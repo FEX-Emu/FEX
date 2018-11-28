@@ -48,6 +48,11 @@ static void A(std::string const &Message, Args... arguments) {
   LogMan::Throw::A(false, format(Message, arguments...));
 }
 
+static void A(std::string const &Message) {
+  if (MSG_LEVEL >= ASSERT) M(ASSERT, Message);
+  LogMan::Throw::A(false, Message);
+}
+
 template <class... Args>
 static void E(std::string const &Message, Args... arguments) {
   auto format = [](std::string const &Message, Args... arguments) {
@@ -60,6 +65,10 @@ static void E(std::string const &Message, Args... arguments) {
   };
   if (MSG_LEVEL >= ERROR)
     M(ERROR, format(Message, arguments...));
+}
+
+static void E(std::string const &Message) {
+  if (MSG_LEVEL >= ERROR) M(ERROR, Message);
 }
 
 template <class... Args>
@@ -77,6 +86,10 @@ static void D(std::string const &Message, Args... arguments) {
     M(DEBUG, format(Message, arguments...));
 }
 
+static void D(std::string const &Message) {
+  if (MSG_LEVEL >= DEBUG) M(DEBUG, Message);
+}
+
 template <class... Args>
 static void I(std::string const &Message, Args... arguments) {
   auto format = [](std::string const &Message, Args... arguments) {
@@ -91,6 +104,11 @@ static void I(std::string const &Message, Args... arguments) {
   if (MSG_LEVEL >= INFO)
     M(INFO, format(Message, arguments...));
 }
+
+static void I(std::string const &Message) {
+  if (MSG_LEVEL >= INFO) M(INFO, Message);
+}
+
 
 } // namespace Msg
 } // namespace LogMan

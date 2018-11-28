@@ -26,7 +26,7 @@ ELFContainer::ELFContainer(std::string const &Filename) {
 
   memcpy(&Header, reinterpret_cast<Elf64_Ehdr *>(&RawFile.at(0)),
          sizeof(Elf64_Ehdr));
-  LogMan::Throw::A(Header.e_type == 2, "ELF wasn't 64bit");
+  LogMan::Throw::A(Header.e_type == ET_EXEC, "ELF wasn't EXEC");
   LogMan::Throw::A(Header.e_phentsize == 56, "PH Entry size wasn't 56");
   LogMan::Throw::A(Header.e_shentsize == 64, "PH Entry size wasn't 64");
 
@@ -51,9 +51,9 @@ ELFContainer::ELFContainer(std::string const &Filename) {
 
   // Print Information
   PrintHeader();
-  PrintSectionHeaders();
-  PrintProgramHeaders();
-  PrintSymbolTable();
+  //PrintSectionHeaders();
+  //PrintProgramHeaders();
+  //PrintSymbolTable();
 }
 
 void ELFContainer::WriteLoadableSections(MemoryWriter Writer) {
@@ -73,6 +73,12 @@ ELFSymbol const *ELFContainer::GetSymbol(std::string const &Name) {
 }
 ELFSymbol const *ELFContainer::GetSymbol(uint64_t Address) {
   auto Sym = SymbolMapByAddress.find(Address);
+  if (Sym == SymbolMapByAddress.end())
+    return nullptr;
+  return Sym->second;
+}
+ELFSymbol const *ELFContainer::GetSymbolInRange(RangeType Address) {
+  auto Sym = SymbolMapByAddress.lower_bound(Address.first);
   if (Sym == SymbolMapByAddress.end())
     return nullptr;
   return Sym->second;
@@ -129,17 +135,21 @@ void ELFContainer::CalculateSymbols() {
     uint64_t offset = SymTabHeader->sh_offset + i * SymTabHeader->sh_entsize;
     Elf64_Sym const *Symbol =
         reinterpret_cast<Elf64_Sym const *>(&RawFile.at(offset));
-    ELFSymbol DefinedSymbol{};
-    DefinedSymbol.FileOffset = offset;
-    DefinedSymbol.Address = Symbol->st_value;
-    DefinedSymbol.Size = Symbol->st_size;
-    DefinedSymbol.Type = ELF64_ST_TYPE(Symbol->st_info);
-    DefinedSymbol.Bind = ELF64_ST_BIND(Symbol->st_info);
-    DefinedSymbol.Name = &StrTab[Symbol->st_name];
-    Symbols.emplace_back(DefinedSymbol);
-    auto Sym = &Symbols.back();
-    SymbolMap[DefinedSymbol.Name] = Sym;
-    SymbolMapByAddress[DefinedSymbol.Address] = Sym;
+    if (ELF64_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN) {
+      ELFSymbol DefinedSymbol{};
+      DefinedSymbol.FileOffset = offset;
+      DefinedSymbol.Address = Symbol->st_value;
+      DefinedSymbol.Size = Symbol->st_size;
+      DefinedSymbol.Type = ELF64_ST_TYPE(Symbol->st_info);
+      DefinedSymbol.Bind = ELF64_ST_BIND(Symbol->st_info);
+      DefinedSymbol.Name = &StrTab[Symbol->st_name];
+
+      Symbols.emplace_back(DefinedSymbol);
+      auto Sym = &Symbols.back();
+      SymbolMap[DefinedSymbol.Name] = Sym;
+      SymbolMapByAddress[DefinedSymbol.Address] = Sym;
+      SymbolMapByAddressRange[std::make_pair(DefinedSymbol.Address, DefinedSymbol.Address + Symbol->st_size)] = Sym;
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 #include <elf.h>
 #include <functional>
+#include <map>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -34,6 +35,9 @@ public:
   ELFSymbol const *GetSymbol(std::string const &Name);
   ELFSymbol const *GetSymbol(uint64_t Address);
 
+  using RangeType = std::pair<uint64_t, uint64_t>;
+  ELFSymbol const *GetSymbolInRange(RangeType Address);
+
 private:
   void CalculateMemoryLayouts();
   void CalculateSymbols();
@@ -50,7 +54,15 @@ private:
   std::vector<Elf64_Phdr> ProgramHeaders;
   std::vector<ELFSymbol> Symbols;
   std::unordered_map<std::string, ELFSymbol *> SymbolMap;
-  std::unordered_map<uint64_t, ELFSymbol *> SymbolMapByAddress;
+  std::map<uint64_t, ELFSymbol *> SymbolMapByAddress;
+
+  struct RangeCompare {
+    bool operator()(const RangeType& a, const RangeType& b) const {
+      return a.first == b.first ||
+        (a.first <= b.first && a.second >= b.second);
+    }
+  };
+  std::map<RangeType, ELFSymbol *, RangeCompare> SymbolMapByAddressRange;
 
   uint64_t MinPhysicalMemoryLocation{0};
   uint64_t MaxPhysicalMemoryLocation{0};
