@@ -9,6 +9,8 @@ enum DebugLevels {
   ERROR = 2,  ///< Only Errors printed
   DEBUG = 3,  ///< Debug messages added
   INFO = 4,   ///< Info messages added
+  STDOUT = 5, ///< Meant to go to STDOUT
+  STDERR = 6, ///< Meant to go to STDERR
 };
 
 constexpr DebugLevels MSG_LEVEL = INFO;
@@ -17,11 +19,15 @@ namespace Throw {
 using ThrowHandler = std::function<void(std::string const &Message)>;
 void InstallHandler(ThrowHandler Handler);
 
-[[noreturn]] void M(std::string const &Message);
+[[noreturn]] void M(const char *fmt, va_list args);
 
-static void A(bool Value, std::string const &Message) {
-  if (MSG_LEVEL >= ASSERT && !Value)
-    M(Message);
+[[maybe_unused]] static void A(bool Value, const char *fmt, ...) {
+  if (MSG_LEVEL >= ASSERT && !Value) {
+    va_list args;
+    va_start(args, fmt);
+    M(fmt, args);
+    va_end(args);
+  }
 }
 
 } // namespace Throw
@@ -31,82 +37,54 @@ using MsgHandler =
     std::function<void(DebugLevels Level, std::string const &Message)>;
 void InstallHandler(MsgHandler Handler);
 
-void M(DebugLevels Level, std::string const &Message);
+void M(DebugLevels Level, const char *fmt, va_list args);
 
-template <class... Args>
-static void A(std::string const &Message, Args... arguments) {
-  auto format = [](std::string const &Message, Args... arguments) {
-    std::ostringstream Str;
-    Str << Message;
-    for (auto Arg : {arguments...}) {
-      Str << Arg;
-    }
-    return Str.str();
-  };
-  if (MSG_LEVEL >= ASSERT)
-    M(ERROR, format(Message, arguments...));
-  LogMan::Throw::A(false, format(Message, arguments...));
+[[maybe_unused]] static void A(const char *fmt, ...) {
+  if (MSG_LEVEL >= ASSERT) {
+    va_list args;
+    va_start(args, fmt);
+    M(ASSERT, fmt, args);
+    va_end(args);
+  }
+  __builtin_trap();
+}
+[[maybe_unused]] static void E(const char *fmt, ...) {
+  if (MSG_LEVEL >= ERROR) {
+    va_list args;
+    va_start(args, fmt);
+    M(ERROR, fmt, args);
+    va_end(args);
+  }
+}
+[[maybe_unused]] static void D(const char *fmt, ...) {
+  if (MSG_LEVEL >= DEBUG) {
+    va_list args;
+    va_start(args, fmt);
+    M(DEBUG, fmt, args);
+    va_end(args);
+  }
+}
+[[maybe_unused]] static void I(const char *fmt, ...) {
+  if (MSG_LEVEL >= INFO) {
+    va_list args;
+    va_start(args, fmt);
+    M(INFO, fmt, args);
+    va_end(args);
+  }
 }
 
-static void A(std::string const &Message) {
-  if (MSG_LEVEL >= ASSERT) M(ASSERT, Message);
-  LogMan::Throw::A(false, Message);
+[[maybe_unused]] static void OUT(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  M(STDOUT, fmt, args);
+  va_end(args);
 }
 
-template <class... Args>
-static void E(std::string const &Message, Args... arguments) {
-  auto format = [](std::string const &Message, Args... arguments) {
-    std::ostringstream Str;
-    Str << Message;
-    for (auto Arg : {arguments...}) {
-      Str << Arg;
-    }
-    return Str.str();
-  };
-  if (MSG_LEVEL >= ERROR)
-    M(ERROR, format(Message, arguments...));
-}
-
-static void E(std::string const &Message) {
-  if (MSG_LEVEL >= ERROR) M(ERROR, Message);
-}
-
-template <class... Args>
-static void D(std::string const &Message, Args... arguments) {
-  auto format = [](std::string const &Message, Args... arguments) {
-    std::ostringstream Str;
-    Str << Message;
-    for (auto Arg : {arguments...}) {
-      Str << Arg;
-    }
-    return Str.str();
-  };
-
-  if (MSG_LEVEL >= DEBUG)
-    M(DEBUG, format(Message, arguments...));
-}
-
-static void D(std::string const &Message) {
-  if (MSG_LEVEL >= DEBUG) M(DEBUG, Message);
-}
-
-template <class... Args>
-static void I(std::string const &Message, Args... arguments) {
-  auto format = [](std::string const &Message, Args... arguments) {
-    std::ostringstream Str;
-    Str << Message;
-    for (auto Arg : {arguments...}) {
-      Str << Arg;
-    }
-    return Str.str();
-  };
-
-  if (MSG_LEVEL >= INFO)
-    M(INFO, format(Message, arguments...));
-}
-
-static void I(std::string const &Message) {
-  if (MSG_LEVEL >= INFO) M(INFO, Message);
+[[maybe_unused]] static void ERR(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  M(STDERR, fmt, args);
+  va_end(args);
 }
 
 

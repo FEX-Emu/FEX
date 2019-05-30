@@ -1,3 +1,5 @@
+#pragma once
+
 #include <elf.h>
 #include <functional>
 #include <map>
@@ -15,11 +17,13 @@ struct ELFSymbol {
   uint8_t Bind;
   std::string Name;
 };
+
 class ELFContainer {
 public:
   ELFContainer(std::string const &Filename);
+  ~ELFContainer();
 
-  uint64_t GetEntryPoint() { return Header.e_entry; }
+  uint64_t GetEntryPoint() const { return Header.e_entry; }
 
   using MemoryLayout = std::tuple<uint64_t, uint64_t, uint64_t>;
 

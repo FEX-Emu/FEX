@@ -8,20 +8,26 @@ namespace Throw {
 std::vector<ThrowHandler> Handlers;
 void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
 
-[[noreturn]] void M(std::string const &Message) {
+[[noreturn]] void M(const char *fmt, va_list args) {
+  char Buffer[1024];
+  vsprintf(Buffer, fmt, args);
+  std::string Message(Buffer);
   for (auto Handler : Handlers) {
     Handler(Message);
   }
+
   __builtin_trap();
 }
-
 } // namespace Throw
 
 namespace Msg {
 std::vector<MsgHandler> Handlers;
 void InstallHandler(MsgHandler Handler) { Handlers.emplace_back(Handler); }
 
-void M(DebugLevels Level, std::string const &Message) {
+void M(DebugLevels Level, const char *fmt, va_list args) {
+  char Buffer[1024];
+  vsprintf(Buffer, fmt, args);
+  std::string Message(Buffer);
   for (auto Handler : Handlers) {
     Handler(Level, Message);
   }

@@ -56,6 +56,16 @@ ELFContainer::ELFContainer(std::string const &Filename) {
   //PrintSymbolTable();
 }
 
+ELFContainer::~ELFContainer() {
+  SymbolMapByAddressRange.clear();
+  SymbolMapByAddress.clear();
+  SymbolMap.clear();
+  Symbols.clear();
+  ProgramHeaders.clear();
+  SectionHeaders.clear();
+  RawFile.clear();
+}
+
 void ELFContainer::WriteLoadableSections(MemoryWriter Writer) {
   for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
     Elf64_Phdr const &hdr = ProgramHeaders.at(i);
@@ -99,9 +109,9 @@ void ELFContainer::CalculateMemoryLayouts() {
   MinPhysicalMemoryLocation = MinPhysAddr;
   MaxPhysicalMemoryLocation = MaxPhysAddr;
   PhysicalMemorySize = PhysMemSize;
-  LogMan::Msg::D("Min PAddr: ", MinPhysAddr);
-  LogMan::Msg::D("Max PAddr: ", MaxPhysAddr);
-  LogMan::Msg::D("Physical Size: ", PhysMemSize);
+  LogMan::Msg::D("Min PAddr: 0x%lx", MinPhysAddr);
+  LogMan::Msg::D("Max PAddr: 0x%lx", MaxPhysAddr);
+  LogMan::Msg::D("Physical Size: 0x%lx", PhysMemSize);
 }
 
 void ELFContainer::CalculateSymbols() {
@@ -117,7 +127,7 @@ void ELFContainer::CalculateSymbols() {
     }
   }
   if (!SymTabHeader) {
-    LogMan::Msg::I("No Symbol table", "");
+    LogMan::Msg::I("No Symbol table");
     return;
   }
 
@@ -154,19 +164,19 @@ void ELFContainer::CalculateSymbols() {
 }
 
 void ELFContainer::PrintHeader() const {
-  LogMan::Msg::I("Type: ", Header.e_type);
-  LogMan::Msg::I("Machine: ", Header.e_machine);
-  LogMan::Msg::I("Version: ", Header.e_version);
-  LogMan::Msg::I("Entry point: ", Header.e_entry);
-  LogMan::Msg::I("PH Off: ", Header.e_phoff);
-  LogMan::Msg::I("SH Off: ", Header.e_shoff);
-  LogMan::Msg::I("Flags: ", Header.e_flags);
-  LogMan::Msg::I("EH Size: ", Header.e_ehsize);
-  LogMan::Msg::I("PH Num: ", Header.e_phnum);
-  LogMan::Msg::I("SH Num: ", Header.e_shnum);
-  LogMan::Msg::I("PH Entry Size: ", Header.e_phentsize);
-  LogMan::Msg::I("SH Entry Size: ", Header.e_shentsize);
-  LogMan::Msg::I("SH Str Index: ", Header.e_shstrndx);
+  LogMan::Msg::I("Type: %d", Header.e_type);
+  LogMan::Msg::I("Machine: %d", Header.e_machine);
+  LogMan::Msg::I("Version: %d", Header.e_version);
+  LogMan::Msg::I("Entry point: 0x%lx", Header.e_entry);
+  LogMan::Msg::I("PH Off: %d", Header.e_phoff);
+  LogMan::Msg::I("SH Off: %d", Header.e_shoff);
+  LogMan::Msg::I("Flags: %d", Header.e_flags);
+  LogMan::Msg::I("EH Size: %d", Header.e_ehsize);
+  LogMan::Msg::I("PH Num: %d", Header.e_phnum);
+  LogMan::Msg::I("SH Num: %d", Header.e_shnum);
+  LogMan::Msg::I("PH Entry Size: %d", Header.e_phentsize);
+  LogMan::Msg::I("SH Entry Size: %d", Header.e_shentsize);
+  LogMan::Msg::I("SH Str Index: %d", Header.e_shstrndx);
 }
 
 void ELFContainer::PrintSectionHeaders() const {
@@ -176,17 +186,17 @@ void ELFContainer::PrintSectionHeaders() const {
   char const *SHStrings = &RawFile.at(StrHeader.sh_offset);
   for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
     Elf64_Shdr const &hdr = SectionHeaders.at(i);
-    LogMan::Msg::I("Index: ", i);
-    LogMan::Msg::I("Name:       ", &SHStrings[hdr.sh_name]);
-    LogMan::Msg::I("Type:       ", hdr.sh_type);
-    LogMan::Msg::I("Flags:      ", hdr.sh_flags);
-    LogMan::Msg::I("Addr:       ", hdr.sh_addr);
-    LogMan::Msg::I("Offset:     ", hdr.sh_offset);
-    LogMan::Msg::I("Size:       ", hdr.sh_size);
-    LogMan::Msg::I("Link:       ", hdr.sh_link);
-    LogMan::Msg::I("Info:       ", hdr.sh_info);
-    LogMan::Msg::I("AddrAlign:  ", hdr.sh_addralign);
-    LogMan::Msg::I("Entry Size: ", hdr.sh_entsize);
+    LogMan::Msg::I("Index: %d", i);
+    LogMan::Msg::I("Name:       %s", &SHStrings[hdr.sh_name]);
+    LogMan::Msg::I("Type:       %d", hdr.sh_type);
+    LogMan::Msg::I("Flags:      %d", hdr.sh_flags);
+    LogMan::Msg::I("Addr:       0x%lx", hdr.sh_addr);
+    LogMan::Msg::I("Offset:     0x%lx", hdr.sh_offset);
+    LogMan::Msg::I("Size:       %d", hdr.sh_size);
+    LogMan::Msg::I("Link:       %d", hdr.sh_link);
+    LogMan::Msg::I("Info:       %d", hdr.sh_info);
+    LogMan::Msg::I("AddrAlign:  %d", hdr.sh_addralign);
+    LogMan::Msg::I("Entry Size: %d", hdr.sh_entsize);
   }
 }
 
@@ -197,14 +207,14 @@ void ELFContainer::PrintProgramHeaders() const {
   char const *SHStrings = &RawFile.at(StrHeader.sh_offset);
   for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
     Elf64_Phdr const &hdr = ProgramHeaders.at(i);
-    LogMan::Msg::I("Type:    ", hdr.p_type);
-    LogMan::Msg::I("Flags:   ", hdr.p_flags);
-    LogMan::Msg::I("Offset:  ", hdr.p_offset);
-    LogMan::Msg::I("VAddr:   ", hdr.p_vaddr);
-    LogMan::Msg::I("PAddr:   ", hdr.p_paddr);
-    LogMan::Msg::I("FSize:   ", hdr.p_filesz);
-    LogMan::Msg::I("MemSize: ", hdr.p_memsz);
-    LogMan::Msg::I("Align:   ", hdr.p_align);
+    LogMan::Msg::I("Type:    %d", hdr.p_type);
+    LogMan::Msg::I("Flags:   %d", hdr.p_flags);
+    LogMan::Msg::I("Offset:  %d", hdr.p_offset);
+    LogMan::Msg::I("VAddr:   0x%lx", hdr.p_vaddr);
+    LogMan::Msg::I("PAddr:   0x%lx", hdr.p_paddr);
+    LogMan::Msg::I("FSize:   %d", hdr.p_filesz);
+    LogMan::Msg::I("MemSize: %d", hdr.p_memsz);
+    LogMan::Msg::I("Align:   %d", hdr.p_align);
   }
 }
 
@@ -221,7 +231,7 @@ void ELFContainer::PrintSymbolTable() const {
     }
   }
   if (!SymTabHeader) {
-    LogMan::Msg::I("No Symbol table", "");
+    LogMan::Msg::I("No Symbol table");
     return;
   }
 
@@ -243,7 +253,7 @@ void ELFContainer::PrintSymbolTable() const {
         << Symbol->st_size << " " << uint32_t(Symbol->st_info) << " "
         << uint32_t(Symbol->st_other) << " " << Symbol->st_shndx << " "
         << &StrTab[Symbol->st_name];
-    LogMan::Msg::I(Str.str(), "");
+    LogMan::Msg::I("%s", Str.str().c_str());
   }
 }
 
