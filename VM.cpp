@@ -378,14 +378,6 @@ err:
         fprintf(stderr, "KVM_RUN failed\n");
         return false;
       }
-      kvm_regs Registers;
-      if (ioctl(VCPU_FD, KVM_GET_REGS, &Registers) == -1) {
-        printf("Couldn't set registers\n");
-      }
-      printf("RIP ended up at 0x%llx\n", Registers.rip);
-
-      printf("EAX: 0x%llx\n", Registers.rax);
-
       return true;
     }
   }
