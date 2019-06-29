@@ -1,0 +1,526 @@
+{
+  "Defines": [
+    "constexpr static uint8_t COND_EQ  = 0",
+    "constexpr static uint8_t COND_NEQ = 1",
+    "constexpr static uint8_t COND_CS  = 2",
+    "constexpr static uint8_t COND_CC  = 3",
+    "constexpr static uint8_t COND_MI  = 4",
+    "constexpr static uint8_t COND_PL  = 5",
+    "constexpr static uint8_t COND_VS  = 6",
+    "constexpr static uint8_t COND_VC  = 7",
+    "constexpr static uint8_t COND_HI  = 8",
+    "constexpr static uint8_t COND_LS  = 9",
+    "constexpr static uint8_t COND_GE  = 10",
+    "constexpr static uint8_t COND_LT  = 11",
+    "constexpr static uint8_t COND_GT  = 12",
+    "constexpr static uint8_t COND_LE  = 13"
+  ],
+
+  "Ops": {
+    "Dummy": {
+    },
+    "Constant": {
+			"HasDest": true,
+      "FixedDestSize": "8",
+      "Args": [
+        "uint64_t", "Constant"
+      ]
+    },
+    "BeginBlock": {},
+    "EndBlock": {
+      "Args": [
+        "uint64_t", "RIPIncrement"
+      ]
+    },
+
+    "Break": {
+      "Args": [
+        "uint8_t", "Reason",
+        "uint8_t", "Literal"
+      ]
+    },
+
+    "EndFunction": {},
+    "ExitFunction": {},
+
+    "Jump": {
+			"DispatcherUnary": true,
+      "SSAArgs": "1"
+    },
+
+    "CondJump": {
+      "SSAArgs": "2"
+    },
+
+    "Mov": {
+			"HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "SSAArgs": "1"
+    },
+
+    "CycleCounter": {
+      "HasDest": true,
+      "FixedDestSize": "8"
+    },
+
+    "LoadContext": {
+			"HasDest": true,
+      "DestSize": "Size",
+      "Args": [
+        "uint8_t", "Size",
+        "uint32_t", "Offset"
+      ]
+    },
+
+    "StoreContext": {
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "Size",
+        "uint32_t", "Offset"
+      ]
+    },
+
+    "LoadFlag": {
+			"HasDest": true,
+      "DestSize": "1",
+      "Args": [
+        "uint32_t", "Flag"
+      ]
+    },
+
+    "StoreFlag": {
+      "SSAArgs": "1",
+      "Args": [
+        "uint32_t", "Flag"
+      ]
+    },
+
+    "Syscall": {
+			"HasDest": true,
+      "FixedDestSize": "8",
+      "SSAArgs": "7"
+    },
+
+    "LoadMem": {
+			"HasDest": true,
+      "DestSize": "Size",
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "StoreMem": {
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "Add": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Sub": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Mul": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "UMul": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Div": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "UDiv": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Rem": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "URem": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "MulH": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "UMulH": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Or": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "And": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Xor": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Lshl": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Lshr": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Ashr": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Rol": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "Ror": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "LDiv": {
+			"HasDest": true,
+      "SSAArgs": "3"
+    },
+
+    "LUDiv": {
+			"HasDest": true,
+      "SSAArgs": "3"
+    },
+
+    "LRem": {
+			"HasDest": true,
+      "SSAArgs": "3"
+    },
+
+    "LURem": {
+			"HasDest": true,
+      "SSAArgs": "3"
+    },
+
+    "Zext": {
+ 			"HasDest": true,
+      "DestSize": "SrcSize / 4",
+      "SSAArgs": "1",
+			"Args": [
+				"uint8_t", "SrcSize"
+			]
+    },
+
+    "Sext": {
+			"HasDest": true,
+      "DestSize": "SrcSize / 4",
+      "SSAArgs": "1",
+			"Args": [
+        "uint8_t", "SrcSize"
+      ]
+    },
+
+    "Neg": {
+			"HasDest": true,
+			"DispatcherUnary": true,
+      "SSAArgs": "1"
+    },
+
+    "Popcount": {
+			"HasDest": true,
+			"DispatcherUnary": true,
+      "SSAArgs": "1"
+    },
+
+    "FindLSB": {
+			"HasDest": true,
+			"DispatcherUnary": true,
+      "SSAArgs": "1"
+    },
+
+    "FindMSB": {
+			"HasDest": true,
+			"DispatcherUnary": true,
+      "SSAArgs": "1"
+    },
+
+    "Rev": {
+			"HasDest": true,
+			"DispatcherUnary": true,
+      "SSAArgs": "1"
+    },
+
+    "CPUID": {
+      "HasDest": true,
+      "FixedDestSize": "4",
+      "NumElements": "4",
+      "SSAArgs": "1"
+    },
+
+    "Bfi": {
+			"HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "SSAArgs": "2",
+			"Args": [
+        "uint8_t", "Width",
+        "uint8_t", "lsb"
+      ]
+    },
+
+    "Bfe": {
+			"HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "SSAArgs": "1",
+			"Args": [
+        "uint8_t", "Width",
+        "uint8_t", "lsb"
+      ]
+    },
+
+    "Sbfe": {
+			"HasDest": true,
+      "SSAArgs": "1",
+			"Args": [
+        "uint8_t", "Width",
+        "uint8_t", "lsb"
+      ]
+    },
+
+    "Select": {
+			"HasDest": true,
+      "SSAArgs": "4",
+      "Args": [
+        "uint8_t", "Cond"
+      ]
+    },
+
+    "CAS": {
+			"HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "SSAArgs": "3"
+    },
+
+    "CreateVector2": {
+      "HasDest": true,
+      "DestSize": "GetOpSize(ssa0) * 2",
+      "SSAArgs": "2"
+    },
+
+    "CreateVector3": {
+      "HasDest": true,
+      "DestSize": "GetOpSize(ssa0) * 3",
+      "SSAArgs": "3"
+    },
+
+    "CreateVector4": {
+      "HasDest": true,
+      "DestSize": "GetOpSize(ssa0) * 4",
+      "SSAArgs": "4"
+    },
+
+    "SplatVector2": {
+      "HasDest": true,
+      "NumElements": "2",
+      "DestSize": "GetOpSize(ssa0) * 2",
+      "SSAArgs": "1"
+    },
+
+    "SplatVector3": {
+      "HasDest": true,
+      "NumElements": "3",
+      "DestSize": "GetOpSize(ssa0) * 3",
+      "SSAArgs": "1"
+    },
+
+    "SplatVector4": {
+      "HasDest": true,
+      "NumElements": "4",
+      "DestSize": "GetOpSize(ssa0) * 4",
+      "SSAArgs": "1"
+    },
+
+    "ExtractElement": {
+      "HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "Idx"
+      ]
+    },
+
+    "VOr": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "VXor": {
+			"HasDest": true,
+			"Dispatcher": true,
+      "SSAArgs": "2"
+    },
+
+    "VAdd": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSub": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUMin": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSMin": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VZip": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VZip2": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VCMPEQ": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VCMPGT": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUShl": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUShlS": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUShr": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VInsElement": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "DestIdx",
+        "uint8_t", "SrcIdx"
+      ]
+    },
+
+    "Print": {
+			"DispatcherUnary": true,
+      "SSAArgs": "1"
+    },
+
+    "Last": {
+      "Last": true,
+      "Args": []
+    }
+  }
+}

@@ -1,0 +1,6 @@
+[submodule "External/SonicUtils"]
+	path = External/SonicUtils
+	url = https://github.com/Sonicadvance1/SonicUtils.git
+[submodule "External/vixl"]
+	path = External/vixl
+	url = https://git.linaro.org/arm/vixl.git
