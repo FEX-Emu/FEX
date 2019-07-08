@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <sstream>
+#include <stdarg.h>
 
 namespace LogMan {
 enum DebugLevels {
@@ -21,7 +22,10 @@ void InstallHandler(ThrowHandler Handler);
 
 [[noreturn]] void M(const char *fmt, va_list args);
 
-[[maybe_unused]] static void A(bool Value, const char *fmt, ...) {
+#ifdef NDEBUG
+static inline void A(bool, const char*, ...) {}
+#else
+static inline void A(bool Value, const char *fmt, ...) {
   if (MSG_LEVEL >= ASSERT && !Value) {
     va_list args;
     va_start(args, fmt);
@@ -29,6 +33,7 @@ void InstallHandler(ThrowHandler Handler);
     va_end(args);
   }
 }
+#endif
 
 } // namespace Throw
 
@@ -39,7 +44,10 @@ void InstallHandler(MsgHandler Handler);
 
 void M(DebugLevels Level, const char *fmt, va_list args);
 
-[[maybe_unused]] static void A(const char *fmt, ...) {
+#ifdef NDEBUG
+static inline void A(const char*, ...) {}
+#else
+static inline void A(const char *fmt, ...) {
   if (MSG_LEVEL >= ASSERT) {
     va_list args;
     va_start(args, fmt);
@@ -48,7 +56,9 @@ void M(DebugLevels Level, const char *fmt, va_list args);
   }
   __builtin_trap();
 }
-[[maybe_unused]] static void E(const char *fmt, ...) {
+#endif
+
+static inline void E(const char *fmt, ...) {
   if (MSG_LEVEL >= ERROR) {
     va_list args;
     va_start(args, fmt);
@@ -56,7 +66,7 @@ void M(DebugLevels Level, const char *fmt, va_list args);
     va_end(args);
   }
 }
-[[maybe_unused]] static void D(const char *fmt, ...) {
+static inline void D(const char *fmt, ...) {
   if (MSG_LEVEL >= DEBUG) {
     va_list args;
     va_start(args, fmt);
@@ -64,7 +74,7 @@ void M(DebugLevels Level, const char *fmt, va_list args);
     va_end(args);
   }
 }
-[[maybe_unused]] static void I(const char *fmt, ...) {
+static inline void I(const char *fmt, ...) {
   if (MSG_LEVEL >= INFO) {
     va_list args;
     va_start(args, fmt);
@@ -73,14 +83,14 @@ void M(DebugLevels Level, const char *fmt, va_list args);
   }
 }
 
-[[maybe_unused]] static void OUT(const char *fmt, ...) {
+static inline void OUT(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   M(STDOUT, fmt, args);
   va_end(args);
 }
 
-[[maybe_unused]] static void ERR(const char *fmt, ...) {
+static inline void ERR(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   M(STDERR, fmt, args);
