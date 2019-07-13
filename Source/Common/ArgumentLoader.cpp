@@ -1,0 +1,150 @@
+#include "Common/Config.h"
+
+#include "OptionParser.h"
+
+namespace FEX::ArgLoader {
+  std::vector<std::string> RemainingArgs;
+
+  void Load(int argc, char **argv) {
+
+    optparse::OptionParser Parser{};
+    optparse::OptionGroup CPUGroup(Parser, "CPU Core options");
+    optparse::OptionGroup TestGroup(Parser, "Test Harness options");
+
+    {
+      CPUGroup.add_option("-c", "--core")
+        .dest("Core")
+        .help("Which CPU core to use")
+        .choices({"irint", "irjit", "llvm", "host", "vm"})
+        .set_default("irint");
+
+      Parser.set_defaults("Break", "0");
+      Parser.set_defaults("Multiblock", "0");
+
+
+      CPUGroup.add_option("-b", "--break")
+        .dest("Break")
+        .action("store_true")
+        .help("Break when op dispatcher doesn't understand instruction");
+      CPUGroup.add_option("--no-break")
+        .dest("Break")
+        .action("store_false")
+        .help("Break when op dispatcher doesn't understand instruction");
+
+      CPUGroup.add_option("-s", "--single-step")
+        .dest("SingleStep")
+        .action("store_true")
+        .help("Single Step config");
+
+      CPUGroup.add_option("-n", "--max-inst")
+        .dest("MaxInst")
+        .help("Maximum number of instructions to stick in a block")
+        .set_default(~0U);
+     CPUGroup.add_option("-m", "--multiblock")
+        .dest("Multiblock")
+        .action("store_true")
+        .help("Enable Multiblock code compilation");
+     CPUGroup.add_option("--no-multiblock")
+        .dest("Multiblock")
+        .action("store_false")
+        .help("Enable Multiblock code compilation");
+
+      Parser.add_option_group(CPUGroup);
+    }
+    {
+      TestGroup.add_option("-g", "--dump-gprs")
+        .dest("DumpGPRs")
+        .action("store_true")
+        .help("When Test Harness ends, print GPR state")
+        .set_default(false);
+
+      TestGroup.add_option("-C", "--ipc-client")
+        .dest("IPCClient")
+        .action("store_true")
+        .help("If the lockstep runner is a client or server")
+        .set_default(false);
+
+      TestGroup.add_option("-I", "--ID")
+        .dest("IPCID")
+        .help("Sets an ID that is prepended to IPC names. For multiple runners")
+        .set_default("0");
+
+      TestGroup.add_option("-e", "--elf")
+        .dest("ELFType")
+        .action("store_true")
+        .help("Lockstep runner should load argument as ELF")
+        .set_default(false);
+
+      Parser.add_option_group(TestGroup);
+    }
+    optparse::Values Options = Parser.parse_args(argc, argv);
+
+    {
+      if (Options.is_set_by_user("Core")) {
+        auto Core = Options["Core"];
+        if (Core == "irint")
+          Config::Add("Core", "0");
+        else if (Core == "irjit")
+          Config::Add("Core", "1");
+        else if (Core == "llvm")
+          Config::Add("Core", "2");
+        else if (Core == "host")
+          Config::Add("Core", "3");
+        else if (Core == "vm")
+          Config::Add("Core", "4");
+      }
+
+      if (Options.is_set_by_user("Break")) {
+        bool Break = Options.get("Break");
+        Config::Add("Break", std::to_string(Break));
+      }
+
+      if (Options.is_set_by_user("SingleStep")) {
+        bool SingleStep = Options.get("SingleStep");
+        Config::Add("SingleStep", std::to_string(SingleStep));
+
+        // Single stepping also enforces single instruction size blocks
+        Config::Add("MaxInst", std::to_string(1u));
+      }
+      else {
+        if (Options.is_set_by_user("MaxInst")) {
+          uint32_t MaxInst = Options.get("MaxInst");
+          Config::Add("MaxInst", std::to_string(MaxInst));
+        }
+      }
+
+      if (Options.is_set_by_user("Multiblock")) {
+        bool Multiblock = Options.get("Multiblock");
+        Config::Add("Multiblock", std::to_string(Multiblock));
+      }
+
+    }
+
+    {
+      if (Options.is_set_by_user("DumpGPRs")) {
+        bool DumpGPRs = Options.get("DumpGPRs");
+        Config::Add("DumpGPRs", std::to_string(DumpGPRs));
+      }
+
+      if (Options.is_set_by_user("IPCClient")) {
+        bool IPCClient = Options.get("IPCClient");
+        Config::Add("IPCClient", std::to_string(IPCClient));
+      }
+
+      if (Options.is_set_by_user("ELFType")) {
+        bool ELFType = Options.get("ELFType");
+        Config::Add("ELFType", std::to_string(ELFType));
+      }
+      if (Options.is_set_by_user("IPCID")) {
+        const char* Value = Options.get("IPCID");
+        Config::Add("IPCID", Value);
+      }
+
+    }
+    RemainingArgs = Parser.args();
+  }
+
+  std::vector<std::string> Get() {
+    return RemainingArgs;
+  }
+}

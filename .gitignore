@@ -1,3 +1,6 @@
-
 compile_commands.json
 vim_rc
+Config.json
+
+[Bb]uild*/
+.vscode/
