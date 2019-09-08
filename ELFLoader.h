@@ -15,7 +15,7 @@ struct ELFSymbol {
   uint64_t Size;
   uint8_t Type;
   uint8_t Bind;
-  std::string Name;
+  char const *Name;
 };
 
 class ELFContainer {
@@ -36,7 +36,7 @@ public:
   using MemoryWriter = std::function<void(void *, uint64_t, uint64_t)>;
   void WriteLoadableSections(MemoryWriter Writer);
 
-  ELFSymbol const *GetSymbol(std::string const &Name);
+  ELFSymbol const *GetSymbol(char const *Name);
   ELFSymbol const *GetSymbol(uint64_t Address);
 
   using RangeType = std::pair<uint64_t, uint64_t>;
@@ -54,23 +54,16 @@ private:
 
   std::vector<char> RawFile;
   Elf64_Ehdr Header;
-  std::vector<Elf64_Shdr> SectionHeaders;
-  std::vector<Elf64_Phdr> ProgramHeaders;
+  std::vector<Elf64_Shdr*> SectionHeaders;
+  std::vector<Elf64_Phdr*> ProgramHeaders;
   std::vector<ELFSymbol> Symbols;
-  std::unordered_map<std::string, ELFSymbol *> SymbolMap;
+  std::unordered_map<char const*, ELFSymbol *> SymbolMap;
   std::map<uint64_t, ELFSymbol *> SymbolMapByAddress;
-
-  struct RangeCompare {
-    bool operator()(const RangeType& a, const RangeType& b) const {
-      return a.first == b.first ||
-        (a.first <= b.first && a.second >= b.second);
-    }
-  };
-  std::map<RangeType, ELFSymbol *, RangeCompare> SymbolMapByAddressRange;
 
   uint64_t MinPhysicalMemoryLocation{0};
   uint64_t MaxPhysicalMemoryLocation{0};
   uint64_t PhysicalMemorySize{0};
+  bool IsStatic{true};
 };
 
 } // namespace ELFLoader

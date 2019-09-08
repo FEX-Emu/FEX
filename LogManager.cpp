@@ -10,10 +10,9 @@ void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
 
 [[noreturn]] void M(const char *fmt, va_list args) {
   char Buffer[1024];
-  vsprintf(Buffer, fmt, args);
-  std::string Message(Buffer);
-  for (auto Handler : Handlers) {
-    Handler(Message);
+  vsnprintf(Buffer, 1024, fmt, args);
+  for (auto &Handler : Handlers) {
+    Handler(Buffer);
   }
 
   __builtin_trap();
@@ -26,10 +25,9 @@ void InstallHandler(MsgHandler Handler) { Handlers.emplace_back(Handler); }
 
 void M(DebugLevels Level, const char *fmt, va_list args) {
   char Buffer[1024];
-  vsprintf(Buffer, fmt, args);
-  std::string Message(Buffer);
-  for (auto Handler : Handlers) {
-    Handler(Level, Message);
+  vsnprintf(Buffer, 1024, fmt, args);
+  for (auto &Handler : Handlers) {
+    Handler(Level, Buffer);
   }
 }
 

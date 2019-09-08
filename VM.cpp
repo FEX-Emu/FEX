@@ -25,6 +25,9 @@ public:
   void *MapRegionFlags(size_t Offset, size_t Size, uint32_t flags, bool Fixed);
   void *MapRegion(size_t Offset, size_t Size, bool Fixed);
 
+  void *MapRegionMirror(size_t BasePtr, size_t Offset, size_t Size, uint32_t flags, bool Fixed);
+  void *FakeMapRegion(size_t Offset);
+
 private:
   int SHMfd;
   size_t SHMSize;
@@ -35,6 +38,7 @@ void *Memmap::MapRegion(size_t Offset, size_t Size, bool Fixed) {
 }
 
 void *Memmap::MapRegionFlags(size_t Offset, size_t Size, uint32_t flags, bool Fixed) {
+  return mmap(0, Size, flags, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
   uintptr_t PtrOffset = reinterpret_cast<uintptr_t>(Base) + Offset;
   void *Ptr = mmap(reinterpret_cast<void*>(PtrOffset), Size, flags,
       MAP_SHARED | (Fixed ? MAP_FIXED : 0), SHMfd, Offset);
@@ -43,8 +47,28 @@ void *Memmap::MapRegionFlags(size_t Offset, size_t Size, uint32_t flags, bool Fi
     LogMan::Msg::A("Failed to map memory region [0x%lx, 0x%lx) - %d", Offset, Size, Fixed);
     return nullptr;
   }
+  LogMan::Msg::D("Mapped [0x%0lx, 0x%0lx) to 0x%0lx on host", Offset, Offset + Size, Ptr);
 
   return Ptr;
+}
+
+void *Memmap::MapRegionMirror(size_t BasePtr, size_t Offset, size_t Size, uint32_t flags, bool Fixed) {
+  uintptr_t PtrOffset = reinterpret_cast<uintptr_t>(Base) + BasePtr;
+  void *Ptr = mmap(reinterpret_cast<void*>(PtrOffset), Size, flags,
+      MAP_SHARED | (Fixed ? MAP_FIXED : 0), SHMfd, Offset);
+
+  if (Ptr == MAP_FAILED) {
+    LogMan::Msg::A("Failed to map memory region [0x%lx, 0x%lx) - %d", Offset, Size, Fixed);
+    return nullptr;
+  }
+  LogMan::Msg::D("Mapped [0x%0lx, 0x%0lx) to 0x%0lx on host", Offset, Offset + Size, Ptr);
+
+  return Ptr;
+}
+
+void *Memmap::FakeMapRegion(size_t Offset) {
+  uintptr_t PtrOffset = reinterpret_cast<uintptr_t>(Base) + Offset;
+  return reinterpret_cast<void*>(PtrOffset);
 }
 
 bool Memmap::AllocateSHMRegion(size_t Size) {
@@ -202,6 +226,7 @@ namespace SU::VM {
         int VM_FD{-1};
         int VCPU_FD{-1};
 
+        constexpr static uint64_t VirtualBase = 0x0000'0001'0000'0000;
         // This is the size of the user's memory region
         uint64_t PhysicalUserMemorySize;
 
@@ -224,8 +249,12 @@ namespace SU::VM {
         MemoryRegion APICRegion {
           .RegionSize = 4096,
         };
+        MemoryRegion LongQuirkRegion {
+          .RegionSize = 4096,
+        };
         bool SetupCPUInLongMode();
         bool SetupMemory();
+        bool HandleKVMLongModeQuirk();
         Memmap Mapper;
     };
 
@@ -251,6 +280,7 @@ namespace SU::VM {
       // [IDTRegion, IDTRegion + Size)
       // [GDTRegion, GDTRegion + Size)
       // [APICRegion, APICRegion + Size)
+      // [LongQuirkRegion, LongQuirkRegion + Size)
       // [PML4, PML4 + Size)
       //
       // ============================
@@ -258,7 +288,6 @@ namespace SU::VM {
       // ============================
       // Virtual memory map directly mirrors the physical mapping
 
-      uint64_t VirtualBase = 0x0000'00F0'0000'0000;
       uint64_t PhysicalMemoryBase = 0;
       // Calculate the amount of physical memory backing we need
       PhysicalMemorySize = PhysicalUserMemorySize;
@@ -275,6 +304,10 @@ namespace SU::VM {
       APICRegion.VirtualBase = VirtualBase + APICRegion.PhysicalBase; // Mapped to the same place
       PhysicalMemorySize += APICRegion.RegionSize;
 
+      LongQuirkRegion.PhysicalBase = PhysicalMemorySize;
+      LongQuirkRegion.VirtualBase = VirtualBase + LongQuirkRegion.PhysicalBase; // Mapped to the same place
+      PhysicalMemorySize += LongQuirkRegion.RegionSize;
+
       // Physical and virtual map directly atm
       PML4.SetPhysicalAddress(PhysicalMemorySize);
       PML4.SetVirtualAddress(VirtualBase + PhysicalMemorySize);
@@ -284,7 +317,7 @@ namespace SU::VM {
       // Align up just to make sure we are page aligned
       PhysicalMemorySize = AlignUp(PhysicalMemorySize, 4096);
 
-      Mapper.AllocateSHMRegion(1ULL << 36);
+      Mapper.AllocateSHMRegion(1ULL << 37);
 
       // Physical memory is just [0, PhysicalMemorySize)
       // Just map physical zero to virtual zero
@@ -560,18 +593,46 @@ namespace SU::VM {
           return false;
         }
 
-
         uint64_t *APICRegisters = (uint64_t*)APICRegion.MappedLocation;
         for (unsigned i = 0; i < 0x54; ++i) {
           APICRegisters[i] = ~0ULL;
         }
       }
 
+      // Set up our memory region for working around a KVM quirk
+      {
+        LongQuirkRegion.MappedLocation = Mapper.MapRegion(LongQuirkRegion.PhysicalBase, LongQuirkRegion.RegionSize, true);
+        LogMan::Throw::A(LongQuirkRegion.MappedLocation != (void*)-1ULL, "Couldn't Allocate");
+
+        // Map this memory to the guest VM
+        kvm_userspace_memory_region Region = {
+          .slot = MemorySlot++,
+          .flags = 0,
+          .guest_phys_addr = LongQuirkRegion.PhysicalBase,
+          .memory_size = LongQuirkRegion.RegionSize,
+          .userspace_addr = (uint64_t)LongQuirkRegion.MappedLocation,
+        };
+
+        if (ioctl(VM_FD, KVM_SET_USER_MEMORY_REGION, &Region) == -1) {
+          printf("Couldn't set guestPD region\n");
+          return false;
+        }
+
+        uint8_t *LongQuirkMemory = (uint8_t*)LongQuirkRegion.MappedLocation;
+        uint8_t Code[] = {
+          0xEB,
+          0x00, // JMP +0
+          0xF4,
+          0xF4,
+          0xF4, // HLT
+        };
+        memcpy(LongQuirkMemory, Code, sizeof(Code));
+      }
+
       return true;
     }
 
     bool KVMInstance::SetupCPUInLongMode() {
-
       kvm_sregs SpecialRegisters = {
         .cs = {
           .base = 0,   // Ignored in 64bit mode
@@ -599,14 +660,22 @@ namespace SU::VM {
         },
 
         .cr0 = (1U << 0) | // Protected Mode enable. Required for 64bit mode
+//          (1U << 1) | // Monitor coprocessor
           (0U << 2) |  // EM bit. 0 means State x87 FPU is present
           (0U << 3) | // TS bit. If set causes a device not available exception
           (1U << 31) | // (PG) Enable paging bit. Required for 64bit mode
           0,
-        .cr3 = PML4.GetPhysicalAddress(), // PDBR in PAE mode. Required for 64bit mode
+        .cr3 = PML4.GetPhysicalAddress() | // PDBR in PAE mode. Required for 64bit mode
+//          (1U << 4) | // Page cache disable
+          0,
         .cr4 = (1U << 5) | // PAE. Required for 64bit mode
+//          (1U << 0) | // (VME) VM86 extensions
+//          (1U << 1) | // (PVI) Virtual interrupt flags
+//          (1U << 3) | // (DE) Debug extensions
+//          (1U << 6) | // (MCE) Machine check enable
+//          (1U << 7) | // (PGE) Global page enable
           (1U << 9) | // OSFXSR. Required to enable SSE
-//          (1U << 18) | // XXX: OSXSave. Required to enable AVX. Requires setting the guest CPUID to say it supports xsave
+          // (1U << 18) | // XXX: OSXSave. Required to enable AVX. Requires setting the guest CPUID to say it supports xsave
           0,
         .efer = (1U << 10) | // (LMA) Long Mode Active.
           (1U << 8) | // (LME) Long Mode Enable
@@ -620,10 +689,10 @@ namespace SU::VM {
           .limit = (uint16_t)IDTRegion.RegionSize,
         },
         .apic_base = (1 << 11) | // (AE) APIC Enable
-//          (APICRegion.PhysicalBase >> 12 << 32), // ABA, APIC Base Address. ABA is zext by 12 bits to form a 52bit physical address
+          // (APICRegion.PhysicalBase >> 12 << 32), // ABA, APIC Base Address. ABA is zext by 12 bits to form a 52bit physical address
           0,
         // Do we need the LDT(Local Descriptor Table) and TR (Task Register)?
-       .tr = {
+        .tr = {
           .base = 0,
           .limit = 0,
         },
@@ -632,14 +701,16 @@ namespace SU::VM {
           .base = 0,
           .limit = 0,
         },
-     };
+      };
 
       kvm_regs Registers = {
         .rip = ~0ULL,
         .rsp = 0xFF0,
         .rflags = 0x2 | // 0x2 is the default state of rflags
-          (1 << 9) | // By default enable hardware interrupts
-          (1 << 19), // By default enable virtual hardware interrupts
+          (1U << 9) | // By default enable hardware interrupts
+          (1U << 19) | // By default enable virtual hardware interrupts
+          (1U << 21) | // CPU ID detection
+          0,
       };
 
       if (ioctl(VCPU_FD, KVM_SET_SREGS, &SpecialRegisters) == -1) {
@@ -651,6 +722,60 @@ namespace SU::VM {
         fprintf(stderr, "Couldn't set kvm_regs\n");
         return false;
       }
+      return true;
+    }
+
+    bool KVMInstance::HandleKVMLongModeQuirk() {
+      uint64_t TestRIP = LongQuirkRegion.VirtualBase + 3;
+      uint64_t MAXRIP = LongQuirkRegion.VirtualBase + 0x10;
+
+      for (uint32_t tries = 0; tries < 4; ++tries) {
+        fprintf(stderr, "Trie: %d\n", tries);
+        kvm_regs Registers = {
+          .rip = LongQuirkRegion.VirtualBase,
+          .rsp = 0xFF0,
+          .rflags = 0x2 | // 0x2 is the default state of rflags
+            (1U << 9) | // By default enable hardware interrupts
+            (1U << 19) | // By default enable virtual hardware interrupts
+            (1U << 21) | // CPU ID detection
+            0,
+        };
+
+        if (ioctl(VCPU_FD, KVM_SET_REGS, &Registers) == -1) {
+          fprintf(stderr, "[Quirk] Couldn't set kvm_regs\n");
+          return false;
+        }
+
+        if (!SetStepping(true)) {
+          fprintf(stderr, "[Quirk] Couldn't set stepping\n");
+          return false;
+        }
+
+        do {
+          if (!Run()) {
+            fprintf(stderr, "[Quirk] Couldn't step\n");
+            return false;
+          }
+          auto Regs = GetRegisterState();
+          if (Regs.rip > MAXRIP) {
+            break;
+          }
+
+        } while (ExitReason() == 4);
+
+        auto Regs = GetRegisterState();
+        if (Regs.rip == TestRIP) {
+          break;
+        }
+      }
+
+      auto Regs = GetRegisterState();
+
+      if (Regs.rip != TestRIP) {
+        fprintf(stderr, "[Quirk] Expected RIP: 0x%lx but got 0x%lx\n", TestRIP, Regs.rip);
+        return false;
+      }
+
       return true;
     }
 
@@ -719,6 +844,11 @@ namespace SU::VM {
       Result = ioctl(VM_FD, KVM_SET_TSS_ADDR, -1U - (4096 * 3));
       if (Result == -1) {
         fprintf(stderr, "Couldn't set TSS ADDR\n");
+        goto err;
+      }
+
+      if (!HandleKVMLongModeQuirk()) {
+        fprintf(stderr, "Couldn't work around KVM long mode enable quirk");
         goto err;
       }
 
@@ -897,20 +1027,6 @@ err:
       LogMan::Msg::D("Interrupt Bitmap");
       for (int i = 0; i < (KVM_NR_INTERRUPTS + 63) / 64; ++i) {
         LogMan::Msg::D("Interrupt: %d: 0x%016llx", Registers.interrupt_bitmap[i]);
-      }
-
-      void *PhysBase = VM_Addr;
-      uint8_t *GuestData = reinterpret_cast<uint8_t*>(PhysBase);
-
-      uint64_t Offset = State.rip - 0x1000'0000ULL;
-      uint64_t Size = 16;
-      LogMan::Msg::D("Mem: [%016llx, %016llx)", Offset, Offset + Size);
-      for (uint64_t i = 0; i < 16 * 3; i += 16) {
-        LogMan::Msg::D("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
-            GuestData[Offset + i + 0], GuestData[Offset + i + 1], GuestData[Offset + i + 2], GuestData[Offset + i + 3],
-            GuestData[Offset + i + 4], GuestData[Offset + i + 5], GuestData[Offset + i + 6], GuestData[Offset + i + 7],
-            GuestData[Offset + i + 8], GuestData[Offset + i + 9], GuestData[Offset + i + 10], GuestData[Offset + i + 11],
-            GuestData[Offset + i + 12], GuestData[Offset + i + 13], GuestData[Offset + i + 14], GuestData[Offset + i + 15]);
       }
     }
   }

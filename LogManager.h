@@ -17,7 +17,7 @@ enum DebugLevels {
 constexpr DebugLevels MSG_LEVEL = INFO;
 
 namespace Throw {
-using ThrowHandler = std::function<void(std::string const &Message)>;
+using ThrowHandler = void(*)(char const *Message);
 void InstallHandler(ThrowHandler Handler);
 
 [[noreturn]] void M(const char *fmt, va_list args);
@@ -38,8 +38,7 @@ static inline void A(bool Value, const char *fmt, ...) {
 } // namespace Throw
 
 namespace Msg {
-using MsgHandler =
-    std::function<void(DebugLevels Level, std::string const &Message)>;
+using MsgHandler = void(*)(DebugLevels Level, char const *Message);
 void InstallHandler(MsgHandler Handler);
 
 void M(DebugLevels Level, const char *fmt, va_list args);
