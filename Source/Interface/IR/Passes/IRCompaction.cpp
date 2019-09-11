@@ -53,6 +53,12 @@ bool IRCompaction::Run(OpDispatchBuilder *Disp) {
     NodeWrapper *WrapperOp = Begin();
     OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
     FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+
+    if (IROp->HasDest && RealNode->GetUses() == 0) {
+      // Should this be in a dedicated DCE pass?
+      ++Begin;
+      continue;
+    }
     size_t OpSize = FEXCore::IR::GetSize(IROp->Op);
 
     // Allocate the ops locally for our local dispatch
@@ -74,6 +80,12 @@ bool IRCompaction::Run(OpDispatchBuilder *Disp) {
     NodeWrapper *WrapperOp = Begin();
     OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
     FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+
+    if (IROp->HasDest && RealNode->GetUses() == 0) {
+      // Should this be in a dedicated DCE pass?
+      ++Begin;
+      continue;
+    }
 
     NodeWrapper LocalNodeWrapper = NodeWrapper::WrapOffset(NodeLocationRemapper[WrapperOp->ID()] * sizeof(OrderedNode));
     OrderedNode *LocalNode = reinterpret_cast<OrderedNode*>(LocalNodeWrapper.GetPtr(LocalListBegin));
