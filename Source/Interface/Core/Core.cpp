@@ -99,7 +99,7 @@ namespace FEXCore::Context {
     , SyscallHandler {this} {
     FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
     PassManager.AddDefaultPasses();
-    // PassManager.AddDefaultValidationPasses();
+    PassManager.AddDefaultValidationPasses();
   }
 
   bool Context::GetFilenameHash(std::string const &Filename, std::string &Hash) {
@@ -518,7 +518,6 @@ namespace FEXCore::Context {
         Thread->OpDispatcher->EndBlock(TotalInstructionsLength);
         Thread->OpDispatcher->ExitFunction();
       }
-
 
       // Run the passmanager over the IR from the dispatcher
       PassManager.Run(Thread->OpDispatcher.get());
