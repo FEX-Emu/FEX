@@ -517,9 +517,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     // XXX: Test
     GetPackedRFLAG(false);
 
-    auto CondJump = _CondJump();
-    CondJump.first->Header.NumArgs = 1;
-    CondJump.first->Header.Args[0] = SrcCond.Node->Wrapped(ListData.Begin());
+    auto CondJump = _CondJump(SrcCond);
 
     auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
     auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
@@ -535,7 +533,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     // Make sure to start a new block after ending this one
     auto JumpTarget = _BeginBlock();
     // This very explicitly avoids the isDest path for Ops. We want the actual destination here
-    CondJump.first->Header.Args[1] = JumpTarget.Node->Wrapped(ListData.Begin());
+    SetJumpTarget(CondJump, JumpTarget);
   }
 }
 
@@ -1551,7 +1549,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
     // Make sure to start a new block after ending this one
     auto LoopStart = _BeginBlock();
-    JumpStart.first->Header.Args[0] = LoopStart.Node->Wrapped(ListData.Begin());
+    SetJumpTarget(JumpStart, LoopStart);
 
     OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
 
@@ -1564,9 +1562,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
       Counter, ZeroConst,
       OneConst, ZeroConst);
-    auto CondJump = _CondJump();
-    CondJump.first->Header.NumArgs = 1;
-    CondJump.first->Header.Args[0] = CanLeaveCond.Node->Wrapped(ListData.Begin());
+    auto CondJump = _CondJump(CanLeaveCond);
 
     // Decrement counter
     Counter = _Sub(Counter, OneConst);
@@ -1583,7 +1579,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   _EndBlock(0);
   // Make sure to start a new block after ending this one
   auto LoopEnd = _BeginBlock();
-  CondJump.first->Header.Args[1] = LoopEnd.Node->Wrapped(ListData.Begin());
+  SetJumpTarget(CondJump, LoopEnd);
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
@@ -1615,7 +1611,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
   _EndBlock(0);
   // Make sure to start a new block after ending this one
     auto LoopStart = _BeginBlock();
-    JumpStart.first->Header.Args[0] = LoopStart.Node->Wrapped(ListData.Begin());
+    SetJumpTarget(JumpStart, LoopStart);
 
     OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
     OrderedNode *Dest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
@@ -1631,9 +1627,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
       Counter, ZeroConst,
       OneConst, ZeroConst);
-    auto CondJump = _CondJump();
-    CondJump.first->Header.NumArgs = 1;
-    CondJump.first->Header.Args[0] = CanLeaveCond.Node->Wrapped(ListData.Begin());
+    auto CondJump = _CondJump(CanLeaveCond);
 
     // Decrement counter
     Counter = _Sub(Counter, OneConst);
@@ -1654,7 +1648,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
   _EndBlock(0);
   // Make sure to start a new block after ending this one
   auto LoopEnd = _BeginBlock();
-  CondJump.first->Header.Args[1] = LoopEnd.Node->Wrapped(ListData.Begin());
+  SetJumpTarget(CondJump, LoopEnd);
 
 }
 
@@ -2469,7 +2463,7 @@ void OpDispatchBuilder::ResetWorkingList() {
   ListData.Reset();
   CurrentWriteCursor = nullptr;
   // This is necessary since we do "null" pointer checks
-  ListData.Allocate(sizeof(OrderedNode));
+  InvalidNode = reinterpret_cast<OrderedNode*>(ListData.Allocate(sizeof(OrderedNode)));
   DecodeFailure = false;
   Information.HadUnconditionalExit = false;
   ShouldDump = false;
@@ -3045,16 +3039,15 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
   if (Op->OP == 0xCE) { // Conditional to only break if Overflow == 1
     auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    auto CondJump = _CondJump();
-    CondJump.first->Header.NumArgs = 1;
+
     // If condition doesn't hold then keep going
-    CondJump.first->Header.Args[0] = _Xor(Flag, _Constant(1)).Node->Wrapped(ListData.Begin());
+    auto CondJump = _CondJump(_Xor(Flag, _Constant(1)));
     _Break(Reason, Literal);
     _EndBlock(0);
 
     // Make sure to start a new block after ending this one
     auto JumpTarget = _BeginBlock();
-    CondJump.first->Header.Args[1] = JumpTarget.Node->Wrapped(ListData.Begin());
+    SetJumpTarget(CondJump, JumpTarget);
   }
   else {
     _Break(Reason, Literal);

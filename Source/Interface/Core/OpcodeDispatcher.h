@@ -212,6 +212,21 @@ public:
 	IRPair<IROp_VUShr> _VUShr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShr(ssa0, ssa1, RegisterSize, ElementSize);
   }
+
+  IRPair<IROp_Jump> _Jump() {
+    return _Jump(InvalidNode);
+  }
+  IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0) {
+    return _CondJump(ssa0, InvalidNode);
+  }
+
+  void SetJumpTarget(IRPair<IROp_Jump> Op, OrderedNode *Target) {
+    Op.first->Header.Args[0].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+  }
+  void SetJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
+    Op.first->Header.Args[1].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+  }
+
   /**  @} */
 
   bool IsValueConstant(NodeWrapper ssa, uint64_t *Constant) {
@@ -309,6 +324,7 @@ private:
   IntrusiveAllocator Data;
   IntrusiveAllocator ListData;
 
+  OrderedNode *InvalidNode;
 };
 
 void InstallOpcodeHandlers();

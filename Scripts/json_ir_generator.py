@@ -217,39 +217,6 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\t\treturn HeaderOp->HasDest;\n")
     output_file.write("\t}\n\n")
 
-    for op_key, op_vals in ops.items():
-        if not ("Last" in op_vals):
-            HasDest = False
-            HasFixedDestSize = False
-            FixedDestSize = 0
-            HasDestSize = False;
-            DestSize = ""
-
-            if ("HasDest" in op_vals and op_vals["HasDest"] == True):
-                HasDest = True
-
-            if ("FixedDestSize" in op_vals):
-                HasFixedDestSize = True
-                FixedDestSize = int(op_vals["FixedDestSize"])
-
-            if ("DestSize" in op_vals):
-                HasDestSize = True
-                DestSize = op_vals["DestSize"];
-
-            output_file.write("\tIRPair<IROp_%s> _%s() {\n" % (op_key, op_key))
-
-            output_file.write("\t\tauto Op = AllocateOp<IROp_%s, IROps::OP_%s>();\n" % (op_key, op_key.upper()))
-
-            if (HasDest):
-                if (HasFixedDestSize):
-                    output_file.write("\t\tOp.first->Header.Size = %d;\n" % FixedDestSize)
-
-                output_file.write("\t\tOp.first->Header.HasDest = true;\n")
-
-            output_file.write("\t\treturn Op;\n")
-
-            output_file.write("\t}\n\n")
-
     # Generate helpers with operands
     for op_key, op_vals in ops.items():
         if not ("Last" in op_vals):
@@ -267,9 +234,6 @@ def print_ir_allocator_helpers(ops, defines):
 
             if ("Args" in op_vals and len(op_vals["Args"]) != 0):
                 HasArgs = True
-
-            if not (HasArgs or SSAArgs != 0):
-                continue
 
             if ("HelperGen" in op_vals and op_vals["HelperGen"] == False):
                 continue;
@@ -316,6 +280,7 @@ def print_ir_allocator_helpers(ops, defines):
             if (SSAArgs != 0):
                 for i in range(0, SSAArgs):
                     output_file.write("\t\tOp.first->Header.Args[%d] = ssa%d->Wrapped(ListData.Begin());\n" % (i, i))
+                    output_file.write("\t\tssa%d->AddUse();\n" % (i))
 
             if (HasArgs):
                 for i in range(1, len(op_vals["Args"]), 2):
