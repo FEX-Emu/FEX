@@ -1156,7 +1156,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   StoreResult(Op, ALUOp);
 
   // XXX: This isn't correct
-  GenerateFlags_Logical(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
 }
 
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
@@ -2904,6 +2904,54 @@ void OpDispatchBuilder::GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, 
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
   }
 }
+
+void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  auto ZeroConst = _Constant(0);
+  auto OneConst = _Constant(1);
+
+  auto CmpResult = _Select(FEXCore::IR::COND_EQ, Src2, ZeroConst, OneConst, ZeroConst);
+  auto CondJump = _CondJump(CmpResult);
+  // AF
+  {
+    // Undefined
+    // Set to zero anyway
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(ZeroConst);
+  }
+
+  // SF
+  {
+    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+
+    auto LshrOp = _Lshr(Res, SignBitConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+  }
+
+  // PF
+  {
+    auto EightBitMask = _Constant(0xFF);
+    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
+    auto XorOp = _Xor(PopCountOp, OneConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  }
+
+  // ZF
+  {
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
+        Res, ZeroConst, OneConst, ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+  }
+
+  // CF/OF
+  {
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
+  }
+
+  _EndBlock(0);
+  auto NewBlock = _BeginBlock();
+  SetJumpTarget(CondJump, NewBlock);
+}
+
 void OpDispatchBuilder::GenerateFlags_Rotate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   auto ZeroConst = _Constant(0);
 
