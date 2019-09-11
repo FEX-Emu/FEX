@@ -856,12 +856,12 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags);
   // Op size is destination size
   // Therefore sext OpSize/2
-  uint8_t Size = GetSrcSize(Op);
-  Src = _Sext(Size * 8, Src);
-  if (Size == 4)
-    Src = _Zext(Size * 2 * 8, Src);
+  uint8_t SrcSize = GetSrcSize(Op) / 2;
+  Src = _Sext(SrcSize * 8, Src);
+  if (SrcSize == 4)
+    Src = _Zext(SrcSize * 2 * 8, Src);
 
-  StoreResult(Op, Src);
+  StoreResult_WithOpSize(Op, Op->Dest, Src, SrcSize * 2 * 8);
 }
 
 void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
