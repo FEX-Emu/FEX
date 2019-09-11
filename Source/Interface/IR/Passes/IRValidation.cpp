@@ -46,7 +46,20 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
     if (IROp->HasDest) {
       HadError |= OpSize == 0;
       if (OpSize == 0) {
-        Errors << "%ssa" << WrapperOp->NodeOffset << ": Had destination but with no size" << std::endl;
+        Errors << "%ssa" << WrapperOp->ID() << ": Had destination but with no size" << std::endl;
+      }
+
+      if (RealNode->GetUses() == 0) {
+        HadError |= true;
+        Errors << "%ssa" << WrapperOp->ID() << ": Destination created but had no uses" << std::endl;
+      }
+    }
+
+    for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
+      NodeWrapper Arg = IROp->Args[i];
+      if (Arg.ID() == 0) {
+        HadError |= true;
+        Errors << "Op" << WrapperOp->ID() <<": Arg[" << i << "] has invalid target of %ssa0" << std::endl;
       }
     }
 
@@ -54,10 +67,10 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
     case OP_BEGINBLOCK: {
       HadError |= InBlock;
       if (InBlock) {
-        Errors << "BasicBlock " << WrapperOp->NodeOffset << ": Begin in middle of block" << std::endl;
+        Errors << "BasicBlock " << WrapperOp->ID() << ": Begin in middle of block" << std::endl;
       }
 
-      auto Block = OffsetToBlockMap.try_emplace(WrapperOp->NodeOffset, BlockInfo{}).first;
+      auto Block = OffsetToBlockMap.try_emplace(WrapperOp->ID(), BlockInfo{}).first;
       CurrentBlock = &Block->second;
       CurrentBlock->Begin = WrapperOp;
       InBlock = true;
@@ -67,14 +80,14 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
     case OP_ENDBLOCK: {
       HadError |= !InBlock;
       if (!InBlock) {
-        Errors << "BasicBlock " << WrapperOp->NodeOffset << ": End loose without a begin" << std::endl;
+        Errors << "BasicBlock " << WrapperOp->ID() << ": End loose without a begin" << std::endl;
       }
 
       if (CurrentBlock) {
         // XXX: Enable once fallthrough is handled
         // HadError |= !CurrentBlock->HasExit && CurrentBlock->Successors.size() == 0;
         // if (!CurrentBlock->HasExit && CurrentBlock->Successors.size() == 0) {
-        //   Errors << "BasicBlock " << WrapperOp->NodeOffset << ": Didn't have an exit and didn't have any successors. (Fallthrough?)" << std::endl;
+        //   Errors << "BasicBlock " << WrapperOp->ID() << ": Didn't have an exit and didn't have any successors. (Fallthrough?)" << std::endl;
         // }
         CurrentBlock->End = WrapperOp;
         CurrentBlock = nullptr;
@@ -100,7 +113,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
       FEXCore::IR::IROp_Header *TargetOp = TargetNode->Op(DataBegin);
       HadError |= TargetOp->Op != OP_BEGINBLOCK;
       if (TargetOp->Op != OP_BEGINBLOCK) {
-        Errors << "CondJump " << WrapperOp->NodeOffset << ": CondJump to Op that isn't the begining of a block" << std::endl;
+        Errors << "CondJump " << WrapperOp->ID() << ": CondJump to Op that isn't the begining of a block" << std::endl;
       }
       else {
         auto Block = OffsetToBlockMap.try_emplace(IterLocation()->NodeOffset, BlockInfo{}).first;
@@ -121,7 +134,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
       FEXCore::IR::IROp_Header *TargetOp = TargetNode->Op(DataBegin);
       HadError |= TargetOp->Op != OP_BEGINBLOCK;
       if (TargetOp->Op != OP_BEGINBLOCK) {
-        Errors << "Jump " << WrapperOp->NodeOffset << ": Jump to Op that isn't the begining of a block" << std::endl;
+        Errors << "Jump " << WrapperOp->ID() << ": Jump to Op that isn't the begining of a block" << std::endl;
       }
       else {
         auto Block = OffsetToBlockMap.try_emplace(IterLocation()->NodeOffset, BlockInfo{}).first;

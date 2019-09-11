@@ -16,7 +16,7 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, NodeWr
   OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(Arg.GetPtr(ListBegin));
   auto IROp = RealNode->Op(Data);
 
-  *out << "%ssa" << std::to_string(Arg.NodeOffset / sizeof(OrderedNode)) << " i" << std::dec << (IROp->Size * 8);
+  *out << "%ssa" << std::to_string(Arg.ID()) << " i" << std::dec << (IROp->Size * 8);
   if (IROp->Elements > 1) {
     *out << "v" << std::dec << IROp->Elements;
   }
@@ -36,7 +36,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
 		auto Name = FEXCore::IR::GetName(IROp->Op);
 
     if (IROp->HasDest) {
-      *out << "%ssa" << std::to_string(Op->NodeOffset / sizeof(OrderedNode)) << " i" << std::dec << (IROp->Size * 8);
+      *out << "%ssa" << std::to_string(Op->ID()) << " i" << std::dec << (IROp->Size * 8);
       if (IROp->Elements > 1) {
         *out << "v" << std::dec << IROp->Elements;
       }
