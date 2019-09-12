@@ -49,6 +49,10 @@ public:
      LogMan::Msg::ERR("%s", reinterpret_cast<char*>(buf));
     return count;
   }
+
+  uint64_t read(int fd, void *buf, size_t count) {
+    return ::read(HostFD, buf, count);
+  }
 };
 
 uint64_t FD::read(int fd, void *buf, size_t count) {
@@ -89,7 +93,6 @@ int FD::fstat(int fd, struct stat *buf) {
 }
 
 int FD::close(int fd) {
-  LogMan::Msg::D("Closing: %s", PathName.c_str());
   return ::close(HostFD);
 }
 
@@ -191,7 +194,6 @@ uint64_t FileManager::Writev(int fd, void *iov, int iovcnt) {
 }
 
 uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
-  LogMan::Msg::D("Trying to read access of: %s", pathname);
   return access(pathname, mode);
 }
 
@@ -207,14 +209,9 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
 
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, int flags, uint32_t mode) {
   int32_t fd = CurrentFDOffset;
-  LogMan::Msg::D("Attempting to open '%s'", pathname);
   if (!strcmp(pathname, "/dev/tty")) {
     FDMap[CurrentFDOffset++] = new STDFD{CTX, STDOUT_FILENO, "/dev/tty", 0, 0};
     return fd;
-  }
-
-  if (!strcmp(pathname, "/etc/ld.so.cache")) {
-    return -1;
   }
 
   auto fdPtr = new FD{CTX, fd, pathname, flags, mode};
@@ -227,7 +224,6 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
 
   FDMap[CurrentFDOffset++] = fdPtr;
 
-  LogMan::Msg::D("Opening: %d(%d) %s\n", fd, Result, pathname);
   return fd;
 }
 
