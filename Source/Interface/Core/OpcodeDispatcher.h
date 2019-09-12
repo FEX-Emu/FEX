@@ -125,6 +125,9 @@ public:
   template<size_t ElementSize>
   void SHUFOp(OpcodeArgs);
 
+  void FXSaveOp(OpcodeArgs);
+  void FXRStoreOp(OpcodeArgs);
+
 #undef OpcodeArgs
 
   /**

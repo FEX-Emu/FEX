@@ -3150,6 +3150,14 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   StoreResult(Op, Res);
 }
 
+void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
+}
+
+void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
+}
+
+
+
 #undef OpcodeArgs
 
 void InstallOpcodeHandlers() {
@@ -3456,6 +3464,10 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 6), 1, &OpDispatchBuilder::PSLL<8, true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 3), 1, &OpDispatchBuilder::PSRLDQ},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 7), 1, &OpDispatchBuilder::PSLL<16, true>},
+
+    // GROUP 15
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 0), 1, &OpDispatchBuilder::FXSaveOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 1), 1, &OpDispatchBuilder::FXRStoreOp},
 
     // GROUP 16
     {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 8, &OpDispatchBuilder::NOPOp},

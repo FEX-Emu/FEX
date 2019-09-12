@@ -1294,8 +1294,8 @@ void InitializeInfoTables() {
     {OPD(TYPE_GROUP_14, PF_F2, 7), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                                             0, nullptr}},
 
     // GROUP 15
-    {OPD(TYPE_GROUP_15, PF_NONE, 0), 1, X86InstInfo{"FXSAVE",          TYPE_MMX, FLAGS_NONE,       0, nullptr}}, // MMX/x87
-    {OPD(TYPE_GROUP_15, PF_NONE, 1), 1, X86InstInfo{"FXRSTOR",         TYPE_MMX, FLAGS_NONE,       0, nullptr}}, // MMX/x87
+    {OPD(TYPE_GROUP_15, PF_NONE, 0), 1, X86InstInfo{"FXSAVE",          TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,       0, nullptr}}, // MMX/x87
+    {OPD(TYPE_GROUP_15, PF_NONE, 1), 1, X86InstInfo{"FXRSTOR",         TYPE_INST, FLAGS_MODRM,       0, nullptr}}, // MMX/x87
     {OPD(TYPE_GROUP_15, PF_NONE, 2), 1, X86InstInfo{"LDMXCSR",         TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_NONE, 3), 1, X86InstInfo{"STMXCSR",         TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_NONE, 4), 1, X86InstInfo{"XSAVE",           TYPE_PRIV, FLAGS_NONE,      0, nullptr}},
