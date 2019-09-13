@@ -3151,12 +3151,94 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
+  OrderedNode *Mem = LoadSource(Op, Op->Dest, Op->Flags, false);
+
+  // Saves 512bytes to the memory location provided
+  // Header changes depending on if REX.W is set or not
+  if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
+    // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
+    // ------------------------------------------
+    //   00 | FCW | FSW | FTW | <R>   | FOP | FIP                   |
+    //   16 | FDP                           | MXCSR     | MXCSR_MASK|
+  }
+  else {
+    // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
+    // ------------------------------------------
+    //   00 | FCW | FSW | FTW | <R>   | FOP | FIP[31:0] | FCS | <R> |
+    //   16 | FDP[31:0] | FDS         | <R> | MXCSR     | MXCSR_MASK|
+  }
+
+  // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
+  // ------------------------------------------
+  //   32 | ST0/MM0                             | <R>
+  //   48 | ST1/MM1                             | <R>
+  //   64 | ST2/MM2                             | <R>
+  //   80 | ST3/MM3                             | <R>
+  //   96 | ST4/MM4                             | <R>
+  //  112 | ST5/MM5                             | <R>
+  //  128 | ST6/MM6                             | <R>
+  //  144 | ST7/MM7                             | <R>
+  //  160 | XMM0
+  //  173 | XMM1
+  //  192 | XMM2
+  //  208 | XMM3
+  //  224 | XMM4
+  //  240 | XMM5
+  //  256 | XMM6
+  //  272 | XMM7
+  //  288 | XMM8
+  //  304 | XMM9
+  //  320 | XMM10
+  //  336 | XMM11
+  //  352 | XMM12
+  //  368 | XMM13
+  //  384 | XMM14
+  //  400 | XMM15
+  //  416 | <R>
+  //  432 | <R>
+  //  448 | <R>
+  //  464 | Available
+  //  480 | Available
+  //  496 | Available
+  // FCW: x87 FPU control word
+  // FSW: x87 FPU status word
+  // FTW: x87 FPU Tag word (Abridged)
+  // FOP: x87 FPU opcode. Lower 11 bits of the opcode
+  // FIP: x87 FPU instructyion pointer offset
+  // FCS: x87 FPU instruction pointer selector. If CPUID_0000_0007_0000_00000:EBX[bit 13] = 1 then this is deprecated and stores as 0
+  // FDP: x87 FPU instruction operand (data) pointer offset
+  // FDS: x87 FPU instruction operand (data) pointer selector. Same deprecation as FCS
+  // MXCSR: If OSFXSR bit in CR4 is not set then this may not be saved
+  // MXCSR_MASK: Mask for writes to the MXCSR register
+  // If OSFXSR bit in CR4 is not set than FXSAVE /may/ not save the XMM registers
+  // This is implementation dependent
+  for (unsigned i = 0; i < 8; ++i) {
+    OrderedNode *MMReg = _LoadContext(16, offsetof(FEXCore::Core::CPUState, mm[i]));
+    OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 32));
+
+    _StoreMem(16, MemLocation, MMReg);
+  }
+  for (unsigned i = 0; i < 16; ++i) {
+    OrderedNode *XMMReg = _LoadContext(16, offsetof(FEXCore::Core::CPUState, xmm[i]));
+    OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
+
+    _StoreMem(16, MemLocation, XMMReg);
+  }
 }
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
+  OrderedNode *Mem = LoadSource(Op, Op->Src1, Op->Flags, false);
+  for (unsigned i = 0; i < 8; ++i) {
+    OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 32));
+    auto MMReg = _LoadMem(16, MemLocation);
+    _StoreContext(16, offsetof(FEXCore::Core::CPUState, mm[i]), MMReg);
+  }
+  for (unsigned i = 0; i < 16; ++i) {
+    OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
+    auto XMMReg = _LoadMem(16, MemLocation);
+    _StoreContext(16, offsetof(FEXCore::Core::CPUState, xmm[i]), XMMReg);
+  }
 }
-
-
 
 #undef OpcodeArgs
 

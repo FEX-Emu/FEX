@@ -36,6 +36,14 @@ constexpr unsigned REG_XMM_12 = 28;
 constexpr unsigned REG_XMM_13 = 29;
 constexpr unsigned REG_XMM_14 = 30;
 constexpr unsigned REG_XMM_15 = 31;
+constexpr unsigned REG_MM_0   = 32;
+constexpr unsigned REG_MM_1   = 33;
+constexpr unsigned REG_MM_2   = 34;
+constexpr unsigned REG_MM_3   = 35;
+constexpr unsigned REG_MM_4   = 36;
+constexpr unsigned REG_MM_5   = 37;
+constexpr unsigned REG_MM_6   = 38;
+constexpr unsigned REG_MM_7   = 39;
 constexpr unsigned REG_INVALID = 255;
 /**  @} */
 
