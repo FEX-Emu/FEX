@@ -26,6 +26,11 @@ namespace FEXCore::Memory {
     void *GetMemoryBase() { return SHM->Object.Ptr; }
 
     void *GetPointer(uint64_t Offset);
+#ifndef NDEBUG
+    void *GetPointerSizeCheck(uint64_t Offset, uint64_t Size);
+#else
+    void *GetPointerSizeCheck(uint64_t Offset, uint64_t Size) { return GetPointer(Offset); }
+#endif
     template<typename T>
     T GetPointer(uint64_t Offset) {
       return reinterpret_cast<T>(GetPointer(Offset));
