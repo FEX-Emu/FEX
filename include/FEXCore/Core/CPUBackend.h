@@ -11,6 +11,7 @@ namespace IR {
 
 namespace Core {
   struct DebugData;
+  struct ThreadState;
 }
 
 namespace CPU {
@@ -68,6 +69,10 @@ class LLVMCore;
      * @return true if it needs the IR
      */
     virtual bool NeedsOpDispatch() = 0;
+
+    virtual bool HasCustomDispatch() const { return false; }
+
+    virtual void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) {}
   };
 
 }
