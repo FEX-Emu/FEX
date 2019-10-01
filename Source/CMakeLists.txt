@@ -93,10 +93,18 @@ endif()
 set(OUTPUT_NAME "${CMAKE_CURRENT_BINARY_DIR}/IRDefines.inc")
 set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/Interface/IR/IR.json")
 
-add_custom_target(IR_INC
+add_custom_command(
+  OUTPUT "${OUTPUT_NAME}"
   DEPENDS "${INPUT_NAME}"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}"
   )
+
+set_source_files_properties(${OUTPUT_NAME} PROPERTIES
+  GENERATED TRUE)
+
+add_custom_target(IR_INC
+  DEPENDS "${OUTPUT_NAME}")
 
 add_library(${PROJECT_NAME} STATIC ${SRCS})
 add_dependencies(${PROJECT_NAME} IR_INC)
