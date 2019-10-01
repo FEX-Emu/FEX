@@ -673,7 +673,7 @@ void InitializeInfoTables() {
     // GROUP 11
     {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 0), 1, X86InstInfo{"MOV",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST  | FLAGS_SRC_SEXT,                   1, nullptr}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 1), 6, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
-    {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, X86InstInfo{"MOV",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST  | FLAGS_SRC_SEXT,                                   4, nullptr}},
+    {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, X86InstInfo{"MOV",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,                                   4, nullptr}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 1), 6, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
 #undef OPD
   };
@@ -1775,7 +1775,7 @@ void InitializeInfoTables() {
 
   const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> H0F38Table = {
     {OPD(PF_38_NONE, 0x00), 1, X86InstInfo{"PSHUFB",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(PF_38_66,   0x00), 1, X86InstInfo{"PSHUFB",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(PF_38_66,   0x00), 1, X86InstInfo{"PSHUFB",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(PF_38_NONE, 0x01), 1, X86InstInfo{"PHADDW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x01), 1, X86InstInfo{"PHADDW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_NONE, 0x02), 1, X86InstInfo{"PHADDD",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -1864,7 +1864,7 @@ void InitializeInfoTables() {
 #define PF_3A_66   1
 
   const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> H0F3ATable = {
-    {OPD(0, PF_3A_NONE, 0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(0, PF_3A_NONE, 0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_UNDEC, FLAGS_NONE, 1, nullptr}},
     {OPD(0, PF_3A_66,   0x08), 1, X86InstInfo{"ROUNDPS",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x09), 1, X86InstInfo{"ROUNDPD",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x0A), 1, X86InstInfo{"ROUNDSS",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -1872,7 +1872,7 @@ void InitializeInfoTables() {
     {OPD(0, PF_3A_66,   0x0C), 1, X86InstInfo{"BLENDPS",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x0D), 1, X86InstInfo{"BLENDPD",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x0E), 1, X86InstInfo{"PBLENDW",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(0, PF_3A_66,   0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(0, PF_3A_66,   0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(0, PF_3A_66,   0x14), 1, X86InstInfo{"PEXTRB",          TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x15), 1, X86InstInfo{"PEXTRW",          TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -1893,7 +1893,7 @@ void InitializeInfoTables() {
     {OPD(0, PF_3A_66,   0x60), 1, X86InstInfo{"PCMPESTRM",       TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x61), 1, X86InstInfo{"PCMPESTRI",       TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x62), 1, X86InstInfo{"PCMPISTRM",       TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(0, PF_3A_66,   0x63), 1, X86InstInfo{"PCMPISTRI",       TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(0, PF_3A_66,   0x63), 1, X86InstInfo{"PCMPISTRI",       TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(0, PF_3A_66,   0xDF), 1, X86InstInfo{"AESKEYGENASSIST", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
   };
