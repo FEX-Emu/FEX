@@ -24,8 +24,8 @@ public:
 
   FEXCore::CodeLoader::MemoryLayout GetLayout() const override {
     // Needs to be page aligned
-    uint64_t CodeSize = 0x1000;
-    return std::make_tuple(CODE_START_RANGE, CODE_START_RANGE + CodeSize, CodeSize);
+    constexpr uint64_t ConstCodeSize = 0x1000;
+    return std::make_tuple(CODE_START_RANGE, CODE_START_RANGE + ConstCodeSize, ConstCodeSize);
   }
 
   void MapMemoryRegion(std::function<void* (uint64_t, uint64_t)> Mapper) override {
