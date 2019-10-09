@@ -103,7 +103,7 @@ void InstallDebugInfo() {
       auto OpNum = std::get<0>(Op);
       auto DebugInfo = std::get<2>(Op);
       for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        memcpy(&FinalTable.at(OpNum+i).DebugInfo, &DebugInfo, sizeof(X86InstDebugInfo::Flags));
+        memcpy(&FinalTable[OpNum+i].DebugInfo, &DebugInfo, sizeof(X86InstDebugInfo::Flags));
       }
     }
   };

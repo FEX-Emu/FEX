@@ -8,23 +8,126 @@
 
 namespace FEXCore::X86Tables {
 
-std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
-std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
+X86InstInfo BaseOps[MAX_PRIMARY_TABLE_SIZE];
 
-std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
-std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
-std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
-std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
-std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
-std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
-std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops;
-std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps;
-std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps;
-std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps;
-std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps;
-std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps;
-std::array<X86InstInfo, MAX_XOP_TABLE_SIZE> XOPTableOps;
-std::array<X86InstInfo, MAX_XOP_GROUP_TABLE_SIZE> XOPTableGroupOps;
+X86InstInfo SecondBaseOps[MAX_SECOND_TABLE_SIZE];
+X86InstInfo RepModOps[MAX_REP_MOD_TABLE_SIZE];
+X86InstInfo RepNEModOps[MAX_REPNE_MOD_TABLE_SIZE];
+X86InstInfo OpSizeModOps[MAX_OPSIZE_MOD_TABLE_SIZE];
+
+X86InstInfo PrimaryInstGroupOps[MAX_INST_GROUP_TABLE_SIZE];
+X86InstInfo SecondInstGroupOps[MAX_INST_SECOND_GROUP_TABLE_SIZE];
+X86InstInfo SecondModRMTableOps[MAX_SECOND_MODRM_TABLE_SIZE];
+X86InstInfo X87Ops[MAX_X87_TABLE_SIZE];
+X86InstInfo DDDNowOps[MAX_3DNOW_TABLE_SIZE];
+X86InstInfo H0F38TableOps[MAX_0F_38_TABLE_SIZE];
+X86InstInfo H0F3ATableOps[MAX_0F_3A_TABLE_SIZE];
+X86InstInfo VEXTableOps[MAX_VEX_TABLE_SIZE];
+X86InstInfo VEXTableGroupOps[MAX_VEX_GROUP_TABLE_SIZE];
+X86InstInfo XOPTableOps[MAX_XOP_TABLE_SIZE];
+X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
+
+struct U8U8InfoStruct {
+  uint8_t first, second;
+  X86InstInfo Info;
+};
+
+struct U16U8InfoStruct {
+  uint16_t first;
+  uint8_t second;
+  X86InstInfo Info;
+};
+
+#ifndef NDEBUG
+static uint64_t Total{};
+static uint64_t NumInsts{};
+#endif
+
+static void GenerateTable(X86InstInfo *FinalTable, U8U8InfoStruct const *LocalTable, size_t TableSize) {
+  for (size_t j = 0; j < TableSize; ++j) {
+    U8U8InfoStruct const &Op = LocalTable[j];
+    auto OpNum = Op.first;
+    X86InstInfo const &Info = Op.Info;
+    for (uint32_t i = 0; i < Op.second; ++i) {
+      LogMan::Throw::A(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable[OpNum + i].Name, Info.Name);
+      FinalTable[OpNum + i] = Info;
+#ifndef NDEBUG
+      ++Total;
+      if (Info.Type == TYPE_INST)
+        NumInsts++;
+#endif
+    }
+  }
+};
+
+static void GenerateTable(X86InstInfo *FinalTable, U16U8InfoStruct const *LocalTable, size_t TableSize) {
+  for (size_t j = 0; j < TableSize; ++j) {
+    U16U8InfoStruct const &Op = LocalTable[j];
+    auto OpNum = Op.first;
+    X86InstInfo const &Info = Op.Info;
+    for (uint32_t i = 0; i < Op.second; ++i) {
+      LogMan::Throw::A(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable[OpNum + i].Name, Info.Name);
+      FinalTable[OpNum + i] = Info;
+#ifndef NDEBUG
+      ++Total;
+      if (Info.Type == TYPE_INST)
+        NumInsts++;
+#endif
+    }
+  }
+};
+
+static void GenerateTableWithCopy(X86InstInfo *FinalTable, U8U8InfoStruct const *LocalTable, size_t TableSize, X86InstInfo *OtherLocal) {
+  for (size_t j = 0; j < TableSize; ++j) {
+    U8U8InfoStruct const &Op = LocalTable[j];
+    auto OpNum = Op.first;
+    X86InstInfo const &Info = Op.Info;
+    for (uint32_t i = 0; i < Op.second; ++i) {
+      LogMan::Throw::A(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable[OpNum + i].Name, Info.Name);
+      if (Info.Type == TYPE_COPY_OTHER) {
+        FinalTable[OpNum + i] = OtherLocal[OpNum + i];
+      }
+      else {
+        FinalTable[OpNum + i] = Info;
+#ifndef NDEBUG
+        ++Total;
+        if (Info.Type == TYPE_INST)
+          NumInsts++;
+#endif
+      }
+    }
+  }
+};
+
+static void GenerateX87Table(X86InstInfo *FinalTable, U16U8InfoStruct const *LocalTable, size_t TableSize) {
+  for (size_t j = 0; j < TableSize; ++j) {
+    U16U8InfoStruct const &Op = LocalTable[j];
+    auto OpNum = Op.first;
+    X86InstInfo const &Info = Op.Info;
+    for (uint32_t i = 0; i < Op.second; ++i) {
+      LogMan::Throw::A(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable[OpNum + i].Name, Info.Name);
+      if ((OpNum & 0b11'000'000) == 0b11'000'000) {
+        // If the mod field is 0b11 then it is a regular op
+        FinalTable[OpNum + i] = Info;
+      }
+      else {
+        // If the mod field is !0b11 then this instruction is duplicated through the whole mod [0b00, 0b10] range
+        // and the modrm.rm space because that is used part of the instruction encoding
+        LogMan::Throw::A((OpNum & 0b11'000'000) == 0, "Only support mod field of zero in this path");
+        for (uint16_t mod = 0b00'000'000; mod < 0b11'000'000; mod += 0b01'000'000) {
+          for (uint16_t rm = 0b000; rm < 0b1'000; ++rm) {
+            FinalTable[(OpNum | mod | rm) + i] = Info;
+          }
+        }
+      }
+#ifndef NDEBUG
+        ++Total;
+        if (Info.Type == TYPE_INST)
+          NumInsts++;
+#endif
+    }
+  }
+};
 
 void InitializeInfoTables() {
   using namespace FEXCore::X86Tables::InstFlags;
@@ -63,7 +166,8 @@ void InitializeInfoTables() {
   for (auto &BaseOp : XOPTableGroupOps)
       BaseOp = UnknownOp;
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> BaseOpTable = {
+
+  const U8U8InfoStruct BaseOpTable[] = {
     // Prefixes
     // Operand size overide
     {0x66, 1, X86InstInfo{"",      TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
@@ -302,7 +406,7 @@ void InitializeInfoTables() {
     {0x8F, 1, X86InstInfo{"",   TYPE_XOP_TABLE_PREFIX, FLAGS_NONE, 0, nullptr}},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> TwoByteOpTable = {
+  const U8U8InfoStruct TwoByteOpTable[] = {
     // Instructions
     {0x00, 1, X86InstInfo{"",           TYPE_GROUP_6, FLAGS_NONE,                                                                                       0, nullptr}},
     {0x01, 1, X86InstInfo{"",           TYPE_GROUP_7, FLAGS_NONE,                                                                                       0, nullptr}},
@@ -548,8 +652,8 @@ void InitializeInfoTables() {
     {0xFF, 1, X86InstInfo{"UD0",      TYPE_INST, FLAGS_DEBUG | FLAGS_BLOCK_END,                                                                                           0, nullptr}},
   };
 
-  const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> PrimaryGroupOpTable = {
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
+  const U16U8InfoStruct PrimaryGroupOpTable[] = {
     // GROUP_1 | 0x80 | reg
     {OPD(TYPE_GROUP_1, OpToIndex(0x80), 0), 1, X86InstInfo{"ADD",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                      1, nullptr}},
     {OPD(TYPE_GROUP_1, OpToIndex(0x80), 1), 1, X86InstInfo{"OR",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                      1, nullptr}},
@@ -675,10 +779,10 @@ void InitializeInfoTables() {
     {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 1), 6, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, X86InstInfo{"MOV",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,                                   4, nullptr}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 1), 6, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
-#undef OPD
   };
+#undef OPD
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> RepModOpTable = {
+  const U8U8InfoStruct RepModOpTable[] = {
     {0x0, 16, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
 
     {0x10, 1, X86InstInfo{"MOVSS",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
@@ -758,7 +862,7 @@ void InitializeInfoTables() {
     {0xFF, 1, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> RepNEModOpTable = {
+  const U8U8InfoStruct RepNEModOpTable[] = {
     {0x0, 16, X86InstInfo{"",           TYPE_COPY_OTHER, FLAGS_NONE,                                                     0, nullptr}},
 
     {0x10, 1, X86InstInfo{"MOVSD",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                  0, nullptr}},
@@ -831,7 +935,7 @@ void InitializeInfoTables() {
     {0xF8, 8, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> OpSizeModOpTable = {
+  const U8U8InfoStruct OpSizeModOpTable[] = {
     {0x0, 16, X86InstInfo{"",           TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},
 
     {0x10, 1, X86InstInfo{"MOVUPD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         0, nullptr}},
@@ -978,12 +1082,13 @@ void InitializeInfoTables() {
     {0xFF, 1, X86InstInfo{"",           TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},
   };
 
-#define PF_NONE 0
-#define PF_F3 1
-#define PF_66 2
-#define PF_F2 3
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_6) << 5) | (prefix) << 3 | (Reg))
-  const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> SecondaryExtensionOpTable = {
+  constexpr uint16_t PF_NONE = 0;
+  constexpr uint16_t PF_F3   = 1;
+  constexpr uint16_t PF_66   = 2;
+  constexpr uint16_t PF_F2   = 3;
+
+  const U16U8InfoStruct SecondaryExtensionOpTable[] = {
     // GROUP 1
     // GROUP 2
     // GROUP 3
@@ -1450,7 +1555,7 @@ void InitializeInfoTables() {
   };
 #undef OPD
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> SecondaryModRMExtensionOpTable = {
+  const U8U8InfoStruct SecondaryModRMExtensionOpTable[] = {
     // REG /1
     {((0 << 3) | 0), 1, X86InstInfo{"MONITOR",  TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
     {((0 << 3) | 1), 1, X86InstInfo{"MWAIT",    TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
@@ -1494,7 +1599,7 @@ void InitializeInfoTables() {
 
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
 #define OPDReg(op, reg) (((op - 0xD8) << 8) | (reg << 3))
-  const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> X87OpTable = {
+  const U16U8InfoStruct X87OpTable[] = {
     // 0xD8
     {OPDReg(0xD8, 0), 1, X86InstInfo{"FADD",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xD8, 1), 1, X86InstInfo{"FMUL",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
@@ -1734,7 +1839,7 @@ void InitializeInfoTables() {
 #undef OPD
 #undef OPDReg
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> DDDNowOpTable = {
+  const U8U8InfoStruct DDDNowOpTable[] = {
     {0x0C, 1, X86InstInfo{"PI2FW",    TYPE_3DNOW_INST, FLAGS_NONE, 0, nullptr}},
     {0x0D, 1, X86InstInfo{"PI2FD",    TYPE_3DNOW_INST, FLAGS_NONE, 0, nullptr}},
     {0x1C, 1, X86InstInfo{"PF2IW",    TYPE_3DNOW_INST, FLAGS_NONE, 0, nullptr}},
@@ -1769,11 +1874,11 @@ void InitializeInfoTables() {
   };
 
 #define OPD(prefix, opcode) ((prefix << 8) | opcode)
-#define PF_38_NONE 0
-#define PF_38_66 1
-#define PF_38_F2 2
+  constexpr uint16_t PF_38_NONE = 0;
+  constexpr uint16_t PF_38_66   = 1;
+  constexpr uint16_t PF_38_F2   = 2;
 
-  const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> H0F38Table = {
+  const U16U8InfoStruct H0F38Table[] = {
     {OPD(PF_38_NONE, 0x00), 1, X86InstInfo{"PSHUFB",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x00), 1, X86InstInfo{"PSHUFB",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(PF_38_NONE, 0x01), 1, X86InstInfo{"PHADDW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -1854,16 +1959,13 @@ void InitializeInfoTables() {
     {OPD(PF_38_F2,   0xF0), 1, X86InstInfo{"CRC32",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_F2,   0xF1), 1, X86InstInfo{"CRC32",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
   };
-#undef PF_38_NONE
-#undef PF_38_66
-#undef PF_38_F2
 #undef OPD
 
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
-#define PF_3A_NONE 0
-#define PF_3A_66   1
+  constexpr uint16_t PF_3A_NONE = 0;
+  constexpr uint16_t PF_3A_66   = 1;
 
-  const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> H0F3ATable = {
+  const U16U8InfoStruct H0F3ATable[] = {
     {OPD(0, PF_3A_NONE, 0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_UNDEC, FLAGS_NONE, 1, nullptr}},
     {OPD(0, PF_3A_66,   0x08), 1, X86InstInfo{"ROUNDPS",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x09), 1, X86InstInfo{"ROUNDPD",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -1897,13 +1999,10 @@ void InitializeInfoTables() {
 
     {OPD(0, PF_3A_66,   0xDF), 1, X86InstInfo{"AESKEYGENASSIST", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
   };
-#undef PF_3A_NONE
-#undef PF_3A_66
-
 #undef OPD
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> VEXTable = {
+  const U16U8InfoStruct VEXTable[] = {
     // Map 0 (Reserved)
     // VEX Map 1
     {OPD(1, 0b00, 0x10), 1, X86InstInfo{"VMOVUPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2373,14 +2472,15 @@ void InitializeInfoTables() {
     // VEX Map 4 - 31 (Reserved)
   };
 #undef OPD
-#define OPD(group, opcode) ((group << 3) | (opcode))
-#define VEX_GROUP_12 0
-#define VEX_GROUP_13 1
-#define VEX_GROUP_14 2
-#define VEX_GROUP_15 3
-#define VEX_GROUP_17 4
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> VEXGroupTable = {
+#define OPD(group, opcode) ((group << 3) | (opcode))
+  constexpr uint16_t VEX_GROUP_12 = 0;
+  constexpr uint16_t VEX_GROUP_13 = 1;
+  constexpr uint16_t VEX_GROUP_14 = 2;
+  constexpr uint16_t VEX_GROUP_15 = 3;
+  constexpr uint16_t VEX_GROUP_17 = 7;
+
+  const U8U8InfoStruct VEXGroupTable[] = {
     {OPD(VEX_GROUP_12, 0b010), 1, X86InstInfo{"VPSRLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(VEX_GROUP_12, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(VEX_GROUP_12, 0b110), 1, X86InstInfo{"VPSLLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2401,21 +2501,14 @@ void InitializeInfoTables() {
     {OPD(VEX_GROUP_17, 0b010), 1, X86InstInfo{"BLSMSK",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(VEX_GROUP_17, 0b011), 1, X86InstInfo{"BLSI",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
   };
-
-#undef VEX_GROUP_12
-#undef VEX_GROUP_13
-#undef VEX_GROUP_14
-#undef VEX_GROUP_15
-#undef VEX_GROUP_17
-
 #undef OPD
 
 #define OPD(group, pp, opcode) ( (group << 10) | (pp << 8) | (opcode))
-#define XOP_GROUP_8 0
-#define XOP_GROUP_9 1
-#define XOP_GROUP_A 2
+  constexpr uint16_t XOP_GROUP_8 = 0;
+  constexpr uint16_t XOP_GROUP_9 = 1;
+  constexpr uint16_t XOP_GROUP_A = 2;
 
-  const std::vector<std::tuple<uint16_t, uint8_t, X86InstInfo>> XOPTable = {
+  const U16U8InfoStruct XOPTable[] = {
     // Group 8
     {OPD(XOP_GROUP_8, 0, 0x85), 1, X86InstInfo{"VPMAXSSWW",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(XOP_GROUP_8, 0, 0x86), 1, X86InstInfo{"VPMACSSWD",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2498,14 +2591,10 @@ void InitializeInfoTables() {
     {OPD(XOP_GROUP_A, 0, 0x10), 1, X86InstInfo{"BEXTR",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(XOP_GROUP_A, 0, 0x12), 1, X86InstInfo{"",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // Group 4
   };
-
-#undef XOP_GROUP_8
-#undef XOP_GROUP_9
-#undef XOP_GROUP_A
-
 #undef OPD
+
 #define OPD(subgroup, opcode)  (((subgroup - 1) << 3) | (opcode))
-  const std::vector<std::tuple<uint8_t, uint8_t, X86InstInfo>> XOPGroupTable = {
+  const U8U8InfoStruct XOPGroupTable[] = {
     // Group 1
     {OPD(1, 1), 1, X86InstInfo{"BLCFILL",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 2), 1, X86InstInfo{"BLSFILL",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2529,70 +2618,28 @@ void InitializeInfoTables() {
   };
 #undef OPD
 
-  uint64_t Total{};
-  uint64_t NumInsts{};
-  auto GenerateTable = [&Total, &NumInsts](auto& FinalTable, auto& LocalTable) {
-    for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
-      auto Info = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LogMan::Throw::A(FinalTable.at(OpNum + i).Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable.at(OpNum + i).Name, Info.Name);
-        FinalTable.at(OpNum + i) = Info;
-        ++Total;
-        if (Info.Type == TYPE_INST)
-          NumInsts++;
-      }
-    }
-  };
+  GenerateTable(BaseOps, BaseOpTable, sizeof(BaseOpTable) / sizeof(BaseOpTable[0]));
+  GenerateTable(SecondBaseOps, TwoByteOpTable, sizeof(TwoByteOpTable) / sizeof(BaseOpTable[0]));
+  GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable, sizeof(PrimaryGroupOpTable) / sizeof(PrimaryGroupOpTable[0]));
 
-  auto GenerateX87Table = [&Total, &NumInsts](auto& FinalTable, auto& LocalTable) {
-    for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
-      auto Info = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LogMan::Throw::A(FinalTable.at(OpNum + i).Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable.at(OpNum + i).Name, Info.Name);
-        if ((OpNum & 0b11'000'000) == 0b11'000'000) {
-          // If the mod field is 0b11 then it is a regular op
-          FinalTable.at(OpNum + i) = Info;
-        }
-        else {
-          // If the mod field is !0b11 then this instruction is duplicated through the whole mod [0b00, 0b10] range
-          // and the modrm.rm space because that is used part of the instruction encoding
-          LogMan::Throw::A((OpNum & 0b11'000'000) == 0, "Only support mod field of zero in this path");
-          for (uint16_t mod = 0b00'000'000; mod < 0b11'000'000; mod += 0b01'000'000) {
-            for (uint16_t rm = 0b000; rm < 0b1'000; ++rm) {
-              FinalTable.at((OpNum | mod | rm) + i) = Info;
-            }
-          }
-        }
-        Total++;
-        if (Info.Type == TYPE_INST) {
-          NumInsts++;
-        }
-      }
-    }
-  };
+  GenerateTableWithCopy(RepModOps, RepModOpTable, sizeof(RepModOpTable) / sizeof(RepModOpTable[0]), SecondBaseOps);
+  GenerateTableWithCopy(RepNEModOps, RepNEModOpTable,   sizeof(RepNEModOpTable) / sizeof(RepNEModOpTable[0]), SecondBaseOps);
+  GenerateTableWithCopy(OpSizeModOps, OpSizeModOpTable, sizeof(OpSizeModOpTable) / sizeof(OpSizeModOpTable[0]), SecondBaseOps);
+  GenerateTable(SecondInstGroupOps, SecondaryExtensionOpTable, sizeof(SecondaryExtensionOpTable) / sizeof(SecondaryExtensionOpTable[0]));
 
-  auto GenerateTableWithCopy = [&Total, &NumInsts](auto& FinalTable, auto& LocalTable, auto& OtherLocal) {
-    for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
-      auto Info = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LogMan::Throw::A(FinalTable.at(OpNum + i).Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable.at(OpNum + i).Name, Info.Name);
-        if (Info.Type == TYPE_COPY_OTHER) {
-          FinalTable.at(OpNum + i) = OtherLocal.at(OpNum + i);
-        }
-        else {
-          FinalTable.at(OpNum + i) = Info;
-          Total++;
-          if (Info.Type == TYPE_INST) {
-            NumInsts++;
-          }
-        }
-      }
-    }
-  };
+  GenerateTable(SecondModRMTableOps, SecondaryModRMExtensionOpTable, sizeof(SecondaryModRMExtensionOpTable) / sizeof(SecondaryModRMExtensionOpTable[0]));
+  GenerateX87Table(X87Ops, X87OpTable, sizeof(X87OpTable) / sizeof(X87OpTable[0]));
+  GenerateTable(DDDNowOps, DDDNowOpTable, sizeof(DDDNowOpTable) / sizeof(DDDNowOpTable[0]));
+  GenerateTable(H0F38TableOps, H0F38Table, sizeof(H0F38Table) / sizeof(H0F38Table[0]));
+  GenerateTable(H0F3ATableOps, H0F3ATable, sizeof(H0F3ATable) / sizeof(H0F3ATable[0]));
 
+  GenerateTable(VEXTableOps, VEXTable, sizeof(VEXTable) / sizeof(VEXTable[0]));
+  GenerateTable(VEXTableGroupOps, VEXGroupTable, sizeof(VEXGroupTable) / sizeof(VEXGroupTable[0]));
+
+  GenerateTable(XOPTableOps, XOPTable, sizeof(XOPTable) / sizeof(XOPTable[0]));
+  GenerateTable(XOPTableGroupOps, XOPGroupTable, sizeof(XOPGroupTable) / sizeof(XOPGroupTable[0]));
+
+#ifndef NDEBUG
   auto CheckTable = [&UnknownOp](auto& FinalTable) {
     for (size_t i = 0; i < FinalTable.size(); ++i) {
       auto const &Op = FinalTable.at(i);
@@ -2603,40 +2650,17 @@ void InitializeInfoTables() {
     }
   };
 
-  GenerateTable(BaseOps, BaseOpTable);
-  GenerateTable(SecondBaseOps, TwoByteOpTable);
-  GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable);
+  // CheckTable(BaseOps);
+  // CheckTable(SecondBaseOps);
 
-  GenerateTableWithCopy(RepModOps, RepModOpTable, SecondBaseOps);
-  GenerateTableWithCopy(RepNEModOps, RepNEModOpTable, SecondBaseOps);
-  GenerateTableWithCopy(OpSizeModOps, OpSizeModOpTable, SecondBaseOps);
-  GenerateTable(SecondInstGroupOps, SecondaryExtensionOpTable);
-  GenerateTable(SecondModRMTableOps, SecondaryModRMExtensionOpTable);
+  // CheckTable(RepModOps);
+  // CheckTable(RepNEModOps);
+  // CheckTable(OpSizeModOps);
+  // CheckTable(X87Ops);
 
-  GenerateX87Table(X87Ops, X87OpTable);
-  GenerateTable(DDDNowOps, DDDNowOpTable);
-  GenerateTable(H0F38TableOps, H0F38Table);
-  GenerateTable(H0F3ATableOps, H0F3ATable);
-
-  GenerateTable(VEXTableOps, VEXTable);
-  GenerateTable(VEXTableGroupOps, VEXGroupTable);
-
-  GenerateTable(XOPTableOps, XOPTable);
-  GenerateTable(XOPTableGroupOps, XOPGroupTable);
-
-  CheckTable(BaseOps);
-  CheckTable(SecondBaseOps);
-
-  CheckTable(RepModOps);
-  CheckTable(RepNEModOps);
-  CheckTable(OpSizeModOps);
-  CheckTable(X87Ops);
-
-#ifndef NDEBUG
   X86InstDebugInfo::InstallDebugInfo();
+  LogMan::Msg::D("X86Tables had %ld total insts, and %ld labeled as understood\n", Total, NumInsts);
 #endif
-
-  printf("X86Tables had %ld total insts, and %ld labeled as understood\n", Total, NumInsts);
 }
 
 }

@@ -142,7 +142,6 @@ enum InstType {
   TYPE_REX_PREFIX,
   TYPE_SECONDARY_TABLE_PREFIX,
   TYPE_X87_TABLE_PREFIX,
-  TYPE_MODRM_TABLE_PREFIX,
   TYPE_VEX_TABLE_PREFIX,
   TYPE_XOP_TABLE_PREFIX,
   TYPE_INST,
@@ -373,27 +372,26 @@ constexpr size_t MAX_XOP_TABLE_SIZE = (1 << 13);
 // group select (2 bits for now) | modrm opcode (3 bits)
 constexpr size_t MAX_XOP_GROUP_TABLE_SIZE = (1 << 6);
 
-extern std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
-extern std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
-extern std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
-extern std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
-extern std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
-extern std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
-extern std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
-extern std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
-extern std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops;
-extern std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps;
-
-extern std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps;
-extern std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps;
+extern X86InstInfo BaseOps[MAX_PRIMARY_TABLE_SIZE];
+extern X86InstInfo SecondBaseOps[MAX_SECOND_TABLE_SIZE];
+extern X86InstInfo RepModOps[MAX_REP_MOD_TABLE_SIZE];
+extern X86InstInfo RepNEModOps[MAX_REPNE_MOD_TABLE_SIZE];
+extern X86InstInfo OpSizeModOps[MAX_OPSIZE_MOD_TABLE_SIZE];
+extern X86InstInfo PrimaryInstGroupOps[MAX_INST_GROUP_TABLE_SIZE];
+extern X86InstInfo SecondInstGroupOps[MAX_INST_SECOND_GROUP_TABLE_SIZE];
+extern X86InstInfo SecondModRMTableOps[MAX_SECOND_MODRM_TABLE_SIZE];
+extern X86InstInfo X87Ops[MAX_X87_TABLE_SIZE];
+extern X86InstInfo DDDNowOps[MAX_3DNOW_TABLE_SIZE];
+extern X86InstInfo H0F38TableOps[MAX_0F_38_TABLE_SIZE];
+extern X86InstInfo H0F3ATableOps[MAX_0F_3A_TABLE_SIZE];
 
 // VEX
-extern std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps;
-extern std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps;
+extern X86InstInfo VEXTableOps[MAX_VEX_TABLE_SIZE];
+extern X86InstInfo VEXTableGroupOps[MAX_VEX_GROUP_TABLE_SIZE];
 
 // XOP
-extern std::array<X86InstInfo, MAX_XOP_TABLE_SIZE> XOPTableOps;
-extern std::array<X86InstInfo, MAX_XOP_GROUP_TABLE_SIZE> XOPTableGroupOps;
+extern X86InstInfo XOPTableOps[MAX_XOP_TABLE_SIZE];
+extern X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
 
 void InitializeInfoTables();
 }
