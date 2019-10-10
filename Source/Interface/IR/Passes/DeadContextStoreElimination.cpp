@@ -38,11 +38,10 @@ static bool IsGPR(uint32_t Offset, uint8_t *greg) {
   return true;
 }
 
-
 bool RCLE::Run(OpDispatchBuilder *Disp) {
   bool Changed = false;
   auto CurrentIR = Disp->ViewIR();
-  std::array<OrderedNodeWrapper::NodeOffsetType, 16> LastValidGPRStores{};
+  std::array<OrderedNode *, 16> LastValidGPRStores{};
   auto OriginalWriteCursor = Disp->GetWriteCursor();
 
   uintptr_t ListBegin = CurrentIR.GetListData();
@@ -74,10 +73,10 @@ bool RCLE::Run(OpDispatchBuilder *Disp) {
         // Make sure we are within GREG state
         uint8_t greg = ~0;
         if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
-          LastValidGPRStores[greg] = Op->Header.Args[0].NodeOffset;
+          LastValidGPRStores[greg] = IROp->Args[0].GetNode(ListBegin);
         } else if (IsGPR(Op->Offset, &greg)) {
           // If we aren't overwriting the whole state then we don't want to track this value
-          LastValidGPRStores[greg] = 0;
+          LastValidGPRStores[greg] = nullptr;
         }
       }
 
@@ -87,21 +86,18 @@ bool RCLE::Run(OpDispatchBuilder *Disp) {
         // Make sure we are within GREG state
         uint8_t greg = ~0;
         if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
-          if (LastValidGPRStores[greg] != 0) {
+          if (LastValidGPRStores[greg] != nullptr) {
             // If the last store matches this load value then we can replace the loaded value with the previous valid one
-            if (1) {
-              Disp->SetWriteCursor(CodeNode);
-              auto MovVal = Disp->_Mov(OrderedNodeWrapper::WrapOffset(LastValidGPRStores[greg]).GetNode(ListBegin));
-              Disp->ReplaceAllUsesWith(CodeNode, MovVal);
-            }
-            else {
-              Disp->ReplaceAllUsesWith(CodeNode, OrderedNodeWrapper::WrapOffset(LastValidGPRStores[greg]).GetNode(ListBegin));
-            }
+            Disp->ReplaceAllUsesWithInclusive(CodeNode, LastValidGPRStores[greg], CodeBegin, CodeLast);
+            if (CodeNode->GetUses() == 0)
+              Disp->Unlink(CodeNode);
+            // Set it as invalid now
+            LastValidGPRStores[greg] = nullptr;
             Changed = true;
           }
         } else if (IsGPR(Op->Offset, &greg)) {
             // If we aren't overwriting the whole state then we don't want to track this value
-            LastValidGPRStores[greg] = 0; // 0 is invalid
+            LastValidGPRStores[greg] = nullptr;
         }
       }
 
@@ -119,7 +115,7 @@ bool RCLE::Run(OpDispatchBuilder *Disp) {
     }
 
     // We don't track across block boundaries
-    LastValidGPRStores.fill(0);
+    LastValidGPRStores.fill(nullptr);
   }
 
   Disp->SetWriteCursor(OriginalWriteCursor);
