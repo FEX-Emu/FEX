@@ -30,6 +30,7 @@ public:
   int openat(int dirfd, const char *pathname, int flags, mode_t mode);
   int fstat(int fd, struct stat *buf);
   int close(int fd);
+  int ioctl(int fd, uint64_t request, void *args);
 
   int GetHostFD() const { return HostFD; }
 
@@ -61,6 +62,8 @@ public:
   uint64_t Access(const char *pathname, int mode);
   uint64_t Readlink(const char *pathname, char *buf, size_t bufsiz);
   uint64_t Openat(int dirfs, const char *pathname, int flags, uint32_t mode);
+  uint64_t Ioctl(int fd, uint64_t request, void *args);
+
 
   int32_t FindHostFD(int fd);
 

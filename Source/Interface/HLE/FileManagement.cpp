@@ -4,6 +4,7 @@
 #include "Interface/HLE/FileManagement.h"
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
 namespace FEXCore {
@@ -12,6 +13,7 @@ class STDFD final : public FD {
 public:
   STDFD(FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode)
     : FD (ctx, fd, pathname, flags, mode) {
+    HostFD = fd;
   }
 
   ssize_t writev(int fd, void *iov, int iovcnt) override {
@@ -48,10 +50,6 @@ public:
    else if (FDOffset == STDERR_FILENO)
      LogMan::Msg::ERR("%s", reinterpret_cast<char*>(buf));
     return count;
-  }
-
-  uint64_t read(int fd, void *buf, size_t count) {
-    return ::read(HostFD, buf, count);
   }
 };
 
@@ -94,6 +92,10 @@ int FD::fstat(int fd, struct stat *buf) {
 
 int FD::close(int fd) {
   return ::close(HostFD);
+}
+
+int FD::ioctl(int fd, uint64_t request, void *args) {
+  return ::ioctl(HostFD, request, args);
 }
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
@@ -225,6 +227,15 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
   FDMap[CurrentFDOffset++] = fdPtr;
 
   return fd;
+}
+
+uint64_t FileManager::Ioctl(int fd, uint64_t request, void *args) {
+  auto FD = FDMap.find(fd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  return FD->second->ioctl(fd, request, args);
 }
 
 int32_t FileManager::FindHostFD(int fd) {
