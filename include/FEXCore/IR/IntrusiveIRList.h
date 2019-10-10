@@ -22,7 +22,7 @@ class IntrusiveAllocator final {
     IntrusiveAllocator(IntrusiveAllocator &&) = delete;
     IntrusiveAllocator(size_t Size)
       : MemorySize {Size} {
-      Data = reinterpret_cast<uintptr_t>(calloc(Size, 1));
+      Data = reinterpret_cast<uintptr_t>(malloc(Size));
     }
 
     ~IntrusiveAllocator() {
@@ -35,7 +35,7 @@ class IntrusiveAllocator final {
     }
 
     void *Allocate(size_t Size) {
-      assert(CheckSize(Size) && "Failure");
+      LogMan::Throw::A(CheckSize(Size), "Ran out of space in IntrusiveAllocator during allocation");
       size_t NewOffset = CurrentOffset + Size;
       uintptr_t NewPointer = Data + CurrentOffset;
       CurrentOffset = NewOffset;
@@ -95,12 +95,13 @@ public:
 
   size_t GetDataSize() const { return DataSize; }
   size_t GetListSize() const { return ListSize; }
+  size_t GetSSACount() const { return ListSize / sizeof(OrderedNode); }
 
   using iterator = NodeWrapperIterator;
 
   iterator begin() const noexcept
   {
-    NodeWrapper Wrapped;
+    OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
     return iterator(reinterpret_cast<uintptr_t>(ListData), Wrapped);
   }
@@ -112,9 +113,17 @@ public:
    */
   iterator end() const noexcept
   {
-    NodeWrapper Wrapped;
+    OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = 0;
     return iterator(reinterpret_cast<uintptr_t>(ListData), Wrapped);
+  }
+
+  /**
+   * @brief Convert a OrderedNodeWrapper to an interator that we can iterate over
+   * @return Iterator for this op
+   */
+  iterator at(OrderedNodeWrapper Node) const noexcept {
+    return iterator(reinterpret_cast<uintptr_t>(ListData), Node);
   }
 
 private:

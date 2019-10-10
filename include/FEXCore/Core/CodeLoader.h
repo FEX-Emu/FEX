@@ -34,6 +34,9 @@ public:
    */
   virtual uint64_t DefaultRIP() const = 0;
 
+  virtual void GetInitLocations(std::vector<uint64_t> *Locations) {}
+  virtual uint64_t InitializeThreadSlot(std::function<void(void const*, uint64_t)> Writer) const { return 0; };
+
   using MemoryLayout = std::tuple<uint64_t, uint64_t, uint64_t>;
   /**
    * @brief Gets the default memory layout of the memory object being loaded

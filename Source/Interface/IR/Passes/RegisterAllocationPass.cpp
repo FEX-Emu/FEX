@@ -1,15 +1,13 @@
 #include "Common/BitSet.h"
-#include "Common/Profiler.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
 #include <iterator>
 
-PROFILER_DEFINE(RA, "Passes", "RA", 0);
-
 namespace FEXCore::IR {
   constexpr uint32_t INVALID_REG = ~0U;
   constexpr uint32_t INVALID_CLASS = ~0U;
+  constexpr uint32_t DEFAULT_INTERFERENCE_LIST_SIZE = 128;
 
   struct Register {
   };
@@ -17,7 +15,7 @@ namespace FEXCore::IR {
   struct RegisterClass {
     uint32_t RegisterBase;
     uint32_t NumberOfRegisters{0};
-    BitSet<uint32_t> Registers;
+    BitSet<uint64_t> Registers;
   };
 
   struct RegisterAllocationPass::RegisterNode {
@@ -26,7 +24,7 @@ namespace FEXCore::IR {
     uint32_t InterferenceCount;
     uint32_t InterferenceListSize;
     uint32_t *InterferenceList;
-    BitSet<uint32_t> Interference;
+    BitSet<uint64_t> Interference;
   };
 
   static_assert(std::is_pod<RegisterAllocationPass::RegisterNode>::value, "We want this to be POD");
@@ -96,7 +94,7 @@ namespace FEXCore::IR {
     for (uint32_t i = 0; i < NodeCount; ++i) {
       Graph->Nodes[i].Register = INVALID_REG;
       Graph->Nodes[i].RegisterClass = INVALID_CLASS;
-      Graph->Nodes[i].InterferenceListSize = 32;
+      Graph->Nodes[i].InterferenceListSize = DEFAULT_INTERFERENCE_LIST_SIZE;
       Graph->Nodes[i].InterferenceList = reinterpret_cast<uint32_t*>(calloc(Graph->Nodes[i].InterferenceListSize, sizeof(uint32_t)));
       Graph->Nodes[i].InterferenceCount = 0;
       Graph->Nodes[i].Interference.Allocate(NodeCount);
@@ -125,7 +123,7 @@ namespace FEXCore::IR {
       for (uint32_t i = OldNodeCount; i < NodeCount; ++i) {
         Graph->Nodes[i].Register = INVALID_REG;
         Graph->Nodes[i].RegisterClass = INVALID_CLASS;
-        Graph->Nodes[i].InterferenceListSize = 32;
+        Graph->Nodes[i].InterferenceListSize = DEFAULT_INTERFERENCE_LIST_SIZE;
         Graph->Nodes[i].InterferenceList = reinterpret_cast<uint32_t*>(calloc(Graph->Nodes[i].InterferenceListSize, sizeof(uint32_t)));
         Graph->Nodes[i].InterferenceCount = 0;
         Graph->Nodes[i].Interference.Allocate(NodeCount);
@@ -165,22 +163,6 @@ namespace FEXCore::IR {
     Graph->Nodes[Node].RegisterClass = Class;
   }
 
-  void RegisterAllocationPass::AddNodeInterference(uint32_t Node1, uint32_t Node2) {
-    auto AddInterference = [&](uint32_t Node1, uint32_t Node2) {
-      RegisterNode *Node = &Graph->Nodes[Node1];
-      Node->Interference.Set(Node2);
-      if (Node->InterferenceListSize <= Node->InterferenceCount) {
-        Node->InterferenceListSize *= 2;
-        Node->InterferenceList = reinterpret_cast<uint32_t*>(realloc(Node->InterferenceList, Node->InterferenceListSize * sizeof(uint32_t)));
-      }
-      Node->InterferenceList[Node->InterferenceCount] = Node2;
-      ++Node->InterferenceCount;
-    };
-
-    AddInterference(Node1, Node2);
-    AddInterference(Node2, Node1);
-  }
-
   uint32_t RegisterAllocationPass::GetNodeRegister(uint32_t Node) {
     return Graph->Nodes[Node].Register;
   }
@@ -210,8 +192,8 @@ namespace FEXCore::IR {
     while (Begin != End) {
       using namespace FEXCore::IR;
 
-      NodeWrapper *WrapperOp = Begin();
-      OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
+      OrderedNodeWrapper *WrapperOp = Begin();
+      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
       FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
 
       if (IROp->HasDest) {
@@ -266,7 +248,8 @@ namespace FEXCore::IR {
     }
   }
 
-  void RegisterAllocationPass::CalculateLiveRange(IRListView<false> *CurrentIR, uint32_t Nodes) {
+  void RegisterAllocationPass::CalculateLiveRange(IRListView<false> *CurrentIR) {
+    size_t Nodes = CurrentIR->GetSSACount();
     if (Nodes > LiveRanges.size()) {
       LiveRanges.resize(Nodes);
     }
@@ -281,14 +264,14 @@ namespace FEXCore::IR {
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
     while (Begin != End) {
       using namespace FEXCore::IR;
-      NodeWrapper *WrapperOp = Begin();
-      OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
+      OrderedNodeWrapper *WrapperOp = Begin();
+      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
       FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
-
       uint32_t Node = WrapperOp->ID();
 
       // If the destination hasn't yet been set then set it now
-      if (IROp->HasDest && LiveRanges[Node].Begin == ~0U) {
+      if (IROp->HasDest) {
+        LogMan::Throw::A(LiveRanges[Node].Begin == ~0U, "Node begin already defined?");
         LiveRanges[Node].Begin = Node;
         // Default to ending right where it starts
         LiveRanges[Node].End = Node;
@@ -312,13 +295,27 @@ namespace FEXCore::IR {
 
       ++Begin;
     }
+  }
+
+  void RegisterAllocationPass::CalculateNodeInterference(uint32_t NodeCount) {
+    auto AddInterference = [&](uint32_t Node1, uint32_t Node2) {
+      RegisterNode *Node = &Graph->Nodes[Node1];
+      Node->Interference.Set(Node2);
+      if (Node->InterferenceListSize <= Node->InterferenceCount) {
+        Node->InterferenceListSize *= 2;
+        Node->InterferenceList = reinterpret_cast<uint32_t*>(realloc(Node->InterferenceList, Node->InterferenceListSize * sizeof(uint32_t)));
+      }
+      Node->InterferenceList[Node->InterferenceCount] = Node2;
+      ++Node->InterferenceCount;
+    };
 
     // Now that we have all the live ranges calculated we need to add them to our interference graph
-    for (uint32_t i = 0; i < Nodes; ++i) {
-      for (uint32_t j = i + 1; j < Nodes; ++j) {
+    for (uint32_t i = 0; i < NodeCount; ++i) {
+      for (uint32_t j = i + 1; j < NodeCount; ++j) {
         if (!(LiveRanges[i].Begin >= LiveRanges[j].End ||
               LiveRanges[j].Begin >= LiveRanges[i].End)) {
-          AddNodeInterference(i, j);
+          AddInterference(i, j);
+          AddInterference(j, i);
         }
       }
     }
@@ -342,10 +339,10 @@ namespace FEXCore::IR {
 
       if (Reg == ~0U) {
         auto RegisterNode = GetRegisterNode(i);
-        LogMan::Msg::E("\t%%ssa%d with no-RA has live range [%d, %d): Remat cost: %d", i, LiveRanges[i].Begin, LiveRanges[i].End, LiveRanges[i].RematCost);
+        // LogMan::Msg::E("\t%%ssa%d with no-RA has live range [%d, %d): Remat cost: %d", i, LiveRanges[i].Begin, LiveRanges[i].End, LiveRanges[i].RematCost);
         for (uint32_t j = 0; j < RegisterNode->InterferenceCount; ++j) {
           uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
-          LogMan::Msg::E("\t\tInterferes with %%ssa%d: live range[%d, %d): Remat cost: %d", InterferenceNode, LiveRanges[InterferenceNode].Begin, LiveRanges[InterferenceNode].End, LiveRanges[InterferenceNode].RematCost);
+          // LogMan::Msg::E("\t\tInterferes with %%ssa%d: live range[%d, %d): Remat cost: %d", InterferenceNode, LiveRanges[InterferenceNode].Begin, LiveRanges[InterferenceNode].End, LiveRanges[InterferenceNode].RematCost);
         }
         Graph->SpillStack.emplace_back(SpillStackUnit{i, CurrentNode->RegisterClass});
       }
@@ -375,8 +372,8 @@ namespace FEXCore::IR {
 
     while (Begin != End) {
       using namespace FEXCore::IR;
-      NodeWrapper *WrapperOp = Begin();
-      OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
+      OrderedNodeWrapper *WrapperOp = Begin();
+      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
       FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
 
       LogMan::Msg::D("\t\t%%ssa%d Do we have %%ssa%d", WrapperOp->ID(), Node->Wrapped(ListBegin).ID());
@@ -406,8 +403,8 @@ namespace FEXCore::IR {
     auto LastCursor = Disp->GetWriteCursor();
 
     while (Begin != End) {
-      NodeWrapper *WrapperOp = Begin();
-      OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
+      OrderedNodeWrapper *WrapperOp = Begin();
+      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
       FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
       auto Iter = IsInSpillStack(&Graph->SpillStack, WrapperOp->ID());
       if (Iter != Graph->SpillStack.end()) {
@@ -424,8 +421,8 @@ namespace FEXCore::IR {
               // We want to end the live range of this value here and continue it on first use
               auto ConstantRegisterNode = GetRegisterNode(InterferenceNode);
               auto *ConstantLiveRange = &LiveRanges[InterferenceNode];
-              NodeWrapper ConstantOp = NodeWrapper::WrapOffset(InterferenceNode * sizeof(OrderedNode));
-              OrderedNode *ConstantNode = reinterpret_cast<OrderedNode*>(ConstantOp.GetPtr(ListBegin));
+              OrderedNodeWrapper ConstantOp = OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(OrderedNode));
+              OrderedNode *ConstantNode = ConstantOp.GetNode(ListBegin);
               FEXCore::IR::IROp_Constant const *ConstantIROp = ConstantNode->Op(DataBegin)->C<IR::IROp_Constant>();
               LogMan::Throw::A(ConstantIROp->Header.Op == OP_CONSTANT, "This needs to be const");
 
@@ -435,8 +432,8 @@ namespace FEXCore::IR {
               auto FirstUseLocation = FindFirstUse(Disp, ConstantNode, NextIter, End);
               if (FirstUseLocation != End) {
                 // LogMan::Throw::A(FirstUseLocation != End, "Failure to find op use");
-                NodeWrapper *FirstUseOp = FirstUseLocation();
-                OrderedNode *FirstUseOrderedNode = reinterpret_cast<OrderedNode*>(FirstUseOp->GetPtr(ListBegin));
+                OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
+                OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
                 Disp->SetWriteCursor(FirstUseOrderedNode);
                 auto FilledConstant = Disp->_Constant(ConstantIROp->Constant);
                 Disp->ReplaceAllUsesWithInclusive(ConstantNode, FilledConstant, FirstUseLocation, End);
@@ -507,13 +504,13 @@ namespace FEXCore::IR {
             auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
             // If the interference's live range is past this op's live range then we can dump it
             if (1) {
-              NodeWrapper InterferenceOp = NodeWrapper::WrapOffset(InterferenceNode * sizeof(OrderedNode));
-              OrderedNode *InterferenceOrderedNode = reinterpret_cast<OrderedNode*>(InterferenceOp.GetPtr(ListBegin));
+              OrderedNodeWrapper InterferenceOp = OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(OrderedNode));
+              OrderedNode *InterferenceOrderedNode = InterferenceOp.GetNode(ListBegin);
               FEXCore::IR::IROp_Header *InterferenceIROp = InterferenceOrderedNode->Op(DataBegin);
 
               auto PrevIter = Begin;
               --PrevIter;
-              Disp->SetWriteCursor(reinterpret_cast<OrderedNode*>(PrevIter()->GetPtr(ListBegin)));
+              Disp->SetWriteCursor(PrevIter()->GetNode(ListBegin));
               auto SpillOp = Disp->_SpillRegister(InterferenceOrderedNode, SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
               SpillOp.first->Header.Size = InterferenceIROp->Size;
               SpillOp.first->Header.Elements = InterferenceIROp->Elements;
@@ -525,8 +522,8 @@ namespace FEXCore::IR {
                 auto FirstUseLocation = FindFirstUse(Disp, InterferenceOrderedNode, NextIter, End);
                 if (FirstUseLocation != End) {
                   // LogMan::Throw::A(FirstUseLocation != End, "Failure to find op use");
-                  NodeWrapper *FirstUseOp = FirstUseLocation();
-                  OrderedNode *FirstUseOrderedNode = reinterpret_cast<OrderedNode*>(FirstUseOp->GetPtr(ListBegin));
+                  OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
+                  OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
                   Disp->SetWriteCursor(FirstUseOrderedNode);
 
                   auto FilledInterference = Disp->_FillRegister(SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
@@ -558,32 +555,39 @@ namespace FEXCore::IR {
   }
 
   bool RegisterAllocationPass::Run(OpDispatchBuilder *Disp) {
-    PROFILER_SCOPE(RA);
-    PROFILER_COUNTER_ADD("RA/counter", 1);
     bool Changed = false;
     constexpr uint32_t RATries = 1;
 
     SpillSlotCount = 0;
     HasSpills = false;
+    HadFullRA = false;
     for (uint32_t i = 0; i < RATries; ++i) {
       auto CurrentIR = Disp->ViewIR();
 
       uintptr_t ListSize = CurrentIR.GetListSize();
-      uint32_t SSACount = ListSize / sizeof(IR::OrderedNode);
+      uint32_t SSACount = CurrentIR.GetSSACount();
 
       ResetRegisterGraph(SSACount);
       FindNodeClasses(&CurrentIR);
 
-      CalculateLiveRange(&CurrentIR, SSACount);
+      CalculateLiveRange(&CurrentIR);
+      CalculateNodeInterference(SSACount);
       AllocateRegisters();
       if (!Graph->SpillStack.empty()) {
-        Disp->ShouldDump = true;
-        Changed = true;
-        //ClearSpillList(Disp);
+        if (Config_SupportsSpills) {
+          Disp->ShouldDump = true;
+          Changed = true;
+          ClearSpillList(Disp);
+        }
+        else {
+          HadFullRA = false;
+          SpillSlotCount = 0;
+        }
         return Changed;
       }
       else {
         // We managed to RA, leave now
+        HadFullRA = true;
         Disp->ShouldDump = false;
         return Changed;
       }

@@ -30,15 +30,17 @@ public:
   void FreeRegisterGraph();
   void ResetRegisterGraph(uint32_t NodeCount);
   void SetNodeClass(uint32_t Node, uint32_t Class);
-  void AddNodeInterference(uint32_t Node1, uint32_t Node2);
   uint32_t GetNodeRegister(uint32_t Node);
 
   void AllocateRegisters();
 
   /**  @} */
 
+  bool HasFullRA() const { return HadFullRA; }
   bool HadSpills() const { return HasSpills; }
   uint32_t SpillSlots() const { return SpillSlotCount; }
+
+  void SetSupportsSpills(bool Supports) { Config_SupportsSpills = Supports; }
 
 private:
   RegisterGraph *Graph;
@@ -52,7 +54,8 @@ private:
 
   std::vector<LiveRange> LiveRanges;
 
-  void CalculateLiveRange(IRListView<false> *CurrentIR, uint32_t Nodes);
+  void CalculateLiveRange(IRListView<false> *CurrentIR);
+  void CalculateNodeInterference(uint32_t NodeCount);
 
   void ClearSpillList(OpDispatchBuilder *Disp);
 
@@ -61,6 +64,9 @@ private:
 
   bool HasSpills {};
   uint32_t SpillSlotCount {};
+  bool HadFullRA {};
+
+  bool Config_SupportsSpills {true};
 };
 
 }

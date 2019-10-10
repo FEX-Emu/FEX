@@ -36,7 +36,7 @@ def print_ir_structs(ops, defines):
     output_file.write("\ttemplate<typename T>\n")
     output_file.write("\tT* CW() { return reinterpret_cast<T*>(Data); }\n")
 
-    output_file.write("\tNodeWrapper Args[0];\n")
+    output_file.write("\tOrderedNodeWrapper Args[0];\n")
 
     output_file.write("};\n\n");
 
@@ -48,6 +48,7 @@ def print_ir_structs(ops, defines):
     for op_key, op_vals in ops.items():
         SSAArgs = 0
         HasArgs = False
+        HasSSANames = False
 
         if ("SSAArgs" in op_vals):
             SSAArgs = int(op_vals["SSAArgs"])
@@ -55,16 +56,24 @@ def print_ir_structs(ops, defines):
         if ("Args" in op_vals and len(op_vals["Args"]) != 0):
             HasArgs = True
 
+        if ("SSANames" in op_vals and len(op_vals["SSANames"]) != 0):
+            HasSSANames = True
+
         if (HasArgs or SSAArgs != 0):
             output_file.write("struct __attribute__((packed)) IROp_%s {\n" % op_key)
             output_file.write("\tIROp_Header Header;\n\n")
 
             # SSA arguments have a hard requirement to appear after the header
             if (SSAArgs != 0):
-                output_file.write("private:\n")
-                for i in range(0, SSAArgs):
-                    output_file.write("\tuint64_t : (sizeof(NodeWrapper) * 8);\n");
-                output_file.write("public:\n")
+                if (HasSSANames):
+                    for i in range(0, SSAArgs):
+                        output_file.write("\tOrderedNodeWrapper %s;\n" % (op_vals["SSANames"][i]));
+
+                else:
+                    output_file.write("private:\n")
+                    for i in range(0, SSAArgs):
+                        output_file.write("\tuint64_t : (sizeof(OrderedNodeWrapper) * 8);\n");
+                    output_file.write("public:\n")
 
             if (HasArgs):
                 output_file.write("\t// User defined data\n")
@@ -182,13 +191,32 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("#ifdef IROP_ALLOCATE_HELPERS\n")
 
     output_file.write("\ttemplate <class T>\n")
-    output_file.write("\tusing IRPair = FEXCore::IR::Wrapper<T>;\n\n")
+    output_file.write("\tstruct Wrapper final {\n")
+    output_file.write("\t\tT *first;\n")
+    output_file.write("\t\tOrderedNode *Node; ///< Actual offset of this IR in ths list\n")
+    output_file.write("\t\t\n")
+    output_file.write("\t\toperator Wrapper<IROp_Header>() const { return Wrapper<IROp_Header> {reinterpret_cast<IROp_Header*>(first), Node}; }\n")
+    output_file.write("\t\toperator OrderedNode *() { return Node; }\n")
+    output_file.write("\t\toperator OpNodeWrapper () { return Node->Header.Value; }\n")
+    output_file.write("\t};\n")
+
+    output_file.write("\ttemplate <class T>\n")
+    output_file.write("\tusing IRPair = Wrapper<T>;\n\n")
 
     output_file.write("\tIRPair<IROp_Header> AllocateRawOp(size_t HeaderSize) {\n")
     output_file.write("\t\tauto Op = reinterpret_cast<IROp_Header*>(Data.Allocate(HeaderSize));\n")
     output_file.write("\t\tmemset(Op, 0, HeaderSize);\n")
     output_file.write("\t\tOp->Op = IROps::OP_DUMMY;\n")
-    output_file.write("\t\treturn FEXCore::IR::Wrapper<IROp_Header>{Op, CreateNode(Op)};\n")
+    output_file.write("\t\treturn IRPair<IROp_Header>{Op, CreateNode(Op)};\n")
+    output_file.write("\t}\n\n")
+
+    output_file.write("\ttemplate<class T, IROps T2>\n")
+    output_file.write("\tT *AllocateOrphanOp() {\n")
+    output_file.write("\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n")
+    output_file.write("\t\tauto Op = reinterpret_cast<T*>(Data.Allocate(Size));\n")
+    output_file.write("\t\tmemset(Op, 0, Size);\n")
+    output_file.write("\t\tOp->Header.Op = T2;\n")
+    output_file.write("\t\treturn Op;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\ttemplate<class T, IROps T2>\n")
@@ -197,23 +225,23 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\t\tauto Op = reinterpret_cast<T*>(Data.Allocate(Size));\n")
     output_file.write("\t\tmemset(Op, 0, Size);\n")
     output_file.write("\t\tOp->Header.Op = T2;\n")
-    output_file.write("\t\treturn FEXCore::IR::Wrapper<T>{Op, CreateNode(&Op->Header)};\n")
+    output_file.write("\t\treturn IRPair<T>{Op, CreateNode(&Op->Header)};\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tuint8_t GetOpSize(OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = reinterpret_cast<IROp_Header const*>(Op->Header.Value.GetPtr(Data.Begin()));\n")
+    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
     output_file.write("\t\tLogMan::Throw::A(HeaderOp->HasDest, \"Op %s has no dest\\n\", GetName(HeaderOp->Op));\n")
     output_file.write("\t\treturn HeaderOp->Size;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tuint8_t GetOpElements(OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = reinterpret_cast<IROp_Header const*>(Op->Header.Value.GetPtr(Data.Begin()));\n")
+    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
     output_file.write("\t\tLogMan::Throw::A(HeaderOp->HasDest, \"Op %s has no dest\\n\", GetName(HeaderOp->Op));\n")
     output_file.write("\t\treturn HeaderOp->Elements;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tbool OpHasDest(OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = reinterpret_cast<IROp_Header const*>(Op->Header.Value.GetPtr(Data.Begin()));\n")
+    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
     output_file.write("\t\treturn HeaderOp->HasDest;\n")
     output_file.write("\t}\n\n")
 

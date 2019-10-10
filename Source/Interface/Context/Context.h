@@ -14,6 +14,13 @@
 
 namespace FEXCore {
 class SyscallHandler;
+namespace CPU {
+  class JITCore;
+}
+}
+
+namespace FEXCore::IR {
+  class RegisterAllocationPass;
 }
 
 namespace FEXCore::Context {
@@ -24,6 +31,8 @@ namespace FEXCore::Context {
 
   struct Context {
     friend class FEXCore::SyscallHandler;
+    friend class FEXCore::CPU::JITCore;
+
     struct {
       bool Multiblock {false};
       bool BreakOnFrontendFailure {true};
@@ -78,6 +87,11 @@ namespace FEXCore::Context {
     FEXCore::Core::ThreadState *GetThreadState();
     void LoadEntryList();
 
+    uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    uintptr_t CompileFallbackBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+  protected:
+    IR::RegisterAllocationPass *GetRegisterAllocatorPass();
+
   private:
     void WaitForIdle();
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID, uint64_t ChildTID);
@@ -89,7 +103,6 @@ namespace FEXCore::Context {
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
-    uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr);
 
     FEXCore::CodeLoader *LocalLoader{};
@@ -99,5 +112,8 @@ namespace FEXCore::Context {
     void AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread);
     void SaveEntryList();
     std::set<uint64_t> EntryList;
+    std::vector<uint64_t> InitLocations;
+    uint64_t StartingRIP;
+    IR::RegisterAllocationPass *RAPass {};
   };
 }

@@ -16,24 +16,51 @@ bool SyscallOptimization::Run(OpDispatchBuilder *Disp) {
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
-  IR::NodeWrapperIterator Begin = CurrentIR.begin();
-  IR::NodeWrapperIterator End = CurrentIR.end();
+  auto Begin = CurrentIR.begin();
+  auto Op = Begin();
 
-  while (Begin != End) {
-    NodeWrapper *WrapperOp = Begin();
-    OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
-    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+  OrderedNode *RealNode = Op->GetNode(ListBegin);
+  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
-    if (IROp->Op == FEXCore::IR::OP_SYSCALL) {
-      // Is the first argument a constant?
-      uint64_t Constant;
-      if (Disp->IsValueConstant(IROp->Args[0], &Constant)) {
-      //  LogMan::Msg::A("Whoa. Syscall argument is constant: %ld", Constant);
-        Changed = true;
+  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+
+  while (1) {
+    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+
+    // We grab these nodes this way so we can iterate easily
+    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
+    auto CodeLast = CurrentIR.at(BlockIROp->Last);
+    while (1) {
+      auto CodeOp = CodeBegin();
+      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
+      auto IROp = CodeNode->Op(DataBegin);
+
+      if (IROp->Op == FEXCore::IR::OP_SYSCALL) {
+        Disp->ShouldDump = true;
+        // Is the first argument a constant?
+        uint64_t Constant;
+        if (Disp->IsValueConstant(IROp->Args[0], &Constant)) {
+          LogMan::Msg::D("Whoa. Syscall argument is constant: %ld", Constant);
+          Changed = true;
+        }
+
       }
 
+      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+      if (CodeBegin == CodeLast) {
+        break;
+      }
+      ++CodeBegin;
     }
-    ++Begin;
+
+    if (BlockIROp->Next.ID() == 0) {
+      break;
+    } else {
+      BlockNode = BlockIROp->Next.GetNode(ListBegin);
+    }
+
   }
 
   return Changed;

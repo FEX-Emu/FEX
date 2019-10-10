@@ -39,10 +39,10 @@ private:
   void *AllocateTmpSpace(size_t Size);
 
   template<typename Res>
-  Res GetDest(IR::NodeWrapper Op);
+  Res GetDest(IR::OrderedNodeWrapper Op);
 
   template<typename Res>
-  Res GetSrc(IR::NodeWrapper Src);
+  Res GetSrc(IR::OrderedNodeWrapper Src);
 
   std::vector<uint8_t> TmpSpace;
   DestMapType DestMap;
@@ -86,13 +86,13 @@ void *InterpreterCore::AllocateTmpSpace(size_t Size) {
 }
 
 template<typename Res>
-Res InterpreterCore::GetDest(IR::NodeWrapper Op) {
+Res InterpreterCore::GetDest(IR::OrderedNodeWrapper Op) {
   auto DstPtr = DestMap[Op.NodeOffset];
   return reinterpret_cast<Res>(DstPtr);
 }
 
 template<typename Res>
-Res InterpreterCore::GetSrc(IR::NodeWrapper Src) {
+Res InterpreterCore::GetSrc(IR::OrderedNodeWrapper Src) {
 #if DESTMAP_AS_MAP
   LogMan::Throw::A(DestMap.find(Src.NodeOffset) != DestMap.end(), "Op had source but it wasn't in the destination map");
 #endif
@@ -138,8 +138,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
      using namespace FEXCore::IR;
      using namespace FEXCore::IR;
 
-     NodeWrapper *WrapperOp = Begin();
-     OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
+     OrderedNodeWrapper *WrapperOp = Begin();
+     OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
      FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
      uint8_t OpSize = IROp->Size;
 
@@ -287,15 +287,16 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
      case IR::OP_STOREMEM: {
  #define STORE_DATA(x, y) \
      case x: { \
-       y *Data = Thread->CTX->MemoryMapper.GetBaseOffset<y *>(*GetSrc<uint64_t*>(Op->Header.Args[0])); \
+       uint64_t SrcPtr = *GetSrc<uint64_t*>(Op->Header.Args[0]); \
+       y *Data = Thread->CTX->MemoryMapper.GetPointer<y *>(SrcPtr); \
        LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx for size %d store\n", *GetSrc<uint64_t*>(Op->Header.Args[0]), x);\
-       *Data = *GetSrc<y*>(Op->Header.Args[1]); \
+       memcpy(Data, GetSrc<y*>(Op->Header.Args[1]), sizeof(y)); \
      } \
      break
 
       auto Op = IROp->C<IR::IROp_StoreMem>();
-      //LogMan::Msg::D("Storing guestmem: 0x%lx (%d)", *GetSrc<uint64_t*>(Op->Header.Args[0]), Op->Size);
-      //LogMan::Msg::D("\tStoring: 0x%016lx", (uint64_t)*GetSrc<uint64_t*>(Op->Header.Args[1]));
+      // LogMan::Msg::D("Storing guestmem: 0x%lx (%d)", *GetSrc<uint64_t*>(Op->Header.Args[0]), Op->Size);
+      // LogMan::Msg::D("\tStoring: 0x%016lx", (uint64_t)*GetSrc<uint64_t*>(Op->Header.Args[1]));
 
       switch (Op->Size) {
       STORE_DATA(1, uint8_t);
@@ -1449,6 +1450,16 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
       default: LogMan::Msg::A("Unknown LREM Size: %d", Size); break;
       }
     break;
+    }
+    case IR::OP_VEXTR: {
+      auto Op = IROp->C<IR::IROp_VExtr>();
+      __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+      __uint128_t Src2 = *GetSrc<__uint128_t*>(Op->Header.Args[1]);
+
+      uint8_t Offset = Op->Index * 8;
+      __uint128_t Dst = (Src1 << (sizeof(__uint128_t) - Offset)) | (Src2 >> Offset);
+      memcpy(GDP, &Dst, 16);
+      break;
     }
 
      default:

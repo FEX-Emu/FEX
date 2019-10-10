@@ -7,7 +7,18 @@
 namespace FEXCore::IR {
 
 /**
+ * @brief The IROp_Header is an dynamically sized array
+ * At the end it contains a uint8_t for the number of arguments that Op has
+ * Then there is an unsized array of NodeWrapper arguments for the number of arguments this op has
+ * The op structures that are including the header must ensure that they pad themselves correctly to the number of arguments used
+ */
+struct IROp_Header;
+
+class OrderedNode;
+/**
  * @brief This is a very simple wrapper for our node pointers
+ * You probably don't want to use this directly
+ * Use OpNodeWrapper and OrderedNodeWrapper types below instead
  *
  * This is necessary to allow two things
  *  - Reduce memory usage by having the pointer be an 32bit offset rather than the whole 64bit pointer
@@ -19,46 +30,53 @@ namespace FEXCore::IR {
  *  - We have to have the base offset live somewhere else
  *  - Has to be POD and trivially copyable
  *  - Makes every real node access turn in to a [Base + Offset] access
+ *  - Can be confusing if you're mixing OpNodeWrapper and OrderedNodeWrapper usage
  */
-struct NodeWrapper final {
+template<typename Type>
+struct NodeWrapperBase final {
   // On x86-64 using a uint64_t type is more efficient since RIP addressing gives you [<Base> + <Index> + <imm offset>]
   // On AArch64 using uint32_t is just more memory efficient. 32bit or 64bit offset doesn't matter
   // We use uint32_t to be more memory efficient (Cuts our node list size in half)
   using NodeOffsetType = uint32_t;
   NodeOffsetType NodeOffset;
 
-  static NodeWrapper WrapOffset(NodeOffsetType Offset) {
-    NodeWrapper Wrapped;
+  static NodeWrapperBase WrapOffset(NodeOffsetType Offset) {
+    NodeWrapperBase Wrapped;
     Wrapped.NodeOffset = Offset;
     return Wrapped;
   }
 
-  static NodeWrapper WrapPtr(uintptr_t Base, uintptr_t Value) {
-    NodeWrapper Wrapped;
+  static NodeWrapperBase WrapPtr(uintptr_t Base, uintptr_t Value) {
+    NodeWrapperBase Wrapped;
     Wrapped.SetOffset(Base, Value);
     return Wrapped;
   }
 
-  static void *UnwrapNode(uintptr_t Base, NodeWrapper Node) {
-    return Node.GetPtr(Base);
+  static void *UnwrapNode(uintptr_t Base, NodeWrapperBase Node) {
+    return Node.GetNode(Base);
   }
 
   uint32_t ID() const;
 
-  explicit NodeWrapper() = default;
-  void *GetPtr(uintptr_t Base) { return reinterpret_cast<void*>(Base + NodeOffset); }
-  void const *GetPtr(uintptr_t Base) const { return reinterpret_cast<void*>(Base + NodeOffset); }
+  explicit NodeWrapperBase() = default;
+
+  Type *GetNode(uintptr_t Base) { return reinterpret_cast<Type*>(Base + NodeOffset); }
+  Type const *GetNode(uintptr_t Base) const { return reinterpret_cast<Type*>(Base + NodeOffset); }
+
   void SetOffset(uintptr_t Base, uintptr_t Value) { NodeOffset = Value - Base; }
-  bool operator==(NodeWrapper const &rhs) { return NodeOffset == rhs.NodeOffset; }
+  bool operator==(NodeWrapperBase const &rhs) { return NodeOffset == rhs.NodeOffset; }
 };
 
-static_assert(std::is_pod<NodeWrapper>::value);
-static_assert(sizeof(NodeWrapper) == sizeof(uint32_t));
+static_assert(std::is_pod<NodeWrapperBase<OrderedNode>>::value);
+static_assert(sizeof(NodeWrapperBase<OrderedNode>) == sizeof(uint32_t));
+
+using OpNodeWrapper = NodeWrapperBase<IROp_Header>;
+using OrderedNodeWrapper = NodeWrapperBase<OrderedNode>;
 
 struct OrderedNodeHeader {
-  NodeWrapper Value;
-  NodeWrapper Next;
-  NodeWrapper Previous;
+  OpNodeWrapper Value;
+  OrderedNodeWrapper Next;
+  OrderedNodeWrapper Previous;
 };
 
 static_assert(sizeof(OrderedNodeHeader) == sizeof(uint32_t) * 3);
@@ -70,7 +88,7 @@ static_assert(sizeof(OrderedNodeHeader) == sizeof(uint32_t) * 3);
 */
 class NodeWrapperIterator final {
 public:
-	using value_type              = NodeWrapper;
+	using value_type              = OrderedNodeWrapper;
 	using size_type               = std::size_t;
 	using difference_type         = std::ptrdiff_t;
 	using reference               = value_type&;
@@ -83,9 +101,9 @@ public:
 	using const_reverse_iterator  = const_iterator;
 	using iterator_category       = std::bidirectional_iterator_tag;
 
-	using NodeType = NodeWrapper;
-	using NodePtr = NodeWrapper*;
-	using NodeRef = NodeWrapper&;
+	using NodeType = value_type;
+	using NodePtr = value_type*;
+	using NodeRef = value_type&;
 
 	NodeWrapperIterator(uintptr_t Base) : BaseList {Base} {}
 	explicit NodeWrapperIterator(uintptr_t Base, NodeType Ptr) : BaseList {Base}, Node {Ptr} {}
@@ -99,13 +117,13 @@ public:
 	}
 
 	NodeWrapperIterator operator++() {
-		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetPtr(BaseList));
+		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
 		Node = RealNode->Next;
 		return *this;
 	}
 
 	NodeWrapperIterator operator--() {
-		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetPtr(BaseList));
+		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
 		Node = RealNode->Previous;
 		return *this;
 	}
@@ -122,14 +140,6 @@ private:
 	uintptr_t BaseList{};
 	NodeType Node{};
 };
-
-/**
- * @brief The IROp_Header is an dynamically sized array
- * At the end it contains a uint8_t for the number of arguments that Op has
- * Then there is an unsized array of NodeWrapper arguments for the number of arguments this op has
- * The op structures that are including the header must ensure that they pad themselves correctly to the number of arguments used
- */
-struct IROp_Header;
 
 /**
  * @brief This is a node in our IR representation
@@ -153,6 +163,8 @@ class OrderedNode final {
     OrderedNodeHeader Header;
     uint32_t NumUses;
 
+    using value_type              = OrderedNodeWrapper;
+
     OrderedNode() = default;
 
     /**
@@ -163,7 +175,7 @@ class OrderedNode final {
      *
      * @return Pointer to the node being added
      */
-    NodeWrapper append(uintptr_t Base, NodeWrapper Node) {
+    value_type append(uintptr_t Base, value_type Node) {
       // Set Next Node's Previous to incoming node
       SetPrevious(Base, Header.Next, Node);
 
@@ -179,7 +191,7 @@ class OrderedNode final {
     }
 
     OrderedNode *append(uintptr_t Base, OrderedNode *Node) {
-      NodeWrapper WNode = Node->Wrapped(Base);
+      value_type WNode = Node->Wrapped(Base);
       // Set Next Node's Previous to incoming node
       SetPrevious(Base, Header.Next, WNode);
 
@@ -201,7 +213,7 @@ class OrderedNode final {
      *
      * @return Pointer to the node being added
      */
-    NodeWrapper prepend(uintptr_t Base, NodeWrapper Node) {
+    value_type prepend(uintptr_t Base, value_type Node) {
       // Set the previous node's next to the incoming node
       SetNext(Base, Header.Previous, Node);
 
@@ -217,7 +229,7 @@ class OrderedNode final {
     }
 
     OrderedNode *prepend(uintptr_t Base, OrderedNode *Node) {
-      NodeWrapper WNode = Node->Wrapped(Base);
+      value_type WNode = Node->Wrapped(Base);
       // Set the previous node's next to the incoming node
       SetNext(Base, Header.Previous, WNode);
 
@@ -241,10 +253,10 @@ class OrderedNode final {
     size_t size(uintptr_t Base) const {
       size_t Size = 1;
       // Walk the list forward until we hit a sentinal
-      NodeWrapper Current = Header.Next;
+      value_type Current = Header.Next;
       while (Current.NodeOffset != 0) {
         ++Size;
-        OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(Current.GetPtr(Base));
+        OrderedNode *RealNode = Current.GetNode(Base);
         Current = RealNode->Header.Next;
       }
       return Size;
@@ -258,41 +270,36 @@ class OrderedNode final {
       SetPrevious(Base, Header.Next, Header.Previous);
     }
 
-    IROp_Header const* Op(uintptr_t Base) const { return reinterpret_cast<IROp_Header const*>(Header.Value.GetPtr(Base)); }
-    IROp_Header *Op(uintptr_t Base) { return reinterpret_cast<IROp_Header*>(Header.Value.GetPtr(Base)); }
+    IROp_Header const* Op(uintptr_t Base) const { return Header.Value.GetNode(Base); }
+    IROp_Header *Op(uintptr_t Base) { return Header.Value.GetNode(Base); }
 
     uint32_t GetUses() const { return NumUses; }
 
     void AddUse() { ++NumUses; }
     void RemoveUse() { --NumUses; }
 
-    using iterator = NodeWrapperIterator;
-
-    iterator begin(uint64_t Base) noexcept { return iterator(Base, Wrapped(Base)); }
-    iterator end(uint64_t Base, uint64_t End) noexcept { return iterator(Base, WrappedOffset(End)); }
-
-    NodeWrapper Wrapped(uintptr_t Base) {
-      NodeWrapper Tmp;
+    value_type Wrapped(uintptr_t Base) {
+      value_type Tmp;
       Tmp.SetOffset(Base, reinterpret_cast<uintptr_t>(this));
       return Tmp;
     }
 
   private:
-    NodeWrapper WrappedOffset(uint32_t Offset) {
-      NodeWrapper Tmp;
+    value_type WrappedOffset(uint32_t Offset) {
+      value_type Tmp;
       Tmp.NodeOffset = Offset;
       return Tmp;
     }
 
-    static void SetPrevious(uintptr_t Base, NodeWrapper Node, NodeWrapper New) {
+    static void SetPrevious(uintptr_t Base, value_type Node, value_type New) {
       if (Node.NodeOffset == 0) return;
-      OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(Node.GetPtr(Base));
+      OrderedNode *RealNode = Node.GetNode(Base);
       RealNode->Header.Previous = New;
     }
 
-    static void SetNext(uintptr_t Base, NodeWrapper Node, NodeWrapper New) {
+    static void SetNext(uintptr_t Base, value_type Node, value_type New) {
       if (Node.NodeOffset == 0) return;
-      OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(Node.GetPtr(Base));
+      OrderedNode *RealNode = Node.GetNode(Base);
       RealNode->Header.Next = New;
     }
 
@@ -304,26 +311,24 @@ static_assert(std::is_trivially_copyable<OrderedNode>::value);
 static_assert(offsetof(OrderedNode, Header) == 0);
 static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_t)));
 
+struct RegisterClassType final {
+  uint32_t Val;
+  operator uint32_t() {
+    return Val;
+  }
+};
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES
 #include "IRDefines.inc"
-
-template <class T>
-struct Wrapper final {
-  T *first;
-  OrderedNode *Node; ///< Actual offset of this IR in ths list
-
-  operator Wrapper<IROp_Header>() const { return Wrapper<IROp_Header> {reinterpret_cast<IROp_Header*>(first), Node}; }
-  operator OrderedNode *() { return Node; }
-  operator NodeWrapper () { return Node->Header.Value; }
-};
 
 template<bool>
 class IRListView;
 
 void Dump(std::stringstream *out, IRListView<false> const* IR);
 
-inline uint32_t NodeWrapper::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }
+template<typename Type>
+inline uint32_t NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }
 
 };

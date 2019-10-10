@@ -9,51 +9,70 @@ public:
 };
 
 bool RedundantFlagCalculationEliminination::Run(OpDispatchBuilder *Disp) {
+  std::array<OrderedNode*, 32> LastValidFlagStores{};
+
   bool Changed = false;
   auto CurrentIR = Disp->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
-  IR::NodeWrapperIterator Begin = CurrentIR.begin();
-  IR::NodeWrapperIterator End = CurrentIR.end();
+  auto Begin = CurrentIR.begin();
+  auto Op = Begin();
 
-  std::array<OrderedNode*, 32> LastValidFlagStores{};
+  OrderedNode *RealNode = Op->GetNode(ListBegin);
+  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
-  while (Begin != End) {
-    NodeWrapper *WrapperOp = Begin();
-    OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
-    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
-    if (IROp->Op == OP_BEGINBLOCK ||
-        IROp->Op == OP_ENDBLOCK ||
-        IROp->Op == OP_JUMP ||
-        IROp->Op == OP_CONDJUMP ||
-        IROp->Op == OP_EXITFUNCTION) {
-      // We don't track across block boundaries
-      LastValidFlagStores.fill(nullptr);
-    }
+  while (1) {
+    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-    if (IROp->Op == OP_STOREFLAG) {
-      auto Op = IROp->CW<IR::IROp_StoreFlag>();
+    // We grab these nodes this way so we can iterate easily
+    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
+    auto CodeLast = CurrentIR.at(BlockIROp->Last);
+    while (1) {
+      auto CodeOp = CodeBegin();
+      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
+      auto IROp = CodeNode->Op(DataBegin);
 
-      // If we have had a valid flag store previously and it hasn't been touched until this new store
-      // Then just delete the old one and let DCE to take care of the rest
-      if (LastValidFlagStores[Op->Flag] != nullptr) {
-        Disp->Unlink(LastValidFlagStores[Op->Flag]);
-        Changed = true;
+      if (IROp->Op == OP_STOREFLAG) {
+        auto Op = IROp->CW<IR::IROp_StoreFlag>();
+
+        // If we have had a valid flag store previously and it hasn't been touched until this new store
+        // Then just delete the old one and let DCE to take care of the rest
+        if (LastValidFlagStores[Op->Flag] != nullptr) {
+          Disp->Unlink(LastValidFlagStores[Op->Flag]);
+          Changed = true;
+        }
+
+        // Set this node as the last one valid for this flag
+        LastValidFlagStores[Op->Flag] = RealNode;
+      }
+      else if (IROp->Op == OP_LOADFLAG) {
+        auto Op = IROp->CW<IR::IROp_LoadFlag>();
+
+        // If we loaded a flag then we can't track past this
+        LastValidFlagStores[Op->Flag] = nullptr;
       }
 
-      // Set this node as the last one valid for this flag
-      LastValidFlagStores[Op->Flag] = RealNode;
-    }
-    else if (IROp->Op == OP_LOADFLAG) {
-      auto Op = IROp->CW<IR::IROp_LoadFlag>();
 
-      // If we loaded a flag then we can't track past this
-      LastValidFlagStores[Op->Flag] = nullptr;
+      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+      if (CodeBegin == CodeLast) {
+        break;
+      }
+      ++CodeBegin;
     }
 
-    ++Begin;
+    if (BlockIROp->Next.ID() == 0) {
+      break;
+    } else {
+      BlockNode = BlockIROp->Next.GetNode(ListBegin);
+    }
+
+    // We don't track across block boundaries
+    LastValidFlagStores.fill(nullptr);
   }
 
   return Changed;

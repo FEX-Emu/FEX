@@ -54,7 +54,6 @@ set (SRCS
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp
   Interface/Core/OpcodeDispatcher.cpp
-  Interface/Core/RegisterAllocation.cpp
   Interface/Core/X86Tables.cpp
   Interface/Core/X86DebugInfo.cpp
   Interface/Core/Interpreter/InterpreterCore.cpp
@@ -71,6 +70,7 @@ set (SRCS
   Interface/IR/Passes/IRCompaction.cpp
   Interface/IR/Passes/IRValidation.cpp
   Interface/IR/Passes/RedundantFlagCalculationElimination.cpp
+  Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
   )
 
@@ -108,7 +108,7 @@ add_custom_target(IR_INC
 
 add_library(${PROJECT_NAME} STATIC ${SRCS})
 add_dependencies(${PROJECT_NAME} IR_INC)
-target_link_libraries(${PROJECT_NAME} LLVM pthread rt ${JIT_LIBS})
+target_link_libraries(${PROJECT_NAME} LLVM pthread rt ${JIT_LIBS} dl)
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 

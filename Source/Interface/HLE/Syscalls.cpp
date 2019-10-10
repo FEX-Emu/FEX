@@ -8,6 +8,7 @@
 
 #include <FEXCore/Core/X86Enums.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 constexpr uint64_t PAGE_SIZE = 4096;
 
@@ -128,7 +129,7 @@ void SyscallHandler::DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thr
   DefaultProgramBreakAddress = Addr;
 
   // Just allocate 1GB of data memory past the default program break location at this point
-  CTX->MapRegion(Thread, Addr, 0x1000'0000);
+  CTX->MapRegion(Thread, Addr, 0x1000'0000, true);
 }
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
@@ -154,8 +155,11 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   }
   // Memory management
   case SYSCALL_BRK: {
-    LogMan::Msg::D("\tBRK: 0x%lx - 0x%lx", Args->Argument[1], DataSpace);
     if (Args->Argument[1] == 0) { // Just wants to get the location of the program break atm
+      if (DataSpace == 0) {
+        // XXX: We need to setup our default BRK space first
+        DefaultProgramBreak(Thread, 0xe000'0000);
+      }
       Result = DataSpace + DataSpaceSize;
     }
     else {
@@ -175,12 +179,8 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   break;
   }
   case SYSCALL_MMAP: {
-    LogMan::Msg::D("\tMMAP(<addr> %p, <length> 0x%lx, <prot>%d, <flags>0x%x, <fd>%d, <offset>0x%lx)",
-        Args->Argument[1], Args->Argument[2],
-        Args->Argument[3], Args->Argument[4],
-        Args->Argument[5], Args->Argument[6]);
     int Flags = Args->Argument[4];
-    int GuestFD = Args->Argument[5];
+    int GuestFD = static_cast<int32_t>(Args->Argument[5]);
     int HostFD = -1;
 
     if (GuestFD != -1) {
@@ -193,13 +193,13 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     uint64_t Prot = Args->Argument[3];
 
 #ifdef DEBUG_MMAP
-    FileSizeToUse = Size;
-    Prot = PROT_READ | PROT_WRITE | PROT_EXEC;
+//    FileSizeToUse = Size;
 #endif
+    Prot = PROT_READ | PROT_WRITE | PROT_EXEC;
 
     if (Flags & MAP_FIXED) {
       Base = Args->Argument[1];
-      void *HostPtr = CTX->MemoryMapper.GetPointer<void*>(Base);
+      void *HostPtr = CTX->MemoryMapper.GetPointerSizeCheck(Base, FileSizeToUse);
       if (!HostPtr) {
         HostPtr = CTX->MapRegion(Thread, Base, Size, true);
       }
@@ -232,7 +232,13 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     }
     else {
       // XXX: MMAP should map memory regions for all threads
-      void *HostPtr = CTX->MapRegion(Thread, Base, Size, true);
+      void *HostPtr = CTX->MemoryMapper.GetPointerSizeCheck(Base, FileSizeToUse);
+      if (!HostPtr) {
+        HostPtr = CTX->MapRegion(Thread, Base, Size, true);
+      }
+      else {
+        LogMan::Msg::D("\tMapping Fixed pointer in already mapped space: 0x%lx -> %p", Base, HostPtr);
+      }
 
       if (HostFD != -1) {
 #ifdef DEBUG_MMAP
@@ -258,14 +264,12 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   break;
   }
   case SYSCALL_MPROTECT: {
-    LogMan::Msg::D("\tMPROTECT: 0x%x, 0x%lx, 0x%lx", Args->Argument[1], Args->Argument[2], Args->Argument[3]);
     void *HostPtr = CTX->MemoryMapper.GetPointer<void*>(Args->Argument[1]);
 
-    Result = mprotect(HostPtr, Args->Argument[2], Args->Argument[3]);
+//    Result = mprotect(HostPtr, Args->Argument[2], Args->Argument[3]);
   break;
   }
   case SYSCALL_ARCH_PRCTL: {
-    LogMan::Msg::D("\tPRTCL: 0x%x: 0x%lx", Args->Argument[1], Args->Argument[2]);
     switch (Args->Argument[1]) {
     case 0x1001: // ARCH_SET_GS
       Thread->State.State.gs = Args->Argument[2];
@@ -508,7 +512,21 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       Args->Argument[3],
       Args->Argument[4]);
   break;
+  case SYSCALL_IOCTL:
+    Result = FM.Ioctl(
+      Args->Argument[1],
+      Args->Argument[2],
+      CTX->MemoryMapper.GetPointer<void*>(Args->Argument[3]));
+  break;
 
+  case SYSCALL_TIME: {
+    time_t *ClockResult = CTX->MemoryMapper.GetPointer<time_t*>(Args->Argument[2]);
+    Result = time(ClockResult);
+    // XXX: Debug
+    // memset(ClockResult, 0, sizeof(time_t));
+    // Result = 0;
+  }
+  break;
   case SYSCALL_CLOCK_GETTIME: {
     timespec *ClockResult = CTX->MemoryMapper.GetPointer<timespec*>(Args->Argument[2]);
     Result = clock_gettime(Args->Argument[1], ClockResult);
@@ -533,25 +551,31 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   break;
   }
   case SYSCALL_PRLIMIT64: {
-  LogMan::Throw::A(Args->Argument[3] == 0, "Guest trying to set limit for %d", Args->Argument[2]);
-  struct rlimit {
-    uint64_t rlim_cur;
-    uint64_t rlim_max;
-  };
-  switch (Args->Argument[2]) {
-  case 3: { // Stack limits
-    rlimit *old_limit = CTX->MemoryMapper.GetPointer<rlimit*>(Args->Argument[3]);
-    // Default size
-    old_limit->rlim_cur = 8 * 1024;
-    old_limit->rlim_max = ~0ULL;
+    LogMan::Throw::A(Args->Argument[3] == 0, "Guest trying to set limit for %d", Args->Argument[2]);
+    struct rlimit {
+      uint64_t rlim_cur;
+      uint64_t rlim_max;
+    };
+    switch (Args->Argument[2]) {
+    case 3: { // Stack limits
+      rlimit *old_limit = CTX->MemoryMapper.GetPointer<rlimit*>(Args->Argument[3]);
+      // Default size
+      old_limit->rlim_cur = 8 * 1024;
+      old_limit->rlim_max = ~0ULL;
+    break;
+    }
+    default: LogMan::Msg::A("Unknown PRLimit: %d", Args->Argument[2]);
+    }
+    Result = 0;
   break;
   }
-  default: LogMan::Msg::A("Unknown PRLimit: %d", Args->Argument[2]);
-  }
-  Result = 0;
-
-  break;
-  }
+  case SYSCALL_UMASK:
+    // Just say that the mask has always matched what was passed in
+    Result = Args->Argument[1];
+    break;
+  case SYSCALL_CHDIR:
+    Result = chdir(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]));
+    break;
   // Currently unhandled
   // Return fake result
   case SYSCALL_RT_SIGACTION:

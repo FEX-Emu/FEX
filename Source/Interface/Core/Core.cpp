@@ -8,6 +8,7 @@
 #include "Interface/Core/Interpreter/InterpreterCore.h"
 #include "Interface/Core/JIT/JITCore.h"
 #include "Interface/Core/LLVMJIT/LLVMCore.h"
+#include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -20,7 +21,7 @@
 constexpr uint64_t STACK_OFFSET = 0xc000'0000;
 
 constexpr uint64_t FS_OFFSET = 0xb000'0000;
-constexpr uint64_t FS_SIZE = 0x1000;
+constexpr uint64_t FS_SIZE = 0x1000'0000;
 
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
@@ -212,7 +213,7 @@ namespace FEXCore::Context {
     }
     memset(NewThreadState.flags, 0, 32);
     NewThreadState.gs = 0;
-    NewThreadState.fs = FS_OFFSET + FS_SIZE / 2;
+    NewThreadState.fs = FS_OFFSET;
     NewThreadState.flags[1] = 1;
 
     FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0, 0);
@@ -220,17 +221,11 @@ namespace FEXCore::Context {
     // We are the parent thread
     ParentThread = Thread;
 
-    auto MemLayout = Loader->GetLayout();
-
-    uint64_t BasePtr = AlignDown(std::get<0>(MemLayout), PAGE_SIZE);
-    uint64_t BaseSize = AlignUp(std::get<2>(MemLayout), PAGE_SIZE);
-
-    Thread->BlockCache->HintUsedRange(BasePtr, BaseSize);
-
-    uintptr_t BaseRegion = reinterpret_cast<uintptr_t>(MapRegion(Thread, BasePtr, BaseSize, true));
+    uintptr_t MemoryBase = MemoryMapper.GetBaseOffset<uintptr_t>(0);
 
     auto MemoryMapperFunction = [&](uint64_t Base, uint64_t Size) -> void* {
-      return MapRegion(Thread, Base, Size);
+      Thread->BlockCache->HintUsedRange(Base, Base);
+      return MapRegion(Thread, Base, Size, true);
     };
 
     Loader->MapMemoryRegion(MemoryMapperFunction);
@@ -244,15 +239,19 @@ namespace FEXCore::Context {
     // Now let the code loader setup memory
     auto MemoryWriterFunction = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
       // Writes the machine code to be emulated in to memory
-      memcpy(reinterpret_cast<void*>(BaseRegion + Addr), Data, Size);
+      memcpy(reinterpret_cast<void*>(MemoryBase + Addr), Data, Size);
     };
 
     Loader->LoadMemory(MemoryWriterFunction);
+    Loader->GetInitLocations(&InitLocations);
 
-    // Set the RIP to what the code loader wants
-    Thread->State.State.rip = Loader->DefaultRIP();
+    auto TLSSlotWriter = [&](void const *Data, uint64_t Size) -> void {
+      memcpy(reinterpret_cast<void*>(MemoryBase + FS_OFFSET), Data, Size);
+    };
 
-    LogMan::Msg::D("Memory Base: 0x%016lx", MemoryMapper.GetBaseOffset<uint64_t>(0));
+    // Offset next thread's FS_OFFSET by slot size
+    uint64_t SlotSize = Loader->InitializeThreadSlot(TLSSlotWriter);
+    StartingRIP = Loader->DefaultRIP();
 
     InitializeThread(Thread);
 
@@ -275,7 +274,7 @@ namespace FEXCore::Context {
       if (AllPaused)
         break;
 
-      PauseWait.WaitFor(std::chrono::seconds(1));
+      PauseWait.WaitFor(std::chrono::milliseconds(10));
     } while (true);
   }
 
@@ -325,10 +324,11 @@ namespace FEXCore::Context {
     Thread->FallbackBackend->Initialize();
 
     // Compile all of our cached entries
-    LogMan::Msg::D("Precompiling: %ld blocks", EntryList.size());
+    LogMan::Msg::D("Precompiling: %ld blocks...", EntryList.size());
     for (auto Entry : EntryList) {
       CompileRIP(Thread, Entry);
     }
+    LogMan::Msg::D("Done", EntryList.size());
 
     // This will create the execution thread but it won't actually start executing
     Thread->ExecutionThread = std::thread(&Context::ExecutionThread, this, Thread);
@@ -379,6 +379,15 @@ namespace FEXCore::Context {
     return Thread;
   }
 
+  IR::RegisterAllocationPass *Context::GetRegisterAllocatorPass() {
+    if (!RAPass) {
+      RAPass = new IR::RegisterAllocationPass();
+      PassManager.InsertPass(RAPass);
+    }
+
+    return RAPass;
+  }
+
   uintptr_t Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
     auto BlockMapPtr = Thread->BlockCache->AddBlockMapping(Address, Ptr);
     if (BlockMapPtr == 0) {
@@ -406,7 +415,6 @@ namespace FEXCore::Context {
       bool HadDispatchError {false};
       [[maybe_unused]] bool HadRIPSetter {false};
 
-      Thread->OpDispatcher->BeginBlock();
       if (!FrontendDecoder.DecodeInstructionsInBlock(&GuestCode[TotalInstructionsLength], GuestRIP + TotalInstructionsLength)) {
         if (Config.BreakOnFrontendFailure) {
            LogMan::Msg::E("Had Frontend decoder error");
@@ -415,6 +423,7 @@ namespace FEXCore::Context {
         return 0;
       }
 
+      Thread->OpDispatcher->BeginFunction(GuestRIP);
       auto DecodedOps = FrontendDecoder.GetDecodedInsts();
       for (size_t i = 0; i < DecodedOps.second; ++i) {
         FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
@@ -515,15 +524,17 @@ namespace FEXCore::Context {
 
       if (!Thread->OpDispatcher->Information.HadUnconditionalExit)
       {
-        Thread->OpDispatcher->EndBlock(TotalInstructionsLength);
+        Thread->OpDispatcher->CreateNewEndBlock(TotalInstructionsLength);
+        Thread->OpDispatcher->CreateNewBeginBlock();
         Thread->OpDispatcher->ExitFunction();
+        Thread->OpDispatcher->CreateNewEndBlock(0);
       }
+      Thread->OpDispatcher->Finalize();
 
       // Run the passmanager over the IR from the dispatcher
       PassManager.Run(Thread->OpDispatcher.get());
 
-      if (Thread->OpDispatcher->ShouldDump)
-//      if (GuestRIP == 0x48b680)
+      // if (Thread->OpDispatcher->ShouldDump)
       {
         std::stringstream out;
         auto NewIR = Thread->OpDispatcher->ViewIR();
@@ -531,17 +542,15 @@ namespace FEXCore::Context {
         printf("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
       }
 
-      // Do RA on the IR right now?
-
       // Create a copy of the IR and place it in this thread's IR cache
-      auto IR = Thread->IRLists.try_emplace(GuestRIP, Thread->OpDispatcher->CreateIRCopy());
+      auto AddedIR = Thread->IRLists.try_emplace(GuestRIP, Thread->OpDispatcher->CreateIRCopy());
       Thread->OpDispatcher->ResetWorkingList();
 
-      auto Debugit = Thread->DebugData.try_emplace(GuestRIP, FEXCore::Core::DebugData{});
+      auto Debugit = Thread->DebugData.try_emplace(GuestRIP);
       Debugit.first->second.GuestCodeSize = TotalInstructionsLength;
       Debugit.first->second.GuestInstructionCount = TotalInstructions;
 
-      IRList = IR.first->second.get();
+      IRList = AddedIR.first->second.get();
       DebugData = &Debugit.first->second;
       Thread->Stats.BlocksCompiled.fetch_add(1);
     }
@@ -555,6 +564,20 @@ namespace FEXCore::Context {
     if (CodePtr != nullptr) {
       // The core managed to compile the code.
       return AddBlockMapping(Thread, GuestRIP, CodePtr);
+    }
+
+    return 0;
+  }
+
+  using BlockFn = void (*)(FEXCore::Core::InternalThreadState *Thread);
+  uintptr_t Context::CompileFallbackBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    // We have ONE more chance to try and fallback to the fallback CPU backend
+    // This will most likely fail since regular code use won't be using a fallback core.
+    // It's mainly for testing new instruction encodings
+    void *CodePtr = Thread->FallbackBackend->CompileCode(nullptr, nullptr);
+    if (CodePtr) {
+     uintptr_t Ptr = reinterpret_cast<uintptr_t >(AddBlockMapping(Thread, GuestRIP, CodePtr));
+     return Ptr;
     }
 
     return 0;
@@ -579,119 +602,143 @@ namespace FEXCore::Context {
     Thread->State.RunningEvents.Running = true;
     Thread->State.RunningEvents.ShouldPause = false;
     constexpr uint32_t CoreDebugLevel = 0;
-    while (!ShouldStop.load() && !Thread->State.RunningEvents.ShouldStop.load()) {
-      uint64_t GuestRIP = Thread->State.State.rip;
 
-      if (CoreDebugLevel >= 1) {
-        char const *Name = LocalLoader->FindSymbolNameInRange(GuestRIP);
-        LogMan::Msg::D(">>>>RIP: 0x%lx: '%s'", GuestRIP, Name ? Name : "<Unknown>");
-      }
+    bool Initializing = false;
 
-      using BlockFn = void (*)(FEXCore::Core::InternalThreadState *Thread);
+    uint64_t InitializationStep = 0;
+    if (Initializing) {
+      Thread->State.State.rip = ~0ULL;
+    }
+    else {
+      Thread->State.State.rip = StartingRIP;
+    }
 
-      if (!Thread->CPUBackend->NeedsOpDispatch()) {
-        BlockFn Ptr = reinterpret_cast<BlockFn>(Thread->CPUBackend->CompileCode(nullptr, nullptr));
-        Ptr(Thread);
-      }
-      else {
-        // Do have have this block compiled?
-        auto it = Thread->BlockCache->FindBlock(GuestRIP);
-        if (it == 0) {
-          // If not compile it
-          it = CompileBlock(Thread, GuestRIP);
+    if (Thread->CPUBackend->HasCustomDispatch()) {
+      Thread->CPUBackend->ExecuteCustomDispatch(&Thread->State);
+    }
+    else {
+      while (!ShouldStop.load() && !Thread->State.RunningEvents.ShouldStop.load()) {
+        if (Initializing) {
+          if (Thread->State.State.rip == ~0ULL) {
+            if (InitializationStep < InitLocations.size()) {
+              Thread->State.State.gregs[X86State::REG_RSP] -= 8;
+              *MemoryMapper.GetPointer<uint64_t*>(Thread->State.State.gregs[X86State::REG_RSP]) = ~0ULL;
+              LogMan::Msg::D("Going down init path: 0x%lx", InitLocations[InitializationStep]);
+              Thread->State.State.rip = InitLocations[InitializationStep++];
+            }
+            else {
+              Initializing = false;
+              Thread->State.State.rip = StartingRIP;
+            }
+          }
+        }
+        uint64_t GuestRIP = Thread->State.State.rip;
+
+        if (CoreDebugLevel >= 1) {
+          char const *Name = LocalLoader->FindSymbolNameInRange(GuestRIP);
+          LogMan::Msg::D(">>>>RIP: 0x%lx: '%s'", GuestRIP, Name ? Name : "<Unknown>");
         }
 
-        // Did we successfully compile this block?
-        if (it != 0) {
-          // Block is compiled, run it
-          BlockFn Ptr = reinterpret_cast<BlockFn>(it);
+        if (!Thread->CPUBackend->NeedsOpDispatch()) {
+          BlockFn Ptr = reinterpret_cast<BlockFn>(Thread->CPUBackend->CompileCode(nullptr, nullptr));
           Ptr(Thread);
         }
         else {
-          // We have ONE more chance to try and fallback to the fallback CPU backend
-          // This will most likely fail since regular code use won't be using a fallback core.
-          // It's mainly for testing new instruction encodings
-          void *CodePtr = Thread->FallbackBackend->CompileCode(nullptr, nullptr);
-          if (CodePtr) {
-           BlockFn Ptr = reinterpret_cast<BlockFn>(AddBlockMapping(Thread, GuestRIP, CodePtr));
-           Ptr(Thread);
+          // Do have have this block compiled?
+          auto it = Thread->BlockCache->FindBlock(GuestRIP);
+          if (it == 0) {
+            // If not compile it
+            it = CompileBlock(Thread, GuestRIP);
+          }
+
+          // Did we successfully compile this block?
+          if (it != 0) {
+            // Block is compiled, run it
+            BlockFn Ptr = reinterpret_cast<BlockFn>(it);
+            Ptr(Thread);
           }
           else {
-            // Let the frontend know that something has happened that is unhandled
-            Thread->State.RunningEvents.ShouldPause = true;
-            Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_UNKNOWNERROR;
+            // We have ONE more chance to try and fallback to the fallback CPU backend
+            // This will most likely fail since regular code use won't be using a fallback core.
+            // It's mainly for testing new instruction encodings
+            uintptr_t CodePtr = CompileFallbackBlock(Thread, GuestRIP);
+            if (CodePtr) {
+              BlockFn Ptr = reinterpret_cast<BlockFn>(CodePtr);
+              Ptr(Thread);
+            }
+            else {
+              // Let the frontend know that something has happened that is unhandled
+              Thread->State.RunningEvents.ShouldPause = true;
+              Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_UNKNOWNERROR;
+            }
           }
         }
-      }
-//      if (GuestRIP == 0x48c8dd) {
-//        fflush(stdout);
-//        __builtin_trap();
-//      }
 
-      if (CoreDebugLevel >= 2) {
-        int i = 0;
-        LogMan::Msg::D("\tGPR[%d]: %016lx %016lx %016lx %016lx", i, Thread->State.State.gregs[i + 0], Thread->State.State.gregs[i + 1], Thread->State.State.gregs[i + 2], Thread->State.State.gregs[i + 3]);
-        i += 4;
-        LogMan::Msg::D("\tGPR[%d]: %016lx %016lx %016lx %016lx", i, Thread->State.State.gregs[i + 0], Thread->State.State.gregs[i + 1], Thread->State.State.gregs[i + 2], Thread->State.State.gregs[i + 3]);
-        i += 4;
-        LogMan::Msg::D("\tGPR[%d]: %016lx %016lx %016lx %016lx", i, Thread->State.State.gregs[i + 0], Thread->State.State.gregs[i + 1], Thread->State.State.gregs[i + 2], Thread->State.State.gregs[i + 3]);
-        i += 4;
-        LogMan::Msg::D("\tGPR[%d]: %016lx %016lx %016lx %016lx", i, Thread->State.State.gregs[i + 0], Thread->State.State.gregs[i + 1], Thread->State.State.gregs[i + 2], Thread->State.State.gregs[i + 3]);
-        uint64_t PackedFlags{};
-        for (unsigned i = 0; i < 32; ++i) {
-          PackedFlags |= static_cast<uint64_t>(Thread->State.State.flags[i]) << i;
+        if (CoreDebugLevel >= 2) {
+          int i = 0;
+          LogMan::Msg::D("\tGPR[%d]: %016lx %016lx %016lx %016lx", i, Thread->State.State.gregs[i + 0], Thread->State.State.gregs[i + 1], Thread->State.State.gregs[i + 2], Thread->State.State.gregs[i + 3]);
+          i += 4;
+          LogMan::Msg::D("\tGPR[%d]: %016lx %016lx %016lx %016lx", i, Thread->State.State.gregs[i + 0], Thread->State.State.gregs[i + 1], Thread->State.State.gregs[i + 2], Thread->State.State.gregs[i + 3]);
+          i += 4;
+          LogMan::Msg::D("\tGPR[%d]: %016lx %016lx %016lx %016lx", i, Thread->State.State.gregs[i + 0], Thread->State.State.gregs[i + 1], Thread->State.State.gregs[i + 2], Thread->State.State.gregs[i + 3]);
+          i += 4;
+          LogMan::Msg::D("\tGPR[%d]: %016lx %016lx %016lx %016lx", i, Thread->State.State.gregs[i + 0], Thread->State.State.gregs[i + 1], Thread->State.State.gregs[i + 2], Thread->State.State.gregs[i + 3]);
+          uint64_t PackedFlags{};
+          for (i = 0; i < 32; ++i) {
+            PackedFlags |= static_cast<uint64_t>(Thread->State.State.flags[i]) << i;
+          }
+          LogMan::Msg::D("\tFlags: %016lx", PackedFlags);
         }
-        LogMan::Msg::D("\tFlags: %016lx", PackedFlags);
-      }
 
-      if (CoreDebugLevel >= 3) {
-        int i = 0;
-        LogMan::Msg::D("\tXMM[%d][0]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][0], Thread->State.State.xmm[i + 1][0], Thread->State.State.xmm[i + 2][0], Thread->State.State.xmm[i + 3][0]);
-        LogMan::Msg::D("\tXMM[%d][1]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][1], Thread->State.State.xmm[i + 1][1], Thread->State.State.xmm[i + 2][1], Thread->State.State.xmm[i + 3][1]);
+        if (CoreDebugLevel >= 3) {
+          int i = 0;
+          LogMan::Msg::D("\tXMM[%d][0]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][0], Thread->State.State.xmm[i + 1][0], Thread->State.State.xmm[i + 2][0], Thread->State.State.xmm[i + 3][0]);
+          LogMan::Msg::D("\tXMM[%d][1]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][1], Thread->State.State.xmm[i + 1][1], Thread->State.State.xmm[i + 2][1], Thread->State.State.xmm[i + 3][1]);
 
-        i += 4;
-        LogMan::Msg::D("\tXMM[%d][0]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][0], Thread->State.State.xmm[i + 1][0], Thread->State.State.xmm[i + 2][0], Thread->State.State.xmm[i + 3][0]);
-        LogMan::Msg::D("\tXMM[%d][1]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][1], Thread->State.State.xmm[i + 1][1], Thread->State.State.xmm[i + 2][1], Thread->State.State.xmm[i + 3][1]);
-        i += 4;
-        LogMan::Msg::D("\tXMM[%d][0]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][0], Thread->State.State.xmm[i + 1][0], Thread->State.State.xmm[i + 2][0], Thread->State.State.xmm[i + 3][0]);
-        LogMan::Msg::D("\tXMM[%d][1]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][1], Thread->State.State.xmm[i + 1][1], Thread->State.State.xmm[i + 2][1], Thread->State.State.xmm[i + 3][1]);
-        i += 4;
-        LogMan::Msg::D("\tXMM[%d][0]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][0], Thread->State.State.xmm[i + 1][0], Thread->State.State.xmm[i + 2][0], Thread->State.State.xmm[i + 3][0]);
-        LogMan::Msg::D("\tXMM[%d][1]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][1], Thread->State.State.xmm[i + 1][1], Thread->State.State.xmm[i + 2][1], Thread->State.State.xmm[i + 3][1]);
-        uint64_t PackedFlags{};
-        for (unsigned i = 0; i < 32; ++i) {
-          PackedFlags |= static_cast<uint64_t>(Thread->State.State.flags[i]) << i;
+          i += 4;
+          LogMan::Msg::D("\tXMM[%d][0]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][0], Thread->State.State.xmm[i + 1][0], Thread->State.State.xmm[i + 2][0], Thread->State.State.xmm[i + 3][0]);
+          LogMan::Msg::D("\tXMM[%d][1]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][1], Thread->State.State.xmm[i + 1][1], Thread->State.State.xmm[i + 2][1], Thread->State.State.xmm[i + 3][1]);
+          i += 4;
+          LogMan::Msg::D("\tXMM[%d][0]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][0], Thread->State.State.xmm[i + 1][0], Thread->State.State.xmm[i + 2][0], Thread->State.State.xmm[i + 3][0]);
+          LogMan::Msg::D("\tXMM[%d][1]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][1], Thread->State.State.xmm[i + 1][1], Thread->State.State.xmm[i + 2][1], Thread->State.State.xmm[i + 3][1]);
+          i += 4;
+          LogMan::Msg::D("\tXMM[%d][0]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][0], Thread->State.State.xmm[i + 1][0], Thread->State.State.xmm[i + 2][0], Thread->State.State.xmm[i + 3][0]);
+          LogMan::Msg::D("\tXMM[%d][1]: %016lx %016lx %016lx %016lx", i, Thread->State.State.xmm[i + 0][1], Thread->State.State.xmm[i + 1][1], Thread->State.State.xmm[i + 2][1], Thread->State.State.xmm[i + 3][1]);
+          uint64_t PackedFlags{};
+          for (i = 0; i < 32; ++i) {
+            PackedFlags |= static_cast<uint64_t>(Thread->State.State.flags[i]) << i;
+          }
+          LogMan::Msg::D("\tFlags: %016lx", PackedFlags);
         }
-        LogMan::Msg::D("\tFlags: %016lx", PackedFlags);
-      }
 
-      if (Thread->State.RunningEvents.ShouldStop.load()) {
-        // If it is the parent thread that died then just leave
-        // XXX: This doesn't make sense when the parent thread doesn't outlive its children
-        if (Thread->State.ThreadManager.GetTID() == 1) {
-          ShouldStop = true;
-          Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
+        if (Thread->State.RunningEvents.ShouldStop.load()) {
+          // If it is the parent thread that died then just leave
+          // XXX: This doesn't make sense when the parent thread doesn't outlive its children
+          if (Thread->State.ThreadManager.GetTID() == 1) {
+            ShouldStop = true;
+            Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
+          }
+          break;
         }
-        break;
-      }
 
-      if (RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP || Thread->State.RunningEvents.ShouldPause) {
-        Thread->State.RunningEvents.Running = false;
-        Thread->State.RunningEvents.WaitingToStart = false;
+        if (RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP || Thread->State.RunningEvents.ShouldPause) {
+          Thread->State.RunningEvents.Running = false;
+          Thread->State.RunningEvents.WaitingToStart = false;
 
-        // If something previously hasn't set the exit state then set it now
-        if (Thread->ExitReason == FEXCore::Context::ExitReason::EXIT_NONE)
-          Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_DEBUG;
+          // If something previously hasn't set the exit state then set it now
+          if (Thread->ExitReason == FEXCore::Context::ExitReason::EXIT_NONE)
+            Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_DEBUG;
 
-        PauseWait.NotifyAll();
-        Thread->StartRunning.Wait();
+          PauseWait.NotifyAll();
+          Thread->StartRunning.Wait();
 
-        // If we set it to debug then set it back to none after this
-        // We want to retain the state if the frontend decides to leave
-        if (Thread->ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG)
-          Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
+          // If we set it to debug then set it back to none after this
+          // We want to retain the state if the frontend decides to leave
+          if (Thread->ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG)
+            Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
 
-        Thread->State.RunningEvents.Running = true;
+          Thread->State.RunningEvents.Running = true;
+        }
       }
     }
 
@@ -731,7 +778,7 @@ namespace FEXCore::Context {
     return MemoryMapper.GetMemoryBase();
   }
 
-  void Context::CopyMemoryMapping([[maybe_unused]] FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread) {
+  void Context::CopyMemoryMapping([[maybe_unused]] FEXCore::Core::InternalThreadState*, FEXCore::Core::InternalThreadState *ChildThread) {
     auto Regions = MemoryMapper.MappedRegions;
     for (auto const& Region : Regions) {
       ChildThread->CPUBackend->MapRegion(Region.Ptr, Region.Offset, Region.Size);

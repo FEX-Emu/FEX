@@ -1,9 +1,11 @@
 #include "Interface/Context/Context.h"
-#include "Interface/Core/RegisterAllocation.h"
+
+#include "Interface/Core/BlockCache.h"
 #include "Interface/Core/InternalThreadState.h"
 
-#include "Interface/Core/JIT/x86_64/JIT.h"
 #include "Interface/HLE/Syscalls.h"
+
+#include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #if _M_X86_64
 #define VIXL_INCLUDE_SIMULATOR_AARCH64
@@ -22,23 +24,33 @@
 namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
-#define STATE x0
-#define MEM_BASE x1
-#define TMP1 x2
-#define TMP2 x3
+
+#define MEM_BASE x28
+#define STATE x27
+#define TMP1 x1
+#define TMP2 x2
 
 #define VTMP1 v1
 #define VTMP2 v2
 #define VTMP3 v3
 
-static uint64_t SyscallThunk(FEXCore::Core::InternalThreadState *Thread, FEXCore::SyscallHandler *Handler, FEXCore::HLE::SyscallArguments *Args)
-{
+static uint64_t SyscallThunk(FEXCore::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
   return Handler->HandleSyscall(Thread, Args);
 }
 
 static void CPUIDThunk(FEXCore::CPUIDEmu *CPUID, uint64_t Function, FEXCore::CPUIDEmu::FunctionResults *Results) {
   FEXCore::CPUIDEmu::FunctionResults Res = CPUID->RunFunction(Function);
   memcpy(Results, &Res, sizeof(FEXCore::CPUIDEmu::FunctionResults));
+}
+
+static uint64_t CompileBlockThunk(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
+  uint64_t Result = CTX->CompileBlock(Thread, RIP);
+  return Result;
+}
+
+static uint64_t CompileFallbackBlockThunk(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
+  uint64_t Result = CTX->CompileFallbackBlock(Thread, RIP);
+  return Result;
 }
 
 // XXX: Switch from MacroAssembler to Assembler once we drop the simulator
@@ -57,12 +69,22 @@ public:
   void SimulationExecution(FEXCore::Core::InternalThreadState *Thread);
 #endif
 
+  bool HasCustomDispatch() const override { return CustomDispatchGenerated; }
+
+#if _M_X86_64
+  void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override;
+#else
+  void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override {
+    DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread->InternalState));
+  }
+#endif
+
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
   FEXCore::IR::IRListView<true> const *CurrentIR;
 
-  std::unordered_map<IR::NodeWrapper::NodeOffsetType, aarch64::Label*> JumpTargets;
+  std::map<IR::OrderedNodeWrapper::NodeOffsetType, aarch64::Label> JumpTargets;
 
   /**
    * @name Register Allocation
@@ -73,21 +95,19 @@ private:
   constexpr static uint32_t RegisterClasses = 2;
 
   constexpr static uint32_t GPRBase = 0;
-  constexpr static uint32_t GPRClass = 0;
+  constexpr static uint32_t GPRClass = IR::RegisterAllocationPass::GPRClass;
   constexpr static uint32_t FPRBase = NumGPRs;
-  constexpr static uint32_t FPRClass = 1;
+  constexpr static uint32_t FPRClass = IR::RegisterAllocationPass::FPRClass;
 
-  RA::RegisterSet *RASet;
+  IR::RegisterAllocationPass::RegisterSet *RASet;
   /**  @} */
 
-  void FindNodeClasses();
-  bool CalculateLiveRange(uint32_t Nodes);
   constexpr static uint8_t RA_32 = 0;
   constexpr static uint8_t RA_64 = 1;
   constexpr static uint8_t RA_FPR = 2;
 
   bool HasRA = false;
-  RA::RegisterGraph *Graph;
+  IR::RegisterAllocationPass::RegisterGraph *Graph;
   uint32_t GetPhys(uint32_t Node);
 
   template<uint8_t RAType>
@@ -118,9 +138,27 @@ private:
   std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> HostToGuest;
 #endif
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant);
+
+  void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
+  bool CustomDispatchGenerated {false};
+  using CustomDispatch = void(*)(FEXCore::Core::InternalThreadState *Thread);
+  CustomDispatch DispatchPtr{};
+  IR::RegisterAllocationPass *RAPass;
+
+#if _M_X86_64
+  uint64_t CustomDispatchEnd;
+#endif
 };
 
 #if _M_X86_64
+void JITCore::ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) {
+  PrintDisassembler PrintDisasm(stdout);
+  PrintDisasm.DisassembleBuffer(vixl::aarch64::Instruction::Cast(DispatchPtr), vixl::aarch64::Instruction::Cast(CustomDispatchEnd));
+
+  Sim.WriteXRegister(0, reinterpret_cast<uint64_t>(Thread));
+  Sim.RunFrom(vixl::aarch64::Instruction::Cast(DispatchPtr));
+}
+
 static void SimulatorExecution(FEXCore::Core::InternalThreadState *Thread) {
   JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
   Core->SimulationExecution(Thread);
@@ -129,8 +167,8 @@ static void SimulatorExecution(FEXCore::Core::InternalThreadState *Thread) {
 void JITCore::SimulationExecution(FEXCore::Core::InternalThreadState *Thread) {
   using namespace vixl::aarch64;
   auto SimulatorAddress = HostToGuest[Thread->State.State.rip];
-  //PrintDisassembler PrintDisasm(stdout);
-  //PrintDisasm.DisassembleBuffer(vixl::aarch64::Instruction::Cast(SimulatorAddress.first), vixl::aarch64::Instruction::Cast(SimulatorAddress.second));
+  // PrintDisassembler PrintDisasm(stdout);
+  // PrintDisasm.DisassembleBuffer(vixl::aarch64::Instruction::Cast(SimulatorAddress.first), vixl::aarch64::Instruction::Cast(SimulatorAddress.second));
 
   Sim.WriteXRegister(0, reinterpret_cast<uint64_t>(Thread));
   Sim.RunFrom(vixl::aarch64::Instruction::Cast(SimulatorAddress.first));
@@ -149,11 +187,14 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   // XXX: Set this to a real minimum feature set in the future
   SetCPUFeatures(vixl::CPUFeatures::All());
 
-  RASet = RA::AllocateRegisterSet(RegisterCount, RegisterClasses);
-  RA::AddRegisters(RASet, GPRClass, GPRBase, NumGPRs);
-  RA::AddRegisters(RASet, FPRClass, FPRBase, NumFPRs);
+  RAPass = CTX->GetRegisterAllocatorPass();
+  RAPass->SetSupportsSpills(false);
 
-  Graph = RA::AllocateRegisterGraph(RASet, 9000);
+  RASet = RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
+  RAPass->AddRegisters(RASet, GPRClass, GPRBase, NumGPRs);
+  RAPass->AddRegisters(RASet, FPRClass, FPRBase, NumFPRs);
+
+  Graph = RAPass->AllocateRegisterGraph(RASet, 9000);
 	LiveRanges.resize(9000);
 
   // Just set the entire range as executable
@@ -165,11 +206,13 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 #if _M_X86_64
   Sim.SetCPUFeatures(vixl::CPUFeatures::All());
 #endif
+  SetAllowAssembler(true);
+  CreateCustomDispatch(Thread);
 }
 
 JITCore::~JITCore() {
-	FreeRegisterGraph(Graph);
-	FreeRegisterSet(RASet);
+  RAPass->FreeRegisterGraph();
+  RAPass->FreeRegisterSet(RASet);
 }
 
 void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
@@ -202,7 +245,7 @@ const std::array<aarch64::VRegister, 22> RAFPR = {
   v29, v30, v31};
 
 uint32_t JITCore::GetPhys(uint32_t Node) {
-  uint32_t Reg = RA::GetNodeRegister(Graph, Node);
+  uint32_t Reg = RAPass->GetNodeRegister(Node);
 
   if (Reg < FPRBase)
     return Reg;
@@ -242,114 +285,6 @@ aarch64::VRegister JITCore::GetDst(uint32_t Node) {
   return RAFPR[Reg];
 }
 
-void JITCore::FindNodeClasses() {
-  uintptr_t ListBegin = CurrentIR->GetListData();
-  uintptr_t DataBegin = CurrentIR->GetData();
-
-  IR::NodeWrapperIterator Begin = CurrentIR->begin();
-  IR::NodeWrapperIterator End = CurrentIR->end();
-
-  while (Begin != End) {
-    using namespace FEXCore::IR;
-
-    NodeWrapper *WrapperOp = Begin();
-    OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
-    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
-
-    if (IROp->HasDest) {
-      // XXX: This needs to be better
-      switch (IROp->Op) {
-      case OP_LOADCONTEXT: {
-        auto Op = IROp->C<IR::IROp_LoadContext>();
-        if (Op->Size == 16)
-          RA::SetNodeClass(Graph, WrapperOp->ID(), FPRClass);
-        else
-          RA::SetNodeClass(Graph, WrapperOp->ID(), GPRClass);
-      break;
-      }
-      case IR::OP_LOADMEM: {
-        auto Op = IROp->C<IR::IROp_LoadMem>();
-        if (Op->Size == 16)
-          RA::SetNodeClass(Graph, WrapperOp->ID(), FPRClass);
-        else
-          RA::SetNodeClass(Graph, WrapperOp->ID(), GPRClass);
-        break;
-      }
-
-      case OP_ZEXT: {
-        auto Op = IROp->C<IR::IROp_Zext>();
-        LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-
-        if (Op->SrcSize == 64) {
-          RA::SetNodeClass(Graph, WrapperOp->ID(), FPRClass);
-        }
-        else {
-          RA::SetNodeClass(Graph, WrapperOp->ID(), GPRClass);
-        }
-        break;
-      }
-      case OP_CPUID: RA::SetNodeClass(Graph, WrapperOp->ID(), FPRClass); break;
-      default:
-        if (IROp->Op >= IR::OP_VOR)
-          RA::SetNodeClass(Graph, WrapperOp->ID(), FPRClass);
-        else
-          RA::SetNodeClass(Graph, WrapperOp->ID(), GPRClass);
-      break;
-      }
-    }
-    ++Begin;
-  }
-}
-
-bool JITCore::CalculateLiveRange(uint32_t Nodes) {
-	if (Nodes > LiveRanges.size()) {
-		LiveRanges.resize(Nodes);
-	}
-  memset(&LiveRanges.at(0), 0xFF, Nodes * sizeof(LiveRange));
-
-  uintptr_t ListBegin = CurrentIR->GetListData();
-  uintptr_t DataBegin = CurrentIR->GetData();
-
-  IR::NodeWrapperIterator Begin = CurrentIR->begin();
-  IR::NodeWrapperIterator End = CurrentIR->end();
-
-  while (Begin != End) {
-    using namespace FEXCore::IR;
-    NodeWrapper *WrapperOp = Begin();
-    OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
-    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
-
-    uint32_t Node = WrapperOp->ID();
-
-    // If the destination hasn't yet been set then set it now
-    if (IROp->HasDest && LiveRanges[Node].Begin == ~0U) {
-      LiveRanges[Node].Begin = Node;
-      // Default to ending right where it starts
-      LiveRanges[Node].End = Node;
-    }
-
-    for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
-      uint32_t ArgNode = IROp->Args[i].ID();
-      // Set the node end to be at least here
-      LiveRanges[ArgNode].End = Node;
-    }
-
-    ++Begin;
-  }
-
-  // Now that we have all the live ranges calculated we need to add them to our interference graph
-  for (uint32_t i = 0; i < Nodes; ++i) {
-    for (uint32_t j = i + 1; j < Nodes; ++j) {
-      if (!(LiveRanges[i].Begin >= LiveRanges[j].End ||
-            LiveRanges[j].Begin >= LiveRanges[i].End)) {
-        RA::AddNodeInterference(Graph, i, j);
-      }
-    }
-  }
-
-  return RA::AllocateRegisters(Graph);
-}
-
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
   using namespace aarch64;
   JumpTargets.clear();
@@ -362,11 +297,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   IR::NodeWrapperIterator End = CurrentIR->end();
 
   uintptr_t ListSize = CurrentIR->GetListSize();
-  uint32_t SSACount = ListSize / sizeof(IR::OrderedNode);
-
-	ResetRegisterGraph(Graph, SSACount);
-  FindNodeClasses();
-  HasRA = CalculateLiveRange(SSACount);
+  HasRA = RAPass->HasFullRA();
 
   LogMan::Throw::A(HasRA, "Arm64 JIT only works with RA");
 
@@ -393,14 +324,17 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   auto Buffer = GetBuffer();
   auto Entry = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
-  void *Memory = CTX->MemoryMapper.GetMemoryBase();
-  LoadConstant(MEM_BASE, (uint64_t)Memory);
+  if (!CustomDispatchGenerated) {
+    void *Memory = CTX->MemoryMapper.GetMemoryBase();
+    LoadConstant(MEM_BASE, (uint64_t)Memory);
+    mov(STATE, x0);
+  }
 
   while (Begin != End) {
     using namespace FEXCore::IR;
 
-    NodeWrapper *WrapperOp = Begin();
-    OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
+    OrderedNodeWrapper *WrapperOp = Begin();
+    OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
     FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
     uint8_t OpSize = IROp->Size;
     uint32_t Node = WrapperOp->ID();
@@ -411,7 +345,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         auto Name = FEXCore::IR::GetName(IROp->Op);
 
         if (IROp->HasDest) {
-          uint32_t PhysReg = RA::GetNodeRegister(Graph, Node);
+          uint32_t PhysReg = RAPass->GetNodeRegister(Node);
           if (PhysReg >= FPRBase)
             Inst << "\tFPR" << GetPhys(Node) << " = " << Name << " ";
           else
@@ -423,14 +357,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
           uint32_t ArgNode = IROp->Args[i].ID();
-          uint32_t PhysReg = RA::GetNodeRegister(Graph, ArgNode);
+          uint32_t PhysReg = RAPass->GetNodeRegister(ArgNode);
           if (PhysReg >= FPRBase)
             Inst << "FPR" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
           else
             Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
         }
-
-        LogMan::Msg::D("%s", Inst.str().c_str());
       }
     }
 
@@ -439,10 +371,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       auto IsTarget = JumpTargets.find(WrapperOp->ID());
       if (IsTarget == JumpTargets.end()) {
         // XXX: This is a memory leak
-        JumpTargets.try_emplace(WrapperOp->ID(), new aarch64::Label);
+        JumpTargets.try_emplace(WrapperOp->ID());
       }
       else {
-        bind(IsTarget->second);
+        bind(&IsTarget->second);
       }
       break;
     }
@@ -467,7 +399,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       // X1: ThreadState
       // X2: Pointer to SyscallArguments
 
-      uint64_t SPOffset = AlignUp((2 + RA64.size() + 7 + 2) * 8, 16);
+      uint64_t SPOffset = AlignUp((RA64.size() + 7 + 1) * 8, 16);
 
       sub(sp, sp, SPOffset);
       for (uint32_t i = 0; i < 7; ++i)
@@ -478,14 +410,26 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         str(RA, MemOperand(sp, 7 * 8 + i * 8));
         i++;
       }
-      str(STATE,    MemOperand(sp, 7 * 8 + RA64.size() * 8 + 1 * 8));
-      str(MEM_BASE, MemOperand(sp, 7 * 8 + RA64.size() * 8 + 2 * 8));
-      str(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 3 * 8));
+      str(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
 
-      // x0 = threadstate already
-      LoadConstant(x1, reinterpret_cast<uint64_t>(&CTX->SyscallHandler));
-      mov (x2, sp);
+      LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->SyscallHandler));
+      mov(x1, STATE);
+      mov(x2, sp);
+
+#if _M_X86_64
       CallRuntime(SyscallThunk);
+#else
+      using ClassPtrType = uint64_t (FEXCore::SyscallHandler::*)(FEXCore::Core::InternalThreadState *, FEXCore::HLE::SyscallArguments *);
+      union PtrCast {
+        ClassPtrType ClassPtr;
+        uintptr_t Data;
+      };
+
+      PtrCast Ptr;
+      Ptr.ClassPtr = &FEXCore::SyscallHandler::HandleSyscall;
+      LoadConstant(x3, Ptr.Data);
+      blr(x3);
+#endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
@@ -498,9 +442,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       // Move result to its destination register
       mov(GetDst<RA_64>(Node), x0);
 
-      ldr(STATE,    MemOperand(sp, 7 * 8 + RA64.size() * 8 + 1 * 8));
-      ldr(MEM_BASE, MemOperand(sp, 7 * 8 + RA64.size() * 8 + 2 * 8));
-      ldr(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 3 * 8));
+      ldr(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
 
       add(sp, sp, SPOffset);
       break;
@@ -517,9 +459,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         i++;
       }
 
-      str(STATE,    MemOperand(sp, RA64.size() * 8 + 0 * 8));
-      str(MEM_BASE, MemOperand(sp, RA64.size() * 8 + 1 * 8));
-      str(lr,       MemOperand(sp, RA64.size() * 8 + 2 * 8));
+      str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
 
       // x0 = CPUID Handler
       // x1 = CPUID Function
@@ -540,9 +480,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       auto Dst = GetDst(Node);
       ldr(Dst, MemOperand(sp, RA64.size() * 8 + 3 * 8));
 
-      ldr(STATE,    MemOperand(sp, RA64.size() * 8 + 0 * 8));
-      ldr(MEM_BASE, MemOperand(sp, RA64.size() * 8 + 1 * 8));
-      ldr(lr,       MemOperand(sp, RA64.size() * 8 + 2 * 8));
+      ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
 
       add(sp, sp, SPOffset);
 
@@ -551,7 +489,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     case IR::OP_EXTRACTELEMENT: {
       auto Op = IROp->C<IR::IROp_ExtractElement>();
 
-      uint32_t PhysReg = RA::GetNodeRegister(Graph, Op->Header.Args[0].ID());
+      uint32_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
       if (PhysReg >= FPRBase) {
         switch (OpSize) {
         case 4:
@@ -574,16 +512,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       Label *TargetLabel;
       auto IsTarget = JumpTargets.find(Op->Header.Args[0].ID());
       if (IsTarget == JumpTargets.end()) {
-        TargetLabel = JumpTargets.try_emplace(Op->Header.Args[0].ID(), new aarch64::Label).first->second;
+        TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[0].ID()).first->second;
       }
       else {
-        TargetLabel = IsTarget->second;
+        TargetLabel = &IsTarget->second;
       }
 
       b(TargetLabel);
       break;
     }
-
     case IR::OP_CONDJUMP: {
       auto Op = IROp->C<IR::IROp_CondJump>();
 
@@ -591,10 +528,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       auto IsTarget = JumpTargets.find(Op->Header.Args[1].ID());
       if (IsTarget == JumpTargets.end()) {
         // XXX: This is a memory leak
-        TargetLabel = JumpTargets.try_emplace(Op->Header.Args[1].ID(), new aarch64::Label).first->second;
+        TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
       }
       else {
-        TargetLabel = IsTarget->second;
+        TargetLabel = &IsTarget->second;
       }
 
       cbnz(GetSrc<RA_64>(Op->Header.Args[0].ID()), TargetLabel);
@@ -709,7 +646,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         lsrv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
       else
         lsrv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-    break;
+      break;
     }
     case IR::OP_ASHR: {
       auto Op = IROp->C<IR::IROp_Ashr>();
@@ -717,7 +654,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         asrv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
       else
         asrv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-    break;
+      break;
     }
     case IR::OP_LSHL: {
       auto Op = IROp->C<IR::IROp_Lshl>();
@@ -725,7 +662,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         lslv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
       else
         lslv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-    break;
+      break;
     }
     case IR::OP_ROR: {
       auto Op = IROp->C<IR::IROp_Ror>();
@@ -745,7 +682,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       break;
     }
-
     case IR::OP_ROL: {
       auto Op = IROp->C<IR::IROp_Rol>();
       uint8_t Mask = OpSize * 8 - 1;
@@ -768,7 +704,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       break;
     }
-
     case IR::OP_SEXT: {
       auto Op = IROp->C<IR::IROp_Sext>();
       LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
@@ -794,7 +729,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     case IR::OP_ZEXT: {
       auto Op = IROp->C<IR::IROp_Zext>();
       LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-      uint32_t PhysReg = RA::GetNodeRegister(Graph, Op->Header.Args[0].ID());
+      uint32_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
       if (PhysReg >= FPRBase) {
         // FPR -> GPR transfer with free truncation
         switch (Op->SrcSize) {
@@ -886,19 +821,20 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       break;
     }
-
     case IR::OP_BFE: {
       auto Op = IROp->C<IR::IROp_Bfe>();
       LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
+      LogMan::Throw::A(Op->Width != 0, "Invalid BFE width of 0");
+
       auto Dst = GetDst<RA_64>(Node);
       if (OpSize == 16) {
         LogMan::Throw::A(!(Op->lsb < 64 && (Op->lsb + Op->Width > 64)), "Trying to BFE an XMM across the 64bit split: Beginning at %d, ending at %d", Op->lsb, Op->lsb + Op->Width);
         uint8_t Offset = Op->lsb;
         if (Offset < 64) {
-          mov(Dst, GetSrc(Op->Header.Args[0].ID()), 0);
+          mov(Dst, GetSrc(Op->Header.Args[0].ID()).D(), 0);
         }
         else {
-          mov(Dst, GetSrc(Op->Header.Args[0].ID()), 1);
+          mov(Dst, GetSrc(Op->Header.Args[0].ID()).D(), 1);
           Offset -= 64;
         }
 
@@ -912,18 +848,20 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       else {
         lsr(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), Op->lsb);
-        and_(Dst, Dst, ((1ULL << Op->Width) - 1));
+        if (Op->Width != 64) {
+          and_(Dst, Dst, ((1ULL << Op->Width) - 1));
+        }
       }
       break;
     }
     case IR::OP_POPCOUNT: {
       auto Op = IROp->C<IR::IROp_Popcount>();
       auto Dst = GetDst<RA_64>(Node);
-      fmov(VTMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      fmov(VTMP1.V1D(), GetSrc<RA_64>(Op->Header.Args[0].ID()));
       cnt(VTMP1.V8B(), VTMP1.V8B());
       addv(VTMP1.B(), VTMP1.V8B());
-      umov(Dst, VTMP1.B(), 0);
-    break;
+      umov(Dst.W(), VTMP1.B(), 0);
+      break;
     }
     case IR::OP_FINDLSB: {
       auto Op = IROp->C<IR::IROp_FindLSB>();
@@ -980,7 +918,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       mov(GetDst<RA_64>(Node), TMP2);
       break;
     }
-
     case IR::OP_SELECT: {
       auto Op = IROp->C<IR::IROp_Select>();
 
@@ -1162,7 +1099,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       break;
     }
-
     case IR::OP_LUREM: {
       auto Op = IROp->C<IR::IROp_LURem>();
       // Each source is OpSize in size
@@ -1219,7 +1155,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       break;
     }
-
     case IR::OP_VINSELEMENT: {
       auto Op = IROp->C<IR::IROp_VInsElement>();
       mov(VTMP1, GetSrc(Op->Header.Args[0].ID()));
@@ -1397,17 +1332,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       eor(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
       break;
     }
+    case IR::OP_VEXTR: {
+      auto Op = IROp->C<IR::IROp_VExtr>();
+      // AArch64 ext op has bit arrangement as [Vm:Vn] so arguments need to be swapped
+      ext(GetDst(Node).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index);
+      break;
+    }
     case IR::OP_VUSHLS: {
       auto Op = IROp->C<IR::IROp_VUShlS>();
 
       switch (Op->ElementSize) {
+      case 1: {
+        dup(VTMP1.V16B(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        ushl(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), VTMP1.V16B());
+      break;
+      }
       case 2: {
-        dup(VTMP1.V8H(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        dup(VTMP1.V8H(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
         ushl(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), VTMP1.V8H());
       break;
       }
       case 4: {
-        dup(VTMP1.V4S(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        dup(VTMP1.V4S(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
         ushl(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), VTMP1.V4S());
       break;
       }
@@ -1420,11 +1366,58 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       break;
     }
+    case IR::OP_VUMIN: {
+      auto Op = IROp->C<IR::IROp_VUMin>();
+      switch (Op->ElementSize) {
+      case 1: {
+        umin(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+      break;
+      }
+      case 2: {
+        umin(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+      break;
+      }
+      case 4: {
+        umin(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+      break;
+      }
+      case 8: {
+        umin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+      break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+      }
+      break;
+    }
+    case IR::OP_VSMIN: {
+      auto Op = IROp->C<IR::IROp_VSMin>();
+      switch (Op->ElementSize) {
+      case 1: {
+        smin(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+      break;
+      }
+      case 2: {
+        smin(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+      break;
+      }
+      case 4: {
+        smin(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+      break;
+      }
+      case 8: {
+        smin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+      break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+      }
+      break;
+    }
     case IR::OP_CYCLECOUNTER: {
-      if (0)
+#ifdef DEBUG_CYCLES
         movz(GetDst<RA_64>(Node), 0);
-      else
+#else
         mrs(GetDst<RA_64>(Node), CNTVCT_EL0);
+#endif
       break;
     }
     default:
@@ -1437,14 +1430,174 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   FinalizeCode();
 #if _M_X86_64
-  auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-  HostToGuest[State->State.State.rip] = std::make_pair(Entry, CodeEnd);
-  return (void*)SimulatorExecution;
-#else
-  return reinterpret_cast<void*>(Entry);
+  if (!CustomDispatchGenerated) {
+    auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    HostToGuest[State->State.State.rip] = std::make_pair(Entry, CodeEnd);
+    return (void*)SimulatorExecution;
+  }
 #endif
+
+  return reinterpret_cast<void*>(Entry);
 }
 
+void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
+  auto Buffer = GetBuffer();
+  DispatchPtr = Buffer->GetOffsetAddress<CustomDispatch>(GetCursorOffset());
+  EmissionCheckScope(this, 0);
+
+  // while (!Thread->State.RunningEvents.ShouldStop.load()) {
+  //    Ptr = FindBlock(RIP)
+  //    if (!Ptr)
+  //      Ptr = CTX->CompileBlock(RIP);
+  //
+  //    if (Ptr)
+  //      Ptr();
+  //    else
+  //    {
+  //      Ptr = FallbackCore->CompileBlock()
+  //      if (Ptr)
+  //        Ptr()
+  //      else {
+  //        ShouldStop = true;
+  //      }
+  //    }
+  // }
+
+  // Push all the register we need to save
+  PushCalleeSavedRegisters();
+
+  // Push our memory base to the correct register
+  void *Memory = CTX->MemoryMapper.GetMemoryBase();
+  LoadConstant(MEM_BASE, (uint64_t)Memory);
+  // Move our thread pointer to the correct register
+  // This is passed in to parameter 0 (x0)
+  mov(STATE, x0);
+
+  aarch64::Label LoopTop;
+  bind(&LoopTop);
+
+  // Load in our RIP
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+  LoadConstant(x0, Thread->BlockCache->GetPagePointer());
+
+  // Steal the page offset
+  and_(x1, x2, 0x0FFF);
+  // Offset the address and add to our page pointer
+  add(x3, x0, Operand(x2, LSR, 12));
+
+  // Load the pointer from the offset
+  ldr(x3, MemOperand(x3));
+  aarch64::Label NoBlock;
+
+  // If page pointer is zero then we have no block
+  cbz(x3, &NoBlock);
+
+  // Now load from that pointer offset by the page offset to get our real block
+  ldr(x3, MemOperand(x3, x1));
+  cbz(x3, &NoBlock);
+
+  // If we've made it here then we have a real compiled block
+  {
+    blr(x3);
+  }
+
+  aarch64::Label ExitCheck;
+  bind(&ExitCheck);
+
+  constexpr uint64_t ShouldStopOffset = offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop);
+  // If we don't need to stop then keep going
+  add(x1, STATE, ShouldStopOffset);
+  ldarb(x0, MemOperand(x1));
+  cbz(x0, &LoopTop);
+
+  PopCalleeSavedRegisters();
+
+  // Return from the function
+  // LR is set to the correct return location now
+  ret();
+
+  aarch64::Label FallbackCore;
+  // Need to create the block
+  {
+    bind(&NoBlock);
+
+    LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
+    mov(x1, STATE);
+
+#if _M_X86_64
+    CallRuntime(CompileBlockThunk);
+#else
+    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
+    union PtrCast {
+      ClassPtrType ClassPtr;
+      uintptr_t Data;
+    };
+
+    PtrCast Ptr;
+    Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
+    LoadConstant(x3, Ptr.Data);
+
+    // X2 contains our guest RIP
+    blr(x3); // { ThreadState, RIP}
+#endif
+    // X0 now contains either nullptr or block pointer
+    cbz(x0, &FallbackCore);
+    blr(x0);
+
+    b(&ExitCheck);
+  }
+
+  aarch64::Label ExitError;
+  // We need to fallback to our fallback core
+  {
+    bind(&FallbackCore);
+
+#if _M_X86_64
+    // XXX: Fallback core doesn't work on x86-64
+    // We can't tell the difference between simulator entry points and not
+    b(&ExitError);
+#else
+    LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
+    mov(x1, STATE);
+
+    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
+    union PtrCast {
+      ClassPtrType ClassPtr;
+      uintptr_t Data;
+    };
+
+    PtrCast Ptr;
+    Ptr.ClassPtr = &FEXCore::Context::Context::CompileFallbackBlock;
+    LoadConstant(x3, Ptr.Data);
+
+    // X2 contains our guest RIP
+    blr(x3); // {ThreadState, RIP}
+#endif
+    // X0 now contains either nullptr or block pointer
+    cbz(x0, &ExitError);
+    blr(x0);
+
+    b(&ExitCheck);
+  }
+
+  // Exit error
+  {
+    bind(&ExitError);
+    LoadConstant(x0, 1);
+    add(x1, STATE, ShouldStopOffset);
+    stlrb(x0, MemOperand(x1));
+    b(&ExitCheck);
+  }
+
+#if _M_X86_64
+  CustomDispatchEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+#endif
+
+  FinalizeCode();
+  // XXX: Crashes currently.
+  // Disabling will be useful for debugging ThreadState
+  // CustomDispatchGenerated = true;
+}
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
   return new JITCore(ctx, Thread);

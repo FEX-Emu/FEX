@@ -28,9 +28,9 @@ public:
   void ResetWorkingList();
   bool HadDecodeFailure() { return DecodeFailure; }
 
-  void BeginBlock();
-  void EndBlock(uint64_t RIPIncrement);
+  void BeginFunction(uint64_t RIP);
   void ExitFunction();
+  void Finalize();
 
   // Dispatch builder functions
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
@@ -70,6 +70,7 @@ public:
   void CMOVOp(OpcodeArgs);
   void CPUIDOp(OpcodeArgs);
   void SHLOp(OpcodeArgs);
+  template<bool SHR1Bit>
   void SHROp(OpcodeArgs);
   void ASHROp(OpcodeArgs);
   void ROROp(OpcodeArgs);
@@ -127,6 +128,8 @@ public:
 
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
+
+  void PAlignrOp(OpcodeArgs);
 
 #undef OpcodeArgs
 
@@ -215,7 +218,9 @@ public:
 	IRPair<IROp_VUShr> _VUShr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShr(ssa0, ssa1, RegisterSize, ElementSize);
   }
-
+  IRPair<IROp_VExtr> _VExtr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index) {
+    return _VExtr(ssa0, ssa1, RegisterSize, ElementSize, Index);
+  }
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }
@@ -232,8 +237,8 @@ public:
 
   /**  @} */
 
-  bool IsValueConstant(NodeWrapper ssa, uint64_t *Constant) {
-     OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(ssa.GetPtr(ListData.Begin()));
+  bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t *Constant) {
+     OrderedNode *RealNode = ssa.GetNode(ListData.Begin());
      FEXCore::IR::IROp_Header *IROp = RealNode->Op(Data.Begin());
      if (IROp->Op == OP_CONSTANT) {
        auto Op = IROp->C<IR::IROp_Constant>();
@@ -259,6 +264,8 @@ public:
     return Node;
   }
 
+  void ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNode *NewNode, IR::NodeWrapperIterator After, IR::NodeWrapperIterator End);
+
   void Unlink(OrderedNode *Node) {
     Node->Unlink(ListData.Begin());
   }
@@ -271,7 +278,54 @@ public:
     LogMan::Throw::A(rhs.ListData.BackingSize() <= ListData.BackingSize(), "Trying to take ownership of data that is too large");
     Data.CopyData(rhs.Data);
     ListData.CopyData(rhs.ListData);
+    InvalidNode = rhs.InvalidNode;
+    CurrentWriteCursor = rhs.CurrentWriteCursor;
+    CodeBlocks = rhs.CodeBlocks;
   }
+
+  void SetWriteCursor(OrderedNode *Node) {
+    CurrentWriteCursor = Node;
+  }
+
+  OrderedNode *GetWriteCursor() {
+    return CurrentWriteCursor;
+  }
+
+  /**
+   * @brief This creates an orphaned code node
+   * The IROp backing is in the correct list but the OrderedNode lives outside of the list
+   *
+   * XXX: This is because we don't want code blocks to interleave with current instruction IR ops currently
+   * We can change this behaviour once we remove the old BeginBlock/EndBlock types
+   *
+   * @return OrderedNode
+   */
+  OrderedNode *CreateCodeNode() {
+    OrderedNode *CodeNode = _CodeBlock(InvalidNode, InvalidNode, InvalidNode);
+    CodeBlocks.emplace_back(CodeNode);
+    return CodeNode;
+  }
+
+  void SetCodeNodeBegin(OrderedNode *CodeNode, OrderedNode *Begin) {
+     FEXCore::IR::IROp_CodeBlock *IROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
+     LogMan::Throw::A(IROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
+     IROp->Begin = Begin->Wrapped(ListData.Begin());
+  }
+
+  void SetCodeNodeLast(OrderedNode *CodeNode, OrderedNode *Last) {
+     FEXCore::IR::IROp_CodeBlock *IROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
+     LogMan::Throw::A(IROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
+     IROp->Last = Last->Wrapped(ListData.Begin());
+  }
+
+  void LinkCodeBlocks(OrderedNode *CodeNode, OrderedNode *Next) {
+     FEXCore::IR::IROp_CodeBlock *IROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
+     LogMan::Throw::A(IROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
+     IROp->Next = Next->Wrapped(ListData.Begin());
+  }
+
+  IRPair<IROp_BeginBlock> CreateNewBeginBlock();
+  IRPair<IROp_EndBlock> CreateNewEndBlock(uint64_t RIPIncrement);
 
 private:
   void TestFunction();
@@ -314,12 +368,17 @@ private:
     return Node;
   }
 
-  void SetWriteCursor(OrderedNode *Node) {
-    CurrentWriteCursor = Node;
+  OrderedNode *GetNode(uint32_t SSANode) {
+    uintptr_t ListBegin = ListData.Begin();
+    OrderedNode *Node = reinterpret_cast<OrderedNode *>(ListBegin + SSANode * sizeof(OrderedNode));
+    return Node;
   }
 
-  OrderedNode *GetWriteCursor() {
-    return CurrentWriteCursor;
+  OrderedNode *EmplaceOrphanedNode(OrderedNode *OldNode) {
+    size_t Size = sizeof(OrderedNode);
+    OrderedNode *Ptr = reinterpret_cast<OrderedNode*>(ListData.Allocate(Size));
+    memcpy(Ptr, OldNode, Size);
+    return Ptr;
   }
 
   OrderedNode *CurrentWriteCursor = nullptr;
@@ -329,6 +388,8 @@ private:
   IntrusiveAllocator ListData;
 
   OrderedNode *InvalidNode;
+  OrderedNode *CurrentCodeBlock{};
+  std::vector<OrderedNode*> CodeBlocks;
 };
 
 void InstallOpcodeHandlers();

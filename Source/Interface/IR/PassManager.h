@@ -18,6 +18,9 @@ class PassManager final {
 public:
   void AddDefaultPasses();
   void AddDefaultValidationPasses();
+  void InsertPass(Pass *Pass) {
+    Passes.emplace_back(Pass);
+  }
   bool Run(OpDispatchBuilder *Disp);
 
 private:

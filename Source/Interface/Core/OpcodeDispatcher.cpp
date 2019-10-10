@@ -94,6 +94,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   // Store the new RIP
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
   _EndFunction();
+  CreateNewEndBlock(0);
   Information.HadUnconditionalExit = true;
 }
 
@@ -279,11 +280,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
   _ExitFunction(); // If we get here then leave the function now
 
-  // Fracking RIPSetter check ending the block causes issues
-  // Split the block and leave early to work around the bug
-  _EndBlock(0);
-  // Make sure to start a new block after ending this one
-  _BeginBlock();
+  CreateNewEndBlock(0);
   Information.HadUnconditionalExit = true;
 }
 
@@ -306,13 +303,8 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), JMPPCOffset);
   _ExitFunction(); // If we get here then leave the function now
 
-  // Fracking RIPSetter check ending the block causes issues
-  // Split the block and leave early to work around the bug
-  _EndBlock(0);
-  // Make sure to start a new block after ending this one
-  _BeginBlock();
+  CreateNewEndBlock(0);
   Information.HadUnconditionalExit = true;
-
 }
 
 void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
@@ -514,9 +506,6 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 #endif
   // Fallback
   {
-    // XXX: Test
-    GetPackedRFLAG(false);
-
     auto CondJump = _CondJump(SrcCond);
 
     auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
@@ -528,10 +517,10 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
     _ExitFunction();
 
-    _EndBlock(0);
+    CreateNewEndBlock(0);
 
     // Make sure to start a new block after ending this one
-    auto JumpTarget = _BeginBlock();
+    auto JumpTarget = CreateNewBeginBlock();
     // This very explicitly avoids the isDest path for Ops. We want the actual destination here
     SetJumpTarget(CondJump, JumpTarget);
   }
@@ -580,10 +569,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
     _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
     _ExitFunction();
 
-    _EndBlock(0);
-
-    // Make sure to start a new block after ending this one
-    _BeginBlock();
+    CreateNewEndBlock(0);
     Information.HadUnconditionalExit = true;
   }
 }
@@ -598,12 +584,8 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), RIPOffset);
   _ExitFunction();
 
-  _EndBlock(0);
-
-  // Make sure to start a new block after ending this one
-  _BeginBlock();
+  CreateNewEndBlock(0);
   Information.HadUnconditionalExit = true;
-
 }
 
 void OpDispatchBuilder::SETccOp(OpcodeArgs) {
@@ -1159,19 +1141,10 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
 }
 
+template<bool SHR1Bit>
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
-  bool SHR1Bit = false;
-#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
-  switch (Op->OP) {
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 5):
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 5):
-    SHR1Bit = true;
-  break;
-  }
-#undef OPD
-
   OrderedNode *Src;
-  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags);
+  auto Dest = LoadSource(Op, Op->Dest, Op->Flags);
 
   if (SHR1Bit) {
     Src = _Constant(1);
@@ -1496,9 +1469,7 @@ void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::INCOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-    LogMan::Msg::A("Can't handle REP on this\n");
-  }
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX), "Can't handle REP on this\n");
 
   OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags);
   auto OneConst = _Constant(1);
@@ -1511,9 +1482,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::DECOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-    LogMan::Msg::A("Can't handle REP on this\n");
-  }
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX), "Can't handle REP on this\n");
 
   OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags);
   auto OneConst = _Constant(1);
@@ -1526,9 +1495,8 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
-  if (!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX)) {
-    LogMan::Msg::A("Can't handle REP not existing on STOS\n");
-  }
+  LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX, "Can't handle REP not existing on STOS\n");
+
   auto Size = GetSrcSize(Op);
 
   auto ZeroConst = _Constant(0);
@@ -1545,10 +1513,10 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags);
 
   auto JumpStart = _Jump();
-  _EndBlock(0);
+  CreateNewEndBlock(0);
 
     // Make sure to start a new block after ending this one
-    auto LoopStart = _BeginBlock();
+    auto LoopStart = CreateNewBeginBlock();
     SetJumpTarget(JumpStart, LoopStart);
 
     OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
@@ -1576,23 +1544,18 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
     // Jump back to the start, we have more work to do
     _Jump(LoopStart);
-  _EndBlock(0);
+  CreateNewEndBlock(0);
   // Make sure to start a new block after ending this one
-  auto LoopEnd = _BeginBlock();
+  auto LoopEnd = CreateNewBeginBlock();
   SetJumpTarget(CondJump, LoopEnd);
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-    LogMan::Msg::A("Can't handle REP\n");
-  }
-
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX), "Can't handle REP on this\n");
   _Break(0, 0);
 }
 void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
-  if (!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX)) {
-    LogMan::Msg::A("Can't only handle REP\n");
-  }
+  LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX, "Can't only handle REP\n");
 
   auto Size = GetSrcSize(Op);
 
@@ -1608,9 +1571,9 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       SizeConst, NegSizeConst);
 
   auto JumpStart = _Jump();
-  _EndBlock(0);
+  CreateNewEndBlock(0);
   // Make sure to start a new block after ending this one
-    auto LoopStart = _BeginBlock();
+    auto LoopStart = CreateNewBeginBlock();
     SetJumpTarget(JumpStart, LoopStart);
 
     OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
@@ -1645,9 +1608,9 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     // Jump back to the start, we have more work to do
     _Jump(LoopStart);
-  _EndBlock(0);
+  CreateNewEndBlock(0);
   // Make sure to start a new block after ending this one
-  auto LoopEnd = _BeginBlock();
+  auto LoopEnd = CreateNewBeginBlock();
   SetJumpTarget(CondJump, LoopEnd);
 
 }
@@ -2178,12 +2141,43 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   }
 }
 
-void OpDispatchBuilder::BeginBlock() {
-  _BeginBlock();
+OpDispatchBuilder::IRPair<IROp_BeginBlock> OpDispatchBuilder::CreateNewBeginBlock() {
+  auto CodeNode = CreateCodeNode();
+  auto BeginBlock = _BeginBlock();
+  SetCodeNodeBegin(CodeNode, BeginBlock);
+  CurrentCodeBlock = CodeNode;
+  return BeginBlock;
 }
 
-void OpDispatchBuilder::EndBlock(uint64_t RIPIncrement) {
-  _EndBlock(RIPIncrement);
+OpDispatchBuilder::IRPair<IROp_EndBlock> OpDispatchBuilder::CreateNewEndBlock(uint64_t RIPIncrement) {
+  auto EndBlock = _EndBlock(RIPIncrement);
+  SetCodeNodeLast(CurrentCodeBlock, EndBlock);
+  return EndBlock;
+}
+
+void OpDispatchBuilder::BeginFunction(uint64_t RIP) {
+  _IRHeader(RIP, InvalidNode->Wrapped(ListData.Begin()), 0);
+  CreateNewBeginBlock();
+}
+
+void OpDispatchBuilder::Finalize() {
+  // Node 0 is invalid node
+  OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(GetNode(1));
+  FEXCore::IR::IROp_Header *IROp = RealNode->Op(Data.Begin());
+  LogMan::Throw::A(IROp->Op == OP_IRHEADER, "First op in function must be our header");
+  FEXCore::IR::IROp_IRHeader *Op = IROp->CW<FEXCore::IR::IROp_IRHeader>();
+  Op->BlockCount = CodeBlocks.size();
+
+  OrderedNode *PrevCodeBlock{};
+  for (auto &CodeBlock : CodeBlocks) {
+    if (PrevCodeBlock) {
+      LinkCodeBlocks(PrevCodeBlock, CodeBlock);
+    }
+    PrevCodeBlock = CodeBlock;
+  }
+
+  Op->Blocks = CodeBlocks[0]->Wrapped(ListData.Begin());
+  CodeBlocks.clear();
 }
 
 void OpDispatchBuilder::ExitFunction() {
@@ -2437,7 +2431,7 @@ void OpDispatchBuilder::StoreResult(FEXCore::X86Tables::DecodedOp Op, OrderedNod
 
 void OpDispatchBuilder::TestFunction() {
   printf("Doing Test Function\n");
-  _BeginBlock();
+  CreateNewBeginBlock();
   auto Load1 = _LoadContext(8, 0);
   auto Load2  = _LoadContext(8, 0);
   //auto Res = Load1 <Add> Load2;
@@ -2461,12 +2455,14 @@ OpDispatchBuilder::OpDispatchBuilder()
 void OpDispatchBuilder::ResetWorkingList() {
   Data.Reset();
   ListData.Reset();
+  CodeBlocks.clear();
   CurrentWriteCursor = nullptr;
   // This is necessary since we do "null" pointer checks
   InvalidNode = reinterpret_cast<OrderedNode*>(ListData.Allocate(sizeof(OrderedNode)));
   DecodeFailure = false;
   Information.HadUnconditionalExit = false;
   ShouldDump = false;
+  CurrentCodeBlock = nullptr;
 }
 
 template<unsigned BitOffset>
@@ -2529,9 +2525,6 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(bool Lower8) {
 }
 
 void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
   auto Size = GetSrcSize(Op) * 8;
   // AF
   {
@@ -2542,9 +2535,9 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
 
   // SF
   {
-    auto ThirtyOneConst = _Constant(Size - 1);
+    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
 
-    auto LshrOp = _Lshr(Res, ThirtyOneConst);
+    auto LshrOp = _Lshr(Res, SignBitConst);
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
   }
 
@@ -2552,7 +2545,7 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
   {
     auto PopCountOp = _Popcount(_And(Res, _Constant(0xFF)));
 
-    auto XorOp = _Xor(PopCountOp, OneConst);
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
   }
 
@@ -2561,7 +2554,7 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
     auto Dst8 = _Bfe(Size, 0, Res);
 
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Dst8, ZeroConst, OneConst, ZeroConst);
+        Dst8, _Constant(0), _Constant(1), _Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
 
@@ -2571,9 +2564,9 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
     auto Dst8 = _Bfe(Size, 0, Res);
     auto Src8 = _Bfe(Size, 0, Src2);
 
-    auto SelectOpLT = _Select(FEXCore::IR::COND_LT, Dst8, Src8, OneConst, ZeroConst);
-    auto SelectOpLE = _Select(FEXCore::IR::COND_LE, Dst8, Src8, OneConst, ZeroConst);
-    auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, OneConst, SelectOpLE, SelectOpLT);
+    auto SelectOpLT = _Select(FEXCore::IR::COND_LT, Dst8, Src8, _Constant(1), _Constant(0));
+    auto SelectOpLE = _Select(FEXCore::IR::COND_LE, Dst8, Src8, _Constant(1), _Constant(0));
+    auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, _Constant(1), SelectOpLE, SelectOpLT);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
   }
 
@@ -2605,9 +2598,6 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
 }
 
 void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
   // AF
   {
     OrderedNode *AFRes = _Xor(_Xor(Src1, Src2), Res);
@@ -2617,9 +2607,9 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
 
   // SF
   {
-    auto ThirtyOneConst = _Constant(GetSrcSize(Op) * 8 - 1);
+    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
 
-    auto LshrOp = _Lshr(Res, ThirtyOneConst);
+    auto LshrOp = _Lshr(Res, SignBitConst);
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
   }
 
@@ -2627,14 +2617,14 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
   {
     auto PopCountOp = _Popcount(_And(Res, _Constant(0xFF)));
 
-    auto XorOp = _Xor(PopCountOp, OneConst);
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
   }
 
   // ZF
   {
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, ZeroConst, OneConst, ZeroConst);
+        Res, _Constant(0), _Constant(1), _Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
 
@@ -2644,9 +2634,9 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
     auto Dst8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
     auto Src8_1 = _Bfe(GetSrcSize(Op) * 8, 0, Src1);
 
-    auto SelectOpLT = _Select(FEXCore::IR::COND_GT, Dst8, Src8_1, OneConst, ZeroConst);
-    auto SelectOpLE = _Select(FEXCore::IR::COND_GE, Dst8, Src8_1, OneConst, ZeroConst);
-    auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, OneConst, SelectOpLE, SelectOpLT);
+    auto SelectOpLT = _Select(FEXCore::IR::COND_GT, Dst8, Src8_1, _Constant(1), _Constant(0));
+    auto SelectOpLE = _Select(FEXCore::IR::COND_GE, Dst8, Src8_1, _Constant(1), _Constant(0));
+    auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, _Constant(1), SelectOpLE, SelectOpLT);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
   }
 
@@ -2677,8 +2667,6 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
 }
 
 void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
   // AF
   {
     OrderedNode *AFRes = _Xor(_Xor(Src1, Src2), Res);
@@ -2698,12 +2686,14 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
   {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, OneConst);
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
   }
 
   // ZF
   {
+    auto ZeroConst = _Constant(0);
+    auto OneConst = _Constant(1);
     auto Bfe8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
         Bfe8, ZeroConst, OneConst, ZeroConst);
@@ -2712,6 +2702,9 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
 
   // CF
   {
+    auto ZeroConst = _Constant(0);
+    auto OneConst = _Constant(1);
+
     auto SelectOp = _Select(FEXCore::IR::COND_LT,
         Src1, Src2, OneConst, ZeroConst);
 
@@ -2743,9 +2736,6 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
 }
 
 void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
   // AF
   {
     OrderedNode *AFRes = _Xor(_Xor(Src1, Src2), Res);
@@ -2765,14 +2755,14 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
   {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, OneConst);
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
   }
 
   // ZF
   {
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, ZeroConst, OneConst, ZeroConst);
+        Res, _Constant(0), _Constant(1), _Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
   // CF
@@ -2780,7 +2770,7 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
     auto Dst8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
     auto Src8 = _Bfe(GetSrcSize(Op) * 8, 0, Src2);
 
-    auto SelectOp = _Select(FEXCore::IR::COND_LT, Dst8, Src8, OneConst, ZeroConst);
+    auto SelectOp = _Select(FEXCore::IR::COND_LT, Dst8, Src8, _Constant(1), _Constant(0));
 
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
   }
@@ -2813,17 +2803,15 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
 }
 
 void OpDispatchBuilder::GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *High) {
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
   auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
 
   // PF/AF/ZF/SF
   // Undefined
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Constant(0));
   }
 
   // CF/OF
@@ -2833,7 +2821,7 @@ void OpDispatchBuilder::GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, Orde
 
     auto SignBit = _Ashr(Res, SignBitConst);
 
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, SignBit, ZeroConst, OneConst);
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, SignBit, _Constant(0), _Constant(1));
 
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(SelectOp);
@@ -2841,16 +2829,13 @@ void OpDispatchBuilder::GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, Orde
 }
 
 void OpDispatchBuilder::GenerateFlags_UMUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *High) {
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
   // AF/SF/PF/ZF
   // Undefined
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Constant(0));
   }
 
   // CF/OF
@@ -2858,7 +2843,7 @@ void OpDispatchBuilder::GenerateFlags_UMUL(FEXCore::X86Tables::DecodedOp Op, Ord
     // CF and OF are set if the result of the operation can't be fit in to the destination register
     // The result register will be all zero if it can't fit due to how multiplication behaves
 
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, ZeroConst, ZeroConst, OneConst);
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, _Constant(0), _Constant(0), _Constant(1));
 
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(SelectOp);
@@ -2866,13 +2851,11 @@ void OpDispatchBuilder::GenerateFlags_UMUL(FEXCore::X86Tables::DecodedOp Op, Ord
 }
 
 void OpDispatchBuilder::GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
   // AF
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
   }
 
   // SF
@@ -2887,35 +2870,32 @@ void OpDispatchBuilder::GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, 
   {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, OneConst);
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
   }
 
   // ZF
   {
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, ZeroConst, OneConst, ZeroConst);
+        Res, _Constant(0), _Constant(1), _Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
 
   // CF/OF
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Constant(0));
   }
 }
 
 void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
-  auto CmpResult = _Select(FEXCore::IR::COND_EQ, Src2, ZeroConst, OneConst, ZeroConst);
+  auto CmpResult = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), _Constant(1), _Constant(0));
   auto CondJump = _CondJump(CmpResult);
   // AF
   {
     // Undefined
     // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
   }
 
   // SF
@@ -2930,36 +2910,35 @@ void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, Or
   {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, OneConst);
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
   }
 
   // ZF
   {
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, ZeroConst, OneConst, ZeroConst);
+        Res, _Constant(0), _Constant(1), _Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
 
   // CF/OF
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Constant(0));
   }
 
-  _EndBlock(0);
-  auto NewBlock = _BeginBlock();
+  CreateNewEndBlock(0);
+
+  auto NewBlock = CreateNewBeginBlock();
   SetJumpTarget(CondJump, NewBlock);
 }
 
 void OpDispatchBuilder::GenerateFlags_Rotate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  auto ZeroConst = _Constant(0);
-
   // CF/OF
   // XXX: These are wrong
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZeroConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Constant(0));
   }
 }
 
@@ -3091,10 +3070,10 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     // If condition doesn't hold then keep going
     auto CondJump = _CondJump(_Xor(Flag, _Constant(1)));
     _Break(Reason, Literal);
-    _EndBlock(0);
+    CreateNewEndBlock(0);
 
     // Make sure to start a new block after ending this one
-    auto JumpTarget = _BeginBlock();
+    auto JumpTarget = CreateNewBeginBlock();
     SetJumpTarget(CondJump, JumpTarget);
   }
   else {
@@ -3240,7 +3219,39 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
+  OrderedNode *Src1 = LoadSource(Op, Op->Dest, Op->Flags);
+  OrderedNode *Src2 = LoadSource(Op, Op->Src1, Op->Flags);
+
+  uint8_t Index = Op->Src2.TypeLiteral.Literal;
+  OrderedNode *Res = _VExtr(GetDstSize(Op), 1, Src1, Src2, Index);
+  StoreResult(Op, Res);
+}
+
 #undef OpcodeArgs
+
+
+void OpDispatchBuilder::ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNode *NewNode, IR::NodeWrapperIterator After, IR::NodeWrapperIterator End) {
+  uintptr_t ListBegin = ListData.Begin();
+  uintptr_t DataBegin = Data.Begin();
+
+  while (After != End) {
+    OrderedNodeWrapper *WrapperOp = After();
+    OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
+    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+
+    for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
+      if (IROp->Args[i].ID() == Node->Wrapped(ListBegin).ID()) {
+        LogMan::Msg::D("\tAt %%ssa%d: Replacing ID %%ssa%d with %%ssa%d", WrapperOp->ID(), IROp->Args[i].ID(), NewNode->Wrapped(ListBegin).ID());
+        Node->RemoveUse();
+        NewNode->AddUse();
+        IROp->Args[i].NodeOffset = NewNode->Wrapped(ListBegin).NodeOffset;
+      }
+    }
+
+    ++After;
+  }
+}
 
 void InstallOpcodeHandlers() {
   const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable = {
@@ -3279,6 +3290,7 @@ void InstallOpcodeHandlers() {
     {0x9F, 1, &OpDispatchBuilder::LAHFOp},
     {0xA0, 4, &OpDispatchBuilder::MOVOffsetOp},
     {0xA4, 2, &OpDispatchBuilder::MOVSOp},
+    // XXX: Causes issues with ld.so
     {0xA6, 2, &OpDispatchBuilder::CMPSOp},
     {0xA8, 2, &OpDispatchBuilder::TESTOp},
     {0xAA, 2, &OpDispatchBuilder::STOSOp},
@@ -3396,37 +3408,37 @@ void InstallOpcodeHandlers() {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 1), 1, &OpDispatchBuilder::ROROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 4), 1, &OpDispatchBuilder::SHLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 5), 1, &OpDispatchBuilder::SHROp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 5), 1, &OpDispatchBuilder::SHROp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 1), 1, &OpDispatchBuilder::ROROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 4), 1, &OpDispatchBuilder::SHLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 5), 1, &OpDispatchBuilder::SHROp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 5), 1, &OpDispatchBuilder::SHROp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1), 1, &OpDispatchBuilder::ROROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 4), 1, &OpDispatchBuilder::SHLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 5), 1, &OpDispatchBuilder::SHROp}, // 1Bit SHR
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 5), 1, &OpDispatchBuilder::SHROp<true>}, // 1Bit SHR
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1), 1, &OpDispatchBuilder::ROROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 4), 1, &OpDispatchBuilder::SHLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 5), 1, &OpDispatchBuilder::SHROp}, // 1Bit SHR
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 5), 1, &OpDispatchBuilder::SHROp<true>}, // 1Bit SHR
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 1), 1, &OpDispatchBuilder::ROROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 4), 1, &OpDispatchBuilder::SHLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 5), 1, &OpDispatchBuilder::SHROp}, // SHR by CL
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 5), 1, &OpDispatchBuilder::SHROp<false>}, // SHR by CL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 1), 1, &OpDispatchBuilder::ROROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 4), 1, &OpDispatchBuilder::SHLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 5), 1, &OpDispatchBuilder::SHROp}, // SHR by CL
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 5), 1, &OpDispatchBuilder::SHROp<false>}, // SHR by CL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     // GROUP 3
@@ -3459,7 +3471,6 @@ void InstallOpcodeHandlers() {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 6), 1, &OpDispatchBuilder::PUSHOp},
 
     // GROUP 11
-    // XXX: LLVM hangs when commented out?
     {OPD(FEXCore::X86Tables::TYPE_GROUP_11, OpToIndex(0xC6), 0), 1, &OpDispatchBuilder::MOVOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, &OpDispatchBuilder::MOVOp},
  #undef OPD
@@ -3467,9 +3478,7 @@ void InstallOpcodeHandlers() {
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepModOpTable = {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
-
     {0x6F, 1, &OpDispatchBuilder::MOVUPSOp},
-    // XXX: Causes LLVM to crash if commented out?
     {0x7E, 1, &OpDispatchBuilder::MOVQOp},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
   };
@@ -3545,7 +3554,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 2), 1, &OpDispatchBuilder::PSRLD<4>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 6), 1, &OpDispatchBuilder::PSLL<8, true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 3), 1, &OpDispatchBuilder::PSRLDQ},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 7), 1, &OpDispatchBuilder::PSLL<16, true>},
+    // XXX: Causes issues with ld.so
+    // {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 7), 1, &OpDispatchBuilder::PSLL<16, true>},
 
     // GROUP 15
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 0), 1, &OpDispatchBuilder::FXSaveOp},
@@ -3563,6 +3573,18 @@ constexpr uint16_t PF_F2 = 3;
   };
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> X87OpTable = {
   };
+
+#define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
+#define PF_3A_NONE 0
+#define PF_3A_66   1
+  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F3ATable = {
+    {OPD(0, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::PAlignrOp},
+  };
+#undef PF_3A_NONE
+#undef PF_3A_66
+
+#undef OPD
+
 
   uint64_t NumInsts{};
   auto InstallToTable = [&NumInsts](auto& FinalTable, auto& LocalTable) {
@@ -3599,6 +3621,8 @@ constexpr uint16_t PF_F2 = 3;
   InstallToTable(FEXCore::X86Tables::SecondInstGroupOps, SecondaryExtensionOpTable);
 
   InstallToTable(FEXCore::X86Tables::X87Ops, X87OpTable);
+
+  InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3ATable);
 
   // Useful for debugging
   // CheckTable(FEXCore::X86Tables::BaseOps);

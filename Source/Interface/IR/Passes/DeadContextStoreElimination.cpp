@@ -42,67 +42,87 @@ static bool IsGPR(uint32_t Offset, uint8_t *greg) {
 bool RCLE::Run(OpDispatchBuilder *Disp) {
   bool Changed = false;
   auto CurrentIR = Disp->ViewIR();
+  std::array<OrderedNodeWrapper::NodeOffsetType, 16> LastValidGPRStores{};
+  auto OriginalWriteCursor = Disp->GetWriteCursor();
+
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
-  IR::NodeWrapperIterator Begin = CurrentIR.begin();
-  IR::NodeWrapperIterator End = CurrentIR.end();
+  auto Begin = CurrentIR.begin();
+  auto Op = Begin();
 
-  std::array<NodeWrapper*, 16> LastValidGPRStores{};
+  OrderedNode *RealNode = Op->GetNode(ListBegin);
+  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
-  while (Begin != End) {
-    NodeWrapper *WrapperOp = Begin();
-    OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
-    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
-    if (IROp->Op == OP_BEGINBLOCK ||
-        IROp->Op == OP_ENDBLOCK ||
-        IROp->Op == OP_JUMP ||
-        IROp->Op == OP_CONDJUMP ||
-        IROp->Op == OP_EXITFUNCTION) {
-      // We don't track across block boundaries
-      LastValidGPRStores.fill(nullptr);
-    }
+  while (1) {
+    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-    if (IROp->Op == OP_STORECONTEXT) {
-      auto Op = IROp->CW<IR::IROp_StoreContext>();
-      // Make sure we are within GREG state
-      uint8_t greg = ~0;
-      if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
-        FEXCore::IR::IROp_Header *ArgOp = reinterpret_cast<OrderedNode*>(Op->Header.Args[0].GetPtr(ListBegin))->Op(DataBegin);
-        // Ensure we aren't doing a mismatched store
-        // XXX: We should really catch this in IR validation
-        if (ArgOp->Size == 8) {
-          LastValidGPRStores[greg] = &Op->Header.Args[0];
-        }
-        else {
-          LastValidGPRStores[greg] = nullptr;
-        }
-      } else if (IsGPR(Op->Offset, &greg)) {
-        // If we aren't overwriting the whole state then we don't want to track this value
-        LastValidGPRStores[greg] = nullptr;
-      }
-    }
+    // We grab these nodes this way so we can iterate easily
+    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
+    auto CodeLast = CurrentIR.at(BlockIROp->Last);
+    while (1) {
+      auto CodeOp = CodeBegin();
+      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
+      auto IROp = CodeNode->Op(DataBegin);
 
-    if (IROp->Op == OP_LOADCONTEXT) {
-      auto Op = IROp->C<IR::IROp_LoadContext>();
-
-      // Make sure we are within GREG state
-      uint8_t greg = ~0;
-      if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
-        if (LastValidGPRStores[greg] != nullptr) {
-          // If the last store matches this load value then we can replace the loaded value with the previous valid one
-          auto MovVal = Disp->_Mov(reinterpret_cast<OrderedNode*>(LastValidGPRStores[greg]->GetPtr(ListBegin)));
-          Disp->ReplaceAllUsesWith(RealNode, MovVal);
-          Changed = true;
-        }
-      } else if (IsGPR(Op->Offset, &greg)) {
+      if (IROp->Op == OP_STORECONTEXT) {
+        auto Op = IROp->CW<IR::IROp_StoreContext>();
+        // Make sure we are within GREG state
+        uint8_t greg = ~0;
+        if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
+          LastValidGPRStores[greg] = Op->Header.Args[0].NodeOffset;
+        } else if (IsGPR(Op->Offset, &greg)) {
           // If we aren't overwriting the whole state then we don't want to track this value
-          LastValidGPRStores[greg] = nullptr; // 0 is invalid
+          LastValidGPRStores[greg] = 0;
+        }
       }
+
+      if (IROp->Op == OP_LOADCONTEXT) {
+        auto Op = IROp->C<IR::IROp_LoadContext>();
+
+        // Make sure we are within GREG state
+        uint8_t greg = ~0;
+        if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
+          if (LastValidGPRStores[greg] != 0) {
+            // If the last store matches this load value then we can replace the loaded value with the previous valid one
+            if (1) {
+              Disp->SetWriteCursor(CodeNode);
+              auto MovVal = Disp->_Mov(OrderedNodeWrapper::WrapOffset(LastValidGPRStores[greg]).GetNode(ListBegin));
+              Disp->ReplaceAllUsesWith(CodeNode, MovVal);
+            }
+            else {
+              Disp->ReplaceAllUsesWith(CodeNode, OrderedNodeWrapper::WrapOffset(LastValidGPRStores[greg]).GetNode(ListBegin));
+            }
+            Changed = true;
+          }
+        } else if (IsGPR(Op->Offset, &greg)) {
+            // If we aren't overwriting the whole state then we don't want to track this value
+            LastValidGPRStores[greg] = 0; // 0 is invalid
+        }
+      }
+
+      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+      if (CodeBegin == CodeLast) {
+        break;
+      }
+      ++CodeBegin;
     }
-    ++Begin;
+
+    if (BlockIROp->Next.ID() == 0) {
+      break;
+    } else {
+      BlockNode = BlockIROp->Next.GetNode(ListBegin);
+    }
+
+    // We don't track across block boundaries
+    LastValidGPRStores.fill(0);
   }
+
+  Disp->SetWriteCursor(OriginalWriteCursor);
 
   return Changed;
 }

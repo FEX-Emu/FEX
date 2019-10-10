@@ -21,7 +21,7 @@
 #include <llvm/Transforms/Vectorize.h>
 #include <vector>
 
-#define DESTMAP_AS_MAP 0
+#define DESTMAP_AS_MAP 1
 #if DESTMAP_AS_MAP
 using DestMapType = std::unordered_map<uint64_t, llvm::Value*>;
 #else
@@ -185,18 +185,18 @@ private:
 
   llvm::Value *CastVectorToType(llvm::Value *Arg, bool Integer, uint8_t RegisterSize, uint8_t ElementSize);
   llvm::Value *CastToOpaqueStructure(llvm::Value *Arg, llvm::Type *DstType);
-  void SetDest(IR::NodeWrapper Op, llvm::Value *Val);
-  llvm::Value *GetSrc(IR::NodeWrapper Src);
+  void SetDest(IR::OrderedNodeWrapper Op, llvm::Value *Val);
+  llvm::Value *GetSrc(IR::OrderedNodeWrapper Src);
 
   DestMapType DestMap;
   FEXCore::IR::IRListView<true> const *CurrentIR;
 
-  std::unordered_map<IR::NodeWrapper::NodeOffsetType, llvm::BasicBlock*> JumpTargets;
-  std::unordered_map<IR::NodeWrapper::NodeOffsetType, llvm::BasicBlock*> ForwardJumpTargets;
+  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, llvm::BasicBlock*> JumpTargets;
+  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, llvm::BasicBlock*> ForwardJumpTargets;
 
   // Target Machines
   const std::string arch = "x86-64";
-  const std::string cpu = "znver2";
+  const std::string cpu = "skylake";
   const llvm::Triple TargetTriple{"x86_64", "unknown", "linux", "gnu"};
   const llvm::SmallVector<std::string, 0> Attrs;
   llvm::TargetMachine *LLVMTarget;
@@ -754,16 +754,16 @@ llvm::Value *LLVMJITCore::CastToOpaqueStructure(llvm::Value *Arg, llvm::Type *Ds
   return JITState.IRBuilder->CreateZExtOrTrunc(Arg, DstType->getPointerElementType());
 }
 
-void LLVMJITCore::SetDest(IR::NodeWrapper Op, llvm::Value *Val) {
-  DestMap[Op.NodeOffset] = Val;
+void LLVMJITCore::SetDest(IR::OrderedNodeWrapper Op, llvm::Value *Val) {
+  DestMap[Op.ID()] = Val;
 }
 
-llvm::Value *LLVMJITCore::GetSrc(IR::NodeWrapper Src) {
+llvm::Value *LLVMJITCore::GetSrc(IR::OrderedNodeWrapper Src) {
 #if DESTMAP_AS_MAP
-  LogMan::Throw::A(DestMap.find(Src.NodeOffset) != DestMap.end(), "Op had Src but wasn't added to the dest map");
+  LogMan::Throw::A(DestMap.find(Src.ID()) != DestMap.end(), "Op had Src but wasn't added to the dest map");
 #endif
 
-  auto DstPtr = DestMap[Src.NodeOffset];
+  auto DstPtr = DestMap[Src.ID()];
   LogMan::Throw::A(DstPtr != nullptr, "Destmap had slot but wasn't allocated memory");
   return DstPtr;
 }
@@ -771,11 +771,11 @@ llvm::Value *LLVMJITCore::GetSrc(IR::NodeWrapper Src) {
 void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrapperIterator *Node) {
   using namespace llvm;
 
-   uintptr_t ListBegin = CurrentIR->GetListData();
-   uintptr_t DataBegin = CurrentIR->GetData();
+  uintptr_t ListBegin = CurrentIR->GetListData();
+  uintptr_t DataBegin = CurrentIR->GetData();
 
-  IR::NodeWrapper *WrapperOp = (*Node)();
-  IR::OrderedNode *RealNode = reinterpret_cast<IR::OrderedNode*>(WrapperOp->GetPtr(ListBegin));
+  IR::OrderedNodeWrapper *WrapperOp = (*Node)();
+  IR::OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
   FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
   uint8_t OpSize = IROp->Size;
 
@@ -1812,7 +1812,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
     LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
   break;
   }
-  ++*Node;
 }
 
 void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) {
@@ -1855,35 +1854,66 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
        FunctionModule);
    Func->setCallingConv(CallingConv::C);
 
-   {
-     auto Entry = BasicBlock::Create(*Con, "Entry", Func);
-     JITCurrentState.Blocks.emplace_back(Entry);
-     JITState.IRBuilder->SetInsertPoint(Entry);
-     JITCurrentState.CurrentBlock = Entry;
+  {
+    auto Entry = BasicBlock::Create(*Con, "Entry", Func);
+    JITCurrentState.Blocks.emplace_back(Entry);
+    JITState.IRBuilder->SetInsertPoint(Entry);
+    JITCurrentState.CurrentBlock = Entry;
 
-     CreateGlobalVariables(Engine, FunctionModule);
+    CreateGlobalVariables(Engine, FunctionModule);
 
-     auto Builder = JITState.IRBuilder;
+    auto Builder = JITState.IRBuilder;
 
-     // Let's create the exit block quick
-     JITCurrentState.ExitBlock = BasicBlock::Create(*Con, "ExitBlock", Func);
-     JITCurrentState.Blocks.emplace_back(JITCurrentState.ExitBlock);
+    // Let's create the exit block quick
+    JITCurrentState.ExitBlock = BasicBlock::Create(*Con, "ExitBlock", Func);
+    JITCurrentState.Blocks.emplace_back(JITCurrentState.ExitBlock);
 
-     JITState.IRBuilder->SetInsertPoint(JITCurrentState.ExitBlock);
-     Builder->CreateRetVoid();
+    JITState.IRBuilder->SetInsertPoint(JITCurrentState.ExitBlock);
+    Builder->CreateRetVoid();
 
-     JITState.IRBuilder->SetInsertPoint(Entry);
-     JITCurrentState.CurrentBlock = Entry;
-     JITCurrentState.Blocks.emplace_back(JITCurrentState.CurrentBlock);
-     JITCurrentState.CurrentBlockHasTerm = false;
+    JITState.IRBuilder->SetInsertPoint(Entry);
+    JITCurrentState.CurrentBlock = Entry;
+    JITCurrentState.Blocks.emplace_back(JITCurrentState.CurrentBlock);
+    JITCurrentState.CurrentBlockHasTerm = false;
 
-     IR::NodeWrapperIterator Begin = CurrentIR->begin();
-     IR::NodeWrapperIterator End = CurrentIR->end();
+    uintptr_t ListBegin = CurrentIR->GetListData();
+    uintptr_t DataBegin = CurrentIR->GetData();
 
-     while (Begin != End) {
-       HandleIR(CurrentIR, &Begin);
-     }
-   }
+    auto HeaderIterator = CurrentIR->begin();
+    IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
+    IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
+    auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+
+    IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+
+    while (1) {
+      using namespace FEXCore::IR;
+      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+
+      // We grab these nodes this way so we can iterate easily
+      auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
+      auto CodeLast = CurrentIR->at(BlockIROp->Last);
+
+      while (1) {
+        HandleIR(CurrentIR, &CodeBegin);
+
+        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+        if (CodeBegin == CodeLast) {
+          break;
+        }
+        ++CodeBegin;
+
+      }
+
+      if (BlockIROp->Next.ID() == 0) {
+        break;
+      } else {
+        BlockNode = BlockIROp->Next.GetNode(ListBegin);
+      }
+    }
+  }
 
    for (auto &Block : JITCurrentState.Blocks) {
      // If the block is empty then let is just jump to the exit block
@@ -1904,8 +1934,7 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
 
    raw_ostream &Out = outs();
 
-   //if (CTX->Config.LLVM_PrinterPass)
-   if (ThreadState->State.State.rip == 0x4021b0)
+   // if (CTX->Config.LLVM_PrinterPass)
    {
      FPM.addPass(PrintModulePass(Out));
    }

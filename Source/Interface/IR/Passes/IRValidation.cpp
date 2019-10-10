@@ -6,13 +6,13 @@
 namespace FEXCore::IR::Validation {
 
 struct BlockInfo {
-  IR::NodeWrapper *Begin;
-  IR::NodeWrapper *End;
+  IR::OrderedNodeWrapper *Begin;
+  IR::OrderedNodeWrapper *End;
 
   bool HasExit;
 
-  std::vector<IR::NodeWrapper*> Predecessors;
-  std::vector<IR::NodeWrapper*> Successors;
+  std::vector<IR::OrderedNodeWrapper*> Predecessors;
+  std::vector<IR::OrderedNodeWrapper*> Successors;
 };
 
 class IRValidation final : public FEXCore::IR::Pass {
@@ -20,7 +20,7 @@ public:
   bool Run(OpDispatchBuilder *Disp) override;
 
 private:
-  std::unordered_map<IR::NodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
+  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
 };
 
 bool IRValidation::Run(OpDispatchBuilder *Disp) {
@@ -37,8 +37,8 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
   std::ostringstream Errors;
 
   while (Begin != End) {
-    NodeWrapper *WrapperOp = Begin();
-    OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(WrapperOp->GetPtr(ListBegin));
+    OrderedNodeWrapper *WrapperOp = Begin();
+    OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
     FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
 
     uint8_t OpSize = IROp->Size;
@@ -56,7 +56,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
     }
 
     for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
-      NodeWrapper Arg = IROp->Args[i];
+      OrderedNodeWrapper Arg = IROp->Args[i];
       if (Arg.ID() == 0) {
         HadError |= true;
         Errors << "Op" << WrapperOp->ID() <<": Arg[" << i << "] has invalid target of %ssa0" << std::endl;
@@ -70,7 +70,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
         Errors << "BasicBlock " << WrapperOp->ID() << ": Begin in middle of block" << std::endl;
       }
 
-      auto Block = OffsetToBlockMap.try_emplace(WrapperOp->ID(), BlockInfo{}).first;
+      auto Block = OffsetToBlockMap.try_emplace(WrapperOp->ID()).first;
       CurrentBlock = &Block->second;
       CurrentBlock->Begin = WrapperOp;
       InBlock = true;
@@ -109,14 +109,14 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
         CurrentBlock->Successors.emplace_back(IterLocation());
       }
 
-      OrderedNode *TargetNode = reinterpret_cast<OrderedNode*>(IterLocation()->GetPtr(ListBegin));
+      OrderedNode *TargetNode = IterLocation()->GetNode(ListBegin);
       FEXCore::IR::IROp_Header *TargetOp = TargetNode->Op(DataBegin);
       HadError |= TargetOp->Op != OP_BEGINBLOCK;
       if (TargetOp->Op != OP_BEGINBLOCK) {
         Errors << "CondJump " << WrapperOp->ID() << ": CondJump to Op that isn't the begining of a block" << std::endl;
       }
       else {
-        auto Block = OffsetToBlockMap.try_emplace(IterLocation()->NodeOffset, BlockInfo{}).first;
+        auto Block = OffsetToBlockMap.try_emplace(IterLocation()->NodeOffset).first;
         Block->second.Predecessors.emplace_back(CurrentBlock->Begin);
       }
 
@@ -130,14 +130,14 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
         CurrentBlock->Successors.emplace_back(IterLocation());
       }
 
-      OrderedNode *TargetNode = reinterpret_cast<OrderedNode*>(IterLocation()->GetPtr(ListBegin));
+      OrderedNode *TargetNode = IterLocation()->GetNode(ListBegin);
       FEXCore::IR::IROp_Header *TargetOp = TargetNode->Op(DataBegin);
       HadError |= TargetOp->Op != OP_BEGINBLOCK;
       if (TargetOp->Op != OP_BEGINBLOCK) {
         Errors << "Jump " << WrapperOp->ID() << ": Jump to Op that isn't the begining of a block" << std::endl;
       }
       else {
-        auto Block = OffsetToBlockMap.try_emplace(IterLocation()->NodeOffset, BlockInfo{}).first;
+        auto Block = OffsetToBlockMap.try_emplace(IterLocation()->NodeOffset).first;
         Block->second.Predecessors.emplace_back(CurrentBlock->Begin);
       }
     break;
