@@ -12,6 +12,7 @@
 #include "aarch64/simulator-aarch64.h"
 #endif
 #include "aarch64/assembler-aarch64.h"
+#include "aarch64/cpu-aarch64.h"
 #include "aarch64/disasm-aarch64.h"
 #include "aarch64/macro-assembler-aarch64.h"
 
@@ -128,6 +129,7 @@ private:
 #if DEBUG || _M_X86_64
   vixl::aarch64::Decoder Decoder;
 #endif
+  vixl::aarch64::CPU CPU;
 
 #if DEBUG
   vixl::aarch64::Disassembler Disasm;
@@ -206,6 +208,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 #if _M_X86_64
   Sim.SetCPUFeatures(vixl::CPUFeatures::All());
 #endif
+  CPU.SetUp();
   SetAllowAssembler(true);
   CreateCustomDispatch(Thread);
 }
@@ -293,10 +296,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   uintptr_t ListBegin = CurrentIR->GetListData();
   uintptr_t DataBegin = CurrentIR->GetData();
 
-  IR::NodeWrapperIterator Begin = CurrentIR->begin();
-  IR::NodeWrapperIterator End = CurrentIR->end();
-
-  uintptr_t ListSize = CurrentIR->GetListSize();
   HasRA = RAPass->HasFullRA();
 
   LogMan::Throw::A(HasRA, "Arm64 JIT only works with RA");
@@ -330,1105 +329,1133 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     mov(STATE, x0);
   }
 
-  while (Begin != End) {
+  auto HeaderIterator = CurrentIR->begin();
+  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
+  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
+  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+
+  IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+
+  while (1) {
     using namespace FEXCore::IR;
+    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
-    OrderedNodeWrapper *WrapperOp = Begin();
-    OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
-    uint8_t OpSize = IROp->Size;
-    uint32_t Node = WrapperOp->ID();
+    // We grab these nodes this way so we can iterate easily
+    auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
+    auto CodeLast = CurrentIR->at(BlockIROp->Last);
 
-    if (HasRA) {
-      if (0) {
-        std::stringstream Inst;
-        auto Name = FEXCore::IR::GetName(IROp->Op);
+    while (1) {
+      OrderedNodeWrapper *WrapperOp = CodeBegin();
+      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
+      FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+      uint8_t OpSize = IROp->Size;
+      uint32_t Node = WrapperOp->ID();
 
-        if (IROp->HasDest) {
-          uint32_t PhysReg = RAPass->GetNodeRegister(Node);
-          if (PhysReg >= FPRBase)
-            Inst << "\tFPR" << GetPhys(Node) << " = " << Name << " ";
-          else
-            Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
+      if (HasRA) {
+        if (0) {
+          std::stringstream Inst;
+          auto Name = FEXCore::IR::GetName(IROp->Op);
+
+          if (IROp->HasDest) {
+            uint32_t PhysReg = RAPass->GetNodeRegister(Node);
+            if (PhysReg >= FPRBase)
+              Inst << "\tFPR" << GetPhys(Node) << " = " << Name << " ";
+            else
+              Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
+          }
+          else {
+            Inst << "\t" << Name << " ";
+          }
+
+          for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
+            uint32_t ArgNode = IROp->Args[i].ID();
+            uint32_t PhysReg = RAPass->GetNodeRegister(ArgNode);
+            if (PhysReg >= FPRBase)
+              Inst << "FPR" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
+            else
+              Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
+          }
+        }
+      }
+
+      switch (IROp->Op) {
+      case IR::OP_BEGINBLOCK: {
+        auto IsTarget = JumpTargets.find(WrapperOp->ID());
+        if (IsTarget == JumpTargets.end()) {
+          // XXX: This is a memory leak
+          JumpTargets.try_emplace(WrapperOp->ID());
         }
         else {
-          Inst << "\t" << Name << " ";
+          bind(&IsTarget->second);
         }
-
-        for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
-          uint32_t ArgNode = IROp->Args[i].ID();
-          uint32_t PhysReg = RAPass->GetNodeRegister(ArgNode);
-          if (PhysReg >= FPRBase)
-            Inst << "FPR" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
-          else
-            Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
+        break;
+      }
+      case IR::OP_ENDBLOCK: {
+        auto Op = IROp->C<IR::IROp_EndBlock>();
+        if (Op->RIPIncrement) {
+          ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
+          add(TMP1, TMP1, Operand(Op->RIPIncrement));
+          str(TMP1,  MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
         }
+        break;
       }
-    }
-
-    switch (IROp->Op) {
-    case IR::OP_BEGINBLOCK: {
-      auto IsTarget = JumpTargets.find(WrapperOp->ID());
-      if (IsTarget == JumpTargets.end()) {
-        // XXX: This is a memory leak
-        JumpTargets.try_emplace(WrapperOp->ID());
+      case IR::OP_EXITFUNCTION:
+      case IR::OP_ENDFUNCTION: {
+        ret();
+        break;
       }
-      else {
-        bind(&IsTarget->second);
-      }
-      break;
-    }
-    case IR::OP_ENDBLOCK: {
-      auto Op = IROp->C<IR::IROp_EndBlock>();
-      if (Op->RIPIncrement) {
-        ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
-        add(TMP1, TMP1, Operand(Op->RIPIncrement));
-        str(TMP1,  MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
-      }
-      break;
-    }
-    case IR::OP_EXITFUNCTION:
-    case IR::OP_ENDFUNCTION: {
-      ret();
-      break;
-    }
-    case IR::OP_SYSCALL: {
-      auto Op = IROp->C<IR::IROp_Syscall>();
-      // Arguments are passed as follows:
-      // X0: SyscallHandler
-      // X1: ThreadState
-      // X2: Pointer to SyscallArguments
+      case IR::OP_SYSCALL: {
+        auto Op = IROp->C<IR::IROp_Syscall>();
+        // Arguments are passed as follows:
+        // X0: SyscallHandler
+        // X1: ThreadState
+        // X2: Pointer to SyscallArguments
 
-      uint64_t SPOffset = AlignUp((RA64.size() + 7 + 1) * 8, 16);
+        uint64_t SPOffset = AlignUp((RA64.size() + 7 + 1) * 8, 16);
 
-      sub(sp, sp, SPOffset);
-      for (uint32_t i = 0; i < 7; ++i)
-        str(GetSrc<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, 0 + i * 8));
+        sub(sp, sp, SPOffset);
+        for (uint32_t i = 0; i < 7; ++i)
+          str(GetSrc<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, 0 + i * 8));
 
-      int i = 0;
-      for (auto RA : RA64) {
-        str(RA, MemOperand(sp, 7 * 8 + i * 8));
-        i++;
-      }
-      str(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
+        int i = 0;
+        for (auto RA : RA64) {
+          str(RA, MemOperand(sp, 7 * 8 + i * 8));
+          i++;
+        }
+        str(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
 
-      LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->SyscallHandler));
-      mov(x1, STATE);
-      mov(x2, sp);
+        LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->SyscallHandler));
+        mov(x1, STATE);
+        mov(x2, sp);
 
 #if _M_X86_64
-      CallRuntime(SyscallThunk);
+        CallRuntime(SyscallThunk);
 #else
-      using ClassPtrType = uint64_t (FEXCore::SyscallHandler::*)(FEXCore::Core::InternalThreadState *, FEXCore::HLE::SyscallArguments *);
-      union PtrCast {
-        ClassPtrType ClassPtr;
-        uintptr_t Data;
-      };
+        using ClassPtrType = uint64_t (FEXCore::SyscallHandler::*)(FEXCore::Core::InternalThreadState *, FEXCore::HLE::SyscallArguments *);
+        union PtrCast {
+          ClassPtrType ClassPtr;
+          uintptr_t Data;
+        };
 
-      PtrCast Ptr;
-      Ptr.ClassPtr = &FEXCore::SyscallHandler::HandleSyscall;
-      LoadConstant(x3, Ptr.Data);
-      blr(x3);
+        PtrCast Ptr;
+        Ptr.ClassPtr = &FEXCore::SyscallHandler::HandleSyscall;
+        LoadConstant(x3, Ptr.Data);
+        blr(x3);
 #endif
 
-      // Result is now in x0
-      // Fix the stack and any values that were stepped on
-      i = 0;
-      for (auto RA : RA64) {
-        ldr(RA, MemOperand(sp, 7 * 8 + i * 8));
-        i++;
-      }
-
-      // Move result to its destination register
-      mov(GetDst<RA_64>(Node), x0);
-
-      ldr(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
-
-      add(sp, sp, SPOffset);
-      break;
-    }
-    case IR::OP_CPUID: {
-      auto Op = IROp->C<IR::IROp_CPUID>();
-
-      uint64_t SPOffset = AlignUp((RA64.size() + 2 + 2) * 8 + sizeof(FEXCore::CPUIDEmu::FunctionResults), 16);
-      sub(sp, sp, SPOffset);
-
-      int i = 0;
-      for (auto RA : RA64) {
-        str(RA, MemOperand(sp, 0 + i * 8));
-        i++;
-      }
-
-      str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-      // x0 = CPUID Handler
-      // x1 = CPUID Function
-      // x2 = Result location
-      LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->CPUID));
-      mov(x1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      add(x2, sp, RA64.size() * 8 + 3 * 8);
-      CallRuntime(CPUIDThunk);
-
-      i = 0;
-      for (auto RA : RA64) {
-        ldr(RA, MemOperand(sp, 0 + i * 8));
-        i++;
-      }
-
-      // Results are in x0, x1
-      // Results want to be in a i32v4 vector
-      auto Dst = GetDst(Node);
-      ldr(Dst, MemOperand(sp, RA64.size() * 8 + 3 * 8));
-
-      ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-      add(sp, sp, SPOffset);
-
-      break;
-    }
-    case IR::OP_EXTRACTELEMENT: {
-      auto Op = IROp->C<IR::IROp_ExtractElement>();
-
-      uint32_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
-      if (PhysReg >= FPRBase) {
-        switch (OpSize) {
-        case 4:
-          umov(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->Idx);
-        break;
-        case 8:
-          umov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->Idx);
-        break;
-        default:  LogMan::Msg::A("Unhandled ExtractElementSize: %d", OpSize);
+        // Result is now in x0
+        // Fix the stack and any values that were stepped on
+        i = 0;
+        for (auto RA : RA64) {
+          ldr(RA, MemOperand(sp, 7 * 8 + i * 8));
+          i++;
         }
-      }
-      else {
-        LogMan::Msg::A("Can't handle extract from GPR yet");
-      }
-      break;
-    }
-    case IR::OP_JUMP: {
-      auto Op = IROp->C<IR::IROp_Jump>();
 
-      Label *TargetLabel;
-      auto IsTarget = JumpTargets.find(Op->Header.Args[0].ID());
-      if (IsTarget == JumpTargets.end()) {
-        TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[0].ID()).first->second;
-      }
-      else {
-        TargetLabel = &IsTarget->second;
-      }
+        // Move result to its destination register
+        mov(GetDst<RA_64>(Node), x0);
 
-      b(TargetLabel);
-      break;
-    }
-    case IR::OP_CONDJUMP: {
-      auto Op = IROp->C<IR::IROp_CondJump>();
+        ldr(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
 
-      Label *TargetLabel;
-      auto IsTarget = JumpTargets.find(Op->Header.Args[1].ID());
-      if (IsTarget == JumpTargets.end()) {
-        // XXX: This is a memory leak
-        TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
-      }
-      else {
-        TargetLabel = &IsTarget->second;
-      }
-
-      cbnz(GetSrc<RA_64>(Op->Header.Args[0].ID()), TargetLabel);
-      break;
-    }
-    case IR::OP_LOADCONTEXT: {
-      auto Op = IROp->C<IR::IROp_LoadContext>();
-      switch (Op->Size) {
-      case 1:
-        ldrb(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
-      break;
-      case 2:
-        ldrh(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
-      break;
-      case 4:
-        ldr(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
-      break;
-      case 8:
-        ldr(GetDst<RA_64>(Node), MemOperand(STATE, Op->Offset));
-      break;
-      case 16:
-        ldr(GetDst(Node), MemOperand(STATE, Op->Offset));
-      break;
-      default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
-      }
-      break;
-    }
-    case IR::OP_STORECONTEXT: {
-      auto Op = IROp->C<IR::IROp_StoreContext>();
-      switch (Op->Size) {
-      case 1:
-        strb(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-      break;
-      case 2:
-        strh(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-      break;
-      case 4:
-        str(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-      break;
-      case 8:
-        str(GetSrc<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-      break;
-      case 16:
-        str(GetSrc(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-      break;
-      default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
-      }
-      break;
-    }
-    case IR::OP_STOREFLAG: {
-      auto Op = IROp->C<IR::IROp_StoreFlag>();
-      and_(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()), 1);
-      strb(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
-      break;
-    }
-    case IR::OP_LOADFLAG: {
-      auto Op = IROp->C<IR::IROp_LoadFlag>();
-      auto Dst = GetDst<RA_64>(Node);
-      ldrb(Dst, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
-      and_(Dst, Dst, 1);
-      break;
-    }
-    case IR::OP_BREAK: {
-      auto Op = IROp->C<IR::IROp_Break>();
-      switch (Op->Reason) {
-        case 4: // HLT
-          hlt(4);
+        add(sp, sp, SPOffset);
         break;
-        default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
       }
-      break;
-    }
-    case IR::OP_CONSTANT: {
-      auto Op = IROp->C<IR::IROp_Constant>();
-      auto Dst = GetDst<RA_64>(Node);
-      LoadConstant(Dst, Op->Constant);
-      break;
-    }
-    case IR::OP_ADD: {
-      auto Op = IROp->C<IR::IROp_Add>();
-      add(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-    }
-    case IR::OP_SUB: {
-      auto Op = IROp->C<IR::IROp_Sub>();
-      sub(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-    }
-    case IR::OP_AND: {
-      auto Op = IROp->C<IR::IROp_And>();
-      and_(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-    }
-    case IR::OP_XOR: {
-      auto Op = IROp->C<IR::IROp_Xor>();
-      eor(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-    }
-    case IR::OP_OR: {
-      auto Op = IROp->C<IR::IROp_Or>();
-      orr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-    }
-    case IR::OP_MOV: {
-      auto Op = IROp->C<IR::IROp_Mov>();
-      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      break;
-    }
-    case IR::OP_LSHR: {
-      auto Op = IROp->C<IR::IROp_Lshr>();
-      if (OpSize == 8)
-        lsrv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      else
-        lsrv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-      break;
-    }
-    case IR::OP_ASHR: {
-      auto Op = IROp->C<IR::IROp_Ashr>();
-      if (OpSize == 8)
-        asrv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      else
-        asrv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-      break;
-    }
-    case IR::OP_LSHL: {
-      auto Op = IROp->C<IR::IROp_Lshl>();
-      if (OpSize == 8)
-        lslv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      else
-        lslv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-      break;
-    }
-    case IR::OP_ROR: {
-      auto Op = IROp->C<IR::IROp_Ror>();
-      uint8_t Mask = OpSize * 8 - 1;
+      case IR::OP_CPUID: {
+        auto Op = IROp->C<IR::IROp_CPUID>();
 
-      switch (OpSize) {
-      case 4: {
-        rorv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-      break;
-      }
-      case 8: {
-        rorv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-      }
+        uint64_t SPOffset = AlignUp((RA64.size() + 2 + 2) * 8 + sizeof(FEXCore::CPUIDEmu::FunctionResults), 16);
+        sub(sp, sp, SPOffset);
 
-      default: LogMan::Msg::A("Unhandled ROR size: %d", OpSize);
-      }
-      break;
-    }
-    case IR::OP_ROL: {
-      auto Op = IROp->C<IR::IROp_Rol>();
-      uint8_t Mask = OpSize * 8 - 1;
+        int i = 0;
+        for (auto RA : RA64) {
+          str(RA, MemOperand(sp, 0 + i * 8));
+          i++;
+        }
 
-      switch (OpSize) {
-      case 4: {
-        movz(TMP1, 32);
-        sub(TMP1.W(), TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-        rorv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), TMP1.W());
-      break;
-      }
-      case 8: {
-        movz(TMP1, 64);
-        sub(TMP1, TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        rorv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), TMP1);
-      break;
-      }
+        str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
 
-      default: LogMan::Msg::A("Unhandled ROL size: %d", OpSize);
-      }
-      break;
-    }
-    case IR::OP_SEXT: {
-      auto Op = IROp->C<IR::IROp_Sext>();
-      LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-      auto Dst = GetDst<RA_64>(Node);
+        // x0 = CPUID Handler
+        // x1 = CPUID Function
+        // x2 = Result location
+        LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->CPUID));
+        mov(x1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        add(x2, sp, RA64.size() * 8 + 3 * 8);
+        CallRuntime(CPUIDThunk);
 
-      switch (Op->SrcSize / 8) {
-      case 1:
-        sxtb(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      break;
-      case 2:
-        sxth(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      break;
-      case 4:
-        sxtw(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      break;
-      case 8:
-        mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      break;
-      default: LogMan::Msg::A("Unknown Sext size: %d", Op->SrcSize / 8);
+        i = 0;
+        for (auto RA : RA64) {
+          ldr(RA, MemOperand(sp, 0 + i * 8));
+          i++;
+        }
+
+        // Results are in x0, x1
+        // Results want to be in a i32v4 vector
+        auto Dst = GetDst(Node);
+        ldr(Dst, MemOperand(sp, RA64.size() * 8 + 3 * 8));
+
+        ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+        add(sp, sp, SPOffset);
+
+        break;
       }
-      break;
-    }
-    case IR::OP_ZEXT: {
-      auto Op = IROp->C<IR::IROp_Zext>();
-      LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-      uint32_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
-      if (PhysReg >= FPRBase) {
-        // FPR -> GPR transfer with free truncation
-        switch (Op->SrcSize) {
+      case IR::OP_EXTRACTELEMENT: {
+        auto Op = IROp->C<IR::IROp_ExtractElement>();
+
+        uint32_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
+        if (PhysReg >= FPRBase) {
+          switch (OpSize) {
+          case 4:
+            umov(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->Idx);
+          break;
+          case 8:
+            umov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->Idx);
+          break;
+          default:  LogMan::Msg::A("Unhandled ExtractElementSize: %d", OpSize);
+          }
+        }
+        else {
+          LogMan::Msg::A("Can't handle extract from GPR yet");
+        }
+        break;
+      }
+      case IR::OP_JUMP: {
+        auto Op = IROp->C<IR::IROp_Jump>();
+
+        Label *TargetLabel;
+        auto IsTarget = JumpTargets.find(Op->Header.Args[0].ID());
+        if (IsTarget == JumpTargets.end()) {
+          TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[0].ID()).first->second;
+        }
+        else {
+          TargetLabel = &IsTarget->second;
+        }
+
+        b(TargetLabel);
+        break;
+      }
+      case IR::OP_CONDJUMP: {
+        auto Op = IROp->C<IR::IROp_CondJump>();
+
+        Label *TargetLabel;
+        auto IsTarget = JumpTargets.find(Op->Header.Args[1].ID());
+        if (IsTarget == JumpTargets.end()) {
+          // XXX: This is a memory leak
+          TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
+        }
+        else {
+          TargetLabel = &IsTarget->second;
+        }
+
+        cbnz(GetSrc<RA_64>(Op->Header.Args[0].ID()), TargetLabel);
+        break;
+      }
+      case IR::OP_LOADCONTEXT: {
+        auto Op = IROp->C<IR::IROp_LoadContext>();
+        switch (Op->Size) {
+        case 1:
+          ldrb(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
+        break;
+        case 2:
+          ldrh(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
+        break;
+        case 4:
+          ldr(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
+        break;
         case 8:
-          mov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
+          ldr(GetDst<RA_64>(Node), MemOperand(STATE, Op->Offset));
         break;
         case 16:
-          mov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
+          ldr(GetDst(Node), MemOperand(STATE, Op->Offset));
         break;
-        case 32:
-          mov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
-        break;
-        case 64:
-          mov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
-        break;
-        default: LogMan::Msg::A("Unhandled Zext size: %d", Op->SrcSize); break;
+        default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
         }
+        break;
       }
-      else {
-        if (Op->SrcSize == 64) {
-          // GPR->FPR transfer
-          auto Dst = GetDst(Node);
-          eor(Dst.V16B(), Dst.V16B(), Dst.V16B());
-          ins(Dst.V2D(), 0, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      case IR::OP_STORECONTEXT: {
+        auto Op = IROp->C<IR::IROp_StoreContext>();
+        switch (Op->Size) {
+        case 1:
+          strb(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+        break;
+        case 2:
+          strh(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+        break;
+        case 4:
+          str(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+        break;
+        case 8:
+          str(GetSrc<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+        break;
+        case 16:
+          str(GetSrc(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+        break;
+        default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+        }
+        break;
+      }
+      case IR::OP_STOREFLAG: {
+        auto Op = IROp->C<IR::IROp_StoreFlag>();
+        and_(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()), 1);
+        strb(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
+        break;
+      }
+      case IR::OP_LOADFLAG: {
+        auto Op = IROp->C<IR::IROp_LoadFlag>();
+        auto Dst = GetDst<RA_64>(Node);
+        ldrb(Dst, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
+        and_(Dst, Dst, 1);
+        break;
+      }
+      case IR::OP_BREAK: {
+        auto Op = IROp->C<IR::IROp_Break>();
+        switch (Op->Reason) {
+          case 4: // HLT
+            hlt(4);
+          break;
+          default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
+        }
+        break;
+      }
+      case IR::OP_CONSTANT: {
+        auto Op = IROp->C<IR::IROp_Constant>();
+        auto Dst = GetDst<RA_64>(Node);
+        LoadConstant(Dst, Op->Constant);
+        break;
+      }
+      case IR::OP_ADD: {
+        auto Op = IROp->C<IR::IROp_Add>();
+        add(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+      }
+      case IR::OP_SUB: {
+        auto Op = IROp->C<IR::IROp_Sub>();
+        sub(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+      }
+      case IR::OP_AND: {
+        auto Op = IROp->C<IR::IROp_And>();
+        and_(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+      }
+      case IR::OP_XOR: {
+        auto Op = IROp->C<IR::IROp_Xor>();
+        eor(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+      }
+      case IR::OP_OR: {
+        auto Op = IROp->C<IR::IROp_Or>();
+        orr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+      }
+      case IR::OP_MOV: {
+        auto Op = IROp->C<IR::IROp_Mov>();
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+      }
+      case IR::OP_LSHR: {
+        auto Op = IROp->C<IR::IROp_Lshr>();
+        if (OpSize == 8)
+          lsrv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        else
+          lsrv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+      }
+      case IR::OP_ASHR: {
+        auto Op = IROp->C<IR::IROp_Ashr>();
+        if (OpSize == 8)
+          asrv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        else
+          asrv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+      }
+      case IR::OP_LSHL: {
+        auto Op = IROp->C<IR::IROp_Lshl>();
+        if (OpSize == 8)
+          lslv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        else
+          lslv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+      }
+      case IR::OP_ROR: {
+        auto Op = IROp->C<IR::IROp_Ror>();
+        uint8_t Mask = OpSize * 8 - 1;
+
+        switch (OpSize) {
+        case 4: {
+          rorv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 8: {
+          rorv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+        }
+
+        default: LogMan::Msg::A("Unhandled ROR size: %d", OpSize);
+        }
+        break;
+      }
+      case IR::OP_ROL: {
+        auto Op = IROp->C<IR::IROp_Rol>();
+        uint8_t Mask = OpSize * 8 - 1;
+
+        switch (OpSize) {
+        case 4: {
+          movz(TMP1, 32);
+          sub(TMP1.W(), TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          rorv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), TMP1.W());
+        break;
+        }
+        case 8: {
+          movz(TMP1, 64);
+          sub(TMP1, TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          rorv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), TMP1);
+        break;
+        }
+
+        default: LogMan::Msg::A("Unhandled ROL size: %d", OpSize);
+        }
+        break;
+      }
+      case IR::OP_SEXT: {
+        auto Op = IROp->C<IR::IROp_Sext>();
+        LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
+        auto Dst = GetDst<RA_64>(Node);
+
+        switch (Op->SrcSize / 8) {
+        case 1:
+          sxtb(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+        case 2:
+          sxth(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+        case 4:
+          sxtw(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+        case 8:
+          mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+        default: LogMan::Msg::A("Unknown Sext size: %d", Op->SrcSize / 8);
+        }
+        break;
+      }
+      case IR::OP_ZEXT: {
+        auto Op = IROp->C<IR::IROp_Zext>();
+        LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
+        uint32_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
+        if (PhysReg >= FPRBase) {
+          // FPR -> GPR transfer with free truncation
+          switch (Op->SrcSize) {
+          case 8:
+            mov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
+          break;
+          case 16:
+            mov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
+          break;
+          case 32:
+            mov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
+          break;
+          case 64:
+            mov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
+          break;
+          default: LogMan::Msg::A("Unhandled Zext size: %d", Op->SrcSize); break;
+          }
         }
         else {
-          and_(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), ((1ULL << Op->SrcSize) - 1));
+          if (Op->SrcSize == 64) {
+            // GPR->FPR transfer
+            auto Dst = GetDst(Node);
+            eor(Dst.V16B(), Dst.V16B(), Dst.V16B());
+            ins(Dst.V2D(), 0, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
+          else {
+            and_(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), ((1ULL << Op->SrcSize) - 1));
+          }
         }
+        break;
       }
-      break;
-    }
-    case IR::OP_MUL: {
-      auto Op = IROp->C<IR::IROp_Mul>();
-      auto Dst = GetDst<RA_64>(Node);
+      case IR::OP_MUL: {
+        auto Op = IROp->C<IR::IROp_Mul>();
+        auto Dst = GetDst<RA_64>(Node);
 
-      switch (OpSize) {
-      case 1:
-        sxtb(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        sxtb(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(Dst, TMP1, TMP2);
-        sxtb(Dst, Dst);
-      break;
-      case 2:
-        sxth(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        sxth(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(Dst, TMP1, TMP2);
-        sxth(Dst, Dst);
-      break;
-      case 4:
-        sxtw(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        sxtw(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(Dst.W(), TMP1.W(), TMP2.W());
-        sxtw(Dst, Dst);
-      break;
-      case 8:
-        mul(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-      default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+        switch (OpSize) {
+        case 1:
+          sxtb(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          sxtb(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(Dst, TMP1, TMP2);
+          sxtb(Dst, Dst);
+        break;
+        case 2:
+          sxth(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          sxth(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(Dst, TMP1, TMP2);
+          sxth(Dst, Dst);
+        break;
+        case 4:
+          sxtw(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          sxtw(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(Dst.W(), TMP1.W(), TMP2.W());
+          sxtw(Dst, Dst);
+        break;
+        case 8:
+          mul(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+        default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+        }
+        break;
       }
-      break;
-    }
-    case IR::OP_UMUL: {
-      auto Op = IROp->C<IR::IROp_UMul>();
-      auto Dst = GetDst<RA_64>(Node);
+      case IR::OP_UMUL: {
+        auto Op = IROp->C<IR::IROp_UMul>();
+        auto Dst = GetDst<RA_64>(Node);
 
-      switch (OpSize) {
-      case 1:
-        uxtb(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        uxtb(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(Dst, TMP1, TMP2);
-        uxtb(Dst, Dst);
-      break;
-      case 2:
-        uxth(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        uxth(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(Dst, TMP1, TMP2);
-        uxth(Dst, Dst);
-      break;
-      case 4:
-        uxtw(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        uxtw(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(Dst.W(), TMP1.W(), TMP2.W());
-        uxtw(Dst, Dst);
-      break;
-      case 8:
-        mul(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-      default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+        switch (OpSize) {
+        case 1:
+          uxtb(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          uxtb(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(Dst, TMP1, TMP2);
+          uxtb(Dst, Dst);
+        break;
+        case 2:
+          uxth(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          uxth(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(Dst, TMP1, TMP2);
+          uxth(Dst, Dst);
+        break;
+        case 4:
+          uxtw(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          uxtw(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(Dst.W(), TMP1.W(), TMP2.W());
+          uxtw(Dst, Dst);
+        break;
+        case 8:
+          mul(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+        default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+        }
+        break;
       }
-      break;
-    }
-    case IR::OP_BFE: {
-      auto Op = IROp->C<IR::IROp_Bfe>();
-      LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
-      LogMan::Throw::A(Op->Width != 0, "Invalid BFE width of 0");
+      case IR::OP_BFE: {
+        auto Op = IROp->C<IR::IROp_Bfe>();
+        LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
+        LogMan::Throw::A(Op->Width != 0, "Invalid BFE width of 0");
 
-      auto Dst = GetDst<RA_64>(Node);
-      if (OpSize == 16) {
-        LogMan::Throw::A(!(Op->lsb < 64 && (Op->lsb + Op->Width > 64)), "Trying to BFE an XMM across the 64bit split: Beginning at %d, ending at %d", Op->lsb, Op->lsb + Op->Width);
-        uint8_t Offset = Op->lsb;
-        if (Offset < 64) {
-          mov(Dst, GetSrc(Op->Header.Args[0].ID()).D(), 0);
+        auto Dst = GetDst<RA_64>(Node);
+        if (OpSize == 16) {
+          LogMan::Throw::A(!(Op->lsb < 64 && (Op->lsb + Op->Width > 64)), "Trying to BFE an XMM across the 64bit split: Beginning at %d, ending at %d", Op->lsb, Op->lsb + Op->Width);
+          uint8_t Offset = Op->lsb;
+          if (Offset < 64) {
+            mov(Dst, GetSrc(Op->Header.Args[0].ID()).D(), 0);
+          }
+          else {
+            mov(Dst, GetSrc(Op->Header.Args[0].ID()).D(), 1);
+            Offset -= 64;
+          }
+
+          if (Offset) {
+            lsr(Dst, Dst, Offset);
+          }
+
+          if (Op->Width != 64) {
+            ubfx(Dst, Dst, 0, Op->Width);
+          }
         }
         else {
-          mov(Dst, GetSrc(Op->Header.Args[0].ID()).D(), 1);
-          Offset -= 64;
+          lsr(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), Op->lsb);
+          if (Op->Width != 64) {
+            and_(Dst, Dst, ((1ULL << Op->Width) - 1));
+          }
+        }
+        break;
+      }
+      case IR::OP_POPCOUNT: {
+        auto Op = IROp->C<IR::IROp_Popcount>();
+        auto Dst = GetDst<RA_64>(Node);
+        fmov(VTMP1.V1D(), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        cnt(VTMP1.V8B(), VTMP1.V8B());
+        addv(VTMP1.B(), VTMP1.V8B());
+        umov(Dst.W(), VTMP1.B(), 0);
+        break;
+      }
+      case IR::OP_FINDLSB: {
+        auto Op = IROp->C<IR::IROp_FindLSB>();
+        auto Dst = GetDst<RA_64>(Node);
+        auto Src = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (OpSize != 8) {
+          ubfx(TMP1, Src, 0, OpSize * 8);
+          cmp(TMP1, 0);
+          rbit(TMP1, TMP1);
+          clz(Dst, TMP1);
+          csinv(Dst, Dst, xzr, ne);
+        }
+        else {
+          rbit(TMP1, Src);
+          cmp(Src, 0);
+          clz(Dst, TMP1);
+          csinv(Dst, Dst, xzr, ne);
         }
 
-        if (Offset) {
-          lsr(Dst, Dst, Offset);
+        break;
+      }
+      case IR::OP_FINDMSB: {
+        auto Op = IROp->C<IR::IROp_FindMSB>();
+        auto Dst = GetDst<RA_64>(Node);
+        movz(TMP1, OpSize * 8);
+        clz(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        sub(Dst, TMP1, Dst);
+        break;
+      }
+      case IR::OP_CAS: {
+        auto Op = IROp->C<IR::IROp_CAS>();
+        // Args[0]: Expected
+        // Args[1]: Desired
+        // Args[2]: Pointer
+        // DataSrc = *Src1
+        // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
+        // This will write to memory! Careful!
+
+        auto Expected = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        auto Desired = GetSrc<RA_64>(Op->Header.Args[1].ID());
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[2].ID());
+
+        add(TMP1, MEM_BASE, MemSrc);
+        mov(TMP2, Expected);
+
+        switch (OpSize) {
+        case 1: casalb(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
+        case 2: casalh(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
+        case 4: casal(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
+        case 8: casal(TMP2.X(), Desired.X(), MemOperand(TMP1)); break;
+        default: LogMan::Msg::A("Unsupported: %d", OpSize);
         }
 
-        if (Op->Width != 64) {
-          ubfx(Dst, Dst, 0, Op->Width);
+        mov(GetDst<RA_64>(Node), TMP2);
+        break;
+      }
+      case IR::OP_SELECT: {
+        auto Op = IROp->C<IR::IROp_Select>();
+
+        cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+
+        switch (Op->Cond) {
+        case FEXCore::IR::COND_EQ:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::eq);
+        break;
+        case FEXCore::IR::COND_NEQ:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::ne);
+        break;
+        case FEXCore::IR::COND_GE:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::ge);
+        break;
+        case FEXCore::IR::COND_LT:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::lo);
+        break;
+        case FEXCore::IR::COND_GT:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::gt);
+        break;
+        case FEXCore::IR::COND_LE:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::le);
+        break;
+        case FEXCore::IR::COND_CS:
+        case FEXCore::IR::COND_CC:
+        case FEXCore::IR::COND_MI:
+        case FEXCore::IR::COND_PL:
+        case FEXCore::IR::COND_VS:
+        case FEXCore::IR::COND_VC:
+        case FEXCore::IR::COND_HI:
+        case FEXCore::IR::COND_LS:
+        default:
+        LogMan::Msg::A("Unsupported compare type");
+        break;
         }
+
+        break;
       }
-      else {
-        lsr(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), Op->lsb);
-        if (Op->Width != 64) {
-          and_(Dst, Dst, ((1ULL << Op->Width) - 1));
+      case IR::OP_LOADMEM: {
+        auto Op = IROp->C<IR::IROp_LoadMem>();
+
+        auto Dst = GetDst<RA_64>(Node);
+        switch (Op->Size) {
+        case 1:
+          ldrb(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        case 2:
+          ldrh(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        case 4:
+          ldr(Dst.W(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        case 8:
+          ldr(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        case 16:
+          ldr(GetDst(Node), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
         }
+        break;
       }
-      break;
-    }
-    case IR::OP_POPCOUNT: {
-      auto Op = IROp->C<IR::IROp_Popcount>();
-      auto Dst = GetDst<RA_64>(Node);
-      fmov(VTMP1.V1D(), GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      cnt(VTMP1.V8B(), VTMP1.V8B());
-      addv(VTMP1.B(), VTMP1.V8B());
-      umov(Dst.W(), VTMP1.B(), 0);
-      break;
-    }
-    case IR::OP_FINDLSB: {
-      auto Op = IROp->C<IR::IROp_FindLSB>();
-      auto Dst = GetDst<RA_64>(Node);
-      auto Src = GetSrc<RA_64>(Op->Header.Args[0].ID());
-      if (OpSize != 8) {
-        ubfx(TMP1, Src, 0, OpSize * 8);
-        cmp(TMP1, 0);
-        rbit(TMP1, TMP1);
-        clz(Dst, TMP1);
-        csinv(Dst, Dst, xzr, ne);
+      case IR::OP_STOREMEM: {
+        auto Op = IROp->C<IR::IROp_StoreMem>();
+        switch (Op->Size) {
+        case 1:
+          strb(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        case 2:
+          strh(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        case 4:
+          str(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        case 8:
+          str(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        case 16:
+          str(GetSrc(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+        break;
+        default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+        }
+        break;
       }
-      else {
-        rbit(TMP1, Src);
-        cmp(Src, 0);
-        clz(Dst, TMP1);
-        csinv(Dst, Dst, xzr, ne);
+      case IR::OP_MULH: {
+        auto Op = IROp->C<IR::IROp_MulH>();
+        switch (OpSize) {
+        case 1:
+          sxtb(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          sxtb(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(TMP1, TMP1, TMP2);
+          sbfx(GetDst<RA_64>(Node), TMP1, 8, 8);
+        break;
+        case 2:
+          sxth(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          sxth(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(TMP1, TMP1, TMP2);
+          sbfx(GetDst<RA_64>(Node), TMP1, 16, 16);
+        break;
+        case 4:
+          sxtw(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          sxtw(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(TMP1, TMP1, TMP2);
+          sbfx(GetDst<RA_64>(Node), TMP1, 32, 32);
+        break;
+        case 8:
+          smulh(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+        default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+        }
+        break;
       }
+      case IR::OP_UMULH: {
+        auto Op = IROp->C<IR::IROp_UMulH>();
+        switch (OpSize) {
+        case 1:
+          uxtb(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          uxtb(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(TMP1, TMP1, TMP2);
+          ubfx(GetDst<RA_64>(Node), TMP1, 8, 8);
+        break;
+        case 2:
+          uxth(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          uxth(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(TMP1, TMP1, TMP2);
+          ubfx(GetDst<RA_64>(Node), TMP1, 16, 16);
+        break;
+        case 4:
+          uxtw(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          uxtw(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mul(TMP1, TMP1, TMP2);
+          ubfx(GetDst<RA_64>(Node), TMP1, 32, 32);
+        break;
+        case 8:
+          umulh(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+        default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+        }
+        break;
+      }
+      case IR::OP_LUDIV: {
+        auto Op = IROp->C<IR::IROp_LUDiv>();
+        // Each source is OpSize in size
+        // So you can have up to a 128bit divide from x86-64
+        auto Size = OpSize;
+        switch (Size) {
+        case 4: {
+          mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
+          udiv(GetDst<RA_64>(Node), TMP1, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+        break;
+        }
+        case 8: {
+          udiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[2].ID()));
+        break;
+        }
+        default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+        }
+        break;
+      }
+      case IR::OP_LDIV: {
+        auto Op = IROp->C<IR::IROp_LDiv>();
+        // Each source is OpSize in size
+        // So you can have up to a 128bit divide from x86-64
+        auto Size = OpSize;
+        switch (Size) {
+        case 4: {
+          mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
+          sdiv(GetDst<RA_64>(Node), TMP1, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+        break;
+        }
+        case 8: {
+          sdiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[2].ID()));
+        break;
+        }
+        default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+        }
+        break;
+      }
+      case IR::OP_LUREM: {
+        auto Op = IROp->C<IR::IROp_LURem>();
+        // Each source is OpSize in size
+        // So you can have up to a 128bit divide from x86-64
+        auto Size = OpSize;
+        switch (Size) {
+        case 4: {
+          auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
-      break;
-    }
-    case IR::OP_FINDMSB: {
-      auto Op = IROp->C<IR::IROp_FindMSB>();
-      auto Dst = GetDst<RA_64>(Node);
-      movz(TMP1, OpSize * 8);
-      clz(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      sub(Dst, TMP1, Dst);
-      break;
-    }
-    case IR::OP_CAS: {
-      auto Op = IROp->C<IR::IROp_CAS>();
-      // Args[0]: Expected
-      // Args[1]: Desired
-      // Args[2]: Pointer
-      // DataSrc = *Src1
-      // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
-      // This will write to memory! Careful!
+          mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
+          udiv(TMP2, TMP1, Divisor);
 
-      auto Expected = GetSrc<RA_64>(Op->Header.Args[0].ID());
-      auto Desired = GetSrc<RA_64>(Op->Header.Args[1].ID());
-      auto MemSrc = GetSrc<RA_64>(Op->Header.Args[2].ID());
+          msub(GetDst<RA_64>(Node), TMP2, Divisor, TMP1);
+        break;
+        }
+        case 8: {
+          auto Dividend = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
-      add(TMP1, MEM_BASE, MemSrc);
-      mov(TMP2, Expected);
+          udiv(TMP1, Dividend, Divisor);
+          msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
+        break;
+        }
+        default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+        }
+        break;
+      }
+      case IR::OP_LREM: {
+        auto Op = IROp->C<IR::IROp_LRem>();
+        // Each source is OpSize in size
+        // So you can have up to a 128bit divide from x86-64
+        auto Size = OpSize;
+        switch (Size) {
+        case 4: {
+          auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
-      switch (OpSize) {
-      case 1: casalb(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
-      case 2: casalh(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
-      case 4: casal(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
-      case 8: casal(TMP2.X(), Desired.X(), MemOperand(TMP1)); break;
-      default: LogMan::Msg::A("Unsupported: %d", OpSize);
-      }
+          mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
+          sdiv(TMP2, TMP1, Divisor);
 
-      mov(GetDst<RA_64>(Node), TMP2);
-      break;
-    }
-    case IR::OP_SELECT: {
-      auto Op = IROp->C<IR::IROp_Select>();
+          msub(GetDst<RA_64>(Node), TMP2, Divisor, TMP1);
+        break;
+        }
+        case 8: {
+          auto Dividend = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
-      cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          sdiv(TMP1, Dividend, Divisor);
+          msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
+        break;
+        }
+        default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+        }
+        break;
+      }
+      case IR::OP_VINSELEMENT: {
+        auto Op = IROp->C<IR::IROp_VInsElement>();
+        mov(VTMP1, GetSrc(Op->Header.Args[0].ID()));
+        switch (Op->ElementSize) {
+        case 1: {
+          mov(VTMP1.V16B(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V16B(), Op->SrcIdx);
+        break;
+        }
+        case 2: {
+          mov(VTMP1.V8H(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V8H(), Op->SrcIdx);
+        break;
+        }
+        case 4: {
+          mov(VTMP1.V4S(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V4S(), Op->SrcIdx);
+        break;
+        }
+        case 8: {
+          mov(VTMP1.V2D(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V2D(), Op->SrcIdx);
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        mov(GetDst(Node), VTMP1);
+        break;
+      }
+      case IR::OP_VADD: {
+        auto Op = IROp->C<IR::IROp_VAdd>();
+        switch (Op->ElementSize) {
+        case 1: {
+          add(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          add(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          add(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          add(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VSUB: {
+        auto Op = IROp->C<IR::IROp_VSub>();
+        switch (Op->ElementSize) {
+        case 1: {
+          sub(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          sub(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          sub(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          sub(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VCMPEQ: {
+        auto Op = IROp->C<IR::IROp_VCMPEQ>();
+        LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
+        switch (Op->ElementSize) {
+        case 1: {
+          cmeq(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          cmeq(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          cmeq(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          cmeq(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VCMPGT: {
+        auto Op = IROp->C<IR::IROp_VCMPGT>();
+        LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
+        switch (Op->ElementSize) {
+        case 1: {
+          cmgt(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          cmgt(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          cmgt(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          cmgt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VZIP: {
+        auto Op = IROp->C<IR::IROp_VZip>();
+        LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
+        switch (Op->ElementSize) {
+        case 1: {
+          zip1(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          zip1(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          zip1(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          zip1(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VZIP2: {
+        auto Op = IROp->C<IR::IROp_VZip2>();
+        LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
+        switch (Op->ElementSize) {
+        case 1: {
+          zip2(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          zip2(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          zip2(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          zip2(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VOR: {
+        auto Op = IROp->C<IR::IROp_VOr>();
+        orr(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+      }
+      case IR::OP_VXOR: {
+        auto Op = IROp->C<IR::IROp_VXor>();
+        eor(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+      }
+      case IR::OP_VEXTR: {
+        auto Op = IROp->C<IR::IROp_VExtr>();
+        // AArch64 ext op has bit arrangement as [Vm:Vn] so arguments need to be swapped
+        ext(GetDst(Node).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index);
+        break;
+      }
+      case IR::OP_VUSHLS: {
+        auto Op = IROp->C<IR::IROp_VUShlS>();
 
-      switch (Op->Cond) {
-      case FEXCore::IR::COND_EQ:
-        csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::eq);
-      break;
-      case FEXCore::IR::COND_NEQ:
-        csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::ne);
-      break;
-      case FEXCore::IR::COND_GE:
-        csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::ge);
-      break;
-      case FEXCore::IR::COND_LT:
-        csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::lo);
-      break;
-      case FEXCore::IR::COND_GT:
-        csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::gt);
-      break;
-      case FEXCore::IR::COND_LE:
-        csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::le);
-      break;
-      case FEXCore::IR::COND_CS:
-      case FEXCore::IR::COND_CC:
-      case FEXCore::IR::COND_MI:
-      case FEXCore::IR::COND_PL:
-      case FEXCore::IR::COND_VS:
-      case FEXCore::IR::COND_VC:
-      case FEXCore::IR::COND_HI:
-      case FEXCore::IR::COND_LS:
-      default:
-      LogMan::Msg::A("Unsupported compare type");
-      break;
-      }
-
-      break;
-    }
-    case IR::OP_LOADMEM: {
-      auto Op = IROp->C<IR::IROp_LoadMem>();
-
-      auto Dst = GetDst<RA_64>(Node);
-      switch (Op->Size) {
-      case 1:
-        ldrb(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      case 2:
-        ldrh(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      case 4:
-        ldr(Dst.W(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      case 8:
-        ldr(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      case 16:
-        ldr(GetDst(Node), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
-      }
-      break;
-    }
-    case IR::OP_STOREMEM: {
-      auto Op = IROp->C<IR::IROp_StoreMem>();
-      switch (Op->Size) {
-      case 1:
-        strb(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      case 2:
-        strh(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      case 4:
-        str(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      case 8:
-        str(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      case 16:
-        str(GetSrc(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-      break;
-      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
-      }
-      break;
-    }
-    case IR::OP_MULH: {
-      auto Op = IROp->C<IR::IROp_MulH>();
-      switch (OpSize) {
-      case 1:
-        sxtb(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        sxtb(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(TMP1, TMP1, TMP2);
-        sbfx(GetDst<RA_64>(Node), TMP1, 8, 8);
-      break;
-      case 2:
-        sxth(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        sxth(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(TMP1, TMP1, TMP2);
-        sbfx(GetDst<RA_64>(Node), TMP1, 16, 16);
-      break;
-      case 4:
-        sxtw(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        sxtw(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(TMP1, TMP1, TMP2);
-        sbfx(GetDst<RA_64>(Node), TMP1, 32, 32);
-      break;
-      case 8:
-        smulh(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-      default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
-      }
-      break;
-    }
-    case IR::OP_UMULH: {
-      auto Op = IROp->C<IR::IROp_UMulH>();
-      switch (OpSize) {
-      case 1:
-        uxtb(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        uxtb(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(TMP1, TMP1, TMP2);
-        ubfx(GetDst<RA_64>(Node), TMP1, 8, 8);
-      break;
-      case 2:
-        uxth(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        uxth(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(TMP1, TMP1, TMP2);
-        ubfx(GetDst<RA_64>(Node), TMP1, 16, 16);
-      break;
-      case 4:
-        uxtw(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        uxtw(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        mul(TMP1, TMP1, TMP2);
-        ubfx(GetDst<RA_64>(Node), TMP1, 32, 32);
-      break;
-      case 8:
-        umulh(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      break;
-      default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
-      }
-      break;
-    }
-    case IR::OP_LUDIV: {
-      auto Op = IROp->C<IR::IROp_LUDiv>();
-      // Each source is OpSize in size
-      // So you can have up to a 128bit divide from x86-64
-      auto Size = OpSize;
-      switch (Size) {
-      case 4: {
-        mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-        udiv(GetDst<RA_64>(Node), TMP1, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-      break;
-      }
-      case 8: {
-        udiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[2].ID()));
-      break;
-      }
-      default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
-      }
-      break;
-    }
-    case IR::OP_LDIV: {
-      auto Op = IROp->C<IR::IROp_LDiv>();
-      // Each source is OpSize in size
-      // So you can have up to a 128bit divide from x86-64
-      auto Size = OpSize;
-      switch (Size) {
-      case 4: {
-        mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-        sdiv(GetDst<RA_64>(Node), TMP1, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-      break;
-      }
-      case 8: {
-        sdiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[2].ID()));
-      break;
-      }
-      default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
-      }
-      break;
-    }
-    case IR::OP_LUREM: {
-      auto Op = IROp->C<IR::IROp_LURem>();
-      // Each source is OpSize in size
-      // So you can have up to a 128bit divide from x86-64
-      auto Size = OpSize;
-      switch (Size) {
-      case 4: {
-        auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
-
-        mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-        udiv(TMP2, TMP1, Divisor);
-
-        msub(GetDst<RA_64>(Node), TMP2, Divisor, TMP1);
-      break;
-      }
-      case 8: {
-        auto Dividend = GetSrc<RA_64>(Op->Header.Args[0].ID());
-        auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
-
-        udiv(TMP1, Dividend, Divisor);
-        msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
-      break;
-      }
-      default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
-      }
-      break;
-    }
-    case IR::OP_LREM: {
-      auto Op = IROp->C<IR::IROp_LRem>();
-      // Each source is OpSize in size
-      // So you can have up to a 128bit divide from x86-64
-      auto Size = OpSize;
-      switch (Size) {
-      case 4: {
-        auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
-
-        mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-        sdiv(TMP2, TMP1, Divisor);
-
-        msub(GetDst<RA_64>(Node), TMP2, Divisor, TMP1);
-      break;
-      }
-      case 8: {
-        auto Dividend = GetSrc<RA_64>(Op->Header.Args[0].ID());
-        auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
-
-        sdiv(TMP1, Dividend, Divisor);
-        msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
-      break;
-      }
-      default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
-      }
-      break;
-    }
-    case IR::OP_VINSELEMENT: {
-      auto Op = IROp->C<IR::IROp_VInsElement>();
-      mov(VTMP1, GetSrc(Op->Header.Args[0].ID()));
-      switch (Op->ElementSize) {
-      case 1: {
-        mov(VTMP1.V16B(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V16B(), Op->SrcIdx);
-      break;
-      }
-      case 2: {
-        mov(VTMP1.V8H(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V8H(), Op->SrcIdx);
-      break;
-      }
-      case 4: {
-        mov(VTMP1.V4S(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V4S(), Op->SrcIdx);
-      break;
-      }
-      case 8: {
-        mov(VTMP1.V2D(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V2D(), Op->SrcIdx);
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      mov(GetDst(Node), VTMP1);
-      break;
-    }
-    case IR::OP_VADD: {
-      auto Op = IROp->C<IR::IROp_VAdd>();
-      switch (Op->ElementSize) {
-      case 1: {
-        add(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-      }
-      case 2: {
-        add(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-      break;
-      }
-      case 4: {
-        add(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-      break;
-      }
-      case 8: {
-        add(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_VSUB: {
-      auto Op = IROp->C<IR::IROp_VSub>();
-      switch (Op->ElementSize) {
-      case 1: {
-        sub(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-      }
-      case 2: {
-        sub(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-      break;
-      }
-      case 4: {
-        sub(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-      break;
-      }
-      case 8: {
-        sub(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_VCMPEQ: {
-      auto Op = IROp->C<IR::IROp_VCMPEQ>();
-      LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
-      switch (Op->ElementSize) {
-      case 1: {
-        cmeq(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-      }
-      case 2: {
-        cmeq(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-      break;
-      }
-      case 4: {
-        cmeq(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-      break;
-      }
-      case 8: {
-        cmeq(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_VCMPGT: {
-      auto Op = IROp->C<IR::IROp_VCMPGT>();
-      LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
-      switch (Op->ElementSize) {
-      case 1: {
-        cmgt(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-      }
-      case 2: {
-        cmgt(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-      break;
-      }
-      case 4: {
-        cmgt(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-      break;
-      }
-      case 8: {
-        cmgt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_VZIP: {
-      auto Op = IROp->C<IR::IROp_VZip>();
-      LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
-      switch (Op->ElementSize) {
-      case 1: {
-        zip1(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-      }
-      case 2: {
-        zip1(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-      break;
-      }
-      case 4: {
-        zip1(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-      break;
-      }
-      case 8: {
-        zip1(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_VZIP2: {
-      auto Op = IROp->C<IR::IROp_VZip2>();
-      LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
-      switch (Op->ElementSize) {
-      case 1: {
-        zip2(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-      }
-      case 2: {
-        zip2(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-      break;
-      }
-      case 4: {
-        zip2(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-      break;
-      }
-      case 8: {
-        zip2(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_VOR: {
-      auto Op = IROp->C<IR::IROp_VOr>();
-      orr(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-    }
-    case IR::OP_VXOR: {
-      auto Op = IROp->C<IR::IROp_VXor>();
-      eor(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-    }
-    case IR::OP_VEXTR: {
-      auto Op = IROp->C<IR::IROp_VExtr>();
-      // AArch64 ext op has bit arrangement as [Vm:Vn] so arguments need to be swapped
-      ext(GetDst(Node).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index);
-      break;
-    }
-    case IR::OP_VUSHLS: {
-      auto Op = IROp->C<IR::IROp_VUShlS>();
-
-      switch (Op->ElementSize) {
-      case 1: {
-        dup(VTMP1.V16B(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-        ushl(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), VTMP1.V16B());
-      break;
-      }
-      case 2: {
-        dup(VTMP1.V8H(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-        ushl(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), VTMP1.V8H());
-      break;
-      }
-      case 4: {
-        dup(VTMP1.V4S(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-        ushl(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), VTMP1.V4S());
-      break;
-      }
-      case 8: {
-        dup(VTMP1.V2D(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        ushl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), VTMP1.V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_VUMIN: {
-      auto Op = IROp->C<IR::IROp_VUMin>();
-      switch (Op->ElementSize) {
-      case 1: {
-        umin(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-      }
-      case 2: {
-        umin(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-      break;
-      }
-      case 4: {
-        umin(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-      break;
-      }
-      case 8: {
-        umin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_VSMIN: {
-      auto Op = IROp->C<IR::IROp_VSMin>();
-      switch (Op->ElementSize) {
-      case 1: {
-        smin(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-      break;
-      }
-      case 2: {
-        smin(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-      break;
-      }
-      case 4: {
-        smin(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-      break;
-      }
-      case 8: {
-        smin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-      break;
-      }
-      default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-      }
-      break;
-    }
-    case IR::OP_CYCLECOUNTER: {
+        switch (Op->ElementSize) {
+        case 1: {
+          dup(VTMP1.V16B(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          ushl(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), VTMP1.V16B());
+        break;
+        }
+        case 2: {
+          dup(VTMP1.V8H(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          ushl(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), VTMP1.V8H());
+        break;
+        }
+        case 4: {
+          dup(VTMP1.V4S(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          ushl(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), VTMP1.V4S());
+        break;
+        }
+        case 8: {
+          dup(VTMP1.V2D(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          ushl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), VTMP1.V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VUMIN: {
+        auto Op = IROp->C<IR::IROp_VUMin>();
+        switch (Op->ElementSize) {
+        case 1: {
+          umin(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          umin(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          umin(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          umin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VSMIN: {
+        auto Op = IROp->C<IR::IROp_VSMin>();
+        switch (Op->ElementSize) {
+        case 1: {
+          smin(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          smin(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          smin(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          smin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_CYCLECOUNTER: {
 #ifdef DEBUG_CYCLES
-        movz(GetDst<RA_64>(Node), 0);
+          movz(GetDst<RA_64>(Node), 0);
 #else
-        mrs(GetDst<RA_64>(Node), CNTVCT_EL0);
+          mrs(GetDst<RA_64>(Node), CNTVCT_EL0);
 #endif
-      break;
-    }
-    default:
-      LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
-      break;
+        break;
+      }
+      default:
+        LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
+        break;
+      }
+
+      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+      if (CodeBegin == CodeLast) {
+        break;
+      }
+      ++CodeBegin;
     }
 
-    ++Begin;
+    if (BlockIROp->Next.ID() == 0) {
+      break;
+    } else {
+      BlockNode = BlockIROp->Next.GetNode(ListBegin);
+    }
   }
 
   FinalizeCode();
+
+  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(Entry));
 #if _M_X86_64
   if (!CustomDispatchGenerated) {
     auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
@@ -1594,6 +1621,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 #endif
 
   FinalizeCode();
+  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(DispatchPtr));
   // XXX: Crashes currently.
   // Disabling will be useful for debugging ThreadState
   // CustomDispatchGenerated = true;

@@ -38,7 +38,7 @@ namespace FEXCore::Core {
     uint64_t RunCount; ///< Number of times this block of code has been run
   };
 
-  struct __attribute__((packed)) InternalThreadState {
+  struct InternalThreadState {
     FEXCore::Core::ThreadState State;
 
     FEXCore::Context::Context *CTX;
