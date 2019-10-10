@@ -2863,7 +2863,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     }
   }
 
+  void *Exit = getCurr<void*>();
+
   ready();
+
+  DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(Exit) - reinterpret_cast<uintptr_t>(Entry);
 
   return Entry;
 }

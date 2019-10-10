@@ -1,5 +1,6 @@
 #include "Common/MathUtils.h"
 #include "Common/Paths.h"
+
 #include "Interface/Context/Context.h"
 #include "Interface/Core/BlockCache.h"
 #include "Interface/Core/Core.h"
@@ -563,6 +564,10 @@ namespace FEXCore::Context {
 
     if (CodePtr != nullptr) {
       // The core managed to compile the code.
+#if ENABLE_JITSYMBOLS
+      Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
+#endif
+
       return AddBlockMapping(Thread, GuestRIP, CodePtr);
     }
 

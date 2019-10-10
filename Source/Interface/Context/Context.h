@@ -1,4 +1,5 @@
 #pragma once
+#include "Common/JitSymbols.h"
 #include "Event.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
@@ -115,5 +116,9 @@ namespace FEXCore::Context {
     std::vector<uint64_t> InitLocations;
     uint64_t StartingRIP;
     IR::RegisterAllocationPass *RAPass {};
+#if ENABLE_JITSYMBOLS
+    FEXCore::JITSymbols Symbols;
+#endif
+
   };
 }

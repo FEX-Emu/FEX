@@ -47,6 +47,7 @@ endif()
 
 set (SRCS
   Common/Paths.cpp
+  Common/JitSymbols.cpp
   Interface/Config/Config.cpp
   Interface/Context/Context.cpp
   Interface/Core/BlockCache.cpp
@@ -87,6 +88,10 @@ if (ENABLE_JIT)
     list(APPEND SRCS Interface/Core/JIT/Arm64/JIT.cpp)
     list(APPEND JIT_LIBS vixl)
   endif()
+endif()
+
+if (ENABLE_JITSYMBOLS)
+  add_definitions(-DENABLE_JITSYMBOLS=1)
 endif()
 
 # Generate IR include file
