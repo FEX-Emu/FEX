@@ -104,8 +104,6 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
       }
 
       *out << "\n";
-      printf("%s", out->str().c_str());
-      *out = std::stringstream{};
 
       // CodeLast is inclusive. So we still need to dump the CodeLast op as well
       if (CodeBegin == CodeLast) {

@@ -588,7 +588,6 @@ namespace FEXCore::IR {
       else {
         // We managed to RA, leave now
         HadFullRA = true;
-        Disp->ShouldDump = false;
         return Changed;
       }
     }

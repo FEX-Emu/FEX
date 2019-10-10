@@ -534,7 +534,7 @@ namespace FEXCore::Context {
       // Run the passmanager over the IR from the dispatcher
       PassManager.Run(Thread->OpDispatcher.get());
 
-      // if (Thread->OpDispatcher->ShouldDump)
+      if (Thread->OpDispatcher->ShouldDump)
       {
         std::stringstream out;
         auto NewIR = Thread->OpDispatcher->ViewIR();

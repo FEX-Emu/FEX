@@ -38,12 +38,11 @@ bool SyscallOptimization::Run(OpDispatchBuilder *Disp) {
       auto IROp = CodeNode->Op(DataBegin);
 
       if (IROp->Op == FEXCore::IR::OP_SYSCALL) {
-        Disp->ShouldDump = true;
         // Is the first argument a constant?
         uint64_t Constant;
         if (Disp->IsValueConstant(IROp->Args[0], &Constant)) {
-          LogMan::Msg::D("Whoa. Syscall argument is constant: %ld", Constant);
-          Changed = true;
+          // XXX: We can now optimize this syscall
+          //Changed = true;
         }
 
       }
