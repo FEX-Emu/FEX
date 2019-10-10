@@ -21,7 +21,7 @@ BlockCache::BlockCache(FEXCore::Context::Context *CTX)
   // At 64GB of virtual memory this will allocate 128MB of virtual memory space
   PagePointer = reinterpret_cast<uintptr_t>(mmap(nullptr, ctx->Config.VirtualMemSize / 4096 * 8, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 
-  // Allocate our memory backing our pageso
+  // Allocate our memory backing our pages
   // We need 32KB per guest page (One pointer per byte)
   // XXX: We can drop down to 16KB if we store 4byte offsets from the code base
   // We currently limit to 128MB of real memory for caching for the total cache size.

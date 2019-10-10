@@ -21,14 +21,14 @@ public:
     Address >>= 12;
 
     uintptr_t *Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
-    uint64_t PagePointer = Pointers[Address];
-    if (!PagePointer) {
+    uint64_t LocalPagePointer = Pointers[Address];
+    if (!LocalPagePointer) {
       // Page for this code didn't even exist, nothing to do
       return;
     }
 
     // Page exists, just set the offset to zero
-    uintptr_t *BlockPointers = reinterpret_cast<uintptr_t*>(PagePointer);
+    uintptr_t *BlockPointers = reinterpret_cast<uintptr_t*>(LocalPagePointer);
     BlockPointers[PageOffset] = 0;
   }
 
@@ -60,6 +60,8 @@ public:
   void ClearCache();
 
   void HintUsedRange(uint64_t Address, uint64_t Size);
+
+  uintptr_t GetPagePointer() { return PagePointer; }
 
 private:
   uintptr_t AllocateBackingForPage() {
