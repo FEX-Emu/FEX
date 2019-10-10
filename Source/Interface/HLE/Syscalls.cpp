@@ -12,6 +12,116 @@
 constexpr uint64_t PAGE_SIZE = 4096;
 
 namespace FEXCore {
+#ifdef DEBUG_STRACE
+void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) {
+  switch (Args->Argument[0]) {
+  case SYSCALL_BRK: LogMan::Msg::D("brk(%p)                               = 0x%lx", Args->Argument[1], Ret); break;
+  case SYSCALL_ACCESS:
+    LogMan::Msg::D("access(\"%s\", %d) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2], Ret);
+    break;
+  case SYSCALL_OPENAT:
+    LogMan::Msg::D("openat(%ld, \"%s\", %d) = %ld", Args->Argument[1], CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[2]), Args->Argument[3], Ret);
+    break;
+  case SYSCALL_STAT:
+    LogMan::Msg::D("stat(\"%s\", {...}) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Ret);
+    break;
+  case SYSCALL_FSTAT:
+    LogMan::Msg::D("fstat(%ld, {...}) = %ld", Args->Argument[1], Ret);
+    break;
+  case SYSCALL_MMAP:
+    LogMan::Msg::D("mmap(%p, %ld, %ld, %ld, %d, %p) = %p", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], static_cast<int32_t>(Args->Argument[5]), Args->Argument[6], Ret);
+    break;
+  case SYSCALL_CLOSE:
+    LogMan::Msg::D("close(%ld) = %ld", Args->Argument[1], Ret);
+    break;
+  case SYSCALL_READ:
+    LogMan::Msg::D("read(%ld, {...}, %ld) = %ld", Args->Argument[1], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_ARCH_PRCTL:
+    LogMan::Msg::D("arch_prctl(%ld, %p) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
+  case SYSCALL_MPROTECT:
+    LogMan::Msg::D("mprotect(%p, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_MUNMAP:
+    LogMan::Msg::D("munmap(%p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
+  case SYSCALL_UNAME:
+    LogMan::Msg::D("uname ({...}) = %ld", Ret);
+    break;
+  case SYSCALL_UMASK:
+    LogMan::Msg::D("umask(0x%lx) = %ld", Args->Argument[1], Ret);
+    break;
+  case SYSCALL_CHDIR:
+    LogMan::Msg::D("chdir(\"%s\") = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Ret);
+    break;
+  case SYSCALL_EXIT:
+    LogMan::Msg::D("exit(0x%lx)", Args->Argument[1]);
+    break;
+  case SYSCALL_WRITE:
+    LogMan::Msg::D("write(%ld, %p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_WRITEV:
+    LogMan::Msg::D("writev(%ld, %p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_EXIT_GROUP:
+    LogMan::Msg::D("exit_group(0x%lx)", Args->Argument[1]);
+    break;
+  case SYSCALL_SET_TID_ADDRESS:
+    LogMan::Msg::D("set_tid_address(%p) = %ld", Args->Argument[1], Ret);
+    break;
+  case SYSCALL_SET_ROBUST_LIST:
+    LogMan::Msg::D("set_robust_list(%p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
+  case SYSCALL_RT_SIGACTION:
+    LogMan::Msg::D("rt_sigaction(%ld, %p, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_RT_SIGPROCMASK:
+    LogMan::Msg::D("rt_sigprocmask(%ld, %p, %p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
+    break;
+  case SYSCALL_PRLIMIT64:
+    LogMan::Msg::D("prlimit64(%ld, %ld, %p, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
+    break;
+  case SYSCALL_GETPID:
+    LogMan::Msg::D("getpid() = %ld", Ret);
+    break;
+  case SYSCALL_GETUID:
+    LogMan::Msg::D("getuid() = %ld", Ret);
+    break;
+  case SYSCALL_GETGID:
+    LogMan::Msg::D("getgid() = %ld", Ret);
+    break;
+  case SYSCALL_GETEUID:
+    LogMan::Msg::D("geteuid() = %ld", Ret);
+    break;
+  case SYSCALL_GETEGID:
+    LogMan::Msg::D("getegid() = %ld", Ret);
+    break;
+  case SYSCALL_GETTID:
+    LogMan::Msg::D("gettid() = %ld", Ret);
+    break;
+  case SYSCALL_TGKILL:
+    LogMan::Msg::D("tgkill(%ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
+  case SYSCALL_LSEEK:
+    LogMan::Msg::D("lseek(%ld, %ld, %ld = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_IOCTL:
+    LogMan::Msg::D("ioctl(%ld, %ld, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_TIME:
+    LogMan::Msg::D("time(%p) = %ld", Args->Argument[1], Ret);
+    break;
+  case SYSCALL_CLOCK_GETTIME:
+    LogMan::Msg::D("clock_gettime(%ld, %p) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
+  case SYSCALL_READLINK:
+    LogMan::Msg::D("readlink(\"%s\") = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Ret);
+    break;
+  default: LogMan::Msg::D("Unknown strace: %d", Args->Argument[0]);
+  }
+}
+#endif
 void SyscallHandler::DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread, uint64_t Addr) {
   DataSpaceSize = 0;
   DataSpace = Addr;
@@ -23,8 +133,6 @@ void SyscallHandler::DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thr
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
   uint64_t Result = 0;
-
-  LogMan::Msg::D("Syscall: %d", Args->Argument[0]);
 
   switch (Args->Argument[0]) {
   case SYSCALL_UNAME: {
@@ -459,6 +567,9 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   break;
   }
 
+#ifdef DEBUG_STRACE
+  Strace(Args, Result);
+#endif
   return Result;
 }
 }

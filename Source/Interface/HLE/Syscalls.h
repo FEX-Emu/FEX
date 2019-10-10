@@ -70,6 +70,7 @@ struct Futex {
   uint32_t Val;
 };
 
+// #define DEBUG_STRACE
 class SyscallHandler final {
 public:
   SyscallHandler(FEXCore::Context::Context *ctx) : CTX {ctx}, FM {ctx} {}
@@ -99,6 +100,7 @@ private:
   // Futex management
   std::unordered_map<uint64_t, Futex*> Futexes;
   std::mutex FutexMutex;
+
   // BRK management
   uint64_t DataSpace {};
   uint64_t DataSpaceSize {};
@@ -106,5 +108,11 @@ private:
 
   // MMap management
   uint64_t LastMMAP = 0xd000'0000;
+
+#ifdef DEBUG_STRACE
+  void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret);
+#endif
+
 };
+
 }
