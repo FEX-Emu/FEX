@@ -836,14 +836,14 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
 
 void OpDispatchBuilder::CDQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags);
-  // Op size is destination size
-  // Therefore sext OpSize/2
-  uint8_t SrcSize = GetSrcSize(Op) / 2;
-  Src = _Sext(SrcSize * 8, Src);
-  if (SrcSize == 4)
-    Src = _Zext(SrcSize * 2 * 8, Src);
+  uint8_t SrcSize = GetSrcSize(Op);
 
-  StoreResult_WithOpSize(Op, Op->Dest, Src, SrcSize * 2 * 8);
+  Src = _Sext(SrcSize * 4, Src);
+  if (SrcSize == 4) {
+    Src = _Zext(SrcSize * 8, Src);
+    SrcSize *= 2;
+  }
+  StoreResult_WithOpSize(Op, Op->Dest, Src, SrcSize * 8);
 }
 
 void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
@@ -3242,7 +3242,6 @@ void OpDispatchBuilder::ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNo
 
     for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
       if (IROp->Args[i].ID() == Node->Wrapped(ListBegin).ID()) {
-        LogMan::Msg::D("\tAt %%ssa%d: Replacing ID %%ssa%d with %%ssa%d", WrapperOp->ID(), IROp->Args[i].ID(), NewNode->Wrapped(ListBegin).ID());
         Node->RemoveUse();
         NewNode->AddUse();
         IROp->Args[i].NodeOffset = NewNode->Wrapped(ListBegin).NodeOffset;

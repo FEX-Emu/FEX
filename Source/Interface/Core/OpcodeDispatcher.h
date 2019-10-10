@@ -174,11 +174,11 @@ public:
 	IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3) {
     return _Select(ssa0, ssa1, ssa2, ssa3, Cond);
   }
-	IRPair<IROp_Sext> _Sext(uint8_t Size, OrderedNode *ssa0) {
-    return _Sext(ssa0, Size);
+	IRPair<IROp_Sext> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {
+    return _Sext(ssa0, SrcSize);
   }
-	IRPair<IROp_Zext> _Zext(uint8_t Size, OrderedNode *ssa0) {
-    return _Zext(ssa0, Size);
+	IRPair<IROp_Zext> _Zext(uint8_t SrcSize, OrderedNode *ssa0) {
+    return _Zext(ssa0, SrcSize);
   }
 	IRPair<IROp_VInsElement> _VInsElement(uint8_t RegisterSize, uint8_t ElementSize, uint8_t DestIdx, uint8_t SrcIdx, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VInsElement(ssa0, ssa1, RegisterSize, ElementSize, DestIdx, SrcIdx);
