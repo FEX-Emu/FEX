@@ -34,6 +34,7 @@ enum Syscalls {
   SYSCALL_BRK             = 12,  ///< __NR_brk
   SYSCALL_RT_SIGACTION    = 13,  ///< __NR_rt_sigaction
   SYSCALL_RT_SIGPROCMASK  = 14,  ///< __NR_rt_sigprocmask
+  SYSCALL_IOCTL           = 16,  ///< __NR_ioctl
   SYSCALL_WRITEV          = 20,  ///< __NR_writev
   SYSCALL_ACCESS          = 21,  ///< __NR_access
   SYSCALL_NANOSLEEP       = 35,  ///< __NR_nanosleep
@@ -42,13 +43,16 @@ enum Syscalls {
   SYSCALL_EXIT            = 60,  ///< __NR_exit
   SYSCALL_WAIT4           = 61,  ///< __NR_wait4
   SYSCALL_UNAME           = 63,  ///< __NR_uname
+  SYSCALL_CHDIR           = 80,  ///< __NR_chdir
   SYSCALL_READLINK        = 89,  ///< __NR_readlink
+  SYSCALL_UMASK           = 95,  ///< __NR_umask
   SYSCALL_GETUID          = 102, ///< __NR_getuid
   SYSCALL_GETGID          = 104, ///< __NR_getgid
   SYSCALL_GETEUID         = 107, ///< __NR_geteuid
   SYSCALL_GETEGID         = 108, ///< __NR_getegid
   SYSCALL_ARCH_PRCTL      = 158, ///< __NR_arch_prctl
   SYSCALL_GETTID          = 186, ///< __NR_gettid
+  SYSCALL_TIME            = 201, ///< __NR_time
   SYSCALL_FUTEX           = 202, ///< __NR_futex
   SYSCALL_SET_TID_ADDRESS = 218, ///< __NR_set_tid_address
   SYSCALL_CLOCK_GETTIME   = 228, ///< __NR_clock_gettime
