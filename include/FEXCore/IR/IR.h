@@ -136,6 +136,10 @@ public:
 		return &Node;
 	}
 
+  static NodeWrapperIterator Invalid() {
+    return NodeWrapperIterator(0);
+  }
+
 private:
 	uintptr_t BaseList{};
 	NodeType Node{};
