@@ -10,6 +10,7 @@ using namespace Xbyak;
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 // #define DEBUG_RA 1
+// #define DEBUG_CYCLES
 
 namespace FEXCore::CPU {
 // Temp registers
@@ -107,7 +108,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx)
   Stack.resize(9000 * 16 * 64);
 
   RAPass = CTX->GetRegisterAllocatorPass();
-  RAPass->SetSupportsSpills(false);
+  RAPass->SetSupportsSpills(true);
 
   RASet = RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
   RAPass->AddRegisters(RASet, GPRClass, GPRBase, NumGPRs);

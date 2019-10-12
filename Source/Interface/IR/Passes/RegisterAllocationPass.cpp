@@ -1,5 +1,6 @@
 #include "Common/BitSet.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
+#include "Interface/IR/Passes.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
 #include <iterator>
@@ -338,12 +339,6 @@ namespace FEXCore::IR {
       }
 
       if (Reg == ~0U) {
-        auto RegisterNode = GetRegisterNode(i);
-        // LogMan::Msg::E("\t%%ssa%d with no-RA has live range [%d, %d): Remat cost: %d", i, LiveRanges[i].Begin, LiveRanges[i].End, LiveRanges[i].RematCost);
-        for (uint32_t j = 0; j < RegisterNode->InterferenceCount; ++j) {
-          uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
-          // LogMan::Msg::E("\t\tInterferes with %%ssa%d: live range[%d, %d): Remat cost: %d", InterferenceNode, LiveRanges[InterferenceNode].Begin, LiveRanges[InterferenceNode].End, LiveRanges[InterferenceNode].RematCost);
-        }
         Graph->SpillStack.emplace_back(SpillStackUnit{i, CurrentNode->RegisterClass});
       }
       else {
@@ -352,7 +347,6 @@ namespace FEXCore::IR {
     }
 
     if (!Graph->SpillStack.empty()) {
-      LogMan::Msg::E("Couldn't allocate %ld registers\n", Graph->SpillStack.size());
       HasSpills = true;
     }
   }
@@ -370,26 +364,97 @@ namespace FEXCore::IR {
     uintptr_t ListBegin = CurrentIR.GetListData();
     uintptr_t DataBegin = CurrentIR.GetData();
 
-    while (Begin != End) {
+    uint32_t SearchID = Node->Wrapped(ListBegin).ID();
+
+    while (1) {
       using namespace FEXCore::IR;
       OrderedNodeWrapper *WrapperOp = Begin();
       OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
       FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
 
-      LogMan::Msg::D("\t\t%%ssa%d Do we have %%ssa%d", WrapperOp->ID(), Node->Wrapped(ListBegin).ID());
       for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
         uint32_t ArgNode = IROp->Args[i].ID();
-        LogMan::Msg::D("\t\t\tArg[%d] %%ssa%d == %%ssa%d ?", i, ArgNode, Node->Wrapped(ListBegin).ID());
-        if (ArgNode == Node->Wrapped(ListBegin).ID()) {
-          LogMan::Msg::D("\t\t\tFound it");
+        if (ArgNode == SearchID) {
           return Begin;
         }
+      }
+
+      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+      if (Begin == End) {
+        break;
       }
 
       ++Begin;
     }
 
-    return End;
+    return NodeWrapperIterator::Invalid();
+  }
+
+  uint32_t RegisterAllocationPass::FindNodeToSpill(RegisterAllocationPass::RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange) {
+    uint32_t InterferenceToSpill = ~0U;
+    uint32_t InterferenceLowestCost = ~0U;
+    uint32_t InterferenceFarthest = 0;
+
+    for (uint32_t j = 0; j < RegisterNode->InterferenceCount; ++j) {
+      uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
+      auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
+      if (CurrentLocation < InterferenceLiveRange->Begin) {
+        continue;
+      }
+
+      // If the interference's live range is past this op's live range then we can dump it
+      if (InterferenceLiveRange->End > OpLiveRange->End &&
+          InterferenceLiveRange->RematCost != 1) {
+
+        bool Found = false;
+        if (InterferenceLiveRange->End > InterferenceFarthest) {
+          Found = true;
+        }
+        else if (InterferenceLiveRange->RematCost < InterferenceLowestCost) {
+          Found = true;
+        }
+
+        if (Found) {
+          InterferenceToSpill = j;
+          InterferenceLowestCost = InterferenceLiveRange->RematCost;
+          InterferenceFarthest = InterferenceLiveRange->End;
+        }
+      }
+    }
+
+    // Couldn't find register to spill
+    // Be more aggressive
+    if (InterferenceToSpill == ~0U) {
+      for (uint32_t j = 0; j < RegisterNode->InterferenceCount; ++j) {
+        uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
+        auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
+
+        if (CurrentLocation < InterferenceLiveRange->Begin) {
+          continue;
+        }
+
+        if (InterferenceLiveRange->RematCost != 1) {
+          bool Found = false;
+          if (OpLiveRange->End != InterferenceLiveRange->End &&
+              OpLiveRange->Begin > InterferenceLiveRange->Begin) {
+            Found = true;
+          }
+          else if (OpLiveRange->End != InterferenceLiveRange->End) {
+            Found = true;
+          }
+
+          if (Found) {
+            InterferenceToSpill = j;
+            InterferenceLowestCost = InterferenceLiveRange->RematCost;
+            InterferenceFarthest = InterferenceLiveRange->End;
+          }
+
+        }
+      }
+    }
+
+    LogMan::Throw::A(InterferenceToSpill != ~0U, "Couldn't find Node to spill");
+    return InterferenceToSpill;
   }
 
   void RegisterAllocationPass::ClearSpillList(OpDispatchBuilder *Disp) {
@@ -397,174 +462,146 @@ namespace FEXCore::IR {
     uintptr_t ListBegin = CurrentIR.GetListData();
     uintptr_t DataBegin = CurrentIR.GetData();
 
-    IR::NodeWrapperIterator Begin = CurrentIR.begin();
-    IR::NodeWrapperIterator End = CurrentIR.end();
-
     auto LastCursor = Disp->GetWriteCursor();
 
-    while (Begin != End) {
-      OrderedNodeWrapper *WrapperOp = Begin();
-      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-      FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
-      auto Iter = IsInSpillStack(&Graph->SpillStack, WrapperOp->ID());
-      if (Iter != Graph->SpillStack.end()) {
-        auto RegisterNode = GetRegisterNode(Iter->Node);
-        auto *OpLiveRange = &LiveRanges[Iter->Node];
-        auto SpillSlot = std::distance(Graph->SpillStack.begin(), Iter);
+    auto HeaderBegin = CurrentIR.begin();
+    auto HeaderOp = HeaderBegin();
 
-        bool Spilled = false;
-        if (1) {
-          for (uint32_t j = 0; j < RegisterNode->InterferenceCount; ++j) {
-            uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
-            if (LiveRanges[InterferenceNode].End > OpLiveRange->End &&
-                LiveRanges[InterferenceNode].RematCost == 1) { // CONSTANT
-              // We want to end the live range of this value here and continue it on first use
-              auto ConstantRegisterNode = GetRegisterNode(InterferenceNode);
-              auto *ConstantLiveRange = &LiveRanges[InterferenceNode];
-              OrderedNodeWrapper ConstantOp = OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(OrderedNode));
-              OrderedNode *ConstantNode = ConstantOp.GetNode(ListBegin);
-              FEXCore::IR::IROp_Constant const *ConstantIROp = ConstantNode->Op(DataBegin)->C<IR::IROp_Constant>();
-              LogMan::Throw::A(ConstantIROp->Header.Op == OP_CONSTANT, "This needs to be const");
+    OrderedNode *RealNode = HeaderOp->GetNode(ListBegin);
+    auto HeaderIROp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+    LogMan::Throw::A(HeaderIROp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
-              // First op post Spill
-              auto NextIter = Begin;
-              ++NextIter;
-              auto FirstUseLocation = FindFirstUse(Disp, ConstantNode, NextIter, End);
-              if (FirstUseLocation != End) {
-                // LogMan::Throw::A(FirstUseLocation != End, "Failure to find op use");
-                OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
-                OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
-                Disp->SetWriteCursor(FirstUseOrderedNode);
-                auto FilledConstant = Disp->_Constant(ConstantIROp->Constant);
-                Disp->ReplaceAllUsesWithInclusive(ConstantNode, FilledConstant, FirstUseLocation, End);
-              }
-              Spilled = true;
-              break;
-            }
-          }
-        }
+    OrderedNode *BlockNode = HeaderIROp->Blocks.GetNode(ListBegin);
 
-        if (!Spilled) {
-          uint32_t InterferenceToSpill = ~0U;
-          uint32_t InterferenceLowestCost = ~0U;
-          uint32_t InterferenceFarthest = 0;
+    while (1) {
+      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+      LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-          for (uint32_t j = 0; j < RegisterNode->InterferenceCount; ++j) {
-            uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
-            auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
-            // If the interference's live range is past this op's live range then we can dump it
-            if (InterferenceLiveRange->End > OpLiveRange->End &&
-                InterferenceLiveRange->RematCost != 1) {
+      // We grab these nodes this way so we can iterate easily
+      auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
+      auto CodeLast = CurrentIR.at(BlockIROp->Last);
+      while (1) {
+        auto CodeOp = CodeBegin();
+        auto Iter = IsInSpillStack(&Graph->SpillStack, CodeOp->ID());
 
-              bool Found = false;
-              if (InterferenceLiveRange->End > InterferenceFarthest) {
-                Found = true;
-              }
-              else if (InterferenceLiveRange->RematCost < InterferenceLowestCost) {
-                Found = true;
-              }
+        if (Iter != Graph->SpillStack.end()) {
+          auto RegisterNode = GetRegisterNode(Iter->Node);
+          auto *OpLiveRange = &LiveRanges[Iter->Node];
 
-              if (Found) {
-                InterferenceToSpill = j;
-                InterferenceLowestCost = InterferenceLiveRange->RematCost;
-                InterferenceFarthest = InterferenceLiveRange->End;
-              }
-            }
-          }
-
-          // Couldn't find register to spill
-          // Be more aggressive
-          if (InterferenceToSpill == ~0U) {
+          bool Spilled = false;
+          // This will try rematerializing constants first
+          // AArch64 constant remat cost is 1-2 cycles (1-4 instructions with uop fusion)
+          if (1) {
             for (uint32_t j = 0; j < RegisterNode->InterferenceCount; ++j) {
               uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
-              auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
-              if (InterferenceLiveRange->RematCost != 1) {
-                bool Found = false;
-                if (OpLiveRange->End != InterferenceLiveRange->End &&
-                    OpLiveRange->Begin > InterferenceLiveRange->Begin) {
-                  Found = true;
-                }
-                else if (OpLiveRange->End != InterferenceLiveRange->End) {
-                  Found = true;
-                }
+              if (LiveRanges[InterferenceNode].End > OpLiveRange->End &&
+                  LiveRanges[InterferenceNode].RematCost == 1) { // CONSTANT
+                // We want to end the live range of this value here and continue it on first use
+                OrderedNodeWrapper ConstantOp = OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(OrderedNode));
+                OrderedNode *ConstantNode = ConstantOp.GetNode(ListBegin);
+                FEXCore::IR::IROp_Constant const *ConstantIROp = ConstantNode->Op(DataBegin)->C<IR::IROp_Constant>();
+                LogMan::Throw::A(ConstantIROp->Header.Op == OP_CONSTANT, "This needs to be const");
 
-                if (Found) {
-                  InterferenceToSpill = j;
-                  InterferenceLowestCost = InterferenceLiveRange->RematCost;
-                  InterferenceFarthest = InterferenceLiveRange->End;
-                }
-
-              }
-            }
-          }
-
-          if (InterferenceToSpill != ~0U) {
-            uint32_t InterferenceNode = RegisterNode->InterferenceList[InterferenceToSpill];
-            auto InterferenceRegisterNode = GetRegisterNode(InterferenceNode);
-            auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
-            // If the interference's live range is past this op's live range then we can dump it
-            if (1) {
-              OrderedNodeWrapper InterferenceOp = OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(OrderedNode));
-              OrderedNode *InterferenceOrderedNode = InterferenceOp.GetNode(ListBegin);
-              FEXCore::IR::IROp_Header *InterferenceIROp = InterferenceOrderedNode->Op(DataBegin);
-
-              auto PrevIter = Begin;
-              --PrevIter;
-              Disp->SetWriteCursor(PrevIter()->GetNode(ListBegin));
-              auto SpillOp = Disp->_SpillRegister(InterferenceOrderedNode, SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
-              SpillOp.first->Header.Size = InterferenceIROp->Size;
-              SpillOp.first->Header.Elements = InterferenceIROp->Elements;
-
-              {
                 // First op post Spill
-                auto NextIter = Begin;
+                auto NextIter = CodeBegin;
                 ++NextIter;
-                auto FirstUseLocation = FindFirstUse(Disp, InterferenceOrderedNode, NextIter, End);
-                if (FirstUseLocation != End) {
-                  // LogMan::Throw::A(FirstUseLocation != End, "Failure to find op use");
+                auto FirstUseLocation = FindFirstUse(Disp, ConstantNode, NextIter, CodeLast);
+                if (FirstUseLocation != NodeWrapperIterator::Invalid()) {
+                  --FirstUseLocation;
                   OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
                   OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
                   Disp->SetWriteCursor(FirstUseOrderedNode);
-
-                  auto FilledInterference = Disp->_FillRegister(SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
-                  LogMan::Msg::D("\t\tFill at %%ssa%d", FilledInterference.Node->Wrapped(ListBegin).ID());
-                  FilledInterference.first->Header.Size = InterferenceIROp->Size;
-                  FilledInterference.first->Header.Elements = InterferenceIROp->Elements;
-                  Disp->ReplaceAllUsesWithInclusive(InterferenceOrderedNode, FilledInterference, FirstUseLocation, End);
+                  auto FilledConstant = Disp->_Constant(ConstantIROp->Constant);
+                  Disp->ReplaceAllUsesWithInclusive(ConstantNode, FilledConstant, FirstUseLocation, CodeLast);
                 }
                 Spilled = true;
+                break;
               }
-
-              ++SpillSlotCount;
-              break;
             }
           }
+
+          // If we didn't remat a constant then we need to do some real spilling
+          if (!Spilled) {
+            uint32_t InterferenceToSpill = FindNodeToSpill(RegisterNode, CodeBegin()->ID(), OpLiveRange);
+
+            if (InterferenceToSpill != ~0U) {
+              uint32_t InterferenceNode = RegisterNode->InterferenceList[InterferenceToSpill];
+              auto InterferenceRegisterNode = GetRegisterNode(InterferenceNode);
+              // If the interference's live range is past this op's live range then we can dump it
+              if (1) {
+                OrderedNodeWrapper InterferenceOp = OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(OrderedNode));
+                OrderedNode *InterferenceOrderedNode = InterferenceOp.GetNode(ListBegin);
+                FEXCore::IR::IROp_Header *InterferenceIROp = InterferenceOrderedNode->Op(DataBegin);
+
+                auto PrevIter = CodeBegin;
+                --PrevIter;
+                --PrevIter;
+                Disp->SetWriteCursor(PrevIter()->GetNode(ListBegin));
+
+                auto SpillOp = Disp->_SpillRegister(InterferenceOrderedNode, SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
+                SpillOp.first->Header.Size = InterferenceIROp->Size;
+                SpillOp.first->Header.Elements = InterferenceIROp->Elements;
+
+                {
+                  // First op post Spill
+                  auto NextIter = CodeBegin;
+                  ++NextIter;
+                  auto FirstUseLocation = FindFirstUse(Disp, InterferenceOrderedNode, NextIter, CodeLast);
+
+                  LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "Failure to find op use");
+                  if (FirstUseLocation != NodeWrapperIterator::Invalid()) {
+                    --FirstUseLocation;
+                    OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
+                    OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
+                    Disp->SetWriteCursor(FirstUseOrderedNode);
+
+                    auto FilledInterference = Disp->_FillRegister(SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
+                    FilledInterference.first->Header.Size = InterferenceIROp->Size;
+                    FilledInterference.first->Header.Elements = InterferenceIROp->Elements;
+                    Disp->ReplaceAllUsesWithInclusive(InterferenceOrderedNode, FilledInterference, FirstUseLocation, CodeLast);
+                  }
+                  Spilled = true;
+                }
+
+                ++SpillSlotCount;
+                break;
+              }
+            }
+          }
+
+          // LogMan::Throw::A(SpillSlotCount <= Graph->SpillStack.size(), "Managed to hit more spill locations than in the spill stack. %d <= %ld", SpillSlotCount, Graph->SpillStack.size());
+          LogMan::Throw::A(Spilled, "We should have spilled by now");
+
+          Disp->SetWriteCursor(LastCursor);
+          Graph->SpillStack.erase(Iter);
         }
 
-        // LogMan::Throw::A(SpillSlotCount <= Graph->SpillStack.size(), "Managed to hit more spill locations than in the spill stack. %d <= %ld", SpillSlotCount, Graph->SpillStack.size());
-        // auto ConstantVal = Disp->_Constant(NewConstant);
-        // Disp->ReplaceAllUsesWith(RealNode, ConstantVal);
-        LogMan::Throw::A(Spilled, "We should have spilled by now");
-
-        Disp->SetWriteCursor(LastCursor);
-        Graph->SpillStack.erase(Iter);
+        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+        if (CodeBegin == CodeLast) {
+          break;
+        }
+        ++CodeBegin;
       }
 
-      ++Begin;
+      if (BlockIROp->Next.ID() == 0) {
+        break;
+      } else {
+        BlockNode = BlockIROp->Next.GetNode(ListBegin);
+      }
     }
   }
 
   bool RegisterAllocationPass::Run(OpDispatchBuilder *Disp) {
     bool Changed = false;
-    constexpr uint32_t RATries = 1;
 
     SpillSlotCount = 0;
     HasSpills = false;
     HadFullRA = false;
-    for (uint32_t i = 0; i < RATries; ++i) {
+    do {
+      // We need to rerun compaction every step
+      Changed |= LocalCompaction->Run(Disp);
       auto CurrentIR = Disp->ViewIR();
 
-      uintptr_t ListSize = CurrentIR.GetListSize();
       uint32_t SSACount = CurrentIR.GetSSACount();
 
       ResetRegisterGraph(SSACount);
@@ -575,27 +612,28 @@ namespace FEXCore::IR {
       AllocateRegisters();
       if (!Graph->SpillStack.empty()) {
         if (Config_SupportsSpills) {
-          Disp->ShouldDump = true;
           Changed = true;
           ClearSpillList(Disp);
         }
         else {
           HadFullRA = false;
           SpillSlotCount = 0;
+          return Changed;
         }
-        return Changed;
       }
       else {
         // We managed to RA, leave now
         HadFullRA = true;
+        Changed |= LocalCompaction->Run(Disp);
         return Changed;
       }
-    }
+    } while (!Graph->SpillStack.empty());
 
     return Changed;
   }
 
   RegisterAllocationPass::RegisterAllocationPass() {
+    LocalCompaction.reset(CreateIRCompaction());
     LiveRanges.resize(9000);
   }
 }

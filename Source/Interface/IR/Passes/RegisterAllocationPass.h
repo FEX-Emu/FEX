@@ -61,12 +61,14 @@ private:
 
   RegisterNode *GetRegisterNode(uint32_t Node);
   IR::NodeWrapperIterator FindFirstUse(OpDispatchBuilder *Disp, OrderedNode* Node, IR::NodeWrapperIterator Begin, IR::NodeWrapperIterator End);
+  uint32_t FindNodeToSpill(RegisterAllocationPass::RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange);
 
   bool HasSpills {};
   uint32_t SpillSlotCount {};
   bool HadFullRA {};
 
   bool Config_SupportsSpills {true};
+  std::unique_ptr<FEXCore::IR::Pass> LocalCompaction;
 };
 
 }
