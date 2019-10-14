@@ -273,22 +273,28 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     switch (Args->Argument[1]) {
     case 0x1001: // ARCH_SET_GS
       Thread->State.State.gs = Args->Argument[2];
+      Result = 0;
     break;
     case 0x1002: // ARCH_SET_FS
       Thread->State.State.fs = Args->Argument[2];
+      Result = 0;
     break;
     case 0x1003: // ARCH_GET_FS
       *CTX->MemoryMapper.GetPointer<uint64_t*>(Args->Argument[2]) = Thread->State.State.fs;
+      Result = 0;
     break;
     case 0x1004: // ARCH_GET_GS
       *CTX->MemoryMapper.GetPointer<uint64_t*>(Args->Argument[2]) = Thread->State.State.gs;
+      Result = 0;
+    break;
+    case 0x3001: // ARCH_CET_STATUS
+      Result = -22; // We don't support CET, return EINVAL
     break;
     default:
       LogMan::Msg::E("Unknown prctl: 0x%x", Args->Argument[1]);
       CTX->ShouldStop = true;
     break;
     }
-    Result = 0;
   break;
   }
   // Thread management

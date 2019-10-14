@@ -60,6 +60,9 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_07h() {
     ;
   Res.Res[2] = ~0U;
   Res.Res[3] = ~0U;
+
+  Res.Res[2] &= ~(1 << 20); // we don't support CET indirect branch tracking
+  Res.Res[3] &= ~(1 << 7);  // we don't support CET shadow stack features
   return Res;
 }
 
