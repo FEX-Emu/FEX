@@ -2057,14 +2057,17 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 // if (MemData == Xs)
 //    *Xn = Xt
 // Xs = MemData
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX ||
-      Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-    LogMan::Msg::A("We don't support CMPXCHG to FS/GS segment");
-  }
 
   auto Size = GetSrcSize(Op);
   // If this is a memory location then we want the pointer to it
   OrderedNode *Src1 = LoadSource(Op, Op->Dest, Op->Flags, false);
+
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
+    Src1 = _Add(Src1, _LoadContext(8, offsetof(FEXCore::Core::CPUState, fs)));
+  }
+  else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+    Src1 = _Add(Src1, _LoadContext(8, offsetof(FEXCore::Core::CPUState, gs)));
+  }
 
   // This is our source register
   OrderedNode *Src2 = LoadSource(Op, Op->Src1, Op->Flags);
