@@ -1021,7 +1021,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
             cmp(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
 
-            switch (Op->Cond) {
+            switch (Op->Cond.Val) {
             case FEXCore::IR::COND_EQ:
               mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
               cmove(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
@@ -2526,7 +2526,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             cmp(rax, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
 
-            switch (Op->Cond) {
+            switch (Op->Cond.Val) {
               case FEXCore::IR::COND_EQ:
                 mov(rcx, qword [TEMP_STACK + Op->Header.Args[3].ID() * 16]);
                 cmove(rcx, qword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);

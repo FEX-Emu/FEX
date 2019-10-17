@@ -365,7 +365,7 @@
 			"HasDest": true,
       "SSAArgs": "4",
       "Args": [
-        "uint8_t", "Cond"
+        "CondClassType", "Cond"
       ]
     },
 

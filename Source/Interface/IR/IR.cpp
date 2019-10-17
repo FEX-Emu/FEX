@@ -3,10 +3,33 @@
 
 namespace FEXCore::IR {
 #define IROP_GETNAME_IMPL
+#define IROP_GETRAARGS_IMPL
+
 #include "IRDefines.inc"
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, uint64_t Arg) {
   *out << "0x" << std::hex << Arg;
+}
+
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, CondClassType Arg) {
+  std::array<std::string, 14> CondNames = {
+    "EQ",
+    "NEQ",
+    "CS",
+    "CC",
+    "MI",
+    "PL",
+    "VS",
+    "VC",
+    "HI",
+    "LS",
+    "GE",
+    "LT",
+    "GT",
+    "LE",
+  };
+
+  *out << CondNames[Arg];
 }
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, RegisterClassType Arg) {
   if (Arg == 0)

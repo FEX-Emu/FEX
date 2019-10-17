@@ -173,7 +173,7 @@ public:
     return _StoreContext(ssa0, Size, Offset);
   }
 	IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3) {
-    return _Select(ssa0, ssa1, ssa2, ssa3, Cond);
+    return _Select(ssa0, ssa1, ssa2, ssa3, {Cond});
   }
 	IRPair<IROp_Sext> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {
     return _Sext(ssa0, SrcSize);

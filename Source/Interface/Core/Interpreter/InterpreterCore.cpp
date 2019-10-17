@@ -757,7 +757,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
       uint64_t ArgTrue = *GetSrc<uint64_t*>(Op->Header.Args[2]);
       uint64_t ArgFalse = *GetSrc<uint64_t*>(Op->Header.Args[3]);
 
-      switch (Op->Cond) {
+      switch (Op->Cond.Val) {
       case FEXCore::IR::COND_EQ:
         CompResult = Src1 == Src2;
       break;

@@ -322,6 +322,13 @@ struct RegisterClassType final {
   }
 };
 
+struct CondClassType final {
+  uint8_t Val;
+  operator uint8_t() {
+    return Val;
+  }
+};
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES

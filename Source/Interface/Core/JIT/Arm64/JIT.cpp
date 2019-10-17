@@ -937,7 +937,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
 
-        switch (Op->Cond) {
+        switch (Op->Cond.Val) {
         case FEXCore::IR::COND_EQ:
           csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::eq);
         break;

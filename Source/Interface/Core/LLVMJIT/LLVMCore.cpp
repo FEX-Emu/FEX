@@ -953,7 +953,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
     ArgFalse = JITState.IRBuilder->CreateZExtOrTrunc(ArgFalse, ArgTrue->getType());
 
     Value *Cmp{};
-    switch (Op->Cond) {
+    switch (Op->Cond.Val) {
     case FEXCore::IR::COND_EQ:
       Cmp = JITState.IRBuilder->CreateICmpEQ(Src1, Src2);
     break;
