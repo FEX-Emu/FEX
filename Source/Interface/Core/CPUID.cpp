@@ -62,7 +62,13 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_07h() {
   Res.Res[3] = ~0U;
 
   Res.Res[2] &= ~(1 << 20); // we don't support CET indirect branch tracking
-  Res.Res[3] &= ~(1 << 7);  // we don't support CET shadow stack features
+  Res.Res[3] &= ~(
+      (1 << 7)  | // we don't support CET shadow stack features
+      (1 << 16) | // Remove AVX512F
+      (1 << 17) | // Remove AVX512DQ
+      (1 << 28) | // Remove AVX512CD
+      (1 << 30)   // Remove AVX512BW
+      );
   return Res;
 }
 
