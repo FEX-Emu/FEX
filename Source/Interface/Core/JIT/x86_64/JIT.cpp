@@ -320,8 +320,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         case IR::OP_BREAK: {
           auto Op = IROp->C<IR::IROp_Break>();
           switch (Op->Reason) {
-            case 4: // HLT
+            case 0: // Hard fault
+            case 5: // Guest ud2
               ud2();
+            break;
+            case 4: // HLT
+              mov(al, 1);
+              xchg(byte [STATE + offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop)], al);
+
+              // This code matches what is in EXITFUNCTION/ENDFUNCTION
+              if (SpillSlots) {
+                add(rsp, SpillSlots * 16);
+              }
+
+              if (HasRA) {
+                pop(r15);
+                pop(r14);
+                pop(r13);
+                pop(r12);
+                pop(rbp);
+                pop(rbx);
+              }
+              ret();
             break;
             default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
           }
