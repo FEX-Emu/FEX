@@ -20,9 +20,12 @@
     "Dummy": {
     },
     "IRHeader": {
+      "SSAArgs": "1",
+      "SSANames": [
+        "Blocks"
+      ],
       "Args": [
         "uint64_t", "Entry",
-        "OrderedNodeWrapper", "Blocks",
         "uint32_t", "BlockCount"
       ]
     },

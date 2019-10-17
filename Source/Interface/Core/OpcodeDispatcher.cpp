@@ -2157,7 +2157,8 @@ OpDispatchBuilder::IRPair<IROp_EndBlock> OpDispatchBuilder::CreateNewEndBlock(ui
 }
 
 void OpDispatchBuilder::BeginFunction(uint64_t RIP) {
-  _IRHeader(RIP, InvalidNode->Wrapped(ListData.Begin()), 0);
+  Entry = RIP;
+  _IRHeader(InvalidNode, RIP, 0);
   CreateNewBeginBlock();
 }
 
