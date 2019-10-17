@@ -309,7 +309,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     HasSIB = DecodeSIB(&Displacement, ModRM);
   }
 
-  uint8_t Bytes = Info->MoreBytes + Displacement;
+  uint8_t Bytes = Info->MoreBytes;
 
   if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_MUL_2) && HasWideningDisplacement) {
     Bytes <<= 1;
@@ -317,6 +317,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_DIV_2) && HasNarrowingDisplacement) {
     Bytes >>= 1;
   }
+  Bytes += Displacement;
 
   auto ModRMOperand = [&](FEXCore::X86Tables::DecodedOperand &GPR, FEXCore::X86Tables::DecodedOperand &NonGPR, bool HasXMMGPR, bool HasXMMNonGPR, bool GPR8Bit, bool NonGPR8Bit) {
     FEXCore::X86Tables::ModRMDecoded ModRM;
