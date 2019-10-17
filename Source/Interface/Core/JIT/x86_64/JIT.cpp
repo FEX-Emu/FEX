@@ -1582,7 +1582,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             #define LOAD_CTX(x, y) \
               case x: { \
                 movzx(rax, y [STATE + Op->Offset]); \
-                mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax); \
+                mov(qword [TEMP_STACK + (Node * 16)], rax); \
               } \
               break
             switch (Op->Size) {
@@ -1590,22 +1590,22 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             LOAD_CTX(2, word);
             case 4: {
               mov(eax, dword [STATE + Op->Offset]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
             }
             break;
             case 8: {
               mov(rax, qword [STATE + Op->Offset]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
             }
             break;
             case 16: {
               if (Op->Offset % 16 == 0) {
                 movaps(xmm0, xword [STATE + Op->Offset]);
-                movaps(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+                movaps(xword [TEMP_STACK + (Node * 16)], xmm0);
               }
               else {
                 movups(xmm0, xword [STATE + Op->Offset]);
-                movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+                movups(xword [TEMP_STACK + (Node * 16)], xmm0);
               }
             }
             break;
@@ -1661,27 +1661,27 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             switch (OpSize) {
             case 1: {
               movzx(rax, byte [rsp + SlotOffset]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
             }
             break;
             case 2: {
               movzx(rax, word [rsp + SlotOffset]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
             }
             break;
             case 4: {
               mov(rax, dword [rsp + SlotOffset]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
             }
             break;
             case 8: {
               mov(rax, qword [rsp + SlotOffset]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
             }
             break;
             case 16: {
               movaps(xmm0, xword [rsp + SlotOffset]);
-              movaps(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+              movaps(xword [TEMP_STACK + (Node * 16)], xmm0);
             }
             break;
             default:  LogMan::Msg::A("Unhandled FillRegister size: %d", OpSize);
@@ -1759,7 +1759,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
             pop(r11);
             pop(rdi);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_CPUID: {
@@ -1791,13 +1791,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             pop(r11);
             pop(rdi);
 
-            mov(dword [TEMP_STACK + (WrapperOp->ID() * 16) + 0], eax);
+            mov(dword [TEMP_STACK + (Node * 16) + 0], eax);
             shr(rax, 32);
-            mov(dword [TEMP_STACK + (WrapperOp->ID() * 16) + 4], eax);
+            mov(dword [TEMP_STACK + (Node * 16) + 4], eax);
 
-            mov(dword [TEMP_STACK + (WrapperOp->ID() * 16) + 8], edx);
+            mov(dword [TEMP_STACK + (Node * 16) + 8], edx);
             shr(rdx, 32);
-            mov(dword [TEMP_STACK + (WrapperOp->ID() * 16) + 12], edx);
+            mov(dword [TEMP_STACK + (Node * 16) + 12], edx);
             break;
           }
           case IR::OP_EXTRACTELEMENT: {
@@ -1819,7 +1819,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             break;
             default:  LogMan::Msg::A("Unhandled ExtractElementSize: %d", OpSize);
             }
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_LOADFLAG: {
@@ -1827,7 +1827,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
             movzx(rax, byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)]);
             and(rax, 1);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_STOREFLAG: {
@@ -1865,27 +1865,27 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             switch (Op->Size) {
               case 1: {
                 movzx (rcx, byte [rax]);
-                mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rcx);
+                mov (qword [TEMP_STACK + (Node * 16)], rcx);
                 break;
               }
               case 2: {
                 movzx (rcx, word [rax]);
-                mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rcx);
+                mov (qword [TEMP_STACK + (Node * 16)], rcx);
                 break;
               }
               case 4: {
                 mov(ecx, dword [rax]);
-                mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rcx);
+                mov (qword [TEMP_STACK + (Node * 16)], rcx);
                 break;
               }
               case 8: {
                 mov(rcx, qword [rax]);
-                mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rcx);
+                mov(qword [TEMP_STACK + (Node * 16)], rcx);
                 break;
               }
               case 16: {
                 movups(xmm0, xword [rax]);
-                movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+                movups(xword [TEMP_STACK + (Node * 16)], xmm0);
                 if (MemoryDebug) {
                   movq(rcx, xmm0);
                 }
@@ -1987,17 +1987,17 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           case IR::OP_MOV: {
             auto Op = IROp->C<IR::IROp_Mov>();
             mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_CONSTANT: {
             auto Op = IROp->C<IR::IROp_Constant>();
             if (Op->Constant >> 31) {
               mov(rax, Op->Constant);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
             }
             else {
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], Op->Constant);
+              mov(qword [TEMP_STACK + (Node * 16)], Op->Constant);
             }
             break;
           }
@@ -2019,42 +2019,47 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               popcnt(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             break;
             }
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
+            break;
+          }
+          case IR::OP_PRINT: {
+            auto Op = IROp->C<IR::IROp_Print>();
+            mov (rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             break;
           }
           case IR::OP_ADD: {
             auto Op = IROp->C<IR::IROp_Add>();
             mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             add(rax, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_SUB: {
             auto Op = IROp->C<IR::IROp_Sub>();
             mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             sub(rax, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_XOR: {
             auto Op = IROp->C<IR::IROp_Xor>();
             mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             xor(rax, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-            mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov(qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_AND: {
             auto Op = IROp->C<IR::IROp_And>();
             mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             and(rax, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-            mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov(qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_OR: {
             auto Op = IROp->C<IR::IROp_Or>();
             mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             or(rax, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-            mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov(qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_MUL: {
@@ -2065,25 +2070,25 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               movsx(rcx, byte [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               imul(cl);
               movsx(rax, al);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 2:
               movsx(rax, word [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               movsx(rcx, word [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               imul(cx);
               movsx(rax, ax);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 4:
               movsxd(rax, dword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               imul(dword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               movsxd(rax, eax);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 8:
               mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               imul(qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
             }
@@ -2097,24 +2102,24 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               movzx(rcx, byte [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mul(cl);
               movzx(rax, al);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 2:
               movzx(rax, word [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               movzx(rcx, word [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mul(cx);
               movzx(rax, ax);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 4:
               mov(rax, dword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               mul(dword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 8:
               mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               mul(qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
             }
@@ -2128,25 +2133,25 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               movsx(rcx, byte [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               imul(cl);
               movsx(rax, ax);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 2:
               movsx(rax, word [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               movsx(rcx, word [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               imul(cx);
               movsx(rax, dx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 4:
               movsxd(rax, dword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               imul(dword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               movsxd(rax, edx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 8:
               mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               imul(qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rdx);
+              mov(qword [TEMP_STACK + (Node * 16)], rdx);
               break;
             default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
             }
@@ -2160,24 +2165,24 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               movzx(rcx, byte [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mul(cl);
               movzx(rax, ax);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 2:
               movzx(rax, word [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               movzx(rcx, word [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mul(cx);
               movzx(rax, dx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 4:
               mov(rax, dword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               mul(dword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rdx);
+              mov(qword [TEMP_STACK + (Node * 16)], rdx);
               break;
             case 8:
               mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               mul(qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rdx);
+              mov(qword [TEMP_STACK + (Node * 16)], rdx);
               break;
             default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
             }
@@ -2194,7 +2199,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(edx, dword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mov(ecx, dword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);
               idiv(ecx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             }
             case 8: {
@@ -2202,7 +2207,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(rdx, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mov(rcx, qword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);
               idiv(rcx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             }
             default: LogMan::Msg::A("Unknown LDIV Size: %d", Size); break;
@@ -2220,7 +2225,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(edx, dword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mov(ecx, dword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);
               idiv(ecx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rdx);
+              mov(qword [TEMP_STACK + (Node * 16)], rdx);
               break;
             }
             case 8: {
@@ -2228,7 +2233,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(rdx, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mov(rcx, qword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);
               idiv(rcx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rdx);
+              mov(qword [TEMP_STACK + (Node * 16)], rdx);
               break;
             }
             default: LogMan::Msg::A("Unknown LREM Size: %d", Size); break;
@@ -2246,7 +2251,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(edx, dword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mov(ecx, dword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);
               div(ecx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             }
             case 8: {
@@ -2254,7 +2259,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(rdx, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mov(rcx, qword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);
               div(rcx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             }
             default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
@@ -2272,7 +2277,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(edx, dword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mov(ecx, dword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);
               div(ecx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rdx);
+              mov(qword [TEMP_STACK + (Node * 16)], rdx);
               break;
             }
             case 8: {
@@ -2280,7 +2285,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(rdx, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
               mov(rcx, qword [TEMP_STACK + Op->Header.Args[2].ID() * 16]);
               div(rcx);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rdx);
+              mov(qword [TEMP_STACK + (Node * 16)], rdx);
               break;
             }
             default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
@@ -2293,13 +2298,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
             if (Op->SrcSize == 64) {
               movd(xmm0, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
-              movups(qword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+              movups(qword [TEMP_STACK + (Node * 16)], xmm0);
             }
             else {
               mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
               mov(rcx, uint64_t((1ULL << Op->SrcSize) - 1));
               and(rax, rcx);
-              mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov (qword [TEMP_STACK + (Node * 16)], rax);
             }
             break;
           }
@@ -2309,19 +2314,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             switch (Op->SrcSize / 8) {
             case 1:
               movsx(rax, byte [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 2:
               movsx(rax, word [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 4:
               movsxd(rax, dword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             case 8:
               mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
-              mov(qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov(qword [TEMP_STACK + (Node * 16)], rax);
               break;
             default: LogMan::Msg::A("Unknown Sext size: %d", Op->SrcSize / 8);
             }
@@ -2347,7 +2352,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             and(rax, rdx);
             shl(rdx, Op->lsb);
             or(rax, rdx);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_BFE: {
@@ -2375,7 +2380,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
                 and(rax, rcx);
               }
 
-              mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov (qword [TEMP_STACK + (Node * 16)], rax);
             }
             else {
               mov(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
@@ -2387,7 +2392,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
                 and(rax, rcx);
               }
 
-              mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+              mov (qword [TEMP_STACK + (Node * 16)], rax);
             }
             break;
           }
@@ -2398,7 +2403,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             cmp(qword [TEMP_STACK + Op->Header.Args[0].ID() * 16], 1);
             sbb(rax, rax);
             or(rax, rcx);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_FINDMSB: {
@@ -2406,7 +2411,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(rax, OpSize * 8);
             lzcnt(rcx, dword [TEMP_STACK + Op->Header.Args[0].ID() * 16]);
             sub(rax, rcx);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_LSHR: {
@@ -2416,7 +2421,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(rcx, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
             and(rcx, Mask);
             shrx(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16], rcx);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_LSHL: {
@@ -2426,7 +2431,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(rcx, qword [TEMP_STACK + Op->Header.Args[1].ID() * 16]);
             and(rcx, Mask);
             shlx(rax, qword [TEMP_STACK + Op->Header.Args[0].ID() * 16], rcx);
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_ASHR: {
@@ -2455,7 +2460,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
             };
 
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_ROL: {
@@ -2486,7 +2491,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
                 break;
               }
             }
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_ROR: {
@@ -2517,7 +2522,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
             }
             }
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_SELECT: {
@@ -2563,7 +2568,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               LogMan::Msg::A("Unsupported compare type");
               break;
             }
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rcx);
+            mov (qword [TEMP_STACK + (Node * 16)], rcx);
             break;
           }
           case IR::OP_CAS: {
@@ -2613,7 +2618,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             }
 
             // RAX now contains the result
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
             break;
           }
           case IR::OP_VCMPEQ: {
@@ -2638,7 +2643,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
               default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
             }
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VCMPGT: {
@@ -2659,21 +2664,21 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
                 pcmpgtq(xmm0, xmm1);
               default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
             }
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VXOR: {
             auto Op = IROp->C<IR::IROp_VXor>();
             movups(xmm0, xword [TEMP_STACK + (Op->Header.Args[0].ID() * 16)]);
             pxor(xmm0, xword [TEMP_STACK + (Op->Header.Args[1].ID() * 16)]);
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VOR: {
             auto Op = IROp->C<IR::IROp_VOr>();
             movups(xmm0, xword [TEMP_STACK + (Op->Header.Args[0].ID() * 16)]);
             por(xmm0, xword [TEMP_STACK + (Op->Header.Args[1].ID() * 16)]);
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VINSELEMENT: {
@@ -2705,7 +2710,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
             }
 
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VADD: {
@@ -2727,7 +2732,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
             }
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VSUB: {
@@ -2749,7 +2754,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
                 break;
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
             }
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VUSHLS: {
@@ -2769,7 +2774,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
                 break;
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
             }
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VZIP: {
@@ -2791,7 +2796,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
                 break;
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
             }
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VZIP2: {
@@ -2813,7 +2818,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
                 break;
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
             }
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_VEXTR: {
@@ -2821,7 +2826,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             movups(xmm0, xword [TEMP_STACK + (Op->Header.Args[0].ID() * 16)]);
             movups(xmm1, xword [TEMP_STACK + (Op->Header.Args[1].ID() * 16)]);
             palignr(xmm0, xmm1, Op->Index);
-            movups(xword [TEMP_STACK + (WrapperOp->ID() * 16)], xmm0);
+            movups(xword [TEMP_STACK + (Node * 16)], xmm0);
             break;
           }
           case IR::OP_CYCLECOUNTER: {
@@ -2832,9 +2837,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             shl(rdx, 32);
             or(rax, rdx);
             #endif
-            mov (qword [TEMP_STACK + (WrapperOp->ID() * 16)], rax);
+            mov (qword [TEMP_STACK + (Node * 16)], rax);
           break;
           }
+          case IR::OP_DUMMY:
           case IR::OP_CODEBLOCK:
           case IR::OP_IRHEADER:
           case IR::OP_BEGINBLOCK:
