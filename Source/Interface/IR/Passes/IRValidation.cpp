@@ -55,7 +55,8 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
       }
     }
 
-    for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
+    uint8_t NumArgs = IR::GetArgs(IROp->Op);
+    for (uint8_t i = 0; i < NumArgs; ++i) {
       OrderedNodeWrapper Arg = IROp->Args[i];
       if (Arg.ID() == 0) {
         HadError |= true;
