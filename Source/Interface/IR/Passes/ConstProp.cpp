@@ -37,6 +37,22 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
       OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
       auto IROp = CodeNode->Op(DataBegin);
       switch (IROp->Op) {
+      case OP_ADD: {
+        auto Op = IROp->C<IR::IROp_Add>();
+        uint64_t Constant1;
+        uint64_t Constant2;
+
+        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+          uint64_t NewConstant = Constant1 + Constant2;
+          Disp->SetWriteCursor(CodeNode);
+          auto ConstantVal = Disp->_Constant(NewConstant);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
+      break;
+      }
+
       case OP_ZEXT: {
         auto Op = IROp->C<IR::IROp_Zext>();
         uint64_t Constant;
