@@ -26,7 +26,7 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
 
   *out << "%ssa" << std::to_string(Arg.ID()) << " i" << std::dec << (IROp->Size * 8);
   if (IROp->Elements > 1) {
-    *out << "v" << std::dec << IROp->Elements;
+    *out << "v" << std::dec << (uint32_t)IROp->Elements;
   }
 }
 
@@ -42,13 +42,15 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
   LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  uint8_t CurrentIndent = 0;
+  int8_t CurrentIndent = 0;
   auto AddIndent = [&out, &CurrentIndent]() {
     for (uint8_t i = 0; i < CurrentIndent; ++i) {
       *out << "\t";
     }
   };
 
+  ++CurrentIndent;
+  AddIndent();
   *out << "(%%ssa" << std::to_string(RealNode->Wrapped(ListBegin).ID()) << ") " << "IRHeader ";
   *out << "0x" << std::hex << HeaderOp->Entry << ", ";
   *out << "%%ssa" << HeaderOp->Blocks.ID() << ", ";
@@ -61,12 +63,15 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
     // We grab these nodes this way so we can iterate easily
     auto CodeBegin = IR->at(BlockIROp->Begin);
     auto CodeLast = IR->at(BlockIROp->Last);
+
+    AddIndent();
     *out << "(%%ssa" << std::to_string(BlockNode->Wrapped(ListBegin).ID()) << ") " << "CodeBlock ";
 
     *out << "%%ssa" << std::to_string(BlockIROp->Begin.ID()) << ", ";
     *out << "%%ssa" << std::to_string(BlockIROp->Last.ID()) << ", ";
     *out << "%%ssa" << std::to_string(BlockIROp->Next.ID()) << std::endl;
 
+    ++CurrentIndent;
     while (1) {
       OrderedNodeWrapper *CodeOp = CodeBegin();
       OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
@@ -78,7 +83,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
       if (IROp->HasDest) {
         *out << "%ssa" << std::to_string(CodeOp->ID()) << " i" << std::dec << (IROp->Size * 8);
         if (IROp->Elements > 1) {
-          *out << "v" << std::dec << IROp->Elements;
+          *out << "v" << std::dec << (uint32_t)IROp->Elements;
         }
         *out << " = ";
       }
@@ -90,10 +95,8 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
       switch (IROp->Op) {
         case IR::OP_BEGINBLOCK:
           *out << " %ssa" << std::to_string(CodeOp->ID());
-          ++CurrentIndent;
           break;
         case IR::OP_ENDBLOCK:
-          --CurrentIndent;
           break;
         default: break;
       }
@@ -111,6 +114,8 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
       }
       ++CodeBegin;
     }
+
+    CurrentIndent = std::max(0, CurrentIndent - 1);
 
     if (BlockIROp->Next.ID() == 0) {
       break;
