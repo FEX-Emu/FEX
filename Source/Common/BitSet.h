@@ -13,10 +13,10 @@ struct BitSet final {
 
 	ElementType *Memory;
 	void Allocate(size_t Elements) {
-		Memory = static_cast<ElementType*>(malloc(AlignUp(Elements / MinimumSize, MinimumSize)));
+		Memory = static_cast<ElementType*>(malloc(AlignUp(Elements / MinimumSize, MinimumSize) * MinimumSize));
 	}
 	void Realloc(size_t Elements) {
-		Memory = static_cast<ElementType*>(realloc(Memory, AlignUp(Elements / MinimumSize, MinimumSize)));
+		Memory = static_cast<ElementType*>(realloc(Memory, AlignUp(Elements / MinimumSize, MinimumSize) * MinimumSize));
 	}
 	void Free() {
 		free(Memory);
