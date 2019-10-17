@@ -13,6 +13,9 @@ using namespace Xbyak;
 // #define DEBUG_CYCLES
 
 namespace FEXCore::CPU {
+static void PrintValue(uint64_t Value) {
+  LogMan::Msg::D("Value: 0x%lx", Value);
+}
 // Temp registers
 // rax, rcx, rdx, rsi, r8, r9,
 // r10, r11
@@ -33,7 +36,6 @@ const std::array<Xbyak::Reg, 11> RA16 = { si, r8w, r9w, r10w, r11w, bx, bp, r12w
 const std::array<Xbyak::Reg, 11> RA8 = { sil, r8b, r9b, r10b, r11b, bl, bpl, r12b, r13b, r14b, r15b };
 const std::array<Xbyak::Reg, 11> RAXMM = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
 const std::array<Xbyak::Xmm, 11> RAXMM_x = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
-
 
 class JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
 public:
@@ -1187,6 +1189,29 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov (GetDst<RA_64>(Node), rax);
             break;
           }
+          case IR::OP_PRINT: {
+            auto Op = IROp->C<IR::IROp_Print>();
+
+            push(rdi);
+            push(rdi);
+
+            for (auto &Reg : RA64)
+              push(Reg);
+
+            mov (rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+
+            mov(rax, reinterpret_cast<uintptr_t>(PrintValue));
+            call(rax);
+
+            for (uint32_t i = RA64.size(); i > 0; --i)
+              pop(RA64[i - 1]);
+
+            pop(rdi);
+            pop(rdi);
+
+            break;
+          }
+
           case IR::OP_CPUID: {
             auto Op = IROp->C<IR::IROp_CPUID>();
             using ClassPtrType = FEXCore::CPUIDEmu::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t Function);
