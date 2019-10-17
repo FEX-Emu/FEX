@@ -354,6 +354,7 @@ namespace FEXCore::Context {
     }
 
     Thread->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>();
+    Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
     Thread->BlockCache = std::make_unique<FEXCore::BlockCache>(this);
     Thread->CTX = this;
 
@@ -432,51 +433,48 @@ namespace FEXCore::Context {
 
         TableInfo = DecodedOps.first->at(i).TableInfo;
         DecodedInfo = &DecodedOps.first->at(i);
-        // if (FrontendDecoder.JumpTargets.find(DecodedInfo->PC) != FrontendDecoder.JumpTargets.end()) {
-        //   Thread->OpDispatcher->_EndBlock(0);
-        //   auto JumpTarget = Thread->OpDispatcher->_BeginBlock();
-        //   Thread->OpDispatcher->Arguments.JumpTargets.emplace(DecodedInfo->PC, JumpTarget.location);
-        // }
+        if (FrontendDecoder.JumpTargets.find(DecodedInfo->PC) != FrontendDecoder.JumpTargets.end() &&
+            Thread->OpDispatcher->GetJumpTargetIfExists(DecodedInfo->PC) == nullptr) {
+          auto Jump = Thread->OpDispatcher->_Jump();
+          Thread->OpDispatcher->CreateNewEndBlock(0);
+          auto JumpTarget = Thread->OpDispatcher->CreateNewBeginBlock();
+          Thread->OpDispatcher->SetJumpTarget(Jump, JumpTarget);
+          Thread->OpDispatcher->InsertJumpTarget(DecodedInfo->PC, JumpTarget.Node);
+        }
 
-        // // Check our fixups to see if they still are necessary
-        // auto fixup = Thread->OpDispatcher->Arguments.Fixups.find(DecodedInfo->PC);
-        // if (fixup != Thread->OpDispatcher->Arguments.Fixups.end()) {
-        //   IR::AlignmentType JumpTarget;
-        //   auto it = Thread->OpDispatcher->Arguments.JumpTargets.find(DecodedInfo->PC);
-        //   if (it != Thread->OpDispatcher->Arguments.JumpTargets.end()) {
-        //     JumpTarget = it->second;
-        //   }
+        // Check our fixups to see if they still are necessary
+        auto fixup = Thread->OpDispatcher->Fixups.find(DecodedInfo->PC);
+        if (fixup != Thread->OpDispatcher->Fixups.end()) {
+          IR::OrderedNode *JumpTarget{};
+          auto it = Thread->OpDispatcher->JumpTargets.find(DecodedInfo->PC);
+          if (it != Thread->OpDispatcher->JumpTargets.end()) {
+            JumpTarget = it->second;
+          }
+          else {
+            Thread->OpDispatcher->CreateNewEndBlock(0);
+            JumpTarget = Thread->OpDispatcher->CreateNewBeginBlock();
+          }
 
-        //   for (auto it : fixup->second) {
-        //     switch (it.SourceCondJump->Op) {
-        //     case FEXCore::IR::OP_CONDJUMP: {
-        //       if (JumpTarget.IsInvalid()) {
-        //         Thread->OpDispatcher->_EndBlock(0);
-        //         JumpTarget = Thread->OpDispatcher->_BeginBlock().location;
-        //       }
-        //       auto CondJumpOp = it.SourceCondJump->CW<IR::IROp_CondJump>();
-        //       CondJumpOp->Location = JumpTarget;
-        //     break;
-        //     }
-        //     case FEXCore::IR::OP_JUMP: {
-        //       if (JumpTarget.IsInvalid()) {
-        //         Thread->OpDispatcher->_EndBlock(0);
-        //         JumpTarget = Thread->OpDispatcher->_BeginBlock().location;
-        //       }
-        //       auto JumpOp = it.SourceCondJump->CW<IR::IROp_Jump>();
-        //       JumpOp->Location = JumpTarget;
-        //     break;
-        //     }
+          for (auto it : fixup->second) {
+            switch (it.Op->Op) {
+            case FEXCore::IR::OP_CONDJUMP: {
+              Thread->OpDispatcher->SetJumpTarget(it.Op->CW<IR::IROp_CondJump>(), JumpTarget);
+            break;
+            }
+            case FEXCore::IR::OP_JUMP: {
+              Thread->OpDispatcher->SetJumpTarget(it.Op->CW<IR::IROp_Jump>(), JumpTarget);
+            break;
+            }
 
-        //     default:
-        //       LogMan::Msg::A("Unknown fixup kind");
-        //     break;
-        //     }
-        //   }
+            default:
+              LogMan::Msg::A("Unknown fixup kind: '%s'", std::string(IR::GetName(it.Op->Op)).c_str());
+            break;
+            }
+          }
 
-        //   // No longer need this fixup
-        //   Thread->OpDispatcher->Arguments.Fixups.erase(fixup);
-        // }
+          // No longer need this fixup
+          Thread->OpDispatcher->Fixups.erase(fixup);
+        }
 
         if (TableInfo->OpcodeDispatcher) {
           auto Fn = TableInfo->OpcodeDispatcher;
@@ -494,7 +492,7 @@ namespace FEXCore::Context {
           }
         }
         else {
-          // LogMan::Msg::E("Missing OpDispatcher at 0x%lx", GuestRIP);
+          // LogMan::Msg::A("Missing OpDispatcher at 0x%lx", GuestRIP + TotalInstructionsLength);
           HadDispatchError = true;
         }
 
@@ -521,9 +519,7 @@ namespace FEXCore::Context {
         }
       }
 
-      //LogMan::Throw::A(Thread->OpDispatcher->Arguments.Fixups.empty(), "Still had fixups that weren't fixed!");
-
-      if (!Thread->OpDispatcher->Information.HadUnconditionalExit)
+      // Just dump a new block just incase we get here
       {
         Thread->OpDispatcher->CreateNewEndBlock(TotalInstructionsLength);
         Thread->OpDispatcher->CreateNewBeginBlock();

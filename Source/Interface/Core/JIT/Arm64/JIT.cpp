@@ -369,13 +369,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             Inst << "\t" << Name << " ";
           }
 
-          for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
+          uint8_t NumArgs = IR::GetArgs(IROp->Op);
+          for (uint8_t i = 0; i < NumArgs; ++i) {
             uint32_t ArgNode = IROp->Args[i].ID();
             uint32_t PhysReg = RAPass->GetNodeRegister(ArgNode);
             if (PhysReg >= FPRBase)
-              Inst << "FPR" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
+              Inst << "FPR" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
             else
-              Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
+              Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
           }
         }
       }

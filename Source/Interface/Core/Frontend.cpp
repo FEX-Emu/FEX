@@ -642,7 +642,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
       }
       case 0x3A: { // F3A Table!
         constexpr uint16_t PF_3A_NONE = 0;
-        constexpr uint16_t PF_3A_66   = 1;
+        constexpr uint16_t PF_3A_66   = (1 << 0);
         constexpr uint16_t PF_3A_REX  = (1 << 1);
 
         uint16_t Prefix = PF_3A_NONE;
@@ -797,22 +797,26 @@ bool Decoder::BlockEndCanContinuePast() {
 
 bool Decoder::BranchTargetInMultiblockRange() {
   if (!CTX->Config.Multiblock)
-     return false;
+    return false;
 
   // If the RIP setting is conditional AND within our symbol range then it can be considered for multiblock
   uint64_t TargetRIP = 0;
   bool Conditional = true;
+
   switch (DecodeInst->OP) {
-  case 0x70 ... 0x7F: { // Conditional JUMP
+  case 0x70 ... 0x7F: // Conditional JUMP
+  case 0x80 ... 0x8F: { // More conditional
     // Source is a literal
     // auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
     // auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
     // Target offset is PC + InstSize + Literal
+    LogMan::Throw::A(DecodeInst->Src1.TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
     TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src1.TypeLiteral.Literal;
   break;
   }
   case 0xE9:
   case 0xEB: // Both are unconditional JMP instructions
+    LogMan::Throw::A(DecodeInst->Src1.TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
     TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src1.TypeLiteral.Literal;
     Conditional = false;
   break;
@@ -832,7 +836,7 @@ bool Decoder::BranchTargetInMultiblockRange() {
       MaxCondBranchForward = std::max(MaxCondBranchForward, TargetRIP);
       MaxCondBranchBackwards = std::min(MaxCondBranchBackwards, TargetRIP);
     }
-    //JumpTargets.emplace(TargetRIP);
+    JumpTargets.emplace(TargetRIP);
     return true;
   }
   return false;
@@ -858,12 +862,8 @@ bool Decoder::DecodeInstructionsInBlock(uint8_t const* _InstStream, uint64_t PC)
   if (!SymbolAvailable) {
     // If we don't have a symbol available then assume all branches are valid for multiblock
     SymbolMaxAddress = ~0ULL;
-    SymbolMinAddress = 0;
+    SymbolMinAddress = EntryPoint;
   }
-
-//  LogMan::Msg::I("============================");
-//  LogMan::Msg::I(">>> Started decoding at 0x%lx", PC);
-//  LogMan::Msg::I("============================");
 
   while(!Done) {
     ErrorDuringDecoding = !DecodeInstruction(PC + PCOffset);

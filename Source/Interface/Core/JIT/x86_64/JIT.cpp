@@ -209,6 +209,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 	void *Entry = getCurr<void*>();
 
   HasRA = RAPass->HasFullRA();
+  LogMan::Throw::A(HasRA, "Needs RA");
 
   uint32_t SpillSlots = RAPass->SpillSlots();
   if (HasRA) {
@@ -243,6 +244,16 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
     auto CodeLast = CurrentIR->at(BlockIROp->Last);
 
+    {
+      uint32_t Node = BlockNode->Wrapped(ListBegin).ID();
+      auto IsTarget = JumpTargets.find(Node);
+      if (IsTarget == JumpTargets.end()) {
+        IsTarget = JumpTargets.try_emplace(Node).first;
+      }
+
+      L(IsTarget->second);
+    }
+
     while (1) {
       OrderedNodeWrapper *WrapperOp = CodeBegin();
       OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
@@ -269,13 +280,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             Inst << "\t" << Name << " ";
           }
 
-          for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
+          uint8_t NumArgs = IR::GetArgs(IROp->Op);
+          for (uint8_t i = 0; i < NumArgs; ++i) {
             uint32_t ArgNode = IROp->Args[i].ID();
             uint32_t PhysReg = RAPass->GetNodeRegister(ArgNode);
             if (PhysReg >= XMMBase)
-              Inst << "XMM" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
+              Inst << "XMM" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
             else
-              Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == IROp->NumArgs ? "" : ", ");
+              Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
           }
 
           LogMan::Msg::D("%s", Inst.str().c_str());
@@ -285,13 +297,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
       switch (IROp->Op) {
         case IR::OP_BEGINBLOCK: {
-          auto IsTarget = JumpTargets.find(WrapperOp->ID());
+          auto IsTarget = JumpTargets.find(Node);
           if (IsTarget == JumpTargets.end()) {
-            JumpTargets.try_emplace(WrapperOp->ID());
+            IsTarget = JumpTargets.try_emplace(Node).first;
           }
           else {
-            L(IsTarget->second);
           }
+
+          L(IsTarget->second);
           break;
         }
         case IR::OP_ENDBLOCK: {
@@ -362,6 +375,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
 
           jmp(*TargetLabel, T_NEAR);
+
           break;
         }
         default: break;
@@ -381,8 +395,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               TargetLabel = &IsTarget->second;
             }
 
+            // Take branch if (src != 0)
             cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), 0);
             jne(*TargetLabel, T_NEAR);
+
             break;
           }
           case IR::OP_LOADCONTEXT: {
@@ -1606,6 +1622,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov (GetDst<RA_64>(Node), rax);
             break;
           }
+          case IR::OP_DUMMY:
           case IR::OP_CODEBLOCK:
           case IR::OP_IRHEADER:
           case IR::OP_BEGINBLOCK:

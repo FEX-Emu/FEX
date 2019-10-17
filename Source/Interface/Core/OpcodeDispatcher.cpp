@@ -308,94 +308,111 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
-  enum CompareType {
-    COMPARE_ZERO,
-    COMPARE_NOTZERO,
-    COMPARE_EQUALMASK,
-    COMPARE_OTHER,
-  };
-  uint32_t FLAGMask;
-  CompareType Type = COMPARE_OTHER;
-
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
   IRPair<IROp_Header> SrcCond;
 
+  IRPair<IROp_Constant> TakeBranch;
+  IRPair<IROp_Constant> DoNotTakeBranch;
+  bool ShouldMulti = Multiblock;
+  TakeBranch = _Constant(1);
+  DoNotTakeBranch = _Constant(0);
+
   switch (Op->OP) {
   case 0x70:
-  case 0x80:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_OF_LOC;
-    Type = COMPARE_NOTZERO;
+  case 0x80: { // JO - Jump if OF == 1
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_NEQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x71:
-  case 0x81:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_OF_LOC;
-    Type = COMPARE_ZERO;
+  case 0x81: { // JNO - Jump if OF == 0
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_EQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x72:
-  case 0x82:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_NOTZERO;
+  case 0x82: { // JC - Jump if CF == 1
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_NEQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x73:
-  case 0x83:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_ZERO;
+  case 0x83: { // JNC - Jump if CF == 0
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_EQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x74:
-  case 0x84:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
-    Type = COMPARE_NOTZERO;
+  case 0x84: { // JE - Jump if ZF == 1
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_NEQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x75:
-  case 0x85:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
-    Type = COMPARE_ZERO;
+  case 0x85: { // JNE - Jump if ZF == 0
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_EQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x76:
-  case 0x86: {
+  case 0x86: { // JNA - Jump if CF == 1 || ZC == 1
     auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
     auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
     auto Check = _Or(Flag1, Flag2);
     SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, OneConst, ZeroConst, OneConst);
+        Check, OneConst, TakeBranch, DoNotTakeBranch);
   break;
   }
   case 0x77:
-  case 0x87: {
+  case 0x87: { // JA - Jump if CF == 0 && ZF == 0
     auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
     auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
     auto Check = _Or(Flag1, _Lshl(Flag2, _Constant(1)));
     SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, ZeroConst, ZeroConst, OneConst);
+        Check, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
   }
   case 0x78:
-  case 0x88:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_SF_LOC;
-    Type = COMPARE_NOTZERO;
+  case 0x88: { // JS - Jump if SF == 1
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_NEQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x79:
-  case 0x89:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_SF_LOC;
-    Type = COMPARE_ZERO;
+  case 0x89: { // JNS - Jump if SF == 0
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_EQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x7A:
-  case 0x8A:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
-    Type = COMPARE_NOTZERO;
+  case 0x8A: { // JP - Jump if PF == 1
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_NEQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x7B:
-  case 0x8B:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
-    Type = COMPARE_ZERO;
+  case 0x8B: { // JNP - Jump if PF == 0
+    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
+    SrcCond = _Select(FEXCore::IR::COND_EQ,
+        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
   break;
+  }
   case 0x7C: // SF <> OF
   case 0x8C: {
     auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
     auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
     SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag1, Flag2, ZeroConst, OneConst);
+        Flag1, Flag2, TakeBranch, DoNotTakeBranch);
   break;
   }
   case 0x7D: // SF = OF
@@ -403,7 +420,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
     auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
     SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag1, Flag2, ZeroConst, OneConst);
+        Flag1, Flag2, TakeBranch, DoNotTakeBranch);
   break;
   }
   case 0x7E: // ZF = 1 || SF <> OF
@@ -420,7 +437,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
     auto Check = _Or(Select1, Select2);
     SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, OneConst, ZeroConst, OneConst);
+        Check, OneConst, TakeBranch, DoNotTakeBranch);
   break;
   }
   case 0x7F: // ZF = 0 && SF = OF
@@ -437,124 +454,153 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
     auto Check = _And(Select1, Select2);
     SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, OneConst, ZeroConst, OneConst);
+        Check, OneConst, TakeBranch, DoNotTakeBranch);
   break;
   }
   default: LogMan::Msg::A("Unknown Jmp Op: 0x%x\n", Op->OP); return;
   }
 
-  if (Type != COMPARE_OTHER) {
-    auto MaskConst = _Constant(FLAGMask);
-
-    auto RFLAG = GetPackedRFLAG(false);
-
-    auto AndOp = _And(RFLAG, MaskConst);
-
-    switch (Type) {
-    case COMPARE_ZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-          AndOp, ZeroConst, ZeroConst, OneConst);
-    break;
-    }
-    case COMPARE_NOTZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          AndOp, ZeroConst, ZeroConst, OneConst);
-    break;
-    }
-    case COMPARE_EQUALMASK: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-          AndOp, MaskConst, ZeroConst, OneConst);
-    break;
-    }
-    case COMPARE_OTHER: break;
-    }
-  }
-
   // The conditions of the previous conditional branches are inverted from what you expect on the x86 side
   // This inversion exists because our condjump needs to jump over code that sets the RIP to the target conditionally
   // XXX: Reenable
-#if 0
-  if (ConfigMultiblock()) {
-    auto CondJump = _CondJump();
-    CondJump.first->Header.NumArgs = 1;
-    CondJump.first->Cond = SrcCond;
-
-    _EndBlock(0);
-    // Make sure to start a new block after ending this one
-    _BeginBlock();
-
+  if (ShouldMulti) {
+    LogMan::Throw::A(Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
     uint64_t Target = Op->PC + Op->InstSize + Op->Src1.TypeLiteral.Literal;
-    if (false && Target > Op->PC) {
-      // If we are forward jumping: Add the IR Op to the fixup list
-      auto it = Arguments.Fixups.find(Target);
-      if (it == Arguments.Fixups.end()) {
-        std::vector<IRArguments::Fixup> empty;
-        it = Arguments.Fixups.emplace(std::make_pair(Target, empty)).first;
+
+    if (Target >= Entry) {
+      auto CondJump = _CondJump(SrcCond);
+
+      auto JumpOver = _Jump();
+      // Generate a fallback block incase we end up in a case where we can't fix this up
+      if (1) {
+        CreateNewEndBlock(0);
+        // Make sure to start a new block after ending this one
+        auto JumpTarget = CreateNewBeginBlock();
+        // This very explicitly avoids the isDest path for Ops. We want the actual destination here
+        SetJumpTarget(CondJump, JumpTarget);
+
+        // Store the new RIP
+        _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), _Constant(Target));
+        _ExitFunction();
       }
-      it->second.emplace_back(IRArguments::Fixup{&CondJump.first->Header});
-      return;
-    }
-    else if (false && Target <= Op->PC) {
-      // If we are jumping backwards then we should have a jump target available in our jump targets list
-      auto it = Arguments.JumpTargets.find(Target);
-      if (it != Arguments.JumpTargets.end()) {
-        CondJump.first->Location = it->second;
+
+      CreateNewEndBlock(0);
+
+      // Make sure to start a new block after ending this one
+      auto JumpTarget = CreateNewBeginBlock();
+      SetJumpTarget(JumpOver, JumpTarget);
+      // Set the instruction after this one to have a jump target
+      InsertJumpTarget(Op->PC + Op->InstSize, JumpTarget.Node);
+
+      if (Target > Op->PC) {
+        // If we are forward jumping: Add the IR Op to the fixup list
+        auto it = Fixups.find(Target);
+        if (it == Fixups.end()) {
+          it = Fixups.try_emplace(Target).first;
+        }
+        it->second.emplace_back(Fixup{CondJump.Node, &CondJump.first->Header});
+
         return;
+      }
+      else if (Target <= Op->PC) {
+        // If we are jumping backwards then we should have a jump target available in our jump targets list
+        auto it = JumpTargets.find(Target);
+        if (it != JumpTargets.end()) {
+          SetJumpTarget(CondJump, it->second);
+          return;
+        }
       }
     }
   }
-#endif
+
   // Fallback
   {
     auto CondJump = _CondJump(SrcCond);
-
-    auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
-    auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
-
-		auto NewRIP = _Add(RIPOffset, RIPTargetConst);
-
-    // Store the new RIP
-    _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-    _ExitFunction();
+    auto Jump = _Jump();
 
     CreateNewEndBlock(0);
 
-    // Make sure to start a new block after ending this one
-    auto JumpTarget = CreateNewBeginBlock();
-    // This very explicitly avoids the isDest path for Ops. We want the actual destination here
-    SetJumpTarget(CondJump, JumpTarget);
+    // Taking branch block
+    {
+      // Make sure to start a new block after ending this one
+      auto JumpTarget = CreateNewBeginBlock();
+
+      auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
+      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+
+      auto NewRIP = _Add(RIPOffset, RIPTargetConst);
+
+      // Store the new RIP
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
+      _ExitFunction();
+      CreateNewEndBlock(0);
+
+      SetJumpTarget(CondJump, JumpTarget);
+    }
+
+    // Failure to take branch
+    {
+      // Make sure to start a new block after ending this one
+      auto JumpTarget = CreateNewBeginBlock();
+
+      // Leave block
+      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+
+      // Store the new RIP
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), RIPTargetConst);
+      _ExitFunction();
+
+      CreateNewEndBlock(0);
+
+      SetJumpTarget(Jump, JumpTarget);
+    }
+
+    CreateNewBeginBlock();
   }
 }
 
 void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
   // This is just an unconditional relative literal jump
   // XXX: Reenable
-#if 0
-  if (ConfigMultiblock()) {
+  if (Multiblock) {
+    LogMan::Throw::A(Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
     uint64_t Target = Op->PC + Op->InstSize + Op->Src1.TypeLiteral.Literal;
-    if (false && Target > Op->PC) {
+    if (Target > Op->PC) {
       // If we are forward jumping: Add the IR Op to the fixup list
-      auto it = Arguments.Fixups.find(Target);
-      if (it == Arguments.Fixups.end()) {
-        std::vector<IRArguments::Fixup> empty;
-        it = Arguments.Fixups.emplace(std::make_pair(Target, empty)).first;
+      auto it = Fixups.find(Target);
+      if (it == Fixups.end()) {
+        it = Fixups.try_emplace(Target).first;
       }
       auto Jump = _Jump();
-      it->second.emplace_back(IRArguments::Fixup{&Jump.first->Header});
+      it->second.emplace_back(Fixup{Jump.Node, &Jump.first->Header});
+
+      // Fallback path in case the block isn't patched up
+      if (1) {
+        CreateNewEndBlock(0);
+        // Make sure to start a new block after ending this one
+        auto JumpTarget = CreateNewBeginBlock();
+        SetJumpTarget(Jump, JumpTarget);
+
+        // Store the new RIP
+        _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), _Constant(Target));
+        _ExitFunction();
+
+        CreateNewEndBlock(0);
+        Information.HadUnconditionalExit = true;
+      }
+
       return;
     }
     else if (Target <= Op->PC) {
       // If we are jumping backwards then we should have a jump target available in our jump targets list
-      auto it = Arguments.JumpTargets.find(Target);
+      auto it = JumpTargets.find(Target);
 
-      if (it != Arguments.JumpTargets.end()) {
-        auto Jump = _Jump();
-        Jump.first->Location = it->second;
+      if (it != JumpTargets.end()) {
+        _Jump(it->second);
         return;
       }
     }
   }
-#endif
 
   // Fallback
   {
@@ -2145,12 +2191,12 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   }
 }
 
-OpDispatchBuilder::IRPair<IROp_BeginBlock> OpDispatchBuilder::CreateNewBeginBlock() {
+OpDispatchBuilder::IRPair<IROp_CodeBlock> OpDispatchBuilder::CreateNewBeginBlock() {
   auto CodeNode = CreateCodeNode();
-  auto BeginBlock = _BeginBlock();
-  SetCodeNodeBegin(CodeNode, BeginBlock);
+  auto NewNode = _Dummy();
+  SetCodeNodeBegin(CodeNode, NewNode);
   CurrentCodeBlock = CodeNode;
-  return BeginBlock;
+  return CodeNode;
 }
 
 OpDispatchBuilder::IRPair<IROp_EndBlock> OpDispatchBuilder::CreateNewEndBlock(uint64_t RIPIncrement) {
@@ -2461,6 +2507,8 @@ void OpDispatchBuilder::ResetWorkingList() {
   Data.Reset();
   ListData.Reset();
   CodeBlocks.clear();
+  Fixups.clear();
+  JumpTargets.clear();
   CurrentWriteCursor = nullptr;
   // This is necessary since we do "null" pointer checks
   InvalidNode = reinterpret_cast<OrderedNode*>(ListData.Allocate(sizeof(OrderedNode)));
@@ -3250,7 +3298,8 @@ void OpDispatchBuilder::ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNo
     OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
     FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
 
-    for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
+    uint8_t NumArgs = IR::GetArgs(IROp->Op);
+    for (uint8_t i = 0; i < NumArgs; ++i) {
       if (IROp->Args[i].ID() == Node->Wrapped(ListBegin).ID()) {
         Node->RemoveUse();
         NewNode->AddUse();

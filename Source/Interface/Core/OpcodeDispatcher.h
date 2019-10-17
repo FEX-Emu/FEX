@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 
 namespace FEXCore::IR {
 class Pass;
@@ -21,6 +22,15 @@ public:
     bool HadUnconditionalExit {false};
   } Information;
   bool ShouldDump {false};
+
+  struct Fixup {
+    OrderedNode *Node;
+    IROp_Header *Op;
+  };
+
+  std::map<uint64_t, std::vector<Fixup>> Fixups;
+  std::map<uint64_t, OrderedNode *> JumpTargets;
+
   OpDispatchBuilder();
 
   IRListView<false> ViewIR() { return IRListView<false>(&Data, &ListData); }
@@ -229,14 +239,55 @@ public:
     return _CondJump(ssa0, InvalidNode);
   }
 
+  void SetJumpTarget(IR::IROp_Jump *Op, OrderedNode *Target) {
+    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+        "Tried setting Jump target to %%ssa%d %s",
+        Target->Wrapped(ListData.Begin()).ID(),
+        std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
+
+    Op->Header.Args[0].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+  }
+  void SetJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
+    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+        "Tried setting CondJump target to %%ssa%d %s",
+        Target->Wrapped(ListData.Begin()).ID(),
+        std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
+
+    Op->Header.Args[1].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+  }
+
   void SetJumpTarget(IRPair<IROp_Jump> Op, OrderedNode *Target) {
+    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+        "Tried setting Jump target to %%ssa%d %s",
+        Target->Wrapped(ListData.Begin()).ID(),
+        std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
+
     Op.first->Header.Args[0].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
   void SetJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
+    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+        "Tried setting CondJump target to %%ssa%d %s",
+        Target->Wrapped(ListData.Begin()).ID(),
+        std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
     Op.first->Header.Args[1].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
 
   /**  @} */
+
+  OrderedNode *InsertJumpTarget(uint64_t RIP, OrderedNode *Node) {
+    LogMan::Throw::A(JumpTargets.find(RIP) == JumpTargets.end(), "Trying to insert JumpTarget that already exists!");
+    LogMan::Throw::A(Node->Op(Data.Begin())->Op == OP_CODEBLOCK,
+      "Tried inserting an invalid jump target of type %s",
+      std::string(IR::GetName(Node->Op(Data.Begin())->Op)).c_str());
+    JumpTargets[RIP] = Node;
+    return Node;
+  }
+
+  OrderedNode *GetJumpTargetIfExists(uint64_t RIP) {
+    auto Node = JumpTargets.find(RIP);
+    if (Node == JumpTargets.end()) return nullptr;
+    return Node->second;
+  }
 
   bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t *Constant) {
      OrderedNode *RealNode = ssa.GetNode(ListData.Begin());
@@ -301,8 +352,8 @@ public:
    *
    * @return OrderedNode
    */
-  OrderedNode *CreateCodeNode() {
-    OrderedNode *CodeNode = _CodeBlock(InvalidNode, InvalidNode, InvalidNode);
+  IRPair<IROp_CodeBlock> CreateCodeNode() {
+    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode, InvalidNode);
     CodeBlocks.emplace_back(CodeNode);
     return CodeNode;
   }
@@ -325,8 +376,11 @@ public:
      IROp->Next = Next->Wrapped(ListData.Begin());
   }
 
-  IRPair<IROp_BeginBlock> CreateNewBeginBlock();
+  IRPair<IROp_CodeBlock> CreateNewBeginBlock();
   IRPair<IROp_EndBlock> CreateNewEndBlock(uint64_t RIPIncrement);
+
+  void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
+  bool GetMultiblock() { return Multiblock; }
 
 private:
   void TestFunction();
@@ -391,6 +445,8 @@ private:
   OrderedNode *InvalidNode;
   OrderedNode *CurrentCodeBlock{};
   std::vector<OrderedNode*> CodeBlocks;
+  bool Multiblock{};
+  uint64_t Entry;
 };
 
 void InstallOpcodeHandlers();

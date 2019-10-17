@@ -259,42 +259,67 @@ namespace FEXCore::IR {
     uintptr_t ListBegin = CurrentIR->GetListData();
     uintptr_t DataBegin = CurrentIR->GetData();
 
-    IR::NodeWrapperIterator Begin = CurrentIR->begin();
-    IR::NodeWrapperIterator End = CurrentIR->end();
+    auto Begin = CurrentIR->begin();
+    auto Op = Begin();
+
+    OrderedNode *RealNode = Op->GetNode(ListBegin);
+    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+    LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+
+    OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
-    while (Begin != End) {
-      using namespace FEXCore::IR;
-      OrderedNodeWrapper *WrapperOp = Begin();
-      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-      FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
-      uint32_t Node = WrapperOp->ID();
+    while (1) {
+      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+      LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-      // If the destination hasn't yet been set then set it now
-      if (IROp->HasDest) {
-        LogMan::Throw::A(LiveRanges[Node].Begin == ~0U, "Node begin already defined?");
-        LiveRanges[Node].Begin = Node;
-        // Default to ending right where it starts
-        LiveRanges[Node].End = Node;
+      // We grab these nodes this way so we can iterate easily
+      auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
+      auto CodeLast = CurrentIR->at(BlockIROp->Last);
+      while (1) {
+        auto CodeOp = CodeBegin();
+        OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
+        auto IROp = CodeNode->Op(DataBegin);
+        uint32_t Node = CodeOp->ID();
+
+        // If the destination hasn't yet been set then set it now
+        if (IROp->HasDest) {
+          LogMan::Throw::A(LiveRanges[Node].Begin == ~0U, "Node begin already defined?");
+          LiveRanges[Node].Begin = Node;
+          // Default to ending right where it starts
+          LiveRanges[Node].End = Node;
+        }
+
+        // Calculate remat cost
+        switch (IROp->Op) {
+        case OP_CONSTANT: LiveRanges[Node].RematCost = 1; break;
+        case OP_LOADFLAG:
+        case OP_LOADCONTEXT: LiveRanges[Node].RematCost = 10; break;
+        case OP_LOADMEM: LiveRanges[Node].RematCost = 100; break;
+        case OP_FILLREGISTER: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST + 1; break;
+        default: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST; break;
+        }
+
+        uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        for (uint8_t i = 0; i < NumArgs; ++i) {
+          uint32_t ArgNode = IROp->Args[i].ID();
+          // Set the node end to be at least here
+          LiveRanges[ArgNode].End = Node;
+          LogMan::Throw::A(LiveRanges[ArgNode].Begin != ~0U, "%%ssa%d used by %%ssa%d before defined?", ArgNode, Node);
+        }
+
+        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+        if (CodeBegin == CodeLast) {
+          break;
+        }
+        ++CodeBegin;
       }
 
-      // Calculate remat cost
-      switch (IROp->Op) {
-      case OP_CONSTANT: LiveRanges[Node].RematCost = 1; break;
-      case OP_LOADFLAG:
-      case OP_LOADCONTEXT: LiveRanges[Node].RematCost = 10; break;
-      case OP_LOADMEM: LiveRanges[Node].RematCost = 100; break;
-      case OP_FILLREGISTER: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST + 1; break;
-      default: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST; break;
+      if (BlockIROp->Next.ID() == 0) {
+        break;
+      } else {
+        BlockNode = BlockIROp->Next.GetNode(ListBegin);
       }
-
-      for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
-        uint32_t ArgNode = IROp->Args[i].ID();
-        // Set the node end to be at least here
-        LiveRanges[ArgNode].End = Node;
-      }
-
-      ++Begin;
     }
   }
 
@@ -372,7 +397,8 @@ namespace FEXCore::IR {
       OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
       FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
 
-      for (uint8_t i = 0; i < IROp->NumArgs; ++i) {
+      uint8_t NumArgs = IR::GetArgs(IROp->Op);
+      for (uint8_t i = 0; i < NumArgs; ++i) {
         uint32_t ArgNode = IROp->Args[i].ID();
         if (ArgNode == SearchID) {
           return Begin;
@@ -506,6 +532,7 @@ namespace FEXCore::IR {
                 auto NextIter = CodeBegin;
                 ++NextIter;
                 auto FirstUseLocation = FindFirstUse(Disp, ConstantNode, NextIter, CodeLast);
+                LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
                 if (FirstUseLocation != NodeWrapperIterator::Invalid()) {
                   --FirstUseLocation;
                   OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
@@ -513,8 +540,8 @@ namespace FEXCore::IR {
                   Disp->SetWriteCursor(FirstUseOrderedNode);
                   auto FilledConstant = Disp->_Constant(ConstantIROp->Constant);
                   Disp->ReplaceAllUsesWithInclusive(ConstantNode, FilledConstant, FirstUseLocation, CodeLast);
+                  Spilled = true;
                 }
-                Spilled = true;
                 break;
               }
             }
@@ -548,23 +575,23 @@ namespace FEXCore::IR {
                   ++NextIter;
                   auto FirstUseLocation = FindFirstUse(Disp, InterferenceOrderedNode, NextIter, CodeLast);
 
-                  LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "Failure to find op use");
+                  LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
                   if (FirstUseLocation != NodeWrapperIterator::Invalid()) {
                     --FirstUseLocation;
                     OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
                     OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
+
                     Disp->SetWriteCursor(FirstUseOrderedNode);
 
                     auto FilledInterference = Disp->_FillRegister(SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
                     FilledInterference.first->Header.Size = InterferenceIROp->Size;
                     FilledInterference.first->Header.Elements = InterferenceIROp->Elements;
                     Disp->ReplaceAllUsesWithInclusive(InterferenceOrderedNode, FilledInterference, FirstUseLocation, CodeLast);
+                    Spilled = true;
                   }
-                  Spilled = true;
                 }
 
                 ++SpillSlotCount;
-                break;
               }
             }
           }
@@ -597,7 +624,7 @@ namespace FEXCore::IR {
     SpillSlotCount = 0;
     HasSpills = false;
     HadFullRA = false;
-    do {
+    while (1) {
       // We need to rerun compaction every step
       Changed |= LocalCompaction->Run(Disp);
       auto CurrentIR = Disp->ViewIR();
@@ -610,10 +637,14 @@ namespace FEXCore::IR {
       CalculateLiveRange(&CurrentIR);
       CalculateNodeInterference(SSACount);
       AllocateRegisters();
+
       if (!Graph->SpillStack.empty()) {
         if (Config_SupportsSpills) {
           Changed = true;
           ClearSpillList(Disp);
+          // We could have cleared the spill list entirely
+          // We need to ensure compaction + RA happens again to get correct ordering
+          continue;
         }
         else {
           HadFullRA = false;
@@ -621,15 +652,11 @@ namespace FEXCore::IR {
           return Changed;
         }
       }
-      else {
-        // We managed to RA, leave now
-        HadFullRA = true;
-        Changed |= LocalCompaction->Run(Disp);
-        return Changed;
-      }
-    } while (!Graph->SpillStack.empty());
+      // We managed to RA, leave now
+      HadFullRA = true;
 
-    return Changed;
+      return Changed;
+    }
   }
 
   RegisterAllocationPass::RegisterAllocationPass() {
