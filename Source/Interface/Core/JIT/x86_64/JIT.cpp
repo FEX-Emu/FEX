@@ -606,7 +606,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               movsx(Dst, GetSrc<RA_16>(Op->Header.Args[0].ID()));
             break;
             case 4:
-              movsxd(Reg64(Dst.getIdx()), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              movsxd(Dst.cvt64(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
             break;
             case 8:
               mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
@@ -787,7 +787,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             case 4:
               movsxd(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
               imul(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-              movsx(Dst, eax);
+              movsxd(Dst.cvt64(), eax);
             break;
             case 8:
               mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
@@ -816,7 +816,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(GetDst<RA_64>(Node), rax);
             break;
             case 4:
-              movsx(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              movsxd(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
               imul(GetSrc<RA_32>(Op->Header.Args[1].ID()));
               movsxd(rax, edx);
               mov(GetDst<RA_64>(Node), rdx);
