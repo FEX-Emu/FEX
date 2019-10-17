@@ -113,6 +113,7 @@ def print_ir_sizes(ops, defines):
     output_file.write("[[maybe_unused]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
 
     output_file.write("std::string_view const& GetName(IROps Op);\n")
+    output_file.write("uint8_t GetArgs(IROps Op);\n")
 
     output_file.write("#undef IROP_SIZES\n")
     output_file.write("#endif\n\n")
@@ -134,6 +135,31 @@ def print_ir_getname(ops, defines):
 
     output_file.write("#undef IROP_GETNAME_IMPL\n")
     output_file.write("#endif\n\n")
+
+# Print out the number of SSA args that need to be RA'd
+def print_ir_getraargs(ops, defines):
+    output_file.write("#ifdef IROP_GETRAARGS_IMPL\n")
+
+    output_file.write("constexpr std::array<uint8_t, OP_LAST + 1> IRArgs = {\n")
+    for op_key, op_vals in ops.items():
+        SSAArgs = 0
+        if ("SSAArgs" in op_vals):
+            SSAArgs = int(op_vals["SSAArgs"])
+
+        if ("RAOverride" in op_vals):
+            SSAArgs = int(op_vals["RAOverride"])
+
+        output_file.write("\t%d,\n" % SSAArgs)
+
+    output_file.write("};\n\n")
+
+    output_file.write("uint8_t GetArgs(IROps Op) {\n")
+    output_file.write("  return IRArgs[Op];\n")
+    output_file.write("}\n")
+
+    output_file.write("#undef IROP_GETRAARGS_IMPL\n")
+    output_file.write("#endif\n\n")
+
 
 # Print out IR argument printing
 def print_ir_arg_printer(ops, defines):
@@ -360,6 +386,7 @@ print_enums(ops, defines)
 print_ir_structs(ops, defines)
 print_ir_sizes(ops, defines)
 print_ir_getname(ops, defines)
+print_ir_getraargs(ops, defines)
 print_ir_arg_printer(ops, defines)
 print_ir_allocator_helpers(ops, defines)
 

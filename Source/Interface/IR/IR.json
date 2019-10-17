@@ -28,6 +28,7 @@
     },
     "CodeBlock": {
       "SSAArgs": "3",
+      "RAOverride": "0",
       "SSANames": [
         "Begin",
         "Last",
@@ -60,11 +61,13 @@
 
     "Jump": {
 			"DispatcherUnary": true,
-      "SSAArgs": "1"
+      "SSAArgs": "1",
+      "RAOverride": "0"
     },
 
     "CondJump": {
-      "SSAArgs": "2"
+      "SSAArgs": "2",
+      "RAOverride": "1"
     },
 
     "Mov": {
