@@ -130,6 +130,7 @@ public:
   void FXRStoreOp(OpcodeArgs);
 
   void PAlignrOp(OpcodeArgs);
+  void UnimplementedOp(OpcodeArgs);
 
 #undef OpcodeArgs
 

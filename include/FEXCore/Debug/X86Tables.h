@@ -178,6 +178,8 @@ enum InstType {
   // Group 7 allows additional extensions to this table
   TYPE_SECOND_GROUP_MODRM,
 
+  TYPE_GROUP_EVEX,
+
   // Just to make grepping easier
   TYPE_3DNOW_TABLE = TYPE_INVALID,
   TYPE_3DNOW_INST = TYPE_INVALID,
@@ -372,6 +374,8 @@ constexpr size_t MAX_XOP_TABLE_SIZE = (1 << 13);
 // group select (2 bits for now) | modrm opcode (3 bits)
 constexpr size_t MAX_XOP_GROUP_TABLE_SIZE = (1 << 6);
 
+constexpr size_t MAX_EVEX_TABLE_SIZE = 256;
+
 extern X86InstInfo BaseOps[MAX_PRIMARY_TABLE_SIZE];
 extern X86InstInfo SecondBaseOps[MAX_SECOND_TABLE_SIZE];
 extern X86InstInfo RepModOps[MAX_REP_MOD_TABLE_SIZE];
@@ -392,6 +396,9 @@ extern X86InstInfo VEXTableGroupOps[MAX_VEX_GROUP_TABLE_SIZE];
 // XOP
 extern X86InstInfo XOPTableOps[MAX_XOP_TABLE_SIZE];
 extern X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
+
+// EVEX
+extern X86InstInfo EVEXTableOps[MAX_EVEX_TABLE_SIZE];
 
 void InitializeInfoTables();
 }

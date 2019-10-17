@@ -570,6 +570,13 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     return NormalOp(&XOPTableOps[Op], Op);
 #undef OPD
   }
+  else if (Info->Type == FEXCore::X86Tables::TYPE_GROUP_EVEX) {
+    uint8_t P1 = ReadByte();
+    uint8_t P2 = ReadByte();
+    uint8_t P3 = ReadByte();
+    uint8_t EVEXOp = ReadByte();
+    return NormalOp(&EVEXTableOps[EVEXOp], EVEXOp);
+  }
 
   return NormalOp(Info, Op);
 }

@@ -26,6 +26,7 @@ X86InstInfo VEXTableOps[MAX_VEX_TABLE_SIZE];
 X86InstInfo VEXTableGroupOps[MAX_VEX_GROUP_TABLE_SIZE];
 X86InstInfo XOPTableOps[MAX_XOP_TABLE_SIZE];
 X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
+X86InstInfo EVEXTableOps[MAX_EVEX_TABLE_SIZE];
 
 struct U8U8InfoStruct {
   uint8_t first, second;
@@ -165,7 +166,8 @@ void InitializeInfoTables() {
       BaseOp = UnknownOp;
   for (auto &BaseOp : XOPTableGroupOps)
       BaseOp = UnknownOp;
-
+  for (auto &BaseOp : EVEXTableOps)
+      BaseOp = UnknownOp;
 
   const U8U8InfoStruct BaseOpTable[] = {
     // Prefixes
@@ -255,7 +257,8 @@ void InitializeInfoTables() {
     {0x50, 8, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SF_REX_IN_BYTE | FLAGS_DEBUG_MEM_ACCESS ,                    0, nullptr}},
     {0x58, 8, X86InstInfo{"POP",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SF_REX_IN_BYTE | FLAGS_DEBUG_MEM_ACCESS ,                    0, nullptr}},
 
-    {0x60, 3, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                           0, nullptr}},
+    {0x60, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                           0, nullptr}},
+    {0x62, 1, X86InstInfo{"",       TYPE_GROUP_EVEX, FLAGS_NONE,                                                                           0, nullptr}},
     {0x63, 1, X86InstInfo{"MOVSXD", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM,                                                                         0, nullptr}},
 
     {0x68, 1, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_DISPLACE_SIZE_DIV_2 , 4, nullptr}},
@@ -523,22 +526,22 @@ void InitializeInfoTables() {
     {0x7E, 1, X86InstInfo{"MOVD",       TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                                                   0, nullptr}},
     {0x7F, 1, X86InstInfo{"MOVQ",       TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                                                   0, nullptr}},
 
-    {0x80, 1, X86InstInfo{"JO",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x81, 1, X86InstInfo{"JNO",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x82, 1, X86InstInfo{"JB",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x83, 1, X86InstInfo{"JNB",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x84, 1, X86InstInfo{"JZ",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x85, 1, X86InstInfo{"JNZ",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x86, 1, X86InstInfo{"JBE",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x87, 1, X86InstInfo{"JNBE",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x88, 1, X86InstInfo{"JS",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x89, 1, X86InstInfo{"JNS",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x8A, 1, X86InstInfo{"JP",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x8B, 1, X86InstInfo{"JNP",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x8C, 1, X86InstInfo{"JL",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x8D, 1, X86InstInfo{"JNL",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x8E, 1, X86InstInfo{"JLE",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
-    {0x8F, 1, X86InstInfo{"JNLE",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_BLOCK_END | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x80, 1, X86InstInfo{"JO",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x81, 1, X86InstInfo{"JNO",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x82, 1, X86InstInfo{"JB",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x83, 1, X86InstInfo{"JNB",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x84, 1, X86InstInfo{"JZ",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x85, 1, X86InstInfo{"JNZ",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x86, 1, X86InstInfo{"JBE",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x87, 1, X86InstInfo{"JNBE",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x88, 1, X86InstInfo{"JS",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x89, 1, X86InstInfo{"JNS",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x8A, 1, X86InstInfo{"JP",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x8B, 1, X86InstInfo{"JNP",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x8C, 1, X86InstInfo{"JL",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x8D, 1, X86InstInfo{"JNL",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x8E, 1, X86InstInfo{"JLE",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
+    {0x8F, 1, X86InstInfo{"JNLE",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 ,                                            4, nullptr}},
 
     {0x90, 1, X86InstInfo{"SETO",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                                        0, nullptr}},
     {0x91, 1, X86InstInfo{"SETNO",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                                        0, nullptr}},
@@ -671,7 +674,7 @@ void InitializeInfoTables() {
     {OPD(TYPE_GROUP_1, OpToIndex(0x81), 4), 1, X86InstInfo{"AND",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
     {OPD(TYPE_GROUP_1, OpToIndex(0x81), 5), 1, X86InstInfo{"SUB",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
     {OPD(TYPE_GROUP_1, OpToIndex(0x81), 6), 1, X86InstInfo{"XOR",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
-    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 7), 1, X86InstInfo{"CMP",  TYPE_INST, FLAGS_SRC_SEXT | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
+    {OPD(TYPE_GROUP_1, OpToIndex(0x81), 7), 1, X86InstInfo{"CMP",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
 
     // Invalid in 64bit mode
     {OPD(TYPE_GROUP_1, OpToIndex(0x82), 0), 8, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                        0, nullptr}},
@@ -1404,17 +1407,17 @@ void InitializeInfoTables() {
     {OPD(TYPE_GROUP_15, PF_NONE, 2), 1, X86InstInfo{"LDMXCSR",         TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_NONE, 3), 1, X86InstInfo{"STMXCSR",         TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_NONE, 4), 1, X86InstInfo{"XSAVE",           TYPE_PRIV, FLAGS_NONE,      0, nullptr}},
-    {OPD(TYPE_GROUP_15, PF_NONE, 5), 1, X86InstInfo{"LFENCE/XRSTOR",   TYPE_PRIV, FLAGS_NONE,      0, nullptr}},
+    {OPD(TYPE_GROUP_15, PF_NONE, 5), 1, X86InstInfo{"LFENCE/XRSTOR",   TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,      0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_NONE, 6), 1, X86InstInfo{"MFENCE/XSAVEOPT", TYPE_PRIV, FLAGS_NONE,      0, nullptr}},
-    {OPD(TYPE_GROUP_15, PF_NONE, 7), 1, X86InstInfo{"SFENCE/CLFLUSH",  TYPE_PRIV, FLAGS_NONE,      0, nullptr}},
+    {OPD(TYPE_GROUP_15, PF_NONE, 7), 1, X86InstInfo{"SFENCE/CLFLUSH",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,      0, nullptr}},
 
     {OPD(TYPE_GROUP_15, PF_F3, 0), 1, X86InstInfo{"RDFSBASE", TYPE_PRIV, FLAGS_MODRM | FLAGS_SF_MOD_DST,          0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 1), 1, X86InstInfo{"RDGSBASE", TYPE_PRIV, FLAGS_MODRM | FLAGS_SF_MOD_DST,          0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 2), 1, X86InstInfo{"WRFSBASE", TYPE_PRIV, FLAGS_MODRM,          0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 3), 1, X86InstInfo{"WRGSBASE", TYPE_PRIV, FLAGS_MODRM,          0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 4), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
-    {OPD(TYPE_GROUP_15, PF_F3, 5), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
-    {OPD(TYPE_GROUP_15, PF_F3, 6), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
+    {OPD(TYPE_GROUP_15, PF_F3, 5), 1, X86InstInfo{"INCSSPQ", TYPE_INST, FLAGS_MODRM,                    0, nullptr}},
+    {OPD(TYPE_GROUP_15, PF_F3, 6), 1, X86InstInfo{"CLRSSBSY", TYPE_INST, FLAGS_NONE,                    0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 7), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
 
     {OPD(TYPE_GROUP_15, PF_66, 0), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
@@ -1935,7 +1938,7 @@ void InitializeInfoTables() {
     {OPD(PF_38_66,   0x38), 1, X86InstInfo{"PMINSB",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x39), 1, X86InstInfo{"PMINSD",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x3A), 1, X86InstInfo{"PMINUW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(PF_38_66,   0x3B), 1, X86InstInfo{"PMINUD",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(PF_38_66,   0x3B), 1, X86InstInfo{"PMINUD",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(PF_38_66,   0x3C), 1, X86InstInfo{"PMAXSB",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x3D), 1, X86InstInfo{"PMAXSD",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x3E), 1, X86InstInfo{"PMAXUW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -1975,6 +1978,7 @@ void InitializeInfoTables() {
     {OPD(0, PF_3A_66,   0x0D), 1, X86InstInfo{"BLENDPD",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x0E), 1, X86InstInfo{"PBLENDW",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
+    {OPD(1, PF_3A_66,   0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(0, PF_3A_66,   0x14), 1, X86InstInfo{"PEXTRB",          TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x15), 1, X86InstInfo{"PEXTRW",          TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2079,11 +2083,11 @@ void InitializeInfoTables() {
     {OPD(1, 0b01, 0x72), 1, X86InstInfo{"",           TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 13
     {OPD(1, 0b01, 0x73), 1, X86InstInfo{"",           TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 14
 
-    {OPD(1, 0b01, 0x74), 1, X86InstInfo{"VPCMPEQB",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0x75), 1, X86InstInfo{"VPCMPEQW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0x76), 1, X86InstInfo{"VPCMPEQD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x74), 1, X86InstInfo{"VPCMPEQB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x75), 1, X86InstInfo{"VPCMPEQW",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x76), 1, X86InstInfo{"VPCMPEQD",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(1, 0b00, 0x77), 1, X86InstInfo{"VZERO*",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x77), 1, X86InstInfo{"VZERO*",     TYPE_INST, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b00, 0xC2), 1, X86InstInfo{"VCMPccPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xC2), 1, X86InstInfo{"VCMPccPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2165,10 +2169,10 @@ void InitializeInfoTables() {
     {OPD(1, 0b01, 0x6B), 1, X86InstInfo{"VPACKSSDW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x6C), 1, X86InstInfo{"VPUNPCKLQDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x6D), 1, X86InstInfo{"VPUNPCKHQDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0x6E), 1, X86InstInfo{"VMOV*",       TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x6E), 1, X86InstInfo{"VMOV*",       TYPE_INST, GenFlagsDstSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR, 0, nullptr}},
 
-    {OPD(1, 0b01, 0x6F), 1, X86InstInfo{"VMOVDQA",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b10, 0x6F), 1, X86InstInfo{"VMOVDQU",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x6F), 1, X86InstInfo{"VMOVDQA",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b10, 0x6F), 1, X86InstInfo{"VMOVDQU",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b01, 0x7C), 1, X86InstInfo{"VHADDPD",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x7C), 1, X86InstInfo{"VHADDPS",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2176,11 +2180,11 @@ void InitializeInfoTables() {
     {OPD(1, 0b01, 0x7D), 1, X86InstInfo{"VHSUBPD",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x7D), 1, X86InstInfo{"VHSUBPS",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b01, 0x7E), 1, X86InstInfo{"VMOV*",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x7E), 1, X86InstInfo{"VMOV*",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b10, 0x7E), 1, X86InstInfo{"VMOVQ",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b01, 0x7F), 1, X86InstInfo{"VMOVDQA",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b10, 0x7F), 1, X86InstInfo{"VMOVDQU",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x7F), 1, X86InstInfo{"VMOVDQA",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b10, 0x7F), 1, X86InstInfo{"VMOVDQU",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b00, 0xAE), 1, X86InstInfo{"",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
     {OPD(1, 0b01, 0xAE), 1, X86InstInfo{"",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
@@ -2196,7 +2200,7 @@ void InitializeInfoTables() {
     {OPD(1, 0b01, 0xD4), 1, X86InstInfo{"VPADDQ",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xD5), 1, X86InstInfo{"VPMULLW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xD6), 1, X86InstInfo{"VMOVQ",       TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xD7), 1, X86InstInfo{"VPMOVMSKB",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xD7), 1, X86InstInfo{"VPMOVMSKB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
 
     {OPD(1, 0b01, 0xD8), 1, X86InstInfo{"VPSUBUSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xD9), 1, X86InstInfo{"VPSUBUSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2223,11 +2227,11 @@ void InitializeInfoTables() {
     {OPD(1, 0b01, 0xE8), 1, X86InstInfo{"VPSUBSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xE9), 1, X86InstInfo{"VPSUBSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xEA), 1, X86InstInfo{"VPMINSW",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xEB), 1, X86InstInfo{"VPOR",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xEB), 1, X86InstInfo{"VPOR",    TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xEC), 1, X86InstInfo{"VPADDSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xED), 1, X86InstInfo{"VPADDSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xEE), 1, X86InstInfo{"VPMAXSW",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xEF), 1, X86InstInfo{"VPXOR",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xEF), 1, X86InstInfo{"VPXOR",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b11, 0xF0), 1, X86InstInfo{"VLDDQU",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
@@ -2305,7 +2309,7 @@ void InitializeInfoTables() {
     {OPD(2, 0b01, 0x38), 1, X86InstInfo{"VPMINSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x39), 1, X86InstInfo{"VPMINSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x3A), 1, X86InstInfo{"VPMINUW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x3B), 1, X86InstInfo{"VPMINUD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x3B), 1, X86InstInfo{"VPMINUD", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x3C), 1, X86InstInfo{"VPMAXSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x3D), 1, X86InstInfo{"VPMAXSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x3E), 1, X86InstInfo{"VPMAXUW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2317,12 +2321,12 @@ void InitializeInfoTables() {
     {OPD(2, 0b01, 0x46), 1, X86InstInfo{"VPSRAVD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x47), 1, X86InstInfo{"VPSLLV", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(2, 0b01, 0x58), 1, X86InstInfo{"VPBROADCASTD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x59), 1, X86InstInfo{"VPBROADCASTQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x5A), 1, X86InstInfo{"VPBROADCASTI128", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x58), 1, X86InstInfo{"VPBROADCASTD", TYPE_INST, FLAGS_MODRM, 0, nullptr}},
+    {OPD(2, 0b01, 0x59), 1, X86InstInfo{"VPBROADCASTQ", TYPE_INST, FLAGS_MODRM, 0, nullptr}},
+    {OPD(2, 0b01, 0x5A), 1, X86InstInfo{"VBBROADCASTI128", TYPE_INST, FLAGS_MODRM, 0, nullptr}},
 
-    {OPD(2, 0b01, 0x78), 1, X86InstInfo{"VPBROADCASTB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x79), 1, X86InstInfo{"VPBROADCASTW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x78), 1, X86InstInfo{"VPBROADCASTB", TYPE_INST, FLAGS_MODRM, 0, nullptr}},
+    {OPD(2, 0b01, 0x79), 1, X86InstInfo{"VPBROADCASTW", TYPE_INST, FLAGS_MODRM, 0, nullptr}},
 
     {OPD(2, 0b01, 0x8C), 1, X86InstInfo{"VPMASKMOV", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x8E), 1, X86InstInfo{"VPMASKMOV", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -2618,6 +2622,13 @@ void InitializeInfoTables() {
   };
 #undef OPD
 
+  const U16U8InfoStruct EVEXTable[] = {
+    {0x10, 1, X86InstInfo{"VMOVUPS",         TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {0x11, 1, X86InstInfo{"VMOVUPS",         TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {0x59, 1, X86InstInfo{"VBROADCASTQ",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {0x7F, 1, X86InstInfo{"VMOVDQU64",       TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
+  };
+
   GenerateTable(BaseOps, BaseOpTable, sizeof(BaseOpTable) / sizeof(BaseOpTable[0]));
   GenerateTable(SecondBaseOps, TwoByteOpTable, sizeof(TwoByteOpTable) / sizeof(BaseOpTable[0]));
   GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable, sizeof(PrimaryGroupOpTable) / sizeof(PrimaryGroupOpTable[0]));
@@ -2638,6 +2649,8 @@ void InitializeInfoTables() {
 
   GenerateTable(XOPTableOps, XOPTable, sizeof(XOPTable) / sizeof(XOPTable[0]));
   GenerateTable(XOPTableGroupOps, XOPGroupTable, sizeof(XOPGroupTable) / sizeof(XOPGroupTable[0]));
+
+  GenerateTable(EVEXTableOps, EVEXTable, sizeof(EVEXTable) / sizeof(EVEXTable[0]));
 
 #ifndef NDEBUG
   auto CheckTable = [&UnknownOp](auto& FinalTable) {

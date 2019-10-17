@@ -1106,6 +1106,7 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), _ExtractElement(Res, 2));
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), _ExtractElement(Res, 3));
 }
+
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   bool SHL1Bit = false;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
@@ -3228,8 +3229,13 @@ void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
   StoreResult(Op, Res);
 }
 
-#undef OpcodeArgs
+void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
+  // We don't actually support this instruction
+  // Multiblock may hit it though
+  _Break(0, 0);
+}
 
+#undef OpcodeArgs
 
 void OpDispatchBuilder::ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNode *NewNode, IR::NodeWrapperIterator After, IR::NodeWrapperIterator End) {
   uintptr_t ListBegin = ListData.Begin();
@@ -3328,6 +3334,7 @@ void InstallOpcodeHandlers() {
      {0x90, 16, &OpDispatchBuilder::SETccOp}, // XXX: Causes some unit tests to fail due to flags being incorrect
      {0xA2, 1, &OpDispatchBuilder::CPUIDOp},
      {0xA3, 1, &OpDispatchBuilder::BTOp}, // BT
+     {0xAB, 1, &OpDispatchBuilder::UnimplementedOp},
      {0xAF, 1, &OpDispatchBuilder::IMUL1SrcOp}, // XXX: Causes issues with LLVM JIT
      {0xB0, 2, &OpDispatchBuilder::CMPXCHGOp}, // CMPXCHG
      {0xB6, 2, &OpDispatchBuilder::MOVZXOp},
@@ -3335,6 +3342,7 @@ void InstallOpcodeHandlers() {
      {0xBD, 1, &OpDispatchBuilder::BSROp}, // BSF
      // XXX: Broken on LLVM?
      {0xBE, 2, &OpDispatchBuilder::MOVSXOp},
+     {0xC0, 2, &OpDispatchBuilder::UnimplementedOp},
      {0xC8, 8, &OpDispatchBuilder::BSWAPOp},
 
      // SSE
@@ -3480,12 +3488,14 @@ void InstallOpcodeHandlers() {
     {0x6F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x7E, 1, &OpDispatchBuilder::MOVQOp},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
+    {0xBC, 2, &OpDispatchBuilder::UnimplementedOp},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepNEModOpTable = {
     {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, true>},
+    {0xF0, 1, &OpDispatchBuilder::UnimplementedOp},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> OpSizeModOpTable = {
@@ -3517,6 +3527,7 @@ void InstallOpcodeHandlers() {
     {0xD7, 1, &OpDispatchBuilder::PMOVMSKBOp}, // PMOVMSKB
     // XXX: Untested
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
+    {0xE7, 1, &OpDispatchBuilder::UnimplementedOp},
     {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
 
     {0xEB, 1, &OpDispatchBuilder::VectorALUOp},
@@ -3559,6 +3570,11 @@ constexpr uint16_t PF_F2 = 3;
     // GROUP 15
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 0), 1, &OpDispatchBuilder::FXSaveOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 1), 1, &OpDispatchBuilder::FXRStoreOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},
 
     // GROUP 16
     {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 8, &OpDispatchBuilder::NOPOp},
@@ -3569,21 +3585,76 @@ constexpr uint16_t PF_F2 = 3;
 #undef OPD
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> SecondaryModRMExtensionOpTable = {
+    // REG /2
+    {((1 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
   };
+
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> X87OpTable = {
   };
+
+#define OPD(prefix, opcode) ((prefix << 8) | opcode)
+  constexpr uint16_t PF_38_NONE = 0;
+  constexpr uint16_t PF_38_66   = 1;
+  constexpr uint16_t PF_38_F2   = 2;
+  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F38Table = {
+    {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(PF_38_66,   0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
+  };
+
+#undef OPD
 
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
 #define PF_3A_NONE 0
 #define PF_3A_66   1
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F3ATable = {
-    {OPD(0, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::PAlignrOp},
+    {OPD(0, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::UnimplementedOp},
   };
 #undef PF_3A_NONE
 #undef PF_3A_66
 
 #undef OPD
 
+
+#define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
+  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> VEXTable = {
+    {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b01, 0x76), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b01, 0x5A), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::UnimplementedOp},
+  };
+#undef OPD
+
+  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> EVEXTable = {
+    {0x10, 1, &OpDispatchBuilder::UnimplementedOp},
+    {0x11, 1, &OpDispatchBuilder::UnimplementedOp},
+    {0x59, 1, &OpDispatchBuilder::UnimplementedOp},
+    {0x7F, 1, &OpDispatchBuilder::UnimplementedOp},
+  };
 
   uint64_t NumInsts{};
   auto InstallToTable = [&NumInsts](auto& FinalTable, auto& LocalTable) {
@@ -3619,9 +3690,14 @@ constexpr uint16_t PF_F2 = 3;
   InstallToTable(FEXCore::X86Tables::OpSizeModOps, OpSizeModOpTable);
   InstallToTable(FEXCore::X86Tables::SecondInstGroupOps, SecondaryExtensionOpTable);
 
+  InstallToTable(FEXCore::X86Tables::SecondModRMTableOps, SecondaryModRMExtensionOpTable);
+
   InstallToTable(FEXCore::X86Tables::X87Ops, X87OpTable);
 
+  InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38Table);
   InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3ATable);
+  InstallToTable(FEXCore::X86Tables::VEXTableOps, VEXTable);
+  InstallToTable(FEXCore::X86Tables::EVEXTableOps, EVEXTable);
 
   // Useful for debugging
   // CheckTable(FEXCore::X86Tables::BaseOps);
