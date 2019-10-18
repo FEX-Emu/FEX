@@ -11,6 +11,12 @@ public:
   struct RegisterGraph;
   struct RegisterNode;
 
+  struct LiveRange {
+    uint32_t Begin;
+    uint32_t End;
+    uint32_t RematCost;
+  };
+
   static constexpr uint32_t GPRClass = 0;
   static constexpr uint32_t FPRClass = 1;
 
@@ -37,7 +43,6 @@ public:
   /**  @} */
 
   bool HasFullRA() const { return HadFullRA; }
-  bool HadSpills() const { return HasSpills; }
   uint32_t SpillSlots() const { return SpillSlotCount; }
 
   void SetSupportsSpills(bool Supports) { Config_SupportsSpills = Supports; }
@@ -46,18 +51,14 @@ private:
   RegisterGraph *Graph;
   void FindNodeClasses(IRListView<false> *CurrentIR);
 
-  struct LiveRange {
-    uint32_t Begin;
-    uint32_t End;
-    uint32_t RematCost;
-  };
-
   std::vector<LiveRange> LiveRanges;
 
   void CalculateLiveRange(IRListView<false> *CurrentIR);
   void CalculateNodeInterference(uint32_t NodeCount);
 
   void ClearSpillList(OpDispatchBuilder *Disp);
+
+  void FindSpillSlot(uint32_t Node, uint32_t RegisterClass);
 
   RegisterNode *GetRegisterNode(uint32_t Node);
   IR::NodeWrapperIterator FindFirstUse(OpDispatchBuilder *Disp, OrderedNode* Node, IR::NodeWrapperIterator Begin, IR::NodeWrapperIterator End);

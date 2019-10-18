@@ -22,6 +22,7 @@ namespace FEXCore::IR {
   struct RegisterAllocationPass::RegisterNode {
     uint32_t RegisterClass;
     uint32_t Register;
+    uint32_t SpillSlot;
     uint32_t InterferenceCount;
     uint32_t InterferenceListSize;
     uint32_t *InterferenceList;
@@ -40,6 +41,7 @@ namespace FEXCore::IR {
   struct SpillStackUnit {
     uint32_t Node;
     uint32_t Class;
+    RegisterAllocationPass::LiveRange SpillRange;
     OrderedNode *SpilledNode;
   };
 
@@ -347,8 +349,30 @@ namespace FEXCore::IR {
     }
   }
 
+  void RegisterAllocationPass::FindSpillSlot(uint32_t Node, uint32_t RegisterClass) {
+    HasSpills = true;
+    RegisterNode *CurrentNode = &Graph->Nodes[Node];
+    LiveRange *NodeLiveRange = &LiveRanges[Node];
+    for (uint32_t i = 0; i < Graph->SpillStack.size(); ++i) {
+      SpillStackUnit *SpillUnit = &Graph->SpillStack.at(i);
+      if (!(NodeLiveRange->Begin <= SpillUnit->SpillRange.End &&
+          SpillUnit->SpillRange.Begin <= NodeLiveRange->End)) {
+        SpillUnit->SpillRange.Begin = std::min(SpillUnit->SpillRange.Begin, LiveRanges[Node].Begin);
+        SpillUnit->SpillRange.End = std::max(SpillUnit->SpillRange.End, LiveRanges[Node].End);
+        CurrentNode->SpillSlot = i;
+        return;
+      }
+    }
+
+    // Couldn't find a spill slot so just make a new one
+    auto StackItem = Graph->SpillStack.emplace_back(SpillStackUnit{Node, RegisterClass});
+    StackItem.SpillRange.Begin = LiveRanges[Node].Begin;
+    StackItem.SpillRange.End = LiveRanges[Node].End;
+    CurrentNode->SpillSlot = SpillSlotCount;
+    SpillSlotCount++;
+  }
+
   void RegisterAllocationPass::AllocateRegisters() {
-    Graph->SpillStack.clear();
     for (uint32_t i = 0; i < Graph->NodeCount; ++i) {
       RegisterNode *CurrentNode = &Graph->Nodes[i];
       if (CurrentNode->RegisterClass == INVALID_CLASS)
@@ -364,15 +388,11 @@ namespace FEXCore::IR {
       }
 
       if (Reg == ~0U) {
-        Graph->SpillStack.emplace_back(SpillStackUnit{i, CurrentNode->RegisterClass});
+        FindSpillSlot(i, CurrentNode->RegisterClass);
       }
       else {
         CurrentNode->Register = RAClass->RegisterBase + Reg;
       }
-    }
-
-    if (!Graph->SpillStack.empty()) {
-      HasSpills = true;
     }
   }
 
@@ -530,7 +550,6 @@ namespace FEXCore::IR {
 
                 // First op post Spill
                 auto NextIter = CodeBegin;
-                ++NextIter;
                 auto FirstUseLocation = FindFirstUse(Disp, ConstantNode, NextIter, CodeLast);
                 LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
                 if (FirstUseLocation != NodeWrapperIterator::Invalid()) {
@@ -565,7 +584,7 @@ namespace FEXCore::IR {
                 --PrevIter;
                 Disp->SetWriteCursor(PrevIter()->GetNode(ListBegin));
 
-                auto SpillOp = Disp->_SpillRegister(InterferenceOrderedNode, SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
+                auto SpillOp = Disp->_SpillRegister(InterferenceOrderedNode, RegisterNode->SpillSlot, {InterferenceRegisterNode->RegisterClass});
                 SpillOp.first->Header.Size = InterferenceIROp->Size;
                 SpillOp.first->Header.Elements = InterferenceIROp->Elements;
 
@@ -583,20 +602,17 @@ namespace FEXCore::IR {
 
                     Disp->SetWriteCursor(FirstUseOrderedNode);
 
-                    auto FilledInterference = Disp->_FillRegister(SpillSlotCount, {InterferenceRegisterNode->RegisterClass});
+                    auto FilledInterference = Disp->_FillRegister(RegisterNode->SpillSlot, {InterferenceRegisterNode->RegisterClass});
                     FilledInterference.first->Header.Size = InterferenceIROp->Size;
                     FilledInterference.first->Header.Elements = InterferenceIROp->Elements;
                     Disp->ReplaceAllUsesWithInclusive(InterferenceOrderedNode, FilledInterference, FirstUseLocation, CodeLast);
                     Spilled = true;
                   }
                 }
-
-                ++SpillSlotCount;
               }
             }
           }
 
-          // LogMan::Throw::A(SpillSlotCount <= Graph->SpillStack.size(), "Managed to hit more spill locations than in the spill stack. %d <= %ld", SpillSlotCount, Graph->SpillStack.size());
           LogMan::Throw::A(Spilled, "We should have spilled by now");
 
           Disp->SetWriteCursor(LastCursor);
@@ -622,9 +638,10 @@ namespace FEXCore::IR {
     bool Changed = false;
 
     SpillSlotCount = 0;
-    HasSpills = false;
     HadFullRA = false;
+    Graph->SpillStack.clear();
     while (1) {
+      HasSpills = false;
       // We need to rerun compaction every step
       Changed |= LocalCompaction->Run(Disp);
       auto CurrentIR = Disp->ViewIR();
@@ -638,7 +655,7 @@ namespace FEXCore::IR {
       CalculateNodeInterference(SSACount);
       AllocateRegisters();
 
-      if (!Graph->SpillStack.empty()) {
+      if (HasSpills) {
         if (Config_SupportsSpills) {
           Changed = true;
           ClearSpillList(Disp);
