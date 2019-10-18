@@ -107,7 +107,6 @@ private:
   constexpr static uint8_t RA_64 = 1;
   constexpr static uint8_t RA_FPR = 2;
 
-  bool HasRA = false;
   IR::RegisterAllocationPass::RegisterGraph *Graph;
   uint32_t GetPhys(uint32_t Node);
 
@@ -296,8 +295,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   uintptr_t ListBegin = CurrentIR->GetListData();
   uintptr_t DataBegin = CurrentIR->GetData();
 
-  HasRA = RAPass->HasFullRA();
-  LogMan::Throw::A(HasRA, "Arm64 JIT only works with RA");
+  LogMan::Throw::A(RAPass->HasFullRA(), "Arm64 JIT only works with RA");
 
   uint32_t SpillSlots = RAPass->SpillSlots();
 
@@ -358,31 +356,29 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       uint8_t OpSize = IROp->Size;
       uint32_t Node = WrapperOp->ID();
 
-      if (HasRA) {
-        if (0) {
-          std::stringstream Inst;
-          auto Name = FEXCore::IR::GetName(IROp->Op);
+      if (0) {
+        std::stringstream Inst;
+        auto Name = FEXCore::IR::GetName(IROp->Op);
 
-          if (IROp->HasDest) {
-            uint32_t PhysReg = RAPass->GetNodeRegister(Node);
-            if (PhysReg >= FPRBase)
-              Inst << "\tFPR" << GetPhys(Node) << " = " << Name << " ";
-            else
-              Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
-          }
-          else {
-            Inst << "\t" << Name << " ";
-          }
+        if (IROp->HasDest) {
+          uint32_t PhysReg = RAPass->GetNodeRegister(Node);
+          if (PhysReg >= FPRBase)
+            Inst << "\tFPR" << GetPhys(Node) << " = " << Name << " ";
+          else
+            Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
+        }
+        else {
+          Inst << "\t" << Name << " ";
+        }
 
-          uint8_t NumArgs = IR::GetArgs(IROp->Op);
-          for (uint8_t i = 0; i < NumArgs; ++i) {
-            uint32_t ArgNode = IROp->Args[i].ID();
-            uint32_t PhysReg = RAPass->GetNodeRegister(ArgNode);
-            if (PhysReg >= FPRBase)
-              Inst << "FPR" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
-            else
-              Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
-          }
+        uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        for (uint8_t i = 0; i < NumArgs; ++i) {
+          uint32_t ArgNode = IROp->Args[i].ID();
+          uint32_t PhysReg = RAPass->GetNodeRegister(ArgNode);
+          if (PhysReg >= FPRBase)
+            Inst << "FPR" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+          else
+            Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
         }
       }
 
