@@ -37,6 +37,51 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
       OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
       auto IROp = CodeNode->Op(DataBegin);
       switch (IROp->Op) {
+/*
+      case OP_MUL:
+      case OP_UMUL:
+      case OP_DIV:
+      case OP_UDIV:
+      case OP_REM:
+      case OP_UREM:
+      case OP_MULH:
+      case OP_UMULH:
+      case OP_LSHR:
+      case OP_ASHR:
+      case OP_ROL:
+      case OP_ROR:
+      case OP_LDIV:
+      case OP_LUDIV:
+      case OP_LREM:
+      case OP_LUREM:
+      case OP_BFI:
+      {
+        uint64_t Constant1;
+        uint64_t Constant2;
+
+        if (Disp->IsValueConstant(IROp->Args[0], &Constant1) &&
+            Disp->IsValueConstant(IROp->Args[1], &Constant2)) {
+          LogMan::Msg::A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
+        }
+      break;
+      }
+
+      case OP_SEXT:
+      case OP_NEG:
+      case OP_POPCOUNT:
+      case OP_FINDLSB:
+      case OP_FINDMSB:
+      case OP_REV:
+      case OP_SBFE:
+      {
+        uint64_t Constant1;
+
+        if (Disp->IsValueConstant(IROp->Args[0], &Constant1)) {
+          LogMan::Msg::A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
+        }
+      break;
+      }
+*/
       case OP_ADD: {
         auto Op = IROp->C<IR::IROp_Add>();
         uint64_t Constant1;
@@ -52,7 +97,101 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         }
       break;
       }
+      case OP_SUB: {
+        auto Op = IROp->C<IR::IROp_Sub>();
+        uint64_t Constant1;
+        uint64_t Constant2;
 
+        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+          uint64_t NewConstant = Constant1 - Constant2;
+          Disp->SetWriteCursor(CodeNode);
+          auto ConstantVal = Disp->_Constant(NewConstant);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
+      break;
+      }
+      case OP_AND: {
+        auto Op = IROp->C<IR::IROp_And>();
+        uint64_t Constant1;
+        uint64_t Constant2;
+
+        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+          uint64_t NewConstant = Constant1 & Constant2;
+          Disp->SetWriteCursor(CodeNode);
+          auto ConstantVal = Disp->_Constant(NewConstant);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
+      break;
+      }
+      case OP_OR: {
+        auto Op = IROp->C<IR::IROp_Or>();
+        uint64_t Constant1;
+        uint64_t Constant2;
+
+        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+          uint64_t NewConstant = Constant1 | Constant2;
+          Disp->SetWriteCursor(CodeNode);
+          auto ConstantVal = Disp->_Constant(NewConstant);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
+      break;
+      }
+      case OP_XOR: {
+        auto Op = IROp->C<IR::IROp_Xor>();
+        uint64_t Constant1;
+        uint64_t Constant2;
+
+        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+          uint64_t NewConstant = Constant1 ^ Constant2;
+          Disp->SetWriteCursor(CodeNode);
+          auto ConstantVal = Disp->_Constant(NewConstant);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
+      break;
+      }
+      case OP_LSHL: {
+        auto Op = IROp->C<IR::IROp_Lshl>();
+        uint64_t Constant1;
+        uint64_t Constant2;
+
+        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+          uint64_t NewConstant = Constant1 << Constant2;
+          Disp->SetWriteCursor(CodeNode);
+          auto ConstantVal = Disp->_Constant(NewConstant);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
+      break;
+      }
+
+
+      case OP_BFE: {
+        auto Op = IROp->C<IR::IROp_Bfe>();
+        uint64_t Constant;
+        if (IROp->Size <= 8 && Disp->IsValueConstant(Op->Header.Args[0], &Constant)) {
+          uint64_t SourceMask = (1ULL << Op->Width) - 1;
+          if (Op->Width == 64)
+            SourceMask = ~0ULL;
+          SourceMask <<= Op->lsb;
+
+          uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
+          Disp->SetWriteCursor(CodeNode);
+          auto ConstantVal = Disp->_Constant(NewConstant);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
+
+        break;
+      }
       case OP_ZEXT: {
         auto Op = IROp->C<IR::IROp_Zext>();
         uint64_t Constant;
@@ -60,7 +199,7 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
           uint64_t NewConstant = Constant & ((1ULL << Op->SrcSize) - 1);
           Disp->SetWriteCursor(CodeNode);
           auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWith(CodeNode, ConstantVal);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
       break;
