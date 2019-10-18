@@ -1,4 +1,5 @@
 #include "Interface/Context/Context.h"
+#include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
@@ -99,6 +100,10 @@ private:
   using CustomDispatch = void(*)(FEXCore::Core::InternalThreadState *Thread);
   CustomDispatch DispatchPtr{};
   IR::RegisterAllocationPass *RAPass;
+
+#ifdef BLOCKSTATS
+  bool GetSamplingData {true};
+#endif
 };
 
 JITCore::JITCore(FEXCore::Context::Context *ctx)
@@ -226,6 +231,49 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
   LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
+#ifdef BLOCKSTATS
+  BlockSamplingData::BlockData *SamplingData = CTX->BlockData->GetBlockData(HeaderOp->Entry);
+  if (GetSamplingData) {
+    mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
+    rdtsc();
+    shl(rdx, 32);
+    or(rax, rdx);
+    mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Start)], rax);
+  }
+
+  auto ExitBlock = [&]() {
+    if (GetSamplingData) {
+      mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
+      // Get time
+      rdtsc();
+      shl(rdx, 32);
+      or(rax, rdx);
+
+      // Calculate time spent in block
+      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Start)]);
+      sub(rax, rdx);
+
+      // Add time to total time
+      add(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalTime)], rax);
+
+      // Increment call count
+      inc(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalCalls)]);
+
+      // Calculate min
+      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Min)]);
+      cmp(rdx, rax);
+      cmova(rdx, rax);
+      mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Min)], rdx);
+
+      // Calculate max
+      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Max)]);
+      cmp(rdx, rax);
+      cmovb(rdx, rax);
+      mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Max)], rdx);
+    }
+  };
+#endif
+
   IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
   while (1) {
     using namespace FEXCore::IR;
@@ -317,6 +365,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           pop(rbp);
           pop(rbx);
 
+#ifdef BLOCKSTATS
+          ExitBlock();
+#endif
           ret();
           break;
         }
@@ -342,6 +393,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               pop(r12);
               pop(rbp);
               pop(rbx);
+
+#ifdef BLOCKSTATS
+              ExitBlock();
+#endif
               ret();
             break;
             default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);

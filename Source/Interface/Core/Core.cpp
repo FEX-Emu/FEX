@@ -3,6 +3,7 @@
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/BlockCache.h"
+#include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Core.h"
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -102,6 +103,9 @@ namespace FEXCore::Context {
     FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
     PassManager.AddDefaultPasses();
     PassManager.AddDefaultValidationPasses();
+#ifdef BLOCKSTATS
+    BlockData = std::make_unique<FEXCore::BlockSamplingData>();
+#endif
   }
 
   bool Context::GetFilenameHash(std::string const &Filename, std::string &Hash) {

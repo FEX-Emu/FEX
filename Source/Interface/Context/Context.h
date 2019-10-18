@@ -15,6 +15,8 @@
 
 namespace FEXCore {
 class SyscallHandler;
+class BlockSamplingData;
+
 namespace CPU {
   class JITCore;
 }
@@ -64,6 +66,10 @@ namespace FEXCore::Context {
     FEXCore::SyscallHandler SyscallHandler;
     CustomCPUFactoryType CustomCPUFactory;
     CustomCPUFactoryType FallbackCPUFactory;
+
+#ifdef BLOCKSTATS
+    std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
+#endif
 
     Context();
     ~Context();
