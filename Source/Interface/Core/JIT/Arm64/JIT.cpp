@@ -190,7 +190,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   SetCPUFeatures(vixl::CPUFeatures::All());
 
   RAPass = CTX->GetRegisterAllocatorPass();
-  RAPass->SetSupportsSpills(false);
+  RAPass->SetSupportsSpills(true);
 
   RASet = RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
   RAPass->AddRegisters(RASet, GPRClass, GPRBase, NumGPRs);
@@ -297,8 +297,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   uintptr_t DataBegin = CurrentIR->GetData();
 
   HasRA = RAPass->HasFullRA();
-
   LogMan::Throw::A(HasRA, "Arm64 JIT only works with RA");
+
+  uint32_t SpillSlots = RAPass->SpillSlots();
 
   // AAPCS64
   // r30      = LR
@@ -327,6 +328,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     void *Memory = CTX->MemoryMapper.GetMemoryBase();
     LoadConstant(MEM_BASE, (uint64_t)Memory);
     mov(STATE, x0);
+  }
+
+  if (SpillSlots) {
+    sub(sp, sp, SpillSlots * 16);
   }
 
   auto HeaderIterator = CurrentIR->begin();
@@ -404,6 +409,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_EXITFUNCTION:
       case IR::OP_ENDFUNCTION: {
+        if (SpillSlots) {
+          add(sp, sp, SpillSlots * 16);
+        }
+
         ret();
         break;
       }
@@ -609,9 +618,68 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         and_(Dst, Dst, 1);
         break;
       }
+      case IR::OP_FILLREGISTER: {
+        auto Op = IROp->C<IR::IROp_FillRegister>();
+        uint32_t SlotOffset = Op->Slot * 16;
+        switch (OpSize) {
+        case 1: {
+          ldrb(GetDst<RA_64>(Node), MemOperand(sp, SlotOffset));
+          break;
+        }
+        case 2: {
+          ldrh(GetDst<RA_64>(Node), MemOperand(sp, SlotOffset));
+          break;
+        }
+        case 4: {
+          ldr(GetDst<RA_32>(Node), MemOperand(sp, SlotOffset));
+          break;
+        }
+        case 8: {
+          ldr(GetDst<RA_64>(Node), MemOperand(sp, SlotOffset));
+          break;
+        }
+        case 16: {
+          ldr(GetDst(Node), MemOperand(sp, SlotOffset));
+          break;
+        }
+        default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+        }
+        break;
+      }
+
+      case IR::OP_SPILLREGISTER: {
+        auto Op = IROp->C<IR::IROp_SpillRegister>();
+        uint32_t SlotOffset = Op->Slot * 16;
+        switch (OpSize) {
+        case 1: {
+          strb(GetSrc<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+          break;
+        }
+        case 2: {
+          strh(GetSrc<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+          break;
+        }
+        case 4: {
+          str(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+          break;
+        }
+        case 8: {
+          str(GetSrc<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+          break;
+        }
+        case 16: {
+          str(GetSrc(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+          break;
+        }
+        default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+        }
+        break;
+      }
       case IR::OP_BREAK: {
         auto Op = IROp->C<IR::IROp_Break>();
         switch (Op->Reason) {
+          case 0: // Hard fault
+          case 5: // Guest ud2
           case 4: // HLT
             hlt(4);
           break;
@@ -1435,6 +1503,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 #endif
         break;
       }
+      case IR::OP_DUMMY:
+        break;
       default:
         LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
         break;
