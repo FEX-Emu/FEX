@@ -68,6 +68,7 @@ set (SRCS
   Interface/IR/IR.cpp
   Interface/IR/PassManager.cpp
   Interface/IR/Passes/ConstProp.cpp
+  Interface/IR/Passes/DeadCodeElimination.cpp
   Interface/IR/Passes/DeadContextStoreElimination.cpp
   Interface/IR/Passes/IRCompaction.cpp
   Interface/IR/Passes/IRValidation.cpp
