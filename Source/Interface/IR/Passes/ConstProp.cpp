@@ -38,7 +38,6 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
       auto IROp = CodeNode->Op(DataBegin);
       switch (IROp->Op) {
 /*
-      case OP_MUL:
       case OP_UMUL:
       case OP_DIV:
       case OP_UDIV:
@@ -203,6 +202,20 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
           Changed = true;
         }
       break;
+      }
+      case OP_MUL: {
+        auto Op = IROp->C<IR::IROp_Mul>();
+        uint64_t Constant1;
+        uint64_t Constant2;
+
+        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+          uint64_t NewConstant = Constant1 * Constant2;
+          Disp->SetWriteCursor(CodeNode);
+          auto ConstantVal = Disp->_Constant(NewConstant);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
       }
       default: break;
       }
