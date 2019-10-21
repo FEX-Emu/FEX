@@ -304,6 +304,7 @@ public:
   // Since the node is decoupled from the backing op then we can swap out the backing op without much overhead
   // This can potentially cause problems where multiple nodes are pointing to the same IROp
   OrderedNode *ReplaceAllUsesWith(OrderedNode *Node, IROp_Header *Op) {
+    RemoveArgUses(Node);
     Node->Header.Value.SetOffset(Data.Begin(), reinterpret_cast<uintptr_t>(Op));
     return Node;
   }
@@ -312,15 +313,15 @@ public:
   // This takes the op backing in the new node and replaces the node in the other node
   // Again can cause problems where things are pointing to NewNode and haven't been decoupled
   OrderedNode *ReplaceAllUsesWith(OrderedNode *Node, OrderedNode *NewNode) {
+    RemoveArgUses(Node);
     Node->Header.Value.NodeOffset = NewNode->Header.Value.NodeOffset;
     return Node;
   }
 
   void ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNode *NewNode, IR::NodeWrapperIterator After, IR::NodeWrapperIterator End);
 
-  void Unlink(OrderedNode *Node) {
-    Node->Unlink(ListData.Begin());
-  }
+  void Remove(OrderedNode *Node);
+
 
   void SetPackedRFLAG(bool Lower8, OrderedNode *Src);
   OrderedNode *GetPackedRFLAG(bool Lower8);
@@ -383,6 +384,7 @@ public:
   bool GetMultiblock() { return Multiblock; }
 
 private:
+  void RemoveArgUses(OrderedNode *Node);
   void TestFunction();
   bool DecodeFailure{false};
 

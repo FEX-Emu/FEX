@@ -43,7 +43,7 @@ bool RedundantFlagCalculationEliminination::Run(OpDispatchBuilder *Disp) {
         // If we have had a valid flag store previously and it hasn't been touched until this new store
         // Then just delete the old one and let DCE to take care of the rest
         if (LastValidFlagStores[Op->Flag] != nullptr) {
-          Disp->Unlink(LastValidFlagStores[Op->Flag]);
+          Disp->Remove(LastValidFlagStores[Op->Flag]);
           Changed = true;
         }
 

@@ -3311,6 +3311,25 @@ void OpDispatchBuilder::ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNo
   }
 }
 
+void OpDispatchBuilder::RemoveArgUses(OrderedNode *Node) {
+  uintptr_t ListBegin = ListData.Begin();
+  uintptr_t DataBegin = Data.Begin();
+
+  FEXCore::IR::IROp_Header *IROp = Node->Op(DataBegin);
+
+  uint8_t NumArgs = IR::GetArgs(IROp->Op);
+  for (uint8_t i = 0; i < NumArgs; ++i) {
+    auto ArgNode = IROp->Args[i].GetNode(ListBegin);
+    ArgNode->RemoveUse();
+  }
+}
+
+void OpDispatchBuilder::Remove(OrderedNode *Node) {
+  RemoveArgUses(Node);
+
+  Node->Unlink(ListData.Begin());
+}
+
 void InstallOpcodeHandlers() {
   const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable = {
     // Instructions

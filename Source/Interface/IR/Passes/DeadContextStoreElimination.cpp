@@ -90,7 +90,7 @@ bool RCLE::Run(OpDispatchBuilder *Disp) {
             // If the last store matches this load value then we can replace the loaded value with the previous valid one
             Disp->ReplaceAllUsesWithInclusive(CodeNode, LastValidGPRStores[greg], CodeBegin, CodeLast);
             if (CodeNode->GetUses() == 0)
-              Disp->Unlink(CodeNode);
+              Disp->Remove(CodeNode);
             // Set it as invalid now
             LastValidGPRStores[greg] = nullptr;
             Changed = true;
