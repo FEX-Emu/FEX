@@ -129,6 +129,8 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
       default: *out << "<Unknown Args>"; break;
       }
 
+      //*out << " (" <<  std::dec << CodeNode->GetUses() << ")";
+
       *out << "\n";
 
       // CodeLast is inclusive. So we still need to dump the CodeLast op as well

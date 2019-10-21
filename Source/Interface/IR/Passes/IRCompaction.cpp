@@ -124,6 +124,9 @@ bool IRCompaction::Run(OpDispatchBuilder *Disp) {
         auto LocalPair = LocalBuilder.AllocateRawOp(OpSize);
         IR::OrderedNodeWrapper LocalNodeWrapper = LocalPair.Node->Wrapped(LocalListBegin);
 
+        // Copy usage infomation
+        LocalPair.Node->NumUses = CodeNode->GetUses();
+
         // Copy over the op
         memcpy(LocalPair.first, IROp, OpSize);
 
