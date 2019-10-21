@@ -48,7 +48,7 @@ bool RedundantFlagCalculationEliminination::Run(OpDispatchBuilder *Disp) {
         }
 
         // Set this node as the last one valid for this flag
-        LastValidFlagStores[Op->Flag] = RealNode;
+        LastValidFlagStores[Op->Flag] = CodeNode;
       }
       else if (IROp->Op == OP_LOADFLAG) {
         auto Op = IROp->CW<IR::IROp_LoadFlag>();
