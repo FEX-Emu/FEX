@@ -10,6 +10,7 @@ void PassManager::AddDefaultPasses() {
   Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreateRedundantFlagCalculationEliminination()));
   Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreateSyscallOptimization()));
   Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreatePassDeadContextStoreElimination()));
+  Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreatePassDeadCodeElimination()));
 
   // If the IR is compacted post-RA then the node indexing gets messed up and the backend isn't able to find the register assigned to a node
   // Compact before IR, don't worry about RA generating spills/fills
