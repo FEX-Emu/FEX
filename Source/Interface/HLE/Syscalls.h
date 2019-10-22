@@ -43,6 +43,7 @@ enum Syscalls {
   SYSCALL_EXIT            = 60,  ///< __NR_exit
   SYSCALL_WAIT4           = 61,  ///< __NR_wait4
   SYSCALL_UNAME           = 63,  ///< __NR_uname
+  SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
   SYSCALL_CHDIR           = 80,  ///< __NR_chdir
   SYSCALL_READLINK        = 89,  ///< __NR_readlink
   SYSCALL_UMASK           = 95,  ///< __NR_umask

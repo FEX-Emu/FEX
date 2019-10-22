@@ -53,6 +53,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_UMASK:
     LogMan::Msg::D("umask(0x%lx) = %ld", Args->Argument[1], Ret);
     break;
+  case SYSCALL_GETCWD:
+    LogMan::Msg::D("getcwd(\"%s\", %ld) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2], Ret);
+    break;
   case SYSCALL_CHDIR:
     LogMan::Msg::D("chdir(\"%s\") = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Ret);
     break;
@@ -579,6 +582,16 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     // Just say that the mask has always matched what was passed in
     Result = Args->Argument[1];
     break;
+  case SYSCALL_GETCWD:
+  {
+    char *ptr = getcwd(CTX->MemoryMapper.GetPointer<char *>(Args->Argument[1]), Args->Argument[2]);
+    if (!ptr) {
+      Result = errno;
+    } else {
+      Result = strlen(ptr) + 1;
+    }
+    break;
+  }
   case SYSCALL_CHDIR:
     Result = chdir(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]));
     break;
