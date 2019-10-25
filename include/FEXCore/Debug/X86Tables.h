@@ -1,8 +1,8 @@
 #pragma once
 
-#include <array>
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 
 namespace FEXCore::IR {
 ///< Forward declaration of OpDispatchBuilder

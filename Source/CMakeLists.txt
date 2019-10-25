@@ -61,6 +61,18 @@ set (SRCS
   Interface/Core/Interpreter/InterpreterCore.cpp
   Interface/Core/LLVMJIT/LLVMCore.cpp
   Interface/Core/LLVMJIT/LLVMMemoryManager.cpp
+  Interface/Core/X86Tables/BaseTables.cpp
+  Interface/Core/X86Tables/DDDTables.cpp
+  Interface/Core/X86Tables/EVEXTables.cpp
+  Interface/Core/X86Tables/H0F38Tables.cpp
+  Interface/Core/X86Tables/H0F3ATables.cpp
+  Interface/Core/X86Tables/PrimaryGroupTables.cpp
+  Interface/Core/X86Tables/SecondaryGroupTables.cpp
+  Interface/Core/X86Tables/SecondaryModRMTables.cpp
+  Interface/Core/X86Tables/SecondaryTables.cpp
+  Interface/Core/X86Tables/VEXTables.cpp
+  Interface/Core/X86Tables/X87Tables.cpp
+  Interface/Core/X86Tables/XOPTables.cpp
   Interface/HLE/FileManagement.cpp
   Interface/HLE/Syscalls.cpp
   Interface/Memory/MemMapper.cpp
