@@ -835,6 +835,9 @@ bool Decoder::BranchTargetInMultiblockRange() {
     if (Conditional) {
       MaxCondBranchForward = std::max(MaxCondBranchForward, TargetRIP);
       MaxCondBranchBackwards = std::min(MaxCondBranchBackwards, TargetRIP);
+
+      // If we are conditional then a target can be the instruction past the conditional instruction
+      JumpTargets.emplace(DecodeInst->PC + DecodeInst->InstSize);
     }
     JumpTargets.emplace(TargetRIP);
     return true;
@@ -864,6 +867,9 @@ bool Decoder::DecodeInstructionsInBlock(uint8_t const* _InstStream, uint64_t PC)
     SymbolMaxAddress = ~0ULL;
     SymbolMinAddress = EntryPoint;
   }
+
+  // Entry is a jump target
+  JumpTargets.emplace(PC);
 
   while(!Done) {
     ErrorDuringDecoding = !DecodeInstruction(PC + PCOffset);
