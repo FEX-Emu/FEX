@@ -63,14 +63,18 @@
     "ExitFunction": {},
 
     "Jump": {
-			"DispatcherUnary": true,
       "SSAArgs": "1",
       "RAOverride": "0"
     },
 
     "CondJump": {
-      "SSAArgs": "2",
-      "RAOverride": "1"
+      "SSAArgs": "3",
+      "RAOverride": "1",
+      "SSANames": [
+        "Cond",
+        "TrueBlock",
+        "FalseBlock"
+      ]
     },
 
     "Mov": {
@@ -154,109 +158,91 @@
 
     "Add": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Sub": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Mul": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "UMul": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Div": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "UDiv": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Rem": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "URem": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "MulH": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "UMulH": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Or": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "And": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Xor": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Lshl": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Lshr": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Ashr": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Rol": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "Ror": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
@@ -300,31 +286,26 @@
 
     "Neg": {
 			"HasDest": true,
-			"DispatcherUnary": true,
       "SSAArgs": "1"
     },
 
     "Popcount": {
 			"HasDest": true,
-			"DispatcherUnary": true,
       "SSAArgs": "1"
     },
 
     "FindLSB": {
 			"HasDest": true,
-			"DispatcherUnary": true,
       "SSAArgs": "1"
     },
 
     "FindMSB": {
 			"HasDest": true,
-			"DispatcherUnary": true,
       "SSAArgs": "1"
     },
 
     "Rev": {
 			"HasDest": true,
-			"DispatcherUnary": true,
       "SSAArgs": "1"
     },
 
@@ -379,7 +360,6 @@
     },
 
     "Print": {
-			"DispatcherUnary": true,
       "SSAArgs": "1"
     },
 
@@ -433,13 +413,11 @@
 
     "VOr": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 
     "VXor": {
 			"HasDest": true,
-			"Dispatcher": true,
       "SSAArgs": "2"
     },
 

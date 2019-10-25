@@ -419,7 +419,6 @@ namespace FEXCore::Context {
 
     if (IR == Thread->IRLists.end()) {
       bool HadDispatchError {false};
-      [[maybe_unused]] bool HadRIPSetter {false};
 
       if (!FrontendDecoder.DecodeInstructionsInBlock(&GuestCode[TotalInstructionsLength], GuestRIP + TotalInstructionsLength)) {
         if (Config.BreakOnFrontendFailure) {
@@ -429,7 +428,7 @@ namespace FEXCore::Context {
         return 0;
       }
 
-      Thread->OpDispatcher->BeginFunction(GuestRIP);
+      Thread->OpDispatcher->BeginFunction(GuestRIP, &FrontendDecoder.JumpTargets);
       auto DecodedOps = FrontendDecoder.GetDecodedInsts();
       for (size_t i = 0; i < DecodedOps.second; ++i) {
         FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
@@ -437,48 +436,8 @@ namespace FEXCore::Context {
 
         TableInfo = DecodedOps.first->at(i).TableInfo;
         DecodedInfo = &DecodedOps.first->at(i);
-        if (FrontendDecoder.JumpTargets.find(DecodedInfo->PC) != FrontendDecoder.JumpTargets.end() &&
-            Thread->OpDispatcher->GetJumpTargetIfExists(DecodedInfo->PC) == nullptr) {
-          auto Jump = Thread->OpDispatcher->_Jump();
-          Thread->OpDispatcher->CreateNewEndBlock(0);
-          auto JumpTarget = Thread->OpDispatcher->CreateNewBeginBlock();
-          Thread->OpDispatcher->SetJumpTarget(Jump, JumpTarget);
-          Thread->OpDispatcher->InsertJumpTarget(DecodedInfo->PC, JumpTarget.Node);
-        }
 
-        // Check our fixups to see if they still are necessary
-        auto fixup = Thread->OpDispatcher->Fixups.find(DecodedInfo->PC);
-        if (fixup != Thread->OpDispatcher->Fixups.end()) {
-          IR::OrderedNode *JumpTarget{};
-          auto it = Thread->OpDispatcher->JumpTargets.find(DecodedInfo->PC);
-          if (it != Thread->OpDispatcher->JumpTargets.end()) {
-            JumpTarget = it->second;
-          }
-          else {
-            Thread->OpDispatcher->CreateNewEndBlock(0);
-            JumpTarget = Thread->OpDispatcher->CreateNewBeginBlock();
-          }
-
-          for (auto it : fixup->second) {
-            switch (it.Op->Op) {
-            case FEXCore::IR::OP_CONDJUMP: {
-              Thread->OpDispatcher->SetJumpTarget(it.Op->CW<IR::IROp_CondJump>(), JumpTarget);
-            break;
-            }
-            case FEXCore::IR::OP_JUMP: {
-              Thread->OpDispatcher->SetJumpTarget(it.Op->CW<IR::IROp_Jump>(), JumpTarget);
-            break;
-            }
-
-            default:
-              LogMan::Msg::A("Unknown fixup kind: '%s'", std::string(IR::GetName(it.Op->Op)).c_str());
-            break;
-            }
-          }
-
-          // No longer need this fixup
-          Thread->OpDispatcher->Fixups.erase(fixup);
-        }
+        Thread->OpDispatcher->SetNewBlockIfChanged(DecodedInfo->PC);
 
         if (TableInfo->OpcodeDispatcher) {
           auto Fn = TableInfo->OpcodeDispatcher;
@@ -509,34 +468,25 @@ namespace FEXCore::Context {
           }
           else {
             // We had some instructions. Early exit
+            Thread->OpDispatcher->_StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(GuestRIP + TotalInstructionsLength));
+            Thread->OpDispatcher->_ExitFunction();
             break;
           }
         }
 
-        // This is to make sure if we are stepping or make a block that is too large that we will still set the block
-        if (!HadDispatchError && (TableInfo->Flags & X86Tables::InstFlags::FLAGS_SETS_RIP)) {
-          HadRIPSetter = true;
-        }
+        Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == DecodedOps.second);
 
         if (TotalInstructions >= Config.MaxInstPerBlock) {
           break;
         }
       }
 
-      // Just dump a new block just incase we get here
-      {
-        Thread->OpDispatcher->CreateNewEndBlock(TotalInstructionsLength);
-        Thread->OpDispatcher->CreateNewBeginBlock();
-        Thread->OpDispatcher->ExitFunction();
-        Thread->OpDispatcher->CreateNewEndBlock(0);
-      }
       Thread->OpDispatcher->Finalize();
 
       // Run the passmanager over the IR from the dispatcher
       PassManager.Run(Thread->OpDispatcher.get());
 
-      if (Thread->OpDispatcher->ShouldDump)
-      {
+      if (Thread->OpDispatcher->ShouldDump) {
         std::stringstream out;
         auto NewIR = Thread->OpDispatcher->ViewIR();
         FEXCore::IR::Dump(&out, &NewIR);

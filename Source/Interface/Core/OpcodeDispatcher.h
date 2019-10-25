@@ -1,13 +1,14 @@
 #pragma once
 
-#include <FEXCore/IR/IntrusiveIRList.h>
-
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
 
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <set>
 
 namespace FEXCore::IR {
 class Pass;
@@ -23,13 +24,58 @@ public:
   } Information;
   bool ShouldDump {false};
 
-  struct Fixup {
-    OrderedNode *Node;
-    IROp_Header *Op;
+  struct JumpTargetInfo {
+    OrderedNode* BlockEntry;
+    bool HaveEmitted;
   };
 
-  std::map<uint64_t, std::vector<Fixup>> Fixups;
-  std::map<uint64_t, OrderedNode *> JumpTargets;
+  std::map<uint64_t, JumpTargetInfo> JumpTargets;
+
+  OrderedNode* GetNewJumpBlock(uint64_t RIP) {
+    auto it = JumpTargets.find(RIP);
+    LogMan::Throw::A(it != JumpTargets.end(), "Couldn't find block generated for 0x%lx", RIP);
+    return it->second.BlockEntry;
+  }
+
+  void SetNewBlockIfChanged(uint64_t RIP) {
+    auto it = JumpTargets.find(RIP);
+    if (it == JumpTargets.end()) return;
+
+    it->second.HaveEmitted = true;
+
+    if (CurrentCodeBlock->Wrapped(ListData.Begin()).ID() == it->second.BlockEntry->Wrapped(ListData.Begin()).ID()) return;
+
+    // We have hit a RIP that is a jump target
+    // Thus we need to end up in a new block
+    SetCurrentCodeBlock(it->second.BlockEntry);
+  }
+
+  void FinishOp(uint64_t NextRIP, bool LastOp) {
+    auto it = JumpTargets.find(NextRIP);
+
+    // If we are switching to a new block and this current block has yet to set a RIP
+    // Then we need to insert an unconditional jump from the current block to the one we are going to
+    // This happens most frequently when an instruction jumps backwards to another location
+    // eg:
+    //
+    //  nop dword [rax], eax
+    // .label:
+    //  rdi, 0x8
+    //  cmp qword [rdi-8], 0
+    //  jne .label
+    if (!BlockSetRIP) {
+      if (it == JumpTargets.end() && LastOp) {
+        // If we don't have a jump target to a new block then we have to leave
+        // Set the RIP to the next instruction and leave
+        _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), _Constant(NextRIP));
+        _ExitFunction();
+      }
+      else if (it != JumpTargets.end()) {
+        _Jump(it->second.BlockEntry);
+      }
+    }
+    BlockSetRIP = false;
+  }
 
   OpDispatchBuilder();
 
@@ -38,7 +84,7 @@ public:
   void ResetWorkingList();
   bool HadDecodeFailure() { return DecodeFailure; }
 
-  void BeginFunction(uint64_t RIP);
+  void BeginFunction(uint64_t RIP, std::set<uint64_t> *Targets);
   void ExitFunction();
   void Finalize();
 
@@ -79,6 +125,7 @@ public:
   void MOVOffsetOp(OpcodeArgs);
   void CMOVOp(OpcodeArgs);
   void CPUIDOp(OpcodeArgs);
+  template<bool SHL1Bit>
   void SHLOp(OpcodeArgs);
   template<bool SHR1Bit>
   void SHROp(OpcodeArgs);
@@ -236,7 +283,7 @@ public:
     return _Jump(InvalidNode);
   }
   IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0) {
-    return _CondJump(ssa0, InvalidNode);
+    return _CondJump(ssa0, InvalidNode, InvalidNode);
   }
 
   void SetJumpTarget(IR::IROp_Jump *Op, OrderedNode *Target) {
@@ -247,13 +294,21 @@ public:
 
     Op->Header.Args[0].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
-  void SetJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
+  void SetTrueJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
     LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting CondJump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
 
     Op->Header.Args[1].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+  }
+  void SetFalseJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
+    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+        "Tried setting CondJump target to %%ssa%d %s",
+        Target->Wrapped(ListData.Begin()).ID(),
+        std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
+
+    Op->Header.Args[2].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
 
   void SetJumpTarget(IRPair<IROp_Jump> Op, OrderedNode *Target) {
@@ -264,30 +319,22 @@ public:
 
     Op.first->Header.Args[0].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
-  void SetJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
+  void SetTrueJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
     LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting CondJump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
     Op.first->Header.Args[1].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
+  void SetFalseJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
+    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+        "Tried setting CondJump target to %%ssa%d %s",
+        Target->Wrapped(ListData.Begin()).ID(),
+        std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
+    Op.first->Header.Args[2].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+  }
 
   /**  @} */
-
-  OrderedNode *InsertJumpTarget(uint64_t RIP, OrderedNode *Node) {
-    LogMan::Throw::A(JumpTargets.find(RIP) == JumpTargets.end(), "Trying to insert JumpTarget that already exists!");
-    LogMan::Throw::A(Node->Op(Data.Begin())->Op == OP_CODEBLOCK,
-      "Tried inserting an invalid jump target of type %s",
-      std::string(IR::GetName(Node->Op(Data.Begin())->Op)).c_str());
-    JumpTargets[RIP] = Node;
-    return Node;
-  }
-
-  OrderedNode *GetJumpTargetIfExists(uint64_t RIP) {
-    auto Node = JumpTargets.find(RIP);
-    if (Node == JumpTargets.end()) return nullptr;
-    return Node->second;
-  }
 
   bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t *Constant) {
      OrderedNode *RealNode = ssa.GetNode(ListData.Begin());
@@ -371,21 +418,47 @@ public:
      IROp->Last = Last->Wrapped(ListData.Begin());
   }
 
+  /**
+   * @name Links codeblocks together
+   * Codeblocks are singly linked so we need to walk the list forward if the linked block isn't isn't the last
+   *
+   * eq.
+   * CodeNode->Next -> Next
+   * to
+   * CodeNode->Next -> New -> Next
+   *
+   * @{ */
+  /**  @} */
   void LinkCodeBlocks(OrderedNode *CodeNode, OrderedNode *Next) {
-     FEXCore::IR::IROp_CodeBlock *IROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
-     LogMan::Throw::A(IROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
-     IROp->Next = Next->Wrapped(ListData.Begin());
+     FEXCore::IR::IROp_CodeBlock *CurrentIROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
+     LogMan::Throw::A(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
+
+     OrderedNodeWrapper OldNext = CurrentIROp->Next;
+     // First thing is to assign CodeNode->Next to the incoming node
+     {
+       CurrentIROp->Next = Next->Wrapped(ListData.Begin());
+     }
+
+     // Second thing is to assign the incoming node's Next to what was in CodeNode->Next
+     {
+       FEXCore::IR::IROp_CodeBlock *NextIROp = Next->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
+       auto NewOldNext = NextIROp->Next;
+       NextIROp->Next = OldNext;
+       OldNext = NewOldNext;
+     }
   }
 
   IRPair<IROp_CodeBlock> CreateNewBeginBlock();
   IRPair<IROp_EndBlock> CreateNewEndBlock(uint64_t RIPIncrement);
+
+  IRPair<IROp_CodeBlock> CreateNewCodeBlock();
+  void SetCurrentCodeBlock(OrderedNode *Node);
 
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
   bool GetMultiblock() { return Multiblock; }
 
 private:
   void RemoveArgUses(OrderedNode *Node);
-  void TestFunction();
   bool DecodeFailure{false};
 
   OrderedNode *LoadSource(FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, bool LoadData = true, bool ForceLoad = false);
@@ -437,6 +510,9 @@ private:
     memcpy(Ptr, OldNode, Size);
     return Ptr;
   }
+
+  void CreateJumpBlocks(std::set<uint64_t> *Targets);
+  bool BlockSetRIP {false};
 
   OrderedNode *CurrentWriteCursor = nullptr;
 

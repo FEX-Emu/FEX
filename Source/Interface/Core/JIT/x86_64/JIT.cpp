@@ -426,19 +426,30 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         case IR::OP_CONDJUMP: {
           auto Op = IROp->C<IR::IROp_CondJump>();
 
-          Label *TargetLabel;
-          auto IsTarget = JumpTargets.find(Op->Header.Args[1].ID());
-          if (IsTarget == JumpTargets.end()) {
-            TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
+          Label *TrueTargetLabel;
+          Label *FalseTargetLabel;
+
+          auto TrueIter = JumpTargets.find(Op->Header.Args[1].ID());
+          auto FalseIter = JumpTargets.find(Op->Header.Args[2].ID());
+
+          if (TrueIter == JumpTargets.end()) {
+            TrueTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
           }
           else {
-            TargetLabel = &IsTarget->second;
+            TrueTargetLabel = &TrueIter->second;
+          }
+
+          if (FalseIter == JumpTargets.end()) {
+            FalseTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[2].ID()).first->second;
+          }
+          else {
+            FalseTargetLabel = &FalseIter->second;
           }
 
           // Take branch if (src != 0)
           cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), 0);
-          jne(*TargetLabel, T_NEAR);
-
+          jne(*TrueTargetLabel, T_NEAR);
+          jmp(*FalseTargetLabel, T_NEAR);
           break;
         }
         case IR::OP_LOADCONTEXT: {

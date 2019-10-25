@@ -1,5 +1,3 @@
-
-
 #include "Interface/Core/OpcodeDispatcher.h"
 #include <FEXCore/Core/CoreState.h>
 #include <climits>
@@ -93,7 +91,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
 
   // Store the new RIP
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-  _EndFunction();
+  _ExitFunction();
   CreateNewEndBlock(0);
   Information.HadUnconditionalExit = true;
 }
@@ -258,6 +256,7 @@ void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CALLOp(OpcodeArgs) {
+  BlockSetRIP = true;
   auto ConstantPC = _Constant(Op->PC + Op->InstSize);
 
   OrderedNode *JMPPCOffset = LoadSource(Op, Op->Src1, Op->Flags);
@@ -279,12 +278,11 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   // Store the RIP
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
   _ExitFunction(); // If we get here then leave the function now
-
-  CreateNewEndBlock(0);
-  Information.HadUnconditionalExit = true;
 }
 
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
+  BlockSetRIP = true;
+
   OrderedNode *JMPPCOffset = LoadSource(Op, Op->Src1, Op->Flags);
 
   auto ConstantPCReturn = _Constant(Op->PC + Op->InstSize);
@@ -302,228 +300,182 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   // Store the RIP
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), JMPPCOffset);
   _ExitFunction(); // If we get here then leave the function now
-
-  CreateNewEndBlock(0);
-  Information.HadUnconditionalExit = true;
 }
 
 void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
+  BlockSetRIP = true;
+
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
   IRPair<IROp_Header> SrcCond;
 
   IRPair<IROp_Constant> TakeBranch;
   IRPair<IROp_Constant> DoNotTakeBranch;
-  bool ShouldMulti = Multiblock;
   TakeBranch = _Constant(1);
   DoNotTakeBranch = _Constant(0);
 
   switch (Op->OP) {
-  case 0x70:
-  case 0x80: { // JO - Jump if OF == 1
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x71:
-  case 0x81: { // JNO - Jump if OF == 0
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x72:
-  case 0x82: { // JC - Jump if CF == 1
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x73:
-  case 0x83: { // JNC - Jump if CF == 0
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x74:
-  case 0x84: { // JE - Jump if ZF == 1
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x75:
-  case 0x85: { // JNE - Jump if ZF == 0
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x76:
-  case 0x86: { // JNA - Jump if CF == 1 || ZC == 1
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-    auto Check = _Or(Flag1, Flag2);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, OneConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x77:
-  case 0x87: { // JA - Jump if CF == 0 && ZF == 0
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-    auto Check = _Or(Flag1, _Lshl(Flag2, _Constant(1)));
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x78:
-  case 0x88: { // JS - Jump if SF == 1
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x79:
-  case 0x89: { // JNS - Jump if SF == 0
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x7A:
-  case 0x8A: { // JP - Jump if PF == 1
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x7B:
-  case 0x8B: { // JNP - Jump if PF == 0
-    auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x7C: // SF <> OF
-  case 0x8C: {
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag1, Flag2, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x7D: // SF = OF
-  case 0x8D: {
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag1, Flag2, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x7E: // ZF = 1 || SF <> OF
-  case 0x8E: {
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-    auto Select1 = _Select(FEXCore::IR::COND_EQ,
-        Flag1, OneConst, OneConst, ZeroConst);
-
-    auto Select2 = _Select(FEXCore::IR::COND_NEQ,
-        Flag2, Flag3, OneConst, ZeroConst);
-
-    auto Check = _Or(Select1, Select2);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, OneConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  case 0x7F: // ZF = 0 && SF = OF
-  case 0x8F: {
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-    auto Select1 = _Select(FEXCore::IR::COND_EQ,
-        Flag1, ZeroConst, OneConst, ZeroConst);
-
-    auto Select2 = _Select(FEXCore::IR::COND_EQ,
-        Flag2, Flag3, OneConst, ZeroConst);
-
-    auto Check = _And(Select1, Select2);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, OneConst, TakeBranch, DoNotTakeBranch);
-  break;
-  }
-  default: LogMan::Msg::A("Unknown Jmp Op: 0x%x\n", Op->OP); return;
-  }
-
-  // The conditions of the previous conditional branches are inverted from what you expect on the x86 side
-  // This inversion exists because our condjump needs to jump over code that sets the RIP to the target conditionally
-  // XXX: Reenable
-  if (ShouldMulti) {
-    LogMan::Throw::A(Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-    uint64_t Target = Op->PC + Op->InstSize + Op->Src1.TypeLiteral.Literal;
-
-    if (Target >= Entry) {
-      auto CondJump = _CondJump(SrcCond);
-
-      auto JumpOver = _Jump();
-      // Generate a fallback block incase we end up in a case where we can't fix this up
-      if (1) {
-        CreateNewEndBlock(0);
-        // Make sure to start a new block after ending this one
-        auto JumpTarget = CreateNewBeginBlock();
-        // This very explicitly avoids the isDest path for Ops. We want the actual destination here
-        SetJumpTarget(CondJump, JumpTarget);
-
-        // Store the new RIP
-        _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), _Constant(Target));
-        _ExitFunction();
-      }
-
-      CreateNewEndBlock(0);
-
-      // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewBeginBlock();
-      SetJumpTarget(JumpOver, JumpTarget);
-      // Set the instruction after this one to have a jump target
-      InsertJumpTarget(Op->PC + Op->InstSize, JumpTarget.Node);
-
-      if (Target > Op->PC) {
-        // If we are forward jumping: Add the IR Op to the fixup list
-        auto it = Fixups.find(Target);
-        if (it == Fixups.end()) {
-          it = Fixups.try_emplace(Target).first;
-        }
-        it->second.emplace_back(Fixup{CondJump.Node, &CondJump.first->Header});
-
-        return;
-      }
-      else if (Target <= Op->PC) {
-        // If we are jumping backwards then we should have a jump target available in our jump targets list
-        auto it = JumpTargets.find(Target);
-        if (it != JumpTargets.end()) {
-          SetJumpTarget(CondJump, it->second);
-          return;
-        }
-      }
+    case 0x70:
+    case 0x80: { // JO - Jump if OF == 1
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_NEQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
     }
+    case 0x71:
+    case 0x81: { // JNO - Jump if OF == 0
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x72:
+    case 0x82: { // JC - Jump if CF == 1
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_NEQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x73:
+    case 0x83: { // JNC - Jump if CF == 0
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x74:
+    case 0x84: { // JE - Jump if ZF == 1
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_NEQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x75:
+    case 0x85: { // JNE - Jump if ZF == 0
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x76:
+    case 0x86: { // JNA - Jump if CF == 1 || ZC == 1
+      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+      auto Check = _Or(Flag1, Flag2);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Check, OneConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x77:
+    case 0x87: { // JA - Jump if CF == 0 && ZF == 0
+      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+      auto Check = _Or(Flag1, _Lshl(Flag2, _Constant(1)));
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Check, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x78:
+    case 0x88: { // JS - Jump if SF == 1
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_NEQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x79:
+    case 0x89: { // JNS - Jump if SF == 0
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x7A:
+    case 0x8A: { // JP - Jump if PF == 1
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_NEQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x7B:
+    case 0x8B: { // JNP - Jump if PF == 0
+      auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x7C: // SF <> OF
+    case 0x8C: {
+      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_NEQ,
+          Flag1, Flag2, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x7D: // SF = OF
+    case 0x8D: {
+      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Flag1, Flag2, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x7E: // ZF = 1 || SF <> OF
+    case 0x8E: {
+      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
+      auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+
+      auto Select1 = _Select(FEXCore::IR::COND_EQ,
+          Flag1, OneConst, OneConst, ZeroConst);
+
+      auto Select2 = _Select(FEXCore::IR::COND_NEQ,
+          Flag2, Flag3, OneConst, ZeroConst);
+
+      auto Check = _Or(Select1, Select2);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Check, OneConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    case 0x7F: // ZF = 0 && SF = OF
+    case 0x8F: {
+      auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
+      auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+
+      auto Select1 = _Select(FEXCore::IR::COND_EQ,
+          Flag1, ZeroConst, OneConst, ZeroConst);
+
+      auto Select2 = _Select(FEXCore::IR::COND_EQ,
+          Flag2, Flag3, OneConst, ZeroConst);
+
+      auto Check = _And(Select1, Select2);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+          Check, OneConst, TakeBranch, DoNotTakeBranch);
+    break;
+    }
+    default: LogMan::Msg::A("Unknown Jmp Op: 0x%x\n", Op->OP); return;
   }
+
+  LogMan::Throw::A(Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src1.TypeLiteral.Literal;
+
+  auto TrueBlock = JumpTargets.find(Target);
+  auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
 
   // Fallback
   {
     auto CondJump = _CondJump(SrcCond);
-    auto Jump = _Jump();
-
-    CreateNewEndBlock(0);
 
     // Taking branch block
-    {
+    if (TrueBlock != JumpTargets.end()) {
+      SetTrueJumpTarget(CondJump, TrueBlock->second.BlockEntry);
+    }
+    else {
       // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewBeginBlock();
+      auto JumpTarget = CreateNewCodeBlock();
+      SetTrueJumpTarget(CondJump, JumpTarget);
+      SetCurrentCodeBlock(JumpTarget);
 
       auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
       auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
@@ -533,15 +485,17 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       // Store the new RIP
       _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
       _ExitFunction();
-      CreateNewEndBlock(0);
-
-      SetJumpTarget(CondJump, JumpTarget);
     }
 
     // Failure to take branch
-    {
+    if (FalseBlock != JumpTargets.end()) {
+      SetFalseJumpTarget(CondJump, FalseBlock->second.BlockEntry);
+    }
+    else {
       // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewBeginBlock();
+      auto JumpTarget = CreateNewCodeBlock();
+      SetFalseJumpTarget(CondJump, JumpTarget);
+      SetCurrentCodeBlock(JumpTarget);
 
       // Leave block
       auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
@@ -549,57 +503,33 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       // Store the new RIP
       _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), RIPTargetConst);
       _ExitFunction();
-
-      CreateNewEndBlock(0);
-
-      SetJumpTarget(Jump, JumpTarget);
     }
-
-    CreateNewBeginBlock();
   }
 }
 
 void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
+  BlockSetRIP = true;
+
   // This is just an unconditional relative literal jump
   // XXX: Reenable
   if (Multiblock) {
     LogMan::Throw::A(Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
     uint64_t Target = Op->PC + Op->InstSize + Op->Src1.TypeLiteral.Literal;
-    if (Target > Op->PC) {
-      // If we are forward jumping: Add the IR Op to the fixup list
-      auto it = Fixups.find(Target);
-      if (it == Fixups.end()) {
-        it = Fixups.try_emplace(Target).first;
-      }
+    auto JumpBlock = JumpTargets.find(Target);
+    if (JumpBlock != JumpTargets.end()) {
+      _Jump(GetNewJumpBlock(Target));
+    }
+    else {
+      // If the block isn't a jump target then we need to create an exit block
       auto Jump = _Jump();
-      it->second.emplace_back(Fixup{Jump.Node, &Jump.first->Header});
 
-      // Fallback path in case the block isn't patched up
-      if (1) {
-        CreateNewEndBlock(0);
-        // Make sure to start a new block after ending this one
-        auto JumpTarget = CreateNewBeginBlock();
-        SetJumpTarget(Jump, JumpTarget);
-
-        // Store the new RIP
-        _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), _Constant(Target));
-        _ExitFunction();
-
-        CreateNewEndBlock(0);
-        Information.HadUnconditionalExit = true;
-      }
-
-      return;
+      auto JumpTarget = CreateNewCodeBlock();
+      SetJumpTarget(Jump, JumpTarget);
+      SetCurrentCodeBlock(JumpTarget);
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), _Constant(Target));
+      _ExitFunction();
     }
-    else if (Target <= Op->PC) {
-      // If we are jumping backwards then we should have a jump target available in our jump targets list
-      auto it = JumpTargets.find(Target);
-
-      if (it != JumpTargets.end()) {
-        _Jump(it->second);
-        return;
-      }
-    }
+    return;
   }
 
   // Fallback
@@ -614,13 +544,11 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
     // Store the new RIP
     _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
     _ExitFunction();
-
-    CreateNewEndBlock(0);
-    Information.HadUnconditionalExit = true;
   }
 }
 
 void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
+  BlockSetRIP = true;
   // This is just an unconditional jump
   // This uses ModRM to determine its location
   // No way to use this effectively in multiblock
@@ -629,9 +557,6 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   // Store the new RIP
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), RIPOffset);
   _ExitFunction();
-
-  CreateNewEndBlock(0);
-  Information.HadUnconditionalExit = true;
 }
 
 void OpDispatchBuilder::SETccOp(OpcodeArgs) {
@@ -1153,16 +1078,8 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), _ExtractElement(Res, 3));
 }
 
+template<bool SHL1Bit>
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
-  bool SHL1Bit = false;
-#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
-  switch (Op->OP) {
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 4):
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 4):
-    SHL1Bit = true;
-  break;
-  }
-#undef OPD
   OrderedNode *Src;
   OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags);
 
@@ -1185,7 +1102,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   StoreResult(Op, ALUOp);
 
   // XXX: This isn't correct
-  GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  // GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
 }
 
 template<bool SHR1Bit>
@@ -1560,14 +1477,13 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags);
 
   auto JumpStart = _Jump();
-  CreateNewEndBlock(0);
 
-    // Make sure to start a new block after ending this one
-    auto LoopStart = CreateNewBeginBlock();
-    SetJumpTarget(JumpStart, LoopStart);
+  // Make sure to start a new block after ending this one
+  auto JumpTarget = CreateNewCodeBlock();
+  SetJumpTarget(JumpStart, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
 
     OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
-
     OrderedNode *Dest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
 
     // Store to memory where RDI points
@@ -1579,22 +1495,33 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
       OneConst, ZeroConst);
     auto CondJump = _CondJump(CanLeaveCond);
 
-    // Decrement counter
-    Counter = _Sub(Counter, OneConst);
+    auto LoopTail = CreateNewCodeBlock();
+    SetFalseJumpTarget(CondJump, LoopTail);
+    SetCurrentCodeBlock(LoopTail);
 
-    // Store the counter so we don't have to deal with PHI here
-    _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), Counter);
+    // Working loop
+    {
+      OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
+      OrderedNode *TailDest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
 
-    // Offset the pointer
-    Dest = _Add(Dest, PtrDir);
-    _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), Dest);
+      // Decrement counter
+      TailCounter = _Sub(TailCounter, OneConst);
 
-    // Jump back to the start, we have more work to do
-    _Jump(LoopStart);
-  CreateNewEndBlock(0);
+      // Store the counter so we don't have to deal with PHI here
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
+
+      // Offset the pointer
+      TailDest = _Add(TailDest, PtrDir);
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest);
+
+      // Jump back to the start, we have more work to do
+      _Jump(JumpTarget);
+    }
+
   // Make sure to start a new block after ending this one
-  auto LoopEnd = CreateNewBeginBlock();
-  SetJumpTarget(CondJump, LoopEnd);
+  auto LoopEnd = CreateNewCodeBlock();
+  SetTrueJumpTarget(CondJump, LoopEnd);
+  SetCurrentCodeBlock(JumpTarget);
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
@@ -1618,10 +1545,10 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       SizeConst, NegSizeConst);
 
   auto JumpStart = _Jump();
-  CreateNewEndBlock(0);
   // Make sure to start a new block after ending this one
     auto LoopStart = CreateNewBeginBlock();
     SetJumpTarget(JumpStart, LoopStart);
+    SetCurrentCodeBlock(LoopStart);
 
     OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
     OrderedNode *Dest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
@@ -1639,27 +1566,39 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       OneConst, ZeroConst);
     auto CondJump = _CondJump(CanLeaveCond);
 
-    // Decrement counter
-    Counter = _Sub(Counter, OneConst);
+    auto LoopTail = CreateNewCodeBlock();
+    SetFalseJumpTarget(CondJump, LoopTail);
+    SetCurrentCodeBlock(LoopTail);
 
-    // Store the counter so we don't have to deal with PHI here
-    _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), Counter);
+    // Working loop
+    {
 
-    // Offset the pointer
-    Dest_RDI = _Add(Dest_RDI, PtrDir);
-    _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), Dest_RDI);
+      OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
+      OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
+      OrderedNode *TailDest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
 
-    // Offset second pointer
-    Dest_RSI = _Add(Dest_RSI, PtrDir);
-    _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), Dest_RSI);
+      // Decrement counter
+      TailCounter = _Sub(TailCounter, OneConst);
 
-    // Jump back to the start, we have more work to do
-    _Jump(LoopStart);
-  CreateNewEndBlock(0);
+      // Store the counter so we don't have to deal with PHI here
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
+
+      // Offset the pointer
+      TailDest_RDI = _Add(TailDest_RDI, PtrDir);
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest_RDI);
+
+      // Offset second pointer
+      TailDest_RSI = _Add(TailDest_RSI, PtrDir);
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), TailDest_RSI);
+
+      // Jump back to the start, we have more work to do
+      _Jump(LoopStart);
+    }
+
   // Make sure to start a new block after ending this one
   auto LoopEnd = CreateNewBeginBlock();
-  SetJumpTarget(CondJump, LoopEnd);
-
+  SetTrueJumpTarget(CondJump, LoopEnd);
+  SetCurrentCodeBlock(LoopEnd);
 }
 
 void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
@@ -2191,6 +2130,32 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   }
 }
 
+OpDispatchBuilder::IRPair<IROp_CodeBlock> OpDispatchBuilder::CreateNewCodeBlock() {
+  auto OldCursor = GetWriteCursor();
+  SetWriteCursor(CurrentCodeBlock);
+
+  auto CodeNode = CreateCodeNode();
+  auto NewNode = _Dummy();
+  SetCodeNodeBegin(CodeNode, NewNode);
+
+  auto EndBlock = _EndBlock(0);
+  SetCodeNodeLast(CodeNode, EndBlock);
+
+  if (CurrentCodeBlock) {
+    LinkCodeBlocks(CurrentCodeBlock, CodeNode);
+  }
+
+  SetWriteCursor(OldCursor);
+
+  return CodeNode;
+}
+
+void OpDispatchBuilder::SetCurrentCodeBlock(OrderedNode *Node) {
+  CurrentCodeBlock = Node;
+  LogMan::Throw::A(Node->Op(Data.Begin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '%s'", std::string(IR::GetName(Node->Op(Data.Begin())->Op)).c_str());
+  SetWriteCursor(Node->Op(Data.Begin())->CW<IROp_CodeBlock>()->Begin.GetNode(ListData.Begin()));
+}
+
 OpDispatchBuilder::IRPair<IROp_CodeBlock> OpDispatchBuilder::CreateNewBeginBlock() {
   auto CodeNode = CreateCodeNode();
   auto NewNode = _Dummy();
@@ -2205,10 +2170,37 @@ OpDispatchBuilder::IRPair<IROp_EndBlock> OpDispatchBuilder::CreateNewEndBlock(ui
   return EndBlock;
 }
 
-void OpDispatchBuilder::BeginFunction(uint64_t RIP) {
+void OpDispatchBuilder::CreateJumpBlocks(std::set<uint64_t> *Targets) {
+  OrderedNode *PrevCodeBlock{};
+  for (auto Target : *Targets) {
+    auto CodeNode = CreateCodeNode();
+
+    auto NewNode = _Dummy();
+    SetCodeNodeBegin(CodeNode, NewNode);
+
+    auto EndBlock = _EndBlock(0);
+    SetCodeNodeLast(CodeNode, EndBlock);
+
+    JumpTargets.try_emplace(Target, JumpTargetInfo{CodeNode, false});
+
+    if (PrevCodeBlock) {
+      LinkCodeBlocks(PrevCodeBlock, CodeNode);
+    }
+
+    PrevCodeBlock = CodeNode;
+  }
+}
+
+void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::set<uint64_t> *Targets) {
   Entry = RIP;
-  _IRHeader(InvalidNode, RIP, 0);
-  CreateNewBeginBlock();
+  auto IRHeader = _IRHeader(InvalidNode, RIP, 0);
+  CreateJumpBlocks(Targets);
+
+  auto Block = GetNewJumpBlock(RIP);
+  CurrentCodeBlock = Block;
+  SetWriteCursor(Block->Op(Data.Begin())->CW<IROp_CodeBlock>()->Begin.GetNode(ListData.Begin()));
+
+  IRHeader.first->Blocks = Block->Wrapped(ListData.Begin());
 }
 
 void OpDispatchBuilder::Finalize() {
@@ -2216,18 +2208,16 @@ void OpDispatchBuilder::Finalize() {
   OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(GetNode(1));
   FEXCore::IR::IROp_Header *IROp = RealNode->Op(Data.Begin());
   LogMan::Throw::A(IROp->Op == OP_IRHEADER, "First op in function must be our header");
-  FEXCore::IR::IROp_IRHeader *Op = IROp->CW<FEXCore::IR::IROp_IRHeader>();
-  Op->BlockCount = CodeBlocks.size();
 
-  OrderedNode *PrevCodeBlock{};
-  for (auto &CodeBlock : CodeBlocks) {
-    if (PrevCodeBlock) {
-      LinkCodeBlocks(PrevCodeBlock, CodeBlock);
-    }
-    PrevCodeBlock = CodeBlock;
+  // Let's walk the jump blocks and see if we have handled every block target
+  for (auto &Handler : JumpTargets) {
+    if (Handler.second.HaveEmitted) continue;
+
+    // We haven't emitted. Dump out to the dispatcher
+    SetCurrentCodeBlock(Handler.second.BlockEntry);
+    _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), _Constant(Handler.first));
+    _ExitFunction();
   }
-
-  Op->Blocks = CodeBlocks[0]->Wrapped(ListData.Begin());
   CodeBlocks.clear();
 }
 
@@ -2480,23 +2470,6 @@ void OpDispatchBuilder::StoreResult(FEXCore::X86Tables::DecodedOp Op, OrderedNod
   StoreResult(Op, Op->Dest, Src);
 }
 
-void OpDispatchBuilder::TestFunction() {
-  printf("Doing Test Function\n");
-  CreateNewBeginBlock();
-  auto Load1 = _LoadContext(8, 0);
-  auto Load2  = _LoadContext(8, 0);
-  //auto Res = Load1 <Add> Load2;
-  auto Res = _Add(Load1, Load2);
-  _StoreContext(Res, 8, 0);
-
-  std::stringstream out;
-  auto IR = ViewIR();
-  FEXCore::IR::Dump(&out, &IR);
-
-  printf("List Data Size: %ld\n", ListData.Size());
-  printf("IR:\n%s\n@@@@@\n", out.str().c_str());
-}
-
 OpDispatchBuilder::OpDispatchBuilder()
   : Data {8 * 1024 * 1024}
   , ListData {8 * 1024 * 1024} {
@@ -2507,8 +2480,8 @@ void OpDispatchBuilder::ResetWorkingList() {
   Data.Reset();
   ListData.Reset();
   CodeBlocks.clear();
-  Fixups.clear();
   JumpTargets.clear();
+  BlockSetRIP = false;
   CurrentWriteCursor = nullptr;
   // This is necessary since we do "null" pointer checks
   InvalidNode = reinterpret_cast<OrderedNode*>(ListData.Allocate(sizeof(OrderedNode)));
@@ -2944,6 +2917,12 @@ void OpDispatchBuilder::GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, 
 void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   auto CmpResult = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), _Constant(1), _Constant(0));
   auto CondJump = _CondJump(CmpResult);
+
+  // Make sure to start a new block after ending this one
+  auto JumpTarget = CreateNewCodeBlock();
+  SetFalseJumpTarget(CondJump, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
+
   // AF
   {
     // Undefined
@@ -2980,10 +2959,11 @@ void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, Or
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Constant(0));
   }
 
-  CreateNewEndBlock(0);
-
-  auto NewBlock = CreateNewBeginBlock();
-  SetJumpTarget(CondJump, NewBlock);
+  auto Jump = _Jump();
+  auto NextJumpTarget = CreateNewCodeBlock();
+  SetJumpTarget(Jump, NextJumpTarget);
+  SetTrueJumpTarget(CondJump, NextJumpTarget);
+  SetCurrentCodeBlock(NextJumpTarget);
 }
 
 void OpDispatchBuilder::GenerateFlags_Rotate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
@@ -3090,6 +3070,8 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
   uint8_t Reason{};
   uint8_t Literal{};
+  BlockSetRIP = true;
+
   switch (Op->OP) {
   case 0xCC:
     Reason = 0;
@@ -3122,12 +3104,17 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
     // If condition doesn't hold then keep going
     auto CondJump = _CondJump(_Xor(Flag, _Constant(1)));
+    auto FalseBlock = CreateNewBeginBlock();
+    SetFalseJumpTarget(CondJump, FalseBlock);
+    SetCurrentCodeBlock(FalseBlock);
+
     _Break(Reason, Literal);
-    CreateNewEndBlock(0);
 
     // Make sure to start a new block after ending this one
     auto JumpTarget = CreateNewBeginBlock();
-    SetJumpTarget(CondJump, JumpTarget);
+    SetTrueJumpTarget(CondJump, JumpTarget);
+    SetCurrentCodeBlock(JumpTarget);
+
   }
   else {
     _Break(Reason, Literal);
@@ -3486,37 +3473,37 @@ void InstallOpcodeHandlers() {
     // GROUP 2
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 1), 1, &OpDispatchBuilder::ROROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 4), 1, &OpDispatchBuilder::SHLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 4), 1, &OpDispatchBuilder::SHLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 5), 1, &OpDispatchBuilder::SHROp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 1), 1, &OpDispatchBuilder::ROROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 4), 1, &OpDispatchBuilder::SHLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 4), 1, &OpDispatchBuilder::SHLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 5), 1, &OpDispatchBuilder::SHROp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1), 1, &OpDispatchBuilder::ROROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 4), 1, &OpDispatchBuilder::SHLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 4), 1, &OpDispatchBuilder::SHLOp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 5), 1, &OpDispatchBuilder::SHROp<true>}, // 1Bit SHR
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1), 1, &OpDispatchBuilder::ROROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 4), 1, &OpDispatchBuilder::SHLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 4), 1, &OpDispatchBuilder::SHLOp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 5), 1, &OpDispatchBuilder::SHROp<true>}, // 1Bit SHR
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 1), 1, &OpDispatchBuilder::ROROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 4), 1, &OpDispatchBuilder::SHLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 4), 1, &OpDispatchBuilder::SHLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 5), 1, &OpDispatchBuilder::SHROp<false>}, // SHR by CL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 0), 1, &OpDispatchBuilder::ROLOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 1), 1, &OpDispatchBuilder::ROROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 4), 1, &OpDispatchBuilder::SHLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 4), 1, &OpDispatchBuilder::SHLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 5), 1, &OpDispatchBuilder::SHROp<false>}, // SHR by CL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
 
