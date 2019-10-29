@@ -36,7 +36,7 @@ void InitializeX87Tables() {
     {OPDReg(0xD9, 0), 1, X86InstInfo{"FLD",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
     {OPDReg(0xD9, 1), 1, X86InstInfo{"",        TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xD9, 2), 1, X86InstInfo{"FST",     TYPE_X87, FLAGS_NONE, 0, nullptr}},
-    {OPDReg(0xD9, 3), 1, X86InstInfo{"FSTP",    TYPE_X87, FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xD9, 3), 1, X86InstInfo{"FSTP",    TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
     {OPDReg(0xD9, 4), 1, X86InstInfo{"FLDENV",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xD9, 5), 1, X86InstInfo{"FLDCW",   TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xD9, 6), 1, X86InstInfo{"FNSTENV", TYPE_X87, FLAGS_NONE, 0, nullptr}},
@@ -117,9 +117,9 @@ void InitializeX87Tables() {
     {OPDReg(0xDB, 2), 1, X86InstInfo{"FIST",   TYPE_X87,   FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDB, 3), 1, X86InstInfo{"FISTP",  TYPE_X87,   FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDB, 4), 1, X86InstInfo{"",       TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
-    {OPDReg(0xDB, 5), 1, X86InstInfo{"FLD",    TYPE_INST,    FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
+    {OPDReg(0xDB, 5), 1, X86InstInfo{"FLD",    TYPE_X87,    FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
     {OPDReg(0xDB, 6), 1, X86InstInfo{"",       TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
-    {OPDReg(0xDB, 7), 1, X86InstInfo{"FSTP",   TYPE_X87,   FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xDB, 7), 1, X86InstInfo{"FSTP",   TYPE_X87,   FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
       //  / 0
       {OPD(0xDB, 0xC0), 8, X86InstInfo{"FCMOVNB", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 1
@@ -168,7 +168,7 @@ void InitializeX87Tables() {
     {OPDReg(0xDD, 0), 1, X86InstInfo{"FLD", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDD, 1), 1, X86InstInfo{"FISTTP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDD, 2), 1, X86InstInfo{"FST", TYPE_X87, FLAGS_NONE, 0, nullptr}},
-    {OPDReg(0xDD, 3), 1, X86InstInfo{"FSTP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xDD, 3), 1, X86InstInfo{"FSTP", TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
     {OPDReg(0xDD, 4), 1, X86InstInfo{"FRSTOR", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDD, 5), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDD, 6), 1, X86InstInfo{"FNSAVE", TYPE_X87, FLAGS_NONE, 0, nullptr}},
@@ -180,7 +180,7 @@ void InitializeX87Tables() {
       //  / 2
       {OPD(0xDD, 0xD0), 8, X86InstInfo{"FST", TYPE_INST, FLAGS_NONE, 0, nullptr}},
       //  / 3
-      {OPD(0xDD, 0xD8), 8, X86InstInfo{"FSTP", TYPE_INST, FLAGS_NONE, 0, nullptr}},
+      {OPD(0xDD, 0xD8), 8, X86InstInfo{"FSTP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 4
       {OPD(0xDD, 0xE0), 8, X86InstInfo{"FUCOM", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 5

@@ -145,6 +145,7 @@ enum InstType {
   TYPE_VEX_TABLE_PREFIX,
   TYPE_XOP_TABLE_PREFIX,
   TYPE_INST,
+  TYPE_X87 = TYPE_INST,
   TYPE_INVALID,
   TYPE_COPY_OTHER,
 
@@ -178,6 +179,12 @@ enum InstType {
   // Group 7 allows additional extensions to this table
   TYPE_SECOND_GROUP_MODRM,
 
+  TYPE_VEX_GROUP_12,
+  TYPE_VEX_GROUP_13,
+  TYPE_VEX_GROUP_14,
+  TYPE_VEX_GROUP_15,
+  TYPE_VEX_GROUP_17,
+
   TYPE_GROUP_EVEX,
 
   // Just to make grepping easier
@@ -187,7 +194,6 @@ enum InstType {
   // Exists in the table but isn't decoded correctly
   TYPE_UNDEC = TYPE_INVALID,
   TYPE_MMX = TYPE_INVALID,
-  TYPE_X87 = TYPE_INVALID,
   TYPE_PRIV = TYPE_INVALID,
   TYPE_0F38_TABLE = TYPE_INVALID,
   TYPE_0F3A_TABLE = TYPE_INVALID,

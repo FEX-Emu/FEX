@@ -553,8 +553,28 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     uint16_t VEXOp = ReadByte();
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
     Op = OPD(map_select, pp, VEXOp);
-    return NormalOp(&VEXTableOps[Op], Op);
 #undef OPD
+
+    FEXCore::X86Tables::X86InstInfo *LocalInfo = &VEXTableOps[Op];
+
+    if (LocalInfo->Type >= FEXCore::X86Tables::TYPE_VEX_GROUP_12 &&
+        LocalInfo->Type <= FEXCore::X86Tables::TYPE_VEX_GROUP_17) {
+    // We have ModRM
+    uint8_t ModRMByte = ReadByte();
+    DecodeInst->ModRM = ModRMByte;
+    DecodeInst->DecodedModRM = true;
+    DecodeInst->Flags |= DecodeFlags::FLAG_MODRM_PRESENT;
+
+    FEXCore::X86Tables::ModRMDecoded ModRM;
+    ModRM.Hex = DecodeInst->ModRM;
+
+#define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
+      Op = OPD(LocalInfo->Type, pp, ModRM.reg);
+#undef OPD
+      return NormalOp(&VEXTableGroupOps[Op], Op);
+    }
+    else
+      return NormalOp(LocalInfo, Op);
   }
   else if (Info->Type == FEXCore::X86Tables::TYPE_XOP_TABLE_PREFIX) {
     LogMan::Msg::A("XOP and POP <modrm> aren't handled!");

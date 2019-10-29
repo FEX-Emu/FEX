@@ -69,18 +69,18 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0x61), 1, X86InstInfo{"VPUNPCKLWD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x62), 1, X86InstInfo{"VPUNPCKLDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x63), 1, X86InstInfo{"VPACKSSWB",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0x64), 1, X86InstInfo{"VPCMPGTB",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0x65), 1, X86InstInfo{"VPVMPGTW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0x66), 1, X86InstInfo{"VPVMPGTD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x64), 1, X86InstInfo{"VPCMPGTB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x65), 1, X86InstInfo{"VPVMPGTW",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x66), 1, X86InstInfo{"VPVMPGTD",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x67), 1, X86InstInfo{"VPACKUSWB",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b01, 0x70), 1, X86InstInfo{"VPSHUFD",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b10, 0x70), 1, X86InstInfo{"VPSHUFHW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x70), 1, X86InstInfo{"VPSHUFLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b01, 0x71), 1, X86InstInfo{"",           TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 12
-    {OPD(1, 0b01, 0x72), 1, X86InstInfo{"",           TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 13
-    {OPD(1, 0b01, 0x73), 1, X86InstInfo{"",           TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 14
+    {OPD(1, 0b01, 0x71), 1, X86InstInfo{"",           TYPE_VEX_GROUP_12, FLAGS_NONE, 0, nullptr}}, // VEX Group 12
+    {OPD(1, 0b01, 0x72), 1, X86InstInfo{"",           TYPE_VEX_GROUP_13, FLAGS_NONE, 0, nullptr}}, // VEX Group 13
+    {OPD(1, 0b01, 0x73), 1, X86InstInfo{"",           TYPE_VEX_GROUP_14, FLAGS_NONE, 0, nullptr}}, // VEX Group 14
 
     {OPD(1, 0b01, 0x74), 1, X86InstInfo{"VPCMPEQB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x75), 1, X86InstInfo{"VPCMPEQW",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
@@ -180,15 +180,15 @@ void InitializeVEXTables() {
     {OPD(1, 0b11, 0x7D), 1, X86InstInfo{"VHSUBPS",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b01, 0x7E), 1, X86InstInfo{"VMOV*",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b10, 0x7E), 1, X86InstInfo{"VMOVQ",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b10, 0x7E), 1, X86InstInfo{"VMOVQ",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b01, 0x7F), 1, X86InstInfo{"VMOVDQA",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b10, 0x7F), 1, X86InstInfo{"VMOVDQU",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(1, 0b00, 0xAE), 1, X86InstInfo{"",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
-    {OPD(1, 0b01, 0xAE), 1, X86InstInfo{"",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
-    {OPD(1, 0b10, 0xAE), 1, X86InstInfo{"",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
-    {OPD(1, 0b11, 0xAE), 1, X86InstInfo{"",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
+    {OPD(1, 0b00, 0xAE), 1, X86InstInfo{"",     TYPE_VEX_GROUP_15, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
+    {OPD(1, 0b01, 0xAE), 1, X86InstInfo{"",     TYPE_VEX_GROUP_15, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
+    {OPD(1, 0b10, 0xAE), 1, X86InstInfo{"",     TYPE_VEX_GROUP_15, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
+    {OPD(1, 0b11, 0xAE), 1, X86InstInfo{"",     TYPE_VEX_GROUP_15, FLAGS_NONE, 0, nullptr}}, // VEX Group 15
 
     {OPD(1, 0b01, 0xD0), 1, X86InstInfo{"VADDSUBPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0xD0), 1, X86InstInfo{"VADDSUBPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -198,17 +198,17 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0xD3), 1, X86InstInfo{"VPSRLQ",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xD4), 1, X86InstInfo{"VPADDQ",      TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xD5), 1, X86InstInfo{"VPMULLW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xD6), 1, X86InstInfo{"VMOVQ",       TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xD6), 1, X86InstInfo{"VMOVQ",       TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xD7), 1, X86InstInfo{"VPMOVMSKB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
 
-    {OPD(1, 0b01, 0xD8), 1, X86InstInfo{"VPSUBUSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xD9), 1, X86InstInfo{"VPSUBUSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xDA), 1, X86InstInfo{"VPMINUB",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xDB), 1, X86InstInfo{"VPAND",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xDC), 1, X86InstInfo{"VPADDUSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xDD), 1, X86InstInfo{"VPADDUSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xDE), 1, X86InstInfo{"VPMAXUB",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xDF), 1, X86InstInfo{"VPANDN",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xD8), 1, X86InstInfo{"VPSUBUSB", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xD9), 1, X86InstInfo{"VPSUBUSW", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xDA), 1, X86InstInfo{"VPMINUB",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xDB), 1, X86InstInfo{"VPAND",    TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xDC), 1, X86InstInfo{"VPADDUSB", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xDD), 1, X86InstInfo{"VPADDUSW", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xDE), 1, X86InstInfo{"VPMAXUB",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xDF), 1, X86InstInfo{"VPANDN",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b01, 0xE0), 1, X86InstInfo{"VPAVGB",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xE1), 1, X86InstInfo{"VPSRAW",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -221,7 +221,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b10, 0xE6), 1, X86InstInfo{"VCVTDQ2PD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0xE6), 1, X86InstInfo{"VCVTPD2DQ",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b01, 0xE7), 1, X86InstInfo{"VMOVNTDQ",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xE7), 1, X86InstInfo{"VMOVNTDQ",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b01, 0xE8), 1, X86InstInfo{"VPSUBSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xE9), 1, X86InstInfo{"VPSUBSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -251,7 +251,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0xFE), 1, X86InstInfo{"VPADDD", TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     // VEX Map 2
-    {OPD(2, 0b01, 0x00), 1, X86InstInfo{"VSHUFB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x00), 1, X86InstInfo{"VPSHUFB", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x01), 1, X86InstInfo{"VPADDW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x02), 1, X86InstInfo{"VPHADDD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x03), 1, X86InstInfo{"VPHADDSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -379,10 +379,10 @@ void InitializeVEXTables() {
 
     {OPD(2, 0b00, 0xF2), 1, X86InstInfo{"ANDN", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(2, 0b00, 0xF3), 1, X86InstInfo{"", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
-    {OPD(2, 0b01, 0xF3), 1, X86InstInfo{"", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
-    {OPD(2, 0b10, 0xF3), 1, X86InstInfo{"", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
-    {OPD(2, 0b11, 0xF3), 1, X86InstInfo{"", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
+    {OPD(2, 0b00, 0xF3), 1, X86InstInfo{"", TYPE_VEX_GROUP_17, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
+    {OPD(2, 0b01, 0xF3), 1, X86InstInfo{"", TYPE_VEX_GROUP_17, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
+    {OPD(2, 0b10, 0xF3), 1, X86InstInfo{"", TYPE_VEX_GROUP_17, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
+    {OPD(2, 0b11, 0xF3), 1, X86InstInfo{"", TYPE_VEX_GROUP_17, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
 
     {OPD(2, 0b00, 0xF5), 1, X86InstInfo{"BZHI", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0xF5), 1, X86InstInfo{"PEXT", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -410,7 +410,7 @@ void InitializeVEXTables() {
     {OPD(3, 0b01, 0x0C), 1, X86InstInfo{"VBLENDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x0D), 1, X86InstInfo{"VBLENDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x0E), 1, X86InstInfo{"VBLENDW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x0F), 1, X86InstInfo{"VALIGNR", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x0F), 1, X86InstInfo{"VPALIGNR", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(3, 0b01, 0x14), 1, X86InstInfo{"VPEXTRB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x15), 1, X86InstInfo{"VPEXTRW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -448,7 +448,7 @@ void InitializeVEXTables() {
     {OPD(3, 0b01, 0x60), 1, X86InstInfo{"VPCMPESTRM", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x61), 1, X86InstInfo{"VPCMPESTRI", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x62), 1, X86InstInfo{"VPCMPISTRM", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x63), 1, X86InstInfo{"VPCMPISTRI", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x63), 1, X86InstInfo{"VPCMPISTRI", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(3, 0b01, 0x68), 1, X86InstInfo{"VFMADDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x69), 1, X86InstInfo{"VFMADDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -476,33 +476,27 @@ void InitializeVEXTables() {
   };
 #undef OPD
 
-#define OPD(group, opcode) ((group << 3) | (opcode))
-  constexpr uint16_t VEX_GROUP_12 = 0;
-  constexpr uint16_t VEX_GROUP_13 = 1;
-  constexpr uint16_t VEX_GROUP_14 = 2;
-  constexpr uint16_t VEX_GROUP_15 = 3;
-  constexpr uint16_t VEX_GROUP_17 = 7;
-
+#define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
   const U8U8InfoStruct VEXGroupTable[] = {
-    {OPD(VEX_GROUP_12, 0b010), 1, X86InstInfo{"VPSRLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_12, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_12, 0b110), 1, X86InstInfo{"VPSLLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_12, 1, 0b010), 1, X86InstInfo{"VPSRLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_12, 1, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_12, 1, 0b110), 1, X86InstInfo{"VPSLLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(VEX_GROUP_13, 0b010), 1, X86InstInfo{"VPSRLD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_13, 0b100), 1, X86InstInfo{"VPSRAD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_13, 0b110), 1, X86InstInfo{"VPSLLD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_13, 1, 0b010), 1, X86InstInfo{"VPSRLD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_13, 1, 0b100), 1, X86InstInfo{"VPSRAD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_13, 1, 0b110), 1, X86InstInfo{"VPSLLD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(VEX_GROUP_14, 0b010), 1, X86InstInfo{"VPSRLQ",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_14, 0b011), 1, X86InstInfo{"VPSRLDQ",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_14, 0b110), 1, X86InstInfo{"VPSLLQ",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_14, 0b111), 1, X86InstInfo{"VPSLLDQ",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_14, 1, 0b010), 1, X86InstInfo{"VPSRLQ",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
+    {OPD(TYPE_VEX_GROUP_14, 1, 0b011), 1, X86InstInfo{"VPSRLDQ",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
+    {OPD(TYPE_VEX_GROUP_14, 1, 0b110), 1, X86InstInfo{"VPSLLQ",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
+    {OPD(TYPE_VEX_GROUP_14, 1, 0b111), 1, X86InstInfo{"VPSLLDQ",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
-    {OPD(VEX_GROUP_15, 0b010), 1, X86InstInfo{"VLDMXCSR", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_15, 0b011), 1, X86InstInfo{"VSTMXCSR", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_15, 1, 0b010), 1, X86InstInfo{"VLDMXCSR", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_15, 1, 0b011), 1, X86InstInfo{"VSTMXCSR", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(VEX_GROUP_17, 0b001), 1, X86InstInfo{"BLSR",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_17, 0b010), 1, X86InstInfo{"BLSMSK",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(VEX_GROUP_17, 0b011), 1, X86InstInfo{"BLSI",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_17, 0, 0b001), 1, X86InstInfo{"BLSR",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_17, 0, 0b010), 1, X86InstInfo{"BLSMSK",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_17, 0, 0b011), 1, X86InstInfo{"BLSI",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
   };
 #undef OPD
 
