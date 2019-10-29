@@ -798,74 +798,65 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
   return !ErrorDuringDecoding;
 }
 
-bool Decoder::BlockEndCanContinuePast() {
+void Decoder::BranchTargetInMultiblockRange() {
   if (!CTX->Config.Multiblock)
-     return false;
-
-  // Have we had a conditional branch past this PC previously?
-  // We can continue in this case
-  //
-  // ex.
-  // test eax, eax
-  // jne .Continue
-  // ud2           <--- We can continue past this instruction, which is a block ender
-  // .Continue:
-  // ...
-
-  return DecodeInst->PC <= MaxCondBranchForward;
-}
-
-bool Decoder::BranchTargetInMultiblockRange() {
-  if (!CTX->Config.Multiblock)
-    return false;
+    return;
 
   // If the RIP setting is conditional AND within our symbol range then it can be considered for multiblock
   uint64_t TargetRIP = 0;
   bool Conditional = true;
 
   switch (DecodeInst->OP) {
-  case 0x70 ... 0x7F: // Conditional JUMP
-  case 0x80 ... 0x8F: { // More conditional
-    // Source is a literal
-    // auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
-    // auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
-    // Target offset is PC + InstSize + Literal
-    LogMan::Throw::A(DecodeInst->Src1.TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
-    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src1.TypeLiteral.Literal;
-  break;
-  }
-  case 0xE9:
-  case 0xEB: // Both are unconditional JMP instructions
-    LogMan::Throw::A(DecodeInst->Src1.TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
-    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src1.TypeLiteral.Literal;
-    Conditional = false;
-  break;
-  case 0xC2: // RET imm
-  case 0xC3: // RET
-    Conditional = false;
-  break;
-  default:
-    return false;
-  break;
+    case 0x70 ... 0x7F: // Conditional JUMP
+    case 0x80 ... 0x8F: { // More conditional
+      // Source is a literal
+      // auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
+      // auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+      // Target offset is PC + InstSize + Literal
+      LogMan::Throw::A(DecodeInst->Src1.TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
+      TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src1.TypeLiteral.Literal;
+    break;
+    }
+    case 0xE9:
+    case 0xEB: // Both are unconditional JMP instructions
+      LogMan::Throw::A(DecodeInst->Src1.TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
+      TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src1.TypeLiteral.Literal;
+      Conditional = false;
+    break;
+    case 0xC2: // RET imm
+    case 0xC3: // RET
+    case 0xE8: // Call - Immediate target, We don't want to inline calls
+    default:
+      return;
+    break;
   }
 
   // If the target RIP is within the symbol ranges then we are golden
-  if (TargetRIP > SymbolMinAddress && TargetRIP <= SymbolMaxAddress) {
+  if (TargetRIP >= SymbolMinAddress && TargetRIP < SymbolMaxAddress) {
     // Update our conditional branch ranges before we return
     if (Conditional) {
       MaxCondBranchForward = std::max(MaxCondBranchForward, TargetRIP);
       MaxCondBranchBackwards = std::min(MaxCondBranchBackwards, TargetRIP);
 
       // If we are conditional then a target can be the instruction past the conditional instruction
-      JumpTargets.emplace(DecodeInst->PC + DecodeInst->InstSize);
+      uint64_t FallthroughRIP = DecodeInst->PC + DecodeInst->InstSize;
+      if (HasBlocks.find(FallthroughRIP) == HasBlocks.end() &&
+          BlocksToDecode.find(FallthroughRIP) == BlocksToDecode.end()) {
+        BlocksToDecode.emplace(FallthroughRIP);
+      }
     }
-    JumpTargets.emplace(TargetRIP);
-    return true;
+
+    if (HasBlocks.find(TargetRIP) == HasBlocks.end() &&
+        BlocksToDecode.find(TargetRIP) == BlocksToDecode.end()) {
+      BlocksToDecode.emplace(TargetRIP);
+    }
   }
-  return false;
 }
 
-bool Decoder::DecodeInstructionsInBlock(uint8_t const* _InstStream, uint64_t PC) {
+bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC) {
+  Blocks.clear();
+  BlocksToDecode.clear();
+  HasBlocks.clear();
   // Reset internal state management
   DecodedSize = 0;
   MaxCondBranchForward = 0;
@@ -874,12 +865,10 @@ bool Decoder::DecodeInstructionsInBlock(uint8_t const* _InstStream, uint64_t PC)
   // XXX: Load symbol data
   SymbolAvailable = false;
   EntryPoint = PC;
-  JumpTargets.clear();
   InstStream = _InstStream;
 
   bool ErrorDuringDecoding = false;
-  bool Done = false;
-  uint64_t PCOffset = 0;
+  uint64_t TotalInstructions{};
 
   // If we don't have symbols available then we become a bit optimistic about multiblock ranges
   if (!SymbolAvailable) {
@@ -889,47 +878,71 @@ bool Decoder::DecodeInstructionsInBlock(uint8_t const* _InstStream, uint64_t PC)
   }
 
   // Entry is a jump target
-  JumpTargets.emplace(PC);
+  BlocksToDecode.emplace(PC);
 
-  while(!Done) {
-    ErrorDuringDecoding = !DecodeInstruction(PC + PCOffset);
-    if (ErrorDuringDecoding) {
-      LogMan::Msg::D("Couldn't Decode something at 0x%lx, Started at 0x%lx", PC + PCOffset, PC);
-      break;
+  while (!BlocksToDecode.empty()) {
+    auto BlockDecodeIt = BlocksToDecode.begin();
+    uint64_t RIPToDecode = *BlockDecodeIt;
+    Blocks.emplace_back();
+    DecodedBlocks &CurrentBlockDecoding = Blocks.back();
+
+    CurrentBlockDecoding.Entry = RIPToDecode;
+
+    uint64_t PCOffset = 0;
+    uint64_t BlockNumberOfInstructions{};
+    uint64_t BlockStartOffset = DecodedSize;
+
+    // Do a bit of pointer math to figure out where we are in code
+    InstStream = _InstStream - EntryPoint + RIPToDecode;
+
+    while (1) {
+      ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
+      if (ErrorDuringDecoding) {
+        LogMan::Msg::D("Couldn't Decode something at 0x%lx, Started at 0x%lx", PC + PCOffset, PC);
+        break;
+      }
+
+      ++TotalInstructions;
+      ++BlockNumberOfInstructions;
+      ++DecodedSize;
+
+      bool CanContinue = false;
+      if (!(DecodeInst->TableInfo->Flags &
+          (FEXCore::X86Tables::InstFlags::FLAGS_BLOCK_END | FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP))) {
+        // If this isn't a block ender then we can keep going regardless
+        CanContinue = true;
+      }
+
+      if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP) {
+        // If we have multiblock enabled
+        // If the branch target is within our multiblock range then we can keep going on
+        // We don't want to short circuit this since we want to calculate our ranges still
+        BranchTargetInMultiblockRange();
+      }
+
+      if (!CanContinue) {
+        break;
+      }
+
+      if (DecodedSize >= CTX->Config.MaxInstPerBlock ||
+          DecodedSize >= DecodedBuffer.size()) {
+        break;
+      }
+
+      if (TotalInstructions >= CTX->Config.MaxInstPerBlock) {
+        break;
+      }
+
+      PCOffset += DecodeInst->InstSize;
+      InstStream += DecodeInst->InstSize;
     }
-    ++DecodedSize;
 
-    bool CanContinue = false;
-    if (!(DecodeInst->TableInfo->Flags &
-        (FEXCore::X86Tables::InstFlags::FLAGS_BLOCK_END | FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP))) {
-      // If this isn't a block ender then we can keep going regardless
-      CanContinue = true;
-    }
+    BlocksToDecode.erase(BlockDecodeIt);
+    HasBlocks.emplace(RIPToDecode);
 
-    // If this is an instruction that just completely kills a block then just end currently
-    // XXX: If we've had a conditional branch past this then keep going
-    if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_BLOCK_END) {
-      CanContinue = BlockEndCanContinuePast();
-    }
-
-    if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP) {
-      // If we have multiblock enabled
-      // If the branch target is within our multiblock range then we can keep going on
-      // We don't want to short circuit this since we want to calculate our ranges still
-      CanContinue = CanContinue | BranchTargetInMultiblockRange();
-    }
-
-    if (!CanContinue) {
-      break;
-    }
-
-    if (DecodedSize >= CTX->Config.MaxInstPerBlock ||
-        DecodedSize >= DecodedBuffer.size()) {
-      break;
-    }
-
-    PCOffset += DecodeInst->InstSize;
-    InstStream += DecodeInst->InstSize;
+    // Copy over only the number of instructions we decoded
+    CurrentBlockDecoding.NumInstructions = BlockNumberOfInstructions;
+    CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer.at(BlockStartOffset);
   }
 
   return !ErrorDuringDecoding;

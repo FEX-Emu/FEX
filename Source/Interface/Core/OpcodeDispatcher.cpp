@@ -92,7 +92,6 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   // Store the new RIP
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
   _ExitFunction();
-  CreateNewEndBlock(0);
   Information.HadUnconditionalExit = true;
 }
 
@@ -1546,7 +1545,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
   auto JumpStart = _Jump();
   // Make sure to start a new block after ending this one
-    auto LoopStart = CreateNewBeginBlock();
+    auto LoopStart = CreateNewCodeBlock();
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
 
@@ -1572,7 +1571,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     // Working loop
     {
-
       OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
       OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
       OrderedNode *TailDest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
@@ -1596,7 +1594,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     }
 
   // Make sure to start a new block after ending this one
-  auto LoopEnd = CreateNewBeginBlock();
+  auto LoopEnd = CreateNewCodeBlock();
   SetTrueJumpTarget(CondJump, LoopEnd);
   SetCurrentCodeBlock(LoopEnd);
 }
@@ -2132,9 +2130,10 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 
 OpDispatchBuilder::IRPair<IROp_CodeBlock> OpDispatchBuilder::CreateNewCodeBlock() {
   auto OldCursor = GetWriteCursor();
-  SetWriteCursor(CurrentCodeBlock);
+  SetWriteCursor(CodeBlocks.back());
 
   auto CodeNode = CreateCodeNode();
+
   auto NewNode = _Dummy();
   SetCodeNodeBegin(CodeNode, NewNode);
 
@@ -2156,23 +2155,9 @@ void OpDispatchBuilder::SetCurrentCodeBlock(OrderedNode *Node) {
   SetWriteCursor(Node->Op(Data.Begin())->CW<IROp_CodeBlock>()->Begin.GetNode(ListData.Begin()));
 }
 
-OpDispatchBuilder::IRPair<IROp_CodeBlock> OpDispatchBuilder::CreateNewBeginBlock() {
-  auto CodeNode = CreateCodeNode();
-  auto NewNode = _Dummy();
-  SetCodeNodeBegin(CodeNode, NewNode);
-  CurrentCodeBlock = CodeNode;
-  return CodeNode;
-}
-
-OpDispatchBuilder::IRPair<IROp_EndBlock> OpDispatchBuilder::CreateNewEndBlock(uint64_t RIPIncrement) {
-  auto EndBlock = _EndBlock(RIPIncrement);
-  SetCodeNodeLast(CurrentCodeBlock, EndBlock);
-  return EndBlock;
-}
-
-void OpDispatchBuilder::CreateJumpBlocks(std::set<uint64_t> *Targets) {
+void OpDispatchBuilder::CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
   OrderedNode *PrevCodeBlock{};
-  for (auto Target : *Targets) {
+  for (auto &Target : *Blocks) {
     auto CodeNode = CreateCodeNode();
 
     auto NewNode = _Dummy();
@@ -2181,7 +2166,7 @@ void OpDispatchBuilder::CreateJumpBlocks(std::set<uint64_t> *Targets) {
     auto EndBlock = _EndBlock(0);
     SetCodeNodeLast(CodeNode, EndBlock);
 
-    JumpTargets.try_emplace(Target, JumpTargetInfo{CodeNode, false});
+    JumpTargets.try_emplace(Target.Entry, JumpTargetInfo{CodeNode, false});
 
     if (PrevCodeBlock) {
       LinkCodeBlocks(PrevCodeBlock, CodeNode);
@@ -2191,15 +2176,13 @@ void OpDispatchBuilder::CreateJumpBlocks(std::set<uint64_t> *Targets) {
   }
 }
 
-void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::set<uint64_t> *Targets) {
+void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
   Entry = RIP;
   auto IRHeader = _IRHeader(InvalidNode, RIP, 0);
-  CreateJumpBlocks(Targets);
+  CreateJumpBlocks(Blocks);
 
   auto Block = GetNewJumpBlock(RIP);
-  CurrentCodeBlock = Block;
-  SetWriteCursor(Block->Op(Data.Begin())->CW<IROp_CodeBlock>()->Begin.GetNode(ListData.Begin()));
-
+  SetCurrentCodeBlock(Block);
   IRHeader.first->Blocks = Block->Wrapped(ListData.Begin());
 }
 
@@ -3104,14 +3087,14 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
     // If condition doesn't hold then keep going
     auto CondJump = _CondJump(_Xor(Flag, _Constant(1)));
-    auto FalseBlock = CreateNewBeginBlock();
+    auto FalseBlock = CreateNewCodeBlock();
     SetFalseJumpTarget(CondJump, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);
 
     _Break(Reason, Literal);
 
     // Make sure to start a new block after ending this one
-    auto JumpTarget = CreateNewBeginBlock();
+    auto JumpTarget = CreateNewCodeBlock();
     SetTrueJumpTarget(CondJump, JumpTarget);
     SetCurrentCodeBlock(JumpTarget);
 

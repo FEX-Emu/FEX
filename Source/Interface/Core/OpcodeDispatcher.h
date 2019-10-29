@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Interface/Core/Frontend.h"
+
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
@@ -84,7 +86,7 @@ public:
   void ResetWorkingList();
   bool HadDecodeFailure() { return DecodeFailure; }
 
-  void BeginFunction(uint64_t RIP, std::set<uint64_t> *Targets);
+  void BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   void ExitFunction();
   void Finalize();
 
@@ -448,9 +450,6 @@ public:
      }
   }
 
-  IRPair<IROp_CodeBlock> CreateNewBeginBlock();
-  IRPair<IROp_EndBlock> CreateNewEndBlock(uint64_t RIPIncrement);
-
   IRPair<IROp_CodeBlock> CreateNewCodeBlock();
   void SetCurrentCodeBlock(OrderedNode *Node);
 
@@ -511,7 +510,7 @@ private:
     return Ptr;
   }
 
-  void CreateJumpBlocks(std::set<uint64_t> *Targets);
+  void CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   bool BlockSetRIP {false};
 
   OrderedNode *CurrentWriteCursor = nullptr;

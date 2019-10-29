@@ -409,9 +409,6 @@ namespace FEXCore::Context {
     void *CodePtr {nullptr};
     uint8_t const *GuestCode = MemoryMapper.GetPointer<uint8_t const*>(GuestRIP);
 
-    uint64_t TotalInstructions {0};
-    uint64_t TotalInstructionsLength {0};
-
     // Do we already have this in the IR cache?
     auto IR = Thread->IRLists.find(GuestRIP);
     FEXCore::IR::IRListView<true> *IRList {};
@@ -420,7 +417,10 @@ namespace FEXCore::Context {
     if (IR == Thread->IRLists.end()) {
       bool HadDispatchError {false};
 
-      if (!FrontendDecoder.DecodeInstructionsInBlock(&GuestCode[TotalInstructionsLength], GuestRIP + TotalInstructionsLength)) {
+      uint64_t TotalInstructions {0};
+      uint64_t TotalInstructionsLength {0};
+
+      if (!FrontendDecoder.DecodeInstructionsAtEntry(GuestCode, GuestRIP)) {
         if (Config.BreakOnFrontendFailure) {
            LogMan::Msg::E("Had Frontend decoder error");
            ShouldStop = true;
@@ -428,56 +428,62 @@ namespace FEXCore::Context {
         return 0;
       }
 
-      Thread->OpDispatcher->BeginFunction(GuestRIP, &FrontendDecoder.JumpTargets);
-      auto DecodedOps = FrontendDecoder.GetDecodedInsts();
-      for (size_t i = 0; i < DecodedOps.second; ++i) {
-        FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
-        FEXCore::X86Tables::DecodedInst const* DecodedInfo {nullptr};
+      auto CodeBlocks = FrontendDecoder.GetDecodedBlocks();
 
-        TableInfo = DecodedOps.first->at(i).TableInfo;
-        DecodedInfo = &DecodedOps.first->at(i);
+      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
 
-        Thread->OpDispatcher->SetNewBlockIfChanged(DecodedInfo->PC);
+      for (size_t j = 0; j < CodeBlocks->size(); ++j) {
+        FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
+        // Set the block entry point
+        Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
 
-        if (TableInfo->OpcodeDispatcher) {
-          auto Fn = TableInfo->OpcodeDispatcher;
-          std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
-          if (Thread->OpDispatcher->HadDecodeFailure()) {
-            if (Config.BreakOnFrontendFailure) {
-              LogMan::Msg::E("Had OpDispatcher error at 0x%lx", GuestRIP);
-              ShouldStop = true;
+        uint64_t BlockInstructionsLength {};
+
+        uint64_t InstsInBlock = Block.NumInstructions;
+        for (size_t i = 0; i < InstsInBlock; ++i) {
+          FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
+          FEXCore::X86Tables::DecodedInst const* DecodedInfo {nullptr};
+
+          TableInfo = Block.DecodedInstructions[i].TableInfo;
+          DecodedInfo = &Block.DecodedInstructions[i];
+
+          if (TableInfo->OpcodeDispatcher) {
+            auto Fn = TableInfo->OpcodeDispatcher;
+            std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
+            if (Thread->OpDispatcher->HadDecodeFailure()) {
+              if (Config.BreakOnFrontendFailure) {
+                LogMan::Msg::E("Had OpDispatcher error at 0x%lx", GuestRIP);
+                ShouldStop = true;
+              }
+              HadDispatchError = true;
             }
+            else {
+              BlockInstructionsLength += DecodedInfo->InstSize;
+              TotalInstructionsLength += DecodedInfo->InstSize;
+              ++TotalInstructions;
+            }
+          }
+          else {
+            LogMan::Msg::E("Missing OpDispatcher at 0x%lx", Block.Entry + BlockInstructionsLength);
             HadDispatchError = true;
           }
-          else {
-            TotalInstructionsLength += DecodedInfo->InstSize;
-            TotalInstructions++;
-          }
-        }
-        else {
-          // LogMan::Msg::A("Missing OpDispatcher at 0x%lx", GuestRIP + TotalInstructionsLength);
-          HadDispatchError = true;
-        }
 
-        // If we had a dispatch error then leave early
-        if (HadDispatchError) {
-          if (TotalInstructions == 0) {
-            // Couldn't handle any instruction in op dispatcher
-            Thread->OpDispatcher->ResetWorkingList();
-            return 0;
+          // If we had a dispatch error then leave early
+          if (HadDispatchError) {
+            if (TotalInstructions == 0) {
+              // Couldn't handle any instruction in op dispatcher
+              Thread->OpDispatcher->ResetWorkingList();
+              return 0;
+            }
+            else {
+              // We had some instructions. Early exit
+              Thread->OpDispatcher->_StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
+              Thread->OpDispatcher->_ExitFunction();
+              break;
+            }
           }
-          else {
-            // We had some instructions. Early exit
-            Thread->OpDispatcher->_StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(GuestRIP + TotalInstructionsLength));
-            Thread->OpDispatcher->_ExitFunction();
-            break;
-          }
-        }
 
-        Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == DecodedOps.second);
-
-        if (TotalInstructions >= Config.MaxInstPerBlock) {
-          break;
+          Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == InstsInBlock);
         }
       }
 

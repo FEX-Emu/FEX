@@ -1,9 +1,11 @@
 #pragma once
 
 #include <FEXCore/Debug/X86Tables.h>
+#include <array>
 #include <cstdint>
 #include <utility>
 #include <set>
+#include <stack>
 #include <vector>
 
 namespace FEXCore::Context {
@@ -13,21 +15,26 @@ struct Context;
 namespace FEXCore::Frontend {
 class Decoder final {
 public:
-  Decoder(FEXCore::Context::Context *ctx);
-  bool DecodeInstructionsInBlock(uint8_t const* InstStream, uint64_t PC);
+  // New Frontend decoding
+  struct DecodedBlocks final {
+    uint64_t Entry{};
+    uint64_t NumInstructions{};
+    FEXCore::X86Tables::DecodedInst *DecodedInstructions;
+  };
 
-  std::pair<std::vector<FEXCore::X86Tables::DecodedInst>*, size_t> const GetDecodedInsts() {
-    return std::make_pair(&DecodedBuffer, DecodedSize);
+  Decoder(FEXCore::Context::Context *ctx);
+  bool DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC);
+
+  std::vector<DecodedBlocks> const *GetDecodedBlocks() {
+    return &Blocks;
   }
-  std::set<uint64_t> JumpTargets;
 
 private:
   FEXCore::Context::Context *CTX;
 
   bool DecodeInstruction(uint64_t PC);
 
-  bool BlockEndCanContinuePast();
-  bool BranchTargetInMultiblockRange();
+  void BranchTargetInMultiblockRange();
 
   void DecodeModRM(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecoded ModRM);
   bool DecodeSIB(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecoded ModRM);
@@ -57,5 +64,8 @@ private:
   uint64_t SymbolMaxAddress {};
   uint64_t SymbolMinAddress {~0ULL};
 
+  std::vector<DecodedBlocks> Blocks;
+  std::set<uint64_t> BlocksToDecode;
+  std::set<uint64_t> HasBlocks;
 };
 }
