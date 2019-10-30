@@ -106,7 +106,6 @@ private:
 
     llvm::BasicBlock *CurrentBlock;
     std::vector<llvm::BasicBlock*> Blocks;
-    bool CurrentBlockHasTerm{false};
     llvm::BasicBlock *ExitBlock;
   };
 
@@ -192,7 +191,6 @@ private:
   FEXCore::IR::IRListView<true> const *CurrentIR;
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, llvm::BasicBlock*> JumpTargets;
-  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, llvm::BasicBlock*> ForwardJumpTargets;
 
   // Target Machines
   const std::string arch = "x86-64";
@@ -780,1045 +778,949 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
   uint8_t OpSize = IROp->Size;
 
   switch (IROp->Op) {
-  case FEXCore::IR::IROps::OP_BEGINBLOCK: {
-    auto ForwardIt = ForwardJumpTargets.find(WrapperOp->NodeOffset);
-    if (ForwardIt != ForwardJumpTargets.end()) {
-      // This block has already been created for us, just move over to it
-      JITState.IRBuilder->SetInsertPoint(ForwardIt->second);
-    }
-    else {
-      auto Block = BasicBlock::Create(*Con, "BeginBlock", Func);
-      JITCurrentState.Blocks.emplace_back(Block);
+    case IR::OP_ENDBLOCK: {
+      auto Op = IROp->C<IR::IROp_EndBlock>();
 
-      // Blocks can be jump targets
-      JumpTargets[WrapperOp->NodeOffset] = Block;
-
-      // We need to do a jump from previous block to this block
-      // This ensures block fallthrough works
-      // Although if the previously block already had a terminator then skip the jump
-      if (!JITCurrentState.CurrentBlockHasTerm) {
-        JITState.IRBuilder->CreateBr(Block);
-      }
-      JITState.IRBuilder->SetInsertPoint(Block);
-      JITCurrentState.CurrentBlock = Block;
-      JITCurrentState.CurrentBlockHasTerm = false;
-    }
-  }
-  break;
-  case IR::OP_ENDBLOCK: {
-    auto Op = IROp->C<IR::IROp_EndBlock>();
-
-    if (Op->RIPIncrement) {
-      auto DownCountValue = JITState.IRBuilder->CreateGEP(JITCurrentState.CPUState,
-        {
-          JITState.IRBuilder->getInt32(0),
-          JITState.IRBuilder->getInt32(0),
-        },
-        "RIPIncrement");
-      auto LoadRIP = JITState.IRBuilder->CreateLoad(DownCountValue);
-      auto NewValue = JITState.IRBuilder->CreateAdd(LoadRIP, JITState.IRBuilder->getInt64(Op->RIPIncrement));
-      JITState.IRBuilder->CreateStore(NewValue, DownCountValue);
-    }
-
-    // If we hit an end block that isn't at the end of the stream that means we need to early exit
-    // Just set ourselves to the end regardless
-    if (CTX->Config.Multiblock) {
-      // Fall through to the next block
-      // Just in case some additional garbage needs to fall through
-      auto Block = BasicBlock::Create(*Con, "EndBlock_Fallthrough", Func);
-      JITCurrentState.Blocks.emplace_back(Block);
-
-      if (!JITCurrentState.CurrentBlockHasTerm) {
-        JITState.IRBuilder->CreateBr(Block);
-      }
-
-      JITState.IRBuilder->SetInsertPoint(Block);
-      JITCurrentState.CurrentBlock = Block;
-      JITCurrentState.CurrentBlockHasTerm = false;
-
-    }
-    else {
-      if (!JITCurrentState.CurrentBlockHasTerm) {
-        JITState.IRBuilder->CreateBr(JITCurrentState.ExitBlock);
-        auto Block = BasicBlock::Create(*Con, "EndBlock_Fallthrough", Func);
-        JITCurrentState.Blocks.emplace_back(Block);
-
-        JITState.IRBuilder->SetInsertPoint(Block);
-        JITCurrentState.CurrentBlock = Block;
-        JITCurrentState.CurrentBlockHasTerm = false;
-      }
-    }
-  break;
-  }
-  case IR::OP_BREAK: {
-    std::vector<llvm::Value*> Args;
-    // We need to pull this argument from the ExecuteCodeFunction
-    Args.emplace_back(Func->args().begin());
-
-    JITState.IRBuilder->CreateCall(JITCurrentState.ExitVMFunction, Args);
-    JITState.IRBuilder->CreateBr(JITCurrentState.ExitBlock);
-
-    // Just in case some additional garbage needs to fall through
-    auto Block = BasicBlock::Create(*Con, "Break_Fallthrough", Func);
-    JITCurrentState.Blocks.emplace_back(Block);
-
-    JITState.IRBuilder->SetInsertPoint(Block);
-    JITCurrentState.CurrentBlock = Block;
-    JITCurrentState.CurrentBlockHasTerm = false;
-  break;
-  }
-  case IR::OP_EXITFUNCTION:
-  case IR::OP_ENDFUNCTION: {
-    JITState.IRBuilder->CreateBr(JITCurrentState.ExitBlock);
-    JITCurrentState.CurrentBlockHasTerm = true;
-  break;
-  }
-  case IR::OP_JUMP: {
-    auto Op = IROp->C<IR::IROp_Jump>();
-    auto JumpTarget = Op->Header.Args[0].NodeOffset;
-    llvm::BasicBlock *Target;
-    auto ForwardIt = ForwardJumpTargets.find(JumpTarget);
-    if (ForwardIt == ForwardJumpTargets.end()) {
-      // If the target doesn't yet exist then create it now
-      Target = BasicBlock::Create(*Con, "ForwardJump_Target", Func);
-      JITCurrentState.Blocks.emplace_back(Target);
-      ForwardJumpTargets[JumpTarget] = Target;
-    }
-    else {
-      // If we have the branch created already then we can just jump to it
-      Target = ForwardIt->second;
-    }
-    JITState.IRBuilder->CreateBr(Target);
-    JITCurrentState.CurrentBlockHasTerm = true;
-  break;
-  }
-  case IR::OP_CONDJUMP: {
-    auto Op = IROp->C<IR::IROp_CondJump>();
-    auto Cond = GetSrc(Op->Header.Args[0]);
-    auto JumpTarget = Op->Header.Args[1].NodeOffset;
-
-    auto Comp = JITState.IRBuilder->CreateICmpNE(Cond, JITState.IRBuilder->getInt64(0));
-    if (JumpTarget < WrapperOp->NodeOffset) {
-      // Backwards branch means the target block is already created
-      auto Block = BasicBlock::Create(*Con, "CondJump_FalseBlock", Func);
-      JITCurrentState.Blocks.emplace_back(Block);
-
-      JITState.IRBuilder->CreateCondBr(Comp, JumpTargets[JumpTarget], Block);
-      JITState.IRBuilder->SetInsertPoint(Block);
-      JITCurrentState.CurrentBlock = Block;
-      JITCurrentState.CurrentBlockHasTerm = false;
-    }
-    else {
-      // If we are forward jumping then we need to create two new blocks
-      // One for continuing execution and another for the true conditional path
-      // If the target already exists in the forward block map then we just use that
-      llvm::BasicBlock *TrueBlock;
-      auto ForwardIt = ForwardJumpTargets.find(JumpTarget);
-      if (ForwardIt == ForwardJumpTargets.end()) {
-        // Add the True path to our forward block map so when we hit it in the future we can just use it
-        auto Block = BasicBlock::Create(*Con, "CondJump_TrueBlock", Func);
-        JITCurrentState.Blocks.emplace_back(Block);
-
-        ForwardJumpTargets[JumpTarget] = Block;
-        TrueBlock = Block;
-      }
-      else {
-        TrueBlock = ForwardIt->second;
-      }
-      auto Block = BasicBlock::Create(*Con, "CondJump_FalseBlock", Func);
-      JITCurrentState.Blocks.emplace_back(Block);
-
-      JITState.IRBuilder->CreateCondBr(Comp, TrueBlock, Block);
-      JITState.IRBuilder->SetInsertPoint(Block);
-      JITCurrentState.CurrentBlock = Block;
-      JITCurrentState.CurrentBlockHasTerm = false;
-    }
-  break;
-  }
-  case IR::OP_MOV: {
-    auto Op = IROp->C<IR::IROp_Mov>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    SetDest(*WrapperOp, Src);
-  break;
-  }
-  case IR::OP_SELECT: {
-    auto Op = IROp->C<IR::IROp_Select>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    auto ArgTrue = GetSrc(Op->Header.Args[2]);
-    auto ArgFalse = GetSrc(Op->Header.Args[3]);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-    ArgFalse = JITState.IRBuilder->CreateZExtOrTrunc(ArgFalse, ArgTrue->getType());
-
-    Value *Cmp{};
-    switch (Op->Cond.Val) {
-    case FEXCore::IR::COND_EQ:
-      Cmp = JITState.IRBuilder->CreateICmpEQ(Src1, Src2);
-    break;
-    case FEXCore::IR::COND_NEQ:
-      Cmp = JITState.IRBuilder->CreateICmpNE(Src1, Src2);
-    break;
-    case FEXCore::IR::COND_GE:
-      Cmp = JITState.IRBuilder->CreateICmpUGE(Src1, Src2);
-    break;
-    case FEXCore::IR::COND_LT:
-      Cmp = JITState.IRBuilder->CreateICmpULT(Src1, Src2);
-    break;
-    case FEXCore::IR::COND_GT:
-      Cmp = JITState.IRBuilder->CreateICmpUGT(Src1, Src2);
-    break;
-    case FEXCore::IR::COND_LE:
-      Cmp = JITState.IRBuilder->CreateICmpULE(Src1, Src2);
-    break;
-    default: LogMan::Msg::A("Unknown Select Op Type: %d", Op->Cond); break;
-    }
-
-    auto Result = JITState.IRBuilder->CreateSelect(Cmp, ArgTrue, ArgFalse);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case FEXCore::IR::IROps::OP_CONSTANT: {
-    auto Op = IROp->C<IR::IROp_Constant>();
-    auto Result = JITState.IRBuilder->getInt64(Op->Constant);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case FEXCore::IR::IROps::OP_SYSCALL: {
-    auto Op = IROp->C<IR::IROp_Syscall>();
-
-    std::vector<llvm::Value*> Args;
-    Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(&CTX->SyscallHandler)));
-    // We need to pull this argument from the ExecuteCodeFunction
-    Args.emplace_back(Func->args().begin());
-
-    auto LLVMArgs = JITState.IRBuilder->CreateAlloca(ArrayType::get(Type::getInt64Ty(*Con), 7));
-    for (unsigned i = 0; i < 7; ++i) {
-      auto Location = JITState.IRBuilder->CreateGEP(LLVMArgs,
+      if (Op->RIPIncrement) {
+        auto DownCountValue = JITState.IRBuilder->CreateGEP(JITCurrentState.CPUState,
           {
             JITState.IRBuilder->getInt32(0),
-            JITState.IRBuilder->getInt32(i),
+            JITState.IRBuilder->getInt32(0),
           },
-          "Arg");
-      auto Src = GetSrc(Op->Header.Args[i]);
-      JITState.IRBuilder->CreateStore(Src, Location);
+          "RIPIncrement");
+        auto LoadRIP = JITState.IRBuilder->CreateLoad(DownCountValue);
+        auto NewValue = JITState.IRBuilder->CreateAdd(LoadRIP, JITState.IRBuilder->getInt64(Op->RIPIncrement));
+        JITState.IRBuilder->CreateStore(NewValue, DownCountValue);
+      }
+    break;
     }
-    Args.emplace_back(LLVMArgs);
+    case IR::OP_BREAK: {
+      std::vector<llvm::Value*> Args;
+      // We need to pull this argument from the ExecuteCodeFunction
+      Args.emplace_back(Func->args().begin());
 
-    auto Result = JITState.IRBuilder->CreateCall(JITCurrentState.SyscallFunction, Args);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_CPUID: {
-    auto Op = IROp->C<IR::IROp_CPUID>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    std::vector<llvm::Value*> Args{};
+      JITState.IRBuilder->CreateCall(JITCurrentState.ExitVMFunction, Args);
+      JITState.IRBuilder->CreateBr(JITCurrentState.ExitBlock);
+    break;
+    }
+    case IR::OP_EXITFUNCTION:
+    case IR::OP_ENDFUNCTION: {
+      JITState.IRBuilder->CreateBr(JITCurrentState.ExitBlock);
+    break;
+    }
+    case IR::OP_JUMP: {
+      auto Op = IROp->C<IR::IROp_Jump>();
+      JITState.IRBuilder->CreateBr(JumpTargets[Op->Header.Args[0].ID()]);
+    break;
+    }
+    case IR::OP_CONDJUMP: {
+      auto Op = IROp->C<IR::IROp_CondJump>();
+      auto Cond = GetSrc(Op->Header.Args[0]);
 
-    auto ReturnType = ArrayType::get(Type::getInt32Ty(*Con), 4);
-    auto LLVMArgs = JITState.IRBuilder->CreateAlloca(ReturnType);
-    Args.emplace_back(LLVMArgs);
-    Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(&CTX->CPUID)));
-    Args.emplace_back(Src);
-    JITState.IRBuilder->CreateCall(JITCurrentState.CPUIDFunction, Args);
-    auto Result = JITState.IRBuilder->CreateLoad(ReturnType, LLVMArgs);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  // The IR's current representation of vectors is actually an array
-  case IR::OP_EXTRACTELEMENT: {
-    auto Op = IROp->C<IR::IROp_ExtractElement>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    std::vector<unsigned> Idxs = {Op->Idx};
-    auto Result = JITState.IRBuilder->CreateExtractValue(Src, Idxs);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_LOADCONTEXT: {
-    auto Op = IROp->C<IR::IROp_LoadContext>();
-    auto Value = CreateContextPtr(Op->Offset, Op->Size);
-    llvm::Value *Load;
-    if ((Op->Offset % Op->Size) == 0)
-      Load = JITState.IRBuilder->CreateAlignedLoad(Value, Op->Size);
-    else
-      Load = JITState.IRBuilder->CreateLoad(Value);
-    SetDest(*WrapperOp, Load);
-  break;
-  }
-  case IR::OP_STORECONTEXT: {
-    auto Op = IROp->C<IR::IROp_StoreContext>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    auto Value = CreateContextPtr(Op->Offset, Op->Size);
-    Src = CastToOpaqueStructure(Src, Value->getType());
+      auto Comp = JITState.IRBuilder->CreateICmpNE(Cond, JITState.IRBuilder->getInt64(0));
+      JITState.IRBuilder->CreateCondBr(Comp, JumpTargets[Op->Header.Args[1].ID()], JumpTargets[Op->Header.Args[2].ID()]);
+    break;
+    }
+    case IR::OP_MOV: {
+      auto Op = IROp->C<IR::IROp_Mov>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      SetDest(*WrapperOp, Src);
+    break;
+    }
+    case IR::OP_SELECT: {
+      auto Op = IROp->C<IR::IROp_Select>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
 
-    if ((Op->Offset % Op->Size) == 0)
-      JITState.IRBuilder->CreateAlignedStore(Src, Value, Op->Size);
-    else
-      JITState.IRBuilder->CreateStore(Src, Value);
-  break;
-  }
-  case IR::OP_LOADFLAG: {
-    auto Op = IROp->C<IR::IROp_LoadFlag>();
-    auto Value = CreateContextPtr(offsetof(FEXCore::Core::CPUState, flags) + Op->Flag, 1);
-    auto Load = JITState.IRBuilder->CreateLoad(Value);
-    SetDest(*WrapperOp, Load);
-  break;
-  }
-  case IR::OP_STOREFLAG: {
-    auto Op = IROp->C<IR::IROp_StoreFlag>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    auto Value = CreateContextPtr(offsetof(FEXCore::Core::CPUState, flags) + Op->Flag, 1);
-    Src = JITState.IRBuilder->CreateZExtOrTrunc(Src, Type::getInt8Ty(*Con));
-    Src = JITState.IRBuilder->CreateAnd(Src, JITState.IRBuilder->getInt8(1));
+      auto ArgTrue = GetSrc(Op->Header.Args[2]);
+      auto ArgFalse = GetSrc(Op->Header.Args[3]);
 
-    JITState.IRBuilder->CreateStore(Src, Value);
-  break;
-  }
-  case IR::OP_ADD: {
-    auto Op = IROp->C<IR::IROp_Add>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+      ArgFalse = JITState.IRBuilder->CreateZExtOrTrunc(ArgFalse, ArgTrue->getType());
 
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+      Value *Cmp{};
+      switch (Op->Cond.Val) {
+      case FEXCore::IR::COND_EQ:
+        Cmp = JITState.IRBuilder->CreateICmpEQ(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_NEQ:
+        Cmp = JITState.IRBuilder->CreateICmpNE(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_GE:
+        Cmp = JITState.IRBuilder->CreateICmpUGE(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_LT:
+        Cmp = JITState.IRBuilder->CreateICmpULT(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_GT:
+        Cmp = JITState.IRBuilder->CreateICmpUGT(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_LE:
+        Cmp = JITState.IRBuilder->CreateICmpULE(Src1, Src2);
+      break;
+      default: LogMan::Msg::A("Unknown Select Op Type: %d", Op->Cond); break;
+      }
 
-    auto Result = JITState.IRBuilder->CreateAdd(Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_SUB: {
-    auto Op = IROp->C<IR::IROp_Add>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-
-    auto Result = JITState.IRBuilder->CreateSub(Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_XOR: {
-    auto Op = IROp->C<IR::IROp_Xor>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-
-    auto Result = JITState.IRBuilder->CreateXor(Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_BFE: {
-    auto Op = IROp->C<IR::IROp_Bfe>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
-
-    auto BitWidth = Src->getType()->getIntegerBitWidth();
-    if (OpSize == 16) {
-      LogMan::Throw::A(Op->Width <= 64, "Can't extract width of %d", Op->Width);
-
-      // Generate our 128bit mask
-      auto SourceMask = JITState.IRBuilder->CreateShl(JITState.IRBuilder->getIntN(BitWidth, 1), JITState.IRBuilder->getIntN(BitWidth, Op->Width));
-      SourceMask = JITState.IRBuilder->CreateSub(SourceMask, JITState.IRBuilder->getIntN(BitWidth, 1));
-
-      // Shift the source in to the correct location
-      auto Result = JITState.IRBuilder->CreateLShr(Src, JITState.IRBuilder->getIntN(BitWidth, Op->lsb));
-      // Mask what we want
-      Result = JITState.IRBuilder->CreateAnd(Result, SourceMask);
+      auto Result = JITState.IRBuilder->CreateSelect(Cmp, ArgTrue, ArgFalse);
       SetDest(*WrapperOp, Result);
+    break;
     }
-    else {
+    case FEXCore::IR::IROps::OP_CONSTANT: {
+      auto Op = IROp->C<IR::IROp_Constant>();
+      auto Result = JITState.IRBuilder->getInt64(Op->Constant);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case FEXCore::IR::IROps::OP_SYSCALL: {
+      auto Op = IROp->C<IR::IROp_Syscall>();
+
+      std::vector<llvm::Value*> Args;
+      Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(&CTX->SyscallHandler)));
+      // We need to pull this argument from the ExecuteCodeFunction
+      Args.emplace_back(Func->args().begin());
+
+      auto LLVMArgs = JITState.IRBuilder->CreateAlloca(ArrayType::get(Type::getInt64Ty(*Con), 7));
+      for (unsigned i = 0; i < 7; ++i) {
+        auto Location = JITState.IRBuilder->CreateGEP(LLVMArgs,
+            {
+              JITState.IRBuilder->getInt32(0),
+              JITState.IRBuilder->getInt32(i),
+            },
+            "Arg");
+        auto Src = GetSrc(Op->Header.Args[i]);
+        JITState.IRBuilder->CreateStore(Src, Location);
+      }
+      Args.emplace_back(LLVMArgs);
+
+      auto Result = JITState.IRBuilder->CreateCall(JITCurrentState.SyscallFunction, Args);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_CPUID: {
+      auto Op = IROp->C<IR::IROp_CPUID>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      std::vector<llvm::Value*> Args{};
+
+      auto ReturnType = ArrayType::get(Type::getInt32Ty(*Con), 4);
+      auto LLVMArgs = JITState.IRBuilder->CreateAlloca(ReturnType);
+      Args.emplace_back(LLVMArgs);
+      Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(&CTX->CPUID)));
+      Args.emplace_back(Src);
+      JITState.IRBuilder->CreateCall(JITCurrentState.CPUIDFunction, Args);
+      auto Result = JITState.IRBuilder->CreateLoad(ReturnType, LLVMArgs);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    // The IR's current representation of vectors is actually an array
+    case IR::OP_EXTRACTELEMENT: {
+      auto Op = IROp->C<IR::IROp_ExtractElement>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      std::vector<unsigned> Idxs = {Op->Idx};
+      auto Result = JITState.IRBuilder->CreateExtractValue(Src, Idxs);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_LOADCONTEXT: {
+      auto Op = IROp->C<IR::IROp_LoadContext>();
+      auto Value = CreateContextPtr(Op->Offset, Op->Size);
+      llvm::Value *Load;
+      if ((Op->Offset % Op->Size) == 0)
+        Load = JITState.IRBuilder->CreateAlignedLoad(Value, Op->Size);
+      else
+        Load = JITState.IRBuilder->CreateLoad(Value);
+      SetDest(*WrapperOp, Load);
+    break;
+    }
+    case IR::OP_STORECONTEXT: {
+      auto Op = IROp->C<IR::IROp_StoreContext>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      auto Value = CreateContextPtr(Op->Offset, Op->Size);
+      Src = CastToOpaqueStructure(Src, Value->getType());
+
+      if ((Op->Offset % Op->Size) == 0)
+        JITState.IRBuilder->CreateAlignedStore(Src, Value, Op->Size);
+      else
+        JITState.IRBuilder->CreateStore(Src, Value);
+    break;
+    }
+    case IR::OP_LOADFLAG: {
+      auto Op = IROp->C<IR::IROp_LoadFlag>();
+      auto Value = CreateContextPtr(offsetof(FEXCore::Core::CPUState, flags) + Op->Flag, 1);
+      auto Load = JITState.IRBuilder->CreateLoad(Value);
+      SetDest(*WrapperOp, Load);
+    break;
+    }
+    case IR::OP_STOREFLAG: {
+      auto Op = IROp->C<IR::IROp_StoreFlag>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      auto Value = CreateContextPtr(offsetof(FEXCore::Core::CPUState, flags) + Op->Flag, 1);
+      Src = JITState.IRBuilder->CreateZExtOrTrunc(Src, Type::getInt8Ty(*Con));
+      Src = JITState.IRBuilder->CreateAnd(Src, JITState.IRBuilder->getInt8(1));
+
+      JITState.IRBuilder->CreateStore(Src, Value);
+    break;
+    }
+    case IR::OP_ADD: {
+      auto Op = IROp->C<IR::IROp_Add>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+
+      auto Result = JITState.IRBuilder->CreateAdd(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_SUB: {
+      auto Op = IROp->C<IR::IROp_Add>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+
+      auto Result = JITState.IRBuilder->CreateSub(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_XOR: {
+      auto Op = IROp->C<IR::IROp_Xor>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+
+      auto Result = JITState.IRBuilder->CreateXor(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_BFE: {
+      auto Op = IROp->C<IR::IROp_Bfe>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
+
+      auto BitWidth = Src->getType()->getIntegerBitWidth();
+      if (OpSize == 16) {
+        LogMan::Throw::A(Op->Width <= 64, "Can't extract width of %d", Op->Width);
+
+        // Generate our 128bit mask
+        auto SourceMask = JITState.IRBuilder->CreateShl(JITState.IRBuilder->getIntN(BitWidth, 1), JITState.IRBuilder->getIntN(BitWidth, Op->Width));
+        SourceMask = JITState.IRBuilder->CreateSub(SourceMask, JITState.IRBuilder->getIntN(BitWidth, 1));
+
+        // Shift the source in to the correct location
+        auto Result = JITState.IRBuilder->CreateLShr(Src, JITState.IRBuilder->getIntN(BitWidth, Op->lsb));
+        // Mask what we want
+        Result = JITState.IRBuilder->CreateAnd(Result, SourceMask);
+        SetDest(*WrapperOp, Result);
+      }
+      else {
+        uint64_t SourceMask = (1ULL << Op->Width) - 1;
+        if (Op->Width == 64)
+          SourceMask = ~0ULL;
+
+        auto Result = JITState.IRBuilder->CreateLShr(Src, JITState.IRBuilder->getIntN(BitWidth, Op->lsb));
+        Result = JITState.IRBuilder->CreateAnd(Result,
+            JITState.IRBuilder->getIntN(BitWidth, SourceMask));
+        SetDest(*WrapperOp, Result);
+      }
+    break;
+    }
+    case IR::OP_BFI: {
+      auto Op = IROp->C<IR::IROp_Bfi>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
       uint64_t SourceMask = (1ULL << Op->Width) - 1;
       if (Op->Width == 64)
         SourceMask = ~0ULL;
+      uint64_t DestMask = ~(SourceMask << Op->lsb);
 
-      auto Result = JITState.IRBuilder->CreateLShr(Src, JITState.IRBuilder->getIntN(BitWidth, Op->lsb));
-      Result = JITState.IRBuilder->CreateAnd(Result,
-          JITState.IRBuilder->getIntN(BitWidth, SourceMask));
+      auto BitWidth = Src1->getType()->getIntegerBitWidth();
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+      auto MaskedDest = JITState.IRBuilder->CreateAnd(Src1, JITState.IRBuilder->getIntN(BitWidth, DestMask));
+      auto MaskedSrc = JITState.IRBuilder->CreateAnd(Src2, JITState.IRBuilder->getIntN(BitWidth, SourceMask));
+      MaskedSrc = JITState.IRBuilder->CreateShl(MaskedSrc, JITState.IRBuilder->getIntN(BitWidth, Op->lsb));
+
+      auto Result = JITState.IRBuilder->CreateOr(MaskedDest, MaskedSrc);
+
       SetDest(*WrapperOp, Result);
+    break;
     }
-  break;
-  }
-  case IR::OP_BFI: {
-    auto Op = IROp->C<IR::IROp_Bfi>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
+    case IR::OP_LSHR: {
+      auto Op = IROp->C<IR::IROp_Lshr>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
 
-    uint64_t SourceMask = (1ULL << Op->Width) - 1;
-    if (Op->Width == 64)
-      SourceMask = ~0ULL;
-    uint64_t DestMask = ~(SourceMask << Op->lsb);
+      // Our IR assumes defined behaviour for shifting all the bits out of the value
+      // So we need to ZEXT to the next size up and then trunc
+      auto OriginalType = Src1->getType();
+      auto BiggerType = Type::getIntNTy(*Con, 128);
+      Src1 = JITState.IRBuilder->CreateZExt(Src1, BiggerType);
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
 
-    auto BitWidth = Src1->getType()->getIntegerBitWidth();
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-    auto MaskedDest = JITState.IRBuilder->CreateAnd(Src1, JITState.IRBuilder->getIntN(BitWidth, DestMask));
-    auto MaskedSrc = JITState.IRBuilder->CreateAnd(Src2, JITState.IRBuilder->getIntN(BitWidth, SourceMask));
-    MaskedSrc = JITState.IRBuilder->CreateShl(MaskedSrc, JITState.IRBuilder->getIntN(BitWidth, Op->lsb));
-
-    auto Result = JITState.IRBuilder->CreateOr(MaskedDest, MaskedSrc);
-
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_LSHR: {
-    auto Op = IROp->C<IR::IROp_Lshr>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Our IR assumes defined behaviour for shifting all the bits out of the value
-    // So we need to ZEXT to the next size up and then trunc
-    auto OriginalType = Src1->getType();
-    auto BiggerType = Type::getIntNTy(*Con, 128);
-    Src1 = JITState.IRBuilder->CreateZExt(Src1, BiggerType);
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
-
-    auto Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
-    Result = JITState.IRBuilder->CreateTrunc(Result, OriginalType);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_ASHR: {
-    auto Op = IROp->C<IR::IROp_Ashr>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Our IR assumes defined behaviour for shifting all the bits out of the value
-    // So we need to ZEXT to the next size up and then trunc
-    auto OriginalType = Src1->getType();
-    auto BiggerType = Type::getIntNTy(*Con, 128);
-    Src1 = JITState.IRBuilder->CreateSExt(Src1, BiggerType);
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
-
-    auto Result = JITState.IRBuilder->CreateAShr(Src1, Src2);
-    Result = JITState.IRBuilder->CreateTrunc(Result, OriginalType);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_LSHL: {
-    auto Op = IROp->C<IR::IROp_Lshl>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Our IR assumes defined behaviour for shifting all the bits out of the value
-    // So we need to ZEXT to the next size up and then trunc
-    auto OriginalType = Src1->getType();
-    auto BiggerType = Type::getIntNTy(*Con, 128);
-    Src1 = JITState.IRBuilder->CreateZExt(Src1, BiggerType);
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
-
-    auto Result = JITState.IRBuilder->CreateShl(Src1, Src2);
-    Result = JITState.IRBuilder->CreateTrunc(Result, OriginalType);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_AND: {
-    auto Op = IROp->C<IR::IROp_And>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-
-    auto Result = JITState.IRBuilder->CreateAnd(Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_UMUL:
-  case IR::OP_MUL: {
-    auto Op = IROp->C<IR::IROp_Mul>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-
-    auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_ROL: {
-    auto Op = IROp->C<IR::IROp_Rol>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-
-    auto Result = FSHL(Src1, Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_ROR: {
-    auto Op = IROp->C<IR::IROp_Ror>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-    auto Result = FSHR(Src1, Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_PRINT: {
-    auto Op = IROp->C<IR::IROp_Print>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    if (Src->getType()->getIntegerBitWidth() < 64) {
-      Src = JITState.IRBuilder->CreateZExtOrTrunc(Src, Type::getInt64Ty(*Con));
+      auto Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
+      Result = JITState.IRBuilder->CreateTrunc(Result, OriginalType);
+      SetDest(*WrapperOp, Result);
+    break;
     }
-    CreateDebugPrint(Src);
-  break;
-  }
+    case IR::OP_ASHR: {
+      auto Op = IROp->C<IR::IROp_Ashr>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
 
-  case IR::OP_CYCLECOUNTER: {
+      // Our IR assumes defined behaviour for shifting all the bits out of the value
+      // So we need to ZEXT to the next size up and then trunc
+      auto OriginalType = Src1->getType();
+      auto BiggerType = Type::getIntNTy(*Con, 128);
+      Src1 = JITState.IRBuilder->CreateSExt(Src1, BiggerType);
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
+
+      auto Result = JITState.IRBuilder->CreateAShr(Src1, Src2);
+      Result = JITState.IRBuilder->CreateTrunc(Result, OriginalType);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_LSHL: {
+      auto Op = IROp->C<IR::IROp_Lshl>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Our IR assumes defined behaviour for shifting all the bits out of the value
+      // So we need to ZEXT to the next size up and then trunc
+      auto OriginalType = Src1->getType();
+      auto BiggerType = Type::getIntNTy(*Con, 128);
+      Src1 = JITState.IRBuilder->CreateZExt(Src1, BiggerType);
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
+
+      auto Result = JITState.IRBuilder->CreateShl(Src1, Src2);
+      Result = JITState.IRBuilder->CreateTrunc(Result, OriginalType);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_AND: {
+      auto Op = IROp->C<IR::IROp_And>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+
+      auto Result = JITState.IRBuilder->CreateAnd(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_UMUL:
+    case IR::OP_MUL: {
+      auto Op = IROp->C<IR::IROp_Mul>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_ROL: {
+      auto Op = IROp->C<IR::IROp_Rol>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+
+      auto Result = FSHL(Src1, Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_ROR: {
+      auto Op = IROp->C<IR::IROp_Ror>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+      auto Result = FSHR(Src1, Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_PRINT: {
+      auto Op = IROp->C<IR::IROp_Print>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      if (Src->getType()->getIntegerBitWidth() < 64) {
+        Src = JITState.IRBuilder->CreateZExtOrTrunc(Src, Type::getInt64Ty(*Con));
+      }
+      CreateDebugPrint(Src);
+    break;
+    }
+
+    case IR::OP_CYCLECOUNTER: {
 #ifdef DEBUG_CYCLES
-    SetDest(*WrapperOp, JITState.IRBuilder->getInt64(0));
+      SetDest(*WrapperOp, JITState.IRBuilder->getInt64(0));
 #else
-    SetDest(*WrapperOp, CycleCounter());
+      SetDest(*WrapperOp, CycleCounter());
 #endif
-  break;
-  }
-
-  case IR::OP_POPCOUNT: {
-    auto Op = IROp->C<IR::IROp_Popcount>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-
-    SetDest(*WrapperOp, Popcount(Src));
-  break;
-  }
-  case IR::OP_FINDLSB: {
-    auto Op = IROp->C<IR::IROp_FindLSB>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-
-    unsigned SrcBitWidth = Src->getType()->getIntegerBitWidth();
-    llvm::Value *Result = CTTZ(Src);
-
-    // Need to compare source to zero, since we are expecting -1 on zero, llvm CTTZ returns undef on zero
-    auto Comp = JITState.IRBuilder->CreateICmpEQ(Src, JITState.IRBuilder->getIntN(SrcBitWidth, 0));
-    Result = JITState.IRBuilder->CreateSelect(Comp, JITState.IRBuilder->getIntN(SrcBitWidth, ~0ULL), Result);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_FINDMSB: {
-    auto Op = IROp->C<IR::IROp_FindMSB>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-
-    unsigned SrcBitWidth = Src->getType()->getIntegerBitWidth();
-    llvm::Value *Result = CTLZ(Src);
-
-    Result = JITState.IRBuilder->CreateSub(JITState.IRBuilder->getIntN(SrcBitWidth, SrcBitWidth), Result);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_SEXT: {
-    auto Op = IROp->C<IR::IROp_Sext>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    llvm::Type *SourceType = Type::getIntNTy(*Con, Op->SrcSize);
-    llvm::Type *TargetType = Type::getIntNTy(*Con, OpSize * 8);
-
-    auto Result = JITState.IRBuilder->CreateSExtOrTrunc(Src, SourceType);
-    Result = JITState.IRBuilder->CreateSExt(Result, TargetType);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_ZEXT: {
-    auto Op = IROp->C<IR::IROp_Zext>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    llvm::Type *SourceType = Type::getIntNTy(*Con, Op->SrcSize);
-    llvm::Type *TargetType = Type::getIntNTy(*Con, OpSize * 8);
-
-    auto Result = JITState.IRBuilder->CreateZExtOrTrunc(Src, SourceType);
-    Result = JITState.IRBuilder->CreateZExt(Result, TargetType);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_OR: {
-    auto Op = IROp->C<IR::IROp_Or>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
-
-    auto Result = JITState.IRBuilder->CreateOr(Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_UDIV: {
-    auto Op = IROp->C<IR::IROp_UDiv>();
-    auto Src  = GetSrc(Op->Header.Args[0]);
-    auto Divisor = GetSrc(Op->Header.Args[1]);
-
-    Divisor = JITState.IRBuilder->CreateZExtOrTrunc(Divisor, Src->getType());
-
-    auto Result = JITState.IRBuilder->CreateUDiv(Src, Divisor);
-    SetDest(*WrapperOp, Result);
-
-  break;
-  }
-  case IR::OP_DIV: {
-    auto Op = IROp->C<IR::IROp_UDiv>();
-    auto Src  = GetSrc(Op->Header.Args[0]);
-    auto Divisor = GetSrc(Op->Header.Args[1]);
-
-    Divisor = JITState.IRBuilder->CreateZExtOrTrunc(Divisor, Src->getType());
-
-    auto Result = JITState.IRBuilder->CreateSDiv(Src, Divisor);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_UREM: {
-    auto Op = IROp->C<IR::IROp_URem>();
-    auto Src  = GetSrc(Op->Header.Args[0]);
-    auto Divisor = GetSrc(Op->Header.Args[1]);
-
-    Divisor = JITState.IRBuilder->CreateZExtOrTrunc(Divisor, Src->getType());
-
-    auto Result = JITState.IRBuilder->CreateURem(Src, Divisor);
-    SetDest(*WrapperOp, Result);
-
-  break;
-  }
-  case IR::OP_REM: {
-    auto Op = IROp->C<IR::IROp_Rem>();
-    auto Src  = GetSrc(Op->Header.Args[0]);
-    auto Divisor = GetSrc(Op->Header.Args[1]);
-
-    Divisor = JITState.IRBuilder->CreateZExtOrTrunc(Divisor, Src->getType());
-
-    auto Result = JITState.IRBuilder->CreateSRem(Src, Divisor);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_LUDIV: {
-    auto Op = IROp->C<IR::IROp_LUDiv>();
-    // Each source is OpSize in size
-    // So you can have up to a 128bit divide from x86-64
-    auto SrcLow  = GetSrc(Op->Header.Args[0]);
-    auto SrcHigh = GetSrc(Op->Header.Args[1]);
-    auto Divisor = GetSrc(Op->Header.Args[2]);
-
-    Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
-    Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
-
-    // Zero extend all values to large size
-    SrcLow = JITState.IRBuilder->CreateZExt(SrcLow, iLarge);
-    SrcHigh = JITState.IRBuilder->CreateZExt(SrcHigh, iLarge);
-    Divisor = JITState.IRBuilder->CreateZExt(Divisor, iLarge);
-    // Combine the split values
-    SrcHigh = JITState.IRBuilder->CreateShl(SrcHigh, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
-    auto Dividend = JITState.IRBuilder->CreateOr(SrcHigh, SrcLow);
-
-    // Now do the divide
-    auto Result = JITState.IRBuilder->CreateUDiv(Dividend, Divisor);
-
-    // Now truncate back down origina size and store
-    Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_LDIV: {
-    auto Op = IROp->C<IR::IROp_LDiv>();
-    // Each source is OpSize in size
-    // So you can have up to a 128bit divide from x86-64
-    auto SrcLow  = GetSrc(Op->Header.Args[0]);
-    auto SrcHigh = GetSrc(Op->Header.Args[1]);
-    auto Divisor = GetSrc(Op->Header.Args[2]);
-
-    Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
-    Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
-
-    // Zero extend all values to large size
-    SrcLow = JITState.IRBuilder->CreateZExt(SrcLow, iLarge);
-    SrcHigh = JITState.IRBuilder->CreateZExt(SrcHigh, iLarge);
-    Divisor = JITState.IRBuilder->CreateSExt(Divisor, iLarge);
-    // Combine the split values
-    SrcHigh = JITState.IRBuilder->CreateShl(SrcHigh, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
-    auto Dividend = JITState.IRBuilder->CreateOr(SrcHigh, SrcLow);
-
-    // Now do the divide
-    auto Result = JITState.IRBuilder->CreateSDiv(Dividend, Divisor);
-
-    // Now truncate back down origina size and store
-    Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_LUREM: {
-    auto Op = IROp->C<IR::IROp_LURem>();
-    // Each source is OpOpSize in size
-    // So you can have up to a 128bit divide from x86-64
-    auto SrcLow  = GetSrc(Op->Header.Args[0]);
-    auto SrcHigh = GetSrc(Op->Header.Args[1]);
-    auto Divisor = GetSrc(Op->Header.Args[2]);
-
-    Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
-    Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
-
-    // Zero extend all values to large size
-    SrcLow = JITState.IRBuilder->CreateZExt(SrcLow, iLarge);
-    SrcHigh = JITState.IRBuilder->CreateZExt(SrcHigh, iLarge);
-    Divisor = JITState.IRBuilder->CreateZExt(Divisor, iLarge);
-    // Combine the split values
-    SrcHigh = JITState.IRBuilder->CreateShl(SrcHigh, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
-    auto Dividend = JITState.IRBuilder->CreateOr(SrcHigh, SrcLow);
-
-    // Now do the remainder
-    auto Result = JITState.IRBuilder->CreateURem(Dividend, Divisor);
-
-    // Now truncate back down origina size and store
-    Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_LREM: {
-    auto Op = IROp->C<IR::IROp_LRem>();
-    // Each source is OpOpSize in size
-    // So you can have up to a 128bit divide from x86-64
-    auto SrcLow  = GetSrc(Op->Header.Args[0]);
-    auto SrcHigh = GetSrc(Op->Header.Args[1]);
-    auto Divisor = GetSrc(Op->Header.Args[2]);
-
-    Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
-    Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
-
-    // Zero extend all values to large size
-    SrcLow = JITState.IRBuilder->CreateZExt(SrcLow, iLarge);
-    SrcHigh = JITState.IRBuilder->CreateZExt(SrcHigh, iLarge);
-    Divisor = JITState.IRBuilder->CreateSExt(Divisor, iLarge);
-    // Combine the split values
-    SrcHigh = JITState.IRBuilder->CreateShl(SrcHigh, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
-    auto Dividend = JITState.IRBuilder->CreateOr(SrcHigh, SrcLow);
-
-    // Now do the remainder
-    auto Result = JITState.IRBuilder->CreateSRem(Dividend, Divisor);
-
-    // Now truncate back down origina size and store
-    Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_UMULH: {
-    auto Op = IROp->C<IR::IROp_UMulH>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
-    Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
-
-    // Zero extend all values to larger value
-    Src1 = JITState.IRBuilder->CreateZExt(Src1, iLarge);
-    Src2 = JITState.IRBuilder->CreateZExt(Src2, iLarge);
-
-    // Do the large multiply
-    auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
-    Result = JITState.IRBuilder->CreateLShr(Result, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
-    // Now truncate back down to origianl size and store
-    Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_MULH: {
-    auto Op = IROp->C<IR::IROp_MulH>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
-    Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
-
-    // Sign extend all values to larger value
-    Src1 = JITState.IRBuilder->CreateSExt(Src1, iLarge);
-    Src2 = JITState.IRBuilder->CreateSExt(Src2, iLarge);
-
-    // Do the large multiply
-    auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
-    Result = JITState.IRBuilder->CreateLShr(Result, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
-
-    // Now truncate back down to origianl size and store
-    Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_REV: {
-    auto Op = IROp->C<IR::IROp_Rev>();
-    auto Src = GetSrc(Op->Header.Args[0]);
-    SetDest(*WrapperOp, BSwap(Src));
-  break;
-  }
-  case IR::OP_CREATEVECTOR2: {
-    auto Op = IROp->C<IR::IROp_CreateVector2>();
-    LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Value *Undef = UndefValue::get(VectorType::get(Src1->getType(), 2));
-
-    // Src1 = CastToOpaqueStructure(Src1, ElementType);
-    // Src2 = CastToOpaqueStructure(Src2, ElementType);
-
-    Undef = JITState.IRBuilder->CreateInsertElement(Undef, Src1, JITState.IRBuilder->getInt32(0));
-    Undef = JITState.IRBuilder->CreateInsertElement(Undef, Src2, JITState.IRBuilder->getInt32(1));
-    SetDest(*WrapperOp, Undef);
-  break;
-  }
-  case IR::OP_SPLATVECTOR2: {
-    auto Op = IROp->C<IR::IROp_SplatVector2>();
-    LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
-    auto Src = GetSrc(Op->Header.Args[0]);
-
-    auto Result = JITState.IRBuilder->CreateVectorSplat(2, Src);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_SPLATVECTOR3: {
-    auto Op = IROp->C<IR::IROp_SplatVector3>();
-    LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
-    auto Src = GetSrc(Op->Header.Args[0]);
-
-    auto Result = JITState.IRBuilder->CreateVectorSplat(3, Src);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_SPLATVECTOR4: {
-    auto Op = IROp->C<IR::IROp_SplatVector4>();
-    LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
-    auto Src = GetSrc(Op->Header.Args[0]);
-
-    auto Result = JITState.IRBuilder->CreateVectorSplat(4, Src);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_VOR: {
-    auto Op = IROp->C<IR::IROp_Or>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    auto Result = JITState.IRBuilder->CreateOr(Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_VXOR: {
-    auto Op = IROp->C<IR::IROp_Or>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    auto Result = JITState.IRBuilder->CreateXor(Src1, Src2);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_VADD: {
-    auto Op = IROp->C<IR::IROp_VAdd>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-    Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
-
-    auto Result = JITState.IRBuilder->CreateAdd(Src1, Src2);
-
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_VSUB: {
-    auto Op = IROp->C<IR::IROp_VSub>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-    Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
-
-    auto Result = JITState.IRBuilder->CreateSub(Src1, Src2);
-
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_VUSHL: {
-    auto Op = IROp->C<IR::IROp_VUShl>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-    Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
-
-    // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
-    auto Result = JITState.IRBuilder->CreateShl(Src1, Src2);
-
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_VUSHLS: {
-    auto Op = IROp->C<IR::IROp_VUShlS>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType()->getScalarType());
-    Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, Src2);
-
-    // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
-    auto Result = JITState.IRBuilder->CreateShl(Src1, Src2);
-
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_VUSHR: {
-    auto Op = IROp->C<IR::IROp_VUShr>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-    Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, Src2);
-
-    // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
-    auto Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
-
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_VCMPEQ: {
-    auto Op = IROp->C<IR::IROp_VCMPEQ>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-    Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
-
-    // Do an icmpeq, this will return a vector of <NumElements x i1>
-    auto Result = JITState.IRBuilder->CreateICmpEQ(Src1, Src2);
-
-    // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
-    Result = JITState.IRBuilder->CreateSExt(Result, Src1->getType());
-
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_VCMPGT: {
-    auto Op = IROp->C<IR::IROp_VCMPGT>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-    Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
-
-    // Do an icmpeq, this will return a vector of <NumElements x i1>
-    auto Result = JITState.IRBuilder->CreateICmpSGT(Src1, Src2);
-
-    // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
-    Result = JITState.IRBuilder->CreateSExt(Result, Src1->getType());
-
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-
-  case IR::OP_VZIP2:
-  case IR::OP_VZIP: {
-    auto Op = IROp->C<IR::IROp_VZip>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-    Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
-
-    unsigned NumElements = Op->RegisterSize / Op->ElementSize;
-    unsigned BaseElement = IROp->Op == IR::OP_VZIP2 ? NumElements / 2 : 0;
-    std::vector<uint32_t> VectorMask;
-    for (unsigned i = 0; i < NumElements; ++i) {
-      unsigned shfl = i % 2 ? (NumElements + (i >> 1)) : (i >> 1);
-      shfl += BaseElement;
-      VectorMask.emplace_back(shfl);
+    break;
     }
 
-    auto VectorMaskConstant = ConstantDataVector::get(*Con, VectorMask);
+    case IR::OP_POPCOUNT: {
+      auto Op = IROp->C<IR::IROp_Popcount>();
+      auto Src = GetSrc(Op->Header.Args[0]);
 
-    auto Result = JITState.IRBuilder->CreateShuffleVector(Src1, Src2, VectorMaskConstant);
+      SetDest(*WrapperOp, Popcount(Src));
+    break;
+    }
+    case IR::OP_FINDLSB: {
+      auto Op = IROp->C<IR::IROp_FindLSB>();
+      auto Src = GetSrc(Op->Header.Args[0]);
 
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_VINSELEMENT: {
-    auto Op = IROp->C<IR::IROp_VInsElement>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
+      unsigned SrcBitWidth = Src->getType()->getIntegerBitWidth();
+      llvm::Value *Result = CTTZ(Src);
 
-    // Cast to the type we want
-    Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
-    Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+      // Need to compare source to zero, since we are expecting -1 on zero, llvm CTTZ returns undef on zero
+      auto Comp = JITState.IRBuilder->CreateICmpEQ(Src, JITState.IRBuilder->getIntN(SrcBitWidth, 0));
+      Result = JITState.IRBuilder->CreateSelect(Comp, JITState.IRBuilder->getIntN(SrcBitWidth, ~0ULL), Result);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_FINDMSB: {
+      auto Op = IROp->C<IR::IROp_FindMSB>();
+      auto Src = GetSrc(Op->Header.Args[0]);
 
-    // Extract our source index
-    auto Source = JITState.IRBuilder->CreateExtractElement(Src2, JITState.IRBuilder->getInt32(Op->SrcIdx));
-    auto Result = JITState.IRBuilder->CreateInsertElement(Src1, Source, JITState.IRBuilder->getInt32(Op->DestIdx));
-    SetDest(*WrapperOp, Result);
-  break;
-  }
+      unsigned SrcBitWidth = Src->getType()->getIntegerBitWidth();
+      llvm::Value *Result = CTLZ(Src);
 
-  case IR::OP_CAS: {
-    auto Op = IROp->C<IR::IROp_CAS>();
-    auto Src1 = GetSrc(Op->Header.Args[0]);
-    auto Src2 = GetSrc(Op->Header.Args[1]);
-    auto MemSrc = GetSrc(Op->Header.Args[2]);
+      Result = JITState.IRBuilder->CreateSub(JITState.IRBuilder->getIntN(SrcBitWidth, SrcBitWidth), Result);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
 
-    MemSrc = JITState.IRBuilder->CreateAdd(MemSrc, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
-    // Cast the pointer type correctly
-    MemSrc = JITState.IRBuilder->CreateIntToPtr(MemSrc, Type::getIntNTy(*Con, OpSize * 8)->getPointerTo());
+    case IR::OP_SEXT: {
+      auto Op = IROp->C<IR::IROp_Sext>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      llvm::Type *SourceType = Type::getIntNTy(*Con, Op->SrcSize);
+      llvm::Type *TargetType = Type::getIntNTy(*Con, OpSize * 8);
 
-    Src1 = JITState.IRBuilder->CreateZExtOrTrunc(Src1, MemSrc->getType()->getPointerElementType());
-    Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, MemSrc->getType()->getPointerElementType());
+      auto Result = JITState.IRBuilder->CreateSExtOrTrunc(Src, SourceType);
+      Result = JITState.IRBuilder->CreateSExt(Result, TargetType);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_ZEXT: {
+      auto Op = IROp->C<IR::IROp_Zext>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      llvm::Type *SourceType = Type::getIntNTy(*Con, Op->SrcSize);
+      llvm::Type *TargetType = Type::getIntNTy(*Con, OpSize * 8);
 
-    llvm::Value *Result = JITState.IRBuilder->CreateAtomicCmpXchg(MemSrc, Src1, Src2, llvm::AtomicOrdering::SequentiallyConsistent, llvm::AtomicOrdering::SequentiallyConsistent);
+      auto Result = JITState.IRBuilder->CreateZExtOrTrunc(Src, SourceType);
+      Result = JITState.IRBuilder->CreateZExt(Result, TargetType);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
 
-    // Result is a { <Type>, i1 } So we need to extract it first
-    // Behaves exactly like std::atomic::compare_exchange_strong(Desired (Src1), Src2) ? Src1 : Desired
-    Result = JITState.IRBuilder->CreateExtractValue(Result, {0});
-    SetDest(*WrapperOp, Result);
-  break;
-  }
+    case IR::OP_OR: {
+      auto Op = IROp->C<IR::IROp_Or>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
 
-  case IR::OP_LOADMEM: {
-    auto Op = IROp->C<IR::IROp_LoadMem>();
-    auto Src = GetSrc(Op->Header.Args[0]);
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
 
-    Src = JITState.IRBuilder->CreateAdd(Src, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
-    // Cast the pointer type correctly
-    Src = JITState.IRBuilder->CreateIntToPtr(Src, Type::getIntNTy(*Con, Op->Size * 8)->getPointerTo());
-    auto Result = CreateMemoryLoad(Src);
-    SetDest(*WrapperOp, Result);
-  break;
-  }
-  case IR::OP_STOREMEM: {
-    auto Op = IROp->C<IR::IROp_StoreMem>();
+      auto Result = JITState.IRBuilder->CreateOr(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_UDIV: {
+      auto Op = IROp->C<IR::IROp_UDiv>();
+      auto Src  = GetSrc(Op->Header.Args[0]);
+      auto Divisor = GetSrc(Op->Header.Args[1]);
 
-    auto Dst = GetSrc(Op->Header.Args[0]);
-    auto Src = GetSrc(Op->Header.Args[1]);
+      Divisor = JITState.IRBuilder->CreateZExtOrTrunc(Divisor, Src->getType());
 
-    Dst = JITState.IRBuilder->CreateAdd(Dst, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
-    auto Type = Type::getIntNTy(*Con, Op->Size * 8);
-    Src = JITState.IRBuilder->CreateZExtOrTrunc(Src, Type);
-    Dst = JITState.IRBuilder->CreateIntToPtr(Dst, Type->getPointerTo());
-    CreateMemoryStore(Dst, Src);
-  break;
-  }
-  default:
-    LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
-  break;
+      auto Result = JITState.IRBuilder->CreateUDiv(Src, Divisor);
+      SetDest(*WrapperOp, Result);
+
+    break;
+    }
+    case IR::OP_DIV: {
+      auto Op = IROp->C<IR::IROp_UDiv>();
+      auto Src  = GetSrc(Op->Header.Args[0]);
+      auto Divisor = GetSrc(Op->Header.Args[1]);
+
+      Divisor = JITState.IRBuilder->CreateZExtOrTrunc(Divisor, Src->getType());
+
+      auto Result = JITState.IRBuilder->CreateSDiv(Src, Divisor);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_UREM: {
+      auto Op = IROp->C<IR::IROp_URem>();
+      auto Src  = GetSrc(Op->Header.Args[0]);
+      auto Divisor = GetSrc(Op->Header.Args[1]);
+
+      Divisor = JITState.IRBuilder->CreateZExtOrTrunc(Divisor, Src->getType());
+
+      auto Result = JITState.IRBuilder->CreateURem(Src, Divisor);
+      SetDest(*WrapperOp, Result);
+
+    break;
+    }
+    case IR::OP_REM: {
+      auto Op = IROp->C<IR::IROp_Rem>();
+      auto Src  = GetSrc(Op->Header.Args[0]);
+      auto Divisor = GetSrc(Op->Header.Args[1]);
+
+      Divisor = JITState.IRBuilder->CreateZExtOrTrunc(Divisor, Src->getType());
+
+      auto Result = JITState.IRBuilder->CreateSRem(Src, Divisor);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_LUDIV: {
+      auto Op = IROp->C<IR::IROp_LUDiv>();
+      // Each source is OpSize in size
+      // So you can have up to a 128bit divide from x86-64
+      auto SrcLow  = GetSrc(Op->Header.Args[0]);
+      auto SrcHigh = GetSrc(Op->Header.Args[1]);
+      auto Divisor = GetSrc(Op->Header.Args[2]);
+
+      Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
+      Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
+
+      // Zero extend all values to large size
+      SrcLow = JITState.IRBuilder->CreateZExt(SrcLow, iLarge);
+      SrcHigh = JITState.IRBuilder->CreateZExt(SrcHigh, iLarge);
+      Divisor = JITState.IRBuilder->CreateZExt(Divisor, iLarge);
+      // Combine the split values
+      SrcHigh = JITState.IRBuilder->CreateShl(SrcHigh, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
+      auto Dividend = JITState.IRBuilder->CreateOr(SrcHigh, SrcLow);
+
+      // Now do the divide
+      auto Result = JITState.IRBuilder->CreateUDiv(Dividend, Divisor);
+
+      // Now truncate back down origina size and store
+      Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_LDIV: {
+      auto Op = IROp->C<IR::IROp_LDiv>();
+      // Each source is OpSize in size
+      // So you can have up to a 128bit divide from x86-64
+      auto SrcLow  = GetSrc(Op->Header.Args[0]);
+      auto SrcHigh = GetSrc(Op->Header.Args[1]);
+      auto Divisor = GetSrc(Op->Header.Args[2]);
+
+      Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
+      Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
+
+      // Zero extend all values to large size
+      SrcLow = JITState.IRBuilder->CreateZExt(SrcLow, iLarge);
+      SrcHigh = JITState.IRBuilder->CreateZExt(SrcHigh, iLarge);
+      Divisor = JITState.IRBuilder->CreateSExt(Divisor, iLarge);
+      // Combine the split values
+      SrcHigh = JITState.IRBuilder->CreateShl(SrcHigh, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
+      auto Dividend = JITState.IRBuilder->CreateOr(SrcHigh, SrcLow);
+
+      // Now do the divide
+      auto Result = JITState.IRBuilder->CreateSDiv(Dividend, Divisor);
+
+      // Now truncate back down origina size and store
+      Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_LUREM: {
+      auto Op = IROp->C<IR::IROp_LURem>();
+      // Each source is OpOpSize in size
+      // So you can have up to a 128bit divide from x86-64
+      auto SrcLow  = GetSrc(Op->Header.Args[0]);
+      auto SrcHigh = GetSrc(Op->Header.Args[1]);
+      auto Divisor = GetSrc(Op->Header.Args[2]);
+
+      Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
+      Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
+
+      // Zero extend all values to large size
+      SrcLow = JITState.IRBuilder->CreateZExt(SrcLow, iLarge);
+      SrcHigh = JITState.IRBuilder->CreateZExt(SrcHigh, iLarge);
+      Divisor = JITState.IRBuilder->CreateZExt(Divisor, iLarge);
+      // Combine the split values
+      SrcHigh = JITState.IRBuilder->CreateShl(SrcHigh, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
+      auto Dividend = JITState.IRBuilder->CreateOr(SrcHigh, SrcLow);
+
+      // Now do the remainder
+      auto Result = JITState.IRBuilder->CreateURem(Dividend, Divisor);
+
+      // Now truncate back down origina size and store
+      Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_LREM: {
+      auto Op = IROp->C<IR::IROp_LRem>();
+      // Each source is OpOpSize in size
+      // So you can have up to a 128bit divide from x86-64
+      auto SrcLow  = GetSrc(Op->Header.Args[0]);
+      auto SrcHigh = GetSrc(Op->Header.Args[1]);
+      auto Divisor = GetSrc(Op->Header.Args[2]);
+
+      Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
+      Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
+
+      // Zero extend all values to large size
+      SrcLow = JITState.IRBuilder->CreateZExt(SrcLow, iLarge);
+      SrcHigh = JITState.IRBuilder->CreateZExt(SrcHigh, iLarge);
+      Divisor = JITState.IRBuilder->CreateSExt(Divisor, iLarge);
+      // Combine the split values
+      SrcHigh = JITState.IRBuilder->CreateShl(SrcHigh, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
+      auto Dividend = JITState.IRBuilder->CreateOr(SrcHigh, SrcLow);
+
+      // Now do the remainder
+      auto Result = JITState.IRBuilder->CreateSRem(Dividend, Divisor);
+
+      // Now truncate back down origina size and store
+      Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_UMULH: {
+      auto Op = IROp->C<IR::IROp_UMulH>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
+      Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
+
+      // Zero extend all values to larger value
+      Src1 = JITState.IRBuilder->CreateZExt(Src1, iLarge);
+      Src2 = JITState.IRBuilder->CreateZExt(Src2, iLarge);
+
+      // Do the large multiply
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+      Result = JITState.IRBuilder->CreateLShr(Result, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
+      // Now truncate back down to origianl size and store
+      Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_MULH: {
+      auto Op = IROp->C<IR::IROp_MulH>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Type *iNormal = Type::getIntNTy(*Con, OpSize * 8);
+      Type *iLarge = Type::getIntNTy(*Con, OpSize * 8 * 2);
+
+      // Sign extend all values to larger value
+      Src1 = JITState.IRBuilder->CreateSExt(Src1, iLarge);
+      Src2 = JITState.IRBuilder->CreateSExt(Src2, iLarge);
+
+      // Do the large multiply
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+      Result = JITState.IRBuilder->CreateLShr(Result, JITState.IRBuilder->getIntN(OpSize * 8 * 2, OpSize * 8));
+
+      // Now truncate back down to origianl size and store
+      Result = JITState.IRBuilder->CreateTrunc(Result, iNormal);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_REV: {
+      auto Op = IROp->C<IR::IROp_Rev>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      SetDest(*WrapperOp, BSwap(Src));
+    break;
+    }
+    case IR::OP_CREATEVECTOR2: {
+      auto Op = IROp->C<IR::IROp_CreateVector2>();
+      LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Value *Undef = UndefValue::get(VectorType::get(Src1->getType(), 2));
+
+      // Src1 = CastToOpaqueStructure(Src1, ElementType);
+      // Src2 = CastToOpaqueStructure(Src2, ElementType);
+
+      Undef = JITState.IRBuilder->CreateInsertElement(Undef, Src1, JITState.IRBuilder->getInt32(0));
+      Undef = JITState.IRBuilder->CreateInsertElement(Undef, Src2, JITState.IRBuilder->getInt32(1));
+      SetDest(*WrapperOp, Undef);
+    break;
+    }
+    case IR::OP_SPLATVECTOR2: {
+      auto Op = IROp->C<IR::IROp_SplatVector2>();
+      LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      auto Result = JITState.IRBuilder->CreateVectorSplat(2, Src);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_SPLATVECTOR3: {
+      auto Op = IROp->C<IR::IROp_SplatVector3>();
+      LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      auto Result = JITState.IRBuilder->CreateVectorSplat(3, Src);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_SPLATVECTOR4: {
+      auto Op = IROp->C<IR::IROp_SplatVector4>();
+      LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      auto Result = JITState.IRBuilder->CreateVectorSplat(4, Src);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VOR: {
+      auto Op = IROp->C<IR::IROp_Or>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      auto Result = JITState.IRBuilder->CreateOr(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VXOR: {
+      auto Op = IROp->C<IR::IROp_Or>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      auto Result = JITState.IRBuilder->CreateXor(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VADD: {
+      auto Op = IROp->C<IR::IROp_VAdd>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateAdd(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VSUB: {
+      auto Op = IROp->C<IR::IROp_VSub>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateSub(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_VUSHL: {
+      auto Op = IROp->C<IR::IROp_VUShl>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateShl(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_VUSHLS: {
+      auto Op = IROp->C<IR::IROp_VUShlS>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType()->getScalarType());
+      Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, Src2);
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateShl(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_VUSHR: {
+      auto Op = IROp->C<IR::IROp_VUShr>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, Src2);
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_VCMPEQ: {
+      auto Op = IROp->C<IR::IROp_VCMPEQ>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateICmpEQ(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, Src1->getType());
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VCMPGT: {
+      auto Op = IROp->C<IR::IROp_VCMPGT>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateICmpSGT(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, Src1->getType());
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_VUMIN: {
+      auto Op = IROp->C<IR::IROp_VUMin>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateICmpULT(Src1, Src2);
+      Result = JITState.IRBuilder->CreateSelect(Result, Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_VZIP2:
+    case IR::OP_VZIP: {
+      auto Op = IROp->C<IR::IROp_VZip>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      unsigned NumElements = Op->RegisterSize / Op->ElementSize;
+      unsigned BaseElement = IROp->Op == IR::OP_VZIP2 ? NumElements / 2 : 0;
+      std::vector<uint32_t> VectorMask;
+      for (unsigned i = 0; i < NumElements; ++i) {
+        unsigned shfl = i % 2 ? (NumElements + (i >> 1)) : (i >> 1);
+        shfl += BaseElement;
+        VectorMask.emplace_back(shfl);
+      }
+
+      auto VectorMaskConstant = ConstantDataVector::get(*Con, VectorMask);
+
+      auto Result = JITState.IRBuilder->CreateShuffleVector(Src1, Src2, VectorMaskConstant);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VINSELEMENT: {
+      auto Op = IROp->C<IR::IROp_VInsElement>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      // Extract our source index
+      auto Source = JITState.IRBuilder->CreateExtractElement(Src2, JITState.IRBuilder->getInt32(Op->SrcIdx));
+      auto Result = JITState.IRBuilder->CreateInsertElement(Src1, Source, JITState.IRBuilder->getInt32(Op->DestIdx));
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_CAS: {
+      auto Op = IROp->C<IR::IROp_CAS>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+      auto MemSrc = GetSrc(Op->Header.Args[2]);
+
+      MemSrc = JITState.IRBuilder->CreateAdd(MemSrc, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      // Cast the pointer type correctly
+      MemSrc = JITState.IRBuilder->CreateIntToPtr(MemSrc, Type::getIntNTy(*Con, OpSize * 8)->getPointerTo());
+
+      Src1 = JITState.IRBuilder->CreateZExtOrTrunc(Src1, MemSrc->getType()->getPointerElementType());
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, MemSrc->getType()->getPointerElementType());
+
+      llvm::Value *Result = JITState.IRBuilder->CreateAtomicCmpXchg(MemSrc, Src1, Src2, llvm::AtomicOrdering::SequentiallyConsistent, llvm::AtomicOrdering::SequentiallyConsistent);
+
+      // Result is a { <Type>, i1 } So we need to extract it first
+      // Behaves exactly like std::atomic::compare_exchange_strong(Desired (Src1), Src2) ? Src1 : Desired
+      Result = JITState.IRBuilder->CreateExtractValue(Result, {0});
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
+    case IR::OP_LOADMEM: {
+      auto Op = IROp->C<IR::IROp_LoadMem>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      Src = JITState.IRBuilder->CreateAdd(Src, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      // Cast the pointer type correctly
+      Src = JITState.IRBuilder->CreateIntToPtr(Src, Type::getIntNTy(*Con, Op->Size * 8)->getPointerTo());
+      auto Result = CreateMemoryLoad(Src);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_STOREMEM: {
+      auto Op = IROp->C<IR::IROp_StoreMem>();
+
+      auto Dst = GetSrc(Op->Header.Args[0]);
+      auto Src = GetSrc(Op->Header.Args[1]);
+
+      Dst = JITState.IRBuilder->CreateAdd(Dst, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      auto Type = Type::getIntNTy(*Con, Op->Size * 8);
+      Src = JITState.IRBuilder->CreateZExtOrTrunc(Src, Type);
+      Dst = JITState.IRBuilder->CreateIntToPtr(Dst, Type->getPointerTo());
+      CreateMemoryStore(Dst, Src);
+    break;
+    }
+    case IR::OP_DUMMY:
+    break;
+    default:
+      LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
+    break;
   }
 }
 
 void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) {
-   using namespace llvm;
-
+  using namespace llvm;
    JumpTargets.clear();
-   ForwardJumpTargets.clear();
    JITCurrentState.Blocks.clear();
 
    CurrentIR = IR;
@@ -1854,31 +1756,19 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
        FunctionModule);
    Func->setCallingConv(CallingConv::C);
 
+  auto Builder = JITState.IRBuilder;
+
+  auto Entry = BasicBlock::Create(*Con, "Entry", Func);
+  JITCurrentState.Blocks.emplace_back(Entry);
+  JITState.IRBuilder->SetInsertPoint(Entry);
+  JITCurrentState.CurrentBlock = Entry;
+
+  CreateGlobalVariables(Engine, FunctionModule);
+
+  uintptr_t ListBegin = CurrentIR->GetListData();
+  uintptr_t DataBegin = CurrentIR->GetData();
+
   {
-    auto Entry = BasicBlock::Create(*Con, "Entry", Func);
-    JITCurrentState.Blocks.emplace_back(Entry);
-    JITState.IRBuilder->SetInsertPoint(Entry);
-    JITCurrentState.CurrentBlock = Entry;
-
-    CreateGlobalVariables(Engine, FunctionModule);
-
-    auto Builder = JITState.IRBuilder;
-
-    // Let's create the exit block quick
-    JITCurrentState.ExitBlock = BasicBlock::Create(*Con, "ExitBlock", Func);
-    JITCurrentState.Blocks.emplace_back(JITCurrentState.ExitBlock);
-
-    JITState.IRBuilder->SetInsertPoint(JITCurrentState.ExitBlock);
-    Builder->CreateRetVoid();
-
-    JITState.IRBuilder->SetInsertPoint(Entry);
-    JITCurrentState.CurrentBlock = Entry;
-    JITCurrentState.Blocks.emplace_back(JITCurrentState.CurrentBlock);
-    JITCurrentState.CurrentBlockHasTerm = false;
-
-    uintptr_t ListBegin = CurrentIR->GetListData();
-    uintptr_t DataBegin = CurrentIR->GetData();
-
     auto HeaderIterator = CurrentIR->begin();
     IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
     IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
@@ -1892,26 +1782,69 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
       auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
-      auto CodeLast = CurrentIR->at(BlockIROp->Last);
-
-      while (1) {
-        HandleIR(CurrentIR, &CodeBegin);
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
-
-      }
+      auto Block = BasicBlock::Create(*Con, "Block", Func);
+      JITCurrentState.Blocks.emplace_back(Block);
+      JumpTargets[BlockNode->Wrapped(ListBegin).ID()] = Block;
 
       if (BlockIROp->Next.ID() == 0) {
         break;
       } else {
         BlockNode = BlockIROp->Next.GetNode(ListBegin);
       }
+    }
+  }
+
+  // Let's create the exit block quick
+  JITCurrentState.ExitBlock = BasicBlock::Create(*Con, "ExitBlock", Func);
+  JITCurrentState.Blocks.emplace_back(JITCurrentState.ExitBlock);
+
+  JITState.IRBuilder->SetInsertPoint(JITCurrentState.ExitBlock);
+  Builder->CreateRetVoid();
+
+  auto HeaderIterator = CurrentIR->begin();
+  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
+  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
+  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+
+  IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+
+  bool First = true;
+  while (1) {
+    using namespace FEXCore::IR;
+    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+
+    // We grab these nodes this way so we can iterate easily
+    auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
+    auto CodeLast = CurrentIR->at(BlockIROp->Last);
+
+    auto Block = JumpTargets[BlockNode->Wrapped(ListBegin).ID()];
+
+    if (First) {
+      JITState.IRBuilder->SetInsertPoint(Entry);
+      JITState.IRBuilder->CreateBr(Block);
+      First = false;
+    }
+
+    JITState.IRBuilder->SetInsertPoint(Block);
+    JITCurrentState.CurrentBlock = Block;
+
+    while (1) {
+      HandleIR(CurrentIR, &CodeBegin);
+
+      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+      if (CodeBegin == CodeLast) {
+        break;
+      }
+      ++CodeBegin;
+
+    }
+
+    if (BlockIROp->Next.ID() == 0) {
+      break;
+    } else {
+      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 
@@ -1934,7 +1867,7 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
 
    raw_ostream &Out = outs();
 
-   // if (CTX->Config.LLVM_PrinterPass)
+   if (CTX->Config.LLVM_PrinterPass)
    {
      FPM.addPass(PrintModulePass(Out));
    }
