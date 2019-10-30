@@ -92,7 +92,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   // Store the new RIP
   _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
   _ExitFunction();
-  Information.HadUnconditionalExit = true;
+  BlockSetRIP = true;
 }
 
 void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
@@ -2469,7 +2469,6 @@ void OpDispatchBuilder::ResetWorkingList() {
   // This is necessary since we do "null" pointer checks
   InvalidNode = reinterpret_cast<OrderedNode*>(ListData.Allocate(sizeof(OrderedNode)));
   DecodeFailure = false;
-  Information.HadUnconditionalExit = false;
   ShouldDump = false;
   CurrentCodeBlock = nullptr;
 }

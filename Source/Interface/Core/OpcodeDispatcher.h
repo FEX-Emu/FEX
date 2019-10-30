@@ -21,9 +21,6 @@ friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
 public:
 
-  struct {
-    bool HadUnconditionalExit {false};
-  } Information;
   bool ShouldDump {false};
 
   struct JumpTargetInfo {
