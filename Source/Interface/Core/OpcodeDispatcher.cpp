@@ -1520,7 +1520,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   // Make sure to start a new block after ending this one
   auto LoopEnd = CreateNewCodeBlock();
   SetTrueJumpTarget(CondJump, LoopEnd);
-  SetCurrentCodeBlock(JumpTarget);
+  SetCurrentCodeBlock(LoopEnd);
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
@@ -3253,7 +3253,7 @@ void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
-  _Break(0, 0);
+  // _Break(0, 0);
 }
 
 #undef OpcodeArgs
