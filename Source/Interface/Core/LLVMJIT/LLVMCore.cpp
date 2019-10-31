@@ -1720,41 +1720,51 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
 
 void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) {
   using namespace llvm;
-   JumpTargets.clear();
-   JITCurrentState.Blocks.clear();
+  JumpTargets.clear();
+  JITCurrentState.Blocks.clear();
 
-   CurrentIR = IR;
+  CurrentIR = IR;
 
 #if DESTMAP_AS_MAP
-   DestMap.clear();
+  DestMap.clear();
 #else
-   uintptr_t ListSize = CurrentIR->GetListSize();
-   if (ListSize > DestMap.size()) {
-     DestMap.resize(std::max(DestMap.size() * 2, ListSize));
-   }
+  uintptr_t ListSize = CurrentIR->GetListSize();
+  if (ListSize > DestMap.size()) {
+    DestMap.resize(std::max(DestMap.size() * 2, ListSize));
+  }
 #endif
 
-   std::ostringstream FunctionName;
-   FunctionName << "Function_0x";
-   FunctionName << std::hex << ThreadState->State.State.rip;
+  uintptr_t ListBegin = CurrentIR->GetListData();
+  uintptr_t DataBegin = CurrentIR->GetData();
 
-   auto FunctionModule = new llvm::Module("Module", *Con);
-   auto EngineBuilder = llvm::EngineBuilder(std::unique_ptr<llvm::Module>(FunctionModule));
-   EngineBuilder.setEngineKind(llvm::EngineKind::JIT);
-   EngineBuilder.setMCJITMemoryManager(std::unique_ptr<llvm::RTDyldMemoryManager>(JITState.MemManager));
+  auto HeaderIterator = CurrentIR->begin();
+  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
+  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
+  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
-   auto Engine = EngineBuilder.create(LLVMTarget);
+  std::ostringstream FunctionName;
+  FunctionName << "Function_0x";
+  FunctionName << std::hex << HeaderOp->Entry;
 
-   Type *i64 = Type::getInt64Ty(*Con);
-   auto FunctionType = FunctionType::get(Type::getVoidTy(*Con),
-     {
-       i64,
-     }, false);
-   Func = Function::Create(FunctionType,
-       Function::ExternalLinkage,
-       FunctionName.str(),
-       FunctionModule);
-   Func->setCallingConv(CallingConv::C);
+  auto FunctionModule = new llvm::Module("Module", *Con);
+  auto EngineBuilder = llvm::EngineBuilder(std::unique_ptr<llvm::Module>(FunctionModule));
+  EngineBuilder.setEngineKind(llvm::EngineKind::JIT);
+  EngineBuilder.setMCJITMemoryManager(std::unique_ptr<llvm::RTDyldMemoryManager>(JITState.MemManager));
+
+  auto Engine = EngineBuilder.create(LLVMTarget);
+
+  Type *i64 = Type::getInt64Ty(*Con);
+  auto FunctionType = FunctionType::get(Type::getVoidTy(*Con),
+    {
+      i64,
+    }, false);
+  Func = Function::Create(FunctionType,
+    Function::ExternalLinkage,
+    FunctionName.str(),
+    FunctionModule);
+
+  Func->setCallingConv(CallingConv::C);
 
   auto Builder = JITState.IRBuilder;
 
@@ -1765,16 +1775,7 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
 
   CreateGlobalVariables(Engine, FunctionModule);
 
-  uintptr_t ListBegin = CurrentIR->GetListData();
-  uintptr_t DataBegin = CurrentIR->GetData();
-
   {
-    auto HeaderIterator = CurrentIR->begin();
-    IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-    IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-    auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
     IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
     while (1) {
@@ -1800,12 +1801,6 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
 
   JITState.IRBuilder->SetInsertPoint(JITCurrentState.ExitBlock);
   Builder->CreateRetVoid();
-
-  auto HeaderIterator = CurrentIR->begin();
-  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
   IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
@@ -1838,7 +1833,6 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
         break;
       }
       ++CodeBegin;
-
     }
 
     if (BlockIROp->Next.ID() == 0) {
@@ -1848,44 +1842,36 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
     }
   }
 
-   for (auto &Block : JITCurrentState.Blocks) {
-     // If the block is empty then let is just jump to the exit block
-     if (Block->empty()) {
-       JITState.IRBuilder->SetInsertPoint(Block);
-       JITState.IRBuilder->CreateBr(JITCurrentState.ExitBlock);
-     }
-   }
+  llvm::ModulePassManager FPM;
+  llvm::ModuleAnalysisManager FAM;
+  llvm::PassBuilder passBuilder(LLVMTarget);
 
-   llvm::ModulePassManager FPM;
-   llvm::ModuleAnalysisManager FAM;
-   llvm::PassBuilder passBuilder(LLVMTarget);
+  passBuilder.registerModuleAnalyses(FAM);
+  passBuilder.buildModuleSimplificationPipeline(
+    llvm::PassBuilder::OptimizationLevel::O3,
+    llvm::PassBuilder::ThinLTOPhase::None);
 
-   passBuilder.registerModuleAnalyses(FAM);
-   passBuilder.buildModuleSimplificationPipeline(
-       llvm::PassBuilder::OptimizationLevel::O3,
-       llvm::PassBuilder::ThinLTOPhase::None);
+  raw_ostream &Out = outs();
 
-   raw_ostream &Out = outs();
+  if (CTX->Config.LLVM_PrinterPass)
+  {
+    FPM.addPass(PrintModulePass(Out));
+  }
 
-   if (CTX->Config.LLVM_PrinterPass)
-   {
-     FPM.addPass(PrintModulePass(Out));
-   }
+  if (CTX->Config.LLVM_IRValidation)
+  {
+    verifyModule(*FunctionModule, &Out);
+  }
 
-   if (CTX->Config.LLVM_IRValidation)
-   {
-     verifyModule(*FunctionModule, &Out);
-   }
+  FPM.run(*FunctionModule, FAM);
+  Engine->finalizeObject();
 
-   FPM.run(*FunctionModule, FAM);
-   Engine->finalizeObject();
+  JITState.Functions.emplace_back(Engine);
 
-   JITState.Functions.emplace_back(Engine);
+  DebugData->HostCodeSize = JITState.MemManager->GetLastCodeAllocation();
+  void *FunctionPtr = reinterpret_cast<void*>(Engine->getFunctionAddress(FunctionName.str()));
 
-   DebugData->HostCodeSize = JITState.MemManager->GetLastCodeAllocation();
-   void *FunctionPtr = reinterpret_cast<void*>(Engine->getFunctionAddress(FunctionName.str()));
-
-   return FunctionPtr;
+  return FunctionPtr;
 }
 
 FEXCore::CPU::CPUBackend *CreateLLVMCore(FEXCore::Core::InternalThreadState *Thread) {

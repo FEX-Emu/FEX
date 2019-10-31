@@ -49,8 +49,7 @@ public:
     SetCurrentCodeBlock(it->second.BlockEntry);
   }
 
-  void FinishOp(uint64_t NextRIP, bool LastOp) {
-    auto it = JumpTargets.find(NextRIP);
+  bool FinishOp(uint64_t NextRIP, bool LastOp) {
 
     // If we are switching to a new block and this current block has yet to set a RIP
     // Then we need to insert an unconditional jump from the current block to the one we are going to
@@ -63,6 +62,7 @@ public:
     //  cmp qword [rdi-8], 0
     //  jne .label
     if (!BlockSetRIP) {
+      auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end() && LastOp) {
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
@@ -71,9 +71,12 @@ public:
       }
       else if (it != JumpTargets.end()) {
         _Jump(it->second.BlockEntry);
+        return true;
       }
     }
     BlockSetRIP = false;
+
+    return false;
   }
 
   OpDispatchBuilder();

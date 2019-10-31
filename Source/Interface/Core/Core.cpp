@@ -483,7 +483,9 @@ namespace FEXCore::Context {
             }
           }
 
-          Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == InstsInBlock);
+          if (Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == InstsInBlock)) {
+            break;
+          }
         }
       }
 
