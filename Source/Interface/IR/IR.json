@@ -540,6 +540,12 @@
         "uint8_t", "Index"
       ]
     },
+
+    "VBitcast": {
+      "HasDest": true,
+      "SSAArgs": "1"
+    },
+
     "Last": {
       "Last": true,
       "Args": []

@@ -1434,6 +1434,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           vpor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
           break;
         }
+        case IR::OP_VBITCAST: {
+          auto Op = IROp->C<IR::IROp_VBitcast>();
+          movaps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+        break;
+        }
         case IR::OP_VCMPEQ: {
           auto Op = IROp->C<IR::IROp_VCMPEQ>();
           LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);

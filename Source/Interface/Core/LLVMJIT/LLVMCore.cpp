@@ -749,7 +749,7 @@ llvm::Value *LLVMJITCore::CastToOpaqueStructure(llvm::Value *Arg, llvm::Type *Ds
     Arg = JITState.IRBuilder->CreateBitCast(Arg, NewIntegerType);
   }
 
-  return JITState.IRBuilder->CreateZExtOrTrunc(Arg, DstType->getPointerElementType());
+  return JITState.IRBuilder->CreateZExtOrTrunc(Arg, DstType);
 }
 
 void LLVMJITCore::SetDest(IR::OrderedNodeWrapper Op, llvm::Value *Val) {
@@ -935,7 +935,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_StoreContext>();
       auto Src = GetSrc(Op->Header.Args[0]);
       auto Value = CreateContextPtr(Op->Offset, Op->Size);
-      Src = CastToOpaqueStructure(Src, Value->getType());
+      Src = CastToOpaqueStructure(Src, Value->getType()->getPointerElementType());
 
       if ((Op->Offset % Op->Size) == 0)
         JITState.IRBuilder->CreateAlignedStore(Src, Value, Op->Size);
@@ -1469,6 +1469,15 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src = GetSrc(Op->Header.Args[0]);
 
       auto Result = JITState.IRBuilder->CreateVectorSplat(4, Src);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VBITCAST: {
+      auto Op = IROp->C<IR::IROp_VBitcast>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      auto Result = CastToOpaqueStructure(Src, Type::getIntNTy(*Con, Src->getType()->getPrimitiveSizeInBits()));
+
       SetDest(*WrapperOp, Result);
     break;
     }
