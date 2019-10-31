@@ -12,7 +12,7 @@ void InitializeSecondaryTables() {
     {0x02, 1, X86InstInfo{"LAR",        TYPE_UNDEC, FLAGS_NONE,                                                                                         0, nullptr}},
     {0x03, 1, X86InstInfo{"LSL",        TYPE_UNDEC, FLAGS_NONE,                                                                                         0, nullptr}},
     {0x04, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                                                       0, nullptr}},
-    {0x05, 1, X86InstInfo{"SYSCALL",    TYPE_INST, FLAGS_BLOCK_END,                                                                                     0, nullptr}},
+    {0x05, 1, X86InstInfo{"SYSCALL",    TYPE_INST, FLAGS_NONE,                                                                                          0, nullptr}},
     {0x06, 1, X86InstInfo{"CLTS",       TYPE_PRIV, FLAGS_NONE,                                                                                          0, nullptr}},
     {0x07, 1, X86InstInfo{"SYSRET",     TYPE_PRIV, FLAGS_NONE,                                                                                          0, nullptr}},
     {0x08, 1, X86InstInfo{"INVD",       TYPE_PRIV, FLAGS_NONE,                                                                                          0, nullptr}},
