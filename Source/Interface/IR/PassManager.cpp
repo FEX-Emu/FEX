@@ -5,7 +5,7 @@
 namespace FEXCore::IR {
 
 void PassManager::AddDefaultPasses() {
-  // Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreateRedundantContextLoadElimination()));
+  Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreateRedundantContextLoadElimination()));
   Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreateConstProp()));
   Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreateRedundantFlagCalculationEliminination()));
   Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(CreateSyscallOptimization()));
