@@ -38,10 +38,28 @@ static bool IsGPR(uint32_t Offset, uint8_t *greg) {
   return true;
 }
 
+static bool IsAlignedXMM(uint8_t Size, uint32_t Offset, uint8_t *greg) {
+  if (Size != 16) return false;
+  if (Offset & 0b1111) return false;
+  if (Offset < offsetof(FEXCore::Core::CPUState, xmm[0]) || Offset > offsetof(FEXCore::Core::CPUState, xmm[15])) return false;
+
+  *greg = (Offset - offsetof(FEXCore::Core::CPUState, xmm[0])) / 16;
+  return true;
+}
+
+static bool IsXMM(uint32_t Offset, uint8_t *greg) {
+  if (Offset < offsetof(FEXCore::Core::CPUState, xmm[0]) || Offset > offsetof(FEXCore::Core::CPUState, xmm[15])) return false;
+
+  *greg = (Offset - offsetof(FEXCore::Core::CPUState, xmm[0])) / 16;
+  return true;
+}
+
 bool RCLE::Run(OpDispatchBuilder *Disp) {
   bool Changed = false;
   auto CurrentIR = Disp->ViewIR();
   std::array<OrderedNode *, 16> LastValidGPRStores{};
+  std::array<OrderedNode *, 16> LastValidXMMStores{};
+
   auto OriginalWriteCursor = Disp->GetWriteCursor();
 
   uintptr_t ListBegin = CurrentIR.GetListData();
@@ -78,6 +96,12 @@ bool RCLE::Run(OpDispatchBuilder *Disp) {
           // If we aren't overwriting the whole state then we don't want to track this value
           LastValidGPRStores[greg] = nullptr;
         }
+        else if (IsAlignedXMM(Op->Size, Op->Offset, &greg)) {
+          LastValidXMMStores[greg] = IROp->Args[0].GetNode(ListBegin);
+        } else if (IsXMM(Op->Offset, &greg)) {
+          // If we aren't overwriting the whole state then we don't want to track this value
+          LastValidXMMStores[greg] = nullptr;
+        }
       }
 
       if (IROp->Op == OP_LOADCONTEXT) {
@@ -99,6 +123,24 @@ bool RCLE::Run(OpDispatchBuilder *Disp) {
             // If we aren't overwriting the whole state then we don't want to track this value
             LastValidGPRStores[greg] = nullptr;
         }
+        else if (IsAlignedXMM(Op->Size, Op->Offset, &greg)) {
+          if (LastValidXMMStores[greg] != nullptr) {
+            // If the last store matches this load value then we can replace the loaded value with the previous valid one
+            // Need to be careful here since the code could be expecting it to be loaded as i128
+            // So we need to bitcast the previous value just in case
+            Disp->SetWriteCursor(CodeNode);
+            auto BitCast = Disp->_VBitcast(LastValidXMMStores[greg]);
+            Disp->ReplaceAllUsesWithInclusive(CodeNode, BitCast, CodeBegin, CodeLast);
+            if (CodeNode->GetUses() == 0)
+              Disp->Remove(CodeNode);
+            // Set it as invalid now
+            LastValidXMMStores[greg] = nullptr;
+            Changed = true;
+          }
+        } else if (IsXMM(Op->Offset, &greg)) {
+            // If we aren't overwriting the whole state then we don't want to track this value
+            LastValidXMMStores[greg] = nullptr;
+        }
       }
 
       // CodeLast is inclusive. So we still need to dump the CodeLast op as well
@@ -116,6 +158,7 @@ bool RCLE::Run(OpDispatchBuilder *Disp) {
 
     // We don't track across block boundaries
     LastValidGPRStores.fill(nullptr);
+    LastValidXMMStores.fill(nullptr);
   }
 
   Disp->SetWriteCursor(OriginalWriteCursor);
