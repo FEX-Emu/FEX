@@ -83,6 +83,7 @@ bool RCLE::RedundantStoreLoadElimination(OpDispatchBuilder *Disp) {
   bool Changed = false;
   auto CurrentIR = Disp->ViewIR();
   std::array<OrderedNode *, 16> LastValidGPRStores{};
+  std::array<OrderedNode *, 32> LastValidFLAGStores{};
   std::array<OrderedNode *, 16> LastValidXMMStores{};
 
   auto OriginalWriteCursor = Disp->GetWriteCursor();
@@ -128,8 +129,7 @@ bool RCLE::RedundantStoreLoadElimination(OpDispatchBuilder *Disp) {
           LastValidXMMStores[greg] = nullptr;
         }
       }
-
-      if (IROp->Op == OP_LOADCONTEXT) {
+      else if (IROp->Op == OP_LOADCONTEXT) {
         auto Op = IROp->C<IR::IROp_LoadContext>();
 
         // Make sure we are within GREG state
@@ -167,6 +167,25 @@ bool RCLE::RedundantStoreLoadElimination(OpDispatchBuilder *Disp) {
             LastValidXMMStores[greg] = nullptr;
         }
       }
+      else if (IROp->Op == OP_STOREFLAG) {
+        auto Op = IROp->C<IR::IROp_StoreFlag>();
+        LastValidFLAGStores[Op->Flag] = IROp->Args[0].GetNode(ListBegin);
+      }
+      else if (IROp->Op == OP_LOADFLAG) {
+        auto Op = IROp->C<IR::IROp_LoadFlag>();
+        uint8_t Flag = Op->Flag;
+        if (LastValidFLAGStores[Flag] != nullptr) {
+          // If the last store matches this load value then we can replace the loaded value with the previous valid one
+          Disp->SetWriteCursor(CodeNode);
+          auto Res = Disp->_Bfe(1, 0, LastValidFLAGStores[Flag]);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, Res, CodeBegin, CodeLast);
+          if (CodeNode->GetUses() == 0)
+            Disp->Remove(CodeNode);
+          // Set it as invalid now
+          LastValidFLAGStores[Flag] = nullptr;
+          Changed = true;
+        }
+      }
 
       // CodeLast is inclusive. So we still need to dump the CodeLast op as well
       if (CodeBegin == CodeLast) {
@@ -184,6 +203,7 @@ bool RCLE::RedundantStoreLoadElimination(OpDispatchBuilder *Disp) {
     // We don't track across block boundaries
     LastValidGPRStores.fill(nullptr);
     LastValidXMMStores.fill(nullptr);
+    LastValidFLAGStores.fill(nullptr);
   }
 
   Disp->SetWriteCursor(OriginalWriteCursor);
