@@ -156,8 +156,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
        Thread->State.State.rip += Op->RIPIncrement;
      break;
      }
-    case IR::OP_EXITFUNCTION:
-    case IR::OP_ENDFUNCTION: {
+    case IR::OP_EXITFUNCTION: {
       Quit = true;
     break;
     }

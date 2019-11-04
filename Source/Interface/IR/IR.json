@@ -38,17 +38,18 @@
         "Next"
       ]
     },
+    "BeginBlock": {},
+    "EndBlock": {
+      "Args": [
+        "uint64_t", "RIPIncrement"
+      ]
+    },
+
     "Constant": {
 			"HasDest": true,
       "FixedDestSize": "8",
       "Args": [
         "uint64_t", "Constant"
-      ]
-    },
-    "BeginBlock": {},
-    "EndBlock": {
-      "Args": [
-        "uint64_t", "RIPIncrement"
       ]
     },
 
@@ -59,7 +60,6 @@
       ]
     },
 
-    "EndFunction": {},
     "ExitFunction": {},
 
     "Jump": {

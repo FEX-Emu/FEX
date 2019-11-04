@@ -803,8 +803,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       JITState.IRBuilder->CreateBr(JITCurrentState.ExitBlock);
     break;
     }
-    case IR::OP_EXITFUNCTION:
-    case IR::OP_ENDFUNCTION: {
+    case IR::OP_EXITFUNCTION: {
       JITState.IRBuilder->CreateBr(JITCurrentState.ExitBlock);
     break;
     }

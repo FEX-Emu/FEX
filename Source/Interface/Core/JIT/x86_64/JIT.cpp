@@ -352,8 +352,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
-        case IR::OP_EXITFUNCTION:
-        case IR::OP_ENDFUNCTION: {
+        case IR::OP_EXITFUNCTION: {
           if (SpillSlots) {
             add(rsp, SpillSlots * 16);
           }
@@ -382,7 +381,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(al, 1);
               xchg(byte [STATE + offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop)], al);
 
-              // This code matches what is in EXITFUNCTION/ENDFUNCTION
+              // This code matches what is in EXITFUNCTION
               if (SpillSlots) {
                 add(rsp, SpillSlots * 16);
               }
@@ -1684,7 +1683,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         case IR::OP_BEGINBLOCK:
         case IR::OP_ENDBLOCK:
         case IR::OP_EXITFUNCTION:
-        case IR::OP_ENDFUNCTION:
         case IR::OP_BREAK:
         case IR::OP_JUMP:
           break;

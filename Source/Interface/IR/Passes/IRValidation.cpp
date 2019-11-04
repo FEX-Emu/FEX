@@ -88,8 +88,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
       }
 
       switch (IROp->Op) {
-        case IR::OP_EXITFUNCTION:
-        case IR::OP_ENDFUNCTION: {
+        case IR::OP_EXITFUNCTION: {
           CurrentBlock->HasExit = true;
         break;
         }

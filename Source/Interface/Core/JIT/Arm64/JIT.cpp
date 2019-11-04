@@ -403,8 +403,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
-      case IR::OP_EXITFUNCTION:
-      case IR::OP_ENDFUNCTION: {
+      case IR::OP_EXITFUNCTION: {
         if (SpillSlots) {
           add(sp, sp, SpillSlots * 16);
         }

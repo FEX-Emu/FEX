@@ -57,7 +57,6 @@ bool DeadCodeElimination::Run(OpDispatchBuilder *Disp) {
       // Control flow
       case OP_BREAK:
       case OP_JUMP:
-      case OP_ENDFUNCTION:
       case OP_EXITFUNCTION:
       case OP_CONDJUMP:
         // Keep
