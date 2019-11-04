@@ -158,6 +158,44 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
       HadError |= true;
       Errors << "%ssa" << BlockNode->Wrapped(ListBegin).ID() << " Has " << NumSuccessors << " successors which is too many" << std::endl;
     }
+
+    {
+      auto GetOp = [&ListBegin, &DataBegin](auto Code) {
+        auto CodeOp = Code();
+        OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
+        auto IROp = CodeNode->Op(DataBegin);
+        return IROp->Op;
+      };
+
+      auto CodeCurrent = CodeLast;
+
+      // Last instruction in the block must be EndBlock
+      {
+        auto Op = GetOp(CodeCurrent);
+        if (Op != IR::OP_ENDBLOCK) {
+          HadError |= true;
+          Errors << "%ssa" << BlockNode->Wrapped(ListBegin).ID() << " Failed to end block with EndBlock" << std::endl;
+        }
+      }
+
+      --CodeCurrent;
+
+      // Blocks need to have an instruction that leaves the block in some way before the EndBlock instruction
+      {
+        auto Op = GetOp(CodeCurrent);
+        switch (Op) {
+          case OP_EXITFUNCTION:
+          case OP_JUMP:
+          case OP_CONDJUMP:
+          case OP_BREAK:
+            break;
+          default:
+            HadError |= true;
+            Errors << "%ssa" << BlockNode->Wrapped(ListBegin).ID() << " Didn't have an exit IR op as its last instruction" << std::endl;
+        };
+      }
+    }
+
     if (BlockIROp->Next.ID() == 0) {
       break;
     } else {
