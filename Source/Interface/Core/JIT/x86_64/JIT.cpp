@@ -1174,7 +1174,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             }
             break;
             case 16: {
-               movups(GetDst(Node), xword [rax]);
+               if (Op->Size == Op->Align)
+                 movaps(GetDst(Node), xword [rax]);
+               else
+                 movups(GetDst(Node), xword [rax]);
                if (MemoryDebug) {
                  movq(rcx, GetDst(Node));
                }
@@ -1204,7 +1207,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
           break;
           case 16:
-            movups(xword [rax], GetSrc(Op->Header.Args[1].ID()));
+            if (Op->Size == Op->Align)
+              movaps(xword [rax], GetSrc(Op->Header.Args[1].ID()));
+            else
+              movups(xword [rax], GetSrc(Op->Header.Args[1].ID()));
           break;
           default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
           }

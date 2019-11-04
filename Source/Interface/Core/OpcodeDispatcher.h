@@ -216,66 +216,64 @@ public:
     return Op;
   }
 
-	IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
+  IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
     return _Bfe(ssa0, Width, lsb);
   }
-	IRPair<IROp_Bfi> _Bfi(uint8_t Width, uint8_t lsb, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_Bfi> _Bfi(uint8_t Width, uint8_t lsb, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _Bfi(ssa0, ssa1, Width, lsb);
   }
-  IRPair<IROp_StoreMem> _StoreMem(uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1) {
-    return _StoreMem(ssa0, ssa1, Size);
+  IRPair<IROp_StoreMem> _StoreMem(uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Align = 1) {
+    return _StoreMem(ssa0, ssa1, Size, Align);
   }
-	IRPair<IROp_LoadMem> _LoadMem(uint8_t Size, OrderedNode *ssa0) {
-    return _LoadMem(ssa0, Size);
+  IRPair<IROp_LoadMem> _LoadMem(uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
+    return _LoadMem(ssa0, Size, Align);
   }
-	IRPair<IROp_StoreContext> _StoreContext(uint8_t Size, uint32_t Offset, OrderedNode *ssa0) {
+  IRPair<IROp_StoreContext> _StoreContext(uint8_t Size, uint32_t Offset, OrderedNode *ssa0) {
     return _StoreContext(ssa0, Size, Offset);
   }
-	IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3) {
+  IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3) {
     return _Select(ssa0, ssa1, ssa2, ssa3, {Cond});
   }
-	IRPair<IROp_Sext> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {
+  IRPair<IROp_Sext> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {
     return _Sext(ssa0, SrcSize);
   }
-	IRPair<IROp_Zext> _Zext(uint8_t SrcSize, OrderedNode *ssa0) {
+  IRPair<IROp_Zext> _Zext(uint8_t SrcSize, OrderedNode *ssa0) {
     return _Zext(ssa0, SrcSize);
   }
-	IRPair<IROp_VInsElement> _VInsElement(uint8_t RegisterSize, uint8_t ElementSize, uint8_t DestIdx, uint8_t SrcIdx, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VInsElement> _VInsElement(uint8_t RegisterSize, uint8_t ElementSize, uint8_t DestIdx, uint8_t SrcIdx, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VInsElement(ssa0, ssa1, RegisterSize, ElementSize, DestIdx, SrcIdx);
   }
-	IRPair<IROp_VAdd> _VAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VAdd> _VAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VAdd(ssa0, ssa1, RegisterSize, ElementSize);
   }
-	IRPair<IROp_VSub> _VSub(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VSub> _VSub(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VSub(ssa0, ssa1, RegisterSize, ElementSize);
   }
   IRPair<IROp_VUMin> _VUMin(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUMin(ssa0, ssa1, RegisterSize, ElementSize);
   }
-	IRPair<IROp_VSMin> _VSMin(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VSMin> _VSMin(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VSMin(ssa0, ssa1, RegisterSize, ElementSize);
   }
-	IRPair<IROp_VZip> _VZip(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VZip> _VZip(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VZip(ssa0, ssa1, RegisterSize, ElementSize);
   }
-	IRPair<IROp_VZip2> _VZip2(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VZip2> _VZip2(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VZip2(ssa0, ssa1, RegisterSize, ElementSize);
   }
-	IRPair<IROp_VCMPEQ> _VCMPEQ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VCMPEQ> _VCMPEQ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VCMPEQ(ssa0, ssa1, RegisterSize, ElementSize);
   }
-	IRPair<IROp_VCMPGT> _VCMPGT(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VCMPGT> _VCMPGT(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VCMPGT(ssa0, ssa1, RegisterSize, ElementSize);
   }
-
-	IRPair<IROp_VUShl> _VUShl(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VUShl> _VUShl(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShl(ssa0, ssa1, RegisterSize, ElementSize);
   }
-	IRPair<IROp_VUShlS> _VUShlS(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VUShlS> _VUShlS(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShlS(ssa0, ssa1, RegisterSize, ElementSize);
   }
-
-	IRPair<IROp_VUShr> _VUShr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+  IRPair<IROp_VUShr> _VUShr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShr(ssa0, ssa1, RegisterSize, ElementSize);
   }
   IRPair<IROp_VExtr> _VExtr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index) {
@@ -460,11 +458,11 @@ private:
   void RemoveArgUses(OrderedNode *Node);
   bool DecodeFailure{false};
 
-  OrderedNode *LoadSource(FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, bool LoadData = true, bool ForceLoad = false);
-  OrderedNode *LoadSource_WithOpSize(FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, bool LoadData = true, bool ForceLoad = false);
-  void StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize);
-  void StoreResult(FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src);
-  void StoreResult(FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src);
+  OrderedNode *LoadSource(FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
+  OrderedNode *LoadSource_WithOpSize(FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
+  void StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align);
+  void StoreResult(FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align);
+  void StoreResult(FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align);
   uint8_t GetDstSize(FEXCore::X86Tables::DecodedOp Op);
   uint8_t GetSrcSize(FEXCore::X86Tables::DecodedOp Op);
 

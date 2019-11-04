@@ -55,8 +55,8 @@ private:
   void HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrapperIterator *Node);
   llvm::Value *CreateContextGEP(uint64_t Offset, uint8_t Size);
   llvm::Value *CreateContextPtr(uint64_t Offset, uint8_t Size);
-  llvm::Value *CreateMemoryLoad(llvm::Value *Ptr);
-  void CreateMemoryStore(llvm::Value *Ptr, llvm::Value *Val);
+  llvm::Value *CreateMemoryLoad(llvm::Value *Ptr, uint8_t Align);
+  void CreateMemoryStore(llvm::Value *Ptr, llvm::Value *Val, uint8_t Align);
 
   void ValidateMemoryInVM(uint64_t Ptr, uint8_t Size, bool Load);
   template<typename Type>
@@ -273,7 +273,7 @@ void LLVMJITCore::MemoryStore_Validate(uint64_t Ptr, Type Val) {
   LogMan::Msg::D("\tStoring: 0x%016lx", Data);
 }
 
-llvm::Value *LLVMJITCore::CreateMemoryLoad(llvm::Value *Ptr) {
+llvm::Value *LLVMJITCore::CreateMemoryLoad(llvm::Value *Ptr, uint8_t Align) {
   if (CTX->Config.LLVM_MemoryValidation) {
     std::vector<llvm::Value*> Args;
     Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(this)));
@@ -290,10 +290,10 @@ llvm::Value *LLVMJITCore::CreateMemoryLoad(llvm::Value *Ptr) {
     }
   }
 
-  return JITState.IRBuilder->CreateLoad(Ptr);
+  return JITState.IRBuilder->CreateAlignedLoad(Ptr, Align);
 }
 
-void LLVMJITCore::CreateMemoryStore(llvm::Value *Ptr, llvm::Value *Val) {
+void LLVMJITCore::CreateMemoryStore(llvm::Value *Ptr, llvm::Value *Val, uint8_t Align) {
   if (CTX->Config.LLVM_MemoryValidation) {
     std::vector<llvm::Value*> Args;
     Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(this)));
@@ -312,7 +312,7 @@ void LLVMJITCore::CreateMemoryStore(llvm::Value *Ptr, llvm::Value *Val) {
     return;
   }
 
-  JITState.IRBuilder->CreateStore(Val, Ptr);
+  JITState.IRBuilder->CreateAlignedStore(Val, Ptr, Align);
 }
 
 
@@ -1701,7 +1701,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Src = JITState.IRBuilder->CreateAdd(Src, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
       // Cast the pointer type correctly
       Src = JITState.IRBuilder->CreateIntToPtr(Src, Type::getIntNTy(*Con, Op->Size * 8)->getPointerTo());
-      auto Result = CreateMemoryLoad(Src);
+      auto Result = CreateMemoryLoad(Src, Op->Align);
       SetDest(*WrapperOp, Result);
     break;
     }
@@ -1715,7 +1715,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Type = Type::getIntNTy(*Con, Op->Size * 8);
       Src = JITState.IRBuilder->CreateZExtOrTrunc(Src, Type);
       Dst = JITState.IRBuilder->CreateIntToPtr(Dst, Type->getPointerTo());
-      CreateMemoryStore(Dst, Src);
+      CreateMemoryStore(Dst, Src, Op->Align);
     break;
     }
     case IR::OP_DUMMY:

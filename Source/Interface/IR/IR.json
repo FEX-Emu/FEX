@@ -145,14 +145,16 @@
       "DestSize": "Size",
       "SSAArgs": "1",
       "Args": [
-        "uint8_t", "Size"
+        "uint8_t", "Size",
+        "uint8_t", "Align"
       ]
     },
 
     "StoreMem": {
       "SSAArgs": "2",
       "Args": [
-        "uint8_t", "Size"
+        "uint8_t", "Size",
+        "uint8_t", "Align"
       ]
     },
 
