@@ -1850,20 +1850,30 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
     }
   }
 
-  llvm::ModulePassManager FPM;
-  llvm::ModuleAnalysisManager FAM;
+  llvm::ModulePassManager MPM;
+
+  llvm::LoopAnalysisManager LAM;
+  llvm::FunctionAnalysisManager FAM;
+  llvm::CGSCCAnalysisManager CGAM;
+  llvm::ModuleAnalysisManager MAM;
+
   llvm::PassBuilder passBuilder(LLVMTarget);
 
-  passBuilder.registerModuleAnalyses(FAM);
-  passBuilder.buildModuleSimplificationPipeline(
-    llvm::PassBuilder::OptimizationLevel::O3,
-    llvm::PassBuilder::ThinLTOPhase::None);
+  passBuilder.registerLoopAnalyses(LAM);
+  passBuilder.registerFunctionAnalyses(FAM);
+  passBuilder.registerCGSCCAnalyses(CGAM);
+  passBuilder.registerModuleAnalyses(MAM);
+
+  passBuilder.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+  MPM = passBuilder.buildModuleOptimizationPipeline(
+    llvm::PassBuilder::OptimizationLevel::O3);
 
   raw_ostream &Out = outs();
 
   if (CTX->Config.LLVM_PrinterPass)
   {
-    FPM.addPass(PrintModulePass(Out));
+    MPM.addPass(PrintModulePass(Out));
   }
 
   if (CTX->Config.LLVM_IRValidation)
@@ -1871,7 +1881,7 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
     verifyModule(*FunctionModule, &Out);
   }
 
-  FPM.run(*FunctionModule, FAM);
+  MPM.run(*FunctionModule, MAM);
   Engine->finalizeObject();
 
   JITState.Functions.emplace_back(Engine);
