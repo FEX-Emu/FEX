@@ -63,7 +63,7 @@ namespace FEXCore::Memory {
     for (auto const &Region : MappedRegions) {
       if (Region.contains(Offset)) {
         LogMan::Throw::A((Region.Offset + Region.Size) >= (Offset + Size), "Pointer in region but region isn't large enough. Needs 0x%lx more", Offset - Region.Offset + Size - Region.Size);
-        if ((Region.Offset + Region.Size) < (Offset + Size)) {
+        if ((Region.Offset + Region.Size) >= (Offset + Size)) {
           return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Region.Ptr) + (Offset - Region.Offset));
         }
       }
