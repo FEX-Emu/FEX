@@ -124,22 +124,215 @@ namespace SU::VM {
       // This is the host pointer that is visible on both Host and Guest
       void SetTablePointer(uint64_t *Address) { Tables = Address; }
 
-      // 4k page mode uses 4 4096 byte tables
-      // Each table has entries that are 8bytes in size. So each table is 512 elements in size
-      // Different page modes drop the number of pages
-      uint64_t GetPML4Size() const { return 4096 * 4; }
+      // We need to calculate our PML4 table size
+      // PTE = (MaxVirtualMemory / PAGE_SIZE) * Entry_Size
+      // PDE = (MaxVirtualMemory >> 21) * Entry_Size
+      // PDPE = (MaxVirtualMemory >> 30) * Entry_Size
+      // PML4 = (MaxVirtualMemory >> 39) * Entry_Size
+      uint64_t GetPML4Size() const {
+        return (AlignUp(MaxVirtualMemory >> 39, 512) * // PML4
+                512 * // PDPE
+                512 + // PDE
+                AlignUp(MaxVirtualMemory / PAGE_SIZE, 512)) * ENTRY_SIZE;
+      }
 
       void AddMemoryMapping(uint64_t VirtualAddress, uint64_t PhysicalAddress, uint64_t Size) {
         MemoryMappings.emplace_back(MemoryRegion{VirtualAddress, PhysicalAddress, Size});
       }
 
+      uint64_t FindPhysicalInVirtual(uint64_t VirtualAddr) {
+        for (auto Mapping : MemoryMappings) {
+          if (VirtualAddr >= Mapping.VirtualBase &&
+              VirtualAddr < (Mapping.VirtualBase + Mapping.RegionSize)) {
+            return Mapping.PhysicalBase + (VirtualAddr - Mapping.VirtualBase);
+          }
+        }
+        return ~0ULL;
+      }
+
+      uint64_t FindPhysicalFromTables(uint64_t VirtualAddr) {
+        uint64_t *PML4_Table = (uint64_t*)((uintptr_t)Tables + 4096 * 0);
+        uint64_t *PDPE_Table = (uint64_t*)((uintptr_t)Tables + 4096 * 1);
+        uint64_t *PDE_Table  = (uint64_t*)((uintptr_t)Tables + 4096 * 2);
+        uint64_t *PTE_Table  = (uint64_t*)((uintptr_t)Tables + 4096 * 3);
+
+        uint64_t Physical_PML4_Table = PML4PhysicalAddress + 4096 * 0;
+        uint64_t Physical_PDPE_Table = PML4PhysicalAddress + 4096 * 1;
+        uint64_t Physical_PDE_Table  = PML4PhysicalAddress + 4096 * 2;
+        uint64_t Physical_PTE_Table  = PML4PhysicalAddress + 4096 * 3;
+
+        uint64_t PML4_Offset = (VirtualAddr >> 39) & 0x1FF;
+        uint64_t PDPE_Offset = (VirtualAddr >> 30) & 0x1FF;
+        uint64_t PDE_Offset = (VirtualAddr >> 21) & 0x1FF;
+        uint64_t PTE_Offset = (VirtualAddr >> 12) & 0x1FF;
+        uint64_t Physical_Offset = (VirtualAddr) & 0xFFF;
+        return PTE_Table[PTE_Offset] & ~0xFFF;
+      }
+
       void SetupTables();
+
     private:
+
+      uint64_t GetPML4TableOffset(uint64_t Address) const {
+        // There is only one PML4 table
+        return 0;
+      }
+
+      uint64_t GetPML4EntryOffset(uint64_t Address) const {
+        LogMan::Throw::A(Address < MaxVirtualMemory, "Address of 0x%lx is larger than our max virtual address size", Address);
+
+        // First get the segment for the PML4
+        uint64_t PML4Segment = (Address >> 39) & 0x1FF;
+
+        // Each entry is 8 bytes
+        // So the table entry is just the segment multiplied by the entry size
+        return PML4Segment * ENTRY_SIZE;
+      }
+
+      uint64_t GetPDPEEntryOffset(uint64_t Address) const {
+        LogMan::Throw::A(Address < MaxVirtualMemory, "Address of 0x%lx is larger than our max virtual address size", Address);
+
+        // Get the segment for the PDPE
+        uint64_t PDPESegment = (Address >> 30) & 0x1FF;
+
+        // Each entry is 8 bytes
+        // So the table entry is just the segment multiplied by the entry size
+        return PDPESegment * ENTRY_SIZE;
+      }
+
+      uint64_t GetPDEEntryOffset(uint64_t Address) const {
+        LogMan::Throw::A(Address < MaxVirtualMemory, "Address of 0x%lx is larger than our max virtual address size", Address);
+
+        // Get the segment for the PDE
+        uint64_t PDESegment = (Address >> 21) & 0x1FF;
+
+        // Each entry is 8 bytes
+        // So the table entry is just the segment multiplied by the entry size
+        return PDESegment * ENTRY_SIZE;
+      }
+
+      uint64_t GetPTEEntryOffset(uint64_t Address) const {
+        LogMan::Throw::A(Address < MaxVirtualMemory, "Address of 0x%lx is larger than our max virtual address size", Address);
+
+        // Get the segment for the PTE
+        uint64_t PTESegment = (Address >> 12) & 0x1FF;
+
+        // Each entry is 8 bytes
+        // So the table entry is just the segment multiplied by the entry size
+        return PTESegment * ENTRY_SIZE;
+      }
+
+      uint64_t GetPDPETableOffset(uint64_t Address) const {
+        uint64_t PDPETables = GetPDPEBase((uint64_t)0ULL);
+
+        // We get the PML4 Entry number
+        uint64_t PML4Entry = GetPML4EntryOffset(Address) / ENTRY_SIZE;
+
+        // The PML4 entry number selects which PDE table we use
+        return PDPETables + PML4Entry * 512;
+      }
+
+      uint64_t GetPDETableOffset(uint64_t Address) const {
+        uint64_t PDETables = GetPDEBase((uint64_t)0ULL);
+
+        // We get the PML4 Entry number
+        uint64_t PML4Entry = GetPML4EntryOffset(Address) / ENTRY_SIZE;
+
+        // We get the PDPE Entry number
+        uint64_t PDPEEntry = GetPDPEEntryOffset(Address) / ENTRY_SIZE;
+
+        return PDETables + PML4Entry * 512 + PDPEEntry * 512;
+      }
+
+      uint64_t GetPTETableOffset(uint64_t Address) const {
+        uint64_t PTETables = GetPTEBase((uint64_t)0ULL);
+
+        // We get the PML4 Entry number
+        uint64_t PML4Entry = GetPML4EntryOffset(Address) / ENTRY_SIZE;
+
+        // We get the PDPE Entry number
+        uint64_t PDPEEntry = GetPDPEEntryOffset(Address) / ENTRY_SIZE;
+
+        // We get the PDE Entry number
+        uint64_t PDEEntry = GetPDEEntryOffset(Address) / ENTRY_SIZE;
+
+        return PTETables + PML4Entry * 512 + PDPEEntry * 512 + PDEEntry * 512;
+      }
+
+      // PML4 base is just at our base pointer location
+      template<typename T>
+      T GetPML4Base(T Base) const {
+        return Base;
+      }
+
+      uint64_t GetPML4TableEntryCount() const {
+        return AlignUp(MaxVirtualMemory >> 39, 512);
+      }
+
+      template<typename T>
+      T GetPDPEBase(T Base) const {
+        uintptr_t Ptr = reinterpret_cast<uintptr_t>(Base);
+
+        // PDPE is just past our PML4 table
+        // PML4 is the top level table, which is only 1 table in size
+        Ptr += GetPML4TableEntryCount() * ENTRY_SIZE;
+
+        return reinterpret_cast<T>(Ptr);
+      }
+
+      // The PDPE table size is the number of PML4 entries
+      // multiplied by the number of PDPE entries
+      uint64_t GetPDPETableEntryCount() const {
+        return GetPML4TableEntryCount() * 512;
+      }
+
+      template<typename T>
+      T GetPDEBase(T Base) const {
+        uintptr_t Ptr = reinterpret_cast<uintptr_t>(Base);
+
+        // PML4 is the top level table, which is only 1 table in size
+        // PDPE is just past our PML4 table
+        // PDE is just past our PDPE table
+        Ptr += GetPML4TableEntryCount() * ENTRY_SIZE +
+               GetPDPETableEntryCount() * ENTRY_SIZE;
+
+        return reinterpret_cast<T>(Ptr);
+      }
+
+      // The PDE table size is the number of PDPE entries
+      // multiplied by the number of PDE entries
+      uint64_t GetPDETableEntryCount() const {
+        return GetPDPETableEntryCount() * 512;
+      }
+
+      template<typename T>
+      T GetPTEBase(T Base) const {
+        uintptr_t Ptr = reinterpret_cast<uintptr_t>(Base);
+
+        // PML4 is the top level table, which is only 1 table in size
+        // PDPE is just past our PML4 table
+        // PDE is just past our PDPE table
+        // PTE is just past our PDE table
+        Ptr += GetPML4TableEntryCount() * ENTRY_SIZE +
+               GetPDPETableEntryCount() * ENTRY_SIZE +
+               GetPDETableEntryCount() * ENTRY_SIZE;
+
+        return reinterpret_cast<T>(Ptr);
+      }
+
+      // The PTE table size is the maximum size of our virtual memory range
+      // divided by page size, Aligned to the max table size
+      uint64_t GetPTETableEntryCount() const {
+        return AlignUp(MaxVirtualMemory / PAGE_SIZE, 512);
+      }
+
       std::vector<MemoryRegion> MemoryMappings;
       uint64_t PML4VirtualAddress{};
       uint64_t PML4PhysicalAddress{};
       uint64_t *Tables;
       constexpr static uint64_t PAGE_SIZE = 4096;
+      constexpr static uint64_t ENTRY_SIZE = 8;
+      constexpr static uint64_t MaxVirtualMemory  = (1ULL << 36);
     };
 
     void PML4Control::SetupTables() {
@@ -147,18 +340,10 @@ namespace SU::VM {
       // We will always map virtual memory to physical memory linearly
       // Nothing special going on here
 
-      // These are all allocated linearly
-      uint64_t *PML4_Table = (uint64_t*)((uintptr_t)Tables + 4096 * 0);
-      uint64_t *PDPE_Table = (uint64_t*)((uintptr_t)Tables + 4096 * 1);
-      uint64_t *PDE_Table  = (uint64_t*)((uintptr_t)Tables + 4096 * 2);
-      uint64_t *PTE_Table  = (uint64_t*)((uintptr_t)Tables + 4096 * 3);
+      uint64_t TotalPages{};
 
-      uint64_t Physical_PML4_Table = PML4PhysicalAddress + 4096 * 0;
-      uint64_t Physical_PDPE_Table = PML4PhysicalAddress + 4096 * 1;
-      uint64_t Physical_PDE_Table  = PML4PhysicalAddress + 4096 * 2;
-      uint64_t Physical_PTE_Table  = PML4PhysicalAddress + 4096 * 3;
-
-      for (auto &Region : MemoryMappings) {
+      for (auto &Region : MemoryMappings)
+      {
         uint64_t VirtualAddress = Region.VirtualBase;
         uint64_t PhysicalAddress = Region.PhysicalBase;
 
@@ -171,28 +356,50 @@ namespace SU::VM {
         if (Region.RegionSize & (PAGE_SIZE - 1)) {
           fprintf(stderr, "Memory region [0x%lx, 0x%lx) size 0x%lx is not page aligned\n", VirtualAddress, VirtualAddress + Region.RegionSize, Region.RegionSize);
         }
+        fprintf(stderr, "[Virt] Memory [0x%lx, 0x%lx) mapped to physical address 0x%lx\n", VirtualAddress, VirtualAddress + Region.RegionSize, PhysicalAddress);
 
         uint64_t NumPages = Region.RegionSize / PAGE_SIZE;
+        TotalPages += NumPages;
 
         // Now walk the tables for all the pages and map the table
         for (uint64_t i = 0; i < NumPages; ++i) {
           uint64_t OffsetVirtual = VirtualAddress + (i * PAGE_SIZE);
           uint64_t OffsetPhysical = PhysicalAddress + (i * PAGE_SIZE);
 
-          uint64_t PML4_Offset = (OffsetVirtual >> 39) & 0x1FF;
-          uint64_t PDPE_Offset = (OffsetVirtual >> 30) & 0x1FF;
-          uint64_t PDE_Offset = (OffsetVirtual >> 21) & 0x1FF;
-          uint64_t PTE_Offset = (OffsetVirtual >> 12) & 0x1FF;
-          uint64_t Physical_Offset = (OffsetVirtual ) & 0xFFF;
+          uint64_t PML4_Table_Offset = GetPML4TableOffset(OffsetVirtual);
+          uint64_t PDPE_Table_Offset = GetPDPETableOffset(OffsetVirtual);
+          uint64_t PDE_Table_Offset = GetPDETableOffset(OffsetVirtual);
+          uint64_t PTE_Table_Offset = GetPTETableOffset(OffsetVirtual);
+
+          // These don't calculate which table they end up in
+          // Just the offset in to the table
+          uint64_t PML4_Entry_Offset = GetPML4EntryOffset(OffsetVirtual);
+          uint64_t PDPE_Entry_Offset = GetPDPEEntryOffset(OffsetVirtual);
+          uint64_t PDE_Entry_Offset = GetPDEEntryOffset(OffsetVirtual);
+          uint64_t PTE_Entry_Offset = GetPTEEntryOffset(OffsetVirtual);
+
+          uint64_t PML4_Entry = GetPML4EntryOffset(OffsetVirtual) / ENTRY_SIZE;
+          uint64_t PDPE_Entry = GetPDPEEntryOffset(OffsetVirtual) / ENTRY_SIZE;
+          uint64_t PDE_Entry = GetPDEEntryOffset(OffsetVirtual) / ENTRY_SIZE;
+          uint64_t PTE_Entry = GetPTEEntryOffset(OffsetVirtual) / ENTRY_SIZE;
+
+          uint64_t PDPE_Selected_Table = PML4PhysicalAddress + PDPE_Table_Offset;
+          uint64_t PDE_Selected_Table = PML4PhysicalAddress + PDE_Table_Offset;
+          uint64_t PTE_Selected_Table = PML4PhysicalAddress + PTE_Table_Offset;
+
+          uint64_t *PML4_Table = (uint64_t*)((uintptr_t)Tables + PML4_Table_Offset);
+          uint64_t *PDPE_Table = (uint64_t*)((uintptr_t)Tables + PDPE_Table_Offset);
+          uint64_t *PDE_Table  = (uint64_t*)((uintptr_t)Tables + PDE_Table_Offset);
+          uint64_t *PTE_Table  = (uint64_t*)((uintptr_t)Tables + PTE_Table_Offset);
 
           // Set the PML4_table to point to Base of the PDPE table offset
-          PML4_Table[PML4_Offset] = (uint64_t)Physical_PDPE_Table | 0b111;
+          PML4_Table[PML4_Entry] = PDPE_Selected_Table | 0b111;
           // Continue mapping
-          PDPE_Table[PDPE_Offset] = (uint64_t)Physical_PDE_Table | 0b111;
+          PDPE_Table[PDPE_Entry] = PDE_Selected_Table | 0b0000'0000'0111;
           // Continue mapping
-          PDE_Table[PDE_Offset]   = (uint64_t)Physical_PTE_Table | 0b111;
+          PDE_Table[PDE_Entry]   = PTE_Selected_Table | 0b111;
           // This now maps directly to the region's physical address
-          PTE_Table[PTE_Offset] = OffsetPhysical | 0b000'100000011;
+          PTE_Table[PTE_Entry] = OffsetPhysical | 0b0001'00000011;
         }
       }
     }
@@ -249,12 +456,8 @@ namespace SU::VM {
         MemoryRegion APICRegion {
           .RegionSize = 4096,
         };
-        MemoryRegion LongQuirkRegion {
-          .RegionSize = 4096,
-        };
         bool SetupCPUInLongMode();
         bool SetupMemory();
-        bool HandleKVMLongModeQuirk();
         Memmap Mapper;
     };
 
@@ -280,7 +483,6 @@ namespace SU::VM {
       // [IDTRegion, IDTRegion + Size)
       // [GDTRegion, GDTRegion + Size)
       // [APICRegion, APICRegion + Size)
-      // [LongQuirkRegion, LongQuirkRegion + Size)
       // [PML4, PML4 + Size)
       //
       // ============================
@@ -303,10 +505,6 @@ namespace SU::VM {
       APICRegion.PhysicalBase = PhysicalMemorySize;
       APICRegion.VirtualBase = VirtualBase + APICRegion.PhysicalBase; // Mapped to the same place
       PhysicalMemorySize += APICRegion.RegionSize;
-
-      LongQuirkRegion.PhysicalBase = PhysicalMemorySize;
-      LongQuirkRegion.VirtualBase = VirtualBase + LongQuirkRegion.PhysicalBase; // Mapped to the same place
-      PhysicalMemorySize += LongQuirkRegion.RegionSize;
 
       // Physical and virtual map directly atm
       PML4.SetPhysicalAddress(PhysicalMemorySize);
@@ -599,36 +797,6 @@ namespace SU::VM {
         }
       }
 
-      // Set up our memory region for working around a KVM quirk
-      {
-        LongQuirkRegion.MappedLocation = Mapper.MapRegion(LongQuirkRegion.PhysicalBase, LongQuirkRegion.RegionSize, true);
-        LogMan::Throw::A(LongQuirkRegion.MappedLocation != (void*)-1ULL, "Couldn't Allocate");
-
-        // Map this memory to the guest VM
-        kvm_userspace_memory_region Region = {
-          .slot = MemorySlot++,
-          .flags = 0,
-          .guest_phys_addr = LongQuirkRegion.PhysicalBase,
-          .memory_size = LongQuirkRegion.RegionSize,
-          .userspace_addr = (uint64_t)LongQuirkRegion.MappedLocation,
-        };
-
-        if (ioctl(VM_FD, KVM_SET_USER_MEMORY_REGION, &Region) == -1) {
-          printf("Couldn't set guestPD region\n");
-          return false;
-        }
-
-        uint8_t *LongQuirkMemory = (uint8_t*)LongQuirkRegion.MappedLocation;
-        uint8_t Code[] = {
-          0xEB,
-          0x00, // JMP +0
-          0xF4,
-          0xF4,
-          0xF4, // HLT
-        };
-        memcpy(LongQuirkMemory, Code, sizeof(Code));
-      }
-
       return true;
     }
 
@@ -725,60 +893,6 @@ namespace SU::VM {
       return true;
     }
 
-    bool KVMInstance::HandleKVMLongModeQuirk() {
-      uint64_t TestRIP = LongQuirkRegion.VirtualBase + 3;
-      uint64_t MAXRIP = LongQuirkRegion.VirtualBase + 0x10;
-
-      for (uint32_t tries = 0; tries < 4; ++tries) {
-        fprintf(stderr, "Trie: %d\n", tries);
-        kvm_regs Registers = {
-          .rip = LongQuirkRegion.VirtualBase,
-          .rsp = 0xFF0,
-          .rflags = 0x2 | // 0x2 is the default state of rflags
-            (1U << 9) | // By default enable hardware interrupts
-            (1U << 19) | // By default enable virtual hardware interrupts
-            (1U << 21) | // CPU ID detection
-            0,
-        };
-
-        if (ioctl(VCPU_FD, KVM_SET_REGS, &Registers) == -1) {
-          fprintf(stderr, "[Quirk] Couldn't set kvm_regs\n");
-          return false;
-        }
-
-        if (!SetStepping(true)) {
-          fprintf(stderr, "[Quirk] Couldn't set stepping\n");
-          return false;
-        }
-
-        do {
-          if (!Run()) {
-            fprintf(stderr, "[Quirk] Couldn't step\n");
-            return false;
-          }
-          auto Regs = GetRegisterState();
-          if (Regs.rip > MAXRIP) {
-            break;
-          }
-
-        } while (ExitReason() == 4);
-
-        auto Regs = GetRegisterState();
-        if (Regs.rip == TestRIP) {
-          break;
-        }
-      }
-
-      auto Regs = GetRegisterState();
-
-      if (Regs.rip != TestRIP) {
-        fprintf(stderr, "[Quirk] Expected RIP: 0x%lx but got 0x%lx\n", TestRIP, Regs.rip);
-        return false;
-      }
-
-      return true;
-    }
-
     bool KVMInstance::Initialize() {
       int APIVersion;
       int VCPUSize;
@@ -844,11 +958,6 @@ namespace SU::VM {
       Result = ioctl(VM_FD, KVM_SET_TSS_ADDR, -1U - (4096 * 3));
       if (Result == -1) {
         fprintf(stderr, "Couldn't set TSS ADDR\n");
-        goto err;
-      }
-
-      if (!HandleKVMLongModeQuirk()) {
-        fprintf(stderr, "Couldn't work around KVM long mode enable quirk");
         goto err;
       }
 
@@ -942,6 +1051,25 @@ err:
     void KVMInstance::SetRegisterState(VMInstance::RegisterState &State) {
       kvm_regs Registers;
       // This map 1:1
+      static_assert(offsetof(kvm_regs, rax) == offsetof(VMInstance::RegisterState, rax));
+      static_assert(offsetof(kvm_regs, rbx) == offsetof(VMInstance::RegisterState, rbx));
+      static_assert(offsetof(kvm_regs, rcx) == offsetof(VMInstance::RegisterState, rcx));
+      static_assert(offsetof(kvm_regs, rdx) == offsetof(VMInstance::RegisterState, rdx));
+      static_assert(offsetof(kvm_regs, rsi) == offsetof(VMInstance::RegisterState, rsi));
+      static_assert(offsetof(kvm_regs, rdi) == offsetof(VMInstance::RegisterState, rdi));
+      static_assert(offsetof(kvm_regs, rsp) == offsetof(VMInstance::RegisterState, rsp));
+      static_assert(offsetof(kvm_regs, rbp) == offsetof(VMInstance::RegisterState, rbp));
+      static_assert(offsetof(kvm_regs, r8) == offsetof(VMInstance::RegisterState, r8));
+      static_assert(offsetof(kvm_regs, r9) == offsetof(VMInstance::RegisterState, r9));
+      static_assert(offsetof(kvm_regs, r10) == offsetof(VMInstance::RegisterState, r10));
+      static_assert(offsetof(kvm_regs, r11) == offsetof(VMInstance::RegisterState, r11));
+      static_assert(offsetof(kvm_regs, r12) == offsetof(VMInstance::RegisterState, r12));
+      static_assert(offsetof(kvm_regs, r13) == offsetof(VMInstance::RegisterState, r13));
+      static_assert(offsetof(kvm_regs, r14) == offsetof(VMInstance::RegisterState, r14));
+      static_assert(offsetof(kvm_regs, r15) == offsetof(VMInstance::RegisterState, r15));
+      static_assert(offsetof(kvm_regs, rip) == offsetof(VMInstance::RegisterState, rip));
+      static_assert(offsetof(kvm_regs, rflags) == offsetof(VMInstance::RegisterState, rflags));
+
       memcpy(&Registers, &State, sizeof(kvm_regs));
 
       if (ioctl(VCPU_FD, KVM_SET_REGS, &Registers) == -1) {
