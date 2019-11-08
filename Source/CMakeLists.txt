@@ -48,6 +48,7 @@ endif()
 set (SRCS
   Common/Paths.cpp
   Common/JitSymbols.cpp
+  Common/NetStream.cpp
   Interface/Config/Config.cpp
   Interface/Context/Context.cpp
   Interface/Core/BlockCache.cpp
@@ -55,6 +56,7 @@ set (SRCS
   Interface/Core/Core.cpp
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp
+  Interface/Core/GdbServer.cpp
   Interface/Core/OpcodeDispatcher.cpp
   Interface/Core/X86Tables.cpp
   Interface/Core/X86DebugInfo.cpp
