@@ -193,9 +193,15 @@ private:
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, llvm::BasicBlock*> JumpTargets;
 
   // Target Machines
+#ifdef _M_X86_64
   const std::string arch = "x86-64";
   const std::string cpu = "skylake";
   const llvm::Triple TargetTriple{"x86_64", "unknown", "linux", "gnu"};
+#else
+  const std::string arch = "aarch64";
+  const std::string cpu = "cortex-a76";
+  const llvm::Triple TargetTriple{"aarch64", "unknown", "linux", "gnu"};
+#endif
   const llvm::SmallVector<std::string, 0> Attrs;
   llvm::TargetMachine *LLVMTarget;
 };
