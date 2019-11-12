@@ -35,6 +35,24 @@ using namespace vixl::aarch64;
 #define VTMP2 v2
 #define VTMP3 v3
 
+const std::array<aarch64::Register, 13> RA64 = {
+  x4, x5, x6, x7, x8, x9,
+  x10, x11, x12, x13, x14, x15,
+  /*x16, x17,*/ // We can't use these until we move away from the MacroAssembler
+  x18};
+const std::array<aarch64::Register, 13> RA32 = {
+  w4, w5, w6, w7, w8, w9,
+  w10, w11, w12, w13, w14, w15,
+  /*w16, w17,*/
+  w18};
+
+//  v8..v15 = (lower 64bits) Callee saved
+const std::array<aarch64::VRegister, 22> RAFPR = {
+  v3, v4, v5, v6, v7, v8, v16,
+  v17, v18, v19, v20, v21, v22,
+  v23, v24, v25, v26, v27, v28,
+  v29, v30, v31};
+
 static uint64_t SyscallThunk(FEXCore::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
   return Handler->HandleSyscall(Thread, Args);
 }
@@ -76,7 +94,7 @@ public:
   void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override;
 #else
   void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override {
-    DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread->InternalState));
+    DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread));
   }
 #endif
 
@@ -90,8 +108,8 @@ private:
   /**
    * @name Register Allocation
    * @{ */
-  constexpr static uint32_t NumGPRs = 15;
-  constexpr static uint32_t NumFPRs = 22;
+  constexpr static uint32_t NumGPRs = RA64.size();
+  constexpr static uint32_t NumFPRs = RAFPR.size();
   constexpr static uint32_t RegisterCount = NumGPRs + NumFPRs;
   constexpr static uint32_t RegisterClasses = 2;
 
@@ -229,22 +247,6 @@ void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
     }
   }
 }
-
-const std::array<aarch64::Register, 15> RA64 = {
-  x4, x5, x6, x7, x8, x9,
-  x10, x11, x12, x13, x14, x15,
-  x16, x17, x18};
-const std::array<aarch64::Register, 15> RA32 = {
-  w4, w5, w6, w7, w8, w9,
-  w10, w11, w12, w13, w14, w15,
-  w16, w17, w18};
-
-//  v8..v15 = (lower 64bits) Callee saved
-const std::array<aarch64::VRegister, 22> RAFPR = {
-  v3, v4, v5, v6, v7, v8, v16,
-  v17, v18, v19, v20, v21, v22,
-  v23, v24, v25, v26, v27, v28,
-  v29, v30, v31};
 
 uint32_t JITCore::GetPhys(uint32_t Node) {
   uint32_t Reg = RAPass->GetNodeRegister(Node);
@@ -696,8 +698,16 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         switch (Op->Reason) {
           case 0: // Hard fault
           case 5: // Guest ud2
-          case 4: // HLT
             hlt(4);
+            break;
+          case 4: // HLT
+            LoadConstant(TMP1, 1);
+            stlrb(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop)));
+
+            if (SpillSlots) {
+              add(sp, sp, SpillSlots * 16);
+            }
+            ret();
           break;
           default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
         }
@@ -1596,28 +1606,30 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   bind(&LoopTop);
 
   // Load in our RIP
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+  // Don't modify x2 since it contains our RIP once the block doesn't exist
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
   LoadConstant(x0, Thread->BlockCache->GetPagePointer());
 
   // Steal the page offset
   and_(x1, x2, 0x0FFF);
-  // Offset the address and add to our page pointer
-  add(x3, x0, Operand(x2, LSR, 12));
 
   // Load the pointer from the offset
-  ldr(x3, MemOperand(x3));
+  ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
   aarch64::Label NoBlock;
 
   // If page pointer is zero then we have no block
-  cbz(x3, &NoBlock);
+  cbz(x0, &NoBlock);
+
+  // Offset the address and add to our page pointer
+  lsr(x1, x2, 12);
 
   // Now load from that pointer offset by the page offset to get our real block
-  ldr(x3, MemOperand(x3, x1));
-  cbz(x3, &NoBlock);
+  ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
+  cbz(x0, &NoBlock);
 
   // If we've made it here then we have a real compiled block
   {
-    blr(x3);
+    blr(x0);
   }
 
   aarch64::Label ExitCheck;
@@ -1656,8 +1668,10 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
     LoadConstant(x3, Ptr.Data);
 
+    stp(STATE, MEM_BASE, MemOperand(sp, -16, PreIndex));
     // X2 contains our guest RIP
-    blr(x3); // { ThreadState, RIP}
+    blr(x3); // { CTX, ThreadState, RIP}
+    ldp(STATE, MEM_BASE, MemOperand(sp, 16, PostIndex));
 #endif
     // X0 now contains either nullptr or block pointer
     cbz(x0, &FallbackCore);
@@ -1689,8 +1703,10 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     Ptr.ClassPtr = &FEXCore::Context::Context::CompileFallbackBlock;
     LoadConstant(x3, Ptr.Data);
 
+    stp(STATE, MEM_BASE, MemOperand(sp, -16, PreIndex));
     // X2 contains our guest RIP
     blr(x3); // {ThreadState, RIP}
+    ldp(STATE, MEM_BASE, MemOperand(sp, 16, PostIndex));
 #endif
     // X0 now contains either nullptr or block pointer
     cbz(x0, &ExitError);
