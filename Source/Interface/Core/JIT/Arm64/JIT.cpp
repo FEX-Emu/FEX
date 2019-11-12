@@ -349,6 +349,16 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
     auto CodeLast = CurrentIR->at(BlockIROp->Last);
 
+    {
+      uint32_t Node = BlockNode->Wrapped(ListBegin).ID();
+      auto IsTarget = JumpTargets.find(Node);
+      if (IsTarget == JumpTargets.end()) {
+        IsTarget = JumpTargets.try_emplace(Node).first;
+      }
+
+      bind(&IsTarget->second);
+    }
+
     while (1) {
       OrderedNodeWrapper *WrapperOp = CodeBegin();
       OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
@@ -384,14 +394,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
       switch (IROp->Op) {
       case IR::OP_BEGINBLOCK: {
-        auto IsTarget = JumpTargets.find(WrapperOp->ID());
+        auto IsTarget = JumpTargets.find(Node);
         if (IsTarget == JumpTargets.end()) {
-          // XXX: This is a memory leak
-          JumpTargets.try_emplace(WrapperOp->ID());
+          IsTarget = JumpTargets.try_emplace(Node).first;
         }
         else {
-          bind(&IsTarget->second);
         }
+
+        bind(&IsTarget->second);
         break;
       }
       case IR::OP_ENDBLOCK: {
@@ -543,17 +553,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_CONDJUMP: {
         auto Op = IROp->C<IR::IROp_CondJump>();
 
-        Label *TargetLabel;
-        auto IsTarget = JumpTargets.find(Op->Header.Args[1].ID());
-        if (IsTarget == JumpTargets.end()) {
-          // XXX: This is a memory leak
-          TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
+        Label *TrueTargetLabel;
+        Label *FalseTargetLabel;
+
+        auto TrueIter = JumpTargets.find(Op->Header.Args[1].ID());
+        auto FalseIter = JumpTargets.find(Op->Header.Args[2].ID());
+
+        if (TrueIter == JumpTargets.end()) {
+          TrueTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
         }
         else {
-          TargetLabel = &IsTarget->second;
+          TrueTargetLabel = &TrueIter->second;
         }
 
-        cbnz(GetSrc<RA_64>(Op->Header.Args[0].ID()), TargetLabel);
+        if (FalseIter == JumpTargets.end()) {
+          FalseTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[2].ID()).first->second;
+        }
+        else {
+          FalseTargetLabel = &FalseIter->second;
+        }
+
+        cbnz(GetSrc<RA_64>(Op->Header.Args[0].ID()), TrueTargetLabel);
+        b(FalseTargetLabel);
         break;
       }
       case IR::OP_LOADCONTEXT: {
@@ -1404,6 +1425,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         auto Op = IROp->C<IR::IROp_VOr>();
         orr(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
         break;
+      }
+      case IR::OP_VBITCAST: {
+        auto Op = IROp->C<IR::IROp_VBitcast>();
+        mov(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      break;
       }
       case IR::OP_VXOR: {
         auto Op = IROp->C<IR::IROp_VXor>();
