@@ -50,7 +50,7 @@ public:
   bool HasCustomDispatch() const override { return CustomDispatchGenerated; }
 
   void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override {
-    DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread->InternalState));
+    DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread));
   }
 
 private:

@@ -29,8 +29,6 @@ namespace FEXCore::Core {
     } RunningEvents;
 
     FEXCore::HLE::ThreadManagement ThreadManager;
-
-    uint8_t InternalState[0];
   };
   static_assert(offsetof(ThreadState, State) == 0, "CPUState must be first member in threadstate");
 

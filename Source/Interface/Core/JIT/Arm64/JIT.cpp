@@ -1607,11 +1607,11 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
   // Load in our RIP
   // Don't modify x2 since it contains our RIP once the block doesn't exist
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
   LoadConstant(x0, Thread->BlockCache->GetPagePointer());
 
-  // Steal the page offset
-  and_(x1, x2, 0x0FFF);
+  // Offset the address and add to our page pointer
+  lsr(x1, x2, 12);
 
   // Load the pointer from the offset
   ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
@@ -1620,8 +1620,8 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // If page pointer is zero then we have no block
   cbz(x0, &NoBlock);
 
-  // Offset the address and add to our page pointer
-  lsr(x1, x2, 12);
+  // Steal the page offset
+  and_(x1, x2, 0x0FFF);
 
   // Now load from that pointer offset by the page offset to get our real block
   ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
@@ -1732,7 +1732,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(DispatchPtr));
   // XXX: Crashes currently.
   // Disabling will be useful for debugging ThreadState
-  // CustomDispatchGenerated = true;
+  CustomDispatchGenerated = true;
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
