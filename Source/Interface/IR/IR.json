@@ -45,6 +45,26 @@
       ]
     },
 
+    "GuestCallDirect": {
+      "Args": [
+        "uint64_t", "RIP",
+        "uint64_t", "NextRIP"
+      ]
+    },
+
+    "GuestCallIndirect": {
+      "SSAArgs": "1",
+      "SSANames": [
+        "RIP"
+      ],
+      "Args": [
+        "uint64_t", "NextRIP"
+      ]
+    },
+
+    "GuestReturn": {
+    },
+
     "Constant": {
 			"HasDest": true,
       "FixedDestSize": "8",
