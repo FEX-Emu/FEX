@@ -126,7 +126,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
       }
 
       #define IROP_ARGPRINTER_HELPER
-      #include "IRDefines.inc"
+      #include <FEXCore/IR/IRDefines.inc>
       default: *out << "<Unknown Args>"; break;
       }
 

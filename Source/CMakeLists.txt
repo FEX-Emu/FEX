@@ -144,6 +144,7 @@ function(AddLibrary Name Type)
   target_include_directories(${Name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)
 
   target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
+  target_include_directories(${Name} PUBLIC "${CMAKE_BINARY_DIR}/include/")
 
   target_compile_options(${Name}
     PRIVATE
