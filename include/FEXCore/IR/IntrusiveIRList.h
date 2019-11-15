@@ -1,8 +1,8 @@
 #pragma once
 
 #include "FEXCore/IR/IR.h"
-#include "LogManager.h"
 
+#include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <tuple>
@@ -35,7 +35,8 @@ class IntrusiveAllocator final {
     }
 
     void *Allocate(size_t Size) {
-      LogMan::Throw::A(CheckSize(Size), "Ran out of space in IntrusiveAllocator during allocation");
+      assert(CheckSize(Size) &&
+        "Ran out of space in IntrusiveAllocator during allocation");
       size_t NewOffset = CurrentOffset + Size;
       uintptr_t NewPointer = Data + CurrentOffset;
       CurrentOffset = NewOffset;
