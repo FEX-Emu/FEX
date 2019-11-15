@@ -1,5 +1,5 @@
-#include "LogManager.h"
-#include "VM.h"
+#include <SonicUtils/LogManager.h>
+#include <SonicUtils/VM.h>
 
 #include <memory>
 #include <fcntl.h>

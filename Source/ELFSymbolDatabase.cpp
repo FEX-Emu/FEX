@@ -1,6 +1,6 @@
-#include "ELFSymbolDatabase.h"
-#include "LogManager.h"
-#include "Common/MathUtils.h"
+#include <SonicUtils/ELFSymbolDatabase.h>
+#include <SonicUtils/LogManager.h>
+#include <SonicUtils/Common/MathUtils.h>
 
 #include <cstring>
 #include <elf.h>

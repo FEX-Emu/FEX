@@ -1,5 +1,5 @@
-#include "ELFLoader.h"
-#include "LogManager.h"
+#include <SonicUtils/ELFLoader.h>
+#include <SonicUtils/LogManager.h>
 #include <cstring>
 #include <elf.h>
 #include <fstream>
