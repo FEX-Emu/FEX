@@ -48,7 +48,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(External/SonicUtils/)
-include_directories(External/SonicUtils/)
+include_directories(External/SonicUtils/include/SonicUtils)
 
 add_subdirectory(Source/)
 target_include_directories(${PROJECT_NAME} PUBLIC include/)

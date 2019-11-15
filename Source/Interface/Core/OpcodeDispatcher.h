@@ -7,6 +7,8 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
 
+#include "LogManager.h"
+
 #include <cstdint>
 #include <functional>
 #include <map>

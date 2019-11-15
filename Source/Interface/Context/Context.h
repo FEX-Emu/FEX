@@ -1,6 +1,5 @@
 #pragma once
 #include "Common/JitSymbols.h"
-#include "Event.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/InternalThreadState.h"
@@ -9,6 +8,7 @@
 #include "Interface/IR/PassManager.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Utils/Event.h>
 #include <stdint.h>
 
 #include <mutex>

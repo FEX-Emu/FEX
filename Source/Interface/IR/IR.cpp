@@ -1,5 +1,6 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include "LogManager.h"
 
 namespace FEXCore::IR {
 #define IROP_GETNAME_IMPL
