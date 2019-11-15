@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <vector>
 
 namespace FEXCore {
 /**
