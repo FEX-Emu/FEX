@@ -1,4 +1,5 @@
 #include "VM.h"
+#include "LogManager.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>

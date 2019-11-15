@@ -46,7 +46,7 @@ set (CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-poin
 add_definitions(-Wno-trigraphs)
 
 # add_subdirectory(External/SonicUtils/)
-include_directories(External/SonicUtils/)
+include_directories(External/SonicUtils/include/SonicUtils)
 
 add_subdirectory(External/cpp-optparse/)
 include_directories(External/cpp-optparse/)

@@ -9,12 +9,12 @@
 #include "DebuggerState.h"
 #include "LogManager.h"
 
-#include "Event.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Debug/ContextDebug.h>
 #include <FEXCore/Memory/SharedMem.h>
+#include <FEXCore/Utils/Event.h>
 
 #include <imgui.h>
 #include <epoxy/gl.h>
