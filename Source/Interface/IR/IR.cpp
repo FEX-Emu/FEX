@@ -6,7 +6,7 @@ namespace FEXCore::IR {
 #define IROP_GETNAME_IMPL
 #define IROP_GETRAARGS_IMPL
 
-#include "IRDefines.inc"
+#include <FEXCore/IR/IRDefines.inc>
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, uint64_t Arg) {
   *out << "0x" << std::hex << Arg;

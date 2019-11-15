@@ -332,7 +332,7 @@ struct CondClassType final {
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES
-#include "IRDefines.inc"
+#include <FEXCore/IR/IRDefines.inc>
 
 template<bool>
 class IRListView;

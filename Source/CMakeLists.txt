@@ -111,7 +111,7 @@ if (ENABLE_JITSYMBOLS)
 endif()
 
 # Generate IR include file
-set(OUTPUT_NAME "${CMAKE_CURRENT_BINARY_DIR}/IRDefines.inc")
+set(OUTPUT_NAME "${CMAKE_BINARY_DIR}/include/FEXCore/IR/IRDefines.inc")
 set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/Interface/IR/IR.json")
 
 add_custom_command(
@@ -127,36 +127,40 @@ set_source_files_properties(${OUTPUT_NAME} PROPERTIES
 add_custom_target(IR_INC
   DEPENDS "${OUTPUT_NAME}")
 
-add_library(${PROJECT_NAME} STATIC ${SRCS})
-add_dependencies(${PROJECT_NAME} IR_INC)
-target_link_libraries(${PROJECT_NAME} LLVM pthread rt ${JIT_LIBS} dl)
-
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
-
-target_include_directories(${PROJECT_NAME} PRIVATE IncludePrivate/)
-
-target_compile_options(${PROJECT_NAME}
-  PRIVATE
-  "-Wno-trigraphs")
-
 # Add in diagnostic colours if the option is available.
 # Ninja code generator will kill colours if this isn't here
 check_cxx_compiler_flag(-fdiagnostics-color=always GCC_COLOR)
 check_cxx_compiler_flag(-fcolor-diagnostics CLANG_COLOR)
 
-if (GCC_COLOR)
-  target_compile_options(${PROJECT_NAME}
-    PRIVATE
-    "-fdiagnostics-color=always")
-endif()
-if (CLANG_COLOR)
-  target_compile_options(${PROJECT_NAME}
-    PRIVATE
-    "-fcolor-diagnostics")
-endif()
+function(AddLibrary Name Type)
+  add_library(${Name} ${Type} ${SRCS})
+  add_dependencies(${Name} IR_INC)
+  target_link_libraries(${Name} LLVM pthread rt ${JIT_LIBS} dl)
+  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
-target_compile_options(${PROJECT_NAME}
-  PRIVATE
-  -Wall)
+  target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
+  target_include_directories(${Name} PRIVATE IncludePrivate/)
+  target_include_directories(${Name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/)
+
+  target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
+
+  target_compile_options(${Name}
+    PRIVATE
+    -Wno-trigraphs -Wall)
+
+  if (GCC_COLOR)
+    target_compile_options(${Name}
+      PRIVATE
+      "-fdiagnostics-color=always")
+  endif()
+  if (CLANG_COLOR)
+    target_compile_options(${Name}
+      PRIVATE
+      "-fcolor-diagnostics")
+  endif()
+endfunction()
+
+AddLibrary(${PROJECT_NAME} STATIC)
+AddLibrary(${PROJECT_NAME}_shared SHARED)
 add_subdirectory(Test/)

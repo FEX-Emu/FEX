@@ -206,7 +206,7 @@ public:
 // Use Clang!
 #define IROP_ALLOCATE_HELPERS
 #define IROP_DISPATCH_HELPERS
-#include "IRDefines.inc"
+#include <FEXCore/IR/IRDefines.inc>
 
   IRPair<IROp_Constant> _Constant(uint8_t Size, uint64_t Constant) {
     auto Op = AllocateOp<IROp_Constant, IROps::OP_CONSTANT>();
