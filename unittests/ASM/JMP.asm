@@ -21,7 +21,7 @@ mov rsp, 0xe8000000
 jmp function
 func_return:
 
-mov rbx, function2+1
+lea rbx, [rel function2]
 jmp rbx
 func2_return:
 

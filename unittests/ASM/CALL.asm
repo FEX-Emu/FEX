@@ -20,7 +20,7 @@ mov rsp, 0xe8000000
 call function
 
 ; Move the absolute address of function2 in to rbx and call it
-mov rbx, function2+1
+lea rbx, [rel function2]
 call rbx
 
 hlt
