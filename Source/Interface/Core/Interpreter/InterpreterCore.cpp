@@ -263,6 +263,11 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, GetSrc<void*>(Op->Header.Args[0]), OpSize);
             break;
           }
+          case IR::OP_VBITCAST: {
+            auto Op = IROp->C<IR::IROp_VBitcast>();
+            memcpy(GDP, GetSrc<void*>(Op->Header.Args[0]), 16);
+            break;
+          }
           case IR::OP_CONSTANT: {
             auto Op = IROp->C<IR::IROp_Constant>();
             GD = Op->Constant;
