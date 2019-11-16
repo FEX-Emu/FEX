@@ -29,15 +29,32 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   list(APPEND ASM_DEPENDS "${OUTPUT_NAME};${OUTPUT_CONFIG_NAME}")
 
-  set(TEST_NAME "Test_${ASM_NAME}")
-  add_test(NAME ${TEST_NAME}
-    COMMAND "${CMAKE_BINARY_DIR}/Bin/TestHarness" "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
-  # This will cause the ASM tests to fail if it can't find the TestHarness or ASMN files
-  # Prety crap way to work around the fact that tests can't have a build dependency in a different directory
-  # Just make sure to independently run `make all` then `make test`
-  set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarness")
-  set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_NAME}")
-  set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_CONFIG_NAME}")
+  set(TEST_ARGS
+    "-c irint -n 1"
+    "-c irint -n 500"
+    "-c irint -n 500 -m"
+    "-c irjit -n 1"
+    "-c irjit -n 500"
+    "-c irjit -n 500 -m"
+    "-c llvm -n 1"
+    "-c llvm -n 500"
+    "-c llvm -n 500 -m")
+
+  set(TEST_NUM 0)
+  foreach(ARGS ${TEST_ARGS})
+    set(TEST_NAME "${TEST_NUM}/Test_${ASM_NAME}")
+    string(REPLACE " " ";" ARGS_LIST ${ARGS})
+    add_test(NAME ${TEST_NAME}
+      COMMAND "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner" ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
+    # This will cause the ASM tests to fail if it can't find the TestHarness or ASMN files
+    # Prety crap way to work around the fact that tests can't have a build dependency in a different directory
+    # Just make sure to independently run `make all` then `make test`
+    set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
+    set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_NAME}")
+    set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_CONFIG_NAME}")
+
+    math(EXPR TEST_NUM "${TEST_NUM} + 1")
+  endforeach()
 
 endforeach()
 
