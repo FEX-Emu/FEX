@@ -17,9 +17,9 @@ namespace FEXCore::CPU {
 
 #define DESTMAP_AS_MAP 0
 #if DESTMAP_AS_MAP
-using DestMapType = std::unordered_map<uint64_t, void*>;
+using DestMapType = std::unordered_map<uint32_t, uint32_t>;
 #else
-using DestMapType = std::vector<void*>;
+using DestMapType = std::vector<uint32_t>;
 #endif
 
 class InterpreterCore final : public CPUBackend {
@@ -36,7 +36,7 @@ public:
   void ExecuteCode(FEXCore::Core::InternalThreadState *Thread);
 private:
   FEXCore::Context::Context *CTX;
-  void *AllocateTmpSpace(size_t Size);
+  uint32_t AllocateTmpSpace(size_t Size);
 
   template<typename Res>
   Res GetDest(IR::OrderedNodeWrapper Op);
@@ -65,7 +65,7 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx)
 #endif
 }
 
-void *InterpreterCore::AllocateTmpSpace(size_t Size) {
+uint32_t InterpreterCore::AllocateTmpSpace(size_t Size) {
   // XXX: IR generation has a bug where the size can periodically end up being zero
   // LogMan::Throw::A(Size !=0, "Dest Op had zero destination size");
   Size = Size < 16 ? 16 : Size;
@@ -82,12 +82,12 @@ void *InterpreterCore::AllocateTmpSpace(size_t Size) {
   // Make sure to set the new offset
   TmpOffset = NewEnd;
 
-  return &TmpSpace.at(NewBase);
+  return NewBase;
 }
 
 template<typename Res>
 Res InterpreterCore::GetDest(IR::OrderedNodeWrapper Op) {
-  auto DstPtr = DestMap[Op.ID()];
+  auto DstPtr = &TmpSpace.at(DestMap[Op.ID()]);
   return reinterpret_cast<Res>(DstPtr);
 }
 
@@ -97,7 +97,7 @@ Res InterpreterCore::GetSrc(IR::OrderedNodeWrapper Src) {
   LogMan::Throw::A(DestMap.find(Src.ID()) != DestMap.end(), "Op had source but it wasn't in the destination map");
 #endif
 
-  auto DstPtr = DestMap[Src.ID()];
+  auto DstPtr = &TmpSpace.at(DestMap[Src.ID()]);
   LogMan::Throw::A(DstPtr != nullptr, "Destmap had slot but didn't get allocated memory");
   return reinterpret_cast<Res>(DstPtr);
 }
@@ -119,7 +119,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 #if DESTMAP_AS_MAP
   DestMap.clear();
 #else
-  uintptr_t ListSize = CurrentIR->GetListSize();
+  uintptr_t ListSize = CurrentIR->GetSSACount();
   if (ListSize > DestMap.size()) {
     DestMap.resize(std::max(DestMap.size() * 2, ListSize));
   }
