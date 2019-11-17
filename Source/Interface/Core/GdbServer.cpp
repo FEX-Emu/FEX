@@ -1,10 +1,11 @@
 #include <cstdlib>
+#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <thread>
 #include <memory>
+#include <optional>
 #include "Common/NetStream.h"
 #include "LogManager.h"
 
@@ -12,10 +13,17 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "GdbServer.h"
 
+namespace FEXCore
+{
 
+GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEXCore::CodeLoader *Loader) : CTX(ctx) {
+
+}
 
 static int calculateChecksum(std::string &packet) {
     unsigned char checksum = 0;
@@ -30,7 +38,7 @@ static int calculateChecksum(std::string &packet) {
 // Takes a serial stream and reads a single packet
 // Un-escapes chars, checks the checksum and request a retransmit if it fails.
 // Once the checksum is validated, it acknowledges and returns the packet in a string
-static std::string ReadPacket(std::iostream &stream) {
+std::string GdbServer::ReadPacket(std::iostream &stream) {
     std::string packet;
 
     // The GDB "Remote Serial Protocal" was originally 7bit clean for use on serial ports.
@@ -84,36 +92,199 @@ static std::string ReadPacket(std::iostream &stream) {
     return "";
 }
 
-static void SendPacket(std::ostream &stream, std::string packet) {
-    LogMan::Msg::E("GdbServer Reply: %s", packet.c_str());
-    stream << '$' << packet << '#';
-    stream << std::setfill('0') << std::setw(2) << std::hex << (int)calculateChecksum(packet);
-    stream << std::setfill('*') << std::setw(0) << std::flush;
+static std::string escapePacket(std::string packet) {
+    std::ostringstream ss;
+
+    for(auto &c : packet) {
+        switch (c) {
+        case '$':
+        case '#':
+        case '*':
+        case '}': {
+            char escaped = c ^ 0x20;
+            ss << '}' << (escaped);
+            break;
+        }
+        default:
+            ss << c;
+            break;
+        }
+    }
+
+    return ss.str();
 }
 
-static std::string handleQuery(std::string &packet) {
-    if (packet.rfind("qSupported", 0) == 0) {
-        return "PacketSize=2000";
+void GdbServer::SendPacket(std::ostream &stream, std::string packet) {
+    auto escaped = escapePacket(packet);
+    LogMan::Msg::E("GdbServer Reply: %s", escaped.c_str());
+    stream << '$' << escaped << '#';
+    stream << std::setfill('0') << std::setw(2) << std::hex << (int)calculateChecksum(escaped);
+    stream << std::flush;
+}
+
+std::string GdbServer::handleXfer(std::string &packet) {
+
+    std::string object;
+    std::string rw;
+    std::string annex;
+    int offset;
+    int length;
+
+    // Parse Xfer message
+    {
+        auto ss = std::istringstream(packet);
+        std::string expectXfer;
+        char expectComma;
+
+        std::getline(ss, expectXfer, ':');
+        std::getline(ss, object, ':');
+        std::getline(ss, rw, ':');
+        std::getline(ss, annex, ':');
+        ss >> std::hex >> offset;
+        ss.get(expectComma);
+        ss >> std::hex >> length;
+
+        // Bail on any errors
+        if (ss.fail() || !ss.eof() || expectXfer != "qXfer" || rw != "read" || expectComma != ',')
+            return "E00";
+    }
+
+    // Lambda to correctly encode any reply
+    auto encode = [&](std::string data) -> std::string {
+        if (offset == data.size())
+            return "l";
+        if (offset >= data.size())
+            return "E34"; // ERANGE
+        if ((data.size() - offset) > length)
+            return "m" + data.substr(offset, length);
+        return "l" + data.substr(offset);
+    };
+
+    if (object == "exec-file") {
+        if (annex == "")
+            return encode(CTX->SyscallHandler.GetFilename());
+        return "E00";
     }
     return "";
 }
 
-static std::string ProcessPacket(std::string &packet) {
+std::string GdbServer::handleQuery(std::string &packet) {
+    auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
+
+    if (match("qSupported")) {
+        return "PacketSize=2000;qXfer:exec-file:read+";
+    }
+    if (match("qAttached")) {
+        return "1"; // We don't currently support launching executables from gdb.
+    }
+    if (match("qXfer")) {
+        return handleXfer(packet);
+    }
+    if (match("qOffsets")) {
+        CTX->GetMemoryRegions()
+        return "Text=0;Data=F00000;Bss=0";
+    }
+    return "";
+}
+
+std::string hexstring(std::istringstream &ss, char delm) {
+    std::string ret;
+
+    char hexString[3] = {0, 0, 0};
+    while (ss.peek() != delm) {
+        ss.read(hexString, 2);
+        int c = std::strtoul(hexString, nullptr, 16);
+        ret.push_back((char) c);
+    }
+
+    ss.get();
+
+    return ret;
+}
+
+std::string GdbServer::handleV(std::string& packet) {
+    auto match = [&](std::string str) -> std::optional<std::istringstream> {
+        if (packet.rfind(str, 0) == 0) {
+            auto ss = std::istringstream(packet);
+            ss.seekg(str.size());
+            return ss;
+        }
+        return std::nullopt;
+    };
+
+    auto F = [](int result) {
+        std::ostringstream ss;
+        ss << "F" << std::hex << result;
+        return ss.str(); };
+    auto F_error = [&]() {
+        std::ostringstream ss;
+        ss << "F-1," << std::hex << errno;
+        return ss.str(); };
+    auto F_data = [&](int result, std::string data) {
+        std::ostringstream ss;
+        ss << "F" << std::hex << result << ";" << data;
+        return ss.str(); };
+
+    std::optional<std::istringstream> ss;
+    if((ss = match("vFile:open:"))) {
+        std::string filename;
+        int flags;
+        int mode;
+
+        filename = hexstring(*ss, ',');
+        *ss >> std::hex >> flags;
+        ss->get(); // discard comma
+        *ss >> std::hex >> mode;
+
+        return F(open(filename.c_str(), flags, mode));
+    }
+    if((ss = match("vFile:setfs:"))) {
+        int pid;
+        *ss >> pid;
+
+        F(pid == 0 ? 0 : -1); // Only support the common filesystem
+    }
+    if((ss = match("vFile:pread:"))) {
+        int fd, count, offset;
+
+        *ss >> std::hex >> fd;
+        ss->get(); // discard comma
+        *ss >> std::hex >> count;
+        ss->get(); // discard comma
+        *ss >> std::hex >> offset;
+
+        std::string data(count, '\0');
+        if (lseek(fd, offset, SEEK_SET) < 0) {
+            return F_error();
+        }
+        int ret = read(fd, data.data(), count);
+        if (ret < 0) {
+            return F_error();
+        }
+        data.resize(ret);
+        return F_data(ret, data);
+    }
+    return "";
+}
+
+std::string GdbServer::ProcessPacket(std::string &packet) {
     switch (packet[0]) {
     case 'q':
         return handleQuery(packet);
+    case 'v':
+        return handleV(packet);
     default:
         return "";
     }
 }
 
-static void GdbServerLoop(std::unique_ptr<std::iostream> stream) {
+void GdbServer::GdbServerLoop(std::unique_ptr<std::iostream> stream) {
     std::string responce;
 
     // Outer server loop. Handles packet start, ACK/NAK and break
 
     int c;
-    while ((c = stream->get()) > 0 ) {
+    while ((c = stream->get()) >= 0 ) {
         switch (c) {
         case '$': {
             std::string packet = ReadPacket(*stream);
@@ -138,16 +309,12 @@ static void GdbServerLoop(std::unique_ptr<std::iostream> stream) {
     }
 }
 
-static std::thread gdbServerThread;
-
-static void StartThread(int socket) {
-    auto stream = std::make_unique<NetStream>(socket);
-
+void GdbServer::StartThread(std::unique_ptr<std::iostream> stream) {
     //gdbServerThread = std::thread(GdbServerLoop, stream);
     GdbServerLoop(std::move(stream));
 }
 
-void GdbServerInit() {
+std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
     // open socket
     int sockfd, new_fd;
 
@@ -187,7 +354,8 @@ void GdbServerInit() {
     new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
     LogMan::Msg::E("Connected");
 
-    StartThread(new_fd);
-
-
+    return std::make_unique<NetStream>(new_fd);
 }
+
+
+} // namespace FEXCore

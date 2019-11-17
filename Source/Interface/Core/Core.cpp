@@ -20,6 +20,8 @@
 
 #include <fstream>
 
+#include "Interface/Core/GdbServer.h"
+
 constexpr uint64_t STACK_OFFSET = 0xc000'0000;
 
 constexpr uint64_t FS_OFFSET = 0xb000'0000;
@@ -257,6 +259,9 @@ namespace FEXCore::Context {
     // Offset next thread's FS_OFFSET by slot size
     uint64_t SlotSize = Loader->InitializeThreadSlot(TLSSlotWriter);
     StartingRIP = Loader->DefaultRIP();
+
+    auto gdb = new GdbServer(this, Loader);
+    gdb->StartAndBlock();
 
     InitializeThread(Thread);
 
