@@ -15,7 +15,6 @@ private:
     public:
         NetBuf(int socketfd) {
             socket = socketfd;
-           // memset((void*)output_buffer.data(), (int)'-', sizeof(output_buffer));
             reset_output_buffer();
         }
 

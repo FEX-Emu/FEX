@@ -64,7 +64,7 @@ int NetStream::NetBuf::sync() {
 }
 
 std::streambuf::int_type NetStream::NetBuf::underflow() {
-    size_t size = recv(socket, (void *)std::begin(input_buffer), sizeof(input_buffer), 0);
+    ssize_t size = recv(socket, (void *)std::begin(input_buffer), sizeof(input_buffer), 0);
 
     if (size <= 0) {
         setg(nullptr, nullptr, nullptr);
