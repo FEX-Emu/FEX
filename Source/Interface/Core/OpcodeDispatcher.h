@@ -182,6 +182,7 @@ public:
   template<size_t ElementSize, bool Scalar>
   void PSLL(OpcodeArgs);
   void PSRLDQ(OpcodeArgs);
+  void PSLLDQ(OpcodeArgs);
   void MOVDDUPOp(OpcodeArgs);
 
   template<size_t ElementSize>
@@ -280,6 +281,12 @@ public:
   }
   IRPair<IROp_VExtr> _VExtr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index) {
     return _VExtr(ssa0, ssa1, RegisterSize, ElementSize, Index);
+  }
+  IRPair<IROp_VSLI> _VSLI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t ByteShift) {
+    return _VSLI(ssa0, RegisterSize, ElementSize, ByteShift);
+  }
+  IRPair<IROp_VSRI> _VSRI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t ByteShift) {
+    return _VSRI(ssa0, RegisterSize, ElementSize, ByteShift);
   }
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);

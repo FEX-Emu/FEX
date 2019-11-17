@@ -3136,15 +3136,27 @@ void OpDispatchBuilder::PSLL(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  LogMan::Throw::A(Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  uint64_t Shift = Op->Src1.TypeLiteral.Literal;
+
   OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
 
-  // PSRLDQ shifts by bytes
-  // Adjust input value by number of bytes
-  Src = _Lshl(Src, _Constant(3));
+  auto Size = GetDstSize(Op);
 
-  auto Shift = _Lshr(Dest, Src);
-  StoreResult(Op, Shift, -1);
+  auto Result = _VSRI(Size, 16, Dest, Shift);
+  StoreResult(Op, Result, -1);
+}
+
+void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
+  LogMan::Throw::A(Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  uint64_t Shift = Op->Src1.TypeLiteral.Literal;
+
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+
+  auto Size = GetDstSize(Op);
+
+  auto Result = _VSLI(Size, 16, Dest, Shift);
+  StoreResult(Op, Result, -1);
 }
 
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
@@ -3607,8 +3619,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 2), 1, &OpDispatchBuilder::PSRLD<4>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 6), 1, &OpDispatchBuilder::PSLL<8, true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 3), 1, &OpDispatchBuilder::PSRLDQ},
-    // XXX: Causes issues with ld.so
-    // {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 7), 1, &OpDispatchBuilder::PSLL<16, true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 7), 1, &OpDispatchBuilder::PSLLDQ},
 
     // GROUP 15
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 0), 1, &OpDispatchBuilder::FXSaveOp},

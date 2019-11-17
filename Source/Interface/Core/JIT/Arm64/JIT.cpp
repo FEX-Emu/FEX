@@ -1480,6 +1480,20 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_VSLI: {
+        auto Op = IROp->C<IR::IROp_VSLI>();
+        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+        sli(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->ByteShift);
+        mov(GetDst(Node).V16B(), VTMP1.V16B());
+        break;
+      }
+      case IR::OP_VSRI: {
+        auto Op = IROp->C<IR::IROp_VSRI>();
+        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+        sri(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->ByteShift);
+        mov(GetDst(Node).V16B(), VTMP1.V16B());
+        break;
+      }
       case IR::OP_VUMIN: {
         auto Op = IROp->C<IR::IROp_VUMin>();
         switch (Op->ElementSize) {

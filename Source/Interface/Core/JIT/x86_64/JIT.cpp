@@ -1562,6 +1562,20 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           break;
         }
+        case IR::OP_VSLI: {
+          auto Op = IROp->C<IR::IROp_VSLI>();
+          movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+          pslldq(xmm15, Op->ByteShift);
+          movapd(GetDst(Node), xmm15);
+          break;
+        }
+        case IR::OP_VSRI: {
+          auto Op = IROp->C<IR::IROp_VSRI>();
+          movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+          psrldq(xmm15, Op->ByteShift);
+          movapd(GetDst(Node), xmm15);
+          break;
+        }
         case IR::OP_VEXTR: {
           auto Op = IROp->C<IR::IROp_VExtr>();
           vpalignr(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), Op->Index);

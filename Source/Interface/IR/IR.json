@@ -563,6 +563,26 @@
       ]
     },
 
+    "VSLI": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "ByteShift"
+      ]
+    },
+
+    "VSRI": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "ByteShift"
+      ]
+    },
+
     "VBitcast": {
       "HasDest": true,
       "SSAArgs": "1"

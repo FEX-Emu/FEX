@@ -1022,6 +1022,25 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, &Dst, 16);
             break;
           }
+          case IR::OP_VSLI: {
+            auto Op = IROp->C<IR::IROp_VSLI>();
+            __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+            __uint128_t Src2 = Op->ByteShift;
+
+            __uint128_t Dst = Src1 << (Src2 * 8);
+            memcpy(GDP, &Dst, 16);
+            break;
+          }
+          case IR::OP_VSRI: {
+            auto Op = IROp->C<IR::IROp_VSRI>();
+            __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+            __uint128_t Src2 = Op->ByteShift;
+
+            __uint128_t Dst = Src1 >> (Src2 * 8);
+            memcpy(GDP, &Dst, 16);
+            break;
+          }
+
   #define DO_VECTOR_OP(size, type, func)              \
     case size: {                                      \
     auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
