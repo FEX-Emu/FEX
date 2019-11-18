@@ -1124,6 +1124,10 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
   else
     Src = _And(Src, _Constant(0x1F));
 
+  if (Size != 64) {
+    Dest = _Bfe(Size, 0, Dest);
+  }
+
   auto ALUOp = _Lshr(Dest, Src);
 
   StoreResult(Op, ALUOp, -1);
