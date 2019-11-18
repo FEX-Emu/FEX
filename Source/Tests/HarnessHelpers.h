@@ -454,6 +454,15 @@ public:
         EnvironmentVariables.emplace_back(envp[i]);
       }
     }
+
+    // Calculate argument and envp backing sizes
+     for (unsigned i = 0; i < Args.size(); ++i) {
+      ArgumentBackingSize += Args[i].size() + 1;
+    }
+
+    for (unsigned i = 0; i < EnvironmentVariables.size(); ++i) {
+      EnvironmentBackingSize += EnvironmentVariables[i].size() + 1;
+    }
   }
 
   uint64_t StackSize() const override {
@@ -466,27 +475,23 @@ public:
     uint64_t rsp = GuestPtr + StackSize();
 
     uint64_t TotalArgumentMemSize{};
-    uint64_t ArgumentBackingSize{};
 
     TotalArgumentMemSize += 8; // Argument counter size
     TotalArgumentMemSize += 8 * Args.size(); // Pointers to strings
     TotalArgumentMemSize += 8; // Padding for something
     TotalArgumentMemSize += 8 * EnvironmentVariables.size(); // Argument location for envp
+    TotalArgumentMemSize += 8; // Padding for something
+    TotalArgumentMemSize += 8; // Padding for something
 
-    for (unsigned i = 0; i < Args.size(); ++i) {
-      TotalArgumentMemSize += Args[i].size() + 1;
-      ArgumentBackingSize += Args[i].size() + 1;
-    }
+    uint64_t ArgumentOffset = TotalArgumentMemSize;
+    TotalArgumentMemSize += ArgumentBackingSize;
 
-    for (unsigned i = 0; i < EnvironmentVariables.size(); ++i) {
-      TotalArgumentMemSize += EnvironmentVariables[i].size() + 1;
-    }
+    uint64_t EnvpOffset = TotalArgumentMemSize;
+    TotalArgumentMemSize += EnvironmentBackingSize;
 
-    TotalArgumentMemSize += 8;
-
-    // Burn some SP space for a redzone
-    rsp -= TotalArgumentMemSize + 0x1000;
-    StackPointer -= TotalArgumentMemSize + 0x1000;
+    // Offset the stack by how much memory we need
+    rsp -= TotalArgumentMemSize;
+    StackPointer -= TotalArgumentMemSize;
 
     // Stack setup
     // [0, 8):   Argument Count
@@ -502,17 +507,16 @@ public:
     // ...
     // [envpend, +8): nullptr
 
+    // Pointer list offsets
     uint64_t *ArgumentPointers = reinterpret_cast<uint64_t*>(StackPointer + 8);
     uint64_t *PadPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + Args.size() * 8);
-    uint64_t *EnvpPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + EnvironmentVariables.size() * 8 + 8);
+    uint64_t *EnvpPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + Args.size() * 8 + 8);
 
-    uint64_t ArgumentBackingOffset = 8 * Args.size() + 8 * 4;
-    uint8_t *ArgumentBackingBase = reinterpret_cast<uint8_t*>(StackPointer + ArgumentBackingOffset);
-    uint64_t ArgumentBackingBaseGuest = rsp + ArgumentBackingOffset;
-
-    uint64_t EnvpBackingOffset = ArgumentBackingOffset + ArgumentBackingSize + EnvironmentVariables.size() * 8;
-    uint8_t *EnvpBackingBase = reinterpret_cast<uint8_t*>(StackPointer + EnvpBackingOffset);
-    uint64_t EnvpBackingBaseGuest = rsp + EnvpBackingOffset;
+    // Arguments memory lives after everything else
+    uint8_t *ArgumentBackingBase = reinterpret_cast<uint8_t*>(StackPointer + ArgumentOffset);
+    uint8_t *EnvpBackingBase = reinterpret_cast<uint8_t*>(StackPointer + EnvpOffset);
+    uint64_t ArgumentBackingBaseGuest = rsp + ArgumentOffset;
+    uint64_t EnvpBackingBaseGuest = rsp + EnvpOffset;
 
     *reinterpret_cast<uint64_t*>(StackPointer + 0) = Args.size();
     PadPointers[0] = 0;
@@ -592,6 +596,9 @@ private:
   ::ELFLoader::ELFSymbolDatabase DB;
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;
+  uint64_t ArgumentBackingSize{};
+  uint64_t EnvironmentBackingSize{};
+
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 };
 
