@@ -3646,9 +3646,17 @@ constexpr uint16_t PF_F2 = 3;
     // REG /2
     {((1 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
   };
-
+#define OPDReg(op, reg) (((op - 0xD8) << 8) | (reg << 3))
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> X87OpTable = {
+    {OPDReg(0xD9, 5) | 0x00, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
+    {OPDReg(0xD9, 5) | 0x40, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
+    {OPDReg(0xD9, 5) | 0x80, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
+
+    {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
+    {OPDReg(0xD9, 7) | 0x40, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
+    {OPDReg(0xD9, 7) | 0x80, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
   };
+#undef OPDReg
 
 #define OPD(prefix, opcode) ((prefix << 8) | opcode)
   constexpr uint16_t PF_38_NONE = 0;
