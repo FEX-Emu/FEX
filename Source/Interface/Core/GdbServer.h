@@ -22,10 +22,12 @@ private:
     std::string ProcessPacket(std::string &packet);
     std::string handleQuery(std::string &packet);
     std::string handleXfer(std::string &packet);
+    std::string handleMemory(std::string &packet);
     std::string handleV(std::string& packet);
 
     FEXCore::Context::Context *CTX;
     std::thread gdbServerThread;
+    uint64_t data_offset;
 };
 
 }

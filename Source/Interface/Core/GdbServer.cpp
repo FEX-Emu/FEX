@@ -7,7 +7,7 @@
 #include <memory>
 #include <optional>
 #include "Common/NetStream.h"
-#include "LogManager.h"
+    #include "LogManager.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -17,12 +17,13 @@
 #include <unistd.h>
 
 #include "GdbServer.h"
+#include <FEXCore/Core/CodeLoader.h>
 
 namespace FEXCore
 {
 
 GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEXCore::CodeLoader *Loader) : CTX(ctx) {
-
+    std::tie(std::ignore, std::ignore, data_offset) = Loader->GetLayout();
 }
 
 static int calculateChecksum(std::string &packet) {
@@ -31,6 +32,31 @@ static int calculateChecksum(std::string &packet) {
         checksum += c;
     }
     return checksum;
+}
+
+static std::string hexstring(std::istringstream &ss, int delm) {
+    std::string ret;
+
+    char hexString[3] = {0, 0, 0};
+    while (ss.peek() != delm) {
+        ss.read(hexString, 2);
+        int c = std::strtoul(hexString, nullptr, 16);
+        ret.push_back((char) c);
+    }
+
+    if (delm != -1)
+        ss.get();
+
+    return ret;
+}
+
+static std::string encodeHex(unsigned char *data, size_t length) {
+    std::ostringstream ss;
+
+    for (size_t i=0; i < length; i++) {
+        ss << std::setfill('0') << std::setw(2) << std::hex << int(data[i]);
+    }
+    return ss.str();
 }
 
 
@@ -168,6 +194,42 @@ std::string GdbServer::handleXfer(std::string &packet) {
     return "";
 }
 
+std::string GdbServer::handleMemory(std::string &packet) {
+    bool write;
+    size_t addr;
+    size_t length;
+    std::string data;
+
+    auto ss = std::istringstream(packet);
+    write = ss.get() == 'M';
+    ss >> std::hex >> addr;
+    ss.get(); // discard comma
+    ss >> std::hex >> length;
+
+    if (write) {
+        ss.get(); // discard colon
+        data = hexstring(ss, -1); // grab data until end of file.
+    }
+
+    // validate packet
+    if (ss.fail() || !ss.eof() || (write && (data.length() != length))) {
+        return "E00";
+    }
+
+    // TODO: check we are in a valid memory range
+    //       Also, clamp length
+    void* ptr = CTX->MemoryMapper.GetPointer(addr);
+
+    if (write) {
+        std::memcpy(ptr, data.data(), data.length());
+        // TODO: invalidate any code
+        return "OK";
+    } else {
+        return encodeHex((unsigned char*)ptr, length);
+    }
+}
+
+
 std::string GdbServer::handleQuery(std::string &packet) {
     auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
 
@@ -181,25 +243,9 @@ std::string GdbServer::handleQuery(std::string &packet) {
         return handleXfer(packet);
     }
     if (match("qOffsets")) {
-        CTX->GetMemoryRegions()
-        return "Text=0;Data=F00000;Bss=0";
+        return "Text=0;Data=0;Bss=0";
     }
     return "";
-}
-
-std::string hexstring(std::istringstream &ss, char delm) {
-    std::string ret;
-
-    char hexString[3] = {0, 0, 0};
-    while (ss.peek() != delm) {
-        ss.read(hexString, 2);
-        int c = std::strtoul(hexString, nullptr, 16);
-        ret.push_back((char) c);
-    }
-
-    ss.get();
-
-    return ret;
 }
 
 std::string GdbServer::handleV(std::string& packet) {
@@ -267,12 +313,37 @@ std::string GdbServer::handleV(std::string& packet) {
     return "";
 }
 
+std::string readRegs() {
+    std::ostringstream ss;
+
+    // The gdb RDP protocol just squirts 27 registers, as 16 digit hex onto the wire.
+    ss << std::setfill('0') << std::setw(16) << std::hex;
+
+    for (uint64_t i = 0; i < 70; i++) {
+        // I don't know how the regs map... lets just ask
+        uint64_t data = (i | 0x80dd000000cc0000 | i << 32 | i << 56);
+        if (i == 16) { // RIP
+            data = 0x47c990;
+        }
+        ss << std::setfill('0') << std::setw(16) << std::hex << __builtin_bswap64(data);
+    }
+    return ss.str();
+}
+
+
 std::string GdbServer::ProcessPacket(std::string &packet) {
     switch (packet[0]) {
+    case '?':
+        return "S00";
+    case 'g':
+        return readRegs();
     case 'q':
         return handleQuery(packet);
     case 'v':
         return handleV(packet);
+    case 'm': // Memory read
+    case 'M': // Memory write
+        return handleMemory(packet);
     default:
         return "";
     }
