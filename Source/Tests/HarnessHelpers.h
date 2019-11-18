@@ -504,7 +504,7 @@ public:
 
     uint64_t *ArgumentPointers = reinterpret_cast<uint64_t*>(StackPointer + 8);
     uint64_t *PadPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + Args.size() * 8);
-    uint64_t *EnvpPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + Args.size() * 8 + 8);
+    uint64_t *EnvpPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + EnvironmentVariables.size() * 8 + 8);
 
     uint64_t ArgumentBackingOffset = 8 * Args.size() + 8 * 4;
     uint8_t *ArgumentBackingBase = reinterpret_cast<uint8_t*>(StackPointer + ArgumentBackingOffset);
