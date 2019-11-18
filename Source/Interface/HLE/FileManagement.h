@@ -31,6 +31,7 @@ public:
   int fstat(int fd, struct stat *buf);
   int close(int fd);
   int ioctl(int fd, uint64_t request, void *args);
+  int lseek(int fd, off_t offset, int wehnce);
 
   int GetHostFD() const { return HostFD; }
 

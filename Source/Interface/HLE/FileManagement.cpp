@@ -98,6 +98,10 @@ int FD::ioctl(int fd, uint64_t request, void *args) {
   return ::ioctl(HostFD, request, args);
 }
 
+int FD::lseek(int fd, off_t offset, int whence) {
+  return ::lseek(HostFD, offset, whence);
+}
+
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : CTX {ctx} {
 
@@ -181,8 +185,12 @@ uint64_t FileManager::Fstat(int fd, void *buf) {
 }
 
 uint64_t FileManager::Lseek(int fd, uint64_t offset, int whence) {
-  LogMan::Msg::E("XXX: Attempting to lseek %d 0x%lx 0x%x", fd, offset, whence);
+  auto fdPtr = FDMap.find(fd);
+  if (fdPtr == FDMap.end()) {
+    LogMan::Msg::E("XXX: Trying to lseek unknown fd: %d", fd);
   return -1LL;
+}
+  return fdPtr->second->lseek(fd, offset, whence);
 }
 
 uint64_t FileManager::Writev(int fd, void *iov, int iovcnt) {

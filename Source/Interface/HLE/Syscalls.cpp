@@ -108,7 +108,7 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     LogMan::Msg::D("tgkill(%ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
   case SYSCALL_LSEEK:
-    LogMan::Msg::D("lseek(%ld, %ld, %ld = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    LogMan::Msg::D("lseek(%ld, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
     break;
   case SYSCALL_IOCTL:
     LogMan::Msg::D("ioctl(%ld, %ld, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
