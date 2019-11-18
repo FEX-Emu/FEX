@@ -193,15 +193,6 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
-  auto Constant = _Constant(Size);
-
-  auto OldSP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]));
-
-  auto NewSP = _Sub(OldSP, Constant);
-
-  // Store the new stack pointer
-  _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
-
   OrderedNode *Src;
   if (Op->OP == 0x68 || Op->OP == 0x6A) { // Immediate Push
     Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
@@ -210,6 +201,15 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
     if (Op->OP == 0xFF && Size == 4) LogMan::Msg::A("Woops. Can't do 32bit for this PUSH op");
     Src = LoadSource(Op, Op->Dest, Op->Flags, -1);
   }
+
+  auto Constant = _Constant(Size);
+
+  auto OldSP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]));
+
+  auto NewSP = _Sub(OldSP, Constant);
+
+  // Store the new stack pointer
+  _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
 
   // Store our value to the new stack location
   _StoreMem(Size, NewSP, Src, Size);
