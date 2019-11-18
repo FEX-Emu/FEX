@@ -89,14 +89,14 @@ void InitializeBaseTables() {
     {0x3D, 1, X86InstInfo{"CMP",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4, nullptr}},
 
     {0x3F, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0, nullptr}},
-    {0x50, 8, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SF_REX_IN_BYTE | FLAGS_DEBUG_MEM_ACCESS ,                    0, nullptr}},
-    {0x58, 8, X86InstInfo{"POP",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SF_REX_IN_BYTE | FLAGS_DEBUG_MEM_ACCESS ,                    0, nullptr}},
+    {0x50, 8, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SF_REX_IN_BYTE | FLAGS_DEBUG_MEM_ACCESS ,                    0, nullptr}},
+    {0x58, 8, X86InstInfo{"POP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SF_REX_IN_BYTE | FLAGS_DEBUG_MEM_ACCESS ,                    0, nullptr}},
 
     {0x60, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                           0, nullptr}},
     {0x62, 1, X86InstInfo{"",       TYPE_GROUP_EVEX, FLAGS_NONE,                                                                           0, nullptr}},
     {0x63, 1, X86InstInfo{"MOVSXD", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM,                                                                         0, nullptr}},
 
-    {0x68, 1, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_DISPLACE_SIZE_DIV_2 , 4, nullptr}},
+    {0x68, 1, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SRC_SEXT, 4, nullptr}},
     {0x69, 1, X86InstInfo{"IMUL",   TYPE_INST, FLAGS_MODRM | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,        4, nullptr}},
     {0x6A, 1, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_SRC_SEXT ,            1, nullptr}},
     {0x6B, 1, X86InstInfo{"IMUL",   TYPE_INST, FLAGS_MODRM | FLAGS_SRC_SEXT ,                                    1, nullptr}},
@@ -143,8 +143,8 @@ void InitializeBaseTables() {
 
     // These three are all X87 instructions
     {0x9B, 1, X86InstInfo{"FWAIT",  TYPE_INVALID, FLAGS_NONE,                           0, nullptr}},
-    {0x9C, 1, X86InstInfo{"PUSHF",  TYPE_INVALID, GenFlagsSameSize(SIZE_64BIT) ,          0, nullptr}},
-    {0x9D, 1, X86InstInfo{"POPF",   TYPE_INVALID, GenFlagsSameSize(SIZE_64BIT) ,          0, nullptr}},
+    {0x9C, 1, X86InstInfo{"PUSHF",  TYPE_INVALID, GenFlagsSameSize(SIZE_64BITDEF),      0, nullptr}},
+    {0x9D, 1, X86InstInfo{"POPF",   TYPE_INVALID, GenFlagsSameSize(SIZE_64BITDEF),      0, nullptr}},
 
     {0x9E, 1, X86InstInfo{"SAHF",   TYPE_INST, FLAGS_NONE,                              0, nullptr}},
     {0x9F, 1, X86InstInfo{"LAHF",   TYPE_INST, FLAGS_NONE,                              0, nullptr}},
@@ -172,7 +172,7 @@ void InitializeBaseTables() {
     {0xC2, 1, X86InstInfo{"RET",    TYPE_INST, FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                             2, nullptr}},
     {0xC3, 1, X86InstInfo{"RET",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_BLOCK_END ,                                                0, nullptr}},
     {0xC8, 1, X86InstInfo{"ENTER",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS ,                                      3, nullptr}},
-    {0xC9, 1, X86InstInfo{"LEAVE",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_BLOCK_END ,                                                0, nullptr}},
+    {0xC9, 1, X86InstInfo{"LEAVE",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_BLOCK_END ,                                                0, nullptr}},
     {0xCA, 2, X86InstInfo{"RETF",   TYPE_PRIV, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                              0, nullptr}},
     {0xCC, 1, X86InstInfo{"INT3",   TYPE_INST, FLAGS_DEBUG,                                                                                      0, nullptr}},
     {0xCD, 1, X86InstInfo{"INT",    TYPE_INST, FLAGS_DEBUG ,                                                                  1, nullptr}},

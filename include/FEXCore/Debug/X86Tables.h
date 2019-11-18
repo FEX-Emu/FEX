@@ -249,14 +249,15 @@ constexpr uint32_t FLAGS_MODRM                 = (1 << 16);
 constexpr uint32_t FLAGS_SIZE_DST_OFF = 20;
 constexpr uint32_t FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
 
-constexpr uint32_t SIZE_MASK   = 0b111;
-constexpr uint32_t SIZE_DEF    = 0b000;
-constexpr uint32_t SIZE_8BIT   = 0b001;
-constexpr uint32_t SIZE_16BIT  = 0b010;
-constexpr uint32_t SIZE_32BIT  = 0b011;
-constexpr uint32_t SIZE_64BIT  = 0b100;
-constexpr uint32_t SIZE_128BIT = 0b101;
-constexpr uint32_t SIZE_256BIT = 0b110;
+constexpr uint32_t SIZE_MASK     = 0b111;
+constexpr uint32_t SIZE_DEF      = 0b000;
+constexpr uint32_t SIZE_8BIT     = 0b001;
+constexpr uint32_t SIZE_16BIT    = 0b010;
+constexpr uint32_t SIZE_32BIT    = 0b011;
+constexpr uint32_t SIZE_64BIT    = 0b100;
+constexpr uint32_t SIZE_128BIT   = 0b101;
+constexpr uint32_t SIZE_256BIT   = 0b110;
+constexpr uint32_t SIZE_64BITDEF = 0b111; // Default mode is 64bit instead of typical 32bit
 
 inline uint32_t GetSizeDstFlags(uint32_t Flags) { return (Flags >> FLAGS_SIZE_DST_OFF) & SIZE_MASK; }
 inline uint32_t GetSizeSrcFlags(uint32_t Flags) { return (Flags >> FLAGS_SIZE_SRC_OFF) & SIZE_MASK; }

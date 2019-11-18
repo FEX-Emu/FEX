@@ -215,13 +215,15 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_128BIT);
     }
     else if (DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE &&
-      DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF) {
+      (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF ||
+       DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
       // See table 1-2. Operand-Size Overrides for this decoding
       // If the default operating mode is 32bit and we have the operand size flag then the operating size drops to 16bit
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_16BIT);
     }
     else if (DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING ||
-      DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT) {
+      DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
+      DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_64BIT);
     }
     else {
@@ -239,13 +241,15 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_128BIT);
     }
     else if (DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE &&
-      SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF) {
+      (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF ||
+       SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
       // See table 1-2. Operand-Size Overrides for this decoding
       // If the default operating mode is 32bit and we have the operand size flag then the operating size drops to 16bit
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_16BIT);
     }
     else if (DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING ||
-      SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT) {
+      SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
+      SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF) {
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_64BIT);
     }
     else {
