@@ -1479,30 +1479,30 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
     SetCurrentCodeBlock(LoopHead);
     {
-  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
-    OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
-    OrderedNode *Dest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
-
-    // Store to memory where RDI points
-    _StoreMem(Size, Dest, Src, Size);
-
+      OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
       auto ZeroConst = _Constant(0);
 
-    // Can we end the block?
-    auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
-      Counter, ZeroConst,
-        _Constant(1), ZeroConst);
+      // Can we end the block?
+      auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
+          Counter, ZeroConst,
+          _Constant(1), ZeroConst);
 
       _CondJump(CanLeaveCond, LoopEnd, LoopTail);
     }
 
     SetCurrentCodeBlock(LoopTail);
     {
+      OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+      OrderedNode *Dest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
+
+      // Store to memory where RDI points
+      _StoreMem(Size, Dest, Src, Size);
+
       OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
       OrderedNode *TailDest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
 
       // Decrement counter
-      TailCounter = _Sub(TailCounter,  _Constant(1));
+      TailCounter = _Sub(TailCounter, _Constant(1));
 
       // Store the counter so we don't have to deal with PHI here
       _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
@@ -1556,14 +1556,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     SetCurrentCodeBlock(LoopStart);
 
     OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
-    OrderedNode *Dest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
-    OrderedNode *Dest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
-
-    auto Src1 = _LoadMem(Size, Dest_RDI, Size);
-    auto Src2 = _LoadMem(Size, Dest_RSI, Size);
-
-    auto ALUOp = _Sub(Src1, Src2);
-    GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
 
     // Can we end the block?
     auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
@@ -1577,6 +1569,15 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     // Working loop
     {
+      OrderedNode *Dest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
+      OrderedNode *Dest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
+
+      auto Src1 = _LoadMem(Size, Dest_RDI, Size);
+      auto Src2 = _LoadMem(Size, Dest_RSI, Size);
+
+      auto ALUOp = _Sub(Src1, Src2);
+      GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
+
       OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
       OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
       OrderedNode *TailDest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
