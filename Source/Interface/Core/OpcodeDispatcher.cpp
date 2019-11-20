@@ -1789,14 +1789,15 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     // If the destination is a GPR then the source is memory
     // xmm1[127:64] = src
-    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+    OrderedNode *Dest = LoadSource_WithOpSize(Op, Op->Dest, 16, Op->Flags, -1);
+    Src = _VCastFromGPR(16, GetSrcSize(Op), Src);
     auto Result = _VInsElement(16, 8, 1, 0, Dest, Src);
     StoreResult(Op, Result, -1);
   }
   else {
     // In this case memory is the destination and the high bits of the XMM are source
     // Mem64 = xmm1[127:64]
-    auto Result = _VInsElement(16, 8, 0, 1, Src, Src);
+    auto Result = _VExtractToGPR(16, 8, Src, 1);
     StoreResult(Op, Result, -1);
   }
 }
@@ -3171,7 +3172,7 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
-  OrderedNode *Mem = LoadSource(Op, Op->Dest, Op->Flags, false);
+  OrderedNode *Mem = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
 
   // Saves 512bytes to the memory location provided
   // Header changes depending on if REX.W is set or not
@@ -3247,7 +3248,7 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
-  OrderedNode *Mem = LoadSource(Op, Op->Src1, Op->Flags, false);
+  OrderedNode *Mem = LoadSource(Op, Op->Src1, Op->Flags, -1, false);
   for (unsigned i = 0; i < 8; ++i) {
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 32));
     auto MMReg = _LoadMem(16, MemLocation, 16);
@@ -3272,7 +3273,7 @@ void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
-  // _Break(0, 0);
+  _Break(0, 0);
 }
 
 #undef OpcodeArgs
