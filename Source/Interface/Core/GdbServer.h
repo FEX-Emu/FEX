@@ -25,6 +25,8 @@ private:
     std::string handleMemory(std::string &packet);
     std::string handleV(std::string& packet);
 
+    std::string readRegs();
+
     FEXCore::Context::Context *CTX;
     std::thread gdbServerThread;
     uint64_t data_offset;

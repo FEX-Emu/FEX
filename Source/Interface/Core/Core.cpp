@@ -65,6 +65,29 @@ std::string_view const& GetFlagName(unsigned Flag) {
   return FlagNames[Flag];
 }
 
+constexpr std::array<std::string_view const, 16> RegNames = {
+  "rax",
+  "rbx",
+  "rcx",
+  "rdx",
+  "rsi",
+  "rdi",
+  "rbp",
+  "rsp",
+  "r8",
+  "r9",
+  "r10",
+  "r11",
+  "r12",
+  "r13",
+  "r14",
+  "r15",
+};
+
+std::string_view const& GetGRegName(unsigned Reg) {
+  return RegNames[Reg];
+}
+
 namespace DefaultFallbackCore {
   class DefaultFallbackCore final : public FEXCore::CPU::CPUBackend {
   public:

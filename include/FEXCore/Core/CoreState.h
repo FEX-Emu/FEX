@@ -35,4 +35,5 @@ namespace FEXCore::Core {
   constexpr uint64_t PAGE_SIZE = 4096;
 
   std::string_view const& GetFlagName(unsigned Flag);
+  std::string_view const& GetGRegName(unsigned Reg);
 }
