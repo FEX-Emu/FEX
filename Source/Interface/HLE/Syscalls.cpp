@@ -195,11 +195,6 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     uint64_t FileSizeToUse = Args->Argument[2];
     uint64_t Prot = Args->Argument[3];
 
-#ifdef DEBUG_MMAP
-//    FileSizeToUse = Size;
-#endif
-    Prot = PROT_READ | PROT_WRITE | PROT_EXEC;
-
     if (Flags & MAP_FIXED) {
       Base = Args->Argument[1];
       void *HostPtr = CTX->MemoryMapper.GetPointerSizeCheck(Base, FileSizeToUse);
@@ -211,24 +206,14 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       }
 
       if (HostFD != -1) {
-#ifdef DEBUG_MMAP
-        // We are a file. Screw you I'm going to just memcpy you in to place
-        void *FileMem = mmap(nullptr, FileSizeToUse, Prot, MAP_PRIVATE, HostFD, Args->Argument[6]);
+        void *FileMem = mmap(HostPtr, FileSizeToUse, Prot, MAP_DENYWRITE | MAP_PRIVATE | MAP_FIXED, HostFD, Args->Argument[6]);
         if (FileMem == MAP_FAILED) {
           LogMan::Msg::A("Couldn't map file to %p\n", HostPtr);
         }
-
-        memcpy(HostPtr, FileMem, FileSizeToUse);
-        munmap(FileMem, Size);
-#else
-        void *FileMem = mmap(HostPtr, FileSizeToUse, Prot, MAP_PRIVATE | MAP_FIXED, HostFD, Args->Argument[6]);
-        if (FileMem == MAP_FAILED) {
-          LogMan::Msg::A("Couldn't map file to %p\n", HostPtr);
-        }
-#endif
       }
       else {
         LogMan::Throw::A(Args->Argument[6] == 0, "Don't understand a fixed offset mmap");
+        mmap(HostPtr, Size, Prot, Flags, HostFD, Args->Argument[6]);
       }
 
       Result = Base;
@@ -244,21 +229,13 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       }
 
       if (HostFD != -1) {
-#ifdef DEBUG_MMAP
-        // We are a file. Screw you I'm going to just memcpy you in to place
-        void *FileMem = mmap(nullptr, FileSizeToUse, Prot, MAP_PRIVATE, HostFD, Args->Argument[6]);
-        if (FileMem == MAP_FAILED) {
-          LogMan::Msg::A("Couldn't map file to %p\n", HostPtr);
-        }
-
-        memcpy(HostPtr, FileMem, FileSizeToUse);
-        munmap(FileMem, Size);
-#else
         void *FileMem = mmap(HostPtr, FileSizeToUse, Prot, MAP_PRIVATE | MAP_FIXED, HostFD, Args->Argument[6]);
         if (FileMem == MAP_FAILED) {
           LogMan::Msg::A("Couldn't map file to %p\n", HostPtr);
         }
-#endif
+      }
+      else {
+        mmap(HostPtr, Size, Prot, Flags, HostFD, Args->Argument[6]);
       }
 
       LastMMAP += Size;
@@ -268,8 +245,7 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   }
   case SYSCALL_MPROTECT: {
     void *HostPtr = CTX->MemoryMapper.GetPointer<void*>(Args->Argument[1]);
-
-//    Result = mprotect(HostPtr, Args->Argument[2], Args->Argument[3]);
+    Result = mprotect(HostPtr, Args->Argument[2], Args->Argument[3]);
   break;
   }
   case SYSCALL_ARCH_PRCTL: {
