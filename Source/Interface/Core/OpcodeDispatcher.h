@@ -288,6 +288,13 @@ public:
   IRPair<IROp_VSRI> _VSRI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t ByteShift) {
     return _VSRI(ssa0, RegisterSize, ElementSize, ByteShift);
   }
+  IRPair<IROp_VCastFromGPR> _VCastFromGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VCastFromGPR(ssa0, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VExtractToGPR> _VExtractToGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t Index) {
+    return _VExtractToGPR(ssa0, RegisterSize, ElementSize, Index);
+  }
+
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }

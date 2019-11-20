@@ -381,6 +381,17 @@
       "SSAArgs": "3"
     },
 
+    "VExtractToGPR": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "DestSize": "ElementSize",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "Idx"
+      ]
+    },
+
     "Print": {
       "SSAArgs": "1"
     },
@@ -586,6 +597,15 @@
     "VBitcast": {
       "HasDest": true,
       "SSAArgs": "1"
+    },
+
+    "VCastFromGPR": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
     },
 
     "Last": {

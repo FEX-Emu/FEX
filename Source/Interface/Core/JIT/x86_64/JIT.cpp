@@ -1261,6 +1261,38 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov (GetDst<RA_64>(Node), rax);
           break;
         }
+
+        case IR::OP_VEXTRACTTOGPR: {
+          auto Op = IROp->C<IR::IROp_VExtractToGPR>();
+          movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+
+          // Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
+
+          // pextrq reg64/mem64, xmm, imm
+          // pinsrq xmm, reg64/mem64, imm8
+          switch (Op->ElementSize) {
+          case 1: {
+            pextrb(GetDst<RA_8>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+          break;
+          }
+          case 2: {
+            pextrw(GetDst<RA_16>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+          break;
+          }
+          case 4: {
+            pextrd(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+          break;
+          }
+          case 8: {
+            pextrq(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+
+          break;
+        }
+
         case IR::OP_PRINT: {
           auto Op = IROp->C<IR::IROp_Print>();
 
@@ -1443,6 +1475,27 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_VBitcast>();
           movaps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
         break;
+        }
+        case IR::OP_VCASTFROMGPR: {
+          auto Op = IROp->C<IR::IROp_VCastFromGPR>();
+          switch (Op->ElementSize) {
+            case 1:
+              movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+              vmovq(GetDst(Node), rax);
+            break;
+            case 2:
+              movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              vmovq(GetDst(Node), rax);
+            break;
+            case 4:
+              vmovd(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()).cvt32());
+            break;
+            case 8:
+              vmovq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()).cvt64());
+            break;
+            default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+          }
+          break;
         }
         case IR::OP_VCMPEQ: {
           auto Op = IROp->C<IR::IROp_VCMPEQ>();

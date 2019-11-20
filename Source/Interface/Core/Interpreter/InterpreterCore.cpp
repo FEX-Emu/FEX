@@ -268,6 +268,39 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, GetSrc<void*>(Op->Header.Args[0]), 16);
             break;
           }
+          case IR::OP_VCASTFROMGPR: {
+            auto Op = IROp->C<IR::IROp_VCastFromGPR>();
+            memcpy(GDP, GetSrc<void*>(Op->Header.Args[0]), Op->ElementSize);
+            break;
+          }
+          case IR::OP_VEXTRACTTOGPR: {
+            auto Op = IROp->C<IR::IROp_VExtractToGPR>();
+            LogMan::Throw::A(Op->RegisterSize <= 16, "OpSize is too large for VExtractToGPR: %d", OpSize);
+            if (Op->RegisterSize == 16) {
+              __uint128_t SourceMask = (1ULL << (Op->ElementSize * 8)) - 1;
+              uint64_t Shift = Op->ElementSize * Op->Idx * 8;
+              if (Op->ElementSize == 8)
+                SourceMask = ~0ULL;
+
+              __uint128_t Src = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+              Src >>= Shift;
+              Src &= SourceMask;
+              memcpy(GDP, &Src, Op->ElementSize);
+            }
+            else {
+              uint64_t SourceMask = (1ULL << (Op->ElementSize * 8)) - 1;
+              uint64_t Shift = Op->ElementSize * Op->Idx * 8;
+              if (Op->ElementSize == 8)
+                SourceMask = ~0ULL;
+
+              uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
+              Src >>= Shift;
+              Src &= SourceMask;
+              GD = Src;
+            }
+            break;
+          }
+
           case IR::OP_CONSTANT: {
             auto Op = IROp->C<IR::IROp_Constant>();
             GD = Op->Constant;

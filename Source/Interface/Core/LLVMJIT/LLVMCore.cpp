@@ -1433,6 +1433,16 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, BSwap(Src));
     break;
     }
+    case IR::OP_VCASTFROMGPR: {
+      auto Op = IROp->C<IR::IROp_VCastFromGPR>();
+      LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      auto Result = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, Src);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+
     case IR::OP_CREATEVECTOR2: {
       auto Op = IROp->C<IR::IROp_CreateVector2>();
       LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
@@ -1582,7 +1592,32 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VSLI: {
+      auto Op = IROp->C<IR::IROp_VSLI>();
+      auto Src = GetSrc(Op->Header.Args[0]);
 
+      // Cast to the type we want
+      Src = CastToOpaqueStructure(Src, Type::getIntNTy(*Con, Src->getType()->getPrimitiveSizeInBits()));
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateShl(Src, JITState.IRBuilder->getIntN(Src->getType()->getPrimitiveSizeInBits(), Op->ByteShift * 8));
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VSRI: {
+      auto Op = IROp->C<IR::IROp_VSRI>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastToOpaqueStructure(Src, Type::getIntNTy(*Con, Src->getType()->getPrimitiveSizeInBits()));
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateLShr(Src, JITState.IRBuilder->getIntN(Src->getType()->getPrimitiveSizeInBits(), Op->ByteShift * 8));
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
     case IR::OP_VCMPEQ: {
       auto Op = IROp->C<IR::IROp_VCMPEQ>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
