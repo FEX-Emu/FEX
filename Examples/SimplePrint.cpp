@@ -104,7 +104,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
   FEXCore::Context::InitCore(CTX, &Test);
 
-  auto ShutdownReason = FEXCore::Context::RunLoop(CTX, true);
+  auto ShutdownReason = FEXCore::Context::RunUntilExit(CTX);
   LogMan::Msg::D("Reason we left VM: %d", ShutdownReason);
 
   FEXCore::Context::DestroyContext(CTX);

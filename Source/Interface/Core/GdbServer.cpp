@@ -463,8 +463,7 @@ void GdbServer::GdbServerLoop(std::unique_ptr<std::iostream> stream) {
 }
 
 void GdbServer::StartThread(std::unique_ptr<std::iostream> stream) {
-    //gdbServerThread = std::thread(GdbServerLoop, stream);
-    GdbServerLoop(std::move(stream));
+    gdbServerThread = std::thread(&GdbServer::GdbServerLoop, this, std::move(stream));
 }
 
 std::unique_ptr<std::iostream> GdbServer::OpenSocket() {

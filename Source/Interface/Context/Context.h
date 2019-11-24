@@ -66,6 +66,7 @@ namespace FEXCore::Context {
     FEXCore::SyscallHandler SyscallHandler;
     CustomCPUFactoryType CustomCPUFactory;
     CustomCPUFactoryType FallbackCPUFactory;
+    std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
 
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
@@ -75,9 +76,11 @@ namespace FEXCore::Context {
     ~Context();
 
     bool InitCore(FEXCore::CodeLoader *Loader);
-    FEXCore::Context::ExitReason RunLoop(bool WaitForIdle);
+    FEXCore::Context::ExitReason RunUntilExit();
     bool IsPaused() const { return !Running; }
     void Pause();
+    void Run();
+    void Step();
 
     // Debugger interface
     void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
@@ -109,6 +112,8 @@ namespace FEXCore::Context {
     void InitializeThread(FEXCore::Core::InternalThreadState *Thread);
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
+    void NotifyPause();
+    void HandleExit(FEXCore::Core::InternalThreadState *Thread);
 
     uintptr_t AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr);
 
@@ -122,6 +127,9 @@ namespace FEXCore::Context {
     std::vector<uint64_t> InitLocations;
     uint64_t StartingRIP;
     IR::RegisterAllocationPass *RAPass {};
+    std::mutex ExitMutex;
+
+    bool StartPaused = false;
 #if ENABLE_JITSYMBOLS
     FEXCore::JITSymbols Symbols;
 #endif

@@ -41,8 +41,26 @@ namespace FEXCore::Context {
     return CTX->InitCore(Loader);
   }
 
-  FEXCore::Context::ExitReason RunLoop(FEXCore::Context::Context *CTX, bool WaitForIdle) {
-    return CTX->RunLoop(WaitForIdle);
+  void SetExitHandler(FEXCore::Context::Context *CTX,
+      std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> handler) {
+    CTX->CustomExitHandler = handler;
+  }
+
+  std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> GetExitHandler(FEXCore::Context::Context *CTX) {
+    return CTX->CustomExitHandler;
+  }
+
+  void Run(FEXCore::Context::Context *CTX) {
+    CTX->Run();
+  }
+
+  void Step(FEXCore::Context::Context *CTX) {
+    CTX->Step();
+  }
+
+
+  FEXCore::Context::ExitReason RunUntilExit(FEXCore::Context::Context *CTX) {
+    return CTX->RunUntilExit();
   }
 
   FEXCore::Context::ExitReason GetExitReason(FEXCore::Context::Context *CTX) {
@@ -63,6 +81,11 @@ namespace FEXCore::Context {
 
   void Pause(FEXCore::Context::Context *CTX) {
     CTX->Pause();
+  }
+
+  void Stop(FEXCore::Context::Context *CTX) {
+    CTX->ShouldStop = true;
+    CTX->Pause(); // Block until exit
   }
 
   void SetCustomCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory) {

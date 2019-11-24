@@ -87,17 +87,50 @@ namespace FEXCore::Context {
 
   void SetApplicationFile(FEXCore::Context::Context *CTX, std::string const &File);
 
+  void SetExitHandler(FEXCore::Context::Context *CTX, std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> handler);
+  std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> GetExitHandler(FEXCore::Context::Context *CTX);
+
   /**
-   * @brief Starts running the CPU core
+   * @brief Pauses execution on the CPU core
    *
-   * If WaitForIdle is enabled then this call will block until the thread exits or if single stepping is enabled, after the core steps one instruction
+   * Blocks until all threads have paused.
+   */
+  void Pause(FEXCore::Context::Context *CTX);
+
+  /**
+   * @brief Starts (or continues) the CPU core
+   *
+   * This function is async and returns immediately.
+   * Use RunUntilExit() for synchonous executions
+   *
+   */
+  void Run(FEXCore::Context::Context *CTX);
+
+  /**
+   * @brief Runs the CPU core until it exits
+   *
+   * If an Exit handler has been registered, this function won't return until the core
+   * has shutdown.
    *
    * @param CTX The context that we created
-   * @param WaitForIdle Should we wait for the core to be idle or not
    *
-   * @return The ExitReason for the parentthread. ASYNC_RUN if WaitForIdle was false
+   * @return The ExitReason for the parentthread.
    */
-  ExitReason RunLoop(FEXCore::Context::Context *CTX, bool WaitForIdle);
+  ExitReason RunUntilExit(FEXCore::Context::Context *CTX);
+
+  /**
+   * @brief Tells the core to shutdown
+   *
+   * Blocks until shutdown
+   */
+  void Stop(FEXCore::Context::Context *CTX);
+
+  /**
+   * @brief Executes one instruction
+   *
+   * Returns once execution is complete.
+   */
+  void Step(FEXCore::Context::Context *CTX);
 
   /**
    * @brief [[threadsafe]] Returns the ExitReason of the parent thread. Typically used for async result status
@@ -134,8 +167,6 @@ namespace FEXCore::Context {
    * @param State The satate object to copy from
    */
   void SetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State);
-
-  void Pause(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Allows the frontend to pass in a custom CPUBackend creation factory

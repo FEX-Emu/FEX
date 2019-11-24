@@ -18,6 +18,7 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/X86Enums.h>
 
+
 #include <fstream>
 
 #include "Interface/Core/GdbServer.h"
@@ -281,10 +282,13 @@ namespace FEXCore::Context {
 
     // Offset next thread's FS_OFFSET by slot size
     uint64_t SlotSize = Loader->InitializeThreadSlot(TLSSlotWriter);
-    StartingRIP = Loader->DefaultRIP();
+    Thread->State.State.rip = StartingRIP = Loader->DefaultRIP();
 
-    auto gdb = new GdbServer(this, Loader);
-    gdb->StartAndBlock();
+    if (false) {
+      auto gdb = new GdbServer(this, Loader);
+      gdb->StartAndBlock();
+      StartPaused = true;
+    }
 
     InitializeThread(Thread);
 
@@ -309,47 +313,63 @@ namespace FEXCore::Context {
 
       PauseWait.WaitFor(std::chrono::milliseconds(10));
     } while (true);
-  }
 
-  void Context::Pause() {
-    // Tell all the threads that they should pause
-    {
-      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
-      for (auto &Thread : Threads) {
-        Thread->State.RunningEvents.ShouldPause.store(true);
-      }
-
-      for (auto &Thread : Threads) {
-        Thread->StartRunning.NotifyAll();
-      }
-      Running = true;
-    }
-
-    WaitForIdle();
     Running = false;
   }
 
-  FEXCore::Context::ExitReason Context::RunLoop(bool WaitForIdle) {
-    {
-      // Spin up all the threads
-      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
-      for (auto &Thread : Threads) {
-        Thread->State.RunningEvents.ShouldPause.store(false);
-        Thread->State.RunningEvents.WaitingToStart.store(true);
-      }
-
-      for (auto &Thread : Threads) {
-        Thread->StartRunning.NotifyAll();
-      }
-      Running = true;
+  void Context::NotifyPause() {
+    // Tell all the threads that they should pause
+    std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+    for (auto &Thread : Threads) {
+      Thread->State.RunningEvents.ShouldPause.store(true);
     }
 
-    if (WaitForIdle) {
+    for (auto &Thread : Threads) {
+      Thread->StartRunning.NotifyAll();
+    }
+    Running = true;
+  }
+
+  void Context::Pause() {
+    NotifyPause();
+
+    WaitForIdle();
+  }
+
+  void Context::Run() {
+    // Spin up all the threads
+    std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+    for (auto &Thread : Threads) {
+      Thread->State.RunningEvents.ShouldPause.store(false);
+      Thread->State.RunningEvents.WaitingToStart.store(true);
+    }
+
+    for (auto &Thread : Threads) {
+      Thread->StartRunning.NotifyAll();
+    }
+    Running = true;
+  }
+
+  void Context::Step() {
+    FEXCore::Config::SetConfig(this, FEXCore::Config::CONFIG_SINGLESTEP, 1);
+    Run();
+    WaitForIdle();
+    FEXCore::Config::SetConfig(this, FEXCore::Config::CONFIG_SINGLESTEP, 0);
+  }
+
+  FEXCore::Context::ExitReason Context::RunUntilExit() {
+    if(!StartPaused)
+      Run();
+
+    while(true) {
       this->WaitForIdle();
-      return ParentThread->ExitReason;
-    }
+      auto reason = ParentThread->ExitReason;
 
-    return FEXCore::Context::ExitReason::EXIT_ASYNC_RUN;
+      // Don't return if a custom exit handling the exit
+      if (!CustomExitHandler || reason == ExitReason::EXIT_SHUTDOWN) {
+        return reason;
+      }
+    }
   }
 
   void Context::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
@@ -370,6 +390,7 @@ namespace FEXCore::Context {
     Thread->ThreadWaiting.Wait();
   }
 
+
   void Context::RunThread(FEXCore::Core::InternalThreadState *Thread) {
     // Tell the thread to start executing
     Thread->StartRunning.NotifyAll();
@@ -381,7 +402,7 @@ namespace FEXCore::Context {
     // Grab the new thread object
     {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
-      Thread = Threads.emplace_back(new FEXCore::Core::InternalThreadState{});
+      Thread = Threads.emplace_back(new FEXCore::Core::InternalThreadState);
       Thread->State.ThreadManager.TID = ++ThreadID;
     }
 
@@ -574,6 +595,32 @@ namespace FEXCore::Context {
     return 0;
   }
 
+  void Context::HandleExit(FEXCore::Core::InternalThreadState *thread) {
+    PauseWait.NotifyAll();
+
+    // The first thread here gets to handle the exit.
+    // If a thread is exiting due to error or debug, it will be the first thread here
+    if(ExitMutex.try_lock()) {
+      if (this->Threads.size() > 1) {
+        if (!thread->State.RunningEvents.ShouldPause) {
+          // A thread has exited without being asked, Tell the other threads to pause
+          NotifyPause();
+        }
+
+        // Wait for all other threads to be paused
+        WaitForIdle();
+      }
+
+      Running = false;
+
+      if (CustomExitHandler) {
+        CustomExitHandler(thread->State.ThreadManager.TID, thread->ExitReason);
+      }
+
+      ExitMutex.unlock();
+    }
+  }
+
   void Context::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
@@ -720,7 +767,9 @@ namespace FEXCore::Context {
           if (Thread->ExitReason == FEXCore::Context::ExitReason::EXIT_NONE)
             Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_DEBUG;
 
-          PauseWait.NotifyAll();
+          HandleExit(Thread);
+
+
           Thread->StartRunning.Wait();
 
           // If we set it to debug then set it back to none after this
