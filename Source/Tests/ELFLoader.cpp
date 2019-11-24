@@ -72,10 +72,12 @@ int main(int argc, char **argv, char **const envp) {
   FEX::HarnessHelper::ELFCodeLoader Loader{Args[0], Args, envp};
 
   FEXCore::Context::InitializeStaticTables();
-  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
+  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 32);
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
   FEXCore::Context::SetApplicationFile(CTX, std::filesystem::canonical(Args[0]));
+
+
 
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, CoreConfig() > 3 ? FEXCore::Config::CONFIG_CUSTOM : CoreConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MULTIBLOCK, MultiblockConfig());
@@ -87,8 +89,21 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
   FEXCore::Context::InitCore(CTX, &Loader);
 
-  while (FEXCore::Context::RunLoop(CTX, true) == FEXCore::Context::ExitReason::EXIT_DEBUG);
-  auto ShutdownReason = FEXCore::Context::GetExitReason(CTX);
+  FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
+
+
+  // There might already be an exit handler, leave it installed
+  if(!FEXCore::Context::GetExitHandler(CTX)) {
+    FEXCore::Context::SetExitHandler(CTX, [&](uint64_t thread, FEXCore::Context::ExitReason reason) {
+      if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG) {
+        ShutdownReason = reason;
+        FEXCore::Context::Stop(CTX);
+      }
+    });
+  }
+
+  FEXCore::Context::RunUntilExit(CTX);
+
   LogMan::Msg::D("Reason we left VM: %d", ShutdownReason);
   bool Result = ShutdownReason == 0;
 

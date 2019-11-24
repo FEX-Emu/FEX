@@ -642,7 +642,7 @@ int main(int argc, char **argv) {
     }
 
     FEXCore::Context::ExitReason ExitReason;
-    ExitReason = FEXCore::Context::RunLoop(CTX, true);
+    ExitReason = FEXCore::Context::RunUntilExit(CTX);
     FEXCore::Context::GetCPUState(CTX, &State1);
 
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {

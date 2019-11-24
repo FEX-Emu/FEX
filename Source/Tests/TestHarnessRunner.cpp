@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
   if (!Result1)
     return 1;
 
-  while (FEXCore::Context::RunLoop(CTX, true) == FEXCore::Context::ExitReason::EXIT_DEBUG)
+  while (FEXCore::Context::RunUntilExit(CTX) == FEXCore::Context::ExitReason::EXIT_DEBUG)
     ;
 
   FEXCore::SHM::DestroyRegion(SHM);

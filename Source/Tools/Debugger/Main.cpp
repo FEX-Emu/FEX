@@ -21,7 +21,6 @@
 #include <memory>
 #include <GLFW/glfw3.h>
 #include <thread>
-
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
@@ -31,30 +30,23 @@ FEXCore::SHM::SHMObject *SHM{};
 std::atomic_bool ShouldClose = false;
 std::thread CoreThread;
 
-void CoreWorker() {
-  while (!ShouldClose) {
-    SteppingEvent.Wait();
-    if (ShouldClose) {
-      break;
-    }
-    FEXCore::Context::RunLoop(CTX, false);
+void ExitHandler(uint64_t thread, FEXCore::Context::ExitReason reason) {
+    if (ShouldClose)
+      FEXCore::Context::Stop(CTX);
     FEX::DebuggerState::SetHasNewState();
     FEX::DebuggerState::CallNewState();
-  }
 }
 
 void StepCallback() {
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SINGLESTEP, 1);
-  SteppingEvent.NotifyAll();
+  FEXCore::Context::Step(CTX);
 }
 
 void CreateCoreCallback(char const *Filename, bool ELF) {
-  SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
+  SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 32);
   CTX = FEXCore::Context::CreateNewContext();
 
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SINGLESTEP, 1);
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, FEX::DebuggerState::GetCoreType());
   FEXCore::Context::SetFallbackCPUBackendFactory(CTX, VMFactory::CPUCreationFactoryFallback);
 
@@ -80,7 +72,8 @@ void CreateCoreCallback(char const *Filename, bool ELF) {
   FEX::DebuggerState::SetContext(CTX);
   FEX::DebuggerState::SetHasNewState();
   FEX::DebuggerState::CallNewState();
-  CoreThread = std::thread(CoreWorker);
+
+  FEXCore::Context::SetExitHandler(CTX, ExitHandler);
 }
 
 void CompileRIPCallback(uint64_t RIP) {
@@ -90,11 +83,7 @@ void CompileRIPCallback(uint64_t RIP) {
 }
 
 void CloseCallback() {
-  ShouldClose = true;
-  SteppingEvent.NotifyAll();
-  if (CoreThread.joinable()) {
-    CoreThread.join();
-  }
+  FEXCore::Context::Stop(CTX);
 
   if (SHM) {
     FEXCore::SHM::DestroyRegion(SHM);

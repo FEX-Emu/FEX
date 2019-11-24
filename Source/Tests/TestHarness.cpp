@@ -89,9 +89,9 @@ int main(int argc, char **argv) {
  if (!Result1 || !Result2)
    return 2;
 
- while (FEXCore::Context::RunLoop(CTX1, true) == FEXCore::Context::ExitReason::EXIT_DEBUG);
+ while (FEXCore::Context::RunUntilExit(CTX1) == FEXCore::Context::ExitReason::EXIT_DEBUG);
  LogMan::Msg::I("Running Core2");
-  while (FEXCore::Context::RunLoop(CTX2, true) == FEXCore::Context::ExitReason::EXIT_DEBUG);
+  while (FEXCore::Context::RunUntilExit(CTX2) == FEXCore::Context::ExitReason::EXIT_DEBUG);
 
   FEXCore::Core::CPUState State1;
   FEXCore::Core::CPUState State2;
