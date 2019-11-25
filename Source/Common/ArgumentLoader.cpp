@@ -48,6 +48,10 @@ namespace FEX::ArgLoader {
         .dest("Multiblock")
         .action("store_false")
         .help("Enable Multiblock code compilation");
+    CPUGroup.add_option("-G", "--gdb")
+        .dest("GdbServer")
+        .action("store_true")
+        .help("Enables the GDB server");
 
       Parser.add_option_group(CPUGroup);
     }
@@ -118,6 +122,10 @@ namespace FEX::ArgLoader {
         Config::Add("Multiblock", std::to_string(Multiblock));
       }
 
+      if (Options.is_set_by_user("GdbServer")) {
+        bool GdbServer = Options.get("GdbServer");
+        Config::Add("GdbServer", std::to_string(GdbServer));
+      }
     }
 
     {

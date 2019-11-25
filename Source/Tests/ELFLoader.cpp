@@ -64,6 +64,7 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::Value<uint64_t> BlockSizeConfig{"MaxInst", 1};
   FEX::Config::Value<bool> SingleStepConfig{"SingleStep", false};
   FEX::Config::Value<bool> MultiblockConfig{"Multiblock", false};
+  FEX::Config::Value<bool> GdbServerConfig{"GdbServer", false};
 
   auto Args = FEX::ArgLoader::Get();
 
@@ -83,6 +84,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MULTIBLOCK, MultiblockConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SINGLESTEP, SingleStepConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MAXBLOCKINST, BlockSizeConfig());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_GDBSERVER, GdbServerConfig());
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, VMFactory::CPUCreationFactory);
   // FEXCore::Context::SetFallbackCPUBackendFactory(CTX, VMFactory::CPUCreationFactoryFallback);
 
