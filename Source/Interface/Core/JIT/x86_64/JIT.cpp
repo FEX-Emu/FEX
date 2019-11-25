@@ -378,8 +378,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               ud2();
             break;
             case 4: // HLT
+            case 6: // INT3
+            {
               mov(al, 1);
-              xchg(byte [STATE + offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop)], al);
+
+              auto offset = Op->Reason == 4 ?
+                  offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop) // HLT
+                : offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldPause); // INT3
+              xchg(byte [STATE + offset], al);
 
               // This code matches what is in EXITFUNCTION
               if (SpillSlots) {
@@ -398,6 +404,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 #endif
               ret();
             break;
+            }
             default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
           }
           break;

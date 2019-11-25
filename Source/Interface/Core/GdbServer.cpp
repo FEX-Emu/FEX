@@ -22,8 +22,22 @@
 namespace FEXCore
 {
 
-GdbServer::GdbServer(FEXCore::Context::Context *ctx, FEXCore::CodeLoader *Loader) : CTX(ctx) {
-    std::tie(std::ignore, std::ignore, data_offset) = Loader->GetLayout();
+static const std::string NO_REPLY = "}{\x7f}{"; // An "unlikely" packet
+
+void GdbServer::Break() {
+    std::lock_guard lk(sendMutex);
+    if (CommsStream)
+        SendPacket(*CommsStream, "S05");
+}
+
+GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
+    ctx->CustomExitHandler = [&](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
+        if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
+            this->Break();
+        }
+    };
+
+    StartThread();
 }
 
 static int calculateChecksum(std::string &packet) {
@@ -100,7 +114,7 @@ std::string GdbServer::ReadPacket(std::iostream &stream) {
             int expected_checksum = std::strtoul(hexString, nullptr, 16);
 
             if (calculateChecksum(packet) == expected_checksum) {
-                LogMan::Msg::E("Received Packet: \"%s\"", packet.c_str());
+                LogMan::Msg::I("Received Packet: \"%s\"", packet.c_str());
                 stream << "+" << std::flush;
                 return packet;
             } else {
@@ -141,8 +155,12 @@ static std::string escapePacket(std::string packet) {
 }
 
 void GdbServer::SendPacket(std::ostream &stream, std::string packet) {
+    // In-band signaling, not a great design
+    if (packet == NO_REPLY)
+        return;
+
     auto escaped = escapePacket(packet);
-    LogMan::Msg::E("GdbServer Reply: %s", escaped.c_str());
+    //LogMan::Msg::E("GdbServer Reply: %s", escaped.c_str());
     stream << '$' << escaped << '#';
     stream << std::setfill('0') << std::setw(2) << std::hex << (int)calculateChecksum(escaped);
     stream << std::flush;
@@ -150,7 +168,7 @@ void GdbServer::SendPacket(std::ostream &stream, std::string packet) {
 
 std::string GdbServer::readRegs() {
     auto state = CTX->GetCPUState();
-    state.rip = 0x47c990;
+   // state.rip = 0x47c990;
 
     return encodeHex((unsigned char *)&state, sizeof(state)).substr(0, 572*2);
 }
@@ -432,14 +450,14 @@ std::string GdbServer::handleV(std::string& packet) {
         switch (action) {
         case 'c':
             CTX->Run();
-            return ""; // fixme
+            return NO_REPLY;
         case 's':
             CTX->Step();
-            return ""; // fixme
+            return NO_REPLY;
 
         case 't':
             CTX->ShouldStop = true;
-            return "";
+            return NO_REPLY;
         default:
             return "E00";
         }
@@ -466,19 +484,26 @@ std::string GdbServer::ProcessPacket(std::string &packet) {
     }
 }
 
-void GdbServer::GdbServerLoop(std::unique_ptr<std::iostream> stream) {
+void GdbServer::GdbServerLoop() {
+    CommsStream = OpenSocket();
+
     std::string responce;
 
     // Outer server loop. Handles packet start, ACK/NAK and break
 
     int c;
-    while ((c = stream->get()) >= 0 ) {
+    while ((c = CommsStream->get()) >= 0 ) {
         switch (c) {
         case '$': {
-            std::string packet = ReadPacket(*stream);
+            std::string packet = ReadPacket(*CommsStream);
             responce = ProcessPacket(packet);
-            std::cout << responce;
-            SendPacket(*stream, responce);
+            {
+                std::lock_guard lk(sendMutex);
+                SendPacket(*CommsStream, responce);
+            }
+            if (responce == "") {
+                LogMan::Msg::D("Unknown packet %s", packet.c_str());
+            }
             break;
         }
         case '+':
@@ -486,19 +511,29 @@ void GdbServer::GdbServerLoop(std::unique_ptr<std::iostream> stream) {
             break;
         case '-':
             // NAK, Resend requested
-            SendPacket(*stream, responce);
+            {
+                std::lock_guard lk(sendMutex);
+                SendPacket(*CommsStream, responce);
+            }
             break;
         case '\x03': // ASCII EOT
-            LogMan::Msg::E("GdbServer: Break");
+            LogMan::Msg::D("GdbServer: Break");
+            CTX->Pause();
             break;
         default:
-            LogMan::Msg::E("GdbServer: Unexpected byte %c (%02x)", c, c);
+            LogMan::Msg::D("GdbServer: Unexpected byte %c (%02x)", c, c);
         }
     }
+
+    {
+        std::lock_guard lk(sendMutex);
+        CommsStream.release();
+    }
+
 }
 
-void GdbServer::StartThread(std::unique_ptr<std::iostream> stream) {
-    gdbServerThread = std::thread(&GdbServer::GdbServerLoop, this, std::move(stream));
+void GdbServer::StartThread() {
+    gdbServerThread = std::thread(&GdbServer::GdbServerLoop, this);
 }
 
 std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
@@ -535,7 +570,7 @@ std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
 
     // Block until a connection arrives
 
-    LogMan::Msg::E("GdbServer, waiting for connection");
+    LogMan::Msg::E("GdbServer, waiting for connection on localhost:8086");
     listen(sockfd, 1);
 
     new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);

@@ -11,11 +11,13 @@
 #include <FEXCore/Utils/Event.h>
 #include <stdint.h>
 
+#include <memory>
 #include <mutex>
 
 namespace FEXCore {
 class SyscallHandler;
 class BlockSamplingData;
+class GdbServer;
 
 namespace CPU {
   class JITCore;
@@ -42,6 +44,7 @@ namespace FEXCore::Context {
       int64_t MaxInstPerBlock {-1LL};
       uint64_t VirtualMemSize {1ULL << 36};
       FEXCore::Config::ConfigCore Core {FEXCore::Config::CONFIG_INTERPRETER};
+      bool GdbServer {false};
 
       // LLVM JIT options
       bool LLVM_MemoryValidation {false};
@@ -68,6 +71,8 @@ namespace FEXCore::Context {
     CustomCPUFactoryType FallbackCPUFactory;
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
 
+
+
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif
@@ -81,6 +86,10 @@ namespace FEXCore::Context {
     void Pause();
     void Run();
     void Step();
+
+    bool GetGdbServerStatus() { return (bool)DebugServer; }
+    void StartGdbServer();
+    void StopGdbServer();
 
     // Debugger interface
     void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
@@ -128,6 +137,7 @@ namespace FEXCore::Context {
     uint64_t StartingRIP;
     IR::RegisterAllocationPass *RAPass {};
     std::mutex ExitMutex;
+    std::unique_ptr<GdbServer> DebugServer;
 
     bool StartPaused = false;
 #if ENABLE_JITSYMBOLS

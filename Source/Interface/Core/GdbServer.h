@@ -1,6 +1,6 @@
 
+#include <mutex>
 #include <thread>
-#include <condition_variable>
 
 #include "Interface/Context/Context.h"
 
@@ -10,16 +10,14 @@ namespace FEXCore {
 
 class GdbServer {
 public:
-    GdbServer(FEXCore::Context::Context *ctx, FEXCore::CodeLoader *Loader);
-    void StartAndBlock() { StartThread(OpenSocket()); Wait(); }
+    GdbServer(FEXCore::Context::Context *ctx);
 
 private:
-    std::unique_ptr<std::iostream> OpenSocket();
-    void StartThread(std::unique_ptr<std::iostream> stream);
-    void GdbServerLoop(std::unique_ptr<std::iostream> stream);
-    void Wait() {
+    void Break();
 
-    }
+    std::unique_ptr<std::iostream> OpenSocket();
+    void StartThread();
+    void GdbServerLoop();
     std::string ReadPacket(std::iostream &stream);
     void SendPacket(std::ostream &stream, std::string packet);
 
@@ -34,9 +32,8 @@ private:
     FEXCore::Context::Context *CTX;
     std::thread gdbServerThread;
     uint64_t data_offset;
-
-    std::condition_variable waiting;
-
+    std::unique_ptr<std::iostream> CommsStream;
+    std::mutex sendMutex;
 };
 
 }

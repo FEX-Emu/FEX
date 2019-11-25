@@ -3060,12 +3060,9 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
   uint8_t Reason{};
   uint8_t Literal{};
-  BlockSetRIP = true;
+  bool setRIP = false;
 
   switch (Op->OP) {
-  case 0xCC:
-    Reason = 0;
-  break;
   case 0xCD:
     Reason = 1;
     Literal = Op->Src1.TypeLiteral.Literal;
@@ -3078,15 +3075,24 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   break;
   case 0xF4: {
     Reason = 4;
-
-    // We want to set RIP to the next instruction after HLT
-    auto NewRIP = _Constant(Op->PC + Op->InstSize);
-    _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
+    setRIP = true;
   break;
   }
   case 0x0B:
     Reason = 5;
+  case 0xCC:
+    Reason = 6;
+    setRIP = true;
   break;
+  break;
+  }
+
+  if (setRIP) {
+    BlockSetRIP = setRIP;
+
+    // We want to set RIP to the next instruction after HLT/INT3
+    auto NewRIP = _Constant(Op->PC + Op->InstSize);
+    _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
   }
 
   if (Op->OP == 0xCE) { // Conditional to only break if Overflow == 1

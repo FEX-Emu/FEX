@@ -284,15 +284,20 @@ namespace FEXCore::Context {
     uint64_t SlotSize = Loader->InitializeThreadSlot(TLSSlotWriter);
     Thread->State.State.rip = StartingRIP = Loader->DefaultRIP();
 
-    if (false) {
-      auto gdb = new GdbServer(this, Loader);
-      gdb->StartAndBlock();
-      StartPaused = true;
-    }
-
     InitializeThread(Thread);
 
     return true;
+  }
+
+  void Context::StartGdbServer() {
+    if (!DebugServer) {
+      DebugServer = std::make_unique<GdbServer>(this);
+      StartPaused = true;
+    }
+  }
+
+  void Context::StopGdbServer() {
+    DebugServer.reset();
   }
 
   void Context::WaitForIdle() {

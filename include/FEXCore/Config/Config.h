@@ -10,6 +10,7 @@ namespace FEXCore::Config {
     CONFIG_DEFAULTCORE,
     CONFIG_VIRTUALMEMSIZE,
     CONFIG_SINGLESTEP,
+    CONFIG_GDBSERVER,
   };
 
   enum ConfigCore {
