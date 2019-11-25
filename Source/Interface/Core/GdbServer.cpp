@@ -410,6 +410,41 @@ std::string GdbServer::handleV(std::string& packet) {
         data.resize(ret);
         return F_data(ret, data);
     }
+    if ((ss = match("vCont?"))) {
+        return "vCont;c;C;s;t"; // We support continue, step and terminate
+                                // FIXME: We also claim to support continue with signal... because it's compulsory
+    }
+    if ((ss = match("vCont;"))) {
+        char action;
+        int thread;
+
+        action = ss->get();
+
+        if (ss->peek() == ':') {
+            ss->get();
+            *ss >> std::hex >> thread;
+        }
+
+        if (ss->fail() || !ss->eof()) {
+            return "E00";
+        }
+
+        switch (action) {
+        case 'c':
+            CTX->Run();
+            return ""; // fixme
+        case 's':
+            CTX->Step();
+            return ""; // fixme
+
+        case 't':
+            CTX->ShouldStop = true;
+            return "";
+        default:
+            return "E00";
+        }
+
+    }
     return "";
 }
 
