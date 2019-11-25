@@ -444,14 +444,31 @@
       ]
     },
 
+    "VAnd": {
+			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VOr": {
 			"HasDest": true,
-      "SSAArgs": "2"
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
     },
 
     "VXor": {
 			"HasDest": true,
-      "SSAArgs": "2"
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
     },
 
     "VAdd": {

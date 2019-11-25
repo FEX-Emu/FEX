@@ -1497,7 +1497,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
     break;
     }
     case IR::OP_VOR: {
-      auto Op = IROp->C<IR::IROp_Or>();
+      auto Op = IROp->C<IR::IROp_VOr>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
 
@@ -1506,11 +1506,20 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
     break;
     }
     case IR::OP_VXOR: {
-      auto Op = IROp->C<IR::IROp_Or>();
+      auto Op = IROp->C<IR::IROp_VXor>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
 
       auto Result = JITState.IRBuilder->CreateXor(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VAND: {
+      auto Op = IROp->C<IR::IROp_VAnd>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      auto Result = JITState.IRBuilder->CreateAnd(Src1, Src2);
       SetDest(*WrapperOp, Result);
     break;
     }
