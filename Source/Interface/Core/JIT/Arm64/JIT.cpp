@@ -1000,6 +1000,22 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         sub(Dst, TMP1, Dst);
         break;
       }
+      case IR::OP_REV: {
+        auto Op = IROp->C<IR::IROp_Rev>();
+        switch (OpSize) {
+          case 2:
+            rev16(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          break;
+          case 4:
+            rev(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            break;
+          case 8:
+            rev(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            break;
+          default: LogMan::Msg::A("Unknown REV size: %d", OpSize); break;
+        }
+        break;
+      }
       case IR::OP_CAS: {
         auto Op = IROp->C<IR::IROp_CAS>();
         // Args[0]: Expected

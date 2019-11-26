@@ -2049,6 +2049,24 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov (GetDst<RA_64>(Node), rax);
           break;
         }
+        case IR::OP_REV: {
+          auto Op = IROp->C<IR::IROp_Rev>();
+          switch (OpSize) {
+            case 2:
+              LogMan::Msg::A("Unhandled REV size 2");
+            break;
+            case 4:
+              mov (GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              bswap(GetDst<RA_32>(Node).cvt32());
+              break;
+            case 8:
+              mov (GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              bswap(GetDst<RA_64>(Node).cvt64());
+              break;
+            default: LogMan::Msg::A("Unknown REV size: %d", OpSize); break;
+          }
+          break;
+        }
         case IR::OP_FINDTRAILINGZEROS: {
           auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
           tzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
