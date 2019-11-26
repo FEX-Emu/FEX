@@ -3,7 +3,7 @@
   "Ignore": [],
   "RegData": {
     "RAX": "1",
-    "RDX": "2"
+    "RBX": "2"
   },
   "MemoryRegions": {
     "0x100000000": "4096"

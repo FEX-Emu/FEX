@@ -2,9 +2,9 @@
 {
   "Match": "All",
   "RegData": {
-    "RAX": "0xFFFFFFFFFFFFFFD1",
-    "RBX": "0xFFFFFFFFFFFFDAD1",
-    "RCX": "0xBAD0DAD1",
+    "RAX": "0xFFFFFFFFFFFFFFFF",
+    "RBX": "0xFFFFFFFFFFFFFFFF",
+    "RCX": "0xFFFFFFFFFFFFFFFF",
     "RDX": "0xDEADBEEFBAD0DAD1",
     "R15": "0xDEADBEEFBAD0DAD1"
   }

@@ -21,3 +21,5 @@ movzx bx,  al ; 8bit-> 16bit
 movzx ecx, al ; 8bit-> 32bit
 movzx edx, ax ; 16bit-> 32bit
 movzx rdi, ax ; 16bit -> 64bit
+
+hlt
