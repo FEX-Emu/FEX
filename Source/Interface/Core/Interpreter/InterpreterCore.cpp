@@ -11,6 +11,7 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 
 #include <atomic>
+#include <cmath>
 #include <vector>
 
 namespace FEXCore::CPU {
@@ -1046,6 +1047,15 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, &Dst, 16);
             break;
           }
+          case IR::OP_VAND: {
+            auto Op = IROp->C<IR::IROp_VAnd>();
+            __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+            __uint128_t Src2 = *GetSrc<__uint128_t*>(Op->Header.Args[1]);
+
+            __uint128_t Dst = Src1 & Src2;
+            memcpy(GDP, &Dst, 16);
+            break;
+          }
           case IR::OP_VXOR: {
             auto Op = IROp->C<IR::IROp_VXor>();
             __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
@@ -1094,6 +1104,15 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
     }                                                 \
     break;                                            \
     }
+  #define DO_VECTOR_1SRC_OP(size, type, func)              \
+    case size: {                                      \
+    auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+    auto *Src_d = reinterpret_cast<type*>(Src); \
+    for (uint8_t i = 0; i < Elements; ++i) {          \
+      Dst_d[i] = func(Src_d[i]);          \
+    }                                                 \
+    break;                                            \
+    }
           case IR::OP_VADD: {
             auto Op = IROp->C<IR::IROp_VAdd>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -1132,6 +1151,156 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, Tmp, Op->RegisterSize);
             break;
           }
+          case IR::OP_VFADD: {
+            auto Op = IROp->C<IR::IROp_VFAdd>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) { return a + b; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(4, float, Func)
+              DO_VECTOR_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFSUB: {
+            auto Op = IROp->C<IR::IROp_VFSub>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) { return a - b; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(4, float, Func)
+              DO_VECTOR_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFMUL: {
+            auto Op = IROp->C<IR::IROp_VFMul>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) { return a * b; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(4, float, Func)
+              DO_VECTOR_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFDIV: {
+            auto Op = IROp->C<IR::IROp_VFDiv>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) { return a / b; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(4, float, Func)
+              DO_VECTOR_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFMIN: {
+            auto Op = IROp->C<IR::IROp_VFMin>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) { return std::min(a, b); };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(4, float, Func)
+              DO_VECTOR_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFMAX: {
+            auto Op = IROp->C<IR::IROp_VFMax>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) { return std::max(a, b); };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(4, float, Func)
+              DO_VECTOR_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFRECP: {
+            auto Op = IROp->C<IR::IROp_VFRecp>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a) { return 1.0 / a; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_OP(4, float, Func)
+              DO_VECTOR_1SRC_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFSQRT: {
+            auto Op = IROp->C<IR::IROp_VFSqrt>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a) { return std::sqrt(a); };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_OP(4, float, Func)
+              DO_VECTOR_1SRC_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFRSQRT: {
+            auto Op = IROp->C<IR::IROp_VFRSqrt>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a) { return 1.0 / std::sqrt(a); };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_OP(4, float, Func)
+              DO_VECTOR_1SRC_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
           case IR::OP_VUMIN: {
             auto Op = IROp->C<IR::IROp_VUMin>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -1159,6 +1328,44 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             uint8_t Elements = Op->RegisterSize / Op->ElementSize;
             auto Func = [](auto a, auto b) { return std::min(a, b); };
+
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(1, int8_t,  Func)
+              DO_VECTOR_OP(2, int16_t, Func)
+              DO_VECTOR_OP(4, int32_t, Func)
+              DO_VECTOR_OP(8, int64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VUMAX: {
+            auto Op = IROp->C<IR::IROp_VUMax>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+            auto Func = [](auto a, auto b) { return std::max(a, b); };
+
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(1, uint8_t,  Func)
+              DO_VECTOR_OP(2, uint16_t, Func)
+              DO_VECTOR_OP(4, uint32_t, Func)
+              DO_VECTOR_OP(8, uint64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VSMAX: {
+            auto Op = IROp->C<IR::IROp_VSMax>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+            auto Func = [](auto a, auto b) { return std::max(a, b); };
 
             switch (Op->ElementSize) {
               DO_VECTOR_OP(1, int8_t,  Func)
@@ -1489,10 +1696,54 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_VExtr>();
             __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
             __uint128_t Src2 = *GetSrc<__uint128_t*>(Op->Header.Args[1]);
+            LogMan::Throw::A(Op->RegisterSize == 16, "Unknown VEXTR register size");
 
-            uint8_t Offset = Op->Index * 8;
-            __uint128_t Dst = (Src1 << (sizeof(__uint128_t) - Offset)) | (Src2 >> Offset);
-            memcpy(GDP, &Dst, 16);
+            uint64_t Offset = Op->Index * 8;
+            __uint128_t Dst = (Src1 << (sizeof(__uint128_t) * 8 - Offset)) | (Src2 >> Offset);
+
+            memcpy(GDP, &Dst, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_SCVTF: {
+            auto Op = IROp->C<IR::IROp_SCVTF>();
+            if (Op->ElementSize == 8) {
+              double Dst = (double)*GetSrc<int64_t*>(Op->Header.Args[0]);
+              memcpy(GDP, &Dst, Op->ElementSize);
+            }
+            else {
+              float Dst = (float)*GetSrc<int32_t*>(Op->Header.Args[0]);
+              memcpy(GDP, &Dst, Op->ElementSize);
+            }
+            break;
+          }
+          case IR::OP_FCVTZS: {
+            auto Op = IROp->C<IR::IROp_SCVTF>();
+            if (Op->ElementSize == 8) {
+              int64_t Dst = (int64_t)*GetSrc<double*>(Op->Header.Args[0]);
+              memcpy(GDP, &Dst, Op->ElementSize);
+            }
+            else {
+              int32_t Dst = (int32_t)*GetSrc<float*>(Op->Header.Args[0]);
+              memcpy(GDP, &Dst, Op->ElementSize);
+            }
+            break;
+          }
+          case IR::OP_FCVTF: {
+            auto Op = IROp->C<IR::IROp_FCVTF>();
+            uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
+            switch (Conv) {
+              case 0x0804: { // Double <- Float
+                double Dst = (double)*GetSrc<float*>(Op->Header.Args[0]);
+                memcpy(GDP, &Dst, 8);
+                break;
+              }
+              case 0x0408: { // Float <- Double
+                float Dst = (float)*GetSrc<double*>(Op->Header.Args[0]);
+                memcpy(GDP, &Dst, 4);
+                break;
+              }
+              default: LogMan::Msg::A("Unknown FCVT sizes: 0x%x", Conv);
+            }
             break;
           }
           default:
