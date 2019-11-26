@@ -9,6 +9,7 @@ namespace FEX::ArgLoader {
 
     optparse::OptionParser Parser{};
     optparse::OptionGroup CPUGroup(Parser, "CPU Core options");
+    optparse::OptionGroup EmulationGroup(Parser, "Emulation options");
     optparse::OptionGroup TestGroup(Parser, "Test Harness options");
 
     {
@@ -20,7 +21,6 @@ namespace FEX::ArgLoader {
 
       Parser.set_defaults("Break", "0");
       Parser.set_defaults("Multiblock", "0");
-
 
       CPUGroup.add_option("-b", "--break")
         .dest("Break")
@@ -54,6 +54,26 @@ namespace FEX::ArgLoader {
         .help("Enables the GDB server");
 
       Parser.add_option_group(CPUGroup);
+    }
+    {
+      Parser.set_defaults("AccurateSTDOut", "0");
+      Parser.set_defaults("LibraryPath", "");
+
+      EmulationGroup.add_option("-L", "--ld-prefix")
+        .dest("LibraryPath")
+        .help("Which LD library prefix to use")
+        .set_default("");
+
+      EmulationGroup.add_option("--accurate-std")
+        .dest("AccurateSTDOut")
+        .action("store_true")
+        .help("Enable accurate output for stdout/stderr");
+      EmulationGroup.add_option("--no-accurate-std")
+        .dest("AccurateSTDOut")
+        .action("store_false")
+        .help("Enable accurate output for stdout/stderr");
+
+      Parser.add_option_group(EmulationGroup);
     }
     {
       TestGroup.add_option("-g", "--dump-gprs")
@@ -125,6 +145,18 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("GdbServer")) {
         bool GdbServer = Options.get("GdbServer");
         Config::Add("GdbServer", std::to_string(GdbServer));
+      }
+    }
+
+    {
+      if (Options.is_set_by_user("LibraryPath")) {
+        char const *Option = Options.get("LibraryPath");
+        Config::Add("LibraryPath", Option);
+      }
+
+      if (Options.is_set_by_user("AccurateSTDOut")) {
+        bool Option = Options.get("AccurateSTDOut");
+        Config::Add("AccurateSTDOut", std::to_string(Option));
       }
     }
 

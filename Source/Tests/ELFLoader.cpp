@@ -65,6 +65,8 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::Value<bool> SingleStepConfig{"SingleStep", false};
   FEX::Config::Value<bool> MultiblockConfig{"Multiblock", false};
   FEX::Config::Value<bool> GdbServerConfig{"GdbServer", false};
+  FEX::Config::Value<bool> AccurateSTDConfig{"AccurateSTDOut", false};
+  FEX::Config::Value<std::string> LDPath{"LibraryPath", ""};
 
   auto Args = FEX::ArgLoader::Get();
 
@@ -82,6 +84,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, CoreConfig() > 3 ? FEXCore::Config::CONFIG_CUSTOM : CoreConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MULTIBLOCK, MultiblockConfig());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ACCURATESTDOUT, AccurateSTDConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SINGLESTEP, SingleStepConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MAXBLOCKINST, BlockSizeConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_GDBSERVER, GdbServerConfig());
