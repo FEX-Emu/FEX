@@ -163,8 +163,10 @@ void InitializeBaseTables() {
     {0xA9, 1, X86InstInfo{"TEST",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,                4, nullptr}},
     {0xAA, 1, X86InstInfo{"STOS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS  | FLAGS_SUPPORTS_REP | FLAGS_SF_SRC_RAX,                   0, nullptr}},
     {0xAB, 1, X86InstInfo{"STOS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_SUPPORTS_REP | FLAGS_SF_SRC_RAX,                                   0, nullptr}},
-    {0xAC, 2, X86InstInfo{"LODS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_SUPPORTS_REP,                                                      0, nullptr}},
-    {0xAE, 2, X86InstInfo{"SCAS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                                                           0, nullptr}},
+    {0xAC, 1, X86InstInfo{"LODS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_SUPPORTS_REP,                                                      0, nullptr}},
+    {0xAD, 1, X86InstInfo{"LODS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_SUPPORTS_REP,                                                      0, nullptr}},
+    {0xAE, 1, X86InstInfo{"SCAS",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_SUPPORTS_REP | FLAGS_SF_SRC_RAX,                                   0, nullptr}},
+    {0xAF, 1, X86InstInfo{"SCAS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_SUPPORTS_REP | FLAGS_SF_SRC_RAX,                                   0, nullptr}},
 
     {0xB0, 8, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_REX_IN_BYTE ,                                         1, nullptr}},
     {0xB8, 8, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_REX_IN_BYTE | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_DISPLACE_SIZE_MUL_2, 4, nullptr}},
