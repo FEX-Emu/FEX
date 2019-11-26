@@ -503,10 +503,14 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       Args->Argument[2],
       CTX->MemoryMapper.GetPointer<void*>(Args->Argument[3]));
   break;
-
   case SYSCALL_TIME: {
-    time_t *ClockResult = CTX->MemoryMapper.GetPointer<time_t*>(Args->Argument[2]);
-    Result = time(ClockResult);
+    time_t TmpTime;
+    TmpTime = time(nullptr);
+    if (Args->Argument[1]) {
+      time_t *ClockResult = CTX->MemoryMapper.GetPointer<time_t*>(Args->Argument[1]);
+      *ClockResult = TmpTime;
+    }
+    Result = TmpTime;
     // XXX: Debug
     // memset(ClockResult, 0, sizeof(time_t));
     // Result = 0;
