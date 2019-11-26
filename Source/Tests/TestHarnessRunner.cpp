@@ -88,9 +88,16 @@ int main(int argc, char **argv) {
   while (FEXCore::Context::RunUntilExit(CTX) == FEXCore::Context::ExitReason::EXIT_DEBUG)
     ;
 
+  // Just re-use compare state. It also checks against the expected values in config.
+  FEXCore::Core::CPUState State;
+  FEXCore::Context::GetCPUState(CTX, &State);
+  bool Passed = Loader.CompareStates(State, State);
+
+  LogMan::Msg::I("Passed? %s\n", Passed ? "Yes" : "No");
+
   FEXCore::SHM::DestroyRegion(SHM);
   FEXCore::Context::DestroyContext(CTX);
 
-  return 0;
+  return Passed ? 0 : -1;
 }
 
