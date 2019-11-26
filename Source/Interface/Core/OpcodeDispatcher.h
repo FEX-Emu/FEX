@@ -133,16 +133,21 @@ public:
   void SHLOp(OpcodeArgs);
   template<bool SHR1Bit>
   void SHROp(OpcodeArgs);
+  void SHLDOp(OpcodeArgs);
+  void SHRDOp(OpcodeArgs);
   void ASHROp(OpcodeArgs);
   void ROROp(OpcodeArgs);
   void ROLOp(OpcodeArgs);
   void BTOp(OpcodeArgs);
+  void BTROp(OpcodeArgs);
+  void BTSOp(OpcodeArgs);
   void IMUL1SrcOp(OpcodeArgs);
   void IMUL2SrcOp(OpcodeArgs);
   void IMULOp(OpcodeArgs);
   void STOSOp(OpcodeArgs);
   void MOVSOp(OpcodeArgs);
   void CMPSOp(OpcodeArgs);
+  void SCASOp(OpcodeArgs);
   void BSWAPOp(OpcodeArgs);
 
   void RDTSCOp(OpcodeArgs);
@@ -158,15 +163,21 @@ public:
   void NOTOp(OpcodeArgs);
 
   // SSE
+  void MOVAPSOp(OpcodeArgs);
   void MOVUPSOp(OpcodeArgs);
   void MOVLHPSOp(OpcodeArgs);
   void MOVHPDOp(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorALUOp(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void VectorScalarALUOp(OpcodeArgs);
   void MOVQOp(OpcodeArgs);
   void PADDQOp(OpcodeArgs);
   void PSUBQOp(OpcodeArgs);
   template<size_t ElementSize>
   void PMINUOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void PMAXUOp(OpcodeArgs);
   void PMINSWOp(OpcodeArgs);
   void PMOVMSKBOp(OpcodeArgs);
   void PUNPCKLOp(OpcodeArgs);
@@ -184,6 +195,14 @@ public:
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
   void MOVDDUPOp(OpcodeArgs);
+  template<size_t DstElementSize, bool Signed>
+  void CVT(OpcodeArgs);
+  template<size_t SrcElementSize, bool Signed>
+  void FCVT(OpcodeArgs);
+  template<size_t DstElementSize, size_t SrcElementSize>
+  void FCVTF(OpcodeArgs);
+  void TZCNT(OpcodeArgs);
+  void MOVSSOp(OpcodeArgs);
 
   template<size_t ElementSize>
   void SHUFOp(OpcodeArgs);
@@ -257,6 +276,12 @@ public:
   }
   IRPair<IROp_VSMin> _VSMin(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VSMin(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VUMax> _VUMax(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VUMax(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSMax> _VSMax(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSMax(ssa0, ssa1, RegisterSize, ElementSize);
   }
   IRPair<IROp_VZip> _VZip(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VZip(ssa0, ssa1, RegisterSize, ElementSize);

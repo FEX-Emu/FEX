@@ -696,7 +696,6 @@ void OpDispatchBuilder::SETccOp(OpcodeArgs) {
   StoreResult(Op, SrcCond, -1);
 }
 
-
 void OpDispatchBuilder::TESTOp(OpcodeArgs) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
@@ -1140,6 +1139,82 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+
+  OrderedNode *Shift{};
+  if (Op->OP == 0xA4)  {
+    LogMan::Throw::A(Op->Src2.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+    Shift = _Constant(Op->Src2.TypeLiteral.Literal);
+  }
+  else
+    Shift = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
+
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift = _And(Shift, _Constant(0x3F));
+  else
+    Shift = _And(Shift, _Constant(0x1F));
+
+  auto ShiftRight = _Neg(Shift);
+
+  OrderedNode *Res{};
+  if (Size == 16) {
+    LogMan::Msg::A("Unsupported Op");
+  }
+  else {
+    auto Tmp1 = _Lshl(Dest, Shift);
+    auto Tmp2 = _Lshr(Src, ShiftRight);
+    Res = _Or(Tmp1, Tmp2);
+  }
+
+  StoreResult(Op, Res, -1);
+
+  // XXX: This isn't correct
+  // GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+}
+
+void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+
+  OrderedNode *Shift{};
+  if (Op->OP == 0xAC)  {
+    LogMan::Throw::A(Op->Src2.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+    Shift = _Constant(Op->Src2.TypeLiteral.Literal);
+  }
+  else
+    Shift = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
+
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift = _And(Shift, _Constant(0x3F));
+  else
+    Shift = _And(Shift, _Constant(0x1F));
+
+  auto ShiftRight = _Neg(Shift);
+
+  OrderedNode *Res{};
+  if (Size == 16) {
+    LogMan::Msg::A("Unsupported Op");
+  }
+  else {
+    auto Tmp1 = _Lshr(Dest, Shift);
+    auto Tmp2 = _Lshl(Src, ShiftRight);
+    Res = _Or(Tmp1, Tmp2);
+  }
+
+  StoreResult(Op, Res, -1);
+
+  // XXX: This isn't correct
+  // GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+}
+
 void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   bool SHR1Bit = false;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
@@ -1298,6 +1373,91 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Now shift in to the correct bit location
     Result = _Lshr(Result, BitSelect);
+  }
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
+}
+
+void OpDispatchBuilder::BTROp(OpcodeArgs) {
+  OrderedNode *Result;
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+    Result = _Lshr(Dest, Src);
+  }
+  else {
+    // Load the address to the memory location
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
+    uint32_t Size = GetSrcSize(Op);
+    uint32_t Mask = Size * 8 - 1;
+    OrderedNode *SizeMask = _Constant(Mask);
+    OrderedNode *AddressShift = _Constant(32 - __builtin_clz(Mask));
+
+    // Get the bit selection from the src
+    OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    // First shift out the selection bits
+    Src = _Lshr(Src, AddressShift);
+
+    // Now multiply by operand size to get correct indexing
+    if (Size != 1) {
+      Src = _Lshl(Src, _Constant(Size - 1));
+    }
+
+    // Get the address offset by shifting out the size of the op (To shift out the bit selection)
+    // Then use that to index in to the memory location by size of op
+
+    // Now add the addresses together and load the memory
+    OrderedNode *MemoryLocation = _Add(Dest, Src);
+    OrderedNode *Value = _LoadMem(Size, MemoryLocation, Size);
+
+    // Now shift in to the correct bit location
+    Result = _Lshr(Value, BitSelect);
+    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    BitMask = _Neg(BitMask);
+    Value = _And(Value, BitMask);
+    _StoreMem(Size, MemoryLocation, Value, Size);
+  }
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
+}
+
+void OpDispatchBuilder::BTSOp(OpcodeArgs) {
+  OrderedNode *Result;
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+    Result = _Lshr(Dest, Src);
+  }
+  else {
+    // Load the address to the memory location
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
+    uint32_t Size = GetSrcSize(Op);
+    uint32_t Mask = Size * 8 - 1;
+    OrderedNode *SizeMask = _Constant(Mask);
+    OrderedNode *AddressShift = _Constant(32 - __builtin_clz(Mask));
+
+    // Get the bit selection from the src
+    OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    // First shift out the selection bits
+    Src = _Lshr(Src, AddressShift);
+
+    // Now multiply by operand size to get correct indexing
+    if (Size != 1) {
+      Src = _Lshl(Src, _Constant(Size - 1));
+    }
+
+    // Get the address offset by shifting out the size of the op (To shift out the bit selection)
+    // Then use that to index in to the memory location by size of op
+
+    // Now add the addresses together and load the memory
+    OrderedNode *MemoryLocation = _Add(Dest, Src);
+    OrderedNode *Value = _LoadMem(Size, MemoryLocation, Size);
+
+    // Now shift in to the correct bit location
+    Result = _Lshr(Value, BitSelect);
+    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    Value = _Or(Value, BitMask);
+    _StoreMem(Size, MemoryLocation, Value, Size);
   }
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
 }
@@ -1530,9 +1690,105 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX), "Can't handle REP on this\n");
-  _Break(0, 0);
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Can't handle REPNE on MOVS\n");
+
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
+    auto Size = GetSrcSize(Op);
+
+    // Create all our blocks
+    auto LoopHead = CreateNewCodeBlock();
+    auto LoopTail = CreateNewCodeBlock();
+    auto LoopEnd = CreateNewCodeBlock();
+
+    // At the time this was written, our RA can't handle accessing nodes across blocks.
+    // So we need to re-load and re-calculate essential values each iteration of the loop.
+
+    // First thing we need to do is finish this block and jump to the start of the loop.
+    _Jump(LoopHead);
+
+      SetCurrentCodeBlock(LoopHead);
+      {
+        OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
+        auto ZeroConst = _Constant(0);
+
+        // Can we end the block?
+        auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
+            Counter, ZeroConst,
+            _Constant(1), ZeroConst);
+
+        _CondJump(CanLeaveCond, LoopEnd, LoopTail);
+      }
+
+      SetCurrentCodeBlock(LoopTail);
+      {
+        OrderedNode *Src = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
+        OrderedNode *Dest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
+
+        Src = _LoadMem(Size, Src, Size);
+
+        // Store to memory where RDI points
+        _StoreMem(Size, Dest, Src, Size);
+
+        OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
+
+        // Decrement counter
+        TailCounter = _Sub(TailCounter, _Constant(1));
+
+        // Store the counter so we don't have to deal with PHI here
+        _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
+
+        auto SizeConst = _Constant(Size);
+        auto NegSizeConst = _Constant(-Size);
+
+        // Calculate direction.
+        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+            DF,  _Constant(0),
+            SizeConst, NegSizeConst);
+
+        // Offset the pointer
+        OrderedNode *TailSrc = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
+        OrderedNode *TailDest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
+        TailSrc = _Add(TailSrc, PtrDir);
+        TailDest = _Add(TailDest, PtrDir);
+        _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), TailSrc);
+        _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest);
+
+        // Jump back to the start, we have more work to do
+        _Jump(LoopHead);
+      }
+
+    // Make sure to start a new block after ending this one
+
+    SetCurrentCodeBlock(LoopEnd);
+  }
+  else {
+    auto Size = GetSrcSize(Op);
+    OrderedNode *RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
+    OrderedNode *RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
+
+    auto Src = _LoadMem(Size, RSI, Size);
+
+    // Store to memory where RDI points
+    _StoreMem(Size, RDI, Src, Size);
+
+    auto SizeConst = _Constant(Size);
+    auto NegSizeConst = _Constant(-Size);
+
+    // Calculate direction.
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+        DF,  _Constant(0),
+        SizeConst, NegSizeConst);
+
+    RSI = _Add(RSI, PtrDir);
+    RDI = _Add(RDI, PtrDir);
+
+    _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), RSI);
+    _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), RDI);
+  }
 }
+
 void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
   LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX, "Can't only handle REP\n");
 
@@ -1600,6 +1856,77 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       _Jump(LoopStart);
     }
 
+  // Make sure to start a new block after ending this one
+  auto LoopEnd = CreateNewCodeBlock();
+  SetTrueJumpTarget(CondJump, LoopEnd);
+  SetCurrentCodeBlock(LoopEnd);
+}
+
+void OpDispatchBuilder::SCASOp(OpcodeArgs) {
+  LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX, "Can only handle REPNE\n");
+
+  auto Size = GetSrcSize(Op);
+
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Constant(0));
+
+  auto JumpStart = _Jump();
+  // Make sure to start a new block after ending this one
+    auto LoopStart = CreateNewCodeBlock();
+    SetJumpTarget(JumpStart, LoopStart);
+    SetCurrentCodeBlock(LoopStart);
+
+      auto ZeroConst = _Constant(0);
+      auto OneConst = _Constant(1);
+
+      OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
+
+      // Can we end the block?
+      OrderedNode *CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
+        Counter, ZeroConst,
+        OneConst, ZeroConst);
+
+      auto ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      CanLeaveCond = _Or(CanLeaveCond, ZF);
+
+    // We leave if RCX = 0
+    auto CondJump = _CondJump(CanLeaveCond);
+
+    auto LoopTail = CreateNewCodeBlock();
+    SetFalseJumpTarget(CondJump, LoopTail);
+    SetCurrentCodeBlock(LoopTail);
+
+    // Working loop
+    {
+      OrderedNode *Dest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
+
+      auto Src1 = LoadSource(Op, Op->Src1, Op->Flags, -1);
+      auto Src2 = _LoadMem(Size, Dest_RDI, Size);
+
+      auto ALUOp = _Sub(Src1, Src2);
+      GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
+
+      OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
+      OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
+
+      // Decrement counter
+      TailCounter = _Sub(TailCounter, _Constant(1));
+
+      // Store the counter so we don't have to deal with PHI here
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
+
+      auto SizeConst = _Constant(Size);
+      auto NegSizeConst = _Constant(-Size);
+
+      auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+      auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+          DF, _Constant(0),
+          SizeConst, NegSizeConst);
+
+      // Offset the pointer
+      TailDest_RDI = _Add(TailDest_RDI, PtrDir);
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest_RDI);
+      _Jump(LoopStart);
+  }
   // Make sure to start a new block after ending this one
   auto LoopEnd = CreateNewCodeBlock();
   SetTrueJumpTarget(CondJump, LoopEnd);
@@ -1771,6 +2098,11 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFSelectOp);
 }
 
+void OpDispatchBuilder::MOVAPSOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  StoreResult(Op, Src, -1);
+}
+
 void OpDispatchBuilder::MOVUPSOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, 1);
   StoreResult(Op, Src, 1);
@@ -1847,6 +2179,16 @@ void OpDispatchBuilder::PMINUOp(OpcodeArgs) {
   StoreResult(Op, ALUOp, -1);
 }
 
+template<size_t ElementSize>
+void OpDispatchBuilder::PMAXUOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+
+  auto ALUOp = _VUMax(Size, ElementSize, Dest, Src);
+  StoreResult(Op, ALUOp, -1);
+}
+
 void OpDispatchBuilder::PMINSWOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
@@ -1856,29 +2198,33 @@ void OpDispatchBuilder::PMINSWOp(OpcodeArgs) {
   StoreResult(Op, ALUOp, -1);
 }
 
+template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
-  FEXCore::IR::IROps IROp;
-  switch (Op->OP) {
-  case 0xEB:
-    IROp = FEXCore::IR::IROps::OP_VOR;
-  break;
-  case 0xEF:
-    IROp = FEXCore::IR::IROps::OP_VXOR;
-  break;
-  default:
-    IROp = FEXCore::IR::IROps::OP_LAST;
-    LogMan::Msg::A("Unknown ALU Op");
-  break;
-  }
-
+  auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
   OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
 
-  auto ALUOp = _Add(Dest, Src);
+  auto ALUOp = _VAdd(Size, ElementSize, Dest, Src);
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
 
   StoreResult(Op, ALUOp, -1);
+}
+
+template<FEXCore::IR::IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+
+  auto ALUOp = _VAdd(ElementSize, ElementSize, Dest, Src);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  // Insert the lower bits
+  auto Result = _VInsElement(Size, ElementSize, 0, 0, Dest, ALUOp);
+
+  StoreResult(Op, Result, -1);
 }
 
 void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
@@ -2217,14 +2563,15 @@ void OpDispatchBuilder::ExitFunction() {
 }
 
 uint8_t OpDispatchBuilder::GetDstSize(FEXCore::X86Tables::DecodedOp Op) {
-  constexpr std::array<uint8_t, 7> Sizes = {
+  constexpr std::array<uint8_t, 8> Sizes = {
     0, // Invalid DEF
     1,
     2,
     4,
     8,
     16,
-    32
+    32,
+    0, // Invalid DEF
   };
 
   uint32_t DstSizeFlag = FEXCore::X86Tables::DecodeFlags::GetSizeDstFlags(Op->Flags);
@@ -2234,14 +2581,15 @@ uint8_t OpDispatchBuilder::GetDstSize(FEXCore::X86Tables::DecodedOp Op) {
 }
 
 uint8_t OpDispatchBuilder::GetSrcSize(FEXCore::X86Tables::DecodedOp Op) {
-  constexpr std::array<uint8_t, 7> Sizes = {
+  constexpr std::array<uint8_t, 8> Sizes = {
     0, // Invalid DEF
     1,
     2,
     4,
     8,
     16,
-    32
+    32,
+    0, // Invalid DEF
   };
 
   uint32_t SrcSizeFlag = FEXCore::X86Tables::DecodeFlags::GetSizeSrcFlags(Op->Flags);
@@ -3177,6 +3525,88 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   StoreResult(Op, Res, -1);
 }
 
+template<size_t DstElementSize, bool Signed>
+void OpDispatchBuilder::CVT(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+
+  if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
+    // Source is 64bit
+    if (DstElementSize == 4) {
+      Src = _Bfe(32, 0, Src);
+    }
+  }
+  else {
+    // Source is 32bit
+    if (DstElementSize == 8) {
+      if (Signed)
+        Src = _Sext(32, Src);
+      else
+        Src = _Zext(32, Src);
+    }
+
+  }
+
+  if (Signed)
+    Src = _SCVTF(Src, DstElementSize);
+  else
+    Src = _UCVTF(Src, DstElementSize);
+
+  StoreResult(Op, Src, -1);
+}
+
+template<size_t SrcElementSize, bool Signed>
+void OpDispatchBuilder::FCVT(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+
+  if (Signed)
+    Src = _FCVTZS(Src, SrcElementSize);
+  else
+    Src = _FCVTZU(Src, SrcElementSize);
+
+  StoreResult(Op, Src, -1);
+
+}
+
+template<size_t DstElementSize, size_t SrcElementSize>
+void OpDispatchBuilder::FCVTF(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+
+  Src = _FCVTF(Src, DstElementSize, SrcElementSize);
+  StoreResult(Op, Src, -1);
+}
+
+void OpDispatchBuilder::TZCNT(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+
+  Src = _FindTrailingZeros(Src);
+  StoreResult(Op, Src, -1);
+}
+
+void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
+  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
+      Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    // MOVSS xmm1, xmm2
+    OrderedNode *Dest = LoadSource_WithOpSize(Op, Op->Dest, 16, Op->Flags, -1);
+    OrderedNode *Src = LoadSource_WithOpSize(Op, Op->Src1, 16, Op->Flags, -1);
+    auto Result = _VInsElement(16, 4, 0, 0, Dest, Src);
+    StoreResult(Op, Result, -1);
+  }
+  else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    // MOVSS xmm1, mem32
+    OrderedNode *Dest = LoadSource_WithOpSize(Op, Op->Dest, 16, Op->Flags, -1);
+    OrderedNode *Src = LoadSource_WithOpSize(Op, Op->Src1, 4, Op->Flags, -1);
+    Src = _VCastFromGPR(16, 4, Src);
+    auto Result = _VInsElement(16, 8, 0, 0, Dest, Src);
+    StoreResult(Op, Result, -1);
+  }
+  else {
+    // MOVSS mem32, xmm1
+    OrderedNode *Src = LoadSource_WithOpSize(Op, Op->Src1, 16, Op->Flags, -1);
+    auto Result = _VExtractToGPR(16, 4, Src, 0);
+    StoreResult_WithOpSize(Op, Op->Dest, Result, 4, -1);
+  }
+}
+
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
 
@@ -3366,6 +3796,7 @@ void InstallOpcodeHandlers() {
     {0xA6, 2, &OpDispatchBuilder::CMPSOp},
     {0xA8, 2, &OpDispatchBuilder::TESTOp},
     {0xAA, 2, &OpDispatchBuilder::STOSOp},
+    {0xAE, 2, &OpDispatchBuilder::SCASOp},
     {0xB0, 8, &OpDispatchBuilder::MOVOp},
     {0xB8, 8, &OpDispatchBuilder::MOVOp},
     {0xC2, 2, &OpDispatchBuilder::RETOp},
@@ -3401,9 +3832,12 @@ void InstallOpcodeHandlers() {
      {0x90, 16, &OpDispatchBuilder::SETccOp}, // XXX: Causes some unit tests to fail due to flags being incorrect
      {0xA2, 1, &OpDispatchBuilder::CPUIDOp},
      {0xA3, 1, &OpDispatchBuilder::BTOp}, // BT
-     {0xAB, 1, &OpDispatchBuilder::UnimplementedOp},
+     {0xA4, 2, &OpDispatchBuilder::SHLDOp},
+     {0xAB, 1, &OpDispatchBuilder::BTSOp},
+     {0xAC, 2, &OpDispatchBuilder::SHRDOp},
      {0xAF, 1, &OpDispatchBuilder::IMUL1SrcOp}, // XXX: Causes issues with LLVM JIT
      {0xB0, 2, &OpDispatchBuilder::CMPXCHGOp}, // CMPXCHG
+     {0xB3, 1, &OpDispatchBuilder::BTROp},
      {0xB6, 2, &OpDispatchBuilder::MOVZXOp},
      {0xBC, 1, &OpDispatchBuilder::BSFOp}, // BSF
      {0xBD, 1, &OpDispatchBuilder::BSROp}, // BSF
@@ -3418,8 +3852,15 @@ void InstallOpcodeHandlers() {
      {0x16, 1, &OpDispatchBuilder::MOVLHPSOp},
      {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
      {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
-     {0xEB, 1, &OpDispatchBuilder::VectorALUOp},
-
+     {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
+     {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
+     {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
+     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
+     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
+     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>},
+     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>},
+     {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 4>},
+     {0x5F, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMAX, 4>},
      {0x60, 3, &OpDispatchBuilder::PUNPCKLOp},
      {0x64, 1, &OpDispatchBuilder::PCMPGTOp<1>},
      {0x65, 1, &OpDispatchBuilder::PCMPGTOp<2>},
@@ -3441,8 +3882,11 @@ void InstallOpcodeHandlers() {
      {0xD7, 1, &OpDispatchBuilder::PMOVMSKBOp},
      // XXX: Untested
      {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
+     {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
      {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
-     {0xEF, 1, &OpDispatchBuilder::VectorALUOp},
+
+     {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 8>},
+     {0xEF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 8>},
      {0xF8, 4, &OpDispatchBuilder::PSUBQOp},
      {0xFE, 1, &OpDispatchBuilder::PADDQOp},
    };
@@ -3551,16 +3995,35 @@ void InstallOpcodeHandlers() {
    };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepModOpTable = {
+    {0x10, 2, &OpDispatchBuilder::MOVSSOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
+    {0x2A, 1, &OpDispatchBuilder::CVT<4, true>},
+    {0x2C, 1, &OpDispatchBuilder::CVT<4, true>},
+    {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 4>},
+    {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 4>},
+    {0x5A, 1, &OpDispatchBuilder::FCVTF<8, 4>},
+    {0x5C, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 4>},
+    {0x5D, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMIN, 4>},
+    {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 4>},
+    {0x5F, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 4>},
     {0x6F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x7E, 1, &OpDispatchBuilder::MOVQOp},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
-    {0xBC, 2, &OpDispatchBuilder::UnimplementedOp},
+    {0xBC, 2, &OpDispatchBuilder::TZCNT},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepNEModOpTable = {
+    {0x10, 2, &OpDispatchBuilder::MOVAPSOp},
     {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
+    {0x2A, 1, &OpDispatchBuilder::CVT<8, true>},
+    {0x2C, 1, &OpDispatchBuilder::FCVT<8, true>},
+    {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 8>},
+    {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 8>},
+    {0x5C, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 8>},
+    {0x5D, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMIN, 8>},
+    {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 8>},
+    {0x5F, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, true>},
     {0xF0, 1, &OpDispatchBuilder::UnimplementedOp},
   };
@@ -3569,7 +4032,18 @@ void InstallOpcodeHandlers() {
     {0x12, 2, &OpDispatchBuilder::MOVOp},
     {0x16, 2, &OpDispatchBuilder::MOVHPDOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
+    {0x28, 2, &OpDispatchBuilder::MOVAPSOp},
 
+    {0x40, 16, &OpDispatchBuilder::CMOVOp},
+    {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
+    {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
+    {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
+    {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>},
+    {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 8>},
+    {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 8>},
+    {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 8>},
+    {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 8>},
+    {0x5F, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMAX, 8>},
     {0x60, 3, &OpDispatchBuilder::PUNPCKLOp},
     {0x64, 1, &OpDispatchBuilder::PCMPGTOp<1>},
     {0x65, 1, &OpDispatchBuilder::PCMPGTOp<2>},
@@ -3594,12 +4068,14 @@ void InstallOpcodeHandlers() {
     {0xD7, 1, &OpDispatchBuilder::PMOVMSKBOp}, // PMOVMSKB
     // XXX: Untested
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
+    {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
+    {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
     {0xE7, 1, &OpDispatchBuilder::UnimplementedOp},
     {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
 
-    {0xEB, 1, &OpDispatchBuilder::VectorALUOp},
+    {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
 
-    {0xEF, 1, &OpDispatchBuilder::VectorALUOp}, // PXOR
+    {0xEF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
     {0xF2, 1, &OpDispatchBuilder::PSLL<4, true>},
     {0xF3, 1, &OpDispatchBuilder::PSLL<8, true>},
     {0xF8, 4, &OpDispatchBuilder::PSUBQOp},
@@ -3617,6 +4093,16 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 4), 1, &OpDispatchBuilder::BTOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 4), 1, &OpDispatchBuilder::BTOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 4), 1, &OpDispatchBuilder::BTOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 5), 1, &OpDispatchBuilder::BTSOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 5), 1, &OpDispatchBuilder::BTSOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 5), 1, &OpDispatchBuilder::BTSOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 5), 1, &OpDispatchBuilder::BTSOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 6), 1, &OpDispatchBuilder::BTROp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 6), 1, &OpDispatchBuilder::BTROp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 6), 1, &OpDispatchBuilder::BTROp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 6), 1, &OpDispatchBuilder::BTROp},
 
     // GROUP 13
     {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLD<4>},
@@ -3681,8 +4167,8 @@ constexpr uint16_t PF_F2 = 3;
 #define PF_3A_NONE 0
 #define PF_3A_66   1
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F3ATable = {
-    {OPD(0, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(1, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(0, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::PAlignrOp},
+    {OPD(1, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::PAlignrOp},
   };
 #undef PF_3A_NONE
 #undef PF_3A_66
