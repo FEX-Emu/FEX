@@ -584,6 +584,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov(Dst, rax);
           break;
         }
+        case IR::OP_NEG: {
+          auto Op = IROp->C<IR::IROp_Neg>();
+          auto Dst = GetDst<RA_64>(Node);
+          mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          neg(Dst);
+          break;
+        }
         case IR::OP_SUB: {
           auto Op = IROp->C<IR::IROp_Sub>();
           auto Dst = GetDst<RA_64>(Node);
@@ -1358,7 +1365,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           auto Dst = GetDst(Node);
           pinsrq(Dst, rax, 0);
-          pinsrd(Dst, rdx, 1);
+          pinsrq(Dst, rdx, 1);
           break;
         }
         case IR::OP_EXTRACTELEMENT: {
@@ -1468,6 +1475,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VAND: {
+          auto Op = IROp->C<IR::IROp_VAnd>();
+          vpand(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+        }
         case IR::OP_VXOR: {
           auto Op = IROp->C<IR::IROp_VXor>();
           vpxor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
@@ -1476,6 +1488,214 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         case IR::OP_VOR: {
           auto Op = IROp->C<IR::IROp_VOr>();
           vpor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+        }
+        case IR::OP_VFADD: {
+          auto Op = IROp->C<IR::IROp_VFAdd>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            // Scalar
+            switch (Op->ElementSize) {
+              case 4: {
+                vaddss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              case 8: {
+                vaddsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          else {
+            // Vector
+            switch (Op->ElementSize) {
+              case 4: {
+                vaddps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              case 8: {
+                vaddpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          break;
+        }
+        case IR::OP_VFSUB: {
+          auto Op = IROp->C<IR::IROp_VFSub>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            // Scalar
+            switch (Op->ElementSize) {
+              case 4: {
+                vsubss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              case 8: {
+                vsubsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          else {
+            // Vector
+            switch (Op->ElementSize) {
+              case 4: {
+                vsubps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              case 8: {
+                vsubpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          break;
+        }
+        case IR::OP_VFMUL: {
+          auto Op = IROp->C<IR::IROp_VFMul>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            // Scalar
+            switch (Op->ElementSize) {
+              case 4: {
+                vmulss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              case 8: {
+                vmulsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          else {
+            // Vector
+            switch (Op->ElementSize) {
+              case 4: {
+                vmulps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              case 8: {
+                vmulpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          break;
+        }
+        case IR::OP_VFDIV: {
+          auto Op = IROp->C<IR::IROp_VFDiv>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            // Scalar
+            switch (Op->ElementSize) {
+              case 4: {
+                vdivss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              case 8: {
+                vdivsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          else {
+            // Vector
+            switch (Op->ElementSize) {
+              case 4: {
+                vdivps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              case 8: {
+                vdivpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          break;
+        }
+        case IR::OP_VFRECP: {
+          auto Op = IROp->C<IR::IROp_VFRecp>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            // Scalar
+            switch (Op->ElementSize) {
+              case 4: {
+                vrcpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          else {
+            // Vector
+            switch (Op->ElementSize) {
+              case 4: {
+                vrcpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          break;
+        }
+        case IR::OP_VFSQRT: {
+          auto Op = IROp->C<IR::IROp_VFSqrt>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            // Scalar
+            switch (Op->ElementSize) {
+              case 4: {
+                vsqrtss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
+              break;
+              }
+              case 8: {
+                vsqrtsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          else {
+            // Vector
+            switch (Op->ElementSize) {
+              case 4: {
+                vsqrtps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              break;
+              }
+              case 8: {
+                vsqrtpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          break;
+        }
+        case IR::OP_VFRSQRT: {
+          auto Op = IROp->C<IR::IROp_VFRSqrt>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            // Scalar
+            switch (Op->ElementSize) {
+              case 4: {
+                vrsqrtss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
+          else {
+            // Vector
+            switch (Op->ElementSize) {
+              case 4: {
+                vrsqrtps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+          }
           break;
         }
         case IR::OP_VBITCAST: {
@@ -1679,6 +1899,78 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VUMAX: {
+          auto Op = IROp->C<IR::IROp_VUMax>();
+          switch (Op->ElementSize) {
+          case 1: {
+            vpmaxub(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 2: {
+            vpmaxuw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 4: {
+            vpmaxud(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
+        case IR::OP_VSMAX: {
+          auto Op = IROp->C<IR::IROp_VSMax>();
+          switch (Op->ElementSize) {
+          case 1: {
+            vpmaxsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 2: {
+            vpmaxsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 4: {
+            vpmaxsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
+        case IR::OP_SCVTF: {
+          auto Op = IROp->C<IR::IROp_SCVTF>();
+          if (Op->ElementSize == 8) {
+            cvtsi2sd(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
+          else
+            cvtsi2ss(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          break;
+        }
+        case IR::OP_FCVTZS: {
+          auto Op = IROp->C<IR::IROp_SCVTF>();
+          if (Op->ElementSize == 8) {
+            cvttsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+          }
+          else
+            cvttss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+          break;
+        }
+        case IR::OP_FCVTF: {
+          auto Op = IROp->C<IR::IROp_FCVTF>();
+          uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
+          switch (Conv) {
+            case 0x0804: { // Double <- Float
+              cvtss2sd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              break;
+            }
+            case 0x0408: { // Float <- Double
+              cvtsd2ss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              break;
+            }
+            default: LogMan::Msg::A("Unknown FCVT sizes: 0x%x", Conv);
+          }
+          break;
+        }
         case IR::OP_CAS: {
           auto Op = IROp->C<IR::IROp_CAS>();
           // Args[0]: Desired
@@ -1755,6 +2047,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           lzcnt(rcx, GetSrc<RA_64>(Op->Header.Args[0].ID()));
           sub(rax, rcx);
           mov (GetDst<RA_64>(Node), rax);
+          break;
+        }
+        case IR::OP_FINDTRAILINGZEROS: {
+          auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
+          tzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
           break;
         }
         case IR::OP_DUMMY:
