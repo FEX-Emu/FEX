@@ -7,7 +7,10 @@
 #include "LogManager.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 constexpr uint64_t PAGE_SIZE = 4096;
@@ -20,6 +23,15 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_ACCESS:
     LogMan::Msg::D("access(\"%s\", %d) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2], Ret);
     break;
+  case SYSCALL_SELECT:
+    LogMan::Msg::D("select(%ld, 0x%lx, 0x%lx, 0x%lx, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Args->Argument[4],
+      Args->Argument[5],
+      Ret);
+    break;
   case SYSCALL_OPENAT:
     LogMan::Msg::D("openat(%ld, \"%s\", %d) = %ld", Args->Argument[1], CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[2]), Args->Argument[3], Ret);
     break;
@@ -28,6 +40,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_FSTAT:
     LogMan::Msg::D("fstat(%ld, {...}) = %ld", Args->Argument[1], Ret);
+    break;
+  case SYSCALL_POLL:
+    LogMan::Msg::D("poll(0x%lx, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
     break;
   case SYSCALL_MMAP:
     LogMan::Msg::D("mmap(%p, %ld, %ld, %ld, %d, %p) = %p", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], static_cast<int32_t>(Args->Argument[5]), Args->Argument[6], Ret);
@@ -50,14 +65,26 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_UNAME:
     LogMan::Msg::D("uname ({...}) = %ld", Ret);
     break;
+  case SYSCALL_FCNTL:
+    LogMan::Msg::D("uname (%ld, %ld, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
   case SYSCALL_UMASK:
     LogMan::Msg::D("umask(0x%lx) = %ld", Args->Argument[1], Ret);
+    break;
+  case SYSCALL_GETTIMEOFDAY:
+    LogMan::Msg::D("gettimeofday(0x%lx, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
   case SYSCALL_GETCWD:
     LogMan::Msg::D("getcwd(\"%s\", %ld) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2], Ret);
     break;
   case SYSCALL_CHDIR:
     LogMan::Msg::D("chdir(\"%s\") = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Ret);
+    break;
+  case SYSCALL_MKDIR:
+    LogMan::Msg::D("mkdir(\"%s\", 0x%lx) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2], Ret);
+    break;
+  case SYSCALL_UNLINK:
+    LogMan::Msg::D("unlink(\"%s\", 0x%lx) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Ret);
     break;
   case SYSCALL_EXIT:
     LogMan::Msg::D("exit(0x%lx)", Args->Argument[1]);
@@ -70,6 +97,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_EXIT_GROUP:
     LogMan::Msg::D("exit_group(0x%lx)", Args->Argument[1]);
+    break;
+  case SYSCALL_GETDENTS64:
+    LogMan::Msg::D("getdents(%ld, 0x%lx, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
     break;
   case SYSCALL_SET_TID_ADDRESS:
     LogMan::Msg::D("set_tid_address(%p) = %ld", Args->Argument[1], Ret);
@@ -89,6 +119,12 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_GETPID:
     LogMan::Msg::D("getpid() = %ld", Ret);
     break;
+  case SYSCALL_SOCKET:
+    LogMan::Msg::D("socket(%ld, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_CONNECT:
+    LogMan::Msg::D("connect(%ld, 0x%lx, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
   case SYSCALL_GETUID:
     LogMan::Msg::D("getuid() = %ld", Ret);
     break;
@@ -100,6 +136,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_GETEGID:
     LogMan::Msg::D("getegid() = %ld", Ret);
+    break;
+  case SYSCALL_SETREGID:
+    LogMan::Msg::D("setregid(%ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
   case SYSCALL_GETTID:
     LogMan::Msg::D("gettid() = %ld", Ret);
@@ -276,6 +315,17 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     }
   break;
   }
+  case SYSCALL_SOCKET:
+    Result = FM.Socket(Args->Argument[1], Args->Argument[2], Args->Argument[3]);
+  break;
+  case SYSCALL_CONNECT:
+    Result = FM.Connect(Args->Argument[1],
+      CTX->MemoryMapper.GetPointer<const struct sockaddr *>(Args->Argument[2]),
+      Args->Argument[3]);
+  break;
+  case SYSCALL_POLL:
+    Result = FM.Poll(CTX->MemoryMapper.GetPointer<struct pollfd*>(Args->Argument[1]), Args->Argument[2], Args->Argument[3]);
+  break;
   // Thread management
   case SYSCALL_GETUID:
     Result = Thread->State.ThreadManager.GetUID();
@@ -288,6 +338,10 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   break;
   case SYSCALL_GETEGID:
     Result = Thread->State.ThreadManager.GetEGID();
+  break;
+  case SYSCALL_SETREGID:
+    // XXX: Not a real result
+    Result = 0;
   break;
   case SYSCALL_GETTID:
     Result = Thread->State.ThreadManager.GetTID();
@@ -484,6 +538,25 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       CTX->MemoryMapper.GetPointer<const char*>(Args->Argument[1]),
       Args->Argument[2]);
   break;
+  case SYSCALL_SELECT: {
+    fd_set *readfds{};
+    fd_set *writefds{};
+    fd_set *exceptfds{};
+    struct timeval *timeout{};
+
+    if (Args->Argument[2])
+      readfds = CTX->MemoryMapper.GetPointer<fd_set*>(Args->Argument[2]);
+    if (Args->Argument[3])
+      writefds = CTX->MemoryMapper.GetPointer<fd_set*>(Args->Argument[3]);
+    if (Args->Argument[4])
+      exceptfds = CTX->MemoryMapper.GetPointer<fd_set*>(Args->Argument[4]);
+    if (Args->Argument[5])
+      timeout = CTX->MemoryMapper.GetPointer<struct timeval*>(Args->Argument[5]);
+
+    Result = select(Args->Argument[1],
+      readfds, writefds, exceptfds, timeout);
+  break;
+  }
   case SYSCALL_READLINK:
     Result = FM.Readlink(
       CTX->MemoryMapper.GetPointer<const char*>(Args->Argument[1]),
@@ -529,6 +602,12 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = nanosleep(req, rem);
   break;
   }
+  case SYSCALL_GETDENTS64: {
+    Result = FM.GetDents(Args->Argument[1],
+      CTX->MemoryMapper.GetPointer(Args->Argument[2]),
+      Args->Argument[3]);
+  break;
+  }
   case SYSCALL_SET_TID_ADDRESS: {
     Thread->State.ThreadManager.child_tid = Args->Argument[1];
     Result = Thread->State.ThreadManager.GetTID();
@@ -562,6 +641,16 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     // Just say that the mask has always matched what was passed in
     Result = Args->Argument[1];
     break;
+  case SYSCALL_GETTIMEOFDAY: {
+    struct timeval *tv{};
+    struct timezone *tz{};
+    if (Args->Argument[1])
+      tv = CTX->MemoryMapper.GetPointer<struct timeval*>(Args->Argument[1]);
+    if (Args->Argument[2])
+      tz = CTX->MemoryMapper.GetPointer<struct timezone*>(Args->Argument[2]);
+    Result = gettimeofday(tv, tz);
+    break;
+  }
   case SYSCALL_GETCWD:
   {
     char *ptr = getcwd(CTX->MemoryMapper.GetPointer<char *>(Args->Argument[1]), Args->Argument[2]);
@@ -575,6 +664,30 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   case SYSCALL_CHDIR:
     Result = chdir(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]));
     break;
+  case SYSCALL_MKDIR:
+    Result = mkdir(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2]);
+    break;
+  case SYSCALL_UNLINK:
+    Result = unlink(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]));
+    break;
+  case SYSCALL_FCNTL: {
+    int Cmd = Args->Argument[2];
+    auto FD = FM.GetFDBacking(Args->Argument[1]);
+    auto HostFD = FD->GetHostFD();
+    switch (Cmd) {
+      case 1: // F_GETFD
+        Result = fcntl(HostFD, Cmd);
+        break;
+      case 3: // F_GETFL
+        Result = fcntl(HostFD, Cmd);
+        break;
+      case 4: // F_SETFL
+        Result = fcntl(HostFD, Cmd, Args->Argument[3]);
+        break;
+      default: LogMan::Msg::A("FCNTL: Unknown Command: %ld", Cmd); break;
+    }
+    break;
+  }
   // Currently unhandled
   // Return fake result
   case SYSCALL_RT_SIGACTION:

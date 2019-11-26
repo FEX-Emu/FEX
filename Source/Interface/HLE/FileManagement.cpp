@@ -5,7 +5,50 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/uio.h>
 #include <unistd.h>
+
+#ifdef _M_X86_64
+// x86-64 Syscall argument ABI
+// RAX - Syscall number
+// RDI - Arg 1
+// RSI - Arg 2
+// RDX - Arg 3
+// R10 - Arg 4
+// R8  - Arg 5
+// R9  - Arg 6
+static uint64_t DoSyscall(uint64_t Syscall) {
+  uint64_t Result;
+  asm volatile (
+    "syscall;"
+    : "=r" (Result)
+    : "0" (Syscall)
+    : "memory", "cc", "r11", "cx"
+  );
+  return Result;
+}
+
+static uint64_t DoSyscall(uint64_t Syscall, uint64_t Arg1, uint64_t Arg2, uint64_t Arg3) {
+  uint64_t Result;
+  register uint64_t _Arg3 asm ("rdx") = Arg3;
+  register uint64_t _Arg2 asm ("rsi") = Arg2;
+  register uint64_t _Arg1 asm ("rdi") = Arg1;
+  asm volatile (
+    "syscall;"
+    : "=r" (Result)
+    : "0" (Syscall), "r" (_Arg1), "r" (_Arg2), "r" (_Arg3)
+    : "memory", "cc", "r11", "cx"
+  );
+  return Result;
+}
+#else
+static uint64_t DoSyscall(uint64_t Syscall) {
+  LogMan::Msg::A("Can't do syscall on this platform yet");
+}
+static uint64_t DoSyscall(uint64_t Syscall, uint64_t Arg1, uint64_t Arg2, uint64_t Arg3) {
+  LogMan::Msg::A("Can't do syscall on this platform yet");
+}
+#endif
 
 namespace FEXCore {
 
@@ -60,6 +103,17 @@ public:
       return count;
     }
   }
+};
+
+class SocketFD final : public FD {
+public:
+  SocketFD(FEXCore::Context::Context *ctx, int32_t fd, int domain, int type, int protocol)
+    : FD (ctx, fd, "Socket", 0, 0) {
+    HostFD = socket(domain, type, protocol);
+  }
+
+private:
+
 };
 
 uint64_t FD::read(int fd, void *buf, size_t count) {
@@ -255,6 +309,103 @@ uint64_t FileManager::Ioctl(int fd, uint64_t request, void *args) {
   return FD->second->ioctl(fd, request, args);
 }
 
+uint64_t FileManager::GetDents(int fd, void *dirp, uint32_t count) {
+  auto FD = FDMap.find(fd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  return DoSyscall(SYSCALL_GETDENTS64,
+      static_cast<uint64_t>(FD->second->GetHostFD()),
+      reinterpret_cast<uint64_t>(dirp),
+      static_cast<uint64_t>(count));
+}
+
+uint64_t FileManager::Socket(int domain, int type, int protocol) {
+  int32_t fd = CurrentFDOffset;
+
+  auto fdPtr = new SocketFD{CTX, fd, domain, type, protocol};
+
+  auto Result = fdPtr->GetHostFD();
+  if (Result == -1) {
+    delete fdPtr;
+    return -1;
+  }
+
+  FDMap[CurrentFDOffset++] = fdPtr;
+
+  return fd;
+}
+
+uint64_t FileManager::Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+  auto FD = FDMap.find(sockfd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  return connect(FD->second->GetHostFD(), addr, addrlen);
+}
+
+uint64_t FileManager::Poll(struct pollfd *fds, nfds_t nfds, int timeout) {
+  std::vector<pollfd> HostFDs;
+  HostFDs.resize(nfds);
+  memcpy(&HostFDs.at(0), fds, sizeof(pollfd) * nfds);
+  for (auto &FD : HostFDs) {
+    auto HostFD = FDMap.find(FD.fd);
+    if (HostFD == FDMap.end())
+      return -1;
+    FD.fd = HostFD->second->GetHostFD();
+  }
+
+  return poll(fds, nfds, timeout);
+}
+
+uint64_t FileManager::Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
+  fd_set Host_readfds;
+  fd_set Host_writefds;
+  fd_set Host_exceptfds;
+
+  FD_ZERO(&Host_readfds);
+  FD_ZERO(&Host_writefds);
+  FD_ZERO(&Host_exceptfds);
+  int Host_nfds = 0;
+  if (readfds) {
+    for (int i = 0; i < nfds; ++i) {
+      if (FD_ISSET(i, readfds)) {
+        auto HostFD = FDMap.find(i);
+        if (HostFD == FDMap.end())
+          return -1;
+        Host_nfds = std::max(Host_nfds, HostFD->second->GetHostFD());
+        FD_SET(HostFD->second->GetHostFD(), &Host_readfds);
+      }
+    }
+  }
+  if (writefds) {
+    for (int i = 0; i < nfds; ++i) {
+      if (FD_ISSET(i, writefds)) {
+        auto HostFD = FDMap.find(i);
+        if (HostFD == FDMap.end())
+          return -1;
+        Host_nfds = std::max(Host_nfds, HostFD->second->GetHostFD());
+        FD_SET(HostFD->second->GetHostFD(), &Host_writefds);
+      }
+    }
+  }
+  if (exceptfds) {
+    for (int i = 0; i < nfds; ++i) {
+      if (FD_ISSET(i, exceptfds)) {
+        auto HostFD = FDMap.find(i);
+        if (HostFD == FDMap.end())
+          return -1;
+        Host_nfds = std::max(Host_nfds, HostFD->second->GetHostFD());
+        FD_SET(HostFD->second->GetHostFD(), &Host_exceptfds);
+      }
+    }
+  }
+
+  return select(Host_nfds, readfds ? &Host_readfds : nullptr, writefds ? &Host_writefds : nullptr, exceptfds ? &Host_exceptfds : nullptr, timeout);
+}
+
 int32_t FileManager::FindHostFD(int fd) {
   auto FD = FDMap.find(fd);
   if (FD == FDMap.end()) {
@@ -262,6 +413,15 @@ int32_t FileManager::FindHostFD(int fd) {
   }
 
   return FD->second->GetHostFD();
+}
+
+FD const* FileManager::GetFDBacking(int fd) {
+  auto FD = FDMap.find(fd);
+  if (FD == FDMap.end()) {
+    return nullptr;
+  }
+
+  return FD->second;
 }
 
 }

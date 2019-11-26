@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <vector>
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <poll.h>
 
 namespace FEXCore::Context {
 struct Context;
@@ -64,9 +66,17 @@ public:
   uint64_t Readlink(const char *pathname, char *buf, size_t bufsiz);
   uint64_t Openat(int dirfs, const char *pathname, int flags, uint32_t mode);
   uint64_t Ioctl(int fd, uint64_t request, void *args);
+  uint64_t GetDents(int fd, void *dirp, uint32_t count);
 
+  // Sockets
+  uint64_t Socket(int domain, int type, int protocol);
+  uint64_t Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+  uint64_t Poll(struct pollfd *fds, nfds_t nfds, int timeout);
+  uint64_t Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 
   int32_t FindHostFD(int fd);
+
+  FD const* GetFDBacking(int fd);
 
   void SetFilename(std::string const &File) { Filename = File; }
   std::string const & GetFilename() const { return Filename; }
