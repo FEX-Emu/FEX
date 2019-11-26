@@ -170,6 +170,17 @@ private:
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::readcyclecounter, {}, {});
   }
 
+  llvm::CallInst *SQRT(llvm::Value *Arg) {
+    std::vector<llvm::Type*> ArgTypes = {
+      Arg->getType(),
+    };
+    std::vector<llvm::Value*> Args = {
+      Arg,
+    };
+
+    return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::sqrt, ArgTypes, Args);
+  }
+
   void CreateDebugPrint(llvm::Value *Val) {
     std::vector<llvm::Value*> Args;
     Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(this)));
@@ -1547,6 +1558,128 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
 
       auto Result = JITState.IRBuilder->CreateSub(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFADD: {
+      auto Op = IROp->C<IR::IROp_VFAdd>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateAdd(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFSUB: {
+      auto Op = IROp->C<IR::IROp_VFSub>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateSub(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFMUL: {
+      auto Op = IROp->C<IR::IROp_VFMul>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFDIV: {
+      auto Op = IROp->C<IR::IROp_VFDiv>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateFDiv(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFMIN: {
+      auto Op = IROp->C<IR::IROp_VFMin>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateFCmpOLT(Src1, Src2);
+      Result = JITState.IRBuilder->CreateSelect(Result, Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFMAX: {
+      auto Op = IROp->C<IR::IROp_VFMax>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateFCmpOLT(Src1, Src2);
+      Result = JITState.IRBuilder->CreateSelect(Result, Src2, Src1);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFRECP: {
+      auto Op = IROp->C<IR::IROp_VFRecp>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, false, Op->RegisterSize, Op->ElementSize);
+      Value *Dividend = llvm::ConstantFP::get(Src->getType(), 1.0);
+
+      auto Result = JITState.IRBuilder->CreateFDiv(Dividend, Src);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFSQRT: {
+      auto Op = IROp->C<IR::IROp_VFSqrt>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      auto Result = SQRT(Src);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VFRSQRT: {
+      auto Op = IROp->C<IR::IROp_VFRSqrt>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, false, Op->RegisterSize, Op->ElementSize);
+      Value *Dividend = llvm::ConstantFP::get(Src->getType(), 1.0);
+
+      auto Result = JITState.IRBuilder->CreateFDiv(Dividend, SQRT(Src));
 
       SetDest(*WrapperOp, Result);
     break;
