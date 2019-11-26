@@ -24,6 +24,9 @@ namespace FEXCore::Config {
     case FEXCore::Config::CONFIG_GDBSERVER:
       Config != 0 ? CTX->StartGdbServer() : CTX->StopGdbServer();
     break;
+    case FEXCore::Config::CONFIG_ACCURATESTDOUT:
+      CTX->Config.AccurateSTDOut = Config != 0;
+    break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
   }
@@ -46,6 +49,9 @@ namespace FEXCore::Config {
       return CTX->RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP ? 1 : 0;
     case FEXCore::Config::CONFIG_GDBSERVER:
       return CTX->GetGdbServerStatus();
+    break;
+    case FEXCore::Config::CONFIG_ACCURATESTDOUT:
+      return CTX->Config.AccurateSTDOut;
     break;
     default: LogMan::Msg::A("Unknown configuration option");
     }

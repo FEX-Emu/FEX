@@ -41,6 +41,7 @@ namespace FEXCore::Context {
     struct {
       bool Multiblock {false};
       bool BreakOnFrontendFailure {true};
+      bool AccurateSTDOut {false};
       int64_t MaxInstPerBlock {-1LL};
       uint64_t VirtualMemSize {1ULL << 36};
       FEXCore::Config::ConfigCore Core {FEXCore::Config::CONFIG_INTERPRETER};

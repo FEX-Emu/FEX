@@ -36,20 +36,29 @@ public:
 
     OutputString += '\0';
 
-   if (FDOffset == STDOUT_FILENO)
-     LogMan::Msg::OUT("[%ld] %s", FinalSize, OutputString.c_str());
-   else if (FDOffset == STDERR_FILENO)
-     LogMan::Msg::ERR("[%ld] %s", FinalSize, OutputString.c_str());
-
-    return FinalSize;
+    if (CTX->Config.AccurateSTDOut) {
+      return ::writev(fd, (const struct iovec*)iov, iovcnt);
+    }
+    else {
+      if (FDOffset == STDOUT_FILENO)
+        LogMan::Msg::OUT("[%ld] %s", FinalSize, OutputString.c_str());
+      else if (FDOffset == STDERR_FILENO)
+        LogMan::Msg::ERR("[%ld] %s", FinalSize, OutputString.c_str());
+      return FinalSize;
+    }
   }
 
   uint64_t write(int fd, void *buf, size_t count) override {
-   if (FDOffset == STDOUT_FILENO)
-     LogMan::Msg::OUT("%s", reinterpret_cast<char*>(buf));
-   else if (FDOffset == STDERR_FILENO)
-     LogMan::Msg::ERR("%s", reinterpret_cast<char*>(buf));
-    return count;
+    if (CTX->Config.AccurateSTDOut) {
+      return ::write(fd, buf, count);
+    }
+    else {
+      if (FDOffset == STDOUT_FILENO)
+        LogMan::Msg::OUT("%s", reinterpret_cast<char*>(buf));
+      else if (FDOffset == STDERR_FILENO)
+        LogMan::Msg::ERR("%s", reinterpret_cast<char*>(buf));
+      return count;
+    }
   }
 };
 

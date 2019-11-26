@@ -11,6 +11,7 @@ namespace FEXCore::Config {
     CONFIG_VIRTUALMEMSIZE,
     CONFIG_SINGLESTEP,
     CONFIG_GDBSERVER,
+    CONFIG_ACCURATESTDOUT,
   };
 
   enum ConfigCore {
