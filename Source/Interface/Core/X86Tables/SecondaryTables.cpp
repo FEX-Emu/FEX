@@ -84,7 +84,7 @@ void InitializeSecondaryTables() {
     {0x55, 1, X86InstInfo{"ANDNPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x56, 1, X86InstInfo{"ORPS",       TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x57, 1, X86InstInfo{"XORPS",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
-    {0x58, 1, X86InstInfo{"ANDPS",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
+    {0x58, 1, X86InstInfo{"ADDPS",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x59, 1, X86InstInfo{"MULPS",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x5A, 1, X86InstInfo{"CVTPS2PD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x5B, 1, X86InstInfo{"CVTDQ2PS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
@@ -253,8 +253,8 @@ void InitializeSecondaryTables() {
   const U8U8InfoStruct RepModOpTable[] = {
     {0x0, 16, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
 
-    {0x10, 1, X86InstInfo{"MOVSS",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
-    {0x11, 1, X86InstInfo{"MOVSS",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x10, 1, X86InstInfo{"MOVSS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x11, 1, X86InstInfo{"MOVSS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                    0, nullptr}},
     {0x12, 1, X86InstInfo{"MOVSLDUP",  TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,  0, nullptr}},
     {0x13, 3, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
     {0x16, 1, X86InstInfo{"MOVSHDUP",  TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,  0, nullptr}},
