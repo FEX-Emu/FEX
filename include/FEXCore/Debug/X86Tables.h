@@ -246,7 +246,11 @@ constexpr uint32_t FLAGS_MODRM                 = (1 << 16);
   constexpr uint32_t FLAGS_SF_MOD_MEM_ONLY       = (1 << 18);
   constexpr uint32_t FLAGS_SF_MOD_REG_ONLY       = (1 << 19);
 
-constexpr uint32_t FLAGS_SIZE_DST_OFF = 20;
+// The secondary Opcode Map uses prefix bytes to overlay more instruction
+// But some instructions need to ignore this overlay and consume these prefixes.
+constexpr uint32_t FLAGS_NO_OVERLAY           = (1 << 20);
+
+constexpr uint32_t FLAGS_SIZE_DST_OFF = 21;
 constexpr uint32_t FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
 
 constexpr uint32_t SIZE_MASK     = 0b111;

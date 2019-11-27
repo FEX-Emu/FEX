@@ -689,7 +689,15 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
         // 0xF3 - REP prefix
         // If any of these three prefixes are used then it falls down the subtable
         // Additionally: If you hit repeat of differnt prefixes then only the LAST one before this one works for subtable selection
-        if (DecodeInst->LastEscapePrefix == 0xF3) { // REP
+
+        bool NoOverlay = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY) != 0;
+
+        if (NoOverlay) { // This section of the table ignores prefix extention
+          if (NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp)) {
+            InstructionDecoded = true;
+          }
+        }
+        else if (DecodeInst->LastEscapePrefix == 0xF3) { // REP
           // Remove prefix so it doesn't effect calculations.
           // This is only an escape prefix rather tan modifier now
           DecodeInst->Flags &= ~DecodeFlags::FLAG_REP_PREFIX;
