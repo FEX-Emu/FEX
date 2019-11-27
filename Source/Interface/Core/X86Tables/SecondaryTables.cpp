@@ -185,8 +185,8 @@ void InitializeSecondaryTables() {
     {0xBB, 1, X86InstInfo{"BTC",     TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                            0, nullptr}},
     {0xBC, 1, X86InstInfo{"BSF",     TYPE_INST, FLAGS_MODRM,                                                                                        0, nullptr}},
     {0xBD, 1, X86InstInfo{"BSR",     TYPE_INST, FLAGS_MODRM,                                                                                        0, nullptr}},
-    {0xBE, 1, X86InstInfo{"MOVSX",   TYPE_INST, GenFlagsSrcSize(SIZE_8BIT) | FLAGS_MODRM ,                                                           0, nullptr}},
-    {0xBF, 1, X86InstInfo{"MOVSX",   TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_MODRM,                                                          0, nullptr}},
+    {0xBE, 1, X86InstInfo{"MOVSX",   TYPE_INST, GenFlagsSrcSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_NO_OVERLAY,                                        0, nullptr}},
+    {0xBF, 1, X86InstInfo{"MOVSX",   TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_MODRM | FLAGS_NO_OVERLAY,                                       0, nullptr}},
 
     {0xC0, 1, X86InstInfo{"XADD",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                        0, nullptr}},
     {0xC1, 1, X86InstInfo{"XADD",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                                        0, nullptr}},
