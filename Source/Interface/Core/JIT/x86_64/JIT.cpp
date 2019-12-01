@@ -462,11 +462,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_LoadContext>();
           switch (Op->Size) {
           case 1: {
-            mov(GetDst<RA_8>(Node), byte [STATE + Op->Offset]);
+            movzx(GetDst<RA_32>(Node), byte [STATE + Op->Offset]);
           }
           break;
           case 2: {
-            mov(GetDst<RA_16>(Node), word [STATE + Op->Offset]);
+            movzx(GetDst<RA_32>(Node), word [STATE + Op->Offset]);
           }
           break;
           case 4: {
@@ -525,11 +525,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           uint32_t SlotOffset = Op->Slot * 16;
           switch (OpSize) {
           case 1: {
-            mov(GetDst<RA_8>(Node), byte [rsp + SlotOffset]);
+            movzx(GetDst<RA_32>(Node), byte [rsp + SlotOffset]);
           }
           break;
           case 2: {
-            mov(GetDst<RA_16>(Node), word [rsp + SlotOffset]);
+            movzx(GetDst<RA_32>(Node), word [rsp + SlotOffset]);
           }
           break;
           case 4: {
@@ -639,11 +639,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           switch (OpSize) {
           case 1:
-            movzx(GetDst<RA_8>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
+            movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
             popcnt(Dst64, Dst64);
           break;
           case 2: {
-            movzx(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+            movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
             popcnt(Dst64, Dst64);
             break;
           }
