@@ -1368,6 +1368,29 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           pinsrq(Dst, rdx, 1);
           break;
         }
+        case IR::OP_SPLATVECTOR2:
+        case IR::OP_SPLATVECTOR4: {
+          auto Op = IROp->C<IR::IROp_SplatVector2>();
+          LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+          uint8_t NumElements{};
+          if (IROp->Op == OP_SPLATVECTOR4)
+            NumElements = 4;
+          else if (IROp->Op == OP_SPLATVECTOR2)
+            NumElements = 2;
+          uint8_t ElementSize = OpSize / NumElements;
+          switch (ElementSize) {
+            case 4:
+              vmovd(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()).cvt32());
+              shufps(GetDst(Node), GetDst(Node), 0);
+            break;
+            case 8:
+              vmovq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()).cvt64());
+              shufpd(GetDst(Node), GetDst(Node), 0);
+            break;
+            default: LogMan::Msg::A("Unknown Element Size: %d", ElementSize); break;
+          }
+          break;
+        }
         case IR::OP_EXTRACTELEMENT: {
           auto Op = IROp->C<IR::IROp_ExtractElement>();
 
