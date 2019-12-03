@@ -240,7 +240,7 @@ namespace FEXCore::IR {
         }
         case OP_CPUID: SetNodeClass(WrapperOp->ID(), FPRClass); break;
         default:
-          if (IROp->Op >= IR::OP_VOR)
+          if (IROp->Op > IR::OP_PRINT)
             SetNodeClass(WrapperOp->ID(), FPRClass);
           else
             SetNodeClass(WrapperOp->ID(), GPRClass);

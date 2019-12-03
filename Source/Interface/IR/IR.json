@@ -466,6 +466,15 @@
       ]
     },
 
+    "ExtractElement": {
+      "HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "Idx"
+      ]
+    },
+
     "Print": {
       "SSAArgs": "1"
     },
@@ -507,15 +516,6 @@
       "NumElements": "4",
       "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "1"
-    },
-
-    "ExtractElement": {
-      "HasDest": true,
-      "DestSize": "GetOpSize(ssa0)",
-      "SSAArgs": "1",
-      "Args": [
-        "uint8_t", "Idx"
-      ]
     },
 
     "VAnd": {
