@@ -141,6 +141,7 @@ public:
   void BTOp(OpcodeArgs);
   void BTROp(OpcodeArgs);
   void BTSOp(OpcodeArgs);
+  void BTCOp(OpcodeArgs);
   void IMUL1SrcOp(OpcodeArgs);
   void IMUL2SrcOp(OpcodeArgs);
   void IMULOp(OpcodeArgs);

@@ -1462,6 +1462,59 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
 }
 
+void OpDispatchBuilder::BTCOp(OpcodeArgs) {
+  OrderedNode *Result;
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+    Result = _Lshr(Dest, Src);
+
+    uint32_t Size = GetSrcSize(Op);
+    uint32_t Mask = Size * 8 - 1;
+    OrderedNode *SizeMask = _Constant(Mask);
+
+    // Get the bit selection from the src
+    OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    Dest = _Xor(Dest, BitMask);
+    StoreResult(Op, Dest, -1);
+  }
+  else {
+    // Load the address to the memory location
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
+    uint32_t Size = GetSrcSize(Op);
+    uint32_t Mask = Size * 8 - 1;
+    OrderedNode *SizeMask = _Constant(Mask);
+    OrderedNode *AddressShift = _Constant(32 - __builtin_clz(Mask));
+
+    // Get the bit selection from the src
+    OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    // First shift out the selection bits
+    Src = _Lshr(Src, AddressShift);
+
+    // Now multiply by operand size to get correct indexing
+    if (Size != 1) {
+      Src = _Lshl(Src, _Constant(Size - 1));
+    }
+
+    // Get the address offset by shifting out the size of the op (To shift out the bit selection)
+    // Then use that to index in to the memory location by size of op
+
+    // Now add the addresses together and load the memory
+    OrderedNode *MemoryLocation = _Add(Dest, Src);
+    OrderedNode *Value = _LoadMem(Size, MemoryLocation, Size);
+
+    // Now shift in to the correct bit location
+    Result = _Lshr(Value, BitSelect);
+    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    Value = _Xor(Value, BitMask);
+    _StoreMem(Size, MemoryLocation, Value, Size);
+  }
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
+}
+
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(Op, Op->Src1, Op->Flags, -1);
@@ -3812,7 +3865,7 @@ void InstallOpcodeHandlers() {
     {0xFC, 2, &OpDispatchBuilder::FLAGControlOp},
   };
 
-   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable = {
+  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable = {
      // Instructions
      {0x00, 1, nullptr}, // GROUP 6
      {0x01, 1, nullptr}, // GROUP 7
@@ -3839,6 +3892,7 @@ void InstallOpcodeHandlers() {
      {0xB0, 2, &OpDispatchBuilder::CMPXCHGOp}, // CMPXCHG
      {0xB3, 1, &OpDispatchBuilder::BTROp},
      {0xB6, 2, &OpDispatchBuilder::MOVZXOp},
+     {0xBB, 1, &OpDispatchBuilder::BTCOp},
      {0xBC, 1, &OpDispatchBuilder::BSFOp}, // BSF
      {0xBD, 1, &OpDispatchBuilder::BSROp}, // BSF
      // XXX: Broken on LLVM?
@@ -3889,7 +3943,7 @@ void InstallOpcodeHandlers() {
      {0xEF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 8>},
      {0xF8, 4, &OpDispatchBuilder::PSUBQOp},
      {0xFE, 1, &OpDispatchBuilder::PADDQOp},
-   };
+  };
 
    const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> PrimaryGroupOpTable = {
  #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
@@ -4103,6 +4157,11 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 6), 1, &OpDispatchBuilder::BTROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 6), 1, &OpDispatchBuilder::BTROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 6), 1, &OpDispatchBuilder::BTROp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 7), 1, &OpDispatchBuilder::BTCOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 7), 1, &OpDispatchBuilder::BTCOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 7), 1, &OpDispatchBuilder::BTCOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 7), 1, &OpDispatchBuilder::BTCOp},
 
     // GROUP 13
     {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLD<4>},
