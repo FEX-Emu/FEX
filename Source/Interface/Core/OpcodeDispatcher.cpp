@@ -1663,6 +1663,27 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
   StoreResult(Op, Src, -1);
 }
 
+void OpDispatchBuilder::XADDOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+
+  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    // If this is a GPR then we can just do an Add and store
+    auto Result = _Add(Dest, Src);
+    StoreResult(Op, Result, -1);
+
+    // Previous value in dest gets stored in src
+    StoreResult(Op, Op->Src1, Dest, -1);
+
+    auto Size = GetSrcSize(Op) * 8;
+    GenerateFlags_ADD(Op, _Bfe(Size, 0, Result), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  }
+  else {
+    auto Before = _AtomicFetchAdd(Dest, Src, GetSrcSize(Op));
+    StoreResult(Op, Op->Src1, Before, -1);
+  }
+}
+
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
   auto Counter = _CycleCounter();
   auto CounterLow = _Bfe(32, 0, Counter);
@@ -3944,7 +3965,7 @@ void InstallOpcodeHandlers() {
      {0xBD, 1, &OpDispatchBuilder::BSROp}, // BSF
      // XXX: Broken on LLVM?
      {0xBE, 2, &OpDispatchBuilder::MOVSXOp},
-     {0xC0, 2, &OpDispatchBuilder::UnimplementedOp},
+     {0xC0, 2, &OpDispatchBuilder::XADDOp},
      {0xC8, 8, &OpDispatchBuilder::BSWAPOp},
 
      // SSE

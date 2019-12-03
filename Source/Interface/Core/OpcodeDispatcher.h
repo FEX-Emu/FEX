@@ -162,6 +162,7 @@ public:
   void CMPXCHGOp(OpcodeArgs);
   void MULOp(OpcodeArgs);
   void NOTOp(OpcodeArgs);
+  void XADDOp(OpcodeArgs);
 
   // SSE
   void MOVAPSOp(OpcodeArgs);
