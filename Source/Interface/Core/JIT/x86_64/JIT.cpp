@@ -2064,6 +2064,206 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov (GetDst<RA_64>(Node), rax);
           break;
         }
+        case IR::OP_ATOMICADD: {
+          auto Op = IROp->C<IR::IROp_AtomicAdd>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          mov(rax, Memory);
+          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          lock();
+          switch (Op->Size) {
+          case 1:
+            add(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+          break;
+          case 2:
+            add(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+          break;
+          case 4:
+            add(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          break;
+          case 8:
+            add(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          break;
+          default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+          }
+
+          break;
+        }
+        case IR::OP_ATOMICSUB: {
+          auto Op = IROp->C<IR::IROp_AtomicSub>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          mov(rax, Memory);
+          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          lock();
+          switch (Op->Size) {
+          case 1:
+            sub(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+          break;
+          case 2:
+            sub(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+          break;
+          case 4:
+            sub(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          break;
+          case 8:
+            sub(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          break;
+          default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+          }
+
+          break;
+        }
+        case IR::OP_ATOMICAND: {
+          auto Op = IROp->C<IR::IROp_AtomicAnd>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          mov(rax, Memory);
+          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          lock();
+          switch (Op->Size) {
+          case 1:
+            and(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+          break;
+          case 2:
+            and(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+          break;
+          case 4:
+            and(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          break;
+          case 8:
+            and(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          break;
+          default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+          }
+
+          break;
+        }
+        case IR::OP_ATOMICOR: {
+          auto Op = IROp->C<IR::IROp_AtomicOr>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          mov(rax, Memory);
+          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          lock();
+          switch (Op->Size) {
+          case 1:
+            or(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+          break;
+          case 2:
+            or(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+          break;
+          case 4:
+            or(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          break;
+          case 8:
+            or(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          break;
+          default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+          }
+
+          break;
+        }
+        case IR::OP_ATOMICXOR: {
+          auto Op = IROp->C<IR::IROp_AtomicXor>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          mov(rax, Memory);
+          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          lock();
+          switch (Op->Size) {
+          case 1:
+            xor(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+          break;
+          case 2:
+            xor(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+          break;
+          case 4:
+            xor(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          break;
+          case 8:
+            xor(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          break;
+          default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+          }
+
+          break;
+        }
+        case IR::OP_ATOMICFETCHADD: {
+          auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          mov(rax, Memory);
+          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          switch (Op->Size) {
+          case 1:
+            mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            lock();
+            xadd(byte [rax], cl);
+            mov(GetDst<RA_8>(Node), cl);
+          break;
+          case 2:
+            mov(cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            lock();
+            xadd(word [rax], cl);
+            mov(GetDst<RA_16>(Node), cx);
+          break;
+          case 4:
+            mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            lock();
+            xadd(dword [rax], ecx);
+            mov(GetDst<RA_32>(Node), ecx);
+          break;
+          case 8:
+            mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            lock();
+            xadd(qword [rax], rcx);
+            mov(GetDst<RA_64>(Node), rcx);
+          break;
+          default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+          }
+
+          break;
+        }
+        case IR::OP_ATOMICFETCHSUB: {
+          auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          mov(rax, Memory);
+          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          switch (Op->Size) {
+          case 1:
+            mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            neg(cl);
+            lock();
+            xadd(byte [rax], cl);
+            mov(GetDst<RA_8>(Node), cl);
+          break;
+          case 2:
+            mov(cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            neg(cx);
+            lock();
+            xadd(word [rax], cl);
+            mov(GetDst<RA_16>(Node), cx);
+          break;
+          case 4:
+            mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            neg(ecx);
+            lock();
+            xadd(dword [rax], ecx);
+            mov(GetDst<RA_32>(Node), ecx);
+          break;
+          case 8:
+            mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            neg(rcx);
+            lock();
+            xadd(qword [rax], rcx);
+            mov(GetDst<RA_64>(Node), rcx);
+          break;
+          default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+          }
+          break;
+        }
         case IR::OP_CYCLECOUNTER: {
           #ifdef DEBUG_CYCLES
           mov (GetDst<RA_64>(Node), 0);
