@@ -438,21 +438,21 @@
     "SplatVector2": {
       "HasDest": true,
       "NumElements": "2",
-      "DestSize": "GetOpSize(ssa0) * 2",
+      "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "1"
     },
 
     "SplatVector3": {
       "HasDest": true,
       "NumElements": "3",
-      "DestSize": "GetOpSize(ssa0) * 3",
+      "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "1"
     },
 
     "SplatVector4": {
       "HasDest": true,
       "NumElements": "4",
-      "DestSize": "GetOpSize(ssa0) * 4",
+      "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "1"
     },
 
