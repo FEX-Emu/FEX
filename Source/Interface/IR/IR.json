@@ -386,6 +386,59 @@
       "SSAArgs": "3"
     },
 
+    "AtomicAdd": {
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicSub": {
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicAnd": {
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicOr": {
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicXor": {
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicFetchAdd": {
+      "HasDest": true,
+      "DestSize": "Size",
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicFetchSub": {
+      "HasDest": true,
+      "DestSize": "Size",
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
     "VExtractToGPR": {
       "HasDest": true,
       "SSAArgs": "1",
