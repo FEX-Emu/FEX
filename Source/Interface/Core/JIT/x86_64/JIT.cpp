@@ -2287,10 +2287,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_FINDMSB: {
           auto Op = IROp->C<IR::IROp_FindMSB>();
-          mov(rax, OpSize * 8);
-          lzcnt(rcx, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          sub(rax, rcx);
-          mov (GetDst<RA_64>(Node), rax);
+          switch (OpSize) {
+          case 2:
+            bsr(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+            movzx(GetDst<RA_32>(Node), GetDst<RA_16>(Node));
+            break;
+          case 4:
+            bsr(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            break;
+          case 8:
+            bsr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            break;
+          }
           break;
         }
         case IR::OP_REV: {
