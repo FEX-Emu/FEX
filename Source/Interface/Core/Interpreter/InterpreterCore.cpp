@@ -1017,7 +1017,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               default: LogMan::Msg::A("Uknown Splat size"); break;
             }
 
-            uint8_t ElementSize = OpSize / Elements;
             #define CREATE_VECTOR(elementsize, type) \
               case elementsize: { \
                 auto *Dst_d = reinterpret_cast<type*>(Tmp); \
@@ -1026,12 +1025,12 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 Dst_d[i] = *Src_d;\
                 break; \
               }
-            switch (ElementSize) {
+            switch (Op->Header.Size) {
               CREATE_VECTOR(1, uint8_t)
               CREATE_VECTOR(2, uint16_t)
               CREATE_VECTOR(4, uint32_t)
               CREATE_VECTOR(8, uint64_t)
-              default: LogMan::Msg::A("Unknown Element Size: %d", ElementSize); break;
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.Size); break;
             }
             #undef CREATE_VECTOR
             memcpy(GDP, Tmp, OpSize);

@@ -341,9 +341,9 @@ void InitializeSecondaryTables() {
 
     {0x20, 4, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                      0, nullptr}},
     {0x24, 6, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
-    {0x2A, 1, X86InstInfo{"CVTSI2SD",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x2A, 1, X86InstInfo{"CVTSI2SD",  TYPE_INST, GenFlagsDstSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR,                    0, nullptr}},
     {0x2B, 1, X86InstInfo{"MOVNTSD",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {0x2C, 1, X86InstInfo{"CVTTSD2SI", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR, 0, nullptr}},
+    {0x2C, 1, X86InstInfo{"CVTTSD2SI", TYPE_INST, GenFlagsSrcSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR, 0, nullptr}},
     {0x2D, 1, X86InstInfo{"CVTSD2SI",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR, 0, nullptr}},
     {0x2E, 2, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
 
@@ -353,14 +353,14 @@ void InitializeSecondaryTables() {
     {0x50, 1, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
     {0x51, 1, X86InstInfo{"SQRTSD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
     {0x52, 6, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
-    {0x58, 1, X86InstInfo{"ADDSD",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
-    {0x59, 1, X86InstInfo{"MULSD",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
-    {0x5A, 1, X86InstInfo{"CVTSD2SS",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x58, 1, X86InstInfo{"ADDSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x59, 1, X86InstInfo{"MULSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x5A, 1, X86InstInfo{"CVTSD2SS",  TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
     {0x5B, 1, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
-    {0x5C, 1, X86InstInfo{"SUBSD",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
-    {0x5D, 1, X86InstInfo{"MINSD",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
-    {0x5E, 1, X86InstInfo{"DIVSD",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
-    {0x5F, 1, X86InstInfo{"MAXSD",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x5C, 1, X86InstInfo{"SUBSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x5D, 1, X86InstInfo{"MINSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x5E, 1, X86InstInfo{"DIVSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x5F, 1, X86InstInfo{"MAXSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
 
     {0x60, 16, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
 

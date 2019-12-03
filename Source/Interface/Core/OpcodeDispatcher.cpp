@@ -2335,9 +2335,25 @@ void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
 template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
   OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src{};
+  if (Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  }
+  else {
+    // Load a elementsize from memory and move it to a vector register
+    Src = LoadSource_WithOpSize(Op, Op->Src1, ElementSize, Op->Flags, -1);
+    switch (ElementSize) {
+      case 4:
+        Src = _SplatVector4(Src);
+        break;
+      case 8:
+        Src = _SplatVector2(Src);
+        break;
+    }
+  }
 
+  // If OpSize == ElementSize then it only does the lower scalar op
   auto ALUOp = _VAdd(ElementSize, ElementSize, Dest, Src);
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
@@ -2497,6 +2513,16 @@ void OpDispatchBuilder::MOVDOp(OpcodeArgs) {
       SrcSize *= 2;
     }
   }
+  else {
+    // Destination is GPR or mem
+    // Extract from XMM first
+    uint8_t ElementSize = 4;
+    if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING)
+      ElementSize = 8;
+
+    Src = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src, 0);
+  }
+
   StoreResult(Op, Op->Dest, Src, -1);
 }
 
@@ -3664,13 +3690,16 @@ void OpDispatchBuilder::CVT(OpcodeArgs) {
       else
         Src = _Zext(32, Src);
     }
-
   }
 
   if (Signed)
     Src = _SCVTF(Src, DstElementSize);
   else
     Src = _UCVTF(Src, DstElementSize);
+
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+
+  Src = _VInsElement(16, DstElementSize, 0, 0, Dest, Src);
 
   StoreResult(Op, Src, -1);
 }
@@ -3690,9 +3719,12 @@ void OpDispatchBuilder::FCVT(OpcodeArgs) {
 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::FCVTF(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
 
   Src = _FCVTF(Src, DstElementSize, SrcElementSize);
+  Src = _VInsElement(16, DstElementSize, 0, 0, Dest, Src);
+
   StoreResult(Op, Src, -1);
 }
 
@@ -4120,7 +4152,7 @@ void InstallOpcodeHandlers() {
     {0x10, 2, &OpDispatchBuilder::MOVSSOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVT<4, true>},
-    {0x2C, 1, &OpDispatchBuilder::CVT<4, true>},
+    {0x2C, 1, &OpDispatchBuilder::FCVT<4, true>},
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 4>},
     {0x5A, 1, &OpDispatchBuilder::FCVTF<8, 4>},
@@ -4140,6 +4172,7 @@ void InstallOpcodeHandlers() {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVT<8, true>},
     {0x2C, 1, &OpDispatchBuilder::FCVT<8, true>},
+    {0x5A, 1, &OpDispatchBuilder::FCVTF<4, 8>},
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 8>},
     {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 8>},
     {0x5C, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 8>},
