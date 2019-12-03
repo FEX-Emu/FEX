@@ -2210,6 +2210,30 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
+  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
+      Op->Src1.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    // xmm1[63:0] <- xmm2[63:0]
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+    OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+    auto Result = _VInsElement(16, 8, 0, 0, Dest, Src);
+    StoreResult(Op, Result, -1);
+  }
+  else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    // xmm1[127:0] <- zext(mem64)
+    OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+    Src = _Zext(64, Src);
+    StoreResult(Op, Src, -1);
+  }
+  else {
+    // In this case memory is the destination and the low bits of the XMM are source
+    // Mem64 = xmm2[63:0]
+    OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+    auto Result = _VExtractToGPR(16, 8, Src, 0);
+    StoreResult_WithOpSize(Op, Op->Dest, Result, 8, -1);
+  }
+}
+
 void OpDispatchBuilder::PADDQOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   uint8_t ElementSize = 8;
@@ -4090,7 +4114,7 @@ void InstallOpcodeHandlers() {
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepNEModOpTable = {
-    {0x10, 2, &OpDispatchBuilder::MOVAPSOp},
+    {0x10, 2, &OpDispatchBuilder::MOVSDOp},
     {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVT<8, true>},

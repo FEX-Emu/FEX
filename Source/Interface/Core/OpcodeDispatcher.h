@@ -168,6 +168,7 @@ public:
   void MOVUPSOp(OpcodeArgs);
   void MOVLHPSOp(OpcodeArgs);
   void MOVHPDOp(OpcodeArgs);
+  void MOVSDOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorALUOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
