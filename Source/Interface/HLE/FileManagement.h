@@ -36,6 +36,9 @@ public:
   int lseek(int fd, off_t offset, int wehnce);
 
   int GetHostFD() const { return HostFD; }
+  void SetHostFD(int fd) { HostFD = fd; }
+
+  std::string const& GetName() const { return PathName; }
 
 protected:
   FEXCore::Context::Context *CTX;
@@ -60,17 +63,29 @@ public:
   uint64_t Close(int fd);
   uint64_t Stat(const char *pathname, void *buf);
   uint64_t Fstat(int fd, void *buf);
+  uint64_t Lstat(const char *path, void *buf);
   uint64_t Lseek(int fd, uint64_t offset, int whence);
   uint64_t Writev(int fd, void *iov, int iovcnt);
   uint64_t Access(const char *pathname, int mode);
+  uint64_t Pipe(int pipefd[2]);
+  uint64_t Pipe2(int pipefd[2], int flags);
   uint64_t Readlink(const char *pathname, char *buf, size_t bufsiz);
   uint64_t Openat(int dirfs, const char *pathname, int flags, uint32_t mode);
   uint64_t Ioctl(int fd, uint64_t request, void *args);
   uint64_t GetDents(int fd, void *dirp, uint32_t count);
+  uint64_t PRead64(int fd, void *buf, size_t count, off_t offset);
+
+  // EPoll
+  uint64_t EPoll_Create1(int flags);
 
   // Sockets
   uint64_t Socket(int domain, int type, int protocol);
   uint64_t Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+  uint64_t Recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
+  uint64_t Recvmsg(int sockfd, struct msghdr *msg, int flags);
+  uint64_t Shutdown(int sockfd, int how);
+  uint64_t GetSockName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+  uint64_t GetPeerName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
   uint64_t Poll(struct pollfd *fds, nfds_t nfds, int timeout);
   uint64_t Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 

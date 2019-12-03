@@ -3,6 +3,7 @@
 #include "Interface/Context/Context.h"
 #include "Interface/HLE/FileManagement.h"
 #include <fcntl.h>
+#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/uio.h>
@@ -121,23 +122,15 @@ uint64_t FD::read(int fd, void *buf, size_t count) {
 }
 
 ssize_t FD::writev(int fd, void *iov, int iovcnt) {
-  ssize_t FinalSize {};
-  LogMan::Msg::I(">>> writev: %d %p %d", fd, iov, iovcnt);
+  const struct iovec *Guestiov = reinterpret_cast<const struct iovec*>(iov);
+  std::vector<struct iovec> Hostiov;
+  Hostiov.resize(iovcnt);
   for (int i = 0; i < iovcnt; ++i) {
-    struct iovStruct {
-      uint64_t base;
-      size_t len;
-    };
-    iovStruct *iovObject = reinterpret_cast<iovStruct*>(iov);
-    const char *String = CTX->MemoryMapper.GetPointer<const char*>(iovObject->base);
-    LogMan::Msg::I("\t0x%lx Size: 0x%zx %p", iovObject->base, iovObject->len, String);
-    for (size_t j = 0; j < iovObject->len; ++j) {
-      LogMan::Msg::I("%c", String[j]);
-    }
-    FinalSize += iovObject->len;
+    Hostiov[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
+    Hostiov[i].iov_len = Guestiov[i].iov_len;
   }
 
-  return FinalSize;
+  return ::writev(HostFD, &Hostiov.at(0), iovcnt);
 }
 
 uint64_t FD::write(int fd, void *buf, size_t count) {
@@ -247,6 +240,10 @@ uint64_t FileManager::Fstat(int fd, void *buf) {
   return -1LL;
 }
 
+uint64_t FileManager::Lstat(const char *path, void *buf) {
+  return lstat(path, reinterpret_cast<struct stat*>(buf));
+}
+
 uint64_t FileManager::Lseek(int fd, uint64_t offset, int whence) {
   auto fdPtr = FDMap.find(fd);
   if (fdPtr == FDMap.end()) {
@@ -270,8 +267,51 @@ uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
   return access(pathname, mode);
 }
 
+uint64_t FileManager::Pipe(int pipefd[2]) {
+  int HostFD[2];
+  int Result = ::pipe(HostFD);
+
+  {
+    int32_t fd = CurrentFDOffset;
+    auto fdPtr = new FD{CTX, fd, "<Pipe>", 0, 0};
+    fdPtr->SetHostFD(HostFD[0]);
+    pipefd[0] = fd;
+    FDMap[CurrentFDOffset++] = fdPtr;
+  }
+  {
+    int32_t fd = CurrentFDOffset;
+    auto fdPtr = new FD{CTX, fd, "<Pipe>", 0, 0};
+    fdPtr->SetHostFD(HostFD[1]);
+    pipefd[1] = fd;
+    FDMap[CurrentFDOffset++] = fdPtr;
+  }
+
+  return Result;
+}
+uint64_t FileManager::Pipe2(int pipefd[2], int flags) {
+  int HostFD[2];
+  int Result = ::pipe2(HostFD, flags);
+
+  {
+    int32_t fd = CurrentFDOffset;
+    auto fdPtr = new FD{CTX, fd, "<Pipe>", 0, 0};
+    fdPtr->SetHostFD(HostFD[0]);
+    pipefd[0] = fd;
+    FDMap[CurrentFDOffset++] = fdPtr;
+  }
+  {
+    int32_t fd = CurrentFDOffset;
+    auto fdPtr = new FD{CTX, fd, "<Pipe>", 0, 0};
+    fdPtr->SetHostFD(HostFD[1]);
+    pipefd[1] = fd;
+    FDMap[CurrentFDOffset++] = fdPtr;
+  }
+
+  return Result;
+}
+
+
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
-  LogMan::Msg::D("Attemptign to readlink: '%s'", pathname);
   if (strcmp(pathname, "/proc/self/exe") == 0) {
     strncpy(buf, Filename.c_str(), bufsiz);
     return std::min(bufsiz, Filename.size());
@@ -321,6 +361,23 @@ uint64_t FileManager::GetDents(int fd, void *dirp, uint32_t count) {
       static_cast<uint64_t>(count));
 }
 
+uint64_t FileManager::PRead64(int fd, void *buf, size_t count, off_t offset) {
+  auto FD = FDMap.find(fd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+  return pread(FD->second->GetHostFD(), buf, count, offset);
+}
+
+uint64_t FileManager::EPoll_Create1(int flags) {
+  int HostFD = epoll_create1(flags);
+  int32_t fd = CurrentFDOffset;
+  auto fdPtr = new FD{CTX, fd, "<EPoll>", 0, 0};
+  fdPtr->SetHostFD(HostFD);
+  FDMap[CurrentFDOffset++] = fdPtr;
+  return fd;
+}
+
 uint64_t FileManager::Socket(int domain, int type, int protocol) {
   int32_t fd = CurrentFDOffset;
 
@@ -346,18 +403,97 @@ uint64_t FileManager::Connect(int sockfd, const struct sockaddr *addr, socklen_t
   return connect(FD->second->GetHostFD(), addr, addrlen);
 }
 
+uint64_t FileManager::Recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
+  auto FD = FDMap.find(sockfd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  return recvfrom(FD->second->GetHostFD(), buf, len, flags, src_addr, addrlen);
+}
+
+uint64_t FileManager::Recvmsg(int sockfd, struct msghdr *msg, int flags) {
+ auto FD = FDMap.find(sockfd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  std::vector<iovec> Hostvec;
+  struct msghdr Hosthdr;
+  memcpy(&Hosthdr, msg, sizeof(struct msghdr));
+
+  if (Hosthdr.msg_name)
+    Hosthdr.msg_name = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_name));
+
+  if (Hosthdr.msg_control)
+    Hosthdr.msg_control = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_control));
+
+  Hostvec.resize(Hosthdr.msg_iovlen);
+
+  struct iovec *Guestiov = CTX->MemoryMapper.GetPointer<struct iovec*>(reinterpret_cast<uint64_t>(Hosthdr.msg_iov));
+  for (int i = 0; i < Hosthdr.msg_iovlen; ++i) {
+    Hostvec[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
+    Hostvec[i].iov_len = Guestiov[i].iov_len;
+  }
+
+  Hosthdr.msg_iov = &Hostvec.at(0);
+
+  int Result = recvmsg(FD->second->GetHostFD(), &Hosthdr, flags);
+  if (Result == -1) {
+    if (errno == EAGAIN ||
+        errno == EWOULDBLOCK) {
+      return -errno;
+    }
+  }
+  return Result;
+}
+
+uint64_t FileManager::Shutdown(int sockfd, int how) {
+  auto FD = FDMap.find(sockfd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  return shutdown(FD->second->GetHostFD(), how);
+}
+
+uint64_t FileManager::GetSockName(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+  auto FD = FDMap.find(sockfd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  return getsockname(FD->second->GetHostFD(), addr, addrlen);
+}
+
+uint64_t FileManager::GetPeerName(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+  auto FD = FDMap.find(sockfd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  return getpeername(FD->second->GetHostFD(), addr, addrlen);
+}
+
 uint64_t FileManager::Poll(struct pollfd *fds, nfds_t nfds, int timeout) {
   std::vector<pollfd> HostFDs;
   HostFDs.resize(nfds);
   memcpy(&HostFDs.at(0), fds, sizeof(pollfd) * nfds);
   for (auto &FD : HostFDs) {
     auto HostFD = FDMap.find(FD.fd);
-    if (HostFD == FDMap.end())
+    if (HostFD == FDMap.end()) {
+      LogMan::Msg::D("Poll. Failed to map FD: %d", FD.fd);
       return -1;
+    }
     FD.fd = HostFD->second->GetHostFD();
   }
 
-  return poll(fds, nfds, timeout);
+  int Result = poll(&HostFDs.at(0), nfds, timeout);
+
+  for (int i = 0; i < nfds; ++i) {
+    fds[i].revents = HostFDs[i].revents;
+  }
+  return Result;
 }
 
 uint64_t FileManager::Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
