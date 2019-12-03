@@ -1383,6 +1383,18 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
     Result = _Lshr(Dest, Src);
+
+    uint32_t Size = GetSrcSize(Op);
+    uint32_t Mask = Size * 8 - 1;
+    OrderedNode *SizeMask = _Constant(Mask);
+
+    // Get the bit selection from the src
+    OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    BitMask = _Neg(BitMask);
+    Dest = _And(Dest, BitMask);
+    StoreResult(Op, Dest, -1);
   }
   else {
     // Load the address to the memory location
@@ -1426,6 +1438,17 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
     Result = _Lshr(Dest, Src);
+
+    uint32_t Size = GetSrcSize(Op);
+    uint32_t Mask = Size * 8 - 1;
+    OrderedNode *SizeMask = _Constant(Mask);
+
+    // Get the bit selection from the src
+    OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
+    Dest = _Or(Dest, BitMask);
+    StoreResult(Op, Dest, -1);
   }
   else {
     // Load the address to the memory location
