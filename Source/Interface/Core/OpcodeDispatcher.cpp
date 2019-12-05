@@ -795,12 +795,19 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   }
 
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
+    auto Result = _AtomicSwap(Dest, Src, GetSrcSize(Op));
+    StoreResult(Op, Op->Src1, Result, -1);
+  }
+  else {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
 
-  // Swap the contents
-  // Order matters here since we don't want to swap context contents for one that effects the other
-  StoreResult(Op, Op->Dest, Src, -1);
-  StoreResult(Op, Op->Src1, Dest, -1);
+    // Swap the contents
+    // Order matters here since we don't want to swap context contents for one that effects the other
+    StoreResult(Op, Op->Dest, Src, -1);
+    StoreResult(Op, Op->Src1, Dest, -1);
+  }
 }
 
 void OpDispatchBuilder::CDQOp(OpcodeArgs) {
@@ -1695,27 +1702,53 @@ void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
 void OpDispatchBuilder::INCOp(OpcodeArgs) {
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX), "Can't handle REP on this\n");
 
-  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
-  auto OneConst = _Constant(1);
-  auto ALUOp = _Add(Dest, OneConst);
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
+    auto OneConst = _Constant(1);
+    auto AtomicResult = _AtomicFetchAdd(Dest, OneConst, GetSrcSize(Op));
+    auto ALUOp = _Add(AtomicResult, OneConst);
 
-  StoreResult(Op, ALUOp, -1);
+    StoreResult(Op, ALUOp, -1);
 
-  auto Size = GetSrcSize(Op) * 8;
-  GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+    auto Size = GetSrcSize(Op) * 8;
+    GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+  }
+  else {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+    auto OneConst = _Constant(1);
+    auto ALUOp = _Add(Dest, OneConst);
+
+    StoreResult(Op, ALUOp, -1);
+
+    auto Size = GetSrcSize(Op) * 8;
+    GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+  }
 }
 
 void OpDispatchBuilder::DECOp(OpcodeArgs) {
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX), "Can't handle REP on this\n");
 
-  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
-  auto OneConst = _Constant(1);
-  auto ALUOp = _Sub(Dest, OneConst);
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
+    auto OneConst = _Constant(1);
+    auto AtomicResult = _AtomicFetchSub(Dest, OneConst, GetSrcSize(Op));
+    auto ALUOp = _Sub(AtomicResult, OneConst);
 
-  StoreResult(Op, ALUOp, -1);
+    StoreResult(Op, ALUOp, -1);
 
-  auto Size = GetSrcSize(Op) * 8;
-  GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+    auto Size = GetSrcSize(Op) * 8;
+    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+  }
+  else {
+    OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+    auto OneConst = _Constant(1);
+    auto ALUOp = _Sub(Dest, OneConst);
+
+    StoreResult(Op, ALUOp, -1);
+
+    auto Size = GetSrcSize(Op) * 8;
+    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+  }
 }
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
@@ -3520,31 +3553,69 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
 
   // X86 basic ALU ops just do the operation between the destination and a single source
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
 
-  auto ALUOp = _Add(Dest, Src);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
+  OrderedNode *Result{};
+  OrderedNode *Dest{};
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *DestMem = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
+    switch (IROp) {
+      case FEXCore::IR::IROps::OP_ADD: {
+        Dest = _AtomicFetchAdd(DestMem, Src, GetSrcSize(Op));
+        Result = _Add(Dest, Src);
+        break;
+      }
+      case FEXCore::IR::IROps::OP_SUB: {
+        Dest = _AtomicFetchSub(DestMem, Src, GetSrcSize(Op));
+        Result = _Sub(Dest, Src);
+        break;
+      }
+      case FEXCore::IR::IROps::OP_OR: {
+        Dest = _AtomicFetchOr(DestMem, Src, GetSrcSize(Op));
+        Result = _Or(Dest, Src);
+        break;
+      }
+      case FEXCore::IR::IROps::OP_AND: {
+        LogMan::Msg::D("lock AND at 0x%lx", Op->PC);
+        Dest = _AtomicFetchAnd(DestMem, Src, GetSrcSize(Op));
+        Result = _And(Dest, Src);
+        break;
+      }
+      case FEXCore::IR::IROps::OP_XOR: {
+        Dest = _AtomicFetchXor(DestMem, Src, GetSrcSize(Op));
+        Result = _Xor(Dest, Src);
+        break;
+      }
+      default: LogMan::Msg::A("Unknown Atomic IR Op: %d", IROp); break;
+    }
+  }
+  else {
+    Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
 
-  StoreResult(Op, ALUOp, -1);
+    auto ALUOp = _Add(Dest, Src);
+    // Overwrite our IR's op type
+    ALUOp.first->Header.Op = IROp;
+
+    StoreResult(Op, ALUOp, -1);
+    Result = ALUOp;
+  }
 
   // Flags set
   {
     auto Size = GetSrcSize(Op) * 8;
     switch (IROp) {
     case FEXCore::IR::IROps::OP_ADD:
-      GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+      GenerateFlags_ADD(Op, _Bfe(Size, 0, Result), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
     break;
     case FEXCore::IR::IROps::OP_SUB:
-      GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+      GenerateFlags_SUB(Op, _Bfe(Size, 0, Result), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
     break;
     case FEXCore::IR::IROps::OP_MUL:
-      GenerateFlags_MUL(Op, _Bfe(Size, 0, ALUOp), _MulH(Dest, Src));
+      GenerateFlags_MUL(Op, _Bfe(Size, 0, Result), _MulH(Dest, Src));
     break;
     case FEXCore::IR::IROps::OP_AND:
     case FEXCore::IR::IROps::OP_XOR:
     case FEXCore::IR::IROps::OP_OR: {
-      GenerateFlags_Logical(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+      GenerateFlags_Logical(Op, _Bfe(Size, 0, Result), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
     break;
     }
     default: break;
