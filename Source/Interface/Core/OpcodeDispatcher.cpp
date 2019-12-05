@@ -3830,6 +3830,66 @@ void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
   }
 }
 
+
+OrderedNode *OpDispatchBuilder::GetX87Top() {
+  // Yes, we are storing 3 bits in a single flag register.
+  // Deal with it
+  return _LoadContext(1, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+}
+
+void OpDispatchBuilder::SetX87Top(OrderedNode *Value) {
+  _StoreContext(Value, 1, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+}
+
+template<size_t width>
+void OpDispatchBuilder::FLD(OpcodeArgs) {
+  // Update TOP
+  auto orig_top = GetX87Top();
+  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
+
+  size_t read_width = (width == 80) ? 16 : width / 8;
+
+  // Read from memory
+  auto data = LoadSource_WithOpSize(Op, Op->Src1, read_width, Op->Flags, -1);
+
+  OrderedNode *converted;
+
+  // Convert to 80bit float
+  if (width == 32 || width == 64) {
+    _Zext(32, data);
+    if (width == 32)
+      data = _Zext(32, data);
+
+    constexpr size_t mantissa_bits = (width == 32) ? 23 : 52;
+    constexpr size_t sign_bits = width - (mantissa_bits + 1);
+
+    uint64_t sign_mask = (width == 32) ? 0x80000000 : 0x8000000000000000;
+    uint64_t exponent_mask = (width == 32) ? 0x7F800000 : 0x7FE0000000000000;
+    uint64_t lower_mask = (width == 32) ? 0x007FFFFF : 0x001FFFFFFFFFFFFF;
+    auto sign = _Lshr(_And(data, _Constant(sign_mask)), _Constant(width - 16));
+    auto exponent = _Lshr(_And(data, _Constant(exponent_mask)), _Constant(mantissa_bits));
+    auto lower = _Lshl(_And(data, _Constant(lower_mask)), _Constant(63 - mantissa_bits));
+
+    // XXX: Need to handle NaN/Infinities
+    constexpr size_t exponent_zero = (1 << (sign_bits-1));
+    auto adjusted_exponent = _Add(exponent, _Constant(0x4000 - exponent_zero));
+    auto upper = _Or(sign, adjusted_exponent);
+
+    // XXX: Need to support decoding of denormals
+    auto intergerBit = _Constant(1ULL << 63);
+
+    converted = _VCastFromGPR(16, 8, _Or(intergerBit, lower));
+    converted = _VInsElement(16, 8, 1, 0, converted, _VCastFromGPR(16, 8, upper));
+  }
+  else if (width == 80) {
+    // TODO
+  }
+  // Write to ST[TOP]
+  _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16);
+  //_StoreContext(converted, 16, offsetof(FEXCore::Core::CPUState, mm[7][0]));
+}
+
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
 
@@ -4372,6 +4432,10 @@ constexpr uint16_t PF_F2 = 3;
   };
 #define OPDReg(op, reg) (((op - 0xD8) << 8) | (reg << 3))
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> X87OpTable = {
+    {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::FLD<32>},
+    {OPDReg(0xD9, 0) | 0x40, 8, &OpDispatchBuilder::FLD<32>},
+    {OPDReg(0xD9, 0) | 0x80, 8, &OpDispatchBuilder::FLD<32>},
+
     {OPDReg(0xD9, 5) | 0x00, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
     {OPDReg(0xD9, 5) | 0x40, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
     {OPDReg(0xD9, 5) | 0x80, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
@@ -4379,6 +4443,11 @@ constexpr uint16_t PF_F2 = 3;
     {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
     {OPDReg(0xD9, 7) | 0x40, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
     {OPDReg(0xD9, 7) | 0x80, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
+
+
+    {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::FLD<64>},
+    {OPDReg(0xDD, 0) | 0x40, 8, &OpDispatchBuilder::FLD<64>},
+    {OPDReg(0xDD, 0) | 0x80, 8, &OpDispatchBuilder::FLD<64>},
   };
 #undef OPDReg
 

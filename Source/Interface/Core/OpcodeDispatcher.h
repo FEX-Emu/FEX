@@ -210,6 +210,10 @@ public:
   template<size_t ElementSize>
   void SHUFOp(OpcodeArgs);
 
+  // X87 Ops
+  template<size_t width>
+  void FLD(OpcodeArgs);
+
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
 
@@ -524,6 +528,9 @@ private:
   void GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void GenerateFlags_Rotate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+
+  OrderedNode * GetX87Top();
+  void SetX87Top(OrderedNode *Value);
 
   OrderedNode *CreateNode(IROp_Header *Op) {
     uintptr_t ListBegin = ListData.Begin();
