@@ -2186,6 +2186,35 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           break;
         }
+        case IR::OP_ATOMICSWAP: {
+          auto Op = IROp->C<IR::IROp_AtomicSwap>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          mov(rax, Memory);
+          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          lock();
+          switch (Op->Size) {
+          case 1:
+            mov(GetDst<RA_8>(Node), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            xchg(byte [rax], GetDst<RA_8>(Node));
+          break;
+          case 2:
+            mov(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            xchg(word [rax], GetDst<RA_8>(Node));
+          break;
+          case 4:
+            mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            xchg(dword [rax], GetDst<RA_8>(Node));
+          break;
+          case 8:
+            mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            xchg(qword [rax], GetDst<RA_8>(Node));
+          break;
+          default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+          }
+
+          break;
+        }
         case IR::OP_ATOMICFETCHADD: {
           auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
@@ -2258,6 +2287,243 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(GetDst<RA_64>(Node), rcx);
           break;
           default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+          }
+          break;
+        }
+        case IR::OP_ATOMICFETCHAND: {
+          auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          // TMP1 = rax
+          mov(TMP4, Memory);
+          add(TMP4, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          switch (Op->Size) {
+            case 1: {
+              mov(TMP1.cvt8(), byte [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt8(), TMP1.cvt8());
+              mov(TMP3.cvt8(), TMP1.cvt8());
+              and(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(byte [TMP4], TMP2.cvt8());
+              jne(Loop);
+              // Result is the previous value from memory, which is currently in TMP3
+              movzx(GetDst<RA_64>(Node), TMP3.cvt8());
+              break;
+            }
+            case 2: {
+              mov(TMP1.cvt16(), word [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt16(), TMP1.cvt16());
+              mov(TMP3.cvt16(), TMP1.cvt16());
+              and(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(word [TMP4], TMP2.cvt16());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              movzx(GetDst<RA_64>(Node), TMP3.cvt16());
+              break;
+            }
+            case 4: {
+              mov(TMP1.cvt32(), dword [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt32(), TMP1.cvt32());
+              mov(TMP3.cvt32(), TMP1.cvt32());
+              and(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(dword [TMP4], TMP2.cvt32());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              mov(GetDst<RA_32>(Node), TMP3.cvt32());
+              break;
+            }
+            case 8: {
+              mov(TMP1.cvt64(), qword [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt64(), TMP1.cvt64());
+              mov(TMP3.cvt64(), TMP1.cvt64());
+              and(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(qword [TMP4], TMP2.cvt64());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              mov(GetDst<RA_64>(Node), TMP3.cvt64());
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+          }
+          break;
+        }
+        case IR::OP_ATOMICFETCHOR: {
+          auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          // TMP1 = rax
+          mov(TMP4, Memory);
+          add(TMP4, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          switch (Op->Size) {
+            case 1: {
+              mov(TMP1.cvt8(), byte [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt8(), TMP1.cvt8());
+              mov(TMP3.cvt8(), TMP1.cvt8());
+              or(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(byte [TMP4], TMP2.cvt8());
+              jne(Loop);
+              // Result is the previous value from memory, which is currently in TMP3
+              movzx(GetDst<RA_64>(Node), TMP3.cvt8());
+              break;
+            }
+            case 2: {
+              mov(TMP1.cvt16(), word [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt16(), TMP1.cvt16());
+              mov(TMP3.cvt16(), TMP1.cvt16());
+              or(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(word [TMP4], TMP2.cvt16());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              movzx(GetDst<RA_64>(Node), TMP3.cvt16());
+              break;
+            }
+            case 4: {
+              mov(TMP1.cvt32(), dword [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt32(), TMP1.cvt32());
+              mov(TMP3.cvt32(), TMP1.cvt32());
+              or(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(dword [TMP4], TMP2.cvt32());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              mov(GetDst<RA_32>(Node), TMP3.cvt32());
+              break;
+            }
+            case 8: {
+              mov(TMP1.cvt64(), qword [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt64(), TMP1.cvt64());
+              mov(TMP3.cvt64(), TMP1.cvt64());
+              or(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(qword [TMP4], TMP2.cvt64());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              mov(GetDst<RA_64>(Node), TMP3.cvt64());
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+          }
+          break;
+        }
+        case IR::OP_ATOMICFETCHXOR: {
+          auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+
+          // TMP1 = rax
+          mov(TMP4, Memory);
+          add(TMP4, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          switch (Op->Size) {
+            case 1: {
+              mov(TMP1.cvt8(), byte [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt8(), TMP1.cvt8());
+              mov(TMP3.cvt8(), TMP1.cvt8());
+              xor(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(byte [TMP4], TMP2.cvt8());
+              jne(Loop);
+              // Result is the previous value from memory, which is currently in TMP3
+              movzx(GetDst<RA_64>(Node), TMP3.cvt8());
+              break;
+            }
+            case 2: {
+              mov(TMP1.cvt16(), word [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt16(), TMP1.cvt16());
+              mov(TMP3.cvt16(), TMP1.cvt16());
+              xor(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(word [TMP4], TMP2.cvt16());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              movzx(GetDst<RA_64>(Node), TMP3.cvt16());
+              break;
+            }
+            case 4: {
+              mov(TMP1.cvt32(), dword [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt32(), TMP1.cvt32());
+              mov(TMP3.cvt32(), TMP1.cvt32());
+              xor(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(dword [TMP4], TMP2.cvt32());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              mov(GetDst<RA_32>(Node), TMP3.cvt32());
+              break;
+            }
+            case 8: {
+              mov(TMP1.cvt64(), qword [TMP4]);
+
+              Label Loop;
+              L(Loop);
+              mov(TMP2.cvt64(), TMP1.cvt64());
+              mov(TMP3.cvt64(), TMP1.cvt64());
+              xor(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+
+              // Updates RAX with the value from memory
+              lock(); cmpxchg(qword [TMP4], TMP2.cvt64());
+              jne(Loop);
+
+              // Result is the previous value from memory, which is currently in TMP3
+              mov(GetDst<RA_64>(Node), TMP3.cvt64());
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
           }
           break;
         }
