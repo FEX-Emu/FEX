@@ -421,6 +421,15 @@
       ]
     },
 
+    "AtomicSwap": {
+      "HasDest": true,
+      "DestSize": "Size",
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
     "AtomicFetchAdd": {
       "HasDest": true,
       "DestSize": "Size",
@@ -431,6 +440,33 @@
     },
 
     "AtomicFetchSub": {
+      "HasDest": true,
+      "DestSize": "Size",
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicFetchAnd": {
+      "HasDest": true,
+      "DestSize": "Size",
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicFetchOr": {
+      "HasDest": true,
+      "DestSize": "Size",
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "AtomicFetchXor": {
       "HasDest": true,
       "DestSize": "Size",
       "SSAArgs": "2",
