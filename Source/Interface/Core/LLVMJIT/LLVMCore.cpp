@@ -650,7 +650,8 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
         i64, // Pad to ensure alignment
         ArrayType::get(i128, 16), // XMMs
         i64, i64, // GS, FS
-        ArrayType::get(i8, 32), //rflags
+        ArrayType::get(i8, 48), //rflags
+        ArrayType::get(i128, 8), // MMs
       },
       "CPUStateType");
 

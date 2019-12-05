@@ -68,4 +68,25 @@ constexpr unsigned RFLAG_VIF_LOC  = 19;
 constexpr unsigned RFLAG_VIP_LOC  = 20;
 constexpr unsigned RFLAG_ID_LOC   = 21;
 
+
+// So we can share flag handling logic, we put x87 flags after RFLAGS
+constexpr unsigned X87FLAG_BASE   = 32;
+constexpr unsigned X87FLAG_IE_LOC = 32;
+constexpr unsigned X87FLAG_DE_LOC = 33;
+constexpr unsigned X87FLAG_ZE_LOC = 34;
+constexpr unsigned X87FLAG_OE_LOC = 35;
+constexpr unsigned X87FLAG_UE_LOC = 36;
+constexpr unsigned X87FLAG_PE_LOC = 37;
+constexpr unsigned X87FLAG_SF_LOC = 38;
+constexpr unsigned X87FLAG_ES_LOC = 39;
+constexpr unsigned X87FLAG_C0_LOC = 40;
+constexpr unsigned X87FLAG_C1_LOC = 41;
+constexpr unsigned X87FLAG_C2_LOC = 42;
+constexpr unsigned X87FLAG_TOP_LOC = 43; // 3 Bits wide
+constexpr unsigned X87FLAG_C3_LOC = 46;
+constexpr unsigned X87FLAG_B_LOC = 47;
+
+
+
+
 }
