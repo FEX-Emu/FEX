@@ -124,6 +124,24 @@
         "uint32_t", "Offset"
       ]
     },
+    "LoadContextIndexed": {
+      "SSAArgs": "1",
+			"HasDest": true,
+      "DestSize": "Size",
+      "Args": [
+        "uint8_t", "Size",
+        "uint32_t", "BaseOffset",
+        "uint32_t", "Stride"
+      ]
+    },
+    "StoreContextIndexed": {
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "Size",
+        "uint32_t", "BaseOffset",
+        "uint32_t", "Stride"
+      ]
+    },
     "SpillRegister": {
       "SSAArgs": "1",
       "Args": [

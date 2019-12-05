@@ -480,6 +480,68 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_LOADCONTEXTINDEXED: {
+          auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
+          size_t size = Op->Size;
+          Reg index = GetSrc<RA_64>(Op->Header.Args[0].ID());
+
+          switch (Op->Stride) {
+          case 1:
+          case 2:
+          case 4:
+          case 8: {
+            lea(rax, dword [STATE + Op->BaseOffset]);
+            switch (size) {
+            case 1:
+              movzx(GetDst<RA_32>(Node), byte [rax + index * Op->Stride]);
+              break;
+            case 2:
+              movzx(GetDst<RA_32>(Node), word [rax + index * Op->Stride]);
+              break;
+            case 4:
+              mov(GetDst<RA_32>(Node),  dword [rax + index * Op->Stride]);
+              break;
+            case 8:
+              mov(GetDst<RA_64>(Node),  qword [rax + index * Op->Stride]);
+              break;
+            default:
+              LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+            }
+            break;
+          }
+          case 16: {
+            mov(rax, index);
+            shl(rax, 4);
+            lea(rax, dword [rax + Op->BaseOffset]);
+            switch (size) {
+            case 1:
+              movzx(GetDst<RA_32>(Node), byte [STATE + rax]);
+              break;
+            case 2:
+              movzx(GetDst<RA_32>(Node), word [STATE + rax]);
+              break;
+            case 4:
+              mov(GetDst<RA_32>(Node), dword [STATE + rax]);
+              break;
+            case 8:
+              mov(GetDst<RA_64>(Node), qword [STATE + rax]);
+              break;
+            case 16:
+              if (Op->BaseOffset % 16 == 0)
+                movaps(GetDst(Node), xword [STATE + rax]);
+              else
+                movups(GetDst(Node), xword [STATE + rax]);
+              break;
+            default:
+              LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+            }
+            break;
+          }
+          default:
+            LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+          }
+          break;
+        }
         case IR::OP_STORECONTEXT: {
           auto Op = IROp->C<IR::IROp_StoreContext>();
 
@@ -509,6 +571,46 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
           default:  LogMan::Msg::A("Unhandled StoreContext size: %d", Op->Size);
+          }
+          break;
+        }
+        case IR::OP_STORECONTEXTINDEXED: {
+          auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
+          auto value = GetSrc(Op->Header.Args[0].ID());
+          Reg index = GetSrc<RA_64>(Op->Header.Args[1].ID());
+          size_t size = Op->Size;
+
+          switch (Op->Stride) {
+          case 1:
+          case 2:
+          case 4:
+          case 8: {
+            if (!(size == 1 || size == 2 || size == 4 || size == 8)) {
+              LogMan::Msg::A("Unhandled StoreContextIndexed size: %d", Op->Size);
+            }
+            lea(rax, dword [STATE + Op->BaseOffset]);
+            mov(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
+            break;
+          }
+          case 16: {
+            mov(rax, index);
+            shl(rax, 4);
+            lea(rax, dword [rax + Op->BaseOffset]);
+            if ((size == 1 || size == 2 || size == 4 || size == 8)) {
+              mov(AddressFrame(Op->Size * 8) [STATE + rax], value);
+            } else if (size == 16) {
+              if (Op->BaseOffset % 16 == 0)
+                movaps(xword [STATE + rax], value);
+              else
+                movups(xword [STATE + rax], value);
+            }
+            else {
+              LogMan::Msg::A("Unhandled StoreContextIndexed size: %d", Op->Size);
+            }
+            break;
+          }
+          default:
+            LogMan::Msg::A("Unhandled StoreContextIndexed stride: %d", Op->Stride);
           }
           break;
         }

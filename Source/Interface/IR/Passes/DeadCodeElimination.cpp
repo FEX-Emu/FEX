@@ -44,6 +44,7 @@ bool DeadCodeElimination::Run(OpDispatchBuilder *Disp) {
 
       switch (IROp->Op) {
       // State/memory storage
+      case OP_STORECONTEXTINDEXED:
       case OP_STORECONTEXT:
       case OP_STOREFLAG:
       case OP_STOREMEM:

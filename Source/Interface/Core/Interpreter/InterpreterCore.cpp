@@ -333,11 +333,53 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             #undef LOAD_CTX
             break;
           }
+          case IR::OP_LOADCONTEXTINDEXED: {
+            auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
+            uint64_t Index = *GetSrc<uint64_t*>(Op->Header.Args[0]);
+
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            ContextPtr += Op->BaseOffset;
+            ContextPtr += Index * Op->Stride;
+
+            #define LOAD_CTX(x, y) \
+              case x: { \
+                y const *Data = reinterpret_cast<y const*>(ContextPtr); \
+                GD = *Data; \
+                break; \
+              }
+            switch (Op->Size) {
+              LOAD_CTX(1, uint8_t)
+              LOAD_CTX(2, uint16_t)
+              LOAD_CTX(4, uint32_t)
+              LOAD_CTX(8, uint64_t)
+              case 16: {
+                void const *Data = reinterpret_cast<void const*>(ContextPtr);
+                memcpy(GDP, Data, Op->Size);
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+            }
+            #undef LOAD_CTX
+            break;
+          }
           case IR::OP_STORECONTEXT: {
             auto Op = IROp->C<IR::IROp_StoreContext>();
 
             uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
             ContextPtr += Op->Offset;
+
+            void *Data = reinterpret_cast<void*>(ContextPtr);
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            memcpy(Data, Src, Op->Size);
+            break;
+          }
+          case IR::OP_STORECONTEXTINDEXED: {
+            auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
+            uint64_t Index = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            ContextPtr += Op->BaseOffset;
+            ContextPtr += Index * Op->Stride;
 
             void *Data = reinterpret_cast<void*>(ContextPtr);
             void *Src = GetSrc<void*>(Op->Header.Args[0]);
