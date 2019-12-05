@@ -2275,7 +2275,7 @@ void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
   }
   else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     // xmm1[127:0] <- zext(mem64)
-    OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+    OrderedNode *Src = LoadSource_WithOpSize(Op, Op->Src1, 8, Op->Flags, -1);
     Src = _Zext(64, Src);
     StoreResult(Op, Src, -1);
   }
