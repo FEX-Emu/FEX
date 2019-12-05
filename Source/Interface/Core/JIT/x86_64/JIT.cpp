@@ -1,4 +1,5 @@
 #include "Interface/Context/Context.h"
+#include "Interface/Core/BlockCache.h"
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
@@ -27,18 +28,22 @@ static void PrintValue(uint64_t Value) {
 // 1St Argument: rdi <ThreadState>
 // XMM:
 // All temp
-#define STATE rdi
+#define STATE r14
+#define TMP1 rax
+#define TMP2 rcx
+#define TMP3 rdx
+#define TMP4 rdi
 using namespace Xbyak::util;
-const std::array<Xbyak::Reg, 11> RA64 = { rsi, r8, r9, r10, r11, rbx, rbp, r12, r13, r14, r15 };
-const std::array<Xbyak::Reg, 11> RA32 = { esi, r8d, r9d, r10d, r11d, ebx, ebp, r12d, r13d, r14d, r15d };
-const std::array<Xbyak::Reg, 11> RA16 = { si, r8w, r9w, r10w, r11w, bx, bp, r12w, r13w, r14w, r15w };
-const std::array<Xbyak::Reg, 11> RA8 = { sil, r8b, r9b, r10b, r11b, bl, bpl, r12b, r13b, r14b, r15b };
+const std::array<Xbyak::Reg, 10> RA64 = { rsi, r8, r9, r10, r11, rbx, rbp, r12, r13, r15 };
+const std::array<Xbyak::Reg, 10> RA32 = { esi, r8d, r9d, r10d, r11d, ebx, ebp, r12d, r13d, r15d };
+const std::array<Xbyak::Reg, 10> RA16 = { si, r8w, r9w, r10w, r11w, bx, bp, r12w, r13w, r15w };
+const std::array<Xbyak::Reg, 10> RA8 = { sil, r8b, r9b, r10b, r11b, bl, bpl, r12b, r13b, r15b };
 const std::array<Xbyak::Reg, 11> RAXMM = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
 const std::array<Xbyak::Xmm, 11> RAXMM_x = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
 
 class JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
 public:
-  explicit JITCore(FEXCore::Context::Context *ctx);
+  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
   void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
@@ -55,6 +60,7 @@ public:
 
 private:
   FEXCore::Context::Context *CTX;
+  FEXCore::Core::InternalThreadState *ThreadState;
   FEXCore::IR::IRListView<true> const *CurrentIR;
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
 
@@ -95,7 +101,7 @@ private:
   Xbyak::Xmm GetSrc(uint32_t Node);
   Xbyak::Xmm GetDst(uint32_t Node);
 
-  void CreateCustomDispatch();
+  void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   bool CustomDispatchGenerated {false};
   using CustomDispatch = void(*)(FEXCore::Core::InternalThreadState *Thread);
   CustomDispatch DispatchPtr{};
@@ -106,9 +112,10 @@ private:
 #endif
 };
 
-JITCore::JITCore(FEXCore::Context::Context *ctx)
+JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
   : CodeGenerator(1024 * 1024 * 32)
-  , CTX {ctx} {
+  , CTX {ctx}
+  , ThreadState {Thread} {
   Stack.resize(9000 * 16 * 64);
 
   RAPass = CTX->GetRegisterAllocatorPass();
@@ -119,7 +126,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx)
   RAPass->AddRegisters(RASet, XMMClass, XMMBase, NumXMMs);
 
   Graph = RAPass->AllocateRegisterGraph(RASet, 9000);
-  CreateCustomDispatch();
+  CreateCustomDispatch(Thread);
 }
 
 JITCore::~JITCore() {
@@ -214,12 +221,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   uint32_t SpillSlots = RAPass->SpillSlots();
 
-  push(rbx);
-  push(rbp);
-  push(r12);
-  push(r13);
-  push(r14);
-  push(r15);
+  if (!CustomDispatchGenerated) {
+    push(rbx);
+    push(rbp);
+    push(r12);
+    push(r13);
+    push(r14);
+    push(r15);
+    mov(STATE, rdi);
+  }
 
   if (SpillSlots) {
     sub(rsp, SpillSlots * 16);
@@ -273,6 +283,22 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     }
   };
 #endif
+
+  auto RegularExit = [&]() {
+    if (SpillSlots) {
+      add(rsp, SpillSlots * 16);
+    }
+    pop(r15);
+    pop(r14);
+    pop(r13);
+    pop(r12);
+    pop(rbp);
+    pop(rbx);
+#ifdef BLOCKSTATS
+    ExitBlock();
+#endif
+    ret();
+  };
 
   IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
   while (1) {
@@ -353,21 +379,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           break;
         }
         case IR::OP_EXITFUNCTION: {
-          if (SpillSlots) {
-            add(rsp, SpillSlots * 16);
-          }
-
-          pop(r15);
-          pop(r14);
-          pop(r13);
-          pop(r12);
-          pop(rbp);
-          pop(rbx);
-
-#ifdef BLOCKSTATS
-          ExitBlock();
-#endif
-          ret();
+          RegularExit();
           break;
         }
         case IR::OP_BREAK: {
@@ -381,28 +393,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             case 6: // INT3
             {
               mov(al, 1);
-
               auto offset = Op->Reason == 4 ?
                   offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop) // HLT
                 : offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldPause); // INT3
               xchg(byte [STATE + offset], al);
 
-              // This code matches what is in EXITFUNCTION
-              if (SpillSlots) {
-                add(rsp, SpillSlots * 16);
-              }
-
-              pop(r15);
-              pop(r14);
-              pop(r13);
-              pop(r12);
-              pop(rbp);
-              pop(rbx);
-
-#ifdef BLOCKSTATS
-              ExitBlock();
-#endif
-              ret();
+              RegularExit();
             break;
             }
             default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
@@ -425,10 +421,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           break;
         }
-        default: break;
-      }
-
-      switch (IROp->Op) {
         case IR::OP_CONDJUMP: {
           auto Op = IROp->C<IR::IROp_CondJump>();
 
@@ -1234,6 +1226,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_Syscall>();
           // XXX: This is very terrible, but I don't care for right now
 
+          auto NumPush = 1 + RA64.size() + 7;
           push(rdi);
 
           for (auto &Reg : RA64)
@@ -1261,7 +1254,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           } PtrCast;
           PtrCast.ptr = &FEXCore::SyscallHandler::HandleSyscall;
           mov(rax, PtrCast.Raw);
+
+          if (!(NumPush & 1))
+            sub(rsp, 8); // Align
+
           call(rax);
+
+          if (!(NumPush & 1))
+            add(rsp, 8); // Align
 
           // Reload arguments just in case they are sill live after the fact
           for (uint32_t i = 0; i < 7; ++i)
@@ -1351,12 +1351,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov (rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
           mov (rdi, reinterpret_cast<uint64_t>(&CTX->CPUID));
 
-          sub(rsp, 8); // Align
+          auto NumPush = RA64.size() + 1;
+          if (!(NumPush & 1))
+            sub(rsp, 8); // Align
 
           mov(rax, Ptr.Raw);
           call(rax);
 
-          add(rsp, 8); // Align
+          if (!(NumPush & 1))
+            add(rsp, 8); // Align
 
           pop(rdi);
 
@@ -2319,13 +2322,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           break;
         }
         case IR::OP_DUMMY:
-        case IR::OP_CODEBLOCK:
         case IR::OP_IRHEADER:
-        case IR::OP_BEGINBLOCK:
-        case IR::OP_ENDBLOCK:
-        case IR::OP_EXITFUNCTION:
-        case IR::OP_BREAK:
-        case IR::OP_JUMP:
           break;
         default:
           LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
@@ -2351,11 +2348,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   ready();
 
   DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(Exit) - reinterpret_cast<uintptr_t>(Entry);
-
   return Entry;
 }
 
-void JITCore::CreateCustomDispatch() {
+void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 // Temp registers
 // rax, rcx, rdx, rsi, r8, r9,
 // r10, r11
@@ -2366,7 +2362,7 @@ void JITCore::CreateCustomDispatch() {
 // 1St Argument: rdi <ThreadState>
 // XMM:
 // All temp
-	void *Entry = getCurr<void*>();
+  DispatchPtr = getCurr<CustomDispatch>();
 
   // while (!Thread->State.RunningEvents.ShouldStop.load()) {
   //    Ptr = FindBlock(RIP)
@@ -2386,11 +2382,100 @@ void JITCore::CreateCustomDispatch() {
   //    }
   // }
   // Bunch of exit state stuff
+  push(rbx);
+  push(rbp);
+  push(rbp);
+  push(r12);
+  push(r13);
+  push(r14);
+  push(r15);
+
+  mov(STATE, rdi);
+
+  Label LoopTop;
+  L(LoopTop);
+
+  mov(r13, Thread->BlockCache->GetPagePointer());
+
+  // Load our RIP
+  mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
+
+  mov(rax, rdx);
+  shr(rax, 12);
+
+  // Load page pointer
+  mov(rdi, qword [r13 + rax * 8]);
+
+  Label NoBlock;
+  cmp(rdi, 0);
+  je(NoBlock);
+
+  mov (rax, rdx);
+  and(rax, 0x0FFF);
+
+  // Load the block pointer
+  mov(rax, qword [rdi + rax * 8]);
+
+  cmp(rax, 0);
+  je(NoBlock);
+
+  // Real block if we made it here
+  push(0);
+  call(rax);
+  add(rsp, 8);
+
+  Label ExitCheck;
+  L(ExitCheck);
+
+  cmp(byte [STATE + offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop)], 0);
+  je(LoopTop);
+
+  pop(r15);
+  pop(r14);
+  pop(r13);
+  pop(r12);
+  pop(rbp);
+  pop(rbp);
+  pop(rbx);
+
+  ret();
+
+  Label FallbackCore;
+  // Block creation
+  {
+    L(NoBlock);
+
+    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
+    union PtrCast {
+      ClassPtrType ClassPtr;
+      uintptr_t Data;
+    };
+
+    PtrCast Ptr;
+    Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
+
+    // {rdi, rsi, rdx}
+    mov(rdi, reinterpret_cast<uint64_t>(CTX));
+    mov(rsi, STATE);
+    mov(rax, Ptr.Data);
+    call(rax);
+    // RAX contains nulptr or block ptr here
+    cmp(rax, 0);
+    je(FallbackCore);
+    // rdx already contains RIP here
+    jmp(ExitCheck);
+  }
+
+  {
+    L(FallbackCore);
+    ud2();
+  }
+
   ready();
   // CustomDispatchGenerated = true;
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return new JITCore(ctx);
+  return new JITCore(ctx, Thread);
 }
 }
