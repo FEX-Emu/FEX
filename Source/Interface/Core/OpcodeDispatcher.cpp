@@ -3575,7 +3575,6 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
         break;
       }
       case FEXCore::IR::IROps::OP_AND: {
-        LogMan::Msg::D("lock AND at 0x%lx", Op->PC);
         Dest = _AtomicFetchAnd(DestMem, Src, GetSrcSize(Op));
         Result = _And(Dest, Src);
         break;
