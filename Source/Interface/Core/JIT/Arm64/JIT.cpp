@@ -537,6 +537,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_VEXTRACTTOGPR: {
+        auto Op = IROp->C<IR::IROp_VExtractToGPR>();
+        switch (OpSize) {
+          case 4:
+            umov(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->Idx);
+          break;
+          case 8:
+            umov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->Idx);
+          break;
+          default:  LogMan::Msg::A("Unhandled ExtractElementSize: %d", OpSize);
+        }
+        break;
+      }
       case IR::OP_JUMP: {
         auto Op = IROp->C<IR::IROp_Jump>();
 
@@ -1041,6 +1054,153 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
 
         mov(GetDst<RA_64>(Node), TMP2);
+        break;
+      }
+      case IR::OP_ATOMICADD: {
+        auto Op = IROp->C<IR::IROp_AtomicAdd>();
+
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->Size) {
+        case 1: staddlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 2: staddlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 4: staddl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 8: staddl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+        break;
+      }
+      case IR::OP_ATOMICSUB: {
+        auto Op = IROp->C<IR::IROp_AtomicSub>();
+
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        switch (Op->Size) {
+        case 1: staddlb(TMP2.W(), MemOperand(TMP1)); break;
+        case 2: staddlh(TMP2.W(), MemOperand(TMP1)); break;
+        case 4: staddl(TMP2.W(), MemOperand(TMP1)); break;
+        case 8: staddl(TMP2.X(), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+        break;
+      }
+      case IR::OP_ATOMICAND: {
+        auto Op = IROp->C<IR::IROp_AtomicAnd>();
+
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        switch (Op->Size) {
+        case 1: stclrlb(TMP2.W(), MemOperand(TMP1)); break;
+        case 2: stclrlh(TMP2.W(), MemOperand(TMP1)); break;
+        case 4: stclrl(TMP2.W(), MemOperand(TMP1)); break;
+        case 8: stclrl(TMP2.X(), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+        break;
+      }
+      case IR::OP_ATOMICOR: {
+        auto Op = IROp->C<IR::IROp_AtomicOr>();
+
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->Size) {
+        case 1: stsetlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 2: stsetlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 4: stsetl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 8: stsetl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+        break;
+      }
+      case IR::OP_ATOMICXOR: {
+        auto Op = IROp->C<IR::IROp_AtomicXor>();
+
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->Size) {
+        case 1: steorlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 2: steorlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 4: steorl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 8: steorl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+        break;
+      }
+      case IR::OP_ATOMICSWAP: {
+        auto Op = IROp->C<IR::IROp_AtomicSwap>();
+
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->Size) {
+        case 1: swplb(GetSrc<RA_32>(Op->Header.Args[1].ID()), xzr, MemOperand(TMP1)); break;
+        case 2: swplh(GetSrc<RA_32>(Op->Header.Args[1].ID()), xzr, MemOperand(TMP1)); break;
+        case 4: swpl(GetSrc<RA_32>(Op->Header.Args[1].ID()), xzr, MemOperand(TMP1)); break;
+        case 8: swpl(GetSrc<RA_64>(Op->Header.Args[1].ID()), xzr, MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+        break;
+      }
+      case IR::OP_ATOMICFETCHADD: {
+        auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->Size) {
+        case 1: ldaddalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 2: ldaddalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 4: ldaddal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 8: ldaddal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+
+        break;
+      }
+      case IR::OP_ATOMICFETCHSUB: {
+        auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        switch (Op->Size) {
+        case 1: ldaddalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
+        case 2: ldaddalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
+        case 4: ldaddal(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
+        case 8: ldaddal(GetSrc<RA_64>(Op->Header.Args[1].ID()), TMP2.X(), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+
+        break;
+      }
+      case IR::OP_ATOMICFETCHAND: {
+        auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        switch (Op->Size) {
+        case 1: ldclralb(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
+        case 2: ldclralh(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
+        case 4: ldclral(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
+        case 8: ldclral(GetSrc<RA_64>(Op->Header.Args[1].ID()), TMP2.X(), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+
+        break;
+      }
+      case IR::OP_ATOMICFETCHOR: {
+        auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->Size) {
+        case 1: ldsetalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 2: ldsetalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 4: ldsetal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 8: ldsetal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+
+        break;
+      }
+      case IR::OP_ATOMICFETCHXOR: {
+        auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
+        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->Size) {
+        case 1: ldeoralb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 2: ldeoralh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 4: ldeoral(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 8: ldeoral(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
+        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        }
+
         break;
       }
       case IR::OP_SELECT: {
