@@ -214,6 +214,9 @@ public:
   template<size_t width>
   void FLD(OpcodeArgs);
 
+  template<size_t width, bool pop>
+  void FST(OpcodeArgs);
+
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
 

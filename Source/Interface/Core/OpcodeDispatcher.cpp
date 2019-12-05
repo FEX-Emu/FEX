@@ -2977,7 +2977,17 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op,
       MemStoreDst = _Add(MemStoreDst, _LoadContext(8, offsetof(FEXCore::Core::CPUState, gs)));
     }
 
-    _StoreMem(OpSize, MemStoreDst, Src, Align == -1 ? OpSize : Align);
+    if (OpSize == 10) {
+      // For X87 extended doubles, split before storing
+      auto Lower = _VExtractToGPR(16, 8, Src, 0);
+      _StoreMem(8, MemStoreDst, Lower, Align);
+      auto Upper = _VExtractToGPR(16, 8, Src, 1);
+      auto DestAddr = _Add(MemStoreDst, _Constant(8));
+      _StoreMem(2, DestAddr, Upper, std::min<uint8_t>(Align, 8));
+
+    } else {
+      _StoreMem(OpSize, MemStoreDst, Src, Align == -1 ? OpSize : Align);
+    }
   }
 }
 
@@ -3890,6 +3900,22 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   //_StoreContext(converted, 16, offsetof(FEXCore::Core::CPUState, mm[7][0]));
 }
 
+template<size_t width, bool pop>
+void OpDispatchBuilder::FST(OpcodeArgs) {
+  auto orig_top = GetX87Top();
+  if (width == 80) {
+    auto data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16);
+    StoreResult_WithOpSize(Op, Op->Dest, data, 10, 1);
+  }
+
+  // TODO: Other widths
+
+  if (pop) {
+    auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+    SetX87Top(top);
+  }
+}
+
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
 
@@ -4444,6 +4470,9 @@ constexpr uint16_t PF_F2 = 3;
     {OPDReg(0xD9, 7) | 0x40, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
     {OPDReg(0xD9, 7) | 0x80, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
 
+    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::FST<80, true>},
+    {OPDReg(0xDB, 7) | 0x40, 8, &OpDispatchBuilder::FST<80, true>},
+    {OPDReg(0xDB, 7) | 0x80, 8, &OpDispatchBuilder::FST<80, true>},
 
     {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::FLD<64>},
     {OPDReg(0xDD, 0) | 0x40, 8, &OpDispatchBuilder::FLD<64>},
