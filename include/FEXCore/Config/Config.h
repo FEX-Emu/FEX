@@ -12,6 +12,7 @@ namespace FEXCore::Config {
     CONFIG_SINGLESTEP,
     CONFIG_GDBSERVER,
     CONFIG_ACCURATESTDOUT,
+    CONFIG_ROOTFSPATH,
   };
 
   enum ConfigCore {
@@ -22,5 +23,6 @@ namespace FEXCore::Config {
   };
 
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config);
+  void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, std::string const &Config);
   uint64_t GetConfig(FEXCore::Context::Context *CTX, ConfigOption Option);
 }

@@ -172,6 +172,14 @@ FileManager::~FileManager() {
   }
 }
 
+std::string FileManager::GetEmulatedPath(const char *pathname) {
+  if (pathname[0] != '/' ||
+      CTX->Config.RootFSPath.empty())
+    return {};
+
+  return CTX->Config.RootFSPath + pathname;
+}
+
 uint64_t FileManager::Read(int fd, [[maybe_unused]] void *buf, [[maybe_unused]] size_t count) {
   auto FD = FDMap.find(fd);
   if (FD == FDMap.end()) {
@@ -211,6 +219,12 @@ uint64_t FileManager::Close(int fd) {
 }
 
 uint64_t FileManager::Stat(const char *pathname, void *buf) {
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::stat(Path.c_str(), reinterpret_cast<struct stat*>(buf));
+    if (Result != -1)
+      return Result;
+  }
   return ::stat(pathname, reinterpret_cast<struct stat*>(buf));
 }
 
@@ -241,15 +255,22 @@ uint64_t FileManager::Fstat(int fd, void *buf) {
 }
 
 uint64_t FileManager::Lstat(const char *path, void *buf) {
-  return lstat(path, reinterpret_cast<struct stat*>(buf));
+  auto Path = GetEmulatedPath(path);
+  if (!Path.empty()) {
+    uint64_t Result = ::lstat(Path.c_str(), reinterpret_cast<struct stat*>(buf));
+    if (Result != -1)
+      return Result;
+  }
+
+  return ::lstat(path, reinterpret_cast<struct stat*>(buf));
 }
 
 uint64_t FileManager::Lseek(int fd, uint64_t offset, int whence) {
   auto fdPtr = FDMap.find(fd);
   if (fdPtr == FDMap.end()) {
     LogMan::Msg::E("XXX: Trying to lseek unknown fd: %d", fd);
-  return -1LL;
-}
+    return -1LL;
+  }
   return fdPtr->second->lseek(fd, offset, whence);
 }
 
@@ -264,7 +285,14 @@ uint64_t FileManager::Writev(int fd, void *iov, int iovcnt) {
 }
 
 uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
-  return access(pathname, mode);
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::access(Path.c_str(), mode);
+    if (Result != -1)
+      return Result;
+  }
+
+  return ::access(pathname, mode);
 }
 
 uint64_t FileManager::Pipe(int pipefd[2]) {
@@ -310,14 +338,20 @@ uint64_t FileManager::Pipe2(int pipefd[2], int flags) {
   return Result;
 }
 
-
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   if (strcmp(pathname, "/proc/self/exe") == 0) {
     strncpy(buf, Filename.c_str(), bufsiz);
     return std::min(bufsiz, Filename.size());
   }
 
-  return readlink(pathname, buf, bufsiz);
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::readlink(Path.c_str(), buf, bufsiz);
+    if (Result != -1)
+      return Result;
+  }
+
+  return ::readlink(pathname, buf, bufsiz);
 }
 
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, int flags, uint32_t mode) {
@@ -329,7 +363,15 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
 
   auto fdPtr = new FD{CTX, fd, pathname, flags, mode};
 
-  auto Result = fdPtr->openat(dirfs, pathname, flags, mode);
+  uint64_t Result = -1;
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    Result = fdPtr->openat(dirfs, Path.c_str(), flags, mode);
+  }
+
+  if (Result == -1)
+    Result = fdPtr->openat(dirfs, pathname, flags, mode);
+
   if (Result == -1) {
     delete fdPtr;
     return -1;

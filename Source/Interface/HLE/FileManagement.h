@@ -102,5 +102,6 @@ private:
   std::unordered_map<int32_t, FD*> FDMap;
 
   std::string Filename;
+  std::string GetEmulatedPath(const char *pathname);
 };
 }

@@ -31,6 +31,15 @@ namespace FEXCore::Config {
     }
   }
 
+  void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, std::string const &Config) {
+    switch (Option) {
+    case CONFIG_ROOTFSPATH:
+      CTX->Config.RootFSPath = Config;
+      break;
+    default: LogMan::Msg::A("Unknown configuration option");
+    }
+  }
+
   uint64_t GetConfig(FEXCore::Context::Context *CTX, ConfigOption Option) {
     switch (Option) {
     case FEXCore::Config::CONFIG_MULTIBLOCK:
