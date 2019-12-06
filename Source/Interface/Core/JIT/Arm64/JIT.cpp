@@ -1929,7 +1929,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_VBITCAST: {
         auto Op = IROp->C<IR::IROp_VBitcast>();
         mov(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
-      break;
+        break;
+      }
+      case IR::OP_VCASTFROMGPR: {
+        auto Op = IROp->C<IR::IROp_VCastFromGPR>();
+        switch (Op->ElementSize) {
+          case 1:
+            uxtb(TMP1.W(), GetSrc<RA_32>(Op->Header.Args[0].ID()).W());
+            fmov(GetDst(Node).S(), TMP1.W());
+            break;
+          case 2:
+            uxth(TMP1.W(), GetSrc<RA_32>(Op->Header.Args[0].ID()).W());
+            fmov(GetDst(Node).S(), TMP1.W());
+            break;
+          case 4:
+            fmov(GetDst(Node).S(), GetSrc<RA_32>(Op->Header.Args[0].ID()).W());
+            break;
+          case 8:
+            fmov(GetDst(Node).D(), GetSrc<RA_32>(Op->Header.Args[0].ID()).X());
+            break;
+          default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+        }
+        break;
       }
       case IR::OP_VEXTR: {
         auto Op = IROp->C<IR::IROp_VExtr>();
