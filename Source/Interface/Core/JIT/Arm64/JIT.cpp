@@ -1127,11 +1127,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         auto Op = IROp->C<IR::IROp_AtomicSwap>();
 
         add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()));
         switch (Op->Size) {
-        case 1: swplb(GetSrc<RA_32>(Op->Header.Args[1].ID()), xzr, MemOperand(TMP1)); break;
-        case 2: swplh(GetSrc<RA_32>(Op->Header.Args[1].ID()), xzr, MemOperand(TMP1)); break;
-        case 4: swpl(GetSrc<RA_32>(Op->Header.Args[1].ID()), xzr, MemOperand(TMP1)); break;
-        case 8: swpl(GetSrc<RA_64>(Op->Header.Args[1].ID()), xzr, MemOperand(TMP1)); break;
+        case 1: swplb(GetDst<RA_32>(Node), xzr, MemOperand(TMP1)); break;
+        case 2: swplh(GetDst<RA_32>(Node), xzr, MemOperand(TMP1)); break;
+        case 4: swpl(GetDst<RA_32>(Node), xzr, MemOperand(TMP1)); break;
+        case 8: swpl(GetDst<RA_64>(Node), xzr, MemOperand(TMP1)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
@@ -1154,13 +1155,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
         neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
         switch (Op->Size) {
-        case 1: ldaddalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
-        case 2: ldaddalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
-        case 4: ldaddal(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
-        case 8: ldaddal(GetSrc<RA_64>(Op->Header.Args[1].ID()), TMP2.X(), MemOperand(TMP1)); break;
+        case 1: ldaddalb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 2: ldaddalh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 4: ldaddal(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 8: ldaddal(TMP2.X(), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
-
         break;
       }
       case IR::OP_ATOMICFETCHAND: {
@@ -1168,13 +1168,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
         mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
         switch (Op->Size) {
-        case 1: ldclralb(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
-        case 2: ldclralh(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
-        case 4: ldclral(GetSrc<RA_32>(Op->Header.Args[1].ID()), TMP2.W(), MemOperand(TMP1)); break;
-        case 8: ldclral(GetSrc<RA_64>(Op->Header.Args[1].ID()), TMP2.X(), MemOperand(TMP1)); break;
+        case 1: ldclralb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 2: ldclralh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 4: ldclral(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
+        case 8: ldclral(TMP2.X(), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
-
         break;
       }
       case IR::OP_ATOMICFETCHOR: {
