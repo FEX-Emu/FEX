@@ -57,12 +57,11 @@ namespace FEX::ArgLoader {
     }
     {
       Parser.set_defaults("AccurateSTDOut", "0");
-      Parser.set_defaults("LibraryPath", "");
+      Parser.set_defaults("RootFS", "");
 
-      EmulationGroup.add_option("-L", "--ld-prefix")
-        .dest("LibraryPath")
-        .help("Which LD library prefix to use")
-        .set_default("");
+      EmulationGroup.add_option("-R", "--rootfs")
+        .dest("RootFS")
+        .help("Which Root filesystem prefix to use");
 
       EmulationGroup.add_option("--accurate-std")
         .dest("AccurateSTDOut")
@@ -149,9 +148,9 @@ namespace FEX::ArgLoader {
     }
 
     {
-      if (Options.is_set_by_user("LibraryPath")) {
-        char const *Option = Options.get("LibraryPath");
-        Config::Add("LibraryPath", Option);
+      if (Options.is_set_by_user("RootFS")) {
+        std::string Option = Options["RootFS"];
+        Config::Add("RootFS", Option);
       }
 
       if (Options.is_set_by_user("AccurateSTDOut")) {
