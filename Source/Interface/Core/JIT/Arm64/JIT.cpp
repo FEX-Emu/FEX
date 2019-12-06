@@ -1945,7 +1945,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             fmov(GetDst(Node).S(), GetSrc<RA_32>(Op->Header.Args[0].ID()).W());
             break;
           case 8:
-            fmov(GetDst(Node).D(), GetSrc<RA_32>(Op->Header.Args[0].ID()).X());
+            fmov(GetDst(Node).D(), GetSrc<RA_64>(Op->Header.Args[0].ID()).X());
             break;
           default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
         }
@@ -1987,16 +1987,52 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_VSLI: {
         auto Op = IROp->C<IR::IROp_VSLI>();
-        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
-        sli(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->ByteShift);
-        mov(GetDst(Node).V16B(), VTMP1.V16B());
+        uint8_t BitShift = Op->ByteShift * 8;
+        if (BitShift < 64) {
+          // Move to Pair [TMP2:TMP1]
+          mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
+          mov(TMP2, GetSrc(Op->Header.Args[0].ID()).V2D(), 1);
+          // Left shift low 64bits
+          lsl(x0, TMP1, BitShift);
+
+          // Extract high 64bits from [TMP2:TMP1]
+          extr(TMP1, TMP2, TMP1, 64 - BitShift);
+
+          mov(GetDst(Node).V2D(), 0, x0);
+          mov(GetDst(Node).V2D(), 1, TMP1);
+        }
+        else {
+          mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
+          lsl(TMP1, TMP1, BitShift - 64);
+          mov(GetDst(Node).V2D(), 0, xzr);
+          mov(GetDst(Node).V2D(), 1, TMP1);
+        }
+
         break;
       }
       case IR::OP_VSRI: {
         auto Op = IROp->C<IR::IROp_VSRI>();
-        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
-        sri(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->ByteShift);
-        mov(GetDst(Node).V16B(), VTMP1.V16B());
+        uint8_t BitShift = Op->ByteShift * 8;
+        if (BitShift < 64) {
+          // Move to Pair [TMP2:TMP1]
+          mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
+          mov(TMP2, GetSrc(Op->Header.Args[0].ID()).V2D(), 1);
+
+          // Extract Low 64bits [TMP2:TMP2] >> BitShift
+          extr(TMP1, TMP2, TMP1, BitShift);
+          // Right shift high bits
+          lsr(TMP2, TMP2, BitShift);
+
+          mov(GetDst(Node).V2D(), 0, TMP1);
+          mov(GetDst(Node).V2D(), 1, TMP2);
+        }
+        else {
+          mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 1);
+          lsr(TMP1, TMP1, BitShift - 64);
+          mov(GetDst(Node).V2D(), 0, TMP1);
+          mov(GetDst(Node).V2D(), 1, xzr);
+        }
+
         break;
       }
       case IR::OP_VUMIN: {
