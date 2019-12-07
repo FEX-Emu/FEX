@@ -51,6 +51,8 @@ enum Syscalls {
   SYSCALL_SHUTDOWN        = 48,  ///< __NR_shutdown
   SYSCALL_GETSOCKNAME     = 51,  ///< __NR_getsockname
   SYSCALL_GETPEERNAME     = 52,  ///< __NR_getpeername
+  SYSCALL_SETSOCKOPT      = 54,  ///< __NR_setsockopt
+  SYSCALL_GETSOCKOPT      = 55,  ///< __NR_getsockopt
   SYSCALL_CLONE           = 56,  ///< __NR_clone
   SYSCALL_EXIT            = 60,  ///< __NR_exit
   SYSCALL_WAIT4           = 61,  ///< __NR_wait4
@@ -86,6 +88,7 @@ enum Syscalls {
   SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1
   SYSCALL_PIPE2           = 293, ///< __NR_pipe2
   SYSCALL_PRLIMIT64       = 302, ///< __NR_prlimit64
+  SYSCALL_SENDMMSG        = 307, ///< __NR_sendmmsg
   SYSCALL_GETRANDOM       = 318, ///< __NR_getrandom
 };
 

@@ -86,8 +86,11 @@ public:
   uint64_t Shutdown(int sockfd, int how);
   uint64_t GetSockName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
   uint64_t GetPeerName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+  uint64_t SetSockOpt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+  uint64_t GetSockOpt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
   uint64_t Poll(struct pollfd *fds, nfds_t nfds, int timeout);
   uint64_t Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+  uint64_t Sendmmsg(int sockfd, struct mmsghdr *msgvec, uint32_t vlen, int flags);
 
   int32_t FindHostFD(int fd);
 

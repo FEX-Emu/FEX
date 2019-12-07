@@ -140,6 +140,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_PRLIMIT64:
     LogMan::Msg::D("prlimit64(%ld, %ld, %p, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
     break;
+  case SYSCALL_SENDMMSG:
+    LogMan::Msg::D("sendmmsg(%ld, 0x%lx, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
+    break;
   case SYSCALL_GETPID:
     LogMan::Msg::D("getpid() = %ld", Ret);
     break;
@@ -174,6 +177,24 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_GETPEERNAME:
     LogMan::Msg::D("getpeername(%ld, 0x%lx, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_SETSOCKOPT:
+    LogMan::Msg::D("setsockopt(%ld, %ld, %ld, 0x%lx, %ld) = %ld",
+        Args->Argument[1],
+        Args->Argument[2],
+        Args->Argument[3],
+        Args->Argument[4],
+        Args->Argument[5],
+        Ret);
+    break;
+  case SYSCALL_GETSOCKOPT:
+    LogMan::Msg::D("getsockopt(%ld, %ld, %ld, 0x%lx, 0x%lx) = %ld",
+        Args->Argument[1],
+        Args->Argument[2],
+        Args->Argument[3],
+        Args->Argument[4],
+        Args->Argument[5],
+        Ret);
     break;
   case SYSCALL_CLONE:
     LogMan::Msg::I("clone(%lx,\n\t%lx,\n\t%lx,\n\t%lx,\n\t%lx,\n\t%lx,\n\t%lx)",
@@ -431,6 +452,20 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = FM.GetPeerName(Args->Argument[1],
       CTX->MemoryMapper.GetPointer<struct sockaddr *>(Args->Argument[2]),
       CTX->MemoryMapper.GetPointer<socklen_t *>(Args->Argument[3]));
+  break;
+  case SYSCALL_SETSOCKOPT:
+    Result = FM.SetSockOpt(Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      CTX->MemoryMapper.GetPointer<const void*>(Args->Argument[4]),
+      Args->Argument[5]);
+  break;
+  case SYSCALL_GETSOCKOPT:
+    Result = FM.GetSockOpt(Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      CTX->MemoryMapper.GetPointer<void*>(Args->Argument[4]),
+      CTX->MemoryMapper.GetPointer<socklen_t *>(Args->Argument[5]));
   break;
   case SYSCALL_POLL:
     Result = FM.Poll(CTX->MemoryMapper.GetPointer<struct pollfd*>(Args->Argument[1]), Args->Argument[2], Args->Argument[3]);
@@ -783,6 +818,12 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = 0;
   break;
   }
+  case SYSCALL_SENDMMSG:
+    Result = FM.Sendmmsg(Args->Argument[1],
+      CTX->MemoryMapper.GetPointer<struct mmsghdr*>(Args->Argument[2]),
+      Args->Argument[3],
+      Args->Argument[4]);
+    break;
   case SYSCALL_UMASK:
     // Just say that the mask has always matched what was passed in
     Result = Args->Argument[1];
