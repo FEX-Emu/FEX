@@ -15,6 +15,8 @@
 ; RIP
 ; FS, GS
 ; Flags
+; -- X87 / MMX / 3DNow --
+; MM0-MM7
 ; ===========================
 ; Match: Forces full matching of types
 ;   - Type: String or List of strings

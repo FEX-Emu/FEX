@@ -156,7 +156,7 @@ namespace FEX::HarnessHelper {
 
       if (BaseConfig.OptionRegDataCount > 0) {
         uintptr_t DataOffset = sizeof(ConfigStructBase);
-        constexpr std::array<std::pair<uint64_t, unsigned>, 36> OffsetArray = {{
+        constexpr std::array<std::pair<uint64_t, unsigned>, 45> OffsetArray = {{
           {offsetof(FEXCore::Core::CPUState, rip), 1},
           {offsetof(FEXCore::Core::CPUState, gregs[0]), 1},
           {offsetof(FEXCore::Core::CPUState, gregs[1]), 1},
@@ -193,6 +193,15 @@ namespace FEX::HarnessHelper {
           {offsetof(FEXCore::Core::CPUState, gs), 1},
           {offsetof(FEXCore::Core::CPUState, fs), 1},
           {offsetof(FEXCore::Core::CPUState, flags), 8},
+          {offsetof(FEXCore::Core::CPUState, mm[0][0]), 2},
+          {offsetof(FEXCore::Core::CPUState, mm[1][0]), 2},
+          {offsetof(FEXCore::Core::CPUState, mm[2][0]), 2},
+          {offsetof(FEXCore::Core::CPUState, mm[3][0]), 2},
+          {offsetof(FEXCore::Core::CPUState, mm[4][0]), 2},
+          {offsetof(FEXCore::Core::CPUState, mm[5][0]), 2},
+          {offsetof(FEXCore::Core::CPUState, mm[6][0]), 2},
+          {offsetof(FEXCore::Core::CPUState, mm[7][0]), 2},
+          {offsetof(FEXCore::Core::CPUState, mm[8][0]), 2},
         }};
 
         // Offset past the Memory regions if there are any
@@ -234,6 +243,9 @@ namespace FEX::HarnessHelper {
               Name ="fs";
             else if (NameIndex == 35)
               Name = "rflags";
+            else if (NameIndex >= 36 && NameIndex < 45)
+              Name = "MM[" + std::to_string(NameIndex - 36) + "][" + std::to_string(j) + "]";
+
 
             CheckGPRs("Core1: " + Name + ": ", State1Data[j], RegData->RegValues[j]);
             CheckGPRs("Core2: " + Name + ": ", State2Data[j], RegData->RegValues[j]);
