@@ -3916,6 +3916,74 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::FADD(OpcodeArgs) {
+  auto top = GetX87Top();
+  OrderedNode* arg;
+
+  auto mask = _Constant(7);
+
+  if (Op->Src1.TypeNone.Type != 0) {
+    // Memory arg
+    arg = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  } else {
+    // Implicit arg
+    auto offset = _Constant(Op->OP & 7);
+    arg = _And(_Add(top, offset), mask);
+  }
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16);
+  auto b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16);
+
+  // _StoreContext(a, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]));
+  // _StoreContext(b, 16, offsetof(FEXCore::Core::CPUState, mm[1][0]));
+
+  auto ExponentMask = _Constant(0x7FFF);
+
+  //auto result = _F80Add(a, b);
+  // TODO: Handle sign and negative additions.
+
+  // TODO: handle NANs (and other weird numbers?)
+
+  auto a_Exponent = _And(_VExtractToGPR(16, 8, a, 1), ExponentMask);
+  auto b_Exponent = _And(_VExtractToGPR(16, 8, b, 1), ExponentMask);
+  auto shift = _Sub(a_Exponent, b_Exponent);
+
+  auto zero = _Constant(0);
+
+  auto ExponentLarger  = _Select(COND_LT, shift, zero, a_Exponent, b_Exponent);
+
+  auto a_Mantissa = _VExtractToGPR(16, 8, a, 0);
+  auto b_Mantissa = _VExtractToGPR(16, 8, b, 0);
+  auto MantissaLarger  = _Select(COND_LT, shift, zero, a_Mantissa, b_Mantissa);
+  auto MantissaSmaller = _Select(COND_LT, shift, zero, b_Mantissa, a_Mantissa);
+
+  auto invertedShift   = _Select(COND_LT, shift, zero, _Neg(shift), shift);
+  auto MantissaSmallerShifted = _Lshr(MantissaSmaller, invertedShift);
+
+  auto MantissaSummed = _Add(MantissaLarger, MantissaSmallerShifted);
+
+  auto one = _Constant(1);
+  // Hacky way to detect overflow and adjust
+  auto ExponentAdjusted = _Select(COND_LT, MantissaLarger, MantissaSummed, ExponentLarger, _Add(ExponentLarger, one));
+  auto MantissaShifted = _Or(_Constant(1ULL << 63), _Lshr(MantissaSummed, one));
+  auto MantissaAdjusted = _Select(COND_LT, MantissaLarger, MantissaSummed, MantissaSummed, MantissaShifted);
+
+  // TODO: Rounding, Infinities, exceptions, precision, tags?
+
+  auto lower = _VCastFromGPR(16, 8, MantissaAdjusted);
+  auto upper = _VCastFromGPR(16, 8, ExponentAdjusted);
+
+  auto result = _VInsElement(16, 8, 1, 0, lower, upper);
+
+  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    top = _And(_Add(top, one), mask);
+    SetX87Top(top);
+  }
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16);
+}
+
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(Op, Op->Dest, Op->Flags, -1, false);
 
@@ -4457,6 +4525,7 @@ constexpr uint16_t PF_F2 = 3;
     {((1 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
   };
 #define OPDReg(op, reg) (((op - 0xD8) << 8) | (reg << 3))
+#define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> X87OpTable = {
     {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::FLD<32>},
     {OPDReg(0xD9, 0) | 0x40, 8, &OpDispatchBuilder::FLD<32>},
@@ -4477,7 +4546,10 @@ constexpr uint16_t PF_F2 = 3;
     {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::FLD<64>},
     {OPDReg(0xDD, 0) | 0x40, 8, &OpDispatchBuilder::FLD<64>},
     {OPDReg(0xDD, 0) | 0x80, 8, &OpDispatchBuilder::FLD<64>},
+
+    {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::FADD}
   };
+#undef OPD
 #undef OPDReg
 
 #define OPD(prefix, opcode) ((prefix << 8) | opcode)

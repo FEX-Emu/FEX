@@ -250,7 +250,10 @@ constexpr uint32_t FLAGS_MODRM                 = (1 << 16);
 // But some instructions need to ignore this overlay and consume these prefixes.
 constexpr uint32_t FLAGS_NO_OVERLAY           = (1 << 20);
 
-constexpr uint32_t FLAGS_SIZE_DST_OFF = 21;
+// x87
+constexpr uint32_t FLAGS_POP                  = (1 << 21);
+
+constexpr uint32_t FLAGS_SIZE_DST_OFF = 26;
 constexpr uint32_t FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
 
 constexpr uint32_t SIZE_MASK     = 0b111;

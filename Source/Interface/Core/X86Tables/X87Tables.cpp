@@ -199,7 +199,7 @@ void InitializeX87Tables() {
     {OPDReg(0xDE, 6), 1, X86InstInfo{"FIDIV", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDE, 7), 1, X86InstInfo{"FIDIVR", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 0
-      {OPD(0xDE, 0xC0), 8, X86InstInfo{"FADDP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
+      {OPD(0xDE, 0xC0), 8, X86InstInfo{"FADDP", TYPE_X87, FLAGS_POP, 0, nullptr}},
       //  / 1
       {OPD(0xDE, 0xC8), 8, X86InstInfo{"FMULP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 2
