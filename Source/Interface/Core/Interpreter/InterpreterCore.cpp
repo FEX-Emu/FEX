@@ -1014,6 +1014,415 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          case IR::OP_ATOMICADD: {
+            auto Op = IROp->C<IR::IROp_AtomicAdd>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                *Data += Src;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                *Data += Src;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                *Data += Src;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                *Data += Src;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICSUB: {
+            auto Op = IROp->C<IR::IROp_AtomicSub>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                *Data -= Src;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                *Data -= Src;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                *Data -= Src;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                *Data -= Src;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICAND: {
+            auto Op = IROp->C<IR::IROp_AtomicAnd>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                *Data &= Src;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                *Data &= Src;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                *Data &= Src;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                *Data &= Src;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICOR: {
+            auto Op = IROp->C<IR::IROp_AtomicOr>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                *Data |= Src;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                *Data |= Src;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                *Data |= Src;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                *Data |= Src;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICXOR: {
+            auto Op = IROp->C<IR::IROp_AtomicXor>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                *Data ^= Src;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                *Data ^= Src;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                *Data ^= Src;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                *Data ^= Src;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICSWAP: {
+            auto Op = IROp->C<IR::IROp_AtomicSwap>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                uint8_t Previous = Data->exchange(Src);
+                GD = Previous;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                uint16_t Previous = Data->exchange(Src);
+                GD = Previous;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                uint32_t Previous = Data->exchange(Src);
+                GD = Previous;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                uint64_t Previous = Data->exchange(Src);
+                GD = Previous;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICFETCHADD: {
+            auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                uint8_t Previous = Data->fetch_add(Src);
+                GD = Previous;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                uint16_t Previous = Data->fetch_add(Src);
+                GD = Previous;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                uint32_t Previous = Data->fetch_add(Src);
+                GD = Previous;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                uint64_t Previous = Data->fetch_add(Src);
+                GD = Previous;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICFETCHSUB: {
+            auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                uint8_t Previous = Data->fetch_sub(Src);
+                GD = Previous;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                uint16_t Previous = Data->fetch_sub(Src);
+                GD = Previous;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                uint32_t Previous = Data->fetch_sub(Src);
+                GD = Previous;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                uint64_t Previous = Data->fetch_sub(Src);
+                GD = Previous;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICFETCHAND: {
+            auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                uint8_t Previous = Data->fetch_and(Src);
+                GD = Previous;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                uint16_t Previous = Data->fetch_and(Src);
+                GD = Previous;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                uint32_t Previous = Data->fetch_and(Src);
+                GD = Previous;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                uint64_t Previous = Data->fetch_and(Src);
+                GD = Previous;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICFETCHOR: {
+            auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                uint8_t Previous = Data->fetch_or(Src);
+                GD = Previous;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                uint16_t Previous = Data->fetch_or(Src);
+                GD = Previous;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                uint32_t Previous = Data->fetch_or(Src);
+                GD = Previous;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                uint64_t Previous = Data->fetch_or(Src);
+                GD = Previous;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICFETCHXOR: {
+            auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
+            switch (Op->Size) {
+              case 1: {
+                std::atomic<uint8_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(Op->Header.Args[0]));
+                uint8_t Src = *GetSrc<uint8_t*>(Op->Header.Args[1]);
+                uint8_t Previous = Data->fetch_xor(Src);
+                GD = Previous;
+                break;
+              }
+              case 2: {
+                std::atomic<uint16_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(Op->Header.Args[0]));
+                uint16_t Src = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                uint16_t Previous = Data->fetch_xor(Src);
+                GD = Previous;
+                break;
+              }
+              case 4: {
+                std::atomic<uint32_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint32_t*>(Op->Header.Args[0]));
+                uint32_t Src = *GetSrc<uint32_t*>(Op->Header.Args[1]);
+                uint32_t Previous = Data->fetch_xor(Src);
+                GD = Previous;
+                break;
+              }
+              case 8: {
+                std::atomic<uint64_t> *Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[0]));
+                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[0]));
+                uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+                uint64_t Previous = Data->fetch_xor(Src);
+                GD = Previous;
+                break;
+              }
+              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
           // Vector ops
           case IR::OP_CREATEVECTOR2: {
             auto Op = IROp->C<IR::IROp_CreateVector2>();
