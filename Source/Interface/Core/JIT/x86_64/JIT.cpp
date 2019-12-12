@@ -1226,30 +1226,41 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
             cmovne(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
           break;
-          case FEXCore::IR::COND_GE:
+          case FEXCore::IR::COND_SGE:
             mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
             cmovge(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
           break;
-          case FEXCore::IR::COND_LT:
+          case FEXCore::IR::COND_SLT:
             mov(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
             cmovae(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
           break;
-          case FEXCore::IR::COND_GT:
+          case FEXCore::IR::COND_SGT:
             mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
             cmovg(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
           break;
-          case FEXCore::IR::COND_LE:
+          case FEXCore::IR::COND_SLE:
             mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
             cmovle(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
           break;
-          case FEXCore::IR::COND_CS:
-          case FEXCore::IR::COND_CC:
+          case FEXCore::IR::COND_UGE:
+            mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
+            cmovae(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+          break;
+          case FEXCore::IR::COND_ULT:
+            mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
+            cmovb(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+          break;
+          case FEXCore::IR::COND_UGT:
+            mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
+            cmova(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+          break;
+          case FEXCore::IR::COND_ULE:
+            mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
+            cmovna(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
           case FEXCore::IR::COND_MI:
           case FEXCore::IR::COND_PL:
           case FEXCore::IR::COND_VS:
           case FEXCore::IR::COND_VC:
-          case FEXCore::IR::COND_HI:
-          case FEXCore::IR::COND_LS:
           default:
           LogMan::Msg::A("Unsupported compare type");
           break;

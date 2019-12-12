@@ -863,17 +863,29 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       case FEXCore::IR::COND_NEQ:
         Cmp = JITState.IRBuilder->CreateICmpNE(Src1, Src2);
       break;
-      case FEXCore::IR::COND_GE:
+      case FEXCore::IR::COND_SGE:
+        Cmp = JITState.IRBuilder->CreateICmpSGE(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_SLT:
+        Cmp = JITState.IRBuilder->CreateICmpSLT(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_SGT:
+        Cmp = JITState.IRBuilder->CreateICmpSGT(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_SLE:
+        Cmp = JITState.IRBuilder->CreateICmpSLE(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_UGE:
         Cmp = JITState.IRBuilder->CreateICmpUGE(Src1, Src2);
       break;
-      case FEXCore::IR::COND_LT:
-        Cmp = JITState.IRBuilder->CreateICmpULT(Src1, Src2);
-      break;
-      case FEXCore::IR::COND_GT:
+      case FEXCore::IR::COND_UGT:
         Cmp = JITState.IRBuilder->CreateICmpUGT(Src1, Src2);
       break;
-      case FEXCore::IR::COND_LE:
-        Cmp = JITState.IRBuilder->CreateICmpULE(Src1, Src2);
+      case FEXCore::IR::COND_ULT:
+        Cmp = JITState.IRBuilder->CreateICmpUGE(Src1, Src2);
+      break;
+      case FEXCore::IR::COND_ULE:
+        Cmp = JITState.IRBuilder->CreateICmpUGT(Src1, Src2);
       break;
       default: LogMan::Msg::A("Unknown Select Op Type: %d", Op->Cond); break;
       }

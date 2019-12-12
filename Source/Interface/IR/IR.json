@@ -2,18 +2,18 @@
   "Defines": [
     "constexpr static uint8_t COND_EQ  = 0",
     "constexpr static uint8_t COND_NEQ = 1",
-    "constexpr static uint8_t COND_CS  = 2",
-    "constexpr static uint8_t COND_CC  = 3",
+    "constexpr static uint8_t COND_UGE  = 2",
+    "constexpr static uint8_t COND_ULT  = 3",
     "constexpr static uint8_t COND_MI  = 4",
     "constexpr static uint8_t COND_PL  = 5",
     "constexpr static uint8_t COND_VS  = 6",
     "constexpr static uint8_t COND_VC  = 7",
-    "constexpr static uint8_t COND_HI  = 8",
-    "constexpr static uint8_t COND_LS  = 9",
-    "constexpr static uint8_t COND_GE  = 10",
-    "constexpr static uint8_t COND_LT  = 11",
-    "constexpr static uint8_t COND_GT  = 12",
-    "constexpr static uint8_t COND_LE  = 13"
+    "constexpr static uint8_t COND_UGT  = 8",
+    "constexpr static uint8_t COND_ULE  = 9",
+    "constexpr static uint8_t COND_SGE  = 10",
+    "constexpr static uint8_t COND_SLT  = 11",
+    "constexpr static uint8_t COND_SGT  = 12",
+    "constexpr static uint8_t COND_SLE  = 13"
   ],
 
   "Ops": {

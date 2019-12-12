@@ -920,26 +920,34 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               case FEXCore::IR::COND_NEQ:
                 CompResult = Src1 != Src2;
                 break;
-              case FEXCore::IR::COND_GE:
+              case FEXCore::IR::COND_SGE:
+                CompResult = static_cast<int64_t>(Src1) >= static_cast<int64_t>(Src2);
+                break;
+              case FEXCore::IR::COND_SLT:
+                CompResult = static_cast<int64_t>(Src1) < static_cast<int64_t>(Src2);
+                break;
+              case FEXCore::IR::COND_SGT:
+                CompResult = static_cast<int64_t>(Src1) > static_cast<int64_t>(Src2);
+                break;
+              case FEXCore::IR::COND_SLE:
+                CompResult = static_cast<int64_t>(Src1) <= static_cast<int64_t>(Src2);
+                break;
+              case FEXCore::IR::COND_UGE:
                 CompResult = Src1 >= Src2;
                 break;
-              case FEXCore::IR::COND_LT:
+              case FEXCore::IR::COND_ULT:
                 CompResult = Src1 < Src2;
                 break;
-              case FEXCore::IR::COND_GT:
+              case FEXCore::IR::COND_UGT:
                 CompResult = Src1 > Src2;
                 break;
-              case FEXCore::IR::COND_LE:
+              case FEXCore::IR::COND_ULE:
                 CompResult = Src1 <= Src2;
                 break;
-              case FEXCore::IR::COND_CS:
-              case FEXCore::IR::COND_CC:
               case FEXCore::IR::COND_MI:
               case FEXCore::IR::COND_PL:
               case FEXCore::IR::COND_VS:
               case FEXCore::IR::COND_VC:
-              case FEXCore::IR::COND_HI:
-              case FEXCore::IR::COND_LS:
               default:
                 LogMan::Msg::A("Unsupported compare type");
                 break;

@@ -3118,8 +3118,8 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
     auto Dst8 = _Bfe(Size, 0, Res);
     auto Src8 = _Bfe(Size, 0, Src2);
 
-    auto SelectOpLT = _Select(FEXCore::IR::COND_LT, Dst8, Src8, _Constant(1), _Constant(0));
-    auto SelectOpLE = _Select(FEXCore::IR::COND_LE, Dst8, Src8, _Constant(1), _Constant(0));
+    auto SelectOpLT = _Select(FEXCore::IR::COND_ULT, Dst8, Src8, _Constant(1), _Constant(0));
+    auto SelectOpLE = _Select(FEXCore::IR::COND_ULE, Dst8, Src8, _Constant(1), _Constant(0));
     auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, _Constant(1), SelectOpLE, SelectOpLT);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
   }
@@ -3188,8 +3188,8 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
     auto Dst8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
     auto Src8_1 = _Bfe(GetSrcSize(Op) * 8, 0, Src1);
 
-    auto SelectOpLT = _Select(FEXCore::IR::COND_GT, Dst8, Src8_1, _Constant(1), _Constant(0));
-    auto SelectOpLE = _Select(FEXCore::IR::COND_GE, Dst8, Src8_1, _Constant(1), _Constant(0));
+    auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Dst8, Src8_1, _Constant(1), _Constant(0));
+    auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Dst8, Src8_1, _Constant(1), _Constant(0));
     auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, _Constant(1), SelectOpLE, SelectOpLT);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
   }
@@ -3259,7 +3259,7 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
     auto ZeroConst = _Constant(0);
     auto OneConst = _Constant(1);
 
-    auto SelectOp = _Select(FEXCore::IR::COND_LT,
+    auto SelectOp = _Select(FEXCore::IR::COND_ULT,
         Src1, Src2, OneConst, ZeroConst);
 
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
@@ -3324,7 +3324,7 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
     auto Dst8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
     auto Src8 = _Bfe(GetSrcSize(Op) * 8, 0, Src2);
 
-    auto SelectOp = _Select(FEXCore::IR::COND_LT, Dst8, Src8, _Constant(1), _Constant(0));
+    auto SelectOp = _Select(FEXCore::IR::COND_ULT, Dst8, Src8, _Constant(1), _Constant(0));
 
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
   }
@@ -3950,23 +3950,23 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
 
   auto zero = _Constant(0);
 
-  auto ExponentLarger  = _Select(COND_LT, shift, zero, a_Exponent, b_Exponent);
+  auto ExponentLarger  = _Select(COND_ULT, shift, zero, a_Exponent, b_Exponent);
 
   auto a_Mantissa = _VExtractToGPR(16, 8, a, 0);
   auto b_Mantissa = _VExtractToGPR(16, 8, b, 0);
-  auto MantissaLarger  = _Select(COND_LT, shift, zero, a_Mantissa, b_Mantissa);
-  auto MantissaSmaller = _Select(COND_LT, shift, zero, b_Mantissa, a_Mantissa);
+  auto MantissaLarger  = _Select(COND_ULT, shift, zero, a_Mantissa, b_Mantissa);
+  auto MantissaSmaller = _Select(COND_ULT, shift, zero, b_Mantissa, a_Mantissa);
 
-  auto invertedShift   = _Select(COND_LT, shift, zero, _Neg(shift), shift);
+  auto invertedShift   = _Select(COND_ULT, shift, zero, _Neg(shift), shift);
   auto MantissaSmallerShifted = _Lshr(MantissaSmaller, invertedShift);
 
   auto MantissaSummed = _Add(MantissaLarger, MantissaSmallerShifted);
 
   auto one = _Constant(1);
   // Hacky way to detect overflow and adjust
-  auto ExponentAdjusted = _Select(COND_LT, MantissaLarger, MantissaSummed, ExponentLarger, _Add(ExponentLarger, one));
+  auto ExponentAdjusted = _Select(COND_ULT, MantissaLarger, MantissaSummed, ExponentLarger, _Add(ExponentLarger, one));
   auto MantissaShifted = _Or(_Constant(1ULL << 63), _Lshr(MantissaSummed, one));
-  auto MantissaAdjusted = _Select(COND_LT, MantissaLarger, MantissaSummed, MantissaSummed, MantissaShifted);
+  auto MantissaAdjusted = _Select(COND_ULT, MantissaLarger, MantissaSummed, MantissaSummed, MantissaShifted);
 
   // TODO: Rounding, Infinities, exceptions, precision, tags?
 

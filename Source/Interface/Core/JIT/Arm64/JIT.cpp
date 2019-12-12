@@ -1214,26 +1214,34 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         case FEXCore::IR::COND_NEQ:
           csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::ne);
         break;
-        case FEXCore::IR::COND_GE:
+        case FEXCore::IR::COND_SGE:
           csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::ge);
         break;
-        case FEXCore::IR::COND_LT:
-          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::lo);
+        case FEXCore::IR::COND_SLT:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::lt);
         break;
-        case FEXCore::IR::COND_GT:
+        case FEXCore::IR::COND_SGT:
           csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::gt);
         break;
-        case FEXCore::IR::COND_LE:
+        case FEXCore::IR::COND_SLE:
           csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::le);
         break;
-        case FEXCore::IR::COND_CS:
-        case FEXCore::IR::COND_CC:
+        case FEXCore::IR::COND_UGE:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::cs);
+        break;
+        case FEXCore::IR::COND_ULT:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::cc);
+        break;
+        case FEXCore::IR::COND_UGT:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::hi);
+        break;
+        case FEXCore::IR::COND_ULE:
+          csel(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[2].ID()), GetSrc<RA_64>(Op->Header.Args[3].ID()), Condition::ls);
+        break;
         case FEXCore::IR::COND_MI:
         case FEXCore::IR::COND_PL:
         case FEXCore::IR::COND_VS:
         case FEXCore::IR::COND_VC:
-        case FEXCore::IR::COND_HI:
-        case FEXCore::IR::COND_LS:
         default:
         LogMan::Msg::A("Unsupported compare type");
         break;
