@@ -338,6 +338,30 @@ public:
     return _CondJump(ssa0, InvalidNode, InvalidNode);
   }
 
+  IRPair<IROp_Phi> _Phi() {
+    return _Phi(InvalidNode, InvalidNode, 0);
+  }
+
+  IRPair<IROp_PhiValue> _PhiValue(OrderedNode *Value, OrderedNode *Block) {
+    return _PhiValue(Value, Block, InvalidNode);
+  }
+
+  void AddPhiValue(IR::IROp_Phi *Phi, OrderedNode *Value) {
+    // Got to do some bookkeeping first
+    Value->AddUse();
+    auto ValueIROp = Value->Op(Data.Begin())->C<IR::IROp_PhiValue>()->Value.GetNode(ListData.Begin())->Op(Data.Begin());
+    Phi->Header.Size = ValueIROp->Size;
+    Phi->Header.Elements = ValueIROp->Elements;
+
+    if (!Phi->PhiBegin.ID()) {
+      Phi->PhiBegin = Phi->PhiEnd = Value->Wrapped(ListData.Begin());
+      return;
+    }
+    auto PhiValueEndNode = Phi->PhiEnd.GetNode(ListData.Begin());
+    auto PhiValueEndOp = PhiValueEndNode->Op(Data.Begin())->CW<IR::IROp_PhiValue>();
+    PhiValueEndOp->Next = Value->Wrapped(ListData.Begin());
+  }
+
   void SetJumpTarget(IR::IROp_Jump *Op, OrderedNode *Target) {
     LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting Jump target to %%ssa%d %s",
