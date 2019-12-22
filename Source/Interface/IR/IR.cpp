@@ -102,37 +102,67 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
       auto IROp = CodeNode->Op(DataBegin);
 
       auto Name = FEXCore::IR::GetName(IROp->Op);
-
-      AddIndent();
-      if (IROp->HasDest) {
-        *out << "%ssa" << std::to_string(CodeOp->ID()) << " i" << std::dec << (IROp->Size * 8);
-        if (IROp->Elements > 1) {
-          *out << "v" << std::dec << (uint32_t)IROp->Elements;
-        }
-        *out << " = ";
-      }
-      else {
-        *out << "(%%ssa" << std::to_string(CodeOp->ID()) << ") ";
-      }
-
-      *out << Name;
+      bool Skip{};
       switch (IROp->Op) {
-        case IR::OP_BEGINBLOCK:
-          *out << " %ssa" << std::to_string(CodeOp->ID());
-          break;
-        case IR::OP_ENDBLOCK:
+        case IR::OP_PHIVALUE:
+          Skip = true;
           break;
         default: break;
       }
 
-      #define IROP_ARGPRINTER_HELPER
-      #include <FEXCore/IR/IRDefines.inc>
-      default: *out << "<Unknown Args>"; break;
+      if (!Skip) {
+        AddIndent();
+        if (IROp->HasDest) {
+          *out << "%ssa" << std::to_string(CodeOp->ID()) << " i" << std::dec << (IROp->Size * 8);
+          if (IROp->Elements > 1) {
+            *out << "v" << std::dec << (uint32_t)IROp->Elements;
+          }
+          *out << " = ";
+        }
+        else {
+          *out << "(%%ssa" << std::to_string(CodeOp->ID()) << ") ";
+        }
+        *out << Name;
+        switch (IROp->Op) {
+          case IR::OP_BEGINBLOCK:
+            *out << " %ssa" << std::to_string(CodeOp->ID());
+            break;
+          case IR::OP_ENDBLOCK:
+            break;
+          default: break;
+        }
+
+        #define IROP_ARGPRINTER_HELPER
+        #include <FEXCore/IR/IRDefines.inc>
+        case IR::OP_PHI: {
+          auto Op = IROp->C<IR::IROp_Phi>();
+          auto NodeBegin = IR->at(Op->PhiBegin);
+          *out << " ";
+
+          while (NodeBegin != NodeBegin.Invalid()) {
+            OrderedNodeWrapper *NodeOp = NodeBegin();
+            OrderedNode *NodeNode = NodeOp->GetNode(ListBegin);
+            auto IRNodeOp  = NodeNode->Op(DataBegin)->C<IR::IROp_PhiValue>();
+            *out << "[ ";
+            PrintArg(out, IR, IRNodeOp->Value);
+            *out << ", ";
+            PrintArg(out, IR, IRNodeOp->Block);
+            *out << " ]";
+
+            if (IRNodeOp->Next.ID())
+              *out << ", ";
+
+            NodeBegin = IR->at(IRNodeOp->Next);
+          }
+          break;
+        }
+        default: *out << "<Unknown Args>"; break;
+        }
+
+        //*out << " (" <<  std::dec << CodeNode->GetUses() << ")";
+
+        *out << "\n";
       }
-
-      //*out << " (" <<  std::dec << CodeNode->GetUses() << ")";
-
-      *out << "\n";
 
       // CodeLast is inclusive. So we still need to dump the CodeLast op as well
       if (CodeBegin == CodeLast) {
