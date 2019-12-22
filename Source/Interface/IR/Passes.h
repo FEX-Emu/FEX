@@ -14,6 +14,8 @@ FEXCore::IR::Pass* CreateIRCompaction();
 
 namespace Validation {
 FEXCore::IR::Pass* CreateIRValidation();
+FEXCore::IR::Pass* CreatePhiValidation();
+FEXCore::IR::Pass* CreateValueDominanceValidation();
 }
 }
 
