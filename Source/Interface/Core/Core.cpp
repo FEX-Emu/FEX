@@ -11,6 +11,7 @@
 #include "Interface/Core/JIT/JITCore.h"
 #include "Interface/Core/LLVMJIT/LLVMCore.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
+#include "Interface/IR/Passes.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -441,7 +442,7 @@ namespace FEXCore::Context {
 
   IR::RegisterAllocationPass *Context::GetRegisterAllocatorPass() {
     if (!RAPass) {
-      RAPass = new IR::RegisterAllocationPass();
+      RAPass = IR::CreateRegisterAllocationPass();
       PassManager.InsertPass(RAPass);
     }
 

@@ -75,12 +75,11 @@ private:
   constexpr static uint32_t RegisterCount = NumGPRs + NumXMMs;
   constexpr static uint32_t RegisterClasses = 2;
 
-  constexpr static uint32_t GPRBase = 0;
+  constexpr static uint64_t GPRBase = (0ULL << 32);
   constexpr static uint32_t GPRClass = IR::RegisterAllocationPass::GPRClass;
-  constexpr static uint32_t XMMBase = NumGPRs;
+  constexpr static uint64_t XMMBase = (1ULL << 32);
   constexpr static uint32_t XMMClass = IR::RegisterAllocationPass::FPRClass;
 
-  IR::RegisterAllocationPass::RegisterSet *RASet;
   /**  @} */
 
   constexpr static uint8_t RA_8 = 0;
@@ -89,7 +88,6 @@ private:
   constexpr static uint8_t RA_64 = 3;
   constexpr static uint8_t RA_XMM = 4;
 
-  IR::RegisterAllocationPass::RegisterGraph *Graph;
   uint32_t GetPhys(uint32_t Node);
 
   template<uint8_t RAType>
@@ -119,20 +117,15 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   Stack.resize(9000 * 16 * 64);
 
   RAPass = CTX->GetRegisterAllocatorPass();
-  RAPass->SetSupportsSpills(true);
 
-  RASet = RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
-  RAPass->AddRegisters(RASet, GPRClass, GPRBase, NumGPRs);
-  RAPass->AddRegisters(RASet, XMMClass, XMMBase, NumXMMs);
-
-  Graph = RAPass->AllocateRegisterGraph(RASet, 9000);
+  RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
+  RAPass->AddRegisters(GPRClass, NumGPRs);
+  RAPass->AddRegisters(XMMClass, NumXMMs);
   CreateCustomDispatch(Thread);
 }
 
 JITCore::~JITCore() {
   printf("Used %ld bytes for compiling\n", getCurr<uintptr_t>() - getCode<uintptr_t>());
-	RAPass->FreeRegisterSet(RASet);
-	RAPass->FreeRegisterGraph();
 }
 
 static void LoadMem(uint64_t Addr, uint64_t Data, uint8_t Size) {
@@ -146,14 +139,12 @@ static void StoreMem(uint64_t Addr, uint64_t Data, uint8_t Size) {
 }
 
 uint32_t JITCore::GetPhys(uint32_t Node) {
-  uint32_t Reg = RAPass->GetNodeRegister(Node);
+  uint64_t Reg = RAPass->GetNodeRegister(Node);
 
-  if (Reg < XMMBase)
+  if ((uint32_t)Reg != ~0U)
     return Reg;
-  else if (Reg != ~0U)
-    return Reg - XMMBase;
   else
-    LogMan::Msg::A("Couldn't Allocate register for node: ssa%d", Node);
+    LogMan::Msg::A("Couldn't Allocate register for node: ssa%d. Class: %d", Node, Reg >> 32);
 
   return ~0U;
 }
@@ -335,7 +326,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         auto Name = FEXCore::IR::GetName(IROp->Op);
 
         if (IROp->HasDest) {
-          uint32_t PhysReg = RAPass->GetNodeRegister(Node);
+          uint64_t PhysReg = RAPass->GetNodeRegister(Node);
           if (PhysReg >= XMMBase)
             Inst << "\tXMM" << GetPhys(Node) << " = " << Name << " ";
           else
@@ -348,7 +339,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           uint32_t ArgNode = IROp->Args[i].ID();
-          uint32_t PhysReg = RAPass->GetNodeRegister(ArgNode);
+          uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
           if (PhysReg >= XMMBase)
             Inst << "XMM" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
           else
@@ -754,7 +745,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_Zext>();
           LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
 
-          uint32_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
+          uint64_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
           if (PhysReg >= XMMBase) {
             // XMM -> GPR transfer with free truncation
             switch (Op->SrcSize) {
@@ -1504,7 +1495,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         case IR::OP_EXTRACTELEMENT: {
           auto Op = IROp->C<IR::IROp_ExtractElement>();
 
-          uint32_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
+          uint64_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
           if (PhysReg >= XMMBase) {
             switch (OpSize) {
             case 1:
@@ -2702,6 +2693,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_DUMMY:
         case IR::OP_IRHEADER:
+        case IR::OP_PHIVALUE:
+        case IR::OP_PHI:
           break;
         default:
           LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
