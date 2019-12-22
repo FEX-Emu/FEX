@@ -3,32 +3,31 @@
 
 #include <iostream>
 
+namespace {
+  struct BlockInfo {
+    bool HasExit;
+
+    std::vector<FEXCore::IR::OrderedNode const*> Predecessors;
+    std::vector<FEXCore::IR::OrderedNode const*> Successors;
+  };
+}
+
 namespace FEXCore::IR::Validation {
-
-struct BlockInfo {
-  bool HasExit;
-
-  std::vector<IR::OrderedNode const*> Predecessors;
-  std::vector<IR::OrderedNode const*> Successors;
-};
 
 class IRValidation final : public FEXCore::IR::Pass {
 public:
   bool Run(OpDispatchBuilder *Disp) override;
-
-private:
-  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
 };
 
 bool IRValidation::Run(OpDispatchBuilder *Disp) {
   bool HadError = false;
   bool HadWarning = false;
-  OffsetToBlockMap.clear();
+
+  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
   auto CurrentIR = Disp->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
-  BlockInfo *CurrentBlock {};
   std::ostringstream Errors;
   std::ostringstream Warnings;
 
@@ -44,7 +43,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-    CurrentBlock = &OffsetToBlockMap.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
+    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
 
     // We grab these nodes this way so we can iterate easily
     auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
@@ -96,7 +95,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
           auto Op = IROp->C<IR::IROp_CondJump>();
 
           OrderedNode const *TrueTargetNode = Op->Header.Args[1].GetNode(ListBegin);
-          OrderedNode const *FalseTargetNode = Op->Header.Args[1].GetNode(ListBegin);
+          OrderedNode const *FalseTargetNode = Op->Header.Args[2].GetNode(ListBegin);
 
           CurrentBlock->Successors.emplace_back(TrueTargetNode);
           CurrentBlock->Successors.emplace_back(FalseTargetNode);
