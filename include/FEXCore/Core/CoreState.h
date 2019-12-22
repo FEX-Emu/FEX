@@ -18,7 +18,7 @@ namespace FEXCore::Core {
   };
   static_assert(offsetof(CPUState, xmm) % 16 == 0, "xmm needs to be 128bit aligned!");
 
-  struct __attribute__((packed)) ThreadState {
+  struct ThreadState {
     CPUState State{};
 
     struct {
@@ -31,6 +31,7 @@ namespace FEXCore::Core {
     FEXCore::HLE::ThreadManagement ThreadManager;
   };
   static_assert(offsetof(ThreadState, State) == 0, "CPUState must be first member in threadstate");
+  static_assert(offsetof(ThreadState, State.rip) == 0, "rip must be zero offset in threadstate");
 
   constexpr uint64_t PAGE_SIZE = 4096;
 
