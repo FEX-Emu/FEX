@@ -529,7 +529,7 @@ namespace FEXCore::IR {
       RegisterNode *Node = &Graph->Nodes[Node1];
       uint32_t NewListMax = Node->Head.InterferenceCount + MaxNewNodes;
       if (Node->InterferenceListSize <= NewListMax) {
-        Node->InterferenceListSize *= 2;
+        Node->InterferenceListSize = std::max(Node->InterferenceListSize * 2U, (uint32_t)AlignUp(NewListMax, DEFAULT_INTERFERENCE_LIST_COUNT));
         Node->InterferenceList = reinterpret_cast<uint32_t*>(realloc(Node->InterferenceList, Node->InterferenceListSize * sizeof(uint32_t)));
       }
     };
@@ -803,8 +803,8 @@ namespace FEXCore::IR {
     LiveRange *NodeLiveRange = &LiveRanges[Node];
     for (uint32_t i = 0; i < Graph->SpillStack.size(); ++i) {
       SpillStackUnit *SpillUnit = &Graph->SpillStack.at(i);
-      if (!(NodeLiveRange->Begin <= SpillUnit->SpillRange.End &&
-          SpillUnit->SpillRange.Begin <= NodeLiveRange->End)) {
+      if (NodeLiveRange->Begin <= SpillUnit->SpillRange.End &&
+          SpillUnit->SpillRange.Begin <= NodeLiveRange->End) {
         SpillUnit->SpillRange.Begin = std::min(SpillUnit->SpillRange.Begin, LiveRanges[Node].Begin);
         SpillUnit->SpillRange.End = std::max(SpillUnit->SpillRange.End, LiveRanges[Node].End);
         CurrentNode->Head.SpillSlot = i;
@@ -814,8 +814,8 @@ namespace FEXCore::IR {
 
     // Couldn't find a spill slot so just make a new one
     auto StackItem = Graph->SpillStack.emplace_back(SpillStackUnit{Node, RegisterClass});
-    StackItem.SpillRange.Begin = LiveRanges[Node].Begin;
-    StackItem.SpillRange.End = LiveRanges[Node].End;
+    StackItem.SpillRange.Begin = NodeLiveRange->Begin;
+    StackItem.SpillRange.End = NodeLiveRange->End;
     CurrentNode->Head.SpillSlot = SpillSlotCount;
     SpillSlotCount++;
     return CurrentNode->Head.SpillSlot;
@@ -876,7 +876,7 @@ namespace FEXCore::IR {
                 // First op post Spill
                 auto NextIter = CodeBegin;
                 auto FirstUseLocation = FindFirstUse(Disp, ConstantNode, NextIter, CodeLast);
-                // LogMan::Throw::A(FirstUseLocation != IR::NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
+                LogMan::Throw::A(FirstUseLocation != IR::NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
                 if (FirstUseLocation != IR::NodeWrapperIterator::Invalid()) {
                   --FirstUseLocation;
                   IR::OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
@@ -921,7 +921,7 @@ namespace FEXCore::IR {
                   ++NextIter;
                   auto FirstUseLocation = FindFirstUse(Disp, InterferenceOrderedNode, NextIter, CodeLast);
 
-                  // LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
+                  LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
                   if (FirstUseLocation != IR::NodeWrapperIterator::Invalid()) {
                     --FirstUseLocation;
                     IR::OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
@@ -999,16 +999,19 @@ namespace FEXCore::IR {
   bool ConstrainedRAPass::Run(OpDispatchBuilder *Disp) {
     bool Changed = false;
 
-    HadFullRA = true;
     SpillSlotCount = 0;
+    Graph->SpillStack.clear();
+
     while (1) {
+      HadFullRA = true;
+
       // Virtual allocation pass runs the compaction pass per run
       Changed |= RunAllocateVirtualRegisters(Disp);
 
       for (size_t i = 0; i < PhysicalRegisterCount.size(); ++i) {
         // Virtual registers fit completely within physical registers
         // Remap virtual 1:1 to physical
-        HadFullRA &= TopRAPressure[i] <= PhysicalRegisterCount[i];
+        HadFullRA &= TopRAPressure[i] < PhysicalRegisterCount[i];
       }
 
       if (HadFullRA) {
