@@ -5,8 +5,7 @@ class Pass;
 class RegisterAllocationPass;
 
 FEXCore::IR::Pass* CreateConstProp();
-FEXCore::IR::Pass* CreateRedundantContextLoadElimination();
-FEXCore::IR::Pass* CreatePassDeadContextStoreElimination();
+FEXCore::IR::Pass* CreateContextLoadStoreElimination();
 FEXCore::IR::Pass* CreateSyscallOptimization();
 FEXCore::IR::Pass* CreateRedundantFlagCalculationEliminination();
 FEXCore::IR::Pass* CreateDeadFlagCalculationEliminination();

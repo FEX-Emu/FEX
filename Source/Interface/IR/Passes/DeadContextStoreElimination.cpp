@@ -2,71 +2,299 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 #include <FEXCore/Core/CoreState.h>
 
-namespace FEXCore::IR {
-class DCSE final : public FEXCore::IR::Pass {
+namespace {
+  struct ContextMemberClassification {
+    size_t Offset;
+    uint8_t Size;
+  };
+
+  enum LastAccessType {
+    ACCESS_NONE,          ///< Was never previously accessed
+    ACCESS_WRITE,         ///< Was fully overwritten
+    ACCESS_READ,          ///< Was fully read
+    ACCESS_PARTIAL_WRITE, ///< Was partially written
+    ACCESS_PARTIAL_READ,  ///< Was partially read
+    ACCESS_INVALID,       ///< Accessing this is invalid
+  };
+
+  struct ContextMemberInfo {
+    ContextMemberClassification Class;
+    LastAccessType Accessed;
+    FEXCore::IR::OrderedNode *Node;
+    FEXCore::IR::OrderedNode *Node2;
+  };
+
+  using ContextInfo = std::vector<ContextMemberInfo>;
+
+  constexpr static std::array<LastAccessType, 8> DefaultAccess = {
+    ACCESS_NONE,
+    ACCESS_NONE,
+    ACCESS_INVALID, // PAD
+    ACCESS_NONE,
+    ACCESS_NONE,
+    ACCESS_NONE,
+    ACCESS_NONE,
+    ACCESS_NONE,
+  };
+
+  static void ClassifyContextStruct(ContextInfo *ContextClassification) {
+    ContextClassification->emplace_back(ContextMemberInfo{
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, rip),
+        sizeof(FEXCore::Core::CPUState::rip),
+      },
+      DefaultAccess[0],
+    });
+
+    for (size_t i = 0; i < 16; ++i) {
+      ContextClassification->emplace_back(ContextMemberInfo{
+        ContextMemberClassification {
+          offsetof(FEXCore::Core::CPUState, gregs[0]) + sizeof(FEXCore::Core::CPUState::gregs[0]) * i,
+          sizeof(FEXCore::Core::CPUState::gregs[0]),
+        },
+        DefaultAccess[1],
+      });
+    }
+
+    ContextClassification->emplace_back(ContextMemberInfo{
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, gregs[16]),
+        sizeof(uint64_t),
+      },
+      DefaultAccess[2], ///< NOP padding
+    });
+
+    for (size_t i = 0; i < 16; ++i) {
+      ContextClassification->emplace_back(ContextMemberInfo{
+        ContextMemberClassification {
+          offsetof(FEXCore::Core::CPUState, xmm[0][0]) + sizeof(FEXCore::Core::CPUState::xmm[0]) * i,
+          sizeof(FEXCore::Core::CPUState::xmm[0]),
+        },
+        DefaultAccess[3],
+      });
+    }
+
+    ContextClassification->emplace_back(ContextMemberInfo{
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, gs),
+        sizeof(FEXCore::Core::CPUState::gs),
+      },
+      DefaultAccess[4],
+    });
+
+    ContextClassification->emplace_back(ContextMemberInfo{
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, fs),
+        sizeof(FEXCore::Core::CPUState::fs),
+      },
+      DefaultAccess[5],
+    });
+
+    for (size_t i = 0; i < (sizeof(FEXCore::Core::CPUState::flags) / sizeof(FEXCore::Core::CPUState::flags[0])); ++i) {
+      ContextClassification->emplace_back(ContextMemberInfo{
+        ContextMemberClassification {
+          offsetof(FEXCore::Core::CPUState, flags[0]) + sizeof(FEXCore::Core::CPUState::flags[0]) * i,
+          sizeof(FEXCore::Core::CPUState::flags[0]),
+        },
+        DefaultAccess[6],
+      });
+    }
+
+    for (size_t i = 0; i < 8; ++i) {
+      ContextClassification->emplace_back(ContextMemberInfo{
+        ContextMemberClassification {
+          offsetof(FEXCore::Core::CPUState, mm[0][0]) + sizeof(FEXCore::Core::CPUState::mm[0]) * i,
+          sizeof(FEXCore::Core::CPUState::mm[0]),
+        },
+        DefaultAccess[7],
+      });
+    }
+
+    size_t ClassifiedStructSize{};
+    for (auto &it : *ContextClassification) {
+      ClassifiedStructSize += it.Class.Size;
+    }
+
+    LogMan::Throw::A(ClassifiedStructSize == sizeof(FEXCore::Core::CPUState),
+      "Classified CPUStruct size doesn't match real CPUState struct size! %ld != %ld",
+      ClassifiedStructSize, sizeof(FEXCore::Core::CPUState));
+  }
+
+  static void ResetClassificationAccesses(ContextInfo *ContextClassification) {
+    size_t Offset = 0;
+    ContextClassification->at(Offset++).Accessed = DefaultAccess[0];
+    for (size_t i = 0; i < 16; ++i) {
+      ContextClassification->at(Offset++).Accessed = DefaultAccess[1];
+    }
+    ContextClassification->at(Offset++).Accessed = DefaultAccess[2];
+
+    for (size_t i = 0; i < 16; ++i) {
+      ContextClassification->at(Offset++).Accessed = DefaultAccess[3];
+    }
+
+    ContextClassification->at(Offset++).Accessed = DefaultAccess[4];
+    ContextClassification->at(Offset++).Accessed = DefaultAccess[5];
+
+    for (size_t i = 0; i < (sizeof(FEXCore::Core::CPUState::flags) / sizeof(FEXCore::Core::CPUState::flags[0])); ++i) {
+      ContextClassification->at(Offset++).Accessed = DefaultAccess[6];
+    }
+
+    for (size_t i = 0; i < 8; ++i) {
+      ContextClassification->at(Offset++).Accessed = DefaultAccess[7];
+    }
+  }
+
+  struct BlockInfo {
+    std::vector<FEXCore::IR::OrderedNode *> Predecessors;
+    std::vector<FEXCore::IR::OrderedNode *> Successors;
+    ContextInfo IncomingClassifiedStruct;
+    ContextInfo OutgoingClassifiedStruct;
+  };
+
+class RCLSE final : public FEXCore::IR::Pass {
 public:
-  bool Run(OpDispatchBuilder *Disp) override;
-};
-
-bool DCSE::Run(OpDispatchBuilder *Disp) {
-  //printf("Doing DCSE run\n");
-  return false;
-}
-
-FEXCore::IR::Pass* CreatePassDeadContextStoreElimination() {
-  return new DCSE{};
-}
-
-class RCLE final : public FEXCore::IR::Pass {
-public:
-  bool Run(OpDispatchBuilder *Disp) override;
+  RCLSE() {
+    ClassifyContextStruct(&ClassifiedStruct);
+  }
+  bool Run(FEXCore::IR::OpDispatchBuilder *Disp) override;
 private:
-  bool RedundantStoreLoadElimination(OpDispatchBuilder *Disp);
-  bool RedundantLoadElimination(OpDispatchBuilder *Disp);
-  bool RedundantStoreElimination(OpDispatchBuilder *Disp);
+  ContextInfo ClassifiedStruct;
+  std::unordered_map<FEXCore::IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
+
+  ContextMemberInfo *FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size);
+  ContextMemberInfo *RecordAccess(ContextMemberInfo *Info, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2 = nullptr);
+  ContextMemberInfo *RecordAccess(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2 = nullptr);
+  void CalculateControlFlowInfo(FEXCore::IR::OpDispatchBuilder *Disp);
+
+  // Block local Passes
+  bool RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp);
 };
 
-static bool IsAlignedGPR(uint8_t Size, uint32_t Offset, uint8_t *greg) {
-  if (Size != 8) return false;
-  if (Offset & 0b111) return false;
-  if (Offset < offsetof(FEXCore::Core::CPUState, gregs[0]) || Offset > offsetof(FEXCore::Core::CPUState, gregs[15])) return false;
+ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size) {
+  ContextMemberInfo *Info{};
+  // Just linearly scan to find the info
+  for (size_t i = 0; i < ClassifiedInfo->size(); ++i) {
+    ContextMemberInfo &LocalInfo = ClassifiedInfo->at(i);
+    if (LocalInfo.Class.Offset >= Offset &&
+        (LocalInfo.Class.Offset + LocalInfo.Class.Size) > Offset) {
+      Info = &LocalInfo;
+      break;
+    }
+  }
+  LogMan::Throw::A(Info != nullptr, "Couldn't find Context Member to record to");
 
-  *greg = (Offset - offsetof(FEXCore::Core::CPUState, gregs[0])) / 8;
-  return true;
+  return Info;
 }
 
-static bool IsGPR(uint32_t Offset, uint8_t *greg) {
-  if (Offset < offsetof(FEXCore::Core::CPUState, gregs[0]) || Offset > offsetof(FEXCore::Core::CPUState, gregs[15])) return false;
+ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2) {
+  LogMan::Throw::A((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
+  LogMan::Throw::A(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
 
-  *greg = (Offset - offsetof(FEXCore::Core::CPUState, gregs[0])) / 8;
-  return true;
+  // If we aren't fully overwriting the member then it is a partial write that we need to track
+  if (Size < Info->Class.Size) {
+    AccessType = AccessType == ACCESS_WRITE ? ACCESS_PARTIAL_WRITE : ACCESS_PARTIAL_READ;
+  }
+  if (Size > Info->Class.Size) {
+    LogMan::Msg::A("Can't handle this");
+  }
+
+  Info->Accessed = AccessType;
+  Info->Node = Node;
+  Info->Node2 = Node2;
+  return Info;
 }
 
-static bool IsAlignedXMM(uint8_t Size, uint32_t Offset, uint8_t *greg) {
-  if (Size != 16) return false;
-  if (Offset & 0b1111) return false;
-  if (Offset < offsetof(FEXCore::Core::CPUState, xmm[0]) || Offset > offsetof(FEXCore::Core::CPUState, xmm[15])) return false;
-
-  *greg = (Offset - offsetof(FEXCore::Core::CPUState, xmm[0])) / 16;
-  return true;
+ContextMemberInfo *RCLSE::RecordAccess(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2) {
+  ContextMemberInfo *Info = FindMemberInfo(ClassifiedInfo, Offset, Size);
+  return RecordAccess(Info, Offset, Size, AccessType, Node, Node2);
 }
 
-static bool IsXMM(uint32_t Offset, uint8_t *greg) {
-  if (Offset < offsetof(FEXCore::Core::CPUState, xmm[0]) || Offset > offsetof(FEXCore::Core::CPUState, xmm[15])) return false;
+void RCLSE::CalculateControlFlowInfo(FEXCore::IR::OpDispatchBuilder *Disp) {
+  using namespace FEXCore;
+  using namespace FEXCore::IR;
 
-  *greg = (Offset - offsetof(FEXCore::Core::CPUState, xmm[0])) / 16;
-  return true;
+  OffsetToBlockMap.clear();
+  auto CurrentIR = Disp->ViewIR();
+  uintptr_t ListBegin = CurrentIR.GetListData();
+  uintptr_t DataBegin = CurrentIR.GetData();
+
+  auto Begin = CurrentIR.begin();
+  auto Op = Begin();
+
+  OrderedNode *RealNode = Op->GetNode(ListBegin);
+  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+
+  // Walk the list and calculate the control flow
+  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+  while (1) {
+    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+
+    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
+
+    // We grab these nodes this way so we can iterate easily
+    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
+    auto CodeLast = CurrentIR.at(BlockIROp->Last);
+
+    while (1) {
+      auto CodeOp = CodeBegin();
+      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
+      auto IROp = CodeNode->Op(DataBegin);
+
+      switch (IROp->Op) {
+        case IR::OP_CONDJUMP: {
+          auto Op = IROp->CW<IR::IROp_CondJump>();
+
+          OrderedNode *TrueTargetNode = Op->Header.Args[1].GetNode(ListBegin);
+          OrderedNode *FalseTargetNode = Op->Header.Args[2].GetNode(ListBegin);
+
+          CurrentBlock->Successors.emplace_back(TrueTargetNode);
+          CurrentBlock->Successors.emplace_back(FalseTargetNode);
+
+          {
+            auto Block = &OffsetToBlockMap.try_emplace(Op->Header.Args[1].ID()).first->second;
+            Block->Predecessors.emplace_back(BlockNode);
+          }
+
+          {
+            auto Block = &OffsetToBlockMap.try_emplace(Op->Header.Args[2].ID()).first->second;
+            Block->Predecessors.emplace_back(BlockNode);
+          }
+
+          break;
+        }
+        case IR::OP_JUMP: {
+          auto Op = IROp->CW<IR::IROp_Jump>();
+          OrderedNode *TargetNode = Op->Header.Args[0].GetNode(ListBegin);
+          CurrentBlock->Successors.emplace_back(TargetNode);
+
+          {
+            auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[0].ID()).first;
+            Block->second.Predecessors.emplace_back(BlockNode);
+          }
+          break;
+        }
+        default: break;
+      }
+
+      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
+      if (CodeBegin == CodeLast) {
+        break;
+      }
+      ++CodeBegin;
+    }
+
+    if (BlockIROp->Next.ID() == 0) {
+      break;
+    } else {
+      BlockNode = BlockIROp->Next.GetNode(ListBegin);
+    }
+  }
 }
 
 /**
  * @brief This pass removes redundant pairs of storecontext and loadcontext ops
- *
- * This pass finds cases where a value is saved with StoreContext and then gets reloaded with LoadContext
- * This then eliminates the LoadContext op and uses the original IR value that was saved in the StoreContext instead
- * For XMM registers we need to be careful and do a VBitcast because the StoreContext may have stored a i32v4 and destination is expecting the i128
- * from the LoadContext.
- *
- * This removes a Store + Load dance that can occur
  *
  * eg.
  *   %ssa26 i128 = LoadMem %ssa25 i64, 0x10
@@ -78,143 +306,6 @@ static bool IsXMM(uint32_t Offset, uint8_t *greg) {
  *   (%%ssa27) StoreContext %ssa26 i128, 0x10, 0xb0
  *   %ssa28 i128 = LoadContext 0x10, 0x90
  *   %ssa29 i128 = VBitcast %ssa26 i128
- */
-bool RCLE::RedundantStoreLoadElimination(OpDispatchBuilder *Disp) {
-  bool Changed = false;
-  auto CurrentIR = Disp->ViewIR();
-  std::array<OrderedNode *, 16> LastValidGPRStores{};
-  std::array<OrderedNode *, 32> LastValidFLAGStores{};
-  std::array<OrderedNode *, 16> LastValidXMMStores{};
-
-  auto OriginalWriteCursor = Disp->GetWriteCursor();
-
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
-
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
-
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
-
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-  while (1) {
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
-
-      if (IROp->Op == OP_STORECONTEXT) {
-        auto Op = IROp->CW<IR::IROp_StoreContext>();
-        // Make sure we are within GREG state
-        uint8_t greg = ~0;
-        if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
-          LastValidGPRStores[greg] = IROp->Args[0].GetNode(ListBegin);
-        } else if (IsGPR(Op->Offset, &greg)) {
-          // If we aren't overwriting the whole state then we don't want to track this value
-          LastValidGPRStores[greg] = nullptr;
-        }
-        else if (IsAlignedXMM(Op->Size, Op->Offset, &greg)) {
-          LastValidXMMStores[greg] = IROp->Args[0].GetNode(ListBegin);
-        } else if (IsXMM(Op->Offset, &greg)) {
-          // If we aren't overwriting the whole state then we don't want to track this value
-          LastValidXMMStores[greg] = nullptr;
-        }
-      }
-      else if (IROp->Op == OP_LOADCONTEXT) {
-        auto Op = IROp->C<IR::IROp_LoadContext>();
-
-        // Make sure we are within GREG state
-        uint8_t greg = ~0;
-        if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
-          if (LastValidGPRStores[greg] != nullptr) {
-            // If the last store matches this load value then we can replace the loaded value with the previous valid one
-            Disp->ReplaceAllUsesWithInclusive(CodeNode, LastValidGPRStores[greg], CodeBegin, CodeLast);
-            if (CodeNode->GetUses() == 0)
-              Disp->Remove(CodeNode);
-            // Set it as invalid now
-            LastValidGPRStores[greg] = nullptr;
-            Changed = true;
-          }
-        } else if (IsGPR(Op->Offset, &greg)) {
-            // If we aren't overwriting the whole state then we don't want to track this value
-            LastValidGPRStores[greg] = nullptr;
-        }
-        else if (IsAlignedXMM(Op->Size, Op->Offset, &greg)) {
-          if (LastValidXMMStores[greg] != nullptr) {
-            // If the last store matches this load value then we can replace the loaded value with the previous valid one
-            Disp->SetWriteCursor(CodeNode);
-            auto BitCast = Disp->_VBitcast(LastValidXMMStores[greg]);
-            Disp->ReplaceAllUsesWithInclusive(CodeNode, BitCast, CodeBegin, CodeLast);
-
-            if (CodeNode->GetUses() == 0)
-              Disp->Remove(CodeNode);
-            // Set it as invalid now
-            LastValidXMMStores[greg] = nullptr;
-            Changed = true;
-            // We blew away the load to point to the previous value still
-          }
-        } else if (IsXMM(Op->Offset, &greg)) {
-            // If we aren't overwriting the whole state then we don't want to track this value
-            LastValidXMMStores[greg] = nullptr;
-        }
-      }
-      else if (IROp->Op == OP_STOREFLAG) {
-        auto Op = IROp->C<IR::IROp_StoreFlag>();
-        LastValidFLAGStores[Op->Flag] = IROp->Args[0].GetNode(ListBegin);
-      }
-      else if (IROp->Op == OP_LOADFLAG) {
-        auto Op = IROp->C<IR::IROp_LoadFlag>();
-        uint8_t Flag = Op->Flag;
-        if (LastValidFLAGStores[Flag] != nullptr) {
-          // If the last store matches this load value then we can replace the loaded value with the previous valid one
-          Disp->SetWriteCursor(CodeNode);
-          auto Res = Disp->_Bfe(1, 0, LastValidFLAGStores[Flag]);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, Res, CodeBegin, CodeLast);
-          if (CodeNode->GetUses() == 0)
-            Disp->Remove(CodeNode);
-          // Set it as invalid now
-          LastValidFLAGStores[Flag] = nullptr;
-          Changed = true;
-        }
-      }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
-    }
-
-    // We don't track across block boundaries
-    LastValidGPRStores.fill(nullptr);
-    LastValidXMMStores.fill(nullptr);
-    LastValidFLAGStores.fill(nullptr);
-  }
-
-  Disp->SetWriteCursor(OriginalWriteCursor);
-
-  return Changed;
-}
-
-/**
- * @brief This pass looks for redundant LoadContext ops and eliminates them
- *
- * This only currently looks for GPR and XMM registers that are aligned to their size
  *
  * eg.
  * 		%ssa6 i128 = LoadContext 0x10, 0x90
@@ -223,119 +314,6 @@ bool RCLE::RedundantStoreLoadElimination(OpDispatchBuilder *Disp) {
  * Converts to
  *    %ssa6 i128 = LoadContext 0x10, 0x90
  *    %ssa7 i128 = VXor %ssa6 i128, %ssa6 i128
- */
-bool RCLE::RedundantLoadElimination(OpDispatchBuilder *Disp) {
-  bool Changed = false;
-  auto CurrentIR = Disp->ViewIR();
-
-  auto OriginalWriteCursor = Disp->GetWriteCursor();
-
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
-
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
-
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
-
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-  std::array<OrderedNode *, 16> LastValidGPRLoads{};
-  std::array<OrderedNode *, 16> LastValidXMMLoads{};
-
-  while (1) {
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
-
-      if (IROp->Op == OP_STORECONTEXT) {
-        auto Op = IROp->CW<IR::IROp_StoreContext>();
-        // Make sure we are within GREG state
-        uint8_t greg = ~0;
-        if (IsGPR(Op->Offset, &greg)) {
-          LastValidGPRLoads[greg] = nullptr;
-        } else if (IsXMM(Op->Offset, &greg)) {
-          LastValidXMMLoads[greg] = nullptr;
-        }
-      }
-
-      if (IROp->Op == OP_LOADCONTEXT) {
-        auto Op = IROp->C<IR::IROp_LoadContext>();
-
-        // Make sure we are within GREG state
-        uint8_t greg = ~0;
-        if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
-          if (LastValidGPRLoads[greg] != nullptr) {
-            // If the last load is still valid at this point then replace all uses of the load with the previous one
-            Disp->SetWriteCursor(CodeNode);
-            Disp->ReplaceAllUsesWithInclusive(CodeNode, LastValidGPRLoads[greg], CodeBegin, CodeLast);
-            if (CodeNode->GetUses() == 0)
-              Disp->Remove(CodeNode);
-            Changed = true;
-          }
-          else {
-            LastValidGPRLoads[greg] = CodeNode;
-          }
-        } else if (IsGPR(Op->Offset, &greg)) {
-          // If we aren't overwriting the whole state then we don't want to track this value
-          LastValidGPRLoads[greg] = nullptr;
-        }
-        else if (IsAlignedXMM(Op->Size, Op->Offset, &greg)) {
-          if (LastValidXMMLoads[greg] != nullptr) {
-            // If the last load is still valid at this point then replace all uses of the load with the previous one
-            Disp->SetWriteCursor(CodeNode);
-            Disp->ReplaceAllUsesWithInclusive(CodeNode, LastValidXMMLoads[greg], CodeBegin, CodeLast);
-            if (CodeNode->GetUses() == 0)
-              Disp->Remove(CodeNode);
-            Changed = true;
-          }
-          else {
-            LastValidXMMLoads[greg] = CodeNode;
-          }
-        } else if (IsXMM(Op->Offset, &greg)) {
-          // If we aren't overwriting the whole state then we don't want to track this value
-          LastValidXMMLoads[greg] = nullptr;
-        }
-      }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
-    }
-
-    // We don't track across block boundaries
-    LastValidGPRLoads.fill(nullptr);
-    LastValidXMMLoads.fill(nullptr);
-  }
-
-  Disp->SetWriteCursor(OriginalWriteCursor);
-
-  return Changed;
-}
-
-/**
- * @brief This pass looks for redundant StoreContext ops and eliminates them
- *
- * When multiple StoreContext ops happen to the same location without a load inbetween
- * Then the first StoreContext is redundant and we can eliminate it
- * This only currently looks for GPR and XMM registers that are aligned to their size
  *
  * eg.
  *   (%%ssa189) StoreContext %ssa188 i128, 0x10, 0xa0
@@ -348,15 +326,17 @@ bool RCLE::RedundantLoadElimination(OpDispatchBuilder *Disp) {
  *   %ssa174 i128 = VBitcast %ssa172 i128
  *   %ssa175 i128 = VAdd %ssa174 i128, %ssa173 i128, 0x10, 0x4
  *   (%%ssa176) StoreContext %ssa175 i128, 0x10, 0xa0
+
  */
-bool RCLE::RedundantStoreElimination(OpDispatchBuilder *Disp) {
+bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) {
+  using namespace FEXCore;
+  using namespace FEXCore::IR;
+
   bool Changed = false;
   auto CurrentIR = Disp->ViewIR();
-
-  auto OriginalWriteCursor = Disp->GetWriteCursor();
-
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
+  auto OriginalWriteCursor = Disp->GetWriteCursor();
 
   auto Begin = CurrentIR.begin();
   auto Op = Begin();
@@ -365,18 +345,22 @@ bool RCLE::RedundantStoreElimination(OpDispatchBuilder *Disp) {
   auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
   LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
+  // Walk the list and calculate the control flow
   OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
-  std::array<OrderedNode *, 16> LastValidGPRStores{};
-  std::array<OrderedNode *, 16> LastValidXMMStores{};
+  ContextInfo LocalInfo;
+  ClassifyContextStruct(&LocalInfo);
 
   while (1) {
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
+    ResetClassificationAccesses(&LocalInfo);
+
     // We grab these nodes this way so we can iterate easily
     auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
     auto CodeLast = CurrentIR.at(BlockIROp->Last);
+
     while (1) {
       auto CodeOp = CodeBegin();
       OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
@@ -384,42 +368,91 @@ bool RCLE::RedundantStoreElimination(OpDispatchBuilder *Disp) {
 
       if (IROp->Op == OP_STORECONTEXT) {
         auto Op = IROp->CW<IR::IROp_StoreContext>();
-        // Make sure we are within GREG state
-        uint8_t greg = ~0;
-        if (IsAlignedGPR(Op->Size, Op->Offset, &greg)) {
-          if (LastValidGPRStores[greg] != nullptr) {
-            // If there was previously a store to this context location
-            // and there hasn't been a load inbetween, then we can blow away the previous store
-            Disp->Remove(LastValidGPRStores[greg]);
+        RecordAccess(&LocalInfo, Op->Offset, Op->Size, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
+      }
+      else if (IROp->Op == OP_LOADCONTEXT) {
+        auto Op = IROp->CW<IR::IROp_LoadContext>();
+        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, Op->Size);
+        LastAccessType LastAccess = Info->Accessed;
+        OrderedNode *LastNode = Info->Node;
+        RecordAccess(Info, Op->Offset, Op->Size, ACCESS_READ, CodeNode);
+        // XXX: For some reason this is bugged and I (HdkR) hasn't looked in to it
+        if (LastAccess == ACCESS_WRITE &&
+            Info->Accessed == ACCESS_READ && false) {
+          // If the last store matches this load value then we can replace the loaded value with the previous valid one
+          if (Op->Offset >= offsetof(FEXCore::Core::CPUState, xmm[0]) &&
+              Op->Offset <= offsetof(FEXCore::Core::CPUState, xmm[15])) {
+            Disp->SetWriteCursor(CodeNode);
+            // XMM needs a bit of special help
+            auto BitCast = Disp->_VBitcast(LastNode);
+            Disp->ReplaceAllUsesWithInclusive(CodeNode, BitCast, CodeBegin, CodeLast);
+            RecordAccess(Info, Op->Offset, Op->Size, ACCESS_READ, BitCast);
           }
-          LastValidGPRStores[greg] = CodeNode;
-        }
-        else if (IsGPR(Op->Offset, &greg)) {
-          LastValidGPRStores[greg] = nullptr;
-        }
-        else if (IsAlignedXMM(Op->Size, Op->Offset, &greg)) {
-          if (LastValidXMMStores[greg] != nullptr) {
-            // If there was previously a store to this context location
-            // and there hasn't been a load inbetween, then we can blow away the previous store
-            Disp->Remove(LastValidXMMStores[greg]);
+          else {
+            Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+            RecordAccess(Info, Op->Offset, Op->Size, ACCESS_READ, LastNode);
           }
-          // This op is now the new valid one
-          LastValidXMMStores[greg] = CodeNode;
-        } else if (IsXMM(Op->Offset, &greg)) {
-          LastValidXMMStores[greg] = nullptr;
+          if (CodeNode->GetUses() == 0)
+            Disp->Remove(CodeNode);
+          Changed = true;
+        }
+        else if (LastAccess == ACCESS_READ &&
+                 Info->Accessed == ACCESS_READ) {
+          // Did we read and then read again?
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+          RecordAccess(Info, Op->Offset, Op->Size, ACCESS_READ, LastNode);
+
+          if (CodeNode->GetUses() == 0)
+            Disp->Remove(CodeNode);
+          Changed = true;
         }
       }
+      else if (IROp->Op == OP_STOREFLAG) {
+        auto Op = IROp->CW<IR::IROp_StoreFlag>();
+        auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
+        LastAccessType LastAccess = Info->Accessed;
+        OrderedNode *LastNode2 = Info->Node2;
 
-      if (IROp->Op == OP_LOADCONTEXT) {
-        auto Op = IROp->C<IR::IROp_LoadContext>();
-
-        // Make sure we are within GREG state
-        uint8_t greg = ~0;
-        if (IsGPR(Op->Offset, &greg)) {
-          LastValidGPRStores[greg] = nullptr;
-        } else if (IsXMM(Op->Offset, &greg)) {
-          LastValidXMMStores[greg] = nullptr;
+        if (LastAccess == ACCESS_WRITE) {
+          // If we last wrote to this flag then we can eliminate the last store
+          // LastNode2 = node doing the write
+          Disp->Remove(LastNode2);
+          RecordAccess(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
+          Changed = true;
         }
+        else {
+          RecordAccess(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
+        }
+      }
+      else if (IROp->Op == OP_LOADFLAG) {
+        auto Op = IROp->CW<IR::IROp_LoadFlag>();
+        auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
+        LastAccessType LastAccess = Info->Accessed;
+        OrderedNode *LastNode = Info->Node;
+        if (LastAccess == ACCESS_WRITE) { // 1 byte so always a full write
+          // If the last store matches this load value then we can replace the loaded value with the previous valid one
+          Disp->SetWriteCursor(CodeNode);
+          auto Res = Disp->_Bfe(1, 0, LastNode);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, Res, CodeBegin, CodeLast);
+          if (CodeNode->GetUses() == 0)
+            Disp->Remove(CodeNode);
+          RecordAccess(Info, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, Res);
+          Changed = true;
+        }
+        else if (LastAccess == ACCESS_READ) {
+          Disp->SetWriteCursor(CodeNode);
+          Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+          RecordAccess(Info, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, CodeNode);
+
+          if (CodeNode->GetUses() == 0)
+            Disp->Remove(CodeNode);
+          Changed = true;
+        }
+      }
+      else if (IROp->Op == OP_STORECONTEXTINDEXED ||
+               IROp->Op == OP_LOADCONTEXTINDEXED) {
+        // We can't track through these
+        ResetClassificationAccesses(&LocalInfo);
       }
 
       // CodeLast is inclusive. So we still need to dump the CodeLast op as well
@@ -434,10 +467,6 @@ bool RCLE::RedundantStoreElimination(OpDispatchBuilder *Disp) {
     } else {
       BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
-
-    // We don't track across block boundaries
-    LastValidGPRStores.fill(nullptr);
-    LastValidXMMStores.fill(nullptr);
   }
 
   Disp->SetWriteCursor(OriginalWriteCursor);
@@ -445,18 +474,21 @@ bool RCLE::RedundantStoreElimination(OpDispatchBuilder *Disp) {
   return Changed;
 }
 
-bool RCLE::Run(OpDispatchBuilder *Disp) {
+bool RCLSE::Run(FEXCore::IR::OpDispatchBuilder *Disp) {
+  ResetClassificationAccesses(&ClassifiedStruct);
+  CalculateControlFlowInfo(Disp);
   bool Changed = false;
   Changed |= RedundantStoreLoadElimination(Disp);
-  Changed |= RedundantLoadElimination(Disp);
-  Changed |= RedundantStoreElimination(Disp);
+
   return Changed;
 }
 
-FEXCore::IR::Pass* CreateRedundantContextLoadElimination() {
-  return new RCLE{};
+}
+
+namespace FEXCore::IR {
+
+FEXCore::IR::Pass* CreateContextLoadStoreElimination() {
+  return new RCLSE{};
 }
 
 }
-
-
