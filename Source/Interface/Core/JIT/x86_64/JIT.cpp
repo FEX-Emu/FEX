@@ -279,12 +279,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     if (SpillSlots) {
       add(rsp, SpillSlots * 16);
     }
-    pop(r15);
-    pop(r14);
-    pop(r13);
-    pop(r12);
-    pop(rbp);
-    pop(rbx);
+
+    if (!CustomDispatchGenerated) {
+      pop(r15);
+      pop(r14);
+      pop(r13);
+      pop(r12);
+      pop(rbp);
+      pop(rbx);
+    }
 #ifdef BLOCKSTATS
     ExitBlock();
 #endif
@@ -1436,6 +1439,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         case IR::OP_CPUID: {
           auto Op = IROp->C<IR::IROp_CPUID>();
+
           using ClassPtrType = FEXCore::CPUIDEmu::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t Function);
           union {
             ClassPtrType ClassPtr;
