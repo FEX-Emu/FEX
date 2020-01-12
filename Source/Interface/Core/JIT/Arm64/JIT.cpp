@@ -118,14 +118,12 @@ private:
   constexpr static uint64_t FPRBase = (1ULL << 32);
   constexpr static uint32_t FPRClass = IR::RegisterAllocationPass::FPRClass;
 
-  IR::RegisterAllocationPass::RegisterSet *RASet;
   /**  @} */
 
   constexpr static uint8_t RA_32 = 0;
   constexpr static uint8_t RA_64 = 1;
   constexpr static uint8_t RA_FPR = 2;
 
-  IR::RegisterAllocationPass::RegisterGraph *Graph;
   uint32_t GetPhys(uint32_t Node);
 
   template<uint8_t RAType>
@@ -142,7 +140,6 @@ private:
     uint32_t End;
   };
 
-  std::vector<LiveRange> LiveRanges;
 #if DEBUG || _M_X86_64
   vixl::aarch64::Decoder Decoder;
 #endif
@@ -207,14 +204,10 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   SetCPUFeatures(vixl::CPUFeatures::All());
 
   RAPass = CTX->GetRegisterAllocatorPass();
-  RAPass->SetSupportsSpills(true);
+  RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
 
-  RASet = RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
-  RAPass->AddRegisters(RASet, GPRClass, GPRBase, NumGPRs);
-  RAPass->AddRegisters(RASet, FPRClass, FPRBase, NumFPRs);
-
-  Graph = RAPass->AllocateRegisterGraph(RASet, 9000);
-	LiveRanges.resize(9000);
+  RAPass->AddRegisters(GPRClass, NumGPRs);
+  RAPass->AddRegisters(FPRClass, NumFPRs);
 
   // Just set the entire range as executable
   auto Buffer = GetBuffer();
@@ -231,8 +224,6 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 }
 
 JITCore::~JITCore() {
-  RAPass->FreeRegisterGraph();
-  RAPass->FreeRegisterSet(RASet);
 }
 
 void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
