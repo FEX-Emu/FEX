@@ -1924,17 +1924,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op);
 
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
-  auto SizeConst = _Constant(Size);
-  auto NegSizeConst = _Constant(-Size);
-
-  auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-  auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-      DF, ZeroConst,
-      SizeConst, NegSizeConst);
-
   auto JumpStart = _Jump();
   // Make sure to start a new block after ending this one
     auto LoopStart = CreateNewCodeBlock();
@@ -1945,8 +1934,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     // Can we end the block?
     auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
-      Counter, ZeroConst,
-      OneConst, ZeroConst);
+      Counter, _Constant(0),
+      _Constant(1), _Constant(0));
     auto CondJump = _CondJump(CanLeaveCond);
 
     auto LoopTail = CreateNewCodeBlock();
@@ -1962,25 +1951,28 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       auto Src2 = _LoadMem(Size, Dest_RSI, Size);
 
       auto ALUOp = _Sub(Src1, Src2);
-      GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
+      GenerateFlags_SUB(Op, _Bfe(Size * 8, 0, ALUOp), _Bfe(Size * 8, 0, Src1), _Bfe(Size * 8, 0, Src2));
 
       OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]));
-      OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]));
-      OrderedNode *TailDest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]));
 
       // Decrement counter
-      TailCounter = _Sub(TailCounter, OneConst);
+      TailCounter = _Sub(TailCounter, _Constant(1));
 
       // Store the counter so we don't have to deal with PHI here
       _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
 
+      auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+      auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+          DF, _Constant(0),
+          _Constant(Size), _Constant(-Size));
+
       // Offset the pointer
-      TailDest_RDI = _Add(TailDest_RDI, PtrDir);
-      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest_RDI);
+      Dest_RDI = _Add(Dest_RDI, PtrDir);
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), Dest_RDI);
 
       // Offset second pointer
-      TailDest_RSI = _Add(TailDest_RSI, PtrDir);
-      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), TailDest_RSI);
+      Dest_RSI = _Add(Dest_RSI, PtrDir);
+      _StoreContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), Dest_RSI);
 
       // Jump back to the start, we have more work to do
       _Jump(LoopStart);
