@@ -174,6 +174,8 @@ public:
   void VectorALUOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorScalarALUOp(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize, bool Scalar>
+  void VectorUnaryOp(OpcodeArgs);
   void MOVQOp(OpcodeArgs);
   void PADDQOp(OpcodeArgs);
   void PSUBQOp(OpcodeArgs);

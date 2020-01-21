@@ -2389,6 +2389,25 @@ void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
   StoreResult(Op, Result, -1);
 }
 
+template<FEXCore::IR::IROps IROp, size_t ElementSize, bool Scalar>
+void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  if (Scalar) {
+    Size = ElementSize;
+  }
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+
+  auto ALUOp = _VFSqrt(Size, ElementSize, Src);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  // Insert the lower bits
+  auto Result = _VInsElement(Size, ElementSize, 0, 0, Dest, ALUOp);
+
+  StoreResult(Op, Result, -1);
+}
+
 void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
@@ -4369,6 +4388,8 @@ void InstallOpcodeHandlers() {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVT<4, true>},
     {0x2C, 1, &OpDispatchBuilder::FCVT<4, true>},
+    {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, true>},
+    {0x52, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4, true>},
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 4>},
     {0x5A, 1, &OpDispatchBuilder::FCVTF<8, 4>},
@@ -4389,6 +4410,8 @@ void InstallOpcodeHandlers() {
     {0x2A, 1, &OpDispatchBuilder::CVT<8, true>},
     {0x2C, 1, &OpDispatchBuilder::FCVT<8, true>},
     {0x5A, 1, &OpDispatchBuilder::FCVTF<4, 8>},
+    {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8, true>},
+    //x52 = Invalid
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 8>},
     {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 8>},
     {0x5C, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 8>},
