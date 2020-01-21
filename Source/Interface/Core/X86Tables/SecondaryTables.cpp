@@ -351,7 +351,7 @@ void InitializeSecondaryTables() {
     {0x40, 16, X86InstInfo{"",         TYPE_COPY_OTHER, FLAGS_NONE,                                                      0, nullptr}},
 
     {0x50, 1, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
-    {0x51, 1, X86InstInfo{"SQRTSD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
+    {0x51, 1, X86InstInfo{"SQRTSD",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
     {0x52, 6, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
     {0x58, 1, X86InstInfo{"ADDSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
     {0x59, 1, X86InstInfo{"MULSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
