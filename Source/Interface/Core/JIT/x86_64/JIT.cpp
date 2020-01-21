@@ -1251,6 +1251,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           case FEXCore::IR::COND_ULE:
             mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
             cmovna(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+            break;
           case FEXCore::IR::COND_MI:
           case FEXCore::IR::COND_PL:
           case FEXCore::IR::COND_VS:
