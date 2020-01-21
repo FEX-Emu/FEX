@@ -4464,7 +4464,7 @@ void InstallOpcodeHandlers() {
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
     {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
-    {0xE7, 1, &OpDispatchBuilder::UnimplementedOp},
+    {0xE7, 1, &OpDispatchBuilder::MOVOp},
     {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
 
     {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
