@@ -2518,6 +2518,19 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
 
   StoreResult(Op, Dest, -1);
 }
+
+void OpDispatchBuilder::ANDNOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src1 = LoadSource(Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  // Dest = ~Src1 & Src2
+
+  Src1 = _VNot(Size, Size, Src1);
+  auto Dest = _VAnd(Size, Size, Src1, Src2);
+
+  StoreResult(Op, Dest, -1);
+}
+
 void OpDispatchBuilder::PCMPEQOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   uint8_t ElementSize = 4;
@@ -4242,6 +4255,7 @@ void InstallOpcodeHandlers() {
      {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
      {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
      {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
+     {0x55, 1, &OpDispatchBuilder::ANDNOp},
      {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
      {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
      {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
@@ -4430,6 +4444,7 @@ void InstallOpcodeHandlers() {
 
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
     {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
+    {0x55, 1, &OpDispatchBuilder::ANDNOp},
     {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
     {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>},

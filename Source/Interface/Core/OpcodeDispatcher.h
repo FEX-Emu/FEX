@@ -211,6 +211,7 @@ public:
 
   template<size_t ElementSize>
   void SHUFOp(OpcodeArgs);
+  void ANDNOp(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>
