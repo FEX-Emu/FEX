@@ -162,7 +162,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
         uint32_t Node = WrapperOp->ID();
 
         if (IROp->HasDest) {
-          uint64_t AllocSize = OpSize * std::min(static_cast<uint8_t>(1), IROp->Elements);
+          uint64_t AllocSize = OpSize * std::max(static_cast<uint8_t>(1), IROp->Elements);
           DestMap[Node] = AllocateTmpSpace(AllocSize);
         }
 
