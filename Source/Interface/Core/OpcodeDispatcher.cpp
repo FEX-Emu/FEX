@@ -4107,6 +4107,14 @@ void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
   StoreResult(Op, Res, -1);
 }
 
+void OpDispatchBuilder::LDMXCSR(OpcodeArgs) {
+}
+
+void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
+  // Default MXCSR
+  StoreResult(Op, _Constant(0x1F80), -1);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
@@ -4536,8 +4544,11 @@ constexpr uint16_t PF_F2 = 3;
     // GROUP 15
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 0), 1, &OpDispatchBuilder::FXSaveOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 1), 1, &OpDispatchBuilder::FXRStoreOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 2), 1, &OpDispatchBuilder::LDMXCSR},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 3), 1, &OpDispatchBuilder::STMXCSR},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::NOPOp}, //LFENCE
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::NOPOp}, //MFENCE
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::NOPOp}, //SFENCE
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},

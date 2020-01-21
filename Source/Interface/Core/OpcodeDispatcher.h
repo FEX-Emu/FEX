@@ -225,6 +225,9 @@ public:
   void FXRStoreOp(OpcodeArgs);
 
   void PAlignrOp(OpcodeArgs);
+  void LDMXCSR(OpcodeArgs);
+  void STMXCSR(OpcodeArgs);
+
   void UnimplementedOp(OpcodeArgs);
 
 #undef OpcodeArgs
