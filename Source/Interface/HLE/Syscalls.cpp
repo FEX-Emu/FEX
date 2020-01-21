@@ -18,6 +18,57 @@
 
 constexpr uint64_t PAGE_SIZE = 4096;
 
+namespace {
+  struct __attribute__((packed)) guest_stat {
+    __kernel_ulong_t  st_dev;
+    __kernel_ulong_t  st_ino;
+    __kernel_ulong_t  st_nlink;
+
+    unsigned int    st_mode;
+    unsigned int    st_uid;
+    unsigned int    st_gid;
+    unsigned int    __pad0;
+    __kernel_ulong_t  st_rdev;
+    __kernel_long_t   st_size;
+    __kernel_long_t   st_blksize;
+    __kernel_long_t   st_blocks;  /* Number 512-byte blocks allocated. */
+
+    __kernel_ulong_t  st_atime_;
+    __kernel_ulong_t  st_atime_nsec;
+    __kernel_ulong_t  st_mtime_;
+    __kernel_ulong_t  st_mtime_nsec;
+    __kernel_ulong_t  st_ctime_;
+    __kernel_ulong_t  st_ctime_nsec;
+    __kernel_long_t   __unused[3];
+  };
+
+  static void CopyStat(guest_stat *guest, struct stat *host) {
+#define COPY(x) guest->x = host->x
+    COPY(st_dev);
+    COPY(st_ino);
+    COPY(st_nlink);
+
+    COPY(st_mode);
+    COPY(st_uid);
+    COPY(st_gid);
+
+    COPY(st_rdev);
+    COPY(st_size);
+    COPY(st_blksize);
+    COPY(st_blocks);
+
+    guest->st_atime_ = host->st_atim.tv_sec;
+    guest->st_atime_nsec = host->st_atim.tv_nsec;
+
+    guest->st_mtime_ = host->st_mtime;
+    guest->st_mtime_nsec = host->st_mtim.tv_nsec;
+
+    guest->st_ctime_ = host->st_ctime;
+    guest->st_ctime_nsec = host->st_ctim.tv_nsec;
+#undef COPY
+  }
+}
+
 namespace FEXCore {
 #ifdef DEBUG_STRACE
 void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) {
@@ -660,18 +711,34 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   case SYSCALL_CLOSE:
     Result = FM.Close(Args->Argument[1]);
   break;
-  case SYSCALL_STAT:
+  case SYSCALL_STAT: {
+    struct stat host_stat{};
     Result = FM.Stat(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]),
-        CTX->MemoryMapper.GetPointer(Args->Argument[2]));
-  break;
-  case SYSCALL_FSTAT:
-    Result = FM.Fstat(Args->Argument[1],
-        CTX->MemoryMapper.GetPointer(Args->Argument[2]));
-  break;
-  case SYSCALL_LSTAT:
+      &host_stat);
+
+    guest_stat *guest_data = CTX->MemoryMapper.GetPointer<guest_stat*>(Args->Argument[2]);
+    CopyStat(guest_data, &host_stat);
+    break;
+  }
+  case SYSCALL_FSTAT: {
+    struct stat host_stat{};
+
+    Result = FM.Fstat(Args->Argument[1], &host_stat);
+
+    guest_stat *guest_data = CTX->MemoryMapper.GetPointer<guest_stat*>(Args->Argument[2]);
+    CopyStat(guest_data, &host_stat);
+    break;
+  }
+  case SYSCALL_LSTAT: {
+    struct stat host_stat{};
+
     Result = FM.Lstat(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]),
-        CTX->MemoryMapper.GetPointer(Args->Argument[2]));
-  break;
+      &host_stat);
+
+    guest_stat *guest_data = CTX->MemoryMapper.GetPointer<guest_stat*>(Args->Argument[2]);
+    CopyStat(guest_data, &host_stat);
+    break;
+  }
   case SYSCALL_LSEEK:
     Result = FM.Lseek(Args->Argument[1],
         Args->Argument[2],
