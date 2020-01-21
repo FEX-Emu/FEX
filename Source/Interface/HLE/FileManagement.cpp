@@ -5,51 +5,10 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/ioctl.h>
 #include <sys/uio.h>
 #include <unistd.h>
-
-#ifdef _M_X86_64
-// x86-64 Syscall argument ABI
-// RAX - Syscall number
-// RDI - Arg 1
-// RSI - Arg 2
-// RDX - Arg 3
-// R10 - Arg 4
-// R8  - Arg 5
-// R9  - Arg 6
-static uint64_t DoSyscall(uint64_t Syscall) {
-  uint64_t Result;
-  asm volatile (
-    "syscall;"
-    : "=r" (Result)
-    : "0" (Syscall)
-    : "memory", "cc", "r11", "cx"
-  );
-  return Result;
-}
-
-static uint64_t DoSyscall(uint64_t Syscall, uint64_t Arg1, uint64_t Arg2, uint64_t Arg3) {
-  uint64_t Result;
-  register uint64_t _Arg3 asm ("rdx") = Arg3;
-  register uint64_t _Arg2 asm ("rsi") = Arg2;
-  register uint64_t _Arg1 asm ("rdi") = Arg1;
-  asm volatile (
-    "syscall;"
-    : "=r" (Result)
-    : "0" (Syscall), "r" (_Arg1), "r" (_Arg2), "r" (_Arg3)
-    : "memory", "cc", "r11", "cx"
-  );
-  return Result;
-}
-#else
-static uint64_t DoSyscall(uint64_t Syscall) {
-  LogMan::Msg::A("Can't do syscall on this platform yet");
-}
-static uint64_t DoSyscall(uint64_t Syscall, uint64_t Arg1, uint64_t Arg2, uint64_t Arg3) {
-  LogMan::Msg::A("Can't do syscall on this platform yet");
-}
-#endif
 
 namespace FEXCore {
 
@@ -400,7 +359,7 @@ uint64_t FileManager::GetDents(int fd, void *dirp, uint32_t count) {
     return -1;
   }
 
-  return DoSyscall(SYSCALL_GETDENTS64,
+  return syscall(SYS_getdents64,
       static_cast<uint64_t>(FD->second->GetHostFD()),
       reinterpret_cast<uint64_t>(dirp),
       static_cast<uint64_t>(count));
