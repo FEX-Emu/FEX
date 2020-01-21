@@ -208,7 +208,8 @@ public:
   void FCVTF(OpcodeArgs);
   void TZCNT(OpcodeArgs);
   void MOVSSOp(OpcodeArgs);
-
+  template<size_t ElementSize>
+  void VFCMPOp(OpcodeArgs);
   template<size_t ElementSize>
   void SHUFOp(OpcodeArgs);
   void ANDNOp(OpcodeArgs);

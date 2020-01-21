@@ -3864,6 +3864,34 @@ void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
   }
 }
 
+template<size_t ElementSize>
+void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(Op, Op->Src1, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(Op, Op->Dest, Op->Flags, -1);
+  uint8_t CompType = Op->Src2.TypeLiteral.Literal;
+
+  OrderedNode *Result{};
+  // This maps 1:1 to an AArch64 NEON Op
+  //auto ALUOp = _VCMPGT(Size, ElementSize, Dest, Src);
+  switch (CompType) {
+    case 0x00: case 0x08: case 0x10: case 0x18: // EQ
+      Result = _VFCMPEQ(Size, ElementSize, Dest, Src);
+    break;
+    case 0x01: case 0x09: case 0x11: case 0x19: // LT, GT(Swapped operand)
+      Result = _VFCMPLT(Size, ElementSize, Dest, Src);
+    break;
+    case 0x02: case 0x0A: case 0x12: case 0x1A: // LE, GE(Swapped operand)
+      Result = _VFCMPLE(Size, ElementSize, Dest, Src);
+    break;
+    default: LogMan::Msg::A("Unknown Comparison type: %d", CompType);
+  }
+
+  // Insert the lower bits
+  Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Result);
+
+  StoreResult(Op, Result, -1);
+}
 
 OrderedNode *OpDispatchBuilder::GetX87Top() {
   // Yes, we are storing 3 bits in a single flag register.
@@ -4423,6 +4451,7 @@ void InstallOpcodeHandlers() {
     {0x7E, 1, &OpDispatchBuilder::MOVQOp},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0xBC, 2, &OpDispatchBuilder::TZCNT},
+    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4>},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepNEModOpTable = {
@@ -4441,6 +4470,7 @@ void InstallOpcodeHandlers() {
     {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 8>},
     {0x5F, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, true>},
+    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8>},
     {0xF0, 1, &OpDispatchBuilder::UnimplementedOp},
   };
 
