@@ -742,18 +742,22 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     if (Args->Argument[1]) {
       time_t *ClockResult = CTX->MemoryMapper.GetPointer<time_t*>(Args->Argument[1]);
       *ClockResult = TmpTime;
+#ifdef DEBUG_TIME
+      memset(ClockResult, 0, sizeof(time_t));
+#endif
     }
     Result = TmpTime;
-    // XXX: Debug
-    // memset(ClockResult, 0, sizeof(time_t));
-    // Result = 0;
+#ifdef DEBUG_TIME
+    Result = 0;
+#endif
   }
   break;
   case SYSCALL_CLOCK_GETTIME: {
     timespec *ClockResult = CTX->MemoryMapper.GetPointer<timespec*>(Args->Argument[2]);
     Result = clock_gettime(Args->Argument[1], ClockResult);
-    // XXX: Debug
-    // memset(ClockResult, 0, sizeof(timespec));
+#ifdef DEBUG_TIME
+    memset(ClockResult, 0, sizeof(timespec));
+#endif
   }
   break;
   case SYSCALL_SYSINFO: {
