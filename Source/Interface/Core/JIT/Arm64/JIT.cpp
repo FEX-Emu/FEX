@@ -1027,7 +1027,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_FINDMSB: {
         auto Op = IROp->C<IR::IROp_FindMSB>();
         auto Dst = GetDst<RA_64>(Node);
-        movz(TMP1, OpSize * 8);
+        movz(TMP1, OpSize * 8 - 1);
         clz(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
         sub(Dst, TMP1, Dst);
         break;

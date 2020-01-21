@@ -856,7 +856,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_FINDMSB: {
             auto Op = IROp->C<IR::IROp_FindMSB>();
             uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
-            uint64_t Result = Op->Header.Size * 8 - __builtin_clzll(Src);
+            uint64_t Result = (Op->Header.Size * 8 - __builtin_clzll(Src)) - 1;
             GD = Result;
             break;
           }
