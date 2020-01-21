@@ -487,7 +487,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->CPUID));
         mov(x1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
         add(x2, sp, RA64.size() * 8 + 3 * 8);
+#if _M_X86_64
         CallRuntime(CPUIDThunk);
+#else
+        LoadConstant(x3, (uint64_t)CPUIDThunk);
+        blr(x3);
+#endif
 
         i = 0;
         for (auto RA : RA64) {
