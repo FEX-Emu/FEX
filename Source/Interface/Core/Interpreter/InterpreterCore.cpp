@@ -1541,36 +1541,43 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, &Dst, 16);
             break;
           }
+          case IR::OP_VNOT: {
+            auto Op = IROp->C<IR::IROp_VNot>();
+            __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
 
-  #define DO_VECTOR_OP(size, type, func)              \
-    case size: {                                      \
-    auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
-    auto *Src1_d = reinterpret_cast<type*>(Src1); \
-    auto *Src2_d = reinterpret_cast<type*>(Src2); \
-    for (uint8_t i = 0; i < Elements; ++i) {          \
-      Dst_d[i] = func(Src1_d[i], Src2_d[i]);          \
-    }                                                 \
-    break;                                            \
-    }
-  #define DO_VECTOR_SCALAR_OP(size, type, func)\
-    case size: {                                      \
-    auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
-    auto *Src1_d = reinterpret_cast<type*>(Src1); \
-    auto *Src2_d = reinterpret_cast<type*>(Src2); \
-    for (uint8_t i = 0; i < Elements; ++i) {          \
-      Dst_d[i] = func(Src1_d[i], *Src2_d);          \
-    }                                                 \
-    break;                                            \
-    }
-  #define DO_VECTOR_1SRC_OP(size, type, func)              \
-    case size: {                                      \
-    auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
-    auto *Src_d = reinterpret_cast<type*>(Src); \
-    for (uint8_t i = 0; i < Elements; ++i) {          \
-      Dst_d[i] = func(Src_d[i]);          \
-    }                                                 \
-    break;                                            \
-    }
+            __uint128_t Dst = ~Src1;
+            memcpy(GDP, &Dst, 16);
+            break;
+          }
+          #define DO_VECTOR_OP(size, type, func)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+            auto *Src1_d = reinterpret_cast<type*>(Src1); \
+            auto *Src2_d = reinterpret_cast<type*>(Src2); \
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              Dst_d[i] = func(Src1_d[i], Src2_d[i]);          \
+            }                                                 \
+            break;                                            \
+            }
+          #define DO_VECTOR_SCALAR_OP(size, type, func)\
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+            auto *Src1_d = reinterpret_cast<type*>(Src1); \
+            auto *Src2_d = reinterpret_cast<type*>(Src2); \
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              Dst_d[i] = func(Src1_d[i], *Src2_d);          \
+            }                                                 \
+            break;                                            \
+            }
+          #define DO_VECTOR_1SRC_OP(size, type, func)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+            auto *Src_d = reinterpret_cast<type*>(Src); \
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              Dst_d[i] = func(Src_d[i]);          \
+            }                                                 \
+            break;                                            \
+            }
           case IR::OP_VADD: {
             auto Op = IROp->C<IR::IROp_VAdd>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -2204,6 +2211,113 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          #define DO_SCALAR_COMPARE_OP(size, type, type2, func)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type2*>(Tmp);  \
+            auto *Src1_d = reinterpret_cast<type*>(Src1); \
+            auto *Src2_d = reinterpret_cast<type*>(Src2); \
+            Dst_d[0] = func(Src1_d[0], Src2_d[0]);          \
+            break;                                            \
+            }
+
+          #define DO_VECTOR_COMPARE_OP(size, type, type2, func)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type2*>(Tmp);  \
+            auto *Src1_d = reinterpret_cast<type*>(Src1); \
+            auto *Src2_d = reinterpret_cast<type*>(Src2); \
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              Dst_d[i] = func(Src1_d[i], Src2_d[i]);          \
+            }                                                 \
+            break;                                            \
+            }
+
+          case IR::OP_VFCMPEQ: {
+            auto Op = IROp->C<IR::IROp_VFCMPEQ>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+
+            auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
+
+            uint8_t Tmp[16];
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            if (Op->ElementSize == Op->RegisterSize) {
+              switch (Op->ElementSize) {
+              DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+            else {
+              switch (Op->ElementSize) {
+              DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+
+          case IR::OP_VFCMPLT: {
+            auto Op = IROp->C<IR::IROp_VFCMPLT>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+
+            auto Func = [](auto a, auto b) { return a < b ? ~0ULL : 0; };
+
+            uint8_t Tmp[16];
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            if (Op->ElementSize == Op->RegisterSize) {
+              switch (Op->ElementSize) {
+              DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+            else {
+              switch (Op->ElementSize) {
+              DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+
+          case IR::OP_VFCMPLE: {
+            auto Op = IROp->C<IR::IROp_VFCMPLE>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+
+            auto Func = [](auto a, auto b) { return a <= b ? ~0ULL : 0; };
+
+            uint8_t Tmp[16];
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            if (Op->ElementSize == Op->RegisterSize) {
+              switch (Op->ElementSize) {
+              DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+            else {
+              switch (Op->ElementSize) {
+              DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+
           default:
             LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
             break;

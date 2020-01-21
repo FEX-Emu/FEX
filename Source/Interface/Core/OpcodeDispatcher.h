@@ -276,6 +276,9 @@ public:
   IRPair<IROp_VInsElement> _VInsElement(uint8_t RegisterSize, uint8_t ElementSize, uint8_t DestIdx, uint8_t SrcIdx, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VInsElement(ssa0, ssa1, RegisterSize, ElementSize, DestIdx, SrcIdx);
   }
+  IRPair<IROp_VAnd> _VAnd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VAnd(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VAdd> _VAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VAdd(ssa0, ssa1, RegisterSize, ElementSize);
   }
@@ -306,6 +309,18 @@ public:
   IRPair<IROp_VCMPGT> _VCMPGT(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VCMPGT(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VFCMPEQ> _VFCMPEQ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFCMPEQ(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VFCMPLT> _VFCMPLT(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFCMPLT(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VFCMPGT> _VFCMPGT(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFCMPGT(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VFCMPLE> _VFCMPLE(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFCMPLE(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VUShl> _VUShl(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShl(ssa0, ssa1, RegisterSize, ElementSize);
   }
@@ -323,6 +338,18 @@ public:
   }
   IRPair<IROp_VSRI> _VSRI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t ByteShift) {
     return _VSRI(ssa0, RegisterSize, ElementSize, ByteShift);
+  }
+  IRPair<IROp_VFSqrt> _VFSqrt(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VFSqrt(ssa0, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VFRSqrt> _VFRSqrt(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VFRSqrt(ssa0, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VNeg> _VNeg(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VNeg(ssa0, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VNot> _VNot(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VNot(ssa0, RegisterSize, ElementSize);
   }
   IRPair<IROp_VCastFromGPR> _VCastFromGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     return _VCastFromGPR(ssa0, RegisterSize, ElementSize);

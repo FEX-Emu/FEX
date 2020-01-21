@@ -731,6 +731,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         add(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
         break;
       }
+      case IR::OP_NEG: {
+        auto Op = IROp->C<IR::IROp_Neg>();
+        neg(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+      }
       case IR::OP_SUB: {
         auto Op = IROp->C<IR::IROp_Sub>();
         sub(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
@@ -803,6 +808,26 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         uint8_t Mask = OpSize * 8 - 1;
 
         switch (OpSize) {
+        case 1: {
+          mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 8, 8);
+          bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 16, 8);
+          bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 24, 8);
+          movz(TMP1, 8);
+          sub(TMP1.W(), TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          rorv(GetDst<RA_32>(Node), GetDst<RA_32>(Node), TMP1.W());
+          and_(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 0xFF);
+          break;
+        }
+        case 2: {
+          mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 16, 16);
+          movz(TMP1, 16);
+          sub(TMP1.W(), TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+          rorv(GetDst<RA_32>(Node), GetDst<RA_32>(Node), TMP1.W());
+          and_(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 0xFFFF);
+          break;
+        }
         case 4: {
           movz(TMP1, 32);
           sub(TMP1.W(), TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
@@ -2081,6 +2106,70 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
         }
+        break;
+      }
+      case IR::OP_VUMAX: {
+        auto Op = IROp->C<IR::IROp_VUMax>();
+        switch (Op->ElementSize) {
+        case 1: {
+          umax(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          umax(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          umax(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          umax(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_VSMAX: {
+        auto Op = IROp->C<IR::IROp_VSMax>();
+        switch (Op->ElementSize) {
+        case 1: {
+          smax(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+        }
+        case 2: {
+          smax(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+        }
+        case 4: {
+          smax(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+        }
+        case 8: {
+          smax(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
+      case IR::OP_SCVTF: {
+        auto Op = IROp->C<IR::IROp_SCVTF>();
+        if (Op->ElementSize == 8) {
+          scvtf(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        }
+        else
+          scvtf(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+      }
+      case IR::OP_FCVTZS: {
+        auto Op = IROp->C<IR::IROp_SCVTF>();
+        if (Op->ElementSize == 8) {
+          fcvtzs(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+        }
+        else
+          fcvtzs(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
         break;
       }
       case IR::OP_CYCLECOUNTER: {

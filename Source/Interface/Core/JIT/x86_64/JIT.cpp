@@ -1608,6 +1608,36 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           vpand(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
           break;
         }
+        case IR::OP_VNEG: {
+          auto Op = IROp->C<IR::IROp_VNeg>();
+          vpxor(xmm15, xmm15, xmm15);
+          switch (Op->ElementSize) {
+            case 1: {
+              vpsubb(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+            break;
+            }
+            case 2: {
+              vpsubw(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+            break;
+            }
+            case 4: {
+              vpsubd(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+            break;
+            }
+            case 8: {
+              vpsubq(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
+        case IR::OP_VNOT: {
+          auto Op = IROp->C<IR::IROp_VNot>();
+          pcmpeqd(xmm15, xmm15);
+          vpxor(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+          break;
+        }
         case IR::OP_VXOR: {
           auto Op = IROp->C<IR::IROp_VXor>();
           vpxor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
@@ -1894,6 +1924,116 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VFCMPEQ: {
+          auto Op = IROp->C<IR::IROp_VFCMPEQ>();
+
+          if (Op->ElementSize == Op->RegisterSize) {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
+            break;
+            case 8:
+              vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+          }
+          else {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
+            break;
+            case 8:
+              vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+          }
+          break;
+        }
+        case IR::OP_VFCMPLT: {
+          auto Op = IROp->C<IR::IROp_VFCMPLT>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
+            break;
+            case 8:
+              vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+
+          }
+          else {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
+            break;
+            case 8:
+              vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+          }
+          break;
+        }
+
+        case IR::OP_VFCMPGT: {
+          auto Op = IROp->C<IR::IROp_VFCMPGT>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpss(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
+            break;
+            case 8:
+              vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+
+          }
+          else {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpps(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
+            break;
+            case 8:
+              vcmppd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+          }
+          break;
+        }
+        case IR::OP_VFCMPLE: {
+          auto Op = IROp->C<IR::IROp_VFCMPLE>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpss(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 2);
+            break;
+            case 8:
+              vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 2);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+
+          }
+          else {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpps(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 2);
+            break;
+            case 8:
+              vcmppd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 2);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+          }
+          break;
+        }
+
         case IR::OP_VZIP: {
           auto Op = IROp->C<IR::IROp_VZip>();
           movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));

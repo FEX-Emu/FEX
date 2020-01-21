@@ -733,6 +733,24 @@
       ]
     },
 
+    "VNeg": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VNot": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VUMin": {
       "HasDest": true,
       "SSAArgs": "2",
@@ -798,6 +816,42 @@
 
     "VCMPGT": {
 			"HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VFCMPEQ": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VFCMPLT": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VFCMPGT": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VFCMPLE": {
+      "HasDest": true,
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
