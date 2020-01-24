@@ -34,7 +34,8 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_01h() {
       (3 << 26) | // Let's say that XSAVE isn't enabled by the OS. Prevents glibc from using XSAVE/XGETBV
       (1 << 19) | // Remove SSE4.1
       (1 << 20) | // Remove SSE4.2
-      (1 << 28)   // Remove AVX
+      (1 << 28) | // Remove AVX
+      (1 << 30)   // Remove RDRAND
       );
 
   return Res;
