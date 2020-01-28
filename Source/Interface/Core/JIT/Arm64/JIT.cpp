@@ -588,45 +588,85 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_LOADCONTEXT: {
         auto Op = IROp->C<IR::IROp_LoadContext>();
-        switch (Op->Size) {
-        case 1:
-          ldrb(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
-        break;
-        case 2:
-          ldrh(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
-        break;
-        case 4:
-          ldr(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
-        break;
-        case 8:
-          ldr(GetDst<RA_64>(Node), MemOperand(STATE, Op->Offset));
-        break;
-        case 16:
-          ldr(GetDst(Node), MemOperand(STATE, Op->Offset));
-        break;
-        default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+        if (Op->Class.Val == 0) {
+          switch (Op->Size) {
+          case 1:
+            ldrb(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
+          break;
+          case 2:
+            ldrh(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
+          break;
+          case 4:
+            ldr(GetDst<RA_32>(Node), MemOperand(STATE, Op->Offset));
+          break;
+          case 8:
+            ldr(GetDst<RA_64>(Node), MemOperand(STATE, Op->Offset));
+          break;
+          default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+          }
+        }
+        else {
+          auto Dst = GetDst(Node);
+          switch (Op->Size) {
+          case 1:
+            ldr(Dst.B(), MemOperand(STATE, Op->Offset));
+          break;
+          case 2:
+            ldr(Dst.H(), MemOperand(STATE, Op->Offset));
+          break;
+          case 4:
+            ldr(Dst.S(), MemOperand(STATE, Op->Offset));
+          break;
+          case 8:
+            ldr(Dst.D(), MemOperand(STATE, Op->Offset));
+          break;
+          case 16:
+            ldr(Dst, MemOperand(STATE, Op->Offset));
+          break;
+          default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+          }
         }
         break;
       }
       case IR::OP_STORECONTEXT: {
         auto Op = IROp->C<IR::IROp_StoreContext>();
-        switch (Op->Size) {
-        case 1:
-          strb(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-        break;
-        case 2:
-          strh(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-        break;
-        case 4:
-          str(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-        break;
-        case 8:
-          str(GetSrc<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-        break;
-        case 16:
-          str(GetSrc(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
-        break;
-        default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+        if (Op->Class.Val == 0) {
+          switch (Op->Size) {
+          case 1:
+            strb(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+          break;
+          case 2:
+            strh(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+          break;
+          case 4:
+            str(GetSrc<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+          break;
+          case 8:
+            str(GetSrc<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+          break;
+          default:  LogMan::Msg::A("Unhandled StoreContext size: %d", Op->Size);
+          }
+        }
+        else {
+          auto Src =  GetSrc(Op->Header.Args[0].ID());
+          switch (Op->Size) {
+          case 1:
+            str(Src.B(), MemOperand(STATE, Op->Offset));
+          break;
+          case 2:
+            str(Src.H(), MemOperand(STATE, Op->Offset));
+          break;
+          case 4:
+            str(Src.S(), MemOperand(STATE, Op->Offset));
+          break;
+          case 8:
+            str(Src.D(), MemOperand(STATE, Op->Offset));
+          break;
+          case 16:
+            str(Src, MemOperand(STATE, Op->Offset));
+          break;
+          default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1271,46 +1311,87 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_LOADMEM: {
         auto Op = IROp->C<IR::IROp_LoadMem>();
 
-        auto Dst = GetDst<RA_64>(Node);
-        switch (Op->Size) {
-        case 1:
-          ldrb(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        case 2:
-          ldrh(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        case 4:
-          ldr(Dst.W(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        case 8:
-          ldr(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        case 16:
-          ldr(GetDst(Node), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+        if (Op->Class.Val == 0) {
+          auto Dst = GetDst<RA_64>(Node);
+          switch (Op->Size) {
+          case 1:
+            ldrb(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 2:
+            ldrh(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 4:
+            ldr(Dst.W(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 8:
+            ldr(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+          }
+        }
+        else {
+          auto Dst = GetDst(Node);
+          switch (Op->Size) {
+          case 1:
+            ldr(Dst.B(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 2:
+            ldr(Dst.H(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 4:
+            ldr(Dst.S(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 8:
+            ldr(Dst.D(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 16:
+            ldr(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+          }
         }
         break;
       }
       case IR::OP_STOREMEM: {
         auto Op = IROp->C<IR::IROp_StoreMem>();
-        switch (Op->Size) {
-        case 1:
-          strb(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        case 2:
-          strh(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        case 4:
-          str(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        case 8:
-          str(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        case 16:
-          str(GetSrc(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
-        break;
-        default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+        if (Op->Class.Val == 0) {
+          switch (Op->Size) {
+          case 1:
+            strb(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 2:
+            strh(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 4:
+            str(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 8:
+            str(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+          }
+        }
+        else {
+          auto Src = GetSrc(Op->Header.Args[1].ID());
+          switch (Op->Size) {
+          case 1:
+            str(Src.B(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 2:
+            str(Src.H(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 4:
+            str(Src.S(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 8:
+            str(Src.D(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          case 16:
+            str(Src, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+          break;
+          default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+          }
+
         }
         break;
       }

@@ -446,165 +446,299 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_LOADCONTEXT: {
           auto Op = IROp->C<IR::IROp_LoadContext>();
-          switch (Op->Size) {
-          case 1: {
-            movzx(GetDst<RA_32>(Node), byte [STATE + Op->Offset]);
+          if (Op->Class.Val == 0) {
+            switch (Op->Size) {
+            case 1: {
+              movzx(GetDst<RA_32>(Node), byte [STATE + Op->Offset]);
+            }
+            break;
+            case 2: {
+              movzx(GetDst<RA_32>(Node), word [STATE + Op->Offset]);
+            }
+            break;
+            case 4: {
+              mov(GetDst<RA_32>(Node), dword [STATE + Op->Offset]);
+            }
+            break;
+            case 8: {
+              mov(GetDst<RA_64>(Node), qword [STATE + Op->Offset]);
+            }
+            break;
+            case 16: {
+              LogMan::Msg::A("Invalid GPR load of size 16");
+            }
+            break;
+            default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+            }
           }
-          break;
-          case 2: {
-            movzx(GetDst<RA_32>(Node), word [STATE + Op->Offset]);
-          }
-          break;
-          case 4: {
-            mov(GetDst<RA_32>(Node), dword [STATE + Op->Offset]);
-          }
-          break;
-          case 8: {
-            mov(GetDst<RA_64>(Node), qword [STATE + Op->Offset]);
-          }
-          break;
-          case 16: {
-            if (Op->Offset % 16 == 0)
-              movaps(GetDst(Node), xword [STATE + Op->Offset]);
-            else
-              movups(GetDst(Node), xword [STATE + Op->Offset]);
-          }
-          break;
-          default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+          else {
+            switch (Op->Size) {
+            case 1: {
+              pinsrb(GetDst(Node), byte [STATE + Op->Offset], 0);
+            }
+            break;
+            case 2: {
+              pinsrw(GetDst(Node), word [STATE + Op->Offset], 0);
+            }
+            break;
+            case 4: {
+              vmovd(GetDst(Node), dword [STATE + Op->Offset]);
+            }
+            break;
+            case 8: {
+              vmovq(GetDst(Node), qword [STATE + Op->Offset]);
+            }
+            break;
+            case 16: {
+              if (Op->Offset % 16 == 0)
+                movaps(GetDst(Node), xword [STATE + Op->Offset]);
+              else
+                movups(GetDst(Node), xword [STATE + Op->Offset]);
+            }
+            break;
+            default:  LogMan::Msg::A("Unhandled LoadContext size: %d", Op->Size);
+            }
           }
           break;
         }
+
         case IR::OP_LOADCONTEXTINDEXED: {
           auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
           size_t size = Op->Size;
           Reg index = GetSrc<RA_64>(Op->Header.Args[0].ID());
 
-          switch (Op->Stride) {
-          case 1:
-          case 2:
-          case 4:
-          case 8: {
-            lea(rax, dword [STATE + Op->BaseOffset]);
-            switch (size) {
+          if (Op->Class.Val == 0) {
+            switch (Op->Stride) {
             case 1:
-              movzx(GetDst<RA_32>(Node), byte [rax + index * Op->Stride]);
-              break;
             case 2:
-              movzx(GetDst<RA_32>(Node), word [rax + index * Op->Stride]);
-              break;
             case 4:
-              mov(GetDst<RA_32>(Node),  dword [rax + index * Op->Stride]);
+            case 8: {
+              lea(rax, dword [STATE + Op->BaseOffset]);
+              switch (size) {
+              case 1:
+                movzx(GetDst<RA_32>(Node), byte [rax + index * Op->Stride]);
+                break;
+              case 2:
+                movzx(GetDst<RA_32>(Node), word [rax + index * Op->Stride]);
+                break;
+              case 4:
+                mov(GetDst<RA_32>(Node),  dword [rax + index * Op->Stride]);
+                break;
+              case 8:
+                mov(GetDst<RA_64>(Node),  qword [rax + index * Op->Stride]);
+                break;
+              default:
+                LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+              }
               break;
-            case 8:
-              mov(GetDst<RA_64>(Node),  qword [rax + index * Op->Stride]);
-              break;
-            default:
-              LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
             }
-            break;
-          }
-          case 16: {
-            mov(rax, index);
-            shl(rax, 4);
-            lea(rax, dword [rax + Op->BaseOffset]);
-            switch (size) {
-            case 1:
-              movzx(GetDst<RA_32>(Node), byte [STATE + rax]);
-              break;
-            case 2:
-              movzx(GetDst<RA_32>(Node), word [STATE + rax]);
-              break;
-            case 4:
-              mov(GetDst<RA_32>(Node), dword [STATE + rax]);
-              break;
-            case 8:
-              mov(GetDst<RA_64>(Node), qword [STATE + rax]);
-              break;
             case 16:
-              if (Op->BaseOffset % 16 == 0)
-                movaps(GetDst(Node), xword [STATE + rax]);
-              else
-                movups(GetDst(Node), xword [STATE + rax]);
+              LogMan::Msg::A("Invalid Class load of size 16");
               break;
             default:
-              LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+              LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
             }
-            break;
+
           }
-          default:
-            LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+          else {
+            switch (Op->Stride) {
+            case 1:
+            case 2:
+            case 4:
+            case 8: {
+              lea(rax, dword [STATE + Op->BaseOffset]);
+              switch (size) {
+              case 1:
+                pinsrb(GetDst(Node), byte [rax + index * Op->Stride], 0);
+                break;
+              case 2:
+                pinsrw(GetDst(Node), word [rax + index * Op->Stride], 0);
+                break;
+              case 4:
+                vmovd(GetDst(Node),  dword [rax + index * Op->Stride]);
+                break;
+              case 8:
+                vmovq(GetDst(Node),  qword [rax + index * Op->Stride]);
+                break;
+              default:
+                LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+              }
+              break;
+            }
+            case 16: {
+              mov(rax, index);
+              shl(rax, 4);
+              lea(rax, dword [rax + Op->BaseOffset]);
+              switch (size) {
+              case 1:
+                pinsrb(GetDst(Node), byte [STATE + rax], 0);
+                break;
+              case 2:
+                pinsrw(GetDst(Node), word [STATE + rax], 0);
+                break;
+              case 4:
+                vmovd(GetDst(Node), dword [STATE + rax]);
+                break;
+              case 8:
+                vmovq(GetDst(Node), qword [STATE + rax]);
+                break;
+              case 16:
+                if (Op->BaseOffset % 16 == 0)
+                  movaps(GetDst(Node), xword [STATE + rax]);
+                else
+                  movups(GetDst(Node), xword [STATE + rax]);
+                break;
+              default:
+                LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+              }
+              break;
+            }
+            default:
+              LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+            }
           }
           break;
         }
         case IR::OP_STORECONTEXT: {
           auto Op = IROp->C<IR::IROp_StoreContext>();
 
-          switch (Op->Size) {
-          case 1: {
-            mov(byte [STATE + Op->Offset], GetSrc<RA_8>(Op->Header.Args[0].ID()));
-          }
-          break;
+          if (Op->Class.Val == 0) {
+            switch (Op->Size) {
+            case 1: {
+              mov(byte [STATE + Op->Offset], GetSrc<RA_8>(Op->Header.Args[0].ID()));
+            }
+            break;
 
-          case 2: {
-            mov(word [STATE + Op->Offset], GetSrc<RA_16>(Op->Header.Args[0].ID()));
+            case 2: {
+              mov(word [STATE + Op->Offset], GetSrc<RA_16>(Op->Header.Args[0].ID()));
+            }
+            break;
+            case 4: {
+              mov(dword [STATE + Op->Offset], GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            }
+            break;
+            case 8: {
+              mov(qword [STATE + Op->Offset], GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            }
+            break;
+            case 16:
+              LogMan::Msg::D("Invalid store size of 16");
+            break;
+            default:  LogMan::Msg::A("Unhandled StoreContext size: %d", Op->Size);
+            }
           }
-          break;
-          case 4: {
-            mov(dword [STATE + Op->Offset], GetSrc<RA_32>(Op->Header.Args[0].ID()));
-          }
-          break;
-          case 8: {
-            mov(qword [STATE + Op->Offset], GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          }
-          break;
-          case 16: {
-            if (Op->Offset % 16 == 0)
-              movaps(xword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
-            else
-              movups(xword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
-          }
-          break;
-          default:  LogMan::Msg::A("Unhandled StoreContext size: %d", Op->Size);
+          else {
+            switch (Op->Size) {
+            case 1: {
+              pextrb(byte [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()), 0);
+            }
+            break;
+
+            case 2: {
+              pextrw(word [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()), 0);
+            }
+            break;
+            case 4: {
+              vmovd(dword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
+            }
+            break;
+            case 8: {
+              vmovq(qword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
+            }
+            break;
+            case 16: {
+              if (Op->Offset % 16 == 0)
+                movaps(xword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
+              else
+                movups(xword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
+            }
+            break;
+            default:  LogMan::Msg::A("Unhandled StoreContext size: %d", Op->Size);
+            }
           }
           break;
         }
         case IR::OP_STORECONTEXTINDEXED: {
           auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
-          auto value = GetSrc(Op->Header.Args[0].ID());
           Reg index = GetSrc<RA_64>(Op->Header.Args[1].ID());
           size_t size = Op->Size;
 
-          switch (Op->Stride) {
-          case 1:
-          case 2:
-          case 4:
-          case 8: {
-            if (!(size == 1 || size == 2 || size == 4 || size == 8)) {
-              LogMan::Msg::A("Unhandled StoreContextIndexed size: %d", Op->Size);
-            }
+          if (Op->Class.Val == 0) {
+            auto value = GetSrc<RA_64>(Op->Header.Args[0].ID());
             lea(rax, dword [STATE + Op->BaseOffset]);
-            mov(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
-            break;
-          }
-          case 16: {
-            mov(rax, index);
-            shl(rax, 4);
-            lea(rax, dword [rax + Op->BaseOffset]);
-            if ((size == 1 || size == 2 || size == 4 || size == 8)) {
-              mov(AddressFrame(Op->Size * 8) [STATE + rax], value);
-            } else if (size == 16) {
-              if (Op->BaseOffset % 16 == 0)
-                movaps(xword [STATE + rax], value);
-              else
-                movups(xword [STATE + rax], value);
+
+            switch (Op->Stride) {
+            case 1:
+            case 2:
+            case 4:
+            case 8: {
+              if (!(size == 1 || size == 2 || size == 4 || size == 8)) {
+                LogMan::Msg::A("Unhandled StoreContextIndexed size: %d", Op->Size);
+              }
+              mov(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
+              break;
             }
-            else {
-              LogMan::Msg::A("Unhandled StoreContextIndexed size: %d", Op->Size);
+            default:
+              LogMan::Msg::A("Unhandled StoreContextIndexed stride: %d", Op->Stride);
             }
-            break;
           }
-          default:
-            LogMan::Msg::A("Unhandled StoreContextIndexed stride: %d", Op->Stride);
+          else {
+            auto value = GetSrc(Op->Header.Args[0].ID());
+            switch (Op->Stride) {
+            case 1:
+            case 2:
+            case 4:
+            case 8: {
+              lea(rax, dword [STATE + Op->BaseOffset]);
+              switch (size) {
+              case 1:
+                pextrb(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value, 0);
+                break;
+              case 2:
+                pextrw(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value, 0);
+                break;
+              case 4:
+                vmovd(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
+                break;
+              case 8:
+                vmovq(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
+                break;
+              default:
+                LogMan::Msg::A("Unhandled StoreContextIndexed size: %d", size);
+              }
+              break;
+            }
+            case 16: {
+              mov(rax, index);
+              shl(rax, 4);
+              lea(rax, dword [rax + Op->BaseOffset]);
+              switch (size) {
+              case 1:
+                pextrb(AddressFrame(Op->Size * 8) [STATE + rax], value, 0);
+                break;
+              case 2:
+                pextrw(AddressFrame(Op->Size * 8) [STATE + rax], value, 0);
+                break;
+              case 4:
+                vmovd(AddressFrame(Op->Size * 8) [STATE + rax], value);
+                break;
+              case 8:
+                vmovq(AddressFrame(Op->Size * 8) [STATE + rax], value);
+                break;
+              case 16:
+                if (Op->BaseOffset % 16 == 0)
+                  movaps(xword [STATE + rax], value);
+                else
+                  movups(xword [STATE + rax], value);
+                break;
+              default:
+                LogMan::Msg::A("Unhandled StoreContextIndexed size: %d", size);
+              }
+              break;
+            }
+            default:
+              LogMan::Msg::A("Unhandled StoreContextIndexed stride: %d", Op->Stride);
+            }
           }
           break;
         }
@@ -1267,37 +1401,64 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_LoadMem>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          auto Dst = GetDst<RA_64>(Node);
           mov(rax, Memory);
           add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          switch (Op->Size) {
-            case 1: {
-              movzx (Dst, byte [rax]);
+          if (Op->Class.Val == 0) {
+            auto Dst = GetDst<RA_64>(Node);
+
+            switch (Op->Size) {
+              case 1: {
+                movzx (Dst, byte [rax]);
+              }
+              break;
+              case 2: {
+                movzx (Dst, word [rax]);
+              }
+              break;
+              case 4: {
+                mov(Dst, dword [rax]);
+              }
+              break;
+              case 8: {
+                mov(Dst, qword [rax]);
+              }
+              break;
+              default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
             }
-            break;
-            case 2: {
-              movzx (Dst, word [rax]);
-            }
-            break;
-            case 4: {
-              mov(Dst, dword [rax]);
-            }
-            break;
-            case 8: {
-              mov(Dst, qword [rax]);
-            }
-            break;
-            case 16: {
-               if (Op->Size == Op->Align)
-                 movaps(GetDst(Node), xword [rax]);
-               else
-                 movups(GetDst(Node), xword [rax]);
-               if (MemoryDebug) {
-                 movq(rcx, GetDst(Node));
+          }
+          else
+          {
+            auto Dst = GetDst(Node);
+
+            switch (Op->Size) {
+              case 1: {
+                pinsrb(Dst, byte [rax], 0);
+              }
+              break;
+              case 2: {
+                pinsrw(Dst, word [rax], 0);
+              }
+              break;
+              case 4: {
+                vmovd(Dst, dword [rax]);
+              }
+              break;
+              case 8: {
+                vmovq(Dst, qword [rax]);
+              }
+              break;
+              case 16: {
+                 if (Op->Size == Op->Align)
+                   movups(GetDst(Node), xword [rax]);
+                 else
+                   movups(GetDst(Node), xword [rax]);
+                 if (MemoryDebug) {
+                   movq(rcx, GetDst(Node));
+                 }
                }
-             }
-             break;
-            default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+               break;
+              default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+            }
           }
           break;
         }
@@ -1307,26 +1468,45 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           mov(rax, Memory);
           add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          switch (Op->Size) {
-          case 1:
-            mov(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
-          break;
-          case 2:
-            mov(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
-          break;
-          case 4:
-            mov(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
-          break;
-          case 8:
-            mov(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
-          break;
-          case 16:
-            if (Op->Size == Op->Align)
-              movaps(xword [rax], GetSrc(Op->Header.Args[1].ID()));
-            else
-              movups(xword [rax], GetSrc(Op->Header.Args[1].ID()));
-          break;
-          default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+          if (Op->Class.Val == 0) {
+            switch (Op->Size) {
+            case 1:
+              mov(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            break;
+            case 2:
+              mov(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            break;
+            case 4:
+              mov(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            break;
+            case 8:
+              mov(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            break;
+            default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+            }
+          }
+          else {
+            switch (Op->Size) {
+            case 1:
+              pextrb(byte [rax], GetSrc(Op->Header.Args[1].ID()), 0);
+            break;
+            case 2:
+              pextrw(word [rax], GetSrc(Op->Header.Args[1].ID()), 0);
+            break;
+            case 4:
+              vmovd(dword [rax], GetSrc(Op->Header.Args[1].ID()));
+            break;
+            case 8:
+              vmovq(qword [rax], GetSrc(Op->Header.Args[1].ID()));
+            break;
+            case 16:
+              if (Op->Size == Op->Align)
+                movups(xword [rax], GetSrc(Op->Header.Args[1].ID()));
+              else
+                movups(xword [rax], GetSrc(Op->Header.Args[1].ID()));
+            break;
+            default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+            }
           }
           break;
         }
@@ -2810,6 +2990,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           case 8:
             bsr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
             break;
+          default: LogMan::Msg::A("Unknown OpSize: %d", OpSize);
           }
           break;
         }

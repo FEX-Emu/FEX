@@ -13,7 +13,9 @@
     "constexpr static uint8_t COND_SGE  = 10",
     "constexpr static uint8_t COND_SLT  = 11",
     "constexpr static uint8_t COND_SGT  = 12",
-    "constexpr static uint8_t COND_SLE  = 13"
+    "constexpr static uint8_t COND_SLE  = 13",
+    "static constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
+    "static constexpr FEXCore::IR::RegisterClassType FPRClass {1}"
   ],
 
   "Ops": {
@@ -139,7 +141,8 @@
       "DestSize": "Size",
       "Args": [
         "uint8_t", "Size",
-        "uint32_t", "Offset"
+        "uint32_t", "Offset",
+        "RegisterClassType", "Class"
       ]
     },
 
@@ -147,7 +150,8 @@
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "Size",
-        "uint32_t", "Offset"
+        "uint32_t", "Offset",
+        "RegisterClassType", "Class"
       ]
     },
     "LoadContextIndexed": {
@@ -157,7 +161,8 @@
       "Args": [
         "uint8_t", "Size",
         "uint32_t", "BaseOffset",
-        "uint32_t", "Stride"
+        "uint32_t", "Stride",
+        "RegisterClassType", "Class"
       ]
     },
     "StoreContextIndexed": {
@@ -165,9 +170,11 @@
       "Args": [
         "uint8_t", "Size",
         "uint32_t", "BaseOffset",
-        "uint32_t", "Stride"
+        "uint32_t", "Stride",
+        "RegisterClassType", "Class"
       ]
     },
+
     "SpillRegister": {
       "SSAArgs": "1",
       "Args": [
@@ -210,7 +217,8 @@
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "Size",
-        "uint8_t", "Align"
+        "uint8_t", "Align",
+        "RegisterClassType", "Class"
       ]
     },
 
@@ -218,7 +226,8 @@
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "Size",
-        "uint8_t", "Align"
+        "uint8_t", "Align",
+        "RegisterClassType", "Class"
       ]
     },
 

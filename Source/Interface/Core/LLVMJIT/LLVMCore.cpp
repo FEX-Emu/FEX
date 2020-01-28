@@ -1889,7 +1889,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
-
     case IR::OP_LOADMEM: {
       auto Op = IROp->C<IR::IROp_LoadMem>();
       auto Src = GetSrc(Op->Header.Args[0]);

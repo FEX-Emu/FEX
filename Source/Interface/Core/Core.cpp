@@ -519,7 +519,7 @@ namespace FEXCore::Context {
             }
           }
           else {
-            LogMan::Msg::E("Missing OpDispatcher at 0x%lx", Block.Entry + BlockInstructionsLength);
+            LogMan::Msg::E("Missing OpDispatcher at 0x%lx{'%s'}", Block.Entry + BlockInstructionsLength, TableInfo->Name);
             HadDispatchError = true;
           }
 
@@ -532,7 +532,7 @@ namespace FEXCore::Context {
             }
             else {
               // We had some instructions. Early exit
-              Thread->OpDispatcher->_StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
+              Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
               Thread->OpDispatcher->_ExitFunction();
               break;
             }
@@ -654,7 +654,9 @@ namespace FEXCore::Context {
       Thread->State.State.rip = ~0ULL;
     }
     else {
-      Thread->State.State.rip = StartingRIP;
+      if (Thread->State.ThreadManager.GetTID() == 1) {
+        Thread->State.State.rip = StartingRIP;
+      }
     }
 
     if (Thread->CPUBackend->HasCustomDispatch()) {

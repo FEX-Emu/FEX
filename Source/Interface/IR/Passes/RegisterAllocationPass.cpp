@@ -181,9 +181,9 @@ namespace {
 
     // XXX: This needs to be better
     switch (IROp->Op) {
-      case IR::OP_LOADCONTEXT: {
+    case IR::OP_LOADCONTEXT: {
       auto Op = IROp->C<IR::IROp_LoadContext>();
-      if (Op->Size == 16)
+      if (Op->Class.Val == 1)
         return IR::RegisterAllocationPass::FPRClass;
       else
         return IR::RegisterAllocationPass::GPRClass;
@@ -191,7 +191,7 @@ namespace {
     }
     case IR::OP_STORECONTEXT: {
       auto Op = IROp->C<IR::IROp_StoreContext>();
-      if (Op->Size == 16)
+      if (Op->Class.Val == 1)
         return IR::RegisterAllocationPass::FPRClass;
       else
         return IR::RegisterAllocationPass::GPRClass;
@@ -199,7 +199,15 @@ namespace {
     }
     case IR::OP_LOADMEM: {
       auto Op = IROp->C<IR::IROp_LoadMem>();
-      if (Op->Size == 16)
+      if (Op->Class.Val == 1)
+        return IR::RegisterAllocationPass::FPRClass;
+      else
+        return IR::RegisterAllocationPass::GPRClass;
+      break;
+    }
+    case IR::OP_STOREMEM: {
+      auto Op = IROp->C<IR::IROp_StoreMem>();
+      if (Op->Class.Val == 1)
         return IR::RegisterAllocationPass::FPRClass;
       else
         return IR::RegisterAllocationPass::GPRClass;
@@ -268,9 +276,6 @@ namespace {
         auto IROp = CodeNode->Op(DataBegin);
         uint32_t Node = CodeOp->ID();
 
-        if (Node == 20043) {
-          //LogMan::Msg::D("Does %%ssa%d have dest? %d", Node, IROp->HasDest);
-        }
         // If the destination hasn't yet been set then set it now
         if (IROp->HasDest) {
           SetNodeClass(Graph, Node, GetRegClassFromNode(ListBegin, DataBegin, *CodeOp));
@@ -350,8 +355,9 @@ namespace FEXCore::IR {
     TopRAPressure.resize(ClassCount);
 
     Graph = AllocateRegisterGraph(ClassCount);
-    AllocateRegisters(Graph, 0, DEFAULT_VIRTUAL_REG_COUNT);
-    AllocateRegisters(Graph, 1, DEFAULT_VIRTUAL_REG_COUNT);
+    for (size_t i = 0; i < ClassCount; ++i) {
+      AllocateRegisters(Graph, i, DEFAULT_VIRTUAL_REG_COUNT);
+    }
   }
 
   void ConstrainedRAPass::AddRegisters(uint32_t Class, uint32_t RegisterCount) {

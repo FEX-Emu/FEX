@@ -68,7 +68,7 @@ public:
       if (it == JumpTargets.end() && LastOp) {
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), _Constant(NextRIP));
+        _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), _Constant(NextRIP));
         _ExitFunction();
       }
       else if (it != JumpTargets.end()) {
@@ -95,7 +95,8 @@ public:
   // Dispatch builder functions
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
   void UnhandledOp(OpcodeArgs);
-  void MOVOp(OpcodeArgs);
+  void MOVGPROp(OpcodeArgs);
+  void MOVVectorOp(OpcodeArgs);
   void ALUOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs);
@@ -262,14 +263,14 @@ public:
   IRPair<IROp_Bfi> _Bfi(uint8_t Width, uint8_t lsb, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _Bfi(ssa0, ssa1, Width, lsb);
   }
-  IRPair<IROp_StoreMem> _StoreMem(uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Align = 1) {
-    return _StoreMem(ssa0, ssa1, Size, Align);
+  IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Align = 1) {
+    return _StoreMem(ssa0, ssa1, Size, Align, Class);
   }
-  IRPair<IROp_LoadMem> _LoadMem(uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
-    return _LoadMem(ssa0, Size, Align);
+  IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
+    return _LoadMem(ssa0, Size, Align, Class);
   }
-  IRPair<IROp_StoreContext> _StoreContext(uint8_t Size, uint32_t Offset, OrderedNode *ssa0) {
-    return _StoreContext(ssa0, Size, Offset);
+  IRPair<IROp_StoreContext> _StoreContext(FEXCore::IR::RegisterClassType Class, uint8_t Size, uint32_t Offset, OrderedNode *ssa0) {
+    return _StoreContext(ssa0, Size, Offset, Class);
   }
   IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3) {
     return _Select(ssa0, ssa1, ssa2, ssa3, {Cond});
@@ -568,11 +569,12 @@ private:
   void RemoveArgUses(OrderedNode *Node);
   bool DecodeFailure{false};
 
-  OrderedNode *LoadSource(FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
-  OrderedNode *LoadSource_WithOpSize(FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
-  void StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align);
-  void StoreResult(FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align);
-  void StoreResult(FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align);
+  OrderedNode *LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
+  OrderedNode *LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
+  void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align);
+
   uint8_t GetDstSize(FEXCore::X86Tables::DecodedOp Op);
   uint8_t GetSrcSize(FEXCore::X86Tables::DecodedOp Op);
 
