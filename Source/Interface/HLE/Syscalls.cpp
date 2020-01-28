@@ -8,6 +8,7 @@
 
 #include <FEXCore/Core/X86Enums.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <poll.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -89,10 +90,26 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
       Args->Argument[5],
       Ret);
     break;
+  case SYSCALL_SCHED_YIELD:
+    LogMan::Msg::D("sched_yield() = %ld",
+      Ret);
+    break;
+  case SYSCALL_MINCORE:
+    LogMan::Msg::D("mincore(0x%lx, 0x%lx, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Ret);
+    break;
   case SYSCALL_NANOSLEEP:
     LogMan::Msg::D("nanosleep(0x%ld, 0x%lx) = %ld",
       Args->Argument[1],
       Args->Argument[2],
+      Ret);
+    break;
+  case SYSCALL_ALARM:
+    LogMan::Msg::D("alarm(%ld) = %ld",
+      Args->Argument[1],
       Ret);
     break;
   case SYSCALL_OPENAT:
@@ -118,6 +135,13 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_READ:
     LogMan::Msg::D("read(%ld, {...}, %ld) = %ld", Args->Argument[1], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_PRCTL:
+    LogMan::Msg::D("arch_prctl(%ld, %p, %p, %p, %p) = %ld",
+      Args->Argument[1], Args->Argument[2],
+      Args->Argument[3], Args->Argument[4],
+      Args->Argument[5],
+      Ret);
     break;
   case SYSCALL_ARCH_PRCTL:
     LogMan::Msg::D("arch_prctl(%ld, %p) = %ld", Args->Argument[1], Args->Argument[2], Ret);
@@ -152,6 +176,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_MKDIR:
     LogMan::Msg::D("mkdir(\"%s\", 0x%lx) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2], Ret);
     break;
+  case SYSCALL_RMDIR:
+    LogMan::Msg::D("rmdir(\"%s\", 0x%lx) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2], Ret);
+    break;
   case SYSCALL_UNLINK:
     LogMan::Msg::D("unlink(\"%s\", 0x%lx) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Ret);
     break;
@@ -175,6 +202,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_SET_ROBUST_LIST:
     LogMan::Msg::D("set_robust_list(%p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
+  case SYSCALL_EVENTFD:
+    LogMan::Msg::D("eventfd(%lx, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
   case SYSCALL_EPOLL_CREATE1:
     LogMan::Msg::D("epoll_create1(%ld) = %ld", Args->Argument[1], Ret);
@@ -211,6 +241,13 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
         Args->Argument[4],
         Args->Argument[5],
         Args->Argument[6],
+        Ret);
+    break;
+  case SYSCALL_SENDMSG:
+    LogMan::Msg::D("sendmsg(%ld, 0x%lx, %ld) = %ld",
+        Args->Argument[1],
+        Args->Argument[2],
+        Args->Argument[3],
         Ret);
     break;
   case SYSCALL_RECVMSG:
@@ -277,6 +314,17 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_SETRESUID:
     LogMan::Msg::D("setresuid(%ld, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
     break;
+  case SYSCALL_SETRESGID:
+    LogMan::Msg::D("setresgid(%ld, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_MKNOD:
+    LogMan::Msg::D("mknod(\"%s\", %ld, %ld) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]),
+      Args->Argument[2], Args->Argument[3],
+      Ret);
+    break;
+  case SYSCALL_STATFS:
+    LogMan::Msg::D("statfs(\"%s\", {...}) = %ld", CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Ret);
+    break;
   case SYSCALL_GETTID:
     LogMan::Msg::D("gettid() = %ld", Ret);
     break;
@@ -320,6 +368,13 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
         Args->Argument[2],
         Args->Argument[3],
         Ret);
+    break;
+  case SYSCALL_STATX:
+    LogMan::Msg::D("statx(%ld, \"%s\", 0x%lx, 0x%lx, {...}) = %ld",
+      Args->Argument[1],
+      CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[2]),
+      Args->Argument[3], Args->Argument[4],
+      Ret);
     break;
   default: LogMan::Msg::D("Unknown strace: %d", Args->Argument[0]);
   }
@@ -393,6 +448,10 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     uint64_t Size = AlignUp(Args->Argument[2], PAGE_SIZE);
     uint64_t FileSizeToUse = Args->Argument[2];
     uint64_t Prot = Args->Argument[3];
+    if (Args->Argument[2] == 0) {
+      Result = EINVAL;
+      break;
+    }
 
     if (Flags & MAP_FIXED) {
       Base = Args->Argument[1];
@@ -441,6 +500,19 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = mprotect(HostPtr, Args->Argument[2], Args->Argument[3]);
   break;
   }
+  case SYSCALL_PRCTL: {
+    switch (Args->Argument[1]) {
+    case 0xF: // PR_SET_NAME
+    case 0x10: // PR_GET_NAME
+      Result = 0;
+      break;
+    default:
+      LogMan::Msg::E("Unknown prctl: 0x%x", Args->Argument[1]);
+      CTX->ShouldStop = true;
+    break;
+    }
+  break;
+  }
   case SYSCALL_ARCH_PRCTL: {
     switch (Args->Argument[1]) {
     case 0x1001: // ARCH_SET_GS
@@ -484,6 +556,11 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       Args->Argument[4],
       CTX->MemoryMapper.GetPointer<struct sockaddr *>(Args->Argument[5]),
       CTX->MemoryMapper.GetPointer<socklen_t*>(Args->Argument[6]));
+  break;
+  case SYSCALL_SENDMSG:
+    Result = FM.Sendmsg(Args->Argument[1],
+      CTX->MemoryMapper.GetPointer<const struct msghdr*>(Args->Argument[2]),
+      Args->Argument[3]);
   break;
   case SYSCALL_RECVMSG:
     Result = FM.Recvmsg(Args->Argument[1],
@@ -529,8 +606,12 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = Thread->State.ThreadManager.GetGID();
   break;
   case SYSCALL_SETUID:
-    // XXX: Not a real result
-    Result = -1;
+    if (Thread->State.ThreadManager.GetUID() == Args->Argument[1]) {
+      Result = 0;
+    }
+    else {
+      Result = EINVAL;
+    }
   break;
   case SYSCALL_GETEUID:
     Result = Thread->State.ThreadManager.GetEUID();
@@ -539,12 +620,40 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = Thread->State.ThreadManager.GetEGID();
   break;
   case SYSCALL_SETREGID:
-    // XXX: Not a real result
-    Result = 0;
+    if (Thread->State.ThreadManager.GetEGID() == Args->Argument[1]) {
+      Result = 0;
+    }
+    else {
+      Result = EINVAL;
+    }
   break;
   case SYSCALL_SETRESUID:
     // XXX: Not a real result
     Result = -1;
+  break;
+  case SYSCALL_SETRESGID:
+    // rgid, egid, sgid
+    Result = 0;
+    if (Args->Argument[1] != -1 &&
+        Args->Argument[1] != Thread->State.ThreadManager.GetGID()) {
+      Result = EPERM;
+    }
+    if (Args->Argument[2] != -1 &&
+        Args->Argument[2] != Thread->State.ThreadManager.GetEGID()) {
+      Result = EPERM;
+    }
+    if (Args->Argument[3] != -1) {
+      Result = EPERM;
+    }
+
+  break;
+  case SYSCALL_MKNOD:
+    Result = FM.Mknod(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]),
+      Args->Argument[2], Args->Argument[3]);
+  break;
+  case SYSCALL_STATFS:
+    Result = FM.Statfs(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]),
+      CTX->MemoryMapper.GetPointer(Args->Argument[2]));
   break;
   case SYSCALL_GETTID:
     Result = Thread->State.ThreadManager.GetTID();
@@ -555,6 +664,11 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   case SYSCALL_EXIT:
     LogMan::Msg::D("Thread exit with: %zd\n", Args->Argument[1]);
     Thread->State.RunningEvents.ShouldStop = true;
+    if (Thread->State.ThreadManager.clear_tid) {
+      Futex *futex = GetFutex(Thread->State.ThreadManager.child_tid);
+      futex->Addr->store(0);
+      futex->cv.notify_all();
+    }
   break;
   case SYSCALL_WAIT4:
     LogMan::Msg::I("wait4(%lx,\n\t%lx,\n\t%lx,\n\t%lx)",
@@ -566,51 +680,70 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
 
   // Futexes
   case SYSCALL_FUTEX: {
+    // 0 : uaddr
+    // 1 : op
+    // 2: val
+    // 3: utime
+    // 4: uaddr2
+    // 5: val3
+    LogMan::Msg::I("futex(%lx,\n\t%lx,\n\t%lx,\n\t%lx,\n\t%lx,\n\t%lx)",
+        Args->Argument[1],
+        Args->Argument[2],
+        Args->Argument[3],
+        Args->Argument[4],
+        Args->Argument[5],
+        Args->Argument[6]);
 
-  // 0 : uaddr
-  // 1 : op
-  // 2: val
-  // 3: utime
-  // 4: uaddr2
-  // 5: val3
-  LogMan::Msg::I("futex(%lx,\n\t%lx,\n\t%lx,\n\t%lx,\n\t%lx,\n\t%lx)",
-      Args->Argument[1],
-      Args->Argument[2],
-      Args->Argument[3],
-      Args->Argument[4],
-      Args->Argument[5],
-      Args->Argument[6]);
+    uint8_t Command = Args->Argument[2] & 0xF;
+    Result = 0;
+    switch (Command) {
+      case 0: { // WAIT
+        LogMan::Throw::A(!Args->Argument[4], "Can't handle timed futexes");
+        Futex *futex = GetFutex(Args->Argument[1]);
 
-  uint8_t Command = Args->Argument[2] & 0xF;
-  Result = 0;
-  switch (Command) {
-  case 0: { // WAIT
-    LogMan::Throw::A(!Args->Argument[4], "Can't handle timed futexes");
-    Futex *futex = new Futex{}; // XXX: Definitely a memory leak. When should we free this?
-    futex->Addr = CTX->MemoryMapper.GetPointer<std::atomic<uint32_t>*>(Args->Argument[1]);
-    futex->Val = Args->Argument[3];
-    EmplaceFutex(Args->Argument[1], futex);
-    {
-      std::unique_lock<std::mutex> lk(futex->Mutex);
-      futex->cv.wait(lk, [futex] { return futex->Addr->load() != futex->Val; });
-    }
-  break;
-  }
-  case 1: { // WAKE
-    Futex *futex = GetFutex(Args->Argument[1]);
-    if (!futex) {
-      Result = 0;
+        if (!futex) {
+          futex = new Futex{}; // XXX: Definitely a memory leak. When should we free this?
+          futex->Addr = CTX->MemoryMapper.GetPointer<std::atomic<uint32_t>*>(Args->Argument[1]);
+          futex->Val = Args->Argument[3];
+          EmplaceFutex(Args->Argument[1], futex);
+        }
+        if (futex->Addr->load() != futex->Val) {
+          // Immediate check can return EAGAIN
+          Result = EAGAIN;
+        }
+        else
+        {
+          std::unique_lock<std::mutex> lk(futex->Mutex);
+          futex->Waiters++;
+          futex->cv.wait(lk, [futex] { return futex->Addr->load() != futex->Val; });
+          futex->Waiters--;
+        }
+        break;
+      }
+      case 1: { // WAKE
+        Futex *futex = GetFutex(Args->Argument[1]);
+        if (!futex) {
+          // Tried to wake up an unknown futex?
+          Result = 0;
+          break;
+        }
+        if (Args->Argument[3] == INT_MAX) {
+          Result = futex->Waiters;
+          futex->cv.notify_all();
+        }
+        else {
+          uint32_t PrevWaiters = futex->Waiters;
+          for (uint64_t i = 0; i < Args->Argument[3]; ++i)
+            futex->cv.notify_one();
+          Result = std::min(PrevWaiters, (uint32_t)Args->Argument[3]);
+        }
+        break;
+      }
+      default:
+        LogMan::Msg::A("Unknown futex command");
       break;
     }
-    for (uint64_t i = 0; i < Args->Argument[3]; ++i)
-      futex->cv.notify_one();
-  break;
-  }
-  default:
-    LogMan::Msg::A("Unknown futex command");
-  break;
-  }
-  break;
+    break;
   }
   case SYSCALL_CLONE: {
     // 0: clone_flags
@@ -657,7 +790,10 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     NewThreadState.gregs[FEXCore::X86State::REG_RBX] = 0;
     NewThreadState.gregs[FEXCore::X86State::REG_RBP] = 0;
     NewThreadState.gregs[FEXCore::X86State::REG_RSP] = NewSP;
-    NewThreadState.fs = NewTLS;
+
+    if (Flags & CLONE_SETTLS) {
+      NewThreadState.fs = NewTLS;
+    }
 
     // Set us to start just after the syscall instruction
     NewThreadState.rip += 2;
@@ -681,6 +817,11 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     // Additionally wakeup a futex at that address
     // Address /may/ be changed with SET_TID_ADDRESS syscall
     if (Flags & CLONE_CHILD_CLEARTID) {
+      Futex *futex = new Futex{}; // XXX: Definitely a memory leak. When should we free this?
+      futex->Addr = CTX->MemoryMapper.GetPointer<std::atomic<uint32_t>*>(ChildTID);
+      futex->Val = NewThread->State.ThreadManager.GetTID();
+      EmplaceFutex(ChildTID, futex);
+      NewThread->State.ThreadManager.clear_tid = true;
     }
 
     CTX->InitializeThread(NewThread);
@@ -777,6 +918,9 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       readfds, writefds, exceptfds, timeout);
   break;
   }
+  case SYSCALL_SCHED_YIELD:
+    Result = sched_yield();
+  break;
   case SYSCALL_READLINK:
     Result = FM.Readlink(
       CTX->MemoryMapper.GetPointer<const char*>(Args->Argument[1]),
@@ -839,10 +983,21 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = clock_getres(Args->Argument[1], res);
   }
   break;
+  case SYSCALL_MINCORE: {
+    Result = mincore(CTX->MemoryMapper.GetPointer(Args->Argument[1]),
+      Args->Argument[2],
+      CTX->MemoryMapper.GetPointer<unsigned char*>(Args->Argument[3]));
+  break;
+  }
   case SYSCALL_NANOSLEEP: {
     timespec const* req = CTX->MemoryMapper.GetPointer<timespec const*>(Args->Argument[1]);
     timespec *rem = CTX->MemoryMapper.GetPointer<timespec*>(Args->Argument[2]);
     Result = nanosleep(req, rem);
+  break;
+  }
+  case SYSCALL_ALARM: {
+    // XXX: Not a real result
+    Result = 0;
   break;
   }
   case SYSCALL_GETDENTS64: {
@@ -852,6 +1007,14 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   break;
   }
   case SYSCALL_SET_TID_ADDRESS: {
+    Futex *futex = GetFutex(Thread->State.ThreadManager.child_tid);
+    // If a futex for this address changes then the futex location needs to change...
+    if (futex) {
+      RemoveFutex(Thread->State.ThreadManager.child_tid);
+      futex->Addr = CTX->MemoryMapper.GetPointer<std::atomic<uint32_t>*>(Args->Argument[1]);
+      EmplaceFutex(Args->Argument[1], futex);
+    }
+
     Thread->State.ThreadManager.child_tid = Args->Argument[1];
     Result = Thread->State.ThreadManager.GetTID();
   break;
@@ -859,6 +1022,10 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   case SYSCALL_SET_ROBUST_LIST: {
     Thread->State.ThreadManager.robust_list_head = Args->Argument[1];
     Result = 0;
+  break;
+  }
+  case SYSCALL_EVENTFD: {
+    Result = FM.Eventfd(Args->Argument[1], Args->Argument[2]);
   break;
   }
   case SYSCALL_EPOLL_CREATE1: {
@@ -925,27 +1092,41 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   case SYSCALL_MKDIR:
     Result = mkdir(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]), Args->Argument[2]);
     break;
+  case SYSCALL_RMDIR:
+    Result = rmdir(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]));
+    break;
   case SYSCALL_UNLINK:
     Result = unlink(CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[1]));
     break;
   case SYSCALL_FCNTL: {
     int Cmd = Args->Argument[2];
     auto FD = FM.GetFDBacking(Args->Argument[1]);
-    auto HostFD = FD->GetHostFD();
-    switch (Cmd) {
-      case 1: // F_GETFD
-        Result = fcntl(HostFD, Cmd);
-        break;
-      case 2: // F_SETFD
-        Result = fcntl(HostFD, Cmd, Args->Argument[3]);
-        break;
-      case 3: // F_GETFL
-        Result = fcntl(HostFD, Cmd);
-        break;
-      case 4: // F_SETFL
-        Result = fcntl(HostFD, Cmd, Args->Argument[3]);
-        break;
-      default: LogMan::Msg::A("FCNTL: Unknown Command: %ld", Cmd); break;
+    if (!FD) {
+      Result = EBADF;
+    }
+    else {
+      auto HostFD = FD->GetHostFD();
+      switch (Cmd) {
+        case 0: // F_DUPFD
+        case 1030:{ // F_DUPFD_CLOEXEC
+          int NewFD = fcntl(HostFD, Cmd);
+          Result = FM.DupFD(Args->Argument[1], NewFD);
+          break;
+        }
+        case 1: // F_GETFD
+          Result = fcntl(HostFD, Cmd);
+          break;
+        case 2: // F_SETFD
+          Result = fcntl(HostFD, Cmd, Args->Argument[3]);
+          break;
+        case 3: // F_GETFL
+          Result = fcntl(HostFD, Cmd);
+          break;
+        case 4: // F_SETFL
+          Result = fcntl(HostFD, Cmd, Args->Argument[3]);
+          break;
+        default: LogMan::Msg::A("FCNTL: Unknown Command: %ld", Cmd); break;
+      }
     }
     break;
   }
@@ -953,6 +1134,13 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = getrandom(CTX->MemoryMapper.GetPointer<void*>(Args->Argument[1]),
       Args->Argument[2],
       Args->Argument[3]);
+    break;
+  case SYSCALL_STATX:
+    Result = FM.Statx(
+      Args->Argument[1],
+      CTX->MemoryMapper.GetPointer<char const*>(Args->Argument[2]),
+      Args->Argument[3], Args->Argument[4],
+      CTX->MemoryMapper.GetPointer<struct statx*>(Args->Argument[5]));
     break;
   // Currently unhandled
   // Return fake result

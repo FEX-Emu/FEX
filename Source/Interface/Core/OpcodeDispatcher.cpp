@@ -50,6 +50,9 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     FEXCore::X86State::REG_R9,
   };
 
+  auto NewRIP = _Constant(Op->PC);
+  _StoreContext(8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
+
   auto SyscallOp = _Syscall(
     _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes[0] * 8),
     _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes[1] * 8),

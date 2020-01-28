@@ -24,6 +24,14 @@ public:
     , Flags {flags}
     , Mode {mode} {
   }
+
+  FD(FD *Prev, int32_t fd)
+    : CTX {Prev->CTX}
+    , FDOffset {fd}
+    , PathName {Prev->PathName}
+    , Flags {Prev->Flags}
+    , Mode {Prev->Mode} {
+  }
   virtual ~FD() {}
 
   uint64_t read(int fd, void *buf, size_t count);
@@ -74,14 +82,23 @@ public:
   uint64_t Ioctl(int fd, uint64_t request, void *args);
   uint64_t GetDents(int fd, void *dirp, uint32_t count);
   uint64_t PRead64(int fd, void *buf, size_t count, off_t offset);
+  uint64_t Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf);
+  uint64_t Mknod(const char *pathname, mode_t mode, dev_t dev);
 
   // EPoll
   uint64_t EPoll_Create1(int flags);
+
+  // vfs
+  uint64_t Statfs(const char *path, void *buf);
+
+  // Eventfd
+  uint64_t Eventfd(uint32_t initval, uint32_t flags);
 
   // Sockets
   uint64_t Socket(int domain, int type, int protocol);
   uint64_t Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
   uint64_t Recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
+  uint64_t Sendmsg(int sockfd, const struct msghdr *msg, int flags);
   uint64_t Recvmsg(int sockfd, struct msghdr *msg, int flags);
   uint64_t Shutdown(int sockfd, int how);
   uint64_t GetSockName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
@@ -95,6 +112,7 @@ public:
   int32_t FindHostFD(int fd);
 
   FD const* GetFDBacking(int fd);
+  int32_t DupFD(int prevFD, int newFD);
 
   void SetFilename(std::string const &File) { Filename = File; }
   std::string const & GetFilename() const { return Filename; }

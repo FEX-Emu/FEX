@@ -4,10 +4,12 @@
 #include "Interface/HLE/FileManagement.h"
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/ioctl.h>
 #include <sys/uio.h>
+#include <sys/vfs.h>
 #include <unistd.h>
 
 namespace FEXCore {
@@ -73,6 +75,15 @@ public:
   }
 
 private:
+
+};
+
+class EventFD final : public FD {
+public:
+  EventFD(FEXCore::Context::Context *ctx, int32_t fd, uint32_t initval, uint32_t flags)
+    : FD (ctx, fd, "Event", 0, 0) {
+    HostFD = eventfd(initval, flags);
+  }
 
 };
 
@@ -373,12 +384,68 @@ uint64_t FileManager::PRead64(int fd, void *buf, size_t count, off_t offset) {
   return pread(FD->second->GetHostFD(), buf, count, offset);
 }
 
+uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf) {
+  // Do we need the dirfd?
+  if (pathname[0] == '/' ||
+      ((flags & AT_EMPTY_PATH) && pathname[0] == '\0')) {
+    auto FD = FDMap.find(dirfd);
+    if (FD == FDMap.end()) {
+      return EBADF;
+    }
+    dirfd = FD->second->GetHostFD();
+  }
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::statx(dirfd, Path.c_str(), flags, mask, statxbuf);
+    if (Result != -1)
+      return Result;
+  }
+  return ::statx(dirfd, pathname, flags, mask, statxbuf);
+}
+
+uint64_t FileManager::Mknod(const char *pathname, mode_t mode, dev_t dev) {
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::mknod(Path.c_str(), mode, dev);
+    if (Result != -1)
+      return Result;
+  }
+  return ::mknod(pathname, mode, dev);
+}
+
+
 uint64_t FileManager::EPoll_Create1(int flags) {
   int HostFD = epoll_create1(flags);
   int32_t fd = CurrentFDOffset;
   auto fdPtr = new FD{CTX, fd, "<EPoll>", 0, 0};
   fdPtr->SetHostFD(HostFD);
   FDMap[CurrentFDOffset++] = fdPtr;
+  return fd;
+}
+
+uint64_t FileManager::Statfs(const char *path, void *buf) {
+  auto Path = GetEmulatedPath(path);
+  if (!Path.empty()) {
+    uint64_t Result = ::statfs(Path.c_str(), reinterpret_cast<struct statfs*>(buf));
+    if (Result != -1)
+      return Result;
+  }
+  return ::statfs(path, reinterpret_cast<struct statfs*>(buf));
+}
+
+uint64_t FileManager::Eventfd(uint32_t initval, uint32_t flags) {
+  int32_t fd = CurrentFDOffset;
+
+  auto fdPtr = new EventFD{CTX, fd, initval, flags};
+
+  auto Result = fdPtr->GetHostFD();
+  if (Result == -1) {
+    delete fdPtr;
+    return -errno;
+  }
+
+  FDMap[CurrentFDOffset++] = fdPtr;
+
   return fd;
 }
 
@@ -418,6 +485,42 @@ uint64_t FileManager::Recvfrom(int sockfd, void *buf, size_t len, int flags, str
   }
 
   return recvfrom(FD->second->GetHostFD(), buf, len, flags, src_addr, addrlen);
+}
+
+uint64_t FileManager::Sendmsg(int sockfd, const struct msghdr *msg, int flags) {
+ auto FD = FDMap.find(sockfd);
+  if (FD == FDMap.end()) {
+    return -1;
+  }
+
+  std::vector<iovec> Hostvec;
+  struct msghdr Hosthdr;
+  memcpy(&Hosthdr, msg, sizeof(struct msghdr));
+
+  if (Hosthdr.msg_name)
+    Hosthdr.msg_name = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_name));
+
+  if (Hosthdr.msg_control)
+    Hosthdr.msg_control = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_control));
+
+  Hostvec.resize(Hosthdr.msg_iovlen);
+
+  struct iovec *Guestiov = CTX->MemoryMapper.GetPointer<struct iovec*>(reinterpret_cast<uint64_t>(Hosthdr.msg_iov));
+  for (int i = 0; i < Hosthdr.msg_iovlen; ++i) {
+    Hostvec[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
+    Hostvec[i].iov_len = Guestiov[i].iov_len;
+  }
+
+  Hosthdr.msg_iov = &Hostvec.at(0);
+
+  int Result = sendmsg(FD->second->GetHostFD(), &Hosthdr, flags);
+  if (Result == -1) {
+    if (errno == EAGAIN ||
+        errno == EWOULDBLOCK) {
+      return -errno;
+    }
+  }
+  return Result;
 }
 
 uint64_t FileManager::Recvmsg(int sockfd, struct msghdr *msg, int flags) {
@@ -636,6 +739,20 @@ FD const* FileManager::GetFDBacking(int fd) {
   }
 
   return FD->second;
+}
+
+int32_t FileManager::DupFD(int prevFD, int newFD) {
+  auto prevFDClass = FDMap.find(prevFD);
+  if (prevFDClass == FDMap.end()) {
+    return -1;
+  }
+
+  int32_t fd = CurrentFDOffset;
+
+  auto fdPtr = new FD{prevFDClass->second, fd};
+  FDMap[CurrentFDOffset++] = fdPtr;
+
+  return fd;
 }
 
 }

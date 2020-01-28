@@ -42,11 +42,15 @@ enum Syscalls {
   SYSCALL_ACCESS          = 21,  ///< __NR_access
   SYSCALL_PIPE            = 22,  ///< __NR_pipe
   SYSCALL_SELECT          = 23,  ///< __NR_select
+  SYSCALL_SCHED_YIELD     = 24,  ///< __NR_sched_yield
+  SYSCALL_MINCORE         = 27,  ///< __NR_mincore
   SYSCALL_NANOSLEEP       = 35,  ///< __NR_nanosleep
+  SYSCALL_ALARM           = 37,  ///< __NR_alarm
   SYSCALL_GETPID          = 39,  ///< __NR_getpid
   SYSCALL_SOCKET          = 41,  ///< __NR_socket
   SYSCALL_CONNECT         = 42,  ///< __NR_connect
   SYSCALL_RECVFROM        = 45,  ///< __NR_recvfrom
+  SYSCALL_SENDMSG         = 46,  ///< __NR_sendmsg
   SYSCALL_RECVMSG         = 47,  ///< __NR_recvmsg
   SYSCALL_SHUTDOWN        = 48,  ///< __NR_shutdown
   SYSCALL_GETSOCKNAME     = 51,  ///< __NR_getsockname
@@ -61,6 +65,7 @@ enum Syscalls {
   SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
   SYSCALL_CHDIR           = 80,  ///< __NR_chdir
   SYSCALL_MKDIR           = 83,  ///< __NR_mkdir
+  SYSCALL_RMDIR           = 84,  ///< __NR_rmdir
   SYSCALL_UNLINK          = 87,  ///< __NR_unlink
   SYSCALL_READLINK        = 89,  ///< __NR_readlink
   SYSCALL_UMASK           = 95,  ///< __NR_umask
@@ -73,6 +78,10 @@ enum Syscalls {
   SYSCALL_GETEGID         = 108, ///< __NR_getegid
   SYSCALL_SETREGID        = 114, ///< __NR_setregid
   SYSCALL_SETRESUID       = 117, ///< __NR_setresuid
+  SYSCALL_SETRESGID       = 119, ///< __NR_setresgid
+  SYSCALL_MKNOD           = 133, ///< __NR_mknod
+  SYSCALL_STATFS          = 137, ///< __NR_statfs
+  SYSCALL_PRCTL           = 157, ///< __NR_prctl
   SYSCALL_ARCH_PRCTL      = 158, ///< __NR_arch_prctl
   SYSCALL_GETTID          = 186, ///< __NR_gettid
   SYSCALL_TIME            = 201, ///< __NR_time
@@ -85,17 +94,20 @@ enum Syscalls {
   SYSCALL_TGKILL          = 234, ///< __NR_tgkill
   SYSCALL_OPENAT          = 257, ///< __NR_openat
   SYSCALL_SET_ROBUST_LIST = 273, ///< __NR_set_robust_list
+  SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
   SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1
   SYSCALL_PIPE2           = 293, ///< __NR_pipe2
   SYSCALL_PRLIMIT64       = 302, ///< __NR_prlimit64
   SYSCALL_SENDMMSG        = 307, ///< __NR_sendmmsg
   SYSCALL_GETRANDOM       = 318, ///< __NR_getrandom
+  SYSCALL_STATX           = 332, ///< __NR_statx
 };
 
 struct Futex {
   std::mutex Mutex;
   std::condition_variable cv;
   std::atomic<uint32_t> *Addr;
+  std::atomic<uint32_t> Waiters{};
   uint32_t Val;
 };
 
@@ -114,7 +126,13 @@ public:
 
   Futex *GetFutex(uint64_t Addr) {
     std::scoped_lock<std::mutex> lk (FutexMutex);
-    return Futexes[Addr];
+    auto it = Futexes.find(Addr);
+    if (it == Futexes.end()) return nullptr;
+    return it->second;
+  }
+
+  void RemoveFutex(uint64_t Addr) {
+    Futexes.erase(Addr);
   }
 
   void DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread, uint64_t Addr);

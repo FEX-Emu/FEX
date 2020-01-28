@@ -22,5 +22,6 @@ public:
   uint64_t child_tid{0};
   uint64_t parent_tid{0};
   uint64_t robust_list_head{0};
+  bool     clear_tid{false};
 };
 }
