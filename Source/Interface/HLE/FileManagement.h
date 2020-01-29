@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <poll.h>
 
+#include "Interface/HLE/EmulatedFiles/EmulatedFiles.h"
+
 namespace FEXCore::Context {
 struct Context;
 }
@@ -34,7 +36,7 @@ public:
   }
   virtual ~FD() {}
 
-  uint64_t read(int fd, void *buf, size_t count);
+  virtual uint64_t read(int fd, void *buf, size_t count);
   virtual ssize_t writev(int fd, void *iov, int iovcnt);
   virtual uint64_t write(int fd, void *buf, size_t count);
   int openat(int dirfd, const char *pathname, int flags, mode_t mode);
@@ -121,6 +123,7 @@ private:
   FEXCore::Context::Context *CTX;
   int32_t CurrentFDOffset{0};
   std::unordered_map<int32_t, FD*> FDMap;
+  FEXCore::EmulatedFile::EmulatedFDManager EmuFD;
 
   std::string Filename;
   std::string GetEmulatedPath(const char *pathname);

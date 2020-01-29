@@ -129,7 +129,8 @@ int FD::lseek(int fd, off_t offset, int whence) {
 }
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
-  : CTX {ctx} {
+  : CTX {ctx}
+  , EmuFD {ctx} {
 
   FDMap[CurrentFDOffset++] = new STDFD{CTX, STDIN_FILENO, "stdin", 0, 0};
   FDMap[CurrentFDOffset++] = new STDFD{CTX, STDOUT_FILENO, "stdout", 0, 0};
@@ -334,20 +335,23 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
     return fd;
   }
 
-  auto fdPtr = new FD{CTX, fd, pathname, flags, mode};
+  auto fdPtr = EmuFD.OpenAt(dirfs, pathname, flags, mode);
+  if (!fdPtr) {
+    fdPtr = new FD{CTX, fd, pathname, flags, mode};
 
-  uint64_t Result = -1;
-  auto Path = GetEmulatedPath(pathname);
-  if (!Path.empty()) {
-    Result = fdPtr->openat(dirfs, Path.c_str(), flags, mode);
-  }
+    uint64_t Result = -1;
+    auto Path = GetEmulatedPath(pathname);
+    if (!Path.empty()) {
+      Result = fdPtr->openat(dirfs, Path.c_str(), flags, mode);
+    }
 
-  if (Result == -1)
-    Result = fdPtr->openat(dirfs, pathname, flags, mode);
+    if (Result == -1)
+      Result = fdPtr->openat(dirfs, pathname, flags, mode);
 
-  if (Result == -1) {
-    delete fdPtr;
-    return -1;
+    if (Result == -1) {
+      delete fdPtr;
+      return -1;
+    }
   }
 
   FDMap[CurrentFDOffset++] = fdPtr;
