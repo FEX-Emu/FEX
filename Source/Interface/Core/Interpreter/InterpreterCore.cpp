@@ -870,6 +870,17 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          case IR::OP_FINDTRAILINGZEROS: {
+            auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
+            switch (OpSize) {
+              case 1: GD = __builtin_ctz(*GetSrc<uint8_t*>(Op->Header.Args[0])); break;
+              case 2: GD = __builtin_ctz(*GetSrc<uint16_t*>(Op->Header.Args[0])); break;
+              case 4: GD = __builtin_ctz(*GetSrc<uint32_t*>(Op->Header.Args[0])); break;
+              case 8: GD = __builtin_ctz(*GetSrc<uint64_t*>(Op->Header.Args[0])); break;
+              default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+            }
+            break;
+          }
           case IR::OP_BFI: {
             auto Op = IROp->C<IR::IROp_Bfi>();
             uint64_t SourceMask = (1ULL << Op->Width) - 1;
