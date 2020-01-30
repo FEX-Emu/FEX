@@ -76,6 +76,7 @@ set (SRCS
   Interface/Core/X86Tables/X87Tables.cpp
   Interface/Core/X86Tables/XOPTables.cpp
   Interface/HLE/FileManagement.cpp
+  Interface/HLE/EmulatedFiles/EmulatedFiles.cpp
   Interface/HLE/Syscalls.cpp
   Interface/Memory/MemMapper.cpp
   Interface/Memory/SharedMem.cpp
