@@ -264,6 +264,19 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   bool HasSIB = false;
   bool HasWideningDisplacement = DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING;
   bool HasNarrowingDisplacement = DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE;
+
+  if (HasWideningDisplacement && HasNarrowingDisplacement) {
+    // This is a fun edge case where widening displacement has a precedence over narrowing displacement
+    // If you have both then widening (REX.W) takes precedence over narrowing (66h)
+    // Found with a fun CALL instruction in libLLVM for `call __tls_get_addr`
+    // Instruction was: 66 66 48 e8 a7 ff ec ff
+    // 66: Operand size override
+    // 66: Operand Size override
+    // 48: REX.W
+    // E8: call
+    // a7 ff ec ff: Immediate offset
+    HasNarrowingDisplacement = false;
+  }
   // This is used for ModRM register modification
   // For both modrm.reg and modrm.rm(when mod == 0b11) when value is >= 0b100
   // then it changes from expected registers to the high 8bits of the lower registers
