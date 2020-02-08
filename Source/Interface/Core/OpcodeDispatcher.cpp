@@ -1707,6 +1707,12 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  Src = _Popcount(Src);
+  StoreResult(GPRClass, Op, Src, -1);
+}
+
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
   auto Counter = _CycleCounter();
   auto CounterLow = _Bfe(32, 0, Counter);
@@ -4521,6 +4527,7 @@ void InstallOpcodeHandlers() {
     {0x6F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x7E, 1, &OpDispatchBuilder::MOVQOp},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
+    {0xB8, 1, &OpDispatchBuilder::PopcountOp},
     {0xBC, 2, &OpDispatchBuilder::TZCNT},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4>},
   };

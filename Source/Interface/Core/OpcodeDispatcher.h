@@ -177,6 +177,7 @@ public:
   void MULOp(OpcodeArgs);
   void NOTOp(OpcodeArgs);
   void XADDOp(OpcodeArgs);
+  void PopcountOp(OpcodeArgs);
 
   // SSE
   void MOVAPSOp(OpcodeArgs);
