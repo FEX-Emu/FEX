@@ -298,7 +298,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     CurrentDest->TypeGPR.Type = DecodedOperand::TYPE_GPR;
     CurrentDest->TypeGPR.HighBits = false;
     CurrentDest->TypeGPR.GPR = HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ? FEXCore::X86State::REG_RAX : FEXCore::X86State::REG_RDX;
-    CurrentDest = &DecodeInst->Src1;
+    CurrentDest = &DecodeInst->Src[0];
   }
 
   if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_REX_IN_BYTE)) {
@@ -408,36 +408,35 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     }
   };
 
-  if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM &&
-     Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_DST) {
-    ModRMOperand(DecodeInst->Src1, DecodeInst->Dest, HasXMMSrc, HasXMMDst, Is8BitSrc, Is8BitDest);
+  size_t CurrentSrc = 0;
+
+  if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM) {
+    if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_DST) {
+      ModRMOperand(DecodeInst->Src[CurrentSrc], DecodeInst->Dest, HasXMMSrc, HasXMMDst, Is8BitSrc, Is8BitDest);
+    }
+    else {
+      ModRMOperand(DecodeInst->Dest, DecodeInst->Src[CurrentSrc], HasXMMDst, HasXMMSrc, Is8BitDest, Is8BitSrc);
+    }
+    ++CurrentSrc;
   }
 
-  // This is almost the same as when the ModRM is the destination type
-  // The main different being that Dst and Src flip which bits that use (reg<->rm)
-  auto *CurrentSrc = &DecodeInst->Src1;
-  if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM &&
-     !(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_DST)) {
-    ModRMOperand(DecodeInst->Dest, DecodeInst->Src1, HasXMMDst, HasXMMSrc, Is8BitDest, Is8BitSrc);
-    CurrentSrc = &DecodeInst->Src2;
-  }
-  else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RAX)) {
-      CurrentSrc->TypeGPR.Type = DecodedOperand::TYPE_GPR;
-      CurrentSrc->TypeGPR.HighBits = false;
-      CurrentSrc->TypeGPR.GPR = FEXCore::X86State::REG_RAX;
-      CurrentSrc = &DecodeInst->Src2;
+  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RAX)) {
+    DecodeInst->Src[CurrentSrc].TypeGPR.Type = DecodedOperand::TYPE_GPR;
+    DecodeInst->Src[CurrentSrc].TypeGPR.HighBits = false;
+    DecodeInst->Src[CurrentSrc].TypeGPR.GPR = FEXCore::X86State::REG_RAX;
+    ++CurrentSrc;
   }
   else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RCX)) {
-      CurrentSrc->TypeGPR.Type = DecodedOperand::TYPE_GPR;
-      CurrentSrc->TypeGPR.HighBits = false;
-      CurrentSrc->TypeGPR.GPR = FEXCore::X86State::REG_RCX;
-      CurrentSrc = &DecodeInst->Src2;
+    DecodeInst->Src[CurrentSrc].TypeGPR.Type = DecodedOperand::TYPE_GPR;
+    DecodeInst->Src[CurrentSrc].TypeGPR.HighBits = false;
+    DecodeInst->Src[CurrentSrc].TypeGPR.GPR = FEXCore::X86State::REG_RCX;
+    ++CurrentSrc;
   }
 
   if (Bytes != 0) {
     LogMan::Throw::A(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
 
-    CurrentSrc->TypeLiteral.Size = Bytes;
+    DecodeInst->Src[CurrentSrc].TypeLiteral.Size = Bytes;
 
     uint64_t Literal {0};
     Literal = ReadData(Bytes);
@@ -455,8 +454,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     }
 
     Bytes = 0;
-    CurrentSrc->TypeLiteral.Type = DecodedOperand::TYPE_LITERAL;
-    CurrentSrc->TypeLiteral.Literal = Literal;
+    DecodeInst->Src[CurrentSrc].TypeLiteral.Type = DecodedOperand::TYPE_LITERAL;
+    DecodeInst->Src[CurrentSrc].TypeLiteral.Literal = Literal;
   }
 
   LogMan::Throw::A(Bytes == 0, "Inst at 0x%lx: 0x%04x '%s' Had an instruction of size %d with %d remaining", DecodeInst->PC, DecodeInst->OP, DecodeInst->TableInfo->Name, InstructionSize, Bytes);
@@ -835,17 +834,17 @@ void Decoder::BranchTargetInMultiblockRange() {
     case 0x70 ... 0x7F: // Conditional JUMP
     case 0x80 ... 0x8F: { // More conditional
       // Source is a literal
-      // auto RIPOffset = LoadSource(Op, Op->Src1, Op->Flags);
+      // auto RIPOffset = LoadSource(Op, Op->Src[0], Op->Flags);
       // auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
       // Target offset is PC + InstSize + Literal
-      LogMan::Throw::A(DecodeInst->Src1.TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
-      TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src1.TypeLiteral.Literal;
+      LogMan::Throw::A(DecodeInst->Src[0].TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
+      TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].TypeLiteral.Literal;
     break;
     }
     case 0xE9:
     case 0xEB: // Both are unconditional JMP instructions
-      LogMan::Throw::A(DecodeInst->Src1.TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
-      TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src1.TypeLiteral.Literal;
+      LogMan::Throw::A(DecodeInst->Src[0].TypeNone.Type == DecodedOperand::TYPE_LITERAL, "Had wrong operand type");
+      TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].TypeLiteral.Literal;
       Conditional = false;
     break;
     case 0xC2: // RET imm

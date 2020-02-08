@@ -95,16 +95,21 @@ public:
   // Dispatch builder functions
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
   void UnhandledOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void MOVGPROp(OpcodeArgs);
   void MOVVectorOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void ALUOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs);
   void LEAOp(OpcodeArgs);
   void NOPOp(OpcodeArgs);
   void RETOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void SecondaryALUOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void ADCOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void SBBOp(OpcodeArgs);
   void PUSHOp(OpcodeArgs);
   void POPOp(OpcodeArgs);
@@ -114,10 +119,12 @@ public:
   void CondJUMPOp(OpcodeArgs);
   void JUMPOp(OpcodeArgs);
   void JUMPAbsoluteOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void TESTOp(OpcodeArgs);
   void MOVSXDOp(OpcodeArgs);
   void MOVSXOp(OpcodeArgs);
   void MOVZXOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void CMPOp(OpcodeArgs);
   void SETccOp(OpcodeArgs);
   void CQOOp(OpcodeArgs);
@@ -137,11 +144,17 @@ public:
   void SHLDOp(OpcodeArgs);
   void SHRDOp(OpcodeArgs);
   void ASHROp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void ROROp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void ROLOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void BTOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void BTROp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void BTSOp(OpcodeArgs);
+  template<uint32_t SrcIndex>
   void BTCOp(OpcodeArgs);
   void IMUL1SrcOp(OpcodeArgs);
   void IMUL2SrcOp(OpcodeArgs);
@@ -186,7 +199,9 @@ public:
   void PMAXUOp(OpcodeArgs);
   void PMINSWOp(OpcodeArgs);
   void PMOVMSKBOp(OpcodeArgs);
+  template<size_t ElementSize>
   void PUNPCKLOp(OpcodeArgs);
+  template<size_t ElementSize>
   void PUNPCKHOp(OpcodeArgs);
   template<size_t ElementSize, bool Low>
   void PSHUFDOp(OpcodeArgs);
@@ -194,9 +209,9 @@ public:
   template<size_t ElementSize>
   void PCMPGTOp(OpcodeArgs);
   void MOVDOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<size_t ElementSize, uint32_t SrcIndex>
   void PSRLD(OpcodeArgs);
-  template<size_t ElementSize, bool Scalar>
+  template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
   void PSLL(OpcodeArgs);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
