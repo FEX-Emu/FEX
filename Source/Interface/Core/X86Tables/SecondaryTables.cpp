@@ -190,11 +190,11 @@ void InitializeSecondaryTables() {
 
     {0xC0, 1, X86InstInfo{"XADD",    TYPE_INST, GenFlagsSrcSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                      0, nullptr}},
     {0xC1, 1, X86InstInfo{"XADD",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                                   0, nullptr}},
-    {0xC2, 1, X86InstInfo{"CMPPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM,                                                                      1, nullptr}},
+    {0xC2, 1, X86InstInfo{"CMPPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                      1, nullptr}},
     {0xC3, 1, X86InstInfo{"MOVNTI",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST,                                                                                        0, nullptr}},
     {0xC4, 1, X86InstInfo{"PINSRW",  TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR,                                   1, nullptr}},
     {0xC5, 1, X86InstInfo{"PEXTRW",  TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_XMM_FLAGS,                                                                        1, nullptr}},
-    {0xC6, 1, X86InstInfo{"SHUFPS",  TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM,                                                                      1, nullptr}},
+    {0xC6, 1, X86InstInfo{"SHUFPS",  TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                      1, nullptr}},
     {0xC7, 1, X86InstInfo{"",        TYPE_GROUP_9, FLAGS_NONE,                                                                                          0, nullptr}},
     {0xC8, 8, X86InstInfo{"BSWAP",   TYPE_INST, FLAGS_SF_REX_IN_BYTE | FLAGS_NO_OVERLAY,                                                                0, nullptr}},
 
@@ -311,7 +311,7 @@ void InitializeSecondaryTables() {
     {0xBE, 2, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
 
     {0xC0, 2, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
-    {0xC2, 1, X86InstInfo{"CMPSS",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS,                    1, nullptr}},
+    {0xC2, 1, X86InstInfo{"CMPSS",     TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    1, nullptr}},
     {0xC3, 5, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
     {0xC8, 8, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
 
@@ -383,7 +383,7 @@ void InitializeSecondaryTables() {
     {0xBA, 1, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                        0, nullptr}},
     {0xBB, 5,  X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
     {0xC0, 2, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                      0, nullptr}},
-    {0xC2, 1, X86InstInfo{"CMPSD",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    1, nullptr}},
+    {0xC2, 1, X86InstInfo{"CMPSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    1, nullptr}},
     {0xC3, 5, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
     {0xC8, 8, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                      0, nullptr}},
 
