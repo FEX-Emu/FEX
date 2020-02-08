@@ -22,29 +22,32 @@ public:
   }
 
   ssize_t writev(int fd, void *iov, int iovcnt) override {
-    ssize_t FinalSize {};
-    std::string OutputString;
-
-    struct iovStruct {
-      uint64_t base;
-      size_t len;
-    };
-    iovStruct *iovObject = reinterpret_cast<iovStruct*>(iov);
-
-    for (int i = 0; i < iovcnt; ++i) {
-      const char *String = CTX->MemoryMapper.GetPointer<const char*>(iovObject[i].base);
-      for (size_t j = 0; j < iovObject[i].len; ++j) {
-        OutputString += String[j];
-      }
-      FinalSize += iovObject[i].len;
-    }
-
-    OutputString += '\0';
+    iovec *iovObject = reinterpret_cast<iovec*>(iov);
 
     if (CTX->Config.AccurateSTDOut) {
-      return ::writev(fd, (const struct iovec*)iov, iovcnt);
+      std::vector<iovec> HostStructs(iovcnt);
+      for (int i = 0; i < iovcnt; ++i) {
+        HostStructs[i].iov_base = CTX->MemoryMapper.GetPointer<void*>(reinterpret_cast<uint64_t>(iovObject[i].iov_base));
+        HostStructs[i].iov_len = iovObject[i].iov_len;
+      }
+
+      return ::writev(fd, &HostStructs.at(0), iovcnt);
     }
     else {
+      ssize_t FinalSize {};
+      std::string OutputString;
+
+      for (int i = 0; i < iovcnt; ++i) {
+        const char *String{};
+        String = CTX->MemoryMapper.GetPointer<const char*>(reinterpret_cast<uint64_t>(iovObject[i].iov_base));
+        for (size_t j = 0; j < iovObject[i].iov_len; ++j) {
+          OutputString += String[j];
+        }
+        FinalSize += iovObject[i].iov_len;
+      }
+
+      OutputString += '\0';
+
       if (FDOffset == STDOUT_FILENO)
         LogMan::Msg::OUT("[%ld] %s", FinalSize, OutputString.c_str());
       else if (FDOffset == STDERR_FILENO)
