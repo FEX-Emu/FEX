@@ -13,6 +13,7 @@ namespace FEXCore::Config {
     CONFIG_GDBSERVER,
     CONFIG_ACCURATESTDOUT,
     CONFIG_ROOTFSPATH,
+    CONFIG_UNIFIED_MEMORY,
   };
 
   enum ConfigCore {

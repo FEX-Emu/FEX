@@ -46,6 +46,7 @@ namespace FEXCore::Context {
       uint64_t VirtualMemSize {1ULL << 36};
       FEXCore::Config::ConfigCore Core {FEXCore::Config::CONFIG_INTERPRETER};
       bool GdbServer {false};
+      bool UnifiedMemory {false};
       std::string RootFSPath;
 
       // LLVM JIT options

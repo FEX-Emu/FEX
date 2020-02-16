@@ -27,6 +27,9 @@ namespace FEXCore::Config {
     case FEXCore::Config::CONFIG_ACCURATESTDOUT:
       CTX->Config.AccurateSTDOut = Config != 0;
     break;
+    case FEXCore::Config::CONFIG_UNIFIED_MEMORY:
+      CTX->Config.UnifiedMemory = Config != 0;
+    break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
   }
@@ -61,6 +64,9 @@ namespace FEXCore::Config {
     break;
     case FEXCore::Config::CONFIG_ACCURATESTDOUT:
       return CTX->Config.AccurateSTDOut;
+    break;
+    case FEXCore::Config::CONFIG_UNIFIED_MEMORY:
+      return CTX->Config.UnifiedMemory;
     break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
