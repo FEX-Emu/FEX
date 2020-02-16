@@ -254,6 +254,7 @@ namespace FEXCore::Context {
     ParentThread = Thread;
 
     uintptr_t MemoryBase = MemoryMapper.GetBaseOffset<uintptr_t>(0);
+    Loader->SetMemoryBase(MemoryBase, Config.UnifiedMemory);
 
     auto MemoryMapperFunction = [&](uint64_t Base, uint64_t Size) -> void* {
       Thread->BlockCache->HintUsedRange(Base, Base);
@@ -266,7 +267,12 @@ namespace FEXCore::Context {
     MapRegion(Thread, FS_OFFSET, FS_SIZE, true);
 
     void *StackPointer = MapRegion(Thread, STACK_OFFSET, Loader->StackSize(), true);
-    Thread->State.State.gregs[X86State::REG_RSP] = Loader->SetupStack(StackPointer, STACK_OFFSET);
+
+    uint64_t GuestStack = STACK_OFFSET;
+    if (Config.UnifiedMemory) {
+      GuestStack = reinterpret_cast<uint64_t>(StackPointer);
+    }
+    Thread->State.State.gregs[X86State::REG_RSP] = Loader->SetupStack(StackPointer, GuestStack);
 
     // Now let the code loader setup memory
     auto MemoryWriterFunction = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
@@ -283,7 +289,13 @@ namespace FEXCore::Context {
 
     // Offset next thread's FS_OFFSET by slot size
     uint64_t SlotSize = Loader->InitializeThreadSlot(TLSSlotWriter);
-    Thread->State.State.rip = StartingRIP = Loader->DefaultRIP();
+    uint64_t RIP = Loader->DefaultRIP();
+
+    if (Config.UnifiedMemory) {
+      RIP += MemoryBase;
+      Thread->State.State.fs += MemoryBase;
+    }
+    Thread->State.State.rip = StartingRIP = RIP;
 
     InitializeThread(Thread);
 
@@ -462,7 +474,13 @@ namespace FEXCore::Context {
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     void *CodePtr {nullptr};
-    uint8_t const *GuestCode = MemoryMapper.GetPointer<uint8_t const*>(GuestRIP);
+    uint8_t const *GuestCode{};
+    if (Thread->CTX->Config.UnifiedMemory) {
+      GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
+    }
+    else {
+      GuestCode = MemoryMapper.GetPointer<uint8_t const*>(GuestRIP);
+    }
 
     // Do we already have this in the IR cache?
     auto IR = Thread->IRLists.find(GuestRIP);
@@ -649,6 +667,11 @@ namespace FEXCore::Context {
 
     bool Initializing = false;
 
+    uintptr_t MemoryBase{};
+    if (Thread->CTX->Config.UnifiedMemory) {
+      MemoryBase = MemoryMapper.GetBaseOffset<uintptr_t>(0);
+    }
+
     uint64_t InitializationStep = 0;
     if (Initializing) {
       Thread->State.State.rip = ~0ULL;
@@ -681,8 +704,8 @@ namespace FEXCore::Context {
         uint64_t GuestRIP = Thread->State.State.rip;
 
         if (CoreDebugLevel >= 1) {
-          char const *Name = LocalLoader->FindSymbolNameInRange(GuestRIP);
-          LogMan::Msg::D(">>>>RIP: 0x%lx: '%s'", GuestRIP, Name ? Name : "<Unknown>");
+          char const *Name = LocalLoader->FindSymbolNameInRange(GuestRIP - MemoryBase);
+          LogMan::Msg::D(">>>>RIP: 0x%lx(0x%lx): '%s'", GuestRIP, GuestRIP - MemoryBase, Name ? Name : "<Unknown>");
         }
 
         if (!Thread->CPUBackend->NeedsOpDispatch()) {
