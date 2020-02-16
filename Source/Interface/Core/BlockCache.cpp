@@ -28,6 +28,9 @@ BlockCache::BlockCache(FEXCore::Context::Context *CTX)
   // Can end up being inefficient if we compile a small number of blocks per page
   PageMemory = reinterpret_cast<uintptr_t>(mmap(nullptr, CODE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   LogMan::Throw::A(PageMemory != -1ULL, "Failed to allocate page memory");
+
+  MemoryBase = ctx->MemoryMapper.GetBaseOffset<uintptr_t>(0);
+  VirtualMemSize = ctx->Config.VirtualMemSize;
 }
 
 BlockCache::~BlockCache() {

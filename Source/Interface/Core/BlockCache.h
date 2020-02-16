@@ -1,5 +1,5 @@
 #pragma once
-#include <FEXCore/Core/Context.h>
+#include "Interface/Context/Context.h"
 #include "LogManager.h"
 
 namespace FEXCore {
@@ -33,6 +33,12 @@ public:
   }
 
   uintptr_t AddBlockMapping(uint64_t Address, void *Ptr) {
+    if (ctx->Config.UnifiedMemory) {
+      LogMan::Throw::A(Address >= MemoryBase, "Code Address before Memory Base");
+      LogMan::Throw::A(Address < (MemoryBase + VirtualMemSize), "Code address after memory base");
+      Address -= MemoryBase;
+    }
+
     uint64_t PageOffset = Address & (0x0FFF);
     Address >>= 12;
     uintptr_t *Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
@@ -79,6 +85,12 @@ private:
   }
 
   uintptr_t FindCodePointerForAddress(uint64_t Address) {
+    if (ctx->Config.UnifiedMemory) {
+      LogMan::Throw::A(!(Address < MemoryBase), "Code Address before Memory Base");
+      LogMan::Throw::A(!(Address > (MemoryBase + VirtualMemSize)), "Code address after memory base");
+      Address -= MemoryBase;
+    }
+
     uint64_t PageOffset = Address & (0x0FFF);
     Address >>= 12;
     uintptr_t *Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
@@ -101,6 +113,8 @@ private:
   size_t AllocateOffset {};
 
   FEXCore::Context::Context *ctx;
+  uintptr_t MemoryBase{};
+  uint64_t VirtualMemSize{};
 
 };
 }
