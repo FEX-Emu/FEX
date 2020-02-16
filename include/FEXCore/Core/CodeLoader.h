@@ -38,6 +38,12 @@ public:
   virtual void GetInitLocations(std::vector<uint64_t> *Locations) {}
   virtual uint64_t InitializeThreadSlot(std::function<void(void const*, uint64_t)> Writer) const { return 0; };
 
+  /**
+   * @brief Lets the core tell the CodeLoader where the virtual memory region starts and if we are running in an environment
+   * where host and guest code is unified in a single address space
+   */
+  virtual void SetMemoryBase(uint64_t Base, bool Unified) {}
+
   using MemoryLayout = std::tuple<uint64_t, uint64_t, uint64_t>;
   /**
    * @brief Gets the default memory layout of the memory object being loaded
