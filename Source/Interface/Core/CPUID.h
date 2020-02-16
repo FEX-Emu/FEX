@@ -31,14 +31,11 @@ private:
   // Functions
   FunctionResults Function_0h();
   FunctionResults Function_01h();
-  FunctionResults Function_02h();
-  FunctionResults Function_04h();
   FunctionResults Function_07h();
-  FunctionResults Function_0Dh();
   FunctionResults Function_8000_0000h();
   FunctionResults Function_8000_0001h();
-  FunctionResults Function_8000_0006h();
   FunctionResults Function_8000_0007h();
-  FunctionResults Function_8000_0008h();
+
+  FunctionResults Function_Reserved();
 };
 }
