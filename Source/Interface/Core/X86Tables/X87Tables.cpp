@@ -9,7 +9,7 @@ void InitializeX87Tables() {
   const U16U8InfoStruct X87OpTable[] = {
     // 0xD8
     {OPDReg(0xD8, 0), 1, X86InstInfo{"FADD",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
-    {OPDReg(0xD8, 1), 1, X86InstInfo{"FMUL",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xD8, 1), 1, X86InstInfo{"FMUL",  TYPE_X87, FLAGS_MODRM, 0, nullptr}},
     {OPDReg(0xD8, 2), 1, X86InstInfo{"FCOM",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xD8, 3), 1, X86InstInfo{"FCOMP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xD8, 4), 1, X86InstInfo{"FSUB",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
@@ -112,7 +112,7 @@ void InitializeX87Tables() {
       //  / 7
       {OPD(0xDA, 0xF8), 8, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     // 0xDB
-    {OPDReg(0xDB, 0), 1, X86InstInfo{"FILD",   TYPE_X87,   FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xDB, 0), 1, X86InstInfo{"FILD",   TYPE_X87,   FLAGS_MODRM, 0, nullptr}},
     {OPDReg(0xDB, 1), 1, X86InstInfo{"FISTTP", TYPE_X87,   FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDB, 2), 1, X86InstInfo{"FIST",   TYPE_X87,   FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDB, 3), 1, X86InstInfo{"FISTP",  TYPE_X87,   FLAGS_NONE, 0, nullptr}},
@@ -141,7 +141,7 @@ void InitializeX87Tables() {
       {OPD(0xDB, 0xF8), 8, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     // 0xDC
     {OPDReg(0xDC, 0), 1, X86InstInfo{"FADD", TYPE_X87, FLAGS_NONE, 0, nullptr}},
-    {OPDReg(0xDC, 1), 1, X86InstInfo{"FMUL", TYPE_X87, FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xDC, 1), 1, X86InstInfo{"FMUL", TYPE_X87, FLAGS_MODRM, 0, nullptr}},
     {OPDReg(0xDC, 2), 1, X86InstInfo{"FCOM", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDC, 3), 1, X86InstInfo{"FCOMP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDC, 4), 1, X86InstInfo{"FSUB", TYPE_X87, FLAGS_NONE, 0, nullptr}},
@@ -201,7 +201,7 @@ void InitializeX87Tables() {
       //  / 0
       {OPD(0xDE, 0xC0), 8, X86InstInfo{"FADDP", TYPE_X87, FLAGS_POP, 0, nullptr}},
       //  / 1
-      {OPD(0xDE, 0xC8), 8, X86InstInfo{"FMULP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
+      {OPD(0xDE, 0xC8), 8, X86InstInfo{"FMULP", TYPE_X87, FLAGS_POP, 0, nullptr}},
       //  / 2
       {OPD(0xDE, 0xD0), 8, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
       //  / 3
@@ -217,12 +217,12 @@ void InitializeX87Tables() {
       //  / 7
       {OPD(0xDE, 0xF8), 8, X86InstInfo{"FDIVP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     // 0xDF
-    {OPDReg(0xDF, 0), 1, X86InstInfo{"FILD", TYPE_X87, FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xDF, 0), 1, X86InstInfo{"FILD", TYPE_X87, FLAGS_MODRM, 0, nullptr}},
     {OPDReg(0xDF, 1), 1, X86InstInfo{"FISTTP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDF, 2), 1, X86InstInfo{"FIST", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDF, 3), 1, X86InstInfo{"FISTP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDF, 4), 1, X86InstInfo{"FBLD", TYPE_X87, FLAGS_NONE, 0, nullptr}},
-    {OPDReg(0xDF, 5), 1, X86InstInfo{"FILD", TYPE_X87, FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xDF, 5), 1, X86InstInfo{"FILD", TYPE_X87, FLAGS_MODRM, 0, nullptr}},
     {OPDReg(0xDF, 6), 1, X86InstInfo{"FBSTP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xDF, 7), 1, X86InstInfo{"FISTP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 0
