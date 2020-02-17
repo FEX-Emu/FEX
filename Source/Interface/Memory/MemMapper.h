@@ -16,6 +16,9 @@ namespace FEXCore::Memory {
     void SetBaseRegion(FEXCore::SHM::SHMObject *NewSHM) {
       SHM = reinterpret_cast<FEXCore::SHM::InternalSHMObject*>(NewSHM);
     }
+    size_t GetSHMSize() const {
+      return SHM->Size;
+    }
 
     void *MapRegion(uint64_t Offset, size_t Size, bool Fixed = true);
     void *MapRegion(uint64_t Offset, size_t Size, uint32_t Flags, bool Fixed = true);

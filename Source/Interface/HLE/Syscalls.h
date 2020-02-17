@@ -8,11 +8,6 @@
 #include <mutex>
 #include <unordered_map>
 
-
-namespace FEXCore::Context {
-struct Context;
-}
-
 namespace FEXCore::Core {
 struct InternalThreadState;
 }
@@ -44,8 +39,14 @@ enum Syscalls {
   SYSCALL_SELECT          = 23,  ///< __NR_select
   SYSCALL_SCHED_YIELD     = 24,  ///< __NR_sched_yield
   SYSCALL_MINCORE         = 27,  ///< __NR_mincore
+  SYSCALL_SHMGET          = 29,  ///< __NR_shmget
+  SYSCALL_SHMAT           = 30,  ///< __NR_shmat
+  SYSCALL_SHMCTL          = 31,  ///< __NR_shmctl
+  SYSCALL_DUP2            = 33,  ///< __NR_dup2
   SYSCALL_NANOSLEEP       = 35,  ///< __NR_nanosleep
+  SYSCALL_GETITIMER       = 36,  ///< __NR_getitimer
   SYSCALL_ALARM           = 37,  ///< __NR_alarm
+  SYSCALL_SETITIMER       = 38,  ///< __NR_setitimer
   SYSCALL_GETPID          = 39,  ///< __NR_getpid
   SYSCALL_SOCKET          = 41,  ///< __NR_socket
   SYSCALL_CONNECT         = 42,  ///< __NR_connect
@@ -61,6 +62,7 @@ enum Syscalls {
   SYSCALL_EXIT            = 60,  ///< __NR_exit
   SYSCALL_WAIT4           = 61,  ///< __NR_wait4
   SYSCALL_UNAME           = 63,  ///< __NR_uname
+  SYSCALL_SHMDT           = 67,  ///< __NR_shmdt
   SYSCALL_FCNTL           = 72,  ///< __NR_fcntl
   SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
   SYSCALL_CHDIR           = 80,  ///< __NR_chdir
@@ -79,6 +81,7 @@ enum Syscalls {
   SYSCALL_SETREGID        = 114, ///< __NR_setregid
   SYSCALL_SETRESUID       = 117, ///< __NR_setresuid
   SYSCALL_SETRESGID       = 119, ///< __NR_setresgid
+  SYSCALL_SIGALTSTACK     = 131, ///< __NR_sigaltstack
   SYSCALL_MKNOD           = 133, ///< __NR_mknod
   SYSCALL_STATFS          = 137, ///< __NR_statfs
   SYSCALL_PRCTL           = 157, ///< __NR_prctl
@@ -86,6 +89,7 @@ enum Syscalls {
   SYSCALL_GETTID          = 186, ///< __NR_gettid
   SYSCALL_TIME            = 201, ///< __NR_time
   SYSCALL_FUTEX           = 202, ///< __NR_futex
+  SYSCALL_SCHED_GETAFFINITY = 204, ///< __NR_sched_getaffinity
   SYSCALL_GETDENTS64      = 217, ///< __NR_getdents64
   SYSCALL_SET_TID_ADDRESS = 218, ///< __NR_set_tid_address
   SYSCALL_CLOCK_GETTIME   = 228, ///< __NR_clock_gettime
@@ -93,7 +97,10 @@ enum Syscalls {
   SYSCALL_EXIT_GROUP      = 231, ///< __NR_exit_group
   SYSCALL_TGKILL          = 234, ///< __NR_tgkill
   SYSCALL_OPENAT          = 257, ///< __NR_openat
+  SYSCALL_READLINKAT      = 267, ///< __NR_readlinkat
+  SYSCALL_FACCESSAT       = 269, ///< __NR_faccessat
   SYSCALL_SET_ROBUST_LIST = 273, ///< __NR_set_robust_list
+  SYSCALL_TIMERFD_CREATE  = 283, ///< __NR_timerfd_create
   SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
   SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1
   SYSCALL_PIPE2           = 293, ///< __NR_pipe2
@@ -114,7 +121,7 @@ struct Futex {
 // #define DEBUG_STRACE
 class SyscallHandler final {
 public:
-  SyscallHandler(FEXCore::Context::Context *ctx) : CTX {ctx}, FM {ctx} {}
+  SyscallHandler(FEXCore::Context::Context *ctx);
   uint64_t HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);
 
   // XXX: This leaks memory.
@@ -132,6 +139,7 @@ public:
   }
 
   void RemoveFutex(uint64_t Addr) {
+    std::scoped_lock<std::mutex> lk (FutexMutex);
     Futexes.erase(Addr);
   }
 
@@ -142,11 +150,13 @@ public:
 
 private:
   FEXCore::Context::Context *CTX;
+  bool const &UnifiedMemory;
   FileManager FM;
 
   // Futex management
   std::unordered_map<uint64_t, Futex*> Futexes;
   std::mutex FutexMutex;
+  std::mutex SyscallMutex;
 
   // BRK management
   uint64_t DataSpace {};
@@ -159,7 +169,13 @@ private:
 #ifdef DEBUG_STRACE
   void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret);
 #endif
+  template<typename T>
+  T GetPointer(uint64_t Offset) {
+    return reinterpret_cast<T>(GetPointer(Offset));
+  }
 
+  void *GetPointer(uint64_t Offset);
+  void *GetPointerSizeCheck(uint64_t Offset, uint64_t Size);
 };
 
 }

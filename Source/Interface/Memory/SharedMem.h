@@ -8,5 +8,6 @@ namespace FEXCore::SHM {
   struct InternalSHMObject {
     SHMObject Object;
     int SHMFD;
+    size_t Size;
   };
 }

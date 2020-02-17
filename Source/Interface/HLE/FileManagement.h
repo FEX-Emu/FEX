@@ -77,9 +77,11 @@ public:
   uint64_t Lseek(int fd, uint64_t offset, int whence);
   uint64_t Writev(int fd, void *iov, int iovcnt);
   uint64_t Access(const char *pathname, int mode);
+  uint64_t FAccessat(int dirfd, const char *pathname, int mode, int flags);
   uint64_t Pipe(int pipefd[2]);
   uint64_t Pipe2(int pipefd[2], int flags);
   uint64_t Readlink(const char *pathname, char *buf, size_t bufsiz);
+  uint64_t Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz);
   uint64_t Openat(int dirfs, const char *pathname, int flags, uint32_t mode);
   uint64_t Ioctl(int fd, uint64_t request, void *args);
   uint64_t GetDents(int fd, void *dirp, uint32_t count);
@@ -110,6 +112,9 @@ public:
   uint64_t Poll(struct pollfd *fds, nfds_t nfds, int timeout);
   uint64_t Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
   uint64_t Sendmmsg(int sockfd, struct mmsghdr *msgvec, uint32_t vlen, int flags);
+
+  // Timers
+  uint64_t Timer_Create(int32_t clockid, int32_t flags);
 
   int32_t FindHostFD(int fd);
 

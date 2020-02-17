@@ -42,6 +42,7 @@ namespace FEXCore::SHM {
     }
 
     SHM->Object.Ptr = MapRegionFlags(SHM, 0, Size, PROT_READ | PROT_WRITE, false);
+    SHM->Size = Size;
     if (SHM->Object.Ptr == nullptr) {
       goto err;
     }

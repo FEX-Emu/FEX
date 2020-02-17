@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/ioctl.h>
+#include <sys/timerfd.h>
 #include <sys/uio.h>
 #include <sys/vfs.h>
 #include <unistd.h>
@@ -22,16 +23,25 @@ public:
   }
 
   ssize_t writev(int fd, void *iov, int iovcnt) override {
-    iovec *iovObject = reinterpret_cast<iovec*>(iov);
+    struct Object {
+      void *iov_base;
+      size_t iov_len;
+    };
+    Object *iovObject = reinterpret_cast<Object*>(iov);
 
     if (CTX->Config.AccurateSTDOut) {
-      std::vector<iovec> HostStructs(iovcnt);
-      for (int i = 0; i < iovcnt; ++i) {
-        HostStructs[i].iov_base = CTX->MemoryMapper.GetPointer<void*>(reinterpret_cast<uint64_t>(iovObject[i].iov_base));
-        HostStructs[i].iov_len = iovObject[i].iov_len;
+      if (CTX->Config.UnifiedMemory) {
+        return ::writev(fd, reinterpret_cast<iovec const *>(iov), iovcnt);
       }
+      else {
+        std::vector<iovec> HostStructs(iovcnt);
+        for (int i = 0; i < iovcnt; ++i) {
+          HostStructs[i].iov_base = CTX->MemoryMapper.GetPointer<void*>(reinterpret_cast<uint64_t>(iovObject[i].iov_base));
+          HostStructs[i].iov_len = iovObject[i].iov_len;
+        }
 
-      return ::writev(fd, &HostStructs.at(0), iovcnt);
+        return ::writev(fd, &HostStructs.at(0), iovcnt);
+      }
     }
     else {
       ssize_t FinalSize {};
@@ -39,7 +49,12 @@ public:
 
       for (int i = 0; i < iovcnt; ++i) {
         const char *String{};
-        String = CTX->MemoryMapper.GetPointer<const char*>(reinterpret_cast<uint64_t>(iovObject[i].iov_base));
+        if (CTX->Config.UnifiedMemory) {
+          String = reinterpret_cast<const char*>(iovObject[i].iov_base);
+        }
+        else {
+          String = CTX->MemoryMapper.GetPointer<const char*>(reinterpret_cast<uint64_t>(iovObject[i].iov_base));
+        }
         for (size_t j = 0; j < iovObject[i].iov_len; ++j) {
           OutputString += String[j];
         }
@@ -48,10 +63,11 @@ public:
 
       OutputString += '\0';
 
-      if (FDOffset == STDOUT_FILENO)
-        LogMan::Msg::OUT("[%ld] %s", FinalSize, OutputString.c_str());
-      else if (FDOffset == STDERR_FILENO)
+      if (FDOffset == STDERR_FILENO)
         LogMan::Msg::ERR("[%ld] %s", FinalSize, OutputString.c_str());
+      else
+        LogMan::Msg::OUT("[%ld] %s", FinalSize, OutputString.c_str());
+
       return FinalSize;
     }
   }
@@ -61,10 +77,10 @@ public:
       return ::write(fd, buf, count);
     }
     else {
-      if (FDOffset == STDOUT_FILENO)
-        LogMan::Msg::OUT("%s", reinterpret_cast<char*>(buf));
-      else if (FDOffset == STDERR_FILENO)
+      if (FDOffset == STDERR_FILENO)
         LogMan::Msg::ERR("%s", reinterpret_cast<char*>(buf));
+      else
+        LogMan::Msg::OUT("%s", reinterpret_cast<char*>(buf));
       return count;
     }
   }
@@ -90,16 +106,34 @@ public:
 
 };
 
+class TimerFD final : public FD {
+public:
+  TimerFD(FEXCore::Context::Context *ctx, int32_t fd, int32_t clockid, int32_t flags)
+    : FD (ctx, fd, "Timer", 0, 0) {
+    HostFD = timerfd_create(clockid, flags);
+  }
+
+};
+
 uint64_t FD::read(int fd, void *buf, size_t count) {
   return ::read(HostFD, buf, count);
 }
 
 ssize_t FD::writev(int fd, void *iov, int iovcnt) {
+  if (CTX->Config.UnifiedMemory) {
+    return ::writev(HostFD, reinterpret_cast<const struct iovec*>(iov), iovcnt);
+  }
+
   const struct iovec *Guestiov = reinterpret_cast<const struct iovec*>(iov);
   std::vector<struct iovec> Hostiov;
   Hostiov.resize(iovcnt);
   for (int i = 0; i < iovcnt; ++i) {
-    Hostiov[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
+    if (CTX->Config.UnifiedMemory) {
+      Hostiov[i].iov_base = reinterpret_cast<void*>(Guestiov[i].iov_base);
+    }
+    else {
+      Hostiov[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
+    }
     Hostiov[i].iov_len = Guestiov[i].iov_len;
   }
 
@@ -224,7 +258,7 @@ uint64_t FileManager::Fstat(int fd, void *buf) {
     }
   }
 
-  LogMan::Msg::D("Attempting to stat: %d", fd);
+  LogMan::Msg::D("Attempting to fstat: %d", fd);
   return -1LL;
 }
 
@@ -267,6 +301,20 @@ uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
   }
 
   int Result = ::access(pathname, mode);
+  if (Result == -1)
+    return -errno;
+  return Result;
+}
+
+uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode, int flags) {
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::faccessat(dirfd, Path.c_str(), mode, flags);
+    if (Result != -1)
+      return Result;
+  }
+
+  int Result = ::faccessat(dirfd, pathname, mode, flags);
   if (Result == -1)
     return -errno;
   return Result;
@@ -331,6 +379,22 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   return ::readlink(pathname, buf, bufsiz);
 }
 
+uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz) {
+  if (strcmp(pathname, "/proc/self/exe") == 0) {
+    strncpy(buf, Filename.c_str(), bufsiz);
+    return std::min(bufsiz, Filename.size());
+  }
+
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::readlinkat(dirfd, Path.c_str(), buf, bufsiz);
+    if (Result != -1)
+      return Result;
+  }
+
+  return ::readlinkat(dirfd, pathname, buf, bufsiz);
+}
+
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, int flags, uint32_t mode) {
   int32_t fd = CurrentFDOffset;
   if (!strcmp(pathname, "/dev/tty")) {
@@ -353,7 +417,7 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
 
     if (Result == -1) {
       delete fdPtr;
-      return -1;
+      return -errno;
     }
   }
 
@@ -368,7 +432,12 @@ uint64_t FileManager::Ioctl(int fd, uint64_t request, void *args) {
     return -1;
   }
 
-  return FD->second->ioctl(fd, request, args);
+  uint64_t Result = FD->second->ioctl(fd, request, args);
+  if (Result == -1) {
+    return -errno;
+  }
+
+  return Result;
 }
 
 uint64_t FileManager::GetDents(int fd, void *dirp, uint32_t count) {
@@ -495,7 +564,8 @@ uint64_t FileManager::Recvfrom(int sockfd, void *buf, size_t len, int flags, str
 }
 
 uint64_t FileManager::Sendmsg(int sockfd, const struct msghdr *msg, int flags) {
- auto FD = FDMap.find(sockfd);
+  LogMan::Throw::A(!CTX->Config.UnifiedMemory, "Not yet supported");
+  auto FD = FDMap.find(sockfd);
   if (FD == FDMap.end()) {
     return -1;
   }
@@ -531,36 +601,65 @@ uint64_t FileManager::Sendmsg(int sockfd, const struct msghdr *msg, int flags) {
 }
 
 uint64_t FileManager::Recvmsg(int sockfd, struct msghdr *msg, int flags) {
- auto FD = FDMap.find(sockfd);
+  auto FD = FDMap.find(sockfd);
   if (FD == FDMap.end()) {
     return -1;
   }
 
-  std::vector<iovec> Hostvec;
-  struct msghdr Hosthdr;
-  memcpy(&Hosthdr, msg, sizeof(struct msghdr));
+  int Result{};
+  if (CTX->Config.UnifiedMemory) {
+    Result = recvmsg(FD->second->GetHostFD(), msg, flags);
+  }
+  else {
+    std::vector<iovec> Hostvec;
+    struct msghdr Hosthdr;
+    memcpy(&Hosthdr, msg, sizeof(struct msghdr));
 
-  if (Hosthdr.msg_name)
-    Hosthdr.msg_name = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_name));
+    if (Hosthdr.msg_name)
+      Hosthdr.msg_name = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_name));
 
-  if (Hosthdr.msg_control)
-    Hosthdr.msg_control = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_control));
+    if (Hosthdr.msg_control)
+      Hosthdr.msg_control = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_control));
 
-  Hostvec.resize(Hosthdr.msg_iovlen);
+    Hostvec.resize(Hosthdr.msg_iovlen);
 
-  struct iovec *Guestiov = CTX->MemoryMapper.GetPointer<struct iovec*>(reinterpret_cast<uint64_t>(Hosthdr.msg_iov));
-  for (int i = 0; i < Hosthdr.msg_iovlen; ++i) {
-    Hostvec[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
-    Hostvec[i].iov_len = Guestiov[i].iov_len;
+    struct iovec *Guestiov = CTX->MemoryMapper.GetPointer<struct iovec*>(reinterpret_cast<uint64_t>(Hosthdr.msg_iov));
+    for (int i = 0; i < Hosthdr.msg_iovlen; ++i) {
+      Hostvec[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
+      Hostvec[i].iov_len = Guestiov[i].iov_len;
+    }
+
+    Hosthdr.msg_iov = &Hostvec.at(0);
+
+    Result = recvmsg(FD->second->GetHostFD(), &Hosthdr, flags);
   }
 
-  Hosthdr.msg_iov = &Hostvec.at(0);
-
-  int Result = recvmsg(FD->second->GetHostFD(), &Hosthdr, flags);
   if (Result == -1) {
     if (errno == EAGAIN ||
         errno == EWOULDBLOCK) {
       return -errno;
+    }
+  }
+
+  if (msg->msg_control && msg->msg_controllen > 0) {
+    // Handle the Linux ancillary data
+    struct cmsghdr *cmsg = reinterpret_cast<struct cmsghdr*>(msg->msg_control);
+    switch (cmsg->cmsg_type) {
+      case SCM_RIGHTS: {
+        uint32_t *HostFDs = reinterpret_cast<uint32_t*>(CMSG_DATA(cmsg));
+        uint32_t NumFiles = (msg->msg_controllen - cmsg->cmsg_len) / sizeof(uint32_t);
+        for (size_t i = 0; i < NumFiles; ++i) {
+          int32_t fd = CurrentFDOffset;
+          auto fdPtr = new FEXCore::FD{CTX, fd, "<Shared>", 0, 0};
+          fdPtr->SetHostFD(HostFDs[i]);
+          FDMap[CurrentFDOffset++] = fdPtr;
+
+          // Remap host FD to guest
+          HostFDs[i] = fd;
+        }
+        break;
+      }
+      default: LogMan::Msg::A("Unhandled Ancillary socket type: 0x%x", cmsg->cmsg_type); break;
     }
   }
   return Result;
@@ -685,6 +784,8 @@ uint64_t FileManager::Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set
 }
 
 uint64_t FileManager::Sendmmsg(int sockfd, struct mmsghdr *msgvec, uint32_t vlen, int flags) {
+  LogMan::Throw::A(!CTX->Config.UnifiedMemory, "Not yet supported");
+
   auto FD = FDMap.find(sockfd);
   if (FD == FDMap.end()) {
     return -1;
@@ -730,6 +831,22 @@ uint64_t FileManager::Sendmmsg(int sockfd, struct mmsghdr *msgvec, uint32_t vlen
   return Result;
 }
 
+uint64_t FileManager::Timer_Create(int32_t clockid, int32_t flags) {
+  int32_t fd = CurrentFDOffset;
+
+  auto fdPtr = new TimerFD{CTX, fd, clockid, flags};
+
+  auto Result = fdPtr->GetHostFD();
+  if (Result == -1) {
+    delete fdPtr;
+    return -errno;
+  }
+
+  FDMap[CurrentFDOffset++] = fdPtr;
+
+  return fd;
+}
+
 int32_t FileManager::FindHostFD(int fd) {
   auto FD = FDMap.find(fd);
   if (FD == FDMap.end()) {
@@ -757,6 +874,7 @@ int32_t FileManager::DupFD(int prevFD, int newFD) {
   int32_t fd = CurrentFDOffset;
 
   auto fdPtr = new FD{prevFDClass->second, fd};
+  fdPtr->SetHostFD(newFD);
   FDMap[CurrentFDOffset++] = fdPtr;
 
   return fd;
