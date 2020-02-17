@@ -541,6 +541,7 @@
 
     "FCVTZU": {
       "HasDest": true,
+      "DestSize": "ElementSize",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "ElementSize"
@@ -549,6 +550,7 @@
 
     "FCVTZS": {
       "HasDest": true,
+      "DestSize": "ElementSize",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "ElementSize"
