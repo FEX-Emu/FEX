@@ -134,7 +134,7 @@ void InitializeBaseTables() {
     {0x8A, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM,         0, nullptr}},
     {0x8B, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_MODRM,                         0, nullptr}},
     {0x8C, 1, X86InstInfo{"MOV",    TYPE_INVALID, FLAGS_MODRM | FLAGS_SF_MOD_DST,                      0, nullptr}},
-    {0x8D, 1, X86InstInfo{"LEA",    TYPE_INST, FLAGS_MODRM,                         0, nullptr}},
+    {0x8D, 1, X86InstInfo{"LEA",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_MODRM,                         0, nullptr}},
     {0x8E, 1, X86InstInfo{"MOV",    TYPE_INVALID, FLAGS_MODRM,                      0, nullptr}}, // MOV seg, modrM == invalid on x86-64
     {0x90, 8, X86InstInfo{"XCHG",   TYPE_INST, FLAGS_SF_REX_IN_BYTE | FLAGS_SF_SRC_RAX, 0, nullptr}},
     {0x98, 1, X86InstInfo{"CDQE",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX,     0, nullptr}},
