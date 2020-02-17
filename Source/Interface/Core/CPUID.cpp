@@ -56,13 +56,20 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_07h() {
   Res.Res[2] = ~0U;
   Res.Res[3] = ~0U;
 
-  Res.Res[2] &= ~(1 << 20); // we don't support CET indirect branch tracking
+  Res.Res[2] &= ~(
+    (1 << 2)  | // Remove AVX5124VNNIW
+    (1 << 3)  | // Remove AVX5124FMAPS
+    (1 << 8)  | // Remove AVX512VP2INTERSECT
+    (1 << 20)   // we don't support CET indirect branch tracking
+    );
+
   Res.Res[3] &= ~(
+      (1 << 1)  | // Remove AVX512VBMI
+      (1 << 6)  | // Remove AVX512VBMI2
       (1 << 7)  | // we don't support CET shadow stack features
-      (1 << 16) | // Remove AVX512F
-      (1 << 17) | // Remove AVX512DQ
-      (1 << 28) | // Remove AVX512CD
-      (1 << 30)   // Remove AVX512BW
+      (1 << 11) | // Remove AVX512VNNI
+      (1 << 12) | // Remove AVX512BITALG
+      (1 << 14)   // Remove AVX512VPOPCNTDQ
       );
   return Res;
 }
@@ -79,6 +86,12 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0001h() {
   CPUIDEmu::FunctionResults Res{};
   Res.Res[2] = ~0U; // Let's say we support every feature for fun
   Res.Res[3] = ~0U; // Let's say we support every feature for fun
+
+  Res.Res[3] &= ~(
+    (1 << 6)  | // Remove SSE4a
+    (1 << 11) | // Remove XOP
+    (1 << 16)   // Remove FMA4
+    );
   return Res;
 }
 
