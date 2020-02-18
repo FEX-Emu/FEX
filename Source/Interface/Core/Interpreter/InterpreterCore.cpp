@@ -2136,6 +2136,155 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, Tmp, Op->RegisterSize);
             break;
           }
+          #define DO_VECTOR_1SRC_2TYPE_OP(size, type, type2, func, max)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+            auto *Src_d = reinterpret_cast<type2*>(Src); \
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              Dst_d[i] = (type)func(Src_d[i], max);          \
+            }                                                 \
+            break;                                            \
+            }
+          #define DO_VECTOR_1SRC_2TYPE_OP_TOP(size, type, type2, func, max)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+            auto *Src_d = reinterpret_cast<type2*>(Src2); \
+            memcpy(Dst_d, Src1, Elements * sizeof(type2));\
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              Dst_d[i+Elements] = (type)func(Src_d[i], max);          \
+            }                                                 \
+            break;                                            \
+            }
+
+          case IR::OP_VSQXTUN: {
+            auto Op = IROp->C<IR::IROp_VSQXTUN>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto max) { return std::max(std::min(a, (decltype(a))max), (decltype(a))0); };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(2, int16_t, uint8_t, Func, (1 << 8) - 1)
+              DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, uint16_t, Func, (1 << 16) - 1)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VSQXTUN2: {
+            auto Op = IROp->C<IR::IROp_VSQXTUN2>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto max) { return std::max(std::min(a, (decltype(a))max), (decltype(a))0); };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP_TOP(2, int16_t, uint8_t, Func, (1 << 8) - 1)
+              DO_VECTOR_1SRC_2TYPE_OP_TOP(4, int32_t, uint16_t, Func, (1 << 16) - 1)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VUCVTF: {
+            auto Op = IROp->C<IR::IROp_VUCVTF>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto max) { return a; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(4, float, uint32_t, Func, 0)
+              DO_VECTOR_1SRC_2TYPE_OP(8, double, uint64_t, Func, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VSCVTF: {
+            auto Op = IROp->C<IR::IROp_VSCVTF>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto max) { return a; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(4, float, int32_t, Func, 0)
+              DO_VECTOR_1SRC_2TYPE_OP(8, double, int64_t, Func, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFCVTL: {
+            auto Op = IROp->C<IR::IROp_VFCVTL>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto max) { return a; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(4, double, float, Func, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFCVTN: {
+            auto Op = IROp->C<IR::IROp_VFCVTN>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto max) { return a; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(8, float, double, Func, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VSXTL: {
+            auto Op = IROp->C<IR::IROp_VSXTL>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto max) { return a; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(1, int16_t, int8_t, Func,  0)
+              DO_VECTOR_1SRC_2TYPE_OP(2, int32_t, int16_t, Func, 0)
+              DO_VECTOR_1SRC_2TYPE_OP(4, int64_t, int32_t, Func, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VUXTL: {
+            auto Op = IROp->C<IR::IROp_VUXTL>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto max) { return a; };
+            switch (Op->ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(1, uint16_t, uint8_t, Func,  0)
+              DO_VECTOR_1SRC_2TYPE_OP(2, uint32_t, uint16_t, Func, 0)
+              DO_VECTOR_1SRC_2TYPE_OP(4, uint64_t, uint32_t, Func, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
           case IR::OP_VUMIN: {
             auto Op = IROp->C<IR::IROp_VUMin>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -2561,6 +2710,22 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, &Dst, Op->RegisterSize);
             break;
           }
+          case IR::OP_VINSGPR: {
+            auto Op = IROp->C<IR::IROp_VInsGPR>();
+            __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+            __uint128_t Src2 = *GetSrc<__uint128_t*>(Op->Header.Args[1]);
+
+            uint64_t Offset = Op->Index * 8;
+            __uint128_t Mask = (1ULL << (Op->ElementSize * 8)) - 1;
+            Mask <<= Offset;
+            Mask = ~Mask;
+            __uint128_t Dst = Src1 & Mask;
+            Dst |= Src2 << Offset;
+
+            memcpy(GDP, &Dst, Op->RegisterSize);
+            break;
+          }
+
           case IR::OP_SCVTF: {
             auto Op = IROp->C<IR::IROp_SCVTF>();
             if (Op->ElementSize == 8) {

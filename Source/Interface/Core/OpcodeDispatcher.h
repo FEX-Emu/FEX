@@ -375,11 +375,26 @@ public:
   IRPair<IROp_VNot> _VNot(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     return _VNot(ssa0, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VSQXTN> _VSQXTN(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VSQXTN(ssa0, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSQXTN2> _VSQXTN2(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSQXTN2(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSQXTUN> _VSQXTUN(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VSQXTUN(ssa0, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSQXTUN2> _VSQXTUN2(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSQXTUN2(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VCastFromGPR> _VCastFromGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     return _VCastFromGPR(ssa0, RegisterSize, ElementSize);
   }
   IRPair<IROp_VExtractToGPR> _VExtractToGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t Index) {
     return _VExtractToGPR(ssa0, RegisterSize, ElementSize, Index);
+  }
+  IRPair<IROp_VInsGPR> _VInsGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index) {
+    return _VInsGPR(ssa0, ssa1, RegisterSize, ElementSize, Index);
   }
 
   IRPair<IROp_Jump> _Jump() {
