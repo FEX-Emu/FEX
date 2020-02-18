@@ -19,8 +19,10 @@ namespace FEX::ArgLoader {
         .choices({"irint", "irjit", "llvm", "host", "vm"})
         .set_default("irint");
 
-      Parser.set_defaults("Break", "0");
-      Parser.set_defaults("Multiblock", "0");
+      std::string BreakString = "Break";
+      std::string MultiBlockString = "Multiblock";
+      Parser.set_defaults(BreakString, "0");
+      Parser.set_defaults(MultiBlockString, "0");
 
       CPUGroup.add_option("-b", "--break")
         .dest("Break")
@@ -71,6 +73,11 @@ namespace FEX::ArgLoader {
         .dest("AccurateSTDOut")
         .action("store_false")
         .help("Enable accurate output for stdout/stderr");
+
+      EmulationGroup.add_option("-U", "--unified-memory")
+        .dest("UnifiedMemory")
+        .action("store_true")
+        .help("Enable unified memory for the emulator");
 
       Parser.add_option_group(EmulationGroup);
     }
@@ -156,6 +163,11 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("AccurateSTDOut")) {
         bool Option = Options.get("AccurateSTDOut");
         Config::Add("AccurateSTDOut", std::to_string(Option));
+      }
+
+      if (Options.is_set_by_user("UnifiedMemory")) {
+        bool Option = Options.get("UnifiedMemory");
+        Config::Add("UnifiedMemory", std::to_string(Option));
       }
     }
 
