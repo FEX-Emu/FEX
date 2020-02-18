@@ -474,10 +474,43 @@ public:
     for (unsigned i = 0; i < EnvironmentVariables.size(); ++i) {
       EnvironmentBackingSize += EnvironmentVariables[i].size() + 1;
     }
+
+    AuxVariables.emplace_back(auxv_t{4, 0x38}); // AT_PHENT
+    AuxVariables.emplace_back(auxv_t{5, 0xb}); // XXX: AT_PHNUM
+    AuxVariables.emplace_back(auxv_t{6, 0x1000}); // AT_PAGESIZE
+    AuxVariables.emplace_back(auxv_t{8, 0}); // AT_FLAGS
+    AuxVariables.emplace_back(auxv_t{11, 1000}); // AT_UID
+    AuxVariables.emplace_back(auxv_t{12, 1000}); // AT_EUID
+    AuxVariables.emplace_back(auxv_t{13, 1000}); // AT_GID
+    AuxVariables.emplace_back(auxv_t{14, 1000}); // AT_EGID
+    AuxVariables.emplace_back(auxv_t{16, 0}); // AT_HWCAP
+    AuxVariables.emplace_back(auxv_t{17, 0x64}); // AT_CLKTIK
+    AuxVariables.emplace_back(auxv_t{23, 0}); // AT_SECURE
+
+    //AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
+    AuxVariables.emplace_back(auxv_t{25, ~0ULL}); // AT_RANDOM
+    //AuxVariables.emplace_back(auxv_t{26, 0}); // AT_HWCAP2
+    AuxVariables.emplace_back(auxv_t{32, 0ULL}); // sysinfo (vDSO)
+    AuxVariables.emplace_back(auxv_t{33, 0ULL}); // sysinfo (vDSO)
   }
 
   uint64_t StackSize() const override {
     return STACK_SIZE;
+  }
+
+  virtual void SetMemoryBase(uint64_t Base, bool Unified) override {
+    if (Unified) {
+      MemoryBase = Base;
+    }
+    else {
+      MemoryBase = 0;
+    }
+    // Set up our aux values here
+
+    AuxVariables.emplace_back(auxv_t{3, MemoryBase}); // Program header
+    AuxVariables.emplace_back(auxv_t{7, MemoryBase}); // Interpreter address
+    AuxVariables.emplace_back(auxv_t{9, MemoryBase + DB.DefaultRIP()}); // AT_ENTRY
+    AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
   }
 
   uint64_t SetupStack(void *HostPtr, uint64_t GuestPtr) const override {
@@ -491,14 +524,20 @@ public:
     TotalArgumentMemSize += 8 * Args.size(); // Pointers to strings
     TotalArgumentMemSize += 8; // Padding for something
     TotalArgumentMemSize += 8 * EnvironmentVariables.size(); // Argument location for envp
-    TotalArgumentMemSize += 8; // Padding for something
-    TotalArgumentMemSize += 8; // Padding for something
+    TotalArgumentMemSize += 8; // envp nullptr ender
+
+    uint64_t AuxVOffset = TotalArgumentMemSize;
+    TotalArgumentMemSize += sizeof(auxv_t) * AuxVariables.size();
 
     uint64_t ArgumentOffset = TotalArgumentMemSize;
     TotalArgumentMemSize += ArgumentBackingSize;
 
     uint64_t EnvpOffset = TotalArgumentMemSize;
     TotalArgumentMemSize += EnvironmentBackingSize;
+
+    // Random number location
+    uint64_t RandomNumberLocation = TotalArgumentMemSize;
+    TotalArgumentMemSize += 16;
 
     // Offset the stack by how much memory we need
     rsp -= TotalArgumentMemSize;
@@ -522,6 +561,7 @@ public:
     uint64_t *ArgumentPointers = reinterpret_cast<uint64_t*>(StackPointer + 8);
     uint64_t *PadPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + Args.size() * 8);
     uint64_t *EnvpPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + Args.size() * 8 + 8);
+    auxv_t *AuxVPointers = reinterpret_cast<auxv_t*>(StackPointer + AuxVOffset);
 
     // Arguments memory lives after everything else
     uint8_t *ArgumentBackingBase = reinterpret_cast<uint8_t*>(StackPointer + ArgumentOffset);
@@ -563,8 +603,22 @@ public:
 
       CurrentOffset += EnvpSize + 1;
     }
+
     // Last envp needs to be nullptr
     EnvpPointers[EnvironmentVariables.size()] = 0;
+
+    for (size_t i = 0; i < AuxVariables.size(); ++i) {
+      if (AuxVariables[i].key == 25) {
+        auxv_t Random{25, rsp + RandomNumberLocation};
+        uint64_t *RandomLoc = reinterpret_cast<uint64_t*>(StackPointer + RandomNumberLocation);
+        RandomLoc[0] = 0xDEAD;
+        RandomLoc[1] = 0xDEAD2;
+        AuxVPointers[i] = Random;
+      }
+      else {
+        AuxVPointers[i] = AuxVariables[i];
+      }
+    }
 
     return rsp;
   }
@@ -607,8 +661,14 @@ private:
   ::ELFLoader::ELFSymbolDatabase DB;
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;
+  struct auxv_t {
+    uint64_t key;
+    uint64_t val;
+  };
+  std::vector<auxv_t> AuxVariables;
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
+  uint64_t MemoryBase{};
 
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 };
