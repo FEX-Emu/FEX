@@ -1401,26 +1401,32 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_LoadMem>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           if (Op->Class.Val == 0) {
             auto Dst = GetDst<RA_64>(Node);
 
             switch (Op->Size) {
               case 1: {
-                movzx (Dst, byte [rax]);
+                movzx (Dst, byte [MemReg]);
               }
               break;
               case 2: {
-                movzx (Dst, word [rax]);
+                movzx (Dst, word [MemReg]);
               }
               break;
               case 4: {
-                mov(Dst, dword [rax]);
+                mov(Dst, dword [MemReg]);
               }
               break;
               case 8: {
-                mov(Dst, qword [rax]);
+                mov(Dst, qword [MemReg]);
               }
               break;
               default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
@@ -1432,26 +1438,26 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
             switch (Op->Size) {
               case 1: {
-                pinsrb(Dst, byte [rax], 0);
+                pinsrb(Dst, byte [MemReg], 0);
               }
               break;
               case 2: {
-                pinsrw(Dst, word [rax], 0);
+                pinsrw(Dst, word [MemReg], 0);
               }
               break;
               case 4: {
-                vmovd(Dst, dword [rax]);
+                vmovd(Dst, dword [MemReg]);
               }
               break;
               case 8: {
-                vmovq(Dst, qword [rax]);
+                vmovq(Dst, qword [MemReg]);
               }
               break;
               case 16: {
                  if (Op->Size == Op->Align)
-                   movups(GetDst(Node), xword [rax]);
+                   movups(GetDst(Node), xword [MemReg]);
                  else
-                   movups(GetDst(Node), xword [rax]);
+                   movups(GetDst(Node), xword [MemReg]);
                  if (MemoryDebug) {
                    movq(rcx, GetDst(Node));
                  }
@@ -1466,21 +1472,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_StoreMem>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
+
           if (Op->Class.Val == 0) {
             switch (Op->Size) {
             case 1:
-              mov(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+              mov(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
             break;
             case 2:
-              mov(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+              mov(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
             break;
             case 4:
-              mov(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              mov(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
             break;
             case 8:
-              mov(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              mov(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
             break;
             default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
             }
@@ -1488,22 +1501,22 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           else {
             switch (Op->Size) {
             case 1:
-              pextrb(byte [rax], GetSrc(Op->Header.Args[1].ID()), 0);
+              pextrb(byte [MemReg], GetSrc(Op->Header.Args[1].ID()), 0);
             break;
             case 2:
-              pextrw(word [rax], GetSrc(Op->Header.Args[1].ID()), 0);
+              pextrw(word [MemReg], GetSrc(Op->Header.Args[1].ID()), 0);
             break;
             case 4:
-              vmovd(dword [rax], GetSrc(Op->Header.Args[1].ID()));
+              vmovd(dword [MemReg], GetSrc(Op->Header.Args[1].ID()));
             break;
             case 8:
-              vmovq(qword [rax], GetSrc(Op->Header.Args[1].ID()));
+              vmovq(qword [MemReg], GetSrc(Op->Header.Args[1].ID()));
             break;
             case 16:
               if (Op->Size == Op->Align)
-                movups(xword [rax], GetSrc(Op->Header.Args[1].ID()));
+                movups(xword [MemReg], GetSrc(Op->Header.Args[1].ID()));
               else
-                movups(xword [rax], GetSrc(Op->Header.Args[1].ID()));
+                movups(xword [MemReg], GetSrc(Op->Header.Args[1].ID()));
             break;
             default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
             }
@@ -1738,13 +1751,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // pinsrq xmm, reg64/mem64, imm8
           switch (Op->ElementSize) {
           case 1: {
-            pextrb(al, GetSrc(Op->Header.Args[1].ID()), Op->SrcIdx);
-            pinsrb(xmm15, al, Op->DestIdx);
+            pextrb(eax, GetSrc(Op->Header.Args[1].ID()), Op->SrcIdx);
+            pinsrb(xmm15, eax, Op->DestIdx);
           break;
           }
           case 2: {
-            pextrw(ax, GetSrc(Op->Header.Args[1].ID()), Op->SrcIdx);
-            pinsrw(xmm15, ax, Op->DestIdx);
+            pextrw(eax, GetSrc(Op->Header.Args[1].ID()), Op->SrcIdx);
+            pinsrw(xmm15, eax, Op->DestIdx);
           break;
           }
           case 4: {
@@ -2617,8 +2630,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           //OrderedNode *CASResult = _CAS(Src3, Src2, Src1);
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rcx, Memory);
-          add(rcx, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+          Xbyak::Reg MemReg = rcx;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[2].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+          }
+
           mov(rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
           mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
@@ -2630,21 +2650,21 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           switch (OpSize) {
           case 1: {
-            cmpxchg(byte [rcx], dl);
+            cmpxchg(byte [MemReg], dl);
             movzx(rax, al);
           break;
           }
           case 2: {
-            cmpxchg(word [rcx], dx);
+            cmpxchg(word [MemReg], dx);
             movzx(rax, ax);
           break;
           }
           case 4: {
-            cmpxchg(dword [rcx], edx);
+            cmpxchg(dword [MemReg], edx);
           break;
           }
           case 8: {
-            cmpxchg(qword [rcx], rdx);
+            cmpxchg(qword [MemReg], rdx);
           break;
           }
           default: LogMan::Msg::A("Unsupported: %d", OpSize);
@@ -2658,21 +2678,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_AtomicAdd>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
+
           lock();
           switch (Op->Size) {
           case 1:
-            add(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            add(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
           break;
           case 2:
-            add(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            add(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
           break;
           case 4:
-            add(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            add(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
           break;
           case 8:
-            add(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            add(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
           break;
           default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
           }
@@ -2683,21 +2710,27 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_AtomicSub>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           lock();
           switch (Op->Size) {
           case 1:
-            sub(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            sub(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
           break;
           case 2:
-            sub(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            sub(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
           break;
           case 4:
-            sub(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            sub(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
           break;
           case 8:
-            sub(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            sub(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
           break;
           default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
           }
@@ -2708,21 +2741,27 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_AtomicAnd>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           lock();
           switch (Op->Size) {
           case 1:
-            and(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            and(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
           break;
           case 2:
-            and(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            and(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
           break;
           case 4:
-            and(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            and(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
           break;
           case 8:
-            and(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            and(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
           break;
           default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
           }
@@ -2733,21 +2772,27 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_AtomicOr>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           lock();
           switch (Op->Size) {
           case 1:
-            or(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            or(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
           break;
           case 2:
-            or(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            or(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
           break;
           case 4:
-            or(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            or(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
           break;
           case 8:
-            or(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            or(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
           break;
           default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
           }
@@ -2758,21 +2803,27 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_AtomicXor>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           lock();
           switch (Op->Size) {
           case 1:
-            xor(byte [rax], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+            xor(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
           break;
           case 2:
-            xor(word [rax], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+            xor(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
           break;
           case 4:
-            xor(dword [rax], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            xor(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
           break;
           case 8:
-            xor(qword [rax], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            xor(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
           break;
           default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
           }
@@ -2783,25 +2834,31 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_AtomicSwap>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           lock();
           switch (Op->Size) {
           case 1:
             mov(GetDst<RA_8>(Node), GetSrc<RA_8>(Op->Header.Args[1].ID()));
-            xchg(byte [rax], GetDst<RA_8>(Node));
+            xchg(byte [MemReg], GetDst<RA_8>(Node));
           break;
           case 2:
             mov(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[1].ID()));
-            xchg(word [rax], GetDst<RA_8>(Node));
+            xchg(word [MemReg], GetDst<RA_8>(Node));
           break;
           case 4:
             mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()));
-            xchg(dword [rax], GetDst<RA_8>(Node));
+            xchg(dword [MemReg], GetDst<RA_8>(Node));
           break;
           case 8:
             mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-            xchg(qword [rax], GetDst<RA_8>(Node));
+            xchg(qword [MemReg], GetDst<RA_8>(Node));
           break;
           default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
           }
@@ -2812,31 +2869,37 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           switch (Op->Size) {
           case 1:
             mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
             lock();
-            xadd(byte [rax], cl);
+            xadd(byte [MemReg], cl);
             mov(GetDst<RA_8>(Node), cl);
           break;
           case 2:
             mov(cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
             lock();
-            xadd(word [rax], cl);
+            xadd(word [MemReg], cl);
             mov(GetDst<RA_16>(Node), cx);
           break;
           case 4:
             mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
             lock();
-            xadd(dword [rax], ecx);
+            xadd(dword [MemReg], ecx);
             mov(GetDst<RA_32>(Node), ecx);
           break;
           case 8:
             mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
             lock();
-            xadd(qword [rax], rcx);
+            xadd(qword [MemReg], rcx);
             mov(GetDst<RA_64>(Node), rcx);
           break;
           default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
@@ -2848,35 +2911,41 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-          mov(rax, Memory);
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = rax;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           switch (Op->Size) {
           case 1:
             mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
             neg(cl);
             lock();
-            xadd(byte [rax], cl);
+            xadd(byte [MemReg], cl);
             mov(GetDst<RA_8>(Node), cl);
           break;
           case 2:
             mov(cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
             neg(cx);
             lock();
-            xadd(word [rax], cl);
+            xadd(word [MemReg], cl);
             mov(GetDst<RA_16>(Node), cx);
           break;
           case 4:
             mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
             neg(ecx);
             lock();
-            xadd(dword [rax], ecx);
+            xadd(dword [MemReg], ecx);
             mov(GetDst<RA_32>(Node), ecx);
           break;
           case 8:
             mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
             neg(rcx);
             lock();
-            xadd(qword [rax], rcx);
+            xadd(qword [MemReg], rcx);
             mov(GetDst<RA_64>(Node), rcx);
           break;
           default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
@@ -2888,11 +2957,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
           // TMP1 = rax
-          mov(TMP4, Memory);
-          add(TMP4, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = TMP4;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
+
           switch (Op->Size) {
             case 1: {
-              mov(TMP1.cvt8(), byte [TMP4]);
+              mov(TMP1.cvt8(), byte [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -2901,14 +2977,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               and(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(byte [TMP4], TMP2.cvt8());
+              lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
               jne(Loop);
               // Result is the previous value from memory, which is currently in TMP3
               movzx(GetDst<RA_64>(Node), TMP3.cvt8());
               break;
             }
             case 2: {
-              mov(TMP1.cvt16(), word [TMP4]);
+              mov(TMP1.cvt16(), word [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -2917,7 +2993,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               and(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(word [TMP4], TMP2.cvt16());
+              lock(); cmpxchg(word [MemReg], TMP2.cvt16());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
@@ -2925,7 +3001,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
             }
             case 4: {
-              mov(TMP1.cvt32(), dword [TMP4]);
+              mov(TMP1.cvt32(), dword [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -2934,7 +3010,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               and(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(dword [TMP4], TMP2.cvt32());
+              lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
@@ -2942,7 +3018,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
             }
             case 8: {
-              mov(TMP1.cvt64(), qword [TMP4]);
+              mov(TMP1.cvt64(), qword [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -2951,7 +3027,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               and(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(qword [TMP4], TMP2.cvt64());
+              lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
@@ -2967,11 +3043,17 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
           // TMP1 = rax
-          mov(TMP4, Memory);
-          add(TMP4, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = TMP4;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           switch (Op->Size) {
             case 1: {
-              mov(TMP1.cvt8(), byte [TMP4]);
+              mov(TMP1.cvt8(), byte [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -2980,14 +3062,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               or(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(byte [TMP4], TMP2.cvt8());
+              lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
               jne(Loop);
               // Result is the previous value from memory, which is currently in TMP3
               movzx(GetDst<RA_64>(Node), TMP3.cvt8());
               break;
             }
             case 2: {
-              mov(TMP1.cvt16(), word [TMP4]);
+              mov(TMP1.cvt16(), word [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -2996,7 +3078,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               or(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(word [TMP4], TMP2.cvt16());
+              lock(); cmpxchg(word [MemReg], TMP2.cvt16());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
@@ -3004,7 +3086,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
             }
             case 4: {
-              mov(TMP1.cvt32(), dword [TMP4]);
+              mov(TMP1.cvt32(), dword [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -3013,7 +3095,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               or(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(dword [TMP4], TMP2.cvt32());
+              lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
@@ -3021,7 +3103,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
             }
             case 8: {
-              mov(TMP1.cvt64(), qword [TMP4]);
+              mov(TMP1.cvt64(), qword [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -3030,7 +3112,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               or(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(qword [TMP4], TMP2.cvt64());
+              lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
@@ -3046,11 +3128,17 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
           // TMP1 = rax
-          mov(TMP4, Memory);
-          add(TMP4, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg MemReg = TMP4;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          }
           switch (Op->Size) {
             case 1: {
-              mov(TMP1.cvt8(), byte [TMP4]);
+              mov(TMP1.cvt8(), byte [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -3059,14 +3147,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               xor(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(byte [TMP4], TMP2.cvt8());
+              lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
               jne(Loop);
               // Result is the previous value from memory, which is currently in TMP3
               movzx(GetDst<RA_64>(Node), TMP3.cvt8());
               break;
             }
             case 2: {
-              mov(TMP1.cvt16(), word [TMP4]);
+              mov(TMP1.cvt16(), word [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -3075,7 +3163,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               xor(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(word [TMP4], TMP2.cvt16());
+              lock(); cmpxchg(word [MemReg], TMP2.cvt16());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
@@ -3083,7 +3171,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
             }
             case 4: {
-              mov(TMP1.cvt32(), dword [TMP4]);
+              mov(TMP1.cvt32(), dword [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -3092,7 +3180,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               xor(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(dword [TMP4], TMP2.cvt32());
+              lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
@@ -3100,7 +3188,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               break;
             }
             case 8: {
-              mov(TMP1.cvt64(), qword [TMP4]);
+              mov(TMP1.cvt64(), qword [MemReg]);
 
               Label Loop;
               L(Loop);
@@ -3109,7 +3197,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               xor(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
 
               // Updates RAX with the value from memory
-              lock(); cmpxchg(qword [TMP4], TMP2.cvt64());
+              lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
               jne(Loop);
 
               // Result is the previous value from memory, which is currently in TMP3
