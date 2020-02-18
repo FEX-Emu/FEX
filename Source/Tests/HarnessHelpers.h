@@ -462,7 +462,6 @@ public:
 
         if (Invalid) continue;
 
-        printf("Allowing '%s'\n", envp[i]);
         EnvironmentVariables.emplace_back(envp[i]);
       }
     }
