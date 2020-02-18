@@ -183,6 +183,7 @@ public:
   void MOVAPSOp(OpcodeArgs);
   void MOVUPSOp(OpcodeArgs);
   void MOVLHPSOp(OpcodeArgs);
+  void MOVLPOp(OpcodeArgs);
   void MOVHPDOp(OpcodeArgs);
   void MOVSDOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
@@ -221,8 +222,12 @@ public:
   void CVT(OpcodeArgs);
   template<size_t SrcElementSize, bool Signed>
   void FCVT(OpcodeArgs);
+  template<size_t SrcElementSize, bool Signed, bool Widen>
+  void VFCVT(OpcodeArgs);
   template<size_t DstElementSize, size_t SrcElementSize>
   void FCVTF(OpcodeArgs);
+  template<size_t DstElementSize, size_t SrcElementSize>
+  void VFCVTF(OpcodeArgs);
   void TZCNT(OpcodeArgs);
   void MOVSSOp(OpcodeArgs);
   template<size_t ElementSize>
@@ -230,6 +235,8 @@ public:
   template<size_t ElementSize>
   void SHUFOp(OpcodeArgs);
   void ANDNOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void PINSROp(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>
@@ -245,6 +252,9 @@ public:
   void PAlignrOp(OpcodeArgs);
   void LDMXCSR(OpcodeArgs);
   void STMXCSR(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void PACKUSOp(OpcodeArgs);
 
   void UnimplementedOp(OpcodeArgs);
 
