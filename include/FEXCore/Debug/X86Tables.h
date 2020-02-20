@@ -42,11 +42,19 @@ constexpr uint32_t SIZE_64BIT        = 0b100;
 constexpr uint32_t SIZE_128BIT       = 0b101;
 constexpr uint32_t SIZE_256BIT       = 0b110;
 
+constexpr uint32_t FLAG_OPADDR_OFF = (FLAG_SIZE_SRC_OFF + 3);
+constexpr uint32_t FLAG_OPADDR_MASK = (0b11 << FLAG_OPADDR_OFF);
+
+constexpr uint32_t FLAG_OPERAND_SIZE_LAST = (0b01 << FLAG_OPADDR_OFF);
+constexpr uint32_t FLAG_WIDENING_SIZE_LAST = (0b10 << FLAG_OPADDR_OFF);
+
 inline uint32_t GetSizeDstFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_DST_OFF) & SIZE_MASK; }
 inline uint32_t GetSizeSrcFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_SRC_OFF) & SIZE_MASK; }
 
 inline uint32_t GenSizeDstSize(uint32_t Size) { return Size << FLAG_SIZE_DST_OFF; }
 inline uint32_t GenSizeSrcSize(uint32_t Size) { return Size << FLAG_SIZE_SRC_OFF; }
+
+inline uint32_t GetOpAddr(uint32_t Flags) { return Flags & FLAG_OPADDR_MASK; }
 }
 
 union DecodedOperand {

@@ -743,6 +743,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
     case 0x66: // Operand Size prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_OPERAND_SIZE;
       DecodeInst->LastEscapePrefix = Op;
+      DecodeInst->Flags = (DecodeInst->Flags & ~DecodeFlags::FLAG_OPADDR_MASK) | DecodeFlags::FLAG_OPERAND_SIZE_LAST;
     break;
     case 0x67: // Address Size override prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_ADDRESS_SIZE;
@@ -773,8 +774,10 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
       DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
 
       // Widening displacement
-      if (Op & 0b1000)
+      if (Op & 0b1000) {
         DecodeInst->Flags |= DecodeFlags::FLAG_REX_WIDENING;
+        DecodeInst->Flags = (DecodeInst->Flags & ~DecodeFlags::FLAG_OPADDR_MASK) | DecodeFlags::FLAG_WIDENING_SIZE_LAST;
+      }
 
       // XGPR_B bit set
       if (Op & 0b0001)
