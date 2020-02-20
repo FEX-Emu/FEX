@@ -921,9 +921,13 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_FINDMSB: {
             auto Op = IROp->C<IR::IROp_FindMSB>();
-            uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
-            uint64_t Result = (Op->Header.Size * 8 - __builtin_clzll(Src)) - 1;
-            GD = Result;
+            switch (OpSize) {
+              case 1: GD = ((24 + OpSize * 8) - __builtin_clz(*GetSrc<uint8_t*>(Op->Header.Args[0]))) - 1; break;
+              case 2: GD = ((16 + OpSize * 8) - __builtin_clz(*GetSrc<uint16_t*>(Op->Header.Args[0]))) - 1; break;
+              case 4: GD = (OpSize * 8 - __builtin_clz(*GetSrc<uint32_t*>(Op->Header.Args[0]))) - 1; break;
+              case 8: GD = (OpSize * 8 - __builtin_clzll(*GetSrc<uint64_t*>(Op->Header.Args[0]))) - 1; break;
+              default: LogMan::Msg::A("Unknown REV size: %d", OpSize); break;
+            }
             break;
           }
           case IR::OP_REV: {
