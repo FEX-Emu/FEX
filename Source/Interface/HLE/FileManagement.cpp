@@ -564,33 +564,72 @@ uint64_t FileManager::Recvfrom(int sockfd, void *buf, size_t len, int flags, str
 }
 
 uint64_t FileManager::Sendmsg(int sockfd, const struct msghdr *msg, int flags) {
-  LogMan::Throw::A(!CTX->Config.UnifiedMemory, "Not yet supported");
   auto FD = FDMap.find(sockfd);
   if (FD == FDMap.end()) {
     return -1;
   }
 
-  std::vector<iovec> Hostvec;
-  struct msghdr Hosthdr;
-  memcpy(&Hosthdr, msg, sizeof(struct msghdr));
+  int Result{};
+  if (CTX->Config.UnifiedMemory) {
+    if (msg->msg_control && msg->msg_controllen > 0) {
+      // If we have ancillary data then we need to transform the data
+      struct msghdr Hosthdr;
+      memcpy(&Hosthdr, msg, sizeof(struct msghdr));
 
-  if (Hosthdr.msg_name)
-    Hosthdr.msg_name = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_name));
+      void *New_msg_control = malloc(Hosthdr.msg_controllen);
+      memcpy(New_msg_control, Hosthdr.msg_control, Hosthdr.msg_controllen);
+      Hosthdr.msg_control = New_msg_control;
 
-  if (Hosthdr.msg_control)
-    Hosthdr.msg_control = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_control));
+      struct cmsghdr *cmsg = reinterpret_cast<struct cmsghdr*>(Hosthdr.msg_control);
+      switch (cmsg->cmsg_type) {
+        case SCM_RIGHTS: {
+          uint32_t *GuestFDs = reinterpret_cast<uint32_t*>(CMSG_DATA(cmsg));
+          uint32_t NumFiles = (msg->msg_controllen - cmsg->cmsg_len) / sizeof(uint32_t);
+          for (size_t i = 0; i < NumFiles; ++i) {
+            auto GuestFD = FDMap.find(GuestFDs[i]);
+            // Remap guestFDs back to hostFDs so the other process knows what the real FD is
+            if (GuestFD == FDMap.end()) {
+              LogMan::Msg::D("Couldn't find GuestFD %d", GuestFDs[i]);
+            }
+            else {
+              GuestFDs[i] = GuestFD->second->GetHostFD();
+            }
+          }
+          break;
+        }
+        default: LogMan::Msg::A("Unhandled Ancillary socket type: 0x%x", cmsg->cmsg_type); break;
+      }
 
-  Hostvec.resize(Hosthdr.msg_iovlen);
-
-  struct iovec *Guestiov = CTX->MemoryMapper.GetPointer<struct iovec*>(reinterpret_cast<uint64_t>(Hosthdr.msg_iov));
-  for (int i = 0; i < Hosthdr.msg_iovlen; ++i) {
-    Hostvec[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
-    Hostvec[i].iov_len = Guestiov[i].iov_len;
+      Result = sendmsg(FD->second->GetHostFD(), &Hosthdr, flags);
+      free(New_msg_control);
+    }
+    else {
+      Result = sendmsg(FD->second->GetHostFD(), msg, flags);
+    }
   }
+  else {
+    std::vector<iovec> Hostvec;
+    struct msghdr Hosthdr;
+    memcpy(&Hosthdr, msg, sizeof(struct msghdr));
 
-  Hosthdr.msg_iov = &Hostvec.at(0);
+    if (Hosthdr.msg_name)
+      Hosthdr.msg_name = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_name));
 
-  int Result = sendmsg(FD->second->GetHostFD(), &Hosthdr, flags);
+    if (Hosthdr.msg_control)
+      Hosthdr.msg_control = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Hosthdr.msg_control));
+
+    Hostvec.resize(Hosthdr.msg_iovlen);
+
+    struct iovec *Guestiov = CTX->MemoryMapper.GetPointer<struct iovec*>(reinterpret_cast<uint64_t>(Hosthdr.msg_iov));
+    for (int i = 0; i < Hosthdr.msg_iovlen; ++i) {
+      Hostvec[i].iov_base = CTX->MemoryMapper.GetPointer(reinterpret_cast<uint64_t>(Guestiov[i].iov_base));
+      Hostvec[i].iov_len = Guestiov[i].iov_len;
+    }
+
+    Hosthdr.msg_iov = &Hostvec.at(0);
+
+    Result = sendmsg(FD->second->GetHostFD(), &Hosthdr, flags);
+  }
   if (Result == -1) {
     if (errno == EAGAIN ||
         errno == EWOULDBLOCK) {
