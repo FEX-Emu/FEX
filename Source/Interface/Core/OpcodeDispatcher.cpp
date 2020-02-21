@@ -1958,10 +1958,12 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
 
     // Can we end the block?
-    auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
+    OrderedNode *CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
       Counter, _Constant(0),
       _Constant(1), _Constant(0));
+
     auto CondJump = _CondJump(CanLeaveCond);
+    IRPair<IROp_CondJump> InternalCondJump;
 
     auto LoopTail = CreateNewCodeBlock();
     SetFalseJumpTarget(CondJump, LoopTail);
@@ -1999,13 +2001,17 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       Dest_RSI = _Add(Dest_RSI, PtrDir);
       _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), Dest_RSI);
 
-      // Jump back to the start, we have more work to do
-      _Jump(LoopStart);
+      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      InternalCondJump = _CondJump(ZF);
+
+      // Jump back to the start if we have more work to do
+      SetTrueJumpTarget(InternalCondJump, LoopStart);
     }
 
   // Make sure to start a new block after ending this one
   auto LoopEnd = CreateNewCodeBlock();
   SetTrueJumpTarget(CondJump, LoopEnd);
+  SetFalseJumpTarget(InternalCondJump, LoopEnd);
   SetCurrentCodeBlock(LoopEnd);
 }
 
@@ -2013,8 +2019,6 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
   LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX, "Can only handle REPNE\n");
 
   auto Size = GetSrcSize(Op);
-
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Constant(0));
 
   auto JumpStart = _Jump();
   // Make sure to start a new block after ending this one
@@ -2032,11 +2036,9 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         Counter, ZeroConst,
         OneConst, ZeroConst);
 
-      auto ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-      CanLeaveCond = _Or(CanLeaveCond, ZF);
-
     // We leave if RCX = 0
     auto CondJump = _CondJump(CanLeaveCond);
+    IRPair<IROp_CondJump> InternalCondJump;
 
     auto LoopTail = CreateNewCodeBlock();
     SetFalseJumpTarget(CondJump, LoopTail);
@@ -2072,11 +2074,17 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       // Offset the pointer
       TailDest_RDI = _Add(TailDest_RDI, PtrDir);
       _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest_RDI);
-      _Jump(LoopStart);
+
+      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      InternalCondJump = _CondJump(ZF);
+
+      // Jump back to the start if we have more work to do
+      SetFalseJumpTarget(InternalCondJump, LoopStart);
   }
   // Make sure to start a new block after ending this one
   auto LoopEnd = CreateNewCodeBlock();
   SetTrueJumpTarget(CondJump, LoopEnd);
+  SetTrueJumpTarget(InternalCondJump, LoopEnd);
   SetCurrentCodeBlock(LoopEnd);
 }
 
@@ -3830,6 +3838,32 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+template<size_t ElementSize>
+void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto Size = GetDstSize(Op);
+
+  auto Result = _VSShrS(Size, ElementSize, Dest, Src);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  auto Size = GetDstSize(Op);
+
+  auto Result = _VSShrI(Size, ElementSize, Dest, Shift);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Res = _CreateVector2(Src, Src);
@@ -4253,6 +4287,36 @@ void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+template<size_t ElementSize, bool Signed>
+void OpDispatchBuilder::PMULOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode* Srcs1[2]{};
+  OrderedNode* Srcs2[2]{};
+
+  Srcs1[0] = _VExtr(Size, ElementSize, Src1, Src1, 0);
+  Srcs1[1] = _VExtr(Size, ElementSize, Src1, Src1, 2);
+
+  Srcs2[0] = _VExtr(Size, ElementSize, Src2, Src2, 0);
+  Srcs2[1] = _VExtr(Size, ElementSize, Src2, Src2, 2);
+
+  Src1 = _VInsElement(Size, ElementSize, 1, 0, Srcs1[0], Srcs1[1]);
+  Src2 = _VInsElement(Size, ElementSize, 1, 0, Srcs2[0], Srcs2[1]);
+
+  OrderedNode *Res{};
+  if (Signed) {
+    Res = _VSMull(Size, ElementSize, Src1, Src2);
+  }
+  else {
+    Res = _VUMull(Size, ElementSize, Src1, Src2);
+
+  }
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
@@ -4427,7 +4491,6 @@ void InstallOpcodeHandlers() {
     {0xBB, 1, &OpDispatchBuilder::BTCOp<0>},
     {0xBC, 1, &OpDispatchBuilder::BSFOp}, // BSF
     {0xBD, 1, &OpDispatchBuilder::BSROp}, // BSF
-    // XXX: Broken on LLVM?
     {0xBE, 2, &OpDispatchBuilder::MOVSXOp},
     {0xC0, 2, &OpDispatchBuilder::XADDOp},
     {0xC8, 8, &OpDispatchBuilder::BSWAPOp},
@@ -4435,6 +4498,7 @@ void InstallOpcodeHandlers() {
     // SSE
     // XXX: Broken on LLVM?
     {0x10, 2, &OpDispatchBuilder::MOVUPSOp},
+    {0x12, 2, &OpDispatchBuilder::MOVLPOp},
     {0x14, 1, &OpDispatchBuilder::PUNPCKLOp<4>},
     {0x16, 1, &OpDispatchBuilder::MOVLHPSOp},
     {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
@@ -4445,6 +4509,7 @@ void InstallOpcodeHandlers() {
     {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
+    {0x5A, 1, &OpDispatchBuilder::VFCVTF<8, 4>},
     {0x5B, 1, &OpDispatchBuilder::FCVT<4, true>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>},
@@ -4467,6 +4532,7 @@ void InstallOpcodeHandlers() {
     {0xB9, 1, nullptr}, // GROUP 10
     {0xBA, 1, nullptr}, // GROUP 8
 
+    {0xC4, 1, &OpDispatchBuilder::PINSROp<4>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<4>},
     {0xC7, 1, nullptr}, // GROUP 9
 
@@ -4687,6 +4753,8 @@ void InstallOpcodeHandlers() {
     {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
     {0xDF, 1, &OpDispatchBuilder::ANDNOp},
+    {0xE1, 1, &OpDispatchBuilder::PSRAIOp<2>},
+    {0xE2, 1, &OpDispatchBuilder::PSRAIOp<4>},
     {0xE7, 1, &OpDispatchBuilder::MOVVectorOp},
     {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
 
@@ -4695,6 +4763,7 @@ void InstallOpcodeHandlers() {
     {0xEF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
     {0xF2, 1, &OpDispatchBuilder::PSLL<4, true, 0>},
     {0xF3, 1, &OpDispatchBuilder::PSLL<8, true, 0>},
+    {0xF4, 1, &OpDispatchBuilder::PMULOp<4, false>},
     {0xF8, 4, &OpDispatchBuilder::PSUBQOp},
     {0xFD, 1, &OpDispatchBuilder::PADDQOp},
     {0xFE, 1, &OpDispatchBuilder::PADDQOp},
@@ -4727,10 +4796,16 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 7), 1, &OpDispatchBuilder::BTCOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 7), 1, &OpDispatchBuilder::BTCOp<1>},
 
+    // GROUP 12
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 4), 1, &OpDispatchBuilder::PSRAOp<2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 4), 1, &OpDispatchBuilder::PSRAOp<2>},
+
     // GROUP 13
     {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLD<4, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 4), 1, &OpDispatchBuilder::PSRAOp<4>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 6), 1, &OpDispatchBuilder::PSLL<4, true, 1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 2), 1, &OpDispatchBuilder::PSRLD<4, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 4), 1, &OpDispatchBuilder::PSRAOp<4>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 6), 1, &OpDispatchBuilder::PSLL<4, true, 1>},
 
     // GROUP 14

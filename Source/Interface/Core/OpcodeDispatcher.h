@@ -217,6 +217,10 @@ public:
   void PSLL(OpcodeArgs);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
+  template<size_t ElementSize>
+  void PSRAOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void PSRAIOp(OpcodeArgs);
   void MOVDDUPOp(OpcodeArgs);
   template<size_t DstElementSize, bool Signed>
   void CVT(OpcodeArgs);
@@ -255,6 +259,9 @@ public:
 
   template<size_t ElementSize>
   void PACKUSOp(OpcodeArgs);
+
+  template<size_t ElementSize, bool Signed>
+  void PMULOp(OpcodeArgs);
 
   void UnimplementedOp(OpcodeArgs);
 
@@ -361,6 +368,12 @@ public:
   IRPair<IROp_VUShlS> _VUShlS(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShlS(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VUShrS> _VUShrS(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VUShrS(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSShrS> _VSShrS(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSShrS(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VUShr> _VUShr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShr(ssa0, ssa1, RegisterSize, ElementSize);
   }
@@ -372,6 +385,12 @@ public:
   }
   IRPair<IROp_VSRI> _VSRI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t ByteShift) {
     return _VSRI(ssa0, RegisterSize, ElementSize, ByteShift);
+  }
+  IRPair<IROp_VUShrI> _VUShrI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t BitShift) {
+    return _VUShrI(ssa0, RegisterSize, ElementSize, BitShift);
+  }
+  IRPair<IROp_VSShrI> _VSShrI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t BitShift) {
+    return _VSShrI(ssa0, RegisterSize, ElementSize, BitShift);
   }
   IRPair<IROp_VFSqrt> _VFSqrt(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     return _VFSqrt(ssa0, RegisterSize, ElementSize);
@@ -405,6 +424,18 @@ public:
   }
   IRPair<IROp_VInsGPR> _VInsGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index) {
     return _VInsGPR(ssa0, ssa1, RegisterSize, ElementSize, Index);
+  }
+  IRPair<IROp_VUMul> _VUMul(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VUMul(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSMul> _VSMul(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSMul(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VUMull> _VUMull(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VUMull(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSMull> _VSMull(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSMull(ssa0, ssa1, RegisterSize, ElementSize);
   }
 
   IRPair<IROp_Jump> _Jump() {

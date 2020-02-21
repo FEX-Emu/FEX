@@ -879,6 +879,15 @@
       ]
     },
 
+    "VUShr": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VUShlS": {
 			"HasDest": true,
       "SSAArgs": "2",
@@ -888,8 +897,17 @@
       ]
     },
 
-    "VUShr": {
-			"HasDest": true,
+    "VUShrS": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSShrS": {
+      "HasDest": true,
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -945,6 +963,26 @@
         "uint8_t", "RegisterSize",
         "uint8_t", "ElementSize",
         "uint8_t", "ByteShift"
+      ]
+    },
+
+    "VUShrI": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "BitShift"
+      ]
+    },
+
+    "VSShrI": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "BitShift"
       ]
     },
 
@@ -1073,6 +1111,42 @@
       "Args": [
         "uint8_t", "DstElementSize",
         "uint8_t", "SrcElementSize"
+      ]
+    },
+
+    "VUMul": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSMul": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUMull": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSMull": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
       ]
     },
 
