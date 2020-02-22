@@ -383,7 +383,7 @@ void InitializeSecondaryTables() {
     {0xBA, 1, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                        0, nullptr}},
     {0xBB, 5,  X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
     {0xC0, 2, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                      0, nullptr}},
-    {0xC2, 1, X86InstInfo{"CMPSD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    1, nullptr}},
+    {0xC2, 1, X86InstInfo{"CMPSD",     TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    1, nullptr}},
     {0xC3, 5, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
     {0xC8, 8, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                      0, nullptr}},
 
