@@ -3997,7 +3997,7 @@ void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
   }
 }
 
-template<size_t ElementSize>
+template<size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -4026,8 +4026,10 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
     default: LogMan::Msg::A("Unknown Comparison type: %d", CompType);
   }
 
-  // Insert the lower bits
-  Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Result);
+  if (Scalar) {
+    // Insert the lower bits
+    Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Result);
+  }
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -4540,6 +4542,7 @@ void InstallOpcodeHandlers() {
     {0xB9, 1, nullptr}, // GROUP 10
     {0xBA, 1, nullptr}, // GROUP 8
 
+    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4, false>},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<4>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<4>},
     {0xC7, 1, nullptr}, // GROUP 9
@@ -4683,7 +4686,7 @@ void InstallOpcodeHandlers() {
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0xB8, 1, &OpDispatchBuilder::PopcountOp},
     {0xBC, 2, &OpDispatchBuilder::TZCNT},
-    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4>},
+    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4, true>},
     {0xE6, 1, &OpDispatchBuilder::VFCVT<4, true, true>},
   };
 
@@ -4703,7 +4706,7 @@ void InstallOpcodeHandlers() {
     {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 8>},
     {0x5F, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, true>},
-    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8>},
+    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, true>},
     {0xF0, 1, &OpDispatchBuilder::UnimplementedOp},
   };
 
@@ -4749,6 +4752,7 @@ void InstallOpcodeHandlers() {
     {0x78, 1, nullptr}, // GROUP 17
     {0x7E, 1, &OpDispatchBuilder::MOVDOp},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
+    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, false>},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<4>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<8>},
 
