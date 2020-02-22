@@ -2554,11 +2554,19 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
     Srcs[i] = Src2;
   }
 
+  // 32bit:
+  // [31:0]   = Src1[Selection]
+  // [63:32]  = Src1[Selection]
+  // [95:64]  = Src2[Selection]
+  // [127:96] = Src2[Selection]
+  // 64bit:
   // [63:0]   = Src1[Selection]
   // [127:64] = Src2[Selection]
+  uint8_t SelectionMask = NumElements - 1;
+  uint8_t ShiftAmount = __builtin_popcount(SelectionMask);
   for (uint8_t Element = 0; Element < NumElements; ++Element) {
-    Dest = _VInsElement(Size, ElementSize, Element, Shuffle & 0b1, Dest, Srcs[Element]);
-    Shuffle >>= 1;
+    Dest = _VInsElement(Size, ElementSize, Element, Shuffle & SelectionMask, Dest, Srcs[Element]);
+    Shuffle >>= ShiftAmount;
   }
 
   StoreResult(FPRClass, Op, Dest, -1);
