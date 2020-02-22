@@ -4510,6 +4510,7 @@ void InstallOpcodeHandlers() {
     {0x10, 2, &OpDispatchBuilder::MOVUPSOp},
     {0x12, 2, &OpDispatchBuilder::MOVLPOp},
     {0x14, 1, &OpDispatchBuilder::PUNPCKLOp<4>},
+    {0x15, 1, &OpDispatchBuilder::PUNPCKHOp<4>},
     {0x16, 1, &OpDispatchBuilder::MOVLHPSOp},
     {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
