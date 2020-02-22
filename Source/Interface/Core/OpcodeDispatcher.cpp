@@ -2466,14 +2466,17 @@ void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
   }
 }
 
-void OpDispatchBuilder::PMOVMSKBOp(OpcodeArgs) {
+template<size_t ElementSize>
+void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
+  uint8_t NumElements = Size / ElementSize;
+
   OrderedNode *CurrentVal = _Constant(0);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  for (unsigned i = 0; i < Size; ++i) {
+  for (unsigned i = 0; i < NumElements; ++i) {
     // Extract the top bit of the element
-    OrderedNode *Tmp = _Bfe(1, ((i + 1) * 8) - 1, Src);
+    OrderedNode *Tmp = _Bfe(1, ((i + 1) * (ElementSize * 8)) - 1, Src);
     // Shift it to the correct location
     Tmp = _Lshl(Tmp, _Constant(i));
 
@@ -4514,6 +4517,7 @@ void InstallOpcodeHandlers() {
     {0x16, 1, &OpDispatchBuilder::MOVLHPSOp},
     {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
+    {0x50, 1, &OpDispatchBuilder::MOVMSKOp<4>},
     {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0x55, 1, &OpDispatchBuilder::ANDNOp},
     {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
@@ -4550,7 +4554,7 @@ void InstallOpcodeHandlers() {
 
     {0xD4, 1, &OpDispatchBuilder::PADDQOp},
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
-    {0xD7, 1, &OpDispatchBuilder::PMOVMSKBOp},
+    {0xD7, 1, &OpDispatchBuilder::MOVMSKOp<1>},
     // XXX: Untested
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
     {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
@@ -4721,6 +4725,7 @@ void InstallOpcodeHandlers() {
     {0x28, 2, &OpDispatchBuilder::MOVAPSOp},
 
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
+    {0x50, 1, &OpDispatchBuilder::MOVMSKOp<8>},
     {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0x55, 1, &OpDispatchBuilder::ANDNOp},
     {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
@@ -4760,7 +4765,7 @@ void InstallOpcodeHandlers() {
     {0xD4, 1, &OpDispatchBuilder::PADDQOp},
     // XXX: Causes LLVM to crash if commented out?
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
-    {0xD7, 1, &OpDispatchBuilder::PMOVMSKBOp}, // PMOVMSKB
+    {0xD7, 1, &OpDispatchBuilder::MOVMSKOp<1>}, // PMOVMSKB
     // XXX: Untested
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
     {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},

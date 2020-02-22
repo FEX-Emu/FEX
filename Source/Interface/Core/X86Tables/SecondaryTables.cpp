@@ -76,7 +76,7 @@ void InitializeSecondaryTables() {
     {0x4E, 1, X86InstInfo{"CMOVLE",     TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                               0, nullptr}},
     {0x4F, 1, X86InstInfo{"CMOVNLE",    TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                               0, nullptr}},
 
-    {0x50, 1, X86InstInfo{"MOVMSKPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR,      0, nullptr}},
+    {0x50, 1, X86InstInfo{"MOVMSKPS",   TYPE_INST, GenFlagsSizes(SIZE_32BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR,      0, nullptr}},
     {0x51, 1, X86InstInfo{"SQRTPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x52, 1, X86InstInfo{"RSQRTSS",    TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
     {0x53, 1, X86InstInfo{"RCPPS",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
@@ -432,7 +432,7 @@ void InitializeSecondaryTables() {
     {0x30, 16, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},
     {0x40, 16, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},
 
-    {0x50, 1, X86InstInfo{"MOVMSKPD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR,     0, nullptr}},
+    {0x50, 1, X86InstInfo{"MOVMSKPD",   TYPE_INST, GenFlagsSizes(SIZE_32BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR,     0, nullptr}},
     {0x51, 1, X86InstInfo{"SQRTPD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         0, nullptr}},
     {0x52, 2, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                               0, nullptr}},
     {0x54, 1, X86InstInfo{"ANDPD",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                        0, nullptr}},
