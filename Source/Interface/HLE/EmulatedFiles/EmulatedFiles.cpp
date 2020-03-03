@@ -73,20 +73,28 @@ address sizes   : 43 bits physical, 48 bits virtual
     EmulatedMap.emplace("/proc/cpuinfo");
     EmulatedMap.emplace("/sys/devices/system/cpu/online");
 
-    FDReadCreators["/proc/cpuinfo"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> FEXCore::FD* {
-      return new SimpleStringFD(ctx, fd, pathname, flags, mode, proc_cpuinfo);
+    FDReadCreators["/proc/cpuinfo"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+      FILE *fp = tmpfile();
+      fwrite((void*)&proc_cpuinfo.at(0), sizeof(uint8_t), proc_cpuinfo.size(), fp);
+      fseek(fp, 0, SEEK_SET);
+      int32_t f = fileno(fp);
+      return f;
     };
-    FDReadCreators["/sys/devices/system/cpu/online"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> FEXCore::FD* {
-      return new SimpleStringFD(ctx, fd, pathname, flags, mode, cpus_online);
+    FDReadCreators["/sys/devices/system/cpu/online"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+      FILE *fp = tmpfile();
+      fwrite((void*)&cpus_online.at(0), sizeof(uint8_t), cpus_online.size(), fp);
+      fseek(fp, 0, SEEK_SET);
+      int32_t f = fileno(fp);
+      return f;
     };
   }
 
   EmulatedFDManager::~EmulatedFDManager() {
   }
 
-  FEXCore::FD *EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
+  int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
     if (EmulatedMap.find(pathname) == EmulatedMap.end()) {
-      return nullptr;
+      return -1;
     }
 
     return FDReadCreators[pathname](CTX, dirfs, pathname, flags, mode);

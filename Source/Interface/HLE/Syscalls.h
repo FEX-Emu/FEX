@@ -38,6 +38,7 @@ enum Syscalls {
   SYSCALL_PIPE            = 22,  ///< __NR_pipe
   SYSCALL_SELECT          = 23,  ///< __NR_select
   SYSCALL_SCHED_YIELD     = 24,  ///< __NR_sched_yield
+  SYSCALL_MREMAP          = 25,  ///< __NR_mremap
   SYSCALL_MINCORE         = 27,  ///< __NR_mincore
   SYSCALL_SHMGET          = 29,  ///< __NR_shmget
   SYSCALL_SHMAT           = 30,  ///< __NR_shmat
@@ -64,6 +65,7 @@ enum Syscalls {
   SYSCALL_UNAME           = 63,  ///< __NR_uname
   SYSCALL_SHMDT           = 67,  ///< __NR_shmdt
   SYSCALL_FCNTL           = 72,  ///< __NR_fcntl
+  SYSCALL_FTRUNCATE       = 77,  ///< __NR_ftruncate
   SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
   SYSCALL_CHDIR           = 80,  ///< __NR_chdir
   SYSCALL_MKDIR           = 83,  ///< __NR_mkdir
@@ -84,13 +86,17 @@ enum Syscalls {
   SYSCALL_SIGALTSTACK     = 131, ///< __NR_sigaltstack
   SYSCALL_MKNOD           = 133, ///< __NR_mknod
   SYSCALL_STATFS          = 137, ///< __NR_statfs
+  SYSCALL_FSTATFS         = 138, ///< __NR_fstatfs
+  SYSCALL_SCHED_SETSCHEDULER = 144, ///< __NR_sched_setscheduler
   SYSCALL_PRCTL           = 157, ///< __NR_prctl
   SYSCALL_ARCH_PRCTL      = 158, ///< __NR_arch_prctl
   SYSCALL_GETTID          = 186, ///< __NR_gettid
   SYSCALL_TIME            = 201, ///< __NR_time
   SYSCALL_FUTEX           = 202, ///< __NR_futex
+  SYSCALL_SCHED_SETAFFINITY = 203, ///< __NR_sched_setaffinity
   SYSCALL_SCHED_GETAFFINITY = 204, ///< __NR_sched_getaffinity
   SYSCALL_GETDENTS64      = 217, ///< __NR_getdents64
+  SYSCALL_FADVISE64       = 221, ///< __NR_fadvise64
   SYSCALL_SET_TID_ADDRESS = 218, ///< __NR_set_tid_address
   SYSCALL_CLOCK_GETTIME   = 228, ///< __NR_clock_gettime
   SYSCALL_CLOCK_GETRES    = 229, ///< __NR_clock_getres
@@ -107,6 +113,7 @@ enum Syscalls {
   SYSCALL_PRLIMIT64       = 302, ///< __NR_prlimit64
   SYSCALL_SENDMMSG        = 307, ///< __NR_sendmmsg
   SYSCALL_GETRANDOM       = 318, ///< __NR_getrandom
+  SYSCALL_MEMFD_CREATE    = 319, ///< __NR_memfd_create
   SYSCALL_STATX           = 332, ///< __NR_statx
 };
 

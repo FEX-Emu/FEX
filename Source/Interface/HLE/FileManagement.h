@@ -45,8 +45,8 @@ public:
   int ioctl(int fd, uint64_t request, void *args);
   int lseek(int fd, off_t offset, int wehnce);
 
-  int GetHostFD() const { return HostFD; }
-  void SetHostFD(int fd) { HostFD = fd; }
+  int GetHostFD() const { return FDOffset; }
+  void SetHostFD(int fd) { FDOffset = fd; }
 
   std::string const& GetName() const { return PathName; }
 
@@ -56,8 +56,6 @@ protected:
   std::string PathName;
   [[maybe_unused]] int32_t Flags;
   [[maybe_unused]] mode_t Mode;
-
-  int32_t HostFD;
 };
 
 class FileManager final {
@@ -88,12 +86,14 @@ public:
   uint64_t PRead64(int fd, void *buf, size_t count, off_t offset);
   uint64_t Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf);
   uint64_t Mknod(const char *pathname, mode_t mode, dev_t dev);
+  uint64_t Ftruncate(int fd, off_t length);
 
   // EPoll
   uint64_t EPoll_Create1(int flags);
 
   // vfs
   uint64_t Statfs(const char *path, void *buf);
+  uint64_t FStatfs(int fd, void *buf);
 
   // Eventfd
   uint64_t Eventfd(uint32_t initval, uint32_t flags);
@@ -116,8 +116,12 @@ public:
   // Timers
   uint64_t Timer_Create(int32_t clockid, int32_t flags);
 
+  // MemFD
+  uint64_t Memfd_Create(const char *name, uint32_t flags);
+
   int32_t FindHostFD(int fd);
 
+  std::string *FindFDName(int fd);
   FD const* GetFDBacking(int fd);
   int32_t DupFD(int prevFD, int newFD);
 
@@ -126,10 +130,9 @@ public:
 
 private:
   FEXCore::Context::Context *CTX;
-  int32_t CurrentFDOffset{0};
-  std::unordered_map<int32_t, FD*> FDMap;
   FEXCore::EmulatedFile::EmulatedFDManager EmuFD;
 
+  std::unordered_map<int32_t, std::string> FDToNameMap;
   std::string Filename;
   std::string GetEmulatedPath(const char *pathname);
 };

@@ -17,11 +17,11 @@ namespace FEXCore::EmulatedFile {
     public:
       EmulatedFDManager(FEXCore::Context::Context *ctx);
       ~EmulatedFDManager();
-      FEXCore::FD *OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode);
+      int32_t OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode);
 
     private:
       FEXCore::Context::Context *CTX;
-      using FDReadStringFunc = std::function<FEXCore::FD*(FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode)>;
+      using FDReadStringFunc = std::function<int32_t(FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode)>;
       std::unordered_set<std::string> EmulatedMap;
       std::unordered_map<std::string, FDReadStringFunc> FDReadCreators;
   };

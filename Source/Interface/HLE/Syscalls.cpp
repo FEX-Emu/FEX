@@ -10,12 +10,14 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <poll.h>
+#include <linux/futex.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <sys/random.h>
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <sys/shm.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 constexpr uint64_t PAGE_SIZE = 4096;
@@ -93,6 +95,15 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_SCHED_YIELD:
     LogMan::Msg::D("sched_yield() = %ld",
+      Ret);
+    break;
+  case SYSCALL_MREMAP:
+    LogMan::Msg::D("mremap(0x%lx, 0x%lx, 0x%lx, 0x%lx, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Args->Argument[4],
+      Args->Argument[5],
       Ret);
     break;
   case SYSCALL_MINCORE:
@@ -182,6 +193,13 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_READ:
     LogMan::Msg::D("read(%ld, {...}, %ld) = %ld", Args->Argument[1], Args->Argument[3], Ret);
     break;
+  case SYSCALL_SCHED_SETSCHEDULER:
+    LogMan::Msg::D("sched_setscheduler(%ld, %p, %p) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Ret);
+    break;
   case SYSCALL_PRCTL:
     LogMan::Msg::D("arch_prctl(%ld, %p, %p, %p, %p) = %ld",
       Args->Argument[1], Args->Argument[2],
@@ -206,6 +224,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_FCNTL:
     LogMan::Msg::D("fcntl (%ld, %ld, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_FTRUNCATE:
+    LogMan::Msg::D("ftruncate(%ld, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
   case SYSCALL_UMASK:
     LogMan::Msg::D("umask(0x%lx) = %ld", Args->Argument[1], Ret);
@@ -245,6 +266,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_GETDENTS64:
     LogMan::Msg::D("getdents(%ld, 0x%lx, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_FADVISE64:
+    LogMan::Msg::D("fadvise64(%ld, 0x%lx, %ld, %lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
     break;
   case SYSCALL_SET_TID_ADDRESS:
     LogMan::Msg::D("set_tid_address(%p) = %ld", Args->Argument[1], Ret);
@@ -380,6 +404,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_STATFS:
     LogMan::Msg::D("statfs(\"%s\", {...}) = %ld", GetPointer<char const*>(Args->Argument[1]), Ret);
     break;
+  case SYSCALL_FSTATFS:
+    LogMan::Msg::D("fstatfs(%ld, {...}) = %ld", Args->Argument[1], Ret);
+    break;
   case SYSCALL_GETTID:
     LogMan::Msg::D("gettid() = %ld", Ret);
     break;
@@ -408,8 +435,15 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
       Args->Argument[6],
       Ret);
     break;
+  case SYSCALL_SCHED_SETAFFINITY:
+    LogMan::Msg::D("sched_setaffinity(%ld, %ld, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Ret);
+    break;
   case SYSCALL_SCHED_GETAFFINITY:
-    LogMan::Msg::D("sched_getaffinity(%ld, %ld, %ld, 0x%lx) = %ld",
+    LogMan::Msg::D("sched_getaffinity(%ld, %ld, 0x%lx) = %ld",
       Args->Argument[1],
       Args->Argument[2],
       Args->Argument[3],
@@ -429,6 +463,12 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
         Args->Argument[1],
         Args->Argument[2],
         Args->Argument[3],
+        Ret);
+    break;
+  case SYSCALL_MEMFD_CREATE:
+    LogMan::Msg::D("memfd_create(\"%s\", 0x%lx) = %ld",
+        GetPointer<char const*>(Args->Argument[1]),
+        Args->Argument[2],
         Ret);
     break;
   case SYSCALL_STATX:
@@ -527,11 +567,6 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   case SYSCALL_MMAP: {
     int Flags = Args->Argument[4];
     int GuestFD = static_cast<int32_t>(Args->Argument[5]);
-    int HostFD = -1;
-
-    if (GuestFD != -1) {
-      HostFD = FM.FindHostFD(GuestFD);
-    }
 
     uint64_t Base = AlignDown(LastMMAP, PAGE_SIZE);
     uint64_t Size = AlignUp(Args->Argument[2], PAGE_SIZE);
@@ -554,17 +589,23 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       void *HostPtr = GetPointerSizeCheck(Base, FileSizeToUse);
       if (!HostPtr) {
         HostPtr = CTX->MapRegion(Thread, Base, Size, true);
+        if (GuestFD != -1) {
+          auto Name = FM.FindFDName(GuestFD);
+          if (Name) {
+            LogMan::Msg::D("Mapping File to [0x%lx, 0x%lx) -> '%s' -> %p", Base, Base + Size, Name->c_str(), HostPtr);
+          }
+        }
       }
 
-      if (HostFD != -1) {
-        void *FileMem = mmap(HostPtr, FileSizeToUse, Prot, MAP_DENYWRITE | MAP_PRIVATE | MAP_FIXED, HostFD, Args->Argument[6]);
+      if (GuestFD != -1) {
+        void *FileMem = mmap(HostPtr, FileSizeToUse, Prot, MAP_DENYWRITE | MAP_PRIVATE | MAP_FIXED, GuestFD, Args->Argument[6]);
         if (FileMem == MAP_FAILED) {
           LogMan::Msg::A("Couldn't map file to %p\n", HostPtr);
         }
       }
       else {
         LogMan::Throw::A(Args->Argument[6] == 0, "Don't understand a fixed offset mmap");
-        mmap(HostPtr, Size, Prot, Flags, HostFD, Args->Argument[6]);
+        mmap(HostPtr, Size, Prot, Flags, GuestFD, Args->Argument[6]);
       }
 
       Result = Base;
@@ -575,15 +616,24 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       if (!HostPtr) {
         HostPtr = CTX->MapRegion(Thread, Base, Size, true);
       }
+      else {
+        if (GuestFD != -1) {
+          auto Name = FM.FindFDName(GuestFD);
+          if (Name) {
+            LogMan::Msg::D("Mapping File to [0x%lx, 0x%lx) -> '%s' -> %p", Base, Base + Size, Name->c_str(), HostPtr);
+          }
+        }
+      }
 
-      if (HostFD != -1) {
-        void *FileMem = mmap(HostPtr, FileSizeToUse, Prot, MAP_PRIVATE | MAP_FIXED, HostFD, Args->Argument[6]);
+      if (GuestFD != -1) {
+        void *FileMem = mmap(HostPtr, FileSizeToUse, Prot, MAP_PRIVATE | MAP_FIXED, GuestFD, Args->Argument[6]);
         if (FileMem == MAP_FAILED) {
-          LogMan::Msg::A("Couldn't map file to %p\n", HostPtr);
+          perror(nullptr);
+          LogMan::Msg::A("Couldn't map file to %p. error %d(%s)\n", HostPtr, errno, strerror(errno));
         }
       }
       else {
-        mmap(HostPtr, Size, Prot, Flags, HostFD, Args->Argument[6]);
+        mmap(HostPtr, Size, Prot, Flags, GuestFD, Args->Argument[6]);
       }
 
       LastMMAP += Size;
@@ -592,9 +642,14 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   break;
   }
   case SYSCALL_MPROTECT: {
-    void *HostPtr = CTX->MemoryMapper.GetPointer<void*>(Args->Argument[1]);
+    void *HostPtr = GetPointer<void*>(Args->Argument[1]);
     Result = mprotect(HostPtr, Args->Argument[2], Args->Argument[3]);
   break;
+  }
+  case SYSCALL_SCHED_SETSCHEDULER: {
+    // XXX: Not a real result
+    Result = 0;
+    break;
   }
   case SYSCALL_PRCTL: {
     switch (Args->Argument[1]) {
@@ -754,6 +809,10 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = FM.Statfs(GetPointer<char const*>(Args->Argument[1]),
       GetPointer(Args->Argument[2]));
   break;
+  case SYSCALL_FSTATFS:
+    Result = FM.FStatfs(Args->Argument[1],
+      GetPointer(Args->Argument[2]));
+  break;
   case SYSCALL_GETTID:
     Result = Thread->State.ThreadManager.GetTID();
   break;
@@ -831,11 +890,30 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
         }
         break;
       }
+      case 9: { // WAKE_BITSET
+        // We don't actually support this
+        // Just handle it like a WAKE but wake up everything
+        Futex *futex = GetFutex(Args->Argument[1]);
+        if (!futex) {
+          // Tried to wake up an unknown futex?
+          Result = 0;
+          break;
+        }
+
+        Result = futex->Waiters;
+        futex->cv.notify_all();
+        break;
+      }
       default:
-        LogMan::Msg::A("Unknown futex command");
+        LogMan::Msg::A("Unknown futex command: %d", Command);
       break;
     }
     break;
+  }
+  case SYSCALL_SCHED_SETAFFINITY: {
+    // XXX: Not a real result
+    Result = 0;
+  break;
   }
   case SYSCALL_SCHED_GETAFFINITY: {
     cpu_set_t *mask = GetPointer<cpu_set_t*>(Args->Argument[3]);
@@ -1096,6 +1174,14 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = clock_getres(Args->Argument[1], res);
   }
   break;
+  case SYSCALL_MREMAP: {
+    Result = (uint64_t)mremap(GetPointer(Args->Argument[1]),
+      Args->Argument[2],
+      Args->Argument[3],
+      Args->Argument[4],
+      GetPointer(Args->Argument[5]));
+    break;
+  }
   case SYSCALL_MINCORE: {
     Result = mincore(GetPointer(Args->Argument[1]),
       Args->Argument[2],
@@ -1151,13 +1237,7 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   break;
   }
   case SYSCALL_DUP2: {
-    auto FD = FM.GetFDBacking(Args->Argument[1]);
-    if (!FD) {
-      Result = EBADF;
-    }
-    else {
-      Result = FM.DupFD(Args->Argument[1], dup(FD->GetHostFD()));
-    }
+    Result = FM.DupFD(Args->Argument[1], Args->Argument[2]);
   break;
   }
   case SYSCALL_NANOSLEEP: {
@@ -1185,6 +1265,10 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = FM.GetDents(Args->Argument[1],
       GetPointer(Args->Argument[2]),
       Args->Argument[3]);
+  break;
+  }
+  case SYSCALL_FADVISE64: {
+    Result = posix_fadvise(Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4]);
   break;
   }
   case SYSCALL_SET_TID_ADDRESS: {
@@ -1232,7 +1316,7 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     case 3: { // Stack limits
       rlimit *old_limit = GetPointer<rlimit*>(Args->Argument[4]);
       // Default size
-      old_limit->rlim_cur = 8 * 1024;
+      old_limit->rlim_cur = 8 * 1024 * 1024;
       old_limit->rlim_max = ~0ULL;
     break;
     }
@@ -1291,40 +1375,41 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     break;
   case SYSCALL_FCNTL: {
     int Cmd = Args->Argument[2];
-    auto FD = FM.GetFDBacking(Args->Argument[1]);
-    if (!FD) {
-      Result = EBADF;
-    }
-    else {
-      auto HostFD = FD->GetHostFD();
-      switch (Cmd) {
-        case 0: // F_DUPFD
-        case 1030:{ // F_DUPFD_CLOEXEC
-          Result = FM.DupFD(Args->Argument[1], dup(HostFD));
-          break;
-        }
-        case 1: // F_GETFD
-          Result = fcntl(HostFD, Cmd);
-          break;
-        case 2: // F_SETFD
-          Result = fcntl(HostFD, Cmd, Args->Argument[3]);
-          break;
-        case 3: // F_GETFL
-          Result = fcntl(HostFD, Cmd);
-          break;
-        case 4: // F_SETFL
-          Result = fcntl(HostFD, Cmd, Args->Argument[3]);
-          break;
-        default: LogMan::Msg::A("FCNTL: Unknown Command: %ld", Cmd); break;
+    switch (Cmd) {
+      case 0: // F_DUPFD
+      case 1030:{ // F_DUPFD_CLOEXEC
+        Result = fcntl(Args->Argument[1], Cmd, Args->Argument[3]);
+        break;
       }
+      case 1: // F_GETFD
+        Result = fcntl(Args->Argument[1], Cmd);
+        break;
+      case 2: // F_SETFD
+        Result = fcntl(Args->Argument[1], Cmd, Args->Argument[3]);
+        break;
+      case 3: // F_GETFL
+        Result = fcntl(Args->Argument[1], Cmd);
+        break;
+      case 4: // F_SETFL
+        Result = fcntl(Args->Argument[1], Cmd, Args->Argument[3]);
+        break;
+      default: LogMan::Msg::A("FCNTL: Unknown Command: %ld", Cmd); break;
     }
     break;
   }
+  case SYSCALL_FTRUNCATE:
+    Result = FM.Ftruncate(Args->Argument[1],
+      Args->Argument[2]);
+    break;
   case SYSCALL_GETRANDOM:
     Result = getrandom(GetPointer<void*>(Args->Argument[1]),
       Args->Argument[2],
       Args->Argument[3]);
     break;
+  case SYSCALL_MEMFD_CREATE: {
+    Result = FM.Memfd_Create(GetPointer<char const*>(Args->Argument[1]), Args->Argument[2]);;
+  break;
+  }
   case SYSCALL_STATX:
     Result = FM.Statx(
       Args->Argument[1],

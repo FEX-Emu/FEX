@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/ioctl.h>
@@ -19,7 +20,6 @@ class STDFD final : public FD {
 public:
   STDFD(FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode)
     : FD (ctx, fd, pathname, flags, mode) {
-    HostFD = fd;
   }
 
   ssize_t writev(int fd, void *iov, int iovcnt) override {
@@ -86,42 +86,13 @@ public:
   }
 };
 
-class SocketFD final : public FD {
-public:
-  SocketFD(FEXCore::Context::Context *ctx, int32_t fd, int domain, int type, int protocol)
-    : FD (ctx, fd, "Socket", 0, 0) {
-    HostFD = socket(domain, type, protocol);
-  }
-
-private:
-
-};
-
-class EventFD final : public FD {
-public:
-  EventFD(FEXCore::Context::Context *ctx, int32_t fd, uint32_t initval, uint32_t flags)
-    : FD (ctx, fd, "Event", 0, 0) {
-    HostFD = eventfd(initval, flags);
-  }
-
-};
-
-class TimerFD final : public FD {
-public:
-  TimerFD(FEXCore::Context::Context *ctx, int32_t fd, int32_t clockid, int32_t flags)
-    : FD (ctx, fd, "Timer", 0, 0) {
-    HostFD = timerfd_create(clockid, flags);
-  }
-
-};
-
 uint64_t FD::read(int fd, void *buf, size_t count) {
-  return ::read(HostFD, buf, count);
+  return ::read(fd, buf, count);
 }
 
 ssize_t FD::writev(int fd, void *iov, int iovcnt) {
   if (CTX->Config.UnifiedMemory) {
-    return ::writev(HostFD, reinterpret_cast<const struct iovec*>(iov), iovcnt);
+    return ::writev(fd, reinterpret_cast<const struct iovec*>(iov), iovcnt);
   }
 
   const struct iovec *Guestiov = reinterpret_cast<const struct iovec*>(iov);
@@ -137,7 +108,7 @@ ssize_t FD::writev(int fd, void *iov, int iovcnt) {
     Hostiov[i].iov_len = Guestiov[i].iov_len;
   }
 
-  return ::writev(HostFD, &Hostiov.at(0), iovcnt);
+  return ::writev(fd, &Hostiov.at(0), iovcnt);
 }
 
 uint64_t FD::write(int fd, void *buf, size_t count) {
@@ -145,39 +116,32 @@ uint64_t FD::write(int fd, void *buf, size_t count) {
 }
 
 int FD::openat(int dirfd, const char *pathname, int flags, mode_t mode) {
-  HostFD = ::openat(dirfd, pathname, flags, mode);
-  return HostFD;
+  FDOffset  = ::openat(dirfd, pathname, flags, mode);
+  return FDOffset;
 }
 
 int FD::fstat(int fd, struct stat *buf) {
-  return ::fstat(HostFD, buf);
+  return ::fstat(fd, buf);
 }
 
 int FD::close(int fd) {
-  return ::close(HostFD);
+  return ::close(fd);
 }
 
 int FD::ioctl(int fd, uint64_t request, void *args) {
-  return ::ioctl(HostFD, request, args);
+  return ::ioctl(fd, request, args);
 }
 
 int FD::lseek(int fd, off_t offset, int whence) {
-  return ::lseek(HostFD, offset, whence);
+  return ::lseek(fd, offset, whence);
 }
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : CTX {ctx}
   , EmuFD {ctx} {
-
-  FDMap[CurrentFDOffset++] = new STDFD{CTX, STDIN_FILENO, "stdin", 0, 0};
-  FDMap[CurrentFDOffset++] = new STDFD{CTX, STDOUT_FILENO, "stdout", 0, 0};
-  FDMap[CurrentFDOffset++] = new STDFD{CTX, STDERR_FILENO, "stderr", 0, 0};
 }
 
 FileManager::~FileManager() {
-  for (auto &FD : FDMap) {
-    delete FD.second;
-  }
 }
 
 std::string FileManager::GetEmulatedPath(const char *pathname) {
@@ -189,23 +153,11 @@ std::string FileManager::GetEmulatedPath(const char *pathname) {
 }
 
 uint64_t FileManager::Read(int fd, [[maybe_unused]] void *buf, [[maybe_unused]] size_t count) {
-  auto FD = FDMap.find(fd);
-  if (FD == FDMap.end()) {
-    LogMan::Msg::I("XXX: Implement Read: %d", fd);
-    return -1;
-  }
-
-  return FD->second->read(fd, buf, count);
+  return ::read(fd, buf, count);
 }
 
 uint64_t FileManager::Write(int fd, void *buf, size_t count) {
-  auto FD = FDMap.find(fd);
-  if (FD == FDMap.end()) {
-    LogMan::Msg::I("XXX: Implement write: %d", fd);
-    return -1;
-  }
-
-  return FD->second->write(fd, buf, count);
+  return ::write(fd, buf, count);
 }
 
 uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[maybe_unused]] uint32_t mode) {
@@ -214,15 +166,8 @@ uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[m
 }
 
 uint64_t FileManager::Close(int fd) {
-  auto FD = FDMap.find(fd);
-  if (FD == FDMap.end()) {
-    LogMan::Msg::I("XXX: Trying to close: '%d'", fd);
-    return 0;
-  }
-
-  int Result = FD->second->close(fd);
-  delete FD->second;
-  FDMap.erase(FD);
+  int Result = ::close(fd);
+  FDToNameMap.erase(fd);
   return Result;
 }
 
@@ -239,7 +184,7 @@ uint64_t FileManager::Stat(const char *pathname, void *buf) {
 uint64_t FileManager::Fstat(int fd, void *buf) {
   if (fd == STDOUT_FILENO || fd == STDERR_FILENO) {
     struct stat TmpBuf;
-    int Result = fstat(fd, &TmpBuf);
+    int Result = ::fstat(fd, &TmpBuf);
 
     // Blow away access times
     // Causes issues with lockstep runner and file acesses
@@ -251,15 +196,8 @@ uint64_t FileManager::Fstat(int fd, void *buf) {
     memcpy(buf, &TmpBuf, sizeof(struct stat));
     return Result;
   }
-  else {
-    auto FD = FDMap.find(fd);
-    if (FD != FDMap.end()) {
-      return FD->second->fstat(fd, reinterpret_cast<struct stat*>(buf));
-    }
-  }
 
-  LogMan::Msg::D("Attempting to fstat: %d", fd);
-  return -1LL;
+  return ::fstat(fd, reinterpret_cast<struct stat*>(buf));
 }
 
 uint64_t FileManager::Lstat(const char *path, void *buf) {
@@ -274,22 +212,11 @@ uint64_t FileManager::Lstat(const char *path, void *buf) {
 }
 
 uint64_t FileManager::Lseek(int fd, uint64_t offset, int whence) {
-  auto fdPtr = FDMap.find(fd);
-  if (fdPtr == FDMap.end()) {
-    LogMan::Msg::E("XXX: Trying to lseek unknown fd: %d", fd);
-    return -1LL;
-  }
-  return fdPtr->second->lseek(fd, offset, whence);
+  return ::lseek(fd, offset, whence);
 }
 
 uint64_t FileManager::Writev(int fd, void *iov, int iovcnt) {
-  auto fdPtr = FDMap.find(fd);
-  if (fdPtr == FDMap.end()) {
-    LogMan::Msg::E("XXX: Trying to writev unknown fd: %d", fd);
-    return FDMap.find(0)->second->writev(0, iov, iovcnt);
-    return -1LL;
-  }
-  return fdPtr->second->writev(fd, iov, iovcnt);
+  return ::writev(fd, reinterpret_cast<iovec const *>(iov), iovcnt);
 }
 
 uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
@@ -321,45 +248,11 @@ uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode, int f
 }
 
 uint64_t FileManager::Pipe(int pipefd[2]) {
-  int HostFD[2];
-  int Result = ::pipe(HostFD);
-
-  {
-    int32_t fd = CurrentFDOffset;
-    auto fdPtr = new FD{CTX, fd, "<Pipe>", 0, 0};
-    fdPtr->SetHostFD(HostFD[0]);
-    pipefd[0] = fd;
-    FDMap[CurrentFDOffset++] = fdPtr;
-  }
-  {
-    int32_t fd = CurrentFDOffset;
-    auto fdPtr = new FD{CTX, fd, "<Pipe>", 0, 0};
-    fdPtr->SetHostFD(HostFD[1]);
-    pipefd[1] = fd;
-    FDMap[CurrentFDOffset++] = fdPtr;
-  }
-
+  int Result = ::pipe(pipefd);
   return Result;
 }
 uint64_t FileManager::Pipe2(int pipefd[2], int flags) {
-  int HostFD[2];
-  int Result = ::pipe2(HostFD, flags);
-
-  {
-    int32_t fd = CurrentFDOffset;
-    auto fdPtr = new FD{CTX, fd, "<Pipe>", 0, 0};
-    fdPtr->SetHostFD(HostFD[0]);
-    pipefd[0] = fd;
-    FDMap[CurrentFDOffset++] = fdPtr;
-  }
-  {
-    int32_t fd = CurrentFDOffset;
-    auto fdPtr = new FD{CTX, fd, "<Pipe>", 0, 0};
-    fdPtr->SetHostFD(HostFD[1]);
-    pipefd[1] = fd;
-    FDMap[CurrentFDOffset++] = fdPtr;
-  }
-
+  int Result = ::pipe2(pipefd, flags);
   return Result;
 }
 
@@ -396,43 +289,29 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
 }
 
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, int flags, uint32_t mode) {
-  int32_t fd = CurrentFDOffset;
-  if (!strcmp(pathname, "/dev/tty")) {
-    FDMap[CurrentFDOffset++] = new STDFD{CTX, STDOUT_FILENO, "/dev/tty", 0, 0};
-    return fd;
-  }
+  int32_t fd = -1;
 
-  auto fdPtr = EmuFD.OpenAt(dirfs, pathname, flags, mode);
-  if (!fdPtr) {
-    fdPtr = new FD{CTX, fd, pathname, flags, mode};
-
-    uint64_t Result = -1;
+  fd = EmuFD.OpenAt(dirfs, pathname, flags, mode);
+  if (fd == -1) {
     auto Path = GetEmulatedPath(pathname);
     if (!Path.empty()) {
-      Result = fdPtr->openat(dirfs, Path.c_str(), flags, mode);
+      fd = ::openat(dirfs, Path.c_str(), flags, mode);
     }
 
-    if (Result == -1)
-      Result = fdPtr->openat(dirfs, pathname, flags, mode);
+    if (fd == -1)
+      fd = ::openat(dirfs, pathname, flags, mode);
 
-    if (Result == -1) {
-      delete fdPtr;
+    if (fd == -1) {
       return -errno;
     }
   }
 
-  FDMap[CurrentFDOffset++] = fdPtr;
-
+  FDToNameMap[fd] = pathname;
   return fd;
 }
 
 uint64_t FileManager::Ioctl(int fd, uint64_t request, void *args) {
-  auto FD = FDMap.find(fd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
-  uint64_t Result = FD->second->ioctl(fd, request, args);
+  uint64_t Result = ::ioctl(fd, request, args);
   if (Result == -1) {
     return -errno;
   }
@@ -441,35 +320,17 @@ uint64_t FileManager::Ioctl(int fd, uint64_t request, void *args) {
 }
 
 uint64_t FileManager::GetDents(int fd, void *dirp, uint32_t count) {
-  auto FD = FDMap.find(fd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
   return syscall(SYS_getdents64,
-      static_cast<uint64_t>(FD->second->GetHostFD()),
+      static_cast<uint64_t>(fd),
       reinterpret_cast<uint64_t>(dirp),
       static_cast<uint64_t>(count));
 }
 
 uint64_t FileManager::PRead64(int fd, void *buf, size_t count, off_t offset) {
-  auto FD = FDMap.find(fd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-  return pread(FD->second->GetHostFD(), buf, count, offset);
+  return pread(fd, buf, count, offset);
 }
 
 uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf) {
-  // Do we need the dirfd?
-  if (pathname[0] == '/' ||
-      ((flags & AT_EMPTY_PATH) && pathname[0] == '\0')) {
-    auto FD = FDMap.find(dirfd);
-    if (FD == FDMap.end()) {
-      return EBADF;
-    }
-    dirfd = FD->second->GetHostFD();
-  }
   auto Path = GetEmulatedPath(pathname);
   if (!Path.empty()) {
     uint64_t Result = ::statx(dirfd, Path.c_str(), flags, mask, statxbuf);
@@ -489,14 +350,12 @@ uint64_t FileManager::Mknod(const char *pathname, mode_t mode, dev_t dev) {
   return ::mknod(pathname, mode, dev);
 }
 
+uint64_t FileManager::Ftruncate(int fd, off_t length) {
+  return ftruncate(fd, length);
+}
 
 uint64_t FileManager::EPoll_Create1(int flags) {
-  int HostFD = epoll_create1(flags);
-  int32_t fd = CurrentFDOffset;
-  auto fdPtr = new FD{CTX, fd, "<EPoll>", 0, 0};
-  fdPtr->SetHostFD(HostFD);
-  FDMap[CurrentFDOffset++] = fdPtr;
-  return fd;
+  return epoll_create1(flags);
 }
 
 uint64_t FileManager::Statfs(const char *path, void *buf) {
@@ -509,45 +368,30 @@ uint64_t FileManager::Statfs(const char *path, void *buf) {
   return ::statfs(path, reinterpret_cast<struct statfs*>(buf));
 }
 
+uint64_t FileManager::FStatfs(int fd, void *buf) {
+  return ::fstatfs(fd, reinterpret_cast<struct statfs*>(buf));
+}
+
 uint64_t FileManager::Eventfd(uint32_t initval, uint32_t flags) {
-  int32_t fd = CurrentFDOffset;
-
-  auto fdPtr = new EventFD{CTX, fd, initval, flags};
-
-  auto Result = fdPtr->GetHostFD();
-  if (Result == -1) {
-    delete fdPtr;
+  int32_t fd = eventfd(initval, flags);
+  if (fd == -1) {
     return -errno;
   }
-
-  FDMap[CurrentFDOffset++] = fdPtr;
 
   return fd;
 }
 
 uint64_t FileManager::Socket(int domain, int type, int protocol) {
-  int32_t fd = CurrentFDOffset;
-
-  auto fdPtr = new SocketFD{CTX, fd, domain, type, protocol};
-
-  auto Result = fdPtr->GetHostFD();
-  if (Result == -1) {
-    delete fdPtr;
-    return -1;
+  int fd = socket(domain, type, protocol);
+  if (fd == -1) {
+    return -errno;
   }
-
-  FDMap[CurrentFDOffset++] = fdPtr;
 
   return fd;
 }
 
 uint64_t FileManager::Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
-  int Result = connect(FD->second->GetHostFD(), addr, addrlen);
+  int Result = connect(sockfd, addr, addrlen);
   if (Result == -1) {
     return -errno;
   }
@@ -555,57 +399,18 @@ uint64_t FileManager::Connect(int sockfd, const struct sockaddr *addr, socklen_t
 }
 
 uint64_t FileManager::Recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
+  int Result = recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
+  if (Result == -1) {
+    return -errno;
   }
+  return Result;
 
-  return recvfrom(FD->second->GetHostFD(), buf, len, flags, src_addr, addrlen);
 }
 
 uint64_t FileManager::Sendmsg(int sockfd, const struct msghdr *msg, int flags) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
   int Result{};
   if (CTX->Config.UnifiedMemory) {
-    if (msg->msg_control && msg->msg_controllen > 0) {
-      // If we have ancillary data then we need to transform the data
-      struct msghdr Hosthdr;
-      memcpy(&Hosthdr, msg, sizeof(struct msghdr));
-
-      void *New_msg_control = malloc(Hosthdr.msg_controllen);
-      memcpy(New_msg_control, Hosthdr.msg_control, Hosthdr.msg_controllen);
-      Hosthdr.msg_control = New_msg_control;
-
-      struct cmsghdr *cmsg = reinterpret_cast<struct cmsghdr*>(Hosthdr.msg_control);
-      switch (cmsg->cmsg_type) {
-        case SCM_RIGHTS: {
-          uint32_t *GuestFDs = reinterpret_cast<uint32_t*>(CMSG_DATA(cmsg));
-          uint32_t NumFiles = (msg->msg_controllen - cmsg->cmsg_len) / sizeof(uint32_t);
-          for (size_t i = 0; i < NumFiles; ++i) {
-            auto GuestFD = FDMap.find(GuestFDs[i]);
-            // Remap guestFDs back to hostFDs so the other process knows what the real FD is
-            if (GuestFD == FDMap.end()) {
-              LogMan::Msg::D("Couldn't find GuestFD %d", GuestFDs[i]);
-            }
-            else {
-              GuestFDs[i] = GuestFD->second->GetHostFD();
-            }
-          }
-          break;
-        }
-        default: LogMan::Msg::A("Unhandled Ancillary socket type: 0x%x", cmsg->cmsg_type); break;
-      }
-
-      Result = sendmsg(FD->second->GetHostFD(), &Hosthdr, flags);
-      free(New_msg_control);
-    }
-    else {
-      Result = sendmsg(FD->second->GetHostFD(), msg, flags);
-    }
+    Result = sendmsg(sockfd, msg, flags);
   }
   else {
     std::vector<iovec> Hostvec;
@@ -628,26 +433,18 @@ uint64_t FileManager::Sendmsg(int sockfd, const struct msghdr *msg, int flags) {
 
     Hosthdr.msg_iov = &Hostvec.at(0);
 
-    Result = sendmsg(FD->second->GetHostFD(), &Hosthdr, flags);
+    Result = sendmsg(sockfd, &Hosthdr, flags);
   }
   if (Result == -1) {
-    if (errno == EAGAIN ||
-        errno == EWOULDBLOCK) {
-      return -errno;
-    }
+    return -errno;
   }
   return Result;
 }
 
 uint64_t FileManager::Recvmsg(int sockfd, struct msghdr *msg, int flags) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
   int Result{};
   if (CTX->Config.UnifiedMemory) {
-    Result = recvmsg(FD->second->GetHostFD(), msg, flags);
+    Result = recvmsg(sockfd, msg, flags);
   }
   else {
     std::vector<iovec> Hostvec;
@@ -670,165 +467,52 @@ uint64_t FileManager::Recvmsg(int sockfd, struct msghdr *msg, int flags) {
 
     Hosthdr.msg_iov = &Hostvec.at(0);
 
-    Result = recvmsg(FD->second->GetHostFD(), &Hosthdr, flags);
+    Result = recvmsg(sockfd, &Hosthdr, flags);
   }
 
   if (Result == -1) {
-    if (errno == EAGAIN ||
-        errno == EWOULDBLOCK) {
-      return -errno;
-    }
+    return -errno;
   }
 
-  if (msg->msg_control && msg->msg_controllen > 0) {
-    // Handle the Linux ancillary data
-    struct cmsghdr *cmsg = reinterpret_cast<struct cmsghdr*>(msg->msg_control);
-    switch (cmsg->cmsg_type) {
-      case SCM_RIGHTS: {
-        uint32_t *HostFDs = reinterpret_cast<uint32_t*>(CMSG_DATA(cmsg));
-        uint32_t NumFiles = (msg->msg_controllen - cmsg->cmsg_len) / sizeof(uint32_t);
-        for (size_t i = 0; i < NumFiles; ++i) {
-          int32_t fd = CurrentFDOffset;
-          auto fdPtr = new FEXCore::FD{CTX, fd, "<Shared>", 0, 0};
-          fdPtr->SetHostFD(HostFDs[i]);
-          FDMap[CurrentFDOffset++] = fdPtr;
-
-          // Remap host FD to guest
-          HostFDs[i] = fd;
-        }
-        break;
-      }
-      default: LogMan::Msg::A("Unhandled Ancillary socket type: 0x%x", cmsg->cmsg_type); break;
-    }
-  }
   return Result;
 }
 
 uint64_t FileManager::Shutdown(int sockfd, int how) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
-  return shutdown(FD->second->GetHostFD(), how);
+  return shutdown(sockfd, how);
 }
 
 uint64_t FileManager::GetSockName(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
-  return getsockname(FD->second->GetHostFD(), addr, addrlen);
+  return getsockname(sockfd, addr, addrlen);
 }
 
 uint64_t FileManager::GetPeerName(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
-  return getpeername(FD->second->GetHostFD(), addr, addrlen);
+  return getpeername(sockfd, addr, addrlen);
 }
 
 uint64_t FileManager::SetSockOpt(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
-  int Result = ::setsockopt(FD->second->GetHostFD(), level, optname, optval, optlen);
+  int Result = ::setsockopt(sockfd, level, optname, optval, optlen);
   if (Result == -1)
     return -errno;
   return Result;
 }
 
 uint64_t FileManager::GetSockOpt(int sockfd, int level, int optname, void *optval, socklen_t *optlen) {
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
-
-  int Result = ::getsockopt(FD->second->GetHostFD(), level, optname, optval, optlen);
+  int Result = ::getsockopt(sockfd, level, optname, optval, optlen);
   if (Result == -1)
     return -errno;
   return Result;
 }
 
 uint64_t FileManager::Poll(struct pollfd *fds, nfds_t nfds, int timeout) {
-  std::vector<pollfd> HostFDs;
-  HostFDs.resize(nfds);
-  memcpy(&HostFDs.at(0), fds, sizeof(pollfd) * nfds);
-  for (auto &FD : HostFDs) {
-    auto HostFD = FDMap.find(FD.fd);
-    if (HostFD == FDMap.end()) {
-      LogMan::Msg::D("Poll. Failed to map FD: %d", FD.fd);
-      return -1;
-    }
-    FD.fd = HostFD->second->GetHostFD();
-  }
-
-  int Result = poll(&HostFDs.at(0), nfds, timeout);
-
-  for (int i = 0; i < nfds; ++i) {
-    fds[i].revents = HostFDs[i].revents;
-  }
-  return Result;
+  return ::poll(fds, nfds, timeout);
 }
 
 uint64_t FileManager::Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
-  fd_set Host_readfds;
-  fd_set Host_writefds;
-  fd_set Host_exceptfds;
-
-  FD_ZERO(&Host_readfds);
-  FD_ZERO(&Host_writefds);
-  FD_ZERO(&Host_exceptfds);
-  int Host_nfds = 0;
-  if (readfds) {
-    for (int i = 0; i < nfds; ++i) {
-      if (FD_ISSET(i, readfds)) {
-        auto HostFD = FDMap.find(i);
-        if (HostFD == FDMap.end())
-          return -1;
-        Host_nfds = std::max(Host_nfds, HostFD->second->GetHostFD());
-        FD_SET(HostFD->second->GetHostFD(), &Host_readfds);
-      }
-    }
-  }
-  if (writefds) {
-    for (int i = 0; i < nfds; ++i) {
-      if (FD_ISSET(i, writefds)) {
-        auto HostFD = FDMap.find(i);
-        if (HostFD == FDMap.end())
-          return -1;
-        Host_nfds = std::max(Host_nfds, HostFD->second->GetHostFD());
-        FD_SET(HostFD->second->GetHostFD(), &Host_writefds);
-      }
-    }
-  }
-  if (exceptfds) {
-    for (int i = 0; i < nfds; ++i) {
-      if (FD_ISSET(i, exceptfds)) {
-        auto HostFD = FDMap.find(i);
-        if (HostFD == FDMap.end())
-          return -1;
-        Host_nfds = std::max(Host_nfds, HostFD->second->GetHostFD());
-        FD_SET(HostFD->second->GetHostFD(), &Host_exceptfds);
-      }
-    }
-  }
-
-  return select(Host_nfds, readfds ? &Host_readfds : nullptr, writefds ? &Host_writefds : nullptr, exceptfds ? &Host_exceptfds : nullptr, timeout);
+   return select(nfds, readfds, writefds, exceptfds, timeout);
 }
 
 uint64_t FileManager::Sendmmsg(int sockfd, struct mmsghdr *msgvec, uint32_t vlen, int flags) {
-  LogMan::Throw::A(!CTX->Config.UnifiedMemory, "Not yet supported");
-
-  auto FD = FDMap.find(sockfd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
+  LogMan::Throw::A(!CTX->Config.UnifiedMemory, "Not yet supported: Sendmmsg");
 
   std::vector<mmsghdr> Hostmmghdr;
   std::vector<iovec> Hostvec;
@@ -864,59 +548,48 @@ uint64_t FileManager::Sendmmsg(int sockfd, struct mmsghdr *msgvec, uint32_t vlen
     HostVecOffset += Hosthdr.msg_iovlen;
   }
 
-  int Result = ::sendmmsg(FD->second->GetHostFD(), &Hostmmghdr.at(0), vlen, flags);
+  int Result = ::sendmmsg(sockfd, &Hostmmghdr.at(0), vlen, flags);
   if (Result == -1)
     return -errno;
   return Result;
 }
 
 uint64_t FileManager::Timer_Create(int32_t clockid, int32_t flags) {
-  int32_t fd = CurrentFDOffset;
-
-  auto fdPtr = new TimerFD{CTX, fd, clockid, flags};
-
-  auto Result = fdPtr->GetHostFD();
-  if (Result == -1) {
-    delete fdPtr;
+  int32_t fd = timerfd_create(clockid, flags);
+  if (fd == -1) {
     return -errno;
   }
+  return fd;
+}
 
-  FDMap[CurrentFDOffset++] = fdPtr;
+uint64_t FileManager::Memfd_Create(const char *name, uint32_t flags) {
+  int32_t fd = memfd_create(name, flags);
+  if (fd== -1) {
+    return -errno;
+  }
 
   return fd;
 }
 
 int32_t FileManager::FindHostFD(int fd) {
-  auto FD = FDMap.find(fd);
-  if (FD == FDMap.end()) {
-    return -1;
-  }
+  return fd;
+}
 
-  return FD->second->GetHostFD();
+std::string *FileManager::FindFDName(int fd) {
+  auto it = FDToNameMap.find(fd);
+  if (it == FDToNameMap.end()) {
+    return nullptr;
+  }
+  return &it->second;
 }
 
 FD const* FileManager::GetFDBacking(int fd) {
-  auto FD = FDMap.find(fd);
-  if (FD == FDMap.end()) {
-    return nullptr;
-  }
-
-  return FD->second;
+  LogMan::Msg::A("DERP");
+  return nullptr;
 }
 
 int32_t FileManager::DupFD(int prevFD, int newFD) {
-  auto prevFDClass = FDMap.find(prevFD);
-  if (prevFDClass == FDMap.end()) {
-    return -1;
-  }
-
-  int32_t fd = CurrentFDOffset;
-
-  auto fdPtr = new FD{prevFDClass->second, fd};
-  fdPtr->SetHostFD(newFD);
-  FDMap[CurrentFDOffset++] = fdPtr;
-
-  return fd;
+  return ::dup2(prevFD, newFD);
 }
 
 }
