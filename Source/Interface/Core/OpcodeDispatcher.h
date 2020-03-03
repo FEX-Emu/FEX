@@ -327,6 +327,12 @@ public:
   IRPair<IROp_VSub> _VSub(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VSub(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VQAdd> _VQAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VQAdd(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VQSub> _VQSub(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VQSub(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VUMin> _VUMin(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUMin(ssa0, ssa1, RegisterSize, ElementSize);
   }
@@ -392,6 +398,9 @@ public:
   }
   IRPair<IROp_VSShrI> _VSShrI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t BitShift) {
     return _VSShrI(ssa0, RegisterSize, ElementSize, BitShift);
+  }
+  IRPair<IROp_VShlI> _VShlI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t BitShift) {
+    return _VShlI(ssa0, RegisterSize, ElementSize, BitShift);
   }
   IRPair<IROp_VFSqrt> _VFSqrt(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     return _VFSqrt(ssa0, RegisterSize, ElementSize);

@@ -654,6 +654,24 @@
       ]
     },
 
+    "VQAdd": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VQSub": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VFAdd": {
       "HasDest": true,
       "SSAArgs": "2",
@@ -700,15 +718,6 @@
     },
 
     "VFMax": {
-      "HasDest": true,
-      "SSAArgs": "2",
-      "Args": [
-        "uint8_t", "RegisterSize",
-        "uint8_t", "ElementSize"
-      ]
-    },
-
-    "VFMin": {
       "HasDest": true,
       "SSAArgs": "2",
       "Args": [
@@ -977,6 +986,16 @@
     },
 
     "VSShrI": {
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "BitShift"
+      ]
+    },
+
+    "VShlI": {
       "HasDest": true,
       "SSAArgs": "1",
       "Args": [
