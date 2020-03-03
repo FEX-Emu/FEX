@@ -193,7 +193,9 @@ public:
   template<FEXCore::IR::IROps IROp, size_t ElementSize, bool Scalar>
   void VectorUnaryOp(OpcodeArgs);
   void MOVQOp(OpcodeArgs);
+  template<size_t ElementSize>
   void PADDQOp(OpcodeArgs);
+  template<size_t ElementSize>
   void PSUBQOp(OpcodeArgs);
   template<size_t ElementSize>
   void PMINUOp(OpcodeArgs);
@@ -208,18 +210,21 @@ public:
   void PUNPCKHOp(OpcodeArgs);
   template<size_t ElementSize, bool Low>
   void PSHUFDOp(OpcodeArgs);
+  template<size_t ElementSize>
   void PCMPEQOp(OpcodeArgs);
   template<size_t ElementSize>
   void PCMPGTOp(OpcodeArgs);
   void MOVDOp(OpcodeArgs);
   template<size_t ElementSize, uint32_t SrcIndex>
   void PSRLD(OpcodeArgs);
+  template<size_t ElementSize>
+  void PSRLI(OpcodeArgs);
+  template<size_t ElementSize>
+  void PSLLI(OpcodeArgs);
   template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
   void PSLL(OpcodeArgs);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRAOp(OpcodeArgs);
   template<size_t ElementSize>
   void PSRAIOp(OpcodeArgs);
   void MOVDDUPOp(OpcodeArgs);
