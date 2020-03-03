@@ -200,7 +200,8 @@ public:
   template<size_t ElementSize>
   void PMAXUOp(OpcodeArgs);
   void PMINSWOp(OpcodeArgs);
-  void PMOVMSKBOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void MOVMSKOp(OpcodeArgs);
   template<size_t ElementSize>
   void PUNPCKLOp(OpcodeArgs);
   template<size_t ElementSize>
