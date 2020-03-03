@@ -1900,18 +1900,18 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_VSLI: {
             auto Op = IROp->C<IR::IROp_VSLI>();
             __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
-            __uint128_t Src2 = Op->ByteShift;
+            __uint128_t Src2 = Op->ByteShift * 8;
 
-            __uint128_t Dst = Src1 << (Src2 * 8);
+            __uint128_t Dst = Op->ByteShift >= sizeof(__uint128_t) ? 0 : Src1 << Src2;
             memcpy(GDP, &Dst, 16);
             break;
           }
           case IR::OP_VSRI: {
             auto Op = IROp->C<IR::IROp_VSRI>();
             __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
-            __uint128_t Src2 = Op->ByteShift;
+            __uint128_t Src2 = Op->ByteShift * 8;
 
-            __uint128_t Dst = Src1 >> (Src2 * 8);
+            __uint128_t Dst = Op->ByteShift >= sizeof(__uint128_t) ? 0 : Src1 >> Src2;
             memcpy(GDP, &Dst, 16);
             break;
           }
@@ -1960,7 +1960,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             uint8_t Elements = Op->RegisterSize / Op->ElementSize;
 
-            auto Func = [BitShift](auto a) { return a >> BitShift; };
+            auto Func = [BitShift](auto a) { return BitShift >= (sizeof(a) * 8) ? 0 : a >> BitShift; };
             switch (Op->ElementSize) {
               DO_VECTOR_1SRC_OP(1, uint8_t, Func)
               DO_VECTOR_1SRC_OP(2, uint16_t, Func)
@@ -1979,7 +1979,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             uint8_t Elements = Op->RegisterSize / Op->ElementSize;
 
-            auto Func = [BitShift](auto a) { return a >> BitShift; };
+            auto Func = [BitShift](auto a) { return BitShift >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> BitShift; };
             switch (Op->ElementSize) {
               DO_VECTOR_1SRC_OP(1, int8_t, Func)
               DO_VECTOR_1SRC_OP(2, int16_t, Func)
