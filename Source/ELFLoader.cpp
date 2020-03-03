@@ -413,7 +413,7 @@ void ELFContainer::PrintRelocationTable() const {
   for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
     Elf64_Shdr const *hdr = SectionHeaders.at(i);
     if (hdr->sh_type == SHT_REL) {
-      LogMan::Msg::A("Unhandled REL section");
+      LogMan::Msg::D("Unhandled REL section");
     }
     else if (hdr->sh_type == SHT_RELA) {
       RelaHeader = hdr;
@@ -478,7 +478,7 @@ void ELFContainer::PrintRelocationTable() const {
           LogMan::Msg::D("\tR_X86_64_TPOFF64");
         }
         else {
-          LogMan::Msg::A("Unknown relocation type: %d(0x%lx)", Type, Type);
+          LogMan::Msg::D("Unknown relocation type: %d(0x%lx)", Type, Type);
         }
       }
     }
@@ -499,7 +499,7 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
   for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
     Elf64_Shdr const *hdr = SectionHeaders.at(i);
     if (hdr->sh_type == SHT_REL) {
-      LogMan::Msg::A("Unhandled REL section");
+      LogMan::Msg::D("Unhandled REL section");
     }
     else if (hdr->sh_type == SHT_RELA) {
       RelaHeader = hdr;
@@ -549,7 +549,7 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
               *Location = ELFSym->Address + Entry->r_addend;
             }
             else {
-              LogMan::Msg::A("Could not find symbol for x86_64_64 '%s'", EntrySymbolName);
+              LogMan::Msg::D("Could not find symbol for x86_64_64 '%s'", EntrySymbolName);
               *Location = 0xDEADBEEFBAD0DAD2ULL;
             }
           }
@@ -611,7 +611,7 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
             else {
               // XXX: This seems to be a loader edge case that if the symbol doesn't exist
               // and it is a weakly defined GLOB_DAT type then it is allowed to continue?
-              LogMan::Msg::A("Could not find symbol for Jump slot '%s'", EntrySymbolName);
+              LogMan::Msg::D("Could not find symbol for Jump slot '%s'", EntrySymbolName);
               *Location = 0xDEADBEEFBAD0DAD5ULL;
             }
           }
@@ -655,7 +655,7 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
           }
         }
         else {
-          LogMan::Msg::A("Unknown relocation type: %d(0x%lx)", Type, Type);
+          LogMan::Msg::D("Unknown relocation type: %d(0x%lx)", Type, Type);
         }
       }
     }
