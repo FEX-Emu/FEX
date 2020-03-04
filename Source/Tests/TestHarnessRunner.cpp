@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
   // Just re-use compare state. It also checks against the expected values in config.
   FEXCore::Core::CPUState State;
   FEXCore::Context::GetCPUState(CTX, &State);
-  bool Passed = Loader.CompareStates(State, State);
+  bool Passed = Loader.CompareStates(&State, nullptr);
 
   LogMan::Msg::I("Passed? %s\n", Passed ? "Yes" : "No");
 

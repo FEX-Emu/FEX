@@ -149,10 +149,12 @@ namespace FEX::HarnessHelper {
       memcpy(&BaseConfig, RawConfigFile.data(), sizeof(ConfigStructBase));
     }
 
-    bool CompareStates(FEXCore::Core::CPUState const& State1, FEXCore::Core::CPUState const& State2) {
+    bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
       bool Matches = true;
       uint64_t MatchMask = BaseConfig.OptionMatch & ~BaseConfig.OptionIgnore;
-      Matches &= FEX::HarnessHelper::CompareStates(State1, State2, MatchMask, ConfigDumpGPRs());
+      if (State1 && State2) {
+        Matches &= FEX::HarnessHelper::CompareStates(*State1, *State2, MatchMask, ConfigDumpGPRs());
+      }
 
       if (BaseConfig.OptionRegDataCount > 0) {
         uintptr_t DataOffset = sizeof(ConfigStructBase);
@@ -210,18 +212,17 @@ namespace FEX::HarnessHelper {
           RegDataStructBase *RegData = reinterpret_cast<RegDataStructBase*>(RawConfigFile.data() + DataOffset);
           [[maybe_unused]] std::bitset<64> RegFlags = RegData->RegKey;
           assert(RegFlags.count() == 1  && "Must set reg data explicitly per register");
-          assert(RegData->RegKey != (1UL << 36) && "Invalid register selection");
 
           size_t NameIndex = __builtin_ffsl(RegData->RegKey)- 1;
           auto Offset = OffsetArray[NameIndex];
-          uint64_t *State1Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(&State1) + Offset.first);
-          uint64_t *State2Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(&State2) + Offset.first);
+          uint64_t *State1Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State1) + Offset.first);
+          uint64_t *State2Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State2) + Offset.first);
 
           auto DumpGPRs = [this](auto Name, uint64_t A, uint64_t B) {
             if (!ConfigDumpGPRs())
               return;
 
-            printf("%s: 0x%016lx %s 0x%016lx\n", Name.c_str(), A, A==B ? "==" : "!=", B);
+            printf("%s: 0x%016lx %s 0x%016lx (Expected)\n", Name.c_str(), A, A==B ? "==" : "!=", B);
           };
 
           auto CheckGPRs = [&Matches, DumpGPRs](std::string Name, uint64_t A, uint64_t B) {
@@ -247,8 +248,12 @@ namespace FEX::HarnessHelper {
               Name = "MM[" + std::to_string(NameIndex - 36) + "][" + std::to_string(j) + "]";
 
 
-            CheckGPRs("Core1: " + Name + ": ", State1Data[j], RegData->RegValues[j]);
-            CheckGPRs("Core2: " + Name + ": ", State2Data[j], RegData->RegValues[j]);
+            if (State1) {
+              CheckGPRs("Core1: " + Name + ": ", State1Data[j], RegData->RegValues[j]);
+            }
+            if (State2) {
+              CheckGPRs("Core2: " + Name + ": ", State2Data[j], RegData->RegValues[j]);
+            }
           }
 
           // Get the correct data offset
@@ -359,7 +364,7 @@ namespace FEX::HarnessHelper {
 
     uint64_t GetFinalRIP() override { return CODE_START_RANGE + RawFile.size(); }
 
-    bool CompareStates(FEXCore::Core::CPUState const& State1, FEXCore::Core::CPUState const& State2) {
+    bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
       return Config.CompareStates(State1, State2);
     }
 

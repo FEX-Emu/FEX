@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
   FEXCore::Context::GetCPUState(CTX1, &State1);
   FEXCore::Context::GetCPUState(CTX2, &State2);
 
-  bool Passed = Loader.CompareStates(State1, State2);
+  bool Passed = Loader.CompareStates(&State1, &State2);
   LogMan::Msg::I("Passed? %s\n", Passed ? "Yes" : "No");
 
   FEXCore::SHM::DestroyRegion(SHM1);
