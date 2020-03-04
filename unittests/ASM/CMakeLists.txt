@@ -1,7 +1,7 @@
 
 # Careful. Globbing can't see changes to the contents of files
 # Need to do a fresh clean to see changes
-file(GLOB ASM_SOURCES CONFIGURE_DEPENDS *.asm)
+file(GLOB_RECURSE ASM_SOURCES CONFIGURE_DEPENDS *.asm)
 
 set(ASM_DEPENDS "")
 foreach(ASM_SRC ${ASM_SOURCES})
