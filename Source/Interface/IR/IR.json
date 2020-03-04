@@ -852,6 +852,15 @@
       ]
     },
 
+    "VFCMPNEQ": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VFCMPLT": {
       "HasDest": true,
       "SSAArgs": "2",

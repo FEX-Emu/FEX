@@ -365,6 +365,9 @@ public:
   IRPair<IROp_VFCMPEQ> _VFCMPEQ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VFCMPEQ(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VFCMPNEQ> _VFCMPNEQ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFCMPNEQ(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VFCMPLT> _VFCMPLT(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VFCMPLT(ssa0, ssa1, RegisterSize, ElementSize);
   }

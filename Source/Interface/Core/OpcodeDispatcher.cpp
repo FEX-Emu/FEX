@@ -3988,6 +3988,9 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
     case 0x02: case 0x0A: case 0x12: case 0x1A: // LE, GE(Swapped operand)
       Result = _VFCMPLE(Size, ElementSize, Dest, Src);
     break;
+    case 0x04: case 0x0C: case 0x14: case 0x1C: // NEQ
+      Result = _VFCMPNEQ(Size, ElementSize, Dest, Src);
+    break;
     case 0x05: case 0x0D: case 0x15: case 0x1D: // NLT, NGT(Swapped operand)
       Result = _VFCMPLE(Size, ElementSize, Src, Dest);
     break;
