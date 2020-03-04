@@ -1510,18 +1510,13 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
     uint32_t Size = GetSrcSize(Op);
     uint32_t Mask = Size * 8 - 1;
     OrderedNode *SizeMask = _Constant(Mask);
-    OrderedNode *AddressShift = _Constant(32 - __builtin_clz(Mask));
 
     // Get the bit selection from the src
     OrderedNode *BitSelect = _And(Src, SizeMask);
 
-    // First shift out the selection bits
-    Src = _Lshr(Src, AddressShift);
-
-    // Now multiply by operand size to get correct indexing
-    if (Size != 1) {
-      Src = _Lshl(Src, _Constant(Size - 1));
-    }
+    // Address is provided as bits we want BYTE offsets
+    // Just shift by 3 to get the offset
+    Src = _Lshr(Src, _Constant(3));
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
