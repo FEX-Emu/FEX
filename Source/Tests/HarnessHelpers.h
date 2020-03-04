@@ -392,81 +392,11 @@ public:
       Args.emplace(Args.begin(), File.InterpreterLocation());
     }
 
-    // Just block pretty much everything
-    const std::vector<const char*> NotAllowed = {
-      "XDG_CONFIG_DIRS",
-      "XDG_SEAT",
-      "XDG_SESSION_DESKTOP",
-      "XDG_SESSION_TYPE",
-      "XDG_CURRENT_DESKTOP",
-      "XDG_SESSION_CLASS",
-      "XDG_VTNR",
-      "XDG_SESSION_ID",
-      "XDG_RUNTIME_DIR",
-      "XDG_DATA_DIRS",
-
-      "QT_ACCESSIBILITY",
-      "COLORTERM",
-      "DERBY_HOME",
-      "TERMCAP",
-      "JAVA_HOME",
-      "SSH_AUTH_SOCK",
-      "DESKTOP_SESSION",
-      "SSH_AGENT_PID",
-      "GTK_MODULES",
-      "LOGNAME",
-      "GPG_AGENT_INFO",
-      "XAUTHORITY",
-      "J2REDIR",
-      "WINDOWPATH",
-      "HOME",
-      "LANG",
-      "LS_COLORS",
-      "PM_PACKAGES_ROOT",
-      "TERM",
-      "DEFAULT_PATH",
-      "J2SDKDIR",
-      "LESSCLOSE",
-      "LESSOPEN",
-      "LIBVIRT_DEFAULT_URI",
-      "USER",
-      "DISPLAY",
-      "SHLVL",
-      "PATH",
-      "STY",
-      "GDMSESSION",
-      "DBUS_SESSION_BUS_ADDRESS",
-      "OLDPWD",
-      "_",
-
-      "WINIT_HIDPI_FACTOR",
-      "SHELL",
-      "WINDOWID",
-      "MANDATORY_PATH",
-      "WINDOW",
-      "PWD",
-      "DEFAULTS_PATH",
-
-      "ALACRITTY_LOG",
-      "USERNAME",
-    };
-
     if (!!envp) {
       // If we had envp passed in then make sure to set it up on the guest
       for (unsigned i = 0;; ++i) {
         if (envp[i] == nullptr)
           break;
-        bool Invalid = false;
-
-        for (auto Str : NotAllowed) {
-          if (strncmp(Str, envp[i], strlen(Str)) == 0) {
-            Invalid = true;
-            break;
-          }
-        }
-
-        if (Invalid) continue;
-
         EnvironmentVariables.emplace_back(envp[i]);
       }
     }
