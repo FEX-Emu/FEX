@@ -2274,6 +2274,30 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
+  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
+      Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    // MOVSS xmm1, xmm2
+    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
+    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+    auto Result = _VInsElement(16, 4, 0, 0, Dest, Src);
+    StoreResult(FPRClass, Op, Result, -1);
+  }
+  else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    // MOVSS xmm1, mem32
+    // xmm1[127:0] <- zext(mem32)
+    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+    Src = _Zext(32, Src);
+    Src = _Zext(64, Src);
+    StoreResult(FPRClass, Op, Src, -1);
+  }
+  else {
+    // MOVSS mem32, xmm1
+    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 4, -1);
+  }
+}
+
 void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
       Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
@@ -3951,29 +3975,6 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
 
   Src = _FindTrailingZeros(Src);
   StoreResult(GPRClass, Op, Src, -1);
-}
-
-void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
-      Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    // MOVSS xmm1, xmm2
-    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
-    auto Result = _VInsElement(16, 4, 0, 0, Dest, Src);
-    StoreResult(FPRClass, Op, Result, -1);
-  }
-  else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    // MOVSS xmm1, mem32
-    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
-    auto Result = _VInsElement(16, 8, 0, 0, Dest, Src);
-    StoreResult(FPRClass, Op, Result, -1);
-  }
-  else {
-    // MOVSS mem32, xmm1
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 4, -1);
-  }
 }
 
 template<size_t ElementSize, bool Scalar>
