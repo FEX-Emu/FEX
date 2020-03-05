@@ -944,10 +944,38 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_FINDTRAILINGZEROS: {
             auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
             switch (OpSize) {
-              case 1: GD = __builtin_ctz(*GetSrc<uint8_t*>(Op->Header.Args[0])); break;
-              case 2: GD = __builtin_ctz(*GetSrc<uint16_t*>(Op->Header.Args[0])); break;
-              case 4: GD = __builtin_ctz(*GetSrc<uint32_t*>(Op->Header.Args[0])); break;
-              case 8: GD = __builtin_ctz(*GetSrc<uint64_t*>(Op->Header.Args[0])); break;
+              case 1: {
+                auto Src = *GetSrc<uint8_t*>(Op->Header.Args[0]);
+                if (Src)
+                  GD = __builtin_ctz(Src);
+                else
+                  GD = sizeof(Src) * 8;
+                break;
+              }
+              case 2: {
+                auto Src = *GetSrc<uint16_t*>(Op->Header.Args[0]);
+                if (Src)
+                  GD = __builtin_ctz(Src);
+                else
+                  GD = sizeof(Src) * 8;
+                break;
+              }
+              case 4: {
+                auto Src = *GetSrc<uint32_t*>(Op->Header.Args[0]);
+                if (Src)
+                  GD = __builtin_ctz(Src);
+                else
+                  GD = sizeof(Src) * 8;
+                break;
+              }
+              case 8: {
+                auto Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
+                if (Src)
+                  GD = __builtin_ctzll(Src);
+                else
+                  GD = sizeof(Src) * 8;
+                break;
+              }
               default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
             }
             break;
