@@ -12,6 +12,7 @@
 
 #include <atomic>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 namespace FEXCore::CPU {
@@ -1855,10 +1856,11 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 auto *Dst_d = reinterpret_cast<type*>(Tmp); \
                 auto *Src_d = reinterpret_cast<type*>(Src); \
                 for (uint8_t i = 0; i < Elements; ++i) \
-                Dst_d[i] = *Src_d;\
+                  Dst_d[i] = *Src_d;\
                 break; \
               }
-            switch (Op->Header.Size) {
+            uint8_t ElementSize = OpSize / Elements;
+            switch (ElementSize) {
               CREATE_VECTOR(1, uint8_t)
               CREATE_VECTOR(2, uint16_t)
               CREATE_VECTOR(4, uint32_t)
@@ -1952,6 +1954,17 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }                                                 \
             break;                                            \
             }
+          #define DO_VECTOR_SAT_OP(size, type, func, min, max)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+            auto *Src1_d = reinterpret_cast<type*>(Src1); \
+            auto *Src2_d = reinterpret_cast<type*>(Src2); \
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              Dst_d[i] = func(Src1_d[i], Src2_d[i], min, max);          \
+            }                                                 \
+            break;                                            \
+            }
+
           case IR::OP_VUSHRI: {
             auto Op = IROp->C<IR::IROp_VUShrI>();
             void *Src = GetSrc<void*>(Op->Header.Args[0]);
@@ -2043,6 +2056,82 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VUQADD: {
+            auto Op = IROp->C<IR::IROp_VUQAdd>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) {
+              decltype(a) res = a + b;
+              return res < a ? ~0U : res;
+            };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(1, uint8_t,  Func)
+              DO_VECTOR_OP(2, uint16_t, Func)
+              DO_VECTOR_OP(4, uint32_t, Func)
+              DO_VECTOR_OP(8, uint64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VUQSUB: {
+            auto Op = IROp->C<IR::IROp_VUQSub>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) {
+              decltype(a) res = a - b;
+              return res > a ? 0U : res;
+            };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(1, uint8_t,  Func)
+              DO_VECTOR_OP(2, uint16_t, Func)
+              DO_VECTOR_OP(4, uint32_t, Func)
+              DO_VECTOR_OP(8, uint64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VSQADD: {
+            auto Op = IROp->C<IR::IROp_VSQAdd>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            auto Func = [](auto a, auto b) {
+              decltype(a) res = a + b;
+
+              if (a > 0) {
+                if (b > (std::numeric_limits<decltype(a)>::max() - a)) {
+                  return std::numeric_limits<decltype(a)>::max();
+                }
+              }
+              else if (b < (std::numeric_limits<decltype(a)>::min() - a)) {
+                return std::numeric_limits<decltype(a)>::min();
+              }
+
+              return res;
+            };
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(1, int8_t,  Func)
+              DO_VECTOR_OP(2, int16_t, Func)
+              DO_VECTOR_OP(4, int32_t, Func)
+              DO_VECTOR_OP(8, int64_t, Func)
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
             }
             memcpy(GDP, Tmp, Op->RegisterSize);
@@ -2300,7 +2389,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             uint8_t Tmp[16];
 
-            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+            uint8_t Elements = Op->RegisterSize / (Op->ElementSize << 1);
 
             auto Func = [](auto a, auto b) { return a * b; };
             switch (Op->ElementSize) {
@@ -2319,7 +2408,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             uint8_t Tmp[16];
 
-            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+            uint8_t Elements = Op->RegisterSize / (Op->ElementSize << 1);
 
             auto Func = [](auto a, auto b) { return a * b; };
             switch (Op->ElementSize) {
@@ -2478,7 +2567,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint8_t Tmp[16];
 
             uint8_t Elements = Op->RegisterSize / Op->ElementSize;
-            auto Func = [](auto a, auto b) { return a << b; };
+            auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a << b; };
 
             switch (Op->ElementSize) {
               DO_VECTOR_OP(1, uint8_t,  Func)
@@ -2490,6 +2579,26 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, Tmp, Op->RegisterSize);
             break;
           }
+          case IR::OP_VSSHR: {
+            auto Op = IROp->C<IR::IROp_VSShr>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+            auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> b; };
+
+            switch (Op->ElementSize) {
+              DO_VECTOR_OP(1, int8_t,  Func)
+              DO_VECTOR_OP(2, int16_t, Func)
+              DO_VECTOR_OP(4, int32_t, Func)
+              DO_VECTOR_OP(8, int64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+
           case IR::OP_VUSHLS: {
             auto Op = IROp->C<IR::IROp_VUShlS>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -2497,7 +2606,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint8_t Tmp[16];
 
             uint8_t Elements = Op->RegisterSize / Op->ElementSize;
-            auto Func = [](auto a, auto b) { return a << b; };
+            auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a << b; };
 
             switch (Op->ElementSize) {
               DO_VECTOR_SCALAR_OP(1, uint8_t, Func)
@@ -2517,7 +2626,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint8_t Tmp[16];
 
             uint8_t Elements = Op->RegisterSize / Op->ElementSize;
-            auto Func = [](auto a, auto b) { return a >> b; };
+            auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a >> b; };
 
             switch (Op->ElementSize) {
               DO_VECTOR_SCALAR_OP(1, uint8_t, Func)
@@ -2537,7 +2646,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint8_t Tmp[16];
 
             uint8_t Elements = Op->RegisterSize / Op->ElementSize;
-            auto Func = [](auto a, auto b) { return a >> b; };
+            auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> b; };
 
             switch (Op->ElementSize) {
               DO_VECTOR_SCALAR_OP(1, int8_t, Func)
@@ -2854,7 +2963,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
             __uint128_t Src2 = *GetSrc<__uint128_t*>(Op->Header.Args[1]);
 
-            uint64_t Offset = Op->Index * 8;
+            uint64_t Offset = Op->Index * Op->ElementSize * 8;
             __uint128_t Dst = (Src1 << (sizeof(__uint128_t) * 8 - Offset)) | (Src2 >> Offset);
 
             memcpy(GDP, &Dst, Op->RegisterSize);
@@ -2865,7 +2974,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
             __uint128_t Src2 = *GetSrc<__uint128_t*>(Op->Header.Args[1]);
 
-            uint64_t Offset = Op->Index * 8;
+            uint64_t Offset = Op->Index * Op->ElementSize * 8;
             __uint128_t Mask = (1ULL << (Op->ElementSize * 8)) - 1;
             Mask <<= Offset;
             Mask = ~Mask;

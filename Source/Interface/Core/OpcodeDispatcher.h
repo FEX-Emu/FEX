@@ -223,6 +223,8 @@ public:
   void PSLLI(OpcodeArgs);
   template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
   void PSLL(OpcodeArgs);
+  template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
+  void PSRAOp(OpcodeArgs);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
   template<size_t ElementSize>
@@ -332,11 +334,17 @@ public:
   IRPair<IROp_VSub> _VSub(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VSub(ssa0, ssa1, RegisterSize, ElementSize);
   }
-  IRPair<IROp_VQAdd> _VQAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
-    return _VQAdd(ssa0, ssa1, RegisterSize, ElementSize);
+  IRPair<IROp_VUQAdd> _VUQAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VUQAdd(ssa0, ssa1, RegisterSize, ElementSize);
   }
-  IRPair<IROp_VQSub> _VQSub(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
-    return _VQSub(ssa0, ssa1, RegisterSize, ElementSize);
+  IRPair<IROp_VUQSub> _VUQSub(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VUQSub(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSQAdd> _VSQAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSQAdd(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSQSub> _VSQSub(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSQSub(ssa0, ssa1, RegisterSize, ElementSize);
   }
   IRPair<IROp_VUMin> _VUMin(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUMin(ssa0, ssa1, RegisterSize, ElementSize);
@@ -391,6 +399,9 @@ public:
   }
   IRPair<IROp_VUShr> _VUShr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShr(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VSShr> _VSShr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VSShr(ssa0, ssa1, RegisterSize, ElementSize);
   }
   IRPair<IROp_VExtr> _VExtr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index) {
     return _VExtr(ssa0, ssa1, RegisterSize, ElementSize, Index);

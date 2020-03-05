@@ -591,21 +591,21 @@
     "SplatVector2": {
       "HasDest": true,
       "NumElements": "2",
-      "DestSize": "GetOpSize(ssa0)",
+      "DestSize": "GetOpSize(ssa0) * 2",
       "SSAArgs": "1"
     },
 
     "SplatVector3": {
       "HasDest": true,
       "NumElements": "3",
-      "DestSize": "GetOpSize(ssa0)",
+      "DestSize": "GetOpSize(ssa0) * 3",
       "SSAArgs": "1"
     },
 
     "SplatVector4": {
       "HasDest": true,
       "NumElements": "4",
-      "DestSize": "GetOpSize(ssa0)",
+      "DestSize": "GetOpSize(ssa0) * 4",
       "SSAArgs": "1"
     },
 
@@ -654,7 +654,7 @@
       ]
     },
 
-    "VQAdd": {
+    "VUQAdd": {
       "HasDest": true,
       "SSAArgs": "2",
       "Args": [
@@ -663,7 +663,25 @@
       ]
     },
 
-    "VQSub": {
+    "VUQSub": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSQAdd": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSQSub": {
       "HasDest": true,
       "SSAArgs": "2",
       "Args": [
@@ -898,6 +916,15 @@
     },
 
     "VUShr": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSShr": {
       "HasDest": true,
       "SSAArgs": "2",
       "Args": [

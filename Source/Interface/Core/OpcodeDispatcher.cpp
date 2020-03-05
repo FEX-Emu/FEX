@@ -2365,22 +2365,7 @@ template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src{};
-  if (Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  }
-  else {
-    // Load a elementsize from memory and move it to a vector register
-    Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
-    switch (ElementSize) {
-      case 4:
-        Src = _SplatVector4(Src);
-        break;
-      case 8:
-        Src = _SplatVector2(Src);
-        break;
-    }
-  }
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // If OpSize == ElementSize then it only does the lower scalar op
   auto ALUOp = _VAdd(ElementSize, ElementSize, Dest, Src);
@@ -2406,10 +2391,14 @@ void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
 
-  // Insert the lower bits
-  auto Result = _VInsElement(Size, ElementSize, 0, 0, Dest, ALUOp);
-
-  StoreResult(FPRClass, Op, Result, -1);
+  if (Scalar) {
+    // Insert the lower bits
+    auto Result = _VInsElement(GetSrcSize(Op), ElementSize, 0, 0, Dest, ALUOp);
+    StoreResult(FPRClass, Op, Result, -1);
+  }
+  else {
+    StoreResult(FPRClass, Op, ALUOp, -1);
+  }
 }
 
 void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
@@ -2549,10 +2538,10 @@ void OpDispatchBuilder::ANDNOp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PINSROp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  auto Size = GetDstSize(Op);
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
   LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].TypeLiteral.Literal;
 
@@ -3806,6 +3795,25 @@ void OpDispatchBuilder::PSLL(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
+void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  auto Size = GetDstSize(Op);
+
+  OrderedNode *Result{};
+
+  if (Scalar) {
+    Result = _VSShrS(Size, ElementSize, Dest, Src);
+  }
+  else {
+    Result = _VSShr(Size, ElementSize, Dest, Src);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
   uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
@@ -3874,7 +3882,7 @@ void OpDispatchBuilder::CVT(OpcodeArgs) {
   else
     Src = _UCVTF(Src, DstElementSize);
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
 
   Src = _VInsElement(16, DstElementSize, 0, 0, Dest, Src);
 
@@ -3972,7 +3980,7 @@ template<size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
   uint8_t CompType = Op->Src[1].TypeLiteral.Literal;
 
   OrderedNode *Result{};
@@ -4002,7 +4010,7 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
 
   if (Scalar) {
     // Insert the lower bits
-    Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Result);
+    Result = _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Dest, Result);
   }
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -4658,7 +4666,7 @@ void InstallOpcodeHandlers() {
     {0x5F, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, true>},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, true>},
-    {0xF0, 1, &OpDispatchBuilder::UnimplementedOp},
+    {0xF0, 1, &OpDispatchBuilder::MOVVectorOp},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> OpSizeModOpTable = {
@@ -4707,7 +4715,7 @@ void InstallOpcodeHandlers() {
     {0x7E, 1, &OpDispatchBuilder::MOVDOp},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, false>},
-    {0xC4, 1, &OpDispatchBuilder::PINSROp<4>},
+    {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<8>},
 
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
@@ -4719,13 +4727,13 @@ void InstallOpcodeHandlers() {
     {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
     {0xDF, 1, &OpDispatchBuilder::ANDNOp},
-    {0xE1, 1, &OpDispatchBuilder::PSRAIOp<2>},
-    {0xE2, 1, &OpDispatchBuilder::PSRAIOp<4>},
+    {0xE1, 1, &OpDispatchBuilder::PSRAOp<2, true, 0>},
+    {0xE2, 1, &OpDispatchBuilder::PSRAOp<4, true, 0>},
     {0xE7, 1, &OpDispatchBuilder::MOVVectorOp},
     {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
     {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
-    {0xEC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VQADD, 1>},
-    {0xED, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VQADD, 2>},
+    {0xEC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 1>},
+    {0xED, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 2>},
     {0xEE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 2>},
     {0xEF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
 

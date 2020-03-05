@@ -492,7 +492,7 @@ void InitializeSecondaryTables() {
     {0xC0, 2, X86InstInfo{"",           TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},
     {0xC2, 1, X86InstInfo{"CMPPD",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         1, nullptr}},
     {0xC3, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                               0, nullptr}},
-    {0xC4, 1, X86InstInfo{"PINSRW",     TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_SF_SRC_GPR | FLAGS_XMM_FLAGS,      1, nullptr}},
+    {0xC4, 1, X86InstInfo{"PINSRW",     TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_16BIT) | FLAGS_MODRM | FLAGS_SF_SRC_GPR | FLAGS_XMM_FLAGS,      1, nullptr}},
     {0xC5, 1, X86InstInfo{"PEXTRW",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_SF_DST_GPR | FLAGS_XMM_FLAGS,      1, nullptr}},
     {0xC6, 1, X86InstInfo{"SHUFPD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         1, nullptr}},
     {0xC7, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                               0, nullptr}},
