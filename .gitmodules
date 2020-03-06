@@ -13,3 +13,5 @@
 [submodule "External/tiny-json"]
 	path = External/tiny-json
 	url = https://github.com/Sonicadvance1/tiny-json.git
+[submodule "vixl"]
+	shallow = true
