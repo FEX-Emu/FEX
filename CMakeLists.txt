@@ -62,6 +62,8 @@ include_directories(External/json-maker/)
 add_subdirectory(External/tiny-json/)
 include_directories(External/tiny-json/)
 
+include_directories(External/xbyak/)
+
 include_directories(Source/)
 include_directories("${CMAKE_BINARY_DIR}/Source/")
 

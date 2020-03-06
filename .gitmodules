@@ -1,4 +1,5 @@
 [submodule "External/vixl"]
+	shallow = true
 	path = External/vixl
 	url = https://github.com/Sonicadvance1/vixl.git
 [submodule "External/cpp-optparse"]
@@ -13,5 +14,7 @@
 [submodule "External/tiny-json"]
 	path = External/tiny-json
 	url = https://github.com/Sonicadvance1/tiny-json.git
-[submodule "vixl"]
-	shallow = true
+[submodule "External/xbyak"]
+      shallow = true
+	path = External/xbyak
+	url = https://github.com/herumi/xbyak.git
