@@ -260,6 +260,9 @@ constexpr uint32_t FLAGS_NO_OVERLAY           = (1 << 20);
 // x87
 constexpr uint32_t FLAGS_POP                  = (1 << 21);
 
+// Only SEXT if the instruction is operating in 64bit operand size
+constexpr uint32_t FLAGS_SRC_SEXT64BIT        = (1 << 22);
+
 constexpr uint32_t FLAGS_SIZE_DST_OFF = 26;
 constexpr uint32_t FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
 
