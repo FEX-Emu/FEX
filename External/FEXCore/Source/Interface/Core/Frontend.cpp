@@ -441,7 +441,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     uint64_t Literal {0};
     Literal = ReadData(Bytes);
 
-    if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SRC_SEXT) {
+    if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SRC_SEXT) ||
+        (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_64BIT && Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SRC_SEXT64BIT)) {
       if (Bytes == 1) {
         Literal = static_cast<int8_t>(Literal);
       }
