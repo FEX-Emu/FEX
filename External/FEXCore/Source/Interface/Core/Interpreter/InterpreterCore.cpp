@@ -2888,6 +2888,17 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             // Each source is OpSize in size
             // So you can have up to a 128bit divide from x86-64
             switch (OpSize) {
+              case 2: {
+                uint16_t SrcLow = *GetSrc<uint16_t*>(Op->Header.Args[0]);
+                uint16_t SrcHigh = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                int16_t Divisor = *GetSrc<uint16_t*>(Op->Header.Args[2]);
+                int32_t Source = (static_cast<uint32_t>(SrcHigh) << 16) | SrcLow;
+                int32_t Res = Source / Divisor;
+
+                // We only store the lower bits of the result
+                GD = static_cast<int16_t>(Res);
+                break;
+              }
               case 4: {
                 uint32_t SrcLow = *GetSrc<uint32_t*>(Op->Header.Args[0]);
                 uint32_t SrcHigh = *GetSrc<uint32_t*>(Op->Header.Args[1]);
@@ -2961,6 +2972,17 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             // Each source is OpSize in size
             // So you can have up to a 128bit Remainder from x86-64
             switch (OpSize) {
+              case 2: {
+                uint16_t SrcLow = *GetSrc<uint16_t*>(Op->Header.Args[0]);
+                uint16_t SrcHigh = *GetSrc<uint16_t*>(Op->Header.Args[1]);
+                int16_t Divisor = *GetSrc<uint16_t*>(Op->Header.Args[2]);
+                int32_t Source = (static_cast<uint32_t>(SrcHigh) << 16) | SrcLow;
+                int32_t Res = Source % Divisor;
+
+                // We only store the lower bits of the result
+                GD = static_cast<int16_t>(Res);
+                break;
+              }
               case 4: {
                 uint32_t SrcLow = *GetSrc<uint32_t*>(Op->Header.Args[0]);
                 uint32_t SrcHigh = *GetSrc<uint32_t*>(Op->Header.Args[1]);

@@ -203,14 +203,8 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
-  OrderedNode *Src;
-  if (Op->OP == 0x68 || Op->OP == 0x6A) { // Immediate Push
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  }
-  else {
-    if (Op->OP == 0xFF && Size == 4) LogMan::Msg::A("Woops. Can't do 32bit for this PUSH op");
-    Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  }
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  if (Op->OP == 0xFF && Size == 4) LogMan::Msg::A("Woops. Can't do 32bit for this PUSH op");
 
   auto Constant = _Constant(Size);
 
@@ -291,11 +285,12 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   BlockSetRIP = true;
 
+  uint8_t Size = GetSrcSize(Op);
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   auto ConstantPCReturn = _Constant(Op->PC + Op->InstSize);
 
-  auto ConstantSize = _Constant(8);
+  auto ConstantSize = _Constant(Size);
   auto OldSP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
 
   auto NewSP = _Sub(OldSP, ConstantSize);
@@ -303,7 +298,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   // Store the new stack pointer
   _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
 
-  _StoreMem(GPRClass, 8, NewSP, ConstantPCReturn, 8);
+  _StoreMem(GPRClass, Size, NewSP, ConstantPCReturn, Size);
 
   // Store the RIP
   _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), JMPPCOffset);
@@ -1056,7 +1051,6 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
     auto RFLAG = GetPackedRFLAG(false);
 
     auto AndOp = _And(RFLAG, MaskConst);
-
     switch (Type) {
     case COMPARE_ZERO: {
       SrcCond = _Select(FEXCore::IR::COND_EQ,
@@ -3333,21 +3327,8 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
     auto XorOp2 = _Xor(Res, Src1);
     OrderedNode *FinalAnd = _And(XorOp1, XorOp2);
 
-    switch (GetSrcSize(Op)) {
-    case 1:
-      FinalAnd = _Bfe(1, 7, FinalAnd);
-    break;
-    case 2:
-      FinalAnd = _Bfe(1, 15, FinalAnd);
-    break;
-    case 4:
-      FinalAnd = _Bfe(1, 31, FinalAnd);
-    break;
-    case 8:
-      FinalAnd = _Bfe(1, 63, FinalAnd);
-    break;
-    default: LogMan::Msg::A("Unknown BFESize: %d", GetSrcSize(Op)); break;
-    }
+    FinalAnd = _Bfe(1, GetSrcSize(Op) * 8 - 1, FinalAnd);
+
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(FinalAnd);
   }
 }
@@ -4505,7 +4486,7 @@ void InstallOpcodeHandlers() {
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
     {0x5A, 1, &OpDispatchBuilder::VFCVTF<8, 4>},
-    {0x5B, 1, &OpDispatchBuilder::FCVT<4, true>},
+    {0x5B, 1, &OpDispatchBuilder::VFCVT<4, true, false>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>},
     {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 4>},
