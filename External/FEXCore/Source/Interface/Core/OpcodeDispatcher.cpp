@@ -4486,7 +4486,7 @@ void InstallOpcodeHandlers() {
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
     {0x5A, 1, &OpDispatchBuilder::VFCVTF<8, 4>},
-    {0x5B, 1, &OpDispatchBuilder::FCVT<4, true>},
+    {0x5B, 1, &OpDispatchBuilder::VFCVT<4, true, false>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>},
     {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 4>},
