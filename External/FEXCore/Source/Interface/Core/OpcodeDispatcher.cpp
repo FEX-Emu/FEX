@@ -1051,7 +1051,6 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
     auto RFLAG = GetPackedRFLAG(false);
 
     auto AndOp = _And(RFLAG, MaskConst);
-
     switch (Type) {
     case COMPARE_ZERO: {
       SrcCond = _Select(FEXCore::IR::COND_EQ,
@@ -3328,21 +3327,8 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
     auto XorOp2 = _Xor(Res, Src1);
     OrderedNode *FinalAnd = _And(XorOp1, XorOp2);
 
-    switch (GetSrcSize(Op)) {
-    case 1:
-      FinalAnd = _Bfe(1, 7, FinalAnd);
-    break;
-    case 2:
-      FinalAnd = _Bfe(1, 15, FinalAnd);
-    break;
-    case 4:
-      FinalAnd = _Bfe(1, 31, FinalAnd);
-    break;
-    case 8:
-      FinalAnd = _Bfe(1, 63, FinalAnd);
-    break;
-    default: LogMan::Msg::A("Unknown BFESize: %d", GetSrcSize(Op)); break;
-    }
+    FinalAnd = _Bfe(1, GetSrcSize(Op) * 8 - 1, FinalAnd);
+
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(FinalAnd);
   }
 }
