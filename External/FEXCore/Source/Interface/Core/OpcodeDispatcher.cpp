@@ -285,11 +285,12 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   BlockSetRIP = true;
 
+  uint8_t Size = GetSrcSize(Op);
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   auto ConstantPCReturn = _Constant(Op->PC + Op->InstSize);
 
-  auto ConstantSize = _Constant(8);
+  auto ConstantSize = _Constant(Size);
   auto OldSP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
 
   auto NewSP = _Sub(OldSP, ConstantSize);
@@ -297,7 +298,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   // Store the new stack pointer
   _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
 
-  _StoreMem(GPRClass, 8, NewSP, ConstantPCReturn, 8);
+  _StoreMem(GPRClass, Size, NewSP, ConstantPCReturn, Size);
 
   // Store the RIP
   _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), JMPPCOffset);
