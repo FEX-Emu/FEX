@@ -112,6 +112,7 @@ public:
   template<uint32_t SrcIndex>
   void SBBOp(OpcodeArgs);
   void PUSHOp(OpcodeArgs);
+  void PUSHREGOp(OpcodeArgs);
   void POPOp(OpcodeArgs);
   void LEAVEOp(OpcodeArgs);
   void CALLOp(OpcodeArgs);

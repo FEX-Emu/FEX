@@ -219,6 +219,23 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 }
 
+void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
+  uint8_t Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  auto Constant = _Constant(Size);
+
+  auto OldSP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  auto NewSP = _Sub(OldSP, Constant);
+
+  // Store the new stack pointer
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+
+  // Store our value to the new stack location
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+}
+
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
   auto Constant = _Constant(Size);
@@ -4393,7 +4410,7 @@ void InstallOpcodeHandlers() {
     {0x35, 1, &OpDispatchBuilder::ALUOp<0>},
 
     {0x38, 6, &OpDispatchBuilder::CMPOp<0>},
-    {0x50, 8, &OpDispatchBuilder::PUSHOp},
+    {0x50, 8, &OpDispatchBuilder::PUSHREGOp},
     {0x58, 8, &OpDispatchBuilder::POPOp},
     {0x63, 1, &OpDispatchBuilder::MOVSXDOp},
     {0x68, 1, &OpDispatchBuilder::PUSHOp},
