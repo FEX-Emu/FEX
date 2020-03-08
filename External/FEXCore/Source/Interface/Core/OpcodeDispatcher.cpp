@@ -203,14 +203,8 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
-  OrderedNode *Src;
-  if (Op->OP == 0x68 || Op->OP == 0x6A) { // Immediate Push
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  }
-  else {
-    if (Op->OP == 0xFF && Size == 4) LogMan::Msg::A("Woops. Can't do 32bit for this PUSH op");
-    Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  }
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  if (Op->OP == 0xFF && Size == 4) LogMan::Msg::A("Woops. Can't do 32bit for this PUSH op");
 
   auto Constant = _Constant(Size);
 
