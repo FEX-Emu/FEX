@@ -1,0 +1,64 @@
+%ifdef CONFIG
+{
+  "RegData": {
+    "R15": "0x0000000008070605",
+    "R14": "0x00000000F8F7F6F5",
+    "R13": "0x00000000E8E7E6E5",
+    "R12": "0x00000000D8D7D6D5",
+    "R11": "0x00000000C8C7C6C5",
+    "R10": "0x00000000B8B7B6B5",
+    "R9":  "0x00000000A8A7A6A5",
+    "R8":  "0x0000000098979695",
+    "RSP": "0x8887868584838281",
+    "RDI": "0x7877767574737271",
+    "RSI": "0x6867666564636261",
+    "RBP": "0x5857565554535251",
+    "RDX": "0x4847464544434241",
+    "RCX": "0x3837363534333231",
+    "RBX": "0x2827262524232221",
+    "RAX": "0x1817161514131211"
+  },
+  "MemoryRegions": {
+    "0x100000000": "4096"
+  }
+}
+%endif
+
+mov rdx, 0xe0000000
+
+mov rax, 0x1112131415161718
+mov rbx, 0x2122232425262728
+mov rcx, 0x3132333435363738
+mov rdx, 0x4142434445464748
+mov rbp, 0x5152535455565758
+mov rsi, 0x6162636465666768
+mov rdi, 0x7172737475767778
+mov rsp, 0x8182838485868788
+mov  r8, 0x9192939495969798
+mov  r9, 0xA1A2A3A4A5A6A7A8
+mov r10, 0xB1B2B3B4B5B6B7B8
+mov r11, 0xC1C2C3C4C5C6C7C8
+mov r12, 0xD1D2D3D4D5D6D7D8
+mov r13, 0xE1E2E3E4E5E6E7E8
+mov r14, 0xF1F2F3F4F5F6F7F8
+mov r15, 0x0102030405060708
+
+bswap rax
+bswap rbx
+bswap rcx
+bswap rdx
+bswap rbp
+bswap rsi
+bswap rdi
+bswap rsp
+
+bswap r8d
+bswap r9d
+bswap r10d
+bswap r11d
+bswap r12d
+bswap r13d
+bswap r14d
+bswap r15d
+
+hlt
