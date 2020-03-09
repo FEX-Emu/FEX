@@ -1165,14 +1165,9 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   auto ShiftRight = _Sub(_Constant(Size), Shift);
 
   OrderedNode *Res{};
-  if (Size == 16) {
-    LogMan::Msg::A("Unsupported Op");
-  }
-  else {
-    auto Tmp1 = _Lshl(Dest, Shift);
-    auto Tmp2 = _Lshr(Src, ShiftRight);
-    Res = _Or(Tmp1, Tmp2);
-  }
+  auto Tmp1 = _Lshl(Dest, Shift);
+  auto Tmp2 = _Lshr(Src, ShiftRight);
+  Res = _Or(Tmp1, Tmp2);
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -1203,14 +1198,9 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   auto ShiftRight = _Sub(_Constant(Size), Shift);
 
   OrderedNode *Res{};
-  if (Size == 16) {
-    LogMan::Msg::A("Unsupported Op");
-  }
-  else {
-    auto Tmp1 = _Lshr(Dest, Shift);
-    auto Tmp2 = _Lshl(Src, ShiftRight);
-    Res = _Or(Tmp1, Tmp2);
-  }
+  auto Tmp1 = _Lshr(Dest, Shift);
+  auto Tmp2 = _Lshl(Src, ShiftRight);
+  Res = _Or(Tmp1, Tmp2);
 
   StoreResult(GPRClass, Op, Res, -1);
 
