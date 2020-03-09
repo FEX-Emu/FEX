@@ -1200,7 +1200,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   else
     Shift = _And(Shift, _Constant(0x1F));
 
-  auto ShiftRight = _Neg(Shift);
+  auto ShiftRight = _Sub(_Constant(Size), Shift);
 
   OrderedNode *Res{};
   if (Size == 16) {
