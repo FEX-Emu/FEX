@@ -2164,7 +2164,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::BSFOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : 8;
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the LSB of this source
@@ -2183,12 +2184,13 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
       Src, ZeroConst,
       OneConst, ZeroConst);
 
-  StoreResult(GPRClass, Op, SelectOp, -1);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFSelectOp);
 }
 
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : 8;
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the MSB of this source
@@ -2207,7 +2209,7 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
       Src, ZeroConst,
       OneConst, ZeroConst);
 
-  StoreResult(GPRClass, Op, SelectOp, -1);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFSelectOp);
 }
 
