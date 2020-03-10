@@ -1994,76 +1994,104 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SCASOp(OpcodeArgs) {
-  LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX, "Can only handle REPNE\n");
+  LogMan::Throw::A(
+    (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) ||
+    !(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX),
+    "Can only handle REPNE Or NONE\n");
 
   auto Size = GetSrcSize(Op);
+  bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
 
-  auto JumpStart = _Jump();
-  // Make sure to start a new block after ending this one
-    auto LoopStart = CreateNewCodeBlock();
-    SetJumpTarget(JumpStart, LoopStart);
-    SetCurrentCodeBlock(LoopStart);
+  if (!Repeat) {
+    OrderedNode *Dest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
 
-      auto ZeroConst = _Constant(0);
-      auto OneConst = _Constant(1);
+    auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    auto Src2 = _LoadMem(GPRClass, Size, Dest_RDI, Size);
 
-      OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+    auto ALUOp = _Sub(Src1, Src2);
+    GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
 
-      // Can we end the block?
-      OrderedNode *CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
-        Counter, ZeroConst,
-        OneConst, ZeroConst);
+    auto SizeConst = _Constant(Size);
+    auto NegSizeConst = _Constant(-Size);
 
-    // We leave if RCX = 0
-    auto CondJump = _CondJump(CanLeaveCond);
-    IRPair<IROp_CondJump> InternalCondJump;
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+        DF, _Constant(0),
+        SizeConst, NegSizeConst);
 
-    auto LoopTail = CreateNewCodeBlock();
-    SetFalseJumpTarget(CondJump, LoopTail);
-    SetCurrentCodeBlock(LoopTail);
-
-    // Working loop
-    {
-      OrderedNode *Dest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
-
-      auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      auto Src2 = _LoadMem(GPRClass, Size, Dest_RDI, Size);
-
-      auto ALUOp = _Sub(Src1, Src2);
-      GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
-
-      OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
-      OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
-
-      // Decrement counter
-      TailCounter = _Sub(TailCounter, _Constant(1));
-
-      // Store the counter so we don't have to deal with PHI here
-      _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
-
-      auto SizeConst = _Constant(Size);
-      auto NegSizeConst = _Constant(-Size);
-
-      auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-      auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-          DF, _Constant(0),
-          SizeConst, NegSizeConst);
-
-      // Offset the pointer
-      TailDest_RDI = _Add(TailDest_RDI, PtrDir);
-      _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest_RDI);
-
-      OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-      InternalCondJump = _CondJump(ZF);
-
-      // Jump back to the start if we have more work to do
-      SetFalseJumpTarget(InternalCondJump, LoopStart);
+    // Offset the pointer
+    OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+    TailDest_RDI = _Add(TailDest_RDI, PtrDir);
+    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest_RDI);
   }
-  // Make sure to start a new block after ending this one
-  auto LoopEnd = CreateNewCodeBlock();
-  SetTrueJumpTarget(CondJump, LoopEnd);
-  SetTrueJumpTarget(InternalCondJump, LoopEnd);
-  SetCurrentCodeBlock(LoopEnd);
+  else {
+    auto JumpStart = _Jump();
+    // Make sure to start a new block after ending this one
+      auto LoopStart = CreateNewCodeBlock();
+      SetJumpTarget(JumpStart, LoopStart);
+      SetCurrentCodeBlock(LoopStart);
+
+        auto ZeroConst = _Constant(0);
+        auto OneConst = _Constant(1);
+
+        OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+
+        // Can we end the block?
+        OrderedNode *CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
+          Counter, ZeroConst,
+          OneConst, ZeroConst);
+
+      // We leave if RCX = 0
+      auto CondJump = _CondJump(CanLeaveCond);
+      IRPair<IROp_CondJump> InternalCondJump;
+
+      auto LoopTail = CreateNewCodeBlock();
+      SetFalseJumpTarget(CondJump, LoopTail);
+      SetCurrentCodeBlock(LoopTail);
+
+      // Working loop
+      {
+        OrderedNode *Dest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+
+        auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+        auto Src2 = _LoadMem(GPRClass, Size, Dest_RDI, Size);
+
+        auto ALUOp = _Sub(Src1, Src2);
+        GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
+
+        OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+        OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+
+        // Decrement counter
+        TailCounter = _Sub(TailCounter, _Constant(1));
+
+        // Store the counter so we don't have to deal with PHI here
+        _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
+
+        auto SizeConst = _Constant(Size);
+        auto NegSizeConst = _Constant(-Size);
+
+        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+            DF, _Constant(0),
+            SizeConst, NegSizeConst);
+
+        // Offset the pointer
+        TailDest_RDI = _Add(TailDest_RDI, PtrDir);
+        _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest_RDI);
+
+        OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+        InternalCondJump = _CondJump(ZF);
+
+        // Jump back to the start if we have more work to do
+        SetFalseJumpTarget(InternalCondJump, LoopStart);
+    }
+    // Make sure to start a new block after ending this one
+    auto LoopEnd = CreateNewCodeBlock();
+    SetTrueJumpTarget(CondJump, LoopEnd);
+    SetTrueJumpTarget(InternalCondJump, LoopEnd);
+    SetCurrentCodeBlock(LoopEnd);
+  }
 }
 
 void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
