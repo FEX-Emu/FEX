@@ -932,15 +932,18 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
     // Source is memory(literal)
     // Dest is GPR
     Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, true, true);
+    StoreResult(GPRClass, Op, Op->Dest, Src, -1);
     break;
   case 0xA2:
   case 0xA3:
     // Source is GPR
     // Dest is memory(literal)
     Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    // This one is a bit special since the destination is a literal
+    // So the destination gets stored in Src[1]
+    StoreResult(GPRClass, Op, Op->Src[1], Src, -1);
     break;
   }
-  StoreResult(GPRClass, Op, Op->Dest, Src, -1);
 }
 
 void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
