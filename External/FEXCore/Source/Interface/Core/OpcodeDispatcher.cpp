@@ -1816,7 +1816,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Can't handle REPNE on MOVS\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on MOVS\n");
 
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
     auto Size = GetSrcSize(Op);
