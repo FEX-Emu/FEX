@@ -704,6 +704,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
         // Additionally: If you hit repeat of differnt prefixes then only the LAST one before this one works for subtable selection
 
         bool NoOverlay = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY) != 0;
+        bool NoOverlay66 = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
 
         if (NoOverlay) { // This section of the table ignores prefix extention
           if (NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp)) {
@@ -726,7 +727,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
             InstructionDecoded = true;
           }
         }
-        else if (DecodeInst->LastEscapePrefix == 0x66) { // Operand Size
+        else if (DecodeInst->LastEscapePrefix == 0x66 && !NoOverlay66) { // Operand Size
           // Remove prefix so it doesn't effect calculations.
           // This is only an escape prefix rather tan modifier now
           DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
