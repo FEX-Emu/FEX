@@ -1806,6 +1806,47 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
       break;
     }
+    case IR::OP_FCMP: {
+      auto Op = IROp->C<IR::IROp_FCmp>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastScalarToType(Src1, false, OpSize * 8, Op->ElementSize);
+      Src2 = CastScalarToType(Src2, false, OpSize * 8, Op->ElementSize);
+
+      llvm::Value *Result = JITState.IRBuilder->getInt64(0);
+      if (Op->Flags & (1 << IR::FCMP_FLAG_LT)) {
+        auto FCmp = JITState.IRBuilder->CreateFCmpOLT(Src1, Src2);
+        FCmp = JITState.IRBuilder->CreateZExt(FCmp, Result->getType());
+        FCmp = JITState.IRBuilder->CreateShl(FCmp, JITState.IRBuilder->getInt64(IR::FCMP_FLAG_LT));
+        Result = JITState.IRBuilder->CreateOr(Result, FCmp);
+      }
+      if (Op->Flags & (1 << IR::FCMP_FLAG_UNORDERED)) {
+        auto FCmp = JITState.IRBuilder->CreateFCmpUNO(Src1, Src2);
+        FCmp = JITState.IRBuilder->CreateZExt(FCmp, Result->getType());
+        FCmp = JITState.IRBuilder->CreateShl(FCmp, JITState.IRBuilder->getInt64(IR::FCMP_FLAG_UNORDERED));
+        Result = JITState.IRBuilder->CreateOr(Result, FCmp);
+      }
+      if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
+        auto FCmp = JITState.IRBuilder->CreateFCmpUEQ(Src1, Src2);
+        FCmp = JITState.IRBuilder->CreateZExt(FCmp, Result->getType());
+        FCmp = JITState.IRBuilder->CreateShl(FCmp, JITState.IRBuilder->getInt64(IR::FCMP_FLAG_EQ));
+        Result = JITState.IRBuilder->CreateOr(Result, FCmp);
+      }
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_GETHOSTFLAG: {
+      auto Op = IROp->C<IR::IROp_GetHostFlag>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      auto Result = JITState.IRBuilder->CreateLShr(Src, JITState.IRBuilder->getInt64(Op->Flag));
+      Result = JITState.IRBuilder->CreateAnd(Result, JITState.IRBuilder->getInt64(1));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_CREATEVECTOR2: {
       auto Op = IROp->C<IR::IROp_CreateVector2>();
       LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);

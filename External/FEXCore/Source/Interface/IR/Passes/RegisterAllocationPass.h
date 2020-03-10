@@ -9,6 +9,7 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
   public:
     static constexpr uint32_t GPRClass = 0;
     static constexpr uint32_t FPRClass = 1;
+    static constexpr uint32_t FLAGSClass = 2;
 
     bool HasFullRA() const { return HadFullRA; }
     uint32_t SpillSlots() const { return SpillSlotCount; }

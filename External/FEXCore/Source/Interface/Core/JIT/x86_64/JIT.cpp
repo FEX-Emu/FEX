@@ -2796,7 +2796,47 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_FCMP: {
+          auto Op = IROp->C<IR::IROp_FCmp>();
 
+          if (Op->ElementSize == 4) {
+            ucomiss(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          }
+          else {
+            ucomisd(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          }
+          mov (rax, 0);
+
+          if (Op->Flags & (1 << FCMP_FLAG_LT)) {
+            mov(rcx, 0);
+            setb(cl);
+            shl(rcx, FCMP_FLAG_LT);
+            or(rax, rcx);
+          }
+          if (Op->Flags & (1 << FCMP_FLAG_UNORDERED)) {
+            mov(rcx, 0);
+            setp(cl);
+            shl(rcx, FCMP_FLAG_UNORDERED);
+            or(rax, rcx);
+          }
+          if (Op->Flags & (1 << FCMP_FLAG_EQ)) {
+            mov(rcx, 0);
+            setz(cl);
+            shl(rcx, FCMP_FLAG_EQ);
+            or(rax, rcx);
+          }
+          mov (GetDst<RA_64>(Node), rax);
+          break;
+        }
+        case IR::OP_GETHOSTFLAG: {
+          auto Op = IROp->C<IR::IROp_GetHostFlag>();
+
+          mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          shr(rax, Op->Flag);
+          and(rax, 1);
+          mov(GetDst<RA_64>(Node), rax);
+          break;
+        }
         case IR::OP_VZIP: {
           auto Op = IROp->C<IR::IROp_VZip>();
           movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));

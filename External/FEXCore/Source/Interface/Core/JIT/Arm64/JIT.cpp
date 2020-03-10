@@ -2929,6 +2929,42 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_FCMP: {
+        auto Op = IROp->C<IR::IROp_FCmp>();
+
+        if (Op->ElementSize == 4) {
+          fcmp(GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+        }
+        else {
+          fcmp(GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+        }
+        auto Dst = GetSrc<RA_64>(Node);
+        eor(Dst, Dst, Dst);
+
+        if (Op->Flags & (1 << FCMP_FLAG_LT)) {
+          cset(TMP2, Condition::mi);
+          lsl(TMP2, TMP2, FCMP_FLAG_LT);
+          orr(Dst, Dst, TMP2);
+        }
+        if (Op->Flags & (1 << FCMP_FLAG_EQ)) {
+          cset(TMP2, Condition::eq);
+          lsl(TMP2, TMP2, FCMP_FLAG_EQ);
+          orr(Dst, Dst, TMP2);
+        }
+        if (Op->Flags & (1 << FCMP_FLAG_EQ)) {
+          cset(TMP2, Condition::vs);
+          lsl(TMP2, TMP2, FCMP_FLAG_EQ);
+          orr(Dst, Dst, TMP2);
+        }
+
+        break;
+      }
+      case IR::OP_GETHOSTFLAG: {
+        auto Op = IROp->C<IR::IROp_GetHostFlag>();
+
+        ubfx(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), Op->Flag, 1);
+        break;
+      }
       case IR::OP_VZIP: {
         auto Op = IROp->C<IR::IROp_VZip>();
         LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
