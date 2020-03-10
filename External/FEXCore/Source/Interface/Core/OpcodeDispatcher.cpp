@@ -1748,71 +1748,98 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
-  LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX, "Can't handle REP not existing on STOS\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on STOS");
 
   auto Size = GetSrcSize(Op);
 
-  // Create all our blocks
-  auto LoopHead = CreateNewCodeBlock();
-  auto LoopTail = CreateNewCodeBlock();
-  auto LoopEnd = CreateNewCodeBlock();
 
-  // At the time this was written, our RA can't handle accessing nodes across blocks.
-  // So we need to re-load and re-calculate essential values each iteration of the loop.
+  bool Repeat = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
-  // First thing we need to do is finish this block and jump to the start of the loop.
-  _Jump(LoopHead);
+  if (!Repeat) {
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    OrderedNode *Dest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
 
-    SetCurrentCodeBlock(LoopHead);
-    {
-      OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
-      auto ZeroConst = _Constant(0);
+    // Store to memory where RDI points
+    _StoreMem(GPRClass, Size, Dest, Src, Size);
 
-      // Can we end the block?
-      auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
-          Counter, ZeroConst,
-          _Constant(1), ZeroConst);
+    auto SizeConst = _Constant(Size);
+    auto NegSizeConst = _Constant(-Size);
 
-      _CondJump(CanLeaveCond, LoopEnd, LoopTail);
-    }
+    // Calculate direction.
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+        DF,  _Constant(0),
+        SizeConst, NegSizeConst);
 
-    SetCurrentCodeBlock(LoopTail);
-    {
-      OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      OrderedNode *Dest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+    // Offset the pointer
+    OrderedNode *TailDest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+    TailDest = _Add(TailDest, PtrDir);
+    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest);
 
-      // Store to memory where RDI points
-      _StoreMem(GPRClass, Size, Dest, Src, Size);
+  }
+  else {
+    // Create all our blocks
+    auto LoopHead = CreateNewCodeBlock();
+    auto LoopTail = CreateNewCodeBlock();
+    auto LoopEnd = CreateNewCodeBlock();
 
-      OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
-      OrderedNode *TailDest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+    // At the time this was written, our RA can't handle accessing nodes across blocks.
+    // So we need to re-load and re-calculate essential values each iteration of the loop.
 
-      // Decrement counter
-      TailCounter = _Sub(TailCounter, _Constant(1));
+    // First thing we need to do is finish this block and jump to the start of the loop.
+    _Jump(LoopHead);
 
-      // Store the counter so we don't have to deal with PHI here
-      _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
+      SetCurrentCodeBlock(LoopHead);
+      {
+        OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+        auto ZeroConst = _Constant(0);
 
-      auto SizeConst = _Constant(Size);
-      auto NegSizeConst = _Constant(-Size);
+        // Can we end the block?
+        auto CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
+            Counter, ZeroConst,
+            _Constant(1), ZeroConst);
 
-      // Calculate direction.
-      auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-      auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-          DF,  _Constant(0),
-          SizeConst, NegSizeConst);
+        _CondJump(CanLeaveCond, LoopEnd, LoopTail);
+      }
 
-      // Offset the pointer
-      TailDest = _Add(TailDest, PtrDir);
-      _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest);
+      SetCurrentCodeBlock(LoopTail);
+      {
+        OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+        OrderedNode *Dest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
 
-      // Jump back to the start, we have more work to do
-      _Jump(LoopHead);
-    }
+        // Store to memory where RDI points
+        _StoreMem(GPRClass, Size, Dest, Src, Size);
 
-  // Make sure to start a new block after ending this one
+        OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+        OrderedNode *TailDest = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
 
-  SetCurrentCodeBlock(LoopEnd);
+        // Decrement counter
+        TailCounter = _Sub(TailCounter, _Constant(1));
+
+        // Store the counter so we don't have to deal with PHI here
+        _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
+
+        auto SizeConst = _Constant(Size);
+        auto NegSizeConst = _Constant(-Size);
+
+        // Calculate direction.
+        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+            DF,  _Constant(0),
+            SizeConst, NegSizeConst);
+
+        // Offset the pointer
+        TailDest = _Add(TailDest, PtrDir);
+        _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest);
+
+        // Jump back to the start, we have more work to do
+        _Jump(LoopHead);
+      }
+
+    // Make sure to start a new block after ending this one
+
+    SetCurrentCodeBlock(LoopEnd);
+  }
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
