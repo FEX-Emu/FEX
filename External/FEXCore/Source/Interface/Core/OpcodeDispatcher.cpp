@@ -2021,11 +2021,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SCASOp(OpcodeArgs) {
-  LogMan::Throw::A(
-    (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) ||
-    !(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX),
-    "Can only handle REPNE Or NONE\n");
-
   auto Size = GetSrcSize(Op);
   bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
 
@@ -2052,6 +2047,8 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest_RDI);
   }
   else {
+    bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
+
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
       auto LoopStart = CreateNewCodeBlock();
@@ -2110,13 +2107,24 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
         InternalCondJump = _CondJump(ZF);
 
-        // Jump back to the start if we have more work to do
-        SetFalseJumpTarget(InternalCondJump, LoopStart);
+        if (REPE) {
+          // Jump back to the start if we have more work to do
+          SetFalseJumpTarget(InternalCondJump, LoopStart);
+        }
+        else {
+          // Jump back to the start if we have more work to do
+          SetTrueJumpTarget(InternalCondJump, LoopStart);
+        }
     }
     // Make sure to start a new block after ending this one
     auto LoopEnd = CreateNewCodeBlock();
     SetTrueJumpTarget(CondJump, LoopEnd);
-    SetTrueJumpTarget(InternalCondJump, LoopEnd);
+    if (REPE) {
+      SetTrueJumpTarget(InternalCondJump, LoopEnd);
+    }
+    else {
+      SetFalseJumpTarget(InternalCondJump, LoopEnd);
+    }
     SetCurrentCodeBlock(LoopEnd);
   }
 }
