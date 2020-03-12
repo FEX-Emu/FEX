@@ -1905,32 +1905,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
-        case IR::OP_EXTRACTELEMENT: {
-          auto Op = IROp->C<IR::IROp_ExtractElement>();
-
-          uint64_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
-          if (PhysReg >= XMMBase) {
-            switch (OpSize) {
-            case 1:
-              pextrb(GetDst<RA_8>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
-            break;
-            case 2:
-              pextrw(GetDst<RA_16>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
-            break;
-            case 4:
-              pextrd(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
-            break;
-            case 8:
-              pextrq(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
-            break;
-            default:  LogMan::Msg::A("Unhandled ExtractElementSize: %d", OpSize);
-            }
-          }
-          else {
-            LogMan::Msg::A("Can't handle extract from GPR yet");
-          }
-          break;
-        }
         case IR::OP_VINSELEMENT: {
           auto Op = IROp->C<IR::IROp_VInsElement>();
           movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
@@ -2443,8 +2417,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
-        case IR::OP_VSCVTF: {
-          auto Op = IROp->C<IR::IROp_VSCVTF>();
+        case IR::OP_VECTOR_STOF: {
+          auto Op = IROp->C<IR::IROp_Vector_SToF>();
           switch (Op->ElementSize) {
             case 4:
               cvtdq2ps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
@@ -2465,23 +2439,20 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
-        case IR::OP_VFCVTL: {
-          auto Op = IROp->C<IR::IROp_VFCVTL>();
-          switch (Op->ElementSize) {
-            case 4:
+        case IR::OP_VECTOR_FTOF: {
+          auto Op = IROp->C<IR::IROp_Vector_FToF>();
+          uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
+
+          switch (Conv) {
+            case 0x0804: { // Double <- Float
               cvtps2pd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
-            break;
-            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
-          }
-          break;
-        }
-        case IR::OP_VFCVTN: {
-          auto Op = IROp->C<IR::IROp_VFCVTN>();
-          switch (Op->ElementSize) {
-            case 8:
+              break;
+            }
+            case 0x0408: { // Float <- Double
               cvtpd2ps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
-            break;
-            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+              break;
+            }
+            default: LogMan::Msg::A("Unknown Conversion Type : 0%04x", Conv); break;
           }
           break;
         }
@@ -2895,8 +2866,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
-        case IR::OP_SCVTF: {
-          auto Op = IROp->C<IR::IROp_SCVTF>();
+        case IR::OP_FLOAT_FROMGPR_S: {
+          auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
           if (Op->ElementSize == 8) {
             cvtsi2sd(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
           }
@@ -2904,8 +2875,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             cvtsi2ss(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
           break;
         }
-        case IR::OP_FCVTZS: {
-          auto Op = IROp->C<IR::IROp_SCVTF>();
+        case IR::OP_FLOAT_TOGPR_ZS: {
+          auto Op = IROp->C<IR::IROp_Float_ToGPR_ZS>();
           if (Op->ElementSize == 8) {
             cvttsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
           }
@@ -2913,8 +2884,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             cvttss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
           break;
         }
-        case IR::OP_FCVTF: {
-          auto Op = IROp->C<IR::IROp_FCVTF>();
+        case IR::OP_FLOAT_FTOF: {
+          auto Op = IROp->C<IR::IROp_Float_FToF>();
           uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
           switch (Conv) {
             case 0x0804: { // Double <- Float

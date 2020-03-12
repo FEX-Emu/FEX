@@ -1099,10 +1099,10 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Res = _CPUID(Src);
 
-  _StoreContext(FPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), _ExtractElement(Res, 0));
-  _StoreContext(FPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), _ExtractElement(Res, 1));
-  _StoreContext(FPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), _ExtractElement(Res, 2));
-  _StoreContext(FPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), _ExtractElement(Res, 3));
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), _Zext(32, _VExtractToGPR(16, 4, Res, 0)));
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), _Zext(32, _VExtractToGPR(16, 4, Res, 1)));
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), _Zext(32, _VExtractToGPR(16, 4, Res, 2)));
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), _Zext(32, _VExtractToGPR(16, 4, Res, 3)));
 }
 
 template<bool SHL1Bit>
@@ -2723,33 +2723,6 @@ void OpDispatchBuilder::PCMPGTOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
-void OpDispatchBuilder::MOVDOp(OpcodeArgs) {
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
-      Op->Dest.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
-    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-    // When destination is XMM then it is zext to 128bit
-    uint64_t SrcSize = GetSrcSize(Op) * 8;
-    while (SrcSize != 128) {
-      Src = _Zext(SrcSize, Src);
-      SrcSize *= 2;
-    }
-    StoreResult(FPRClass, Op, Op->Dest, Src, -1);
-  }
-  else {
-    // Destination is GPR or mem
-    // Extract from XMM first
-    uint8_t ElementSize = 4;
-    if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING)
-      ElementSize = 8;
-    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0],Op->Flags, -1);
-
-    Src = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src, 0);
-
-    StoreResult(GPRClass, Op, Op->Dest, Src, -1);
-  }
-
-}
-
 void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 // CMPXCHG ModRM, reg, {RAX}
 // MemData = *ModRM.dest
@@ -3921,7 +3894,6 @@ void OpDispatchBuilder::PSLLI(OpcodeArgs) {
   StoreResult(FPRClass, Op, Shift, -1);
 }
 
-
 template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
 void OpDispatchBuilder::PSLL(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
@@ -4004,7 +3976,7 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
 }
 
 template<size_t DstElementSize, bool Signed>
-void OpDispatchBuilder::CVT(OpcodeArgs) {
+void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
@@ -4024,9 +3996,9 @@ void OpDispatchBuilder::CVT(OpcodeArgs) {
   }
 
   if (Signed)
-    Src = _SCVTF(Src, DstElementSize);
+    Src = _Float_FromGPR_S(Src, DstElementSize);
   else
-    Src = _UCVTF(Src, DstElementSize);
+    Src = _Float_FromGPR_U(Src, DstElementSize);
 
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
 
@@ -4036,19 +4008,19 @@ void OpDispatchBuilder::CVT(OpcodeArgs) {
 }
 
 template<size_t SrcElementSize, bool Signed>
-void OpDispatchBuilder::FCVT(OpcodeArgs) {
+void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   if (Signed)
-    Src = _FCVTZS(Src, SrcElementSize);
+    Src = _Float_ToGPR_ZS(Src, SrcElementSize);
   else
-    Src = _FCVTZU(Src, SrcElementSize);
+    Src = _Float_ToGPR_ZU(Src, SrcElementSize);
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, SrcElementSize, -1);
 }
 
 template<size_t SrcElementSize, bool Signed, bool Widen>
-void OpDispatchBuilder::VFCVT(OpcodeArgs) {
+void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   size_t ElementSize = SrcElementSize;
@@ -4059,37 +4031,75 @@ void OpDispatchBuilder::VFCVT(OpcodeArgs) {
   }
 
   if (Signed)
-    Src = _VSCVTF(Src, Size, ElementSize);
+    Src = _Vector_SToF(Src, Size, ElementSize);
   else
-    Src = _VUCVTF(Src, Size, ElementSize);
+    Src = _Vector_UToF(Src, Size, ElementSize);
 
   StoreResult(FPRClass, Op, Src, -1);
 }
 
+template<size_t SrcElementSize, bool Signed>
+void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  if (Signed)
+    Src = _Vector_FToZS(Src, 16, SrcElementSize);
+  else
+    Src = _Vector_FToZU(Src, 16, SrcElementSize);
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, SrcElementSize, -1);
+}
+
 template<size_t DstElementSize, size_t SrcElementSize>
-void OpDispatchBuilder::FCVTF(OpcodeArgs) {
+void OpDispatchBuilder::Scalar_CVT_Float_To_Float(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  Src = _FCVTF(Src, DstElementSize, SrcElementSize);
+  Src = _Float_FToF(Src, DstElementSize, SrcElementSize);
   Src = _VInsElement(16, DstElementSize, 0, 0, Dest, Src);
 
   StoreResult(FPRClass, Op, Src, -1);
 }
 
 template<size_t DstElementSize, size_t SrcElementSize>
-void OpDispatchBuilder::VFCVTF(OpcodeArgs) {
+void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   size_t Size = GetDstSize(Op);
 
   if (DstElementSize > SrcElementSize) {
-    Src = _VFCVTL(Src, Size, SrcElementSize);
+    Src = _Vector_FToF(Src, Size, SrcElementSize << 1, SrcElementSize);
   }
   else {
-    Src = _VFCVTN(Src, Size, SrcElementSize);
+    Src = _Vector_FToF(Src, Size, SrcElementSize >> 1, SrcElementSize);
   }
 
   StoreResult(FPRClass, Op, Src, -1);
+}
+
+void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
+  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
+      Op->Dest.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    // When destination is XMM then it is zext to 128bit
+    uint64_t SrcSize = GetSrcSize(Op) * 8;
+    while (SrcSize != 128) {
+      Src = _Zext(SrcSize, Src);
+      SrcSize *= 2;
+    }
+    StoreResult(FPRClass, Op, Op->Dest, Src, -1);
+  }
+  else {
+    // Destination is GPR or mem
+    // Extract from XMM first
+    uint8_t ElementSize = 4;
+    if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING)
+      ElementSize = 8;
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0],Op->Flags, -1);
+
+    Src = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src, 0);
+
+    StoreResult(GPRClass, Op, Op->Dest, Src, -1);
+  }
 }
 
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
@@ -4620,14 +4630,16 @@ void InstallOpcodeHandlers() {
     {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
     {0x50, 1, &OpDispatchBuilder::MOVMSKOp<4>},
+    {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, false>},
+    {0x52, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4, false>},
     {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0x55, 1, &OpDispatchBuilder::ANDNOp},
     {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
     {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
-    {0x5A, 1, &OpDispatchBuilder::VFCVTF<8, 4>},
-    {0x5B, 1, &OpDispatchBuilder::VFCVT<4, true, false>},
+    {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>},
+    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true, false>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>},
     {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 4>},
@@ -4752,13 +4764,13 @@ void InstallOpcodeHandlers() {
     {0x10, 2, &OpDispatchBuilder::MOVSSOp},
     {0x16, 1, &OpDispatchBuilder::MOVSHDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
-    {0x2A, 1, &OpDispatchBuilder::CVT<4, true>},
-    {0x2C, 1, &OpDispatchBuilder::FCVT<4, true>},
+    {0x2A, 1, &OpDispatchBuilder::CVTGPR_To_FPR<4, true>},
+    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, true>},
     {0x52, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4, true>},
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 4>},
-    {0x5A, 1, &OpDispatchBuilder::FCVTF<8, 4>},
+    {0x5A, 1, &OpDispatchBuilder::Scalar_CVT_Float_To_Float<8, 4>},
     {0x5C, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 4>},
     {0x5D, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMIN, 4>},
     {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 4>},
@@ -4770,20 +4782,20 @@ void InstallOpcodeHandlers() {
     {0xB8, 1, &OpDispatchBuilder::PopcountOp},
     {0xBC, 2, &OpDispatchBuilder::TZCNT},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4, true>},
-    {0xE6, 1, &OpDispatchBuilder::VFCVT<4, true, true>},
+    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true, true>},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepNEModOpTable = {
     {0x10, 2, &OpDispatchBuilder::MOVSDOp},
     {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
-    {0x2A, 1, &OpDispatchBuilder::CVT<8, true>},
-    {0x2C, 1, &OpDispatchBuilder::FCVT<8, true>},
+    {0x2A, 1, &OpDispatchBuilder::CVTGPR_To_FPR<8, true>},
+    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8, true>},
     //x52 = Invalid
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 8>},
     {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 8>},
-    {0x5A, 1, &OpDispatchBuilder::FCVTF<4, 8>},
+    {0x5A, 1, &OpDispatchBuilder::Scalar_CVT_Float_To_Float<4, 8>},
     {0x5C, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 8>},
     {0x5D, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMIN, 8>},
     {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 8>},
@@ -4810,7 +4822,8 @@ void InstallOpcodeHandlers() {
     {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 8>},
-    {0x5A, 1, &OpDispatchBuilder::VFCVTF<4, 8>},
+    {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>},
+    {0x5B, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 8>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 8>},
     {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 8>},
@@ -4827,7 +4840,7 @@ void InstallOpcodeHandlers() {
     {0x6A, 1, &OpDispatchBuilder::PUNPCKHOp<4>},
     {0x6C, 1, &OpDispatchBuilder::PUNPCKLOp<8>},
     {0x6D, 1, &OpDispatchBuilder::PUNPCKHOp<8>},
-    {0x6E, 1, &OpDispatchBuilder::MOVDOp},
+    {0x6E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {0x6F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<4, true>},
 
@@ -4836,7 +4849,7 @@ void InstallOpcodeHandlers() {
     {0x75, 1, &OpDispatchBuilder::PCMPEQOp<2>},
     {0x76, 1, &OpDispatchBuilder::PCMPEQOp<4>},
     {0x78, 1, nullptr}, // GROUP 17
-    {0x7E, 1, &OpDispatchBuilder::MOVDOp},
+    {0x7E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, false>},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},

@@ -940,15 +940,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
-    // The IR's current representation of vectors is actually an array
-    case IR::OP_EXTRACTELEMENT: {
-      auto Op = IROp->C<IR::IROp_ExtractElement>();
-      auto Src = GetSrc(Op->Header.Args[0]);
-      std::vector<unsigned> Idxs = {Op->Idx};
-      auto Result = JITState.IRBuilder->CreateExtractValue(Src, Idxs);
-      SetDest(*WrapperOp, Result);
-    break;
-    }
     case IR::OP_LOADCONTEXT: {
       auto Op = IROp->C<IR::IROp_LoadContext>();
       auto Value = CreateContextPtr(Op->Offset, Op->Size);
