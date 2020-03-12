@@ -35,14 +35,17 @@ if (FORCE_AARCH64 OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   message(STATUS "Enabling AArch64 JIT")
   set(_M_ARM_64 1)
   set(ENABLE_JIT 1)
-  add_subdirectory(External/vixl/)
-  include_directories(External/vixl/src/)
+  if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
+    # Useful to have for freestanding libFEXCore
+    add_subdirectory(External/vixl/)
+    include_directories(External/vixl/src/)
+  endif()
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-include_directories(External/SonicUtils/include/SonicUtils)
+include_directories(${CMAKE_SOURCE_DIR}/External/SonicUtils/include/SonicUtils)
 
 add_subdirectory(Source/)
 add_subdirectory(Examples/)
