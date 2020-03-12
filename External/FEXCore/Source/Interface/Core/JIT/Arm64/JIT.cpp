@@ -907,6 +907,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_NOT: {
+        auto Op = IROp->C<IR::IROp_Not>();
+        mvn(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+      }
       case IR::OP_ZEXT: {
         auto Op = IROp->C<IR::IROp_Zext>();
         LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);

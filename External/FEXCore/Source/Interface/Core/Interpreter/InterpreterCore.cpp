@@ -503,6 +503,12 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          case IR::OP_NEG: {
+            auto Op = IROp->C<IR::IROp_Neg>();
+            uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
+            GD = -Src;
+            break;
+          }
           case IR::OP_OR: {
             auto Op = IROp->C<IR::IROp_Or>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -643,8 +649,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
-          case IR::OP_NEG: {
-            auto Op = IROp->C<IR::IROp_Neg>();
+          case IR::OP_NOT: {
+            auto Op = IROp->C<IR::IROp_Not>();
             uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
             GD = ~Src;
             break;
