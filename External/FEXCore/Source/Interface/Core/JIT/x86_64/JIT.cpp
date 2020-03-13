@@ -808,8 +808,29 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_NEG: {
           auto Op = IROp->C<IR::IROp_Neg>();
-          auto Dst = GetDst<RA_64>(Node);
-          mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          Xbyak::Reg Src;
+          Xbyak::Reg Dst;
+          switch (OpSize) {
+          case 1:
+            Src = GetSrc<RA_8>(Op->Header.Args[0].ID());
+            Dst = GetDst<RA_8>(Node);
+            break;
+          case 2:
+            Src = GetSrc<RA_16>(Op->Header.Args[0].ID());
+            Dst = GetDst<RA_16>(Node);
+            break;
+          case 4:
+            Src = GetSrc<RA_32>(Op->Header.Args[0].ID());
+            Dst = GetDst<RA_32>(Node);
+            break;
+          case 8:
+            Src = GetSrc<RA_64>(Op->Header.Args[0].ID());
+            Dst = GetDst<RA_64>(Node);
+            break;
+          default:  LogMan::Msg::A("Unhandled Neg size: %d", OpSize);
+            continue;
+          }
+          mov(Dst, Src);
           neg(Dst);
           break;
         }

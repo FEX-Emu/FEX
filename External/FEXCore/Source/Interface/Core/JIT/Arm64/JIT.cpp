@@ -773,7 +773,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_NEG: {
         auto Op = IROp->C<IR::IROp_Neg>();
-        neg(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->SrcSize / 8) {
+        case 4:
+          neg(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          break;
+        case 8:
+          neg(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          break;
+        default: LogMan::Msg::A("Unsupported Not size: %d", Op->SrcSize / 8);
+        }
         break;
       }
       case IR::OP_SUB: {
@@ -909,7 +917,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_NOT: {
         auto Op = IROp->C<IR::IROp_Not>();
-        mvn(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        switch (Op->SrcSize / 8) {
+        case 4:
+          mvn(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          break;
+        case 8:
+          mvn(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          break;
+        default: LogMan::Msg::A("Unsupported Not size: %d", Op->SrcSize / 8);
+        }
         break;
       }
       case IR::OP_ZEXT: {
