@@ -503,6 +503,26 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          case IR::OP_NEG: {
+            auto Op = IROp->C<IR::IROp_Neg>();
+            uint64_t Src = *GetSrc<int64_t*>(Op->Header.Args[0]);
+            switch (OpSize) {
+              case 1:
+                GD = -static_cast<int8_t>(Src);
+                break;
+              case 2:
+                GD = -static_cast<int16_t>(Src);
+                break;
+              case 4:
+                GD = -static_cast<int32_t>(Src);
+                break;
+              case 8:
+                GD = -static_cast<int64_t>(Src);
+                break;
+              default: LogMan::Msg::A("Unknown NEG Size: %d\n", OpSize); break;
+            };
+            break;
+          }
           case IR::OP_OR: {
             auto Op = IROp->C<IR::IROp_Or>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -643,10 +663,11 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
-          case IR::OP_NEG: {
-            auto Op = IROp->C<IR::IROp_Neg>();
+          case IR::OP_NOT: {
+            auto Op = IROp->C<IR::IROp_Not>();
             uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
-            GD = ~Src;
+            uint8_t Mask = OpSize * 8 - 1;
+            GD = (~Src) & Mask;
             break;
           }
           case IR::OP_ZEXT: {

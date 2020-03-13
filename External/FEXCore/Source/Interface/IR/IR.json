@@ -241,6 +241,11 @@
       "SSAArgs": "2"
     },
 
+    "Neg": {
+      "HasDest": true,
+      "SSAArgs": "1"
+    },
+
     "Mul": {
 			"HasDest": true,
       "SSAArgs": "2"
@@ -359,7 +364,7 @@
       ]
     },
 
-    "Neg": {
+    "Not": {
 			"HasDest": true,
       "SSAArgs": "1"
     },

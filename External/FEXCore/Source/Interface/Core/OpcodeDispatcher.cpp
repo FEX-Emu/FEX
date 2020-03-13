@@ -1405,7 +1405,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     OrderedNode *BitSelect = _And(Src, SizeMask);
 
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
-    BitMask = _Neg(BitMask);
+    BitMask = _Not(BitMask);
     Dest = _And(Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
   }
@@ -1433,7 +1433,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     // Now shift in to the correct bit location
     Result = _Lshr(Value, BitSelect);
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
-    BitMask = _Neg(BitMask);
+    BitMask = _Not(BitMask);
     Value = _And(Value, BitMask);
     _StoreMem(GPRClass, Size, MemoryLocation, Value, Size);
   }
