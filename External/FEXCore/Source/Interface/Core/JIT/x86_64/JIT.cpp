@@ -1387,8 +1387,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             cmovge(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
           break;
           case FEXCore::IR::COND_SLT:
-            mov(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-            cmovae(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
+            mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
+            cmovl(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
           break;
           case FEXCore::IR::COND_SGT:
             mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
