@@ -46,6 +46,19 @@ set (CMAKE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_LINKER_FLAGS_RELWITHDEBINFO} -fn
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer")
 set (CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-pointer")
 
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+  set(_M_X86_64 1)
+endif()
+
+if (FORCE_AARCH64 OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  set(_M_ARM_64 1)
+endif()
+
+if (FORCE_AARCH64 OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  add_subdirectory(External/vixl/)
+  include_directories(External/vixl/src/)
+endif()
+
 add_definitions(-Wno-trigraphs)
 
 add_subdirectory(External/SonicUtils/)
