@@ -1989,6 +1989,36 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VSQADD: {
+          auto Op = IROp->C<IR::IROp_VSQAdd>();
+          switch (Op->ElementSize) {
+          case 1: {
+            vpaddsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 2: {
+            vpaddsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
+        case IR::OP_VSQSUB: {
+          auto Op = IROp->C<IR::IROp_VSQSub>();
+          switch (Op->ElementSize) {
+          case 1: {
+            vpsubsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 2: {
+            vpsubsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
         case IR::OP_VSUB: {
           auto Op = IROp->C<IR::IROp_VSub>();
           switch (Op->ElementSize) {
