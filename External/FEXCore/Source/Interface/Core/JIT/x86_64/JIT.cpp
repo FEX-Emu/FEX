@@ -1774,19 +1774,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         case IR::OP_VEXTRACTTOGPR: {
           auto Op = IROp->C<IR::IROp_VExtractToGPR>();
-          movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
 
-          // Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
-
-          // pextrq reg64/mem64, xmm, imm
-          // pinsrq xmm, reg64/mem64, imm8
           switch (Op->ElementSize) {
           case 1: {
-            pextrb(GetDst<RA_8>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+            pextrb(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
           break;
           }
           case 2: {
-            pextrw(GetDst<RA_16>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+            pextrw(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
           break;
           }
           case 4: {
