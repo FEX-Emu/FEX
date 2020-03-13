@@ -2694,7 +2694,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint8_t Tmp[16];
 
             uint8_t Elements = Op->RegisterSize / Op->ElementSize;
-            auto Func = [](auto a, auto b) { return a >> b; };
+            auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a >> b; };
 
             switch (Op->ElementSize) {
               DO_VECTOR_OP(1, uint8_t,  Func)
