@@ -3193,13 +3193,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
             lock();
             xadd(byte [MemReg], cl);
-            mov(GetDst<RA_8>(Node), cl);
+            movzx(GetDst<RA_32>(Node), cl);
           break;
           case 2:
             mov(cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
             lock();
-            xadd(word [MemReg], cl);
-            mov(GetDst<RA_16>(Node), cx);
+            xadd(word [MemReg], cx);
+            movzx(GetDst<RA_32>(Node), cx);
           break;
           case 4:
             mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
@@ -3236,14 +3236,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             neg(cl);
             lock();
             xadd(byte [MemReg], cl);
-            mov(GetDst<RA_8>(Node), cl);
+            movzx(GetDst<RA_32>(Node), cl);
           break;
           case 2:
             mov(cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
             neg(cx);
             lock();
-            xadd(word [MemReg], cl);
-            mov(GetDst<RA_16>(Node), cx);
+            xadd(word [MemReg], cx);
+            movzx(GetDst<RA_32>(Node), cx);
           break;
           case 4:
             mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
