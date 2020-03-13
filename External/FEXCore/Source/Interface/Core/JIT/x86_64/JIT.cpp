@@ -2042,6 +2042,23 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VUMULL: {
+          auto Op = IROp->C<IR::IROp_VSub>();
+          switch (Op->ElementSize) {
+          case 4: {
+            // We need to shuffle the data for this one
+            // x86 PMULUDQ wants the 32bit values in [31:0] and [95:64]
+            // Which then extends out to [63:0] and [127:64]
+            vpshufd(xmm14, GetSrc(Op->Header.Args[0].ID()), 0b10'10'00'00);
+            vpshufd(xmm15, GetSrc(Op->Header.Args[1].ID()), 0b10'10'00'00);
+
+            vpmuludq(GetDst(Node), xmm14, xmm15);
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
         case IR::OP_VAND: {
           auto Op = IROp->C<IR::IROp_VAnd>();
           vpand(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
