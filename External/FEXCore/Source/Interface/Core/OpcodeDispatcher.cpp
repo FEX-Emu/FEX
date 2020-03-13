@@ -3762,15 +3762,23 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
 }
 
-template<size_t ElementSize, uint32_t SrcIndex>
-void OpDispatchBuilder::PSRLD(OpcodeArgs) {
+template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
+void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
   auto Size = GetSrcSize(Op);
 
-  auto Shift = _VUShr(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, Shift, -1);
+  OrderedNode *Result{};
+
+  if (Scalar) {
+    Result = _VUShrS(Size, ElementSize, Dest, Src);
+  }
+  else {
+    Result = _VUShr(Size, ElementSize, Dest, Src);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template<size_t ElementSize>
@@ -4719,6 +4727,9 @@ void InstallOpcodeHandlers() {
     {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<8>},
 
+    {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2, true, 0>},
+    {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4, true, 0>},
+    {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8, true, 0>},
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
     // XXX: Causes LLVM to crash if commented out?
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},

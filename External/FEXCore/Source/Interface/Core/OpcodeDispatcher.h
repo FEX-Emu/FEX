@@ -215,8 +215,8 @@ public:
   template<size_t ElementSize>
   void PCMPGTOp(OpcodeArgs);
   void MOVDOp(OpcodeArgs);
-  template<size_t ElementSize, uint32_t SrcIndex>
-  void PSRLD(OpcodeArgs);
+  template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
+  void PSRLDOp(OpcodeArgs);
   template<size_t ElementSize>
   void PSRLI(OpcodeArgs);
   template<size_t ElementSize>
