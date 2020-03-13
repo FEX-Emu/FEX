@@ -1803,19 +1803,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           switch (Op->ElementSize) {
           case 1: {
-            pinsrb(GetDst(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()), Op->Index);
+            pinsrb(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()), Op->Index);
           break;
           }
           case 2: {
-            pinsrw(GetDst(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()), Op->Index);
+            pinsrw(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()), Op->Index);
           break;
           }
           case 4: {
-            pinsrd(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), Op->Index);
+            pinsrd(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()), Op->Index);
           break;
           }
           case 8: {
-            pinsrq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), Op->Index);
+            pinsrq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()), Op->Index);
           break;
           }
           default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
