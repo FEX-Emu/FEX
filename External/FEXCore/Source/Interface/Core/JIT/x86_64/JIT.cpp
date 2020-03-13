@@ -2665,10 +2665,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           if (Op->ElementSize == Op->RegisterSize) {
             switch (Op->ElementSize) {
             case 4:
-              vcmpss(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 2);
+              vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
             break;
             case 8:
-              vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 2);
+              vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
             break;
             default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
             }
@@ -2677,10 +2677,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           else {
             switch (Op->ElementSize) {
             case 4:
-              vcmpps(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 2);
+              vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
             break;
             case 8:
-              vcmppd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 2);
+              vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
             break;
             default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
             }
