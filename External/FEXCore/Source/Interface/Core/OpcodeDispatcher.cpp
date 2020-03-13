@@ -2683,6 +2683,16 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs) {
 }
 
 template<size_t ElementSize>
+void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  uint64_t Index = Op->Src[1].TypeLiteral.Literal;
+
+  auto Result = _VExtractToGPR(16, ElementSize, Src, Index);
+  StoreResult(GPRClass, Op, Result, -1);
+}
+
+template<size_t ElementSize>
 void OpDispatchBuilder::PCMPEQOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -4820,6 +4830,7 @@ void InstallOpcodeHandlers() {
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, false>},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
+    {0xC5, 1, &OpDispatchBuilder::PExtrOp<2>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<8>},
 
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2, true, 0>},

@@ -250,6 +250,8 @@ public:
   void ANDNOp(OpcodeArgs);
   template<size_t ElementSize>
   void PINSROp(OpcodeArgs);
+  template<size_t ElementSize>
+  void PExtrOp(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>
