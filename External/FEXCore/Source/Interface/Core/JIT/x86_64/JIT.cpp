@@ -2377,6 +2377,40 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VSQXTUN: {
+          auto Op = IROp->C<IR::IROp_VSQXTUN>();
+          // Zero the lower bits
+          vpxor(xmm15, xmm15, xmm15);
+          switch (Op->ElementSize) {
+            case 2:
+              packuswb(xmm15, GetSrc(Op->Header.Args[0].ID()));
+            break;
+            case 4:
+              packusdw(xmm15, GetSrc(Op->Header.Args[0].ID()));
+            break;
+            default: LogMan::Msg::A("Unknown element size: %d", Op->ElementSize);
+          }
+          psrldq(xmm15, 8);
+          movaps(GetDst(Node), xmm15);
+          break;
+        }
+        case IR::OP_VSQXTUN2: {
+          auto Op = IROp->C<IR::IROp_VSQXTUN2>();
+          // Zero the lower bits
+          vpxor(xmm15, xmm15, xmm15);
+          switch (Op->ElementSize) {
+            case 2:
+              packuswb(xmm15, GetSrc(Op->Header.Args[1].ID()));
+            break;
+            case 4:
+              packusdw(xmm15, GetSrc(Op->Header.Args[1].ID()));
+            break;
+            default: LogMan::Msg::A("Unknown element size: %d", Op->ElementSize);
+          }
+
+          vpor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+        }
         case IR::OP_VSXTL: {
           auto Op = IROp->C<IR::IROp_VSXTL>();
           switch (Op->ElementSize) {
