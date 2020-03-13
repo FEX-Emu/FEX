@@ -2592,7 +2592,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             break;
             default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
             }
-
           }
           else {
             switch (Op->ElementSize) {
@@ -2607,7 +2606,33 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VFCMPNEQ: {
+          auto Op = IROp->C<IR::IROp_VFCMPNEQ>();
+          if (Op->ElementSize == Op->RegisterSize) {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
+            break;
+            case 8:
+              vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
 
+          }
+          else {
+            switch (Op->ElementSize) {
+            case 4:
+              vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
+            break;
+            case 8:
+              vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
+            break;
+            default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+            }
+          }
+          break;
+        }
         case IR::OP_VFCMPGT: {
           auto Op = IROp->C<IR::IROp_VFCMPGT>();
           if (Op->ElementSize == Op->RegisterSize) {
