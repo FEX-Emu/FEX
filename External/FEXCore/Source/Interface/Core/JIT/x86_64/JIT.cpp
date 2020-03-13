@@ -2742,47 +2742,62 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_VUSHLS: {
           auto Op = IROp->C<IR::IROp_VUShlS>();
-          movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
-          vmovq(xmm14, Reg64(GetSrc<RA_64>(Op->Header.Args[1].ID()).getIdx()));
 
           switch (Op->ElementSize) {
           case 2: {
-            psllw(xmm15, xmm14);
+            vpsllw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
           break;
           }
           case 4: {
-            pslld(xmm15, xmm14);
+            vpslld(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
           break;
           }
           case 8: {
-            psllq(xmm15, xmm14);
+            vpsllq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
           break;
           }
           default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
           }
-          movapd(GetDst(Node), xmm15);
 
           break;
         }
-        case IR::OP_VUSHR: {
-          auto Op = IROp->C<IR::IROp_VUShr>();
-          vmovq(xmm14, Reg64(GetSrc<RA_64>(Op->Header.Args[1].ID()).getIdx()));
+        case IR::OP_VUSHRS: {
+          auto Op = IROp->C<IR::IROp_VUShrS>();
 
           switch (Op->ElementSize) {
-            case 2: {
-              vpsrlw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm14);
-            break;
-            }
-            case 4: {
-              vpsrld(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm14);
-            break;
-            }
-            case 8: {
-              vpsrlq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm14);
-            break;
-            }
-            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          case 2: {
+            vpsrlw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
           }
+          case 4: {
+            vpsrld(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 8: {
+            vpsrlq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+
+          break;
+        }
+        case IR::OP_VSSHRS: {
+          auto Op = IROp->C<IR::IROp_VSShrS>();
+
+          switch (Op->ElementSize) {
+          case 2: {
+            vpsraw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 4: {
+            vpsrad(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 8: // Doesn't exist on x86
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+
           break;
         }
         case IR::OP_VSLI: {
