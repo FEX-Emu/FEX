@@ -1285,23 +1285,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // So you can have up to a 128bit divide from x86-64
           auto Size = OpSize;
           switch (Size) {
-          case 4: {
-            mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-            mov(edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-            mov(ecx, GetSrc<RA_32>(Op->Header.Args[2].ID()));
-            idiv(ecx);
-            mov(GetDst<RA_64>(Node), rax);
-          break;
-          }
-          case 8: {
-            mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-            mov(rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-            mov(rcx, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-            idiv(rcx);
-            mov(GetDst<RA_64>(Node), rax);
-          break;
-          }
-          default: LogMan::Msg::A("Unknown LDIV Size: %d", Size); break;
+            case 2: {
+              mov(eax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              mov(edx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+              idiv(GetSrc<RA_16>(Op->Header.Args[2].ID()));
+              movsx(GetDst<RA_64>(Node), ax);
+              break;
+            }
+            case 4: {
+              mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov(edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              idiv(GetSrc<RA_32>(Op->Header.Args[2].ID()));
+              movsxd(GetDst<RA_64>(Node).cvt64(), eax);
+              break;
+            }
+            case 8: {
+              mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              mov(rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              idiv(GetSrc<RA_64>(Op->Header.Args[2].ID()));
+              mov(GetDst<RA_64>(Node), rax);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown LDIV Size: %d", Size); break;
           }
           break;
         }
@@ -1311,24 +1316,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // So you can have up to a 128bit divide from x86-64
           auto Size = OpSize;
           switch (Size) {
-          case 4: {
-            mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-            mov(edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-            mov(ecx, GetSrc<RA_32>(Op->Header.Args[2].ID()));
-            idiv(ecx);
-            mov(GetDst<RA_64>(Node), rdx);
-          break;
-          }
-
-          case 8: {
-            mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-            mov(rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-            mov(rcx, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-            idiv(rcx);
-            mov(GetDst<RA_64>(Node), rdx);
-          break;
-          }
-          default: LogMan::Msg::A("Unknown LREM Size: %d", Size); break;
+            case 2: {
+              mov(ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              mov(dx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+              idiv(GetSrc<RA_16>(Op->Header.Args[2].ID()));
+              movsx(GetDst<RA_64>(Node), dx);
+              break;
+            }
+            case 4: {
+              mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov(edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              idiv(GetSrc<RA_32>(Op->Header.Args[2].ID()));
+              mov(GetDst<RA_64>(Node), rdx);
+              break;
+            }
+            case 8: {
+              mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              mov(rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              idiv(GetSrc<RA_64>(Op->Header.Args[2].ID()));
+              mov(GetDst<RA_64>(Node), rdx);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown LREM Size: %d", Size); break;
           }
           break;
         }
@@ -1338,23 +1347,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // So you can have up to a 128bit divide from x86-64
           auto Size = OpSize;
           switch (Size) {
-          case 4: {
-            mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-            mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-            mov (ecx, GetSrc<RA_32>(Op->Header.Args[2].ID()));
-            div(ecx);
-            mov(GetDst<RA_64>(Node), rax);
-          break;
-          }
-          case 8: {
-            mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-            mov (rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-            mov (rcx, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-            div(rcx);
-            mov(GetDst<RA_64>(Node), rax);
-          break;
-          }
-          default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+            case 2: {
+              mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              mov (dx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+              div(GetSrc<RA_16>(Op->Header.Args[2].ID()));
+              movzx(GetDst<RA_32>(Node), ax);
+              break;
+            }
+            case 4: {
+              mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              div(GetSrc<RA_32>(Op->Header.Args[2].ID()));
+              mov(GetDst<RA_64>(Node), rax);
+              break;
+            }
+            case 8: {
+              mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              mov (rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              div(GetSrc<RA_64>(Op->Header.Args[2].ID()));
+              mov(GetDst<RA_64>(Node), rax);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
           }
           break;
         }
@@ -1364,24 +1378,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // So you can have up to a 128bit divide from x86-64
           auto Size = OpSize;
           switch (Size) {
-          case 4: {
-            mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-            mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-            mov (ecx, GetSrc<RA_32>(Op->Header.Args[2].ID()));
-            div(ecx);
-            mov(GetDst<RA_64>(Node), rdx);
-          break;
-          }
-
-          case 8: {
-            mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-            mov (rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-            mov (rcx, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-            div(rcx);
-            mov(GetDst<RA_64>(Node), rdx);
-          break;
-          }
-          default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+            case 2: {
+              mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              mov (dx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+              div(GetSrc<RA_16>(Op->Header.Args[2].ID()));
+              movzx(GetDst<RA_64>(Node), dx);
+              break;
+            }
+            case 4: {
+              mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              div(GetSrc<RA_32>(Op->Header.Args[2].ID()));
+              mov(GetDst<RA_64>(Node), rdx);
+              break;
+            }
+            case 8: {
+              mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              mov (rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              div(GetSrc<RA_64>(Op->Header.Args[2].ID()));
+              mov(GetDst<RA_64>(Node), rdx);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
           }
           break;
         }
@@ -1476,34 +1494,29 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Size = OpSize;
           switch (Size) {
           case 1: {
-            mov (al, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-            mov (ah, 0);
-            mov (cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
-            idiv(cl);
+            movsx(ax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+            idiv(GetSrc<RA_8>(Op->Header.Args[1].ID()));
             movsx(GetDst<RA_32>(Node), al);
           break;
           }
           case 2: {
             mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-            mov (edx, 0);
-            mov (cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-            idiv(cx);
+            cwd();
+            idiv(GetSrc<RA_16>(Op->Header.Args[1].ID()));
             movsx(GetDst<RA_32>(Node), ax);
           break;
           }
           case 4: {
             mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-            mov (edx, 0);
-            mov (ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-            idiv(ecx);
+            cdq();
+            idiv(GetSrc<RA_32>(Op->Header.Args[1].ID()));
             movsxd(GetDst<RA_64>(Node).cvt64(), eax);
           break;
           }
           case 8: {
             mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-            mov (rdx, 0);
-            mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-            idiv(rcx);
+            cqo();
+            idiv(GetSrc<RA_64>(Op->Header.Args[1].ID()));
             mov(GetDst<RA_64>(Node), rax);
           break;
           }
@@ -1515,35 +1528,30 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_Rem>();
           switch (OpSize) {
           case 1: {
-            mov (al, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-            mov (ah, 0);
-            mov (cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
-            idiv(cl);
+            movsx(ax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+            idiv(GetSrc<RA_8>(Op->Header.Args[1].ID()));
             mov(al, ah);
             movsx(GetDst<RA_32>(Node), al);
           break;
           }
           case 2: {
             mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-            mov (edx, 0);
-            mov (cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-            idiv(cx);
+            cwd();
+            idiv(GetSrc<RA_16>(Op->Header.Args[1].ID()));
             movsx(GetDst<RA_32>(Node), dx);
           break;
           }
           case 4: {
             mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-            mov (edx, 0);
-            mov (ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-            idiv(ecx);
+            cdq();
+            idiv(GetSrc<RA_32>(Op->Header.Args[1].ID()));
             movsxd(GetDst<RA_64>(Node).cvt64(), edx);
           break;
           }
           case 8: {
             mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-            mov (rdx, 0);
-            mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-            idiv(rcx);
+            cqo();
+            idiv(GetSrc<RA_64>(Op->Header.Args[1].ID()));
             mov(GetDst<RA_64>(Node), rdx);
           break;
           }
