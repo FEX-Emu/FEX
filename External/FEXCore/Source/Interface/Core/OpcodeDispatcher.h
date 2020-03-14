@@ -233,15 +233,18 @@ public:
   void PSRAIOp(OpcodeArgs);
   void MOVDDUPOp(OpcodeArgs);
   template<size_t DstElementSize, bool Signed>
-  void CVT(OpcodeArgs);
+  void CVTGPR_To_FPR(OpcodeArgs);
   template<size_t SrcElementSize, bool Signed>
-  void FCVT(OpcodeArgs);
+  void CVTFPR_To_GPR(OpcodeArgs);
   template<size_t SrcElementSize, bool Signed, bool Widen>
-  void VFCVT(OpcodeArgs);
+  void Vector_CVT_Int_To_Float(OpcodeArgs);
   template<size_t DstElementSize, size_t SrcElementSize>
-  void FCVTF(OpcodeArgs);
+  void Scalar_CVT_Float_To_Float(OpcodeArgs);
   template<size_t DstElementSize, size_t SrcElementSize>
-  void VFCVTF(OpcodeArgs);
+  void Vector_CVT_Float_To_Float(OpcodeArgs);
+  template<size_t SrcElementSize, bool Signed>
+  void Vector_CVT_Float_To_Int(OpcodeArgs);
+  void MOVBetweenGPR_FPR(OpcodeArgs);
   void TZCNT(OpcodeArgs);
   void MOVSSOp(OpcodeArgs);
   template<size_t ElementSize, bool Scalar>

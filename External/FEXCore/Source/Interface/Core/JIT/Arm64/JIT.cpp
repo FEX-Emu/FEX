@@ -511,26 +511,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         break;
       }
-      case IR::OP_EXTRACTELEMENT: {
-        auto Op = IROp->C<IR::IROp_ExtractElement>();
-
-        uint64_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
-        if (PhysReg >= FPRBase) {
-          switch (OpSize) {
-          case 4:
-            umov(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->Idx);
-          break;
-          case 8:
-            umov(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->Idx);
-          break;
-          default:  LogMan::Msg::A("Unhandled ExtractElementSize: %d", OpSize);
-          }
-        }
-        else {
-          LogMan::Msg::A("Can't handle extract from GPR yet");
-        }
-        break;
-      }
       case IR::OP_VEXTRACTTOGPR: {
         auto Op = IROp->C<IR::IROp_VExtractToGPR>();
         switch (OpSize) {
@@ -773,14 +753,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_NEG: {
         auto Op = IROp->C<IR::IROp_Neg>();
-        switch (Op->SrcSize / 8) {
+        switch (OpSize) {
         case 4:
           neg(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
           break;
         case 8:
           neg(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
           break;
-        default: LogMan::Msg::A("Unsupported Not size: %d", Op->SrcSize / 8);
+        default: LogMan::Msg::A("Unsupported Not size: %d", OpSize);
         }
         break;
       }
@@ -917,14 +897,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_NOT: {
         auto Op = IROp->C<IR::IROp_Not>();
-        switch (Op->SrcSize / 8) {
+        switch (OpSize) {
         case 4:
           mvn(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
           break;
         case 8:
           mvn(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
           break;
-        default: LogMan::Msg::A("Unsupported Not size: %d", Op->SrcSize / 8);
+        default: LogMan::Msg::A("Unsupported Not size: %d", OpSize);
         }
         break;
       }
@@ -2256,8 +2236,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
-      case IR::OP_SCVTF: {
-        auto Op = IROp->C<IR::IROp_SCVTF>();
+      case IR::OP_FLOAT_FROMGPR_S: {
+        auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
         if (Op->ElementSize == 8) {
           scvtf(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
         }
@@ -2265,8 +2245,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           scvtf(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
         break;
       }
-      case IR::OP_FCVTZS: {
-        auto Op = IROp->C<IR::IROp_SCVTF>();
+      case IR::OP_FLOAT_TOGPR_ZS: {
+        auto Op = IROp->C<IR::IROp_Float_ToGPR_ZS>();
         if (Op->ElementSize == 8) {
           fcvtzs(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
         }
