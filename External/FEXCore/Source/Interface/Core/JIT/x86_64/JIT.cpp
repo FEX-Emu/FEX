@@ -2494,8 +2494,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               // 3) Make sure to merge them together at the end
               pextrq(rax, GetSrc(Op->Header.Args[0].ID()), 1);
               pextrq(rcx, GetSrc(Op->Header.Args[0].ID()), 0);
-              cvtsi2ss(GetDst(Node), rcx);
-              cvtsi2ss(xmm15, rax);
+              cvtsi2sd(GetDst(Node), rcx);
+              cvtsi2sd(xmm15, rax);
               movlhps(GetDst(Node), xmm15);
             break;
             default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
