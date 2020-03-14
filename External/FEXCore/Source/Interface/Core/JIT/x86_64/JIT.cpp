@@ -2393,7 +2393,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             // Scalar
             switch (Op->ElementSize) {
               case 4: {
-                vrsqrtss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
+                mov(eax, 0x3f800000); // 1.0f
+                sqrtss(xmm15, GetSrc(Op->Header.Args[0].ID()));
+                vmovd(GetDst(Node), eax);
+                divss(GetDst(Node), xmm15);
               break;
               }
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
