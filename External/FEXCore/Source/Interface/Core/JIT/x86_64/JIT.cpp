@@ -1660,7 +1660,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               }
               break;
               case 4: {
-                mov(Dst, dword [MemReg]);
+                mov(Dst.cvt32(), dword [MemReg]);
               }
               break;
               case 8: {
