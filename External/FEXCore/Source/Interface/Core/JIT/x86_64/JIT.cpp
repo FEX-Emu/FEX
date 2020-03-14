@@ -1832,10 +1832,17 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           for (auto &Reg : RA64)
             push(Reg);
 
+          auto NumPush = RA64.size();
+          if (!(NumPush & 1))
+            sub(rsp, 8); // Align
+
           mov (rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
           mov(rax, reinterpret_cast<uintptr_t>(PrintValue));
           call(rax);
+
+          if (!(NumPush & 1))
+            add(rsp, 8); // Align
 
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
