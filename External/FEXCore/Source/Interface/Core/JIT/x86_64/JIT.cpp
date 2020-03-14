@@ -1012,22 +1012,57 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_Lshr>();
           uint8_t Mask = OpSize * 8 - 1;
 
-          auto Dst = GetDst<RA_64>(Node);
           mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
           and(rcx, Mask);
 
-          shrx(Reg32e(Dst.getIdx(), 64), GetSrc<RA_64>(Op->Header.Args[0].ID()), rcx);
+          switch (OpSize) {
+            case 1:
+              movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
+              shr(GetDst<RA_32>(Node).cvt8(), cl);
+              break;
+            case 2:
+              movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              shr(GetDst<RA_32>(Node).cvt16(), cl);
+              break;
+            case 4:
+              movzx(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              shr(GetDst<RA_32>(Node), cl);
+              break;
+            case 8:
+              mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              shr(GetDst<RA_64>(Node), cl);
+              break;
+            default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
+          };
+
           break;
         }
         case IR::OP_LSHL: {
           auto Op = IROp->C<IR::IROp_Lshl>();
           uint8_t Mask = OpSize * 8 - 1;
 
-          auto Dst = GetDst<RA_64>(Node);
           mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
           and(rcx, Mask);
 
-          shlx(Reg32e(Dst.getIdx(), 64), GetSrc<RA_64>(Op->Header.Args[0].ID()), rcx);
+          switch (OpSize) {
+            case 1:
+              movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
+              shl(GetDst<RA_32>(Node).cvt8(), cl);
+              break;
+            case 2:
+              movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              shl(GetDst<RA_32>(Node).cvt16(), cl);
+              break;
+            case 4:
+              movzx(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              shl(GetDst<RA_32>(Node), cl);
+              break;
+            case 8:
+              mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              shl(GetDst<RA_64>(Node), cl);
+              break;
+            default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
+          };
           break;
         }
         case IR::OP_ASHR: {
