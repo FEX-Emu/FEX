@@ -1942,14 +1942,24 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         case IR::OP_SPLATVECTOR4: {
           auto Op = IROp->C<IR::IROp_SplatVector2>();
           LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
-          switch (Op->Header.Size) {
+          uint8_t Elements = 0;
+
+          switch (Op->Header.Op) {
+            case IR::OP_SPLATVECTOR4: Elements = 4; break;
+            case IR::OP_SPLATVECTOR3: Elements = 3; break;
+            case IR::OP_SPLATVECTOR2: Elements = 2; break;
+            default: LogMan::Msg::A("Uknown Splat size"); break;
+          }
+
+          uint8_t ElementSize = OpSize / Elements;
+
+          switch (ElementSize) {
             case 4:
-              vmovd(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()).cvt32());
+              movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
               shufps(GetDst(Node), GetDst(Node), 0);
             break;
             case 8:
-              vmovq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()).cvt64());
-              shufpd(GetDst(Node), GetDst(Node), 0);
+              movddup(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
             break;
             default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.Size); break;
           }
