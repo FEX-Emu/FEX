@@ -2848,6 +2848,62 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           movapd(GetDst(Node), xmm15);
           break;
         }
+        case IR::OP_VUSHRI: {
+          auto Op = IROp->C<IR::IROp_VUShrI>();
+          movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+          switch (Op->ElementSize) {
+            case 2: {
+              psrlw(GetDst(Node), Op->BitShift);
+              break;
+            }
+            case 4: {
+              psrld(GetDst(Node), Op->BitShift);
+              break;
+            }
+            case 8: {
+              psrlq(GetDst(Node), Op->BitShift);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
+        case IR::OP_VSHLI: {
+          auto Op = IROp->C<IR::IROp_VShlI>();
+          movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+          switch (Op->ElementSize) {
+            case 2: {
+              psllw(GetDst(Node), Op->BitShift);
+              break;
+            }
+            case 4: {
+              pslld(GetDst(Node), Op->BitShift);
+              break;
+            }
+            case 8: {
+              psllq(GetDst(Node), Op->BitShift);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
+        case IR::OP_VSSHRI: {
+          auto Op = IROp->C<IR::IROp_VSShrI>();
+          movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+          switch (Op->ElementSize) {
+            case 2: {
+              psraw(GetDst(Node), Op->BitShift);
+              break;
+            }
+            case 4: {
+              psrad(GetDst(Node), Op->BitShift);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
         case IR::OP_VEXTR: {
           auto Op = IROp->C<IR::IROp_VExtr>();
           vpalignr(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), Op->Index);
