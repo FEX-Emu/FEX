@@ -1946,8 +1946,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
-  LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX, "Can't only handle REP\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Can't only handle REP\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
