@@ -2477,49 +2477,263 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_VCMPEQ: {
         auto Op = IROp->C<IR::IROp_VCMPEQ>();
-        LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
-        switch (Op->ElementSize) {
-        case 1: {
-          cmeq(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-        break;
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              cmeq(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+            break;
+            }
+            case 8: {
+              cmeq(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+            break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
         }
-        case 2: {
-          cmeq(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-        break;
-        }
-        case 4: {
-          cmeq(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-        break;
-        }
-        case 8: {
-          cmeq(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-        break;
-        }
-        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 1: {
+              cmeq(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+            break;
+            }
+            case 2: {
+              cmeq(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+            break;
+            }
+            case 4: {
+              cmeq(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+            break;
+            }
+            case 8: {
+              cmeq(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+            break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
         }
         break;
       }
       case IR::OP_VCMPGT: {
         auto Op = IROp->C<IR::IROp_VCMPGT>();
-        LogMan::Throw::A(Op->RegisterSize == 16, "Can't handle register size of: %d", Op->RegisterSize);
-        switch (Op->ElementSize) {
-        case 1: {
-          cmgt(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-        break;
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              cmgt(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+            break;
+            }
+            case 8: {
+              cmgt(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
         }
-        case 2: {
-          cmgt(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-        break;
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 1: {
+              cmgt(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+            break;
+            }
+            case 2: {
+              cmgt(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+            break;
+            }
+            case 4: {
+              cmgt(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+            break;
+            }
+            case 8: {
+              cmgt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
         }
-        case 4: {
-          cmgt(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
         break;
+      }
+      case IR::OP_VFCMPEQ: {
+        auto Op = IROp->C<IR::IROp_VFCMPEQ>();
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              fcmeq(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+            break;
+            }
+            case 8: {
+              fcmeq(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
         }
-        case 8: {
-          cmgt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 2: {
+              fcmeq(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+            break;
+            }
+            case 4: {
+              fcmeq(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+            break;
+            }
+            case 8: {
+              fcmeq(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
         break;
+      }
+      case IR::OP_VFCMPNEQ: {
+        auto Op = IROp->C<IR::IROp_VFCMPNEQ>();
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              fcmeq(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+            break;
+            }
+            case 8: {
+              fcmeq(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          mvn(GetDst(Node).V8B(), GetDst(Node).V8B());
         }
-        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 2: {
+              fcmeq(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+            break;
+            }
+            case 4: {
+              fcmeq(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+            break;
+            }
+            case 8: {
+              fcmeq(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          mvn(GetDst(Node).V16B(), GetDst(Node).V16B());
+        }
+        break;
+      }
+      case IR::OP_VFCMPLT: {
+        auto Op = IROp->C<IR::IROp_VFCMPLT>();
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              fcmgt(GetDst(Node).S(), GetSrc(Op->Header.Args[1].ID()).S(), GetSrc(Op->Header.Args[0].ID()).S());
+            break;
+            }
+            case 8: {
+              fcmgt(GetDst(Node).D(), GetSrc(Op->Header.Args[1].ID()).D(), GetSrc(Op->Header.Args[0].ID()).D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 2: {
+              fcmgt(GetDst(Node).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H());
+            break;
+            }
+            case 4: {
+              fcmgt(GetDst(Node).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+            break;
+            }
+            case 8: {
+              fcmgt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        break;
+      }
+      case IR::OP_VFCMPGT: {
+        auto Op = IROp->C<IR::IROp_VFCMPGT>();
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              fcmgt(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+            break;
+            }
+            case 8: {
+              fcmgt(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 2: {
+              fcmgt(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+            break;
+            }
+            case 4: {
+              fcmgt(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+            break;
+            }
+            case 8: {
+              fcmgt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        break;
+      }
+      case IR::OP_VFCMPLE: {
+        auto Op = IROp->C<IR::IROp_VFCMPLE>();
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              fcmge(GetDst(Node).S(), GetSrc(Op->Header.Args[1].ID()).S(), GetSrc(Op->Header.Args[0].ID()).S());
+            break;
+            }
+            case 8: {
+              fcmge(GetDst(Node).D(), GetSrc(Op->Header.Args[1].ID()).D(), GetSrc(Op->Header.Args[0].ID()).D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 2: {
+              fcmge(GetDst(Node).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H());
+            break;
+            }
+            case 4: {
+              fcmge(GetDst(Node).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+            break;
+            }
+            case 8: {
+              fcmge(GetDst(Node).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
         }
         break;
       }
