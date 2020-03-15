@@ -2108,6 +2108,25 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_VUMULL: {
+        auto Op = IROp->C<IR::IROp_VUMull>();
+        switch (Op->ElementSize) {
+        case 1: {
+          umull(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8B(), GetSrc(Op->Header.Args[1].ID()).V8B());
+        break;
+        }
+        case 2: {
+          umull(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4H(), GetSrc(Op->Header.Args[1].ID()).V4H());
+        break;
+        }
+        case 4: {
+          umull(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2S(), GetSrc(Op->Header.Args[1].ID()).V2S());
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
       case IR::OP_VFADD: {
         auto Op = IROp->C<IR::IROp_VFAdd>();
         if (Op->ElementSize == Op->RegisterSize) {
