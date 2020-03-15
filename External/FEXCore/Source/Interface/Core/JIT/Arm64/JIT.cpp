@@ -1694,6 +1694,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         // So you can have up to a 128bit divide from x86-64
         auto Size = OpSize;
         switch (Size) {
+        case 2: {
+          uxth(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+          udiv(GetDst<RA_32>(Node), TMP1, GetSrc<RA_32>(Op->Header.Args[2].ID()));
+        break;
+        }
         case 4: {
           mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
           bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
@@ -1714,17 +1720,24 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         // So you can have up to a 128bit divide from x86-64
         auto Size = OpSize;
         switch (Size) {
+        case 2: {
+          uxth(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+          sxth(TMP2, GetSrc<RA_32>(Op->Header.Args[2].ID()));
+          sdiv(GetDst<RA_32>(Node), TMP1, TMP2);
+        break;
+        }
         case 4: {
           mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
           bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-          sdiv(GetDst<RA_64>(Node), TMP1, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+          sdiv(GetDst<RA_32>(Node), TMP1, GetSrc<RA_32>(Op->Header.Args[2].ID()));
         break;
         }
         case 8: {
           sdiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[2].ID()));
         break;
         }
-        default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+        default: LogMan::Msg::A("Unknown LDIV Size: %d", Size); break;
         }
         break;
       }
@@ -1734,6 +1747,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         // So you can have up to a 128bit divide from x86-64
         auto Size = OpSize;
         switch (Size) {
+        case 2: {
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[2].ID());
+
+          uxth(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+          udiv(TMP2.W(), TMP1.W(), Divisor);
+          msub(GetDst<RA_32>(Node), TMP2.W(), Divisor, TMP1.W());
+        break;
+        }
         case 4: {
           auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
@@ -1752,7 +1774,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
         break;
         }
-        default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+        default: LogMan::Msg::A("Unknown LUREM Size: %d", Size); break;
         }
         break;
       }
@@ -1762,14 +1784,26 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         // So you can have up to a 128bit divide from x86-64
         auto Size = OpSize;
         switch (Size) {
+        case 2: {
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[2].ID());
+
+          uxth(TMP1.W(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+          sxth(w3, Divisor);
+          sdiv(TMP2.W(), TMP1.W(), w3);
+
+          msub(GetDst<RA_32>(Node), TMP2.W(), w3, TMP1.W());
+        break;
+        }
         case 4: {
           auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
           mov(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
           bfi(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-          sdiv(TMP2, TMP1, Divisor);
+          sxtw(x3, Divisor);
+          sdiv(TMP2, TMP1, x3);
 
-          msub(GetDst<RA_64>(Node), TMP2, Divisor, TMP1);
+          msub(GetDst<RA_32>(Node), TMP2.W(), w3, TMP1.W());
         break;
         }
         case 8: {
@@ -1780,7 +1814,159 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
         break;
         }
-        default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
+        default: LogMan::Msg::A("Unknown LREM Size: %d", Size); break;
+        }
+        break;
+      }
+      case IR::OP_UDIV: {
+        auto Op = IROp->C<IR::IROp_UDiv>();
+        // Each source is OpSize in size
+        // So you can have up to a 128bit divide from x86-64
+        auto Size = OpSize;
+        switch (Size) {
+        case 1: {
+          udiv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 2: {
+          udiv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 4: {
+          udiv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 8: {
+          udiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+        }
+        default: LogMan::Msg::A("Unknown UDIV Size: %d", Size); break;
+        }
+        break;
+      }
+      case IR::OP_UREM: {
+        auto Op = IROp->C<IR::IROp_URem>();
+        // Each source is OpSize in size
+        // So you can have up to a 128bit divide from x86-64
+        switch (OpSize) {
+        case 1: {
+          auto Dividend = GetSrc<RA_32>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[1].ID());
+
+          udiv(TMP1.W(), Dividend, Divisor);
+          msub(GetDst<RA_32>(Node), TMP1, Divisor, Dividend);
+        break;
+        }
+        case 2: {
+          auto Dividend = GetSrc<RA_32>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[1].ID());
+
+          udiv(TMP1.W(), Dividend, Divisor);
+          msub(GetDst<RA_32>(Node), TMP1, Divisor, Dividend);
+        break;
+        }
+        case 4: {
+          auto Dividend = GetSrc<RA_32>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[1].ID());
+
+          udiv(TMP1.W(), Dividend, Divisor);
+          msub(GetDst<RA_32>(Node), TMP1, Divisor, Dividend);
+        break;
+        }
+        case 8: {
+          auto Dividend = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_64>(Op->Header.Args[1].ID());
+
+          udiv(TMP1, Dividend, Divisor);
+          msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
+        break;
+        }
+        default: LogMan::Msg::A("Unknown UREM Size: %d", OpSize); break;
+        }
+        break;
+      }
+      case IR::OP_DIV: {
+        auto Op = IROp->C<IR::IROp_Div>();
+        // Each source is OpSize in size
+        // So you can have up to a 128bit divide from x86-64
+        auto Size = OpSize;
+        switch (Size) {
+        case 1: {
+          auto Dividend = GetSrc<RA_32>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[1].ID());
+          sxtb(w2, Dividend);
+          sxtb(w3, Divisor);
+
+          sdiv(GetDst<RA_32>(Node), w2, w3);
+        break;
+        }
+        case 2: {
+          auto Dividend = GetSrc<RA_32>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[1].ID());
+          sxth(w2, Dividend);
+          sxth(w3, Divisor);
+
+          sdiv(GetDst<RA_32>(Node), w2, w3);
+        break;
+        }
+        case 4: {
+          sdiv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 8: {
+          sdiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+        }
+        default: LogMan::Msg::A("Unknown DIV Size: %d", Size); break;
+        }
+        break;
+      }
+      case IR::OP_REM: {
+        auto Op = IROp->C<IR::IROp_Rem>();
+        // Each source is OpSize in size
+        // So you can have up to a 128bit divide from x86-64
+        switch (OpSize) {
+        case 1: {
+          auto Dividend = GetSrc<RA_32>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[1].ID());
+          sxtb(w2, Dividend);
+          sxtb(w3, Divisor);
+
+          sdiv(TMP1.W(), w2, w3);
+          msub(GetDst<RA_32>(Node), TMP1.W(), w3, w2);
+        break;
+        }
+        case 2: {
+          auto Dividend = GetSrc<RA_32>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[1].ID());
+
+          sxth(w2, Dividend);
+          sxth(w3, Divisor);
+
+          sdiv(TMP1.W(), w2, w3);
+          msub(GetDst<RA_32>(Node), TMP1.W(), w3, w2);
+        break;
+        }
+        case 4: {
+          auto Dividend = GetSrc<RA_32>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_32>(Op->Header.Args[1].ID());
+
+          sdiv(TMP1.W(), Dividend, Divisor);
+          msub(GetDst<RA_32>(Node), TMP1, Divisor, Dividend);
+        break;
+        }
+        case 8: {
+          auto Dividend = GetSrc<RA_64>(Op->Header.Args[0].ID());
+          auto Divisor = GetSrc<RA_64>(Op->Header.Args[1].ID());
+
+          sdiv(TMP1, Dividend, Divisor);
+          msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
+        break;
+        }
+        default: LogMan::Msg::A("Unknown REM Size: %d", OpSize); break;
+        }
+        break;
+      }
         }
         break;
       }
