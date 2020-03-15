@@ -1305,6 +1305,26 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_FINDTRAILINGZEROS: {
+        auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
+        switch (OpSize) {
+          case 2:
+            rbit(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            orr(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 0x8000);
+            clz(GetDst<RA_32>(Node), GetDst<RA_32>(Node));
+          break;
+          case 4:
+            rbit(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            clz(GetDst<RA_32>(Node), GetDst<RA_32>(Node));
+            break;
+          case 8:
+            rbit(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            clz(GetDst<RA_64>(Node), GetDst<RA_64>(Node));
+            break;
+          default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+        }
+        break;
+      }
       case IR::OP_CAS: {
         auto Op = IROp->C<IR::IROp_CAS>();
         // Args[0]: Expected
