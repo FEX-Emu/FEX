@@ -1967,6 +1967,30 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_VINSGPR: {
+        auto Op = IROp->C<IR::IROp_VInsGPR>();
+        mov(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+        switch (Op->ElementSize) {
+        case 1: {
+          ins(GetDst(Node).V16B(), Op->Index, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 2: {
+          ins(GetDst(Node).V8H(), Op->Index, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 4: {
+          ins(GetDst(Node).V4S(), Op->Index, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 8: {
+          ins(GetDst(Node).V2D(), Op->Index, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
         }
         break;
       }
