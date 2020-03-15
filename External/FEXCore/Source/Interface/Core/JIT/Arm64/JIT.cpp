@@ -2600,7 +2600,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_VEXTR: {
         auto Op = IROp->C<IR::IROp_VExtr>();
         // AArch64 ext op has bit arrangement as [Vm:Vn] so arguments need to be swapped
-        ext(GetDst(Node).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index);
+        ext(GetDst(Node).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index * Op->ElementSize);
         break;
       }
       case IR::OP_VUSHLS: {
