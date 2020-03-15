@@ -656,6 +656,178 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_LOADCONTEXTINDEXED: {
+        auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
+        size_t size = Op->Size;
+        auto index = GetSrc<RA_64>(Op->Header.Args[0].ID());
+
+        if (Op->Class.Val == 0) {
+          switch (Op->Stride) {
+          case 1:
+          case 2:
+          case 4:
+          case 8: {
+            LoadConstant(TMP1, Op->Stride);
+            mul(TMP1, index, TMP1);
+            add(TMP1, STATE, TMP1);
+
+            switch (size) {
+            case 1:
+              ldrb(GetDst<RA_32>(Node), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 2:
+              ldrh(GetDst<RA_32>(Node), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 4:
+              ldr(GetDst<RA_32>(Node), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 8:
+              ldr(GetDst<RA_64>(Node), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            default:
+              LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+            }
+            break;
+          }
+          case 16:
+            LogMan::Msg::A("Invalid Class load of size 16");
+            break;
+          default:
+            LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+          }
+        }
+        else {
+          switch (Op->Stride) {
+          case 1:
+          case 2:
+          case 4:
+          case 8:
+          case 16: {
+            LoadConstant(TMP1, Op->Stride);
+            mul(TMP1, index, TMP1);
+            add(TMP1, STATE, TMP1);
+
+            switch (size) {
+            case 1:
+              ldr(GetDst(Node).B(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 2:
+              ldr(GetDst(Node).H(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 4:
+              ldr(GetDst(Node).S(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 8:
+              ldr(GetDst(Node).D(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 16:
+              if (Op->BaseOffset % 16 == 0) {
+                ldr(GetDst(Node), MemOperand(TMP1, Op->BaseOffset));
+              }
+              else {
+                add(TMP1, TMP1, Op->BaseOffset);
+                ldur(GetDst(Node), MemOperand(TMP1, Op->BaseOffset));
+              }
+              break;
+            default:
+              LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+            }
+            break;
+          }
+          default:
+            LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+          }
+        }
+        break;
+      }
+      case IR::OP_STORECONTEXTINDEXED: {
+        auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
+        size_t size = Op->Size;
+        auto index = GetSrc<RA_64>(Op->Header.Args[1].ID());
+
+        if (Op->Class.Val == 0) {
+          auto value = GetSrc<RA_64>(Op->Header.Args[0].ID());
+
+          switch (Op->Stride) {
+          case 1:
+          case 2:
+          case 4:
+          case 8: {
+            LoadConstant(TMP1, Op->Stride);
+            mul(TMP1, index, TMP1);
+            add(TMP1, STATE, TMP1);
+
+            switch (size) {
+            case 1:
+              strb(value, MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 2:
+              strh(value, MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 4:
+              str(value.W(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 8:
+              str(value, MemOperand(TMP1, Op->BaseOffset));
+              break;
+            default:
+              LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+            }
+            break;
+          }
+          case 16:
+            LogMan::Msg::A("Invalid Class load of size 16");
+            break;
+          default:
+            LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+          }
+        }
+        else {
+          auto value = GetSrc(Op->Header.Args[0].ID());
+
+          switch (Op->Stride) {
+          case 1:
+          case 2:
+          case 4:
+          case 8:
+          case 16: {
+            LoadConstant(TMP1, Op->Stride);
+            mul(TMP1, index, TMP1);
+            add(TMP1, STATE, TMP1);
+
+            switch (size) {
+            case 1:
+              str(value.B(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 2:
+              str(value.H(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 4:
+              str(value.S(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 8:
+              str(value.D(), MemOperand(TMP1, Op->BaseOffset));
+              break;
+            case 16:
+              if (Op->BaseOffset % 16 == 0) {
+                str(value, MemOperand(TMP1, Op->BaseOffset));
+              }
+              else {
+                add(TMP1, TMP1, Op->BaseOffset);
+                stur(value, MemOperand(TMP1, Op->BaseOffset));
+              }
+              break;
+            default:
+              LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+            }
+            break;
+          }
+          default:
+            LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+          }
+        }
+        break;
+      }
       case IR::OP_STOREFLAG: {
         auto Op = IROp->C<IR::IROp_StoreFlag>();
         and_(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()), 1);
