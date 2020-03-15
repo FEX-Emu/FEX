@@ -2754,6 +2754,88 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         break;
       }
+      case IR::OP_VSHLI: {
+        auto Op = IROp->C<IR::IROp_VShlI>();
+
+        if (Op->BitShift >= (Op->ElementSize * 8)) {
+          eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        }
+        else {
+          switch (Op->ElementSize) {
+          case 1: {
+            shl(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->BitShift);
+          break;
+          }
+          case 2: {
+            shl(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), Op->BitShift);
+          break;
+          }
+          case 4: {
+            shl(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->BitShift);
+          break;
+          }
+          case 8: {
+            shl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->BitShift);
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        break;
+      }
+      case IR::OP_VUSHRI: {
+        auto Op = IROp->C<IR::IROp_VUShrI>();
+
+        if (Op->BitShift >= (Op->ElementSize * 8)) {
+          eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        }
+        else {
+          switch (Op->ElementSize) {
+          case 1: {
+            ushr(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->BitShift);
+          break;
+          }
+          case 2: {
+            ushr(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), Op->BitShift);
+          break;
+          }
+          case 4: {
+            ushr(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->BitShift);
+          break;
+          }
+          case 8: {
+            ushr(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->BitShift);
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        break;
+      }
+      case IR::OP_VSSHRI: {
+        auto Op = IROp->C<IR::IROp_VSShrI>();
+
+        switch (Op->ElementSize) {
+        case 1: {
+          sshr(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), std::min((uint8_t)(Op->ElementSize * 8 - 1), Op->BitShift));
+        break;
+        }
+        case 2: {
+          sshr(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), std::min((uint8_t)(Op->ElementSize * 8 - 1), Op->BitShift));
+        break;
+        }
+        case 4: {
+          sshr(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), std::min((uint8_t)(Op->ElementSize * 8 - 1), Op->BitShift));
+        break;
+        }
+        case 8: {
+          sshr(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), std::min((uint8_t)(Op->ElementSize * 8 - 1), Op->BitShift));
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        break;
+      }
       case IR::OP_VUMIN: {
         auto Op = IROp->C<IR::IROp_VUMin>();
         switch (Op->ElementSize) {
