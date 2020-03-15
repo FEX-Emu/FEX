@@ -2042,6 +2042,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         mov(GetDst(Node), VTMP1);
         break;
       }
+      case IR::OP_VNOT: {
+        auto Op = IROp->C<IR::IROp_VNot>();
+        mvn(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+        break;
+      }
       case IR::OP_VXOR: {
         auto Op = IROp->C<IR::IROp_VXor>();
         eor(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
