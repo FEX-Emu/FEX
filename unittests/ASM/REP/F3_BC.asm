@@ -7,7 +7,9 @@
     "RDX": "0x40",
     "RSI": "0x0",
     "R14": "0x0",
-    "R13": "0x0"
+    "R13": "0x0",
+    "R12": "0x20",
+    "R11": "0x10"
   },
   "MemoryRegions": {
     "0x100000000": "4096"
@@ -32,7 +34,11 @@ tzcnt ebx, dword [rdx + 8 * 1]
 tzcnt rcx, qword [rdx + 8 * 2]
 
 mov r15, 0
+mov r12, 0
+mov r11, 0
 tzcnt rdx, r15
+tzcnt r12d, r15d
+tzcnt r11w, r15w
 
 mov r15, 0xFFFFFFFFFFFFFFFF
 tzcnt esi, r15d
