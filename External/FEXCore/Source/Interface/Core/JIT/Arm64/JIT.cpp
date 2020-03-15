@@ -2931,19 +2931,21 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_FLOAT_FROMGPR_S: {
         auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
         if (Op->ElementSize == 8) {
-          scvtf(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          scvtf(GetDst(Node).D(), GetSrc<RA_64>(Op->Header.Args[0].ID()));
         }
-        else
-          scvtf(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        else {
+          scvtf(GetDst(Node).S(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        }
         break;
       }
       case IR::OP_FLOAT_TOGPR_ZS: {
         auto Op = IROp->C<IR::IROp_Float_ToGPR_ZS>();
         if (Op->ElementSize == 8) {
-          fcvtzs(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+          fcvtzs(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).D());
         }
-        else
-          fcvtzs(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+        else {
+          fcvtzs(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).S());
+        }
         break;
       }
       case IR::OP_CYCLECOUNTER: {
