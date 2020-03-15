@@ -906,14 +906,22 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             hlt(4);
             break;
           case 4: // HLT
+          case 6: { // INT3
             LoadConstant(TMP1, 1);
-            stlrb(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop)));
+            size_t offset = Op->Reason == 4 ?
+                offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop) // HLT
+              : offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldPause); // INT3
+
+            add(TMP2, STATE, offset);
+
+            stlrb(TMP1, MemOperand(TMP2));
 
             if (SpillSlots) {
               add(sp, sp, SpillSlots * 16);
             }
             ret();
-          break;
+            break;
+          }
           default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
         }
         break;
