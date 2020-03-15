@@ -1267,9 +1267,26 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_FINDMSB: {
         auto Op = IROp->C<IR::IROp_FindMSB>();
         auto Dst = GetDst<RA_64>(Node);
-        movz(TMP1, OpSize * 8 - 1);
-        clz(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        sub(Dst, TMP1, Dst);
+        switch (OpSize) {
+          case 2:
+            movz(TMP1, OpSize * 8 - 1);
+            lsl(Dst.W(), GetSrc<RA_32>(Op->Header.Args[0].ID()), 16);
+            orr(Dst.W(), Dst.W(), 0x8000);
+            clz(Dst.W(), Dst.W());
+            sub(Dst, TMP1, Dst);
+          break;
+          case 4:
+            movz(TMP1, OpSize * 8 - 1);
+            clz(Dst.W(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            sub(Dst, TMP1, Dst);
+            break;
+          case 8:
+            movz(TMP1, OpSize * 8 - 1);
+            clz(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            sub(Dst, TMP1, Dst);
+            break;
+          default: LogMan::Msg::A("Unknown REV size: %d", OpSize); break;
+        }
         break;
       }
       case IR::OP_REV: {
