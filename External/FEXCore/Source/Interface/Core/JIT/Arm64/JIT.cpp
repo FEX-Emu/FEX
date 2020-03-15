@@ -2712,12 +2712,16 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov(GetDst(Node).V2D(), 1, TMP1);
         }
         else {
-          mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
-          lsl(TMP1, TMP1, BitShift - 64);
-          mov(GetDst(Node).V2D(), 0, xzr);
-          mov(GetDst(Node).V2D(), 1, TMP1);
+          if (Op->ByteShift >= Op->RegisterSize) {
+            eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+          }
+          else {
+            mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
+            lsl(TMP1, TMP1, BitShift - 64);
+            mov(GetDst(Node).V2D(), 0, xzr);
+            mov(GetDst(Node).V2D(), 1, TMP1);
+          }
         }
-
         break;
       }
       case IR::OP_VSRI: {
@@ -2737,10 +2741,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov(GetDst(Node).V2D(), 1, TMP2);
         }
         else {
-          mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 1);
-          lsr(TMP1, TMP1, BitShift - 64);
-          mov(GetDst(Node).V2D(), 0, TMP1);
-          mov(GetDst(Node).V2D(), 1, xzr);
+          if (Op->ByteShift >= Op->RegisterSize) {
+            eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+          }
+          else {
+            mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 1);
+            lsr(TMP1, TMP1, BitShift - 64);
+            mov(GetDst(Node).V2D(), 0, TMP1);
+            mov(GetDst(Node).V2D(), 1, xzr);
+          }
         }
 
         break;
