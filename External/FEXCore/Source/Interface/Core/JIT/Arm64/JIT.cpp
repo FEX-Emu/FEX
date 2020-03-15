@@ -1001,9 +1001,22 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_ROR: {
         auto Op = IROp->C<IR::IROp_Ror>();
-        uint8_t Mask = OpSize * 8 - 1;
 
         switch (OpSize) {
+        case 1: {
+          mov(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()), 8, 8);
+          bfi(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()), 16, 8);
+          bfi(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()), 24, 8);
+          rorv(GetDst<RA_32>(Node), TMP1, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
+        case 2: {
+          mov(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(TMP1, GetSrc<RA_32>(Op->Header.Args[0].ID()), 16, 16);
+          rorv(GetDst<RA_32>(Node), TMP1, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        break;
+        }
         case 4: {
           rorv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
         break;
