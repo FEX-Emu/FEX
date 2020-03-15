@@ -2475,6 +2475,91 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_FLOAT_FTOF: {
+        auto Op = IROp->C<IR::IROp_Float_FToF>();
+        uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
+        switch (Conv) {
+          case 0x0804: { // Double <- Float
+            fcvt(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).S());
+            break;
+          }
+          case 0x0408: { // Float <- Double
+            fcvt(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).D());
+            break;
+          }
+          default: LogMan::Msg::A("Unknown FCVT sizes: 0x%x", Conv);
+        }
+        break;
+      }
+      case IR::OP_VECTOR_UTOF: {
+        auto Op = IROp->C<IR::IROp_Vector_UToF>();
+        switch (Op->ElementSize) {
+          case 4:
+            ucvtf(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          break;
+          case 8:
+            ucvtf(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          break;
+          default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+        }
+        break;
+      }
+      case IR::OP_VECTOR_STOF: {
+        auto Op = IROp->C<IR::IROp_Vector_SToF>();
+        switch (Op->ElementSize) {
+          case 4:
+            scvtf(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          break;
+          case 8:
+            scvtf(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          break;
+          default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+        }
+        break;
+      }
+      case IR::OP_VECTOR_FTOZU: {
+        auto Op = IROp->C<IR::IROp_Vector_FToZU>();
+        switch (Op->ElementSize) {
+          case 4:
+            fcvtzu(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          break;
+          case 8:
+            fcvtzu(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          break;
+          default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+        }
+        break;
+      }
+      case IR::OP_VECTOR_FTOZS: {
+        auto Op = IROp->C<IR::IROp_Vector_FToZS>();
+        switch (Op->ElementSize) {
+          case 4:
+            fcvtzs(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          break;
+          case 8:
+            fcvtzs(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          break;
+          default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+        }
+        break;
+      }
+      case IR::OP_VECTOR_FTOF: {
+        auto Op = IROp->C<IR::IROp_Vector_FToF>();
+        uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
+
+        switch (Conv) {
+          case 0x0804: { // Double <- Float
+            fcvtl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V4S());
+            break;
+          }
+          case 0x0408: { // Float <- Double
+            fcvtn(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V2D());
+            break;
+          }
+          default: LogMan::Msg::A("Unknown Conversion Type : 0%04x", Conv); break;
+        }
+        break;
+      }
       case IR::OP_VCMPEQ: {
         auto Op = IROp->C<IR::IROp_VCMPEQ>();
         if (Op->ElementSize == Op->RegisterSize) {
