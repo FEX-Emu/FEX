@@ -3548,7 +3548,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_FINDTRAILINGZEROS: {
           auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
-          tzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          switch (OpSize) {
+            case 2:
+              tzcnt(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+            break;
+            case 4:
+              tzcnt(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              break;
+            case 8:
+              tzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              break;
+            default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+          }
           break;
         }
         case IR::OP_DUMMY:
