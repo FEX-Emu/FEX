@@ -514,6 +514,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_VEXTRACTTOGPR: {
         auto Op = IROp->C<IR::IROp_VExtractToGPR>();
         switch (OpSize) {
+          case 1:
+            umov(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Idx);
+          break;
+          case 2:
+            umov(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), Op->Idx);
+          break;
           case 4:
             umov(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->Idx);
           break;
