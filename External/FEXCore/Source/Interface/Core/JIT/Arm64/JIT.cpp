@@ -2475,6 +2475,71 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_VSQXTUN: {
+        auto Op = IROp->C<IR::IROp_VSQXTUN>();
+        switch (Op->ElementSize) {
+          case 2:
+            sqxtun(GetDst(Node).V8B(), GetSrc(Op->Header.Args[0].ID()).V8H());
+          break;
+          case 4:
+            sqxtun(GetDst(Node).V4H(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          break;
+          case 8:
+            sqxtun(GetDst(Node).V2S(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          break;
+          default: LogMan::Msg::A("Unknown element size: %d", Op->ElementSize);
+        }
+        break;
+      }
+      case IR::OP_VSQXTUN2: {
+        auto Op = IROp->C<IR::IROp_VSQXTUN2>();
+        mov(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+        switch (Op->ElementSize) {
+          case 2:
+            sqxtun2(GetDst(Node).V16B(), GetSrc(Op->Header.Args[1].ID()).V8H());
+          break;
+          case 4:
+            sqxtun2(GetDst(Node).V8H(), GetSrc(Op->Header.Args[1].ID()).V4S());
+          break;
+          case 8:
+            sqxtun2(GetDst(Node).V4S(), GetSrc(Op->Header.Args[1].ID()).V2D());
+          break;
+          default: LogMan::Msg::A("Unknown element size: %d", Op->ElementSize);
+        }
+        break;
+      }
+      case IR::OP_VSXTL: {
+        auto Op = IROp->C<IR::IROp_VSXTL>();
+        switch (Op->ElementSize) {
+          case 1:
+            sxtl(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8B());
+          break;
+          case 2:
+            sxtl(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4H());
+          break;
+          case 4:
+            sxtl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2S());
+          break;
+          default: LogMan::Msg::A("Unknown element size: %d", Op->ElementSize);
+        }
+        break;
+      }
+      case IR::OP_VUXTL: {
+        auto Op = IROp->C<IR::IROp_VUXTL>();
+        switch (Op->ElementSize) {
+          case 1:
+            uxtl(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8B());
+          break;
+          case 2:
+            uxtl(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4H());
+          break;
+          case 4:
+            uxtl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2S());
+          break;
+          default: LogMan::Msg::A("Unknown element size: %d", Op->ElementSize);
+        }
+        break;
+      }
       case IR::OP_FLOAT_FTOF: {
         auto Op = IROp->C<IR::IROp_Float_FToF>();
         uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
