@@ -13,7 +13,10 @@ env:
 jobs:
   build:
 
-    runs-on: self-hosted
+    runs-on: ${{ matrix.arch }}
+    strategy:
+      matrix:
+        arch: [[self-hosted, x64], [self-hosted, ARM64]]
 
     steps:
     - uses: actions/checkout@v2
@@ -42,3 +45,10 @@ jobs:
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
+
+    - name: Tests
+
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the unit tests
+      run: ctest -j`nproc`
