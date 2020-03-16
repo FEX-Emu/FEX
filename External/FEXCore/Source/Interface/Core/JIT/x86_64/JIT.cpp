@@ -2353,8 +2353,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_VSQXTUN: {
           auto Op = IROp->C<IR::IROp_VSQXTUN>();
-          // Zero the lower bits
-          vpxor(xmm15, xmm15, xmm15);
           switch (Op->ElementSize) {
             case 2:
               packuswb(xmm15, GetSrc(Op->Header.Args[0].ID()));
