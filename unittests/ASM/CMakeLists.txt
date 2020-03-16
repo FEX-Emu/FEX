@@ -45,7 +45,11 @@ foreach(ASM_SRC ${ASM_SOURCES})
     set(TEST_NAME "${TEST_NUM}/Test_${ASM_NAME}")
     string(REPLACE " " ";" ARGS_LIST ${ARGS})
     add_test(NAME ${TEST_NAME}
-      COMMAND "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner" ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
+      COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
+      "${CMAKE_SOURCE_DIR}/unittests/ASM/Known_Failures"
+      "Test_${ASM_NAME}"
+      "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
+      ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
     # This will cause the ASM tests to fail if it can't find the TestHarness or ASMN files
     # Prety crap way to work around the fact that tests can't have a build dependency in a different directory
     # Just make sure to independently run `make all` then `make test`
