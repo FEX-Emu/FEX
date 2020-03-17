@@ -1267,7 +1267,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Our IR assumes defined behaviour for shifting all the bits out of the value
       // So we need to ZEXT to the next size up and then trunc
       auto OriginalType = Src1->getType();
-      auto BiggerType = Type::getIntNTy(*Con, 128);
+      auto BiggerType = Type::getIntNTy(*Con, OriginalType->getPrimitiveSizeInBits() * 2);
       Src1 = JITState.IRBuilder->CreateZExt(Src1, BiggerType);
       Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
 
@@ -1284,7 +1284,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Our IR assumes defined behaviour for shifting all the bits out of the value
       // So we need to ZEXT to the next size up and then trunc
       auto OriginalType = Src1->getType();
-      auto BiggerType = Type::getIntNTy(*Con, 128);
+      auto BiggerType = Type::getIntNTy(*Con, OriginalType->getPrimitiveSizeInBits() * 2);
       Src1 = JITState.IRBuilder->CreateSExt(Src1, BiggerType);
       Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
 
@@ -1301,7 +1301,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Our IR assumes defined behaviour for shifting all the bits out of the value
       // So we need to ZEXT to the next size up and then trunc
       auto OriginalType = Src1->getType();
-      auto BiggerType = Type::getIntNTy(*Con, 128);
+      auto BiggerType = Type::getIntNTy(*Con, OriginalType->getPrimitiveSizeInBits() * 2);
       Src1 = JITState.IRBuilder->CreateZExt(Src1, BiggerType);
       Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
 
