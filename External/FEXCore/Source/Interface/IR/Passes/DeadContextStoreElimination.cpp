@@ -392,8 +392,6 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
             Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
             RecordAccess(Info, Op->Offset, Op->Size, ACCESS_READ, LastNode);
           }
-          if (CodeNode->GetUses() == 0)
-            Disp->Remove(CodeNode);
           Changed = true;
         }
         else if (LastAccess == ACCESS_READ &&
@@ -401,9 +399,6 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
           // Did we read and then read again?
           Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
           RecordAccess(Info, Op->Offset, Op->Size, ACCESS_READ, LastNode);
-
-          if (CodeNode->GetUses() == 0)
-            Disp->Remove(CodeNode);
           Changed = true;
         }
       }
@@ -411,12 +406,10 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
         auto Op = IROp->CW<IR::IROp_StoreFlag>();
         auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
         LastAccessType LastAccess = Info->Accessed;
-        OrderedNode *LastNode2 = Info->Node2;
 
         if (LastAccess == ACCESS_WRITE) {
           // If we last wrote to this flag then we can eliminate the last store
           // LastNode2 = node doing the write
-          Disp->Remove(LastNode2);
           RecordAccess(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
           Changed = true;
         }
@@ -434,8 +427,6 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
           Disp->SetWriteCursor(CodeNode);
           auto Res = Disp->_Bfe(1, 0, LastNode);
           Disp->ReplaceAllUsesWithInclusive(CodeNode, Res, CodeBegin, CodeLast);
-          if (CodeNode->GetUses() == 0)
-            Disp->Remove(CodeNode);
           RecordAccess(Info, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, Res);
           Changed = true;
         }
@@ -443,9 +434,6 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
           Disp->SetWriteCursor(CodeNode);
           Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
           RecordAccess(Info, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, CodeNode);
-
-          if (CodeNode->GetUses() == 0)
-            Disp->Remove(CodeNode);
           Changed = true;
         }
       }
