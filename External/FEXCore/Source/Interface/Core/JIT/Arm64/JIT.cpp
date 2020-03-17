@@ -530,6 +530,25 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_VEXTRACTELEMENT: {
+        auto Op = IROp->C<IR::IROp_VExtractElement>();
+        switch (OpSize) {
+          case 1:
+            mov(GetDst(Node).B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index);
+          break;
+          case 2:
+            mov(GetDst(Node).H(), GetSrc(Op->Header.Args[0].ID()).V8H(), Op->Index);
+          break;
+          case 4:
+            mov(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->Index);
+          break;
+          case 8:
+            mov(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->Index);
+          break;
+          default:  LogMan::Msg::A("Unhandled ExtractElementSize: %d", OpSize);
+        }
+        break;
+      }
       case IR::OP_JUMP: {
         auto Op = IROp->C<IR::IROp_Jump>();
 
@@ -2035,6 +2054,31 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case 8: {
           mov(VTMP1.V2D(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V2D(), Op->SrcIdx);
+        break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+        }
+        mov(GetDst(Node), VTMP1);
+        break;
+      }
+      case IR::OP_VINSSCALARELEMENT: {
+        auto Op = IROp->C<IR::IROp_VInsScalarElement>();
+        mov(VTMP1, GetSrc(Op->Header.Args[0].ID()));
+        switch (Op->ElementSize) {
+        case 1: {
+          mov(VTMP1.V16B(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V16B(), 0);
+        break;
+        }
+        case 2: {
+          mov(VTMP1.V8H(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V8H(), 0);
+        break;
+        }
+        case 4: {
+          mov(VTMP1.V4S(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V4S(), 0);
+        break;
+        }
+        case 8: {
+          mov(VTMP1.V2D(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V2D(), 0);
         break;
         }
         default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;

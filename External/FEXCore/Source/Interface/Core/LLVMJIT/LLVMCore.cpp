@@ -1818,6 +1818,17 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VEXTRACTELEMENT: {
+      auto Op = IROp->C<IR::IROp_VExtractElement>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateExtractElement(Src, JITState.IRBuilder->getInt32(Op->Index));
+      SetDest(*WrapperOp, Result);
+    break;
+    }
     case IR::OP_VINSGPR: {
       auto Op = IROp->C<IR::IROp_VInsGPR>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -2510,6 +2521,20 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Result = JITState.IRBuilder->CreateInsertElement(Src1, Source, JITState.IRBuilder->getInt32(Op->DestIdx));
       SetDest(*WrapperOp, Result);
     break;
+    }
+    case IR::OP_VINSSCALARELEMENT: {
+      auto Op = IROp->C<IR::IROp_VInsScalarElement>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastScalarToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      // Extract our source index
+      auto Result = JITState.IRBuilder->CreateInsertElement(Src1, Src2, JITState.IRBuilder->getInt32(Op->DestIdx));
+      SetDest(*WrapperOp, Result);
+      break;
     }
     case IR::OP_VECTOR_UTOF: {
       auto Op = IROp->C<IR::IROp_Vector_UToF>();

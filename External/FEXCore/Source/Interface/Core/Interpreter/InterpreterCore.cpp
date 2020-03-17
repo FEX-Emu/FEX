@@ -304,7 +304,33 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          case IR::OP_VEXTRACTELEMENT: {
+            auto Op = IROp->C<IR::IROp_VExtractElement>();
+            LogMan::Throw::A(Op->RegisterSize <= 16, "OpSize is too large for VExtractToGPR: %d", OpSize);
+            if (Op->RegisterSize == 16) {
+              __uint128_t SourceMask = (1ULL << (Op->ElementSize * 8)) - 1;
+              uint64_t Shift = Op->ElementSize * Op->Index * 8;
+              if (Op->ElementSize == 8)
+                SourceMask = ~0ULL;
 
+              __uint128_t Src = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+              Src >>= Shift;
+              Src &= SourceMask;
+              memcpy(GDP, &Src, Op->ElementSize);
+            }
+            else {
+              uint64_t SourceMask = (1ULL << (Op->ElementSize * 8)) - 1;
+              uint64_t Shift = Op->ElementSize * Op->Index * 8;
+              if (Op->ElementSize == 8)
+                SourceMask = ~0ULL;
+
+              uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
+              Src >>= Shift;
+              Src &= SourceMask;
+              GD = Src;
+            }
+            break;
+          }
           case IR::OP_CONSTANT: {
             auto Op = IROp->C<IR::IROp_Constant>();
             GD = Op->Constant;
@@ -2806,6 +2832,44 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
                 auto *Src2_d = reinterpret_cast<uint64_t*>(Src2);
                 Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
+                break;
+              }
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+            };
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VINSSCALARELEMENT: {
+            auto Op = IROp->C<IR::IROp_VInsScalarElement>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            // Copy src1 in to dest
+            memcpy(Tmp, Src1, Op->RegisterSize);
+            switch (Op->ElementSize) {
+              case 1: {
+                auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
+                auto Src2_d = *reinterpret_cast<uint8_t*>(Src2);
+                Dst_d[Op->DestIdx] = Src2_d;
+                break;
+              }
+              case 2: {
+                auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp);
+                auto Src2_d = *reinterpret_cast<uint16_t*>(Src2);
+                Dst_d[Op->DestIdx] = Src2_d;
+                break;
+              }
+              case 4: {
+                auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp);
+                auto Src2_d = *reinterpret_cast<uint32_t*>(Src2);
+                Dst_d[Op->DestIdx] = Src2_d;
+                break;
+              }
+              case 8: {
+                auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
+                auto Src2_d = *reinterpret_cast<uint64_t*>(Src2);
+                Dst_d[Op->DestIdx] = Src2_d;
                 break;
               }
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;

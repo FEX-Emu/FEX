@@ -2000,6 +2000,70 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           movapd(GetDst(Node), xmm15);
           break;
         }
+        case IR::OP_VINSSCALARELEMENT: {
+          auto Op = IROp->C<IR::IROp_VInsScalarElement>();
+          movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+
+          // Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
+
+          // pextrq reg64/mem64, xmm, imm
+          // pinsrq xmm, reg64/mem64, imm8
+          switch (Op->ElementSize) {
+          case 1: {
+            pextrb(eax, GetSrc(Op->Header.Args[1].ID()), 0);
+            pinsrb(xmm15, eax, Op->DestIdx);
+          break;
+          }
+          case 2: {
+            pextrw(eax, GetSrc(Op->Header.Args[1].ID()), 0);
+            pinsrw(xmm15, eax, Op->DestIdx);
+          break;
+          }
+          case 4: {
+            pextrd(eax, GetSrc(Op->Header.Args[1].ID()), 0);
+            pinsrd(xmm15, eax, Op->DestIdx);
+          break;
+          }
+          case 8: {
+            pextrq(rax, GetSrc(Op->Header.Args[1].ID()), 0);
+            pinsrq(xmm15, rax, Op->DestIdx);
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+
+          movapd(GetDst(Node), xmm15);
+          break;
+        }
+        case IR::OP_VEXTRACTELEMENT: {
+          auto Op = IROp->C<IR::IROp_VExtractElement>();
+
+          switch (Op->ElementSize) {
+          case 1: {
+            pextrb(eax, GetSrc(Op->Header.Args[1].ID()), Op->Index);
+            pinsrb(GetDst(Node), eax, 0);
+          break;
+          }
+          case 2: {
+            pextrw(eax, GetSrc(Op->Header.Args[1].ID()), Op->Index);
+            pinsrw(GetDst(Node), eax, 0);
+          break;
+          }
+          case 4: {
+            pextrd(eax, GetSrc(Op->Header.Args[1].ID()), Op->Index);
+            pinsrd(GetDst(Node), eax, 0);
+          break;
+          }
+          case 8: {
+            pextrq(rax, GetSrc(Op->Header.Args[1].ID()), Op->Index);
+            pinsrq(GetDst(Node), rax, 0);
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+
+          break;
+        }
         case IR::OP_VADD: {
           auto Op = IROp->C<IR::IROp_VAdd>();
           switch (Op->ElementSize) {
