@@ -16,18 +16,18 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
   std::array<std::string, 14> CondNames = {
     "EQ",
     "NEQ",
-    "CS",
-    "CC",
+    "UGE",
+    "ULT",
     "MI",
     "PL",
     "VS",
     "VC",
-    "HI",
-    "LS",
-    "GE",
-    "LT",
-    "GT",
-    "LE",
+    "UGT",
+    "ULE",
+    "SGE",
+    "SLT",
+    "SGT",
+    "SLE",
   };
 
   *out << CondNames[Arg];
