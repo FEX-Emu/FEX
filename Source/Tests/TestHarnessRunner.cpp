@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
   LogMan::Throw::A(Args.size() > 1, "Not enough arguments");
 
   FEXCore::Context::InitializeStaticTables();
-  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
+  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 34);
   auto CTX = FEXCore::Context::CreateNewContext();
 
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, VMFactory::CPUCreationFactory);
