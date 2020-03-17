@@ -1946,8 +1946,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
-  LogMan::Throw::A(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX, "Can't only handle REP\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Can't only handle REP\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
@@ -2566,7 +2564,9 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
 
   for (unsigned i = 0; i < NumElements; ++i) {
     // Extract the top bit of the element
-    OrderedNode *Tmp = _Bfe(1, ((i + 1) * (ElementSize * 8)) - 1, Src);
+    OrderedNode *Tmp = _VExtractToGPR(16, ElementSize, Src, i);
+    Tmp = _Bfe(1, ElementSize * 8 - 1, Tmp);
+
     // Shift it to the correct location
     Tmp = _Lshl(Tmp, _Constant(i));
 
