@@ -188,7 +188,7 @@ private:
       Arg,
     };
 
-    auto Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::arch64_neon_sqxtun, ArgTypes, Args);
+    auto Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::aarch64_neon_sqxtun, ArgTypes, Args);
 #else
     static_assert(false, "Unhandle intrinsic");
 #endif
