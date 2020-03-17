@@ -1360,7 +1360,15 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Result = _Lshr(Dest, Src);
+
+    uint32_t Size = GetSrcSize(Op);
+    uint32_t Mask = Size * 8 - 1;
+    OrderedNode *SizeMask = _Constant(Mask);
+
+    // Get the bit selection from the src
+    OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    Result = _Lshr(Dest, BitSelect);
   }
   else {
     // Load the address to the memory location
@@ -1395,7 +1403,6 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Result = _Lshr(Dest, Src);
 
     uint32_t Size = GetSrcSize(Op);
     uint32_t Mask = Size * 8 - 1;
@@ -1403,6 +1410,8 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     // Get the bit selection from the src
     OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    Result = _Lshr(Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     BitMask = _Not(BitMask);
@@ -1446,7 +1455,6 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Result = _Lshr(Dest, Src);
 
     uint32_t Size = GetSrcSize(Op);
     uint32_t Mask = Size * 8 - 1;
@@ -1454,6 +1462,8 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     // Get the bit selection from the src
     OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    Result = _Lshr(Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     Dest = _Or(Dest, BitMask);
@@ -1495,7 +1505,6 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-    Result = _Lshr(Dest, Src);
 
     uint32_t Size = GetSrcSize(Op);
     uint32_t Mask = Size * 8 - 1;
@@ -1503,6 +1512,8 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     // Get the bit selection from the src
     OrderedNode *BitSelect = _And(Src, SizeMask);
+
+    Result = _Lshr(Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     Dest = _Xor(Dest, BitMask);

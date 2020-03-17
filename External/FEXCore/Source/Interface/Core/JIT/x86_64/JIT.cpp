@@ -1025,7 +1025,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               shr(GetDst<RA_32>(Node).cvt16(), cl);
               break;
             case 4:
-              movzx(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
               shr(GetDst<RA_32>(Node), cl);
               break;
             case 8:
@@ -1054,7 +1054,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               shl(GetDst<RA_32>(Node).cvt16(), cl);
               break;
             case 4:
-              movzx(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
               shl(GetDst<RA_32>(Node), cl);
               break;
             case 8:
