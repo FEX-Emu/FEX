@@ -4125,6 +4125,13 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
+  OrderedNode *Src2{};
+  if (Scalar) {
+    Src2 = _VExtractElement(GetDstSize(Op), Size, Dest, 0);
+  }
+  else {
+    Src2 = Dest;
+  }
   uint8_t CompType = Op->Src[1].TypeLiteral.Literal;
 
   OrderedNode *Result{};
@@ -4132,29 +4139,29 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   //auto ALUOp = _VCMPGT(Size, ElementSize, Dest, Src);
   switch (CompType) {
     case 0x00: case 0x08: case 0x10: case 0x18: // EQ
-      Result = _VFCMPEQ(Size, ElementSize, Dest, Src);
+      Result = _VFCMPEQ(Size, ElementSize, Src2, Src);
     break;
     case 0x01: case 0x09: case 0x11: case 0x19: // LT, GT(Swapped operand)
-      Result = _VFCMPLT(Size, ElementSize, Dest, Src);
+      Result = _VFCMPLT(Size, ElementSize, Src2, Src);
     break;
     case 0x02: case 0x0A: case 0x12: case 0x1A: // LE, GE(Swapped operand)
-      Result = _VFCMPLE(Size, ElementSize, Dest, Src);
+      Result = _VFCMPLE(Size, ElementSize, Src2, Src);
     break;
     case 0x04: case 0x0C: case 0x14: case 0x1C: // NEQ
-      Result = _VFCMPNEQ(Size, ElementSize, Dest, Src);
+      Result = _VFCMPNEQ(Size, ElementSize, Src2, Src);
     break;
     case 0x05: case 0x0D: case 0x15: case 0x1D: // NLT, NGT(Swapped operand)
-      Result = _VFCMPLE(Size, ElementSize, Src, Dest);
+      Result = _VFCMPLE(Size, ElementSize, Src, Src2);
     break;
     case 0x06: case 0x0E: case 0x16: case 0x1E: // NLE, NGE(Swapped operand)
-      Result = _VFCMPLT(Size, ElementSize, Src, Dest);
+      Result = _VFCMPLT(Size, ElementSize, Src, Src2);
     break;
     default: LogMan::Msg::A("Unknown Comparison type: %d", CompType);
   }
 
   if (Scalar) {
     // Insert the lower bits
-    Result = _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Dest, Result);
+    Result = _VInsScalarElement(GetDstSize(Op), ElementSize, 0, Dest, Result);
   }
 
   StoreResult(FPRClass, Op, Result, -1);
