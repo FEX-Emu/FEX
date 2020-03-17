@@ -50,14 +50,6 @@ include_directories(${CMAKE_SOURCE_DIR}/External/SonicUtils/include/SonicUtils)
 add_subdirectory(Source/)
 add_subdirectory(Examples/)
 
-install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_shared
-  LIBRARY
-    DESTINATION lib
-    COMPONENT Libraries
-  ARCHIVE
-    DESTINATION lib
-    COMPONENT Libraries)
-
 install (DIRECTORY include/FEXCore ${CMAKE_BINARY_DIR}/include/FEXCore
   DESTINATION include
   COMPONENT Development)
