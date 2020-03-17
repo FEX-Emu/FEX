@@ -21,7 +21,7 @@
 #include <llvm/Transforms/Vectorize.h>
 #include <vector>
 
-#define DESTMAP_AS_MAP 1
+#define DESTMAP_AS_MAP 0
 #if DESTMAP_AS_MAP
 using DestMapType = std::unordered_map<uint64_t, llvm::Value*>;
 #else
@@ -55,6 +55,7 @@ private:
   void HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrapperIterator *Node);
   llvm::Value *CreateContextGEP(uint64_t Offset, uint8_t Size);
   llvm::Value *CreateContextPtr(uint64_t Offset, uint8_t Size);
+  llvm::Value *CreateIndexedContextPtr(llvm::Value *Index, uint64_t Offset, uint8_t Size, uint8_t Stride);
   llvm::Value *CreateMemoryLoad(llvm::Value *Ptr, uint8_t Align);
   void CreateMemoryStore(llvm::Value *Ptr, llvm::Value *Val, uint8_t Align);
 
@@ -141,6 +142,85 @@ private:
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::ctlz, ArgTypes, Args);
   }
 
+  llvm::Value *VSQXTUN(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
+    std::vector<llvm::Type*> ArgTypes = {
+    };
+#ifdef _M_X86_64
+    std::vector<llvm::Value*> Args = {
+      llvm::UndefValue::get(Arg->getType()),
+      Arg,
+    };
+
+    uint8_t DestNumElements = RegisterSize / (ElementSize >> 1);
+    uint8_t DestElementSize = ElementSize >> 1;
+
+    llvm::Value *Result{};
+    std::vector<uint32_t> VectorMaskConstant;
+
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          8, 9, 10, 11, 12, 13, 14, 15, // First 8 bytes from high result of source
+          16, 17, 18, 19, 20, 21, 22, 23, // Second 8 bytes from the zero vector
+        };
+        Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::x86_sse2_packuswb_128, ArgTypes, Args);
+        break;
+      case 4:
+        VectorMaskConstant = {
+          4, 5, 6, 7, // First 4 16bits from high result of source
+          8, 9, 10, 11, // Second 8 16bits from the zero vector
+        };
+
+        Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::x86_avx2_packusdw, ArgTypes, Args);
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTUN size: %d", ElementSize); break;
+    }
+
+    // We now need to shuffle the vectors
+    // We want the top 64bits to be zero
+    // The lower 64bits being the results we desire
+    auto ZeroVector = JITState.IRBuilder->CreateVectorSplat(DestNumElements, JITState.IRBuilder->getIntN(DestElementSize * 8, 0));
+
+    Result = JITState.IRBuilder->CreateShuffleVector(Result, ZeroVector, VectorMaskConstant);
+
+#elif _M_ARM_64
+    std::vector<llvm::Value*> Args = {
+      Arg,
+    };
+
+    auto Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::arch64_neon_sqxtun, ArgTypes, Args);
+#else
+    static_assert(false, "Unhandle intrinsic");
+#endif
+
+    return Result;
+  }
+  llvm::Value *VSQXTUN2(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
+    // Convert our upper args
+    ArgUpper = VSQXTUN(ArgUpper, RegisterSize, ElementSize);
+
+    std::vector<uint32_t> VectorMaskConstant;
+
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          0, 1, 2, 3, 4, 5, 6, 7,
+          16, 17, 18, 19, 20, 21, 22, 23
+        };
+        break;
+      case 4:
+        VectorMaskConstant = {
+          0, 1, 2, 3,
+          8, 9, 10, 11
+        };
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTUN2 size: %d", ElementSize); break;
+    }
+
+    // This will convert to VSQXTUN2 in AArch64
+    return JITState.IRBuilder->CreateShuffleVector(ArgLower, ArgUpper, VectorMaskConstant);
+  }
+
   llvm::CallInst *FSHL(llvm::Value *Val, llvm::Value *Val2, llvm::Value *Amt) {
     std::vector<llvm::Type*> ArgTypes = {
       Val->getType(),
@@ -181,6 +261,29 @@ private:
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::sqrt, ArgTypes, Args);
   }
 
+  llvm::CallInst *SQADD(llvm::Value *Arg1, llvm::Value *Arg2) {
+    std::vector<llvm::Type*> ArgTypes = {
+      Arg1->getType(),
+    };
+    std::vector<llvm::Value*> Args = {
+      Arg1,
+      Arg2,
+    };
+
+    return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::sadd_sat, ArgTypes, Args);
+  }
+  llvm::CallInst *SQSUB(llvm::Value *Arg1, llvm::Value *Arg2) {
+    std::vector<llvm::Type*> ArgTypes = {
+      Arg1->getType(),
+    };
+    std::vector<llvm::Value*> Args = {
+      Arg1,
+      Arg2,
+    };
+
+    return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::ssub_sat, ArgTypes, Args);
+  }
+
   void CreateDebugPrint(llvm::Value *Val) {
     std::vector<llvm::Value*> Args;
     Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(this)));
@@ -194,6 +297,7 @@ private:
   void CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Module *FunctionModule);
 
   llvm::Value *CastVectorToType(llvm::Value *Arg, bool Integer, uint8_t RegisterSize, uint8_t ElementSize);
+  llvm::Value *CastScalarToType(llvm::Value *Arg, bool Integer, uint8_t RegisterSize, uint8_t ElementSize);
   llvm::Value *CastToOpaqueStructure(llvm::Value *Arg, llvm::Type *DstType);
   void SetDest(IR::OrderedNodeWrapper Op, llvm::Value *Val);
   llvm::Value *GetSrc(IR::OrderedNodeWrapper Src);
@@ -731,6 +835,30 @@ llvm::Value *LLVMJITCore::CreateContextPtr(uint64_t Offset, uint8_t Size) {
   return nullptr;
 }
 
+llvm::Value *LLVMJITCore::CreateIndexedContextPtr(llvm::Value *Index, uint64_t Offset, uint8_t Size, uint8_t Stride) {
+  llvm::Type *i8 = llvm::Type::getInt8Ty(*Con);
+  llvm::Type *i16 = llvm::Type::getInt16Ty(*Con);
+  llvm::Type *i32 = llvm::Type::getInt32Ty(*Con);
+  llvm::Type *i64 = llvm::Type::getInt64Ty(*Con);
+  llvm::Type *i128 = llvm::Type::getInt128Ty(*Con);
+
+  llvm::Value *StateBasePtr = JITState.IRBuilder->CreatePtrToInt(JITCurrentState.CPUState, i64);
+  Index = JITState.IRBuilder->CreateMul(JITState.IRBuilder->CreateZExt(Index, i64), JITState.IRBuilder->getInt64(Stride));
+  StateBasePtr = JITState.IRBuilder->CreateAdd(Index, StateBasePtr);
+  StateBasePtr = JITState.IRBuilder->CreateAdd(StateBasePtr, JITState.IRBuilder->getInt64(Offset));
+
+  // Convert back to pointer of correct size
+  switch (Size) {
+  case 1:  return JITState.IRBuilder->CreateIntToPtr(StateBasePtr, i8->getPointerTo());
+  case 2:  return JITState.IRBuilder->CreateIntToPtr(StateBasePtr, i16->getPointerTo());
+  case 4:  return JITState.IRBuilder->CreateIntToPtr(StateBasePtr, i32->getPointerTo());
+  case 8:  return JITState.IRBuilder->CreateIntToPtr(StateBasePtr, i64->getPointerTo());
+  case 16: return JITState.IRBuilder->CreateIntToPtr(StateBasePtr, i128->getPointerTo());
+  default: LogMan::Msg::A("Unknown context pointer size: %d", Size); break;
+  }
+  return nullptr;
+}
+
 llvm::Value *LLVMJITCore::CastVectorToType(llvm::Value *Arg, bool Integer, uint8_t RegisterSize, uint8_t ElementSize) {
   uint8_t NumElements = RegisterSize / ElementSize;
   llvm::Type *ElementType;
@@ -758,10 +886,27 @@ llvm::Value *LLVMJITCore::CastVectorToType(llvm::Value *Arg, bool Integer, uint8
   return JITState.IRBuilder->CreateBitCast(Arg, VectorType);
 }
 
+llvm::Value *LLVMJITCore::CastScalarToType(llvm::Value *Arg, bool Integer, uint8_t RegisterSize, uint8_t ElementSize) {
+  llvm::Type *ElementType;
+  if (Integer) {
+    ElementType = llvm::Type::getIntNTy(*Con, ElementSize * 8);
+  }
+  else {
+    if (ElementSize == 4) {
+      ElementType = llvm::Type::getFloatTy(*Con);
+    }
+    else {
+      ElementType = llvm::Type::getDoubleTy(*Con);
+    }
+  }
+
+  return JITState.IRBuilder->CreateBitCast(Arg, ElementType);
+}
+
 llvm::Value *LLVMJITCore::CastToOpaqueStructure(llvm::Value *Arg, llvm::Type *DstType) {
   if (Arg->getType()->isVectorTy()) {
     // First do a bitcast from the vector type to the same size integer
-    unsigned ElementSize = Arg->getType()->getVectorElementType()->getIntegerBitWidth();
+    unsigned ElementSize = Arg->getType()->getVectorElementType()->getPrimitiveSizeInBits();
     unsigned NumElements = Arg->getType()->getVectorNumElements();
     auto NewIntegerType = llvm::Type::getIntNTy(*Con, ElementSize * NumElements);
     Arg = JITState.IRBuilder->CreateBitCast(Arg, NewIntegerType);
@@ -834,7 +979,10 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_CondJump>();
       auto Cond = GetSrc(Op->Header.Args[0]);
 
-      auto Comp = JITState.IRBuilder->CreateICmpNE(Cond, JITState.IRBuilder->getInt64(0));
+      llvm::Value *Zero = JITState.IRBuilder->getInt64(0);
+      Cond = JITState.IRBuilder->CreateZExtOrTrunc(Cond, Zero->getType());
+
+      auto Comp = JITState.IRBuilder->CreateICmpNE(Cond, Zero);
       JITState.IRBuilder->CreateCondBr(Comp, JumpTargets[Op->Header.Args[1].ID()], JumpTargets[Op->Header.Args[2].ID()]);
     break;
     }
@@ -882,10 +1030,10 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
         Cmp = JITState.IRBuilder->CreateICmpUGT(Src1, Src2);
       break;
       case FEXCore::IR::COND_ULT:
-        Cmp = JITState.IRBuilder->CreateICmpUGE(Src1, Src2);
+        Cmp = JITState.IRBuilder->CreateICmpULT(Src1, Src2);
       break;
       case FEXCore::IR::COND_ULE:
-        Cmp = JITState.IRBuilder->CreateICmpUGT(Src1, Src2);
+        Cmp = JITState.IRBuilder->CreateICmpULE(Src1, Src2);
       break;
       default: LogMan::Msg::A("Unknown Select Op Type: %d", Op->Cond); break;
       }
@@ -949,20 +1097,49 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       else
         Load = JITState.IRBuilder->CreateLoad(Value);
       SetDest(*WrapperOp, Load);
+      break;
+    }
+    case IR::OP_LOADCONTEXTINDEXED: {
+      auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
+      auto Index = GetSrc(Op->Header.Args[0]);
+
+      auto Value = CreateIndexedContextPtr(Index, Op->BaseOffset, Op->Size, Op->Stride);
+      llvm::Value *Load;
+      if ((Op->BaseOffset % Op->Size) == 0)
+        Load = JITState.IRBuilder->CreateAlignedLoad(Value, Op->Size);
+      else
+        Load = JITState.IRBuilder->CreateLoad(Value);
+      SetDest(*WrapperOp, Load);
     break;
     }
     case IR::OP_STORECONTEXT: {
       auto Op = IROp->C<IR::IROp_StoreContext>();
       auto Src = GetSrc(Op->Header.Args[0]);
       auto Value = CreateContextPtr(Op->Offset, Op->Size);
-      Src = CastToOpaqueStructure(Src, Value->getType()->getPointerElementType());
+
+      Src = CastToOpaqueStructure(Src, Type::getIntNTy(*Con, Op->Size * 8));
 
       if ((Op->Offset % Op->Size) == 0)
         JITState.IRBuilder->CreateAlignedStore(Src, Value, Op->Size);
       else
         JITState.IRBuilder->CreateStore(Src, Value);
+      break;
+    }
+    case IR::OP_STORECONTEXTINDEXED: {
+      auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      auto Index = GetSrc(Op->Header.Args[1]);
+      auto Value = CreateIndexedContextPtr(Index, Op->BaseOffset, Op->Size, Op->Stride);
+
+      Src = CastToOpaqueStructure(Src, Type::getIntNTy(*Con, Op->Size * 8));
+
+      if ((Op->BaseOffset % Op->Size) == 0)
+        JITState.IRBuilder->CreateAlignedStore(Src, Value, Op->Size);
+      else
+        JITState.IRBuilder->CreateStore(Src, Value);
     break;
     }
+
     case IR::OP_LOADFLAG: {
       auto Op = IROp->C<IR::IROp_LoadFlag>();
       auto Value = CreateContextPtr(offsetof(FEXCore::Core::CPUState, flags) + Op->Flag, 1);
@@ -996,7 +1173,8 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
 
-      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
+      Src1 = JITState.IRBuilder->CreateZExtOrTrunc(Src1, Type::getIntNTy(*Con, OpSize * 8));
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Type::getIntNTy(*Con, OpSize * 8));
 
       auto Result = JITState.IRBuilder->CreateSub(Src1, Src2);
       SetDest(*WrapperOp, Result);
@@ -1010,6 +1188,22 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType());
 
       auto Result = JITState.IRBuilder->CreateXor(Src1, Src2);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_NOT: {
+      auto Op = IROp->C<IR::IROp_Not>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      auto Result = JITState.IRBuilder->CreateNot(Src);
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_NEG: {
+      auto Op = IROp->C<IR::IROp_Neg>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      auto Result = JITState.IRBuilder->CreateNeg(Src);
       SetDest(*WrapperOp, Result);
     break;
     }
@@ -1197,7 +1391,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Comp = JITState.IRBuilder->CreateICmpEQ(Src, JITState.IRBuilder->getIntN(SrcBitWidth, 0));
       Result = JITState.IRBuilder->CreateSelect(Comp, JITState.IRBuilder->getIntN(SrcBitWidth, ~0ULL), Result);
       SetDest(*WrapperOp, Result);
-    break;
+      break;
     }
     case IR::OP_FINDMSB: {
       auto Op = IROp->C<IR::IROp_FindMSB>();
@@ -1206,27 +1400,39 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       unsigned SrcBitWidth = Src->getType()->getIntegerBitWidth();
       llvm::Value *Result = CTLZ(Src);
 
-      Result = JITState.IRBuilder->CreateSub(JITState.IRBuilder->getIntN(SrcBitWidth, SrcBitWidth), Result);
+      Result = JITState.IRBuilder->CreateSub(JITState.IRBuilder->getIntN(SrcBitWidth, SrcBitWidth - 1), Result);
       SetDest(*WrapperOp, Result);
-    break;
+      break;
     }
+    case IR::OP_FINDTRAILINGZEROS: {
+      auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
+      auto Src = GetSrc(Op->Header.Args[0]);
 
+      unsigned SrcBitWidth = Src->getType()->getIntegerBitWidth();
+      llvm::Value *Result = CTTZ(Src);
+
+      // Need to compare source to zero, since we are expecting -1 on zero, llvm CTTZ returns undef on zero
+      auto Comp = JITState.IRBuilder->CreateICmpEQ(Src, JITState.IRBuilder->getIntN(SrcBitWidth, 0));
+      Result = JITState.IRBuilder->CreateSelect(Comp, JITState.IRBuilder->getIntN(SrcBitWidth, SrcBitWidth), Result);
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_SEXT: {
       auto Op = IROp->C<IR::IROp_Sext>();
       auto Src = GetSrc(Op->Header.Args[0]);
       llvm::Type *SourceType = Type::getIntNTy(*Con, Op->SrcSize);
-      llvm::Type *TargetType = Type::getIntNTy(*Con, OpSize * 8);
+      llvm::Type *TargetType = Type::getIntNTy(*Con, 64);
 
       auto Result = JITState.IRBuilder->CreateSExtOrTrunc(Src, SourceType);
       Result = JITState.IRBuilder->CreateSExt(Result, TargetType);
       SetDest(*WrapperOp, Result);
-    break;
+      break;
     }
     case IR::OP_ZEXT: {
       auto Op = IROp->C<IR::IROp_Zext>();
       auto Src = GetSrc(Op->Header.Args[0]);
       llvm::Type *SourceType = Type::getIntNTy(*Con, Op->SrcSize);
-      llvm::Type *TargetType = Type::getIntNTy(*Con, OpSize * 8);
+      llvm::Type *TargetType = Type::getIntNTy(*Con, 64);
 
       auto Result = JITState.IRBuilder->CreateZExtOrTrunc(Src, SourceType);
       Result = JITState.IRBuilder->CreateZExt(Result, TargetType);
@@ -1457,7 +1663,96 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VFCMPEQ: {
+      auto Op = IROp->C<IR::IROp_VFCMPEQ>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
 
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateFCmpOEQ(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, llvm::VectorType::get(Type::getIntNTy(*Con, Src1->getType()->getVectorElementType()->getPrimitiveSizeInBits()), Src1->getType()->getVectorNumElements()));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VFCMPNEQ: {
+      auto Op = IROp->C<IR::IROp_VFCMPNEQ>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateFCmpUNE(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, llvm::VectorType::get(Type::getIntNTy(*Con, Src1->getType()->getVectorElementType()->getPrimitiveSizeInBits()), Src1->getType()->getVectorNumElements()));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VFCMPLT: {
+      auto Op = IROp->C<IR::IROp_VFCMPLT>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateFCmpOLT(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, llvm::VectorType::get(Type::getIntNTy(*Con, Src1->getType()->getVectorElementType()->getPrimitiveSizeInBits()), Src1->getType()->getVectorNumElements()));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VFCMPGT: {
+      auto Op = IROp->C<IR::IROp_VFCMPGT>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateFCmpOGT(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, llvm::VectorType::get(Type::getIntNTy(*Con, Src1->getType()->getVectorElementType()->getPrimitiveSizeInBits()), Src1->getType()->getVectorNumElements()));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VFCMPLE: {
+      auto Op = IROp->C<IR::IROp_VFCMPLE>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateFCmpOLE(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, llvm::VectorType::get(Type::getIntNTy(*Con, Src1->getType()->getVectorElementType()->getPrimitiveSizeInBits()), Src1->getType()->getVectorNumElements()));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_CREATEVECTOR2: {
       auto Op = IROp->C<IR::IROp_CreateVector2>();
       LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
@@ -1511,10 +1806,39 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VEXTRACTTOGPR: {
+      auto Op = IROp->C<IR::IROp_VExtractToGPR>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateExtractElement(Src, JITState.IRBuilder->getInt32(Op->Idx));
+      Result = JITState.IRBuilder->CreateZExt(Result, Type::getInt64Ty(*Con));
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VINSGPR: {
+      auto Op = IROp->C<IR::IROp_VInsGPR>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastToOpaqueStructure(Src2, Type::getIntNTy(*Con, Op->ElementSize * 8));
+
+      auto Result = JITState.IRBuilder->CreateInsertElement(Src1, Src2, JITState.IRBuilder->getInt32(Op->Index));
+      SetDest(*WrapperOp, Result);
+    break;
+    }
     case IR::OP_VOR: {
       auto Op = IROp->C<IR::IROp_VOr>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
 
       auto Result = JITState.IRBuilder->CreateOr(Src1, Src2);
       SetDest(*WrapperOp, Result);
@@ -1525,6 +1849,10 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
 
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
       auto Result = JITState.IRBuilder->CreateXor(Src1, Src2);
       SetDest(*WrapperOp, Result);
     break;
@@ -1533,6 +1861,10 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_VAnd>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
 
       auto Result = JITState.IRBuilder->CreateAnd(Src1, Src2);
       SetDest(*WrapperOp, Result);
@@ -1566,6 +1898,91 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VSQADD: {
+      auto Op = IROp->C<IR::IROp_VSQAdd>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = SQADD(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSQSUB: {
+      auto Op = IROp->C<IR::IROp_VSQSub>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = SQSUB(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VUMULL: {
+      auto Op = IROp->C<IR::IROp_VUMull>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 1: {
+          std::vector<uint32_t> Mask {0, 1, 2, 3, 4, 5, 6, 7, 8};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 16));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask);
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask);
+          break;
+        }
+        case 2: {
+          std::vector<uint32_t> Mask {0, 1, 2, 3};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 8));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask);
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask);
+          break;
+        }
+        case 4: {
+          std::vector<uint32_t> Mask {0, 2}; // XXX: Why is this 0 and 2? It should be 0 and 1 but llvm "optimizes" the code to 0 and 4 in that case. How does this work?
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 4));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask, "Shuffle1");
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask, "Shuffle2");
+          break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+      }
+
+      auto ElementType = llvm::Type::getIntNTy(*Con, Op->ElementSize * 8 * 2);
+      llvm::Type *VectorType = llvm::VectorType::get(ElementType, Op->RegisterSize / Op->ElementSize / 2);
+
+      Src1 = JITState.IRBuilder->CreateZExt(Src1, VectorType);
+      Src2 = JITState.IRBuilder->CreateZExt(Src2, VectorType);
+
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VNOT: {
+      auto Op = IROp->C<IR::IROp_VNot>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateNot(Src1);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
     case IR::OP_VFADD: {
       auto Op = IROp->C<IR::IROp_VFAdd>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -1575,7 +1992,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
       Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
 
-      auto Result = JITState.IRBuilder->CreateAdd(Src1, Src2);
+      auto Result = JITState.IRBuilder->CreateFAdd(Src1, Src2);
 
       SetDest(*WrapperOp, Result);
     break;
@@ -1589,7 +2006,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
       Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
 
-      auto Result = JITState.IRBuilder->CreateSub(Src1, Src2);
+      auto Result = JITState.IRBuilder->CreateFSub(Src1, Src2);
 
       SetDest(*WrapperOp, Result);
     break;
@@ -1603,7 +2020,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
       Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
 
-      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+      auto Result = JITState.IRBuilder->CreateFMul(Src1, Src2);
 
       SetDest(*WrapperOp, Result);
     break;
@@ -1670,6 +2087,8 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src = GetSrc(Op->Header.Args[0]);
 
       // Cast to the type we want
+      Src = CastVectorToType(Src, false, Op->RegisterSize, Op->ElementSize);
+
       auto Result = SQRT(Src);
 
       SetDest(*WrapperOp, Result);
@@ -1688,7 +2107,33 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VSQXTUN: {
+      auto Op = IROp->C<IR::IROp_VSQXTUN>();
+      auto Src = GetSrc(Op->Header.Args[0]);
 
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = VSQXTUN(Src, Op->RegisterSize, Op->ElementSize);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSQXTUN2: {
+      auto Op = IROp->C<IR::IROp_VSQXTUN2>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize >> 1);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = VSQXTUN2(Src1, Src2, Op->RegisterSize, Op->ElementSize);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_VUSHL: {
       auto Op = IROp->C<IR::IROp_VUShl>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -1704,7 +2149,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
-
     case IR::OP_VUSHLS: {
       auto Op = IROp->C<IR::IROp_VUShlS>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -1722,7 +2166,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
-
     case IR::OP_VUSHR: {
       auto Op = IROp->C<IR::IROp_VUShr>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -1730,13 +2173,107 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
 
       // Cast to the type we want
       Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VUSHRS: {
+      auto Op = IROp->C<IR::IROp_VUShrS>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType()->getScalarType());
       Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, Src2);
 
       // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
       auto Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
 
       SetDest(*WrapperOp, Result);
-    break;
+      break;
+    }
+    case IR::OP_VSSHR: {
+      auto Op = IROp->C<IR::IROp_VSShr>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateAShr(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSSHRS: {
+      auto Op = IROp->C<IR::IROp_VSShrS>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+
+      Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, Src1->getType()->getScalarType());
+      Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, Src2);
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateAShr(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSHLI: {
+      auto Op = IROp->C<IR::IROp_VShlI>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, std::min((uint8_t)(Op->ElementSize * 8 - 1), Op->BitShift)));
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateShl(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VUSHRI: {
+      auto Op = IROp->C<IR::IROp_VUShrI>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, std::min((uint8_t)(Op->ElementSize * 8 - 1), Op->BitShift)));
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSSHRI: {
+      auto Op = IROp->C<IR::IROp_VUShrI>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Src2 = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, std::min((uint8_t)(Op->ElementSize * 8 - 1), Op->BitShift)));
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      auto Result = JITState.IRBuilder->CreateAShr(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
     }
     case IR::OP_VSLI: {
       auto Op = IROp->C<IR::IROp_VSLI>();
@@ -1745,11 +2282,16 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Cast to the type we want
       Src = CastToOpaqueStructure(Src, Type::getIntNTy(*Con, Src->getType()->getPrimitiveSizeInBits()));
 
-      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
-      auto Result = JITState.IRBuilder->CreateShl(Src, JITState.IRBuilder->getIntN(Src->getType()->getPrimitiveSizeInBits(), Op->ByteShift * 8));
+      Value *Result{};
+      if (Op->ByteShift >= Op->ElementSize) {
+        Result = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, 0));
+      }
+      else {
+        Result = JITState.IRBuilder->CreateShl(Src, JITState.IRBuilder->getIntN(Src->getType()->getPrimitiveSizeInBits(), Op->ByteShift * 8));
+      }
 
       SetDest(*WrapperOp, Result);
-    break;
+      break;
     }
     case IR::OP_VSRI: {
       auto Op = IROp->C<IR::IROp_VSRI>();
@@ -1758,11 +2300,58 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Cast to the type we want
       Src = CastToOpaqueStructure(Src, Type::getIntNTy(*Con, Src->getType()->getPrimitiveSizeInBits()));
 
-      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
-      auto Result = JITState.IRBuilder->CreateLShr(Src, JITState.IRBuilder->getIntN(Src->getType()->getPrimitiveSizeInBits(), Op->ByteShift * 8));
+      Value *Result{};
+      if (Op->ByteShift >= Op->ElementSize) {
+        Result = JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, 0));
+      }
+      else {
+        Result = JITState.IRBuilder->CreateLShr(Src, JITState.IRBuilder->getIntN(Src->getType()->getPrimitiveSizeInBits(), Op->ByteShift * 8));
+      }
 
       SetDest(*WrapperOp, Result);
-    break;
+      break;
+    }
+    case IR::OP_VSXTL: {
+      auto Op = IROp->C<IR::IROp_VSXTL>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      uint8_t SrcNumElements = Op->RegisterSize / Op->ElementSize;
+      uint8_t DstNumElements = SrcNumElements / 2;
+      llvm::Type *TargetType = VectorType::get(Type::getIntNTy(*Con, Op->ElementSize * 16), DstNumElements);
+
+      std::vector<uint32_t> Mask;
+      for (uint32_t i = 0; i < DstNumElements; ++i) {
+        Mask.emplace_back(i);
+      }
+      // Shuffle out which elements we actually want
+      Src = JITState.IRBuilder->CreateShuffleVector(Src, Src, Mask);
+      auto Result = JITState.IRBuilder->CreateSExt(Src, TargetType);
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VUXTL: {
+      auto Op = IROp->C<IR::IROp_VUXTL>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      uint8_t SrcNumElements = Op->RegisterSize / Op->ElementSize;
+      uint8_t DstNumElements = SrcNumElements / 2;
+      llvm::Type *TargetType = VectorType::get(Type::getIntNTy(*Con, Op->ElementSize * 16), DstNumElements);
+
+      std::vector<uint32_t> Mask;
+      for (uint32_t i = 0; i < DstNumElements; ++i) {
+        Mask.emplace_back(i);
+      }
+      // Shuffle out which elements we actually want
+      Src = JITState.IRBuilder->CreateShuffleVector(Src, Src, Mask);
+      auto Result = JITState.IRBuilder->CreateZExt(Src, TargetType);
+      SetDest(*WrapperOp, Result);
+      break;
     }
     case IR::OP_VCMPEQ: {
       auto Op = IROp->C<IR::IROp_VCMPEQ>();
@@ -1800,7 +2389,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
-
     case IR::OP_VUMIN: {
       auto Op = IROp->C<IR::IROp_VUMin>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -1814,9 +2402,74 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Result = JITState.IRBuilder->CreateSelect(Result, Src1, Src2);
 
       SetDest(*WrapperOp, Result);
-    break;
+      break;
     }
+    case IR::OP_VUMAX: {
+      auto Op = IROp->C<IR::IROp_VUMax>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
 
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateICmpULT(Src1, Src2);
+      Result = JITState.IRBuilder->CreateSelect(Result, Src2, Src1);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSMIN: {
+      auto Op = IROp->C<IR::IROp_VSMin>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateICmpSLT(Src1, Src2);
+      Result = JITState.IRBuilder->CreateSelect(Result, Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSMAX: {
+      auto Op = IROp->C<IR::IROp_VSMax>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateICmpSLT(Src1, Src2);
+      Result = JITState.IRBuilder->CreateSelect(Result, Src2, Src1);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VEXTR: {
+      auto Op = IROp->C<IR::IROp_VExtr>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, 1);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, 1);
+
+      std::vector<uint32_t> VectorMask;
+      for (unsigned i = 0; i < 16; ++i) {
+        VectorMask.emplace_back(Op->Index + i);
+      }
+
+      auto VectorMaskConstant = ConstantDataVector::get(*Con, VectorMask);
+
+      auto Result = JITState.IRBuilder->CreateShuffleVector(Src2, Src1, VectorMaskConstant);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_VZIP2:
     case IR::OP_VZIP: {
       auto Op = IROp->C<IR::IROp_VZip>();
@@ -1858,14 +2511,241 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VECTOR_UTOF: {
+      auto Op = IROp->C<IR::IROp_Vector_UToF>();
+      auto Src = GetSrc(Op->Header.Args[0]);
 
+      uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 4: {
+          auto Result = JITState.IRBuilder->CreateUIToFP(Src, llvm::VectorType::get(Type::getFloatTy(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 8: {
+          auto Result = JITState.IRBuilder->CreateUIToFP(Src, llvm::VectorType::get(Type::getDoubleTy(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+      }
+      break;
+    }
+    case IR::OP_VECTOR_STOF: {
+      auto Op = IROp->C<IR::IROp_Vector_SToF>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 4: {
+          auto Result = JITState.IRBuilder->CreateSIToFP(Src, llvm::VectorType::get(Type::getFloatTy(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 8: {
+          auto Result = JITState.IRBuilder->CreateSIToFP(Src, llvm::VectorType::get(Type::getDoubleTy(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+      }
+      break;
+    }
+    case IR::OP_VECTOR_FTOZU: {
+      auto Op = IROp->C<IR::IROp_Vector_FToZU>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+      Src = CastVectorToType(Src, false, Op->RegisterSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 4: {
+          auto Result = JITState.IRBuilder->CreateFPToUI(Src, llvm::VectorType::get(Type::getInt32Ty(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 8: {
+          auto Result = JITState.IRBuilder->CreateFPToUI(Src, llvm::VectorType::get(Type::getInt64Ty(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+      }
+      break;
+    }
+    case IR::OP_VECTOR_FTOZS: {
+      auto Op = IROp->C<IR::IROp_Vector_FToZS>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+      Src = CastVectorToType(Src, false, Op->RegisterSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 4: {
+          auto Result = JITState.IRBuilder->CreateFPToSI(Src, llvm::VectorType::get(Type::getInt32Ty(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 8: {
+          auto Result = JITState.IRBuilder->CreateFPToSI(Src, llvm::VectorType::get(Type::getInt64Ty(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+      }
+      break;
+    }
+    case IR::OP_VECTOR_FTOF: {
+      auto Op = IROp->C<IR::IROp_Vector_FToF>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, false, Op->RegisterSize, Op->SrcElementSize);
+
+      switch (Conv) {
+        case 0x0804: { // Double <- float
+          uint8_t Elements = Op->RegisterSize / Op->SrcElementSize;
+          auto Result = JITState.IRBuilder->CreateFPExt(Src, llvm::VectorType::get(Type::getDoubleTy(*Con), Elements));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 0x0408: { // Float <- Double
+          uint8_t Elements = Op->RegisterSize / Op->SrcElementSize;
+          auto Result = JITState.IRBuilder->CreateFPTrunc(Src, llvm::VectorType::get(Type::getFloatTy(*Con), Elements));
+          // This will be a <2 x float>
+          // We need to convert it to a <4 x float> and have the upper two elements be zero
+          auto ZeroVector = JITState.IRBuilder->CreateVectorSplat(4, JITState.IRBuilder->CreateBitCast(JITState.IRBuilder->getInt32(0), Type::getFloatTy(*Con)));
+          ZeroVector = JITState.IRBuilder->CreateInsertElement(ZeroVector, JITState.IRBuilder->CreateExtractElement(Result, JITState.IRBuilder->getInt32(0)), JITState.IRBuilder->getInt32(0));
+          ZeroVector = JITState.IRBuilder->CreateInsertElement(ZeroVector, JITState.IRBuilder->CreateExtractElement(Result, JITState.IRBuilder->getInt32(1)), JITState.IRBuilder->getInt32(1));
+          SetDest(*WrapperOp, ZeroVector);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown Conversion Type : 0%04x", Conv); break;
+      }
+      break;
+    }
+    case IR::OP_FLOAT_FTOF: {
+      auto Op = IROp->C<IR::IROp_Float_FToF>();
+      uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastScalarToType(Src, false, OpSize * 8, Op->SrcElementSize);
+
+      switch (Conv) {
+        case 0x0804: { // Double <- float
+          auto Result = JITState.IRBuilder->CreateFPExt(Src, Type::getDoubleTy(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 0x0408: { // Float <- Double
+          auto Result = JITState.IRBuilder->CreateFPTrunc(Src, Type::getFloatTy(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown Conversion Type : 0%04x", Conv); break;
+      }
+
+      break;
+    }
+    case IR::OP_FLOAT_TOGPR_ZU: {
+      auto Op = IROp->C<IR::IROp_Float_ToGPR_ZU>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      Src = CastScalarToType(Src, false, Op->ElementSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 4: {
+          auto Result = JITState.IRBuilder->CreateFPToUI(Src, Type::getInt32Ty(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 8: {
+          auto Result = JITState.IRBuilder->CreateFPToUI(Src, Type::getInt64Ty(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+      }
+      break;
+    }
+    case IR::OP_FLOAT_TOGPR_ZS: {
+      auto Op = IROp->C<IR::IROp_Float_ToGPR_ZS>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      Src = CastScalarToType(Src, false, Op->ElementSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 4: {
+          auto Result = JITState.IRBuilder->CreateFPToSI(Src, Type::getInt32Ty(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 8: {
+          auto Result = JITState.IRBuilder->CreateFPToSI(Src, Type::getInt64Ty(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+      }
+      break;
+    }
+    case IR::OP_FLOAT_FROMGPR_U: {
+      auto Op = IROp->C<IR::IROp_Float_FromGPR_U>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      Src = CastScalarToType(Src, true, Op->ElementSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 4: {
+          auto Result = JITState.IRBuilder->CreateUIToFP(Src, Type::getFloatTy(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 8: {
+          auto Result = JITState.IRBuilder->CreateUIToFP(Src, Type::getDoubleTy(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+      }
+      break;
+    }
+    case IR::OP_FLOAT_FROMGPR_S: {
+      auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      Src = CastScalarToType(Src, true, Op->ElementSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 4: {
+          auto Result = JITState.IRBuilder->CreateSIToFP(Src, Type::getFloatTy(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        case 8: {
+          auto Result = JITState.IRBuilder->CreateSIToFP(Src, Type::getDoubleTy(*Con));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
+      }
+      break;
+    }
     case IR::OP_CAS: {
       auto Op = IROp->C<IR::IROp_CAS>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
       auto MemSrc = GetSrc(Op->Header.Args[2]);
 
-      MemSrc = JITState.IRBuilder->CreateAdd(MemSrc, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      if (!ThreadState->CTX->Config.UnifiedMemory) {
+        MemSrc = JITState.IRBuilder->CreateAdd(MemSrc, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      }
       // Cast the pointer type correctly
       MemSrc = JITState.IRBuilder->CreateIntToPtr(MemSrc, Type::getIntNTy(*Con, OpSize * 8)->getPointerTo());
 
@@ -1884,7 +2764,9 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_LoadMem>();
       auto Src = GetSrc(Op->Header.Args[0]);
 
-      Src = JITState.IRBuilder->CreateAdd(Src, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      if (!ThreadState->CTX->Config.UnifiedMemory) {
+        Src = JITState.IRBuilder->CreateAdd(Src, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      }
       // Cast the pointer type correctly
       Src = JITState.IRBuilder->CreateIntToPtr(Src, Type::getIntNTy(*Con, Op->Size * 8)->getPointerTo());
       auto Result = CreateMemoryLoad(Src, Op->Align);
@@ -1897,11 +2779,41 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Dst = GetSrc(Op->Header.Args[0]);
       auto Src = GetSrc(Op->Header.Args[1]);
 
-      Dst = JITState.IRBuilder->CreateAdd(Dst, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      if (!ThreadState->CTX->Config.UnifiedMemory) {
+        Dst = JITState.IRBuilder->CreateAdd(Dst, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      }
+
       auto Type = Type::getIntNTy(*Con, Op->Size * 8);
       Src = JITState.IRBuilder->CreateZExtOrTrunc(Src, Type);
       Dst = JITState.IRBuilder->CreateIntToPtr(Dst, Type->getPointerTo());
       CreateMemoryStore(Dst, Src, Op->Align);
+    break;
+    }
+    case IR::OP_ATOMICFETCHADD:
+    case IR::OP_ATOMICFETCHSUB:
+    case IR::OP_ATOMICFETCHAND:
+    case IR::OP_ATOMICFETCHOR:
+    case IR::OP_ATOMICFETCHXOR: {
+      auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      auto Value = GetSrc(Op->Header.Args[1]);
+
+      if (!ThreadState->CTX->Config.UnifiedMemory) {
+        Src = JITState.IRBuilder->CreateAdd(Src, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      }
+      AtomicRMWInst::BinOp AtomicOp{};
+      switch (IROp->Op) {
+        case IR::OP_ATOMICFETCHADD: AtomicOp = AtomicRMWInst::Add; break;
+        case IR::OP_ATOMICFETCHSUB: AtomicOp = AtomicRMWInst::Sub; break;
+        case IR::OP_ATOMICFETCHAND: AtomicOp = AtomicRMWInst::And; break;
+        case IR::OP_ATOMICFETCHOR:  AtomicOp = AtomicRMWInst::Or; break;
+        case IR::OP_ATOMICFETCHXOR: AtomicOp = AtomicRMWInst::Xor; break;
+        default: LogMan::Msg::A("Unknown Atomic Op: %d", IROp->Op);
+      }
+      // Cast the pointer type correctly
+      Src = JITState.IRBuilder->CreateIntToPtr(Src, Type::getIntNTy(*Con, Op->Size * 8)->getPointerTo());
+      auto Result = JITState.IRBuilder->CreateAtomicRMW(AtomicOp, Src, Value, AtomicOrdering::AcquireRelease);
+      SetDest(*WrapperOp, Result);
     break;
     }
     case IR::OP_DUMMY:
