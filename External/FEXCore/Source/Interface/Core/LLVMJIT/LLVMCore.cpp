@@ -38,6 +38,15 @@ static void SetExitState_Thunk(FEXCore::Core::InternalThreadState *Thread) {
   Thread->State.RunningEvents.ShouldStop = true;
 }
 
+#ifdef _M_ARM_64
+static uint64_t AArch64ReadCycleCounter() {
+  uint64_t res{};
+  asm ("mrs %0, CNTVCT_EL0"
+      : "=r" (res));
+  return res;
+}
+#endif
+
 class LLVMJITCore final : public CPUBackend {
 public:
   explicit LLVMJITCore(FEXCore::Core::InternalThreadState *Thread);
@@ -85,6 +94,9 @@ private:
     llvm::Function *CPUIDFunction;
     llvm::Function *ExitVMFunction;
     llvm::Function *ValuePrinter;
+#ifdef _M_ARM_64
+    llvm::Function *AArch64ReadCycleCounterFunction;
+#endif
 
     llvm::Function *ValidateLoad8;
     llvm::Function *ValidateLoad16;
@@ -143,9 +155,10 @@ private:
   }
 
   llvm::Value *VSQXTUN(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
+#ifdef _M_X86_64
     std::vector<llvm::Type*> ArgTypes = {
     };
-#ifdef _M_X86_64
+
     std::vector<llvm::Value*> Args = {
       llvm::UndefValue::get(Arg->getType()),
       Arg,
@@ -184,6 +197,10 @@ private:
     Result = JITState.IRBuilder->CreateShuffleVector(Result, ZeroVector, VectorMaskConstant);
 
 #elif _M_ARM_64
+    std::vector<llvm::Type*> ArgTypes = {
+      llvm::VectorType::get(llvm::Type::getIntNTy(*Con, (ElementSize >> 1) * 8), RegisterSize / ElementSize),
+    };
+
     std::vector<llvm::Value*> Args = {
       Arg,
     };
@@ -196,6 +213,11 @@ private:
     return Result;
   }
   llvm::Value *VSQXTUN2(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
+#ifdef _M_X86_64
+    // x86 handles the incoming lower register as a full 128bit, cast it back to ensure LLVM doesn't throw up
+    // We don't care about the upper bits anyway
+    ArgLower = CastVectorToType(ArgLower, true, RegisterSize, ElementSize >> 1);
+#endif
     // Convert our upper args
     ArgUpper = VSQXTUN(ArgUpper, RegisterSize, ElementSize);
 
@@ -247,7 +269,17 @@ private:
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::fshr, ArgTypes, Args);
   }
   llvm::CallInst *CycleCounter() {
+#ifdef _M_X86_64
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::readcyclecounter, {}, {});
+#elif _M_ARM_64
+    // LLVM has readcyclecounter be a zero constant because it's trying to use PMCCNTR_EL0 on AArch64
+    // We actually want to use the CNTVCT_EL0 register but there is no good way to encode this
+    // Call out to a helper function that just uses it...
+    // Could potentially add an intrinsic to LLVM for AArch64 to read system registers
+    return JITState.IRBuilder->CreateCall(JITCurrentState.AArch64ReadCycleCounterFunction, {});
+#else
+    static_assert(false, "No way to read cycle counter");
+#endif
   }
 
   llvm::CallInst *SQRT(llvm::Value *Arg) {
@@ -491,6 +523,27 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
     Ptr.ClassPtr = &CPUIDRun_Thunk;
     Engine->addGlobalMapping(JITCurrentState.CPUIDFunction, Ptr.Data);
   }
+
+#ifdef _M_ARM_64
+  // AArch64ReadCycleCounter Function
+  {
+    auto FuncType = FunctionType::get(i64,
+      { },
+      false);
+    JITCurrentState.AArch64ReadCycleCounterFunction = Function::Create(FuncType,
+      Function::ExternalLinkage,
+      "AArch64ReadCycleCounter",
+      FunctionModule);
+    using ClassPtrType = uint64_t (*)();
+    union PtrCast {
+      ClassPtrType ClassPtr;
+      void* Data;
+    };
+    PtrCast Ptr;
+    Ptr.ClassPtr = &AArch64ReadCycleCounter;
+    Engine->addGlobalMapping(JITCurrentState.AArch64ReadCycleCounterFunction, Ptr.Data);
+  }
+#endif
 
   // Exit VM function
   {
@@ -1267,7 +1320,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Our IR assumes defined behaviour for shifting all the bits out of the value
       // So we need to ZEXT to the next size up and then trunc
       auto OriginalType = Src1->getType();
-      auto BiggerType = Type::getIntNTy(*Con, 128);
+      auto BiggerType = Type::getIntNTy(*Con, OriginalType->getPrimitiveSizeInBits() * 2);
       Src1 = JITState.IRBuilder->CreateZExt(Src1, BiggerType);
       Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
 
@@ -1284,7 +1337,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Our IR assumes defined behaviour for shifting all the bits out of the value
       // So we need to ZEXT to the next size up and then trunc
       auto OriginalType = Src1->getType();
-      auto BiggerType = Type::getIntNTy(*Con, 128);
+      auto BiggerType = Type::getIntNTy(*Con, OriginalType->getPrimitiveSizeInBits() * 2);
       Src1 = JITState.IRBuilder->CreateSExt(Src1, BiggerType);
       Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
 
@@ -1301,7 +1354,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Our IR assumes defined behaviour for shifting all the bits out of the value
       // So we need to ZEXT to the next size up and then trunc
       auto OriginalType = Src1->getType();
-      auto BiggerType = Type::getIntNTy(*Con, 128);
+      auto BiggerType = Type::getIntNTy(*Con, OriginalType->getPrimitiveSizeInBits() * 2);
       Src1 = JITState.IRBuilder->CreateZExt(Src1, BiggerType);
       Src2 = JITState.IRBuilder->CreateZExtOrTrunc(Src2, BiggerType);
 
@@ -1818,6 +1871,17 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VEXTRACTELEMENT: {
+      auto Op = IROp->C<IR::IROp_VExtractElement>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateExtractElement(Src, JITState.IRBuilder->getInt32(Op->Index));
+      SetDest(*WrapperOp, Result);
+    break;
+    }
     case IR::OP_VINSGPR: {
       auto Op = IROp->C<IR::IROp_VInsGPR>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -2124,9 +2188,8 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
 
-
       // Cast to the type we want
-      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize >> 1);
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize >> 1, Op->ElementSize >> 1);
       Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
 
       auto Result = VSQXTUN2(Src1, Src2, Op->RegisterSize, Op->ElementSize);
@@ -2511,6 +2574,20 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VINSSCALARELEMENT: {
+      auto Op = IROp->C<IR::IROp_VInsScalarElement>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastScalarToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      // Extract our source index
+      auto Result = JITState.IRBuilder->CreateInsertElement(Src1, Src2, JITState.IRBuilder->getInt32(Op->DestIdx));
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_VECTOR_UTOF: {
       auto Op = IROp->C<IR::IROp_Vector_UToF>();
       auto Src = GetSrc(Op->Header.Args[0]);
@@ -2699,8 +2776,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_Float_FromGPR_U>();
       auto Src = GetSrc(Op->Header.Args[0]);
 
-      Src = CastScalarToType(Src, true, Op->ElementSize, Op->ElementSize);
-
       switch (Op->ElementSize) {
         case 4: {
           auto Result = JITState.IRBuilder->CreateUIToFP(Src, Type::getFloatTy(*Con));
@@ -2719,8 +2794,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
     case IR::OP_FLOAT_FROMGPR_S: {
       auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
       auto Src = GetSrc(Op->Header.Args[0]);
-
-      Src = CastScalarToType(Src, true, Op->ElementSize, Op->ElementSize);
 
       switch (Op->ElementSize) {
         case 4: {

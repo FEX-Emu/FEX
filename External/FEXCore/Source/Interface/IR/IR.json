@@ -967,6 +967,27 @@
       ]
     },
 
+    "VInsScalarElement": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "DestIdx"
+      ]
+    },
+
+    "VExtractElement": {
+      "HasDest": true,
+      "DestSize": "ElementSize",
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "Index"
+      ]
+    },
+
     "VExtr": {
 			"HasDest": true,
       "SSAArgs": "2",
