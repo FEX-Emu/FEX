@@ -29,20 +29,28 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   list(APPEND ASM_DEPENDS "${OUTPUT_NAME};${OUTPUT_CONFIG_NAME}")
 
+  # Format is "<Test Arguments>" "<Test Name>"
   set(TEST_ARGS
-    "-c irint -n 1"
-    "-c irint -n 500"
-    "-c irint -n 500 -m"
-    "-c irjit -n 1"
-    "-c irjit -n 500"
-    "-c irjit -n 500 -m"
-    "-c llvm -n 1"
-    "-c llvm -n 500"
-    "-c llvm -n 500 -m")
+    "-c irint -n 1"      "int_1"
+    "-c irint -n 500"    "int_500"
+    "-c irint -n 500 -m" "int_500_m"
+    "-c irjit -n 1"      "jit_1"
+    "-c irjit -n 500"    "jit_500"
+    "-c irjit -n 500 -m" "jit_500_m"
+    "-c llvm -n 1"       "llvm_1"
+    "-c llvm -n 500"     "llvm_500"
+    "-c llvm -n 500 -m"  "llvm_500_m"
+    )
 
-  set(TEST_NUM 0)
-  foreach(ARGS ${TEST_ARGS})
-    set(TEST_NAME "${TEST_NUM}/Test_${ASM_NAME}")
+  list(LENGTH TEST_ARGS ARG_COUNT)
+  math(EXPR ARG_COUNT "${ARG_COUNT}-1")
+  foreach(Index RANGE 0 ${ARG_COUNT} 2)
+    math(EXPR TEST_NAME_INDEX "${Index}+1")
+
+    list(GET TEST_ARGS ${Index} ARGS)
+    list(GET TEST_ARGS ${TEST_NAME_INDEX} TEST_DESC)
+
+    set(TEST_NAME "${TEST_DESC}/Test_${ASM_NAME}")
     string(REPLACE " " ";" ARGS_LIST ${ARGS})
     add_test(NAME ${TEST_NAME}
       COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
@@ -56,8 +64,6 @@ foreach(ASM_SRC ${ASM_SOURCES})
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_NAME}")
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_CONFIG_NAME}")
-
-    math(EXPR TEST_NUM "${TEST_NUM} + 1")
   endforeach()
 
 endforeach()
