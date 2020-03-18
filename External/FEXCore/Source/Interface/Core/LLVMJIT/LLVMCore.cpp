@@ -155,9 +155,10 @@ private:
   }
 
   llvm::Value *VSQXTUN(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
+#ifdef _M_X86_64
     std::vector<llvm::Type*> ArgTypes = {
     };
-#ifdef _M_X86_64
+
     std::vector<llvm::Value*> Args = {
       llvm::UndefValue::get(Arg->getType()),
       Arg,
@@ -196,6 +197,10 @@ private:
     Result = JITState.IRBuilder->CreateShuffleVector(Result, ZeroVector, VectorMaskConstant);
 
 #elif _M_ARM_64
+    std::vector<llvm::Type*> ArgTypes = {
+      llvm::VectorType::get(llvm::Type::getIntNTy(*Con, (ElementSize >> 1) * 8), RegisterSize / ElementSize),
+    };
+
     std::vector<llvm::Value*> Args = {
       Arg,
     };
@@ -208,6 +213,11 @@ private:
     return Result;
   }
   llvm::Value *VSQXTUN2(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
+#ifdef _M_X86_64
+    // x86 handles the incoming lower register as a full 128bit, cast it back to ensure LLVM doesn't throw up
+    // We don't care about the upper bits anyway
+    ArgLower = CastVectorToType(ArgLower, true, RegisterSize, ElementSize >> 1);
+#endif
     // Convert our upper args
     ArgUpper = VSQXTUN(ArgUpper, RegisterSize, ElementSize);
 
@@ -2178,9 +2188,8 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src1 = GetSrc(Op->Header.Args[0]);
       auto Src2 = GetSrc(Op->Header.Args[1]);
 
-
       // Cast to the type we want
-      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize >> 1);
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize >> 1, Op->ElementSize >> 1);
       Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
 
       auto Result = VSQXTUN2(Src1, Src2, Op->RegisterSize, Op->ElementSize);
@@ -2767,8 +2776,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_Float_FromGPR_U>();
       auto Src = GetSrc(Op->Header.Args[0]);
 
-      Src = CastScalarToType(Src, true, Op->ElementSize, Op->ElementSize);
-
       switch (Op->ElementSize) {
         case 4: {
           auto Result = JITState.IRBuilder->CreateUIToFP(Src, Type::getFloatTy(*Con));
@@ -2787,8 +2794,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
     case IR::OP_FLOAT_FROMGPR_S: {
       auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
       auto Src = GetSrc(Op->Header.Args[0]);
-
-      Src = CastScalarToType(Src, true, Op->ElementSize, Op->ElementSize);
 
       switch (Op->ElementSize) {
         case 4: {
