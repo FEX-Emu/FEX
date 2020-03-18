@@ -2383,7 +2383,7 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
-    auto Result = _VInsElement(16, 8, 0, 0, Dest, Src);
+    auto Result = _VInsScalarElement(16, 8, 0, Dest, Src);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 8, 16);
   }
   else {
@@ -2406,7 +2406,7 @@ void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
     // MOVSS xmm1, xmm2
     OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
     OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
-    auto Result = _VInsElement(16, 4, 0, 0, Dest, Src);
+    auto Result = _VInsScalarElement(16, 4, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   }
   else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
@@ -2430,7 +2430,7 @@ void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
     // xmm1[63:0] <- xmm2[63:0]
     OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-    auto Result = _VInsElement(16, 8, 0, 0, Dest, Src);
+    auto Result = _VInsScalarElement(16, 8, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   }
   else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
@@ -2523,7 +2523,7 @@ void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
   ALUOp.first->Header.Op = IROp;
 
   // Insert the lower bits
-  auto Result = _VInsElement(Size, ElementSize, 0, 0, Dest, ALUOp);
+  auto Result = _VInsScalarElement(Size, ElementSize, 0, Dest, ALUOp);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -2543,7 +2543,7 @@ void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
 
   if (Scalar) {
     // Insert the lower bits
-    auto Result = _VInsElement(GetSrcSize(Op), ElementSize, 0, 0, Dest, ALUOp);
+    auto Result = _VInsScalarElement(GetSrcSize(Op), ElementSize, 0, Dest, ALUOp);
     StoreResult(FPRClass, Op, Result, -1);
   }
   else {
@@ -4013,7 +4013,7 @@ void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
 
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
 
-  Src = _VInsElement(16, DstElementSize, 0, 0, Dest, Src);
+  Src = _VInsScalarElement(16, DstElementSize, 0, Dest, Src);
 
   StoreResult(FPRClass, Op, Src, -1);
 }
@@ -4067,7 +4067,7 @@ void OpDispatchBuilder::Scalar_CVT_Float_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   Src = _Float_FToF(Src, DstElementSize, SrcElementSize);
-  Src = _VInsElement(16, DstElementSize, 0, 0, Dest, Src);
+  Src = _VInsScalarElement(16, DstElementSize, 0, Dest, Src);
 
   StoreResult(FPRClass, Op, Src, -1);
 }
