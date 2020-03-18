@@ -38,6 +38,15 @@ static void SetExitState_Thunk(FEXCore::Core::InternalThreadState *Thread) {
   Thread->State.RunningEvents.ShouldStop = true;
 }
 
+#ifdef _M_ARM_64
+static uint64_t AArch64ReadCycleCounter() {
+  uint64_t res{};
+  asm ("mrs %0, CNTVCT_EL0"
+      : "=r" (res));
+  return res;
+}
+#endif
+
 class LLVMJITCore final : public CPUBackend {
 public:
   explicit LLVMJITCore(FEXCore::Core::InternalThreadState *Thread);
@@ -85,6 +94,9 @@ private:
     llvm::Function *CPUIDFunction;
     llvm::Function *ExitVMFunction;
     llvm::Function *ValuePrinter;
+#ifdef _M_ARM_64
+    llvm::Function *AArch64ReadCycleCounterFunction;
+#endif
 
     llvm::Function *ValidateLoad8;
     llvm::Function *ValidateLoad16;
@@ -247,7 +259,17 @@ private:
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::fshr, ArgTypes, Args);
   }
   llvm::CallInst *CycleCounter() {
+#ifdef _M_X86_64
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::readcyclecounter, {}, {});
+#elif _M_ARM_64
+    // LLVM has readcyclecounter be a zero constant because it's trying to use PMCCNTR_EL0 on AArch64
+    // We actually want to use the CNTVCT_EL0 register but there is no good way to encode this
+    // Call out to a helper function that just uses it...
+    // Could potentially add an intrinsic to LLVM for AArch64 to read system registers
+    return JITState.IRBuilder->CreateCall(JITCurrentState.AArch64ReadCycleCounterFunction, {});
+#else
+    static_assert(false, "No way to read cycle counter");
+#endif
   }
 
   llvm::CallInst *SQRT(llvm::Value *Arg) {
@@ -491,6 +513,27 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
     Ptr.ClassPtr = &CPUIDRun_Thunk;
     Engine->addGlobalMapping(JITCurrentState.CPUIDFunction, Ptr.Data);
   }
+
+#ifdef _M_ARM_64
+  // AArch64ReadCycleCounter Function
+  {
+    auto FuncType = FunctionType::get(i64,
+      { },
+      false);
+    JITCurrentState.AArch64ReadCycleCounterFunction = Function::Create(FuncType,
+      Function::ExternalLinkage,
+      "AArch64ReadCycleCounter",
+      FunctionModule);
+    using ClassPtrType = uint64_t (*)();
+    union PtrCast {
+      ClassPtrType ClassPtr;
+      void* Data;
+    };
+    PtrCast Ptr;
+    Ptr.ClassPtr = &AArch64ReadCycleCounter;
+    Engine->addGlobalMapping(JITCurrentState.AArch64ReadCycleCounterFunction, Ptr.Data);
+  }
+#endif
 
   // Exit VM function
   {
