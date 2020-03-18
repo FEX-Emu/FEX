@@ -3179,7 +3179,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_VECTOR_FTOF: {
             auto Op = IROp->C<IR::IROp_Vector_FToF>();
             void *Src = GetSrc<void*>(Op->Header.Args[0]);
-            uint8_t Tmp[16];
+            uint8_t Tmp[16]{};
 
             uint16_t Conv = (Op->DstElementSize << 8) | Op->SrcElementSize;
 
