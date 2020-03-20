@@ -473,6 +473,10 @@ namespace FEXCore::Context {
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    // XXX: Threaded mutex hack until we support proper threaded compilation. Issue #13
+    static std::mutex SyscallMutex;
+    std::scoped_lock<std::mutex> lk(SyscallMutex);
+
     void *CodePtr {nullptr};
     uint8_t const *GuestCode{};
     if (Thread->CTX->Config.UnifiedMemory) {
