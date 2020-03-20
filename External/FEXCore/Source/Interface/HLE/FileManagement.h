@@ -79,6 +79,7 @@ public:
   uint64_t Pipe(int pipefd[2]);
   uint64_t Pipe2(int pipefd[2], int flags);
   uint64_t Readlink(const char *pathname, char *buf, size_t bufsiz);
+  uint64_t NewFStatAt(int dirfd, const char *pathname, struct stat *buf, int flag);
   uint64_t Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz);
   uint64_t Openat(int dirfs, const char *pathname, int flags, uint32_t mode);
   uint64_t Ioctl(int fd, uint64_t request, void *args);
@@ -105,6 +106,7 @@ public:
   uint64_t Sendmsg(int sockfd, const struct msghdr *msg, int flags);
   uint64_t Recvmsg(int sockfd, struct msghdr *msg, int flags);
   uint64_t Shutdown(int sockfd, int how);
+  uint64_t Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
   uint64_t GetSockName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
   uint64_t GetPeerName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
   uint64_t SetSockOpt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
@@ -119,10 +121,14 @@ public:
   // MemFD
   uint64_t Memfd_Create(const char *name, uint32_t flags);
 
+  // Syslog
+  uint64_t Syslog(int type, char *bufp, int len);
+
   int32_t FindHostFD(int fd);
 
   std::string *FindFDName(int fd);
   FD const* GetFDBacking(int fd);
+  int32_t DupFD(int prevFD);
   int32_t DupFD(int prevFD, int newFD);
 
   void SetFilename(std::string const &File) { Filename = File; }
