@@ -44,6 +44,7 @@ public:
   ELFSymbol const *GetSymbolInRange(RangeType Address);
 
   bool WasDynamic() const { return DynamicProgram; }
+  bool HasDynamicLinker() const { return !DynamicLinker.empty(); }
   std::string &InterpreterLocation() { return DynamicLinker; }
 
   std::vector<char const*> const *GetNecessaryLibs() const { return &NecessaryLibs; }

@@ -386,7 +386,7 @@ public:
     , DB {&File}
     , Args {args} {
 
-    if (File.WasDynamic()) {
+    if (File.HasDynamicLinker()) {
       // If the file isn't static then we need to add the filename of interpreter
       // to the front of the argument list
       Args.emplace(Args.begin(), File.InterpreterLocation());
