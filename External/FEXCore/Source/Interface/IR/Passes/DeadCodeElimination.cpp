@@ -49,6 +49,7 @@ bool DeadCodeElimination::Run(OpDispatchBuilder *Disp) {
       case OP_STOREFLAG:
       case OP_STOREMEM:
       case OP_CAS:
+      case OP_PRINT:
         // Keep
         break;
       // IO
