@@ -155,6 +155,9 @@ void CPUIDEmu::Init() {
   // SoC vendor attribute enumeration
   RegisterFunction(0x17, std::bind(&CPUIDEmu::Function_Reserved, this));
 
+  // Hypervisor vendor string
+  RegisterFunction(0x4000'0000, std::bind(&CPUIDEmu::Function_Reserved, this));
+
   // Largest extended function number
   RegisterFunction(0x8000'0000, std::bind(&CPUIDEmu::Function_8000_0000h, this));
   // Processor vendor
