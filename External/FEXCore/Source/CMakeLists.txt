@@ -177,5 +177,3 @@ install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_shared
   ARCHIVE
     DESTINATION lib
     COMPONENT Libraries)
-
-add_subdirectory(Test/)
