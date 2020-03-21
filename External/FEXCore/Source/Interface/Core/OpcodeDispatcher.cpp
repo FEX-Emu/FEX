@@ -4834,6 +4834,7 @@ void InstallOpcodeHandlers() {
 
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
     {0x50, 1, &OpDispatchBuilder::MOVMSKOp<8>},
+    {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8, false>},
     {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0x55, 1, &OpDispatchBuilder::ANDNOp},
     {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
