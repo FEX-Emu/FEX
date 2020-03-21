@@ -137,10 +137,13 @@ add_custom_target(IR_INC
 check_cxx_compiler_flag(-fdiagnostics-color=always GCC_COLOR)
 check_cxx_compiler_flag(-fcolor-diagnostics CLANG_COLOR)
 
+set(LINUX_LIBS
+  numa)
+
 function(AddLibrary Name Type)
   add_library(${Name} ${Type} ${SRCS})
   add_dependencies(${Name} IR_INC)
-  target_link_libraries(${Name} LLVM pthread rt ${JIT_LIBS} dl)
+  target_link_libraries(${Name} LLVM pthread rt ${JIT_LIBS} ${LINUX_LIBS} dl)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")

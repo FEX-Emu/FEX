@@ -272,6 +272,13 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   return ::readlink(pathname, buf, bufsiz);
 }
 
+uint64_t FileManager::NewFStatAt(int dirfd, const char *pathname, struct stat *buf, int flags) {
+  int Result = fstatat(dirfd, pathname, buf, flags);
+  if (Result == -1)
+    return -errno;
+  return Result;
+}
+
 uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz) {
   if (strcmp(pathname, "/proc/self/exe") == 0) {
     strncpy(buf, Filename.c_str(), bufsiz);
@@ -481,6 +488,13 @@ uint64_t FileManager::Shutdown(int sockfd, int how) {
   return shutdown(sockfd, how);
 }
 
+uint64_t FileManager::Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+  int Result = bind(sockfd, addr, addrlen);
+  if (Result == -1)
+    return -errno;
+  return Result;
+}
+
 uint64_t FileManager::GetSockName(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   return getsockname(sockfd, addr, addrlen);
 }
@@ -571,6 +585,14 @@ uint64_t FileManager::Memfd_Create(const char *name, uint32_t flags) {
   return fd;
 }
 
+// Syslog
+uint64_t FileManager::Syslog(int type, char *bufp, int len) {
+  return syscall(SYS_syslog,
+    static_cast<uint64_t>(type),
+    reinterpret_cast<uint64_t>(bufp),
+    static_cast<uint64_t>(len));
+}
+
 int32_t FileManager::FindHostFD(int fd) {
   return fd;
 }
@@ -586,6 +608,10 @@ std::string *FileManager::FindFDName(int fd) {
 FD const* FileManager::GetFDBacking(int fd) {
   LogMan::Msg::A("DERP");
   return nullptr;
+}
+
+int32_t FileManager::DupFD(int prevFD) {
+  return ::dup(prevFD);
 }
 
 int32_t FileManager::DupFD(int prevFD, int newFD) {

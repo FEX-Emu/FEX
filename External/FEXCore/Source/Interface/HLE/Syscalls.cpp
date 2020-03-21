@@ -9,8 +9,9 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <poll.h>
 #include <linux/futex.h>
+#include <numaif.h>
+#include <poll.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <sys/random.h>
@@ -113,6 +114,13 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
       Args->Argument[3],
       Ret);
     break;
+  case SYSCALL_MADVISE:
+    LogMan::Msg::D("madvise(0x%lx, 0x%lx, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Ret);
+    break;
   case SYSCALL_SHMGET:
     LogMan::Msg::D("shmget(0x%lx, 0x%lx, 0x%lx) = %ld",
       Args->Argument[1],
@@ -132,6 +140,11 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
       Args->Argument[1],
       Args->Argument[2],
       Args->Argument[3],
+      Ret);
+    break;
+  case SYSCALL_DUP:
+    LogMan::Msg::D("dup(0x%lx) = %ld",
+      Args->Argument[1],
       Ret);
     break;
   case SYSCALL_DUP2:
@@ -165,6 +178,14 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_OPENAT:
     LogMan::Msg::D("openat(%ld, \"%s\", %d) = %ld", Args->Argument[1], GetPointer<char const*>(Args->Argument[2]), Args->Argument[3], Ret);
+    break;
+  case SYSCALL_NEWFSTATAT:
+    LogMan::Msg::D("newfstatat(%ld, \"%s\", %p, 0x%lx) = %ld",
+      Args->Argument[1],
+      GetPointer<char const*>(Args->Argument[2]),
+      Args->Argument[3],
+      Args->Argument[4],
+      Ret);
     break;
   case SYSCALL_READLINKAT:
     LogMan::Msg::D("readlinkat(\"%s\") = %ld", GetPointer<char const*>(Args->Argument[2]), Ret);
@@ -336,6 +357,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
   case SYSCALL_SHUTDOWN:
     LogMan::Msg::D("shutdown(%ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
+  case SYSCALL_BIND:
+    LogMan::Msg::D("bind(%ld, %p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
   case SYSCALL_GETSOCKNAME:
     LogMan::Msg::D("getsockname(%ld, 0x%lx, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
     break;
@@ -369,8 +393,22 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
         Args->Argument[5],
         Args->Argument[6]);
     break;
+  case SYSCALL_EXECVE:
+    LogMan::Msg::I("execve('%s', %p, %p) = %ld",
+        GetPointer<char const *>(Args->Argument[1]),
+        Args->Argument[2],
+        Args->Argument[3],
+        Ret);
+    break;
   case SYSCALL_GETUID:
     LogMan::Msg::D("getuid() = %ld", Ret);
+    break;
+  case SYSCALL_SYSLOG:
+    LogMan::Msg::D("syslog(%ld, %p, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Ret);
     break;
   case SYSCALL_GETGID:
     LogMan::Msg::D("getgid() = %ld", Ret);
@@ -389,6 +427,9 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_SETRESUID:
     LogMan::Msg::D("setresuid(%ld, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_GETRESUID:
+    LogMan::Msg::D("getresuid(%ld, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
     break;
   case SYSCALL_SETRESGID:
     LogMan::Msg::D("setresgid(%ld, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
@@ -412,6 +453,15 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
     break;
   case SYSCALL_TGKILL:
     LogMan::Msg::D("tgkill(%ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
+  case SYSCALL_GET_MEMPOLICY:
+    LogMan::Msg::D("get_mempolicy(%p, %p, %ld, %p, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Args->Argument[4],
+      Args->Argument[5],
+      Ret);
     break;
   case SYSCALL_LSEEK:
     LogMan::Msg::D("lseek(%ld, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
@@ -519,7 +569,7 @@ void *SyscallHandler::GetPointerSizeCheck(uint64_t Offset, uint64_t Size) {
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
   uint64_t Result = 0;
-  std::scoped_lock<std::mutex> lk(SyscallMutex);
+//  std::scoped_lock<std::mutex> lk(SyscallMutex);
 
   switch (Args->Argument[0]) {
   case SYSCALL_UNAME: {
@@ -653,7 +703,8 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
   }
   case SYSCALL_PRCTL: {
     switch (Args->Argument[1]) {
-    case 0xF: // PR_SET_NAME
+    case 0x4:  // PR_SET_DUMPABLE
+    case 0xF:  // PR_SET_NAME
     case 0x10: // PR_GET_NAME
       Result = 0;
       break;
@@ -722,6 +773,11 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = FM.Shutdown(Args->Argument[1],
       Args->Argument[2]);
   break;
+  case SYSCALL_BIND:
+    Result = FM.Bind(Args->Argument[1],
+      GetPointer<const struct sockaddr*>(Args->Argument[2]),
+      Args->Argument[3]);
+  break;
   case SYSCALL_GETSOCKNAME:
     Result = FM.GetSockName(Args->Argument[1],
       GetPointer<struct sockaddr *>(Args->Argument[2]),
@@ -782,6 +838,18 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     // XXX: Not a real result
     Result = -1;
   break;
+  case SYSCALL_GETRESUID: {
+    uid_t *ruid = GetPointer<uid_t*>(Args->Argument[1]);
+    uid_t *euid = GetPointer<uid_t*>(Args->Argument[2]);
+    uid_t *suid = GetPointer<uid_t*>(Args->Argument[3]);
+
+    *ruid = Thread->State.ThreadManager.GetEUID();
+    *euid = Thread->State.ThreadManager.GetEUID();
+    *suid = Thread->State.ThreadManager.GetEUID();
+
+    Result = 0;
+    break;
+  }
   case SYSCALL_SETRESGID:
     // rgid, egid, sgid
     Result = 0;
@@ -1010,6 +1078,15 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     Result = NewThread->State.ThreadManager.GetTID();
   break;
   }
+  case SYSCALL_EXECVE:
+    // XXX: Disallow execve for now
+    Result = -ENOEXEC;
+  break;
+  case SYSCALL_SYSLOG:
+    Result = FM.Syslog(Args->Argument[1],
+      GetPointer<char*>(Args->Argument[2]),
+      Args->Argument[3]);
+  break;
   // File management
   case SYSCALL_READ:
     Result = FM.Read(Args->Argument[1],
@@ -1057,6 +1134,16 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     CopyStat(guest_data, &host_stat);
     break;
   }
+  case SYSCALL_GET_MEMPOLICY:
+    Result = get_mempolicy(
+      GetPointer<int*>(Args->Argument[1]),
+      GetPointer<uint64_t*>(Args->Argument[2]),
+      Args->Argument[3],
+      GetPointer<void*>(Args->Argument[4]),
+      Args->Argument[4]);
+    if (Result == -1)
+      Result = -errno;
+  break;
   case SYSCALL_LSEEK:
     Result = FM.Lseek(Args->Argument[1],
         Args->Argument[2],
@@ -1111,6 +1198,19 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       Args->Argument[3],
       Args->Argument[4]);
   break;
+  case SYSCALL_NEWFSTATAT: {
+    struct stat host_stat{};
+
+    guest_stat *guest_data = GetPointer<guest_stat*>(Args->Argument[2]);
+    Result = FM.NewFStatAt(
+      Args->Argument[1],
+      GetPointer<const char*>(Args->Argument[2]),
+      &host_stat,
+      Args->Argument[4]);
+
+    CopyStat(guest_data, &host_stat);
+    break;
+  }
   case SYSCALL_READLINKAT:
     Result = FM.Readlinkat(
       Args->Argument[1],
@@ -1188,6 +1288,12 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
       GetPointer<unsigned char*>(Args->Argument[3]));
   break;
   }
+  case SYSCALL_MADVISE: {
+    Result = madvise(GetPointer(Args->Argument[1]),
+      Args->Argument[2],
+      Args->Argument[3]);
+  break;
+  }
   case SYSCALL_SHMGET: {
     Result = shmget(Args->Argument[1],
       Args->Argument[2],
@@ -1234,6 +1340,10 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     if (Result == -1) {
       Result = -errno;
     }
+  break;
+  }
+  case SYSCALL_DUP: {
+    Result = FM.DupFD(Args->Argument[1]);
   break;
   }
   case SYSCALL_DUP2: {
