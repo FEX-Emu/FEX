@@ -111,6 +111,9 @@ namespace FEXCore::Context {
 
     uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileFallbackBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+
+    FEXCore::CodeLoader *GetCodeLoader() const { return LocalLoader; }
+
   protected:
     IR::RegisterAllocationPass *GetRegisterAllocatorPass();
 

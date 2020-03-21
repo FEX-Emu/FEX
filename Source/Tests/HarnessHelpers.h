@@ -381,7 +381,7 @@ namespace FEX::HarnessHelper {
 
 class ELFCodeLoader final : public FEXCore::CodeLoader {
 public:
-  ELFCodeLoader(std::string const &Filename, [[maybe_unused]] std::vector<std::string> const &args, char **const envp = nullptr)
+  ELFCodeLoader(std::string const &Filename, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr)
     : File {Filename, false}
     , DB {&File}
     , Args {args} {
@@ -427,6 +427,10 @@ public:
     //AuxVariables.emplace_back(auxv_t{26, 0}); // AT_HWCAP2
     AuxVariables.emplace_back(auxv_t{32, 0ULL}); // sysinfo (vDSO)
     AuxVariables.emplace_back(auxv_t{33, 0ULL}); // sysinfo (vDSO)
+
+    for (auto &Arg : ParsedArgs) {
+      LoaderArgs.emplace_back(Arg.c_str());
+    }
   }
 
   uint64_t StackSize() const override {
@@ -591,11 +595,14 @@ public:
     return DB.InitializeThreadSlot(Writer);
   };
 
+  void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
+
 private:
   ::ELFLoader::ELFContainer File;
   ::ELFLoader::ELFSymbolDatabase DB;
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;
+  std::vector<char const*> LoaderArgs;
   struct auxv_t {
     uint64_t key;
     uint64_t val;

@@ -81,7 +81,7 @@ public:
   virtual uint64_t GetFinalRIP() { return ~0ULL; }
 
   virtual char const *FindSymbolNameInRange(uint64_t Address) { return nullptr; }
-
+  virtual void GetExecveArguments(std::vector<char const*> *Args) {}
 };
 
 

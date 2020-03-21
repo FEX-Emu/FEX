@@ -4,6 +4,7 @@
 
 namespace FEX::ArgLoader {
   std::vector<std::string> RemainingArgs;
+  std::vector<std::string> ProgramArguments;
 
   void Load(int argc, char **argv) {
 
@@ -190,12 +191,16 @@ namespace FEX::ArgLoader {
         const char* Value = Options.get("IPCID");
         Config::Add("IPCID", Value);
       }
-
     }
     RemainingArgs = Parser.args();
+    ProgramArguments = Parser.parsed_args();
   }
 
   std::vector<std::string> Get() {
     return RemainingArgs;
   }
+  std::vector<std::string> GetParsedArgs() {
+    return ProgramArguments;
+  }
+
 }
