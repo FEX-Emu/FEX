@@ -48,7 +48,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories(${CMAKE_SOURCE_DIR}/External/SonicUtils/include/SonicUtils)
 
 add_subdirectory(Source/)
-add_subdirectory(Examples/)
 
 install (DIRECTORY include/FEXCore ${CMAKE_BINARY_DIR}/include/FEXCore
   DESTINATION include
