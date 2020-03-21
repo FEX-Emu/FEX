@@ -1083,10 +1083,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             movsx(GetDst<RA_64>(Node), ax);
           break;
           case 4:
-            sarx(Reg32e(GetDst<RA_32>(Node).getIdx(), 32), GetSrc<RA_32>(Op->Header.Args[0].ID()), ecx);
+            mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            sar(GetDst<RA_32>(Node), cl);
           break;
           case 8:
-            sarx(Reg32e(GetDst<RA_64>(Node).getIdx(), 64), GetSrc<RA_64>(Op->Header.Args[0].ID()), rcx);
+            mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            sar(GetDst<RA_64>(Node), cl);
           break;
           default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
           };
