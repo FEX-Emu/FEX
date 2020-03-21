@@ -848,8 +848,8 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
     uint8_t Command = Args->Argument[2] & 0xF;
     Result = 0;
     switch (Command) {
-      case 0: { // WAIT
-        LogMan::Throw::A(!Args->Argument[4], "Can't handle timed futexes");
+      case 0:   // WAIT
+      case 9: { // WAIT_BITSET
         Futex *futex = GetFutex(Args->Argument[1]);
 
         if (!futex) {
@@ -860,13 +860,34 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
         }
         if (futex->Addr->load() != futex->Val) {
           // Immediate check can return EAGAIN
-          Result = EAGAIN;
+          Result = -EAGAIN;
         }
         else
         {
           std::unique_lock<std::mutex> lk(futex->Mutex);
           futex->Waiters++;
-          futex->cv.wait(lk, [futex] { return futex->Addr->load() != futex->Val; });
+          bool PredPassed = false;
+          if (Args->Argument[4]) {
+            const struct timespec *timeout = GetPointer<const struct timespec*>(Args->Argument[4]);
+            if (Command == 9) {
+              // WAIT_BITSET is absolute time
+              auto duration = std::chrono::seconds(timeout->tv_sec) + std::chrono::nanoseconds(timeout->tv_nsec);
+              auto timepoint =
+                std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>(
+                  std::chrono::duration_cast<std::chrono::system_clock::duration>(duration));
+              PredPassed = futex->cv.wait_until(lk, timepoint, [futex] { return futex->Addr->load() != futex->Val; });
+            }
+            else {
+              auto duration = std::chrono::seconds(timeout->tv_sec) + std::chrono::nanoseconds(timeout->tv_nsec);
+              PredPassed = futex->cv.wait_for(lk, duration, [futex] { return futex->Addr->load() != futex->Val; });
+            }
+            if (!PredPassed) {
+              Result = -ETIMEDOUT;
+            }
+          }
+          else {
+            futex->cv.wait(lk, [futex] { return futex->Addr->load() != futex->Val; });
+          }
           futex->Waiters--;
         }
         break;
@@ -890,7 +911,7 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Threa
         }
         break;
       }
-      case 9: { // WAKE_BITSET
+      case 10: { // WAKE_BITSET
         // We don't actually support this
         // Just handle it like a WAKE but wake up everything
         Futex *futex = GetFutex(Args->Argument[1]);
