@@ -2415,7 +2415,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // Scalar
           switch (Op->ElementSize) {
             case 4: {
-              fmov(VTMP1.S(), 1.0);
+              fmov(VTMP1.S(), 1.0f);
               fdiv(GetDst(Node).S(), VTMP1.S(), GetSrc(Op->Header.Args[0].ID()).S());
             break;
             }
@@ -2431,7 +2431,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // Vector
           switch (Op->ElementSize) {
             case 4: {
-              fmov(VTMP1.V4S(), 1.0);
+              fmov(VTMP1.V4S(), 1.0f);
               fdiv(GetDst(Node).V4S(), VTMP1.V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
             break;
             }
@@ -2501,15 +2501,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // Vector
           switch (Op->ElementSize) {
             case 4: {
-              fmov(VTMP1.V4S(), 1.0);
-              dup(VTMP1.V4S(), VTMP1.V4S(), 0);
+              fmov(VTMP1.V4S(), 1.0f);
               fsqrt(VTMP2.V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
               fdiv(GetDst(Node).V4S(), VTMP1.V4S(), VTMP2.V4S());
             break;
             }
             case 8: {
               fmov(VTMP1.V2D(), 1.0);
-              dup(VTMP1.V2D(), VTMP1.V2D(), 0);
               fsqrt(VTMP2.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
               fdiv(GetDst(Node).V2D(), VTMP1.V2D(), VTMP2.V2D());
             break;
