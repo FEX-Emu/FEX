@@ -78,7 +78,7 @@ void InitializeSecondaryTables() {
 
     {0x50, 1, X86InstInfo{"MOVMSKPS",   TYPE_INST, GenFlagsSizes(SIZE_32BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR,      0, nullptr}},
     {0x51, 1, X86InstInfo{"SQRTPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
-    {0x52, 1, X86InstInfo{"RSQRTSS",    TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
+    {0x52, 1, X86InstInfo{"RSQRTPS",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x53, 1, X86InstInfo{"RCPPS",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x54, 1, X86InstInfo{"ANDPS",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x55, 1, X86InstInfo{"ANDNPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
