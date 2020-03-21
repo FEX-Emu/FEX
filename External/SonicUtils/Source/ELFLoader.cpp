@@ -15,9 +15,10 @@ ELFContainer::ELFContainer(std::string const &Filename, bool CustomInterpreter) 
   }
 
   if (InterpreterHeader && !CustomInterpreter) {
-    DynamicProgram = true;
     // If we we are dynamic application then we have an interpreter program header
     // We need to load that ELF instead if it exists
+    // We are no longer dynamic since we are executing the interpreter
+    DynamicProgram = false;
     const char *RawString = &RawFile.at(InterpreterHeader->p_offset);
     if (!LoadELF(RawString)) {
       LogMan::Msg::E("Couldn't load dynamic ELF file's interpreter");
