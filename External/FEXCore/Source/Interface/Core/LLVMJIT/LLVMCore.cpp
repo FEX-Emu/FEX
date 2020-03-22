@@ -2003,6 +2003,21 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VUMUL:
+    case IR::OP_VSMUL: {
+      auto Op = IROp->C<IR::IROp_VUMul>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_VSQADD: {
       auto Op = IROp->C<IR::IROp_VSQAdd>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
