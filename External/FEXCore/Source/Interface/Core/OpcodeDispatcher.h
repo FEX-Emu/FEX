@@ -250,7 +250,7 @@ public:
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
   template<size_t DstElementSize, size_t SrcElementSize>
   void Vector_CVT_Float_To_Float(OpcodeArgs);
-  template<size_t SrcElementSize, bool Signed>
+  template<size_t SrcElementSize, bool Signed, bool Narrow>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   void MOVBetweenGPR_FPR(OpcodeArgs);
   void TZCNT(OpcodeArgs);

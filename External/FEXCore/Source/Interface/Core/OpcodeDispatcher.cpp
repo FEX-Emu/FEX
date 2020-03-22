@@ -4572,16 +4572,24 @@ void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, -1);
 }
 
-template<size_t SrcElementSize, bool Signed>
+template<size_t SrcElementSize, bool Signed, bool Narrow>
 void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  if (Signed)
-    Src = _Vector_FToZS(Src, 16, SrcElementSize);
-  else
-    Src = _Vector_FToZU(Src, 16, SrcElementSize);
+  size_t ElementSize = SrcElementSize;
+  size_t Size = GetDstSize(Op);
 
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, SrcElementSize, -1);
+  if (Narrow) {
+    Src = _Vector_FToF(Src, Size, SrcElementSize >> 1, SrcElementSize);
+    ElementSize >>= 1;
+  }
+
+  if (Signed)
+    Src = _Vector_FToZS(Src, Size, ElementSize);
+  else
+    Src = _Vector_FToZU(Src, Size, ElementSize);
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
 }
 
 template<size_t DstElementSize, size_t SrcElementSize>
@@ -5342,6 +5350,7 @@ void InstallOpcodeHandlers() {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVTGPR_To_FPR<4, true>},
     {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
+    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, true>},
     {0x52, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4, true>},
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 4>},
@@ -5446,6 +5455,7 @@ void InstallOpcodeHandlers() {
     {0xDF, 1, &OpDispatchBuilder::ANDNOp},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2, true, 0>},
     {0xE2, 1, &OpDispatchBuilder::PSRAOp<4, true, 0>},
+    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},
     {0xE7, 1, &OpDispatchBuilder::MOVVectorOp},
     {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
     {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
