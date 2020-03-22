@@ -44,8 +44,8 @@ void InitializeSecondaryTables() {
     {0x2B, 1, X86InstInfo{"MOVNTPS",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                              0, nullptr}},
     {0x2C, 1, X86InstInfo{"CVTTPS2PI",  TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                   0, nullptr}},
     {0x2D, 1, X86InstInfo{"CVTPS2PI",   TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                   0, nullptr}},
-    {0x2E, 1, X86InstInfo{"UCOMISS",    TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
-    {0x2F, 1, X86InstInfo{"COMISS",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
+    {0x2E, 1, X86InstInfo{"UCOMISS",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
+    {0x2F, 1, X86InstInfo{"COMISS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
 
     {0x30, 1, X86InstInfo{"WRMSR",      TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
     {0x31, 1, X86InstInfo{"RDTSC",      TYPE_INST, FLAGS_DEBUG | FLAGS_NO_OVERLAY,                                                               0, nullptr}},
@@ -426,8 +426,8 @@ void InitializeSecondaryTables() {
     {0x2B, 1, X86InstInfo{"MOVNTPD",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,      0, nullptr}},
     {0x2C, 1, X86InstInfo{"CVTTPD2PI",  TYPE_MMX, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                          0, nullptr}},
     {0x2D, 1, X86InstInfo{"CVTPD2PI",   TYPE_MMX, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                          0, nullptr}},
-    {0x2E, 1, X86InstInfo{"UCOMISD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                          0, nullptr}},
-    {0x2F, 1, X86InstInfo{"COMISD",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                          0, nullptr}},
+    {0x2E, 1, X86InstInfo{"UCOMISD",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                          0, nullptr}},
+    {0x2F, 1, X86InstInfo{"COMISD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                          0, nullptr}},
 
     {0x30, 16, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},
     {0x40, 16, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},

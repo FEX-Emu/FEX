@@ -269,6 +269,8 @@ public:
   void FXRStoreOp(OpcodeArgs);
 
   void PAlignrOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void UCOMISxOp(OpcodeArgs);
   void LDMXCSR(OpcodeArgs);
   void STMXCSR(OpcodeArgs);
 

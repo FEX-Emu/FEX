@@ -238,7 +238,9 @@ namespace {
       return GetRegClassFromNode(ListBegin, DataBegin, Op->PhiBegin);
     }
     default:
-      if (IROp->Op > IR::OP_PRINT)
+      if (IROp->Op >= IR::OP_GETHOSTFLAG)
+        return IR::RegisterAllocationPass::FLAGSClass;
+      else if (IROp->Op > IR::OP_PRINT)
         return IR::RegisterAllocationPass::FPRClass;
       else
         return IR::RegisterAllocationPass::GPRClass;
