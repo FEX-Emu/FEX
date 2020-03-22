@@ -2142,6 +2142,22 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VUMUL:
+        case IR::OP_VSMUL: {
+          auto Op = IROp->C<IR::IROp_VUMul>();
+          switch (Op->ElementSize) {
+          case 2: {
+            vpmullw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 4: {
+            vpmulld(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+          break;
+        }
         case IR::OP_VUMULL: {
           auto Op = IROp->C<IR::IROp_VSub>();
           switch (Op->ElementSize) {
