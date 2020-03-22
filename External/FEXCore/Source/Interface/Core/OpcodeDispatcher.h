@@ -264,6 +264,8 @@ public:
   void PINSROp(OpcodeArgs);
   template<size_t ElementSize>
   void PExtrOp(OpcodeArgs);
+  template<size_t ElementSize, bool Signed>
+  void PMULOp(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>
@@ -286,7 +288,7 @@ public:
   void PACKUSOp(OpcodeArgs);
 
   template<size_t ElementSize, bool Signed>
-  void PMULOp(OpcodeArgs);
+  void PMULLOp(OpcodeArgs);
 
   void UnimplementedOp(OpcodeArgs);
 

@@ -2867,6 +2867,21 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, -1);
 }
 
+template<size_t ElementSize, bool Signed>
+void OpDispatchBuilder::PMULOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  OrderedNode *Res{};
+  if (Signed)
+    Res = _VSMul(Size, ElementSize, Dest, Src);
+  else
+    Res = _VUMul(Size, ElementSize, Dest, Src);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PCMPEQOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -4973,7 +4988,7 @@ void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
 }
 
 template<size_t ElementSize, bool Signed>
-void OpDispatchBuilder::PMULOp(OpcodeArgs) {
+void OpDispatchBuilder::PMULLOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -5422,6 +5437,7 @@ void InstallOpcodeHandlers() {
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4, true, 0>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8, true, 0>},
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
+    {0xD5, 1, &OpDispatchBuilder::PMULOp<2, true>},
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOp<1>}, // PMOVMSKB
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
@@ -5440,7 +5456,7 @@ void InstallOpcodeHandlers() {
 
     {0xF2, 1, &OpDispatchBuilder::PSLL<4, true, 0>},
     {0xF3, 1, &OpDispatchBuilder::PSLL<8, true, 0>},
-    {0xF4, 1, &OpDispatchBuilder::PMULOp<4, false>},
+    {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
     {0xF8, 1, &OpDispatchBuilder::PSUBQOp<1>},
     {0xF9, 1, &OpDispatchBuilder::PSUBQOp<2>},
     {0xFA, 1, &OpDispatchBuilder::PSUBQOp<4>},
