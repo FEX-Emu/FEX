@@ -272,6 +272,17 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   return ::readlink(pathname, buf, bufsiz);
 }
 
+uint64_t FileManager::Chmod(const char *pathname, mode_t mode) {
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::chmod(Path.c_str(), mode);
+    if (Result != -1)
+      return Result;
+  }
+
+  return ::chmod(pathname, mode);
+}
+
 uint64_t FileManager::NewFStatAt(int dirfd, const char *pathname, struct stat *buf, int flags) {
   int Result = fstatat(dirfd, pathname, buf, flags);
   if (Result == -1)
@@ -365,6 +376,27 @@ uint64_t FileManager::EPoll_Create1(int flags) {
   return epoll_create1(flags);
 }
 
+uint64_t FileManager::EPoll_Ctl(int epfd, int op, int fd, void *event) {
+  int Result = epoll_ctl(epfd, op, fd, reinterpret_cast<struct epoll_event*>(event));
+
+  if (Result == -1)
+    return -errno;
+  return Result;
+}
+
+uint64_t FileManager::EPoll_Pwait(int epfd, void *events, int maxevent, int timeout, const void* sigmask) {
+  int Result = epoll_pwait(
+    epfd,
+    reinterpret_cast<struct epoll_event*>(events),
+    maxevent,
+    timeout,
+    reinterpret_cast<const sigset_t*>(sigmask));
+
+  if (Result == -1)
+    return -errno;
+  return Result;
+}
+
 uint64_t FileManager::Statfs(const char *path, void *buf) {
   auto Path = GetEmulatedPath(path);
   if (!Path.empty()) {
@@ -402,6 +434,15 @@ uint64_t FileManager::Connect(int sockfd, const struct sockaddr *addr, socklen_t
   if (Result == -1) {
     return -errno;
   }
+  return Result;
+}
+
+uint64_t FileManager::Sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
+  ssize_t Result = sendto(sockfd, buf, len, flags, dest_addr, addrlen);
+  if (Result == -1) {
+    return -errno;
+  }
+
   return Result;
 }
 
@@ -490,6 +531,13 @@ uint64_t FileManager::Shutdown(int sockfd, int how) {
 
 uint64_t FileManager::Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
   int Result = bind(sockfd, addr, addrlen);
+  if (Result == -1)
+    return -errno;
+  return Result;
+}
+
+uint64_t FileManager::Listen(int sockfd, int backlog) {
+  int Result = listen(sockfd, backlog);
   if (Result == -1)
     return -errno;
   return Result;
