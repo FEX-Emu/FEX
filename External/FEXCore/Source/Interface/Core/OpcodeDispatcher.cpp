@@ -531,7 +531,6 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
   BlockSetRIP = true;
 
   // This is just an unconditional relative literal jump
-  // XXX: Reenable
   if (Multiblock) {
     LogMan::Throw::A(Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
     uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].TypeLiteral.Literal;
@@ -1128,8 +1127,35 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
-  // XXX: This isn't correct
-  // GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  if (SHL1Bit) {
+    GenerateFlags_ShiftLeftImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), 1);
+  }
+  else {
+    GenerateFlags_ShiftLeft(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  }
+}
+
+void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift &= 0x3F;
+  else
+    Shift &= 0x1F;
+
+  OrderedNode *Src = _Constant(Size, Shift);
+
+  auto ALUOp = _Lshl(Dest, Src);
+
+  StoreResult(GPRClass, Op, ALUOp, -1);
+
+  GenerateFlags_ShiftLeftImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), Shift);
 }
 
 template<bool SHR1Bit>
@@ -1160,12 +1186,39 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
-  // XXX: This isn't correct
-  GenerateFlags_Logical(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
-
   if (SHR1Bit) {
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, Size - 1, Src));
+    GenerateFlags_ShiftRightImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), 1);
   }
+  else {
+    GenerateFlags_ShiftRight(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  }
+}
+
+void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift &= 0x3F;
+  else
+    Shift &= 0x1F;
+
+  OrderedNode *Src = _Constant(Size, Shift);
+
+  if (Size != 64) {
+    Dest = _Bfe(Size, 0, Dest);
+  }
+
+  auto ALUOp = _Lshr(Dest, Src);
+
+  StoreResult(GPRClass, Op, ALUOp, -1);
+
+  GenerateFlags_ShiftRightImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), Shift);
 }
 
 void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
@@ -1191,21 +1244,42 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  // XXX: This isn't correct
-  // GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  GenerateFlags_ShiftLeft(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+}
+
+void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift &= 0x3F;
+  else
+    Shift &= 0x1F;
+
+  OrderedNode *ShiftLeft = _Constant(Shift);
+  auto ShiftRight = _Constant(Size - Shift);
+
+  OrderedNode *Res{};
+  auto Tmp1 = _Lshl(Dest, ShiftLeft);
+  auto Tmp2 = _Lshr(Src, ShiftRight);
+  Res = _Or(Tmp1, Tmp2);
+
+  StoreResult(GPRClass, Op, Res, -1);
+
+  GenerateFlags_ShiftLeftImmediate(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), Shift);
 }
 
 void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  OrderedNode *Shift{};
-  if (Op->OP == 0xAC)  {
-    LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-    Shift = _Constant(Op->Src[1].TypeLiteral.Literal);
-  }
-  else
-    Shift = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+  OrderedNode *Shift = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
 
   auto Size = GetSrcSize(Op) * 8;
 
@@ -1215,30 +1289,47 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   else
     Shift = _And(Shift, _Constant(0x1F));
 
-  auto ShiftRight = _Sub(_Constant(Size), Shift);
+  auto ShiftLeft = _Sub(_Constant(Size), Shift);
 
   OrderedNode *Res{};
   auto Tmp1 = _Lshr(Dest, Shift);
-  auto Tmp2 = _Lshl(Src, ShiftRight);
+  auto Tmp2 = _Lshl(Src, ShiftLeft);
+  Res = _Or(Tmp1, Tmp2);
+  StoreResult(GPRClass, Op, Res, -1);
+
+  GenerateFlags_ShiftRight(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+}
+
+void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift = Op->Src[1].TypeLiteral.Literal & 0x3F;
+  else
+    Shift = Op->Src[1].TypeLiteral.Literal & 0x1F;
+
+  OrderedNode *ShiftRight = _Constant(Shift);
+  auto ShiftLeft = _Constant(Size - Shift);
+
+  OrderedNode *Res{};
+  auto Tmp1 = _Lshr(Dest, ShiftRight);
+  auto Tmp2 = _Lshl(Src, ShiftLeft);
   Res = _Or(Tmp1, Tmp2);
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  // XXX: This isn't correct
-  // GenerateFlags_Shift(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  GenerateFlags_ShiftRightImmediate(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), Shift);
 }
 
+template<bool SHR1Bit>
 void OpDispatchBuilder::ASHROp(OpcodeArgs) {
-  bool SHR1Bit = false;
-#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
-  switch (Op->OP) {
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 7):
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 7):
-    SHR1Bit = true;
-  break;
-  }
-#undef OPD
-
   OrderedNode *Src;
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -1262,26 +1353,38 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
-  // XXX: This isn't correct
-  GenerateFlags_Logical(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
-
   if (SHR1Bit) {
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, Size - 1, Src));
+    GenerateFlags_SignShiftRightImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), 1);
+  }
+  else {
+    GenerateFlags_SignShiftRight(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
   }
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::ROROp(OpcodeArgs) {
-  bool Is1Bit = false;
-#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
-  switch (Op->OP) {
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1):
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1):
-    Is1Bit = true;
-  break;
-  }
-#undef OPD
+void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift &= 0x3F;
+  else
+    Shift &= 0x1F;
+
+  OrderedNode *Src = _Constant(Size, Shift);
+  auto ALUOp = _Ashr(Dest, Src);
+
+  StoreResult(GPRClass, Op, ALUOp, -1);
+
+  GenerateFlags_SignShiftRightImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), Shift);
+}
+
+template<bool Is1Bit>
+void OpDispatchBuilder::ROROp(OpcodeArgs) {
   OrderedNode *Src;
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -1290,7 +1393,7 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
     Src = _Constant(Size, 1);
   }
   else {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -1303,27 +1406,39 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
-  // XXX: This is incorrect
-  GenerateFlags_Rotate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
-
   if (Is1Bit) {
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, Size - 1, Src));
+    GenerateFlags_RotateRightImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), 1);
+  }
+  else {
+    GenerateFlags_RotateRight(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
   }
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::ROLOp(OpcodeArgs) {
-  bool Is1Bit = false;
-#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
-  switch (Op->OP) {
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0):
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0):
-    Is1Bit = true;
-  break;
-  default: break;
-  }
-#undef OPD
+void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift &= 0x3F;
+  else
+    Shift &= 0x1F;
+
+  OrderedNode *Src = _Constant(Size, Shift);
+
+  auto ALUOp = _Ror(Dest, Src);
+
+  StoreResult(GPRClass, Op, ALUOp, -1);
+
+  GenerateFlags_RotateRightImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), Shift);
+}
+
+template<bool Is1Bit>
+void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   OrderedNode *Src;
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -1333,7 +1448,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
     Src = _Constant(Size, 1);
   }
   else {
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -1346,12 +1461,35 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
-  // XXX: This is incorrect
-  GenerateFlags_Rotate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
-
   if (Is1Bit) {
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, Size - 1, Src));
+    GenerateFlags_RotateLeftImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), 1);
   }
+  else {
+    GenerateFlags_RotateLeft(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  }
+}
+
+void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Shift &= 0x3F;
+  else
+    Shift &= 0x1F;
+
+  OrderedNode *Src = _Constant(Size, Shift);
+
+  auto ALUOp = _Rol(Dest, Src);
+
+  StoreResult(GPRClass, Op, ALUOp, -1);
+
+  GenerateFlags_RotateLeftImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), Shift);
 }
 
 template<uint32_t SrcIndex>
@@ -1692,6 +1830,10 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
   else {
     auto Before = _AtomicFetchAdd(Dest, Src, GetSrcSize(Op));
     StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
+
+    auto Size = GetSrcSize(Op) * 8;
+    auto Result = _Add(Before, Src);
+    GenerateFlags_ADD(Op, _Bfe(Size, 0, Result), _Bfe(Size, 0, Before), _Bfe(Size, 0, Src));
   }
 }
 
@@ -1699,6 +1841,19 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   Src = _Popcount(Src);
   StoreResult(GPRClass, Op, Src, -1);
+  // Set ZF
+  auto Zero = _Constant(0);
+  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
+      Src,  Zero,
+      _Constant(1), Zero);
+
+  // Set flags
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(Zero);
 }
 
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
@@ -2832,6 +2987,10 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), CASResult);
     }
 
+    auto Size = GetDstSize(Op) * 8;
+    auto ALUOp = _Sub(CASResult, Src3);
+    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, CASResult), _Bfe(Size, 0, Src3));
+
     // Set ZF
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
   }
@@ -3603,7 +3762,7 @@ void OpDispatchBuilder::GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, 
   }
 }
 
-void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+void OpDispatchBuilder::GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   auto CmpResult = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), _Constant(1), _Constant(0));
   auto CondJump = _CondJump(CmpResult);
 
@@ -3612,19 +3771,13 @@ void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, Or
   SetFalseJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
 
-  // AF
+  // CF
   {
-    // Undefined
-    // Set to zero anyway
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
-  }
-
-  // SF
-  {
-    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    // Extract the last bit shifted in to CF
+    auto Size = _Constant(GetSrcSize(Op) * 8);
+    auto ShiftAmt = _Sub(Size, Src2);
+    auto LastBit = _And(_Lshr(Src1, ShiftAmt), _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
   }
 
   // PF
@@ -3635,6 +3788,13 @@ void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, Or
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
   }
 
+  // AF
+  {
+    // Undefined
+    // Set to zero anyway
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+  }
+
   // ZF
   {
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
@@ -3642,9 +3802,137 @@ void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, Or
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
 
-  // CF/OF
+  // SF
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+
+    auto LshrOp = _Lshr(Res, SignBitConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+
+    // OF
+    // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
+    // When Shift > 1 then OF is undefined
+    auto SourceBit = _Bfe(1, GetSrcSize(Op) * 8 - 1, Src1);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(SourceBit, LshrOp));
+  }
+
+  auto Jump = _Jump();
+  auto NextJumpTarget = CreateNewCodeBlock();
+  SetJumpTarget(Jump, NextJumpTarget);
+  SetTrueJumpTarget(CondJump, NextJumpTarget);
+  SetCurrentCodeBlock(NextJumpTarget);
+}
+
+void OpDispatchBuilder::GenerateFlags_ShiftRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  auto CmpResult = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), _Constant(1), _Constant(0));
+  auto CondJump = _CondJump(CmpResult);
+
+  // Make sure to start a new block after ending this one
+  auto JumpTarget = CreateNewCodeBlock();
+  SetFalseJumpTarget(CondJump, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
+
+  // CF
+  {
+    // Extract the last bit shifted in to CF
+    auto ShiftAmt = _Sub(Src2, _Constant(1));
+    auto LastBit = _And(_Lshr(Src1, ShiftAmt), _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
+  }
+
+  // PF
+  {
+    auto EightBitMask = _Constant(0xFF);
+    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  }
+
+  // AF
+  {
+    // Undefined
+    // Set to zero anyway
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+  }
+
+  // ZF
+  {
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
+        Res, _Constant(0), _Constant(1), _Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+  }
+
+  // SF
+  {
+    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+
+    auto LshrOp = _Lshr(Res, SignBitConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+  }
+
+  // OF
+  {
+    // Only defined when Shift is 1 else undefined
+    // Is set to the MSB of the original value
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, Src1));
+  }
+
+  auto Jump = _Jump();
+  auto NextJumpTarget = CreateNewCodeBlock();
+  SetJumpTarget(Jump, NextJumpTarget);
+  SetTrueJumpTarget(CondJump, NextJumpTarget);
+  SetCurrentCodeBlock(NextJumpTarget);
+}
+
+void OpDispatchBuilder::GenerateFlags_SignShiftRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  auto CmpResult = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), _Constant(1), _Constant(0));
+  auto CondJump = _CondJump(CmpResult);
+
+  // Make sure to start a new block after ending this one
+  auto JumpTarget = CreateNewCodeBlock();
+  SetFalseJumpTarget(CondJump, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
+
+  // CF
+  {
+    // Extract the last bit shifted in to CF
+    auto ShiftAmt = _Sub(Src2, _Constant(1));
+    auto LastBit = _And(_Lshr(Src1, ShiftAmt), _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
+  }
+
+  // PF
+  {
+    auto EightBitMask = _Constant(0xFF);
+    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  }
+
+  // AF
+  {
+    // Undefined
+    // Set to zero anyway
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+  }
+
+  // ZF
+  {
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
+        Res, _Constant(0), _Constant(1), _Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+  }
+
+  // SF
+  {
+    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+
+    auto LshrOp = _Lshr(Res, SignBitConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+  }
+
+  // OF
+  {
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Constant(0));
   }
 
@@ -3655,12 +3943,232 @@ void OpDispatchBuilder::GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, Or
   SetCurrentCodeBlock(NextJumpTarget);
 }
 
-void OpDispatchBuilder::GenerateFlags_Rotate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
-  // CF/OF
-  // XXX: These are wrong
+void OpDispatchBuilder::GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  // No flags changed if shift is zero
+  if (Shift == 0) return;
+
+  // CF
   {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Constant(0));
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - Shift, Src1));
+  }
+
+  // PF
+  {
+    auto EightBitMask = _Constant(0xFF);
+    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  }
+
+  // AF
+  {
+    // Undefined
+    // Set to zero anyway
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+  }
+
+  // ZF
+  {
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
+        Res, _Constant(0), _Constant(1), _Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+  }
+
+  // SF
+  {
+    auto LshrOp = _Bfe(1, GetSrcSize(Op) * 8 - 1, Res);
+
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+
+    // OF
+    // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
+    if (Shift == 1) {
+      auto SourceBit = _Bfe(1, GetSrcSize(Op) * 8 - 1, Src1);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(SourceBit, LshrOp));
+    }
+  }
+}
+
+void OpDispatchBuilder::GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  // No flags changed if shift is zero
+  if (Shift == 0) return;
+
+  // CF
+  {
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, Shift, Src1));
+  }
+
+  // PF
+  {
+    auto EightBitMask = _Constant(0xFF);
+    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  }
+
+  // AF
+  {
+    // Undefined
+    // Set to zero anyway
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+  }
+
+  // ZF
+  {
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
+        Res, _Constant(0), _Constant(1), _Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+  }
+
+  // SF
+  {
+    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+
+    auto LshrOp = _Lshr(Res, SignBitConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+
+    // OF
+    // Only defined when Shift is 1 else undefined
+    // Only is set if the top bit was set to 1 when shifted
+    // So it is set to same value as SF
+    if (Shift == 1) {
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Constant(0));
+    }
+  }
+}
+
+void OpDispatchBuilder::GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  // No flags changed if shift is zero
+  if (Shift == 0) return;
+
+  // CF
+  {
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, Shift, Src1));
+  }
+
+  // PF
+  {
+    auto EightBitMask = _Constant(0xFF);
+    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
+    auto XorOp = _Xor(PopCountOp, _Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  }
+
+  // AF
+  {
+    // Undefined
+    // Set to zero anyway
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+  }
+
+  // ZF
+  {
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
+        Res, _Constant(0), _Constant(1), _Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+  }
+
+  // SF
+  {
+    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+
+    auto LshrOp = _Lshr(Res, SignBitConst);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+  }
+
+  // OF
+  {
+    // Only defined when Shift is 1 else undefined
+    // Is set to the MSB of the original value
+    if (Shift == 1) {
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, Src1));
+    }
+  }
+}
+
+void OpDispatchBuilder::GenerateFlags_RotateRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  auto OpSize = GetSrcSize(Op) * 8;
+
+  // Extract the last bit shifted in to CF
+  auto ShiftAmt = _Sub(Src2, _Constant(1));
+  auto NewCF = _And(_Lshr(Src1, ShiftAmt), _Constant(1));
+
+  // CF
+  {
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+  }
+
+  // OF
+  {
+    // OF is set to the XOR of the new CF bit and the most significant bit of the result
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, OpSize - 1, Res), NewCF));
+  }
+}
+
+void OpDispatchBuilder::GenerateFlags_RotateLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  auto OpSize = GetSrcSize(Op) * 8;
+
+  // Extract the last bit shifted in to CF
+  auto Size = _Constant(GetSrcSize(Op) * 8);
+  auto ShiftAmt = _Sub(Size, Src2);
+  auto NewCF = _And(_Lshr(Src1, ShiftAmt), _Constant(1));
+
+  // CF
+  {
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+  }
+
+  // OF
+  {
+    // OF is set to the XOR of the new CF bit and the most significant bit of the result
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, OpSize - 1, Res), NewCF));
+  }
+}
+
+void OpDispatchBuilder::GenerateFlags_RotateRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  if (Shift == 0) return;
+
+  auto OpSize = GetSrcSize(Op) * 8;
+
+  auto NewCF = _Bfe(1, OpSize - Shift, Src1);
+
+  // CF
+  {
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+  }
+
+  // OF
+  {
+    if (Shift == 1) {
+      // OF is set to the XOR of the new CF bit and the most significant bit of the result
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, OpSize - 1, Res), NewCF));
+    }
+  }
+}
+
+void OpDispatchBuilder::GenerateFlags_RotateLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  if (Shift == 0) return;
+
+  auto OpSize = GetSrcSize(Op) * 8;
+
+  // CF
+  {
+    // Extract the last bit shifted in to CF
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, Shift, Src1));
+  }
+
+  // OF
+  {
+    if (Shift == 1) {
+      // OF is the top two MSBs XOR'd together
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, OpSize - 1, Src1), _Bfe(1, OpSize - 2, Src1)));
+    }
   }
 }
 
@@ -4118,6 +4626,15 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
 
   Src = _FindTrailingZeros(Src);
   StoreResult(GPRClass, Op, Src, -1);
+
+  auto Zero = _Constant(0);
+  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
+      Src,  Zero,
+      _Constant(1), Zero);
+
+  // Set flags
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZFResult);
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, 0, Src));
 }
 
 template<size_t ElementSize, bool Scalar>
@@ -4645,14 +5162,16 @@ void InstallOpcodeHandlers() {
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
     {0x6E, 1, &OpDispatchBuilder::UnhandledOp}, // MOVD
     {0x7E, 1, &OpDispatchBuilder::UnhandledOp}, // MOVD
-    {0x80, 16, &OpDispatchBuilder::CondJUMPOp}, // XXX: Fails to fixup some jumps
-    {0x90, 16, &OpDispatchBuilder::SETccOp}, // XXX: Causes some unit tests to fail due to flags being incorrect
+    {0x80, 16, &OpDispatchBuilder::CondJUMPOp},
+    {0x90, 16, &OpDispatchBuilder::SETccOp},
     {0xA2, 1, &OpDispatchBuilder::CPUIDOp},
     {0xA3, 1, &OpDispatchBuilder::BTOp<0>}, // BT
-    {0xA4, 2, &OpDispatchBuilder::SHLDOp},
+    {0xA4, 1, &OpDispatchBuilder::SHLDImmediateOp},
+    {0xA5, 1, &OpDispatchBuilder::SHLDOp},
     {0xAB, 1, &OpDispatchBuilder::BTSOp<0>},
-    {0xAC, 2, &OpDispatchBuilder::SHRDOp},
-    {0xAF, 1, &OpDispatchBuilder::IMUL1SrcOp}, // XXX: Causes issues with LLVM JIT
+    {0xAC, 1, &OpDispatchBuilder::SHRDImmediateOp},
+    {0xAD, 1, &OpDispatchBuilder::SHRDOp},
+    {0xAF, 1, &OpDispatchBuilder::IMUL1SrcOp},
     {0xB0, 2, &OpDispatchBuilder::CMPXCHGOp}, // CMPXCHG
     {0xB3, 1, &OpDispatchBuilder::BTROp<0>},
     {0xB6, 2, &OpDispatchBuilder::MOVZXOp},
@@ -4664,7 +5183,6 @@ void InstallOpcodeHandlers() {
     {0xC8, 8, &OpDispatchBuilder::BSWAPOp},
 
     // SSE
-    // XXX: Broken on LLVM?
     {0x10, 2, &OpDispatchBuilder::MOVUPSOp},
     {0x12, 2, &OpDispatchBuilder::MOVLPOp},
     {0x14, 1, &OpDispatchBuilder::PUNPCKLOp<4>},
@@ -4704,7 +5222,6 @@ void InstallOpcodeHandlers() {
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> PrimaryGroupOpTable = {
     // GROUP 1
-    // XXX: Something in this group causing bad syscall when commented out
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 0), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 1), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 2), 1, &OpDispatchBuilder::ADCOp<1>},
@@ -4733,41 +5250,41 @@ void InstallOpcodeHandlers() {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 7), 1, &OpDispatchBuilder::CMPOp<1>},
 
     // GROUP 2
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 0), 1, &OpDispatchBuilder::ROLOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 1), 1, &OpDispatchBuilder::ROROp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 4), 1, &OpDispatchBuilder::SHLOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 5), 1, &OpDispatchBuilder::SHROp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 0), 1, &OpDispatchBuilder::ROLImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 1), 1, &OpDispatchBuilder::RORImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 4), 1, &OpDispatchBuilder::SHLImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 5), 1, &OpDispatchBuilder::SHRImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 7), 1, &OpDispatchBuilder::ASHRImmediateOp}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 0), 1, &OpDispatchBuilder::ROLOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 1), 1, &OpDispatchBuilder::ROROp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 4), 1, &OpDispatchBuilder::SHLOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 5), 1, &OpDispatchBuilder::SHROp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 0), 1, &OpDispatchBuilder::ROLImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 1), 1, &OpDispatchBuilder::RORImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 4), 1, &OpDispatchBuilder::SHLImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 5), 1, &OpDispatchBuilder::SHRImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 7), 1, &OpDispatchBuilder::ASHRImmediateOp}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0), 1, &OpDispatchBuilder::ROLOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1), 1, &OpDispatchBuilder::ROROp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0), 1, &OpDispatchBuilder::ROLOp<true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1), 1, &OpDispatchBuilder::ROROp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 4), 1, &OpDispatchBuilder::SHLOp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 5), 1, &OpDispatchBuilder::SHROp<true>}, // 1Bit SHR
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 7), 1, &OpDispatchBuilder::ASHROp<true>}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0), 1, &OpDispatchBuilder::ROLOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1), 1, &OpDispatchBuilder::ROROp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0), 1, &OpDispatchBuilder::ROLOp<true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1), 1, &OpDispatchBuilder::ROROp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 4), 1, &OpDispatchBuilder::SHLOp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 5), 1, &OpDispatchBuilder::SHROp<true>}, // 1Bit SHR
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 7), 1, &OpDispatchBuilder::ASHROp<true>}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 0), 1, &OpDispatchBuilder::ROLOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 1), 1, &OpDispatchBuilder::ROROp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 0), 1, &OpDispatchBuilder::ROLOp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 1), 1, &OpDispatchBuilder::ROROp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 4), 1, &OpDispatchBuilder::SHLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 5), 1, &OpDispatchBuilder::SHROp<false>}, // SHR by CL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 7), 1, &OpDispatchBuilder::ASHROp<false>}, // SAR
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 0), 1, &OpDispatchBuilder::ROLOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 1), 1, &OpDispatchBuilder::ROROp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 0), 1, &OpDispatchBuilder::ROLOp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 1), 1, &OpDispatchBuilder::ROROp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 4), 1, &OpDispatchBuilder::SHLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 5), 1, &OpDispatchBuilder::SHROp<false>}, // SHR by CL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 7), 1, &OpDispatchBuilder::ASHROp}, // SAR
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 7), 1, &OpDispatchBuilder::ASHROp<false>}, // SAR
 
     // GROUP 3
     {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 0), 1, &OpDispatchBuilder::TESTOp<1>},
@@ -4890,7 +5407,6 @@ void InstallOpcodeHandlers() {
     {0x6F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<4, true>},
 
-    //  XXX: Causing IR interpreter some problems
     {0x74, 1, &OpDispatchBuilder::PCMPEQOp<1>},
     {0x75, 1, &OpDispatchBuilder::PCMPEQOp<2>},
     {0x76, 1, &OpDispatchBuilder::PCMPEQOp<4>},
@@ -4906,10 +5422,8 @@ void InstallOpcodeHandlers() {
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4, true, 0>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8, true, 0>},
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
-    // XXX: Causes LLVM to crash if commented out?
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOp<1>}, // PMOVMSKB
-    // XXX: Untested
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
     {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},

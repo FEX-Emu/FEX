@@ -140,15 +140,23 @@ public:
   void CPUIDOp(OpcodeArgs);
   template<bool SHL1Bit>
   void SHLOp(OpcodeArgs);
+  void SHLImmediateOp(OpcodeArgs);
   template<bool SHR1Bit>
   void SHROp(OpcodeArgs);
+  void SHRImmediateOp(OpcodeArgs);
   void SHLDOp(OpcodeArgs);
+  void SHLDImmediateOp(OpcodeArgs);
   void SHRDOp(OpcodeArgs);
+  void SHRDImmediateOp(OpcodeArgs);
+  template<bool SHR1Bit>
   void ASHROp(OpcodeArgs);
-  template<uint32_t SrcIndex>
+  void ASHRImmediateOp(OpcodeArgs);
+  template<bool Is1Bit>
   void ROROp(OpcodeArgs);
-  template<uint32_t SrcIndex>
+  void RORImmediateOp(OpcodeArgs);
+  template<bool Is1Bit>
   void ROLOp(OpcodeArgs);
+  void ROLImmediateOp(OpcodeArgs);
   template<uint32_t SrcIndex>
   void BTOp(OpcodeArgs);
   template<uint32_t SrcIndex>
@@ -706,8 +714,16 @@ private:
   void GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *High);
   void GenerateFlags_UMUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *High);
   void GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void GenerateFlags_Shift(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void GenerateFlags_Rotate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void GenerateFlags_ShiftRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void GenerateFlags_SignShiftRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void GenerateFlags_RotateRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void GenerateFlags_RotateLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void GenerateFlags_RotateRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void GenerateFlags_RotateLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
 
   OrderedNode * GetX87Top();
   void SetX87Top(OrderedNode *Value);

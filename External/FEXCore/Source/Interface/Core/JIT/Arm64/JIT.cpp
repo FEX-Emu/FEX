@@ -1055,21 +1055,23 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         switch (OpSize) {
         case 1: {
+          movz(TMP1, 8);
+          sub(TMP1.W(), TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+
           mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
           bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 8, 8);
           bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 16, 8);
           bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 24, 8);
-          movz(TMP1, 8);
-          sub(TMP1.W(), TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
           rorv(GetDst<RA_32>(Node), GetDst<RA_32>(Node), TMP1.W());
           and_(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 0xFF);
           break;
         }
         case 2: {
-          mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
-          bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 16, 16);
           movz(TMP1, 16);
           sub(TMP1.W(), TMP1.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+
+          mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bfi(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 16, 16);
           rorv(GetDst<RA_32>(Node), GetDst<RA_32>(Node), TMP1.W());
           and_(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 0xFFFF);
           break;
