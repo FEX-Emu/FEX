@@ -5445,6 +5445,7 @@ void InstallOpcodeHandlers() {
     {0xF9, 1, &OpDispatchBuilder::PSUBQOp<2>},
     {0xFA, 1, &OpDispatchBuilder::PSUBQOp<4>},
     {0xFB, 1, &OpDispatchBuilder::PSUBQOp<8>},
+    {0xFC, 1, &OpDispatchBuilder::PADDQOp<1>},
     {0xFD, 1, &OpDispatchBuilder::PADDQOp<2>},
     {0xFE, 1, &OpDispatchBuilder::PADDQOp<4>},
   };
