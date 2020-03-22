@@ -53,11 +53,13 @@ enum Syscalls {
   SYSCALL_GETPID          = 39,  ///< __NR_getpid
   SYSCALL_SOCKET          = 41,  ///< __NR_socket
   SYSCALL_CONNECT         = 42,  ///< __NR_connect
+  SYSCALL_SENDTO          = 44,  ///< __NR_sendto
   SYSCALL_RECVFROM        = 45,  ///< __NR_recvfrom
   SYSCALL_SENDMSG         = 46,  ///< __NR_sendmsg
   SYSCALL_RECVMSG         = 47,  ///< __NR_recvmsg
   SYSCALL_SHUTDOWN        = 48,  ///< __NR_shutdown
   SYSCALL_BIND            = 49,  ///< __NR_bind
+  SYSCALL_LISTEN          = 50,  ///< __NR_listen
   SYSCALL_GETSOCKNAME     = 51,  ///< __NR_getsockname
   SYSCALL_GETPEERNAME     = 52,  ///< __NR_getpeername
   SYSCALL_SETSOCKOPT      = 54,  ///< __NR_setsockopt
@@ -72,10 +74,13 @@ enum Syscalls {
   SYSCALL_FTRUNCATE       = 77,  ///< __NR_ftruncate
   SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
   SYSCALL_CHDIR           = 80,  ///< __NR_chdir
+  SYSCALL_RENAME          = 82,  ///< __NR_rename
   SYSCALL_MKDIR           = 83,  ///< __NR_mkdir
   SYSCALL_RMDIR           = 84,  ///< __NR_rmdir
+  SYSCALL_LINK            = 86,  ///< __NR_link
   SYSCALL_UNLINK          = 87,  ///< __NR_unlink
   SYSCALL_READLINK        = 89,  ///< __NR_readlink
+  SYSCALL_CHMOD           = 90,  ///< __NR_chmod
   SYSCALL_UMASK           = 95,  ///< __NR_umask
   SYSCALL_GETTIMEOFDAY    = 96,  ///< __NR_gettimeofday
   SYSCALL_SYSINFO         = 99,  ///< __NR_sysinfo
@@ -89,6 +94,7 @@ enum Syscalls {
   SYSCALL_SETRESUID       = 117, ///< __NR_setresuid
   SYSCALL_GETRESUID       = 118, ///< __NR_getresuid
   SYSCALL_SETRESGID       = 119, ///< __NR_setresgid
+  SYSCALL_GETRESGID       = 120, ///< __NR_getresgid
   SYSCALL_SIGALTSTACK     = 131, ///< __NR_sigaltstack
   SYSCALL_MKNOD           = 133, ///< __NR_mknod
   SYSCALL_STATFS          = 137, ///< __NR_statfs
@@ -107,6 +113,7 @@ enum Syscalls {
   SYSCALL_CLOCK_GETTIME   = 228, ///< __NR_clock_gettime
   SYSCALL_CLOCK_GETRES    = 229, ///< __NR_clock_getres
   SYSCALL_EXIT_GROUP      = 231, ///< __NR_exit_group
+  SYSCALL_EPOLL_CTL       = 233, ///< __NR_epoll_ctl
   SYSCALL_TGKILL          = 234, ///< __NR_tgkill
   SYSCALL_GET_MEMPOLICY   = 239, ///< __NR_get_mempolicy
   SYSCALL_OPENAT          = 257, ///< __NR_openat
@@ -114,6 +121,7 @@ enum Syscalls {
   SYSCALL_READLINKAT      = 267, ///< __NR_readlinkat
   SYSCALL_FACCESSAT       = 269, ///< __NR_faccessat
   SYSCALL_SET_ROBUST_LIST = 273, ///< __NR_set_robust_list
+  SYSCALL_EPOLL_PWAIT     = 281, ///< __NR_epoll_pwait
   SYSCALL_TIMERFD_CREATE  = 283, ///< __NR_timerfd_create
   SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
   SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1

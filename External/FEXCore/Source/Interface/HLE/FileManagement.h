@@ -79,6 +79,7 @@ public:
   uint64_t Pipe(int pipefd[2]);
   uint64_t Pipe2(int pipefd[2], int flags);
   uint64_t Readlink(const char *pathname, char *buf, size_t bufsiz);
+  uint64_t Chmod(const char *pathname, mode_t mode);
   uint64_t NewFStatAt(int dirfd, const char *pathname, struct stat *buf, int flag);
   uint64_t Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz);
   uint64_t Openat(int dirfs, const char *pathname, int flags, uint32_t mode);
@@ -91,6 +92,8 @@ public:
 
   // EPoll
   uint64_t EPoll_Create1(int flags);
+  uint64_t EPoll_Ctl(int epfd, int op, int fd, void *event);
+  uint64_t EPoll_Pwait(int epfd, void *events, int maxevent, int timeout, const void* sigmask);
 
   // vfs
   uint64_t Statfs(const char *path, void *buf);
@@ -102,11 +105,13 @@ public:
   // Sockets
   uint64_t Socket(int domain, int type, int protocol);
   uint64_t Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+  uint64_t Sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
   uint64_t Recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
   uint64_t Sendmsg(int sockfd, const struct msghdr *msg, int flags);
   uint64_t Recvmsg(int sockfd, struct msghdr *msg, int flags);
   uint64_t Shutdown(int sockfd, int how);
   uint64_t Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+  uint64_t Listen(int sockfd, int backlog);
   uint64_t GetSockName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
   uint64_t GetPeerName(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
   uint64_t SetSockOpt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
