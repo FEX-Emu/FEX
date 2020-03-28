@@ -173,6 +173,8 @@ public:
   void CMPSOp(OpcodeArgs);
   void SCASOp(OpcodeArgs);
   void BSWAPOp(OpcodeArgs);
+  void PUSHFOp(OpcodeArgs);
+  void POPFOp(OpcodeArgs);
 
   void RDTSCOp(OpcodeArgs);
   void INCOp(OpcodeArgs);

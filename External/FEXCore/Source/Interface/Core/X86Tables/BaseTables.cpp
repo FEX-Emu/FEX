@@ -143,8 +143,8 @@ void InitializeBaseTables() {
 
     // These three are all X87 instructions
     {0x9B, 1, X86InstInfo{"FWAIT",  TYPE_INVALID, FLAGS_NONE,                           0, nullptr}},
-    {0x9C, 1, X86InstInfo{"PUSHF",  TYPE_INVALID, GenFlagsSameSize(SIZE_64BITDEF),      0, nullptr}},
-    {0x9D, 1, X86InstInfo{"POPF",   TYPE_INVALID, GenFlagsSameSize(SIZE_64BITDEF),      0, nullptr}},
+    {0x9C, 1, X86InstInfo{"PUSHF",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF),         0, nullptr}},
+    {0x9D, 1, X86InstInfo{"POPF",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF),         0, nullptr}},
 
     {0x9E, 1, X86InstInfo{"SAHF",   TYPE_INST, FLAGS_NONE,                              0, nullptr}},
     {0x9F, 1, X86InstInfo{"LAHF",   TYPE_INST, FLAGS_NONE,                              0, nullptr}},
