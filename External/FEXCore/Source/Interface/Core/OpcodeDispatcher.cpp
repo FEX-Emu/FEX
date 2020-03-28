@@ -5067,25 +5067,35 @@ void OpDispatchBuilder::PMULLOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode* Srcs1[2]{};
-  OrderedNode* Srcs2[2]{};
-
-  Srcs1[0] = _VExtr(Size, ElementSize, Src1, Src1, 0);
-  Srcs1[1] = _VExtr(Size, ElementSize, Src1, Src1, 2);
-
-  Srcs2[0] = _VExtr(Size, ElementSize, Src2, Src2, 0);
-  Srcs2[1] = _VExtr(Size, ElementSize, Src2, Src2, 2);
-
-  Src1 = _VInsElement(Size, ElementSize, 1, 0, Srcs1[0], Srcs1[1]);
-  Src2 = _VInsElement(Size, ElementSize, 1, 0, Srcs2[0], Srcs2[1]);
-
   OrderedNode *Res{};
-  if (Signed) {
-    Res = _VSMull(Size, ElementSize, Src1, Src2);
+
+  if (Size == 8) {
+    if (Signed) {
+      Res = _VSMull(16, ElementSize, Src1, Src2);
+    }
+    else {
+      Res = _VUMull(16, ElementSize, Src1, Src2);
+    }
   }
   else {
-    Res = _VUMull(Size, ElementSize, Src1, Src2);
+    OrderedNode* Srcs1[2]{};
+    OrderedNode* Srcs2[2]{};
 
+    Srcs1[0] = _VExtr(Size, ElementSize, Src1, Src1, 0);
+    Srcs1[1] = _VExtr(Size, ElementSize, Src1, Src1, 2);
+
+    Srcs2[0] = _VExtr(Size, ElementSize, Src2, Src2, 0);
+    Srcs2[1] = _VExtr(Size, ElementSize, Src2, Src2, 2);
+
+    Src1 = _VInsElement(Size, ElementSize, 1, 0, Srcs1[0], Srcs1[1]);
+    Src2 = _VInsElement(Size, ElementSize, 1, 0, Srcs2[0], Srcs2[1]);
+
+    if (Signed) {
+      Res = _VSMull(Size, ElementSize, Src1, Src2);
+    }
+    else {
+      Res = _VUMull(Size, ElementSize, Src1, Src2);
+    }
   }
   StoreResult(FPRClass, Op, Res, -1);
 }
