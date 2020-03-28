@@ -708,6 +708,16 @@
       ]
     },
 
+    "VAddP": {
+      "Desc": "Does a horizontal pairwise add of elements across the two source vectors",
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VFAdd": {
       "HasDest": true,
       "SSAArgs": "2",
@@ -1080,13 +1090,52 @@
       ]
     },
 
+    "VUShrNI": {
+      "Desc": "Unsigned shifts right each element and then narrows to the next lower element size",
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "BitShift"
+      ]
+    },
+
+    "VUShrNI2": {
+      "Desc": ["Unsigned shifts right each element and then narrows to the next lower element size",
+               "Inserts results in to the high elements of the first argument"
+              ],
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize",
+        "uint8_t", "BitShift"
+      ]
+    },
+
     "VBitcast": {
       "HasDest": true,
       "SSAArgs": "1"
     },
 
     "VSXTL": {
+      "Desc": "Sign extends elements from the source element size to the next size up",
       "HasDest": true,
+      "DestSize": "RegisterSize",
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSXTL2": {
+      "Desc": ["Sign extends elements from the source element size to the next size up",
+               "Source elements come from the upper 64bits of the register"
+              ],
+      "HasDest": true,
+      "DestSize": "RegisterSize",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1095,6 +1144,19 @@
     },
 
     "VUXTL": {
+      "Desc": "Zero extends elements from the source element size to the next size up",
+      "HasDest": true,
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUXTL2": {
+      "Desc": ["Zero extends elements from the source element size to the next size up",
+               "Source elements come from the upper 64bits of the register"
+              ],
       "HasDest": true,
       "SSAArgs": "1",
       "Args": [
@@ -1255,6 +1317,26 @@
     },
 
     "VSMull": {
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUMull2": {
+      "Dest": "Multiplies the high elements with size extension",
+      "HasDest": true,
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VSMull2": {
+      "Dest": "Multiplies the high elements with size extension",
       "HasDest": true,
       "SSAArgs": "2",
       "Args": [
