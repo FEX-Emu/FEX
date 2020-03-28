@@ -3178,7 +3178,10 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     Src = _Constant(Operand.TypeLiteral.Size * 8, Operand.TypeLiteral.Literal);
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
+    if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_MM_0) {
+      Src = _LoadContext(OpSize, offsetof(FEXCore::Core::CPUState, mm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_MM_0]), FPRClass);
+    }
+    else if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
       Src = _LoadContext(OpSize, offsetof(FEXCore::Core::CPUState, xmm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][Operand.TypeGPR.HighBits ? 1 : 0]), FPRClass);
     }
     else {
@@ -3283,7 +3286,10 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     MemStore = true; // Literals are ONLY hardcoded memory destinations
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
+    if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_MM_0) {
+      _StoreContext(Src, OpSize, offsetof(FEXCore::Core::CPUState, mm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_MM_0]), Class);
+    }
+    else if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
       _StoreContext(Src, OpSize, offsetof(FEXCore::Core::CPUState, xmm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][Operand.TypeGPR.HighBits ? 1 : 0]), Class);
     }
     else {
