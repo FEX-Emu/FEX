@@ -28,6 +28,10 @@ using DestMapType = std::unordered_map<uint64_t, llvm::Value*>;
 using DestMapType = std::vector<llvm::Value*>;
 #endif
 
+#if defined(_M_ARM_64) && defined(_M_X86_64)
+#define AARCH64_ON_X86
+#endif
+
 namespace FEXCore::CPU {
 
 static void CPUIDRun_Thunk(CPUIDEmu::FunctionResults *Results, FEXCore::CPUIDEmu *Class, uint32_t Function) {
@@ -38,7 +42,7 @@ static void SetExitState_Thunk(FEXCore::Core::InternalThreadState *Thread) {
   Thread->State.RunningEvents.ShouldStop = true;
 }
 
-#ifdef _M_ARM_64
+#if defined(_M_ARM_64) && !defined(AARCH64_ON_X86)
 static uint64_t AArch64ReadCycleCounter() {
   uint64_t res{};
   asm ("mrs %0, CNTVCT_EL0"
@@ -94,7 +98,7 @@ private:
     llvm::Function *CPUIDFunction;
     llvm::Function *ExitVMFunction;
     llvm::Function *ValuePrinter;
-#ifdef _M_ARM_64
+#if defined(_M_ARM_64) && !defined(AARCH64_ON_X86)
     llvm::Function *AArch64ReadCycleCounterFunction;
 #endif
 
@@ -152,6 +156,332 @@ private:
     };
 
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::ctlz, ArgTypes, Args);
+  }
+
+
+  llvm::Value *VSQXTN_64(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
+    llvm::Value *Result{};
+#ifdef _M_X86_64
+    Arg = CastVectorToType(Arg, true, 16, ElementSize);
+    RegisterSize <<= 1;
+
+    uint8_t DestNumElements = RegisterSize / (ElementSize >> 1);
+    uint8_t DestElementSize = ElementSize >> 1;
+
+    std::vector<uint32_t> VectorMaskConstant;
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          0, 1, 2, 3, // First 8 bytes from high result of source
+        };
+        break;
+      case 4:
+        VectorMaskConstant = {
+          0, 1, // First 4 16bits from high result of source
+        };
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN size: %d", ElementSize); break;
+    }
+
+    std::vector<llvm::Type*> ArgTypes = {
+    };
+
+    std::vector<llvm::Value*> Args = {
+      Arg,
+      llvm::UndefValue::get(Arg->getType()),
+    };
+
+    switch (ElementSize) {
+      case 2:
+        Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::x86_sse2_packsswb_128, ArgTypes, Args);
+        break;
+      case 4:
+        Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::x86_sse2_packssdw_128, ArgTypes, Args);
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN size: %d", ElementSize); break;
+    }
+    // We now need to shuffle the vectors
+    // We want the top 64bits to be zero
+    // The lower 64bits being the results we desire
+    auto ZeroVector = JITState.IRBuilder->CreateVectorSplat(DestNumElements, JITState.IRBuilder->getIntN(DestElementSize * 8, 0));
+
+    Result = JITState.IRBuilder->CreateShuffleVector(Result, ZeroVector, VectorMaskConstant);
+#elif _M_ARM_64
+    Arg = CastVectorToType(Arg, true, 16, ElementSize);
+    RegisterSize <<= 1;
+
+    std::vector<llvm::Type*> ArgTypes = {
+      llvm::VectorType::get(llvm::Type::getIntNTy(*Con, (ElementSize >> 1) * 8), RegisterSize / ElementSize),
+    };
+
+    std::vector<llvm::Value*> Args = {
+      Arg,
+    };
+
+    Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::aarch64_neon_sqxtn, ArgTypes, Args);
+
+#else
+    static_assert(false, "Unhandle intrinsic");
+#endif
+
+    return Result;
+  }
+
+  llvm::Value *VSQXTN2_64(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
+    std::vector<uint32_t> VectorMaskConstant;
+
+#ifdef _M_X86_64
+    // x86 handles the incoming lower register as a full 128bit, cast it back to ensure LLVM doesn't throw up
+    // We don't care about the upper bits anyway
+    ArgLower = CastVectorToType(ArgLower, true, RegisterSize >> 1, ElementSize >> 1);
+
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          0, 1, 2, 3, 4, 5, 6, 7,
+        };
+        break;
+      case 4:
+        VectorMaskConstant = {
+          0, 1, 2, 3,
+        };
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN2 size: %d", ElementSize); break;
+    }
+#else
+    ArgLower = CastVectorToType(ArgLower, true, RegisterSize, ElementSize >> 1);
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          0, 1, 2, 3, 8, 9, 10, 11,
+        };
+        break;
+      case 4:
+        VectorMaskConstant = {
+          0, 1, 4, 5,
+        };
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN2 size: %d", ElementSize); break;
+    }
+#endif
+
+    // Convert our upper args
+    ArgUpper = VSQXTN_64(ArgUpper, RegisterSize, ElementSize);
+
+    // This will convert to VSQXTN2 in AArch64
+    return JITState.IRBuilder->CreateShuffleVector(ArgLower, ArgUpper, VectorMaskConstant);
+  }
+
+  llvm::Value *VSQXTUN_64(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
+    llvm::Value *Result{};
+#ifdef _M_X86_64
+    // Incoming source is a 64bit register
+    // We want to still pass it through SSE and NEON's 128bit implementation and ignore the upper 64bits
+    // Cast to the type we want
+    llvm::Value *UndefVector = llvm::UndefValue::get(Arg->getType());
+
+    std::vector<uint32_t> LargeVectorMask;
+    for (uint32_t i = 0; i < (RegisterSize / ElementSize * 2); ++i) {
+      LargeVectorMask.emplace_back(i);
+    }
+    Arg = JITState.IRBuilder->CreateShuffleVector(Arg, UndefVector, LargeVectorMask);
+
+    RegisterSize <<= 1;
+
+    uint8_t DestNumElements = RegisterSize / (ElementSize >> 1);
+    uint8_t DestElementSize = ElementSize >> 1;
+
+    std::vector<uint32_t> VectorMaskConstant;
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          0, 1, 2, 3, // First 8 bytes from high result of source
+        };
+        break;
+      case 4:
+        VectorMaskConstant = {
+          0, 1, // First 4 16bits from high result of source
+        };
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTUN size: %d", ElementSize); break;
+    }
+
+    std::vector<llvm::Type*> ArgTypes = {
+    };
+
+    std::vector<llvm::Value*> Args = {
+      Arg,
+      llvm::UndefValue::get(Arg->getType()),
+    };
+
+    switch (ElementSize) {
+      case 2:
+        Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::x86_sse2_packuswb_128, ArgTypes, Args);
+        break;
+      case 4:
+        Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::x86_sse41_packusdw, ArgTypes, Args);
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN size: %d", ElementSize); break;
+    }
+    // We now need to shuffle the vectors
+    // We want the top 64bits to be zero
+    // The lower 64bits being the results we desire
+    auto ZeroVector = JITState.IRBuilder->CreateVectorSplat(DestNumElements, JITState.IRBuilder->getIntN(DestElementSize * 8, 0));
+
+    Result = JITState.IRBuilder->CreateShuffleVector(Result, ZeroVector, VectorMaskConstant);
+#elif _M_ARM_64
+    Arg = CastVectorToType(Arg, true, 16, ElementSize);
+    RegisterSize <<= 1;
+
+    std::vector<llvm::Type*> ArgTypes = {
+      llvm::VectorType::get(llvm::Type::getIntNTy(*Con, (ElementSize >> 1) * 8), RegisterSize / ElementSize),
+    };
+
+    std::vector<llvm::Value*> Args = {
+      Arg,
+    };
+
+    Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::aarch64_neon_sqxtun, ArgTypes, Args);
+
+#else
+    static_assert(false, "Unhandle intrinsic");
+#endif
+
+    return Result;
+  }
+
+  llvm::Value *VSQXTUN2_64(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
+    std::vector<uint32_t> VectorMaskConstant;
+
+#ifdef _M_X86_64
+    // x86 handles the incoming lower register as a full 128bit, cast it back to ensure LLVM doesn't throw up
+    // We don't care about the upper bits anyway
+    ArgLower = CastVectorToType(ArgLower, true, RegisterSize >> 1, ElementSize >> 1);
+
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          0, 1, 2, 3, 4, 5, 6, 7,
+        };
+        break;
+      case 4:
+        VectorMaskConstant = {
+          0, 1, 2, 3,
+        };
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN2 size: %d", ElementSize); break;
+    }
+#else
+    ArgLower = CastVectorToType(ArgLower, true, RegisterSize, ElementSize >> 1);
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          0, 1, 2, 3, 8, 9, 10, 11,
+        };
+        break;
+      case 4:
+        VectorMaskConstant = {
+          0, 1, 4, 5,
+        };
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN2 size: %d", ElementSize); break;
+    }
+#endif
+    // Convert our upper args
+    ArgUpper = VSQXTUN_64(ArgUpper, RegisterSize, ElementSize);
+
+    // This will convert to VSQXTN2 in AArch64
+    return JITState.IRBuilder->CreateShuffleVector(ArgLower, ArgUpper, VectorMaskConstant);
+  }
+
+  llvm::Value *VSQXTN(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
+#ifdef _M_X86_64
+    std::vector<llvm::Type*> ArgTypes = {
+    };
+
+    std::vector<llvm::Value*> Args = {
+      llvm::UndefValue::get(Arg->getType()),
+      Arg,
+    };
+
+    uint8_t DestNumElements = RegisterSize / (ElementSize >> 1);
+    uint8_t DestElementSize = ElementSize >> 1;
+
+    llvm::Value *Result{};
+    std::vector<uint32_t> VectorMaskConstant;
+
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          8, 9, 10, 11, 12, 13, 14, 15, // First 8 bytes from high result of source
+          16, 17, 18, 19, 20, 21, 22, 23, // Second 8 bytes from the zero vector
+        };
+        Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::x86_sse2_packsswb_128, ArgTypes, Args);
+        break;
+      case 4:
+        VectorMaskConstant = {
+          4, 5, 6, 7, // First 4 16bits from high result of source
+          8, 9, 10, 11, // Second 8 16bits from the zero vector
+        };
+
+        Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::x86_sse2_packssdw_128, ArgTypes, Args);
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN size: %d", ElementSize); break;
+    }
+
+    // We now need to shuffle the vectors
+    // We want the top 64bits to be zero
+    // The lower 64bits being the results we desire
+    auto ZeroVector = JITState.IRBuilder->CreateVectorSplat(DestNumElements, JITState.IRBuilder->getIntN(DestElementSize * 8, 0));
+
+    Result = JITState.IRBuilder->CreateShuffleVector(Result, ZeroVector, VectorMaskConstant);
+
+#elif _M_ARM_64
+    std::vector<llvm::Type*> ArgTypes = {
+      llvm::VectorType::get(llvm::Type::getIntNTy(*Con, (ElementSize >> 1) * 8), RegisterSize / ElementSize),
+    };
+
+    std::vector<llvm::Value*> Args = {
+      Arg,
+    };
+
+    auto Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::aarch64_neon_sqxtn, ArgTypes, Args);
+#else
+    static_assert(false, "Unhandle intrinsic");
+#endif
+
+    return Result;
+  }
+
+  llvm::Value *VSQXTN2(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
+#ifdef _M_X86_64
+    // x86 handles the incoming lower register as a full 128bit, cast it back to ensure LLVM doesn't throw up
+    // We don't care about the upper bits anyway
+    ArgLower = CastVectorToType(ArgLower, true, RegisterSize, ElementSize >> 1);
+#endif
+    // Convert our upper args
+    ArgUpper = VSQXTN(ArgUpper, RegisterSize, ElementSize);
+
+    std::vector<uint32_t> VectorMaskConstant;
+
+    switch (ElementSize) {
+      case 2:
+        VectorMaskConstant = {
+          0, 1, 2, 3, 4, 5, 6, 7,
+          16, 17, 18, 19, 20, 21, 22, 23
+        };
+        break;
+      case 4:
+        VectorMaskConstant = {
+          0, 1, 2, 3,
+          8, 9, 10, 11
+        };
+        break;
+      default: LogMan::Msg::A("Unhandled VSQXTN2 size: %d", ElementSize); break;
+    }
+
+    // This will convert to VSQXTN2 in AArch64
+    return JITState.IRBuilder->CreateShuffleVector(ArgLower, ArgUpper, VectorMaskConstant);
   }
 
   llvm::Value *VSQXTUN(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
@@ -212,6 +542,7 @@ private:
 
     return Result;
   }
+
   llvm::Value *VSQXTUN2(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
 #ifdef _M_X86_64
     // x86 handles the incoming lower register as a full 128bit, cast it back to ensure LLVM doesn't throw up
@@ -241,6 +572,47 @@ private:
 
     // This will convert to VSQXTUN2 in AArch64
     return JITState.IRBuilder->CreateShuffleVector(ArgLower, ArgUpper, VectorMaskConstant);
+  }
+
+  llvm::Value *VADDP(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
+#ifdef _M_X86_64
+    // Will generate VPHADD
+    uint8_t NumElements = RegisterSize / ElementSize;
+    std::vector<llvm::Value*> Values;
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Values.emplace_back(JITState.IRBuilder->CreateExtractElement(ArgLower, i));;
+    }
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Values.emplace_back(JITState.IRBuilder->CreateExtractElement(ArgUpper, i));;
+    }
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Values[i] = JITState.IRBuilder->CreateAdd(Values[i*2], Values[i*2+1]);
+    }
+    // Cast to the type we want
+    llvm::Value *Result = llvm::UndefValue::get(ArgLower->getType());
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Result = JITState.IRBuilder->CreateInsertElement(Result, Values[i], i);
+    }
+#elif _M_ARM_64
+    // AArch64 doesn't seem to generate addp through the normal method
+    std::vector<llvm::Type*> ArgTypes = {
+      ArgLower->getType(),
+    };
+
+    std::vector<llvm::Value*> Args = {
+      ArgLower, ArgUpper,
+    };
+
+    auto Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::aarch64_neon_addp, ArgTypes, Args);
+#else
+    static_assert(false, "Unhandle intrinsic");
+#endif
+
+    return Result;
   }
 
   llvm::CallInst *FSHL(llvm::Value *Val, llvm::Value *Val2, llvm::Value *Amt) {
@@ -314,6 +686,29 @@ private:
     };
 
     return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::ssub_sat, ArgTypes, Args);
+  }
+
+  llvm::CallInst *UQADD(llvm::Value *Arg1, llvm::Value *Arg2) {
+    std::vector<llvm::Type*> ArgTypes = {
+      Arg1->getType(),
+    };
+    std::vector<llvm::Value*> Args = {
+      Arg1,
+      Arg2,
+    };
+
+    return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::uadd_sat, ArgTypes, Args);
+  }
+  llvm::CallInst *UQSUB(llvm::Value *Arg1, llvm::Value *Arg2) {
+    std::vector<llvm::Type*> ArgTypes = {
+      Arg1->getType(),
+    };
+    std::vector<llvm::Value*> Args = {
+      Arg1,
+      Arg2,
+    };
+
+    return JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::usub_sat, ArgTypes, Args);
   }
 
   void CreateDebugPrint(llvm::Value *Val) {
@@ -524,7 +919,7 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
     Engine->addGlobalMapping(JITCurrentState.CPUIDFunction, Ptr.Data);
   }
 
-#ifdef _M_ARM_64
+#if defined(_M_ARM_64) && !defined(AARCH64_ON_X86)
   // AArch64ReadCycleCounter Function
   {
     auto FuncType = FunctionType::get(i64,
@@ -913,6 +1308,7 @@ llvm::Value *LLVMJITCore::CreateIndexedContextPtr(llvm::Value *Index, uint64_t O
 }
 
 llvm::Value *LLVMJITCore::CastVectorToType(llvm::Value *Arg, bool Integer, uint8_t RegisterSize, uint8_t ElementSize) {
+  uint8_t DestSizeInBits = RegisterSize * ElementSize * 8;
   uint8_t NumElements = RegisterSize / ElementSize;
   llvm::Type *ElementType;
   if (Integer) {
@@ -928,15 +1324,28 @@ llvm::Value *LLVMJITCore::CastVectorToType(llvm::Value *Arg, bool Integer, uint8
   }
 
   llvm::Type *VectorType = llvm::VectorType::get(ElementType, NumElements);
+  auto SrcType = Arg->getType();
 
-  // This happens frequently
-  // If the source argument isn't of vector type then BitCast fails moving from Scalar->Vector domains
-  // Need to create a vector and insert elements in to that vector from the scalar type instead
-	if (!Arg->getType()->isVectorTy()) {
+  // If the source type is not vector(frequent with opaque types) and it matches the destination size then we can just bitcast it
+	if (!SrcType->isVectorTy() && SrcType->getPrimitiveSizeInBits() == DestSizeInBits) {
     return JITState.IRBuilder->CreateBitCast(Arg, VectorType);
-	}
+  }
 
-  return JITState.IRBuilder->CreateBitCast(Arg, VectorType);
+  uint8_t NumSrcElements = SrcType->getPrimitiveSizeInBits() / (ElementSize * 8);
+  llvm::Type *SrcVectorType = llvm::VectorType::get(ElementType, NumSrcElements);
+
+  // First thing we need to cast the argument type to a vector size that is supported by the source type
+  Arg = JITState.IRBuilder->CreateBitCast(Arg, SrcVectorType);
+
+  llvm::Value *Undef = llvm::UndefValue::get(SrcVectorType);
+  std::vector<uint32_t> Mask;
+  // We then need to shuffle the elements to match the size we want
+  // If the destination size is smaller then we can just shuffle the low elements
+  // If our destination is more than the number of source elements then we need to pull in some undef
+  for (uint32_t i = 0; i < NumElements; ++i)
+    Mask.emplace_back(i);
+
+  return JITState.IRBuilder->CreateShuffleVector(Arg, Undef, Mask);
 }
 
 llvm::Value *LLVMJITCore::CastScalarToType(llvm::Value *Arg, bool Integer, uint8_t RegisterSize, uint8_t ElementSize) {
@@ -2003,6 +2412,20 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VADDP: {
+      auto Op = IROp->C<IR::IROp_VAddP>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = VADDP(Src1, Src2, Op->RegisterSize, Op->ElementSize);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
     case IR::OP_VUMUL:
     case IR::OP_VSMUL: {
       auto Op = IROp->C<IR::IROp_VUMul>();
@@ -2042,6 +2465,34 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
 
       auto Result = SQSUB(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VUQADD: {
+      auto Op = IROp->C<IR::IROp_VUQAdd>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = UQADD(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VUQSUB: {
+      auto Op = IROp->C<IR::IROp_VUQSub>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Result = UQSUB(Src1, Src2);
 
       SetDest(*WrapperOp, Result);
       break;
@@ -2091,6 +2542,142 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VSMULL: {
+      auto Op = IROp->C<IR::IROp_VSMull>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 1: {
+          std::vector<uint32_t> Mask {0, 1, 2, 3, 4, 5, 6, 7, 8};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 16));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask);
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask);
+          break;
+        }
+        case 2: {
+          std::vector<uint32_t> Mask {0, 1, 2, 3};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 8));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask);
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask);
+          break;
+        }
+        case 4: {
+          std::vector<uint32_t> Mask {0, 2}; // XXX: Why is this 0 and 2? It should be 0 and 1 but llvm "optimizes" the code to 0 and 4 in that case. How does this work?
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 4));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask, "Shuffle1");
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask, "Shuffle2");
+          break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+      }
+
+      auto ElementType = llvm::Type::getIntNTy(*Con, Op->ElementSize * 8 * 2);
+      llvm::Type *VectorType = llvm::VectorType::get(ElementType, Op->RegisterSize / Op->ElementSize / 2);
+
+      Src1 = JITState.IRBuilder->CreateSExt(Src1, VectorType);
+      Src2 = JITState.IRBuilder->CreateSExt(Src2, VectorType);
+
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VUMULL2: {
+      auto Op = IROp->C<IR::IROp_VUMull2>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 1: {
+          std::vector<uint32_t> Mask {9, 10, 11, 12, 13, 14, 15};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 16));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask);
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask);
+          break;
+        }
+        case 2: {
+          std::vector<uint32_t> Mask {4, 5, 6, 7};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 8));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask);
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask);
+          break;
+        }
+        case 4: {
+          std::vector<uint32_t> Mask {2, 3};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 4));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask, "Shuffle1");
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask, "Shuffle2");
+          break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+      }
+
+      auto ElementType = llvm::Type::getIntNTy(*Con, Op->ElementSize * 8 * 2);
+      llvm::Type *VectorType = llvm::VectorType::get(ElementType, Op->RegisterSize / Op->ElementSize / 2);
+
+      Src1 = JITState.IRBuilder->CreateZExt(Src1, VectorType);
+      Src2 = JITState.IRBuilder->CreateZExt(Src2, VectorType);
+
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSMULL2: {
+      auto Op = IROp->C<IR::IROp_VSMull2>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      switch (Op->ElementSize) {
+        case 1: {
+          std::vector<uint32_t> Mask {9, 10, 11, 12, 13, 14, 15};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 16));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask);
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask);
+          break;
+        }
+        case 2: {
+          std::vector<uint32_t> Mask {4, 5, 6, 7};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 8));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask);
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask);
+          break;
+        }
+        case 4: {
+          std::vector<uint32_t> Mask {2, 3};
+          Value *Undef = UndefValue::get(VectorType::get(Src1->getType()->getVectorElementType(), 4));
+          Src1 = JITState.IRBuilder->CreateShuffleVector(Src1, Undef, Mask, "Shuffle1");
+          Src2 = JITState.IRBuilder->CreateShuffleVector(Src2, Undef, Mask, "Shuffle2");
+          break;
+        }
+        default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+      }
+
+      auto ElementType = llvm::Type::getIntNTy(*Con, Op->ElementSize * 8 * 2);
+      llvm::Type *VectorType = llvm::VectorType::get(ElementType, Op->RegisterSize / Op->ElementSize / 2);
+
+      Src1 = JITState.IRBuilder->CreateSExt(Src1, VectorType);
+      Src2 = JITState.IRBuilder->CreateSExt(Src2, VectorType);
+
+      auto Result = JITState.IRBuilder->CreateMul(Src1, Src2);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+
     case IR::OP_VNOT: {
       auto Op = IROp->C<IR::IROp_VNot>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -2227,6 +2814,44 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_VSQXTN: {
+      auto Op = IROp->C<IR::IROp_VSQXTN>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      llvm::Value *Result{};
+      if (Op->RegisterSize == 8) {
+        Result = VSQXTN_64(Src, Op->RegisterSize, Op->ElementSize);
+      }
+      else {
+        Result = VSQXTN(Src, Op->RegisterSize, Op->ElementSize);
+      }
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSQXTN2: {
+      auto Op = IROp->C<IR::IROp_VSQXTN2>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize >> 1);
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      llvm::Value *Result{};
+      if (Op->RegisterSize == 8) {
+        Result = VSQXTN2_64(Src1, Src2, Op->RegisterSize, Op->ElementSize);
+      }
+      else {
+        Result = VSQXTN2(Src1, Src2, Op->RegisterSize, Op->ElementSize);
+      }
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_VSQXTUN: {
       auto Op = IROp->C<IR::IROp_VSQXTUN>();
       auto Src = GetSrc(Op->Header.Args[0]);
@@ -2234,7 +2859,13 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Cast to the type we want
       Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
 
-      auto Result = VSQXTUN(Src, Op->RegisterSize, Op->ElementSize);
+      llvm::Value *Result{};
+      if (Op->RegisterSize == 8) {
+        Result = VSQXTUN_64(Src, Op->RegisterSize, Op->ElementSize);
+      }
+      else {
+        Result = VSQXTUN(Src, Op->RegisterSize, Op->ElementSize);
+      }
 
       SetDest(*WrapperOp, Result);
       break;
@@ -2245,10 +2876,16 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src2 = GetSrc(Op->Header.Args[1]);
 
       // Cast to the type we want
-      Src1 = CastVectorToType(Src1, true, Op->RegisterSize >> 1, Op->ElementSize >> 1);
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize >> 1);
       Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
 
-      auto Result = VSQXTUN2(Src1, Src2, Op->RegisterSize, Op->ElementSize);
+      llvm::Value *Result{};
+      if (Op->RegisterSize == 8) {
+        Result = VSQXTUN2_64(Src1, Src2, Op->RegisterSize, Op->ElementSize);
+      }
+      else {
+        Result = VSQXTUN2(Src1, Src2, Op->RegisterSize, Op->ElementSize);
+      }
 
       SetDest(*WrapperOp, Result);
       break;
@@ -2282,6 +2919,10 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
       auto Result = JITState.IRBuilder->CreateShl(Src1, Src2);
 
+      // Ensure we shift out to zero if the shift is > element size
+      auto Cmp = JITState.IRBuilder->CreateICmpUGT(Src2, JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, Op->ElementSize * 8 - 1)));
+      Result = JITState.IRBuilder->CreateSelect(Cmp, JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, 0)), Result);
+
       SetDest(*WrapperOp, Result);
     break;
     }
@@ -2313,6 +2954,10 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
 
       // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
       auto Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
+
+      // Ensure we shift out to zero if the shift is > element size
+      auto Cmp = JITState.IRBuilder->CreateICmpUGE(Src2, JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, Op->ElementSize * 8)));
+      Result = JITState.IRBuilder->CreateSelect(Cmp, JITState.IRBuilder->CreateVectorSplat(Op->RegisterSize / Op->ElementSize, JITState.IRBuilder->getIntN(Op->ElementSize * 8, 0)), Result);
 
       SetDest(*WrapperOp, Result);
       break;
@@ -2394,6 +3039,52 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
       break;
     }
+    case IR::OP_VUSHRNI: {
+      auto Op = IROp->C<IR::IROp_VUShrNI>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+
+      uint32_t NumElements = Op->RegisterSize / Op->ElementSize;
+      uint8_t ElementSize = Op->ElementSize * 8;
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Src2 = JITState.IRBuilder->CreateVectorSplat(NumElements, JITState.IRBuilder->getIntN(ElementSize, std::min((uint8_t)(ElementSize - 1), Op->BitShift)));
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      llvm::Value *Result = JITState.IRBuilder->CreateLShr(Src1, Src2);
+      Result = JITState.IRBuilder->CreateTrunc(Result, llvm::VectorType::get(llvm::Type::getIntNTy(*Con, ElementSize >> 1), NumElements));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VUSHRNI2: {
+      auto Op = IROp->C<IR::IROp_VUShrNI2>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      uint32_t NumElements = Op->RegisterSize / Op->ElementSize;
+      uint8_t ElementSize = Op->ElementSize * 8;
+
+      // Low source needs to already be in the size we want (Typically from VUSHRNI)
+      Src1 = CastVectorToType(Src1, true, Op->RegisterSize >> 1, Op->ElementSize >> 1);
+      // Cast to the type we want
+      Src2 = CastVectorToType(Src2, true, Op->RegisterSize, Op->ElementSize);
+
+      auto Shift = JITState.IRBuilder->CreateVectorSplat(NumElements, JITState.IRBuilder->getIntN(ElementSize, std::min((uint8_t)(ElementSize - 1), Op->BitShift)));
+
+      // Now we will do a lshr <NumElements x i1> -> <NumElements x ElementSize>
+      llvm::Value *ResultHigh = JITState.IRBuilder->CreateLShr(Src2, Shift);
+      ResultHigh = JITState.IRBuilder->CreateTrunc(ResultHigh, llvm::VectorType::get(llvm::Type::getIntNTy(*Con, ElementSize >> 1), NumElements));
+
+      std::vector<uint32_t> Mask;
+      for (uint32_t i = 0; i < (NumElements * 2); ++i) {
+        Mask.emplace_back(i);
+      }
+      auto Result = JITState.IRBuilder->CreateShuffleVector(Src1, ResultHigh, Mask, "Shuffle1");
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_VSLI: {
       auto Op = IROp->C<IR::IROp_VSLI>();
       auto Src = GetSrc(Op->Header.Args[0]);
@@ -2443,6 +3134,27 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
 
       std::vector<uint32_t> Mask;
       for (uint32_t i = 0; i < DstNumElements; ++i) {
+        Mask.emplace_back(i);
+      }
+      // Shuffle out which elements we actually want
+      Src = JITState.IRBuilder->CreateShuffleVector(Src, Src, Mask);
+      auto Result = JITState.IRBuilder->CreateSExt(Src, TargetType);
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VSXTL2: {
+      auto Op = IROp->C<IR::IROp_VSXTL2>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, Op->RegisterSize, Op->ElementSize);
+
+      uint8_t SrcNumElements = Op->RegisterSize / Op->ElementSize;
+      uint8_t DstNumElements = SrcNumElements / 2;
+      llvm::Type *TargetType = VectorType::get(Type::getIntNTy(*Con, Op->ElementSize * 16), DstNumElements);
+
+      std::vector<uint32_t> Mask;
+      for (uint32_t i = DstNumElements; i < (SrcNumElements); ++i) {
         Mask.emplace_back(i);
       }
       // Shuffle out which elements we actually want
