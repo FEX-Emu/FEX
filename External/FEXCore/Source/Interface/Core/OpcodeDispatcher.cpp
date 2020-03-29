@@ -2345,6 +2345,42 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Dest, -1);
 }
 
+void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
+  uint8_t Size = GetSrcSize(Op);
+  OrderedNode *Src = GetPackedRFLAG(false);
+  if (Size != 8) {
+    Src = _Bfe(Size * 8, 0, Src);
+  }
+
+  auto Constant = _Constant(Size);
+
+  auto OldSP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  auto NewSP = _Sub(OldSP, Constant);
+
+  // Store the new stack pointer
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+
+  // Store our value to the new stack location
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+}
+
+void OpDispatchBuilder::POPFOp(OpcodeArgs) {
+  uint8_t Size = GetSrcSize(Op);
+  auto Constant = _Constant(Size);
+
+  auto OldSP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  auto Src = _LoadMem(GPRClass, Size, OldSP, Size);
+
+  auto NewSP = _Add(OldSP, Constant);
+
+  // Store the new stack pointer
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+
+  SetPackedRFLAG(false, Src);
+}
+
 void OpDispatchBuilder::NEGOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto ZeroConst = _Constant(0);
@@ -5145,6 +5181,8 @@ void InstallOpcodeHandlers() {
 
     {0x98, 1, &OpDispatchBuilder::CDQOp},
     {0x99, 1, &OpDispatchBuilder::CQOOp},
+    {0x9C, 1, &OpDispatchBuilder::PUSHFOp},
+    {0x9D, 1, &OpDispatchBuilder::POPFOp},
     {0x9E, 1, &OpDispatchBuilder::SAHFOp},
     {0x9F, 1, &OpDispatchBuilder::LAHFOp},
     {0xA0, 4, &OpDispatchBuilder::MOVOffsetOp},
