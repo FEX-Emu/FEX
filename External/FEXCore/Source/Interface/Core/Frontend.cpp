@@ -11,7 +11,7 @@
 namespace FEXCore::Frontend {
 using namespace FEXCore::X86Tables;
 
-static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool HasREX, bool HasXMM, uint8_t InvalidOffset = 16) {
+static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool HasREX, bool HasXMM, bool HasMM, uint8_t InvalidOffset = 16) {
   constexpr std::array<uint64_t, 16> GPRIndexes = {
     // Classical ordering?
     FEXCore::X86State::REG_RAX,
@@ -71,9 +71,31 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
     FEXCore::X86State::REG_XMM_15,
   };
 
+  constexpr std::array<uint64_t, 16> MMIndexes = {
+    FEXCore::X86State::REG_MM_0,
+    FEXCore::X86State::REG_MM_1,
+    FEXCore::X86State::REG_MM_2,
+    FEXCore::X86State::REG_MM_3,
+    FEXCore::X86State::REG_MM_4,
+    FEXCore::X86State::REG_MM_5,
+    FEXCore::X86State::REG_MM_6,
+    FEXCore::X86State::REG_MM_7,
+    ~0ULL,
+    ~0ULL,
+    ~0ULL,
+    ~0ULL,
+    ~0ULL,
+    ~0ULL,
+    ~0ULL,
+    ~0ULL
+  };
+
   const std::array<uint64_t, 16> *GPRs = &GPRIndexes;
   if (HasXMM) {
     GPRs = &XMMIndexes;
+  }
+  else if (HasMM) {
+    GPRs = &MMIndexes;
   }
   else if (HighBits && !HasREX) {
     GPRs = &GPR8BitHighIndexes;
@@ -285,8 +307,18 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   bool Is8BitSrc = (DecodeFlags::GetSizeSrcFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
   bool Is8BitDest = (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
   bool HasREX = !!(DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX);
-  bool HasXMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) && !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR);
-  bool HasXMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) && !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR);
+  bool HasXMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_SRC);
+  bool HasXMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
+  bool HasMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
+    HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_SRC);
+  bool HasMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
+    HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
   bool HasHighXMM = HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_HIGH_XMM_REG);
   uint8_t Displacement = 0;
 
@@ -310,7 +342,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     // If there is a REX prefix then that allows extended GPR usage
     CurrentDest->TypeGPR.Type = DecodedOperand::TYPE_GPR;
     DecodeInst->Dest.TypeGPR.HighBits = (Is8BitDest && !HasREX && (Op & 0b111) >= 0b100) || HasHighXMM;
-    CurrentDest->TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, Op & 0b111, Is8BitDest, HasREX, false);
+    CurrentDest->TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, Op & 0b111, Is8BitDest, HasREX, false, false);
   }
 
   if (HasMODRM) {
@@ -336,21 +368,21 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   }
   Bytes += Displacement;
 
-  auto ModRMOperand = [&](FEXCore::X86Tables::DecodedOperand &GPR, FEXCore::X86Tables::DecodedOperand &NonGPR, bool HasXMMGPR, bool HasXMMNonGPR, bool GPR8Bit, bool NonGPR8Bit) {
+  auto ModRMOperand = [&](FEXCore::X86Tables::DecodedOperand &GPR, FEXCore::X86Tables::DecodedOperand &NonGPR, bool HasXMMGPR, bool HasXMMNonGPR, bool HasMMGPR, bool HasMMNonGPR, bool GPR8Bit, bool NonGPR8Bit) {
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
 
     // Decode the GPR source first
     GPR.TypeGPR.Type = DecodedOperand::TYPE_GPR;
     GPR.TypeGPR.HighBits = (GPR8Bit && ModRM.reg >= 0b100 && !HasREX) || HasHighXMM;
-    GPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_R ? 1 : 0, ModRM.reg, GPR8Bit, HasREX, HasXMMGPR);
+    GPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_R ? 1 : 0, ModRM.reg, GPR8Bit, HasREX, HasXMMGPR, HasMMGPR);
 
     // ModRM.mod == 0b11 == Register
     // ModRM.Mod != 0b11 == Register-direct addressing
     if (ModRM.mod == 0b11) {
       NonGPR.TypeGPR.Type = DecodedOperand::TYPE_GPR;
       NonGPR.TypeGPR.HighBits = (NonGPR8Bit && ModRM.rm >= 0b100 && !HasREX) || HasHighXMM;
-      NonGPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, NonGPR8Bit, HasREX, HasXMMNonGPR);
+      NonGPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, NonGPR8Bit, HasREX, HasXMMNonGPR, HasMMNonGPR);
     }
     else {
       if (HasSIB) {
@@ -361,8 +393,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
         NonGPR.TypeSIB.Scale = 1 << SIB.scale;
 
         // The invalid encoding types are described at Table 1-12. "promoted nsigned is always non-zero"
-        NonGPR.TypeSIB.Index = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X ? 1 : 0, SIB.index, false, false, false, 0b100);
-        NonGPR.TypeSIB.Base  = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, SIB.base, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
+        NonGPR.TypeSIB.Index = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X ? 1 : 0, SIB.index, false, false, false, false, 0b100);
+        NonGPR.TypeSIB.Base  = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, SIB.base, false, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
 
         uint64_t Literal {0};
         LogMan::Throw::A(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
@@ -389,7 +421,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
         else {
           // Register-direct addressing
           NonGPR.TypeGPR.Type = DecodedOperand::TYPE_GPR_DIRECT;
-          NonGPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false);
+          NonGPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
         }
       }
       else {
@@ -402,7 +434,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
         Bytes -= DisplacementSize;
 
         NonGPR.TypeGPRIndirect.Type = DecodedOperand::TYPE_GPR_INDIRECT;
-        NonGPR.TypeGPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false);
+        NonGPR.TypeGPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
         NonGPR.TypeGPRIndirect.Displacement = Literal;
       }
     }
@@ -412,10 +444,10 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
 
   if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM) {
     if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_DST) {
-      ModRMOperand(DecodeInst->Src[CurrentSrc], DecodeInst->Dest, HasXMMSrc, HasXMMDst, Is8BitSrc, Is8BitDest);
+      ModRMOperand(DecodeInst->Src[CurrentSrc], DecodeInst->Dest, HasXMMSrc, HasXMMDst, HasMMSrc, HasMMDst, Is8BitSrc, Is8BitDest);
     }
     else {
-      ModRMOperand(DecodeInst->Dest, DecodeInst->Src[CurrentSrc], HasXMMDst, HasXMMSrc, Is8BitDest, Is8BitSrc);
+      ModRMOperand(DecodeInst->Dest, DecodeInst->Src[CurrentSrc], HasXMMDst, HasXMMSrc, HasMMDst, HasMMSrc, Is8BitDest, Is8BitSrc);
     }
     ++CurrentSrc;
   }

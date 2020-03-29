@@ -234,6 +234,9 @@ constexpr uint32_t FLAGS_XMM_FLAGS             = (1 << 10);
   constexpr uint32_t FLAGS_SF_HIGH_XMM_REG       = (1 << 11);
   constexpr uint32_t FLAGS_SF_DST_GPR            = (1 << 12);
   constexpr uint32_t FLAGS_SF_SRC_GPR            = (1 << 13);
+  constexpr uint32_t FLAGS_SF_MMX                = (3 << 14); // MMX_DST | MMX_SRC
+  constexpr uint32_t FLAGS_SF_MMX_DST            = (1 << 14);
+  constexpr uint32_t FLAGS_SF_MMX_SRC            = (1 << 15);
 
 // Enables MODRM specific subflags
 // Current reserved range for this SF is [14, 17]
