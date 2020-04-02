@@ -1936,6 +1936,13 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             break;
           }
+          case IR::OP_VMOV: {
+            auto Op = IROp->C<IR::IROp_VMov>();
+            __uint128_t Src = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+
+            memcpy(GDP, &Src, Op->RegisterSize);
+            break;
+          }
           case IR::OP_VOR: {
             auto Op = IROp->C<IR::IROp_VOr>();
             __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);

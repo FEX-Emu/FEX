@@ -1402,6 +1402,12 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
   FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
   uint8_t OpSize = IROp->Size;
 
+  auto GetArgSize = [&](FEXCore::IR::OrderedNodeWrapper ArgWrapper) {
+    FEXCore::IR::OrderedNode *Arg = ArgWrapper.GetNode(ListBegin);
+    FEXCore::IR::IROp_Header *IROp = Arg->Op(DataBegin);
+    return IROp->Size * std::max((uint8_t)1, IROp->Elements);
+  };
+
   switch (IROp->Op) {
     case IR::OP_ENDBLOCK: {
       auto Op = IROp->C<IR::IROp_EndBlock>();
@@ -2299,6 +2305,24 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Result = JITState.IRBuilder->CreateVectorSplat(4, Src);
       SetDest(*WrapperOp, Result);
     break;
+    }
+    case IR::OP_VMOV: {
+      auto Op = IROp->C<IR::IROp_VMov>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      uint8_t ArgSize = GetArgSize(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastScalarToType(Src, true, ArgSize, ArgSize);
+
+      if (Op->RegisterSize != ArgSize) {
+        auto Result = JITState.IRBuilder->CreateZExt(Src, Type::getIntNTy(*Con, Op->RegisterSize * 8));
+        SetDest(*WrapperOp, Result);
+      }
+      else {
+        SetDest(*WrapperOp, Src);
+      }
+      break;
     }
     case IR::OP_VBITCAST: {
       auto Op = IROp->C<IR::IROp_VBitcast>();
