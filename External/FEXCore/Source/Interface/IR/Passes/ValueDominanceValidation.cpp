@@ -120,6 +120,7 @@ bool ValueDominanceValidation::Run(OpDispatchBuilder *Disp) {
 
       uint8_t NumArgs = IR::GetArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
+        if (IROp->Args[i].IsInvalid()) continue;
         OrderedNodeWrapper Arg = IROp->Args[i];
 
         // We must ensure domininance of all SSA arguments
