@@ -54,7 +54,7 @@ void CreateCoreCallback(char const *Filename, bool ELF) {
 
   bool Result{};
   if (ELF) {
-    FEX::HarnessHelper::ELFCodeLoader Loader{Filename, {}, {}};
+    FEX::HarnessHelper::ELFCodeLoader Loader{Filename, {}, {}, {}};
     Result = FEXCore::Context::InitCore(CTX, &Loader);
   }
   else {

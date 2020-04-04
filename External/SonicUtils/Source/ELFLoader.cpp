@@ -8,7 +8,7 @@
 
 namespace ELFLoader {
 
-ELFContainer::ELFContainer(std::string const &Filename, bool CustomInterpreter) {
+ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter) {
   if (!LoadELF(Filename)) {
     LogMan::Msg::E("Couldn't Load ELF file");
     return;
@@ -20,7 +20,10 @@ ELFContainer::ELFContainer(std::string const &Filename, bool CustomInterpreter) 
     // We are no longer dynamic since we are executing the interpreter
     DynamicProgram = false;
     const char *RawString = &RawFile.at(InterpreterHeader->p_offset);
-    if (!LoadELF(RawString)) {
+    if (!RootFS.empty() && LoadELF(RootFS + RawString)) {
+      // Found the interpreter in the rootfs
+    }
+    else if (!LoadELF(RawString)) {
       LogMan::Msg::E("Couldn't load dynamic ELF file's interpreter");
       return;
     }

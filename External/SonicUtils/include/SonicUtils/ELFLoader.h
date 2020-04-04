@@ -21,7 +21,7 @@ struct ELFSymbol {
 
 class ELFContainer {
 public:
-  ELFContainer(std::string const &Filename, bool CustomInterpreter);
+  ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter);
   ~ELFContainer();
 
   uint64_t GetEntryPoint() const { return Header.e_entry; }
