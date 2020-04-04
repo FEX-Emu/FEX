@@ -424,7 +424,7 @@ namespace FEXCore::Context {
       Thread->State.ThreadManager.TID = ++ThreadID;
     }
 
-    Thread->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>();
+    Thread->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
     Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
     Thread->BlockCache = std::make_unique<FEXCore::BlockCache>(this);
     Thread->CTX = this;

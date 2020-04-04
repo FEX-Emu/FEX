@@ -22,7 +22,7 @@ class OpDispatchBuilder final {
 friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
 public:
-
+  FEXCore::Context::Context *CTX{};
   bool ShouldDump {false};
 
   struct JumpTargetInfo {
@@ -81,7 +81,7 @@ public:
     return false;
   }
 
-  OpDispatchBuilder();
+  OpDispatchBuilder(FEXCore::Context::Context *ctx);
 
   IRListView<false> ViewIR() { return IRListView<false>(&Data, &ListData); }
   IRListView<true> *CreateIRCopy() { return new IRListView<true>(&Data, &ListData); }
@@ -544,6 +544,10 @@ public:
     return _PhiValue(Value, Block, InvalidNode);
   }
 
+  OrderedNode *Invalid() {
+    return InvalidNode;
+  }
+
   void AddPhiValue(IR::IROp_Phi *Phi, OrderedNode *Value) {
     // Got to do some bookkeeping first
     Value->AddUse();
@@ -640,9 +644,9 @@ public:
   }
 
   void ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNode *NewNode, IR::NodeWrapperIterator After, IR::NodeWrapperIterator End);
+  void ReplaceNodeArgument(OrderedNode *Node, uint8_t Arg, OrderedNode *NewArg);
 
   void Remove(OrderedNode *Node);
-
 
   void SetPackedRFLAG(bool Lower8, OrderedNode *Src);
   OrderedNode *GetPackedRFLAG(bool Lower8);

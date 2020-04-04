@@ -3383,8 +3383,9 @@ void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCor
   StoreResult(Class, Op, Op->Dest, Src, Align);
 }
 
-OpDispatchBuilder::OpDispatchBuilder()
-  : Data {8 * 1024 * 1024}
+OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::Context *ctx)
+  : CTX {ctx}
+  , Data {8 * 1024 * 1024}
   , ListData {8 * 1024 * 1024} {
   ResetWorkingList();
 }
@@ -5089,6 +5090,18 @@ void OpDispatchBuilder::ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNo
 
     ++After;
   }
+}
+
+void OpDispatchBuilder::ReplaceNodeArgument(OrderedNode *Node, uint8_t Arg, OrderedNode *NewArg) {
+  uintptr_t ListBegin = ListData.Begin();
+  uintptr_t DataBegin = Data.Begin();
+
+  FEXCore::IR::IROp_Header *IROp = Node->Op(DataBegin);
+  OrderedNodeWrapper OldArgWrapper = IROp->Args[Arg];
+  OrderedNode *OldArg = OldArgWrapper.GetNode(ListBegin);
+  OldArg->RemoveUse();
+  NewArg->AddUse();
+  IROp->Args[Arg].NodeOffset = NewArg->Wrapped(ListBegin).NodeOffset;
 }
 
 void OpDispatchBuilder::RemoveArgUses(OrderedNode *Node) {
