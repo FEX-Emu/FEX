@@ -194,7 +194,8 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
       case OP_ZEXT: {
         auto Op = IROp->C<IR::IROp_Zext>();
         uint64_t Constant;
-        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant)) {
+        if (Op->SrcSize != 64 &&
+            Disp->IsValueConstant(Op->Header.Args[0], &Constant)) {
           uint64_t NewConstant = Constant & ((1ULL << Op->SrcSize) - 1);
           Disp->SetWriteCursor(CodeNode);
           auto ConstantVal = Disp->_Constant(NewConstant);
