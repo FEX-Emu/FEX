@@ -32,7 +32,7 @@ namespace FEXCore::Context {
   }
 
   void SetApplicationFile(FEXCore::Context::Context *CTX, std::string const &File) {
-    CTX->SyscallHandler.SetFilename(File);
+    CTX->SyscallHandler->SetFilename(File);
     // XXX: This isn't good for debugging
     // CTX->LoadEntryList();
   }
@@ -97,7 +97,7 @@ namespace FEXCore::Context {
   }
 
   uint64_t HandleSyscall(FEXCore::Context::Context *CTX, FEXCore::Core::ThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
-    return CTX->SyscallHandler.HandleSyscall(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread), Args);
+    return FEXCore::HandleSyscall(CTX->SyscallHandler, reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread), Args);
   }
 
   bool AddVirtualMemoryMapping([[maybe_unused]] FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t VirtualAddress, [[maybe_unused]] uint64_t PhysicalAddress, [[maybe_unused]] uint64_t Size) {

@@ -886,13 +886,13 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
       Function::ExternalLinkage,
       "Syscall",
       FunctionModule);
-    using ClassPtrType = uint64_t (FEXCore::SyscallHandler::*)(FEXCore::Core::InternalThreadState *, FEXCore::HLE::SyscallArguments *);
+    using ClassPtrType = uint64_t (*)(FEXCore::SyscallHandler*, FEXCore::Core::InternalThreadState *, FEXCore::HLE::SyscallArguments *);
     union PtrCast {
       ClassPtrType ClassPtr;
       void* Data;
     };
     PtrCast Ptr;
-    Ptr.ClassPtr = &FEXCore::SyscallHandler::HandleSyscall;
+    Ptr.ClassPtr = &FEXCore::HandleSyscall;
     Engine->addGlobalMapping(JITCurrentState.SyscallFunction, Ptr.Data);
   }
 
@@ -1514,12 +1514,17 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_Syscall>();
 
       std::vector<llvm::Value*> Args;
-      Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(&CTX->SyscallHandler)));
+      Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(CTX->SyscallHandler)));
       // We need to pull this argument from the ExecuteCodeFunction
       Args.emplace_back(Func->args().begin());
 
-      auto LLVMArgs = JITState.IRBuilder->CreateAlloca(ArrayType::get(Type::getInt64Ty(*Con), 7));
-      for (unsigned i = 0; i < 7; ++i) {
+      uint8_t NumArgs{};
+      for (; NumArgs < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++NumArgs) {
+        if (Op->Header.Args[NumArgs].IsInvalid()) break;
+      }
+
+      auto LLVMArgs = JITState.IRBuilder->CreateAlloca(ArrayType::get(Type::getInt64Ty(*Con), FEXCore::HLE::SyscallArguments::MAX_ARGS));
+      for (unsigned i = 0; i < NumArgs; ++i) {
         auto Location = JITState.IRBuilder->CreateGEP(LLVMArgs,
             {
               JITState.IRBuilder->getInt32(0),

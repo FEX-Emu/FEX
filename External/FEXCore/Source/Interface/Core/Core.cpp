@@ -126,7 +126,7 @@ namespace DefaultFallbackCore {
 namespace FEXCore::Context {
   Context::Context()
     : FrontendDecoder {this}
-    , SyscallHandler {this} {
+    , SyscallHandler {FEXCore::CreateHandler(OperatingMode::MODE_64BIT, this)} {
     FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
     PassManager.AddDefaultPasses();
     PassManager.AddDefaultValidationPasses();
@@ -161,7 +161,7 @@ namespace FEXCore::Context {
   }
 
   void Context::SaveEntryList() {
-    std::string const &Filename = SyscallHandler.GetFilename();
+    std::string const &Filename = SyscallHandler->GetFilename();
     std::string hash_string;
 
     if (GetFilenameHash(Filename, hash_string)) {
@@ -179,7 +179,7 @@ namespace FEXCore::Context {
   }
 
   void Context::LoadEntryList() {
-    std::string const &Filename = SyscallHandler.GetFilename();
+    std::string const &Filename = SyscallHandler->GetFilename();
     std::string hash_string;
 
     if (GetFilenameHash(Filename, hash_string)) {

@@ -422,8 +422,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         uint64_t SPOffset = AlignUp((RA64.size() + 7 + 1) * 8, 16);
 
         sub(sp, sp, SPOffset);
-        for (uint32_t i = 0; i < 7; ++i)
+        for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++i) {
+          if (Op->Header.Args[i].IsInvalid()) continue;
           str(GetSrc<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, 0 + i * 8));
+        }
 
         int i = 0;
         for (auto RA : RA64) {
@@ -439,14 +441,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 #if _M_X86_64
         CallRuntime(SyscallThunk);
 #else
-        using ClassPtrType = uint64_t (FEXCore::SyscallHandler::*)(FEXCore::Core::InternalThreadState *, FEXCore::HLE::SyscallArguments *);
+        using ClassPtrType = uint64_t (*)(FEXCore::SyscallHandler*, FEXCore::Core::InternalThreadState *, FEXCore::HLE::SyscallArguments *);
         union PtrCast {
           ClassPtrType ClassPtr;
           uintptr_t Data;
         };
 
         PtrCast Ptr;
-        Ptr.ClassPtr = &FEXCore::SyscallHandler::HandleSyscall;
+        Ptr.ClassPtr = &FEXCore::HandleSyscall;
         LoadConstant(x3, Ptr.Data);
         blr(x3);
 #endif

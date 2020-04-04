@@ -5,36 +5,6 @@
 #include "Interface/HLE/EmulatedFiles/EmulatedFiles.h"
 
 namespace FEXCore::EmulatedFile {
-  class SimpleStringFD final : public FEXCore::FD {
-    public:
-      SimpleStringFD(FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode, std::string_view Str)
-        : FD {ctx, fd, pathname, flags, mode}
-        , String {Str} {
-      }
-
-      uint64_t read(int fd, void *buf, size_t count) {
-        uint64_t SizeToRead = std::min(count, String.size() - ReadOffset);
-        if (SizeToRead) {
-          memcpy(buf, &String.at(ReadOffset), SizeToRead);
-          ReadOffset += SizeToRead;
-        }
-        return SizeToRead;
-      }
-
-      ssize_t writev(int fd, void *iov, int iovcnt) {
-        LogMan::Msg::A("Unimplemented");
-        return 0;
-      }
-      uint64_t write(int fd, void *buf, size_t count) {
-        LogMan::Msg::A("Unimplemented");
-        return 0;
-      }
-
-    private:
-      std::string_view String;
-      uint64_t ReadOffset{};
-  };
-
   static const std::string proc_cpuinfo = R"(
 processor       : 0
 vendor_id       : AuthenticAMD
