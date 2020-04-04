@@ -834,14 +834,16 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
 
 void OpDispatchBuilder::CDQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  uint8_t SrcSize = GetSrcSize(Op);
+  uint8_t DstSize = GetDstSize(Op);
+  uint8_t SrcSize = DstSize >> 1;
 
-  Src = _Sext(SrcSize * 4, Src);
-  if (SrcSize == 4) {
-    Src = _Zext(SrcSize * 8, Src);
-    SrcSize *= 2;
+  Src = _Sext(SrcSize * 8, Src);
+  if (SrcSize == 2) {
+    Src = _Zext(DstSize * 8, Src);
+    DstSize *= 2;
   }
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, SrcSize * 8, -1);
+
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
 }
 
 void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
