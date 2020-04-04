@@ -1,3 +1,4 @@
+#include "Interface/Context/Context.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
@@ -41,10 +42,17 @@ bool SyscallOptimization::Run(OpDispatchBuilder *Disp) {
         // Is the first argument a constant?
         uint64_t Constant;
         if (Disp->IsValueConstant(IROp->Args[0], &Constant)) {
-          // XXX: We can now optimize this syscall
-          //Changed = true;
+          auto SyscallDef = Disp->CTX->SyscallHandler->GetDefinition(Constant);
+          // XXX: Once we have the ability to do real function calls then we can call directly in to the syscall handler
+          if (SyscallDef->NumArgs < FEXCore::HLE::SyscallArguments::MAX_ARGS) {
+            // If the number of args are less than what the IR op supports then we can remove arg usage
+            // We need +1 since we are still passing in syscall number here
+            for (uint8_t Arg = (SyscallDef->NumArgs + 1); Arg < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++Arg) {
+              Disp->ReplaceNodeArgument(CodeNode, Arg, Disp->Invalid());
+            }
+            Changed = true;
+          }
         }
-
       }
 
       // CodeLast is inclusive. So we still need to dump the CodeLast op as well
