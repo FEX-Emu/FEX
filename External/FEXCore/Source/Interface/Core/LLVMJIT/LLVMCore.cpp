@@ -2215,6 +2215,42 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
       break;
     }
+    case IR::OP_VFCMPUNO: {
+      auto Op = IROp->C<IR::IROp_VFCMPUNO>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateFCmpUNO(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, llvm::VectorType::get(Type::getIntNTy(*Con, Src1->getType()->getVectorElementType()->getPrimitiveSizeInBits()), Src1->getType()->getVectorNumElements()));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VFCMPORD: {
+      auto Op = IROp->C<IR::IROp_VFCMPORD>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, Op->RegisterSize, Op->ElementSize);
+      Src2 = CastVectorToType(Src2, false, Op->RegisterSize, Op->ElementSize);
+
+      // Do an icmpeq, this will return a vector of <NumElements x i1>
+      auto Result = JITState.IRBuilder->CreateFCmpORD(Src1, Src2);
+
+      // Now we will do a sext <NumElements x i1> -> <NumElements x ElementSize>
+      Result = JITState.IRBuilder->CreateSExt(Result, llvm::VectorType::get(Type::getIntNTy(*Con, Src1->getType()->getVectorElementType()->getPrimitiveSizeInBits()), Src1->getType()->getVectorNumElements()));
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_FCMP: {
       auto Op = IROp->C<IR::IROp_FCmp>();
       auto Src1 = GetSrc(Op->Header.Args[0]);

@@ -3186,6 +3186,103 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_VFCMPUNO: {
+        auto Op = IROp->C<IR::IROp_VFCMPUNO>();
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              fcmge(VTMP1.S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+              fcmgt(VTMP2.S(), GetSrc(Op->Header.Args[1].ID()).S(), GetSrc(Op->Header.Args[0].ID()).S());
+              orr(GetDst(Node).V8B(), VTMP1.V8B(), VTMP2.V8B());
+              mvn(GetDst(Node).V8B(), GetDst(Node).V8B());
+            break;
+            }
+            case 8: {
+              fcmge(VTMP1.D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+              fcmgt(VTMP2.D(), GetSrc(Op->Header.Args[1].ID()).D(), GetSrc(Op->Header.Args[0].ID()).D());
+              orr(GetDst(Node).V8B(), VTMP1.V8B(), VTMP2.V8B());
+              mvn(GetDst(Node).V8B(), GetDst(Node).V8B());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 2: {
+              fcmge(VTMP1.V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+              fcmgt(VTMP2.V8H(), GetSrc(Op->Header.Args[1].ID()).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H());
+              orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
+              mvn(GetDst(Node).V16B(), GetDst(Node).V16B());
+            break;
+            }
+            case 4: {
+              fcmge(VTMP1.V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+              fcmgt(VTMP2.V4S(), GetSrc(Op->Header.Args[1].ID()).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+              orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
+              mvn(GetDst(Node).V16B(), GetDst(Node).V16B());
+            break;
+            }
+            case 8: {
+              fcmge(VTMP1.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+              fcmgt(VTMP2.V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+              orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
+              mvn(GetDst(Node).V16B(), GetDst(Node).V16B());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        break;
+      }
+      case IR::OP_VFCMPORD: {
+        auto Op = IROp->C<IR::IROp_VFCMPORD>();
+        if (Op->ElementSize == Op->RegisterSize) {
+          // Scalar
+          switch (Op->ElementSize) {
+            case 4: {
+              fcmge(VTMP1.S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+              fcmgt(VTMP2.S(), GetSrc(Op->Header.Args[1].ID()).S(), GetSrc(Op->Header.Args[0].ID()).S());
+              orr(GetDst(Node).V8B(), VTMP1.V8B(), VTMP2.V8B());
+            break;
+            }
+            case 8: {
+              fcmge(VTMP1.D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+              fcmgt(VTMP2.D(), GetSrc(Op->Header.Args[1].ID()).D(), GetSrc(Op->Header.Args[0].ID()).D());
+              orr(GetDst(Node).V8B(), VTMP1.V8B(), VTMP2.V8B());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        else {
+          // Vector
+          switch (Op->ElementSize) {
+            case 2: {
+              fcmge(VTMP1.V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+              fcmgt(VTMP2.V8H(), GetSrc(Op->Header.Args[1].ID()).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H());
+              orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
+            break;
+            }
+            case 4: {
+              fcmge(VTMP1.V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+              fcmgt(VTMP2.V4S(), GetSrc(Op->Header.Args[1].ID()).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+              orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
+            break;
+            }
+            case 8: {
+              fcmge(VTMP1.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+              fcmgt(VTMP2.V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+              orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
+          }
+        }
+        break;
+      }
       case IR::OP_FCMP: {
         auto Op = IROp->C<IR::IROp_FCmp>();
 

@@ -4723,6 +4723,9 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
     case 0x02: case 0x0A: case 0x12: case 0x1A: // LE, GE(Swapped operand)
       Result = _VFCMPLE(Size, ElementSize, Src2, Src);
     break;
+    case 0x03: case 0x0B: case 0x13: case 0x1B: // Unordered
+      Result = _VFCMPUNO(Size, ElementSize, Src2, Src);
+    break;
     case 0x04: case 0x0C: case 0x14: case 0x1C: // NEQ
       Result = _VFCMPNEQ(Size, ElementSize, Src2, Src);
     break;
@@ -4731,6 +4734,9 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
     break;
     case 0x06: case 0x0E: case 0x16: case 0x1E: // NLE, NGE(Swapped operand)
       Result = _VFCMPLT(Size, ElementSize, Src, Src2);
+    break;
+    case 0x07: case 0x0F: case 0x17: case 0x1F: // Ordered
+      Result = _VFCMPORD(Size, ElementSize, Src2, Src);
     break;
     default: LogMan::Msg::A("Unknown Comparison type: %d", CompType);
   }

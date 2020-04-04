@@ -424,6 +424,12 @@ public:
   IRPair<IROp_VFCMPLE> _VFCMPLE(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VFCMPLE(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VFCMPUNO> _VFCMPUNO(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFCMPUNO(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VFCMPORD> _VFCMPORD(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFCMPORD(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VUShl> _VUShl(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUShl(ssa0, ssa1, RegisterSize, ElementSize);
   }

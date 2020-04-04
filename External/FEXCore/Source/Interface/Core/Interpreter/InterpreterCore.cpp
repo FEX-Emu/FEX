@@ -3620,7 +3620,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, Tmp, Op->RegisterSize);
             break;
           }
-
           case IR::OP_VFCMPLE: {
             auto Op = IROp->C<IR::IROp_VFCMPLE>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -3649,7 +3648,62 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, Tmp, Op->RegisterSize);
             break;
           }
+          case IR::OP_VFCMPUNO: {
+            auto Op = IROp->C<IR::IROp_VFCMPUNO>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
 
+            auto Func = [](auto a, auto b) { return (std::isnan(a) || std::isnan(b)) ? ~0ULL : 0; };
+
+            uint8_t Tmp[16];
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            if (Op->ElementSize == Op->RegisterSize) {
+              switch (Op->ElementSize) {
+              DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+            else {
+              switch (Op->ElementSize) {
+              DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
+          case IR::OP_VFCMPORD: {
+            auto Op = IROp->C<IR::IROp_VFCMPORD>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+
+            auto Func = [](auto a, auto b) { return (!std::isnan(a) && !std::isnan(b)) ? ~0ULL : 0; };
+
+            uint8_t Tmp[16];
+            uint8_t Elements = Op->RegisterSize / Op->ElementSize;
+
+            if (Op->ElementSize == Op->RegisterSize) {
+              switch (Op->ElementSize) {
+              DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+            else {
+              switch (Op->ElementSize) {
+              DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
+              DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
+              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->ElementSize);
+              }
+            }
+
+            memcpy(GDP, Tmp, Op->RegisterSize);
+            break;
+          }
           default:
             LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
             break;
