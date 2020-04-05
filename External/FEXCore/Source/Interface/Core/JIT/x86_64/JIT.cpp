@@ -223,7 +223,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   }
 
   if (SpillSlots) {
-    sub(rsp, SpillSlots * 16);
+    sub(rsp, SpillSlots * 16 + 8);
+  }
+  else {
+    sub(rsp, 8);
   }
 
   auto HeaderIterator = CurrentIR->begin();
@@ -277,7 +280,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   auto RegularExit = [&]() {
     if (SpillSlots) {
-      add(rsp, SpillSlots * 16);
+      add(rsp, SpillSlots * 16 + 8);
+    }
+    else {
+      add(rsp, 8);
     }
 
     if (!CustomDispatchGenerated) {
