@@ -331,6 +331,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
+  auto GetArgSize = [&](FEXCore::IR::OrderedNodeWrapper ArgWrapper) {
+    FEXCore::IR::OrderedNode *Arg = ArgWrapper.GetNode(ListBegin);
+    FEXCore::IR::IROp_Header *IROp = Arg->Op(DataBegin);
+    return IROp->Size * std::max((uint8_t)1, IROp->Elements);
+  };
+
   while (1) {
     using namespace FEXCore::IR;
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
@@ -2035,6 +2041,39 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             dup(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
           break;
           default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.Size); break;
+        }
+        break;
+      }
+      case IR::OP_VMOV: {
+        auto Op = IROp->C<IR::IROp_VMov>();
+        switch (GetArgSize(Op->Header.Args[0])) {
+          case 1: {
+            eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+            mov(VTMP1.V16B(), 0, GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
+            mov(GetDst(Node), VTMP1);
+            break;
+          }
+          case 2: {
+            eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+            mov(VTMP1.V8H(), 0, GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
+            mov(GetDst(Node), VTMP1);
+            break;
+          }
+          case 4: {
+            eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+            mov(VTMP1.V4S(), 0, GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
+            mov(GetDst(Node), VTMP1);
+            break;
+          }
+          case 8: {
+            mov(GetDst(Node).V8B(), GetSrc(Op->Header.Args[0].ID()).V8B());
+            break;
+          }
+          case 16: {
+            mov(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+            break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", GetArgSize(Op->Header.Args[0])); break;
         }
         break;
       }

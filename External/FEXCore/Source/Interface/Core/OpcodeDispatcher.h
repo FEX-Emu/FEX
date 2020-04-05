@@ -214,13 +214,14 @@ public:
   template<size_t ElementSize>
   void PMAXUOp(OpcodeArgs);
   void PMINSWOp(OpcodeArgs);
+  void PMAXSWOp(OpcodeArgs);
   template<size_t ElementSize>
   void MOVMSKOp(OpcodeArgs);
   template<size_t ElementSize>
   void PUNPCKLOp(OpcodeArgs);
   template<size_t ElementSize>
   void PUNPCKHOp(OpcodeArgs);
-  template<size_t ElementSize, bool Low>
+  template<size_t ElementSize, bool HalfSize, bool Low>
   void PSHUFDOp(OpcodeArgs);
   template<size_t ElementSize>
   void PCMPEQOp(OpcodeArgs);
@@ -289,8 +290,25 @@ public:
   template<size_t ElementSize>
   void PACKUSOp(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void PACKSSOp(OpcodeArgs);
+
   template<size_t ElementSize, bool Signed>
   void PMULLOp(OpcodeArgs);
+
+  template<bool ToXMM>
+  void MOVQ2DQ(OpcodeArgs);
+
+  template<size_t ElementSize, bool Signed>
+  void PADDSOp(OpcodeArgs);
+
+  template<size_t ElementSize, bool Signed>
+  void PSUBSOp(OpcodeArgs);
+
+  void PMADDWD(OpcodeArgs);
+
+  template<bool Signed>
+  void PMULHW(OpcodeArgs);
 
   void UnimplementedOp(OpcodeArgs);
 

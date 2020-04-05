@@ -80,14 +80,14 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
     FEXCore::X86State::REG_MM_5,
     FEXCore::X86State::REG_MM_6,
     FEXCore::X86State::REG_MM_7,
-    ~0ULL,
-    ~0ULL,
-    ~0ULL,
-    ~0ULL,
-    ~0ULL,
-    ~0ULL,
-    ~0ULL,
-    ~0ULL
+    FEXCore::X86State::REG_INVALID,
+    FEXCore::X86State::REG_INVALID,
+    FEXCore::X86State::REG_INVALID,
+    FEXCore::X86State::REG_INVALID,
+    FEXCore::X86State::REG_INVALID,
+    FEXCore::X86State::REG_INVALID,
+    FEXCore::X86State::REG_INVALID,
+    FEXCore::X86State::REG_INVALID
   };
 
   const std::array<uint64_t, 16> *GPRs = &GPRIndexes;

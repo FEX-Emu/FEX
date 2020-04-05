@@ -314,6 +314,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       L(IsTarget->second);
     }
 
+    auto GetArgSize = [&](OrderedNodeWrapper ArgWrapper) {
+      OrderedNode *Arg = ArgWrapper.GetNode(ListBegin);
+      FEXCore::IR::IROp_Header *IROp = Arg->Op(DataBegin);
+      return IROp->Size * std::max((uint8_t)1, IROp->Elements);
+    };
+
     while (1) {
       OrderedNodeWrapper *WrapperOp = CodeBegin();
       OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
@@ -2341,6 +2347,44 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           default: LogMan::Msg::A("Unknown Element Size: %d", Op->ElementSize); break;
           }
+          break;
+        }
+        case IR::OP_VMOV: {
+          auto Op = IROp->C<IR::IROp_VMov>();
+
+          switch (GetArgSize(Op->Header.Args[0])) {
+            case 1: {
+              vpxor(xmm15, xmm15, xmm15);
+              pextrb(eax, GetSrc(Op->Header.Args[0].ID()), 0);
+              pinsrb(xmm15, eax, 0);
+              movapd(GetDst(Node), xmm15);
+              break;
+            }
+            case 2: {
+              vpxor(xmm15, xmm15, xmm15);
+              pextrw(eax, GetSrc(Op->Header.Args[0].ID()), 0);
+              pinsrw(xmm15, eax, 0);
+              movapd(GetDst(Node), xmm15);
+              break;
+            }
+            case 4: {
+              vpxor(xmm15, xmm15, xmm15);
+              pextrd(eax, GetSrc(Op->Header.Args[0].ID()), 0);
+              pinsrd(xmm15, eax, 0);
+              movapd(GetDst(Node), xmm15);
+              break;
+            }
+            case 8: {
+              movq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              break;
+            }
+            case 16: {
+              movaps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", GetArgSize(Op->Header.Args[0])); break;
+          }
+
           break;
         }
         case IR::OP_VAND: {

@@ -627,6 +627,15 @@
       "SSAArgs": "1"
     },
 
+    "VMov": {
+      "HasDest": true,
+      "DestSize": "RegisterSize",
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "RegisterSize"
+      ]
+    },
+
     "VAnd": {
 			"HasDest": true,
       "SSAArgs": "2",
