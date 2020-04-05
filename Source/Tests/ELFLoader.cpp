@@ -74,7 +74,7 @@ int main(int argc, char **argv, char **const envp) {
 
   LogMan::Throw::A(!Args.empty(), "Not enough arguments");
 
-  FEX::HarnessHelper::ELFCodeLoader Loader{Args[0], Args, ParsedArgs, envp};
+  FEX::HarnessHelper::ELFCodeLoader Loader{Args[0], LDPath(), Args, ParsedArgs, envp};
 
   FEXCore::Context::InitializeStaticTables();
   auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 32);

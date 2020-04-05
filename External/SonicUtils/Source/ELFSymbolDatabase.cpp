@@ -65,7 +65,7 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
         LogMan::Throw::A(Found, "Couldn't find library '%s'", Lib.c_str());
         auto Info = DynamicELFInfo.emplace_back(new ELFInfo{});
         Info->Name = Lib;
-        Info->Container = new ::ELFLoader::ELFContainer(LibraryPath, true);
+        Info->Container = new ::ELFLoader::ELFContainer(LibraryPath, {}, true);
         NewLibraries.emplace_back(Info);
         NameToELF[Lib] = Info;
       }

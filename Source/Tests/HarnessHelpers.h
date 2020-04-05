@@ -381,8 +381,8 @@ namespace FEX::HarnessHelper {
 
 class ELFCodeLoader final : public FEXCore::CodeLoader {
 public:
-  ELFCodeLoader(std::string const &Filename, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr)
-    : File {Filename, false}
+  ELFCodeLoader(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr)
+    : File {Filename, RootFS, false}
     , DB {&File}
     , Args {args} {
 

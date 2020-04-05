@@ -589,7 +589,7 @@ int main(int argc, char **argv) {
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 
   if (ConfigELFType()) {
-    FEX::HarnessHelper::ELFCodeLoader Loader{File, {},{}};
+    FEX::HarnessHelper::ELFCodeLoader Loader{File, {}, {},{}};
     bool Result = FEXCore::Context::InitCore(CTX, &Loader);
     printf("Did we Load? %s\n", Result ? "Yes" : "No");
   }
