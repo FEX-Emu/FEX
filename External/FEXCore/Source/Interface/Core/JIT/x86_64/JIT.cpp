@@ -2881,10 +2881,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_Vector_FToZS>();
           switch (Op->ElementSize) {
             case 4:
-              cvtps2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              cvttps2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
             break;
             case 8:
-              cvtpd2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+              cvttpd2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
             break;
             default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->ElementSize);
           }
