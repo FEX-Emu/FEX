@@ -34,7 +34,7 @@ ELFContainer::ELFContainer(std::string const &Filename, bool CustomInterpreter) 
   CalculateSymbols();
 
   // Print Information
-  PrintHeader();
+  // PrintHeader();
   //PrintSectionHeaders();
   //PrintProgramHeaders();
   //PrintSymbolTable();
@@ -168,9 +168,6 @@ void ELFContainer::CalculateMemoryLayouts() {
   MinPhysicalMemoryLocation = MinPhysAddr;
   MaxPhysicalMemoryLocation = MaxPhysAddr;
   PhysicalMemorySize = PhysMemSize;
-  LogMan::Msg::D("Min PAddr: 0x%lx", MinPhysAddr);
-  LogMan::Msg::D("Max PAddr: 0x%lx", MaxPhysAddr);
-  LogMan::Msg::D("Physical Size: 0x%lx", PhysMemSize);
 }
 
 void ELFContainer::CalculateSymbols() {
@@ -550,7 +547,6 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
               *Location = ELFSym->Address + Entry->r_addend;
             }
             else {
-              LogMan::Msg::D("Could not find symbol for x86_64_64 '%s'", EntrySymbolName);
               *Location = 0xDEADBEEFBAD0DAD2ULL;
             }
           }
@@ -569,9 +565,6 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
           uint64_t *Location = reinterpret_cast<uint64_t*>(reinterpret_cast<uintptr_t>(ELFBase) + Entry->r_offset);
           if (EntrySymbol != nullptr) {
             auto ELFSym = Getter(EntrySymbolName, 2); // Leave out Symbols from the main executable and only grab non-weak
-            if (strstr(EntrySymbolName, "__libc_start_main") != nullptr) {
-              LogMan::Msg::D("Did we find libc_start_main? %s", ELFSym == nullptr ? "False" : "True");
-            }
 
             if (!ELFSym) {
               ELFSym = Getter(EntrySymbolName, 0);
@@ -586,7 +579,6 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
             else {
               // XXX: This seems to be a loader edge case that if the symbol doesn't exist
               // and it is a weakly defined GLOB_DAT type then it is allowed to continue?
-              LogMan::Msg::D("Could not find symbol for GLOB_DAT '%s'", EntrySymbolName);
               // If we set Location to a value then apps crash
             }
           }
@@ -602,9 +594,6 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
             if (!ELFSym) { // XXX: Try again
               ELFSym = Getter(EntrySymbolName, 3);
             }
-            if (strstr(EntrySymbolName, "calloc") != nullptr) {
-              LogMan::Msg::D("Did we find %s? %s", EntrySymbolName, ELFSym == nullptr ? "False" : "True");
-            }
 
             if (ELFSym != nullptr) {
               *Location = ELFSym->Address;
@@ -612,7 +601,6 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
             else {
               // XXX: This seems to be a loader edge case that if the symbol doesn't exist
               // and it is a weakly defined GLOB_DAT type then it is allowed to continue?
-              LogMan::Msg::D("Could not find symbol for Jump slot '%s'", EntrySymbolName);
               *Location = 0xDEADBEEFBAD0DAD5ULL;
             }
           }
