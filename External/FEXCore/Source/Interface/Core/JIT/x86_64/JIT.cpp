@@ -3116,27 +3116,31 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           else {
             ucomisd(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
           }
-          mov (rax, 0);
+          mov (rdx, 0);
 
+          lahf();
           if (Op->Flags & (1 << FCMP_FLAG_LT)) {
+            sahf();
             mov(rcx, 0);
             setb(cl);
             shl(rcx, FCMP_FLAG_LT);
-            or(rax, rcx);
+            or(rdx, rcx);
           }
           if (Op->Flags & (1 << FCMP_FLAG_UNORDERED)) {
+            sahf();
             mov(rcx, 0);
             setp(cl);
             shl(rcx, FCMP_FLAG_UNORDERED);
-            or(rax, rcx);
+            or(rdx, rcx);
           }
           if (Op->Flags & (1 << FCMP_FLAG_EQ)) {
+            sahf();
             mov(rcx, 0);
             setz(cl);
             shl(rcx, FCMP_FLAG_EQ);
-            or(rax, rcx);
+            or(rdx, rcx);
           }
-          mov (GetDst<RA_64>(Node), rax);
+          mov (GetDst<RA_64>(Node), rdx);
           break;
         }
         case IR::OP_GETHOSTFLAG: {
