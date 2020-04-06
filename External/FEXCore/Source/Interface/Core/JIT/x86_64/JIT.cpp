@@ -18,6 +18,7 @@ namespace FEXCore::CPU {
 static void PrintValue(uint64_t Value) {
   LogMan::Msg::D("Value: 0x%lx", Value);
 }
+
 // Temp registers
 // rax, rcx, rdx, rsi, r8, r9,
 // r10, r11
@@ -1773,7 +1774,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_Syscall>();
           // XXX: This is very terrible, but I don't care for right now
 
-          auto NumPush = 1 + RA64.size() + 7;
+          auto NumPush = 1 + RA64.size();
           push(rdi);
 
           for (auto &Reg : RA64)
@@ -1787,32 +1788,31 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // Result: RAX
 
           // These are pushed in reverse order because stacks
-          for (uint32_t i = 7; i > 0; --i)
+          for (uint32_t i = FEXCore::HLE::SyscallArguments::MAX_ARGS; i > 0; --i) {
+            if (Op->Header.Args[i - 1].IsInvalid()) continue;
             push(GetSrc<RA_64>(Op->Header.Args[i - 1].ID()));
+            ++NumPush;
+          }
 
           mov(rsi, rdi); // Move thread in to rsi
-          mov(rdi, reinterpret_cast<uint64_t>(&CTX->SyscallHandler));
+          mov(rdi, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
           mov(rdx, rsp);
 
-          using PtrType = uint64_t (FEXCore::SyscallHandler::*)(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);
-          union {
-            PtrType ptr;
-            uint64_t Raw;
-          } PtrCast;
-          PtrCast.ptr = &FEXCore::SyscallHandler::HandleSyscall;
-          mov(rax, PtrCast.Raw);
+          mov(rax, reinterpret_cast<uint64_t>(FEXCore::HandleSyscall));
 
-          if (!(NumPush & 1))
+          if (NumPush & 1)
             sub(rsp, 8); // Align
 
           call(rax);
 
-          if (!(NumPush & 1))
+          if (NumPush & 1)
             add(rsp, 8); // Align
 
           // Reload arguments just in case they are sill live after the fact
-          for (uint32_t i = 0; i < 7; ++i)
+          for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++i) {
+            if (Op->Header.Args[i].IsInvalid()) continue;
             pop(GetSrc<RA_64>(Op->Header.Args[i].ID()));
+          }
 
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
@@ -1822,7 +1822,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov (GetDst<RA_64>(Node), rax);
           break;
         }
-
         case IR::OP_VEXTRACTTOGPR: {
           auto Op = IROp->C<IR::IROp_VExtractToGPR>();
 
@@ -1884,15 +1883,16 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             push(Reg);
 
           auto NumPush = RA64.size();
-          if (!(NumPush & 1))
+          if (NumPush & 1)
             sub(rsp, 8); // Align
 
           mov (rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
           mov(rax, reinterpret_cast<uintptr_t>(PrintValue));
+
           call(rax);
 
-          if (!(NumPush & 1))
+          if (NumPush & 1)
             add(rsp, 8); // Align
 
           for (uint32_t i = RA64.size(); i > 0; --i)
@@ -1927,13 +1927,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov (rdi, reinterpret_cast<uint64_t>(&CTX->CPUID));
 
           auto NumPush = RA64.size() + 1;
-          if (!(NumPush & 1))
+          if (NumPush & 1)
             sub(rsp, 8); // Align
 
           mov(rax, Ptr.Raw);
           call(rax);
 
-          if (!(NumPush & 1))
+          if (NumPush & 1)
             add(rsp, 8); // Align
 
           pop(rdi);

@@ -58,6 +58,8 @@ struct NodeWrapperBase final {
 
   uint32_t ID() const;
 
+  bool IsInvalid() const { return NodeOffset == 0; }
+
   explicit NodeWrapperBase() = default;
 
   Type *GetNode(uintptr_t Base) { return reinterpret_cast<Type*>(Base + NodeOffset); }

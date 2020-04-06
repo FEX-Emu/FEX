@@ -430,6 +430,7 @@ namespace FEXCore::IR {
 
         uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
+          if (IROp->Args[i].IsInvalid()) continue;
           uint32_t ArgNode = IROp->Args[i].ID();
           // Set the node end to be at least here
           LiveRanges[ArgNode].End = Node;

@@ -218,10 +218,12 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_Syscall>();
 
             FEXCore::HLE::SyscallArguments Args;
-            for (size_t j = 0; j < 7; ++j)
+            for (size_t j = 0; j < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++j) {
+              if (Op->Header.Args[j].IsInvalid()) break;
               Args.Argument[j] = *GetSrc<uint64_t*>(Op->Header.Args[j]);
+            }
 
-            uint64_t Res = CTX->SyscallHandler.HandleSyscall(Thread, &Args);
+            uint64_t Res = FEXCore::HandleSyscall(CTX->SyscallHandler, Thread, &Args);
             GD = Res;
             break;
           }

@@ -301,7 +301,7 @@ std::string GdbServer::handleXfer(std::string &packet) {
 
     if (object == "exec-file") {
         if (annex == "")
-            return encode(CTX->SyscallHandler.GetFilename());
+            return encode(CTX->SyscallHandler->GetFilename());
         return "E00";
     }
     if (object == "features") {

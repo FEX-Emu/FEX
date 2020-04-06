@@ -69,7 +69,7 @@ namespace FEXCore::Context {
     FEXCore::IR::PassManager PassManager;
 
     FEXCore::CPUIDEmu CPUID;
-    FEXCore::SyscallHandler SyscallHandler;
+    FEXCore::SyscallHandler *SyscallHandler;
     CustomCPUFactoryType CustomCPUFactory;
     CustomCPUFactoryType FallbackCPUFactory;
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
@@ -114,19 +114,21 @@ namespace FEXCore::Context {
 
     FEXCore::CodeLoader *GetCodeLoader() const { return LocalLoader; }
 
+    // Used for thread creation from syscalls
+    FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID, uint64_t ChildTID);
+    void InitializeThread(FEXCore::Core::InternalThreadState *Thread);
+    void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
+    void RunThread(FEXCore::Core::InternalThreadState *Thread);
+
   protected:
     IR::RegisterAllocationPass *GetRegisterAllocatorPass();
 
   private:
     void WaitForIdle();
-    FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID, uint64_t ChildTID);
     void *MapRegion(FEXCore::Core::InternalThreadState *Thread, uint64_t Offset, uint64_t Size, bool Fixed = false);
     void *ShmBase();
     void MirrorRegion(FEXCore::Core::InternalThreadState *Thread, void *HostPtr, uint64_t Offset, uint64_t Size);
-    void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
-    void InitializeThread(FEXCore::Core::InternalThreadState *Thread);
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
-    void RunThread(FEXCore::Core::InternalThreadState *Thread);
     void NotifyPause();
     void HandleExit(FEXCore::Core::InternalThreadState *Thread);
 

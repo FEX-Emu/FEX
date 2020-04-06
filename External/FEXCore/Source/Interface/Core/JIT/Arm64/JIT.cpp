@@ -26,8 +26,7 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-#define MEM_BASE x28
-#define STATE x27
+#define STATE x28
 #define TMP1 x1
 #define TMP2 x2
 
@@ -54,7 +53,7 @@ const std::array<aarch64::VRegister, 22> RAFPR = {
   v29, v30, v31};
 
 static uint64_t SyscallThunk(FEXCore::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
-  return Handler->HandleSyscall(Thread, Args);
+  return FEXCore::HandleSyscall(Handler, Thread, Args);
 }
 
 static void CPUIDThunk(FEXCore::CPUIDEmu *CPUID, uint64_t Function, FEXCore::CPUIDEmu::FunctionResults *Results) {
@@ -315,7 +314,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   if (!CustomDispatchGenerated) {
     void *Memory = CTX->MemoryMapper.GetMemoryBase();
-    LoadConstant(MEM_BASE, (uint64_t)Memory);
     mov(STATE, x0);
   }
 
@@ -428,8 +426,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         uint64_t SPOffset = AlignUp((RA64.size() + 7 + 1) * 8, 16);
 
         sub(sp, sp, SPOffset);
-        for (uint32_t i = 0; i < 7; ++i)
+        for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++i) {
+          if (Op->Header.Args[i].IsInvalid()) continue;
           str(GetSrc<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, 0 + i * 8));
+        }
 
         int i = 0;
         for (auto RA : RA64) {
@@ -438,22 +438,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         str(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
 
-        LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->SyscallHandler));
+        LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
         mov(x1, STATE);
         mov(x2, sp);
 
 #if _M_X86_64
         CallRuntime(SyscallThunk);
 #else
-        using ClassPtrType = uint64_t (FEXCore::SyscallHandler::*)(FEXCore::Core::InternalThreadState *, FEXCore::HLE::SyscallArguments *);
-        union PtrCast {
-          ClassPtrType ClassPtr;
-          uintptr_t Data;
-        };
-
-        PtrCast Ptr;
-        Ptr.ClassPtr = &FEXCore::SyscallHandler::HandleSyscall;
-        LoadConstant(x3, Ptr.Data);
+        LoadConstant(x3, reinterpret_cast<uint64_t>(FEXCore::HandleSyscall));
         blr(x3);
 #endif
 
@@ -1365,14 +1357,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         auto Desired = GetSrc<RA_64>(Op->Header.Args[1].ID());
         auto MemSrc = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
-        add(TMP1, MEM_BASE, MemSrc);
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
         mov(TMP2, Expected);
 
         switch (OpSize) {
-        case 1: casalb(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
-        case 2: casalh(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
-        case 4: casal(TMP2.W(), Desired.W(), MemOperand(TMP1)); break;
-        case 8: casal(TMP2.X(), Desired.X(), MemOperand(TMP1)); break;
+        case 1: casalb(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
+        case 2: casalh(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
+        case 4: casal(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
+        case 8: casal(TMP2.X(), Desired.X(), MemOperand(MemSrc)); break;
         default: LogMan::Msg::A("Unsupported: %d", OpSize);
         }
 
@@ -1382,12 +1378,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_ATOMICADD: {
         auto Op = IROp->C<IR::IROp_AtomicAdd>();
 
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         switch (Op->Size) {
-        case 1: staddlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 2: staddlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 4: staddl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 8: staddl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 1: staddlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 2: staddlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 4: staddl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 8: staddl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
@@ -1395,13 +1397,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_ATOMICSUB: {
         auto Op = IROp->C<IR::IROp_AtomicSub>();
 
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
         switch (Op->Size) {
-        case 1: staddlb(TMP2.W(), MemOperand(TMP1)); break;
-        case 2: staddlh(TMP2.W(), MemOperand(TMP1)); break;
-        case 4: staddl(TMP2.W(), MemOperand(TMP1)); break;
-        case 8: staddl(TMP2.X(), MemOperand(TMP1)); break;
+        case 1: staddlb(TMP2.W(), MemOperand(MemSrc)); break;
+        case 2: staddlh(TMP2.W(), MemOperand(MemSrc)); break;
+        case 4: staddl(TMP2.W(), MemOperand(MemSrc)); break;
+        case 8: staddl(TMP2.X(), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
@@ -1409,13 +1417,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_ATOMICAND: {
         auto Op = IROp->C<IR::IROp_AtomicAnd>();
 
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
         switch (Op->Size) {
-        case 1: stclrlb(TMP2.W(), MemOperand(TMP1)); break;
-        case 2: stclrlh(TMP2.W(), MemOperand(TMP1)); break;
-        case 4: stclrl(TMP2.W(), MemOperand(TMP1)); break;
-        case 8: stclrl(TMP2.X(), MemOperand(TMP1)); break;
+        case 1: stclrlb(TMP2.W(), MemOperand(MemSrc)); break;
+        case 2: stclrlh(TMP2.W(), MemOperand(MemSrc)); break;
+        case 4: stclrl(TMP2.W(), MemOperand(MemSrc)); break;
+        case 8: stclrl(TMP2.X(), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
@@ -1423,12 +1437,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_ATOMICOR: {
         auto Op = IROp->C<IR::IROp_AtomicOr>();
 
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         switch (Op->Size) {
-        case 1: stsetlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 2: stsetlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 4: stsetl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 8: stsetl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 1: stsetlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 2: stsetlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 4: stsetl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 8: stsetl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
@@ -1436,12 +1456,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_ATOMICXOR: {
         auto Op = IROp->C<IR::IROp_AtomicXor>();
 
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         switch (Op->Size) {
-        case 1: steorlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 2: steorlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 4: steorl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
-        case 8: steorl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(TMP1)); break;
+        case 1: steorlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 2: steorlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 4: steorl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+        case 8: steorl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
@@ -1449,25 +1475,37 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_ATOMICSWAP: {
         auto Op = IROp->C<IR::IROp_AtomicSwap>();
 
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()));
         switch (Op->Size) {
-        case 1: swplb(GetDst<RA_32>(Node), xzr, MemOperand(TMP1)); break;
-        case 2: swplh(GetDst<RA_32>(Node), xzr, MemOperand(TMP1)); break;
-        case 4: swpl(GetDst<RA_32>(Node), xzr, MemOperand(TMP1)); break;
-        case 8: swpl(GetDst<RA_64>(Node), xzr, MemOperand(TMP1)); break;
+        case 1: swplb(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
+        case 2: swplh(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
+        case 4: swpl(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
+        case 8: swpl(GetDst<RA_64>(Node), xzr, MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
       }
       case IR::OP_ATOMICFETCHADD: {
         auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         switch (Op->Size) {
-        case 1: ldaddalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 2: ldaddalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 4: ldaddal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 8: ldaddal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
+        case 1: ldaddalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 2: ldaddalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 4: ldaddal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 8: ldaddal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
 
@@ -1475,38 +1513,56 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_ATOMICFETCHSUB: {
         auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
         switch (Op->Size) {
-        case 1: ldaddalb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 2: ldaddalh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 4: ldaddal(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 8: ldaddal(TMP2.X(), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
+        case 1: ldaddalb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 2: ldaddalh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 4: ldaddal(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 8: ldaddal(TMP2.X(), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
       }
       case IR::OP_ATOMICFETCHAND: {
         auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
         switch (Op->Size) {
-        case 1: ldclralb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 2: ldclralh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 4: ldclral(TMP2.W(), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 8: ldclral(TMP2.X(), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
+        case 1: ldclralb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 2: ldclralh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 4: ldclral(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 8: ldclral(TMP2.X(), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
         break;
       }
       case IR::OP_ATOMICFETCHOR: {
         auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         switch (Op->Size) {
-        case 1: ldsetalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 2: ldsetalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 4: ldsetal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 8: ldsetal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
+        case 1: ldsetalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 2: ldsetalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 4: ldsetal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 8: ldsetal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
 
@@ -1514,12 +1570,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_ATOMICFETCHXOR: {
         auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
-        add(TMP1, MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[0].ID());
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
         switch (Op->Size) {
-        case 1: ldeoralb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 2: ldeoralh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 4: ldeoral(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(TMP1)); break;
-        case 8: ldeoral(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(TMP1)); break;
+        case 1: ldeoralb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 2: ldeoralh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 4: ldeoral(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+        case 8: ldeoral(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
         default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
         }
 
@@ -1575,20 +1637,26 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_LOADMEM: {
         auto Op = IROp->C<IR::IROp_LoadMem>();
 
+        auto MemSrc = MemOperand(GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          MemSrc = MemOperand(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        }
+
         if (Op->Class.Val == 0) {
           auto Dst = GetDst<RA_64>(Node);
           switch (Op->Size) {
           case 1:
-            ldrb(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldrb(Dst, MemSrc);
           break;
           case 2:
-            ldrh(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldrh(Dst, MemSrc);
           break;
           case 4:
-            ldr(Dst.W(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldr(Dst.W(), MemSrc);
           break;
           case 8:
-            ldr(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldr(Dst, MemSrc);
           break;
           default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
           }
@@ -1597,19 +1665,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Dst = GetDst(Node);
           switch (Op->Size) {
           case 1:
-            ldr(Dst.B(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldr(Dst.B(), MemSrc);
           break;
           case 2:
-            ldr(Dst.H(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldr(Dst.H(), MemSrc);
           break;
           case 4:
-            ldr(Dst.S(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldr(Dst.S(), MemSrc);
           break;
           case 8:
-            ldr(Dst.D(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldr(Dst.D(), MemSrc);
           break;
           case 16:
-            ldr(Dst, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            ldr(Dst, MemSrc);
           break;
           default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
           }
@@ -1618,19 +1686,26 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       }
       case IR::OP_STOREMEM: {
         auto Op = IROp->C<IR::IROp_StoreMem>();
+
+        auto MemSrc = MemOperand(GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          MemSrc = MemOperand(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        }
+
         if (Op->Class.Val == 0) {
           switch (Op->Size) {
           case 1:
-            strb(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            strb(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
           case 2:
-            strh(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            strh(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
           case 4:
-            str(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            str(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemSrc);
           break;
           case 8:
-            str(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            str(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
           default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
           }
@@ -1639,19 +1714,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Src = GetSrc(Op->Header.Args[1].ID());
           switch (Op->Size) {
           case 1:
-            str(Src.B(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            str(Src.B(), MemSrc);
           break;
           case 2:
-            str(Src.H(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            str(Src.H(), MemSrc);
           break;
           case 4:
-            str(Src.S(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            str(Src.S(), MemSrc);
           break;
           case 8:
-            str(Src.D(), MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            str(Src.D(), MemSrc);
           break;
           case 16:
-            str(Src, MemOperand(MEM_BASE, GetSrc<RA_64>(Op->Header.Args[0].ID())));
+            str(Src, MemSrc);
           break;
           default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
           }
@@ -3931,8 +4006,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   PushCalleeSavedRegisters();
 
   // Push our memory base to the correct register
-  void *Memory = CTX->MemoryMapper.GetMemoryBase();
-  LoadConstant(MEM_BASE, (uint64_t)Memory);
   // Move our thread pointer to the correct register
   // This is passed in to parameter 0 (x0)
   mov(STATE, x0);
@@ -4003,10 +4076,10 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
     LoadConstant(x3, Ptr.Data);
 
-    stp(STATE, MEM_BASE, MemOperand(sp, -16, PreIndex));
+    str(STATE, MemOperand(sp, -16, PreIndex));
     // X2 contains our guest RIP
     blr(x3); // { CTX, ThreadState, RIP}
-    ldp(STATE, MEM_BASE, MemOperand(sp, 16, PostIndex));
+    ldr(STATE, MemOperand(sp, 16, PostIndex));
 #endif
     // X0 now contains either nullptr or block pointer
     cbz(x0, &FallbackCore);
@@ -4038,10 +4111,10 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     Ptr.ClassPtr = &FEXCore::Context::Context::CompileFallbackBlock;
     LoadConstant(x3, Ptr.Data);
 
-    stp(STATE, MEM_BASE, MemOperand(sp, -16, PreIndex));
+    str(STATE, MemOperand(sp, -16, PreIndex));
     // X2 contains our guest RIP
     blr(x3); // {ThreadState, RIP}
-    ldp(STATE, MEM_BASE, MemOperand(sp, 16, PostIndex));
+    ldr(STATE, MemOperand(sp, 16, PostIndex));
 #endif
     // X0 now contains either nullptr or block pointer
     cbz(x0, &ExitError);
@@ -4067,7 +4140,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(DispatchPtr));
   // XXX: Crashes currently.
   // Disabling will be useful for debugging ThreadState
-  CustomDispatchGenerated = true;
+  // CustomDispatchGenerated = true;
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

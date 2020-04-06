@@ -73,12 +73,6 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
       uint8_t NumArgs = IR::GetArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
-        // Does the SSA(with RA) argument have an invalid argument?
-        if (Arg.ID() == 0) {
-          HadError |= true;
-          Errors << "%ssa" << CodeOp->ID() <<": Arg[" << i << "] has invalid target of %ssa0" << std::endl;
-        }
-
         // Was an argument defined after this node?
         if (Arg.ID() >= CodeOp->ID()) {
           HadError |= true;

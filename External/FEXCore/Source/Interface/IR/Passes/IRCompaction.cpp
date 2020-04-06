@@ -15,7 +15,8 @@ private:
   std::vector<IR::OrderedNodeWrapper::NodeOffsetType> OldToNewRemap;
 };
 
-IRCompaction::IRCompaction() {
+IRCompaction::IRCompaction()
+  : LocalBuilder {nullptr} {
   OldToNewRemap.resize(9000);
 }
 
