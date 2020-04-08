@@ -417,6 +417,105 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(Data, Src, Op->Size);
             break;
           }
+          case IR::OP_LOADCONTEXTPAIR: {
+            auto Op = IROp->C<IR::IROp_LoadContextPair>();
+
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            ContextPtr += Op->Offset;
+
+            void *Data = reinterpret_cast<void*>(ContextPtr);
+            memcpy(GDP, Data, Op->Size * 2);
+            break;
+          }
+          case IR::OP_STORECONTEXTPAIR: {
+            auto Op = IROp->C<IR::IROp_StoreContextPair>();
+
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            ContextPtr += Op->Offset;
+
+            void *Data = reinterpret_cast<void*>(ContextPtr);
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            memcpy(Data, Src, Op->Size * 2);
+            break;
+          }
+          case IR::OP_CREATEELEMENTPAIR: {
+            auto Op = IROp->C<IR::IROp_CreateElementPair>();
+            void *Src_Lower = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src_Upper = GetSrc<void*>(Op->Header.Args[1]);
+
+            memcpy(GDP, Src_Lower, Op->Header.Size);
+            memcpy(reinterpret_cast<void*>(reinterpret_cast<uint64_t>(GDP) + Op->Header.Size),
+              Src_Upper, Op->Header.Size);
+            break;
+          }
+          case IR::OP_EXTRACTELEMENTPAIR: {
+            auto Op = IROp->C<IR::IROp_ExtractElementPair>();
+            uintptr_t Src = GetSrc<uintptr_t>(Op->Header.Args[0]);
+            memcpy(GDP,
+              reinterpret_cast<void*>(Src + Op->Header.Size * Op->Element), Op->Header.Size);
+            break;
+          }
+          case IR::OP_CASPAIR: {
+            auto Op = IROp->C<IR::IROp_CASPair>();
+            auto Size = OpSize;
+            // Size is the size of each pair element
+            switch (Size) {
+              case 4: {
+                std::atomic<uint64_t> *Data = {};
+                if (Thread->CTX->Config.UnifiedMemory) {
+                  Data = GetSrc<std::atomic<uint64_t> *>(Op->Header.Args[2]);
+                }
+                else {
+                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[2]));
+                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[2]));
+                }
+
+                uint64_t Src1 = *GetSrc<uint64_t*>(Op->Header.Args[0]);
+                uint64_t Src2 = *GetSrc<uint64_t*>(Op->Header.Args[1]);
+
+                uint64_t Expected = Src1;
+                bool Result = Data->compare_exchange_strong(Expected, Src2);
+                GD = Result ? Src1 : Expected;
+                break;
+              }
+              case 8: {
+                std::atomic<__uint128_t> *Data = {};
+                if (Thread->CTX->Config.UnifiedMemory) {
+                  Data = GetSrc<std::atomic<__uint128_t> *>(Op->Header.Args[2]);
+                }
+                else {
+                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<__uint128_t> *>(*GetSrc<uint64_t*>(Op->Header.Args[2]));
+                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(Op->Header.Args[2]));
+                }
+
+                __uint128_t Src1 = *GetSrc<__uint128_t*>(Op->Header.Args[0]);
+                __uint128_t Src2 = *GetSrc<__uint128_t*>(Op->Header.Args[1]);
+
+                __uint128_t Expected = Src1;
+                bool Result = Data->compare_exchange_strong(Expected, Src2);
+                memcpy(GDP, Result ? &Src1 : &Expected, 16);
+                break;
+              }
+              default: LogMan::Msg::A("Unknown CAS size: %d", Size); break;
+            }
+            break;
+          }
+          case IR::OP_TRUNCELEMENTPAIR: {
+            auto Op = IROp->C<IR::IROp_TruncElementPair>();
+
+            switch (Op->Size) {
+              case 4: {
+                uint64_t *Src = GetSrc<uint64_t*>(Op->Header.Args[0]);
+                uint64_t Result{};
+                Result = Src[0] & ~0U;
+                Result |= Src[1] << 32;
+                GD = Result;
+                break;
+              }
+              default: LogMan::Msg::A("Unhandled Truncation size: %d", Op->Size); break;
+            }
+            break;
+          }
           case IR::OP_LOADFLAG: {
             auto Op = IROp->C<IR::IROp_LoadFlag>();
 
