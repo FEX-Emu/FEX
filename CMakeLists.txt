@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(FEX)
 
 option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
@@ -14,6 +14,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Bin)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+cmake_policy(SET CMP0083 NEW) # Follow new PIE policy
+include(CheckPIESupported)
+check_pie_supported()
 
 if (ENABLE_LTO)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
