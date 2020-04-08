@@ -54,9 +54,34 @@ void AssertHandler(char const *Message) {
   fflush(nullptr);
 }
 
+bool CheckMemMapping() {
+  std::fstream fs;
+  fs.open("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  std::string Line;
+  while (std::getline(fs, Line)) {
+    if (fs.eof()) break;
+    uint64_t Begin, End;
+    if (sscanf(Line.c_str(), "%lx-%lx", &Begin, &End) == 2) {
+      // If a memory range is living inside the 32bit memory space then we have a problem
+      if (Begin < 0x1'0000'0000) {
+        return false;
+      }
+    }
+  }
+
+  fs.close();
+  return true;
+}
+
 int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
+
+  if (!CheckMemMapping()) {
+    LogMan::Msg::E("[Unsupported] FEX mapped to lower 32bits! Exiting!");
+    return -1;
+  }
+
   FEX::Config::Init();
   FEX::ArgLoader::Load(argc, argv);
 
