@@ -269,6 +269,14 @@ namespace {
       auto Op = IROp->C<IR::IROp_Phi>();
       return GetRegClassFromNode(ListBegin, DataBegin, Op->PhiBegin);
     }
+    case IR::OP_LOADCONTEXTPAIR:
+    case IR::OP_STORECONTEXTPAIR:
+    case IR::OP_CREATEELEMENTPAIR:
+    case IR::OP_CASPAIR:
+    case IR::OP_TRUNCELEMENTPAIR:
+      return IR::RegisterAllocationPass::GPRPairClass;
+    case IR::OP_EXTRACTELEMENTPAIR:
+      return IR::RegisterAllocationPass::GPRClass;
     default:
       if (IROp->Op >= IR::OP_GETHOSTFLAG)
         return IR::RegisterAllocationPass::FLAGSClass;
