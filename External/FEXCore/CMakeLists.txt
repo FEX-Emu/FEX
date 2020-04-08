@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 set (PROJECT_NAME FEXCore)
 project(${PROJECT_NAME}
   VERSION 0.01
@@ -7,6 +7,11 @@ project(${PROJECT_NAME}
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 option(FORCE_AARCH64 "Force AArch64 Target for testing" FALSE)
 option(ENABLE_JITSYMBOLS "Enable visibility of JITSymbols in profiling tools" FALSE)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+cmake_policy(SET CMP0083 NEW) # Follow new PIE policy
+include(CheckPIESupported)
+check_pie_supported()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
