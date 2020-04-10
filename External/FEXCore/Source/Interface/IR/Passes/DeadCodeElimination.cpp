@@ -46,6 +46,7 @@ bool DeadCodeElimination::Run(OpDispatchBuilder *Disp) {
       // State/memory storage
       case OP_STORECONTEXTINDEXED:
       case OP_STORECONTEXT:
+      case OP_STORECONTEXTPAIR:
       case OP_STOREFLAG:
       case OP_STOREMEM:
       case OP_CAS:
