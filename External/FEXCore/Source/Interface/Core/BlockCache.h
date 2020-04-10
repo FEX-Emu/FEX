@@ -6,6 +6,11 @@ namespace FEXCore {
 class BlockCache {
 public:
 
+  struct BlockCacheEntry { 
+    uintptr_t HostCode;
+    uintptr_t GuestCode;
+  };
+
   BlockCache(FEXCore::Context::Context *CTX);
   ~BlockCache();
 
@@ -17,6 +22,8 @@ public:
   }
 
   void Erase(uint64_t Address) {
+    Address = Address & (VirtualMemSize -1);
+
     uint64_t PageOffset = Address & (0x0FFF);
     Address >>= 12;
 
@@ -28,16 +35,14 @@ public:
     }
 
     // Page exists, just set the offset to zero
-    uintptr_t *BlockPointers = reinterpret_cast<uintptr_t*>(LocalPagePointer);
-    BlockPointers[PageOffset] = 0;
+    auto BlockPointers = reinterpret_cast<BlockCacheEntry*>(LocalPagePointer);
+    BlockPointers[PageOffset].GuestCode = 0;
+    BlockPointers[PageOffset].HostCode = 0;
   }
 
-  uintptr_t AddBlockMapping(uint64_t Address, void *Ptr) {
-    if (ctx->Config.UnifiedMemory) {
-      LogMan::Throw::A(Address >= MemoryBase, "Code Address before Memory Base");
-      LogMan::Throw::A(Address < (MemoryBase + VirtualMemSize), "Code address after memory base");
-      Address -= MemoryBase;
-    }
+  uintptr_t AddBlockMapping(uint64_t Address, void *Ptr) { 
+    auto FullAddress = Address;
+    Address = Address & (VirtualMemSize -1);
 
     uint64_t PageOffset = Address & (0x0FFF);
     Address >>= 12;
@@ -56,9 +61,12 @@ public:
     }
 
     // Add the new pointer to the page block
-    uintptr_t *BlockPointers = reinterpret_cast<uintptr_t*>(LocalPagePointer);
+    auto BlockPointers = reinterpret_cast<BlockCacheEntry*>(LocalPagePointer);
     uintptr_t CastPtr = reinterpret_cast<uintptr_t>(Ptr);
-    BlockPointers[PageOffset] = CastPtr;
+
+    // This silently replaces existing mappings
+    BlockPointers[PageOffset].GuestCode = FullAddress;
+    BlockPointers[PageOffset].HostCode = CastPtr;
 
     return CastPtr;
   }
@@ -85,11 +93,8 @@ private:
   }
 
   uintptr_t FindCodePointerForAddress(uint64_t Address) {
-    if (ctx->Config.UnifiedMemory) {
-      LogMan::Throw::A(!(Address < MemoryBase), "Code Address before Memory Base");
-      LogMan::Throw::A(!(Address > (MemoryBase + VirtualMemSize)), "Code address after memory base");
-      Address -= MemoryBase;
-    }
+    auto FullAddress = Address;
+    Address = Address & (VirtualMemSize -1);
 
     uint64_t PageOffset = Address & (0x0FFF);
     Address >>= 12;
@@ -101,15 +106,19 @@ private:
     }
 
     // Find there pointer for the address in the blocks
-    uintptr_t *BlockPointers = reinterpret_cast<uintptr_t*>(LocalPagePointer);
-    return BlockPointers[PageOffset];
+    auto BlockPointers = reinterpret_cast<BlockCacheEntry*>(LocalPagePointer);
+
+    if (BlockPointers[PageOffset].GuestCode == FullAddress)
+      return BlockPointers[PageOffset].HostCode;
+    else
+      return 0;
   }
 
   uintptr_t PagePointer;
   uintptr_t PageMemory;
 
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
-  constexpr static size_t SIZE_PER_PAGE = 4096 * 8;
+  constexpr static size_t SIZE_PER_PAGE = 4096 * sizeof(BlockCacheEntry);
   size_t AllocateOffset {};
 
   FEXCore::Context::Context *ctx;
