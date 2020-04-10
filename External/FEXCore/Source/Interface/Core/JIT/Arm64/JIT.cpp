@@ -3607,9 +3607,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           lsl(TMP2, TMP2, FCMP_FLAG_EQ);
           orr(Dst, Dst, TMP2);
         }
-        if (Op->Flags & (1 << FCMP_FLAG_EQ)) {
+        if (Op->Flags & (1 << FCMP_FLAG_UNORDERED)) {
           cset(TMP2, Condition::vs);
-          lsl(TMP2, TMP2, FCMP_FLAG_EQ);
+          lsl(TMP2, TMP2, FCMP_FLAG_UNORDERED);
           orr(Dst, Dst, TMP2);
         }
 
