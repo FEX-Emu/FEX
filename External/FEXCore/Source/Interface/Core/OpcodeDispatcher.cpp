@@ -3059,7 +3059,6 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
-  ShouldDump = true;
   // REX.W used to determine if it is 16byte or 8byte
   // Unlike CMPXCHG, the destination can only be a memory location
 
