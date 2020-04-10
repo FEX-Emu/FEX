@@ -59,21 +59,11 @@ namespace FEX::ArgLoader {
       Parser.add_option_group(CPUGroup);
     }
     {
-      Parser.set_defaults("AccurateSTDOut", "0");
       Parser.set_defaults("RootFS", "");
 
       EmulationGroup.add_option("-R", "--rootfs")
         .dest("RootFS")
         .help("Which Root filesystem prefix to use");
-
-      EmulationGroup.add_option("--accurate-std")
-        .dest("AccurateSTDOut")
-        .action("store_true")
-        .help("Enable accurate output for stdout/stderr");
-      EmulationGroup.add_option("--no-accurate-std")
-        .dest("AccurateSTDOut")
-        .action("store_false")
-        .help("Enable accurate output for stdout/stderr");
 
       EmulationGroup.add_option("-U", "--unified-memory")
         .dest("UnifiedMemory")
@@ -159,11 +149,6 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("RootFS")) {
         std::string Option = Options["RootFS"];
         Config::Add("RootFS", Option);
-      }
-
-      if (Options.is_set_by_user("AccurateSTDOut")) {
-        bool Option = Options.get("AccurateSTDOut");
-        Config::Add("AccurateSTDOut", std::to_string(Option));
       }
 
       if (Options.is_set_by_user("UnifiedMemory")) {
