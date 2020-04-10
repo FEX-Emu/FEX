@@ -3058,6 +3058,70 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
+  ShouldDump = true;
+  // REX.W used to determine if it is 16byte or 8byte
+  // Unlike CMPXCHG, the destination can only be a memory location
+
+  auto Size = GetSrcSize(Op);
+  // If this is a memory location then we want the pointer to it
+  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
+    Src1 = _Add(Src1, _LoadContext(8, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
+  }
+  else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+    Src1 = _Add(Src1, _LoadContext(8, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
+  }
+
+  OrderedNode *Expected_Lower = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+  OrderedNode *Expected_Upper = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), GPRClass);
+  OrderedNode *Expected = _CreateElementPair(Expected_Lower, Expected_Upper);
+
+  // Always load 128bits from the context
+  // Since we want the full RBX and RCX loaded
+  OrderedNode *Desired = _LoadContextPair(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), GPRPairClass);
+  if (Size == 4) {
+    Desired = _TruncElementPair(Desired, 4);
+  }
+
+  // ssa0 = Expected
+  // ssa1 = Desired
+  // ssa2 = MemoryLocation
+
+  // DataSrc = *MemSrc
+  // if (DataSrc == Expected) { *MemSrc == Desired; } Expected = DataSrc
+  // This will write to memory! Careful!
+  // Third operand must be a calculated guest memory address
+
+  OrderedNode *CASResult = _CASPair(Expected, Desired, Src1);
+
+  OrderedNode *Result_Lower = _ExtractElementPair(CASResult, 0);
+  OrderedNode *Result_Upper = _ExtractElementPair(CASResult, 1);
+
+  if (Size == 4) {
+    Result_Lower = _Zext(32, Result_Lower);
+    Result_Upper = _Zext(32, Result_Upper);
+  }
+
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Result_Lower);
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), Result_Upper);
+
+  // Set ZF if memory result was expected
+  OrderedNode *EOR_Lower = _Xor(Result_Lower, Expected_Lower);
+  OrderedNode *EOR_Upper = _Xor(Result_Upper, Expected_Upper);
+  OrderedNode *Orr_Result = _Or(EOR_Lower, EOR_Upper);
+
+  auto OneConst = _Constant(1);
+  auto ZeroConst = _Constant(0);
+  OrderedNode *ZFResult = _Select(FEXCore::IR::COND_EQ,
+    Orr_Result, ZeroConst,
+    OneConst, ZeroConst);
+
+  // Set ZF
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
+}
+
 OpDispatchBuilder::IRPair<IROp_CodeBlock> OpDispatchBuilder::CreateNewCodeBlock() {
   auto OldCursor = GetWriteCursor();
   SetWriteCursor(CodeBlocks.back());
@@ -5796,6 +5860,9 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 7), 1, &OpDispatchBuilder::BTCOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 7), 1, &OpDispatchBuilder::BTCOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 7), 1, &OpDispatchBuilder::BTCOp<1>},
+
+    // GROUP 9
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
 
     // GROUP 12
     {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLI<2>},

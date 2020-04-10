@@ -16,6 +16,7 @@
     "constexpr static uint8_t COND_SLE  = 13",
     "static constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
     "static constexpr FEXCore::IR::RegisterClassType FPRClass {1}",
+    "static constexpr FEXCore::IR::RegisterClassType GPRPairClass {2}",
 
     "constexpr static uint8_t FCMP_FLAG_EQ        = 0",
     "constexpr static uint8_t FCMP_FLAG_LT        = 1",
@@ -69,6 +70,74 @@
     },
 
     "GuestReturn": {
+    },
+
+    "CASPair": {
+      "Desc": ["Does a compare and exchange with two GPRPair values",
+               "ssa0 is the comparison value",
+               "ssa1 is the new value",
+               "ssa2 is the memory location",
+               "Returns a pair containing the value in memory"
+              ],
+      "HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "NumElements": "2",
+      "SSAArgs": "3"
+    },
+
+    "LoadContextPair": {
+      "Desc": ["Loads a pair of values from the context"
+              ],
+      "HasDest": true,
+      "DestSize": "Size",
+      "NumElements": "2",
+      "Args": [
+        "uint8_t", "Size",
+        "uint32_t", "Offset",
+        "RegisterClassType", "Class"
+      ]
+    },
+
+    "StoreContextPair": {
+      "Desc": ["Stores a pair of values back in to the context"],
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "Size",
+        "uint32_t", "Offset",
+        "RegisterClassType", "Class"
+      ]
+    },
+
+    "ExtractElementPair": {
+      "Desc": ["Extracts a register for the register pair"],
+      "SSAArgs": "1",
+      "HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "Args": [
+        "uint8_t", "Element"
+      ]
+    },
+
+    "CreateElementPair": {
+      "Desc": ["Inserts a register for the register pair",
+               "ssa0 is the lower incoming register",
+               "ssa1 is the upper incoming register"
+              ],
+      "HasDest": true,
+      "DestSize": "GetOpSize(ssa0)",
+      "NumElements": "2",
+      "SSAArgs": "2"
+    },
+
+    "TruncElementPair": {
+      "Desc": "Truncates each element of a pair to the destination size",
+      "HasDest": true,
+      "DestSize": "Size",
+      "NumElements": "2",
+      "SSAArgs": "1",
+      "Args": [
+        "uint8_t", "Size"
+      ]
     },
 
     "Constant": {

@@ -34,9 +34,12 @@ static void PrintValue(uint64_t Value) {
 #define TMP2 rcx
 #define TMP3 rdx
 #define TMP4 rdi
+#define TMP5 rbx
 using namespace Xbyak::util;
-const std::array<Xbyak::Reg, 10> RA64 = { rsi, r8, r9, r10, r11, rbx, rbp, r12, r13, r15 };
-const std::array<Xbyak::Reg, 10> RA32 = { esi, r8d, r9d, r10d, r11d, ebx, ebp, r12d, r13d, r15d };
+const std::array<Xbyak::Reg, 9> RA64 = { rsi, r8, r9, r10, r11, rbp, r12, r13, r15 };
+const std::array<Xbyak::Reg, 9> RA32 = { esi, r8d, r9d, r10d, r11d, ebp, r12d, r13d, r15d };
+const std::array<std::pair<Xbyak::Reg, Xbyak::Reg>, 4> RA64Pair = {{ {rsi, r8}, {r9, r10}, {r11, rbp}, {r12, r13} }};
+const std::array<std::pair<Xbyak::Reg, Xbyak::Reg>, 4> RA32Pair = {{ {esi, r8d}, {r9d, r10d}, {r11d, ebp}, {r12d, r13d} }};
 const std::array<Xbyak::Reg, 10> RA16 = { si, r8w, r9w, r10w, r11w, bx, bp, r12w, r13w, r15w };
 const std::array<Xbyak::Reg, 10> RA8 = { sil, r8b, r9b, r10b, r11b, bl, bpl, r12b, r13b, r15b };
 const std::array<Xbyak::Reg, 11> RAXMM = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
@@ -73,13 +76,16 @@ private:
    * @{ */
   constexpr static uint32_t NumGPRs = RA64.size(); // 4 is the minimum required for GPR ops
   constexpr static uint32_t NumXMMs = RAXMM.size();
-  constexpr static uint32_t RegisterCount = NumGPRs + NumXMMs;
-  constexpr static uint32_t RegisterClasses = 2;
+  constexpr static uint32_t NumGPRPairs = RA64Pair.size();
+  constexpr static uint32_t RegisterCount = NumGPRs + NumXMMs + NumGPRPairs;
+  constexpr static uint32_t RegisterClasses = 3;
 
   constexpr static uint64_t GPRBase = (0ULL << 32);
   constexpr static uint32_t GPRClass = IR::RegisterAllocationPass::GPRClass;
   constexpr static uint64_t XMMBase = (1ULL << 32);
   constexpr static uint32_t XMMClass = IR::RegisterAllocationPass::FPRClass;
+  constexpr static uint64_t GPRPairBase = (2ULL << 32);
+  constexpr static uint32_t GPRPairClass = IR::RegisterAllocationPass::GPRPairClass;
 
   /**  @} */
 
@@ -93,6 +99,8 @@ private:
 
   template<uint8_t RAType>
   Xbyak::Reg GetSrc(uint32_t Node);
+  template<uint8_t RAType>
+  std::pair<Xbyak::Reg, Xbyak::Reg> GetSrcPair(uint32_t Node);
 
   template<uint8_t RAType>
   Xbyak::Reg GetDst(uint32_t Node);
@@ -122,6 +130,16 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
   RAPass->AddRegisters(GPRClass, NumGPRs);
   RAPass->AddRegisters(XMMClass, NumXMMs);
+  RAPass->AddRegisters(GPRPairClass, NumGPRPairs);
+
+  RAPass->AllocateRegisterConflicts(GPRClass, NumGPRs);
+  RAPass->AllocateRegisterConflicts(GPRPairClass, NumGPRs);
+
+  for (uint32_t i = 0; i < NumGPRPairs; ++i) {
+    RAPass->AddRegisterConflict(GPRClass, i * 2,     GPRPairClass, i);
+    RAPass->AddRegisterConflict(GPRClass, i * 2 + 1, GPRPairClass, i);
+  }
+
   CreateCustomDispatch(Thread);
 }
 
@@ -187,6 +205,15 @@ Xbyak::Reg JITCore::GetDst(uint32_t Node) {
     return RA16[Reg];
   else if (RAType == RA_8)
     return RA8[Reg];
+}
+
+template<uint8_t RAType>
+std::pair<Xbyak::Reg, Xbyak::Reg> JITCore::GetSrcPair(uint32_t Node) {
+  uint32_t Reg = GetPhys(Node);
+  if (RAType == RA_64)
+    return RA64Pair[Reg];
+  else if (RAType == RA_32)
+    return RA32Pair[Reg];
 }
 
 Xbyak::Xmm JITCore::GetDst(uint32_t Node) {
@@ -343,7 +370,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         if (IROp->HasDest) {
           uint64_t PhysReg = RAPass->GetNodeRegister(Node);
-          if (PhysReg >= XMMBase)
+          if (PhysReg >= GPRPairBase)
+            Inst << "\tPair" << GetPhys(Node) << " = " << Name << " ";
+          else if (PhysReg >= XMMBase)
             Inst << "\tXMM" << GetPhys(Node) << " = " << Name << " ";
           else
             Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
@@ -356,7 +385,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         for (uint8_t i = 0; i < NumArgs; ++i) {
           uint32_t ArgNode = IROp->Args[i].ID();
           uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
-          if (PhysReg >= XMMBase)
+          if (PhysReg >= GPRPairBase)
+            Inst << "Pair" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+          else if (PhysReg >= XMMBase)
             Inst << "XMM" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
           else
             Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
@@ -514,7 +545,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
-
         case IR::OP_LOADCONTEXTINDEXED: {
           auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
           size_t size = Op->Size;
@@ -752,6 +782,152 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             default:
               LogMan::Msg::A("Unhandled StoreContextIndexed stride: %d", Op->Stride);
             }
+          }
+          break;
+        }
+        case IR::OP_LOADCONTEXTPAIR: {
+          auto Op = IROp->C<IR::IROp_LoadContextPair>();
+          switch (Op->Size) {
+            case 4: {
+              auto Dst = GetSrcPair<RA_32>(Node);
+              mov(Dst.first,  dword [STATE + Op->Offset]);
+              mov(Dst.second, dword [STATE + Op->Offset + Op->Size]);
+              break;
+            }
+            case 8: {
+              auto Dst = GetSrcPair<RA_64>(Node);
+              mov(Dst.first,  qword [STATE + Op->Offset]);
+              mov(Dst.second, qword [STATE + Op->Offset + Op->Size]);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown Size"); break;
+          }
+          break;
+        }
+        case IR::OP_STORECONTEXTPAIR: {
+          auto Op = IROp->C<IR::IROp_StoreContextPair>();
+          switch (Op->Size) {
+            case 4: {
+              auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+              mov(dword [STATE + Op->Offset], Src.first);
+              mov(dword [STATE + Op->Offset + Op->Size], Src.first);
+              break;
+            }
+            case 8: {
+              auto Src = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
+              mov(qword [STATE + Op->Offset], Src.first);
+              mov(qword [STATE + Op->Offset + Op->Size], Src.first);
+              break;
+            }
+          }
+          break;
+        }
+        case IR::OP_CREATEELEMENTPAIR: {
+          auto Op = IROp->C<IR::IROp_CreateElementPair>();
+          switch (Op->Header.Size) {
+            case 4: {
+              auto Dst = GetSrcPair<RA_32>(Node);
+              mov(Dst.first, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov(Dst.second, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              break;
+            }
+            case 8: {
+              auto Dst = GetSrcPair<RA_64>(Node);
+              mov(Dst.first, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              mov(Dst.second, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              break;
+            }
+            default: LogMan::Msg::A("Unknown Size"); break;
+          }
+          break;
+        }
+        case IR::OP_EXTRACTELEMENTPAIR: {
+          auto Op = IROp->C<IR::IROp_ExtractElementPair>();
+          switch (Op->Header.Size) {
+            case 4: {
+              auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+              std::array<Xbyak::Reg, 2> Regs = {Src.first, Src.second};
+              mov (GetDst<RA_32>(Node), Regs[Op->Element]);
+              break;
+            }
+            case 8: {
+              auto Src = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
+              std::array<Xbyak::Reg, 2> Regs = {Src.first, Src.second};
+              mov (GetDst<RA_64>(Node), Regs[Op->Element]);
+              break;
+            }
+            default: LogMan::Msg::A("Unknown Size"); break;
+          }
+          break;
+        }
+        case IR::OP_TRUNCELEMENTPAIR: {
+          auto Op = IROp->C<IR::IROp_TruncElementPair>();
+
+          switch (Op->Size) {
+            case 4: {
+              auto Dst = GetSrcPair<RA_32>(Node);
+              auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+              mov(Dst.first, Src.first);
+              mov(Dst.second, Src.second);
+              break;
+            }
+            default: LogMan::Msg::A("Unhandled Truncation size: %d", Op->Size); break;
+          }
+          break;
+        }
+        case IR::OP_CASPAIR: {
+          auto Op = IROp->C<IR::IROp_CAS>();
+          // Args[0]: Desired
+          // Args[1]: Expected
+          // Args[2]: Pointer
+          // DataSrc = *Src1
+          // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
+          // This will write to memory! Careful!
+          // Third operand must be a calculated guest memory address
+          //OrderedNode *CASResult = _CAS(Src3, Src2, Src1);
+          uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
+          auto Dst = GetSrcPair<RA_64>(Node);
+          auto Expected = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
+          auto Desired = GetSrcPair<RA_64>(Op->Header.Args[1].ID());
+          auto MemSrc = GetSrc<RA_64>(Op->Header.Args[2].ID());
+
+          Xbyak::Reg MemReg = rdi;
+          if (CTX->Config.UnifiedMemory) {
+            MemReg = MemSrc;
+          }
+          else {
+            mov(MemReg, Memory);
+            add(MemReg, MemSrc);
+          }
+
+          mov(rax, Expected.first);
+          mov(rdx, Expected.second);
+
+          mov(rbx, Desired.first);
+          mov(rcx, Desired.second);
+
+          // RDI(Or Source) now contains pointer
+          // RDX:RAX contains our expected value
+          // RCX:RBX contains our desired
+
+          lock();
+
+          switch (OpSize) {
+            case 4: {
+              cmpxchg8b(dword [MemReg]);
+              // EDX:EAX now contains the result
+              mov(Dst.first.cvt32(), eax);
+              mov(Dst.second.cvt32(), edx);
+            break;
+            }
+            case 8: {
+              cmpxchg16b(qword [MemReg]);
+              // RDX:RAX now contains the result
+              mov(Dst.first, rax);
+              mov(Dst.second, rdx);
+            break;
+            }
+            default: LogMan::Msg::A("Unsupported: %d", OpSize);
           }
           break;
         }

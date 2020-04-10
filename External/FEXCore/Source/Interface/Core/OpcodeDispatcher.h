@@ -185,6 +185,7 @@ public:
   void BSFOp(OpcodeArgs);
   void BSROp(OpcodeArgs);
   void CMPXCHGOp(OpcodeArgs);
+  void CMPXCHGPairOp(OpcodeArgs);
   void MULOp(OpcodeArgs);
   void NOTOp(OpcodeArgs);
   void XADDOp(OpcodeArgs);

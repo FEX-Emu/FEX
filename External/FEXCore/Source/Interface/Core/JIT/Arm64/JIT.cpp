@@ -27,23 +27,51 @@ using namespace vixl;
 using namespace vixl::aarch64;
 
 #define STATE x28
-#define TMP1 x1
-#define TMP2 x2
+#define TMP1 x0
+#define TMP2 x1
+#define TMP3 x2
+#define TMP4 x3
 
 #define VTMP1 v1
 #define VTMP2 v2
 #define VTMP3 v3
 
-const std::array<aarch64::Register, 13> RA64 = {
+const std::array<aarch64::Register, 22> RA64 = {
   x4, x5, x6, x7, x8, x9,
   x10, x11, x12, x13, x14, x15,
   /*x16, x17,*/ // We can't use these until we move away from the MacroAssembler
-  x18};
-const std::array<aarch64::Register, 13> RA32 = {
-  w4, w5, w6, w7, w8, w9,
-  w10, w11, w12, w13, w14, w15,
-  /*w16, w17,*/
-  w18};
+  x18, x19, x20, x21, x22, x23,
+  x24, x25, x26, x27};
+
+const std::array<std::pair<aarch64::Register, aarch64::Register>, 11> RA64Pair = {{
+  {x4, x5},
+  {x6, x7},
+  {x8, x9},
+  {x10, x11},
+  {x12, x13},
+  {x14, x15},
+  /* {x16, x17}, */
+  {x18, x19},
+  {x20, x21},
+  {x22, x23},
+  {x24, x25},
+  {x26, x27},
+}};
+
+const std::array<std::pair<aarch64::Register, aarch64::Register>, 11> RA32Pair = {{
+  {w4, w5},
+  {w6, w7},
+  {w8, w9},
+  {w10, w11},
+  {w12, w13},
+  {w14, w15},
+  /* {w16, w17}, */
+  {w18, w19},
+  {w20, w21},
+  {w22, w23},
+  {w24, w25},
+  {w26, w27},
+}};
 
 //  v8..v15 = (lower 64bits) Callee saved
 const std::array<aarch64::VRegister, 22> RAFPR = {
@@ -109,13 +137,18 @@ private:
    * @{ */
   constexpr static uint32_t NumGPRs = RA64.size();
   constexpr static uint32_t NumFPRs = RAFPR.size();
-  constexpr static uint32_t RegisterCount = NumGPRs + NumFPRs;
-  constexpr static uint32_t RegisterClasses = 2;
+  constexpr static uint32_t NumGPRPairs = RA64Pair.size();
+  constexpr static uint32_t NumCalleeGPRs = 10;
+  constexpr static uint32_t NumCalleeGPRPairs = 5;
+  constexpr static uint32_t RegisterCount = NumGPRs + NumFPRs + NumGPRPairs;
+  constexpr static uint32_t RegisterClasses = 3;
 
   constexpr static uint64_t GPRBase = (0ULL << 32);
   constexpr static uint32_t GPRClass = IR::RegisterAllocationPass::GPRClass;
   constexpr static uint64_t FPRBase = (1ULL << 32);
   constexpr static uint32_t FPRClass = IR::RegisterAllocationPass::FPRClass;
+  constexpr static uint64_t GPRPairBase = (2ULL << 32);
+  constexpr static uint32_t GPRPairClass = IR::RegisterAllocationPass::GPRPairClass;
 
   /**  @} */
 
@@ -130,6 +163,9 @@ private:
 
   template<uint8_t RAType>
   aarch64::Register GetDst(uint32_t Node);
+
+  template<uint8_t RAType>
+  std::pair<aarch64::Register, aarch64::Register> GetSrcPair(uint32_t Node);
 
   aarch64::VRegister GetSrc(uint32_t Node);
   aarch64::VRegister GetDst(uint32_t Node);
@@ -203,10 +239,6 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   SetCPUFeatures(vixl::CPUFeatures::All());
 
   RAPass = CTX->GetRegisterAllocatorPass();
-  RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
-
-  RAPass->AddRegisters(GPRClass, NumGPRs);
-  RAPass->AddRegisters(FPRClass, NumFPRs);
 
   // Just set the entire range as executable
   auto Buffer = GetBuffer();
@@ -220,6 +252,31 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   CPU.SetUp();
   SetAllowAssembler(true);
   CreateCustomDispatch(Thread);
+
+  uint32_t NumUsedGPRs = NumGPRs;
+  uint32_t NumUsedGPRPairs = NumGPRPairs;
+  uint32_t UsedRegisterCount = RegisterCount;
+
+  if (!CustomDispatchGenerated) {
+    // If we aren't using our custom dispatcher then cut out the callee saved registers
+    NumUsedGPRs -= NumCalleeGPRs;
+    NumUsedGPRPairs -= NumCalleeGPRPairs;
+    UsedRegisterCount -= NumCalleeGPRs + NumCalleeGPRPairs;
+  }
+
+  RAPass->AllocateRegisterSet(UsedRegisterCount, RegisterClasses);
+
+  RAPass->AddRegisters(GPRClass, NumUsedGPRs);
+  RAPass->AddRegisters(FPRClass, NumFPRs);
+  RAPass->AddRegisters(GPRPairClass, NumUsedGPRPairs);
+
+  RAPass->AllocateRegisterConflicts(GPRClass, NumUsedGPRs);
+  RAPass->AllocateRegisterConflicts(GPRPairClass, NumUsedGPRs);
+
+  for (uint32_t i = 0; i < NumUsedGPRPairs; ++i) {
+    RAPass->AddRegisterConflict(GPRClass, i * 2,     GPRPairClass, i);
+    RAPass->AddRegisterConflict(GPRClass, i * 2 + 1, GPRPairClass, i);
+  }
 }
 
 JITCore::~JITCore() {
@@ -255,7 +312,7 @@ aarch64::Register JITCore::GetSrc(uint32_t Node) {
   if (RAType == RA_64)
     return RA64[Reg];
   else if (RAType == RA_32)
-    return RA32[Reg];
+    return RA64[Reg].W();
 }
 
 template<uint8_t RAType>
@@ -264,7 +321,16 @@ aarch64::Register JITCore::GetDst(uint32_t Node) {
   if (RAType == RA_64)
     return RA64[Reg];
   else if (RAType == RA_32)
-    return RA32[Reg];
+    return RA64[Reg].W();
+}
+
+template<uint8_t RAType>
+std::pair<aarch64::Register, aarch64::Register> JITCore::GetSrcPair(uint32_t Node) {
+  uint32_t Reg = GetPhys(Node);
+  if (RAType == RA_64)
+    return RA64Pair[Reg];
+  else if (RAType == RA_32)
+    return RA32Pair[Reg];
 }
 
 aarch64::VRegister JITCore::GetSrc(uint32_t Node) {
@@ -367,7 +433,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         if (IROp->HasDest) {
           uint64_t PhysReg = RAPass->GetNodeRegister(Node);
-          if (PhysReg >= FPRBase)
+          if (PhysReg >= GPRPairBase)
+            Inst << "\tPair" << GetPhys(Node) << " = " << Name << " ";
+          else if (PhysReg >= FPRBase)
             Inst << "\tFPR" << GetPhys(Node) << " = " << Name << " ";
           else
             Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
@@ -380,11 +448,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         for (uint8_t i = 0; i < NumArgs; ++i) {
           uint32_t ArgNode = IROp->Args[i].ID();
           uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
-          if (PhysReg >= FPRBase)
+          if (PhysReg >= GPRPairBase)
+            Inst << "Pair" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+          else if (PhysReg >= FPRBase)
             Inst << "FPR" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
           else
             Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
         }
+        std::cout << Inst.str() << std::endl;
       }
 
       switch (IROp->Op) {
@@ -845,6 +916,124 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_LOADCONTEXTPAIR: {
+        auto Op = IROp->C<IR::IROp_LoadContextPair>();
+        switch (Op->Size) {
+          case 4: {
+            auto Dst = GetSrcPair<RA_32>(Node);
+            ldp(Dst.first, Dst.second, MemOperand(STATE, Op->Offset));
+            break;
+          }
+          case 8: {
+            auto Dst = GetSrcPair<RA_64>(Node);
+            ldp(Dst.first, Dst.second, MemOperand(STATE, Op->Offset));
+            break;
+          }
+          default: LogMan::Msg::A("Unknown Size"); break;
+        }
+        break;
+      }
+      case IR::OP_STORECONTEXTPAIR: {
+        auto Op = IROp->C<IR::IROp_StoreContextPair>();
+        switch (Op->Size) {
+          case 4: {
+            auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+            stp(Src.first, Src.second, MemOperand(STATE, Op->Offset));
+            break;
+          }
+          case 8: {
+            auto Src = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
+            stp(Src.first, Src.second, MemOperand(STATE, Op->Offset));
+            break;
+          }
+        }
+        break;
+      }
+      case IR::OP_CREATEELEMENTPAIR: {
+        auto Op = IROp->C<IR::IROp_CreateElementPair>();
+        switch (Op->Header.Size) {
+          case 4: {
+            auto Dst = GetSrcPair<RA_32>(Node);
+            mov(Dst.first, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            mov(Dst.second, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            break;
+          }
+          case 8: {
+            auto Dst = GetSrcPair<RA_64>(Node);
+            mov(Dst.first, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            mov(Dst.second, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            break;
+          }
+          default: LogMan::Msg::A("Unknown Size"); break;
+        }
+        break;
+      }
+      case IR::OP_EXTRACTELEMENTPAIR: {
+        auto Op = IROp->C<IR::IROp_ExtractElementPair>();
+        switch (Op->Header.Size) {
+          case 4: {
+            auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+            std::array<aarch64::Register, 2> Regs = {Src.first, Src.second};
+            mov (GetDst<RA_32>(Node), Regs[Op->Element]);
+            break;
+          }
+          case 8: {
+            auto Src = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
+            std::array<aarch64::Register, 2> Regs = {Src.first, Src.second};
+            mov (GetDst<RA_64>(Node), Regs[Op->Element]);
+            break;
+          }
+          default: LogMan::Msg::A("Unknown Size"); break;
+        }
+        break;
+      }
+      case IR::OP_TRUNCELEMENTPAIR: {
+        auto Op = IROp->C<IR::IROp_TruncElementPair>();
+
+        switch (Op->Size) {
+          case 4: {
+            auto Dst = GetSrcPair<RA_32>(Node);
+            auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+            mov(Dst.first, Src.first);
+            mov(Dst.second, Src.second);
+            break;
+          }
+          default: LogMan::Msg::A("Unhandled Truncation size: %d", Op->Size); break;
+        }
+        break;
+      }
+      case IR::OP_CASPAIR: {
+        auto Op = IROp->C<IR::IROp_CASPair>();
+        // Size is the size of each pair element
+        auto Dst = GetSrcPair<RA_64>(Node);
+        auto Expected = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
+        auto Desired = GetSrcPair<RA_64>(Op->Header.Args[1].ID());
+        auto MemSrc = GetSrc<RA_64>(Op->Header.Args[2].ID());
+
+        if (!CTX->Config.UnifiedMemory) {
+          LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+          add(TMP1, TMP1, MemSrc);
+          MemSrc = TMP1;
+        }
+
+        mov(TMP3, Expected.first);
+        mov(TMP4, Expected.second);
+
+        switch (OpSize) {
+        case 4:
+          caspal(TMP3.W(), TMP4.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
+          mov(Dst.first.W(), TMP3.W());
+          mov(Dst.second.W(), TMP4.W());
+          break;
+        case 8:
+          caspal(TMP3.X(), TMP4.X(), Desired.first.X(), Desired.second.X(), MemOperand(MemSrc));
+          mov(Dst.first, TMP3);
+          mov(Dst.second, TMP4);
+          break;
+        default: LogMan::Msg::A("Unsupported: %d", OpSize);
+        }
+        break;
+      }
       case IR::OP_STOREFLAG: {
         auto Op = IROp->C<IR::IROp_StoreFlag>();
         and_(TMP1, GetSrc<RA_64>(Op->Header.Args[0].ID()), 1);
@@ -886,7 +1075,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
-
       case IR::OP_SPILLREGISTER: {
         auto Op = IROp->C<IR::IROp_SpillRegister>();
         uint32_t SlotOffset = Op->Slot * 16;
@@ -3691,12 +3879,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov(TMP1, GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
           mov(TMP2, GetSrc(Op->Header.Args[0].ID()).V2D(), 1);
           // Left shift low 64bits
-          lsl(x0, TMP1, BitShift);
+          lsl(TMP3, TMP1, BitShift);
 
           // Extract high 64bits from [TMP2:TMP1]
           extr(TMP1, TMP2, TMP1, 64 - BitShift);
 
-          mov(GetDst(Node).V2D(), 0, x0);
+          mov(GetDst(Node).V2D(), 0, TMP3);
           mov(GetDst(Node).V2D(), 1, TMP1);
         }
         else {
@@ -3967,15 +4155,17 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   FinalizeCode();
 
+
+  auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(Entry));
 #if _M_X86_64
   if (!CustomDispatchGenerated) {
-    auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     HostToGuest[State->State.State.rip] = std::make_pair(Entry, CodeEnd);
     return (void*)SimulatorExecution;
   }
 #endif
 
+  LogMan::Msg::D("RIP: %p disas %p,%p", HeaderOp->Entry, Entry, CodeEnd);
   return reinterpret_cast<void*>(Entry);
 }
 
@@ -4016,10 +4206,16 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // Load in our RIP
   // Don't modify x2 since it contains our RIP once the block doesn't exist
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+  auto RipReg = x2;
+  if (CTX->Config.UnifiedMemory) {
+    LoadConstant(x3, reinterpret_cast<uint64_t>(CTX->MemoryMapper.GetMemoryBase()));
+    sub(x3, x2, x3);
+    RipReg = x3;
+  }
   LoadConstant(x0, Thread->BlockCache->GetPagePointer());
 
   // Offset the address and add to our page pointer
-  lsr(x1, x2, 12);
+  lsr(x1, RipReg, 12);
 
   // Load the pointer from the offset
   ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
@@ -4029,7 +4225,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   cbz(x0, &NoBlock);
 
   // Steal the page offset
-  and_(x1, x2, 0x0FFF);
+  and_(x1, RipReg, 0x0FFF);
 
   // Now load from that pointer offset by the page offset to get our real block
   ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
@@ -4138,9 +4334,8 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
   FinalizeCode();
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(DispatchPtr));
-  // XXX: Crashes currently.
   // Disabling will be useful for debugging ThreadState
-  // CustomDispatchGenerated = true;
+  //CustomDispatchGenerated = true;
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

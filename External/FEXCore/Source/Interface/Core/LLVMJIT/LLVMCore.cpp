@@ -68,6 +68,7 @@ private:
   void HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrapperIterator *Node);
   llvm::Value *CreateContextGEP(uint64_t Offset, uint8_t Size);
   llvm::Value *CreateContextPtr(uint64_t Offset, uint8_t Size);
+  llvm::Value *CreateContextPairPtr(uint64_t Offset, uint8_t Size);
   llvm::Value *CreateIndexedContextPtr(llvm::Value *Index, uint64_t Offset, uint8_t Size, uint8_t Stride);
   llvm::Value *CreateMemoryLoad(llvm::Value *Ptr, uint8_t Align);
   void CreateMemoryStore(llvm::Value *Ptr, llvm::Value *Val, uint8_t Align);
@@ -1283,6 +1284,24 @@ llvm::Value *LLVMJITCore::CreateContextPtr(uint64_t Offset, uint8_t Size) {
   return nullptr;
 }
 
+llvm::Value *LLVMJITCore::CreateContextPairPtr(uint64_t Offset, uint8_t Size) {
+  llvm::Type *i64 = llvm::Type::getInt64Ty(*Con);
+
+  llvm::Type *i32v = llvm::VectorType::get(llvm::Type::getInt32Ty(*Con), 2);
+  llvm::Type *i64v = llvm::VectorType::get(llvm::Type::getInt64Ty(*Con), 2);
+
+  llvm::Value *StateBasePtr = JITState.IRBuilder->CreatePtrToInt(JITCurrentState.CPUState, i64);
+  StateBasePtr = JITState.IRBuilder->CreateAdd(StateBasePtr, JITState.IRBuilder->getInt64(Offset));
+
+  // Convert back to pointer of correct size
+  switch (Size) {
+  case 4:  return JITState.IRBuilder->CreateIntToPtr(StateBasePtr, i32v->getPointerTo());
+  case 8:  return JITState.IRBuilder->CreateIntToPtr(StateBasePtr, i64v->getPointerTo());
+  default: LogMan::Msg::A("Unknown context pointer size: %d", Size); break;
+  }
+  return nullptr;
+}
+
 llvm::Value *LLVMJITCore::CreateIndexedContextPtr(llvm::Value *Index, uint64_t Offset, uint8_t Size, uint8_t Stride) {
   llvm::Type *i8 = llvm::Type::getInt8Ty(*Con);
   llvm::Type *i16 = llvm::Type::getInt16Ty(*Con);
@@ -1612,7 +1631,114 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
         JITState.IRBuilder->CreateStore(Src, Value);
     break;
     }
+    case IR::OP_LOADCONTEXTPAIR: {
+      auto Op = IROp->C<IR::IROp_LoadContextPair>();
+      auto Value = CreateContextPairPtr(Op->Offset, Op->Size);
+      uint8_t FullSize = Op->Size * 2;
+      llvm::Value *Load;
+      if ((Op->Offset % FullSize) == 0)
+        Load = JITState.IRBuilder->CreateAlignedLoad(Value, FullSize);
+      else
+        Load = JITState.IRBuilder->CreateLoad(Value);
+      SetDest(*WrapperOp, Load);
+      break;
+    }
+    case IR::OP_STORECONTEXTPAIR: {
+      auto Op = IROp->C<IR::IROp_StoreContextPair>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      auto Value = CreateContextPairPtr(Op->Offset, Op->Size);
 
+      Src = CastToOpaqueStructure(Src, VectorType::get(Type::getIntNTy(*Con, Op->Size * 8), 2));
+
+      uint8_t FullSize = Op->Size * 2;
+      if ((Op->Offset % FullSize) == 0)
+        JITState.IRBuilder->CreateAlignedStore(Src, Value, FullSize);
+      else
+        JITState.IRBuilder->CreateStore(Src, Value);
+      break;
+    }
+    case IR::OP_CREATEELEMENTPAIR: {
+      auto Op = IROp->C<IR::IROp_CreateElementPair>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      Value *Undef = UndefValue::get(VectorType::get(Src1->getType(), 2));
+      Undef = JITState.IRBuilder->CreateInsertElement(Undef, Src1, JITState.IRBuilder->getInt32(0));
+      Undef = JITState.IRBuilder->CreateInsertElement(Undef, Src2, JITState.IRBuilder->getInt32(1));
+      SetDest(*WrapperOp, Undef);
+      break;
+    }
+    case IR::OP_EXTRACTELEMENTPAIR: {
+      auto Op = IROp->C<IR::IROp_ExtractElementPair>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+      auto Result = JITState.IRBuilder->CreateExtractElement(Src, Op->Element);
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_CASPAIR: {
+      auto Op = IROp->C<IR::IROp_CAS>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+      auto MemSrc = GetSrc(Op->Header.Args[2]);
+
+      uint8_t ElementSize = OpSize * 8;
+      uint8_t FullSize = ElementSize * 2;
+
+      auto VectorType = Src1->getType();
+
+      if (!ThreadState->CTX->Config.UnifiedMemory) {
+        MemSrc = JITState.IRBuilder->CreateAdd(MemSrc, JITState.IRBuilder->getInt64(CTX->MemoryMapper.GetBaseOffset<uint64_t>(0)));
+      }
+      // Cast the pointer type correctly
+      MemSrc = JITState.IRBuilder->CreateIntToPtr(MemSrc, Type::getIntNTy(*Con, FullSize)->getPointerTo());
+
+      auto Src1_L = JITState.IRBuilder->CreateExtractElement(Src1, (uint8_t)0);
+      auto Src1_H = JITState.IRBuilder->CreateExtractElement(Src1, 1);
+
+      auto Src2_L = JITState.IRBuilder->CreateExtractElement(Src2, (uint8_t)0);
+      auto Src2_H = JITState.IRBuilder->CreateExtractElement(Src2, 1);
+
+      Src1_L = JITState.IRBuilder->CreateZExtOrTrunc(Src1_L, MemSrc->getType()->getPointerElementType());
+      Src1_H = JITState.IRBuilder->CreateZExtOrTrunc(Src1_H, MemSrc->getType()->getPointerElementType());
+
+      Src2_L = JITState.IRBuilder->CreateZExtOrTrunc(Src2_L, MemSrc->getType()->getPointerElementType());
+      Src2_H = JITState.IRBuilder->CreateZExtOrTrunc(Src2_H, MemSrc->getType()->getPointerElementType());
+
+      Src1 = JITState.IRBuilder->CreateOr(JITState.IRBuilder->CreateShl(Src1_H, JITState.IRBuilder->getIntN(FullSize, ElementSize)),
+        Src1_L);
+
+      Src2 = JITState.IRBuilder->CreateOr(JITState.IRBuilder->CreateShl(Src2_H, JITState.IRBuilder->getIntN(FullSize, ElementSize)),
+        Src2_L);
+
+      llvm::Value *Result = JITState.IRBuilder->CreateAtomicCmpXchg(MemSrc, Src1, Src2, llvm::AtomicOrdering::SequentiallyConsistent, llvm::AtomicOrdering::SequentiallyConsistent);
+
+      // Result is a { <Type>, i1 } So we need to extract it first
+      // Behaves exactly like std::atomic::compare_exchange_strong(Desired (Src1), Src2) ? Src1 : Desired
+      Result = JITState.IRBuilder->CreateExtractValue(Result, {0});
+
+      auto ResultLow = JITState.IRBuilder->CreateTrunc(Result, VectorType->getVectorElementType());
+      auto ResultHigh = JITState.IRBuilder->CreateTrunc(JITState.IRBuilder->CreateLShr(Result, JITState.IRBuilder->getIntN(FullSize, ElementSize)), VectorType->getVectorElementType());
+
+      Value *Undef = UndefValue::get(VectorType);
+      Undef = JITState.IRBuilder->CreateInsertElement(Undef, ResultLow, JITState.IRBuilder->getIntN(FullSize, 0));
+      Result = JITState.IRBuilder->CreateInsertElement(Undef, ResultHigh, JITState.IRBuilder->getIntN(FullSize, 1));
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_TRUNCELEMENTPAIR: {
+      auto Op = IROp->C<IR::IROp_TruncElementPair>();
+
+      switch (Op->Size) {
+        case 4: {
+          auto Src = GetSrc(Op->Header.Args[0]);
+          auto Result = JITState.IRBuilder->CreateTrunc(Src, VectorType::get(llvm::Type::getIntNTy(*Con, 32), 2));
+          SetDest(*WrapperOp, Result);
+          break;
+        }
+        default: LogMan::Msg::A("Unhandled Truncation size: %d", Op->Size); break;
+      }
+      break;
+    }
     case IR::OP_LOADFLAG: {
       auto Op = IROp->C<IR::IROp_LoadFlag>();
       auto Value = CreateContextPtr(offsetof(FEXCore::Core::CPUState, flags) + Op->Flag, 1);

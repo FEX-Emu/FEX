@@ -37,6 +37,8 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
     *out << "GPR";
   else if (Arg == 1)
     *out << "FPR";
+  else if (Arg == 2)
+    *out << "GPRPair";
   else
     *out << "Unknown Registerclass " << Arg;
 }

@@ -471,7 +471,9 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
         }
       }
       else if (IROp->Op == OP_STORECONTEXTINDEXED ||
-               IROp->Op == OP_LOADCONTEXTINDEXED) {
+               IROp->Op == OP_LOADCONTEXTINDEXED ||
+               IROp->Op == OP_LOADCONTEXTPAIR ||
+               IROp->Op == OP_STORECONTEXTPAIR) {
         // We can't track through these
         ResetClassificationAccesses(&LocalInfo);
       }
