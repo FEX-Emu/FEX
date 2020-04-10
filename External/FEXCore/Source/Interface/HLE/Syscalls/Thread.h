@@ -26,6 +26,7 @@ namespace FEXCore::HLE {
   uint64_t Getresuid(FEXCore::Core::InternalThreadState *Thread, uid_t *ruid, uid_t *euid, uid_t *suid);
   uint64_t Setresgid(FEXCore::Core::InternalThreadState *Thread, gid_t rgid, gid_t egid, gid_t sgid);
   uint64_t Getresgid(FEXCore::Core::InternalThreadState *Thread, gid_t *rgid, gid_t *egid, gid_t *sgid);
+  uint64_t Personality(FEXCore::Core::InternalThreadState *Thread, uint64_t persona);
   uint64_t Prctl(FEXCore::Core::InternalThreadState *Thread, int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
   uint64_t Arch_Prctl(FEXCore::Core::InternalThreadState *Thread, int code, unsigned long addr);
   uint64_t Gettid(FEXCore::Core::InternalThreadState *Thread);

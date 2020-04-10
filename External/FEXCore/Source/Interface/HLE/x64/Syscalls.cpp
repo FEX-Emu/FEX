@@ -468,6 +468,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
       Args->Argument[2], Args->Argument[3],
       Ret);
     break;
+  case SYSCALL_PERSONALITY:
+    LogMan::Msg::D("personality(0x%lx) = %lx", Args->Argument[1], Ret);
+    break;
   case SYSCALL_STATFS:
     LogMan::Msg::D("statfs(\"%s\", {...}) = %ld", reinterpret_cast<char const*>(Args->Argument[1]), Ret);
     break;
@@ -669,6 +672,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_GETRESGID,          cvt(&FEXCore::HLE::Getresgid),         3},
     {SYSCALL_SIGALTSTACK,        cvt(&NopSuccess),                      2},
     {SYSCALL_MKNOD,              cvt(&FEXCore::HLE::Mknod),             3},
+    {SYSCALL_PERSONALITY,        cvt(&FEXCore::HLE::Personality),       1},
     {SYSCALL_STATFS,             cvt(&FEXCore::HLE::Statfs),            2},
     {SYSCALL_FSTATFS,            cvt(&FEXCore::HLE::FStatfs),           2},
     {SYSCALL_GETPRIORITY,        cvt(&FEXCore::HLE::Getpriority),       2},

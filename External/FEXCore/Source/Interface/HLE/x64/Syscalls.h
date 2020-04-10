@@ -105,6 +105,7 @@ enum Syscalls {
   SYSCALL_GETRESGID       = 120, ///< __NR_getresgid
   SYSCALL_SIGALTSTACK     = 131, ///< __NR_sigaltstack
   SYSCALL_MKNOD           = 133, ///< __NR_mknod
+  SYSCALL_PERSONALITY     = 135, ///< __NR_personality
   SYSCALL_STATFS          = 137, ///< __NR_statfs
   SYSCALL_FSTATFS         = 138, ///< __NR_fstatfs
   SYSCALL_GETPRIORITY     = 140, ///< __NR_getpriority

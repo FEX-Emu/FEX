@@ -8,6 +8,7 @@
 #include <linux/futex.h>
 #include <stdint.h>
 #include <sched.h>
+#include <sys/personality.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
@@ -178,6 +179,11 @@ namespace FEXCore::HLE {
 
   uint64_t Getresgid(FEXCore::Core::InternalThreadState *Thread, gid_t *rgid, gid_t *egid, gid_t *sgid) {
     uint64_t Result = ::getresgid(rgid, egid, sgid);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Personality(FEXCore::Core::InternalThreadState *Thread, uint64_t persona) {
+    uint64_t Result = ::personality(persona);
     SYSCALL_ERRNO();
   }
 
