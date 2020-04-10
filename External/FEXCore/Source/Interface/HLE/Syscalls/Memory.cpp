@@ -10,7 +10,7 @@ namespace FEXCore::Core {
 struct InternalThreadState;
 }
 
-//#define MEM_PASSTHROUGH
+#define MEM_PASSTHROUGH
 namespace FEXCore::HLE {
   uint64_t Mmap(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
 #ifdef MEM_PASSTHROUGH
