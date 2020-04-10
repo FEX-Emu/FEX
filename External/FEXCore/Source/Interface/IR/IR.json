@@ -645,7 +645,11 @@
     },
 
     "FCmp": {
+      "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
+               "Ordering flag result is true if either float input is NaN"
+              ],
       "HasDest": true,
+      "DestSize": "4",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "ElementSize",
