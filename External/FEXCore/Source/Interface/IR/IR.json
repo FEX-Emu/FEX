@@ -17,6 +17,7 @@
     "static constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
     "static constexpr FEXCore::IR::RegisterClassType FPRClass {1}",
     "static constexpr FEXCore::IR::RegisterClassType GPRPairClass {2}",
+    "static constexpr FEXCore::IR::RegisterClassType InvalidClass {~0U}",
 
     "constexpr static uint8_t FCMP_FLAG_EQ        = 0",
     "constexpr static uint8_t FCMP_FLAG_LT        = 1",
