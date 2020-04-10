@@ -7,16 +7,11 @@ class IRListView;
 
 class RegisterAllocationPass : public FEXCore::IR::Pass {
   public:
-    static constexpr uint32_t GPRClass = 0;
-    static constexpr uint32_t FPRClass = 1;
-    static constexpr uint32_t GPRPairClass = 2;
-    static constexpr uint32_t FLAGSClass = 3;
-
     bool HasFullRA() const { return HadFullRA; }
     uint32_t SpillSlots() const { return SpillSlotCount; }
 
     virtual void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) = 0;
-    virtual void AddRegisters(uint32_t Class, uint32_t RegisterCount) = 0;
+    virtual void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) = 0;
 
     /**
      * @brief Adds a conflict between the two registers (and their respective classes) so if one is allocated then the other can not be allocated in
@@ -30,8 +25,8 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
      * AddRegisterConflict(GPRClass, 0, PairClass, 0); -> Make sure the pair interferes with x0
      * AddRegisterConflict(GPRClass, 1, PairClass, 1); -> Make sure the pair interferes with x1
      */
-    virtual void AddRegisterConflict(uint32_t ClassConflict, uint32_t RegConflict, uint32_t Class, uint32_t Reg) = 0;
-    virtual void AllocateRegisterConflicts(uint32_t Class, uint32_t NumConflicts) = 0;
+    virtual void AddRegisterConflict(FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) = 0;
+    virtual void AllocateRegisterConflicts(FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) = 0;
 
     /**
      * @name Inference graph handling

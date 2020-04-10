@@ -20,7 +20,7 @@ namespace {
   struct ContextMemberInfo {
     ContextMemberClassification Class;
     LastAccessType Accessed;
-    uint8_t AccessRegClass;
+    FEXCore::IR::RegisterClassType AccessRegClass;
     uint32_t AccessOffset;
     uint8_t AccessSize;
     FEXCore::IR::OrderedNode *Node;
@@ -47,7 +47,7 @@ namespace {
         sizeof(FEXCore::Core::CPUState::rip),
       },
       DefaultAccess[0],
-      255,
+      FEXCore::IR::InvalidClass,
     });
 
     for (size_t i = 0; i < 16; ++i) {
@@ -57,7 +57,7 @@ namespace {
           sizeof(FEXCore::Core::CPUState::gregs[0]),
         },
         DefaultAccess[1],
-        255,
+        FEXCore::IR::InvalidClass,
       });
     }
 
@@ -67,7 +67,7 @@ namespace {
         sizeof(uint64_t),
       },
       DefaultAccess[2], ///< NOP padding
-      255,
+      FEXCore::IR::InvalidClass,
     });
 
     for (size_t i = 0; i < 16; ++i) {
@@ -77,7 +77,7 @@ namespace {
           sizeof(FEXCore::Core::CPUState::xmm[0]),
         },
         DefaultAccess[3],
-        255,
+        FEXCore::IR::InvalidClass,
       });
     }
 
@@ -87,7 +87,7 @@ namespace {
         sizeof(FEXCore::Core::CPUState::gs),
       },
       DefaultAccess[4],
-      255,
+      FEXCore::IR::InvalidClass,
     });
 
     ContextClassification->emplace_back(ContextMemberInfo{
@@ -96,7 +96,7 @@ namespace {
         sizeof(FEXCore::Core::CPUState::fs),
       },
       DefaultAccess[5],
-      255,
+      FEXCore::IR::InvalidClass,
     });
 
     for (size_t i = 0; i < (sizeof(FEXCore::Core::CPUState::flags) / sizeof(FEXCore::Core::CPUState::flags[0])); ++i) {
@@ -106,7 +106,7 @@ namespace {
           sizeof(FEXCore::Core::CPUState::flags[0]),
         },
         DefaultAccess[6],
-        255,
+        FEXCore::IR::InvalidClass,
       });
     }
 
@@ -117,7 +117,7 @@ namespace {
           sizeof(FEXCore::Core::CPUState::mm[0]),
         },
         DefaultAccess[7],
-        255,
+        FEXCore::IR::InvalidClass,
       });
     }
 
@@ -134,7 +134,7 @@ namespace {
   static void ResetClassificationAccesses(ContextInfo *ContextClassification) {
     auto SetAccess = [&](size_t Offset, auto Access) {
       ContextClassification->at(Offset).Accessed = Access;
-      ContextClassification->at(Offset).AccessRegClass = 255;
+      ContextClassification->at(Offset).AccessRegClass = FEXCore::IR::InvalidClass;
       ContextClassification->at(Offset).AccessOffset = 0;
     };
     size_t Offset = 0;
@@ -178,8 +178,8 @@ private:
   std::unordered_map<FEXCore::IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
 
   ContextMemberInfo *FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size);
-  ContextMemberInfo *RecordAccess(ContextMemberInfo *Info, uint8_t RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2 = nullptr);
-  ContextMemberInfo *RecordAccess(ContextInfo *ClassifiedInfo, uint8_t RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2 = nullptr);
+  ContextMemberInfo *RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2 = nullptr);
+  ContextMemberInfo *RecordAccess(ContextInfo *ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2 = nullptr);
   void CalculateControlFlowInfo(FEXCore::IR::OpDispatchBuilder *Disp);
 
   // Block local Passes
@@ -202,7 +202,7 @@ ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t O
   return Info;
 }
 
-ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, uint8_t RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2) {
+ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2) {
   LogMan::Throw::A((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
   LogMan::Throw::A(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
 
@@ -223,7 +223,7 @@ ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, uint8_t RegClass
   return Info;
 }
 
-ContextMemberInfo *RCLSE::RecordAccess(ContextInfo *ClassifiedInfo, uint8_t RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2) {
+ContextMemberInfo *RCLSE::RecordAccess(ContextInfo *ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2) {
   ContextMemberInfo *Info = FindMemberInfo(ClassifiedInfo, Offset, Size);
   return RecordAccess(Info, RegClass, Offset, Size, AccessType, Node, Node2);
 }
@@ -449,24 +449,25 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
       }
       else if (IROp->Op == OP_STOREFLAG) {
         auto Op = IROp->CW<IR::IROp_StoreFlag>();
-        RecordAccess(&LocalInfo, 0, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
+        RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
       }
       else if (IROp->Op == OP_LOADFLAG) {
         auto Op = IROp->CW<IR::IROp_LoadFlag>();
         auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
         LastAccessType LastAccess = Info->Accessed;
         OrderedNode *LastNode = Info->Node;
+
         if (LastAccess == ACCESS_WRITE) { // 1 byte so always a full write
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
           Disp->SetWriteCursor(CodeNode);
           auto Res = Disp->_Bfe(1, 0, LastNode);
           Disp->ReplaceAllUsesWithInclusive(CodeNode, Res, CodeBegin, CodeLast);
-          RecordAccess(Info, 0, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, Res);
+          RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastNode);
           Changed = true;
         }
         else if (LastAccess == ACCESS_READ) {
           Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
-          RecordAccess(Info, 0, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastNode);
+          RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastNode);
           Changed = true;
         }
       }

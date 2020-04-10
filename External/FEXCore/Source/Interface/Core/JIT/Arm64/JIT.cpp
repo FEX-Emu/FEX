@@ -144,11 +144,8 @@ private:
   constexpr static uint32_t RegisterClasses = 3;
 
   constexpr static uint64_t GPRBase = (0ULL << 32);
-  constexpr static uint32_t GPRClass = IR::RegisterAllocationPass::GPRClass;
   constexpr static uint64_t FPRBase = (1ULL << 32);
-  constexpr static uint32_t FPRClass = IR::RegisterAllocationPass::FPRClass;
   constexpr static uint64_t GPRPairBase = (2ULL << 32);
-  constexpr static uint32_t GPRPairClass = IR::RegisterAllocationPass::GPRPairClass;
 
   /**  @} */
 
@@ -266,16 +263,16 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 
   RAPass->AllocateRegisterSet(UsedRegisterCount, RegisterClasses);
 
-  RAPass->AddRegisters(GPRClass, NumUsedGPRs);
-  RAPass->AddRegisters(FPRClass, NumFPRs);
-  RAPass->AddRegisters(GPRPairClass, NumUsedGPRPairs);
+  RAPass->AddRegisters(FEXCore::IR::GPRClass, NumUsedGPRs);
+  RAPass->AddRegisters(FEXCore::IR::FPRClass, NumFPRs);
+  RAPass->AddRegisters(FEXCore::IR::GPRPairClass, NumUsedGPRPairs);
 
-  RAPass->AllocateRegisterConflicts(GPRClass, NumUsedGPRs);
-  RAPass->AllocateRegisterConflicts(GPRPairClass, NumUsedGPRs);
+  RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRClass, NumUsedGPRs);
+  RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRPairClass, NumUsedGPRs);
 
   for (uint32_t i = 0; i < NumUsedGPRPairs; ++i) {
-    RAPass->AddRegisterConflict(GPRClass, i * 2,     GPRPairClass, i);
-    RAPass->AddRegisterConflict(GPRClass, i * 2 + 1, GPRPairClass, i);
+    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2,     FEXCore::IR::GPRPairClass, i);
+    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2 + 1, FEXCore::IR::GPRPairClass, i);
   }
 }
 
