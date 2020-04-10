@@ -2054,22 +2054,22 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           switch (Op->ElementSize) {
           case 1: {
-            pextrb(eax, GetSrc(Op->Header.Args[1].ID()), Op->Index);
+            pextrb(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
             pinsrb(GetDst(Node), eax, 0);
           break;
           }
           case 2: {
-            pextrw(eax, GetSrc(Op->Header.Args[1].ID()), Op->Index);
+            pextrw(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
             pinsrw(GetDst(Node), eax, 0);
           break;
           }
           case 4: {
-            pextrd(eax, GetSrc(Op->Header.Args[1].ID()), Op->Index);
+            pextrd(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
             pinsrd(GetDst(Node), eax, 0);
           break;
           }
           case 8: {
-            pextrq(rax, GetSrc(Op->Header.Args[1].ID()), Op->Index);
+            pextrq(rax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
             pinsrq(GetDst(Node), rax, 0);
           break;
           }
