@@ -1100,10 +1100,13 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Res = _CPUID(Src);
 
-  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), _Zext(32, _VExtractToGPR(16, 4, Res, 0)));
-  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), _Zext(32, _VExtractToGPR(16, 4, Res, 1)));
-  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), _Zext(32, _VExtractToGPR(16, 4, Res, 2)));
-  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), _Zext(32, _VExtractToGPR(16, 4, Res, 3)));
+  OrderedNode *Result_Lower = _ExtractElementPair(Res, 0);
+  OrderedNode *Result_Upper = _ExtractElementPair(Res, 1);
+
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), _Bfe(32, 0,  Result_Lower));
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), _Bfe(32, 32, Result_Lower));
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), _Bfe(32, 0,  Result_Upper));
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), _Bfe(32, 32, Result_Upper));
 }
 
 template<bool SHL1Bit>

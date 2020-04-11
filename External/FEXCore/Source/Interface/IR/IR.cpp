@@ -5,6 +5,7 @@
 namespace FEXCore::IR {
 #define IROP_GETNAME_IMPL
 #define IROP_GETRAARGS_IMPL
+#define IROP_REG_CLASSES_IMPL
 
 #include <FEXCore/IR/IRDefines.inc>
 

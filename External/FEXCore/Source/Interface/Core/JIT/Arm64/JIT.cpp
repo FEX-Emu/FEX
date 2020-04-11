@@ -84,9 +84,8 @@ static uint64_t SyscallThunk(FEXCore::SyscallHandler *Handler, FEXCore::Core::In
   return FEXCore::HandleSyscall(Handler, Thread, Args);
 }
 
-static void CPUIDThunk(FEXCore::CPUIDEmu *CPUID, uint64_t Function, FEXCore::CPUIDEmu::FunctionResults *Results) {
-  FEXCore::CPUIDEmu::FunctionResults Res = CPUID->RunFunction(Function);
-  memcpy(Results, &Res, sizeof(FEXCore::CPUIDEmu::FunctionResults));
+static FEXCore::CPUIDEmu::FunctionResults CPUIDThunk(FEXCore::CPUIDEmu *CPUID, uint64_t Function) {
+  return CPUID->RunFunction(Function);
 }
 
 static uint64_t CompileBlockThunk(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
@@ -536,7 +535,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_CPUID: {
         auto Op = IROp->C<IR::IROp_CPUID>();
 
-        uint64_t SPOffset = AlignUp((RA64.size() + 2 + 2) * 8 + sizeof(FEXCore::CPUIDEmu::FunctionResults), 16);
+        uint64_t SPOffset = AlignUp((RA64.size() + 2 + 2) * 8, 16);
         sub(sp, sp, SPOffset);
 
         int i = 0;
@@ -549,17 +548,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         // x0 = CPUID Handler
         // x1 = CPUID Function
-        // x2 = Result location
         LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->CPUID));
         mov(x1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        add(x2, sp, RA64.size() * 8 + 3 * 8);
 #if _M_X86_64
         CallRuntime(CPUIDThunk);
 #else
         LoadConstant(x3, (uint64_t)CPUIDThunk);
         blr(x3);
 #endif
-
         i = 0;
         for (auto RA : RA64) {
           ldr(RA, MemOperand(sp, 0 + i * 8));
@@ -567,9 +563,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
 
         // Results are in x0, x1
-        // Results want to be in a i32v4 vector
-        auto Dst = GetDst(Node);
-        ldr(Dst, MemOperand(sp, RA64.size() * 8 + 3 * 8));
+        // Results want to be in a i64v2 vector
+        auto Dst = GetSrcPair<RA_64>(Node);
+        mov(Dst.first,  x0);
+        mov(Dst.second, x1);
 
         ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
 
@@ -2286,7 +2283,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
         switch (Op->Header.Op) {
           case IR::OP_SPLATVECTOR4: Elements = 4; break;
-          case IR::OP_SPLATVECTOR3: Elements = 3; break;
           case IR::OP_SPLATVECTOR2: Elements = 2; break;
           default: LogMan::Msg::A("Uknown Splat size"); break;
         }

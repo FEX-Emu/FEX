@@ -2120,9 +2120,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
 
-          auto Dst = GetDst(Node);
-          pinsrq(Dst, rax, 0);
-          pinsrq(Dst, rdx, 1);
+          auto Dst = GetSrcPair<RA_64>(Node);
+          mov(Dst.first, rax);
+          mov(Dst.second, rdx);
           break;
         }
         case IR::OP_SPLATVECTOR2:
@@ -2133,7 +2133,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           switch (Op->Header.Op) {
             case IR::OP_SPLATVECTOR4: Elements = 4; break;
-            case IR::OP_SPLATVECTOR3: Elements = 3; break;
             case IR::OP_SPLATVECTOR2: Elements = 2; break;
             default: LogMan::Msg::A("Uknown Splat size"); break;
           }

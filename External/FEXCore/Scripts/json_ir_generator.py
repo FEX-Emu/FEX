@@ -114,8 +114,35 @@ def print_ir_sizes(ops, defines):
 
     output_file.write("std::string_view const& GetName(IROps Op);\n")
     output_file.write("uint8_t GetArgs(IROps Op);\n")
+    output_file.write("FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
 
     output_file.write("#undef IROP_SIZES\n")
+    output_file.write("#endif\n\n")
+
+def print_ir_reg_classes(ops, defines):
+    output_file.write("#ifdef IROP_REG_CLASSES_IMPL\n")
+
+    output_file.write("constexpr std::array<FEXCore::IR::RegisterClassType, IROps::OP_LAST + 1> IRRegClasses = {\n")
+    for op_key, op_vals in ops.items():
+        if ("Last" in op_vals):
+            output_file.write("\tFEXCore::IR::InvalidClass,\n")
+        else:
+            Class = "Invalid"
+            if ("HasDest" in op_vals and not ("DestClass" in op_vals)):
+                sys.exit("IR op %s has destination with no destination class" % (op_key))
+
+            if ("DestClass" in op_vals):
+                Class = op_vals["DestClass"]
+            output_file.write("\tFEXCore::IR::%sClass,\n" % Class)
+
+    output_file.write("};\n\n")
+
+    output_file.write("// Make sure our array maps directly to the IROps enum\n")
+    output_file.write("static_assert(IRRegClasses[IROps::OP_LAST] == FEXCore::IR::InvalidClass);\n\n")
+
+    output_file.write("FEXCore::IR::RegisterClassType GetRegClass(IROps Op) { return IRRegClasses[Op]; }\n\n")
+
+    output_file.write("#undef IROP_REG_CLASSES_IMPL\n")
     output_file.write("#endif\n\n")
 
 # Print out the name printer implementation
@@ -385,6 +412,7 @@ output_file = open(output_filename, "w")
 print_enums(ops, defines)
 print_ir_structs(ops, defines)
 print_ir_sizes(ops, defines)
+print_ir_reg_classes(ops, defines)
 print_ir_getname(ops, defines)
 print_ir_getraargs(ops, defines)
 print_ir_arg_printer(ops, defines)
