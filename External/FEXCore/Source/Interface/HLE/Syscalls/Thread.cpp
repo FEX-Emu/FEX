@@ -28,9 +28,6 @@ namespace FEXCore::HLE {
   }
 
   uint64_t Clone(FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
-    static std::mutex SyscallMutex;
-    std::scoped_lock<std::mutex> lk(SyscallMutex);
-
 #define FLAGPRINT(x, y) if (flags & (y)) LogMan::Msg::I("\tFlag: " #x)
     FLAGPRINT(CSIGNAL,              0x000000FF);
     FLAGPRINT(CLONE_VM,             0x00000100);
@@ -57,6 +54,10 @@ namespace FEXCore::HLE {
     FLAGPRINT(CLONE_NEWNET,         0x40000000);
     FLAGPRINT(CLONE_IO,             0x80000000);
 
+    if (!(flags & CLONE_VM)) {
+      LogMan::Msg::E("Unsupported clone without CLONE_VM");
+      return -ENOSPC;
+    }
     FEXCore::Core::CPUState NewThreadState{};
     // Clone copies the parent thread's state
     memcpy(&NewThreadState, &Thread->State.State, sizeof(FEXCore::Core::CPUState));
@@ -104,6 +105,10 @@ namespace FEXCore::HLE {
 
     // Return the new threads TID
     uint64_t Result = NewThread->State.ThreadManager.GetTID();
+    if (flags & CLONE_VFORK) {
+      // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
+      NewThread->ExecutionThread.join();
+    }
     SYSCALL_ERRNO();
   }
 
