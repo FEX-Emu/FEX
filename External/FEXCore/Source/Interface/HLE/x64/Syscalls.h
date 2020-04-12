@@ -111,6 +111,10 @@ enum Syscalls {
   SYSCALL_GETPRIORITY     = 140, ///< __NR_getpriority
   SYSCALL_SETPRIORITY     = 141, ///< __NR_getpriority
   SYSCALL_SCHED_SETSCHEDULER = 144, ///< __NR_sched_setscheduler
+  SYSCALL_MLOCK           = 149, ///< __NR_mlock
+  SYSCALL_MUNLOCK         = 150, ///< __NR_munlock
+  SYSCALL_MLOCKALL        = 151, ///< __NR_mlockall
+  SYSCALL_MUNLOCKALL      = 152, ///< __NR_munlockall
   SYSCALL_PRCTL           = 157, ///< __NR_prctl
   SYSCALL_ARCH_PRCTL      = 158, ///< __NR_arch_prctl
   SYSCALL_GETTID          = 186, ///< __NR_gettid
@@ -150,6 +154,7 @@ enum Syscalls {
   SYSCALL_SENDMMSG        = 307, ///< __NR_sendmmsg
   SYSCALL_GETRANDOM       = 318, ///< __NR_getrandom
   SYSCALL_MEMFD_CREATE    = 319, ///< __NR_memfd_create
+  SYSCALL_MLOCK2          = 325, ///< __NR_mlock2
   SYSCALL_STATX           = 332, ///< __NR_statx
   SYSCALL_MAX             = 512,
 };
