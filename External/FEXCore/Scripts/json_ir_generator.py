@@ -28,7 +28,7 @@ def print_ir_structs(ops, defines):
     output_file.write("\tIROps Op;\n\n")
     output_file.write("\tuint8_t Size;\n")
     output_file.write("\tuint8_t NumArgs;\n")
-    output_file.write("\tuint8_t Elements : 7;\n")
+    output_file.write("\tuint8_t ElementSize : 7;\n")
     output_file.write("\tbool HasDest : 1;\n")
 
     output_file.write("\ttemplate<typename T>\n")
@@ -196,6 +196,7 @@ def print_ir_arg_printer(ops, defines):
         if not ("Last" in op_vals):
             SSAArgs = 0
             HasArgs = False
+            HasHelperArgs = False
 
             # Does this not want a printer?
             if ("ArgPrinter" in op_vals and op_vals["ArgPrinter"] == False):
@@ -206,6 +207,9 @@ def print_ir_arg_printer(ops, defines):
 
             if ("Args" in op_vals and len(op_vals["Args"]) != 0):
                 HasArgs = True
+
+            if ("HelperArgs" in op_vals and len(op_vals["HelperArgs"]) != 0):
+                HasHelperArgs = True
 
             output_file.write("case IROps::OP_%s: {\n" % op_key.upper())
             if (HasArgs or SSAArgs != 0):
@@ -290,7 +294,7 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\tuint8_t GetOpElements(OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
     output_file.write("\t\tLogMan::Throw::A(HeaderOp->HasDest, \"Op %s has no dest\\n\", GetName(HeaderOp->Op));\n")
-    output_file.write("\t\treturn HeaderOp->Elements;\n")
+    output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tbool OpHasDest(OrderedNode *Op) const {\n")
@@ -303,11 +307,12 @@ def print_ir_allocator_helpers(ops, defines):
         if not ("Last" in op_vals):
             SSAArgs = 0
             HasArgs = False
+            HasHelperArgs = False
             HasDest = False
             HasFixedDestSize = False
             FixedDestSize = 0
             HasDestSize = False;
-            NumElements = 1
+            NumElements = "1"
             DestSize = ""
 
             if ("SSAArgs" in op_vals):
@@ -315,6 +320,9 @@ def print_ir_allocator_helpers(ops, defines):
 
             if ("Args" in op_vals and len(op_vals["Args"]) != 0):
                 HasArgs = True
+
+            if ("HelperArgs" in op_vals and len(op_vals["HelperArgs"]) != 0):
+                HasHelperArgs = True
 
             if ("HelperGen" in op_vals and op_vals["HelperGen"] == False):
                 continue;
@@ -331,23 +339,31 @@ def print_ir_allocator_helpers(ops, defines):
                 DestSize = op_vals["DestSize"]
 
             if ("NumElements" in op_vals):
-                NumElements = int(op_vals["NumElements"])
-
+                NumElements = op_vals["NumElements"]
 
             output_file.write("\tIRPair<IROp_%s> _%s(" % (op_key, op_key))
 
             # Output SSA args first
             if (SSAArgs != 0):
                 for i in range(0, SSAArgs):
-                    LastArg = (SSAArgs - i - 1) == 0 and not HasArgs
+                    LastArg = (SSAArgs - i - 1) == 0 and not (HasArgs or HasHelperArgs)
                     CondArg2 = (", ", "")
                     output_file.write("OrderedNode *ssa%d%s" % (i, CondArg2[LastArg]))
 
-            if (HasArgs):
-                ArgCount = len(op_vals["Args"])
-                for i in range(0, len(op_vals["Args"]), 2):
-                    data_type = op_vals["Args"][i]
-                    data_name = op_vals["Args"][i+1]
+            if (HasArgs or HasHelperArgs):
+                ArgCount = 0
+                Args = []
+                if (HasArgs):
+                    ArgCount += len(op_vals["Args"])
+                    Args += op_vals["Args"]
+
+                if (HasHelperArgs):
+                    ArgCount += len(op_vals["HelperArgs"])
+                    Args += op_vals["HelperArgs"]
+
+                for i in range(0, ArgCount, 2):
+                    data_type = Args[i]
+                    data_name = Args[i+1]
                     LastArg = (ArgCount - i - 2) == 0
                     CondArg2 = (", ", "")
 
@@ -368,13 +384,13 @@ def print_ir_allocator_helpers(ops, defines):
                     data_name = op_vals["Args"][i]
                     output_file.write("\t\tOp.first->%s = %s;\n" % (data_name, data_name))
 
-            if (HasDest):
-                if (HasFixedDestSize):
-                    output_file.write("\t\tOp.first->Header.Size = %d;\n" % FixedDestSize)
-                if (HasDestSize):
-                    output_file.write("\t\tOp.first->Header.Size = %s;\n" % DestSize)
-                output_file.write("\t\tOp.first->Header.Elements = %s;\n" % NumElements)
+            if (HasFixedDestSize):
+                output_file.write("\t\tOp.first->Header.Size = %d;\n" % FixedDestSize)
+            if (HasDestSize):
+                output_file.write("\t\tOp.first->Header.Size = %s;\n" % DestSize)
 
+            if (HasDest):
+                # We can only infer a size if we have arguments
                 if not (HasFixedDestSize or HasDestSize):
                     # We need to infer destination size
                     output_file.write("\t\tuint8_t InferSize = 0;\n")
@@ -385,6 +401,9 @@ def print_ir_allocator_helpers(ops, defines):
 
                     output_file.write("\t\tOp.first->Header.Size = InferSize;\n")
 
+            output_file.write("\t\tOp.first->Header.ElementSize = Op.first->Header.Size / (%s);\n" % NumElements)
+
+            if (HasDest):
                 output_file.write("\t\tOp.first->Header.HasDest = true;\n")
 
             output_file.write("\t\treturn Op;\n")

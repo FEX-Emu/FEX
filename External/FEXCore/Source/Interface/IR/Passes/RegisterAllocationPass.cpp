@@ -950,7 +950,7 @@ namespace FEXCore::IR {
 
                 auto SpillOp = Disp->_SpillRegister(InterferenceOrderedNode, SpillSlot, {InterferenceRegClass});
                 SpillOp.first->Header.Size = InterferenceIROp->Size;
-                SpillOp.first->Header.Elements = InterferenceIROp->Elements;
+                SpillOp.first->Header.ElementSize = InterferenceIROp->ElementSize;
 
                 {
                   // First op post Spill
@@ -968,7 +968,7 @@ namespace FEXCore::IR {
 
                     auto FilledInterference = Disp->_FillRegister(SpillSlot, {InterferenceRegClass});
                     FilledInterference.first->Header.Size = InterferenceIROp->Size;
-                    FilledInterference.first->Header.Elements = InterferenceIROp->Elements;
+                    FilledInterference.first->Header.ElementSize = InterferenceIROp->ElementSize;
                     Disp->ReplaceAllUsesWithInclusive(InterferenceOrderedNode, FilledInterference, FirstUseLocation, CodeLast);
                     Spilled = true;
                   }
