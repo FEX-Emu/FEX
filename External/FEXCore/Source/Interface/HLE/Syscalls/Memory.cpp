@@ -55,4 +55,29 @@ namespace FEXCore::HLE {
     uint64_t Result = ::madvise(addr, length, advice);
     SYSCALL_ERRNO();
   }
+
+  uint64_t Mlock(FEXCore::Core::InternalThreadState *Thread, const void *addr, size_t len) {
+    uint64_t Result = ::mlock(addr, len);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Munlock(FEXCore::Core::InternalThreadState *Thread, const void *addr, size_t len) {
+    uint64_t Result = ::munlock(addr, len);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Mlockall(FEXCore::Core::InternalThreadState *Thread, int flags) {
+    uint64_t Result = ::mlockall(flags);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Munlockall(FEXCore::Core::InternalThreadState *Thread) {
+    uint64_t Result = ::munlockall();
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Mlock2(FEXCore::Core::InternalThreadState *Thread, const void *addr, size_t len, int flags) {
+    uint64_t Result = ::mlock2(addr, len, flags);
+    SYSCALL_ERRNO();
+  }
 }

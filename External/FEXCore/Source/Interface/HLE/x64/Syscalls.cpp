@@ -194,6 +194,27 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
       Args->Argument[3],
       Ret);
     break;
+  case SYSCALL_MLOCK:
+    LogMan::Msg::D("mlock(%p, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Ret);
+    break;
+  case SYSCALL_MUNLOCK:
+    LogMan::Msg::D("munlock(%p, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Ret);
+    break;
+  case SYSCALL_MLOCKALL:
+    LogMan::Msg::D("mlockall(0x%lx) = %ld",
+      Args->Argument[1],
+      Ret);
+    break;
+  case SYSCALL_MUNLOCKALL:
+    LogMan::Msg::D("munlockall(0x%lx) = %ld",
+      Ret);
+    break;
   case SYSCALL_PRCTL:
     LogMan::Msg::D("arch_prctl(%ld, %p, %p, %p, %p) = %ld",
       Args->Argument[1], Args->Argument[2],
@@ -553,6 +574,13 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
         Args->Argument[2],
         Ret);
     break;
+  case SYSCALL_MLOCK2:
+    LogMan::Msg::D("mlock2(%p, 0x%lx, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Ret);
+    break;
   case SYSCALL_STATX:
     LogMan::Msg::D("statx(%ld, \"%s\", 0x%lx, 0x%lx, {...}) = %ld",
       Args->Argument[1],
@@ -678,6 +706,10 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_GETPRIORITY,        cvt(&FEXCore::HLE::Getpriority),       2},
     {SYSCALL_SETPRIORITY,        cvt(&FEXCore::HLE::Setpriority),       3},
     {SYSCALL_SCHED_SETSCHEDULER, cvt(&NopSuccess),                      3},
+    {SYSCALL_MLOCK,              cvt(&FEXCore::HLE::Mlock),             2},
+    {SYSCALL_MUNLOCK,            cvt(&FEXCore::HLE::Munlock),           2},
+    {SYSCALL_MLOCKALL,           cvt(&FEXCore::HLE::Mlockall),          1},
+    {SYSCALL_MUNLOCKALL,         cvt(&FEXCore::HLE::Mlockall),          0},
     {SYSCALL_PRCTL,              cvt(&FEXCore::HLE::Prctl),             5},
     {SYSCALL_ARCH_PRCTL,         cvt(&FEXCore::HLE::Arch_Prctl),        2},
     {SYSCALL_GETTID,             cvt(&FEXCore::HLE::Gettid),            0},
@@ -717,6 +749,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_SENDMMSG,           cvt(&FEXCore::HLE::Sendmmsg),          4},
     {SYSCALL_GETRANDOM,          cvt(&FEXCore::HLE::Getrandom),         3},
     {SYSCALL_MEMFD_CREATE,       cvt(&FEXCore::HLE::Memfd_Create),      2},
+    {SYSCALL_MLOCK2,             cvt(&FEXCore::HLE::Mlock2),            3},
     {SYSCALL_STATX,              cvt(&FEXCore::HLE::Statx),             5},
   };
 

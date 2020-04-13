@@ -16,4 +16,9 @@ namespace FEXCore::HLE {
   uint64_t Msync(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int32_t flags);
   uint64_t Mincore(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, uint8_t *vec);
   uint64_t Madvise(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int32_t advice);
+  uint64_t Mlock(FEXCore::Core::InternalThreadState *Thread, const void *addr, size_t len);
+  uint64_t Munlock(FEXCore::Core::InternalThreadState *Thread, const void *addr, size_t len);
+  uint64_t Mlockall(FEXCore::Core::InternalThreadState *Thread, int flags);
+  uint64_t Munlockall(FEXCore::Core::InternalThreadState *Thread);
+  uint64_t Mlock2(FEXCore::Core::InternalThreadState *Thread, const void *addr, size_t len, int flags);
 }
