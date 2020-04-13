@@ -5726,6 +5726,7 @@ void InstallOpcodeHandlers() {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVTGPR_To_FPR<8, true>},
     {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
+    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8, true>},
     //x52 = Invalid
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 8>},
