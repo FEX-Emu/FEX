@@ -317,11 +317,14 @@ namespace FEXCore::Context {
     do {
       bool AllPaused = true;
       {
-        // Grab the mutex lock so a thread doesn't try and spin up while we are waiting
-        for (size_t i = 0; i < Threads.size(); ++i) {
-          if (Threads[i]->State.RunningEvents.Running.load() || Threads[i]->State.RunningEvents.WaitingToStart.load()) {
-            AllPaused = false;
-            break;
+        std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+        {
+          // Grab the mutex lock so a thread doesn't try and spin up while we are waiting
+          for (size_t i = 0; i < Threads.size(); ++i) {
+            if (Threads[i]->State.RunningEvents.Running.load() || Threads[i]->State.RunningEvents.WaitingToStart.load()) {
+              AllPaused = false;
+              break;
+            }
           }
         }
       }
@@ -329,7 +332,7 @@ namespace FEXCore::Context {
       if (AllPaused)
         break;
 
-      PauseWait.WaitFor(std::chrono::milliseconds(10));
+      PauseWait.WaitFor(std::chrono::milliseconds(250));
     } while (true);
 
     Running = false;
