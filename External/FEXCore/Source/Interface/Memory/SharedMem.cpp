@@ -13,7 +13,7 @@ namespace FEXCore::SHM {
     uintptr_t PtrOffset = reinterpret_cast<uintptr_t>(SHM->Object.Ptr) + Offset;
 
     void *Ptr = mmap(reinterpret_cast<void*>(PtrOffset), Size, flags,
-      MAP_PRIVATE | (Fixed ? MAP_FIXED : 0), SHM->SHMFD, Offset);
+      MAP_NORESERVE | MAP_PRIVATE | (Fixed ? MAP_FIXED : 0), SHM->SHMFD, Offset);
     if (Ptr == MAP_FAILED) {
       LogMan::Msg::A("Failed to map memory region [0x%lx, 0x%lx)", Offset, Offset + Size);
       return nullptr;

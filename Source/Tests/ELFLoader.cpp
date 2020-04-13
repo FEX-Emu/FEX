@@ -101,7 +101,7 @@ int main(int argc, char **argv, char **const envp) {
   FEX::HarnessHelper::ELFCodeLoader Loader{Args[0], LDPath(), Args, ParsedArgs, envp};
 
   FEXCore::Context::InitializeStaticTables();
-  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 32);
+  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
   FEXCore::Context::SetApplicationFile(CTX, std::filesystem::canonical(Args[0]));
