@@ -122,19 +122,22 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   , ThreadState {Thread} {
   Stack.resize(9000 * 16 * 64);
 
+  bool HadRA = CTX->HasRegisterAllocationPass();
   RAPass = CTX->GetRegisterAllocatorPass();
 
-  RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
-  RAPass->AddRegisters(FEXCore::IR::GPRClass, NumGPRs);
-  RAPass->AddRegisters(FEXCore::IR::FPRClass, NumXMMs);
-  RAPass->AddRegisters(FEXCore::IR::GPRPairClass, NumGPRPairs);
+  if (!HadRA) {
+    RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
+    RAPass->AddRegisters(FEXCore::IR::GPRClass, NumGPRs);
+    RAPass->AddRegisters(FEXCore::IR::FPRClass, NumXMMs);
+    RAPass->AddRegisters(FEXCore::IR::GPRPairClass, NumGPRPairs);
 
-  RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRClass, NumGPRs);
-  RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRPairClass, NumGPRs);
+    RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRClass, NumGPRs);
+    RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRPairClass, NumGPRs);
 
-  for (uint32_t i = 0; i < NumGPRPairs; ++i) {
-    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2,     FEXCore::IR::GPRPairClass, i);
-    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2 + 1, FEXCore::IR::GPRPairClass, i);
+    for (uint32_t i = 0; i < NumGPRPairs; ++i) {
+      RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2,     FEXCore::IR::GPRPairClass, i);
+      RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2 + 1, FEXCore::IR::GPRPairClass, i);
+    }
   }
 
   CreateCustomDispatch(Thread);
