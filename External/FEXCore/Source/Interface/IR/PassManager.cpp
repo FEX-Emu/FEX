@@ -18,9 +18,9 @@ void PassManager::AddDefaultPasses() {
 
 void PassManager::AddDefaultValidationPasses() {
 #ifndef NDEBUG
-  Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(Validation::CreatePhiValidation()));
-  Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(Validation::CreateIRValidation()));
-  Passes.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(Validation::CreateValueDominanceValidation()));
+  ValidationPasses.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(Validation::CreatePhiValidation()));
+  ValidationPasses.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(Validation::CreateIRValidation()));
+  ValidationPasses.emplace_back(std::unique_ptr<FEXCore::IR::Pass>(Validation::CreateValueDominanceValidation()));
 #endif
 }
 
@@ -29,6 +29,13 @@ bool PassManager::Run(OpDispatchBuilder *Disp) {
   for (auto const &Pass : Passes) {
     Changed |= Pass->Run(Disp);
   }
+
+#ifndef NDEBUG
+  for (auto const &Pass : ValidationPasses) {
+    Changed |= Pass->Run(Disp);
+  }
+#endif
+
   return Changed;
 }
 
