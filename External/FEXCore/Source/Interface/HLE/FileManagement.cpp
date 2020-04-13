@@ -140,11 +140,11 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
 
     if (fd == -1)
       fd = ::openat(dirfs, pathname, flags, mode);
-
-    return fd;
   }
 
-  FDToNameMap[fd] = pathname;
+  if (fd != -1)
+    FDToNameMap[fd] = pathname;
+
   return fd;
 }
 
