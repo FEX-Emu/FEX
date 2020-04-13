@@ -25,13 +25,19 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
-  uint64_t Sched_Setaffinity(FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, const cpu_set_t *mask) {
+  uint64_t Sched_Setaffinity(FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, const unsigned long *mask) {
     return 0;
   }
 
-  uint64_t Sched_Getaffinity(FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, cpu_set_t *mask) {
+  uint64_t Sched_Getaffinity(FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, unsigned long *mask) {
+    // If we don't have at least one byte in the resulting structure
+    // then we need to return -EINVAL
+    if (cpusetsize < 1) {
+      return -EINVAL;
+    }
     // Claim 1 CPU core
-    CPU_SET(0, mask);
-    return 0;
+    mask[0] |= 1;
+    // Returns the number of bytes written in to mask
+    return 1;
   }
 }
