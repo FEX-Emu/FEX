@@ -5294,6 +5294,12 @@ void OpDispatchBuilder::PMULHW(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
+  Src = _Rev(Src);
+  StoreResult(GPRClass, Op, Src, 1);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
@@ -5950,6 +5956,12 @@ constexpr uint16_t PF_F2 = 3;
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F38Table = {
     {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(PF_38_66,   0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(PF_38_NONE, 0xF0), 1, &OpDispatchBuilder::MOVBEOp},
+    {OPD(PF_38_NONE, 0xF1), 1, &OpDispatchBuilder::MOVBEOp},
+    {OPD(PF_38_66, 0xF0), 1, &OpDispatchBuilder::MOVBEOp},
+    {OPD(PF_38_66, 0xF1), 1, &OpDispatchBuilder::MOVBEOp},
+
   };
 #undef OPD
 

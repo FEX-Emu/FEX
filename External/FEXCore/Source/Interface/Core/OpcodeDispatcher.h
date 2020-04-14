@@ -311,6 +311,8 @@ public:
   template<bool Signed>
   void PMULHW(OpcodeArgs);
 
+  void MOVBEOp(OpcodeArgs);
+
   void UnimplementedOp(OpcodeArgs);
 
 #undef OpcodeArgs
