@@ -4407,7 +4407,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_Rev>();
           switch (OpSize) {
             case 2:
-              LogMan::Msg::A("Unhandled REV size 2");
+              mov (GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              rol(GetDst<RA_16>(Node), 8);
             break;
             case 4:
               mov (GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
