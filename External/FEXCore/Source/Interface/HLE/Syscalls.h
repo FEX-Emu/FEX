@@ -36,38 +36,11 @@ namespace FEXCore {
     __kernel_long_t   __unused[3];
   };
 
-struct Futex {
-  std::mutex Mutex;
-  std::condition_variable cv;
-  std::atomic<uint32_t> *Addr;
-  std::atomic<uint32_t> Waiters{};
-  uint32_t Val;
-};
-
 // #define DEBUG_STRACE
 class SyscallHandler {
 public:
   SyscallHandler(FEXCore::Context::Context *ctx);
   virtual uint64_t HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) = 0;
-
-  // XXX: This leaks memory.
-  // Need to know when to delete futexes
-  void EmplaceFutex(uint64_t Addr, Futex *futex) {
-    std::scoped_lock<std::mutex> lk(FutexMutex);
-    Futexes[Addr] = futex;
-  }
-
-  Futex *GetFutex(uint64_t Addr) {
-    std::scoped_lock<std::mutex> lk (FutexMutex);
-    auto it = Futexes.find(Addr);
-    if (it == Futexes.end()) return nullptr;
-    return it->second;
-  }
-
-  void RemoveFutex(uint64_t Addr) {
-    std::scoped_lock<std::mutex> lk (FutexMutex);
-    Futexes.erase(Addr);
-  }
 
   void DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread, uint64_t Addr);
 
@@ -126,8 +99,6 @@ private:
 
   FEXCore::Context::Context *CTX;
 
-  // Futex management
-  std::unordered_map<uint64_t, Futex*> Futexes;
   std::mutex FutexMutex;
   std::mutex SyscallMutex;
 };
