@@ -76,9 +76,13 @@ enum Syscalls {
   SYSCALL_EXECVE          = 59,  ///< __NR_execve
   SYSCALL_EXIT            = 60,  ///< __NR_exit
   SYSCALL_WAIT4           = 61,  ///< __NR_wait4
+  SYSCALL_KILL            = 62,  ///< __NR_kill
   SYSCALL_UNAME           = 63,  ///< __NR_uname
   SYSCALL_SHMDT           = 67,  ///< __NR_shmdt
   SYSCALL_FCNTL           = 72,  ///< __NR_fcntl
+  SYSCALL_FLOCK           = 73,  ///< __NR_flock
+  SYSCALL_FSYNC           = 74,  ///< __NR_fsync
+  SYSCALL_FDATASYNC       = 75,  ///< __NR_fdatasync
   SYSCALL_FTRUNCATE       = 77,  ///< __NR_ftruncate
   SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
   SYSCALL_CHDIR           = 80,  ///< __NR_chdir
@@ -89,6 +93,7 @@ enum Syscalls {
   SYSCALL_UNLINK          = 87,  ///< __NR_unlink
   SYSCALL_READLINK        = 89,  ///< __NR_readlink
   SYSCALL_CHMOD           = 90,  ///< __NR_chmod
+  SYSCALL_FCHMOD          = 91,  ///< __NR_fchmod
   SYSCALL_UMASK           = 95,  ///< __NR_umask
   SYSCALL_GETTIMEOFDAY    = 96,  ///< __NR_gettimeofday
   SYSCALL_SYSINFO         = 99,  ///< __NR_sysinfo
@@ -98,6 +103,7 @@ enum Syscalls {
   SYSCALL_SETUID          = 105, ///< __NR_setuid
   SYSCALL_GETEUID         = 107, ///< __NR_geteuid
   SYSCALL_GETEGID         = 108, ///< __NR_getegid
+  SYSCALL_GETPPID         = 110, ///< __NR_getppid
   SYSCALL_SETREGID        = 114, ///< __NR_setregid
   SYSCALL_SETRESUID       = 117, ///< __NR_setresuid
   SYSCALL_GETRESUID       = 118, ///< __NR_getresuid
@@ -122,6 +128,7 @@ enum Syscalls {
   SYSCALL_FUTEX           = 202, ///< __NR_futex
   SYSCALL_SCHED_SETAFFINITY = 203, ///< __NR_sched_setaffinity
   SYSCALL_SCHED_GETAFFINITY = 204, ///< __NR_sched_getaffinity
+  SYSCALL_EPOLL_CREATE    = 213, ///< __NR_epoll_create
   SYSCALL_GETDENTS64      = 217, ///< __NR_getdents64
   SYSCALL_FADVISE64       = 221, ///< __NR_fadvise64
   SYSCALL_TIMER_CREATE    = 222, ///< __NR_timer_create
