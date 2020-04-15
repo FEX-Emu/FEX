@@ -32,7 +32,11 @@ namespace FEXCore::HLE {
   uint64_t Dup(FEXCore::Core::InternalThreadState *Thread, int oldfd);
   uint64_t Dup2(FEXCore::Core::InternalThreadState *Thread, int oldfd, int newfd);
   uint64_t Fcntl(FEXCore::Core::InternalThreadState *Thread, int fd, int cmd, uint64_t arg);
+  uint64_t Flock(FEXCore::Core::InternalThreadState *Thread, int fd, int operation);
+  uint64_t Fsync(FEXCore::Core::InternalThreadState *Thread, int fd);
+  uint64_t Fdatasync(FEXCore::Core::InternalThreadState *Thread, int fd);
   uint64_t Ftruncate(FEXCore::Core::InternalThreadState *Thread, int fd, off_t length);
+  uint64_t Fchmod(FEXCore::Core::InternalThreadState *Thread, int fd, int mode);
   uint64_t Getdents64(FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count);
   uint64_t Fadvise64(FEXCore::Core::InternalThreadState *Thread, int fd, off_t offset, off_t len, int advice);
   uint64_t Inotify_init(FEXCore::Core::InternalThreadState *Thread);
