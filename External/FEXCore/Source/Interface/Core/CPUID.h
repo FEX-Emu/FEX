@@ -7,6 +7,15 @@
 namespace FEXCore {
 
 class CPUIDEmu final {
+private:
+  constexpr static uint32_t CPUID_VENDOR_INTEL1 = 0x756E6547; // "Genu"
+  constexpr static uint32_t CPUID_VENDOR_INTEL2 = 0x49656E69; // "ineI"
+  constexpr static uint32_t CPUID_VENDOR_INTEL3 = 0x6C65746E; // "ntel"
+
+  constexpr static uint32_t CPUID_VENDOR_AMD1 = 0x68747541; // "Auth"
+  constexpr static uint32_t CPUID_VENDOR_AMD2 = 0x69746E65; // "enti"
+  constexpr static uint32_t CPUID_VENDOR_AMD3 = 0x444D4163; // "cAMD"
+
 public:
   void Init();
 
