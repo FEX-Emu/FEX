@@ -3747,7 +3747,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             cvtsi2sd(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
           }
           else
-            cvtsi2ss(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            cvtsi2ss(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
           break;
         }
         case IR::OP_FLOAT_TOGPR_ZS: {
