@@ -110,7 +110,6 @@ void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true
 
 void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
   auto IR = Thread->IRLists.find(Thread->State.State.rip);
-  auto DebugData = Thread->DebugData.find(Thread->State.State.rip);
   CurrentIR = IR->second.get();
 
   TmpOffset = 0; // Reset where we are in the temp data range
@@ -3838,7 +3837,10 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
     }
   }
 
-  Thread->Stats.InstructionsExecuted.fetch_add(DebugData->second.GuestInstructionCount);
+  auto DebugData = Thread->DebugData.find(Thread->State.State.rip);
+  if (DebugData != Thread->DebugData.end()) {
+    Thread->Stats.InstructionsExecuted.fetch_add(DebugData->second.GuestInstructionCount);
+  }
 }
 
 FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx) {
