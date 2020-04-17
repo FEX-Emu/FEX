@@ -86,8 +86,10 @@ set (SRCS
   Interface/HLE/Syscalls/Ioctl.cpp
   Interface/HLE/Syscalls/Memory.cpp
   Interface/HLE/Syscalls/Numa.cpp
-  Interface/HLE/Syscalls/SHM.cpp
   Interface/HLE/Syscalls/Sched.cpp
+  Interface/HLE/Syscalls/Semaphore.cpp
+  Interface/HLE/Syscalls/SHM.cpp
+  Interface/HLE/Syscalls/Signals.cpp
   Interface/HLE/Syscalls/Socket.cpp
   Interface/HLE/Syscalls/Thread.cpp
   Interface/HLE/Syscalls/Time.cpp

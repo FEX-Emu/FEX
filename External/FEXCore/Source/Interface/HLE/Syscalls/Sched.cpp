@@ -25,6 +25,41 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Sched_Setparam(FEXCore::Core::InternalThreadState *Thread, pid_t pid, const struct sched_param *param) {
+    uint64_t Result = ::sched_setparam(pid, param);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Sched_Getparam(FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_param *param) {
+    uint64_t Result = ::sched_getparam(pid, param);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Sched_Setscheduler(FEXCore::Core::InternalThreadState *Thread, pid_t pid, int policy, const struct sched_param *param) {
+    uint64_t Result = ::sched_setscheduler(pid, policy, param);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Sched_Getscheduler(FEXCore::Core::InternalThreadState *Thread, pid_t pid) {
+    uint64_t Result = ::sched_getscheduler(pid);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Sched_Get_priority_max(FEXCore::Core::InternalThreadState *Thread, int policy) {
+    uint64_t Result = ::sched_get_priority_max(policy);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Sched_Get_priority_min(FEXCore::Core::InternalThreadState *Thread, int policy) {
+    uint64_t Result = ::sched_get_priority_min(policy);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Sched_rr_get_interval(FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct timespec *tp) {
+    uint64_t Result = ::sched_rr_get_interval(pid, tp);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Sched_Setaffinity(FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, const unsigned long *mask) {
     return 0;
   }

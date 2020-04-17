@@ -78,6 +78,9 @@ enum Syscalls {
   SYSCALL_WAIT4           = 61,  ///< __NR_wait4
   SYSCALL_KILL            = 62,  ///< __NR_kill
   SYSCALL_UNAME           = 63,  ///< __NR_uname
+  SYSCALL_SEMGET          = 64,  ///< __NR_semget
+  SYSCALL_SEMOP           = 65,  ///< __NR_semop
+  SYSCALL_SEMCTL          = 66,  ///< __NR_semctl
   SYSCALL_SHMDT           = 67,  ///< __NR_shmdt
   SYSCALL_FCNTL           = 72,  ///< __NR_fcntl
   SYSCALL_FLOCK           = 73,  ///< __NR_flock
@@ -116,7 +119,13 @@ enum Syscalls {
   SYSCALL_FSTATFS         = 138, ///< __NR_fstatfs
   SYSCALL_GETPRIORITY     = 140, ///< __NR_getpriority
   SYSCALL_SETPRIORITY     = 141, ///< __NR_getpriority
+  SYSCALL_SCHED_SETPARAM  = 142, ///< __NR_sched_setparam
+  SYSCALL_SCHED_GETPARAM  = 143, ///< __NR_sched_getparam
   SYSCALL_SCHED_SETSCHEDULER = 144, ///< __NR_sched_setscheduler
+  SYSCALL_SCHED_GETSCHEDULER = 145, ///< __NR_sched_getscheduler
+  SYSCALL_SCHED_GET_PRIORITY_MAX = 146, ///< __NR_sched_get_priority_max
+  SYSCALL_SCHED_GET_PRIORITY_MIN = 147, ///< __NR_sched_get_priority_min
+  SYSCALL_SCHED_RR_GET_INTERVAL  = 148, ///< __NR_sched_rr_get_interval
   SYSCALL_MLOCK           = 149, ///< __NR_mlock
   SYSCALL_MUNLOCK         = 150, ///< __NR_munlock
   SYSCALL_MLOCKALL        = 151, ///< __NR_mlockall
@@ -129,6 +138,8 @@ enum Syscalls {
   SYSCALL_SCHED_SETAFFINITY = 203, ///< __NR_sched_setaffinity
   SYSCALL_SCHED_GETAFFINITY = 204, ///< __NR_sched_getaffinity
   SYSCALL_EPOLL_CREATE    = 213, ///< __NR_epoll_create
+  SYSCALL_EPOLL_CTL_OLD   = 214, ///< __NR_epoll_ctl_old
+  SYSCALL_EPOLL_WAIT_OLD  = 215, ///< __NR_epoll_wait_old
   SYSCALL_GETDENTS64      = 217, ///< __NR_getdents64
   SYSCALL_FADVISE64       = 221, ///< __NR_fadvise64
   SYSCALL_TIMER_CREATE    = 222, ///< __NR_timer_create
@@ -137,9 +148,11 @@ enum Syscalls {
   SYSCALL_TIMER_GETOVERRUN= 225, ///< __NR_timer_getoverrun
   SYSCALL_TIMER_DELETE    = 226, ///< __NR_timer_delete
   SYSCALL_SET_TID_ADDRESS = 218, ///< __NR_set_tid_address
+  SYSCALL_SEMTIMEDOP      = 220, ///< __NR_semtimedop
   SYSCALL_CLOCK_GETTIME   = 228, ///< __NR_clock_gettime
   SYSCALL_CLOCK_GETRES    = 229, ///< __NR_clock_getres
   SYSCALL_EXIT_GROUP      = 231, ///< __NR_exit_group
+  SYSCALL_EPOLL_WAIT      = 232, ///< __NR_epoll_wait
   SYSCALL_EPOLL_CTL       = 233, ///< __NR_epoll_ctl
   SYSCALL_TGKILL          = 234, ///< __NR_tgkill
   SYSCALL_GET_MEMPOLICY   = 239, ///< __NR_get_mempolicy
