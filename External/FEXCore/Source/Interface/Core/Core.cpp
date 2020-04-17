@@ -601,6 +601,10 @@ namespace FEXCore::Context {
     }
     else {
       IRList = IR->second.get();
+      auto Debugit = Thread->DebugData.find(GuestRIP);
+      if (Debugit != Thread->DebugData.end()) {
+        DebugData = &Debugit->second;
+      }
     }
 
     // Attempt to get the CPU backend to compile this code
