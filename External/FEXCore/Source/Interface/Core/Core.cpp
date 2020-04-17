@@ -468,6 +468,12 @@ namespace FEXCore::Context {
     auto BlockMapPtr = Thread->BlockCache->AddBlockMapping(Address, Ptr);
     if (BlockMapPtr == 0) {
       Thread->BlockCache->ClearCache();
+
+      // Pull out the current IR we added and store it back after we cleared the rest of the list
+      // Needed in the case the the block mapping has aliased
+      auto IR = Thread->IRLists.find(Address)->second.release();
+      Thread->IRLists.clear();
+      Thread->IRLists.try_emplace(Address, IR);
       BlockMapPtr = Thread->BlockCache->AddBlockMapping(Address, Ptr);
       LogMan::Throw::A(BlockMapPtr, "Couldn't add mapping after clearing mapping cache");
     }
