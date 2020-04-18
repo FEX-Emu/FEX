@@ -132,6 +132,11 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Kill(FEXCore::Core::InternalThreadState *Thread, pid_t pid, int sig) {
+    uint64_t Result = ::kill(pid, sig);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Getuid(FEXCore::Core::InternalThreadState *Thread) {
     uint64_t Result = ::getuid();
     SYSCALL_ERRNO();
@@ -159,6 +164,11 @@ namespace FEXCore::HLE {
 
   uint64_t Getegid(FEXCore::Core::InternalThreadState *Thread) {
     uint64_t Result = ::getegid();
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Getppid(FEXCore::Core::InternalThreadState *Thread) {
+    uint64_t Result = ::getppid();
     SYSCALL_ERRNO();
   }
 

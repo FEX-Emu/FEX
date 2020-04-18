@@ -4,6 +4,7 @@
 
 #include <fcntl.h>
 #include <stdint.h>
+#include <sys/file.h>
 #include <sys/eventfd.h>
 #include <sys/inotify.h>
 #include <sys/mman.h>
@@ -144,8 +145,28 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Flock(FEXCore::Core::InternalThreadState *Thread, int fd, int operation) {
+    uint64_t Result = ::flock(fd, operation);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Fsync(FEXCore::Core::InternalThreadState *Thread, int fd) {
+    uint64_t Result = ::fsync(fd);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Fdatasync(FEXCore::Core::InternalThreadState *Thread, int fd) {
+    uint64_t Result = ::fdatasync(fd);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Ftruncate(FEXCore::Core::InternalThreadState *Thread, int fd, off_t length) {
     uint64_t Result = ::ftruncate(fd, length);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Fchmod(FEXCore::Core::InternalThreadState *Thread, int fd, int mode) {
+    uint64_t Result = ::fchmod(fd, mode);
     SYSCALL_ERRNO();
   }
 

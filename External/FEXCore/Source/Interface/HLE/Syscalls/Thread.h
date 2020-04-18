@@ -15,12 +15,14 @@ namespace FEXCore::HLE {
   uint64_t Execve(FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]);
   uint64_t Exit(FEXCore::Core::InternalThreadState *Thread, int status);
   uint64_t Wait4(FEXCore::Core::InternalThreadState *Thread, pid_t pid, int *wstatus, int options, struct rusage *rusage);
+  uint64_t Kill(FEXCore::Core::InternalThreadState *Thread, pid_t pid, int sig);
   uint64_t Getuid(FEXCore::Core::InternalThreadState *Thread);
   uint64_t Getgid(FEXCore::Core::InternalThreadState *Thread);
   uint64_t Setuid(FEXCore::Core::InternalThreadState *Thread, uid_t uid);
   uint64_t Setgid(FEXCore::Core::InternalThreadState *Thread, gid_t gid);
   uint64_t Geteuid(FEXCore::Core::InternalThreadState *Thread);
   uint64_t Getegid(FEXCore::Core::InternalThreadState *Thread);
+  uint64_t Getppid(FEXCore::Core::InternalThreadState *Thread);
   uint64_t Setregid(FEXCore::Core::InternalThreadState *Thread, gid_t rgid, gid_t egid);
   uint64_t Setresuid(FEXCore::Core::InternalThreadState *Thread, uid_t ruid, uid_t euid, uid_t suid);
   uint64_t Getresuid(FEXCore::Core::InternalThreadState *Thread, uid_t *ruid, uid_t *euid, uid_t *suid);
