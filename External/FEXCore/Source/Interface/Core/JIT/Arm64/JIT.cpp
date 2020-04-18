@@ -1493,7 +1493,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         auto Op = IROp->C<IR::IROp_Rev>();
         switch (OpSize) {
           case 2:
-            rev16(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            rev(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            lsr(GetDst<RA_32>(Node), GetDst<RA_32>(Node), 16);
           break;
           case 4:
             rev(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));

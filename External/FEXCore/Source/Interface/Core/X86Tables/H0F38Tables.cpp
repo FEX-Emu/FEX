@@ -81,11 +81,11 @@ void InitializeH0F38Tables() {
     {OPD(PF_38_66,   0xDE), 1, X86InstInfo{"AESDEC",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0xDF), 1, X86InstInfo{"AESDECLAST", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(PF_38_NONE, 0xF0), 1, X86InstInfo{"MOVBE",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(PF_38_NONE, 0xF1), 1, X86InstInfo{"MOVBE",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(PF_38_NONE, 0xF0), 1, X86InstInfo{"MOVBE",      TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
+    {OPD(PF_38_NONE, 0xF1), 1, X86InstInfo{"MOVBE",      TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
 
-    {OPD(PF_38_66,   0xF0), 1, X86InstInfo{"CRC32",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(PF_38_66,   0xF1), 1, X86InstInfo{"CRC32",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(PF_38_66, 0xF0), 1, X86InstInfo{"MOVBE",      TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
+    {OPD(PF_38_66, 0xF1), 1, X86InstInfo{"MOVBE",      TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
 
     {OPD(PF_38_F2,   0xF0), 1, X86InstInfo{"CRC32",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_F2,   0xF1), 1, X86InstInfo{"CRC32",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
