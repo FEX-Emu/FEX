@@ -332,7 +332,7 @@ public:
     auto Op = AllocateOp<IROp_Constant, IROps::OP_CONSTANT>();
     Op.first->Constant = Constant;
     Op.first->Header.Size = Size / 8;
-    Op.first->Header.Elements = 1;
+    Op.first->Header.ElementSize = Size / 8;
     Op.first->Header.NumArgs = 0;
     Op.first->Header.HasDest = true;
     return Op;
@@ -340,12 +340,18 @@ public:
   IRPair<IROp_VBitcast> _VBitcast(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     auto Op = AllocateOp<IROp_VBitcast, IROps::OP_VBITCAST>();
     Op.first->Header.Size = RegisterSize / 8;
-    Op.first->Header.Elements = RegisterSize / ElementSize;
+    Op.first->Header.ElementSize = ElementSize;
     Op.first->Header.NumArgs = 1;
     Op.first->Header.HasDest = true;
     Op.first->Header.Args[0] = ssa0->Wrapped(ListData.Begin());
     ssa0->AddUse();
     return Op;
+  }
+  IRPair<IROp_LoadContext> _LoadContext(uint8_t Size, uint32_t Offset, RegisterClassType Class) {
+    return _LoadContext(Offset, Class, Size);
+  }
+  IRPair<IROp_StoreContext> _StoreContext(RegisterClassType Class, uint8_t Size, uint32_t Offset, OrderedNode *ssa0) {
+    return _StoreContext(ssa0, Offset, Class, Size);
   }
   IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
     return _Bfe(ssa0, Width, lsb);
@@ -359,9 +365,6 @@ public:
   IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
     return _LoadMem(ssa0, Size, Align, Class);
   }
-  IRPair<IROp_StoreContext> _StoreContext(FEXCore::IR::RegisterClassType Class, uint8_t Size, uint32_t Offset, OrderedNode *ssa0) {
-    return _StoreContext(ssa0, Size, Offset, Class);
-  }
   IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3) {
     return _Select(ssa0, ssa1, ssa2, ssa3, {Cond});
   }
@@ -372,13 +375,13 @@ public:
     return _Zext(ssa0, SrcSize);
   }
   IRPair<IROp_VInsElement> _VInsElement(uint8_t RegisterSize, uint8_t ElementSize, uint8_t DestIdx, uint8_t SrcIdx, OrderedNode *ssa0, OrderedNode *ssa1) {
-    return _VInsElement(ssa0, ssa1, RegisterSize, ElementSize, DestIdx, SrcIdx);
+    return _VInsElement(ssa0, ssa1, DestIdx, SrcIdx, RegisterSize, ElementSize);
   }
   IRPair<IROp_VInsScalarElement> _VInsScalarElement(uint8_t RegisterSize, uint8_t ElementSize, uint8_t DestIdx, OrderedNode *ssa0, OrderedNode *ssa1) {
-    return _VInsScalarElement(ssa0, ssa1, RegisterSize, ElementSize, DestIdx);
+    return _VInsScalarElement(ssa0, ssa1, DestIdx, RegisterSize, ElementSize);
   }
   IRPair<IROp_VExtractElement> _VExtractElement(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t Index) {
-    return _VExtractElement(ssa0, RegisterSize, ElementSize, Index);
+    return _VExtractElement(ssa0, Index, RegisterSize, ElementSize);
   }
   IRPair<IROp_VAnd> _VAnd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VAnd(ssa0, ssa1, RegisterSize, ElementSize);
@@ -468,28 +471,28 @@ public:
     return _VSShr(ssa0, ssa1, RegisterSize, ElementSize);
   }
   IRPair<IROp_VExtr> _VExtr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index) {
-    return _VExtr(ssa0, ssa1, RegisterSize, ElementSize, Index);
+    return _VExtr(ssa0, ssa1, Index, RegisterSize, ElementSize);
   }
   IRPair<IROp_VSLI> _VSLI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t ByteShift) {
-    return _VSLI(ssa0, RegisterSize, ElementSize, ByteShift);
+    return _VSLI(ssa0, ByteShift, RegisterSize, ElementSize);
   }
   IRPair<IROp_VSRI> _VSRI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t ByteShift) {
-    return _VSRI(ssa0, RegisterSize, ElementSize, ByteShift);
+    return _VSRI(ssa0, ByteShift, RegisterSize, ElementSize);
   }
   IRPair<IROp_VUShrI> _VUShrI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t BitShift) {
-    return _VUShrI(ssa0, RegisterSize, ElementSize, BitShift);
+    return _VUShrI(ssa0, BitShift, RegisterSize, ElementSize);
   }
   IRPair<IROp_VSShrI> _VSShrI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t BitShift) {
-    return _VSShrI(ssa0, RegisterSize, ElementSize, BitShift);
+    return _VSShrI(ssa0, BitShift, RegisterSize, ElementSize);
   }
   IRPair<IROp_VUShrNI> _VUShrNI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t BitShift) {
-    return _VUShrNI(ssa0, RegisterSize, ElementSize, BitShift);
+    return _VUShrNI(ssa0, BitShift, RegisterSize, ElementSize);
   }
   IRPair<IROp_VUShrNI2> _VUShrNI2(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t BitShift) {
-    return _VUShrNI2(ssa0, ssa1, RegisterSize, ElementSize, BitShift);
+    return _VUShrNI2(ssa0, ssa1, BitShift, RegisterSize, ElementSize);
   }
   IRPair<IROp_VShlI> _VShlI(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t BitShift) {
-    return _VShlI(ssa0, RegisterSize, ElementSize, BitShift);
+    return _VShlI(ssa0, BitShift, RegisterSize, ElementSize);
   }
   IRPair<IROp_VFSqrt> _VFSqrt(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     return _VFSqrt(ssa0, RegisterSize, ElementSize);
@@ -519,10 +522,16 @@ public:
     return _VCastFromGPR(ssa0, RegisterSize, ElementSize);
   }
   IRPair<IROp_VExtractToGPR> _VExtractToGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, uint8_t Index) {
-    return _VExtractToGPR(ssa0, RegisterSize, ElementSize, Index);
+    return _VExtractToGPR(ssa0, Index, RegisterSize, ElementSize);
   }
   IRPair<IROp_VInsGPR> _VInsGPR(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index) {
-    return _VInsGPR(ssa0, ssa1, RegisterSize, ElementSize, Index);
+    return _VInsGPR(ssa0, ssa1, Index, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_Vector_FToF> _Vector_FToF(uint8_t RegisterSize, uint8_t DstElementSize, uint8_t SrcElementSize, OrderedNode *ssa0) {
+    return _Vector_FToF(ssa0, SrcElementSize, RegisterSize, DstElementSize);
+  }
+  IRPair<IROp_Float_FToF> _Float_FToF(uint8_t DstElementSize, uint8_t SrcElementSize, OrderedNode *ssa0) {
+    return _Float_FToF(ssa0, SrcElementSize, DstElementSize);
   }
   IRPair<IROp_VUMul> _VUMul(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VUMul(ssa0, ssa1, RegisterSize, ElementSize);
@@ -578,7 +587,7 @@ public:
     Value->AddUse();
     auto ValueIROp = Value->Op(Data.Begin())->C<IR::IROp_PhiValue>()->Value.GetNode(ListData.Begin())->Op(Data.Begin());
     Phi->Header.Size = ValueIROp->Size;
-    Phi->Header.Elements = ValueIROp->Elements;
+    Phi->Header.ElementSize = ValueIROp->ElementSize;
 
     if (!Phi->PhiBegin.ID()) {
       Phi->PhiBegin = Phi->PhiEnd = Value->Wrapped(ListData.Begin());

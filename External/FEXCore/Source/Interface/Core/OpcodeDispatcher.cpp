@@ -3364,20 +3364,20 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_MM_0) {
-      _StoreContext(Src, OpSize, offsetof(FEXCore::Core::CPUState, mm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_MM_0]), Class);
+      _StoreContext(Class, OpSize, offsetof(FEXCore::Core::CPUState, mm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_MM_0]), Src);
     }
     else if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
-      _StoreContext(Src, OpSize, offsetof(FEXCore::Core::CPUState, xmm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][Operand.TypeGPR.HighBits ? 1 : 0]), Class);
+      _StoreContext(Class, OpSize, offsetof(FEXCore::Core::CPUState, xmm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][Operand.TypeGPR.HighBits ? 1 : 0]), Src);
     }
     else {
       if (OpSize == 4) {
         LogMan::Throw::A(!Operand.TypeGPR.HighBits, "Can't handle 32bit store to high 8bit register");
         auto ZextOp = _Zext(Src, 32);
 
-        _StoreContext(ZextOp, 8, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), Class);
+        _StoreContext(Class, 8, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), ZextOp);
       }
       else {
-        _StoreContext(Src, std::min(static_cast<uint8_t>(8), OpSize), offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]) + (Operand.TypeGPR.HighBits ? 1 : 0), Class);
+        _StoreContext(Class, std::min(static_cast<uint8_t>(8), OpSize), offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]) + (Operand.TypeGPR.HighBits ? 1 : 0), Src);
       }
     }
   }
@@ -4700,7 +4700,7 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
   size_t Size = GetDstSize(Op);
 
   if (Narrow) {
-    Src = _Vector_FToF(Src, Size, SrcElementSize >> 1, SrcElementSize);
+    Src = _Vector_FToF(Size, SrcElementSize >> 1, SrcElementSize, Src);
     ElementSize >>= 1;
   }
 
@@ -4717,7 +4717,7 @@ void OpDispatchBuilder::Scalar_CVT_Float_To_Float(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  Src = _Float_FToF(Src, DstElementSize, SrcElementSize);
+  Src = _Float_FToF(DstElementSize, SrcElementSize, Src);
   Src = _VInsScalarElement(16, DstElementSize, 0, Dest, Src);
 
   StoreResult(FPRClass, Op, Src, -1);
@@ -4729,10 +4729,10 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
   size_t Size = GetDstSize(Op);
 
   if (DstElementSize > SrcElementSize) {
-    Src = _Vector_FToF(Src, Size, SrcElementSize << 1, SrcElementSize);
+    Src = _Vector_FToF(Size, SrcElementSize << 1, SrcElementSize, Src);
   }
   else {
-    Src = _Vector_FToF(Src, Size, SrcElementSize >> 1, SrcElementSize);
+    Src = _Vector_FToF(Size, SrcElementSize >> 1, SrcElementSize, Src);
   }
 
   StoreResult(FPRClass, Op, Src, -1);
@@ -4841,7 +4841,7 @@ OrderedNode *OpDispatchBuilder::GetX87Top() {
 }
 
 void OpDispatchBuilder::SetX87Top(OrderedNode *Value) {
-  _StoreContext(Value, 1, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC, GPRClass);
+  _StoreContext(GPRClass, 1, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC, Value);
 }
 
 template<size_t width>

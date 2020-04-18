@@ -387,18 +387,18 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
 
       if (IROp->Op == OP_STORECONTEXT) {
         auto Op = IROp->CW<IR::IROp_StoreContext>();
-        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, Op->Size);
+        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, IROp->Size);
         uint8_t LastClass = Info->AccessRegClass;
         uint32_t LastOffset = Info->AccessOffset;
         uint8_t LastSize = Info->AccessSize;
         LastAccessType LastAccess = Info->Accessed;
         OrderedNode *LastNode2 = Info->Node2;
-        RecordAccess(Info, Op->Class, Op->Offset, Op->Size, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
+        RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
 
         if (LastAccess == ACCESS_WRITE &&
             LastClass == Op->Class &&
             LastOffset == Op->Offset &&
-            LastSize == Op->Size &&
+            LastSize == IROp->Size &&
             Info->Accessed == ACCESS_WRITE) {
           // Remove the last store because this one overwrites it entirely
           // Happens when we store in to a location then store again
@@ -407,18 +407,18 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
       }
       else if (IROp->Op == OP_LOADCONTEXT) {
         auto Op = IROp->CW<IR::IROp_LoadContext>();
-        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, Op->Size);
+        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, IROp->Size);
         uint8_t LastClass = Info->AccessRegClass;
         uint32_t LastOffset = Info->AccessOffset;
         uint8_t LastSize = Info->AccessSize;
         LastAccessType LastAccess = Info->Accessed;
         OrderedNode *LastNode = Info->Node;
-        RecordAccess(Info, Op->Class, Op->Offset, Op->Size, ACCESS_READ, CodeNode);
+        RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, CodeNode);
 
         if (LastAccess == ACCESS_WRITE &&
             LastClass == Op->Class &&
             LastOffset == Op->Offset &&
-            LastSize == Op->Size &&
+            LastSize == IROp->Size &&
             Info->Accessed == ACCESS_READ) {
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
           if (Op->Offset >= offsetof(FEXCore::Core::CPUState, xmm[0]) &&
@@ -426,24 +426,24 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
 
             Disp->SetWriteCursor(CodeNode);
             // XMM needs a bit of special help
-            auto BitCast = Disp->_VBitcast(Op->Size * 8, 1, LastNode);
+            auto BitCast = Disp->_VBitcast(IROp->Size * 8, 1, LastNode);
             Disp->ReplaceAllUsesWithInclusive(CodeNode, BitCast, CodeBegin, CodeLast);
-            RecordAccess(Info, Op->Class, Op->Offset, Op->Size, ACCESS_READ, LastNode);
+            RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           }
           else {
             Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
-            RecordAccess(Info, Op->Class, Op->Offset, Op->Size, ACCESS_READ, LastNode);
+            RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           }
           Changed = true;
         }
         else if (LastAccess == ACCESS_READ &&
                  LastClass == Op->Class &&
                  LastOffset == Op->Offset &&
-                 LastSize == Op->Size &&
+                 LastSize == IROp->Size &&
                  Info->Accessed == ACCESS_READ) {
           // Did we read and then read again?
           Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
-          RecordAccess(Info, Op->Class, Op->Offset, Op->Size, ACCESS_READ, LastNode);
+          RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           Changed = true;
         }
       }

@@ -51,9 +51,20 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
   OrderedNode *RealNode = Arg.GetNode(ListBegin);
   auto IROp = RealNode->Op(Data);
 
-  *out << "%ssa" << std::to_string(Arg.ID()) << " i" << std::dec << (IROp->Size * 8);
-  if (IROp->Elements > 1) {
-    *out << "v" << std::dec << (uint32_t)IROp->Elements;
+  *out << "%ssa" << std::to_string(Arg.ID());
+
+  if (IROp->HasDest) {
+    uint32_t ElementSize = IROp->ElementSize;
+    if (!IROp->ElementSize) {
+      ElementSize = IROp->Size;
+    }
+    uint32_t NumElements = IROp->Size / ElementSize;
+
+    *out << " i" << std::dec << (ElementSize * 8);
+
+    if (NumElements > 1) {
+      *out << "v" << std::dec << NumElements;
+    }
   }
 }
 
@@ -116,9 +127,17 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
       if (!Skip) {
         AddIndent();
         if (IROp->HasDest) {
-          *out << "%ssa" << std::to_string(CodeOp->ID()) << " i" << std::dec << (IROp->Size * 8);
-          if (IROp->Elements > 1) {
-            *out << "v" << std::dec << (uint32_t)IROp->Elements;
+
+          uint32_t ElementSize = IROp->ElementSize;
+          if (!IROp->ElementSize) {
+            ElementSize = IROp->Size;
+          }
+          uint32_t NumElements = IROp->Size / ElementSize;
+
+          *out << "%ssa" << std::to_string(CodeOp->ID()) << " i" << std::dec << (ElementSize * 8);
+
+          if (NumElements > 1) {
+            *out << "v" << std::dec << NumElements;
           }
           *out << " = ";
         }
