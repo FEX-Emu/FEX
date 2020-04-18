@@ -3982,12 +3982,12 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
 
   raw_ostream &Out = outs();
 
-  // if (CTX->Config.LLVM_PrinterPass)
+  if (CTX->Config.LLVM_PrinterPass)
   {
     MPM.addPass(PrintModulePass(Out));
   }
 
-  // if (CTX->Config.LLVM_IRValidation)
+  if (CTX->Config.LLVM_IRValidation)
   {
     verifyModule(*FunctionModule, &Out);
   }
