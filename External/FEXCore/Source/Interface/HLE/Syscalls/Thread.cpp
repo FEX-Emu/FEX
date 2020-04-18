@@ -74,37 +74,35 @@ namespace FEXCore::HLE {
     // Set us to start just after the syscall instruction
     NewThreadState.rip += 2;
 
-    auto NewThread = Thread->CTX->CreateThread(&NewThreadState, reinterpret_cast<uint64_t>(parent_tid), reinterpret_cast<uint64_t>(child_tid));
+    auto NewThread = Thread->CTX->CreateThread(&NewThreadState, reinterpret_cast<uint64_t>(parent_tid));
     Thread->CTX->CopyMemoryMapping(Thread, NewThread);
+
+    Thread->CTX->InitializeThread(NewThread);
+
+    // Return the new threads TID
+    uint64_t Result = NewThread->State.ThreadManager.GetTID();
 
     // Sets the child TID to pointer in ParentTID
     if (flags & CLONE_PARENT_SETTID) {
-      *parent_tid = NewThread->State.ThreadManager.GetTID();
+      *parent_tid = Result;
     }
 
     // Sets the child TID to the pointer in ChildTID
     if (flags & CLONE_CHILD_SETTID) {
-      *child_tid = NewThread->State.ThreadManager.GetTID();
+      NewThread->State.ThreadManager.set_child_tid = child_tid;
+      *child_tid = Result;
     }
 
     // When the thread exits, clear the child thread ID at ChildTID
     // Additionally wakeup a futex at that address
     // Address /may/ be changed with SET_TID_ADDRESS syscall
     if (flags & CLONE_CHILD_CLEARTID) {
-      FEXCore::Futex *futex = new FEXCore::Futex{}; // XXX: Definitely a memory leak. When should we free this?
-      futex->Addr = reinterpret_cast<std::atomic<uint32_t>*>(child_tid);
-      futex->Val = NewThread->State.ThreadManager.GetTID();
-      Thread->CTX->SyscallHandler->EmplaceFutex(reinterpret_cast<uint64_t>(child_tid), futex);
-      NewThread->State.ThreadManager.clear_tid = true;
+      NewThread->State.ThreadManager.clear_child_tid = child_tid;
     }
-
-    Thread->CTX->InitializeThread(NewThread);
 
     // Actually start the thread
     Thread->CTX->RunThread(NewThread);
 
-    // Return the new threads TID
-    uint64_t Result = NewThread->State.ThreadManager.GetTID();
     if (flags & CLONE_VFORK) {
       // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
       NewThread->ExecutionThread.join();
@@ -119,11 +117,18 @@ namespace FEXCore::HLE {
 
   uint64_t Exit(FEXCore::Core::InternalThreadState *Thread, int status) {
     Thread->State.RunningEvents.ShouldStop = true;
-    if (Thread->State.ThreadManager.clear_tid) {
-      FEXCore::Futex *futex = Thread->CTX->SyscallHandler->GetFutex(Thread->State.ThreadManager.child_tid);
-      futex->Addr->store(0);
-      futex->cv.notify_all();
+    if (Thread->State.ThreadManager.clear_child_tid) {
+      std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->State.ThreadManager.clear_child_tid);
+      Addr->store(0);
+      syscall(SYS_futex,
+        Thread->State.ThreadManager.clear_child_tid,
+        FUTEX_WAKE,
+        ~0ULL,
+        0,
+        0,
+        0);
     }
+
     return 0;
   }
 
@@ -243,196 +248,18 @@ namespace FEXCore::HLE {
   }
 
   uint64_t Futex(FEXCore::Core::InternalThreadState *Thread, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) {
-    uint64_t Result = 0;
-
-    if (0) {
-      auto WakeFutex = [&](uint64_t Address, uint32_t Value) -> uint32_t {
-        FEXCore::Futex *futex = Thread->CTX->SyscallHandler->GetFutex(Address);
-        if (!futex) {
-          futex = new FEXCore::Futex{}; // XXX: Definitely a memory leak. When should we free this?
-          futex->Addr = reinterpret_cast<std::atomic<uint32_t>*>(Address);
-          futex->Val = Value;
-          Thread->CTX->SyscallHandler->EmplaceFutex(Address, futex);
-        }
-
-        if (Value  == INT_MAX) {
-          uint32_t PrevWaiters = futex->Waiters;
-          futex->cv.notify_all();
-          return PrevWaiters;
-        }
-        else {
-          uint32_t PrevWaiters = futex->Waiters;
-          for (uint64_t i = 0; i < Value; ++i)
-            futex->cv.notify_one();
-          return std::min(PrevWaiters, Value);
-        }
-      };
-
-      uint8_t Command = futex_op & 0xF;
-      switch (Command) {
-        case 0:   // WAIT
-        case 9: { // WAIT_BITSET
-          FEXCore::Futex *futex = Thread->CTX->SyscallHandler->GetFutex(reinterpret_cast<uint64_t>(uaddr));
-
-          if (!futex) {
-            futex = new FEXCore::Futex{}; // XXX: Definitely a memory leak. When should we free this?
-            futex->Addr = reinterpret_cast<std::atomic<uint32_t>*>(uaddr);
-            futex->Val = val;
-            Thread->CTX->SyscallHandler->EmplaceFutex(reinterpret_cast<uint64_t>(uaddr), futex);
-          }
-          if (futex->Addr->load() != futex->Val) {
-            // Immediate check can return EAGAIN
-            Result = -EAGAIN;
-          }
-          else
-          {
-            std::unique_lock<std::mutex> lk(futex->Mutex);
-            futex->Waiters++;
-            bool PredPassed = false;
-            if (timeout) {
-              if (Command == 9) {
-                // WAIT_BITSET is absolute time
-                auto duration = std::chrono::seconds(timeout->tv_sec) + std::chrono::nanoseconds(timeout->tv_nsec);
-                auto timepoint =
-                  std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>(
-                    std::chrono::duration_cast<std::chrono::system_clock::duration>(duration));
-                PredPassed = futex->cv.wait_until(lk, timepoint, [futex] { return futex->Addr->load() != futex->Val; });
-              }
-              else {
-                auto duration = std::chrono::seconds(timeout->tv_sec) + std::chrono::nanoseconds(timeout->tv_nsec);
-                PredPassed = futex->cv.wait_for(lk, duration, [futex] { return futex->Addr->load() != futex->Val; });
-              }
-              if (!PredPassed) {
-                Result = -ETIMEDOUT;
-              }
-            }
-            else {
-              futex->cv.wait(lk, [futex] { return futex->Addr->load() != futex->Val; });
-            }
-            futex->Waiters--;
-          }
-          break;
-        }
-        case 1: { // WAKE
-          Result = WakeFutex(reinterpret_cast<uint64_t>(uaddr), val);
-          break;
-        }
-        case 5: { // WAKE_OP
-          FEXCore::Futex *futex = Thread->CTX->SyscallHandler->GetFutex(reinterpret_cast<uint64_t>(uaddr2));
-
-          if (!futex) {
-            futex = new FEXCore::Futex{}; // XXX: Definitely a memory leak. When should we free this?
-            futex->Addr = reinterpret_cast<std::atomic<uint32_t>*>(uaddr2);
-            futex->Val = reinterpret_cast<uint64_t>(timeout); // WAKE_OP reinterprets timeout as this futex's Value
-            Thread->CTX->SyscallHandler->EmplaceFutex(reinterpret_cast<uint64_t>(uaddr2), futex);
-          }
-
-          int32_t OldFutexValue = futex->Addr->load();
-          int32_t op = val3 >> 28 & 0b0111;
-          int32_t cmp = val3 >> 24 & 0b1111;
-          bool Shift = val3 >> 28 & 0b1000;
-          int32_t oparg = (val3 >> 12) & 0xFFF;
-          int32_t cmparg = val3 & 0xFFF;
-          if (Shift)
-            oparg = 1 << oparg;
-
-          switch (op) {
-            case 0: // Set
-              OldFutexValue = futex->Addr->exchange(oparg);
-              break;
-            case 1: // Add
-              OldFutexValue = futex->Addr->fetch_add(oparg);
-              break;
-            case 2: // Or
-              OldFutexValue = futex->Addr->fetch_or(oparg);
-              break;
-            case 3: // AndN
-              OldFutexValue = futex->Addr->fetch_and(~oparg);
-              break;
-            case 4: // Xor
-              OldFutexValue = futex->Addr->fetch_xor(oparg);
-              break;
-            default: LogMan::Msg::A("Unknown WAKE_OP: %d", op); break;
-          }
-          // Wake up original futex still
-          uint32_t PrevWaiters = WakeFutex(reinterpret_cast<uint64_t>(uaddr), val);
-
-          bool WakeupSecond = false;
-          switch (cmp) {
-            case 0: // EQ
-              WakeupSecond = OldFutexValue == cmparg;
-              break;
-            case 1: // NE
-              WakeupSecond = OldFutexValue != cmparg;
-              break;
-            case 2: // LT
-              WakeupSecond = OldFutexValue < cmparg;
-              break;
-            case 3: // LE
-              WakeupSecond = OldFutexValue <= cmparg;
-              break;
-            case 4: // GT
-              WakeupSecond = OldFutexValue > cmparg;
-              break;
-            case 5: // GE
-              WakeupSecond = OldFutexValue >= cmparg;
-              break;
-            default: LogMan::Msg::A("Unknown comp op: %d", cmp);
-          }
-
-          // WAKE_OP reinterprets timeout as this futex's Value
-          if (WakeupSecond)
-            PrevWaiters += WakeFutex(reinterpret_cast<uint64_t>(uaddr2), reinterpret_cast<uint64_t>(timeout));
-
-          Result = PrevWaiters;
-
-          break;
-        }
-        case 10: { // WAKE_BITSET
-          // We don't actually support this
-          // Just handle it like a WAKE but wake up everything
-          FEXCore::Futex *futex = Thread->CTX->SyscallHandler->GetFutex(reinterpret_cast<uint64_t>(uaddr));
-          if (!futex) {
-            futex = new FEXCore::Futex{}; // XXX: Definitely a memory leak. When should we free this?
-            futex->Addr = reinterpret_cast<std::atomic<uint32_t>*>(uaddr);
-            futex->Val = val;
-            Thread->CTX->SyscallHandler->EmplaceFutex(reinterpret_cast<uint64_t>(uaddr), futex);
-          }
-
-          Result = futex->Waiters;
-          futex->cv.notify_all();
-          break;
-        }
-        case 7: // UNLOCK_PI
-          Result = -EPERM;
-          break;
-        default:
-          LogMan::Msg::A("Unknown futex command: %d", Command);
-        break;
-      }
-    }
-    else {
-      return syscall(SYS_futex,
-        uaddr,
-        futex_op,
-        val,
-        timeout,
-        uaddr2,
-        val3);
-    }
-    return Result;
+    uint64_t Result = syscall(SYS_futex,
+      uaddr,
+      futex_op,
+      val,
+      timeout,
+      uaddr2,
+      val3);
+    SYSCALL_ERRNO();
   }
 
   uint64_t Set_tid_address(FEXCore::Core::InternalThreadState *Thread, int *tidptr) {
-    FEXCore::Futex *futex = Thread->CTX->SyscallHandler->GetFutex(Thread->State.ThreadManager.child_tid);
-    // If a futex for this address changes then the futex location needs to change...
-    if (futex) {
-      Thread->CTX->SyscallHandler->RemoveFutex(Thread->State.ThreadManager.child_tid);
-      futex->Addr = reinterpret_cast<std::atomic<uint32_t>*>(tidptr);
-      Thread->CTX->SyscallHandler->EmplaceFutex(reinterpret_cast<uint64_t>(tidptr), futex);
-    }
-
-    Thread->State.ThreadManager.child_tid = reinterpret_cast<uint64_t>(tidptr);
+    Thread->State.ThreadManager.clear_child_tid = tidptr;
     return Thread->State.ThreadManager.GetTID();
   }
 

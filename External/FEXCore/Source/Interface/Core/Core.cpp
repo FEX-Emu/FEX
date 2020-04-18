@@ -19,8 +19,8 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/X86Enums.h>
 
-
 #include <fstream>
+#include <unistd.h>
 
 #include "Interface/Core/GdbServer.h"
 
@@ -248,7 +248,7 @@ namespace FEXCore::Context {
     NewThreadState.fs = FS_OFFSET;
     NewThreadState.flags[1] = 1;
 
-    FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0, 0);
+    FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
 
     // We are the parent thread
     ParentThread = Thread;
@@ -417,7 +417,7 @@ namespace FEXCore::Context {
     Thread->StartRunning.NotifyAll();
   }
 
-  FEXCore::Core::InternalThreadState* Context::CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID, uint64_t ChildTID) {
+  FEXCore::Core::InternalThreadState* Context::CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
     FEXCore::Core::InternalThreadState *Thread{};
 
     // Grab the new thread object
@@ -437,7 +437,6 @@ namespace FEXCore::Context {
 
     // Set up the thread manager state
     Thread->State.ThreadManager.parent_tid = ParentTID;
-    Thread->State.ThreadManager.child_tid = ChildTID;
 
     // Create CPU backend
     switch (Config.Core) {
@@ -655,6 +654,10 @@ namespace FEXCore::Context {
   void Context::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
+    // Let's do some initial bookkeeping here
+    Thread->State.ThreadManager.TID = ::gettid();
+
+    // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
     Thread->StartRunning.Wait();
 
@@ -790,7 +793,7 @@ namespace FEXCore::Context {
         if (Thread->State.RunningEvents.ShouldStop.load()) {
           // If it is the parent thread that died then just leave
           // XXX: This doesn't make sense when the parent thread doesn't outlive its children
-          if (Thread->State.ThreadManager.GetTID() == 1) {
+          if (Thread->State.ThreadManager.parent_tid == 0) {
             ShouldStop = true;
             Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
           }

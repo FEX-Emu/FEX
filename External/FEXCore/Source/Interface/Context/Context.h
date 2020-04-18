@@ -118,7 +118,7 @@ namespace FEXCore::Context {
     FEXCore::CodeLoader *GetCodeLoader() const { return LocalLoader; }
 
     // Used for thread creation from syscalls
-    FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID, uint64_t ChildTID);
+    FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
     void InitializeThread(FEXCore::Core::InternalThreadState *Thread);
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
     void RunThread(FEXCore::Core::InternalThreadState *Thread);

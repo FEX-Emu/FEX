@@ -171,10 +171,11 @@ namespace FEXCore::HLE {
   }
 
   uint64_t Getdents64(FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count) {
-    return syscall(SYS_getdents64,
+    uint64_t Result = syscall(SYS_getdents64,
       static_cast<uint64_t>(fd),
       reinterpret_cast<uint64_t>(dirp),
       static_cast<uint64_t>(count));
+    SYSCALL_ERRNO();
   }
 
   uint64_t Fadvise64(FEXCore::Core::InternalThreadState *Thread, int fd, off_t offset, off_t len, int advice) {

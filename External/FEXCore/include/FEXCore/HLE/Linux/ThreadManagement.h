@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <cstdint>
 
 namespace FEXCore::HLE {
@@ -17,11 +18,11 @@ public:
   uint64_t GID{1000};
   uint64_t EUID{1000};
   uint64_t EGID{1000};
-  uint64_t TID{1};
+  std::atomic<uint64_t> TID{1};
   uint64_t PID{1};
-  uint64_t child_tid{0};
+  int32_t *set_child_tid{0};
+  int32_t *clear_child_tid{0};
   uint64_t parent_tid{0};
   uint64_t robust_list_head{0};
-  bool     clear_tid{false};
 };
 }
