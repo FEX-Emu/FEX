@@ -79,7 +79,7 @@ bool PhiValidation::Run(OpDispatchBuilder *Disp) {
   std::stringstream Out;
 
   if (HadError) {
-    FEXCore::IR::Dump(&Out, &CurrentIR);
+    FEXCore::IR::Dump(&Out, &CurrentIR, nullptr);
 
     Out << "Errors:" << std::endl << Errors.str() << std::endl;
 

@@ -1,6 +1,7 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include "LogManager.h"
+#include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 namespace FEXCore::IR {
 #define IROP_GETNAME_IMPL
@@ -44,7 +45,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
     *out << "Unknown Registerclass " << Arg;
 }
 
-static void PrintArg(std::stringstream *out, IRListView<false> const* IR, OrderedNodeWrapper Arg) {
+static void PrintArg(std::stringstream *out, IRListView<false> const* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationPass *RAPass) {
   uintptr_t Data = IR->GetData();
   uintptr_t ListBegin = IR->GetListData();
 
@@ -52,6 +53,18 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
   auto IROp = RealNode->Op(Data);
 
   *out << "%ssa" << std::to_string(Arg.ID());
+  if (RAPass) {
+    uint64_t RegClass = RAPass->GetNodeRegister(Arg.ID());
+    FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
+    uint32_t Reg = RegClass;
+    switch (Class) {
+      case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
+      case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
+      case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
+    }
+
+    *out << Reg << ")";
+  }
 
   if (IROp->HasDest) {
     uint32_t ElementSize = IROp->ElementSize;
@@ -65,10 +78,11 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
     if (NumElements > 1) {
       *out << "v" << std::dec << NumElements;
     }
+
   }
 }
 
-void Dump(std::stringstream *out, IRListView<false> const* IR) {
+void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationPass *RAPass) {
   uintptr_t ListBegin = IR->GetListData();
   uintptr_t DataBegin = IR->GetData();
 
@@ -134,11 +148,27 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
           }
           uint32_t NumElements = IROp->Size / ElementSize;
 
-          *out << "%ssa" << std::to_string(CodeOp->ID()) << " i" << std::dec << (ElementSize * 8);
+          *out << "%ssa" << std::to_string(CodeOp->ID());
+
+          if (RAPass) {
+            uint64_t RegClass = RAPass->GetNodeRegister(CodeOp->ID());
+            FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
+            uint32_t Reg = RegClass;
+            switch (Class) {
+              case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
+              case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
+              case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
+            }
+
+            *out << Reg << ")";
+          }
+
+          *out << " i" << std::dec << (ElementSize * 8);
 
           if (NumElements > 1) {
             *out << "v" << std::dec << NumElements;
           }
+
           *out << " = ";
         }
         else {
@@ -166,9 +196,9 @@ void Dump(std::stringstream *out, IRListView<false> const* IR) {
             OrderedNode *NodeNode = NodeOp->GetNode(ListBegin);
             auto IRNodeOp  = NodeNode->Op(DataBegin)->C<IR::IROp_PhiValue>();
             *out << "[ ";
-            PrintArg(out, IR, IRNodeOp->Value);
+            PrintArg(out, IR, IRNodeOp->Value, RAPass);
             *out << ", ";
-            PrintArg(out, IR, IRNodeOp->Block);
+            PrintArg(out, IR, IRNodeOp->Block, RAPass);
             *out << " ]";
 
             if (IRNodeOp->Next.ID())
