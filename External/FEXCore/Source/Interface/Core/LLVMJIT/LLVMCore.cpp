@@ -34,8 +34,8 @@ using DestMapType = std::vector<llvm::Value*>;
 
 namespace FEXCore::CPU {
 
-static void CPUIDRun_Thunk(CPUIDEmu::FunctionResults *Results, FEXCore::CPUIDEmu *Class, uint32_t Function) {
-  *Results = Class->RunFunction(Function);
+static CPUIDEmu::FunctionResults CPUIDRun_Thunk(FEXCore::CPUIDEmu *Class, uint32_t Function) {
+  return Class->RunFunction(Function);
 }
 
 static void SetExitState_Thunk(FEXCore::Core::InternalThreadState *Thread) {
@@ -899,9 +899,8 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
 
   // CPUID Function
   {
-    auto FuncType = FunctionType::get(voidTy,
+    auto FuncType = FunctionType::get(i128,
       {
-        ArrayType::get(i32, 4)->getPointerTo(),
         i64, // Technically this is a pointer
         i32, // CPUID Function
       },
@@ -910,7 +909,7 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
       Function::ExternalLinkage,
       "CPUID",
       FunctionModule);
-    using ClassPtrType = void (*)(FEXCore::CPUIDEmu::FunctionResults*, FEXCore::CPUIDEmu*, uint32_t);
+    using ClassPtrType = CPUIDEmu::FunctionResults (*)(FEXCore::CPUIDEmu*, uint32_t);
     union PtrCast {
       ClassPtrType ClassPtr;
       void* Data;
@@ -1570,14 +1569,14 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src = GetSrc(Op->Header.Args[0]);
       std::vector<llvm::Value*> Args{};
 
-      auto ReturnType = ArrayType::get(Type::getInt32Ty(*Con), 4);
-      auto LLVMArgs = JITState.IRBuilder->CreateAlloca(ReturnType);
-      Args.emplace_back(LLVMArgs);
       Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(&CTX->CPUID)));
       Args.emplace_back(Src);
-      JITState.IRBuilder->CreateCall(JITCurrentState.CPUIDFunction, Args);
-      auto Result = JITState.IRBuilder->CreateLoad(ReturnType, LLVMArgs);
-      SetDest(*WrapperOp, Result);
+      auto Result = JITState.IRBuilder->CreateCall(JITCurrentState.CPUIDFunction, Args);
+
+      Value *Undef = UndefValue::get(VectorType::get(Type::getInt64Ty(*Con), 2));
+      Undef = JITState.IRBuilder->CreateInsertElement(Undef, JITState.IRBuilder->CreateTrunc(Result, Type::getInt64Ty(*Con)), JITState.IRBuilder->getInt32(0));
+      Undef = JITState.IRBuilder->CreateInsertElement(Undef, JITState.IRBuilder->CreateTrunc(JITState.IRBuilder->CreateLShr(Result, JITState.IRBuilder->getIntN(128, 64)), Type::getInt64Ty(*Con)), JITState.IRBuilder->getInt32(1));
+      SetDest(*WrapperOp, Undef);
     break;
     }
     case IR::OP_LOADCONTEXT: {
@@ -2452,15 +2451,6 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src = GetSrc(Op->Header.Args[0]);
 
       auto Result = JITState.IRBuilder->CreateVectorSplat(2, Src);
-      SetDest(*WrapperOp, Result);
-    break;
-    }
-    case IR::OP_SPLATVECTOR3: {
-      auto Op = IROp->C<IR::IROp_SplatVector3>();
-      LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
-      auto Src = GetSrc(Op->Header.Args[0]);
-
-      auto Result = JITState.IRBuilder->CreateVectorSplat(3, Src);
       SetDest(*WrapperOp, Result);
     break;
     }

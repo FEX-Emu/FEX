@@ -17,6 +17,7 @@
     "static constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
     "static constexpr FEXCore::IR::RegisterClassType FPRClass {1}",
     "static constexpr FEXCore::IR::RegisterClassType GPRPairClass {2}",
+    "static constexpr FEXCore::IR::RegisterClassType ComplexClass {3}",
     "static constexpr FEXCore::IR::RegisterClassType InvalidClass {~0U}",
 
     "constexpr static uint8_t FCMP_FLAG_EQ        = 0",
@@ -81,6 +82,7 @@
                "Returns a pair containing the value in memory"
               ],
       "HasDest": true,
+      "DestClass": "GPRPair",
       "DestSize": "GetOpSize(ssa0)",
       "NumElements": "2",
       "SSAArgs": "3"
@@ -90,6 +92,7 @@
       "Desc": ["Loads a pair of values from the context"
               ],
       "HasDest": true,
+      "DestClass": "GPRPair",
       "DestSize": "Size",
       "NumElements": "2",
       "Args": [
@@ -113,6 +116,7 @@
       "Desc": ["Extracts a register for the register pair"],
       "SSAArgs": "1",
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "GetOpSize(ssa0)",
       "Args": [
         "uint8_t", "Element"
@@ -125,6 +129,7 @@
                "ssa1 is the upper incoming register"
               ],
       "HasDest": true,
+      "DestClass": "GPRPair",
       "DestSize": "GetOpSize(ssa0)",
       "NumElements": "2",
       "SSAArgs": "2"
@@ -133,6 +138,7 @@
     "TruncElementPair": {
       "Desc": "Truncates each element of a pair to the destination size",
       "HasDest": true,
+      "DestClass": "GPRPair",
       "DestSize": "Size",
       "NumElements": "2",
       "SSAArgs": "1",
@@ -142,7 +148,8 @@
     },
 
     "Constant": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "FixedDestSize": "8",
       "Args": [
         "uint64_t", "Constant"
@@ -175,6 +182,7 @@
 
     "Phi": {
       "HasDest": true,
+      "DestClass": "Complex",
       "DestSize": "~0",
       "ArgPrinter": false,
       "SSAArgs": "2",
@@ -189,6 +197,8 @@
     },
 
     "PhiValue": {
+      "HasDest": false,
+      "DestClass": "Complex",
       "SSAArgs": "3",
       "RAOverride": 0,
       "DestSize": "GetOpSize(ssa0)",
@@ -200,18 +210,21 @@
     },
 
     "Mov": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "1"
     },
 
     "CycleCounter": {
       "HasDest": true,
+      "DestClass": "GPR",
       "FixedDestSize": "8"
     },
 
     "LoadContext": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "Complex",
       "DestSize": "Size",
       "Args": [
         "uint8_t", "Size",
@@ -230,7 +243,8 @@
     },
     "LoadContextIndexed": {
       "SSAArgs": "1",
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "Complex",
       "DestSize": "Size",
       "Args": [
         "uint8_t", "Size",
@@ -258,6 +272,7 @@
     },
     "FillRegister": {
       "HasDest": true,
+      "DestClass": "Complex",
       "Args": [
         "uint32_t", "Slot",
         "RegisterClassType", "Class"
@@ -265,7 +280,8 @@
     },
 
     "LoadFlag": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "1",
       "Args": [
         "uint32_t", "Flag"
@@ -280,13 +296,15 @@
     },
 
     "Syscall": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "FixedDestSize": "8",
       "SSAArgs": "7"
     },
 
     "LoadMem": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "Complex",
       "DestSize": "Size",
       "SSAArgs": "1",
       "Args": [
@@ -306,206 +324,242 @@
     },
 
     "Add": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Sub": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Neg": {
       "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1"
     },
 
     "Mul": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "UMul": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Div": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "UDiv": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Rem": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "URem": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "MulH": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "UMulH": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Or": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "And": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Xor": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Lshl": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Lshr": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Ashr": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Rol": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Ror": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "LDiv": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "3"
     },
 
     "LUDiv": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "3"
     },
 
     "LRem": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "3"
     },
 
     "LURem": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "3"
     },
 
     "Zext": {
- 			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "Complex",
       "DestSize": "SrcSize / 4",
       "SSAArgs": "1",
-			"Args": [
-				"uint8_t", "SrcSize"
-			]
+      "Args": [
+        "uint8_t", "SrcSize"
+      ]
     },
 
     "Sext": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "SrcSize / 4",
       "SSAArgs": "1",
-			"Args": [
+      "Args": [
         "uint8_t", "SrcSize"
       ]
     },
 
     "Not": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1"
     },
 
     "Popcount": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1"
     },
 
     "FindLSB": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1"
     },
 
     "FindMSB": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1"
     },
 
     "FindTrailingZeros": {
       "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1"
     },
 
     "Rev": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1"
     },
 
     "CPUID": {
       "HasDest": true,
-      "FixedDestSize": "4",
-      "NumElements": "4",
+      "DestClass": "GPRPair",
+      "FixedDestSize": "8",
+      "NumElements": "2",
       "SSAArgs": "1"
     },
 
     "Bfi": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "2",
-			"Args": [
+      "Args": [
         "uint8_t", "Width",
         "uint8_t", "lsb"
       ]
     },
 
     "Bfe": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "1",
-			"Args": [
+      "Args": [
         "uint8_t", "Width",
         "uint8_t", "lsb"
       ]
     },
 
     "Sbfe": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1",
-			"Args": [
+      "Args": [
         "uint8_t", "Width",
         "uint8_t", "lsb"
       ]
     },
 
     "Select": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "4",
       "Args": [
         "CondClassType", "Cond"
@@ -513,7 +567,8 @@
     },
 
     "CAS": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "3"
     },
@@ -555,6 +610,7 @@
 
     "AtomicSwap": {
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "Size",
       "SSAArgs": "2",
       "Args": [
@@ -564,6 +620,7 @@
 
     "AtomicFetchAdd": {
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "Size",
       "SSAArgs": "2",
       "Args": [
@@ -573,6 +630,7 @@
 
     "AtomicFetchSub": {
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "Size",
       "SSAArgs": "2",
       "Args": [
@@ -582,6 +640,7 @@
 
     "AtomicFetchAnd": {
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "Size",
       "SSAArgs": "2",
       "Args": [
@@ -591,6 +650,7 @@
 
     "AtomicFetchOr": {
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "Size",
       "SSAArgs": "2",
       "Args": [
@@ -600,6 +660,7 @@
 
     "AtomicFetchXor": {
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "Size",
       "SSAArgs": "2",
       "Args": [
@@ -609,6 +670,7 @@
 
     "VExtractToGPR": {
       "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1",
       "DestSize": "ElementSize",
       "Args": [
@@ -620,6 +682,7 @@
 
     "Float_ToGPR_ZU": {
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "ElementSize",
       "SSAArgs": "1",
       "Args": [
@@ -629,19 +692,11 @@
 
     "Float_ToGPR_ZS": {
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "ElementSize",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "ElementSize"
-      ]
-    },
-
-    "ExtractElement": {
-      "HasDest": true,
-      "DestSize": "GetOpSize(ssa0)",
-      "SSAArgs": "1",
-      "Args": [
-        "uint8_t", "Idx"
       ]
     },
 
@@ -650,6 +705,7 @@
                "Ordering flag result is true if either float input is NaN"
               ],
       "HasDest": true,
+      "DestClass": "GPR",
       "DestSize": "4",
       "SSAArgs": "2",
       "Args": [
@@ -664,38 +720,29 @@
 
     "CreateVector2": {
       "HasDest": true,
+      "DestClass": "FPR",
       "DestSize": "GetOpSize(ssa0) * 2",
       "SSAArgs": "2"
     },
 
-    "CreateVector3": {
-      "HasDest": true,
-      "DestSize": "GetOpSize(ssa0) * 3",
-      "SSAArgs": "3"
-    },
-
     "CreateVector4": {
       "HasDest": true,
+      "DestClass": "FPR",
       "DestSize": "GetOpSize(ssa0) * 4",
       "SSAArgs": "4"
     },
 
     "SplatVector2": {
       "HasDest": true,
+      "DestClass": "FPR",
       "NumElements": "2",
       "DestSize": "GetOpSize(ssa0) * 2",
       "SSAArgs": "1"
     },
 
-    "SplatVector3": {
-      "HasDest": true,
-      "NumElements": "3",
-      "DestSize": "GetOpSize(ssa0) * 3",
-      "SSAArgs": "1"
-    },
-
     "SplatVector4": {
       "HasDest": true,
+      "DestClass": "FPR",
       "NumElements": "4",
       "DestSize": "GetOpSize(ssa0) * 4",
       "SSAArgs": "1"
@@ -703,6 +750,7 @@
 
     "VMov": {
       "HasDest": true,
+      "DestClass": "FPR",
       "DestSize": "RegisterSize",
       "SSAArgs": "1",
       "Args": [
@@ -711,7 +759,8 @@
     },
 
     "VAnd": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -720,7 +769,8 @@
     },
 
     "VOr": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -729,7 +779,8 @@
     },
 
     "VXor": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -738,7 +789,8 @@
     },
 
     "VAdd": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -747,7 +799,8 @@
     },
 
     "VSub": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -757,6 +810,7 @@
 
     "VUQAdd": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -766,6 +820,7 @@
 
     "VUQSub": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -775,6 +830,7 @@
 
     "VSQAdd": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -784,6 +840,7 @@
 
     "VSQSub": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -794,6 +851,7 @@
     "VAddP": {
       "Desc": "Does a horizontal pairwise add of elements across the two source vectors",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -803,6 +861,7 @@
 
     "VFAdd": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -812,6 +871,7 @@
 
     "VFSub": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -821,6 +881,7 @@
 
     "VFMul": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -830,6 +891,7 @@
 
     "VFDiv": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -839,6 +901,7 @@
 
     "VFMin": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -848,6 +911,7 @@
 
     "VFMax": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -857,6 +921,7 @@
 
     "VFRecp": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -866,6 +931,7 @@
 
     "VFSqrt": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -875,6 +941,7 @@
 
     "VFRSqrt": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -884,6 +951,7 @@
 
     "VNeg": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -893,6 +961,7 @@
 
     "VNot": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -902,6 +971,7 @@
 
     "VUMin": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -911,6 +981,7 @@
 
     "VSMin": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -920,6 +991,7 @@
 
     "VUMax": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -929,6 +1001,7 @@
 
     "VSMax": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -937,7 +1010,8 @@
     },
 
     "VZip": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -946,7 +1020,8 @@
     },
 
     "VZip2": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -955,7 +1030,8 @@
     },
 
     "VCMPEQ": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -964,7 +1040,8 @@
     },
 
     "VCMPGT": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -974,6 +1051,7 @@
 
     "VFCMPEQ": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -983,6 +1061,7 @@
 
     "VFCMPNEQ": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -992,6 +1071,7 @@
 
     "VFCMPLT": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1001,6 +1081,7 @@
 
     "VFCMPGT": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1010,6 +1091,7 @@
 
     "VFCMPLE": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1019,6 +1101,7 @@
 
     "VFCMPORD": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1028,6 +1111,7 @@
 
     "VFCMPUNO": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1036,7 +1120,8 @@
     },
 
     "VUShl": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1046,6 +1131,7 @@
 
     "VUShr": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1055,6 +1141,7 @@
 
     "VSShr": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1063,7 +1150,8 @@
     },
 
     "VUShlS": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1073,6 +1161,7 @@
 
     "VUShrS": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1082,6 +1171,7 @@
 
     "VSShrS": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1090,7 +1180,8 @@
     },
 
     "VInsElement": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1102,6 +1193,7 @@
 
     "VInsScalarElement": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1112,6 +1204,7 @@
 
     "VExtractElement": {
       "HasDest": true,
+      "DestClass": "FPR",
       "DestSize": "ElementSize",
       "SSAArgs": "1",
       "Args": [
@@ -1122,7 +1215,8 @@
     },
 
     "VExtr": {
-			"HasDest": true,
+      "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1133,6 +1227,7 @@
 
     "VInsGPR": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1143,6 +1238,7 @@
 
     "VSLI": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1153,6 +1249,7 @@
 
     "VSRI": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1163,6 +1260,7 @@
 
     "VUShrI": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1173,6 +1271,7 @@
 
     "VSShrI": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1183,6 +1282,7 @@
 
     "VShlI": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1194,6 +1294,7 @@
     "VUShrNI": {
       "Desc": "Unsigned shifts right each element and then narrows to the next lower element size",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1207,6 +1308,7 @@
                "Inserts results in to the high elements of the first argument"
               ],
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1217,12 +1319,14 @@
 
     "VBitcast": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1"
     },
 
     "VSXTL": {
       "Desc": "Sign extends elements from the source element size to the next size up",
       "HasDest": true,
+      "DestClass": "FPR",
       "DestSize": "RegisterSize",
       "SSAArgs": "1",
       "Args": [
@@ -1236,6 +1340,7 @@
                "Source elements come from the upper 64bits of the register"
               ],
       "HasDest": true,
+      "DestClass": "FPR",
       "DestSize": "RegisterSize",
       "SSAArgs": "1",
       "Args": [
@@ -1247,6 +1352,7 @@
     "VUXTL": {
       "Desc": "Zero extends elements from the source element size to the next size up",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1259,6 +1365,7 @@
                "Source elements come from the upper 64bits of the register"
               ],
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1268,6 +1375,7 @@
 
     "VCastFromGPR": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1277,6 +1385,7 @@
 
     "VSQXTN": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1286,6 +1395,7 @@
 
     "VSQXTN2": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1295,6 +1405,7 @@
 
     "VSQXTUN": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1304,6 +1415,7 @@
 
     "VSQXTUN2": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1314,6 +1426,7 @@
     "Float_FromGPR_U": {
       "Desc": "Scalar op: Converts unsigned GPR to Scalar float",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "ElementSize"
@@ -1323,6 +1436,7 @@
     "Float_FromGPR_S": {
       "Desc": "Scalar op: Converts signed GPR to Scalar float",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "ElementSize"
@@ -1332,6 +1446,7 @@
     "Float_FToF": {
       "Desc": "Scalar op: Converts float from one size to another",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "DstElementSize",
@@ -1342,6 +1457,7 @@
     "Vector_UToF": {
       "Desc": "Vector op: Converts unsigned integer to same size float",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1352,6 +1468,7 @@
     "Vector_SToF": {
       "Desc": "Vector op: Converts signed integer to same size float",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1362,6 +1479,7 @@
     "Vector_FToZU": {
       "Desc": "Vector op: Converts float to unsigned integer, rounding towards zero",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1372,6 +1490,7 @@
     "Vector_FToZS": {
       "Desc": "Vector op: Converts float to signed integer, rounding towards zero",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1382,6 +1501,7 @@
     "Vector_FToF": {
       "Desc": "Vector op: Converts float from source element size to destination size (fp32<->fp64)",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1392,6 +1512,7 @@
 
     "VUMul": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1401,6 +1522,7 @@
 
     "VSMul": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1410,6 +1532,7 @@
 
     "VUMull": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1419,6 +1542,7 @@
 
     "VSMull": {
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1429,6 +1553,7 @@
     "VUMull2": {
       "Dest": "Multiplies the high elements with size extension",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1439,6 +1564,7 @@
     "VSMull2": {
       "Dest": "Multiplies the high elements with size extension",
       "HasDest": true,
+      "DestClass": "FPR",
       "SSAArgs": "2",
       "Args": [
         "uint8_t", "RegisterSize",
@@ -1448,17 +1574,10 @@
 
     "GetHostFlag": {
       "HasDest": true,
+      "DestClass": "GPR",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "Flag"
-      ]
-    },
-
-    "CreatesFlags": {
-      "HasDest": true,
-      "SSAArgs": "1",
-      "Args": [
-        "uint32_t", "Flags"
       ]
     },
 

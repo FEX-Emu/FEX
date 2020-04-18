@@ -2001,7 +2001,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             break;
           }
           case IR::OP_SPLATVECTOR4:
-          case IR::OP_SPLATVECTOR3:
           case IR::OP_SPLATVECTOR2: {
             auto Op = IROp->C<IR::IROp_SplatVector2>();
             LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
@@ -2011,7 +2010,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             switch (Op->Header.Op) {
               case IR::OP_SPLATVECTOR4: Elements = 4; break;
-              case IR::OP_SPLATVECTOR3: Elements = 3; break;
               case IR::OP_SPLATVECTOR2: Elements = 2; break;
               default: LogMan::Msg::A("Uknown Splat size"); break;
             }

@@ -322,6 +322,8 @@ struct RegisterClassType final {
   operator uint32_t() {
     return Val;
   }
+  constexpr bool operator==(RegisterClassType const &rhs) const { return Val == rhs.Val; }
+  constexpr bool operator!=(RegisterClassType const &rhs) const { return !operator==(rhs); }
 };
 
 struct CondClassType final {
@@ -334,6 +336,7 @@ struct CondClassType final {
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES
+#define IROP_REG_CLASSES
 #include <FEXCore/IR/IRDefines.inc>
 
 template<bool>

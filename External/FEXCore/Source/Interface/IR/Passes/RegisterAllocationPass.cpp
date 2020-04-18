@@ -211,72 +211,60 @@ namespace {
     IR::OrderedNode const *RealNode = WrapperOp.GetNode(ListBegin);
     IR::IROp_Header const *IROp = RealNode->Op(DataBegin);
 
-    // XXX: This needs to be better
-    switch (IROp->Op) {
-    case IR::OP_LOADCONTEXT: {
-      auto Op = IROp->C<IR::IROp_LoadContext>();
-      return Op->Class;
-      break;
-    }
-    case IR::OP_STORECONTEXT: {
-      auto Op = IROp->C<IR::IROp_StoreContext>();
-      return Op->Class;
-      break;
-    }
-    case IR::OP_LOADMEM: {
-      auto Op = IROp->C<IR::IROp_LoadMem>();
-      return Op->Class;
-      break;
-    }
-    case IR::OP_STOREMEM: {
-      auto Op = IROp->C<IR::IROp_StoreMem>();
-      return Op->Class;
-      break;
-    }
-    case IR::OP_ZEXT: {
-      auto Op = IROp->C<IR::IROp_Zext>();
-      LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
+    FEXCore::IR::RegisterClassType Class = IR::GetRegClass(IROp->Op);
+    if (Class != FEXCore::IR::ComplexClass)
+      return Class;
 
-      if (Op->SrcSize == 64) {
-        return FEXCore::IR::FPRClass;
+    // Complex register class handling
+    switch (IROp->Op) {
+      case IR::OP_LOADCONTEXT: {
+        auto Op = IROp->C<IR::IROp_LoadContext>();
+        return Op->Class;
+        break;
       }
-      else {
-        return FEXCore::IR::GPRClass;
+      case IR::OP_LOADCONTEXTINDEXED: {
+        auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
+        return Op->Class;
+        break;
       }
-      break;
-    }
-    case IR::OP_CPUID: return FEXCore::IR::FPRClass; break;
-    case IR::OP_PHIVALUE: {
-      // Unwrap the PHIValue to get the class
-      auto Op = IROp->C<IR::IROp_PhiValue>();
-      return GetRegClassFromNode(ListBegin, DataBegin, Op->Value);
-    }
-    case IR::OP_PHI: {
-      // Class is defined from the values passed in
-      // All Phi nodes should have its class be the same (Validation should confirm this
-      auto Op = IROp->C<IR::IROp_Phi>();
-      return GetRegClassFromNode(ListBegin, DataBegin, Op->PhiBegin);
-    }
-    case IR::OP_LOADCONTEXTPAIR:
-    case IR::OP_STORECONTEXTPAIR:
-    case IR::OP_CREATEELEMENTPAIR:
-    case IR::OP_CASPAIR:
-    case IR::OP_TRUNCELEMENTPAIR:
-      return FEXCore::IR::GPRPairClass;
-    case IR::OP_EXTRACTELEMENTPAIR:
-      return FEXCore::IR::GPRClass;
-    default:
-      if (IROp->Op >= IR::OP_GETHOSTFLAG)
-        return FEXCore::IR::GPRClass; // This will change to Flags Class in the future
-      else if (IROp->Op > IR::OP_PRINT)
-        return FEXCore::IR::FPRClass;
-      else
-        return FEXCore::IR::GPRClass;
-      break;
+      case IR::OP_LOADMEM: {
+        auto Op = IROp->C<IR::IROp_LoadMem>();
+        return Op->Class;
+        break;
+      }
+      case IR::OP_FILLREGISTER: {
+        auto Op = IROp->C<IR::IROp_FillRegister>();
+        return Op->Class;
+        break;
+      }
+      case IR::OP_ZEXT: {
+        auto Op = IROp->C<IR::IROp_Zext>();
+        LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
+
+        if (Op->SrcSize == 64) {
+          return FEXCore::IR::FPRClass;
+        }
+        else {
+          return FEXCore::IR::GPRClass;
+        }
+        break;
+      }
+      case IR::OP_PHIVALUE: {
+        // Unwrap the PHIValue to get the class
+        auto Op = IROp->C<IR::IROp_PhiValue>();
+        return GetRegClassFromNode(ListBegin, DataBegin, Op->Value);
+      }
+      case IR::OP_PHI: {
+        // Class is defined from the values passed in
+        // All Phi nodes should have its class be the same (Validation should confirm this
+        auto Op = IROp->C<IR::IROp_Phi>();
+        return GetRegClassFromNode(ListBegin, DataBegin, Op->PhiBegin);
+      }
+      default: break;
     }
 
     // Unreachable
-    return FEXCore::IR::GPRClass;
+    return FEXCore::IR::InvalidClass;
   };
 
   // Walk the IR and set the node classes
