@@ -235,7 +235,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
 
   HadWarning = false;
   if (HadError || HadWarning) {
-    FEXCore::IR::Dump(&Out, &CurrentIR);
+    FEXCore::IR::Dump(&Out, &CurrentIR, RAPass);
 
     if (HadError) {
       Out << "Errors:" << std::endl << Errors.str() << std::endl;

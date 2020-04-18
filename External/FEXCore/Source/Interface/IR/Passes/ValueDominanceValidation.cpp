@@ -239,7 +239,7 @@ bool ValueDominanceValidation::Run(OpDispatchBuilder *Disp) {
   std::stringstream Out;
 
   if (HadError || HadWarning) {
-    FEXCore::IR::Dump(&Out, &CurrentIR);
+    FEXCore::IR::Dump(&Out, &CurrentIR, nullptr);
 
     if (HadError) {
       Out << "Errors:" << std::endl << Errors.str() << std::endl;

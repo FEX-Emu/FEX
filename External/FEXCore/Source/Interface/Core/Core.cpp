@@ -560,7 +560,7 @@ namespace FEXCore::Context {
       if (Thread->OpDispatcher->ShouldDump) {
         std::stringstream out;
         auto NewIR = Thread->OpDispatcher->ViewIR();
-        FEXCore::IR::Dump(&out, &NewIR);
+        FEXCore::IR::Dump(&out, &NewIR, RAPass);
         printf("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
       }
 
