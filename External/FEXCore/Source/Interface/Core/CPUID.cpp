@@ -1,15 +1,23 @@
 #include "Interface/Core/CPUID.h"
 
 namespace FEXCore {
+//#define CPUID_AMD
 
 CPUIDEmu::FunctionResults CPUIDEmu::Function_0h() {
   CPUIDEmu::FunctionResults Res{};
 
-  Res.Res[0] = 0x16; // Let's say we are a Skylake
   // EBX, EDX, ECX become the manufacturer id string
-  Res.Res[1] = 0x756E6547; // "Genu"
-  Res.Res[2] = 0x49656E69; // "ineI"
-  Res.Res[3] = 0x6C65746E; // "ntel"
+#ifdef CPUID_AMD
+  Res.Res[0] = 0x0D; // Let's say we are a Zen+
+  Res.Res[1] = CPUID_VENDOR_AMD1;
+  Res.Res[2] = CPUID_VENDOR_AMD2;
+  Res.Res[3] = CPUID_VENDOR_AMD3;
+#else
+  Res.Res[0] = 0x16; // Let's say we are a Skylake
+  Res.Res[1] = CPUID_VENDOR_INTEL1;
+  Res.Res[2] = CPUID_VENDOR_INTEL2;
+  Res.Res[3] = CPUID_VENDOR_INTEL3;
+#endif
   return Res;
 }
 
