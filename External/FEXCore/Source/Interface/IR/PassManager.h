@@ -25,6 +25,9 @@ public:
 
 private:
   std::vector<std::unique_ptr<Pass>> Passes;
+#ifndef NDEBUG
+  std::vector<std::unique_ptr<Pass>> ValidationPasses;
+#endif
 };
 }
 

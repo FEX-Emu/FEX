@@ -1,4 +1,6 @@
 #include "Interface/IR/PassManager.h"
+#include "Interface/IR/Passes/RegisterAllocationPass.h"
+#include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
 #include <iostream>
@@ -39,6 +41,11 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
   LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+  IR::RegisterAllocationPass * RAPass{};
+  if (Disp->CTX->HasRegisterAllocationPass()) {
+    RAPass = Disp->CTX->GetRegisterAllocatorPass();
+  }
+
   while (1) {
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
@@ -53,6 +60,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
       auto CodeOp = CodeBegin();
       OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
       auto IROp = CodeNode->Op(DataBegin);
+      uint32_t Node = CodeOp->ID();
 
       uint8_t OpSize = IROp->Size;
 
@@ -67,6 +75,33 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
         if (RealNode->GetUses() == 0) {
           HadWarning |= true;
           Warnings << "%ssa" << CodeOp->ID() << ": Destination created but had no uses" << std::endl;
+        }
+
+        if (RAPass) {
+          // If we have a register allocator then the destination needs to be assigned a register and class
+          uint64_t Reg = RAPass->GetNodeRegister(Node);
+
+          FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
+          FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType{uint32_t(Reg >> 32)};
+
+          // If no register class was assigned
+          if (AssignedClass == IR::InvalidClass) {
+            HadError |= true;
+            Errors << "%ssa" << CodeOp->ID() << ": Had destination but with no register class assigned" << std::endl;
+          }
+
+          // If no physical register was assigned
+          if ((uint32_t)Reg == ~0U) {
+            HadError |= true;
+            Errors << "%ssa" << CodeOp->ID() << ": Had destination but with no register assigned" << std::endl;
+          }
+
+          // Assigned class wasn't the expected class and it is a non-complex op
+          if (AssignedClass != ExpectedClass &&
+              ExpectedClass != IR::ComplexClass) {
+            HadWarning |= true;
+            Warnings << "%ssa" << CodeOp->ID() << ": Destination had register class " << AssignedClass.Val << " When register class " << ExpectedClass.Val << " Was expected" << std::endl;
+          }
         }
       }
 

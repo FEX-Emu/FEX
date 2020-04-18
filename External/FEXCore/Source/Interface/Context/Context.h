@@ -26,6 +26,9 @@ namespace CPU {
 
 namespace FEXCore::IR {
   class RegisterAllocationPass;
+namespace Validation {
+  class IRValidation;
+}
 }
 
 namespace FEXCore::Context {
@@ -37,6 +40,7 @@ namespace FEXCore::Context {
   struct Context {
     friend class FEXCore::SyscallHandler;
     friend class FEXCore::CPU::JITCore;
+    friend class FEXCore::IR::Validation::IRValidation;
 
     struct {
       bool Multiblock {false};
@@ -121,6 +125,7 @@ namespace FEXCore::Context {
 
   protected:
     IR::RegisterAllocationPass *GetRegisterAllocatorPass();
+    bool HasRegisterAllocationPass() const { return RAPass != nullptr; }
 
   private:
     void WaitForIdle();
