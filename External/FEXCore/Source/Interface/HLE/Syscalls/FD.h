@@ -49,6 +49,7 @@ namespace FEXCore::HLE {
   uint64_t Timerfd_Create(FEXCore::Core::InternalThreadState *Thread, int32_t clockid, int32_t flags);
   uint64_t Eventfd(FEXCore::Core::InternalThreadState *Thread, uint32_t initval, uint32_t flags);
   uint64_t Pipe2(FEXCore::Core::InternalThreadState *Thread, int pipefd[2], int flags);
+  uint64_t Inotify_init1(FEXCore::Core::InternalThreadState *Thread, int flags);
   uint64_t Memfd_Create(FEXCore::Core::InternalThreadState *Thread, const char *name, uint32_t flags);
   uint64_t Statx(FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf);
   uint64_t Ppoll(FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize);

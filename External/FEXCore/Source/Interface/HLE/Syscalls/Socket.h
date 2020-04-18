@@ -19,6 +19,7 @@ namespace FEXCore::HLE {
   uint64_t Listen(FEXCore::Core::InternalThreadState *Thread, int sockfd, int backlog);
   uint64_t GetSockName(FEXCore::Core::InternalThreadState *Thread, int sockfd, struct sockaddr *addr, socklen_t *addrlen);
   uint64_t GetPeerName(FEXCore::Core::InternalThreadState *Thread, int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+  uint64_t Socketpair(FEXCore::Core::InternalThreadState *Thread, int domain, int type, int protocol, int sv[2]);
   uint64_t SetSockOpt(FEXCore::Core::InternalThreadState *Thread, int sockfd, int level, int optname, const void *optval, socklen_t optlen);
   uint64_t GetSockOpt(FEXCore::Core::InternalThreadState *Thread, int sockfd, int level, int optname, void *optval, socklen_t *optlen);
   uint64_t Sendmmsg(FEXCore::Core::InternalThreadState *Thread, int sockfd, struct mmsghdr *msgvec, uint32_t vlen, int flags);

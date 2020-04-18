@@ -70,6 +70,7 @@ enum Syscalls {
   SYSCALL_LISTEN          = 50,  ///< __NR_listen
   SYSCALL_GETSOCKNAME     = 51,  ///< __NR_getsockname
   SYSCALL_GETPEERNAME     = 52,  ///< __NR_getpeername
+  SYSCALL_SOCKETPAIR      = 53,  ///< __NR_socketpair
   SYSCALL_SETSOCKOPT      = 54,  ///< __NR_setsockopt
   SYSCALL_GETSOCKOPT      = 55,  ///< __NR_getsockopt
   SYSCALL_CLONE           = 56,  ///< __NR_clone
@@ -170,6 +171,7 @@ enum Syscalls {
   SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
   SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1
   SYSCALL_PIPE2           = 293, ///< __NR_pipe2
+  SYSCALL_INOTIFY_INIT1   = 294, ///< __NR_inotify_init1
   SYSCALL_PRLIMIT64       = 302, ///< __NR_prlimit64
   SYSCALL_SENDMMSG        = 307, ///< __NR_sendmmsg
   SYSCALL_GETRANDOM       = 318, ///< __NR_getrandom

@@ -234,7 +234,12 @@ namespace FEXCore::HLE {
   uint64_t Pipe2(FEXCore::Core::InternalThreadState *Thread, int pipefd[2], int flags) {
     uint64_t Result = ::pipe2(pipefd, flags);
     SYSCALL_ERRNO();
-   }
+  }
+
+  uint64_t Inotify_init1(FEXCore::Core::InternalThreadState *Thread, int flags) {
+    uint64_t Result = ::inotify_init1(flags);
+    SYSCALL_ERRNO();
+  }
 
   uint64_t Memfd_Create(FEXCore::Core::InternalThreadState *Thread, const char *name, uint32_t flags) {
     uint64_t Result = ::memfd_create(name, flags);
