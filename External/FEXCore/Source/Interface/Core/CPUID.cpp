@@ -49,10 +49,8 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_07h() {
   Res.Res[0] = 0x0;
   Res.Res[1] =
     (1 << 0) | // FS/GS support
-    (1 << 3) | // BMI 1 support
     (1 << 5) | // AVX2 support
-    (1 << 7) | // SMEP support
-    (1 << 8) // BMI2 support
+    (1 << 7)   // SMEP support
     ;
   Res.Res[2] = ~0U;
   Res.Res[3] = ~0U;
