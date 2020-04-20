@@ -36,8 +36,11 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
      * @brief Returns the register and class encoded together
      * Top 32bits is the class, lower 32bits is the register
      */
-    virtual uint64_t GetNodeRegister(uint32_t Node) = 0;
+    virtual uint64_t GetDestRegister(uint32_t Node) = 0;
     /**  @} */
+
+    virtual uint64_t GetTemp(uint32_t Node, uint8_t Index) { return ~0ULL; }
+    virtual uint64_t GetPhysicalTemp(uint32_t Node, uint8_t Index) { return ~0ULL; }
 
   protected:
     bool HasSpills {};

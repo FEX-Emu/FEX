@@ -1,0 +1,167 @@
+{
+  "Defines": [
+    "constexpr static uint8_t Reg_RAX   = 0",
+    "constexpr static uint8_t Reg_RBX   = 1",
+    "constexpr static uint8_t Reg_RCX   = 2",
+    "constexpr static uint8_t Reg_RDX   = 3",
+    "constexpr static uint8_t Reg_RBP   = 4",
+    "constexpr static uint8_t Reg_RSI   = 5",
+    "constexpr static uint8_t Reg_RDI   = 6",
+    "constexpr static uint8_t Reg_RSP   = 7",
+    "constexpr static uint8_t Reg_R8    = 8",
+    "constexpr static uint8_t Reg_R9    = 9",
+    "constexpr static uint8_t Reg_R10   = 10",
+    "constexpr static uint8_t Reg_R11   = 11",
+    "constexpr static uint8_t Reg_R12   = 12",
+    "constexpr static uint8_t Reg_R13   = 13",
+    "constexpr static uint8_t Reg_R14   = 14",
+    "constexpr static uint8_t Reg_R15   = 15",
+
+    "constexpr static uint8_t Reg_XMM0  = 16",
+    "constexpr static uint8_t Reg_XMM1  = 17",
+    "constexpr static uint8_t Reg_XMM2  = 18",
+    "constexpr static uint8_t Reg_XMM3  = 19",
+    "constexpr static uint8_t Reg_XMM4  = 20",
+    "constexpr static uint8_t Reg_XMM5  = 21",
+    "constexpr static uint8_t Reg_XMM6  = 22",
+    "constexpr static uint8_t Reg_XMM7  = 23",
+    "constexpr static uint8_t Reg_XMM8  = 24",
+    "constexpr static uint8_t Reg_XMM9  = 25",
+    "constexpr static uint8_t Reg_XMM10 = 26",
+    "constexpr static uint8_t Reg_XMM11 = 27",
+    "constexpr static uint8_t Reg_XMM12 = 28",
+    "constexpr static uint8_t Reg_XMM13 = 29",
+    "constexpr static uint8_t Reg_XMM14 = 30",
+    "constexpr static uint8_t Reg_XMM15 = 31"
+  ],
+
+  "/* Per Node Metadata */" : {
+    "Dest_Is_Src0": "Doesn't need any metadata storage. Just colour Dest and Src0 to same assignment",
+    "Dest_Is_Physical": "Dest register needs 6 bits to ensure up to 32 registers per dest class",
+    "SrcN_Is_Physical": "Needs 6 bits for each(4)",
+    "SrcN_Is_LateKill": "Doesn't need metadata storage",
+    "Needs_Temps": "Needs 3 bits since we don't need more than 7 temps at any point",
+    "Needs_Physicals": "Needs 6bits /per/ physical needed",
+    "Total bits in metadata per op": "33 bits minimum(Zero Needs_Physicals), 57 for 4 physicals, 225bits for 32 physicals, 417 for 64physicals(All FPRs + GPRs)"
+  },
+
+  "/* Current */": "const std::array<Xbyak::Reg, 9> RA64 = { rsi, r8, r9, r10, r11, rbp, r12, r13, r15 };",
+  "/* Current */": "const std::array<Xbyak::Reg, 11> RAXMM = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };",
+  "/* Current */": "const std::array<std::pair<Xbyak::Reg, Xbyak::Reg>, 4> RA64Pair = {{ {rsi, r8}, {r9, r10}, {r11, rbp}, {r12, r13} }};",
+
+  "RegClasses": {
+    "GPR": ["Reg_RAX",
+            "Reg_RBX",
+            "Reg_RCX",
+            "Reg_RDX",
+            "Reg_RBP",
+            "Reg_RSI",
+            "Reg_RDI",
+            "Reg_R8",
+            "Reg_R9",
+            "Reg_R10",
+            "Reg_R11",
+            "Reg_R12",
+            "Reg_R13",
+            "Reg_R15"
+           ],
+    "FPR": ["Reg_XMM0",
+            "Reg_XMM1",
+            "Reg_XMM2",
+            "Reg_XMM3",
+            "Reg_XMM4",
+            "Reg_XMM5",
+            "Reg_XMM6",
+            "Reg_XMM7",
+            "Reg_XMM8",
+            "Reg_XMM9",
+            "Reg_XMM10",
+            "Reg_XMM11",
+            "Reg_XMM12",
+            "Reg_XMM13",
+            "Reg_XMM14",
+            "Reg_XMM15"
+           ],
+    "GPRPair": [
+      ["Reg_RAX", "Reg_RDX"],
+      ["Reg_RBX", "Reg_RCX"],
+      ["Reg_RBP", "Reg_RSI"],
+      ["Reg_RDI", "Reg_R8"],
+      ["Reg_R9",  "Reg_R10"],
+      ["Reg_R11", "Reg_R12"],
+      ["Reg_R13", "Reg_R15"]
+    ]
+  },
+
+  "(1)": "Need a constraint that Dest == Src0",
+  "(2)": "Need a constraint that Dest == PhysicalRegister",
+  "(3)": "Need a contraint that Src<N> == PhysicalRegister (Only necessary for x86 CASPair)",
+  "(4)": "Need a constraint that an op needs <N> temps",
+  "(5)": "Need a contraint that an op needs particular physical registers",
+    "(5a)": "Unrelated to (3), incase it just needs a temp in a particular register",
+  "(6)": "Need a constraint that a source is late-kill",
+
+  "Ops": {
+    "Add": {
+      "": "Showing (1)",
+      "Dest_Is_SSA0": true
+    },
+    "Div": {
+      "": "Showing (1) & (2)",
+      "": ["DIV needs the dividend in RAX, So Dest = RAX = SSA0"
+          ],
+      "Physical_Dest": ["GPR", "Reg_RAX"],
+      "Dest_Is_SSA0": true
+    },
+    "CAS": {
+      "": "Shows (1) & (2)",
+      "": ["CAS needs expected = RAX and Destination = RAX"
+          ],
+      "Physical_Dest": ["GPR", "Reg_RAX"],
+      "Dest_Is_SSA0": true
+    },
+    "CASPair": {
+      "": "Shows (1) & (2) & (3)",
+      "": [
+          ],
+      "Physical_Dest": ["GPRPair", ["Reg_RAX", "Reg_RDX"]],
+      "Dest_Is_SSA0": true,
+      "Physical_ssa1": ["GPRPair", ["Reg_RBX", "Reg_RCX"]]
+    },
+    "FindLSB": {
+      "": "Showing (4)",
+      "": ["Needs a single temporary register to handle the op"
+         ],
+      "TempCountGPR": "1"
+    },
+    "CycleCounter": {
+      "": "Showing (5)",
+      "": ["x86 RDTSC instruction returns in EDX:EAX",
+           "This means the destination can live in EAX but we still need the EDX temp"
+          ],
+      "Physical_Dest": ["GPR", "Reg_RAX"],
+      "NeedsPhysical": [
+        ["GPR", "Reg_RDX"]
+      ]
+    },
+    "Select": {
+      "": "Showing (6)",
+      "": ["With x86 we need to make this a bit ugly and use a cmov",
+           "We can remove a temp usage if we mov the first value then cmov over it",
+           "AArch64 this maps directly to a cmp + csel instruction pair",
+           "Dest = Src0 <op> Src1 ? Src2 : Src3;"
+          ],
+      "LateKill": [
+        "ssa0", "ssa1", "ssa3"
+      ]
+    },
+    "StoreFlag": {
+      "Desc": "Just for testing",
+      "TempCountGPR": "0",
+      "NeedsPhysical": [
+        ["GPR", "Reg_RAX"]
+      ]
+
+    }
+  }
+}

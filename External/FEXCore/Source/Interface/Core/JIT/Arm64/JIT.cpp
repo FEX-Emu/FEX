@@ -295,7 +295,7 @@ void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
 }
 
 uint32_t JITCore::GetPhys(uint32_t Node) {
-  uint64_t Reg = RAPass->GetNodeRegister(Node);
+  uint64_t Reg = RAPass->GetDestRegister(Node);
 
   if ((uint32_t)Reg != ~0U)
     return Reg;
@@ -424,7 +424,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         auto Name = FEXCore::IR::GetName(IROp->Op);
 
         if (IROp->HasDest) {
-          uint64_t PhysReg = RAPass->GetNodeRegister(Node);
+          uint64_t PhysReg = RAPass->GetDestRegister(Node);
           if (PhysReg >= GPRPairBase)
             Inst << "\tPair" << GetPhys(Node) << " = " << Name << " ";
           else if (PhysReg >= FPRBase)
@@ -439,7 +439,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           uint32_t ArgNode = IROp->Args[i].ID();
-          uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
+          uint64_t PhysReg = RAPass->GetDestRegister(ArgNode);
           if (PhysReg >= GPRPairBase)
             Inst << "Pair" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
           else if (PhysReg >= FPRBase)
@@ -1306,7 +1306,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       case IR::OP_ZEXT: {
         auto Op = IROp->C<IR::IROp_Zext>();
         LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-        uint64_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
+        uint64_t PhysReg = RAPass->GetDestRegister(Op->Header.Args[0].ID());
         if (PhysReg >= FPRBase) {
           // FPR -> GPR transfer with free truncation
           switch (Op->SrcSize) {

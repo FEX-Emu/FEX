@@ -436,7 +436,7 @@ namespace FEXCore::Context {
 
   IR::RegisterAllocationPass *Context::GetRegisterAllocatorPass() {
     if (!RAPass) {
-      RAPass = IR::CreateRegisterAllocationPass();
+      RAPass = IR::CreateNewRAPass();
       PassManager.InsertPass(RAPass);
     }
 

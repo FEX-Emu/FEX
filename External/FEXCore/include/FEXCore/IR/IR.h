@@ -41,11 +41,20 @@ struct NodeWrapperBase final {
   using NodeOffsetType = uint32_t;
   NodeOffsetType NodeOffset;
 
+  /**
+   * @brief Wraps just an offset provided in bytes
+   *        If you want to offset based on an index then you need to multiply the offset by sizeof(IR::OrderedNode)
+   */
   static NodeWrapperBase WrapOffset(NodeOffsetType Offset) {
     NodeWrapperBase Wrapped;
     Wrapped.NodeOffset = Offset;
     return Wrapped;
   }
+
+  /**
+   * @brief Wraps a provided index which will multiply by the sizeof(IR::OrderedNode) directly
+   */
+  static NodeWrapperBase WrapID(NodeOffsetType ID);
 
   static NodeWrapperBase WrapPtr(uintptr_t Base, uintptr_t Value) {
     NodeWrapperBase Wrapped;
@@ -348,4 +357,13 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
 template<typename Type>
 inline uint32_t NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }
 
-};
+template<typename Type>
+inline NodeWrapperBase<Type> NodeWrapperBase<Type>::WrapID(NodeOffsetType ID) {
+  return NodeWrapperBase<Type>::WrapOffset(ID * sizeof(OrderedNode));
+}
+
+}
+
+#define IR_CONSTRAINT_REGS
+#include <FEXCore/IR/IRDefines_Constraints.inc>
+

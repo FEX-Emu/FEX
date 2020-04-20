@@ -79,7 +79,7 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
 
         if (RAPass) {
           // If we have a register allocator then the destination needs to be assigned a register and class
-          uint64_t Reg = RAPass->GetNodeRegister(Node);
+          uint64_t Reg = RAPass->GetDestRegister(Node);
 
           FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
           FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType{uint32_t(Reg >> 32)};

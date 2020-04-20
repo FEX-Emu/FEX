@@ -11,6 +11,7 @@ FEXCore::IR::Pass* CreateDeadFlagCalculationEliminination();
 FEXCore::IR::Pass* CreatePassDeadCodeElimination();
 FEXCore::IR::Pass* CreateIRCompaction();
 FEXCore::IR::RegisterAllocationPass* CreateRegisterAllocationPass();
+FEXCore::IR::RegisterAllocationPass* CreateNewRAPass();
 
 namespace Validation {
 FEXCore::IR::Pass* CreateIRValidation();

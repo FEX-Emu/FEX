@@ -1,5 +1,6 @@
 import json
 import sys
+import textwrap
 
 # Print out enum values
 def print_enums(ops, defines):
@@ -412,10 +413,234 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("#undef IROP_ALLOCATE_HELPERS\n")
     output_file.write("#endif\n")
 
-if (len(sys.argv) < 3):
+
+def constraint_find_base_reg(json_arch_constraints_object, class_name, reg):
+    if (class_name == "GPR" or class_name == "FPR"):
+        return reg
+
+    constraints_register_classes = json_arch_constraints_object["REGCLASSES"]
+    constraints_reg = constraints_register_classes["GPRPair"]
+    # If both income pairs match the definition then that is the match
+    # Pair registers have a handicap that they don't interfere with each other, only GPRs
+    # This means that the base register will always be unique
+    # Just check both to ensure correct IR generation
+    for op_val in constraints_reg:
+        if (op_val[0] == reg[0] and op_val[1] == reg[1]):
+            return reg[0]
+
+    # Someone hecked up
+    sys.exit("Constraint pair class '[%s, %s]' doesn't exist" % (reg[0], reg[1]))
+
+# Print out architecture GPRs
+def constraint_print_ir_defines(json_object, json_arch_constraints_object, ops, defines):
+    MAX_PHYSICAL = 4
+    if (True):
+        output_constraints_file.write("#ifdef IR_CONSTRAINT_REGS\n")
+        output_constraints_file.write("namespace FEXCore::IR::Arch {\n")
+
+        # Print out defines here
+        for op_val in defines:
+            output_constraints_file.write("\t%s;\n" % op_val)
+
+        output_constraints_file.write("\n\n")
+
+        # Print out the register classes
+        constraints_register_classes = json_arch_constraints_object["REGCLASSES"]
+
+        if (True):
+            # GPRs first
+            constraints_reg = constraints_register_classes["GPR"]
+            output_constraints_file.write("const std::array<uint8_t, %d> *GetGPRClass();\n" % len(constraints_reg))
+
+            # FPRs
+            constraints_reg = constraints_register_classes["FPR"]
+            output_constraints_file.write("const std::array<uint8_t, %d> *GetFPRClass();\n" % len(constraints_reg))
+
+            # GPR Pair
+            constraints_reg = constraints_register_classes["GPRPair"]
+            output_constraints_file.write("const std::array<std::pair<uint8_t, uint8_t>, %d> *GetGPRPairClass();\n" % len(constraints_reg))
+
+        if (True):
+            output_constraints_file.write(textwrap.dedent("""\
+                // This is a 96bit struct atm
+                // This fits in two GPRs on return
+                struct OpConstraints {
+                    // Flags from the constraints file
+                    uint16_t Flags;
+                    // Number of SSA temps that an op needs
+                    uint8_t NumTempsGPR;
+                    uint8_t NumTempsFPR;
+                    uint8_t NumTempsGPRPair;
+                    // Physical register source assignment that an op needs
+                    // 0: Dst, 1-4: Srcs
+                    // Top 2bits: Reg Class {GPR, FPR, GPRPair}
+                    // Lower 6bits: Physical Register base
+                    // RA interference handling figures out the GPR<->GPRPair interaction
+                    uint8_t SrcPhysicalAssignment[5];
+                    // Physical registers that are needed for the op
+                    // Undefined what those registers are for, just that they are necessary
+                    // Same 2+6bit packing as above
+                    uint8_t NeedsPhysicalRegisters[%d];
+                };
+
+                OpConstraints GetOpConstraints(IROps Op);
+                """ % (MAX_PHYSICAL)))
+
+        output_constraints_file.write("}\n")
+        output_constraints_file.write("#undef IR_CONSTRAINT_REGS\n")
+        output_constraints_file.write("#endif\n")
+
+    if (True):
+        output_constraints_file.write("#ifdef IR_CONSTRAINT_REGS_IMPL\n")
+        output_constraints_file.write("namespace FEXCore::IR::Arch {\n")
+
+        if (True):
+            # GPRs first
+            constraints_reg = constraints_register_classes["GPR"]
+            output_constraints_file.write("static const std::array<uint8_t, %d> Regs_GPR = {\n" % len(constraints_reg))
+            for op_val in constraints_reg:
+                output_constraints_file.write("\tFEXCore::IR::Arch::%s,\n" % op_val)
+
+            output_constraints_file.write("};\n\n")
+            output_constraints_file.write("const std::array<uint8_t, %d> *GetGPRClass() { return &FEXCore::IR::Arch::Regs_GPR; }\n" % len(constraints_reg))
+
+            # FPRs
+            constraints_reg = constraints_register_classes["FPR"]
+            output_constraints_file.write("static const std::array<uint8_t, %d> Regs_FPR = {\n" % len(constraints_reg))
+            for op_val in constraints_reg:
+                output_constraints_file.write("\tFEXCore::IR::Arch::%s,\n" % op_val)
+
+            output_constraints_file.write("};\n\n")
+            output_constraints_file.write("const std::array<uint8_t, %d> *GetFPRClass() { return &FEXCore::IR::Arch::Regs_FPR; }\n" % len(constraints_reg))
+
+            # GPR Pair
+            constraints_reg = constraints_register_classes["GPRPair"]
+            output_constraints_file.write("static const std::array<std::pair<uint8_t, uint8_t>, %d> Regs_GPRPair = {{\n" % len(constraints_reg))
+            for op_val in constraints_reg:
+                output_constraints_file.write("\t{ FEXCore::IR::Arch::%s, FEXCore::IR::Arch::%s },\n" % (op_val[0], op_val[1]))
+
+            output_constraints_file.write("}};\n\n")
+            output_constraints_file.write("const std::array<std::pair<uint8_t, uint8_t>, %d> *GetGPRPairClass() { return &FEXCore::IR::Arch::Regs_GPRPair; }\n" % len(constraints_reg))
+
+        if (True):
+            output_constraints_file.write(textwrap.dedent("""\
+                const OpConstraints DefaultConstraint{};
+                static const std::array<OpConstraints, IROps::OP_LAST + 1> OpConstraintsArray = {
+                """))
+            ir_ops = json_object["OPS"]
+            for op_key, op_vals in ops.items():
+                if not (op_key in ir_ops):
+                    sys.exit("Constraint IR op %s doesn't exist in default table" % (op_key))
+
+            for op_key, op_vals in ir_ops.items():
+                if (op_key in ops):
+                    op_constraints = ops[op_key]
+
+                    num_temps_gpr = 0
+                    num_temps_fpr = 0
+                    num_temps_gprpair = 0
+
+                    needs_specific_physicals = False
+                    if ("TempCountGPR" in op_constraints):
+                        num_temps_gpr = int(op_constraints["TempCountGPR"])
+                    if ("TempCountFPR" in op_constraints):
+                        num_temps_fpr = int(op_constraints["TempCountFPR"])
+                    if ("TempCountGPRPair" in op_constraints):
+                        num_temps_gprpair = int(op_constraints["TempCountGPRPair"])
+
+                    if ("NeedsPhysical" in op_constraints):
+                        needs_specific_physicals = len(op_constraints["NeedsPhysical"]) > 0
+
+                    # OpConstraints layout
+                    output_constraints_file.write("\t{ // IROps::OP_%s\n" % (op_key.upper()))
+                    # Flags
+                    output_constraints_file.write("\t\t.Flags = 0\n")
+                    if ("Dest_Is_SSA0" in op_constraints and op_constraints["Dest_Is_SSA0"]):
+                        output_constraints_file.write("\t\t\t| Constraint_Dest_Is_Src0\n")
+                    if ("Physical_Dest" in op_constraints):
+                        output_constraints_file.write("\t\t\t| Constraint_Dest_Is_Physical\n")
+                    if ("Physical_ssa0" in op_constraints):
+                        output_constraints_file.write("\t\t\t| Constraint_Src0_Is_Physical\n")
+                    if ("Physical_ssa1" in op_constraints):
+                        output_constraints_file.write("\t\t\t| Constraint_Src1_Is_Physical\n")
+                    if ("Physical_ssa2" in op_constraints):
+                        output_constraints_file.write("\t\t\t| Constraint_Src2_Is_Physical\n")
+                    if ("Physical_ssa3" in op_constraints):
+                        output_constraints_file.write("\t\t\t| Constraint_Src3_Is_Physical\n")
+                    if (num_temps_gpr or num_temps_fpr or num_temps_gprpair):
+                        output_constraints_file.write("\t\t\t| Constraint_Needs_Temps\n")
+                    if (needs_specific_physicals):
+                        output_constraints_file.write("\t\t\t| Constraint_Needs_Physicals\n")
+
+                    if ("LateKill" in op_constraints):
+                        for kill in op_constraints["LateKill"]:
+                            ssa_num = kill.replace("ssa", "")
+                            output_constraints_file.write("\t\t\t| Constraint_Src%d_Is_LateKill\n" % int(ssa_num))
+
+                    output_constraints_file.write("\t\t,\n")
+                    # NumTemps
+                    output_constraints_file.write("\t\t.NumTempsGPR     = %d,\n" % num_temps_gpr)
+                    output_constraints_file.write("\t\t.NumTempsFPR     = %d,\n" % num_temps_fpr)
+                    output_constraints_file.write("\t\t.NumTempsGPRPair = %d,\n" % num_temps_gprpair)
+
+                    # SrcPhysicalAssignment
+                    output_constraints_file.write("\t\t.SrcPhysicalAssignment = {\n")
+                    if ("Physical_Dest" in op_constraints):
+                        physical_dest = op_constraints["Physical_Dest"]
+                        output_constraints_file.write("\t\t\t(FEXCore::IR::%sClass.Val << 6) | %s, // dest\n" % (physical_dest[0],
+                            constraint_find_base_reg(json_arch_constraints_object, physical_dest[0], physical_dest[1])))
+                    else:
+                        output_constraints_file.write("\t\t\t0, // dest\n")
+
+                    for i in range(0, 4):
+                        name = "Physical_ssa" + str(i)
+                        if (name in op_constraints):
+                            physical_src = op_constraints[name]
+                            output_constraints_file.write("\t\t\t(FEXCore::IR::%sClass.Val << 6) | %s, // ssa%d\n" % (physical_src[0],
+                                constraint_find_base_reg(json_arch_constraints_object, physical_src[0], physical_src[1]), i))
+                        else:
+                            output_constraints_file.write("\t\t\t0, // ssa%d\n" % i)
+                    output_constraints_file.write("\t\t},\n")
+
+                    # NeedsPhysicalRegisters
+                    output_constraints_file.write("\t\t.NeedsPhysicalRegisters = {\n")
+                    num_physical_needs = 0
+                    if ("NeedsPhysical" in op_constraints):
+                        physical_needs = op_constraints["NeedsPhysical"]
+                        for physical_need in physical_needs:
+                            output_constraints_file.write("\t\t\t(FEXCore::IR::%sClass.Val << 6) | %s, // Need %d\n" % (physical_need[0],
+                                constraint_find_base_reg(json_arch_constraints_object, physical_need[0], physical_need[1]), num_physical_needs))
+                            num_physical_needs += 1
+
+                    for i in range(num_physical_needs, MAX_PHYSICAL):
+                        output_constraints_file.write("\t\t\t255, // Need %d\n" % i)
+
+                    output_constraints_file.write("\t\t},\n")
+
+                    output_constraints_file.write("\t},\n")
+
+                else:
+                    output_constraints_file.write("\tDefaultConstraint,\n")
+
+            output_constraints_file.write("};\n")
+
+            output_constraints_file.write(textwrap.dedent("""\
+                OpConstraints GetOpConstraints(IROps Op) {
+                    return OpConstraintsArray[Op];
+                }
+                """))
+
+        output_constraints_file.write("}\n")
+        output_constraints_file.write("#undef IR_CONSTRAINT_REGS_IMPL\n")
+        output_constraints_file.write("#endif\n")
+
+if (len(sys.argv) < 4):
     sys.exit()
 
 output_filename = sys.argv[2]
+output_constraints_filename = sys.argv[4]
+
+# Load the base JSON file
 json_file = open(sys.argv[1], "r")
 json_text = json_file.read()
 json_file.close()
@@ -423,10 +648,23 @@ json_file.close()
 json_object = json.loads(json_text)
 json_object = {k.upper(): v for k, v in json_object.items()}
 
+# Load the provided JSON arch constraints
+
+json_arch_constraints_file = open(sys.argv[3], "r")
+json_arch_constraints_text = json_arch_constraints_file.read()
+json_arch_constraints_file.close()
+
+json_arch_constraints_object = json.loads(json_arch_constraints_text)
+json_arch_constraints_object = {k.upper(): v for k, v in json_arch_constraints_object.items()}
+
 ops = json_object["OPS"]
 defines = json_object["DEFINES"]
 
+constraints_ops = json_arch_constraints_object["OPS"]
+constraints_defines = json_arch_constraints_object["DEFINES"]
+
 output_file = open(output_filename, "w")
+output_constraints_file = open(output_constraints_filename, "w")
 
 print_enums(ops, defines)
 print_ir_structs(ops, defines)
@@ -437,4 +675,8 @@ print_ir_getraargs(ops, defines)
 print_ir_arg_printer(ops, defines)
 print_ir_allocator_helpers(ops, defines)
 
+# Constraints
+constraint_print_ir_defines(json_object, json_arch_constraints_object, constraints_ops, constraints_defines)
+
 output_file.close()
+output_constraints_file.close()

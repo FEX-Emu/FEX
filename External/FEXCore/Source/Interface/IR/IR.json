@@ -14,15 +14,28 @@
     "constexpr static uint8_t COND_SLT  = 11",
     "constexpr static uint8_t COND_SGT  = 12",
     "constexpr static uint8_t COND_SLE  = 13",
-    "static constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
-    "static constexpr FEXCore::IR::RegisterClassType FPRClass {1}",
+    "static constexpr FEXCore::IR::RegisterClassType GPRClass     {0}",
+    "static constexpr FEXCore::IR::RegisterClassType FPRClass     {1}",
     "static constexpr FEXCore::IR::RegisterClassType GPRPairClass {2}",
     "static constexpr FEXCore::IR::RegisterClassType ComplexClass {3}",
     "static constexpr FEXCore::IR::RegisterClassType InvalidClass {~0U}",
 
     "constexpr static uint8_t FCMP_FLAG_EQ        = 0",
     "constexpr static uint8_t FCMP_FLAG_LT        = 1",
-    "constexpr static uint8_t FCMP_FLAG_UNORDERED = 2"
+    "constexpr static uint8_t FCMP_FLAG_UNORDERED = 2",
+
+    "constexpr static uint32_t Constraint_Dest_Is_Src0      = (1 << 0)",
+    "constexpr static uint32_t Constraint_Dest_Is_Physical  = (1 << 1)",
+    "constexpr static uint32_t Constraint_Needs_Temps       = (1 << 2)",
+    "constexpr static uint32_t Constraint_Needs_Physicals   = (1 << 3)",
+    "constexpr static uint32_t Constraint_Src0_Is_Physical  = (1 << 4)",
+    "constexpr static uint32_t Constraint_Src1_Is_Physical  = (1 << 5)",
+    "constexpr static uint32_t Constraint_Src2_Is_Physical  = (1 << 6)",
+    "constexpr static uint32_t Constraint_Src3_Is_Physical  = (1 << 7)",
+    "constexpr static uint32_t Constraint_Src0_Is_LateKill  = (1 << 8)",
+    "constexpr static uint32_t Constraint_Src1_Is_LateKill  = (1 << 9)",
+    "constexpr static uint32_t Constraint_Src2_Is_LateKill  = (1 << 10)",
+    "constexpr static uint32_t Constraint_Src3_Is_LateKill  = (1 << 11)"
   ],
 
   "Ops": {

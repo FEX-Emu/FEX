@@ -5,315 +5,7 @@
 
 #include <iterator>
 
-namespace {
-  constexpr uint32_t INVALID_REG = ~0U;
-  constexpr uint64_t INVALID_REGCLASS = ~0ULL;
-  constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 128;
-  constexpr uint32_t DEFAULT_NODE_COUNT = 8192;
-  constexpr uint32_t DEFAULT_VIRTUAL_REG_COUNT = 1024;
-
-  struct Register {
-    bool Virtual;
-    uint64_t Index;
-  };
-
-  struct RegisterClass {
-    uint32_t Count;
-    uint32_t PhysicalCount;
-    std::vector<uint64_t> Conflicts;
-  };
-
-  struct RegisterNode {
-    struct VolatileHeader {
-      uint64_t RegAndClass;
-      uint32_t InterferenceCount;
-      uint32_t BlockID;
-      uint32_t SpillSlot;
-      RegisterNode *PhiPartner;
-    } Head;
-
-    uint32_t InterferenceListSize;
-    uint32_t *InterferenceList;
-    BitSetView<uint64_t> Interference;
-  };
-  static_assert(std::is_pod<RegisterNode>::value, "We want this to be POD");
-
-  constexpr RegisterNode::VolatileHeader DefaultNodeHeader = {
-    .RegAndClass = INVALID_REGCLASS,
-    .InterferenceCount = 0,
-    .BlockID = ~0U,
-    .SpillSlot = ~0U,
-    .PhiPartner = nullptr,
-  };
-
-  struct RegisterSet {
-    std::vector<RegisterClass> Classes;
-    uint32_t ClassCount;
-  };
-
-  struct LiveRange {
-    uint32_t Begin;
-    uint32_t End;
-    uint32_t RematCost;
-  };
-
-  struct SpillStackUnit {
-    uint32_t Node;
-    FEXCore::IR::RegisterClassType Class;
-    LiveRange SpillRange;
-    FEXCore::IR::OrderedNode *SpilledNode;
-  };
-
-  struct RegisterGraph {
-    RegisterSet Set;
-    RegisterNode *Nodes;
-    BitSet<uint64_t> InterferenceSet;
-    uint32_t NodeCount;
-    uint32_t MaxNodeCount;
-    std::vector<SpillStackUnit> SpillStack;
-  };
-
-  void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount);
-
-  RegisterGraph *AllocateRegisterGraph(uint32_t ClassCount) {
-    RegisterGraph *Graph = new RegisterGraph{};
-
-    // Allocate the register set
-    Graph->Set.ClassCount = ClassCount;
-    Graph->Set.Classes.resize(ClassCount);
-
-    // Allocate default nodes
-    ResetRegisterGraph(Graph, DEFAULT_NODE_COUNT);
-    return Graph;
-  }
-
-  void AllocateRegisters(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class, uint32_t Count) {
-    Graph->Set.Classes[Class].Count = Count;
-  }
-
-  void AllocatePhysicalRegisters(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class, uint32_t Count) {
-    Graph->Set.Classes[Class].PhysicalCount = Count;
-  }
-
-  void VirtualAddRegisterConflict(RegisterGraph *Graph, FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) {
-    LogMan::Throw::A(Reg < Graph->Set.Classes[Class].Conflicts.size(), "Tried adding reg %d to conflict list only %d in size", RegConflict, Graph->Set.Classes[Class].Conflicts.size());
-    LogMan::Throw::A(RegConflict < Graph->Set.Classes[ClassConflict].Conflicts.size(), "Tried adding reg %d to conflict list only %d in size", Reg, Graph->Set.Classes[ClassConflict].Conflicts.size());
-
-    // Conflict must go both ways
-    Graph->Set.Classes[Class].Conflicts[Reg] = {((uint64_t)ClassConflict << 32) | RegConflict};
-    Graph->Set.Classes[ClassConflict].Conflicts[RegConflict] = {((uint64_t)Class << 32) | Reg};
-  }
-
-  void VirtualAllocateRegisterConflicts(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) {
-    Graph->Set.Classes[Class].Conflicts.resize(NumConflicts);
-  }
-
-  // Returns the new register ID that was the previous top
-  uint32_t AllocateMoreRegisters(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class) {
-    RegisterClass &LocalClass = Graph->Set.Classes[Class];
-    uint32_t OldNumber = LocalClass.Count;
-    LocalClass.Count *= 2;
-    return OldNumber;
-  }
-
-  void FreeRegisterGraph(RegisterGraph *Graph) {
-    for (size_t i = 0; i <Graph->MaxNodeCount; ++i) {
-      free(Graph->Nodes[i].InterferenceList);
-    }
-    free(Graph->Nodes);
-    Graph->InterferenceSet.Free();
-
-    Graph->Set.Classes.clear();
-    delete Graph;
-  }
-
-  void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount) {
-    NodeCount = AlignUp(NodeCount, sizeof(uint64_t));
-    if (NodeCount > Graph->MaxNodeCount) {
-      uint32_t OldNodeCount = Graph->MaxNodeCount;
-      Graph->NodeCount = NodeCount;
-      Graph->MaxNodeCount = NodeCount;
-      Graph->Nodes = static_cast<RegisterNode*>(realloc(Graph->Nodes, NodeCount * sizeof(RegisterNode)));
-
-      Graph->InterferenceSet.Realloc(NodeCount * NodeCount);
-      Graph->InterferenceSet.MemClear(NodeCount * NodeCount);
-
-      // Initialize nodes
-      for (uint32_t i = 0; i < OldNodeCount; ++i) {
-        Graph->Nodes[i].Head = DefaultNodeHeader;
-        Graph->Nodes[i].Interference.GetView(Graph->InterferenceSet, NodeCount * i);
-      }
-
-      for (uint32_t i = OldNodeCount; i < NodeCount; ++i) {
-        Graph->Nodes[i].Head = DefaultNodeHeader;
-        Graph->Nodes[i].InterferenceListSize = DEFAULT_INTERFERENCE_LIST_COUNT;
-        Graph->Nodes[i].InterferenceList = reinterpret_cast<uint32_t*>(calloc(Graph->Nodes[i].InterferenceListSize, sizeof(uint32_t)));
-        Graph->Nodes[i].Interference.GetView(Graph->InterferenceSet, NodeCount * i);
-      }
-    }
-    else {
-      // We are only handling a node count of this size right now
-      Graph->NodeCount = NodeCount;
-      Graph->InterferenceSet.MemClear(NodeCount * NodeCount);
-
-      // Initialize nodes
-      for (uint32_t i = 0; i < NodeCount; ++i) {
-        Graph->Nodes[i].Head = DefaultNodeHeader;
-      }
-    }
-  }
-
-  void SetNodeClass(RegisterGraph *Graph, uint32_t Node, FEXCore::IR::RegisterClassType Class) {
-    Graph->Nodes[Node].Head.RegAndClass = ((uint64_t)Class << 32) | (Graph->Nodes[Node].Head.RegAndClass & ~0U);
-  }
-
-  void SetNodePartner(RegisterGraph *Graph, uint32_t Node, uint32_t Partner) {
-    Graph->Nodes[Node].Head.PhiPartner = &Graph->Nodes[Partner];
-  }
-
-  /**
-   * @brief Individual node interference check
-   */
-  bool DoesNodeInterfereWithRegister(RegisterGraph *Graph, RegisterNode const *Node, uint64_t RegAndClass) {
-    // Walk the node's interference list and see if it interferes with this register
-    for (uint32_t i = 0; i < Node->Head.InterferenceCount; ++i) {
-      RegisterNode *InterferenceNode = &Graph->Nodes[Node->InterferenceList[i]];
-      if (InterferenceNode->Head.RegAndClass == RegAndClass) {
-        return true;
-      }
-
-      FEXCore::IR::RegisterClassType InterferenceClass = FEXCore::IR::RegisterClassType{(uint32_t)(InterferenceNode->Head.RegAndClass >> 32)};
-      uint32_t InterferenceReg = InterferenceNode->Head.RegAndClass;
-      if (InterferenceReg != INVALID_REG &&
-          !Graph->Set.Classes[InterferenceClass].Conflicts.empty() &&
-          Graph->Set.Classes[InterferenceClass].Conflicts[InterferenceReg] == RegAndClass) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * @brief Node set walking for PHI node interference checking
-   */
-  bool DoesNodeSetInterfereWithRegister(RegisterGraph *Graph, std::vector<RegisterNode*> const &Nodes, uint64_t RegAndClass) {
-    for (auto it : Nodes) {
-      if (DoesNodeInterfereWithRegister(Graph, it, RegAndClass)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  FEXCore::IR::RegisterClassType GetRegClassFromNode(uintptr_t ListBegin, uintptr_t DataBegin, FEXCore::IR::OrderedNodeWrapper const WrapperOp) {
-    using namespace FEXCore;
-    IR::OrderedNode const *RealNode = WrapperOp.GetNode(ListBegin);
-    IR::IROp_Header const *IROp = RealNode->Op(DataBegin);
-
-    FEXCore::IR::RegisterClassType Class = IR::GetRegClass(IROp->Op);
-    if (Class != FEXCore::IR::ComplexClass)
-      return Class;
-
-    // Complex register class handling
-    switch (IROp->Op) {
-      case IR::OP_LOADCONTEXT: {
-        auto Op = IROp->C<IR::IROp_LoadContext>();
-        return Op->Class;
-        break;
-      }
-      case IR::OP_LOADCONTEXTINDEXED: {
-        auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
-        return Op->Class;
-        break;
-      }
-      case IR::OP_LOADMEM: {
-        auto Op = IROp->C<IR::IROp_LoadMem>();
-        return Op->Class;
-        break;
-      }
-      case IR::OP_FILLREGISTER: {
-        auto Op = IROp->C<IR::IROp_FillRegister>();
-        return Op->Class;
-        break;
-      }
-      case IR::OP_ZEXT: {
-        auto Op = IROp->C<IR::IROp_Zext>();
-        LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-
-        if (Op->SrcSize == 64) {
-          return FEXCore::IR::FPRClass;
-        }
-        else {
-          return FEXCore::IR::GPRClass;
-        }
-        break;
-      }
-      case IR::OP_PHIVALUE: {
-        // Unwrap the PHIValue to get the class
-        auto Op = IROp->C<IR::IROp_PhiValue>();
-        return GetRegClassFromNode(ListBegin, DataBegin, Op->Value);
-      }
-      case IR::OP_PHI: {
-        // Class is defined from the values passed in
-        // All Phi nodes should have its class be the same (Validation should confirm this
-        auto Op = IROp->C<IR::IROp_Phi>();
-        return GetRegClassFromNode(ListBegin, DataBegin, Op->PhiBegin);
-      }
-      default: break;
-    }
-
-    // Unreachable
-    return FEXCore::IR::InvalidClass;
-  };
-
-  // Walk the IR and set the node classes
-  void FindNodeClasses(RegisterGraph *Graph, FEXCore::IR::IRListView<false> *IR) {
-    uintptr_t ListBegin = IR->GetListData();
-    uintptr_t DataBegin = IR->GetData();
-
-    auto Begin = IR->begin();
-    auto Op = Begin();
-
-    FEXCore::IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
-    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == FEXCore::IR::OP_IRHEADER, "First op wasn't IRHeader");
-
-    FEXCore::IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-    while (1) {
-      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == FEXCore::IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = IR->at(BlockIROp->Begin);
-      auto CodeLast = IR->at(BlockIROp->Last);
-      while (1) {
-        FEXCore::IR::OrderedNodeWrapper *CodeOp = CodeBegin();
-        FEXCore::IR::OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-        auto IROp = CodeNode->Op(DataBegin);
-        uint32_t Node = CodeOp->ID();
-
-        // If the destination hasn't yet been set then set it now
-        if (IROp->HasDest) {
-          SetNodeClass(Graph, Node, GetRegClassFromNode(ListBegin, DataBegin, *CodeOp));
-        }
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
-      }
-
-      if (BlockIROp->Next.ID() == 0) {
-        break;
-      } else {
-        BlockNode = BlockIROp->Next.GetNode(ListBegin);
-      }
-    }
-  }
-}
+#include "Interface/IR/Passes/RegisterGraph.inc"
 
 namespace FEXCore::IR {
   class ConstrainedRAPass final : public RegisterAllocationPass {
@@ -331,7 +23,7 @@ namespace FEXCore::IR {
        * @brief Returns the register and class encoded together
        * Top 32bits is the class, lower 32bits is the register
        */
-      uint64_t GetNodeRegister(uint32_t Node) override;
+      uint64_t GetDestRegister(uint32_t Node) override;
     private:
 
       std::vector<uint32_t> PhysicalRegisterCount;
@@ -349,10 +41,8 @@ namespace FEXCore::IR {
       std::unordered_map<uint32_t, BlockInterferences> LocalBlockInterferences;
       BlockInterferences GlobalBlockInterferences;
 
-      void CalculateLiveRange(FEXCore::IR::IRListView<false> *IR);
       void CalculateBlockInterferences(FEXCore::IR::IRListView<false> *IR);
       void CalculateBlockNodeInterference(FEXCore::IR::IRListView<false> *IR);
-      void CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR);
       void AllocateVirtualRegisters();
 
       FEXCore::IR::NodeWrapperIterator FindFirstUse(FEXCore::IR::OpDispatchBuilder *Disp, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End);
@@ -392,109 +82,8 @@ namespace FEXCore::IR {
     VirtualAllocateRegisterConflicts(Graph, Class, NumConflicts);
   }
 
-  uint64_t ConstrainedRAPass::GetNodeRegister(uint32_t Node) {
+  uint64_t ConstrainedRAPass::GetDestRegister(uint32_t Node) {
     return Graph->Nodes[Node].Head.RegAndClass;
-  }
-
-  void ConstrainedRAPass::CalculateLiveRange(FEXCore::IR::IRListView<false> *IR) {
-    using namespace FEXCore;
-    size_t Nodes = IR->GetSSACount();
-    if (Nodes > LiveRanges.size()) {
-      LiveRanges.resize(Nodes);
-    }
-    LiveRanges.assign(Nodes * sizeof(LiveRange), {~0U, ~0U});
-
-    uintptr_t ListBegin = IR->GetListData();
-    uintptr_t DataBegin = IR->GetData();
-
-    auto Begin = IR->begin();
-    auto Op = Begin();
-
-    IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
-    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
-    IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-    constexpr uint32_t DEFAULT_REMAT_COST = 1000;
-    while (1) {
-      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = IR->at(BlockIROp->Begin);
-      auto CodeLast = IR->at(BlockIROp->Last);
-      while (1) {
-        auto CodeOp = CodeBegin();
-        IR::OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-        auto IROp = CodeNode->Op(DataBegin);
-        uint32_t Node = CodeOp->ID();
-
-        // If the destination hasn't yet been set then set it now
-        if (IROp->HasDest) {
-          LogMan::Throw::A(LiveRanges[Node].Begin == ~0U, "Node begin already defined?");
-          LiveRanges[Node].Begin = Node;
-          // Default to ending right where it starts
-          LiveRanges[Node].End = Node;
-        }
-
-        // Calculate remat cost
-        switch (IROp->Op) {
-          case IR::OP_CONSTANT: LiveRanges[Node].RematCost = 1; break;
-          case IR::OP_LOADFLAG:
-          case IR::OP_LOADCONTEXT: LiveRanges[Node].RematCost = 10; break;
-          case IR::OP_LOADMEM: LiveRanges[Node].RematCost = 100; break;
-          case IR::OP_FILLREGISTER: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST + 1; break;
-          // We want PHI to be very expensive to spill
-          case IR::OP_PHI: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST * 10; break;
-          default: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST; break;
-        }
-
-        // Set this node's block ID
-        Graph->Nodes[Node].Head.BlockID = BlockNode->Wrapped(ListBegin).ID();
-
-        uint8_t NumArgs = IR::GetArgs(IROp->Op);
-        for (uint8_t i = 0; i < NumArgs; ++i) {
-          if (IROp->Args[i].IsInvalid()) continue;
-          uint32_t ArgNode = IROp->Args[i].ID();
-          // Set the node end to be at least here
-          LiveRanges[ArgNode].End = Node;
-          LogMan::Throw::A(LiveRanges[ArgNode].Begin != ~0U, "%%ssa%d used by %%ssa%d before defined?", ArgNode, Node);
-        }
-
-        if (IROp->Op == IR::OP_PHI) {
-          // Special case the PHI op, all of the nodes in the argument need to have the same virtual register affinity
-          // Walk through all of them and set affinities for each other
-          auto Op = IROp->C<IR::IROp_Phi>();
-          auto NodeBegin = IR->at(Op->PhiBegin);
-
-          uint32_t CurrentSourcePartner = Node;
-          while (NodeBegin != NodeBegin.Invalid()) {
-            FEXCore::IR::OrderedNodeWrapper *NodeOp = NodeBegin();
-            FEXCore::IR::OrderedNode *NodeNode = NodeOp->GetNode(ListBegin);
-            auto IRNodeOp = NodeNode->Op(DataBegin)->C<IR::IROp_PhiValue>();
-
-            // Set the node partner to the current one
-            // This creates a singly linked list of node partners to follow
-            SetNodePartner(Graph, CurrentSourcePartner, IRNodeOp->Value.ID());
-            CurrentSourcePartner = IRNodeOp->Value.ID();
-            NodeBegin = IR->at(IRNodeOp->Next);
-          }
-        }
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
-      }
-
-      if (BlockIROp->Next.ID() == 0) {
-        break;
-      } else {
-        BlockNode = BlockIROp->Next.GetNode(ListBegin);
-      }
-    }
   }
 
   void ConstrainedRAPass::CalculateBlockInterferences(FEXCore::IR::IRListView<false> *IR) {
@@ -639,31 +228,6 @@ namespace FEXCore::IR {
     }
   }
 
-  void ConstrainedRAPass::CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR) {
-    auto AddInterference = [&](uint32_t Node1, uint32_t Node2) {
-      RegisterNode *Node = &Graph->Nodes[Node1];
-      Node->Interference.Set(Node2);
-      Node->InterferenceList[Node->Head.InterferenceCount++] = Node2;
-      if (Node->InterferenceListSize <= Node->Head.InterferenceCount) {
-        Node->InterferenceListSize *= 2;
-        Node->InterferenceList = reinterpret_cast<uint32_t*>(realloc(Node->InterferenceList, Node->InterferenceListSize * sizeof(uint32_t)));
-      }
-    };
-
-    uint32_t NodeCount = IR->GetSSACount();
-
-    // Now that we have all the live ranges calculated we need to add them to our interference graph
-    for (uint32_t i = 0; i < NodeCount; ++i) {
-      for (uint32_t j = i + 1; j < NodeCount; ++j) {
-        if (!(LiveRanges[i].Begin >= LiveRanges[j].End ||
-              LiveRanges[j].Begin >= LiveRanges[i].End)) {
-          AddInterference(i, j);
-          AddInterference(j, i);
-        }
-      }
-    }
-  }
-
   void ConstrainedRAPass::AllocateVirtualRegisters() {
     for (uint32_t i = 0; i < Graph->NodeCount; ++i) {
       RegisterNode *CurrentNode = &Graph->Nodes[i];
@@ -673,14 +237,14 @@ namespace FEXCore::IR {
       FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
       uint64_t RegAndClass = ~0ULL;
       RegisterClass *RAClass = &Graph->Set.Classes[RegClass];
-      if (CurrentNode->Head.PhiPartner) {
+      if (CurrentNode->Head.TiePartner) {
         // In the case that we have a list of nodes that need the same register allocated we need to do something special
         // We need to gather the data from the forward linked list and make sure they all match the virtual register
         std::vector<RegisterNode *> Nodes;
         auto CurrentPartner = CurrentNode;
         while (CurrentPartner) {
           Nodes.emplace_back(CurrentPartner);
-          CurrentPartner = CurrentPartner->Head.PhiPartner;
+          CurrentPartner = CurrentPartner->Head.TiePartner;
         }
 
         for (uint32_t ri = 0; ri < RAClass->Count; ++ri) {
@@ -936,7 +500,7 @@ namespace FEXCore::IR {
                 LogMan::Throw::A(SpillSlot != ~0U, "Interference Node doesn't have a spill slot!");
                 LogMan::Throw::A((InterferenceRegisterNode->Head.RegAndClass & ~0U) != ~0U, "Interference node never assigned a register?");
                 LogMan::Throw::A(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
-                LogMan::Throw::A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
+                LogMan::Throw::A(InterferenceRegisterNode->Head.TiePartner == nullptr, "We don't support spilling PHI nodes currently");
 
                 // If the interference's live range is past this op's live range then we can dump it
                 FEXCore::IR::OrderedNodeWrapper InterferenceOp = IR::OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(IR::OrderedNode));
@@ -1016,7 +580,7 @@ namespace FEXCore::IR {
 
     ResetRegisterGraph(Graph, SSACount);
     FindNodeClasses(Graph, &IR);
-    CalculateLiveRange(&IR);
+    CalculateLiveRange(Graph, &IR, &LiveRanges);
 
     // Linear foward scan based interference calculation is faster for smaller blocks
     // Smarter block based interference calculation is faster for larger blocks
@@ -1025,7 +589,7 @@ namespace FEXCore::IR {
       CalculateBlockNodeInterference(&IR);
     }
     else {
-      CalculateNodeInterference(&IR);
+      CalculateNodeInterference(Graph, &IR, &LiveRanges);
     }
     AllocateVirtualRegisters();
 

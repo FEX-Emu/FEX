@@ -54,7 +54,7 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
 
   *out << "%ssa" << std::to_string(Arg.ID());
   if (RAPass) {
-    uint64_t RegClass = RAPass->GetNodeRegister(Arg.ID());
+    uint64_t RegClass = RAPass->GetDestRegister(Arg.ID());
     FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
     uint32_t Reg = RegClass;
     switch (Class) {
@@ -151,7 +151,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
           *out << "%ssa" << std::to_string(CodeOp->ID());
 
           if (RAPass) {
-            uint64_t RegClass = RAPass->GetNodeRegister(CodeOp->ID());
+            uint64_t RegClass = RAPass->GetDestRegister(CodeOp->ID());
             FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
             uint32_t Reg = RegClass;
             switch (Class) {
@@ -234,3 +234,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
 }
 
 }
+
+#define IR_CONSTRAINT_REGS_IMPL
+#include <FEXCore/IR/IRDefines_Constraints.inc>
+

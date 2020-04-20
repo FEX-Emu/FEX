@@ -103,6 +103,7 @@ set (SRCS
   Interface/IR/Passes/DeadContextStoreElimination.cpp
   Interface/IR/Passes/IRCompaction.cpp
   Interface/IR/Passes/IRValidation.cpp
+  Interface/IR/Passes/NewRAPass.cpp
   Interface/IR/Passes/ValueDominanceValidation.cpp
   Interface/IR/Passes/PhiValidation.cpp
   Interface/IR/Passes/RedundantFlagCalculationElimination.cpp
@@ -133,13 +134,25 @@ endif()
 
 # Generate IR include file
 set(OUTPUT_NAME "${CMAKE_BINARY_DIR}/include/FEXCore/IR/IRDefines.inc")
+set(OUTPUT_CONSTRAINTS_NAME "${CMAKE_BINARY_DIR}/include/FEXCore/IR/IRDefines_Constraints.inc")
 set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/Interface/IR/IR.json")
+
+set(ARCH_CONSTRAINTS "${CMAKE_CURRENT_SOURCE_DIR}/Interface/IR/IR_Constraints")
+
+if (_M_ARM_64)
+  set(ARCH_CONSTRAINTS "${ARCH_CONSTRAINTS}_AArch64.json")
+elseif(_M_X86_64)
+  set(ARCH_CONSTRAINTS "${ARCH_CONSTRAINTS}_x86.json")
+endif()
 
 add_custom_command(
   OUTPUT "${OUTPUT_NAME}"
   DEPENDS "${INPUT_NAME}"
+  DEPENDS "${ARCH_CONSTRAINTS}"
+  DEPENDS "${INPUT_CONSTRAINTS_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
-  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}"
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}" "${ARCH_CONSTRAINTS}"
+  "${OUTPUT_CONSTRAINTS_NAME}"
   )
 
 set_source_files_properties(${OUTPUT_NAME} PROPERTIES
