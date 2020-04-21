@@ -234,6 +234,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   // XXX: Set this to a real minimum feature set in the future
   SetCPUFeatures(vixl::CPUFeatures::All());
 
+  bool HadRA = CTX->HasRegisterAllocationPass();
   RAPass = CTX->GetRegisterAllocatorPass();
 
   // Just set the entire range as executable
@@ -260,18 +261,20 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
     UsedRegisterCount -= NumCalleeGPRs + NumCalleeGPRPairs;
   }
 
-  RAPass->AllocateRegisterSet(UsedRegisterCount, RegisterClasses);
+  if (!HadRA) {
+    RAPass->AllocateRegisterSet(UsedRegisterCount, RegisterClasses);
 
-  RAPass->AddRegisters(FEXCore::IR::GPRClass, NumUsedGPRs);
-  RAPass->AddRegisters(FEXCore::IR::FPRClass, NumFPRs);
-  RAPass->AddRegisters(FEXCore::IR::GPRPairClass, NumUsedGPRPairs);
+    RAPass->AddRegisters(FEXCore::IR::GPRClass, NumUsedGPRs);
+    RAPass->AddRegisters(FEXCore::IR::FPRClass, NumFPRs);
+    RAPass->AddRegisters(FEXCore::IR::GPRPairClass, NumUsedGPRPairs);
 
-  RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRClass, NumUsedGPRs);
-  RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRPairClass, NumUsedGPRs);
+    RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRClass, NumUsedGPRs);
+    RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRPairClass, NumUsedGPRs);
 
-  for (uint32_t i = 0; i < NumUsedGPRPairs; ++i) {
-    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2,     FEXCore::IR::GPRPairClass, i);
-    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2 + 1, FEXCore::IR::GPRPairClass, i);
+    for (uint32_t i = 0; i < NumUsedGPRPairs; ++i) {
+      RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2,     FEXCore::IR::GPRPairClass, i);
+      RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2 + 1, FEXCore::IR::GPRPairClass, i);
+    }
   }
 }
 
