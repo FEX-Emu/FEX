@@ -393,13 +393,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
-  auto GetOpSize = [&](IR::OrderedNodeWrapper Node) {
-    auto Wrapper = CurrentIR->at(Node)();
-    FEXCore::IR::OrderedNode *RealNode = Wrapper->GetNode(ListBegin);
-    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
-    return IROp->Size;
-  };
-
   while (1) {
     using namespace FEXCore::IR;
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
