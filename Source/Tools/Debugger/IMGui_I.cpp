@@ -1,7 +1,7 @@
 #include "DebuggerState.h"
 #include "Disassembler.h"
 #include "FEXImGui.h"
-#include "IMGui.h"
+#include "IMGui_I.h"
 #include "LogManager.h"
 #include "IRLexer.h"
 #include "Common/Config.h"

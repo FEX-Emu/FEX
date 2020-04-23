@@ -3,7 +3,7 @@ set(SRCS Main.cpp
   DebuggerState.cpp
   Context.cpp
   FEXImGui.cpp
-  IMGui.cpp
+  IMGui_I.cpp
   IRLexer.cpp
   GLUtils.cpp
   MainWindow.cpp
