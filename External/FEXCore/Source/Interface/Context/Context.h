@@ -65,6 +65,11 @@ namespace FEXCore::Context {
     FEXCore::Core::InternalThreadState* ParentThread;
     std::vector<FEXCore::Core::InternalThreadState*> Threads;
     std::atomic_bool ShouldStop{};
+
+    std::mutex IdleWaitMutex;
+    std::condition_variable IdleWaitCV;
+    std::atomic<uint32_t> IdleWaitRefCount{};
+
     Event PauseWait;
     bool Running{};
     CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};

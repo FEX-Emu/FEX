@@ -314,26 +314,10 @@ namespace FEXCore::Context {
   }
 
   void Context::WaitForIdle() {
-    do {
-      bool AllPaused = true;
-      {
-        std::lock_guard<std::mutex> lk(ThreadCreationMutex);
-        {
-          // Grab the mutex lock so a thread doesn't try and spin up while we are waiting
-          for (size_t i = 0; i < Threads.size(); ++i) {
-            if (Threads[i]->State.RunningEvents.Running.load() || Threads[i]->State.RunningEvents.WaitingToStart.load()) {
-              AllPaused = false;
-              break;
-            }
-          }
-        }
-      }
-
-      if (AllPaused)
-        break;
-
-      PauseWait.WaitFor(std::chrono::milliseconds(250));
-    } while (true);
+    std::unique_lock<std::mutex> lk(IdleWaitMutex);
+    IdleWaitCV.wait(lk, [this] {
+      return IdleWaitRefCount.load() == 0;
+    });
 
     Running = false;
   }
@@ -656,6 +640,7 @@ namespace FEXCore::Context {
 
     // Let's do some initial bookkeeping here
     Thread->State.ThreadManager.TID = ::gettid();
+    ++IdleWaitRefCount;
 
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
@@ -666,6 +651,9 @@ namespace FEXCore::Context {
       Thread->State.RunningEvents.ShouldStop.store(true);
       Thread->State.RunningEvents.Running.store(false);
       Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
+
+      --IdleWaitRefCount;
+      IdleWaitCV.notify_all();
       return;
     }
 
@@ -797,6 +785,9 @@ namespace FEXCore::Context {
             ShouldStop = true;
             Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
           }
+
+          --IdleWaitRefCount;
+          IdleWaitCV.notify_all();
           break;
         }
 
@@ -808,8 +799,10 @@ namespace FEXCore::Context {
           if (Thread->ExitReason == FEXCore::Context::ExitReason::EXIT_NONE)
             Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_DEBUG;
 
-          HandleExit(Thread);
+          --IdleWaitRefCount;
+          IdleWaitCV.notify_all();
 
+          HandleExit(Thread);
 
           Thread->StartRunning.Wait();
 
@@ -819,6 +812,7 @@ namespace FEXCore::Context {
             Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
 
           Thread->State.RunningEvents.Running = true;
+          ++IdleWaitRefCount;
         }
       }
     }
