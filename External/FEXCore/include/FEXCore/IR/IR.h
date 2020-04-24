@@ -5,6 +5,7 @@
 #include <sstream>
 
 namespace FEXCore::IR {
+class RegisterAllocationPass;
 
 /**
  * @brief The IROp_Header is an dynamically sized array
@@ -342,7 +343,7 @@ struct CondClassType final {
 template<bool>
 class IRListView;
 
-void Dump(std::stringstream *out, IRListView<false> const* IR);
+void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationPass *RAPass);
 
 template<typename Type>
 inline uint32_t NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }
