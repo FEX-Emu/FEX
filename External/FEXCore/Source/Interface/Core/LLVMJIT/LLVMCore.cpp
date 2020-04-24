@@ -15,7 +15,7 @@
 #include <llvm/IR/Verifier.h>
 
 // This seems to be needed for LLVM-10, and isn't needed/built from IntrinsicsX86.td in LLVM-9?
-#if __has_include (<llvm/IR/IntrinsicsX86.h>)
+#if defined(_M_X86_64) && __has_include (<llvm/IR/IntrinsicsX86.h>)
  #include <llvm/IR/IntrinsicsX86.h>
 #endif
 
