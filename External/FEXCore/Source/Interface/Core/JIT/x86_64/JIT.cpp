@@ -37,11 +37,7 @@ static void PrintValue(uint64_t Value) {
 #define TMP5 rbx
 using namespace Xbyak::util;
 const std::array<Xbyak::Reg, 9> RA64 = { rsi, r8, r9, r10, r11, rbp, r12, r13, r15 };
-const std::array<Xbyak::Reg, 9> RA32 = { esi, r8d, r9d, r10d, r11d, ebp, r12d, r13d, r15d };
 const std::array<std::pair<Xbyak::Reg, Xbyak::Reg>, 4> RA64Pair = {{ {rsi, r8}, {r9, r10}, {r11, rbp}, {r12, r13} }};
-const std::array<std::pair<Xbyak::Reg, Xbyak::Reg>, 4> RA32Pair = {{ {esi, r8d}, {r9d, r10d}, {r11d, ebp}, {r12d, r13d} }};
-const std::array<Xbyak::Reg, 10> RA16 = { si, r8w, r9w, r10w, r11w, bx, bp, r12w, r13w, r15w };
-const std::array<Xbyak::Reg, 10> RA8 = { sil, r8b, r9b, r10b, r11b, bl, bpl, r12b, r13b, r15b };
 const std::array<Xbyak::Reg, 11> RAXMM = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
 const std::array<Xbyak::Xmm, 11> RAXMM_x = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
 
@@ -176,15 +172,15 @@ Xbyak::Reg JITCore::GetSrc(uint32_t Node) {
   // rbx, rbp, r12, r13, r14, r15
   uint32_t Reg = GetPhys(Node);
   if (RAType == RA_64)
-    return RA64[Reg];
+    return RA64[Reg].cvt64();
   else if (RAType == RA_XMM)
     return RAXMM[Reg];
   else if (RAType == RA_32)
-    return RA32[Reg];
+    return RA64[Reg].cvt32();
   else if (RAType == RA_16)
-    return RA16[Reg];
+    return RA64[Reg].cvt16();
   else if (RAType == RA_8)
-    return RA8[Reg];
+    return RA64[Reg].cvt8();
 }
 
 Xbyak::Xmm JITCore::GetSrc(uint32_t Node) {
@@ -196,15 +192,15 @@ template<uint8_t RAType>
 Xbyak::Reg JITCore::GetDst(uint32_t Node) {
   uint32_t Reg = GetPhys(Node);
   if (RAType == RA_64)
-    return RA64[Reg];
+    return RA64[Reg].cvt64();
   else if (RAType == RA_XMM)
     return RAXMM[Reg];
   else if (RAType == RA_32)
-    return RA32[Reg];
+    return RA64[Reg].cvt32();
   else if (RAType == RA_16)
-    return RA16[Reg];
+    return RA64[Reg].cvt16();
   else if (RAType == RA_8)
-    return RA8[Reg];
+    return RA64[Reg].cvt8();
 }
 
 template<uint8_t RAType>
@@ -213,7 +209,7 @@ std::pair<Xbyak::Reg, Xbyak::Reg> JITCore::GetSrcPair(uint32_t Node) {
   if (RAType == RA_64)
     return RA64Pair[Reg];
   else if (RAType == RA_32)
-    return RA32Pair[Reg];
+    return {RA64Pair[Reg].first.cvt32(), RA64Pair[Reg].second.cvt32()};
 }
 
 Xbyak::Xmm JITCore::GetDst(uint32_t Node) {
