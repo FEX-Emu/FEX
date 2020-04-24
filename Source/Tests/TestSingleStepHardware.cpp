@@ -1,4 +1,5 @@
 #include "Common/ArgumentLoader.h"
+#include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
 #include "ELFLoader.h"
 #include "HarnessHelpers.h"
@@ -91,10 +92,11 @@ void AssertHandler(char const *Message) {
   printf("[ASSERT] %s\n", Message);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
   FEX::Config::Init();
+  FEX::EnvLoader::Load(envp);
   FEX::ArgLoader::Load(argc, argv);
 
   FEX::Config::Value<uint8_t> CoreConfig{"Core", 0};

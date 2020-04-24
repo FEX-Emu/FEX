@@ -1,6 +1,7 @@
 set(NAME Common)
 set(SRCS
   ArgumentLoader.cpp
+  EnvironmentLoader.cpp
   Config.cpp
   StringUtil.cpp)
 
