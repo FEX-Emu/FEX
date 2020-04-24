@@ -37,9 +37,9 @@ void InitializeX87Tables() {
     {OPDReg(0xD9, 1), 1, X86InstInfo{"",        TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xD9, 2), 1, X86InstInfo{"FST",     TYPE_X87, FLAGS_NONE, 0, nullptr}},
     {OPDReg(0xD9, 3), 1, X86InstInfo{"FSTP",    TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
-    {OPDReg(0xD9, 4), 1, X86InstInfo{"FLDENV",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xD9, 4), 1, X86InstInfo{"FLDENV",  TYPE_X87, FLAGS_MODRM, 0, nullptr}},
     {OPDReg(0xD9, 5), 1, X86InstInfo{"FLDCW",   TYPE_X87, FLAGS_NONE, 0, nullptr}},
-    {OPDReg(0xD9, 6), 1, X86InstInfo{"FNSTENV", TYPE_X87, FLAGS_NONE, 0, nullptr}},
+    {OPDReg(0xD9, 6), 1, X86InstInfo{"FNSTENV", TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
     {OPDReg(0xD9, 7), 1, X86InstInfo{"FNSTCW",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
       //  / 0
       {OPD(0xD9, 0xC0), 8, X86InstInfo{"FLD",   TYPE_INST, FLAGS_NONE, 0, nullptr}},
