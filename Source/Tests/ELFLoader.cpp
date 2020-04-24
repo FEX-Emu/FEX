@@ -1,4 +1,5 @@
 #include "Common/ArgumentLoader.h"
+#include "Common/EnvironmentLoader.h"
 #include "CommonCore/VMFactory.h"
 #include "Common/Config.h"
 #include "ELFLoader.h"
@@ -83,6 +84,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEX::Config::Init();
+  FEX::EnvLoader::Load(envp);
   FEX::ArgLoader::Load(argc, argv);
 
   FEX::Config::Value<uint8_t> CoreConfig{"Core", 0};

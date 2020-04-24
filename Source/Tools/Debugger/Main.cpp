@@ -1,4 +1,5 @@
 #include "Common/ArgumentLoader.h"
+#include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
 #include "CommonCore/VMFactory.h"
 #include "Tests/HarnessHelpers.h"
@@ -128,8 +129,9 @@ void GetIRCallback(std::stringstream *out, uint64_t PC) {
   // }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv, char **const envp) {
   FEX::Config::Init();
+  FEX::EnvLoader::Load(envp);
   FEX::ArgLoader::Load(argc, argv);
 
   FEXCore::Context::InitializeStaticTables();
