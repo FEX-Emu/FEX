@@ -1,0 +1,132 @@
+﻿{
+	"environments": [
+		{
+			"BuildPath": "${projectDir}\\out\\build\\${name}",
+			"InstallPath": "${projectDir}\\out\\install\\${name}",
+			"clangcl": "clang-cl.exe",
+			"cc": "clang",
+			"cxx": "clang++"
+		}
+	],
+	"configurations": [
+		{
+			"name": "WSL-Clang-Debug",
+			"generator": "Ninja",
+			"configurationType": "Debug",
+			"buildRoot": "${env.BuildPath}",
+			"installRoot": "${env.InstallPath}",
+			"cmakeExecutable": "/usr/bin/cmake",
+			"cmakeCommandArgs": "",
+			"buildCommandArgs": "-v",
+			"ctestCommandArgs": "",
+			"wslPath": "${defaultWSLPath}",
+			"inheritEnvironments": [ "linux_clang_x64" ],
+			"addressSanitizerRuntimeFlags": "detect_leaks=0",
+			"variables": [
+				{
+					"name": "WSL",
+					"type": "BOOL",
+					"value": "TRUE"
+				}
+			]
+		},
+		{
+			"name": "WSL-Clang-Release",
+			"generator": "Ninja",
+			"configurationType": "RelWithDebInfo",
+			"buildRoot": "${env.BuildPath}",
+			"installRoot": "${env.InstallPath}",
+			"cmakeExecutable": "/usr/bin/cmake",
+			"cmakeCommandArgs": "",
+			"buildCommandArgs": "-v",
+			"ctestCommandArgs": "",
+			"wslPath": "${defaultWSLPath}",
+			"inheritEnvironments": [ "linux_clang_x64" ],
+			"addressSanitizerRuntimeFlags": "detect_leaks=0",
+			"variables": [
+				{
+					"name": "WSL",
+					"type": "BOOL",
+					"value": "TRUE"
+				}
+			]
+		},
+		{
+			"name": "x86-Clang-Cross-Debug",
+			"generator": "Ninja",
+			"configurationType": "Debug",
+			"buildRoot": "${env.BuildPath}",
+			"installRoot": "${env.InstallPath}",
+			"cmakeCommandArgs": "",
+			"buildCommandArgs": "-v",
+			"ctestCommandArgs": "",
+			"inheritEnvironments": [ "clang_cl_x86" ],
+			"variables": [
+				{
+					"name": "CMAKE_C_COMPILER",
+					"type": "STRING",
+					"value": "${env.cc}"
+				},
+				{
+					"name": "CMAKE_CXX_COMPILER",
+					"type": "STRING",
+					"value": "${env.cxx}"
+				},
+				{
+					"name": "CMAKE_SYSROOT",
+					"type": "STRING",
+					"value": "${env.fexsysroot}"
+				}
+			]
+		},
+		{
+			"name": "x64-Clang-Cross-Release",
+			"generator": "Ninja",
+			"configurationType": "RelWithDebInfo",
+			"buildRoot": "${env.BuildPath}",
+			"installRoot": "${env.InstallPath}",
+			"cmakeCommandArgs": "",
+			"buildCommandArgs": "-v",
+			"ctestCommandArgs": "",
+			"inheritEnvironments": [ "clang_cl_x86" ],
+			"variables": [
+				{
+					"name": "CMAKE_C_COMPILER",
+					"type": "STRING",
+					"value": "${env.cc}"
+				},
+				{
+					"name": "CMAKE_CXX_COMPILER",
+					"type": "STRING",
+					"value": "${env.cxx}"
+				},
+				{
+					"name": "CMAKE_SYSROOT",
+					"type": "STRING",
+					"value": "${env.fexsysroot}"
+				}
+			]
+		},
+		{
+			"name": "Linux-Clang-Remote-Debug",
+			"generator": "Ninja",
+			"configurationType": "Debug",
+			"cmakeExecutable": "/usr/bin/cmake",
+			"remoteCopySourcesExclusionList": [ ".vs", ".vscode", ".git", ".github", "build", "out", "bin" ],
+			"cmakeCommandArgs": "",
+			"buildCommandArgs": "-v",
+			"ctestCommandArgs": "",
+			"inheritEnvironments": [ "linux_clang_x64" ],
+			"remoteMachineName": "${env.fexremote}",	// string "-662331587;z.port0.org (username=ubuntu, port=22, authentication=PrivateKey)",
+			"remoteCMakeListsRoot": "$HOME/projects/.vs/${projectDirName}/src",
+			"remoteBuildRoot": "$HOME/projects/.vs/${projectDirName}/build/${name}",
+			"remoteInstallRoot": "$HOME/projects/.vs/${projectDirName}/install/${name}",
+			"remoteCopySources": true,
+			"rsyncCommandArgs": "-t --delete --delete-excluded",
+			"remoteCopyBuildOutput": false,
+			"remoteCopySourcesMethod": "rsync",
+			"addressSanitizerRuntimeFlags": "detect_leaks=0",
+			"variables": []
+		}
+	]
+}

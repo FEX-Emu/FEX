@@ -13,6 +13,12 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
+
+// This seems to be needed for LLVM-10, and isn't needed/built from IntrinsicsX86.td in LLVM-9?
+#if defined(_M_X86_64) && __has_include (<llvm/IR/IntrinsicsX86.h>)
+ #include <llvm/IR/IntrinsicsX86.h>
+#endif
+
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/TargetSelect.h>

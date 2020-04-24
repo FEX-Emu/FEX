@@ -5,7 +5,7 @@
 #include "MainWindow.h"
 #include "Context.h"
 #include "GLUtils.h"
-#include "IMGui.h"
+#include "IMGui_I.h"
 #include "DebuggerState.h"
 #include "LogManager.h"
 
