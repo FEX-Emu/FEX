@@ -64,6 +64,11 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Socketpair(FEXCore::Core::InternalThreadState *Thread, int domain, int type, int protocol, int sv[2]) {
+    uint64_t Result = ::socketpair(domain, type, protocol, sv);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t SetSockOpt(FEXCore::Core::InternalThreadState *Thread, int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
     uint64_t Result = ::setsockopt(sockfd, level, optname, optval, optlen);
     SYSCALL_ERRNO();

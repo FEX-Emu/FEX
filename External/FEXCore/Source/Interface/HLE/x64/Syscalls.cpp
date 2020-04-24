@@ -401,6 +401,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_PIPE2:
     LogMan::Msg::D("pipe2({...}, %d) = %ld", Args->Argument[2], Ret);
     break;
+  case SYSCALL_INOTIFY_INIT1:
+    LogMan::Msg::D("inotify_init1(%lx) = %ld", Args->Argument[1], Ret);
+    break;
   case SYSCALL_RT_SIGACTION:
     LogMan::Msg::D("rt_sigaction(%ld, %p, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
     break;
@@ -470,6 +473,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
     break;
   case SYSCALL_GETPEERNAME:
     LogMan::Msg::D("getpeername(%ld, 0x%lx, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_SOCKETPAIR:
+    LogMan::Msg::D("socketpair({...}) = %ld", Ret);
     break;
   case SYSCALL_SETSOCKOPT:
     LogMan::Msg::D("setsockopt(%ld, %ld, %ld, 0x%lx, %ld) = %ld",
@@ -729,6 +735,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_LISTEN,                 cvt(&FEXCore::HLE::Listen),                 2},
     {SYSCALL_GETSOCKNAME,            cvt(&FEXCore::HLE::GetSockName),            3},
     {SYSCALL_GETPEERNAME,            cvt(&FEXCore::HLE::GetPeerName),            3},
+    {SYSCALL_SOCKETPAIR,             cvt(&FEXCore::HLE::Socketpair),             4},
     {SYSCALL_SETSOCKOPT,             cvt(&FEXCore::HLE::SetSockOpt),             5},
     {SYSCALL_GETSOCKOPT,             cvt(&FEXCore::HLE::GetSockOpt),             5},
     {SYSCALL_CLONE,                  cvt(&FEXCore::HLE::Clone),                  5},
@@ -827,6 +834,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_EVENTFD,                cvt(&FEXCore::HLE::Eventfd),                2},
     {SYSCALL_EPOLL_CREATE1,          cvt(&FEXCore::HLE::EPoll_Create1),          1},
     {SYSCALL_PIPE2,                  cvt(&FEXCore::HLE::Pipe2),                  2},
+    {SYSCALL_INOTIFY_INIT1,          cvt(&FEXCore::HLE::Inotify_init1),          1},
     {SYSCALL_PRLIMIT64,              cvt(&FEXCore::HLE::Prlimit64),              4},
     {SYSCALL_SENDMMSG,               cvt(&FEXCore::HLE::Sendmmsg),               4},
     {SYSCALL_GETRANDOM,              cvt(&FEXCore::HLE::Getrandom),              3},
