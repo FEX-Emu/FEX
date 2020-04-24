@@ -25,8 +25,8 @@
 			"variables": [
 				{
 					"name": "WSL",
-					"type": "BOOL",
-					"value": "TRUE"
+					"value": "TRUE",
+					"type": "BOOL"
 				}
 			]
 		},
@@ -46,8 +46,8 @@
 			"variables": [
 				{
 					"name": "WSL",
-					"type": "BOOL",
-					"value": "TRUE"
+					"value": "TRUE",
+					"type": "BOOL"
 				}
 			]
 		},
@@ -64,18 +64,18 @@
 			"variables": [
 				{
 					"name": "CMAKE_C_COMPILER",
-					"type": "STRING",
-					"value": "${env.cc}"
+					"value": "${env.cc}",
+					"type": "STRING"
 				},
 				{
 					"name": "CMAKE_CXX_COMPILER",
-					"type": "STRING",
-					"value": "${env.cxx}"
+					"value": "${env.cxx}",
+					"type": "STRING"
 				},
 				{
 					"name": "CMAKE_SYSROOT",
-					"type": "STRING",
-					"value": "${env.fexsysroot}"
+					"value": "${env.fexsysroot}",
+					"type": "STRING"
 				}
 			]
 		},
@@ -92,18 +92,18 @@
 			"variables": [
 				{
 					"name": "CMAKE_C_COMPILER",
-					"type": "STRING",
-					"value": "${env.cc}"
+					"value": "${env.cc}",
+					"type": "STRING"
 				},
 				{
 					"name": "CMAKE_CXX_COMPILER",
-					"type": "STRING",
-					"value": "${env.cxx}"
+					"value": "${env.cxx}",
+					"type": "STRING"
 				},
 				{
 					"name": "CMAKE_SYSROOT",
-					"type": "STRING",
-					"value": "${env.fexsysroot}"
+					"value": "${env.fexsysroot}",
+					"type": "STRING"
 				}
 			]
 		},
@@ -117,7 +117,7 @@
 			"buildCommandArgs": "-v",
 			"ctestCommandArgs": "",
 			"inheritEnvironments": [ "linux_clang_x64" ],
-			"remoteMachineName": "${env.fexremote}",	// string "-662331587;z.port0.org (username=ubuntu, port=22, authentication=PrivateKey)",
+			"remoteMachineName": "${env.fexremote}",
 			"remoteCMakeListsRoot": "$HOME/projects/.vs/${projectDirName}/src",
 			"remoteBuildRoot": "$HOME/projects/.vs/${projectDirName}/build/${name}",
 			"remoteInstallRoot": "$HOME/projects/.vs/${projectDirName}/install/${name}",

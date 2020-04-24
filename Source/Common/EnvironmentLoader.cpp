@@ -1,0 +1,108 @@
+#include <functional>
+#include <string_view>
+#include <unordered_map>
+
+#include "Common/Config.h"
+
+
+
+namespace FEX::EnvLoader {
+
+  using string = std::string;
+  using string_view = std::string_view;
+
+  void Load(char *const envp[])
+  {
+    std::unordered_map<string_view,string_view> EnvMap;
+
+    for(const char *const *pvar=envp; pvar && *pvar; pvar++) {
+      string_view Var(*pvar);
+      size_t pos = Var.rfind('=');
+      if (string::npos==pos)
+        continue;
+
+      string_view Ident = Var.substr(0,pos);
+      string_view Value = Var.substr(pos+1);
+      EnvMap[Ident]=Value;
+    }
+
+    std::function GetVar = [=](const string_view id)  -> const string_view {
+      if (EnvMap.find(id) != EnvMap.end()) 
+        return EnvMap.at(id);
+
+      // If envp[] was empty, search using std::getenv()
+      const char* vs = std::getenv(id.data());
+      string_view sv(vs?vs:"");
+      return sv;
+    };
+
+    string_view Value;
+    if ((Value = GetVar("FEX_CORE")).size()) {
+      // Accept Numeric or name //
+      if(isdigit(Value[0])) Config::Add("Core", Value);
+      else {
+        uint32_t CoreVal = 0;
+             if (Value==string_view("irint")) CoreVal=0; // default
+        else if (Value==string_view("irjit")) CoreVal=1;
+        else if (Value==string_view("llvm"))  CoreVal=2;
+        else if (Value==string_view("host"))  CoreVal=3;
+        else if (Value==string_view("vm"))    CoreVal=4;
+        else { assert(0); }
+        Config::Add("Core", std::to_string(CoreVal));
+      }
+    }
+
+    if ((Value = GetVar("FEX_BREAK")).size()) {
+      if(isdigit(Value[0]))
+        Config::Add("Break", Value);
+    }
+
+    if ((Value = GetVar("FEX_SINGLE_STEP")).size()) {
+      if(isdigit(Value[0])) {
+        Config::Add("SingleStep", Value);
+        Config::Add("MaxInst", std::to_string(1u));
+      }
+    }
+    else if ((Value = GetVar("FEX_MAX_INST")).size()) {
+      if(isdigit(Value[0])) Config::Add("MaxInst", Value);
+    }
+
+    if ((Value = GetVar("FEX_MULTIBLOCK")).size()) {
+      if(isdigit(Value[0])) Config::Add("Multiblock", Value);
+    }
+
+    if ((Value = GetVar("FEX_GDB_SERVER")).size()) { 
+      if(isdigit(Value[0])) Config::Add("GdbServer", Value);
+    }
+
+
+
+    if ((Value = GetVar("FEX_ROOTFS")).size()) {
+      Config::Add("RootFS", Value);   //  TODO verify? fs::path(rootfs).exists() ?
+    }
+
+    if ((Value = GetVar("FEX_UNIFIED_MEM")).size()) { 
+      if(isdigit(Value[0])) Config::Add("UnifiedMemory", Value);
+    }
+
+
+
+    if ((Value = GetVar("FEX_DUMP_GPRS")).size()) { 
+      if(isdigit(Value[0])) Config::Add("DumpGPRs", Value);
+    }
+
+    if ((Value = GetVar("FEX_IPC_CLIENT")).size()) { 
+      if(isdigit(Value[0])) Config::Add("IPCClient", Value);
+    }
+
+    if ((Value = GetVar("FEX_ELF_TYPE")).size()) { 
+      if(isdigit(Value[0])) Config::Add("ELFType", Value);
+    }
+
+    if ((Value = GetVar("FEX_IPCID")).size()) {
+      Config::Add("IPCID", Value); 
+    }
+
+  }
+
+}
