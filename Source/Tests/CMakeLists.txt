@@ -1,3 +1,12 @@
+# Boost with minimum version of 1.50, not exact
+find_package(Boost 1.50 REQUIRED)
+
+enable_language(ASM_NASM)
+if(NOT CMAKE_ASM_NASM_COMPILER_LOADED)
+  error("Failed to find NASM compatible assembler!")
+endif()
+
+
 set(LIBS FEXCore Common CommonCore SonicUtils pthread LLVM)
 set(NAME ELFLoader)
 set(SRCS ELFLoader.cpp)
