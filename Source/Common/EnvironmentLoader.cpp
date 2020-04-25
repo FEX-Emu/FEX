@@ -87,6 +87,9 @@ namespace FEX::EnvLoader {
       if ((Value = GetVar("FEX_UNIFIED_MEM")).size()) {
         if (isdigit(Value[0])) Config::Add("UnifiedMemory", Value);
       }
+      else {  // Most convenient place for a default as it's run before ArgLoader
+        Config::Add("UnifiedMemory", string_view("1"));
+      }
     }
 
     {
