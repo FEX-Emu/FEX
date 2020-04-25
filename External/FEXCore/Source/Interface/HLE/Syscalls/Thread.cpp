@@ -3,6 +3,7 @@
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
 
+#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/X86Enums.h>
 
 #include <limits.h>
@@ -24,14 +25,113 @@ struct InternalThreadState;
 
 namespace FEXCore::HLE {
 
+  FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
+    FEXCore::Core::CPUState NewThreadState{};
+    // Clone copies the parent thread's state
+    memcpy(&NewThreadState, &Thread->State.State, sizeof(FEXCore::Core::CPUState));
+
+    NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
+    NewThreadState.gregs[FEXCore::X86State::REG_RBX] = 0;
+    NewThreadState.gregs[FEXCore::X86State::REG_RBP] = 0;
+    NewThreadState.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack);
+
+    if (flags & CLONE_SETTLS) {
+      NewThreadState.fs = reinterpret_cast<uint64_t>(tls);
+    }
+
+    // Set us to start just after the syscall instruction
+    NewThreadState.rip += 2;
+
+    auto NewThread = Thread->CTX->CreateThread(&NewThreadState, reinterpret_cast<uint64_t>(parent_tid));
+    Thread->CTX->CopyMemoryMapping(Thread, NewThread);
+
+    Thread->CTX->InitializeThread(NewThread);
+
+    // Return the new threads TID
+    uint64_t Result = NewThread->State.ThreadManager.GetTID();
+
+    // Sets the child TID to pointer in ParentTID
+    if (flags & CLONE_PARENT_SETTID) {
+      *parent_tid = Result;
+    }
+
+    // Sets the child TID to the pointer in ChildTID
+    if (flags & CLONE_CHILD_SETTID) {
+      NewThread->State.ThreadManager.set_child_tid = child_tid;
+      *child_tid = Result;
+    }
+
+    // When the thread exits, clear the child thread ID at ChildTID
+    // Additionally wakeup a futex at that address
+    // Address /may/ be changed with SET_TID_ADDRESS syscall
+    if (flags & CLONE_CHILD_CLEARTID) {
+      NewThread->State.ThreadManager.clear_child_tid = child_tid;
+    }
+
+    return NewThread;
+  }
+
+  uint64_t DoFork(FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
+    LogMan::Msg::E("FORKING!");
+    uint64_t PrevTID = Thread->State.ThreadManager.TID;
+    pid_t pid = fork();
+    if (pid == 0) {
+      // Child
+      // uhhh...
+      Thread->CTX->HandleForkChildSide(PrevTID);
+      Thread->State.ThreadManager.TID = ::gettid();
+    }
+    else {
+      // Parent
+      return pid;
+    }
+
+    // Handle child setup now
+    if (stack == nullptr) {
+      // In the case of fork and nullptr stack then the child uses the same stack space as the parent
+      // Same virtual address, different addressspace
+      LogMan::Msg::D("@@@@@@@ Had to setup custom stack");
+      stack = (void*)Thread->State.State.gregs[X86State::REG_RSP];
+    }
+
+    LogMan::Msg::D("Time to spin up fork thread with Stack: 0x%lx\n", stack);
+    auto NewThread = CreateNewThread(Thread, flags, stack, 0, child_tid, tls);
+
+    NewThread->State.State.gregs[FEXCore::X86State::REG_RAX] = 0;
+    // Return the new threads TID
+    uint64_t Result = NewThread->State.ThreadManager.GetTID();
+    LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->State.State.rip, Thread->State.State.rip);
+
+    // Actually start the thread
+    Thread->CTX->RunThread(NewThread);
+
+    // This thread needs to die now
+    // New thread becomes the new thread
+    Thread->State.ThreadManager.parent_tid = ~0ULL;
+    Thread->State.RunningEvents.ShouldStop = true;
+
+    return 0;
+  }
+
+
   void RegisterThread() {
     REGISTER_SYSCALL_IMPL(getpid, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
+  #if 1
+      uint64_t Result = Thread->CTX->GetPIDHack();
+      if (Result == ~0ULL) {
+        Result = ::getpid();
+        SYSCALL_ERRNO();
+      }
+      return Result;
+
+  #else
       uint64_t Result = ::getpid();
       SYSCALL_ERRNO();
+  #endif
     });
 
     REGISTER_SYSCALL_IMPL(clone, [](FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) -> uint64_t {
-  #define FLAGPRINT(x, y) if (flags & (y)) LogMan::Msg::I("\tFlag: " #x)
+    #define FLAGPRINT(x, y) if (flags & (y)) LogMan::Msg::I("\tFlag: " #x)
       FLAGPRINT(CSIGNAL,              0x000000FF);
       FLAGPRINT(CLONE_VM,             0x00000100);
       FLAGPRINT(CLONE_FS,             0x00000200);
@@ -58,50 +158,15 @@ namespace FEXCore::HLE {
       FLAGPRINT(CLONE_IO,             0x80000000);
 
       if (!(flags & CLONE_VM)) {
-        LogMan::Msg::E("Unsupported clone without CLONE_VM");
-        return -ENOSPC;
-      }
-      FEXCore::Core::CPUState NewThreadState{};
-      // Clone copies the parent thread's state
-      memcpy(&NewThreadState, &Thread->State.State, sizeof(FEXCore::Core::CPUState));
-
-      NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
-      NewThreadState.gregs[FEXCore::X86State::REG_RBX] = 0;
-      NewThreadState.gregs[FEXCore::X86State::REG_RBP] = 0;
-      NewThreadState.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack);
-
-      if (flags & CLONE_SETTLS) {
-        NewThreadState.fs = reinterpret_cast<uint64_t>(tls);
+        LogMan::Msg::D("Parent [%d] Leaving syscall at rip: 0x%lx", Thread->State.ThreadManager.GetTID(), Thread->State.State.rip);
+        return DoFork(Thread, flags, stack, parent_tid, child_tid, tls);
       }
 
-      // Set us to start just after the syscall instruction
-      NewThreadState.rip += 2;
-
-      auto NewThread = Thread->CTX->CreateThread(&NewThreadState, reinterpret_cast<uint64_t>(parent_tid));
-      Thread->CTX->CopyMemoryMapping(Thread, NewThread);
-
-      Thread->CTX->InitializeThread(NewThread);
+      auto NewThread = CreateNewThread(Thread, flags, stack, parent_tid, child_tid, tls);
 
       // Return the new threads TID
       uint64_t Result = NewThread->State.ThreadManager.GetTID();
-
-      // Sets the child TID to pointer in ParentTID
-      if (flags & CLONE_PARENT_SETTID) {
-        *parent_tid = Result;
-      }
-
-      // Sets the child TID to the pointer in ChildTID
-      if (flags & CLONE_CHILD_SETTID) {
-        NewThread->State.ThreadManager.set_child_tid = child_tid;
-        *child_tid = Result;
-      }
-
-      // When the thread exits, clear the child thread ID at ChildTID
-      // Additionally wakeup a futex at that address
-      // Address /may/ be changed with SET_TID_ADDRESS syscall
-      if (flags & CLONE_CHILD_CLEARTID) {
-        NewThread->State.ThreadManager.clear_child_tid = child_tid;
-      }
+      LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->State.State.rip, Thread->State.State.rip);
 
       // Actually start the thread
       Thread->CTX->RunThread(NewThread);
@@ -110,6 +175,15 @@ namespace FEXCore::HLE {
         // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
         NewThread->ExecutionThread.join();
       }
+
+      if (!(flags & CLONE_VM)) {
+        // This thread needs to die now
+        // New thread becomes the new thread
+        NewThread->ExecutionThread.join();
+        Thread->State.ThreadManager.parent_tid = ~0ULL;
+        Thread->State.RunningEvents.ShouldStop = true;
+      }
+
       SYSCALL_ERRNO();
     });
 

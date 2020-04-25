@@ -131,6 +131,9 @@ namespace FEXCore::Context {
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
+    void HandleForkChildSide(uint64_t prevTID);
+    uint64_t GetPIDHack();
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 

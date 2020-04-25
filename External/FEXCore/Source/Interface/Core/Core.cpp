@@ -489,12 +489,40 @@ namespace FEXCore::Context {
     Thread->BlockCache->ClearCache();
     Thread->CPUBackend->ClearCache();
     Thread->IntBackend->ClearCache();
-
+  
     if (GuestRIP != 0) {
       auto IR = Thread->IRLists.find(GuestRIP)->second.release();
       Thread->IRLists.clear();
       Thread->IRLists.try_emplace(GuestRIP, IR);
     }
+  }
+
+  static int indent = 0;
+
+  void Context::HandleForkChildSide(uint64_t PrevTID) {
+    // Whoa okay, we have forked. Time to clean up
+
+    // Every thread that thinks it exists right now? Not real. Delete them
+    for(auto iter = Threads.begin(); iter != Threads.end(); ++iter) {
+      // Walk the thread list and delete every thread that isn't this one
+      auto Thread = *iter;
+      LogMan::Msg::D("[Child] Deleted a thread");
+      //Thread->ExecutionThread.detach();
+      //delete Thread;
+      //Threads.erase(iter);
+    }
+    indent = 1;
+  }
+
+  uint64_t Context::GetPIDHack() {
+    std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+    for (auto &Thread : Threads) {
+      if (Thread->State.ThreadManager.parent_tid == 0) {
+        return Thread->State.ThreadManager.GetTID();
+      }
+    }
+
+    return ~0ULL;
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -681,6 +709,8 @@ namespace FEXCore::Context {
     Thread->State.ThreadManager.TID = ::gettid();
     ++IdleWaitRefCount;
 
+    LogMan::Msg::D("[%d] Waiting to run", Thread->State.ThreadManager.TID.load());
+
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
 
@@ -689,7 +719,11 @@ namespace FEXCore::Context {
       Thread->StartRunning.Wait();
     }
 
+    LogMan::Msg::D("[%d] Running", Thread->State.ThreadManager.TID.load());
+
     if (ShouldStop.load() || Thread->State.RunningEvents.ShouldStop.load()) {
+      LogMan::Msg::D("[%d] Early exiting", Thread->State.ThreadManager.TID.load());
+
       ShouldStop = true;
       Thread->State.RunningEvents.ShouldStop.store(true);
       Thread->State.RunningEvents.Running.store(false);
@@ -714,14 +748,6 @@ namespace FEXCore::Context {
     }
 
     uint64_t InitializationStep = 0;
-    if (Initializing) {
-      Thread->State.State.rip = ~0ULL;
-    }
-    else {
-      if (Thread->State.ThreadManager.GetTID() == 1) {
-        Thread->State.State.rip = StartingRIP;
-      }
-    }
 
     if (Thread->CPUBackend->HasCustomDispatch()) {
       Thread->CPUBackend->ExecuteCustomDispatch(&Thread->State);
@@ -745,8 +771,9 @@ namespace FEXCore::Context {
         uint64_t GuestRIP = Thread->State.State.rip;
 
         if (CoreDebugLevel >= 1) {
-          char const *Name = LocalLoader->FindSymbolNameInRange(GuestRIP - MemoryBase);
-          LogMan::Msg::D(">>>>RIP: 0x%lx(0x%lx): '%s'", GuestRIP, GuestRIP - MemoryBase, Name ? Name : "<Unknown>");
+          char const *Name = LocalLoader->FindSymbolNameInRange(GuestRIP);
+          std::string Index[2] = {"", "\t"};
+          LogMan::Msg::D("%s[%d] >>>>RIP: 0x%lx(0x%lx): '%s'", Index[indent].c_str(), ::gettid(), GuestRIP, GuestRIP - MemoryBase, Name ? Name : "<Unknown>");
         }
 
         if (!Thread->CPUBackend->NeedsOpDispatch()) {
@@ -822,9 +849,12 @@ namespace FEXCore::Context {
         }
 
         if (Thread->State.RunningEvents.ShouldStop.load()) {
+          LogMan::Msg::D("[%d] Thread Event Should Stop", Thread->State.ThreadManager.TID.load());
+
           // If it is the parent thread that died then just leave
           // XXX: This doesn't make sense when the parent thread doesn't outlive its children
           if (Thread->State.ThreadManager.parent_tid == 0) {
+            LogMan::Msg::D("[%d] Thread Event Everything should stop", Thread->State.ThreadManager.TID.load());
             ShouldStop = true;
             Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
           }
