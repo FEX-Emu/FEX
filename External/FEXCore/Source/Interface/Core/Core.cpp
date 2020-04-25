@@ -458,6 +458,16 @@ namespace FEXCore::Context {
     return BlockMapPtr;
   }
 
+  void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    Thread->BlockCache->ClearCache();
+    Thread->CPUBackend->ClearCache();
+    if (GuestRIP != 0) {
+      auto IR = Thread->IRLists.find(GuestRIP)->second.release();
+      Thread->IRLists.clear();
+      Thread->IRLists.try_emplace(GuestRIP, IR);
+    }
+  }
+
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     // XXX: Threaded mutex hack until we support proper threaded compilation. Issue #13
     static std::mutex SyscallMutex;
