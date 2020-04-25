@@ -264,7 +264,7 @@ void InitializeSecondaryTables() {
     {0x20, 4, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
     {0x24, 6, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
     {0x2A, 1, X86InstInfo{"CVTSI2SS",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR, 0, nullptr}},
-    {0x2B, 1, X86InstInfo{"MOVNTSS",   TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {0x2B, 1, X86InstInfo{"MOVNTSS",   TYPE_INST, GenFlagsSameSize(SIZE_32BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
     {0x2C, 1, X86InstInfo{"CVTTSS2SI", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR, 0, nullptr}},
     {0x2D, 1, X86InstInfo{"CVTSS2SI",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR, 0, nullptr}},
     {0x2E, 2, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
