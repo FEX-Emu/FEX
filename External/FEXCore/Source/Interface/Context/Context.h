@@ -77,7 +77,7 @@ namespace FEXCore::Context {
     FEXCore::IR::PassManager PassManager;
 
     FEXCore::CPUIDEmu CPUID;
-    FEXCore::SyscallHandler *SyscallHandler;
+    std::unique_ptr<FEXCore::SyscallHandler> SyscallHandler;
     CustomCPUFactoryType CustomCPUFactory;
     CustomCPUFactoryType FallbackCPUFactory;
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;

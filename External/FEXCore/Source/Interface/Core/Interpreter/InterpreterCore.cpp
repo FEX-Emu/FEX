@@ -227,7 +227,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               Args.Argument[j] = *GetSrc<uint64_t*>(Op->Header.Args[j]);
             }
 
-            uint64_t Res = FEXCore::HandleSyscall(CTX->SyscallHandler, Thread, &Args);
+            uint64_t Res = FEXCore::HandleSyscall(CTX->SyscallHandler.get(), Thread, &Args);
             GD = Res;
             break;
           }

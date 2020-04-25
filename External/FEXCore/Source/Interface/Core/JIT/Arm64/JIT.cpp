@@ -501,7 +501,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         str(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
 
-        LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
+        LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler.get()));
         mov(x1, STATE);
         mov(x2, sp);
 

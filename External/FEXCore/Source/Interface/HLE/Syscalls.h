@@ -40,6 +40,8 @@ namespace FEXCore {
 class SyscallHandler {
 public:
   SyscallHandler(FEXCore::Context::Context *ctx);
+  virtual ~SyscallHandler() = default;
+
   virtual uint64_t HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) = 0;
 
   void DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread, uint64_t Addr);

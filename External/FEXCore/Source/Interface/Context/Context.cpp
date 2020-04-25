@@ -97,7 +97,7 @@ namespace FEXCore::Context {
   }
 
   uint64_t HandleSyscall(FEXCore::Context::Context *CTX, FEXCore::Core::ThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
-    return FEXCore::HandleSyscall(CTX->SyscallHandler, reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread), Args);
+    return FEXCore::HandleSyscall(CTX->SyscallHandler.get(), reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread), Args);
   }
 
   bool AddVirtualMemoryMapping([[maybe_unused]] FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t VirtualAddress, [[maybe_unused]] uint64_t PhysicalAddress, [[maybe_unused]] uint64_t Size) {
