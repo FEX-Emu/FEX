@@ -19,4 +19,6 @@ namespace FEXCore::HLE {
   uint64_t Sched_rr_get_interval(FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct timespec *tp);
   uint64_t Sched_Setaffinity(FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, const unsigned long *mask);
   uint64_t Sched_Getaffinity(FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, unsigned long *mask);
+  uint64_t Sched_Setattr(FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_attr *attr, unsigned int flags);
+  uint64_t Sched_Getattr(FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags);
 }

@@ -177,6 +177,21 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Getpgrp(FEXCore::Core::InternalThreadState *Thread) {
+    uint64_t Result = ::getpgrp();
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Setsid(FEXCore::Core::InternalThreadState *Thread) {
+    uint64_t Result = ::setsid();
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Setreuid(FEXCore::Core::InternalThreadState *Thread, uid_t ruid, uid_t euid) {
+    uint64_t Result = ::setreuid(ruid, euid);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Setregid(FEXCore::Core::InternalThreadState *Thread, gid_t rgid, gid_t egid) {
     uint64_t Result = ::setregid(rgid, egid);
     SYSCALL_ERRNO();
@@ -269,7 +284,13 @@ namespace FEXCore::HLE {
 
   uint64_t Set_robust_list(FEXCore::Core::InternalThreadState *Thread, struct robust_list_head *head, size_t len) {
     Thread->State.ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
-    return 0;
+    uint64_t Result = ::syscall(SYS_set_robust_list, head, len);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Get_robust_list(FEXCore::Core::InternalThreadState *Thread, int pid, struct robust_list_head **head, size_t *len_ptr) {
+    uint64_t Result = ::syscall(SYS_get_robust_list, pid, head, len_ptr);
+    SYSCALL_ERRNO();
   }
 
   uint64_t Prlimit64(FEXCore::Core::InternalThreadState *Thread, pid_t pid, int resource, const struct rlimit *new_limit, struct rlimit *old_limit) {

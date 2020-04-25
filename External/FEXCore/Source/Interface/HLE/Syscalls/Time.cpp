@@ -34,4 +34,10 @@ namespace FEXCore::HLE {
     uint64_t Result = ::clock_getres(clk_id, tp);
     SYSCALL_ERRNO();
   }
+
+  uint64_t Clock_nanosleep(FEXCore::Core::InternalThreadState *Thread, clockid_t clockid, int flags, const struct timespec *request, struct timespec *remain) {
+    uint64_t Result = ::clock_nanosleep(clockid, flags, request, remain);
+    SYSCALL_ERRNO();
+  }
+
 }

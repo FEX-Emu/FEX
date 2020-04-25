@@ -88,6 +88,7 @@ enum Syscalls {
   SYSCALL_FSYNC           = 74,  ///< __NR_fsync
   SYSCALL_FDATASYNC       = 75,  ///< __NR_fdatasync
   SYSCALL_FTRUNCATE       = 77,  ///< __NR_ftruncate
+  SYSCALL_GETDENTS        = 78,  ///< __NR_getdents
   SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
   SYSCALL_CHDIR           = 80,  ///< __NR_chdir
   SYSCALL_RENAME          = 82,  ///< __NR_rename
@@ -101,6 +102,7 @@ enum Syscalls {
   SYSCALL_UMASK           = 95,  ///< __NR_umask
   SYSCALL_GETTIMEOFDAY    = 96,  ///< __NR_gettimeofday
   SYSCALL_SYSINFO         = 99,  ///< __NR_sysinfo
+  SYSCALL_PTRACE          = 101, ///< __NR_ptrace
   SYSCALL_GETUID          = 102, ///< __NR_getuid
   SYSCALL_SYSLOG          = 103, ///< __NR_syslog
   SYSCALL_GETGID          = 104, ///< __NR_getgid
@@ -108,6 +110,9 @@ enum Syscalls {
   SYSCALL_GETEUID         = 107, ///< __NR_geteuid
   SYSCALL_GETEGID         = 108, ///< __NR_getegid
   SYSCALL_GETPPID         = 110, ///< __NR_getppid
+  SYSCALL_GETPGRP         = 111, ///< __NR_getpgrp
+  SYSCALL_SETSID          = 112, ///< __NR_setsid
+  SYSCALL_SETREUID        = 113, ///< __NR_setreuid
   SYSCALL_SETREGID        = 114, ///< __NR_setregid
   SYSCALL_SETRESUID       = 117, ///< __NR_setresuid
   SYSCALL_GETRESUID       = 118, ///< __NR_getresuid
@@ -142,16 +147,17 @@ enum Syscalls {
   SYSCALL_EPOLL_CTL_OLD   = 214, ///< __NR_epoll_ctl_old
   SYSCALL_EPOLL_WAIT_OLD  = 215, ///< __NR_epoll_wait_old
   SYSCALL_GETDENTS64      = 217, ///< __NR_getdents64
+  SYSCALL_SET_TID_ADDRESS = 218, ///< __NR_set_tid_address
+  SYSCALL_SEMTIMEDOP      = 220, ///< __NR_semtimedop
   SYSCALL_FADVISE64       = 221, ///< __NR_fadvise64
   SYSCALL_TIMER_CREATE    = 222, ///< __NR_timer_create
   SYSCALL_TIMER_SETTIME   = 223, ///< __NR_timer_settime
   SYSCALL_TIMER_GETTIME   = 224, ///< __NR_timer_gettime
   SYSCALL_TIMER_GETOVERRUN= 225, ///< __NR_timer_getoverrun
   SYSCALL_TIMER_DELETE    = 226, ///< __NR_timer_delete
-  SYSCALL_SET_TID_ADDRESS = 218, ///< __NR_set_tid_address
-  SYSCALL_SEMTIMEDOP      = 220, ///< __NR_semtimedop
   SYSCALL_CLOCK_GETTIME   = 228, ///< __NR_clock_gettime
   SYSCALL_CLOCK_GETRES    = 229, ///< __NR_clock_getres
+  SYSCALL_CLOCK_NANOSLEEP = 230, ///< __NR_clock_nanosleep
   SYSCALL_EXIT_GROUP      = 231, ///< __NR_exit_group
   SYSCALL_EPOLL_WAIT      = 232, ///< __NR_epoll_wait
   SYSCALL_EPOLL_CTL       = 233, ///< __NR_epoll_ctl
@@ -166,6 +172,7 @@ enum Syscalls {
   SYSCALL_FACCESSAT       = 269, ///< __NR_faccessat
   SYSCALL_PPOLL           = 271, ///< __NR_ppoll
   SYSCALL_SET_ROBUST_LIST = 273, ///< __NR_set_robust_list
+  SYSCALL_GET_ROBUST_LIST = 274, ///< __NR_get_robust_list
   SYSCALL_EPOLL_PWAIT     = 281, ///< __NR_epoll_pwait
   SYSCALL_TIMERFD_CREATE  = 283, ///< __NR_timerfd_create
   SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
@@ -174,6 +181,8 @@ enum Syscalls {
   SYSCALL_INOTIFY_INIT1   = 294, ///< __NR_inotify_init1
   SYSCALL_PRLIMIT64       = 302, ///< __NR_prlimit64
   SYSCALL_SENDMMSG        = 307, ///< __NR_sendmmsg
+  SYSCALL_SCHED_SETATTR   = 314, ///< __NR_sched_setattr
+  SYSCALL_SCHED_GETATTR   = 315, ///< __NR_sched_getattr
   SYSCALL_GETRANDOM       = 318, ///< __NR_getrandom
   SYSCALL_MEMFD_CREATE    = 319, ///< __NR_memfd_create
   SYSCALL_MLOCK2          = 325, ///< __NR_mlock2

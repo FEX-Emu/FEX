@@ -165,6 +165,19 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Getdents(FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count) {
+#ifdef SYS_getdents
+    uint64_t Result = syscall(SYS_getdents,
+      static_cast<uint64_t>(fd),
+      reinterpret_cast<uint64_t>(dirp),
+      static_cast<uint64_t>(count));
+    SYSCALL_ERRNO();
+#else
+    // XXX: Emulate
+    return -EFAULT;
+#endif
+  }
+
   uint64_t Fchmod(FEXCore::Core::InternalThreadState *Thread, int fd, int mode) {
     uint64_t Result = ::fchmod(fd, mode);
     SYSCALL_ERRNO();
