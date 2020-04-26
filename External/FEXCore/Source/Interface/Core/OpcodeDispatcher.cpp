@@ -2000,6 +2000,32 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(Zero);
 }
 
+template<OpDispatchBuilder::Segment Seg>
+void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src{};
+  if (Seg == Segment_FS) {
+    Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, fs), GPRClass);
+  }
+  else {
+    Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gs), GPRClass);
+  }
+
+  StoreResult(GPRClass, Op, Src, -1);
+}
+
+template<OpDispatchBuilder::Segment Seg>
+void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  if (Seg == Segment_FS) {
+    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, fs), Src);
+  }
+  else {
+    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gs), Src);
+  }
+}
+
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
   auto Counter = _CycleCounter();
   auto CounterLow = _Bfe(32, 0, Counter);
@@ -6117,6 +6143,10 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::NOPOp}, //MFENCE
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::NOPOp}, //SFENCE
 
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_FS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_GS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 2), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment_FS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 3), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment_GS>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},
 
