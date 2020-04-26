@@ -312,6 +312,10 @@ public:
   void PMULHW(OpcodeArgs);
 
   void MOVBEOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void HADDP(OpcodeArgs);
+  template<size_t ElementSize>
+  void HSUBP(OpcodeArgs);
 
   void UnimplementedOp(OpcodeArgs);
 

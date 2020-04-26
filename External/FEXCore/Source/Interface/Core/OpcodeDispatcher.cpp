@@ -5303,6 +5303,46 @@ void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, 1);
 }
 
+template<size_t ElementSize>
+void OpDispatchBuilder::HADDP(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode *Res = _VFAddP(Size, ElementSize, Dest, Src);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::HSUBP(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  // This is a bit complicated since AArch64 doesn't support a pairwise subtract
+  auto Dest_Neg = _VFNeg(Size, ElementSize, Dest);
+  auto Src_Neg = _VFNeg(Size, ElementSize, Src);
+
+  // Now we need to swizzle the values
+  OrderedNode *Swizzle_Dest = Dest;
+  OrderedNode *Swizzle_Src = Src;
+
+  if (ElementSize == 4) {
+    Swizzle_Dest = _VInsElement(Size, ElementSize, 0, 0, Swizzle_Dest, Dest_Neg);
+    Swizzle_Dest = _VInsElement(Size, ElementSize, 2, 2, Swizzle_Dest, Dest_Neg);
+
+    Swizzle_Src = _VInsElement(Size, ElementSize, 0, 0, Swizzle_Src, Src_Neg);
+    Swizzle_Src = _VInsElement(Size, ElementSize, 2, 2, Swizzle_Src, Src_Neg);
+  }
+  else {
+    Swizzle_Dest = _VInsElement(Size, ElementSize, 0, 0, Swizzle_Dest, Dest_Neg);
+    Swizzle_Src = _VInsElement(Size, ElementSize, 0, 0, Swizzle_Src, Src_Neg);
+  }
+
+  OrderedNode *Res = _VFAddP(Size, ElementSize, Swizzle_Dest, Swizzle_Src);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
@@ -5746,6 +5786,8 @@ void InstallOpcodeHandlers() {
     {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 8>},
     {0x5F, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, true, true>},
+    {0x7C, 1, &OpDispatchBuilder::HADDP<4>},
+    {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
     {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, true>},
     {0xF0, 1, &OpDispatchBuilder::MOVVectorOp},
@@ -5798,6 +5840,8 @@ void InstallOpcodeHandlers() {
     {0x75, 1, &OpDispatchBuilder::PCMPEQOp<2>},
     {0x76, 1, &OpDispatchBuilder::PCMPEQOp<4>},
     {0x78, 1, nullptr}, // GROUP 17
+    {0x7C, 1, &OpDispatchBuilder::HADDP<8>},
+    {0x7D, 1, &OpDispatchBuilder::HSUBP<8>},
     {0x7E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, false>},
