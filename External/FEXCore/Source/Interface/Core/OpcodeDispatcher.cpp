@@ -5435,6 +5435,7 @@ void InstallOpcodeHandlers() {
 
     {0x98, 1, &OpDispatchBuilder::CDQOp},
     {0x99, 1, &OpDispatchBuilder::CQOOp},
+    {0x9B, 1, &OpDispatchBuilder::NOPOp},
     {0x9C, 1, &OpDispatchBuilder::PUSHFOp},
     {0x9D, 1, &OpDispatchBuilder::POPFOp},
     {0x9E, 1, &OpDispatchBuilder::SAHFOp},
