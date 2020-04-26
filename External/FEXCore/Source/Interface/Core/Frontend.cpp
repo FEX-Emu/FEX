@@ -841,7 +841,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
       DecodeInst->Flags |= DecodeFlags::FLAG_FS_PREFIX;
     break;
     case 0x65: // GS prefix
-      DecodeInst->Flags |= DecodeFlags::FLAG_FS_PREFIX;
+      DecodeInst->Flags |= DecodeFlags::FLAG_GS_PREFIX;
     break;
     default: { // Default base table
       if (NormalOpHeader(&FEXCore::X86Tables::BaseOps[Op], Op)) {
