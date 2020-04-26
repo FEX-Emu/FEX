@@ -527,6 +527,69 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
+  BlockSetRIP = true;
+  uint32_t Size = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
+
+  auto ZeroConst = _Constant(0);
+  IRPair<IROp_Header> SrcCond;
+
+  IRPair<IROp_Constant> TakeBranch;
+  IRPair<IROp_Constant> DoNotTakeBranch;
+  TakeBranch = _Constant(1);
+  DoNotTakeBranch = _Constant(0);
+
+  LogMan::Throw::A(Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].TypeLiteral.Literal;
+
+  OrderedNode *CondReg = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+  SrcCond = _Select(FEXCore::IR::COND_EQ,
+          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch);
+
+  auto TrueBlock = JumpTargets.find(Target);
+  auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
+
+  {
+    auto CondJump = _CondJump(SrcCond);
+
+    // Taking branch block
+    if (TrueBlock != JumpTargets.end()) {
+      SetTrueJumpTarget(CondJump, TrueBlock->second.BlockEntry);
+    }
+    else {
+      // Make sure to start a new block after ending this one
+      auto JumpTarget = CreateNewCodeBlock();
+      SetTrueJumpTarget(CondJump, JumpTarget);
+      SetCurrentCodeBlock(JumpTarget);
+
+      auto NewRIP = _Constant(Target);
+
+      // Store the new RIP
+      _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
+      _ExitFunction();
+    }
+
+    // Failure to take branch
+    if (FalseBlock != JumpTargets.end()) {
+      SetFalseJumpTarget(CondJump, FalseBlock->second.BlockEntry);
+    }
+    else {
+      // Make sure to start a new block after ending this one
+      auto JumpTarget = CreateNewCodeBlock();
+      SetFalseJumpTarget(CondJump, JumpTarget);
+      SetCurrentCodeBlock(JumpTarget);
+
+      // Leave block
+      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+
+      // Store the new RIP
+      _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), RIPTargetConst);
+      _ExitFunction();
+    }
+  }
+}
+
 void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
   BlockSetRIP = true;
 
@@ -5450,6 +5513,7 @@ void InstallOpcodeHandlers() {
     {0xC2, 2, &OpDispatchBuilder::RETOp},
     {0xC9, 1, &OpDispatchBuilder::LEAVEOp},
     {0xCC, 2, &OpDispatchBuilder::INTOp},
+    {0xE3, 1, &OpDispatchBuilder::CondJUMPRCXOp},
     {0xE8, 1, &OpDispatchBuilder::CALLOp},
     {0xE9, 1, &OpDispatchBuilder::JUMPOp},
     {0xEB, 1, &OpDispatchBuilder::JUMPOp},
