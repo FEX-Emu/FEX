@@ -590,6 +590,82 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   }
 }
 
+template<bool CheckZF, bool ZFTrue>
+void OpDispatchBuilder::LoopOp(OpcodeArgs) {
+  BlockSetRIP = true;
+  auto ZeroConst = _Constant(0);
+  IRPair<IROp_Header> SrcCond;
+
+  IRPair<IROp_Constant> TakeBranch = _Constant(1);
+  IRPair<IROp_Constant> DoNotTakeBranch = _Constant(0);
+
+  uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
+
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].TypeLiteral.Literal;
+
+  OrderedNode *CondReg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  CondReg = _Sub(CondReg, _Constant(SrcSize, 1));
+  StoreResult(GPRClass, Op, Op->Src[0], CondReg, -1);
+
+  ShouldDump = true;
+  SrcCond = _Select(FEXCore::IR::COND_NEQ,
+          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch);
+
+  // If LOOPE then jumps to target if RCX != 0 && ZF == 1
+  // If LOOPNE then jumps to target if RCX != 0 && ZF == 0
+  if (CheckZF) {
+    OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+    if (!ZFTrue) {
+      ZF = _Xor(ZF, _Constant(1));
+    }
+    SrcCond = _And(SrcCond, ZF);
+  }
+
+  auto TrueBlock = JumpTargets.find(Target);
+  auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
+
+  {
+    auto CondJump = _CondJump(SrcCond);
+
+    // Taking branch block
+    if (TrueBlock != JumpTargets.end()) {
+      SetTrueJumpTarget(CondJump, TrueBlock->second.BlockEntry);
+    }
+    else {
+      // Make sure to start a new block after ending this one
+      auto JumpTarget = CreateNewCodeBlock();
+      SetTrueJumpTarget(CondJump, JumpTarget);
+      SetCurrentCodeBlock(JumpTarget);
+
+      auto NewRIP = _Constant(Target);
+
+      // Store the new RIP
+      _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
+      _ExitFunction();
+    }
+
+    // Failure to take branch
+    if (FalseBlock != JumpTargets.end()) {
+      SetFalseJumpTarget(CondJump, FalseBlock->second.BlockEntry);
+    }
+    else {
+      // Make sure to start a new block after ending this one
+      auto JumpTarget = CreateNewCodeBlock();
+      SetFalseJumpTarget(CondJump, JumpTarget);
+      SetCurrentCodeBlock(JumpTarget);
+
+      // Leave block
+      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+
+      // Store the new RIP
+      _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), RIPTargetConst);
+      _ExitFunction();
+    }
+  }
+}
+
 void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
   BlockSetRIP = true;
 
@@ -5563,6 +5639,9 @@ void InstallOpcodeHandlers() {
     {0xC2, 2, &OpDispatchBuilder::RETOp},
     {0xC9, 1, &OpDispatchBuilder::LEAVEOp},
     {0xCC, 2, &OpDispatchBuilder::INTOp},
+    {0xE0, 1, &OpDispatchBuilder::LoopOp<true, false>},
+    {0xE1, 1, &OpDispatchBuilder::LoopOp<true, true>},
+    {0xE2, 1, &OpDispatchBuilder::LoopOp<false, false>},
     {0xE3, 1, &OpDispatchBuilder::CondJUMPRCXOp},
     {0xE8, 1, &OpDispatchBuilder::CALLOp},
     {0xE9, 1, &OpDispatchBuilder::JUMPOp},

@@ -184,9 +184,9 @@ void InitializeBaseTables() {
     {0xD4, 3, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0, nullptr}},
     {0xD7, 1, X86InstInfo{"XLAT",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                                                           0, nullptr}},
 
-    {0xE0, 1, X86InstInfo{"LOOPNE", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT ,                             1, nullptr}},
-    {0xE1, 1, X86InstInfo{"LOOPE",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT ,                             1, nullptr}},
-    {0xE2, 1, X86InstInfo{"LOOP",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT ,                             1, nullptr}},
+    {0xE0, 1, X86InstInfo{"LOOPNE", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_SF_SRC_RCX,                             1, nullptr}},
+    {0xE1, 1, X86InstInfo{"LOOPE",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_SF_SRC_RCX,                             1, nullptr}},
+    {0xE2, 1, X86InstInfo{"LOOP",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_SF_SRC_RCX,                             1, nullptr}},
     {0xE3, 1, X86InstInfo{"JrCXZ",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT ,                             1, nullptr}},
 
     // Should just throw GP

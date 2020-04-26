@@ -119,6 +119,8 @@ public:
   void CALLAbsoluteOp(OpcodeArgs);
   void CondJUMPOp(OpcodeArgs);
   void CondJUMPRCXOp(OpcodeArgs);
+  template<bool CheckZF, bool ZFTrue>
+  void LoopOp(OpcodeArgs);
   void JUMPOp(OpcodeArgs);
   void JUMPAbsoluteOp(OpcodeArgs);
   template<uint32_t SrcIndex>
