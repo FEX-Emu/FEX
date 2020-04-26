@@ -622,6 +622,48 @@ private:
     return Result;
   }
 
+  llvm::Value *VFADDP(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
+#ifdef _M_X86_64
+    // Will generate VPHADD
+    uint8_t NumElements = RegisterSize / ElementSize;
+    std::vector<llvm::Value*> Values;
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Values.emplace_back(JITState.IRBuilder->CreateExtractElement(ArgLower, i));;
+    }
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Values.emplace_back(JITState.IRBuilder->CreateExtractElement(ArgUpper, i));;
+    }
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Values[i] = JITState.IRBuilder->CreateFAdd(Values[i*2], Values[i*2+1]);
+    }
+    // Cast to the type we want
+    llvm::Value *Result = llvm::UndefValue::get(ArgLower->getType());
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Result = JITState.IRBuilder->CreateInsertElement(Result, Values[i], i);
+    }
+#elif _M_ARM_64
+    // AArch64 doesn't seem to generate addp through the normal method
+    std::vector<llvm::Type*> ArgTypes = {
+      ArgLower->getType(),
+    };
+
+    std::vector<llvm::Value*> Args = {
+      ArgLower, ArgUpper,
+    };
+
+    auto Result = JITState.IRBuilder->CreateIntrinsic(llvm::Intrinsic::aarch64_neon_faddp, ArgTypes, Args);
+#else
+    static_assert(false, "Unhandle intrinsic");
+#endif
+
+    return Result;
+  }
+
+
   llvm::CallInst *FSHL(llvm::Value *Val, llvm::Value *Val2, llvm::Value *Amt) {
     std::vector<llvm::Type*> ArgTypes = {
       Val->getType(),
@@ -2850,6 +2892,18 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       break;
     }
 
+    case IR::OP_VFNEG: {
+      auto Op = IROp->C<IR::IROp_VFNeg>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, OpSize, Op->Header.ElementSize);
+
+      auto Result = JITState.IRBuilder->CreateFNeg(Src1);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
     case IR::OP_VNOT: {
       auto Op = IROp->C<IR::IROp_VNot>();
       auto Src1 = GetSrc(Op->Header.Args[0]);
@@ -2875,6 +2929,20 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
 
       SetDest(*WrapperOp, Result);
     break;
+    }
+    case IR::OP_VFADDP: {
+      auto Op = IROp->C<IR::IROp_VFAddP>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, false, OpSize, Op->Header.ElementSize);
+      Src2 = CastVectorToType(Src2, false, OpSize, Op->Header.ElementSize);
+
+      auto Result = VFADDP(Src1, Src2, OpSize, Op->Header.ElementSize);
+
+      SetDest(*WrapperOp, Result);
+      break;
     }
     case IR::OP_VFSUB: {
       auto Op = IROp->C<IR::IROp_VFSub>();
