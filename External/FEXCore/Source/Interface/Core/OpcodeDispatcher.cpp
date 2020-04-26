@@ -2000,6 +2000,23 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(Zero);
 }
 
+void OpDispatchBuilder::XLATOp(OpcodeArgs) {
+  OrderedNode *Src = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), GPRClass);
+  OrderedNode *Offset = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
+    Src = _Add(Src, _LoadContext(8, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
+  }
+  else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+    Src = _Add(Src, _LoadContext(8, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
+  }
+  Src = _Add(Src, Offset);
+
+  auto Res = _LoadMem(GPRClass, 1, Src, 1);
+
+  _StoreContext(GPRClass, 1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Res);
+}
+
 template<OpDispatchBuilder::Segment Seg>
 void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -5665,6 +5682,7 @@ void InstallOpcodeHandlers() {
     {0xC2, 2, &OpDispatchBuilder::RETOp},
     {0xC9, 1, &OpDispatchBuilder::LEAVEOp},
     {0xCC, 2, &OpDispatchBuilder::INTOp},
+    {0xD7, 2, &OpDispatchBuilder::XLATOp},
     {0xE0, 1, &OpDispatchBuilder::LoopOp<true, false>},
     {0xE1, 1, &OpDispatchBuilder::LoopOp<true, true>},
     {0xE2, 1, &OpDispatchBuilder::LoopOp<false, false>},

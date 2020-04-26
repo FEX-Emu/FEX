@@ -193,6 +193,7 @@ public:
   void NOTOp(OpcodeArgs);
   void XADDOp(OpcodeArgs);
   void PopcountOp(OpcodeArgs);
+  void XLATOp(OpcodeArgs);
 
   enum Segment {
     Segment_FS,
