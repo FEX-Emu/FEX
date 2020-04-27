@@ -308,6 +308,10 @@ namespace FEX::HarnessHelper {
       return STACK_SIZE;
     }
 
+    void SetMemoryBase(uint64_t Base, bool Unified) override {
+      MemoryBase = Base;
+    }
+
     uint64_t SetupStack([[maybe_unused]] void *HostPtr, uint64_t GuestPtr) const override {
       return GuestPtr + STACK_SIZE - 16;
     }
@@ -316,50 +320,44 @@ namespace FEX::HarnessHelper {
       return RIP;
     }
 
-    MemoryLayout GetLayout() const override {
-      uint64_t CodeSize = RawFile.size();
-      CodeSize = AlignUp(CodeSize, PAGE_SIZE);
-      return std::make_tuple(CODE_START_RANGE, CODE_START_RANGE + CodeSize, CodeSize);
-    }
-
-    void MapMemoryRegion(std::function<void*(uint64_t, uint64_t)> Mapper) override {
+    void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
       bool LimitedSize = true;
       if (LimitedSize) {
-        Mapper(0xe000'0000, PAGE_SIZE * 10);
+        Mapper(0xe000'0000, PAGE_SIZE * 10, true, true);
 
         // SIB8
         // We test [-128, -126] (Bottom)
         // We test [-8, 8] (Middle)
         // We test [120, 127] (Top)
         // Can fit in two pages
-        Mapper(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2);
+        Mapper(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, true);
 
         // SIB32 Bottom
         // We test INT_MIN, INT_MIN + 8
-        Mapper(0x2'0000'0000, PAGE_SIZE);
+        Mapper(0x2'0000'0000, PAGE_SIZE, true, true);
         // SIB32 Middle
         // We test -8 + 8
-        Mapper(0x2'8000'0000 - PAGE_SIZE, PAGE_SIZE * 2);
+        Mapper(0x2'8000'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, true);
 
         // SIB32 Top
         // We Test INT_MAX - 8, INT_MAX
-        Mapper(0x3'0000'0000 - PAGE_SIZE, PAGE_SIZE * 2);
+        Mapper(0x3'0000'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, true);
       }
       else {
         // This is scratch memory location and SIB8 location
-        Mapper(0xe000'0000, 0x1000'0000);
+        Mapper(0xe000'0000, 0x1000'0000, true, true);
         // This is for large SIB 32bit displacement testing
-        Mapper(0x2'0000'0000, 0x1'0000'1000);
+        Mapper(0x2'0000'0000, 0x1'0000'1000, true, true);
       }
 
       // Map in the memory region for the test file
-      Mapper(CODE_START_PAGE, AlignUp(RawFile.size(), PAGE_SIZE));
+      Mapper(CODE_START_PAGE, AlignUp(RawFile.size(), PAGE_SIZE), true, true);
     }
 
     void LoadMemory(MemoryWriter Writer) override {
       // Memory base here starts at the start location we passed back with GetLayout()
       // This will write at [CODE_START_RANGE + 0, RawFile.size() )
-      Writer(&RawFile.at(0), CODE_START_RANGE, RawFile.size());
+      Writer(&RawFile.at(0), MemoryBase + CODE_START_RANGE, RawFile.size());
     }
 
     uint64_t GetFinalRIP() override { return CODE_START_RANGE + RawFile.size(); }
@@ -374,6 +372,7 @@ namespace FEX::HarnessHelper {
     constexpr static uint64_t CODE_START_PAGE = 0x0'1000;
     constexpr static uint64_t CODE_START_RANGE = CODE_START_PAGE + 0x1;
     constexpr static uint64_t RIP = CODE_START_RANGE;
+    uint64_t MemoryBase{};
 
     std::vector<char> RawFile;
     ConfigLoader Config;
@@ -438,7 +437,7 @@ public:
   }
 
   virtual void SetMemoryBase(uint64_t Base, bool Unified) override {
-    if (Unified) {
+    if (File.WasDynamic() && Unified) {
       MemoryBase = Base;
     }
     else {
@@ -563,19 +562,18 @@ public:
   }
 
   uint64_t DefaultRIP() const override {
-    return DB.DefaultRIP();
+    return MemoryBase + DB.DefaultRIP();
   }
 
-  void MapMemoryRegion(std::function<void*(uint64_t, uint64_t)> Mapper) override {
+  void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
     DB.MapMemoryRegions(Mapper);
   }
 
-  MemoryLayout GetLayout() const override {
-    return DB.GetFileLayout();
-  }
-
   void LoadMemory(MemoryWriter Writer) override {
-    DB.WriteLoadableSections(Writer);
+    auto ELFLoaderWrapper = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
+      Writer(Data, MemoryBase + Addr, Size);
+    };
+    DB.WriteLoadableSections(ELFLoaderWrapper);
   }
 
   char const *FindSymbolNameInRange(uint64_t Address) override {

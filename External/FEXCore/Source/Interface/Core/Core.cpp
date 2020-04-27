@@ -256,17 +256,17 @@ namespace FEXCore::Context {
     uintptr_t MemoryBase = MemoryMapper.GetBaseOffset<uintptr_t>(0);
     Loader->SetMemoryBase(MemoryBase, Config.UnifiedMemory);
 
-    auto MemoryMapperFunction = [&](uint64_t Base, uint64_t Size) -> void* {
+    auto MemoryMapperFunction = [&](uint64_t Base, uint64_t Size, bool Fixed, bool RelativeToBase) -> void* {
       Thread->BlockCache->HintUsedRange(Base, Base);
-      return MapRegion(Thread, Base, Size, true);
+      return MapRegion(Thread, Base, Size, Fixed, RelativeToBase);
     };
 
     Loader->MapMemoryRegion(MemoryMapperFunction);
 
     // Set up all of our memory mappings
-    MapRegion(Thread, FS_OFFSET, FS_SIZE, true);
+    MapRegion(Thread, FS_OFFSET, FS_SIZE, true, false);
 
-    void *StackPointer = MapRegion(Thread, STACK_OFFSET, Loader->StackSize(), true);
+    void *StackPointer = MapRegion(Thread, STACK_OFFSET, Loader->StackSize(), true, false);
 
     uint64_t GuestStack = STACK_OFFSET;
     if (Config.UnifiedMemory) {
@@ -277,24 +277,20 @@ namespace FEXCore::Context {
     // Now let the code loader setup memory
     auto MemoryWriterFunction = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
       // Writes the machine code to be emulated in to memory
-      memcpy(reinterpret_cast<void*>(MemoryBase + Addr), Data, Size);
+      memcpy(reinterpret_cast<void*>(Addr), Data, Size);
     };
 
     Loader->LoadMemory(MemoryWriterFunction);
     Loader->GetInitLocations(&InitLocations);
 
     auto TLSSlotWriter = [&](void const *Data, uint64_t Size) -> void {
-      memcpy(reinterpret_cast<void*>(MemoryBase + FS_OFFSET), Data, Size);
+      memcpy(reinterpret_cast<void*>(FS_OFFSET), Data, Size);
     };
 
     // Offset next thread's FS_OFFSET by slot size
     uint64_t SlotSize = Loader->InitializeThreadSlot(TLSSlotWriter);
     uint64_t RIP = Loader->DefaultRIP();
 
-    if (Config.UnifiedMemory) {
-      RIP += MemoryBase;
-      Thread->State.State.fs += MemoryBase;
-    }
     Thread->State.State.rip = StartingRIP = RIP;
 
     InitializeThread(Thread);
@@ -847,8 +843,8 @@ namespace FEXCore::Context {
     Thread->State.State.rip = RIPBackup;
   }
 
-  void *Context::MapRegion(FEXCore::Core::InternalThreadState *Thread, uint64_t Offset, uint64_t Size, bool Fixed) {
-    void *Ptr = MemoryMapper.MapRegion(Offset, Size, Fixed);
+  void *Context::MapRegion(FEXCore::Core::InternalThreadState *Thread, uint64_t Offset, uint64_t Size, bool Fixed, bool RelativeToBase) {
+    void *Ptr = MemoryMapper.MapRegion(Offset, Size, Fixed, RelativeToBase);
     Thread->CPUBackend->MapRegion(Ptr, Offset, Size);
     Thread->FallbackBackend->MapRegion(Ptr, Offset, Size);
     return Ptr;

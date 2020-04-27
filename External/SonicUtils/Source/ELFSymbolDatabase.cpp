@@ -213,11 +213,23 @@ void ELFSymbolDatabase::FillSymbols() {
 
 }
 
-void ELFSymbolDatabase::MapMemoryRegions(std::function<void*(uint64_t, uint64_t)> Mapper) {
-  LocalInfo.ELFBase = Mapper(std::get<0>(LocalInfo.CustomLayout), std::get<2>(LocalInfo.CustomLayout));
+void ELFSymbolDatabase::MapMemoryRegions(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) {
+  // Need some special handling for the first 0x1'0000
+  uint64_t ELFBase = std::get<0>(LocalInfo.CustomLayout);
+  uint64_t ELFSize = std::get<2>(LocalInfo.CustomLayout);
+  if (ELFBase == 0 && !LocalInfo.Container->WasDynamic()) {
+    // Some special handling of non-dynamic applications that are mapped at 0
+    ELFBase = 0x1'0000;
+    ELFSize -= 0x1'0000;
+    LocalInfo.ELFBase = Mapper(ELFBase, ELFSize, true, false);
+    LocalInfo.ELFBase = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(LocalInfo.ELFBase) - 0x1'0000);
+  }
+  else {
+    LocalInfo.ELFBase = Mapper(ELFBase, ELFSize, true, false);
+  }
 
   for (auto &ELF : DynamicELFInfo) {
-    ELF->ELFBase = Mapper(std::get<0>(ELF->CustomLayout), std::get<2>(ELF->CustomLayout));
+    ELF->ELFBase = Mapper(std::get<0>(ELF->CustomLayout), std::get<2>(ELF->CustomLayout), true, false);
   }
 }
 

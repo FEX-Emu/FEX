@@ -39,16 +39,10 @@ uint8_t data[] = {
       return RIP;
     }
 
-    MemoryLayout GetLayout() const override {
-      uint64_t CodeSize = 0x500;
-      CodeSize = AlignUp(CodeSize, PAGE_SIZE);
-      return std::make_tuple(0, CodeSize, CodeSize);
-    }
-
-    void MapMemoryRegion(std::function<void*(uint64_t, uint64_t)> Mapper) override {
+    void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
       // XXX: Pull this from the config
-      Mapper(0xe000'0000, 0x1000'0000);
-      Mapper(0x2'0000'0000, 0x1'0000'1000);
+      Mapper(0xe000'0000, 0x1000'0000, true, true);
+      Mapper(0x2'0000'0000, 0x1'0000'1000, true, true);
     }
 
     void LoadMemory(MemoryWriter Writer) override {

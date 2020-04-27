@@ -44,16 +44,6 @@ public:
    */
   virtual void SetMemoryBase(uint64_t Base, bool Unified) {}
 
-  using MemoryLayout = std::tuple<uint64_t, uint64_t, uint64_t>;
-  /**
-   * @brief Gets the default memory layout of the memory object being loaded
-   *
-   * This will be mapped in to the guest memory space automatically
-   *
-   * @return A MemoryLayout object describing the layout of the region
-   */
-  virtual MemoryLayout GetLayout() const = 0;
-
   /**
    * @brief Allows the loader to map memory regions that it needs
    *
@@ -61,7 +51,7 @@ public:
    *
    * @param Mapper Returns the host facing pointer for memory setup if the codfe loader needs to do things to it
    */
-  virtual void MapMemoryRegion(std::function<void*(uint64_t, uint64_t)> Mapper) {}
+  virtual void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) {}
 
   /**
    * @brief Memory writer function for loading code in to guest memory
