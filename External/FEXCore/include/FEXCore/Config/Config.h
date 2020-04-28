@@ -13,6 +13,7 @@ namespace FEXCore::Config {
     CONFIG_GDBSERVER,
     CONFIG_ROOTFSPATH,
     CONFIG_UNIFIED_MEMORY,
+    CONFIG_IS64BIT_MODE,
   };
 
   enum ConfigCore {
