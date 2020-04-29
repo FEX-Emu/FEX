@@ -314,6 +314,10 @@ public:
   void PMULHW(OpcodeArgs);
 
   void MOVBEOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void HADDP(OpcodeArgs);
+  template<size_t ElementSize>
+  void HSUBP(OpcodeArgs);
 
   void UnimplementedOp(OpcodeArgs);
 
@@ -435,6 +439,12 @@ public:
   IRPair<IROp_VCMPGT> _VCMPGT(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VCMPGT(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VFAdd> _VFAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFAdd(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VFAddP> _VFAddP(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VFAddP(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VFCMPEQ> _VFCMPEQ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VFCMPEQ(ssa0, ssa1, RegisterSize, ElementSize);
   }
@@ -506,6 +516,9 @@ public:
   }
   IRPair<IROp_VNeg> _VNeg(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     return _VNeg(ssa0, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VFNeg> _VFNeg(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VFNeg(ssa0, RegisterSize, ElementSize);
   }
   IRPair<IROp_VNot> _VNot(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
     return _VNot(ssa0, RegisterSize, ElementSize);

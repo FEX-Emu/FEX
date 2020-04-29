@@ -2379,6 +2379,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         mov(GetDst(Node), VTMP1);
         break;
       }
+      case IR::OP_VFNEG: {
+        auto Op = IROp->C<IR::IROp_VFNeg>();
+        switch (Op->Header.ElementSize) {
+        case 4:
+          fneg(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          break;
+        case 8:
+          fneg(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          break;
+        default: LogMan::Msg::A("Unsupported Not size: %d", OpSize);
+        }
+        break;
+      }
       case IR::OP_VNOT: {
         auto Op = IROp->C<IR::IROp_VNot>();
         mvn(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
@@ -2689,6 +2702,21 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             }
             default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
           }
+        }
+        break;
+      }
+      case IR::OP_VFADDP: {
+        auto Op = IROp->C<IR::IROp_VFAddP>();
+        switch (Op->Header.ElementSize) {
+          case 4: {
+            faddp(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+          break;
+          }
+          case 8: {
+            faddp(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
         }
         break;
       }

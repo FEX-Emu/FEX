@@ -898,6 +898,19 @@
       ]
     },
 
+    "VFAddP": {
+      "Desc": "Does a horizontal pairwise add of elements across the two source vectors with float element types",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "2",
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VFSub": {
       "HasDest": true,
       "DestClass": "FPR",
@@ -995,6 +1008,19 @@
     },
 
     "VNeg": {
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VFNeg": {
+      "Desc": ["Does a floating point sign negation"],
       "HasDest": true,
       "DestClass": "FPR",
       "DestSize": "RegisterSize",

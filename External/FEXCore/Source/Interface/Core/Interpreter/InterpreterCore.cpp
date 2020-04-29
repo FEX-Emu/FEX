@@ -2151,7 +2151,22 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }                                                 \
             break;                                            \
             }
+          case IR::OP_VFNEG: {
+            auto Op = IROp->C<IR::IROp_VFNeg>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
 
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func = [](auto a) { return -a; };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_1SRC_OP(4, float, Func)
+              DO_VECTOR_1SRC_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
           case IR::OP_VUSHRI: {
             auto Op = IROp->C<IR::IROp_VUShrI>();
             void *Src = GetSrc<void*>(Op->Header.Args[0]);
@@ -2370,6 +2385,23 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, Tmp, OpSize);
             break;
           }
+          case IR::OP_VFADDP: {
+            auto Op = IROp->C<IR::IROp_VFAddP>();
+            void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = (OpSize / Op->Header.ElementSize) / 2;
+
+            auto Func = [](auto a, auto b) { return a + b; };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_PAIR_OP(4, float, Func)
+              DO_VECTOR_PAIR_OP(8, double, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
           case IR::OP_VFSUB: {
             auto Op = IROp->C<IR::IROp_VFSub>();
             void *Src1 = GetSrc<void*>(Op->Header.Args[0]);
@@ -2393,7 +2425,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             void *Src2 = GetSrc<void*>(Op->Header.Args[1]);
             uint8_t Tmp[16];
 
-            uint8_t Elements = OpSize / Op->Header.ElementSize;
+            uint8_t Elements = (OpSize / Op->Header.ElementSize) / 2;
 
             auto Func = [](auto a, auto b) { return a + b; };
             switch (Op->Header.ElementSize) {
