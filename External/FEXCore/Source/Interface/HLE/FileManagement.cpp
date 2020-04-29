@@ -33,8 +33,7 @@ std::string FileManager::GetEmulatedPath(const char *pathname) {
 }
 
 uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[maybe_unused]] uint32_t mode) {
-  LogMan::Msg::I("XXX: Trying to open: '%s'", pathname);
-  return 0;
+  return ::open(pathname, flags, mode);
 }
 
 uint64_t FileManager::Close(int fd) {
