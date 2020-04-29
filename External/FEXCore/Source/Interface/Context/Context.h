@@ -131,6 +131,7 @@ namespace FEXCore::Context {
   protected:
     IR::RegisterAllocationPass *GetRegisterAllocatorPass();
     bool HasRegisterAllocationPass() const { return RAPass != nullptr; }
+    void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
   private:
     void WaitForIdle();

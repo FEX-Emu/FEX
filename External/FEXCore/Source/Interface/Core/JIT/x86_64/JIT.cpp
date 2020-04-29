@@ -58,6 +58,10 @@ public:
     DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread));
   }
 
+  void ClearCache() override {
+    reset();
+  }
+
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
@@ -110,10 +114,11 @@ private:
 #ifdef BLOCKSTATS
   bool GetSamplingData {true};
 #endif
+  static constexpr uint32_t MAX_CODE_SIZE = 1024 * 1024 * 32;
 };
 
 JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : CodeGenerator(1024 * 1024 * 32)
+  : CodeGenerator(MAX_CODE_SIZE)
   , CTX {ctx}
   , ThreadState {Thread} {
   Stack.resize(9000 * 16 * 64);
@@ -220,11 +225,23 @@ Xbyak::Xmm JITCore::GetDst(uint32_t Node) {
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
   JumpTargets.clear();
   CurrentIR = IR;
-
+  uint32_t SSACount = CurrentIR->GetSSACount();
   uintptr_t ListBegin = CurrentIR->GetListData();
   uintptr_t DataBegin = CurrentIR->GetData();
 
-  uint32_t SSACount = CurrentIR->GetSSACount();
+  auto HeaderIterator = CurrentIR->begin();
+  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
+  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
+  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+
+  // Fairly excessive buffer range to make sure we don't overflow
+  uint32_t BufferRange = SSACount * 16;
+  if ((getSize() + BufferRange) > MAX_CODE_SIZE) {
+    LogMan::Msg::D("Gotta clear code cache: 0x%lx is too close to 0x%lx", getSize(), MAX_CODE_SIZE);
+    ThreadState->CTX->ClearCodeCache(ThreadState, HeaderOp->Entry);
+  }
+
   uint64_t ListStackSize = SSACount * 16;
   if (ListStackSize > Stack.size()) {
     Stack.resize(ListStackSize);
@@ -252,12 +269,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   else {
     sub(rsp, 8);
   }
-
-  auto HeaderIterator = CurrentIR->begin();
-  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
 #ifdef BLOCKSTATS
   BlockSamplingData::BlockData *SamplingData = CTX->BlockData->GetBlockData(HeaderOp->Entry);

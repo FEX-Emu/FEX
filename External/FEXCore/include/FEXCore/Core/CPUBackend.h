@@ -73,6 +73,8 @@ class LLVMCore;
     virtual bool HasCustomDispatch() const { return false; }
 
     virtual void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) {}
+
+    virtual void ClearCache() {}
   };
 
 }
