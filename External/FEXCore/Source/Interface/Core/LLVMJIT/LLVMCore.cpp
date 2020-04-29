@@ -1538,7 +1538,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_Syscall>();
 
       std::vector<llvm::Value*> Args;
-      Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(CTX->SyscallHandler)));
+      Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(CTX->SyscallHandler.get())));
       // We need to pull this argument from the ExecuteCodeFunction
       Args.emplace_back(Func->args().begin());
 

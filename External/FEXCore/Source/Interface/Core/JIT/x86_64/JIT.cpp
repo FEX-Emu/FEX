@@ -1967,7 +1967,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
 
           mov(rsi, rdi); // Move thread in to rsi
-          mov(rdi, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
+          mov(rdi, reinterpret_cast<uint64_t>(CTX->SyscallHandler.get()));
           mov(rdx, rsp);
 
           mov(rax, reinterpret_cast<uint64_t>(FEXCore::HandleSyscall));
