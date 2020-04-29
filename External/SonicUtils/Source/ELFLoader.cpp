@@ -18,7 +18,6 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
     // If we we are dynamic application then we have an interpreter program header
     // We need to load that ELF instead if it exists
     // We are no longer dynamic since we are executing the interpreter
-    DynamicProgram = false;
     const char *RawString = &RawFile.at(InterpreterHeader->p_offset);
     if (!RootFS.empty() && LoadELF(RootFS + RawString)) {
       // Found the interpreter in the rootfs
@@ -29,9 +28,10 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
     }
   }
   else if (InterpreterHeader) {
-    DynamicProgram = true;
     GetDynamicLibs();
   }
+
+  DynamicProgram = Header.e_type != ET_EXEC;
 
   CalculateMemoryLayouts();
   CalculateSymbols();

@@ -20,9 +20,9 @@ namespace FEXCore::Memory {
       return SHM->Size;
     }
 
-    void *MapRegion(uint64_t Offset, size_t Size, bool Fixed = true);
-    void *MapRegion(uint64_t Offset, size_t Size, uint32_t Flags, bool Fixed = true);
-    void *ChangeMappedRegion(uint64_t Offset, size_t Size, uint32_t Flags, bool Fixed = true);
+    void *MapRegion(uint64_t Offset, size_t Size, bool Fixed = true, bool RelativeToBase = true);
+    void *MapRegion(uint64_t Offset, size_t Size, uint32_t Flags, bool Fixed = true, bool RelativeToBase = true);
+    void *ChangeMappedRegion(uint64_t Offset, size_t Size, uint32_t Flags, bool Fixed = true, bool RelativeToBase = true);
 
     void UnmapRegion(void *Ptr, size_t Size);
 

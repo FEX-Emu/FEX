@@ -135,7 +135,7 @@ namespace FEXCore::Context {
 
   private:
     void WaitForIdle();
-    void *MapRegion(FEXCore::Core::InternalThreadState *Thread, uint64_t Offset, uint64_t Size, bool Fixed = false);
+    void *MapRegion(FEXCore::Core::InternalThreadState *Thread, uint64_t Offset, uint64_t Size, bool Fixed = false, bool RelativeToBase = true);
     void *ShmBase();
     void MirrorRegion(FEXCore::Core::InternalThreadState *Thread, void *HostPtr, uint64_t Offset, uint64_t Size);
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
