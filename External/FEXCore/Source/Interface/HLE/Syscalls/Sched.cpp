@@ -4,6 +4,8 @@
 #include <sched.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
@@ -74,5 +76,15 @@ namespace FEXCore::HLE {
     mask[0] |= 1;
     // Returns the number of bytes written in to mask
     return 1;
+  }
+
+  uint64_t Sched_Setattr(FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_attr *attr, unsigned int flags) {
+    uint64_t Result = ::syscall(SYS_sched_setattr, pid, attr, flags);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Sched_Getattr(FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags) {
+    uint64_t Result = ::syscall(SYS_sched_getattr, pid, attr, size, flags);
+    SYSCALL_ERRNO();
   }
 }

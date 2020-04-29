@@ -31,6 +31,9 @@ namespace {
   uint64_t NopFail(FEXCore::Core::InternalThreadState *Thread) {
     return -1ULL;
   }
+  uint64_t NopPerm(FEXCore::Core::InternalThreadState *Thread) {
+    return -EPERM;
+  }
 }
 
 namespace FEXCore::HLE::x64 {
@@ -276,6 +279,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_FTRUNCATE:
     LogMan::Msg::D("ftruncate(%ld, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
+  case SYSCALL_GETDENTS:
+    LogMan::Msg::D("getdents(%ld, 0x%lx, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
   case SYSCALL_UMASK:
     LogMan::Msg::D("umask(0x%lx) = %ld", Args->Argument[1], Ret);
     break;
@@ -284,6 +290,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
     break;
   case SYSCALL_SYSINFO:
     LogMan::Msg::D("sysinfo(0x%lx) = %ld", Args->Argument[1], Ret);
+    break;
+  case SYSCALL_PTRACE:
+    LogMan::Msg::D("ptrace(%d, %d, 0x%lx, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
     break;
   case SYSCALL_GETCWD:
     LogMan::Msg::D("getcwd(\"%s\", %ld) = %ld", reinterpret_cast<char const*>(Args->Argument[1]), Args->Argument[2], Ret);
@@ -381,6 +390,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_SET_ROBUST_LIST:
     LogMan::Msg::D("set_robust_list(%p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
+  case SYSCALL_GET_ROBUST_LIST:
+    LogMan::Msg::D("get_robust_list(%d, %p, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
   case SYSCALL_EPOLL_PWAIT:
     LogMan::Msg::D("epoll_pwait(%ld, %p, %ld, %ld) = %ld",
       Args->Argument[1],
@@ -415,6 +427,12 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
     break;
   case SYSCALL_SENDMMSG:
     LogMan::Msg::D("sendmmsg(%ld, 0x%lx, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
+    break;
+  case SYSCALL_SCHED_SETATTR:
+    LogMan::Msg::D("sched_setattr(%ld, %p, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_SCHED_GETATTR:
+    LogMan::Msg::D("sched_getattr(%ld, %p, 0x%lx, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
     break;
   case SYSCALL_GETPID:
     LogMan::Msg::D("getpid() = %ld", Ret);
@@ -536,6 +554,15 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_GETPPID:
     LogMan::Msg::D("getppid() = %ld", Ret);
     break;
+  case SYSCALL_GETPGRP:
+    LogMan::Msg::D("getpgrp() = %ld", Ret);
+    break;
+  case SYSCALL_SETSID:
+    LogMan::Msg::D("setsid() = %ld", Ret);
+    break;
+  case SYSCALL_SETREUID:
+    LogMan::Msg::D("setreuid(%ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
   case SYSCALL_SETREGID:
     LogMan::Msg::D("setregid(%ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
@@ -630,6 +657,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
     break;
   case SYSCALL_CLOCK_GETRES:
     LogMan::Msg::D("clock_getres(%ld, %p) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
+  case SYSCALL_CLOCK_NANOSLEEP:
+    LogMan::Msg::D("clock_nanosleep(%ld, %lx, %ld, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
     break;
   case SYSCALL_GETRANDOM:
     LogMan::Msg::D("getrandom(0x%lx, 0x%lx, 0x%lx) = %ld",
@@ -753,6 +783,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_FSYNC,                  cvt(&FEXCore::HLE::Fsync),                  1},
     {SYSCALL_FDATASYNC,              cvt(&FEXCore::HLE::Fdatasync),              1},
     {SYSCALL_FTRUNCATE,              cvt(&FEXCore::HLE::Ftruncate),              2},
+    {SYSCALL_GETDENTS,               cvt(&FEXCore::HLE::Getdents),               3},
     {SYSCALL_GETCWD,                 cvt(&FEXCore::HLE::Getcwd),                 2},
     {SYSCALL_CHDIR,                  cvt(&FEXCore::HLE::Chdir),                  1},
     {SYSCALL_RENAME,                 cvt(&FEXCore::HLE::Rename),                 2},
@@ -766,6 +797,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_UMASK,                  cvt(&FEXCore::HLE::Umask),                  1},
     {SYSCALL_GETTIMEOFDAY,           cvt(&FEXCore::HLE::Gettimeofday),           2},
     {SYSCALL_SYSINFO,                cvt(&FEXCore::HLE::Sysinfo),                1},
+    {SYSCALL_PTRACE,                 cvt(&NopPerm),                              4},
     {SYSCALL_GETUID,                 cvt(&FEXCore::HLE::Getuid),                 0},
     {SYSCALL_SYSLOG,                 cvt(&FEXCore::HLE::Syslog),                 6}, // XXX: Verify ABI on vaarg
     {SYSCALL_GETGID,                 cvt(&FEXCore::HLE::Getgid),                 0},
@@ -773,6 +805,9 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_GETEUID,                cvt(&FEXCore::HLE::Geteuid),                0},
     {SYSCALL_GETEGID,                cvt(&FEXCore::HLE::Getegid),                0},
     {SYSCALL_GETPPID,                cvt(&FEXCore::HLE::Getppid),                0},
+    {SYSCALL_GETPGRP,                cvt(&FEXCore::HLE::Getpgrp),                0},
+    {SYSCALL_SETSID,                 cvt(&FEXCore::HLE::Setsid),                 0},
+    {SYSCALL_SETREUID,               cvt(&FEXCore::HLE::Setreuid),               2},
     {SYSCALL_SETREGID,               cvt(&FEXCore::HLE::Setregid),               2},
     {SYSCALL_SETRESUID,              cvt(&FEXCore::HLE::Setresuid),              3},
     {SYSCALL_GETRESUID,              cvt(&FEXCore::HLE::Getresuid),              3},
@@ -815,6 +850,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_SEMTIMEDOP,             cvt(&FEXCore::HLE::Semtimedop),             4},
     {SYSCALL_CLOCK_GETTIME,          cvt(&FEXCore::HLE::Clock_gettime),          2},
     {SYSCALL_CLOCK_GETRES,           cvt(&FEXCore::HLE::Clock_getres),           2},
+    {SYSCALL_CLOCK_NANOSLEEP,        cvt(&FEXCore::HLE::Clock_nanosleep),        4},
     {SYSCALL_EXIT_GROUP,             cvt(&FEXCore::HLE::Exit_group),             1},
     {SYSCALL_EPOLL_WAIT,             cvt(&FEXCore::HLE::EPoll_Wait),             4},
     {SYSCALL_EPOLL_CTL,              cvt(&FEXCore::HLE::EPoll_Ctl),              4},
@@ -829,6 +865,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_FACCESSAT,              cvt(&FEXCore::HLE::FAccessat),              4},
     {SYSCALL_PPOLL,                  cvt(&FEXCore::HLE::Ppoll),                  5},
     {SYSCALL_SET_ROBUST_LIST,        cvt(&FEXCore::HLE::Set_robust_list),        2},
+    {SYSCALL_GET_ROBUST_LIST,        cvt(&FEXCore::HLE::Get_robust_list),        3},
     {SYSCALL_EPOLL_PWAIT,            cvt(&FEXCore::HLE::EPoll_Pwait),            5},
     {SYSCALL_TIMERFD_CREATE,         cvt(&FEXCore::HLE::Timerfd_Create),         2},
     {SYSCALL_EVENTFD,                cvt(&FEXCore::HLE::Eventfd),                2},
@@ -837,6 +874,8 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_INOTIFY_INIT1,          cvt(&FEXCore::HLE::Inotify_init1),          1},
     {SYSCALL_PRLIMIT64,              cvt(&FEXCore::HLE::Prlimit64),              4},
     {SYSCALL_SENDMMSG,               cvt(&FEXCore::HLE::Sendmmsg),               4},
+    {SYSCALL_SCHED_SETATTR,          cvt(&FEXCore::HLE::Sched_Setattr),          3},
+    {SYSCALL_SCHED_GETATTR,          cvt(&FEXCore::HLE::Sched_Getattr),          4},
     {SYSCALL_GETRANDOM,              cvt(&FEXCore::HLE::Getrandom),              3},
     {SYSCALL_MEMFD_CREATE,           cvt(&FEXCore::HLE::Memfd_Create),           2},
     {SYSCALL_MLOCK2,                 cvt(&FEXCore::HLE::Mlock2),                 3},

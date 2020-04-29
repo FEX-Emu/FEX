@@ -14,4 +14,5 @@ namespace FEXCore::HLE {
   uint64_t Time(FEXCore::Core::InternalThreadState *Thread, time_t *tloc);
   uint64_t Clock_gettime(FEXCore::Core::InternalThreadState *Thread, clockid_t clk_id, struct timespec *tp);
   uint64_t Clock_getres(FEXCore::Core::InternalThreadState *Thread, clockid_t clk_id, struct timespec *tp);
+  uint64_t Clock_nanosleep(FEXCore::Core::InternalThreadState *Thread, clockid_t clockid, int flags, const struct timespec *request, struct timespec *remain);
 }

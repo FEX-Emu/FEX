@@ -23,6 +23,9 @@ namespace FEXCore::HLE {
   uint64_t Geteuid(FEXCore::Core::InternalThreadState *Thread);
   uint64_t Getegid(FEXCore::Core::InternalThreadState *Thread);
   uint64_t Getppid(FEXCore::Core::InternalThreadState *Thread);
+  uint64_t Getpgrp(FEXCore::Core::InternalThreadState *Thread);
+  uint64_t Setsid(FEXCore::Core::InternalThreadState *Thread);
+  uint64_t Setreuid(FEXCore::Core::InternalThreadState *Thread, uid_t ruid, uid_t euid);
   uint64_t Setregid(FEXCore::Core::InternalThreadState *Thread, gid_t rgid, gid_t egid);
   uint64_t Setresuid(FEXCore::Core::InternalThreadState *Thread, uid_t ruid, uid_t euid, uid_t suid);
   uint64_t Getresuid(FEXCore::Core::InternalThreadState *Thread, uid_t *ruid, uid_t *euid, uid_t *suid);
@@ -36,5 +39,6 @@ namespace FEXCore::HLE {
   uint64_t Set_tid_address(FEXCore::Core::InternalThreadState *Thread, int *tidptr);
   uint64_t Exit_group(FEXCore::Core::InternalThreadState *Thread, int status);
   uint64_t Set_robust_list(FEXCore::Core::InternalThreadState *Thread, struct robust_list_head *head, size_t len);
+  uint64_t Get_robust_list(FEXCore::Core::InternalThreadState *Thread, int pid, struct robust_list_head **head, size_t *len_ptr);
   uint64_t Prlimit64(FEXCore::Core::InternalThreadState *Thread, pid_t pid, int resource, const struct rlimit *new_limit, struct rlimit *old_limit);
 }
