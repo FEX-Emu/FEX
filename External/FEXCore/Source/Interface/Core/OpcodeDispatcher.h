@@ -118,6 +118,7 @@ public:
   void CALLOp(OpcodeArgs);
   void CALLAbsoluteOp(OpcodeArgs);
   void CondJUMPOp(OpcodeArgs);
+  void CondJUMPRCXOp(OpcodeArgs);
   void JUMPOp(OpcodeArgs);
   void JUMPAbsoluteOp(OpcodeArgs);
   template<uint32_t SrcIndex>
