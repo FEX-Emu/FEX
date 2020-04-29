@@ -833,6 +833,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_TIMERFD_CREATE,         cvt(&FEXCore::HLE::Timerfd_Create),         2},
     {SYSCALL_EVENTFD,                cvt(&FEXCore::HLE::Eventfd),                2},
     {SYSCALL_EPOLL_CREATE1,          cvt(&FEXCore::HLE::EPoll_Create1),          1},
+    {SYSCALL_DUP3,                   cvt(&FEXCore::HLE::Dup3),                   3},
     {SYSCALL_PIPE2,                  cvt(&FEXCore::HLE::Pipe2),                  2},
     {SYSCALL_INOTIFY_INIT1,          cvt(&FEXCore::HLE::Inotify_init1),          1},
     {SYSCALL_PRLIMIT64,              cvt(&FEXCore::HLE::Prlimit64),              4},

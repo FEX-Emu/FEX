@@ -170,6 +170,7 @@ enum Syscalls {
   SYSCALL_TIMERFD_CREATE  = 283, ///< __NR_timerfd_create
   SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
   SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1
+  SYSCALL_DUP3            = 292, ///< __NR_dup3
   SYSCALL_PIPE2           = 293, ///< __NR_pipe2
   SYSCALL_INOTIFY_INIT1   = 294, ///< __NR_inotify_init1
   SYSCALL_PRLIMIT64       = 302, ///< __NR_prlimit64

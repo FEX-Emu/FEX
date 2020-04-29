@@ -1,8 +1,12 @@
+#include <filesystem>
 #include "LogManager.h"
+#include "Tests/HarnessHelpers.h"
 
 #include "Interface/Context/Context.h"
 #include "Interface/HLE/FileManagement.h"
 #include "Interface/HLE/EmulatedFiles/EmulatedFiles.h"
+
+using string = std::string;
 
 namespace FEXCore::EmulatedFile {
   static const std::string proc_cpuinfo = R"(
@@ -57,17 +61,50 @@ address sizes   : 43 bits physical, 48 bits virtual
       int32_t f = fileno(fp);
       return f;
     };
+
+    string procAuxv = string("/proc/") + std::to_string(getpid()) + string("/auxv");
+    EmulatedMap.emplace(procAuxv); // * get pid /proc/$PID/auxv , self is a symlink albeit likely to be what's used
+    EmulatedMap.emplace("/proc/self/auxv");
+
+    FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
+    FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
   }
 
   EmulatedFDManager::~EmulatedFDManager() {
   }
 
   int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
-    if (EmulatedMap.find(pathname) == EmulatedMap.end()) {
+    std::string cpath = std::filesystem::exists(pathname) ? std::filesystem::canonical(pathname)
+      : std::filesystem::path(pathname).lexically_normal(); // *Note: this doesn't transform to absolute
+
+    if (EmulatedMap.find(cpath) == EmulatedMap.end()) {
       return -1;
     }
 
-    return FDReadCreators[pathname](CTX, dirfs, pathname, flags, mode);
+    return FDReadCreators[cpath](CTX, dirfs, pathname, flags, mode);
   }
+
+  int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode)
+  {
+    FEX::HarnessHelper::ELFCodeLoader *const elfLoader = dynamic_cast<FEX::HarnessHelper::ELFCodeLoader *const>(ctx->GetCodeLoader());
+    if (!elfLoader) {
+      LogMan::Msg::D("Failed to get ELFCodeLoader");
+      return -1;
+    }
+
+    uint64_t auxvBase=0, auxvSize=0;
+    elfLoader->GetAuxv(auxvBase, auxvSize);
+    if (!auxvBase) {
+      LogMan::Msg::D("Failed to get Auxv stack address");
+      return -1;
+    }
+
+    FILE* fp = tmpfile();
+    fwrite((void*)auxvBase, 1, auxvSize, fp);
+    fseek(fp, 0, SEEK_SET);
+    int32_t f = fileno(fp);
+    return f;
+  }
+
 }
 

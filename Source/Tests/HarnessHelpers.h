@@ -16,7 +16,7 @@
 #include <FEXCore/Core/X86Enums.h>
 
 namespace FEX::HarnessHelper {
-   bool CompareStates(FEXCore::Core::CPUState const& State1,
+  inline bool CompareStates(FEXCore::Core::CPUState const& State1,
        FEXCore::Core::CPUState const& State2,
        uint64_t MatchMask,
        bool OutputGPRs) {
@@ -126,7 +126,7 @@ namespace FEX::HarnessHelper {
     return Matches;
   }
 
-  void ReadFile(std::string const &Filename, std::vector<char> *Data) {
+  inline void ReadFile(std::string const &Filename, std::vector<char> *Data) {
     std::fstream TestFile;
     TestFile.open(Filename, std::fstream::in | std::fstream::binary);
     LogMan::Throw::A(TestFile.is_open(), "Failed to open file");
@@ -559,6 +559,9 @@ public:
       }
     }
 
+    *(uint64_t*)(&AuxTabBase) = uint64_t(AuxVPointers);
+    *(uint64_t*)(&AuxTabSize) = sizeof(auxv_t) * AuxVariables.size();
+
     return rsp;
   }
 
@@ -597,6 +600,10 @@ public:
 
   void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
 
+  void GetAuxv(uint64_t& addr, uint64_t& size) {
+    addr = AuxTabBase;
+    size = AuxTabSize;
+  }
 private:
   ::ELFLoader::ELFContainer File;
   ::ELFLoader::ELFSymbolDatabase DB;
@@ -608,6 +615,7 @@ private:
     uint64_t val;
   };
   std::vector<auxv_t> AuxVariables;
+  uint64_t AuxTabBase, AuxTabSize;
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
   uint64_t MemoryBase{};
