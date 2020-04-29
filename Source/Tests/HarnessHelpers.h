@@ -600,7 +600,7 @@ public:
 
   void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
 
-  void GetAuxv(uint64_t& addr, uint64_t& size) {
+  void GetAuxv(uint64_t& addr, uint64_t& size) override {
     addr = AuxTabBase;
     size = AuxTabSize;
   }

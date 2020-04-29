@@ -1,7 +1,7 @@
 #include <filesystem>
 #include <unistd.h>
 #include "LogManager.h"
-#include "Tests/HarnessHelpers.h"
+#include "FEXCore/Core/CodeLoader.h"
 
 #include "Interface/Context/Context.h"
 #include "Interface/HLE/FileManagement.h"
@@ -10,7 +10,7 @@
 using string = std::string;
 
 namespace FEXCore::EmulatedFile {
-  static const std::string proc_cpuinfo = R"(
+  static const string proc_cpuinfo = R"(
 processor       : 0
 vendor_id       : AuthenticAMD
 cpu family      : 23
@@ -39,7 +39,7 @@ cache_alignment : 64
 address sizes   : 43 bits physical, 48 bits virtual
 )";
 
-  static const std::string cpus_online = R"(
+  static const string cpus_online = R"(
 0
 )";
 
@@ -64,7 +64,7 @@ address sizes   : 43 bits physical, 48 bits virtual
     };
 
     string procAuxv = string("/proc/") + std::to_string(getpid()) + string("/auxv");
-    EmulatedMap.emplace(procAuxv); // * get pid /proc/$PID/auxv , self is a symlink albeit likely to be what's used
+    EmulatedMap.emplace(procAuxv);
     EmulatedMap.emplace("/proc/self/auxv");
 
     FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
@@ -75,7 +75,7 @@ address sizes   : 43 bits physical, 48 bits virtual
   }
 
   int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
-    std::string cpath = std::filesystem::exists(pathname) ? std::filesystem::canonical(pathname)
+    string cpath = std::filesystem::exists(pathname) ? std::filesystem::canonical(pathname)
       : std::filesystem::path(pathname).lexically_normal(); // *Note: this doesn't transform to absolute
 
     if (EmulatedMap.find(cpath) == EmulatedMap.end()) {
@@ -87,14 +87,8 @@ address sizes   : 43 bits physical, 48 bits virtual
 
   int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode)
   {
-    FEX::HarnessHelper::ELFCodeLoader *const elfLoader = dynamic_cast<FEX::HarnessHelper::ELFCodeLoader *const>(ctx->GetCodeLoader());
-    if (!elfLoader) {
-      LogMan::Msg::D("Failed to get ELFCodeLoader");
-      return -1;
-    }
-
     uint64_t auxvBase=0, auxvSize=0;
-    elfLoader->GetAuxv(auxvBase, auxvSize);
+    ctx->GetCodeLoader()->GetAuxv(auxvBase, auxvSize);
     if (!auxvBase) {
       LogMan::Msg::D("Failed to get Auxv stack address");
       return -1;

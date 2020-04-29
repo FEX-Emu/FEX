@@ -82,6 +82,8 @@ public:
 
   virtual char const *FindSymbolNameInRange(uint64_t Address) { return nullptr; }
   virtual void GetExecveArguments(std::vector<char const*> *Args) {}
+
+  virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}
 };
 
 
