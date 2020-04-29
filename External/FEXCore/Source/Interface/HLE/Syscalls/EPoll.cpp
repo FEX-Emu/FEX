@@ -8,8 +8,8 @@ struct InternalThreadState;
 }
 
 namespace FEXCore::HLE {
-  uint64_t EPoll_Create(FEXCore::Core::InternalThreadState *Thread, int flags) {
-    uint64_t Result = epoll_create1(flags);
+  uint64_t EPoll_Create(FEXCore::Core::InternalThreadState *Thread, int size) {
+    uint64_t Result = epoll_create(size);
     SYSCALL_ERRNO();
   }
 
