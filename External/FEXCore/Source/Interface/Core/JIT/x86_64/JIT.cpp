@@ -2847,7 +2847,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             // Scalar
             switch (Op->Header.ElementSize) {
               case 4: {
-                vrcpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
+                mov(eax, 0x3f800000); // 1.0f
+                vmovd(xmm15, eax);
+                vdivss(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
               break;
               }
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -2857,7 +2859,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             // Vector
             switch (Op->Header.ElementSize) {
               case 4: {
-                vrcpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+                mov(eax, 0x3f800000); // 1.0f
+                vmovd(xmm15, eax);
+                pshufd(xmm15, xmm15, 0);
+                vdivps(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
               break;
               }
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
