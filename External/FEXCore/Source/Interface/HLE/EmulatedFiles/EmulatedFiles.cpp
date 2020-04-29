@@ -1,11 +1,16 @@
+#include <filesystem>
+#include <unistd.h>
 #include "LogManager.h"
+#include "FEXCore/Core/CodeLoader.h"
 
 #include "Interface/Context/Context.h"
 #include "Interface/HLE/FileManagement.h"
 #include "Interface/HLE/EmulatedFiles/EmulatedFiles.h"
 
+using string = std::string;
+
 namespace FEXCore::EmulatedFile {
-  static const std::string proc_cpuinfo = R"(
+  static const string proc_cpuinfo = R"(
 processor       : 0
 vendor_id       : AuthenticAMD
 cpu family      : 23
@@ -34,7 +39,7 @@ cache_alignment : 64
 address sizes   : 43 bits physical, 48 bits virtual
 )";
 
-  static const std::string cpus_online = R"(
+  static const string cpus_online = R"(
 0
 )";
 
@@ -57,17 +62,44 @@ address sizes   : 43 bits physical, 48 bits virtual
       int32_t f = fileno(fp);
       return f;
     };
+
+    string procAuxv = string("/proc/") + std::to_string(getpid()) + string("/auxv");
+    EmulatedMap.emplace(procAuxv);
+    EmulatedMap.emplace("/proc/self/auxv");
+
+    FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
+    FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
   }
 
   EmulatedFDManager::~EmulatedFDManager() {
   }
 
   int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
-    if (EmulatedMap.find(pathname) == EmulatedMap.end()) {
+    string cpath = std::filesystem::exists(pathname) ? std::filesystem::canonical(pathname)
+      : std::filesystem::path(pathname).lexically_normal(); // *Note: this doesn't transform to absolute
+
+    if (EmulatedMap.find(cpath) == EmulatedMap.end()) {
       return -1;
     }
 
-    return FDReadCreators[pathname](CTX, dirfs, pathname, flags, mode);
+    return FDReadCreators[cpath](CTX, dirfs, pathname, flags, mode);
   }
+
+  int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode)
+  {
+    uint64_t auxvBase=0, auxvSize=0;
+    ctx->GetCodeLoader()->GetAuxv(auxvBase, auxvSize);
+    if (!auxvBase) {
+      LogMan::Msg::D("Failed to get Auxv stack address");
+      return -1;
+    }
+
+    FILE* fp = tmpfile();
+    fwrite((void*)auxvBase, 1, auxvSize, fp);
+    fseek(fp, 0, SEEK_SET);
+    int32_t f = fileno(fp);
+    return f;
+  }
+
 }
 

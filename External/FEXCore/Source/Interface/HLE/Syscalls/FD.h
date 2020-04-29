@@ -31,6 +31,7 @@ namespace FEXCore::HLE {
   uint64_t Select(FEXCore::Core::InternalThreadState *Thread, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
   uint64_t Dup(FEXCore::Core::InternalThreadState *Thread, int oldfd);
   uint64_t Dup2(FEXCore::Core::InternalThreadState *Thread, int oldfd, int newfd);
+  uint64_t Dup3(FEXCore::Core::InternalThreadState* Thread, int oldfd, int newfd, int flags);
   uint64_t Fcntl(FEXCore::Core::InternalThreadState *Thread, int fd, int cmd, uint64_t arg);
   uint64_t Flock(FEXCore::Core::InternalThreadState *Thread, int fd, int operation);
   uint64_t Fsync(FEXCore::Core::InternalThreadState *Thread, int fd);

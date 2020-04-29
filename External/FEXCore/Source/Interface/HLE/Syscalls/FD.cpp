@@ -140,6 +140,11 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Dup3(FEXCore::Core::InternalThreadState* Thread, int oldfd, int newfd, int flags) {
+    uint64_t Result = ::dup3(oldfd, newfd, flags);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Fcntl(FEXCore::Core::InternalThreadState *Thread, int fd, int cmd, uint64_t arg) {
     uint64_t Result = ::fcntl(fd, cmd, arg);
     SYSCALL_ERRNO();
