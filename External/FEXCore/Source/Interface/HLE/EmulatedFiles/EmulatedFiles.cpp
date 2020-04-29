@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <unistd.h>
 #include "LogManager.h"
 #include "Tests/HarnessHelpers.h"
 
