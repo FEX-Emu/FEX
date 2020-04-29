@@ -390,7 +390,7 @@ private:
   uint64_t Entry;
 };
 
-void InstallOpcodeHandlers();
+void InstallOpcodeHandlers(Context::OperatingMode Mode);
 
 }
 

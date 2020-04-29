@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Interface/HLE/FileManagement.h"
+
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 
 #include <atomic>
@@ -105,12 +107,7 @@ private:
   std::mutex SyscallMutex;
 };
 
-enum OperatingMode {
-  MODE_32BIT,
-  MODE_64BIT,
-};
-
-SyscallHandler *CreateHandler(OperatingMode Mode, FEXCore::Context::Context *ctx);
+SyscallHandler *CreateHandler(Context::OperatingMode Mode, FEXCore::Context::Context *ctx);
 uint64_t HandleSyscall(SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);
 
 #define SYSCALL_ERRNO() do { if (Result == -1) return -errno; return Result; } while(0)

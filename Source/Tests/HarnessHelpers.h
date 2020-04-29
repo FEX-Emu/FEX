@@ -602,6 +602,9 @@ public:
     addr = AuxTabBase;
     size = AuxTabSize;
   }
+
+  bool Is64BitMode() const { return File.GetMode() == ::ELFLoader::ELFContainer::MODE_64BIT; }
+
 private:
   ::ELFLoader::ELFContainer File;
   ::ELFLoader::ELFSymbolDatabase DB;

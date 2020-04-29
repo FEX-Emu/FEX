@@ -143,8 +143,8 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx)
   , CTX {ctx} {
 }
 
-SyscallHandler *CreateHandler(OperatingMode Mode, FEXCore::Context::Context *ctx) {
-  if (Mode == MODE_64BIT) {
+SyscallHandler *CreateHandler(Context::OperatingMode Mode, FEXCore::Context::Context *ctx) {
+  if (Mode == Context::MODE_64BIT) {
     return FEXCore::HLE::x64::CreateHandler(ctx);
   }
 

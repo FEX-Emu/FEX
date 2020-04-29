@@ -111,11 +111,15 @@ int main(int argc, char **argv, char **const envp) {
 
   FEX::HarnessHelper::ELFCodeLoader Loader{Args[0], LDPath(), Args, ParsedArgs, envp};
 
-  FEXCore::Context::InitializeStaticTables();
-  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
+  FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
+  uint64_t VMemSize = 1ULL << 36;
+  if (!Loader.Is64BitMode()) {
+    VMemSize = 1ULL << 32;
+  }
+
+  auto SHM = FEXCore::SHM::AllocateSHMRegion(VMemSize);
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
-  FEXCore::Context::SetApplicationFile(CTX, std::filesystem::canonical(Args[0]));
 
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, CoreConfig() > 3 ? FEXCore::Config::CONFIG_CUSTOM : CoreConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MULTIBLOCK, MultiblockConfig());
@@ -124,14 +128,15 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_GDBSERVER, GdbServerConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ROOTFSPATH, LDPath());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, UnifiedMemory());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode());
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, VMFactory::CPUCreationFactory);
   // FEXCore::Context::SetFallbackCPUBackendFactory(CTX, VMFactory::CPUCreationFactoryFallback);
 
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
   FEXCore::Context::InitCore(CTX, &Loader);
+  FEXCore::Context::SetApplicationFile(CTX, std::filesystem::canonical(Args[0]));
 
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
-
 
   // There might already be an exit handler, leave it installed
   if(!FEXCore::Context::GetExitHandler(CTX)) {

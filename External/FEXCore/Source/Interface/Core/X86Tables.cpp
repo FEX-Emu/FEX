@@ -1,5 +1,6 @@
 #include "LogManager.h"
 
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/X86Tables.h>
 #include <array>
 #include <cstdint>
@@ -28,7 +29,7 @@ X86InstInfo XOPTableOps[MAX_XOP_TABLE_SIZE];
 X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
 X86InstInfo EVEXTableOps[MAX_EVEX_TABLE_SIZE];
 
-void InitializeBaseTables();
+void InitializeBaseTables(Context::OperatingMode Mode);
 void InitializeSecondaryTables();
 void InitializePrimaryGroupTables();
 void InitializeSecondaryGroupTables();
@@ -46,7 +47,7 @@ uint64_t Total{};
 uint64_t NumInsts{};
 #endif
 
-void InitializeInfoTables() {
+void InitializeInfoTables(Context::OperatingMode Mode) {
   using namespace FEXCore::X86Tables::InstFlags;
   auto UnknownOp = X86InstInfo{"UND", TYPE_UNKNOWN, FLAGS_NONE, 0, nullptr};
 
@@ -85,7 +86,7 @@ void InitializeInfoTables() {
   for (auto &BaseOp : EVEXTableOps)
       BaseOp = UnknownOp;
 
-  InitializeBaseTables();
+  InitializeBaseTables(Mode);
   InitializeSecondaryTables();
   InitializePrimaryGroupTables();
   InitializeSecondaryGroupTables();

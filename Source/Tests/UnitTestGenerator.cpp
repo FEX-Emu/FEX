@@ -2398,7 +2398,7 @@ int main(int argc, char **argv, char **const envp) {
 
   LogMan::Throw::A(!Args.empty(), "Not enough arguments");
 
-  FEXCore::X86Tables::InitializeInfoTables();
+  FEXCore::X86Tables::InitializeInfoTables(FEXCore::Context::MODE_64BIT);
 
   Code.reserve(4096*128);
   Filepath = Args[0];
