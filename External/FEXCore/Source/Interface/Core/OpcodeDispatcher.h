@@ -193,6 +193,16 @@ public:
   void NOTOp(OpcodeArgs);
   void XADDOp(OpcodeArgs);
   void PopcountOp(OpcodeArgs);
+  void XLATOp(OpcodeArgs);
+
+  enum Segment {
+    Segment_FS,
+    Segment_GS,
+  };
+  template<Segment Seg>
+  void ReadSegmentReg(OpcodeArgs);
+  template<Segment Seg>
+  void WriteSegmentReg(OpcodeArgs);
 
   // SSE
   void MOVAPSOp(OpcodeArgs);
