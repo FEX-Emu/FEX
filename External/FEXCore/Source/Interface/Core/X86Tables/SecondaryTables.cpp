@@ -40,10 +40,10 @@ void InitializeSecondaryTables() {
     {0x24, 4, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                                                       0, nullptr}},
     {0x28, 1, X86InstInfo{"MOVAPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x29, 1, X86InstInfo{"MOVAPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
-    {0x2A, 1, X86InstInfo{"CVTPI2PS",   TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                   0, nullptr}},
+    {0x2A, 1, X86InstInfo{"CVTPI2PS",   TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX_SRC,                                                   0, nullptr}},
     {0x2B, 1, X86InstInfo{"MOVNTPS",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                              0, nullptr}},
-    {0x2C, 1, X86InstInfo{"CVTTPS2PI",  TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                   0, nullptr}},
-    {0x2D, 1, X86InstInfo{"CVTPS2PI",   TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                   0, nullptr}},
+    {0x2C, 1, X86InstInfo{"CVTTPS2PI",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX_DST,                                                   0, nullptr}},
+    {0x2D, 1, X86InstInfo{"CVTPS2PI",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX_DST,                                                   0, nullptr}},
     {0x2E, 1, X86InstInfo{"UCOMISS",    TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
     {0x2F, 1, X86InstInfo{"COMISS",     TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                                   0, nullptr}},
 
