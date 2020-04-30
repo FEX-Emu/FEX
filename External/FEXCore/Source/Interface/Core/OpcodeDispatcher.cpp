@@ -2043,6 +2043,43 @@ void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::EnterOp(OpcodeArgs) {
+  LogMan::Throw::A(Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  uint64_t Value = Op->Src[0].TypeLiteral.Literal;
+
+  uint16_t AllocSpace = Value & 0xFFFF;
+  uint8_t Level = (Value >> 16) & 0x1F;
+
+  auto PushValue = [&](uint8_t Size, OrderedNode *Src) {
+    auto OldSP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+    auto NewSP = _Sub(OldSP, _Constant(Size));
+    _StoreMem(GPRClass, Size, NewSP, Src, Size);
+
+    // Store the new stack pointer
+    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+    return NewSP;
+  };
+
+  auto OldBP = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBP]), GPRClass);
+  auto NewSP = PushValue(8, OldBP);
+  auto temp_RBP = NewSP;
+
+  if (Level > 0) {
+    for (uint8_t i = 1; i < Level; ++i) {
+      auto Offset = _Constant(i * 8);
+      auto MemLoc = _Sub(OldBP, Offset);
+      auto Mem = _LoadMem(GPRClass, 8, MemLoc, 8);
+      NewSP = PushValue(8, Mem);
+    }
+    NewSP = PushValue(8, temp_RBP);
+  }
+  NewSP = _Sub(NewSP, _Constant(AllocSpace));
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+
+  _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBP]), temp_RBP);
+}
+
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
   auto Counter = _CycleCounter();
   auto CounterLow = _Bfe(32, 0, Counter);
@@ -6781,6 +6818,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xAE, 2, &OpDispatchBuilder::SCASOp},
     {0xB0, 16, &OpDispatchBuilder::MOVGPROp<0>},
     {0xC2, 2, &OpDispatchBuilder::RETOp},
+    {0xC8, 1, &OpDispatchBuilder::EnterOp},
     {0xC9, 1, &OpDispatchBuilder::LEAVEOp},
     {0xCC, 2, &OpDispatchBuilder::INTOp},
     {0xD7, 2, &OpDispatchBuilder::XLATOp},

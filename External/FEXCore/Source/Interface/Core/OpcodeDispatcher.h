@@ -202,6 +202,7 @@ public:
   void ReadSegmentReg(OpcodeArgs);
   template<Segment Seg>
   void WriteSegmentReg(OpcodeArgs);
+  void EnterOp(OpcodeArgs);
 
   // SSE
   void MOVAPSOp(OpcodeArgs);
