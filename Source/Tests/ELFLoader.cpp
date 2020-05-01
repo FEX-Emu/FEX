@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+static bool SilentLog;
+
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   const char *CharLevel{nullptr};
 
@@ -46,13 +48,17 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     break;
   }
 
-  printf("[%s] %s\n", CharLevel, Message);
-  fflush(nullptr);
+  if (!SilentLog) {
+    printf("[%s] %s\n", CharLevel, Message);
+    fflush(nullptr);
+  }
 }
 
 void AssertHandler(char const *Message) {
-  printf("[ASSERT] %s\n", Message);
-  fflush(nullptr);
+  if (!SilentLog) {
+    printf("[ASSERT] %s\n", Message);
+    fflush(nullptr);
+  }
 }
 
 bool CheckMemMapping() {
@@ -94,6 +100,9 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::Value<bool> GdbServerConfig{"GdbServer", false};
   FEX::Config::Value<bool> UnifiedMemory{"UnifiedMemory", false};
   FEX::Config::Value<std::string> LDPath{"RootFS", ""};
+  FEX::Config::Value<bool> SilentLog{"SilentLog", false};
+
+  ::SilentLog = SilentLog();
 
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
@@ -142,7 +151,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::DestroyContext(CTX);
   FEXCore::SHM::DestroyRegion(SHM);
 
-  printf("Managed to load? %s\n", Result ? "Yes" : "No");
+  LogMan::Msg::D("Managed to load? %s", Result ? "Yes" : "No");
 
   FEX::Config::Shutdown();
   return 0;

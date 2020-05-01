@@ -1,5 +1,6 @@
 #ifndef NDEBUG
 #include <FEXCore/Debug/X86Tables.h>
+#include "LogManager.h"
 #include <tuple>
 #include <vector>
 
@@ -114,7 +115,7 @@ void InstallDebugInfo() {
 
   GenerateDebugTable(SecondInstGroupOps, SecondaryExtensionOpTable);
 
-  printf("Installing debug info\n");
+  LogMan::Msg::D("Installing debug info");
 }
 }
 #endif
