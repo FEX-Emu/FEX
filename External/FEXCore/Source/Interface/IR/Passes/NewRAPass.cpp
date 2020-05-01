@@ -25,6 +25,7 @@ namespace {
       uint64_t GetDestRegister(uint32_t Node) override;
       uint64_t GetTemp(uint32_t Node, uint8_t Index) override;
       uint64_t GetPhysicalTemp(uint32_t Node, uint8_t Index) override;
+      void GetInterferenceRegsAtNode(uint32_t Node, std::vector<uint64_t> *Regs) override;
 
     private:
       std::vector<uint32_t> PhysicalRegisterCount;
@@ -80,6 +81,17 @@ namespace {
   uint64_t ConstraintRAPass::GetPhysicalTemp(uint32_t Node, uint8_t Index) {
     auto GraphNode = &Graph->Nodes[Node];
     return Graph->Nodes[GraphNode->Head.PhysicalsBase + Index].Head.RegAndClass;
+  }
+
+  void ConstraintRAPass::GetInterferenceRegsAtNode(uint32_t Node, std::vector<uint64_t> *Regs) {
+    auto GraphNode = &Graph->Nodes[Node];
+
+    Regs->reserve(GraphNode->Head.InterferenceCount);
+    Regs->clear();
+    for (uint32_t i = 0; i < GraphNode->Head.InterferenceCount; ++i) {
+      RegisterNode *InterferenceNode = &Graph->Nodes[GraphNode->InterferenceList[i]];
+      Regs->emplace_back(InterferenceNode->Head.RegAndClass);
+    }
   }
 
   void ConstraintRAPass::AllocateVirtualRegisters(FEXCore::IR::IRListView<false> *IR) {

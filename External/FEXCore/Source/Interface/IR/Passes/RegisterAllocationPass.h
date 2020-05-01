@@ -41,6 +41,7 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
 
     virtual uint64_t GetTemp(uint32_t Node, uint8_t Index) { return ~0ULL; }
     virtual uint64_t GetPhysicalTemp(uint32_t Node, uint8_t Index) { return ~0ULL; }
+    virtual void GetInterferenceRegsAtNode(uint32_t Node, std::vector<uint64_t> *Regs) {}
 
   protected:
     bool HasSpills {};
