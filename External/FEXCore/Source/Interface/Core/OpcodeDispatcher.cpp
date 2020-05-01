@@ -4928,6 +4928,29 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, -1);
 }
 
+template<size_t SrcElementSize, bool Signed, bool Widen>
+void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  size_t ElementSize = SrcElementSize;
+  size_t Size = GetDstSize(Op);
+  if (Widen) {
+    Src = _VSXTL(Src, Size, ElementSize);
+    ElementSize <<= 1;
+  }
+
+  if (Signed)
+    Src = _Vector_SToF(Src, Size, ElementSize);
+  else
+    Src = _Vector_UToF(Src, Size, ElementSize);
+
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
+  // Insert the lower bits
+  Dest = _VInsElement(GetDstSize(Op), 8, 0, 0, Dest, Src);
+
+  StoreResult(FPRClass, Op, Dest, -1);
+}
+
 void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
       Op->Dest.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
@@ -5747,7 +5770,9 @@ void InstallOpcodeHandlers() {
     {0x16, 1, &OpDispatchBuilder::MOVLHPSOp},
     {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
+    {0x2A, 1, &OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, true, false>},
     {0x2B, 1, &OpDispatchBuilder::MOVAPSOp},
+    {0x2C, 2, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false>},
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<4>},
     {0x50, 1, &OpDispatchBuilder::MOVMSKOp<4>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, false>},
