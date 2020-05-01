@@ -119,6 +119,16 @@ namespace FEXCore::Context {
   ExitReason RunUntilExit(FEXCore::Context::Context *CTX);
 
   /**
+   * @brief Gets the program exit status
+   *
+   *
+   * @param CTX The context that we created
+   *
+   * @return The program exit status
+   */
+  int GetProgramStatus(FEXCore::Context::Context *CTX);
+
+  /**
    * @brief Tells the core to shutdown
    *
    * Blocks until shutdown

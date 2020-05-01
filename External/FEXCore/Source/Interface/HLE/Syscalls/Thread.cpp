@@ -129,6 +129,8 @@ namespace FEXCore::HLE {
         0);
     }
 
+    Thread->StatusCode = status;
+
     return 0;
   }
 

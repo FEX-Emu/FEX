@@ -373,6 +373,10 @@ namespace FEXCore::Context {
     }
   }
 
+  int Context::GetProgramStatus() {
+    return ParentThread->StatusCode;
+  }
+
   void Context::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
     Thread->CPUBackend->Initialize();
     Thread->FallbackBackend->Initialize();
