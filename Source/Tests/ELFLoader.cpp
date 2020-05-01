@@ -148,11 +148,19 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::D("Reason we left VM: %d", ShutdownReason);
   bool Result = ShutdownReason == 0;
 
+  auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
+
   FEXCore::Context::DestroyContext(CTX);
   FEXCore::SHM::DestroyRegion(SHM);
 
   LogMan::Msg::D("Managed to load? %s", Result ? "Yes" : "No");
 
   FEX::Config::Shutdown();
-  return 0;
+
+  if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
+    return ProgramStatus;
+  }
+  else {
+    return -64 | ShutdownReason;
+  }
 }

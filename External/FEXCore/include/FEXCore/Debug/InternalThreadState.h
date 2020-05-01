@@ -58,6 +58,7 @@ namespace FEXCore::Core {
     std::map<uint64_t, FEXCore::Core::DebugData> DebugData;
     RuntimeStats Stats{};
 
+    int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
   };
 }

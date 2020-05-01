@@ -63,6 +63,10 @@ namespace FEXCore::Context {
     return CTX->RunUntilExit();
   }
 
+  int GetProgramStatus(FEXCore::Context::Context *CTX) {
+    return CTX->GetProgramStatus();
+  }
+
   FEXCore::Context::ExitReason GetExitReason(FEXCore::Context::Context *CTX) {
     return CTX->ParentThread->ExitReason;
   }

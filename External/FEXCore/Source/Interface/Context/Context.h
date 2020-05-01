@@ -93,6 +93,7 @@ namespace FEXCore::Context {
 
     bool InitCore(FEXCore::CodeLoader *Loader);
     FEXCore::Context::ExitReason RunUntilExit();
+    int GetProgramStatus();
     bool IsPaused() const { return !Running; }
     void Pause();
     void Run();
