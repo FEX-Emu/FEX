@@ -6345,7 +6345,7 @@ constexpr uint16_t PF_F2 = 3;
 
   // Useful for debugging
   // CheckTable(FEXCore::X86Tables::BaseOps);
-  printf("We installed %ld instructions to the tables\n", NumInsts);
+  LogMan::Msg::D("We installed %ld instructions to the tables", NumInsts);
 }
 
 }

@@ -145,7 +145,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 }
 
 JITCore::~JITCore() {
-  printf("Used %ld bytes for compiling\n", getCurr<uintptr_t>() - getCode<uintptr_t>());
+  LogMan::Msg::D("Used %ld bytes for compiling", getCurr<uintptr_t>() - getCode<uintptr_t>());
 }
 
 static void LoadMem(uint64_t Addr, uint64_t Data, uint8_t Size) {

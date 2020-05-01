@@ -118,7 +118,7 @@ void InitializeInfoTables() {
   // CheckTable(X87Ops);
 
   X86InstDebugInfo::InstallDebugInfo();
-  LogMan::Msg::D("X86Tables had %ld total insts, and %ld labeled as understood\n", Total, NumInsts);
+  LogMan::Msg::D("X86Tables had %ld total insts, and %ld labeled as understood", Total, NumInsts);
 #endif
 }
 

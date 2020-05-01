@@ -12,6 +12,7 @@ namespace FEX::ArgLoader {
     optparse::OptionGroup CPUGroup(Parser, "CPU Core options");
     optparse::OptionGroup EmulationGroup(Parser, "Emulation options");
     optparse::OptionGroup TestGroup(Parser, "Test Harness options");
+    optparse::OptionGroup LoggingGroup(Parser, "Logging options");
 
     {
       CPUGroup.add_option("-c", "--core")
@@ -98,6 +99,16 @@ namespace FEX::ArgLoader {
 
       Parser.add_option_group(TestGroup);
     }
+
+    {
+      LoggingGroup.add_option("-s", "--silent")
+          .dest("SilentLog")
+          .help("Disable logging")
+          .action("store_true");
+
+      Parser.add_option_group(LoggingGroup);
+    }
+      
     optparse::Values Options = Parser.parse_args(argc, argv);
 
     {
@@ -177,6 +188,14 @@ namespace FEX::ArgLoader {
         Config::Add("IPCID", Value);
       }
     }
+
+    {
+      if (Options.is_set_by_user("SilentLog")) {
+        bool SilentLog = Options.get("SilentLog");
+        Config::Add("SilentLog", std::to_string(SilentLog));
+      }
+    }
+
     RemainingArgs = Parser.args();
     ProgramArguments = Parser.parsed_args();
   }
