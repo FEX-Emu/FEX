@@ -609,7 +609,6 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   CondReg = _Sub(CondReg, _Constant(SrcSize, 1));
   StoreResult(GPRClass, Op, Op->Src[0], CondReg, -1);
 
-  ShouldDump = true;
   SrcCond = _Select(FEXCore::IR::COND_NEQ,
           CondReg, ZeroConst, TakeBranch, DoNotTakeBranch);
 
