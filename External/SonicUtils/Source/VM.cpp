@@ -805,11 +805,11 @@ namespace SU::VM {
         .cs = {
           .base = 0,   // Ignored in 64bit mode
           .limit = 0U, // Ignored in 64bit mode
-          .g = 0,      // Ignored in 64bit mode
-          .db = 0,     // Ignored in 64bit mode
-          .dpl = 0,    // Data-pivilege-level Still used in 64bit mode to allow accesses
-          .l = 1,      // 1 for 64bit execution mode. 0 if you want 32bit compatibility
           .present = 1,
+          .dpl = 0,    // Data-pivilege-level Still used in 64bit mode to allow accesses 
+          .db = 0,     // Ignored in 64bit mode
+          .l = 1,      // 1 for 64bit execution mode. 0 if you want 32bit compatibility
+          .g = 0,      // Ignored in 64bit mode
         },
         .ds = {
           .present = 1,
@@ -825,6 +825,24 @@ namespace SU::VM {
         },
         .ss = {
           .present = 1,
+        },
+        // Do we need the LDT(Local Descriptor Table) and TR (Task Register)?
+        .tr = {
+          .base = 0,
+          .limit = 0,
+        },
+
+        .ldt = {
+          .base = 0,
+          .limit = 0,
+        },
+        .gdt = {
+          .base = GDTRegion.VirtualBase,
+          .limit = (uint16_t)GDTRegion.RegionSize,
+        },
+        .idt = {
+          .base = IDTRegion.VirtualBase,
+          .limit = (uint16_t)IDTRegion.RegionSize,
         },
 
         .cr0 = (1U << 0) | // Protected Mode enable. Required for 64bit mode
@@ -848,32 +866,14 @@ namespace SU::VM {
         .efer = (1U << 10) | // (LMA) Long Mode Active.
           (1U << 8) | // (LME) Long Mode Enable
           0,
-        .gdt = {
-          .base = GDTRegion.VirtualBase,
-          .limit = (uint16_t)GDTRegion.RegionSize,
-        },
-        .idt = {
-          .base = IDTRegion.VirtualBase,
-          .limit = (uint16_t)IDTRegion.RegionSize,
-        },
         .apic_base = (1 << 11) | // (AE) APIC Enable
           // (APICRegion.PhysicalBase >> 12 << 32), // ABA, APIC Base Address. ABA is zext by 12 bits to form a 52bit physical address
           0,
-        // Do we need the LDT(Local Descriptor Table) and TR (Task Register)?
-        .tr = {
-          .base = 0,
-          .limit = 0,
-        },
-
-        .ldt = {
-          .base = 0,
-          .limit = 0,
-        },
       };
 
       kvm_regs Registers = {
+        .rsp = 0xFF0, 
         .rip = ~0ULL,
-        .rsp = 0xFF0,
         .rflags = 0x2 | // 0x2 is the default state of rflags
           (1U << 9) | // By default enable hardware interrupts
           (1U << 19) | // By default enable virtual hardware interrupts
