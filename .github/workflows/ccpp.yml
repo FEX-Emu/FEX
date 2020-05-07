@@ -56,3 +56,9 @@ jobs:
       shell: bash
       # Execute the unit tests
       run: cmake --build . --config $BUILD_TYPE --target ir_tests
+
+    - name: Posix Tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the posixtest
+      run: git clone https://github.com/FEX-Emu/fex-posixtest-bins.git --depth 1 && cd fex-posixtest-bins && ./run-tests.sh ${{runner.workspace}}/build/Bin/ELFLoader
