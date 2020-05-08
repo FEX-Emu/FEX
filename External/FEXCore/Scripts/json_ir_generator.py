@@ -412,6 +412,191 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("#undef IROP_ALLOCATE_HELPERS\n")
     output_file.write("#endif\n")
 
+
+# IR parser allocators
+def print_ir_parser_allocator_helpers(ops, defines):
+    output_file.write("#ifdef IROP_PARSER_ALLOCATE_HELPERS\n")
+
+    # Generate helpers with operands
+    for op_key, op_vals in ops.items():
+        if not ("Last" in op_vals):
+            SSAArgs = 0
+            HasArgs = False
+            HasDest = False
+            HasFixedDestSize = False
+            FixedDestSize = 0
+            HasDestSize = False;
+            NumElements = "1"
+            DestSize = ""
+
+            if ("SSAArgs" in op_vals):
+                SSAArgs = int(op_vals["SSAArgs"])
+
+            if ("Args" in op_vals and len(op_vals["Args"]) != 0):
+                HasArgs = True
+
+            if ("HelperGen" in op_vals and op_vals["HelperGen"] == False):
+                continue;
+
+            if ("HasDest" in op_vals and op_vals["HasDest"] == True):
+                HasDest = True
+
+            if ("FixedDestSize" in op_vals):
+                HasFixedDestSize = True
+                FixedDestSize = int(op_vals["FixedDestSize"])
+
+            if ("DestSize" in op_vals):
+                HasDestSize = True
+                DestSize = op_vals["DestSize"]
+
+            if ("NumElements" in op_vals):
+                NumElements = op_vals["NumElements"]
+
+            CondArg2 = (", ", "")
+
+            output_file.write("\tIRPair<IROp_%s> _Parser_%s(FEXCore::IR::TypeDefinition _ParsedSize%s" %
+                (op_key, op_key, CondArg2[(0 if (HasArgs or SSAArgs != 0) else 1)]))
+
+            # Output SSA args first
+            if (SSAArgs != 0):
+                for i in range(0, SSAArgs):
+                    LastArg = (SSAArgs - i - 1) == 0 and not (HasArgs)
+                    output_file.write("OrderedNode *ssa%d%s" % (i, CondArg2[LastArg]))
+
+            if (HasArgs):
+                ArgCount = 0
+                Args = []
+                if (HasArgs):
+                    ArgCount += len(op_vals["Args"])
+                    Args += op_vals["Args"]
+
+                for i in range(0, ArgCount, 2):
+                    data_type = Args[i]
+                    data_name = Args[i+1]
+                    LastArg = (ArgCount - i - 2) == 0
+
+                    output_file.write("%s %s%s" % (data_type, data_name, CondArg2[LastArg]))
+
+            output_file.write(") {\n")
+
+            output_file.write("\t\tauto Op = AllocateOp<IROp_%s, IROps::OP_%s>();\n" % (op_key, op_key.upper()))
+            output_file.write("\t\tOp.first->Header.NumArgs = %d;\n" % (SSAArgs))
+
+            if (SSAArgs != 0):
+                for i in range(0, SSAArgs):
+                    output_file.write("\t\tOp.first->Header.Args[%d] = ssa%d->Wrapped(ListData.Begin());\n" % (i, i))
+                    output_file.write("\t\tssa%d->AddUse();\n" % (i))
+
+            if (HasArgs):
+                for i in range(1, len(op_vals["Args"]), 2):
+                    data_name = op_vals["Args"][i]
+                    output_file.write("\t\tOp.first->%s = %s;\n" % (data_name, data_name))
+
+            output_file.write("\t\tOp.first->Header.Size = _ParsedSize.Bytes() * _ParsedSize.Elements();\n")
+            output_file.write("\t\tOp.first->Header.ElementSize = _ParsedSize.Bytes();\n")
+
+            if (HasDest):
+                output_file.write("\t\tOp.first->Header.HasDest = true;\n")
+
+            output_file.write("\t\treturn Op;\n")
+            output_file.write("\t}\n\n")
+
+    output_file.write("#undef IROP_PARSER_ALLOCATE_HELPERS\n")
+    output_file.write("#endif\n")
+
+# IR parser switch statement generation
+def print_ir_parser_switch_helper(ops, defines):
+    output_file.write("#ifdef IROP_PARSER_SWITCH_HELPERS\n")
+
+    # Generate helpers with operands
+    for op_key, op_vals in ops.items():
+        if not ("Last" in op_vals):
+            SSAArgs = 0
+            HasArgs = False
+            HasDest = False
+            HasFixedDestSize = False
+            FixedDestSize = 0
+            HasDestSize = False;
+            NumElements = "1"
+            DestSize = ""
+
+            if ("SSAArgs" in op_vals):
+                SSAArgs = int(op_vals["SSAArgs"])
+
+            if ("Args" in op_vals and len(op_vals["Args"]) != 0):
+                HasArgs = True
+
+            if ("SwitchGen" in op_vals and op_vals["SwitchGen"] == False):
+                continue;
+
+            if ("HasDest" in op_vals and op_vals["HasDest"] == True):
+                HasDest = True
+
+            if ("FixedDestSize" in op_vals):
+                HasFixedDestSize = True
+                FixedDestSize = int(op_vals["FixedDestSize"])
+
+            if ("DestSize" in op_vals):
+                HasDestSize = True
+                DestSize = op_vals["DestSize"]
+
+            if ("NumElements" in op_vals):
+                NumElements = op_vals["NumElements"]
+
+            CondArg2 = (", ", "")
+
+            output_file.write("\tcase FEXCore::IR::IROps::OP_%s: {\n" % (op_key.upper()))
+
+            # Output SSA args first
+            if (SSAArgs != 0):
+                for i in range(0, SSAArgs):
+                    output_file.write("\t\tauto ssa_arg%d = DecodeValue<OrderedNode*>(Def.Args[%d]);\n" % (i, i))
+                    output_file.write("\t\tif (!CheckPrintError(Def, ssa_arg%d.first)) return false;\n" % (i))
+
+            if (HasArgs):
+                ArgCount = 0
+                Args = []
+                if (HasArgs):
+                    ArgCount += len(op_vals["Args"])
+                    Args += op_vals["Args"]
+
+                for i in range(0, ArgCount, 2):
+                    data_type = Args[i]
+                    data_name = Args[i+1]
+                    LastArg = (ArgCount - i - 2) == 0
+
+                    output_file.write("\t\tauto arg%d = DecodeValue<%s>(Def.Args[%d]);\n" % (SSAArgs + (i / 2), data_type, SSAArgs + (i / 2)))
+                    output_file.write("\t\tif (!CheckPrintError(Def, arg%d.first)) return false;\n" % (SSAArgs + (i / 2)))
+
+            output_file.write("\t\tDef.Node = _Parser_%s(Def.Size\n" % (op_key))
+
+            if (SSAArgs != 0):
+                for i in range(0, SSAArgs):
+                    output_file.write("\t\t, ssa_arg%d.second\n" % (i))
+
+            if (HasArgs):
+                ArgCount = 0
+                Args = []
+                if (HasArgs):
+                    ArgCount += len(op_vals["Args"])
+                    Args += op_vals["Args"]
+
+                for i in range(0, ArgCount, 2):
+                    data_type = Args[i]
+                    data_name = Args[i+1]
+                    LastArg = (ArgCount - i - 2) == 0
+
+                    output_file.write("\t\t, arg%d.second\n" % (SSAArgs + (i / 2)))
+
+            output_file.write("\t\t);\n")
+
+            output_file.write("\t\tSSANameMapper[Def.Definition] = Def.Node;\n")
+
+            output_file.write("\t\tbreak;\n")
+            output_file.write("\t}\n")
+
+    output_file.write("#undef IROP_PARSER_SWITCH_HELPERS\n")
+    output_file.write("#endif\n")
 if (len(sys.argv) < 3):
     sys.exit()
 
@@ -436,5 +621,7 @@ print_ir_getname(ops, defines)
 print_ir_getraargs(ops, defines)
 print_ir_arg_printer(ops, defines)
 print_ir_allocator_helpers(ops, defines)
+print_ir_parser_allocator_helpers(ops, defines)
+print_ir_parser_switch_helper(ops, defines)
 
 output_file.close()
