@@ -4,6 +4,11 @@
 #include <vector>
 
 namespace FEXCore {
+namespace IR {
+template<bool>
+class IRListView;
+}
+
 /**
  * @brief Code loader class so the CPU backend can load code in a generic fashion
  *
@@ -74,6 +79,9 @@ public:
   virtual void GetExecveArguments(std::vector<char const*> *Args) {}
 
   virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}
+
+  using IRHandler = std::function<void(uint64_t Addr, FEXCore::IR::IRListView<true> *IR)>;
+  virtual void AddIR(IRHandler Handler) {}
 };
 
 

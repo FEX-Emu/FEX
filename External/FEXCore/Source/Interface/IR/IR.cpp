@@ -11,7 +11,7 @@ namespace FEXCore::IR {
 #include <FEXCore/IR/IRDefines.inc>
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, uint64_t Arg) {
-  *out << "0x" << std::hex << Arg;
+  *out << "#0x" << std::hex << Arg;
 }
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, CondClassType Arg) {
@@ -63,7 +63,7 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
       case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
     }
 
-    *out << Reg << ")";
+    *out << std::dec << Reg << ")";
   }
 
   if (IROp->HasDest) {
@@ -79,6 +79,14 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
       *out << "v" << std::dec << NumElements;
     }
 
+  }
+}
+
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, IR::TypeDefinition Arg) {
+  *out << "i" << std::dec << static_cast<uint32_t>(Arg.Bytes() * 8);
+
+  if (Arg.Elements()) {
+    *out << "v" << std::dec << static_cast<uint32_t>(Arg.Elements());
   }
 }
 
@@ -103,10 +111,10 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
 
   ++CurrentIndent;
   AddIndent();
-  *out << "(%%ssa" << std::to_string(RealNode->Wrapped(ListBegin).ID()) << ") " << "IRHeader ";
-  *out << "0x" << std::hex << HeaderOp->Entry << ", ";
-  *out << "%%ssa" << HeaderOp->Blocks.ID() << ", ";
-  *out << std::dec << HeaderOp->BlockCount << std::endl;
+  *out << "(%ssa" << std::to_string(RealNode->Wrapped(ListBegin).ID()) << ") " << "IRHeader ";
+  *out << "#0x" << std::hex << HeaderOp->Entry << ", ";
+  *out << "%ssa" << HeaderOp->Blocks.ID() << ", ";
+  *out << "#" << std::dec << HeaderOp->BlockCount << std::endl;
 
   while (1) {
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
@@ -117,11 +125,11 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
     auto CodeLast = IR->at(BlockIROp->Last);
 
     AddIndent();
-    *out << "(%%ssa" << std::to_string(BlockNode->Wrapped(ListBegin).ID()) << ") " << "CodeBlock ";
+    *out << "(%ssa" << std::to_string(BlockNode->Wrapped(ListBegin).ID()) << ") " << "CodeBlock ";
 
-    *out << "%%ssa" << std::to_string(BlockIROp->Begin.ID()) << ", ";
-    *out << "%%ssa" << std::to_string(BlockIROp->Last.ID()) << ", ";
-    *out << "%%ssa" << std::to_string(BlockIROp->Next.ID()) << std::endl;
+    *out << "%ssa" << std::to_string(BlockIROp->Begin.ID()) << ", ";
+    *out << "%ssa" << std::to_string(BlockIROp->Last.ID()) << ", ";
+    *out << "%ssa" << std::to_string(BlockIROp->Next.ID()) << std::endl;
 
     ++CurrentIndent;
     while (1) {
@@ -160,7 +168,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
               case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
             }
 
-            *out << Reg << ")";
+            *out << std::dec << Reg << ")";
           }
 
           *out << " i" << std::dec << (ElementSize * 8);
@@ -172,7 +180,22 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
           *out << " = ";
         }
         else {
-          *out << "(%%ssa" << std::to_string(CodeOp->ID()) << ") ";
+
+          uint32_t ElementSize = IROp->ElementSize;
+          if (!IROp->ElementSize) {
+            ElementSize = IROp->Size;
+          }
+          uint32_t NumElements = 0;
+          if (ElementSize) {
+            NumElements = IROp->Size / ElementSize;
+          }
+
+          *out << "(%ssa" << std::to_string(CodeOp->ID()) << " ";
+          *out << "i" << std::dec << (ElementSize * 8);
+          if (NumElements > 1) {
+            *out << "v" << std::dec << NumElements;
+          }
+          *out << ") ";
         }
         *out << Name;
         switch (IROp->Op) {

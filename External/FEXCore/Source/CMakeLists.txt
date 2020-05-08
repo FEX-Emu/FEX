@@ -145,8 +145,23 @@ add_custom_command(
 set_source_files_properties(${OUTPUT_NAME} PROPERTIES
   GENERATED TRUE)
 
+# Generate IR documentation
+set(OUTPUT_IR_DOC "${CMAKE_BINARY_DIR}/IR.md")
+
+add_custom_command(
+  OUTPUT "${OUTPUT_IR_DOC}"
+  DEPENDS "${INPUT_NAME}"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py"
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py" "${INPUT_NAME}" "${OUTPUT_IR_DOC}"
+  )
+
+set_source_files_properties(${OUTPUT_IR_NAME} PROPERTIES
+  GENERATED TRUE)
+
+# Create teh target
 add_custom_target(IR_INC
-  DEPENDS "${OUTPUT_NAME}")
+  DEPENDS "${OUTPUT_NAME}"
+  DEPENDS "${OUTPUT_IR_DOC}")
 
 # Add in diagnostic colours if the option is available.
 # Ninja code generator will kill colours if this isn't here

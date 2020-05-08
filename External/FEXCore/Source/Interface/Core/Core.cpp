@@ -381,6 +381,12 @@ namespace FEXCore::Context {
     Thread->CPUBackend->Initialize();
     Thread->FallbackBackend->Initialize();
 
+    auto IRHandler = [Thread](uint64_t Addr, FEXCore::IR::IRListView<true> *IR) -> void {
+      Thread->IRLists.try_emplace(Addr, IR);
+    };
+
+    LocalLoader->AddIR(IRHandler);
+
     // Compile all of our cached entries
     LogMan::Msg::D("Precompiling: %ld blocks...", EntryList.size());
     for (auto Entry : EntryList) {
