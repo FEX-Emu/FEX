@@ -1,0 +1,15 @@
+;%ifdef CONFIG
+;{
+;  "RegData": {
+;    "RAX": "0x4142434445464748"
+;  }
+;}
+;%endif
+
+(%ssa1) IRHeader #0x1000, %ssa2, #0
+  (%ssa2) CodeBlock %ssa6, %ssa8, %ssa3
+    (%ssa6 i0) Dummy
+    %Value i64 = Constant #0x4142434445464748
+    (%Store i64) StoreContext %Value i64, #0x8, GPR
+    (%ssa7 i0) Break #4, #4
+    (%ssa8 i0) EndBlock #0x0
