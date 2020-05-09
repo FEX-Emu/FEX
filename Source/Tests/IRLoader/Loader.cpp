@@ -159,9 +159,8 @@ namespace FEX::IRLoader {
     return {DecodeFailure::DECODE_OKAY, Op->second};
   }
 
-  Loader::Loader(std::string const &Filename)
-		: Data {8 * 1024 * 1024}
-		, ListData {8 * 1024 * 1024} {
+  Loader::Loader(std::string const &Filename, std::string const &ConfigFilename) {
+    Config.Init(ConfigFilename);
     std::fstream fp(Filename, std::fstream::binary | std::fstream::in);
 
     if (!fp.is_open()) {
@@ -475,18 +474,6 @@ namespace FEX::IRLoader {
 
 		return true;
 	}
-
-	// IR dispatcher requirements
-	void Loader::ResetWorkingList() {
-		Data.Reset();
-		ListData.Reset();
-		CodeBlocks.clear();
-		CurrentWriteCursor = nullptr;
-		// This is necessary since we do "null" pointer checks
-		InvalidNode = reinterpret_cast<OrderedNode*>(ListData.Allocate(sizeof(OrderedNode)));
-		CurrentCodeBlock = nullptr;
-	}
-
 
   void InitializeStaticTables() {
     for (FEXCore::IR::IROps Op = FEXCore::IR::IROps::OP_DUMMY;
