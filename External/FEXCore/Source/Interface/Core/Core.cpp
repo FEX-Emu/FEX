@@ -128,6 +128,10 @@ namespace FEXCore::Context {
     : FrontendDecoder {this}
     , SyscallHandler {FEXCore::CreateHandler(OperatingMode::MODE_64BIT, this)} {
     FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
+    PassManager.RegisterExitHandler([this]() {
+      ShouldStop = true;
+    });
+    PassManager.RegisterSyscallHandler(SyscallHandler.get());
     PassManager.AddDefaultPasses();
     PassManager.AddDefaultValidationPasses();
 #ifdef BLOCKSTATS
@@ -381,8 +385,10 @@ namespace FEXCore::Context {
     Thread->CPUBackend->Initialize();
     Thread->FallbackBackend->Initialize();
 
-    auto IRHandler = [Thread](uint64_t Addr, FEXCore::IR::IRListView<true> *IR) -> void {
-      Thread->IRLists.try_emplace(Addr, IR);
+    auto IRHandler = [this, Thread](uint64_t Addr, IR::IREmitter *IR) -> void {
+      // Run the passmanager over the IR from the dispatcher
+      PassManager.Run(IR);
+      Thread->IRLists.try_emplace(Addr, IR->CreateIRCopy());
     };
 
     LocalLoader->AddIR(IRHandler);
@@ -447,7 +453,7 @@ namespace FEXCore::Context {
   IR::RegisterAllocationPass *Context::GetRegisterAllocatorPass() {
     if (!RAPass) {
       RAPass = IR::CreateRegisterAllocationPass();
-      PassManager.InsertPass(RAPass);
+      PassManager.InsertRAPass(RAPass);
     }
 
     return RAPass;

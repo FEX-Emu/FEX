@@ -18,15 +18,15 @@ namespace FEXCore::IR::Validation {
 
 class IRValidation final : public FEXCore::IR::Pass {
 public:
-  bool Run(OpDispatchBuilder *Disp) override;
+  bool Run(IREmitter *IREmit) override;
 };
 
-bool IRValidation::Run(OpDispatchBuilder *Disp) {
+bool IRValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   bool HadWarning = false;
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
-  auto CurrentIR = Disp->ViewIR();
+  auto CurrentIR = IREmit->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
@@ -42,8 +42,8 @@ bool IRValidation::Run(OpDispatchBuilder *Disp) {
 
   OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
   IR::RegisterAllocationPass * RAPass{};
-  if (Disp->CTX->HasRegisterAllocationPass()) {
-    RAPass = Disp->CTX->GetRegisterAllocatorPass();
+  if (Manager->HasRAPass()) {
+    RAPass = Manager->GetRAPass();
   }
 
   while (1) {

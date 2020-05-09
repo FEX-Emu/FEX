@@ -172,7 +172,7 @@ public:
   RCLSE() {
     ClassifyContextStruct(&ClassifiedStruct);
   }
-  bool Run(FEXCore::IR::OpDispatchBuilder *Disp) override;
+  bool Run(FEXCore::IR::IREmitter *IREmit) override;
 private:
   ContextInfo ClassifiedStruct;
   std::unordered_map<FEXCore::IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
@@ -180,10 +180,10 @@ private:
   ContextMemberInfo *FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size);
   ContextMemberInfo *RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2 = nullptr);
   ContextMemberInfo *RecordAccess(ContextInfo *ClassifiedInfo, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *Node2 = nullptr);
-  void CalculateControlFlowInfo(FEXCore::IR::OpDispatchBuilder *Disp);
+  void CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit);
 
   // Block local Passes
-  bool RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp);
+  bool RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit);
 };
 
 ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size) {
@@ -228,12 +228,12 @@ ContextMemberInfo *RCLSE::RecordAccess(ContextInfo *ClassifiedInfo, FEXCore::IR:
   return RecordAccess(Info, RegClass, Offset, Size, AccessType, Node, Node2);
 }
 
-void RCLSE::CalculateControlFlowInfo(FEXCore::IR::OpDispatchBuilder *Disp) {
+void RCLSE::CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit) {
   using namespace FEXCore;
   using namespace FEXCore::IR;
 
   OffsetToBlockMap.clear();
-  auto CurrentIR = Disp->ViewIR();
+  auto CurrentIR = IREmit->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
@@ -347,15 +347,15 @@ void RCLSE::CalculateControlFlowInfo(FEXCore::IR::OpDispatchBuilder *Disp) {
  *   (%%ssa176) StoreContext %ssa175 i128, 0x10, 0xa0
 
  */
-bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) {
+bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
   using namespace FEXCore;
   using namespace FEXCore::IR;
 
   bool Changed = false;
-  auto CurrentIR = Disp->ViewIR();
+  auto CurrentIR = IREmit->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
-  auto OriginalWriteCursor = Disp->GetWriteCursor();
+  auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
   auto Begin = CurrentIR.begin();
   auto Op = Begin();
@@ -402,7 +402,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
             Info->Accessed == ACCESS_WRITE) {
           // Remove the last store because this one overwrites it entirely
           // Happens when we store in to a location then store again
-          Disp->Remove(LastNode2);
+          IREmit->Remove(LastNode2);
         }
       }
       else if (IROp->Op == OP_LOADCONTEXT) {
@@ -424,14 +424,14 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
           if (Op->Offset >= offsetof(FEXCore::Core::CPUState, xmm[0]) &&
               Op->Offset <= offsetof(FEXCore::Core::CPUState, xmm[15])) {
 
-            Disp->SetWriteCursor(CodeNode);
+            IREmit->SetWriteCursor(CodeNode);
             // XMM needs a bit of special help
-            auto BitCast = Disp->_VBitcast(IROp->Size * 8, 1, LastNode);
-            Disp->ReplaceAllUsesWithInclusive(CodeNode, BitCast, CodeBegin, CodeLast);
+            auto BitCast = IREmit->_VBitcast(IROp->Size * 8, 1, LastNode);
+            IREmit->ReplaceAllUsesWithInclusive(CodeNode, BitCast, CodeBegin, CodeLast);
             RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           }
           else {
-            Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+            IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
             RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           }
           Changed = true;
@@ -442,7 +442,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
                  LastSize == IROp->Size &&
                  Info->Accessed == ACCESS_READ) {
           // Did we read and then read again?
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
           RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           Changed = true;
         }
@@ -459,14 +459,14 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
 
         if (LastAccess == ACCESS_WRITE) { // 1 byte so always a full write
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
-          Disp->SetWriteCursor(CodeNode);
-          auto Res = Disp->_Bfe(1, 0, LastNode);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, Res, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto Res = IREmit->_Bfe(1, 0, LastNode);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Res, CodeBegin, CodeLast);
           RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastNode);
           Changed = true;
         }
         else if (LastAccess == ACCESS_READ) {
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
           RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastNode);
           Changed = true;
         }
@@ -493,16 +493,16 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::OpDispatchBuilder *Disp) 
     }
   }
 
-  Disp->SetWriteCursor(OriginalWriteCursor);
+  IREmit->SetWriteCursor(OriginalWriteCursor);
 
   return Changed;
 }
 
-bool RCLSE::Run(FEXCore::IR::OpDispatchBuilder *Disp) {
+bool RCLSE::Run(FEXCore::IR::IREmitter *IREmit) {
   ResetClassificationAccesses(&ClassifiedStruct);
-  CalculateControlFlowInfo(Disp);
+  CalculateControlFlowInfo(IREmit);
   bool Changed = false;
-  Changed |= RedundantStoreLoadElimination(Disp);
+  Changed |= RedundantStoreLoadElimination(IREmit);
 
   return Changed;
 }

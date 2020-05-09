@@ -5,8 +5,7 @@
 
 namespace FEXCore {
 namespace IR {
-template<bool>
-class IRListView;
+class IREmitter;
 }
 
 /**
@@ -80,7 +79,7 @@ public:
 
   virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}
 
-  using IRHandler = std::function<void(uint64_t Addr, FEXCore::IR::IRListView<true> *IR)>;
+  using IRHandler = std::function<void(uint64_t Addr, FEXCore::IR::IREmitter *IR)>;
   virtual void AddIR(IRHandler Handler) {}
 };
 

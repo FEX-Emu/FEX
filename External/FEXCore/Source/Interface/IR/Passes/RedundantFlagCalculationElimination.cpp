@@ -5,7 +5,7 @@ namespace FEXCore::IR {
 
 class DeadFlagCalculationEliminination final : public FEXCore::IR::Pass {
 public:
-  bool Run(OpDispatchBuilder *Disp) override;
+  bool Run(IREmitter *IREmit) override;
 };
 
 /**
@@ -19,11 +19,11 @@ public:
  * This may be more interesting with full function level recompilation since flags definitely won't be used across function boundaries.
  *
  */
-bool DeadFlagCalculationEliminination::Run(OpDispatchBuilder *Disp) {
+bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
   std::array<OrderedNode*, 32> LastValidFlagStores{};
 
   bool Changed = false;
-  auto CurrentIR = Disp->ViewIR();
+  auto CurrentIR = IREmit->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
@@ -74,7 +74,7 @@ bool DeadFlagCalculationEliminination::Run(OpDispatchBuilder *Disp) {
     // If any flags are stored but not loaded by the end of the block, then erase them
     for (auto &Flag : LastValidFlagStores) {
       if (Flag != nullptr) {
-        Disp->Remove(Flag);
+        IREmit->Remove(Flag);
         Changed = true;
       }
     }

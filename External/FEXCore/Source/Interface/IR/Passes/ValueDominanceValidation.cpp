@@ -16,13 +16,13 @@ namespace {
 namespace FEXCore::IR::Validation {
 class ValueDominanceValidation final : public FEXCore::IR::Pass {
 public:
-  bool Run(OpDispatchBuilder *Disp) override;
+  bool Run(IREmitter *IREmit) override;
 };
 
-bool ValueDominanceValidation::Run(OpDispatchBuilder *Disp) {
+bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   bool HadWarning = false;
-  auto CurrentIR = Disp->ViewIR();
+  auto CurrentIR = IREmit->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
   std::ostringstream Errors;

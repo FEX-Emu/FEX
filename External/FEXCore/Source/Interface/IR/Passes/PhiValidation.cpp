@@ -7,12 +7,12 @@ namespace FEXCore::IR::Validation {
 
 class PhiValidation final : public FEXCore::IR::Pass {
 public:
-  bool Run(OpDispatchBuilder *Disp) override;
+  bool Run(IREmitter *IREmit) override;
 };
 
-bool PhiValidation::Run(OpDispatchBuilder *Disp) {
+bool PhiValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
-  auto CurrentIR = Disp->ViewIR();
+  auto CurrentIR = IREmit->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
