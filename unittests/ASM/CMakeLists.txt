@@ -25,7 +25,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   add_custom_command(OUTPUT ${OUTPUT_CONFIG_NAME}
     DEPENDS "${ASM_SRC}"
-    COMMAND "python3" ARGS "${CMAKE_SOURCE_DIR}/Scripts/json_asm_parse.py" "${ASM_SRC}" "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_CONFIG_NAME}")
+    COMMAND "python3" ARGS "${CMAKE_SOURCE_DIR}/Scripts/json_asm_config_parse.py" "${ASM_SRC}" "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_CONFIG_NAME}")
 
   list(APPEND ASM_DEPENDS "${OUTPUT_NAME};${OUTPUT_CONFIG_NAME}")
 
