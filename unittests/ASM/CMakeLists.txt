@@ -70,3 +70,12 @@ endforeach()
 
 add_custom_target(asm_files ALL
   DEPENDS "${ASM_DEPENDS}")
+
+execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
+string(STRIP ${CORES} CORES)
+
+add_custom_target(
+  asm_tests
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  USES_TERMINAL
+  COMMAND "ctest" "-j${CORES}" "-R" "\.*.asm")
