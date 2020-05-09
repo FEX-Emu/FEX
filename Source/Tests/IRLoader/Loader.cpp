@@ -100,7 +100,7 @@ namespace FEX::IRLoader {
 
   template<>
   std::pair<DecodeFailure, FEXCore::IR::TypeDefinition> Loader::DecodeValue(std::string &Arg) {
-    uint8_t Size{}, Elements{};
+    uint8_t Size{}, Elements{1};
     int NumArgs = sscanf(Arg.c_str(), "i%hhdv%hhd", &Size, &Elements);
 
     if (NumArgs != 1 && NumArgs != 2) {
