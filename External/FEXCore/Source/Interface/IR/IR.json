@@ -280,7 +280,10 @@
       "HasDest": true,
       "DestClass": "GPR",
       "DestSize": "GetOpSize(ssa0)",
-      "SSAArgs": "1"
+      "SSAArgs": "1",
+      "SSANames": [
+        "Value"
+      ]
     },
 
     "CycleCounter": {
@@ -300,6 +303,9 @@
     },
 
     "LoadContext": {
+      "Desc": ["Loads a value from the context with offset",
+               "Dest = Ctx[Offset]"
+              ],
       "OpClass": "Memory",
       "HasDest": true,
       "DestClass": "Complex",
@@ -314,8 +320,14 @@
     },
 
     "StoreContext": {
+      "Desc": ["Stores a value to the context with offset",
+               "Ctx[Offset] = Value"
+              ],
       "OpClass": "Memory",
       "SSAArgs": "1",
+      "SSANames": [
+        "Value"
+      ],
       "DestSize": "Size",
       "HelperArgs": [
         "uint8_t", "Size"
@@ -327,8 +339,14 @@
     },
 
     "LoadContextIndexed": {
+      "Desc": ["Loads a value from the context with offset and indexed by SSA value",
+               "Dest = Ctx[BaseOffset + Index * Stride]"
+              ],
       "OpClass": "Memory",
       "SSAArgs": "1",
+      "SSANames": [
+        "Index"
+      ],
       "HasDest": true,
       "DestClass": "Complex",
       "DestSize": "Size",
@@ -341,8 +359,15 @@
     },
 
     "StoreContextIndexed": {
+      "Desc": ["Stores a value to the context with offset and indexed by SSA value",
+               "Ctx[BaseOffset + Index * Stride] = Value"
+              ],
       "OpClass": "Memory",
       "SSAArgs": "2",
+      "SSANames": [
+        "Value",
+        "Index"
+      ],
       "Args": [
         "uint8_t", "Size",
         "uint32_t", "BaseOffset",
@@ -352,8 +377,15 @@
     },
 
     "SpillRegister": {
+      "Desc": ["Spills an SSA value to memory",
+               "Spill slots are register allocated and has live ranges calculated to handle slot calculation",
+               "```diff\n- !Don't use this op. It is for RA to handle spilling and filling!\n```"
+              ],
       "OpClass": "Memory",
       "SSAArgs": "1",
+      "SSANames": [
+        "Value"
+      ],
       "Args": [
         "uint32_t", "Slot",
         "RegisterClassType", "Class"
@@ -361,6 +393,11 @@
     },
 
     "FillRegister": {
+      "Desc": ["Fills a register from a spill slot",
+               "Spill slots are register allocated and has live ranges calculated to handle slot calculation",
+               "```diff\n- !Don't use this op. It is for RA to handle spilling and filling!\n```"
+              ],
+
       "OpClass": "Memory",
       "HasDest": true,
       "DestClass": "Complex",
@@ -371,6 +408,9 @@
     },
 
     "LoadFlag": {
+      "Desc": ["Loads an x86-64 flag from the context object",
+               "Specialized to allow flexible implementation of flag handling"
+              ],
       "OpClass": "Memory",
       "HasDest": true,
       "DestClass": "GPR",
@@ -381,8 +421,14 @@
     },
 
     "StoreFlag": {
+      "Desc": ["Stores 1-bit of the flag in to the specified x86-64 flag",
+               "Specialized to allow flexible implementation of flag handling"
+              ],
       "OpClass": "Memory",
       "SSAArgs": "1",
+      "SSANames": [
+        "Value"
+      ],
       "Args": [
         "uint32_t", "Flag"
       ]
@@ -393,7 +439,16 @@
       "HasDest": true,
       "DestClass": "GPR",
       "FixedDestSize": "8",
-      "SSAArgs": "7"
+      "SSAArgs": "7",
+      "SSANames": [
+        "SyscallID",
+        "Arg0",
+        "Arg1",
+        "Arg2",
+        "Arg3",
+        "Arg4",
+        "Arg5"
+      ]
     },
 
     "LoadMem": {
@@ -402,6 +457,9 @@
       "DestClass": "Complex",
       "DestSize": "Size",
       "SSAArgs": "1",
+      "SSANames": [
+        "Addr"
+      ],
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
@@ -412,6 +470,10 @@
     "StoreMem": {
       "OpClass": "Memory",
       "SSAArgs": "2",
+      "SSANames": [
+        "Addr",
+        "Value"
+      ],
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
