@@ -211,6 +211,12 @@ namespace FEX::IRLoader {
         continue;
       }
 
+      if (Line[0] == ';') {
+        // This is a comment line
+        // Skip it
+        continue;
+      }
+
       size_t CurrentPos{};
 			// Let's see if this node is assigning something first
 			if (Line[0] == '%') {
