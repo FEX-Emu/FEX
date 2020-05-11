@@ -221,6 +221,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   LogMan::Throw::A(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P),
     "Group Ops should have been decoded before this!");
 
+  uint8_t DestSize{};
+
   // New instruction size decoding
   {
     // Decode destinations first
@@ -229,12 +231,15 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
 
     if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_8BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_8BIT);
+      DestSize = 1;
     }
     else if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_16BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_16BIT);
+      DestSize = 2;
     }
     else if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_128BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_128BIT);
+      DestSize = 16;
     }
     else if (DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE &&
       (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF ||
@@ -242,14 +247,17 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       // See table 1-2. Operand-Size Overrides for this decoding
       // If the default operating mode is 32bit and we have the operand size flag then the operating size drops to 16bit
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_16BIT);
+      DestSize = 2;
     }
     else if (DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING ||
       DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
       DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_64BIT);
+      DestSize = 8;
     }
     else {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_32BIT);
+      DestSize = 4;
     }
 
     // Decode sources
@@ -468,7 +476,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   if (Bytes != 0) {
     LogMan::Throw::A(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
 
-    DecodeInst->Src[CurrentSrc].TypeLiteral.Size = Bytes;
+    DecodeInst->Src[CurrentSrc].TypeLiteral.Size = DestSize;
 
     uint64_t Literal {0};
     Literal = ReadData(Bytes);
