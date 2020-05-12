@@ -97,6 +97,7 @@ set (SRCS
   Interface/Memory/MemMapper.cpp
   Interface/Memory/SharedMem.cpp
   Interface/IR/IR.cpp
+  Interface/IR/IREmitter.cpp
   Interface/IR/PassManager.cpp
   Interface/IR/Passes/ConstProp.cpp
   Interface/IR/Passes/DeadCodeElimination.cpp

@@ -4065,7 +4065,9 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
 
   JITState.Functions.emplace_back(Engine);
 
-  DebugData->HostCodeSize = JITState.MemManager->GetLastCodeAllocation();
+  if (DebugData) {
+    DebugData->HostCodeSize = JITState.MemManager->GetLastCodeAllocation();
+  }
   void *FunctionPtr = reinterpret_cast<void*>(Engine->getFunctionAddress(FunctionName.str()));
 
   return FunctionPtr;

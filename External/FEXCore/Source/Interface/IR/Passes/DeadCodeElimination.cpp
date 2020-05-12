@@ -6,14 +6,14 @@
 namespace FEXCore::IR {
 
 class DeadCodeElimination final : public FEXCore::IR::Pass {
-  bool Run(OpDispatchBuilder *Disp) override;
+  bool Run(IREmitter *IREmit) override;
 
 private:
   void markUsed(OrderedNodeWrapper *CodeOp, IROp_Header *IROp);
 };
 
-bool DeadCodeElimination::Run(OpDispatchBuilder *Disp) {
-  auto CurrentIR = Disp->ViewIR();
+bool DeadCodeElimination::Run(IREmitter *IREmit) {
+  auto CurrentIR = IREmit->ViewIR();
 
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
@@ -71,7 +71,7 @@ bool DeadCodeElimination::Run(OpDispatchBuilder *Disp) {
       default:
         if (CodeNode->GetUses() == 0) {
           NumRemoved++;
-          Disp->Remove(CodeNode);
+          IREmit->Remove(CodeNode);
         }
         break;
       }

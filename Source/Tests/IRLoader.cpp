@@ -81,7 +81,7 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
     uint64_t GetFinalRIP() override { return 0; }
 
     virtual void AddIR(IRHandler Handler) override {
-      Handler(IR->GetEntryRIP(), IR->CreateIRCopy());
+      Handler(IR->GetEntryRIP(), IR);
     }
 
   private:
@@ -108,7 +108,7 @@ int main(int argc, char **argv, char **const envp) {
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
 
-  LogMan::Throw::A(!Args.empty(), "Not enough arguments");
+  LogMan::Throw::A(Args.size() > 1, "Not enough arguments");
 
   FEXCore::Context::InitializeStaticTables();
   auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
@@ -127,7 +127,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 
   FEX::IRLoader::InitializeStaticTables();
-	FEX::IRLoader::Loader Loader(Args[0]);
+	FEX::IRLoader::Loader Loader(Args[0], Args[1]);
 
   int Return{};
 
@@ -149,12 +149,20 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::RunUntilExit(CTX);
 
     LogMan::Msg::D("Reason we left VM: %d", ShutdownReason);
-    Return = 0;
-	}
-	else {
+
+    // Just re-use compare state. It also checks against the expected values in config.
+    FEXCore::Core::CPUState State;
+    FEXCore::Context::GetCPUState(CTX, &State);
+    bool Passed = Loader.CompareStates(&State);
+
+    LogMan::Msg::I("Passed? %s\n", Passed ? "Yes" : "No");
+
+    Return = Passed ? 0 : -1;
+  }
+  else {
     LogMan::Msg::E("Couldn't load IR");
     Return = -1;
-	}
+  }
 
   FEXCore::Context::DestroyContext(CTX);
   FEXCore::SHM::DestroyRegion(SHM);

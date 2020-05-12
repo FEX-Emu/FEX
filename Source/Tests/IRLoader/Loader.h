@@ -1,6 +1,9 @@
 #pragma once
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/IR/IREmitter.h>
+
+#include "HarnessHelpers.h"
 
 #include "LogManager.h"
 
@@ -25,19 +28,18 @@ enum class DecodeFailure {
 }
 
 namespace FEX::IRLoader {
-  class Loader final {
+  class Loader final : public FEXCore::IR::IREmitter {
     public:
-      Loader(std::string const &Filename);
-
-      IRListView<false> ViewIR() { return IRListView<false>(&Data, &ListData); }
-			IRListView<true> *CreateIRCopy() { return new IRListView<true>(&Data, &ListData); }
+      Loader(std::string const &Filename, std::string const &ConfigFilename);
 
 			bool IsValid() const { return Loaded; }
       uint64_t GetEntryRIP() const { return EntryRIP; }
 
-#define IROP_ALLOCATE_HELPERS
+      bool CompareStates(FEXCore::Core::CPUState const* State) {
+        return Config.CompareStates(State, nullptr);
+      }
+
 #define IROP_PARSER_ALLOCATE_HELPERS
-#define IROP_DISPATCH_HELPERS
 #include <FEXCore/IR/IRDefines.inc>
     private:
 			bool Parse();
@@ -46,45 +48,6 @@ namespace FEX::IRLoader {
       std::vector<std::string> Lines;
       bool Loaded{};
 
-			// IR definition requirements
-			void ResetWorkingList();
-
-			OrderedNode *CreateNode(IROp_Header *Op) {
-				uintptr_t ListBegin = ListData.Begin();
-				size_t Size = sizeof(OrderedNode);
-				void *Ptr = ListData.Allocate(Size);
-				OrderedNode *Node = new (Ptr) OrderedNode();
-				Node->Header.Value.SetOffset(Data.Begin(), reinterpret_cast<uintptr_t>(Op));
-
-				if (CurrentWriteCursor) {
-					CurrentWriteCursor->append(ListBegin, Node);
-				}
-				CurrentWriteCursor = Node;
-				return Node;
-			}
-
-			OrderedNode *GetNode(uint32_t SSANode) {
-				uintptr_t ListBegin = ListData.Begin();
-				OrderedNode *Node = reinterpret_cast<OrderedNode *>(ListBegin + SSANode * sizeof(OrderedNode));
-				return Node;
-			}
-
-			void SetWriteCursor(OrderedNode *Node) {
-				CurrentWriteCursor = Node;
-			}
-
-			OrderedNode *GetWriteCursor() {
-				return CurrentWriteCursor;
-			}
-
-			IntrusiveAllocator Data;
-			IntrusiveAllocator ListData;
-
-			OrderedNode *InvalidNode;
-			OrderedNode *CurrentCodeBlock{};
-			OrderedNode *CurrentWriteCursor = nullptr;
-
-			std::vector<OrderedNode*> CodeBlocks;
 			std::unordered_map<std::string, OrderedNode*> SSANameMapper;
 
       template<typename Type>
@@ -138,6 +101,7 @@ namespace FEX::IRLoader {
 
       std::vector<LineDefinition> Defs;
 			LineDefinition *CurrentDef{};
+      FEX::HarnessHelper::ConfigLoader Config;
   };
 
   void InitializeStaticTables();

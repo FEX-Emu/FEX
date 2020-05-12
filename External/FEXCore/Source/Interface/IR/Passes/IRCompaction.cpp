@@ -8,7 +8,7 @@ namespace FEXCore::IR {
 class IRCompaction final : public FEXCore::IR::Pass {
 public:
   IRCompaction();
-  bool Run(OpDispatchBuilder *Disp) override;
+  bool Run(IREmitter *IREmit) override;
 
 private:
   OpDispatchBuilder LocalBuilder;
@@ -20,9 +20,8 @@ IRCompaction::IRCompaction()
   OldToNewRemap.resize(9000);
 }
 
-bool IRCompaction::Run(OpDispatchBuilder *Disp) {
-  LocalBuilder.SetMultiblock(Disp->GetMultiblock());
-  auto CurrentIR = Disp->ViewIR();
+bool IRCompaction::Run(IREmitter *IREmit) {
+  auto CurrentIR = IREmit->ViewIR();
   uint32_t NodeCount = CurrentIR.GetSSACount();
 
   if (OldToNewRemap.size() < NodeCount) {
@@ -216,7 +215,7 @@ bool IRCompaction::Run(OpDispatchBuilder *Disp) {
   //   LogMan::Msg::A("Whoa. Compaction made the IR a different size when it shouldn't have. 0x%lx > 0x%lx or 0x%lx > 0x%lx",NewListSize, OldListSize, NewDataSize, OldDataSize);
   // }
 
-  Disp->CopyData(LocalBuilder);
+  IREmit->CopyData(LocalBuilder);
 
   return true;
 }

@@ -320,7 +320,7 @@ namespace FEXCore::IR {
     public:
       ConstrainedRAPass();
       ~ConstrainedRAPass();
-      bool Run(OpDispatchBuilder *Disp) override;
+      bool Run(IREmitter *IREmit) override;
 
       void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) override;
       void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) override;
@@ -340,7 +340,7 @@ namespace FEXCore::IR {
       RegisterGraph *Graph;
       std::unique_ptr<FEXCore::IR::Pass> LocalCompaction;
 
-      void SpillRegisters(FEXCore::IR::OpDispatchBuilder *Disp);
+      void SpillRegisters(FEXCore::IR::IREmitter *IREmit);
 
       std::vector<LiveRange> LiveRanges;
 
@@ -355,11 +355,11 @@ namespace FEXCore::IR {
       void CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR);
       void AllocateVirtualRegisters();
 
-      FEXCore::IR::NodeWrapperIterator FindFirstUse(FEXCore::IR::OpDispatchBuilder *Disp, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End);
+      FEXCore::IR::NodeWrapperIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End);
       uint32_t FindNodeToSpill(RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange);
       uint32_t FindSpillSlot(uint32_t Node, FEXCore::IR::RegisterClassType RegisterClass);
 
-      bool RunAllocateVirtualRegisters(OpDispatchBuilder *Disp);
+      bool RunAllocateVirtualRegisters(IREmitter *IREmit);
   };
 
   ConstrainedRAPass::ConstrainedRAPass() {
@@ -725,8 +725,8 @@ namespace FEXCore::IR {
     }
   }
 
-  FEXCore::IR::NodeWrapperIterator ConstrainedRAPass::FindFirstUse(FEXCore::IR::OpDispatchBuilder *Disp, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End) {
-    auto CurrentIR = Disp->ViewIR();
+  FEXCore::IR::NodeWrapperIterator ConstrainedRAPass::FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End) {
+    auto CurrentIR = IREmit->ViewIR();
     uintptr_t ListBegin = CurrentIR.GetListData();
     uintptr_t DataBegin = CurrentIR.GetData();
 
@@ -856,16 +856,16 @@ namespace FEXCore::IR {
     return CurrentNode->Head.SpillSlot;
   }
 
-  void ConstrainedRAPass::SpillRegisters(FEXCore::IR::OpDispatchBuilder *Disp) {
+  void ConstrainedRAPass::SpillRegisters(FEXCore::IR::IREmitter *IREmit) {
     using namespace FEXCore;
 
-    auto IR = Disp->ViewIR();
+    auto IR = IREmit->ViewIR();
     uintptr_t ListBegin = IR.GetListData();
     uintptr_t DataBegin = IR.GetData();
 
     auto Begin = IR.begin();
     auto Op = Begin();
-    auto LastCursor = Disp->GetWriteCursor();
+    auto LastCursor = IREmit->GetWriteCursor();
 
     IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
     auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
@@ -911,15 +911,15 @@ namespace FEXCore::IR {
                 LogMan::Throw::A(ConstantIROp->Header.Op == IR::OP_CONSTANT, "This needs to be const");
                 // First op post Spill
                 auto NextIter = CodeBegin;
-                auto FirstUseLocation = FindFirstUse(Disp, ConstantNode, NextIter, CodeLast);
+                auto FirstUseLocation = FindFirstUse(IREmit, ConstantNode, NextIter, CodeLast);
                 LogMan::Throw::A(FirstUseLocation != IR::NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
                 if (FirstUseLocation != IR::NodeWrapperIterator::Invalid()) {
                   --FirstUseLocation;
                   IR::OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
                   IR::OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
-                  Disp->SetWriteCursor(FirstUseOrderedNode);
-                  auto FilledConstant = Disp->_Constant(ConstantIROp->Constant);
-                  Disp->ReplaceAllUsesWithInclusive(ConstantNode, FilledConstant, FirstUseLocation, CodeLast);
+                  IREmit->SetWriteCursor(FirstUseOrderedNode);
+                  auto FilledConstant = IREmit->_Constant(ConstantIROp->Constant);
+                  IREmit->ReplaceAllUsesWithInclusive(ConstantNode, FilledConstant, FirstUseLocation, CodeLast);
                   Spilled = true;
                 }
                 break;
@@ -946,9 +946,9 @@ namespace FEXCore::IR {
                 auto PrevIter = CodeBegin;
                 --PrevIter;
                 --PrevIter;
-                Disp->SetWriteCursor(PrevIter()->GetNode(ListBegin));
+                IREmit->SetWriteCursor(PrevIter()->GetNode(ListBegin));
 
-                auto SpillOp = Disp->_SpillRegister(InterferenceOrderedNode, SpillSlot, {InterferenceRegClass});
+                auto SpillOp = IREmit->_SpillRegister(InterferenceOrderedNode, SpillSlot, {InterferenceRegClass});
                 SpillOp.first->Header.Size = InterferenceIROp->Size;
                 SpillOp.first->Header.ElementSize = InterferenceIROp->ElementSize;
 
@@ -956,7 +956,7 @@ namespace FEXCore::IR {
                   // First op post Spill
                   auto NextIter = CodeBegin;
                   ++NextIter;
-                  auto FirstUseLocation = FindFirstUse(Disp, InterferenceOrderedNode, NextIter, CodeLast);
+                  auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, NextIter, CodeLast);
 
                   LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
                   if (FirstUseLocation != IR::NodeWrapperIterator::Invalid()) {
@@ -964,19 +964,19 @@ namespace FEXCore::IR {
                     IR::OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
                     IR::OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
 
-                    Disp->SetWriteCursor(FirstUseOrderedNode);
+                    IREmit->SetWriteCursor(FirstUseOrderedNode);
 
-                    auto FilledInterference = Disp->_FillRegister(SpillSlot, {InterferenceRegClass});
+                    auto FilledInterference = IREmit->_FillRegister(SpillSlot, {InterferenceRegClass});
                     FilledInterference.first->Header.Size = InterferenceIROp->Size;
                     FilledInterference.first->Header.ElementSize = InterferenceIROp->ElementSize;
-                    Disp->ReplaceAllUsesWithInclusive(InterferenceOrderedNode, FilledInterference, FirstUseLocation, CodeLast);
+                    IREmit->ReplaceAllUsesWithInclusive(InterferenceOrderedNode, FilledInterference, FirstUseLocation, CodeLast);
                     Spilled = true;
                   }
                 }
               }
             }
 
-            Disp->SetWriteCursor(LastCursor);
+            IREmit->SetWriteCursor(LastCursor);
             // We can't spill multiple times in a row. Need to restart
             if (Spilled) {
               return;
@@ -999,7 +999,7 @@ namespace FEXCore::IR {
     }
   }
 
-  bool ConstrainedRAPass::RunAllocateVirtualRegisters(FEXCore::IR::OpDispatchBuilder *Disp) {
+  bool ConstrainedRAPass::RunAllocateVirtualRegisters(FEXCore::IR::IREmitter *IREmit) {
     using namespace FEXCore;
     bool Changed = false;
 
@@ -1009,8 +1009,8 @@ namespace FEXCore::IR {
     TopRAPressure.assign(TopRAPressure.size(), 0);
 
     // We need to rerun compaction every step
-    Changed |= LocalCompaction->Run(Disp);
-    auto IR = Disp->ViewIR();
+    Changed |= LocalCompaction->Run(IREmit);
+    auto IR = IREmit->ViewIR();
 
     uint32_t SSACount = IR.GetSSACount();
 
@@ -1033,7 +1033,7 @@ namespace FEXCore::IR {
   }
 
 
-  bool ConstrainedRAPass::Run(OpDispatchBuilder *Disp) {
+  bool ConstrainedRAPass::Run(IREmitter *IREmit) {
     bool Changed = false;
 
     SpillSlotCount = 0;
@@ -1043,7 +1043,7 @@ namespace FEXCore::IR {
       HadFullRA = true;
 
       // Virtual allocation pass runs the compaction pass per run
-      Changed |= RunAllocateVirtualRegisters(Disp);
+      Changed |= RunAllocateVirtualRegisters(IREmit);
 
       for (size_t i = 0; i < PhysicalRegisterCount.size(); ++i) {
         // Virtual registers fit completely within physical registers
@@ -1055,7 +1055,7 @@ namespace FEXCore::IR {
         break;
       }
 
-      SpillRegisters(Disp);
+      SpillRegisters(IREmit);
       Changed = true;
     }
 

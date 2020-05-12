@@ -5,12 +5,12 @@ namespace FEXCore::IR {
 
 class ConstProp final : public FEXCore::IR::Pass {
 public:
-  bool Run(OpDispatchBuilder *Disp) override;
+  bool Run(IREmitter *IREmit) override;
 };
 
-bool ConstProp::Run(OpDispatchBuilder *Disp) {
+bool ConstProp::Run(IREmitter *IREmit) {
   bool Changed = false;
-  auto CurrentIR = Disp->ViewIR();
+  auto CurrentIR = IREmit->ViewIR();
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
@@ -23,7 +23,7 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
 
   OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
-  auto OriginalWriteCursor = Disp->GetWriteCursor();
+  auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
   while (1) {
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
@@ -58,8 +58,8 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         uint64_t Constant1;
         uint64_t Constant2;
 
-        if (Disp->IsValueConstant(IROp->Args[0], &Constant1) &&
-            Disp->IsValueConstant(IROp->Args[1], &Constant2)) {
+        if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) &&
+            IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
           LogMan::Msg::A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
         }
       break;
@@ -75,7 +75,7 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
       {
         uint64_t Constant1;
 
-        if (Disp->IsValueConstant(IROp->Args[0], &Constant1)) {
+        if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
           LogMan::Msg::A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
         }
       break;
@@ -86,12 +86,12 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         uint64_t Constant1;
         uint64_t Constant2;
 
-        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
           uint64_t NewConstant = Constant1 + Constant2;
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
       break;
@@ -101,12 +101,12 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         uint64_t Constant1;
         uint64_t Constant2;
 
-        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
           uint64_t NewConstant = Constant1 - Constant2;
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
       break;
@@ -116,12 +116,12 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         uint64_t Constant1;
         uint64_t Constant2;
 
-        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
           uint64_t NewConstant = Constant1 & Constant2;
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
       break;
@@ -131,12 +131,12 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         uint64_t Constant1;
         uint64_t Constant2;
 
-        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
           uint64_t NewConstant = Constant1 | Constant2;
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
       break;
@@ -146,27 +146,34 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         uint64_t Constant1;
         uint64_t Constant2;
 
-        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
           uint64_t NewConstant = Constant1 ^ Constant2;
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
       break;
       }
       case OP_LSHL: {
-        auto Op = IROp->C<IR::IROp_Lshl>();
+        auto Op = IROp->CW<IR::IROp_Lshl>();
         uint64_t Constant1;
         uint64_t Constant2;
 
-        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
           uint64_t NewConstant = Constant1 << Constant2;
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        }
+        else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
+                 Constant2 == 0) {
+          IREmit->SetWriteCursor(CodeNode);
+          OrderedNode *Arg = Op->Header.Args[0].GetNode(ListBegin);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Arg, CodeBegin, CodeLast);
           Changed = true;
         }
       break;
@@ -176,16 +183,16 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
       case OP_BFE: {
         auto Op = IROp->C<IR::IROp_Bfe>();
         uint64_t Constant;
-        if (IROp->Size <= 8 && Disp->IsValueConstant(Op->Header.Args[0], &Constant)) {
+        if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
           uint64_t SourceMask = (1ULL << Op->Width) - 1;
           if (Op->Width == 64)
             SourceMask = ~0ULL;
           SourceMask <<= Op->lsb;
 
           uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
 
@@ -195,11 +202,11 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         auto Op = IROp->C<IR::IROp_Zext>();
         uint64_t Constant;
         if (Op->SrcSize != 64 &&
-            Disp->IsValueConstant(Op->Header.Args[0], &Constant)) {
+            IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
           uint64_t NewConstant = Constant & ((1ULL << Op->SrcSize) - 1);
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
       break;
@@ -209,12 +216,12 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
         uint64_t Constant1;
         uint64_t Constant2;
 
-        if (Disp->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-            Disp->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+            IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
           uint64_t NewConstant = Constant1 * Constant2;
-          Disp->SetWriteCursor(CodeNode);
-          auto ConstantVal = Disp->_Constant(NewConstant);
-          Disp->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          IREmit->SetWriteCursor(CodeNode);
+          auto ConstantVal = IREmit->_Constant(NewConstant);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
         }
       }
@@ -235,7 +242,7 @@ bool ConstProp::Run(OpDispatchBuilder *Disp) {
     }
   }
 
-  Disp->SetWriteCursor(OriginalWriteCursor);
+  IREmit->SetWriteCursor(OriginalWriteCursor);
 
   return Changed;
 }
