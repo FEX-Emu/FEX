@@ -130,7 +130,6 @@ namespace FEXCore::Context {
     PassManager.RegisterExitHandler([this]() {
       ShouldStop = true;
     });
-    PassManager.RegisterSyscallHandler(SyscallHandler.get());
     PassManager.AddDefaultPasses();
     PassManager.AddDefaultValidationPasses();
 #ifdef BLOCKSTATS
@@ -233,6 +232,7 @@ namespace FEXCore::Context {
 
   bool Context::InitCore(FEXCore::CodeLoader *Loader) {
     SyscallHandler.reset(FEXCore::CreateHandler(Config.Is64BitMode ? OperatingMode::MODE_64BIT : OperatingMode::MODE_32BIT, this));
+    PassManager.RegisterSyscallHandler(SyscallHandler.get());
     LocalLoader = Loader;
     using namespace FEXCore::Core;
     FEXCore::Core::CPUState NewThreadState{};
