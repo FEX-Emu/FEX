@@ -78,6 +78,10 @@ set (SRCS
   Interface/HLE/FileManagement.cpp
   Interface/HLE/EmulatedFiles/EmulatedFiles.cpp
   Interface/HLE/Syscalls.cpp
+  Interface/HLE/x32/Syscalls.cpp
+  Interface/HLE/x32/FD.cpp
+  Interface/HLE/x32/Memory.cpp
+  Interface/HLE/x32/Thread.cpp
   Interface/HLE/x64/Syscalls.cpp
   Interface/HLE/Syscalls/EPoll.cpp
   Interface/HLE/Syscalls/FD.cpp
