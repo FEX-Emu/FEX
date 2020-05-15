@@ -15,6 +15,11 @@ namespace FEXCore::Core {
     uint64_t fs;
     uint8_t flags[48];
     uint64_t mm[8][2];
+
+    // 32bit x86 state
+    struct {
+      uint32_t base;
+    } gdt[32];
   };
   static_assert(offsetof(CPUState, xmm) % 16 == 0, "xmm needs to be 128bit aligned!");
 
