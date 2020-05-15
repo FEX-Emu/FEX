@@ -1,3 +1,4 @@
+#include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include <FEXCore/Core/CoreState.h>
 #include <climits>
@@ -5528,7 +5529,7 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
 
 #undef OpcodeArgs
 
-void InstallOpcodeHandlers() {
+void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable = {
     // Instructions
     {0x00, 1, &OpDispatchBuilder::ALUOp<0>},

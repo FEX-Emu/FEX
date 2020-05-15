@@ -24,7 +24,14 @@ public:
   ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter);
   ~ELFContainer();
 
-  uint64_t GetEntryPoint() const { return Header.e_entry; }
+  uint64_t GetEntryPoint() const {
+    if (Mode == MODE_32BIT) {
+      return Header._32.e_entry;
+    }
+    else {
+      return Header._64.e_entry;
+    }
+  }
 
   using MemoryLayout = std::tuple<uint64_t, uint64_t, uint64_t>;
 
@@ -59,11 +66,20 @@ public:
 
   void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
 
-  bool HasTLS() const { return TLSHeader != nullptr; }
+  bool HasTLS() const { return TLSHeader._64 != nullptr; }
   uint64_t InitializeThreadSlot(void *ELFBase, std::function<void(void const*, uint64_t)> Writer) const;
+
+  enum ELFMode {
+    MODE_32BIT,
+    MODE_64BIT,
+  };
+
+  ELFMode GetMode() const { return Mode; }
 
 private:
   bool LoadELF(std::string const &Filename);
+  bool LoadELF_32();
+  bool LoadELF_64();
   void CalculateMemoryLayouts();
   void CalculateSymbols();
   void GetDynamicLibs();
@@ -77,9 +93,24 @@ private:
   void PrintDynamicTable() const;
 
   std::vector<char> RawFile;
-  Elf64_Ehdr Header;
-  std::vector<Elf64_Shdr*> SectionHeaders;
-  std::vector<Elf64_Phdr*> ProgramHeaders;
+  union {
+    Elf32_Ehdr _32;
+    Elf64_Ehdr _64;
+  } Header;
+
+  union SectionHeader {
+    Elf32_Shdr *_32;
+    Elf64_Shdr *_64;
+  };
+
+  union ProgramHeader {
+    Elf32_Phdr *_32;
+    Elf64_Phdr *_64;
+  };
+
+  ELFMode Mode;
+  std::vector<SectionHeader> SectionHeaders;
+  std::vector<ProgramHeader> ProgramHeaders;
   std::vector<ELFSymbol> Symbols;
   std::unordered_map<std::string, ELFSymbol *> SymbolMap;
   std::map<uint64_t, ELFSymbol *> SymbolMapByAddress;
@@ -89,10 +120,10 @@ private:
   uint64_t MinPhysicalMemoryLocation{0};
   uint64_t MaxPhysicalMemoryLocation{0};
   uint64_t PhysicalMemorySize{0};
-  Elf64_Phdr* InterpreterHeader{};
+  ProgramHeader InterpreterHeader{};
   bool DynamicProgram{false};
   std::string DynamicLinker;
-  Elf64_Phdr const *TLSHeader{};
+  ProgramHeader TLSHeader{};
 };
 
 } // namespace ELFLoader

@@ -8,10 +8,10 @@
 #include <FEXCore/Debug/X86Tables.h>
 
 namespace FEXCore::Context {
-  void InitializeStaticTables() {
+  void InitializeStaticTables(OperatingMode Mode) {
     FEXCore::Paths::InitializePaths();
-    X86Tables::InitializeInfoTables();
-    IR::InstallOpcodeHandlers();
+    X86Tables::InitializeInfoTables(Mode);
+    IR::InstallOpcodeHandlers(Mode);
   }
 
   FEXCore::Context::Context *CreateNewContext() {

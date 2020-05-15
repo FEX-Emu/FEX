@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FEXCore/Core/Context.h>
+
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -430,5 +432,5 @@ extern X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
 // EVEX
 extern X86InstInfo EVEXTableOps[MAX_EVEX_TABLE_SIZE];
 
-void InitializeInfoTables();
+void InitializeInfoTables(Context::OperatingMode Mode);
 }

@@ -52,6 +52,8 @@ namespace FEXCore::Context {
       bool UnifiedMemory {true};
       std::string RootFSPath;
 
+      bool Is64BitMode {true};
+
       // LLVM JIT options
       bool LLVM_MemoryValidation {false};
       bool LLVM_IRValidation {false};

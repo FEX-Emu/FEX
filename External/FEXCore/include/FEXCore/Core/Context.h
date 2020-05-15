@@ -33,12 +33,17 @@ namespace FEXCore::Context {
     EXIT_DEBUG,
     EXIT_UNKNOWNERROR,
   };
+
+  enum OperatingMode {
+    MODE_32BIT,
+    MODE_64BIT,
+  };
   using CustomCPUFactoryType = std::function<FEXCore::CPU::CPUBackend* (FEXCore::Context::Context*, FEXCore::Core::ThreadState *Thread)>;
 
   /**
    * @brief This initializes internal FEXCore state that is shared between contexts and requires overhead to setup
    */
-  void InitializeStaticTables();
+  void InitializeStaticTables(OperatingMode Mode = MODE_64BIT);
 
   /**
    * @brief [[threadsafe]] Create a new FEXCore context object

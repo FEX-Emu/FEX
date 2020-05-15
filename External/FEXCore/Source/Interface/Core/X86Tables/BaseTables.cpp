@@ -1,9 +1,11 @@
 #include "Interface/Core/X86Tables/X86Tables.h"
 
+#include <FEXCore/Core/Context.h>
+
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
-void InitializeBaseTables() {
+void InitializeBaseTables(Context::OperatingMode Mode) {
   const U8U8InfoStruct BaseOpTable[] = {
     // Prefixes
     // Operand size overide
