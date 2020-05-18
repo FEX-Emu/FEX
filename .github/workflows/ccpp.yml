@@ -58,7 +58,6 @@ jobs:
       run: cmake --build . --config $BUILD_TYPE --target ir_tests
 
     - name: Posix Tests
-      working-directory: ${{runner.workspace}}/External/fex-posixtest-bins
       shell: bash
       # Execute the posixtest
-      run: ./run-tests.sh ${{runner.workspace}}/build/Bin/ELFLoader && ./generate-report.py
+      run: cd External/fex-posixtest-bins && ./run-tests.sh ${{runner.workspace}}/build/Bin/ELFLoader && ./generate-report.py
