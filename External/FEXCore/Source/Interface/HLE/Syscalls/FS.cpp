@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/vfs.h>
 #include <unistd.h>
@@ -13,8 +14,8 @@ struct InternalThreadState;
 
 namespace FEXCore::HLE {
   uint64_t Getcwd(FEXCore::Core::InternalThreadState *Thread, char *buf, size_t size) {
-    uint64_t Result = reinterpret_cast<uint64_t>(::getcwd(buf, size));
-    SYSCALL_ERRNO_NULL();
+    uint64_t Result = syscall(SYS_getcwd, buf, size);
+    SYSCALL_ERRNO();
   }
 
   uint64_t Chdir(FEXCore::Core::InternalThreadState *Thread, const char *path) {
