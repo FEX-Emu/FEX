@@ -288,6 +288,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_GETTIMEOFDAY:
     LogMan::Msg::D("gettimeofday(0x%lx, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
+  case SYSCALL_GETRUSAGE:
+    LogMan::Msg::D("getrusage(%ld, 0x%lx) = %ld", Args->Argument[1], Args->Argument[2], Ret);
+    break;
   case SYSCALL_SYSINFO:
     LogMan::Msg::D("sysinfo(0x%lx) = %ld", Args->Argument[1], Ret);
     break;
@@ -796,6 +799,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_FCHMOD,                 cvt(&FEXCore::HLE::Fchmod),                 2},
     {SYSCALL_UMASK,                  cvt(&FEXCore::HLE::Umask),                  1},
     {SYSCALL_GETTIMEOFDAY,           cvt(&FEXCore::HLE::Gettimeofday),           2},
+    {SYSCALL_GETRUSAGE,              cvt(&FEXCore::HLE::Getrusage),              2},
     {SYSCALL_SYSINFO,                cvt(&FEXCore::HLE::Sysinfo),                1},
     {SYSCALL_PTRACE,                 cvt(&NopPerm),                              4},
     {SYSCALL_GETUID,                 cvt(&FEXCore::HLE::Getuid),                 0},

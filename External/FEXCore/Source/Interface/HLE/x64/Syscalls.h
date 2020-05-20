@@ -101,6 +101,7 @@ enum Syscalls {
   SYSCALL_FCHMOD          = 91,  ///< __NR_fchmod
   SYSCALL_UMASK           = 95,  ///< __NR_umask
   SYSCALL_GETTIMEOFDAY    = 96,  ///< __NR_gettimeofday
+  SYSCALL_GETRUSAGE       = 98,  ///< __NR_getrusage
   SYSCALL_SYSINFO         = 99,  ///< __NR_sysinfo
   SYSCALL_PTRACE          = 101, ///< __NR_ptrace
   SYSCALL_GETUID          = 102, ///< __NR_getuid
