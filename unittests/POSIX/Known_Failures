@@ -8,7 +8,6 @@ conformance-interfaces-clock_settime-17-1.test
 conformance-interfaces-clock_settime-17-2.test
 conformance-interfaces-clock_settime-20-1.test
 conformance-interfaces-clock_settime-6-1.test
-conformance-interfaces-difftime-1-1.test
 conformance-interfaces-kill-1-1.test
 conformance-interfaces-killpg-1-1.test
 conformance-interfaces-mlockall-8-1.test
