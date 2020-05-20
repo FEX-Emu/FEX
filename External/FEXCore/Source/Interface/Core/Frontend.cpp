@@ -633,21 +633,6 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     else
       return NormalOp(LocalInfo, Op);
   }
-  else if (Info->Type == FEXCore::X86Tables::TYPE_XOP_TABLE_PREFIX) {
-    LogMan::Msg::A("XOP and POP <modrm> aren't handled!");
-    uint16_t Byte1 = ReadByte();
-    uint16_t Byte2 = ReadByte();
-    uint16_t XOPOp = ReadByte();
-    uint16_t map_select = Byte1 & 0b11111;
-    LogMan::Throw::A(map_select >= 8 && map_select <= 0xA, "We don't understand a map_select of: %d", map_select);
-    uint16_t pp = Byte2 & 0b11;
-    map_select -= 8;
-
-#define OPD(group, pp, opcode) ( (group << 10) | (pp << 8) | (opcode))
-    Op = OPD(map_select, pp, XOPOp);
-    return NormalOp(&XOPTableOps[Op], Op);
-#undef OPD
-  }
   else if (Info->Type == FEXCore::X86Tables::TYPE_GROUP_EVEX) {
     uint8_t P1 = ReadByte();
     uint8_t P2 = ReadByte();

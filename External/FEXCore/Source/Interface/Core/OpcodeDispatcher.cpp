@@ -5596,6 +5596,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x88, 4, &OpDispatchBuilder::MOVGPROp<0>},
 
     {0x8D, 1, &OpDispatchBuilder::LEAOp},
+    {0x8F, 1, &OpDispatchBuilder::POPOp},
     {0x90, 8, &OpDispatchBuilder::XCHGOp},
 
     {0x98, 1, &OpDispatchBuilder::CDQOp},
