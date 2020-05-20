@@ -1,6 +1,8 @@
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
+#include <FEXCore/IR/IR.h>
+
 #include <array>
 
 namespace FEXCore::IR {
@@ -42,38 +44,13 @@ bool DeadCodeElimination::Run(IREmitter *IREmit) {
       OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
       auto IROp = CodeNode->Op(DataBegin);
 
-      switch (IROp->Op) {
-      // State/memory storage
-      case OP_STORECONTEXTINDEXED:
-      case OP_STORECONTEXT:
-      case OP_STORECONTEXTPAIR:
-      case OP_STOREFLAG:
-      case OP_STOREMEM:
-      case OP_CAS:
-      case OP_PRINT:
-        // Keep
-        break;
-      // IO
-      case OP_SYSCALL:
-        // Keep
-        break;
-      // Control flow
-      case OP_BREAK:
-      case OP_JUMP:
-      case OP_EXITFUNCTION:
-      case OP_CONDJUMP:
-        // Keep
-        break;
-      case OP_DUMMY:
-      case OP_ENDBLOCK:
-        // Keep, so we don't have to update block first/last
-        break;
-      default:
+      // Skip over anything that has side effects
+      // Use count tracking can't safely remove anything with side effects
+      if (!IR::HasSideEffects(IROp->Op)) {
         if (CodeNode->GetUses() == 0) {
           NumRemoved++;
           IREmit->Remove(CodeNode);
         }
-        break;
       }
 
       if (CodeLast == CodeBegin) {
