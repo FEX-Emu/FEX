@@ -47,4 +47,4 @@ add_custom_target(
   posix_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "-j${CORES}" "-R" "\.*.posix")
+  COMMAND "ctest" "-j${CORES}" "-VV" "-R" "\.*.posix")
