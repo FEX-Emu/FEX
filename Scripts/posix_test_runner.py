@@ -42,14 +42,18 @@ Process.wait()
 ResultCode = Process.returncode
 
 if (expected_output[test_name] != ResultCode):
+    print("test failed, expected is", expected_output[test_name], "but got", ResultCode)
     if (known_failures.get(test_name)):
+        print("Passing because it was expected to fail")
         # failed and expected to fail -- pass the test
         sys.exit(0)
     else:
         # failed and unexpected to fail -- fail the test
         sys.exit(1)
 else:
+    print("test passed with", ResultCode)
     if (known_failures.get(test_name)):
+        print("Failing because it was expected to fail")
         # passed and expected to fail -- fail the test
         sys.exit(1)
     else:
