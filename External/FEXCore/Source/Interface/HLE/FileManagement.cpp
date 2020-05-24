@@ -130,16 +130,18 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, int flags, uint32_t mode) {
   int32_t fd = -1;
 
-  fd = EmuFD.OpenAt(dirfs, pathname, flags, mode);
-  if (fd == -1) {
-    auto Path = GetEmulatedPath(pathname);
-    if (!Path.empty()) {
-      fd = ::openat(dirfs, Path.c_str(), flags, mode);
+  if (pathname[0] == '/') {
+    fd = EmuFD.OpenAt(dirfs, pathname, flags, mode);
+    if (fd == -1) {
+      auto Path = GetEmulatedPath(pathname);
+      if (!Path.empty()) {
+        fd = ::openat(dirfs, Path.c_str(), flags, mode);
+      }
     }
-
-    if (fd == -1)
-      fd = ::openat(dirfs, pathname, flags, mode);
   }
+
+  if (fd == -1)
+    fd = ::openat(dirfs, pathname, flags, mode);
 
   if (fd != -1)
     FDToNameMap[fd] = pathname;
