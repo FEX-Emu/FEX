@@ -12,7 +12,9 @@
     "R8":  "0xFFFFFFFF00000004",
     "R9":  "0x0000000000000002",
     "R10": "0x0000000000000001",
-    "R11": "0x0000000000000000"
+    "R11": "0x0000000000000000",
+    "R12": "0x4000000000000000",
+    "R13": "0x0000000000000000"
   },
   "MemoryRegions": {
     "0x100000000": "4096"
@@ -109,6 +111,14 @@ idiv qword [r15 + 8 * 10 + 0]
 mov qword [r15 + 8 * 10 + 0], rax
 mov qword [r15 + 8 * 11 + 0], rdx
 
+; 128bit divide where we actually care about the upper bits containing real data
+mov rax, 0x0
+mov rdx, 0x1
+mov rcx, 4
+idiv rcx
+mov qword [r15 + 8 * 12 + 0], rax
+mov qword [r15 + 8 * 13 + 0], rdx
+
 ; Positive / Positive results
 mov rax, [r15 + 8 * 0]
 mov rbx, [r15 + 8 * 1]
@@ -126,6 +136,10 @@ mov r8, [r15 + 8 * 8]
 mov r9, [r15 + 8 * 9]
 mov r10, [r15 + 8 * 10]
 mov r11, [r15 + 8 * 11]
+
+; 128bit results
+mov r12, [r15 + 8 * 12]
+mov r13, [r15 + 8 * 13]
 
 hlt
 
