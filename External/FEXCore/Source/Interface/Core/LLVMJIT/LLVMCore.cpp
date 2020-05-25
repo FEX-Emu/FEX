@@ -19,6 +19,10 @@
  #include <llvm/IR/IntrinsicsX86.h>
 #endif
 
+#if defined(_M_ARM_64) && __has_include (<llvm/IR/IntrinsicsAArch64.h>)
+#include <llvm/IR/IntrinsicsAArch64.h>
+#endif
+
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/TargetSelect.h>
