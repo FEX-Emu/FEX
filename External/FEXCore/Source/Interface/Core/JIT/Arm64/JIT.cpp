@@ -1182,8 +1182,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         auto Op = IROp->C<IR::IROp_Ashr>();
         if (OpSize == 8)
           asrv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        else
-          asrv(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+        else {
+          sbfx(TMP1.X(), GetSrc<RA_64>(Op->Header.Args[0].ID()), 0, OpSize * 8);
+          asrv(GetDst<RA_64>(Node), TMP1.X(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+        }
         break;
       }
       case IR::OP_LSHL: {
@@ -1424,10 +1426,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
         }
         else {
-          lsr(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), Op->lsb);
-          if (Op->Width != 64) {
-            and_(Dst, Dst, ((1ULL << Op->Width) - 1));
-          }
+          ubfx(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()), Op->lsb, Op->Width);
         }
         break;
       }
