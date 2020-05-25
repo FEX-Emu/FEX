@@ -138,6 +138,7 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0x8C, 1, X86InstInfo{"MOV",    TYPE_INVALID, FLAGS_MODRM | FLAGS_SF_MOD_DST,                      0, nullptr}},
     {0x8D, 1, X86InstInfo{"LEA",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_MODRM,                         0, nullptr}},
     {0x8E, 1, X86InstInfo{"MOV",    TYPE_INVALID, FLAGS_MODRM,                      0, nullptr}}, // MOV seg, modrM == invalid on x86-64
+    {0x8F, 1, X86InstInfo{"POP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DEBUG_MEM_ACCESS, 0, nullptr}},
     {0x90, 8, X86InstInfo{"XCHG",   TYPE_INST, FLAGS_SF_REX_IN_BYTE | FLAGS_SF_SRC_RAX, 0, nullptr}},
     {0x98, 1, X86InstInfo{"CDQE",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX,     0, nullptr}},
     {0x99, 1, X86InstInfo{"CQO",    TYPE_INST, FLAGS_SF_DST_RDX | FLAGS_SF_SRC_RAX,     0, nullptr}},
@@ -243,9 +244,6 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
 
     // VEX table
     {0xC4, 2, X86InstInfo{"",   TYPE_VEX_TABLE_PREFIX, FLAGS_NONE, 0, nullptr}},
-
-    // XOP Table
-    {0x8F, 1, X86InstInfo{"",   TYPE_XOP_TABLE_PREFIX, FLAGS_NONE, 0, nullptr}},
   };
 
   GenerateTable(BaseOps, BaseOpTable, sizeof(BaseOpTable) / sizeof(BaseOpTable[0]));
