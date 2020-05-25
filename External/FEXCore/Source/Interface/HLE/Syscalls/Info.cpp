@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <syslog.h>
 #include <sys/random.h>
+#include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
 
@@ -24,6 +25,11 @@ namespace FEXCore::HLE {
     strcpy(buf->version, "#" FEXCORE_VERSION);
     strcpy(buf->machine, "x64_64");
     return 0;
+  }
+
+  uint64_t Getrusage(FEXCore::Core::InternalThreadState *Thread, int who, struct rusage *usage) {
+    uint64_t Result = ::getrusage(who, usage);
+    SYSCALL_ERRNO();
   }
 
   uint64_t Sysinfo(FEXCore::Core::InternalThreadState *Thread, struct sysinfo *info) {
