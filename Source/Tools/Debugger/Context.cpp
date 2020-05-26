@@ -3,6 +3,7 @@
 #include <cassert>
 #include <GLFW/glfw3.h>
 #include <vector>
+#include <cstdio>
 
 namespace GLContext {
 void glfw_error_callback(int error, const char* description)
