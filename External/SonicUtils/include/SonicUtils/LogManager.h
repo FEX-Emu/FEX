@@ -96,6 +96,14 @@ static inline void ERR(const char *fmt, ...) {
   va_end(args);
 }
 
+#define WARN_ONCE(...) \
+  do { \
+    static bool Warned{}; \
+    if (!Warned) { \
+      LogMan::Msg::D(__VA_ARGS__); \
+      Warned = true; \
+    } \
+  } while (0);
 
 } // namespace Msg
 } // namespace LogMan
