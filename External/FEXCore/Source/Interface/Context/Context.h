@@ -127,6 +127,7 @@ namespace FEXCore::Context {
 
     // Used for thread creation from syscalls
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
+    void InitializeThreadData(FEXCore::Core::InternalThreadState *Thread);
     void InitializeThread(FEXCore::Core::InternalThreadState *Thread);
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
