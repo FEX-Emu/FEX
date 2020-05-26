@@ -214,7 +214,9 @@ namespace FEXCore::Context {
     {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
       for (auto &Thread : Threads) {
-        Thread->ExecutionThread.join();
+        if (Thread->ExecutionThread.joinable()) {
+          Thread->ExecutionThread.join();
+        }
       }
 
       for (auto &Thread : Threads) {
@@ -297,7 +299,7 @@ namespace FEXCore::Context {
 
     Thread->State.State.rip = StartingRIP = RIP;
 
-    InitializeThread(Thread);
+    InitializeThreadData(Thread);
 
     return true;
   }
@@ -366,6 +368,7 @@ namespace FEXCore::Context {
     if(!StartPaused)
       Run();
 
+    ExecutionThread(ParentThread);
     while(true) {
       this->WaitForIdle();
       auto reason = ParentThread->ExitReason;
@@ -381,7 +384,7 @@ namespace FEXCore::Context {
     return ParentThread->StatusCode;
   }
 
-  void Context::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
+  void Context::InitializeThreadData(FEXCore::Core::InternalThreadState *Thread) {
     Thread->CPUBackend->Initialize();
     Thread->FallbackBackend->Initialize();
 
@@ -399,6 +402,10 @@ namespace FEXCore::Context {
       CompileRIP(Thread, Entry);
     }
     LogMan::Msg::D("Done", EntryList.size());
+  }
+
+  void Context::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
+    InitializeThreadData(Thread);
 
     // This will create the execution thread but it won't actually start executing
     Thread->ExecutionThread = std::thread(&Context::ExecutionThread, this, Thread);
@@ -406,7 +413,6 @@ namespace FEXCore::Context {
     // Wait for the thread to have started
     Thread->ThreadWaiting.Wait();
   }
-
 
   void Context::RunThread(FEXCore::Core::InternalThreadState *Thread) {
     // Tell the thread to start executing
@@ -676,7 +682,11 @@ namespace FEXCore::Context {
 
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
-    Thread->StartRunning.Wait();
+
+    if (Thread != Thread->CTX->ParentThread) {
+      // Parent thread doesn't need to wait to run
+      Thread->StartRunning.Wait();
+    }
 
     if (ShouldStop.load() || Thread->State.RunningEvents.ShouldStop.load()) {
       ShouldStop = true;
