@@ -84,6 +84,30 @@ static uint64_t SyscallThunk(FEXCore::SyscallHandler *Handler, FEXCore::Core::In
   return FEXCore::HandleSyscall(Handler, Thread, Args);
 }
 
+static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
+  __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
+  __uint128_t Res = Source / Divisor;
+  return Res;
+}
+
+static int64_t LDIV(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
+  __int128_t Source = (static_cast<__int128_t>(SrcHigh) << 64) | SrcLow;
+  __int128_t Res = Source / Divisor;
+  return Res;
+}
+
+static uint64_t LUREM(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
+  __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
+  __uint128_t Res = Source % Divisor;
+  return Res;
+}
+
+static int64_t LREM(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
+  __int128_t Source = (static_cast<__int128_t>(SrcHigh) << 64) | SrcLow;
+  __int128_t Res = Source % Divisor;
+  return Res;
+}
+
 static FEXCore::CPUIDEmu::FunctionResults CPUIDThunk(FEXCore::CPUIDEmu *CPUID, uint64_t Function) {
   return CPUID->RunFunction(Function);
 }
@@ -1986,7 +2010,41 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         break;
         }
         case 8: {
-          udiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[2].ID()));
+          uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
+
+          sub(sp, sp, SPOffset);
+          int i = 0;
+          for (auto RA : RA64) {
+            str(RA, MemOperand(sp, i * 8));
+            i++;
+          }
+          str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+          mov(x0, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mov(x1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          mov(x2, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+
+#if _M_X86_64
+          CallRuntime(LUDIV);
+#else
+          LoadConstant(x3, reinterpret_cast<uint64_t>(LUDIV));
+          blr(x3);
+#endif
+
+          // Result is now in x0
+          // Fix the stack and any values that were stepped on
+          i = 0;
+          for (auto RA : RA64) {
+            ldr(RA, MemOperand(sp, i * 8));
+            i++;
+          }
+
+          // Move result to its destination register
+          mov(GetDst<RA_64>(Node), x0);
+
+          ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+          add(sp, sp, SPOffset);
         break;
         }
         default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
@@ -2013,7 +2071,41 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         break;
         }
         case 8: {
-          sdiv(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[2].ID()));
+          uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
+
+          sub(sp, sp, SPOffset);
+          int i = 0;
+          for (auto RA : RA64) {
+            str(RA, MemOperand(sp, i * 8));
+            i++;
+          }
+          str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+          mov(x0, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mov(x1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          mov(x2, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+
+#if _M_X86_64
+          CallRuntime(LDIV);
+#else
+          LoadConstant(x3, reinterpret_cast<uint64_t>(LDIV));
+          blr(x3);
+#endif
+
+          // Result is now in x0
+          // Fix the stack and any values that were stepped on
+          i = 0;
+          for (auto RA : RA64) {
+            ldr(RA, MemOperand(sp, i * 8));
+            i++;
+          }
+
+          // Move result to its destination register
+          mov(GetDst<RA_64>(Node), x0);
+
+          ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+          add(sp, sp, SPOffset);
         break;
         }
         default: LogMan::Msg::A("Unknown LDIV Size: %d", Size); break;
@@ -2046,11 +2138,41 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         break;
         }
         case 8: {
-          auto Dividend = GetSrc<RA_64>(Op->Header.Args[0].ID());
-          auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
+          uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
 
-          udiv(TMP1, Dividend, Divisor);
-          msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
+          sub(sp, sp, SPOffset);
+          int i = 0;
+          for (auto RA : RA64) {
+            str(RA, MemOperand(sp, i * 8));
+            i++;
+          }
+          str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+          mov(x0, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mov(x1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          mov(x2, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+
+#if _M_X86_64
+          CallRuntime(LUREM);
+#else
+          LoadConstant(x3, reinterpret_cast<uint64_t>(LUREM));
+          blr(x3);
+#endif
+
+          // Result is now in x0
+          // Fix the stack and any values that were stepped on
+          i = 0;
+          for (auto RA : RA64) {
+            ldr(RA, MemOperand(sp, i * 8));
+            i++;
+          }
+
+          // Move result to its destination register
+          mov(GetDst<RA_64>(Node), x0);
+
+          ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+          add(sp, sp, SPOffset);
         break;
         }
         default: LogMan::Msg::A("Unknown LUREM Size: %d", Size); break;
@@ -2086,11 +2208,41 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         break;
         }
         case 8: {
-          auto Dividend = GetSrc<RA_64>(Op->Header.Args[0].ID());
-          auto Divisor = GetSrc<RA_64>(Op->Header.Args[2].ID());
+                  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
 
-          sdiv(TMP1, Dividend, Divisor);
-          msub(GetDst<RA_64>(Node), TMP1, Divisor, Dividend);
+          sub(sp, sp, SPOffset);
+          int i = 0;
+          for (auto RA : RA64) {
+            str(RA, MemOperand(sp, i * 8));
+            i++;
+          }
+          str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+          mov(x0, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mov(x1, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          mov(x2, GetSrc<RA_64>(Op->Header.Args[2].ID()));
+
+#if _M_X86_64
+          CallRuntime(LREM);
+#else
+          LoadConstant(x3, reinterpret_cast<uint64_t>(LREM));
+          blr(x3);
+#endif
+
+          // Result is now in x0
+          // Fix the stack and any values that were stepped on
+          i = 0;
+          for (auto RA : RA64) {
+            ldr(RA, MemOperand(sp, i * 8));
+            i++;
+          }
+
+          // Move result to its destination register
+          mov(GetDst<RA_64>(Node), x0);
+
+          ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+          add(sp, sp, SPOffset);
         break;
         }
         default: LogMan::Msg::A("Unknown LREM Size: %d", Size); break;
