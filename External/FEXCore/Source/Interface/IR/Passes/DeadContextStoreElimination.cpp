@@ -29,10 +29,11 @@ namespace {
 
   using ContextInfo = std::vector<ContextMemberInfo>;
 
-  constexpr static std::array<LastAccessType, 8> DefaultAccess = {
+  constexpr static std::array<LastAccessType, 9> DefaultAccess = {
     ACCESS_NONE,
     ACCESS_NONE,
     ACCESS_INVALID, // PAD
+    ACCESS_NONE,
     ACCESS_NONE,
     ACCESS_NONE,
     ACCESS_NONE,
@@ -117,6 +118,18 @@ namespace {
           sizeof(FEXCore::Core::CPUState::mm[0]),
         },
         DefaultAccess[7],
+        FEXCore::IR::InvalidClass,
+      });
+    }
+
+    // GDTs
+    for (size_t i = 0; i < 32; ++i) {
+      ContextClassification->emplace_back(ContextMemberInfo{
+        ContextMemberClassification {
+          offsetof(FEXCore::Core::CPUState, gdt[0]) + sizeof(FEXCore::Core::CPUState::gdt[0]) * i,
+          sizeof(FEXCore::Core::CPUState::gdt[0]),
+        },
+        DefaultAccess[8],
         FEXCore::IR::InvalidClass,
       });
     }
