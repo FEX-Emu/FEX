@@ -39,6 +39,24 @@ namespace FEXCore::HLE {
 #undef COPY
   }
 
+  static int RemapFlags(int flags) {
+#ifdef _M_X86_64
+    // Nothing to change here
+#elif _M_ARM_64
+    constexpr int X86_64_FLAG_O_DIRECT    =  040000;
+    constexpr int X86_64_FLAG_O_LARGEFILE = 0100000;
+    constexpr int X86_64_FLAG_O_DIRECTORY = 0200000;
+    constexpr int X86_64_FLAG_O_NOFOLLOW  = 0400000;
+    if (flags & X86_64_FLAG_O_DIRECT)    flags = (flags & ~X86_64_FLAG_O_DIRECT)    | O_DIRECT;
+    if (flags & X86_64_FLAG_O_LARGEFILE) flags = (flags & ~X86_64_FLAG_O_LARGEFILE) | O_LARGEFILE;
+    if (flags & X86_64_FLAG_O_DIRECTORY) flags = (flags & ~X86_64_FLAG_O_DIRECTORY) | O_DIRECTORY;
+    if (flags & X86_64_FLAG_O_NOFOLLOW)  flags = (flags & ~X86_64_FLAG_O_NOFOLLOW)  | O_NOFOLLOW;
+#else
+#error Unknown flag remappings for this host platform
+#endif
+    return flags;
+  }
+
   uint64_t Read(FEXCore::Core::InternalThreadState *Thread, int fd, void *buf, size_t count) {
     uint64_t Result = ::read(fd, buf, count);
     SYSCALL_ERRNO();
@@ -50,6 +68,7 @@ namespace FEXCore::HLE {
   }
 
   uint64_t Open(FEXCore::Core::InternalThreadState *Thread, const char *pathname, int flags, uint32_t mode) {
+    flags = RemapFlags(flags);
     uint64_t Result = Thread->CTX->SyscallHandler->FM.Open(pathname, flags, mode);
     SYSCALL_ERRNO();
   }
@@ -141,6 +160,7 @@ namespace FEXCore::HLE {
   }
 
   uint64_t Dup3(FEXCore::Core::InternalThreadState* Thread, int oldfd, int newfd, int flags) {
+    flags = RemapFlags(flags);
     uint64_t Result = ::dup3(oldfd, newfd, flags);
     SYSCALL_ERRNO();
   }
@@ -217,6 +237,7 @@ namespace FEXCore::HLE {
   }
 
   uint64_t Openat(FEXCore::Core::InternalThreadState *Thread, int dirfs, const char *pathname, int flags, uint32_t mode) {
+    flags = RemapFlags(flags);
     uint64_t Result = Thread->CTX->SyscallHandler->FM.Openat(dirfs, pathname, flags, mode);
     SYSCALL_ERRNO();
   }
@@ -251,11 +272,13 @@ namespace FEXCore::HLE {
   }
 
   uint64_t Pipe2(FEXCore::Core::InternalThreadState *Thread, int pipefd[2], int flags) {
+    flags = RemapFlags(flags);
     uint64_t Result = ::pipe2(pipefd, flags);
     SYSCALL_ERRNO();
   }
 
   uint64_t Inotify_init1(FEXCore::Core::InternalThreadState *Thread, int flags) {
+    flags = RemapFlags(flags);
     uint64_t Result = ::inotify_init1(flags);
     SYSCALL_ERRNO();
   }
