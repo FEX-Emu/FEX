@@ -60,3 +60,9 @@ jobs:
       shell: bash
       # Execute the unit tests
       run: cmake --build . --config $BUILD_TYPE --target ir_tests
+
+    - name: Posix Tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the posixtest
+      run: cmake --build . --config $BUILD_TYPE --target posix_tests
