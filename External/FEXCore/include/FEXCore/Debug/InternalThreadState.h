@@ -14,8 +14,14 @@ namespace FEXCore {
 namespace FEXCore::Context {
   struct Context;
 }
+
+namespace FEXCore::Frontend {
+  class Decoder;
+}
+
 namespace FEXCore::IR{
   class OpDispatchBuilder;
+  class PassManager;
 }
 
 namespace FEXCore::Core {
@@ -57,6 +63,10 @@ namespace FEXCore::Core {
 
     std::map<uint64_t, std::unique_ptr<FEXCore::IR::IRListView<true>>> IRLists;
     std::map<uint64_t, FEXCore::Core::DebugData> DebugData;
+
+    std::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
+    std::unique_ptr<FEXCore::IR::PassManager> PassManager;
+
     RuntimeStats Stats{};
 
     int StatusCode{};

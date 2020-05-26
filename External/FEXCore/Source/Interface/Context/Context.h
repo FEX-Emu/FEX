@@ -75,8 +75,6 @@ namespace FEXCore::Context {
     Event PauseWait;
     bool Running{};
     CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};
-    FEXCore::Frontend::Decoder FrontendDecoder;
-    FEXCore::IR::PassManager PassManager;
 
     FEXCore::CPUIDEmu CPUID;
     std::unique_ptr<FEXCore::SyscallHandler> SyscallHandler;
@@ -133,8 +131,6 @@ namespace FEXCore::Context {
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
   protected:
-    IR::RegisterAllocationPass *GetRegisterAllocatorPass();
-    bool HasRegisterAllocationPass() const { return RAPass != nullptr; }
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
   private:
@@ -157,7 +153,6 @@ namespace FEXCore::Context {
     std::set<uint64_t> EntryList;
     std::vector<uint64_t> InitLocations;
     uint64_t StartingRIP;
-    IR::RegisterAllocationPass *RAPass {};
     std::mutex ExitMutex;
     std::unique_ptr<GdbServer> DebugServer;
 
