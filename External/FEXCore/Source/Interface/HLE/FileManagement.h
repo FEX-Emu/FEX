@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
+#include <string>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <poll.h>
