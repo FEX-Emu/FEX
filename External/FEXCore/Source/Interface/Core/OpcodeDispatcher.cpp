@@ -5521,6 +5521,11 @@ void OpDispatchBuilder::HSUBP(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+template<uint8_t FenceType>
+void OpDispatchBuilder::FenceOp(OpcodeArgs) {
+  _Fence({FenceType});
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
@@ -6094,9 +6099,9 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 1), 1, &OpDispatchBuilder::FXRStoreOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 2), 1, &OpDispatchBuilder::LDMXCSR},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 3), 1, &OpDispatchBuilder::STMXCSR},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::NOPOp}, //LFENCE
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::NOPOp}, //MFENCE
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::NOPOp}, //SFENCE
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_Load.Val>},      //LFENCE
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_LoadStore.Val>}, //MFENCE
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_Store.Val>},     //SFENCE
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_FS>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_GS>},

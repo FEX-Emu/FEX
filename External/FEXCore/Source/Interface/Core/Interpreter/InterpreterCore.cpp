@@ -181,6 +181,22 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             Thread->State.State.rip += Op->RIPIncrement;
             break;
           }
+          case IR::OP_FENCE: {
+            auto Op = IROp->C<IR::IROp_Fence>();
+            switch (Op->Fence) {
+              case IR::Fence_Load.Val:
+                std::atomic_thread_fence(std::memory_order_acquire);
+                break;
+              case IR::Fence_LoadStore.Val:
+                std::atomic_thread_fence(std::memory_order_seq_cst);
+                break;
+              case IR::Fence_Store.Val:
+                std::atomic_thread_fence(std::memory_order_release);
+                break;
+              default: LogMan::Msg::A("Unknown Fence: %d", Op->Fence); break;
+            }
+            break;
+          }
           case IR::OP_EXITFUNCTION:
             BlockResults.Quit = true;
             return;

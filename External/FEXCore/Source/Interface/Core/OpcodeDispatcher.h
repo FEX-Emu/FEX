@@ -331,6 +331,9 @@ public:
   template<size_t ElementSize>
   void HSUBP(OpcodeArgs);
 
+  template<uint8_t FenceType>
+  void FenceOp(OpcodeArgs);
+
   void UnimplementedOp(OpcodeArgs);
 
 #undef OpcodeArgs

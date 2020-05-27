@@ -36,7 +36,11 @@
     "",
     "constexpr static uint8_t FCMP_FLAG_EQ        = 0",
     "constexpr static uint8_t FCMP_FLAG_LT        = 1",
-    "constexpr static uint8_t FCMP_FLAG_UNORDERED = 2"
+    "constexpr static uint8_t FCMP_FLAG_UNORDERED = 2",
+
+    "static constexpr FEXCore::IR::FenceType Fence_Load      {0}",
+    "static constexpr FEXCore::IR::FenceType Fence_Store     {1}",
+    "static constexpr FEXCore::IR::FenceType Fence_LoadStore {2}"
   ],
 
   "Ops": {
@@ -102,6 +106,20 @@
 
     "GuestReturn": {
       "OpClass": "Branch"
+    },
+
+    "Fence": {
+      "Desc": ["Does a memory fence operation of the desired type",
+               "Fence_Load: Ensures load memory operations are serialized",
+               "Fence_Store: Ensures store memory operations are serialized",
+               "Fence_LoadStore: Ensures loads and store memory operations are serialized",
+               "Ensures the memory operations are globally visible"
+              ],
+      "HasSideEffects": true,
+      "OpClass": "Misc",
+      "Args":[
+        "FEXCore::IR::FenceType", "Fence"
+      ]
     },
 
     "CASPair": {

@@ -35,6 +35,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
 
   *out << CondNames[Arg];
 }
+
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, RegisterClassType Arg) {
   if (Arg == 0)
     *out << "GPR";
@@ -88,6 +89,21 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
 
   if (Arg.Elements()) {
     *out << "v" << std::dec << static_cast<uint32_t>(Arg.Elements());
+  }
+}
+
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, FEXCore::IR::FenceType Arg) {
+  if (Arg == IR::Fence_Load) {
+    *out << "Loads";
+  }
+  else if (Arg == IR::Fence_Store) {
+    *out << "Stores";
+  }
+  else if (Arg == IR::Fence_LoadStore) {
+    *out << "LoadStores";
+  }
+  else {
+    *out << "<Unknown Fence Type>";
   }
 }
 
