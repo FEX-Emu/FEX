@@ -2105,9 +2105,11 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on STOS");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
 
   auto Size = GetSrcSize(Op);
-
 
   bool Repeat = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
@@ -2200,6 +2202,9 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on MOVS\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
 
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
     auto Size = GetSrcSize(Op);
@@ -2411,6 +2416,10 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SCASOp(OpcodeArgs) {
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
+
   auto Size = GetSrcSize(Op);
   bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
 
@@ -2421,7 +2430,8 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     auto Src2 = _LoadMem(GPRClass, Size, Dest_RDI, Size);
 
     auto ALUOp = _Sub(Src1, Src2);
-    GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
+
+    GenerateFlags_SUB(Op, _Bfe(Size * 8, 0, ALUOp), _Bfe(Size * 8, 0, Src1), _Bfe(Size * 8, 0, Src2));
 
     auto SizeConst = _Constant(Size);
     auto NegSizeConst = _Constant(-Size);
@@ -2471,7 +2481,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         auto Src2 = _LoadMem(GPRClass, Size, Dest_RDI, Size);
 
         auto ALUOp = _Sub(Src1, Src2);
-        GenerateFlags_SUB(Op, ALUOp, Src1, Src2);
+        GenerateFlags_SUB(Op, _Bfe(Size * 8, 0, ALUOp), _Bfe(Size * 8, 0, Src1), _Bfe(Size * 8, 0, Src2));
 
         OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
         OrderedNode *TailDest_RDI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
@@ -2499,21 +2509,21 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
         if (REPE) {
           // Jump back to the start if we have more work to do
-          SetFalseJumpTarget(InternalCondJump, LoopStart);
+          SetTrueJumpTarget(InternalCondJump, LoopStart);
         }
         else {
           // Jump back to the start if we have more work to do
-          SetTrueJumpTarget(InternalCondJump, LoopStart);
+          SetFalseJumpTarget(InternalCondJump, LoopStart);
         }
     }
     // Make sure to start a new block after ending this one
     auto LoopEnd = CreateNewCodeBlock();
     SetTrueJumpTarget(CondJump, LoopEnd);
     if (REPE) {
-      SetTrueJumpTarget(InternalCondJump, LoopEnd);
+      SetFalseJumpTarget(InternalCondJump, LoopEnd);
     }
     else {
-      SetFalseJumpTarget(InternalCondJump, LoopEnd);
+      SetTrueJumpTarget(InternalCondJump, LoopEnd);
     }
     SetCurrentCodeBlock(LoopEnd);
   }
