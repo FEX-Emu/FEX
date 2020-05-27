@@ -3901,6 +3901,11 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       SetDest(*WrapperOp, Result);
     break;
     }
+    case IR::OP_FENCE: {
+      // This is the best LLVM can do from an IR perspective. Which is fine
+      JITState.IRBuilder->CreateFence(AtomicOrdering::SequentiallyConsistent, SyncScope::System);
+      break;
+    }
     case IR::OP_DUMMY:
     break;
     default:

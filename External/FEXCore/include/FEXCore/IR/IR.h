@@ -363,6 +363,15 @@ struct TypeDefinition final {
 
 static_assert(std::is_pod<TypeDefinition>::value);
 
+struct FenceType final {
+  uint8_t Val;
+  operator uint8_t() const {
+    return Val;
+  }
+  constexpr bool operator==(FenceType const &rhs) const { return Val == rhs.Val; }
+  constexpr bool operator!=(FenceType const &rhs) const { return !operator==(rhs); }
+};
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES
