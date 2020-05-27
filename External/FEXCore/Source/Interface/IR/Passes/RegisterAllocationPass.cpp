@@ -1220,6 +1220,21 @@ namespace FEXCore::IR {
   bool ConstrainedRAPass::Run(IREmitter *IREmit) {
     bool Changed = false;
 
+    auto IR = IREmit->ViewIR();
+    uintptr_t ListBegin = IR.GetListData();
+    uintptr_t DataBegin = IR.GetData();
+
+    auto Begin = IR.begin();
+    auto Op = Begin();
+
+    IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
+    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+
+    if (HeaderOp->ShouldInterpret) {
+      return false;
+    }
+
     SpillSlotCount = 0;
     Graph->SpillStack.clear();
 

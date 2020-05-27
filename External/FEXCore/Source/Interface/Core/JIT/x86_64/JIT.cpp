@@ -235,6 +235,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
   LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
+  if (HeaderOp->ShouldInterpret) {
+    return ThreadState->IntBackend->CompileCode(IR, DebugData);
+  }
+
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
   if ((getSize() + BufferRange) > MAX_CODE_SIZE) {

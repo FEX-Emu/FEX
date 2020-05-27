@@ -58,7 +58,8 @@
       ],
       "Args": [
         "uint64_t", "Entry",
-        "uint32_t", "BlockCount"
+        "uint32_t", "BlockCount",
+        "bool", "ShouldInterpret"
       ]
     },
     "CodeBlock": {

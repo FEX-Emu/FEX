@@ -54,7 +54,8 @@ private:
 };
 
 static void InterpreterExecution(FEXCore::Core::InternalThreadState *Thread) {
-  InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
+  // IntBackend will always point to this interpreter object
+  InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
   Core->ExecuteCode(Thread);
 }
 

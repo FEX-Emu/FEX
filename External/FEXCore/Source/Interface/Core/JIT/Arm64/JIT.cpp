@@ -374,6 +374,16 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   uintptr_t ListBegin = CurrentIR->GetListData();
   uintptr_t DataBegin = CurrentIR->GetData();
 
+  auto HeaderIterator = CurrentIR->begin();
+  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
+  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
+  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+
+  if (HeaderOp->ShouldInterpret) {
+    return State->IntBackend->CompileCode(IR, DebugData);
+  }
+
   LogMan::Throw::A(RAPass->HasFullRA(), "Arm64 JIT only works with RA");
 
   uint32_t SpillSlots = RAPass->SpillSlots();
@@ -408,12 +418,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   if (SpillSlots) {
     sub(sp, sp, SpillSlots * 16);
   }
-
-  auto HeaderIterator = CurrentIR->begin();
-  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
   IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 

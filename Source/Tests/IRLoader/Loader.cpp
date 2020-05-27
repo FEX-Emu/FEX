@@ -363,7 +363,7 @@ namespace FEX::IRLoader {
       if (!CheckPrintError(Def, CodeBlockCount.first)) return false;
 
       EntryRIP = Entry.second;
-      IRHeader = _IRHeader(InvalidNode, Entry.second, CodeBlockCount.second);
+      IRHeader = _IRHeader(InvalidNode, Entry.second, CodeBlockCount.second, false);
     }
 
     // Spin through the blocks and generate basic block ops

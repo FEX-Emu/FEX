@@ -49,7 +49,8 @@ namespace FEXCore::Core {
 
     std::unique_ptr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
 
-    std::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
+    std::shared_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
+    std::shared_ptr<FEXCore::CPU::CPUBackend> IntBackend;
     std::unique_ptr<FEXCore::CPU::CPUBackend> FallbackBackend;
 
     std::unique_ptr<FEXCore::BlockCache> BlockCache;
