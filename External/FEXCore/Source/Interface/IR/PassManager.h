@@ -40,6 +40,7 @@ public:
     Passes.emplace_back(Pass);
   }
   void InsertRAPass(Pass *Pass) {
+    RAPass = Pass;
     InsertPass(Pass);
   }
 

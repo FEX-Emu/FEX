@@ -124,14 +124,8 @@ namespace DefaultFallbackCore {
 }
 
 namespace FEXCore::Context {
-  Context::Context()
-    : FrontendDecoder {this} {
+  Context::Context() {
     FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
-    PassManager.RegisterExitHandler([this]() {
-      ShouldStop = true;
-    });
-    PassManager.AddDefaultPasses();
-    PassManager.AddDefaultValidationPasses();
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
@@ -234,7 +228,6 @@ namespace FEXCore::Context {
 
   bool Context::InitCore(FEXCore::CodeLoader *Loader) {
     SyscallHandler.reset(FEXCore::CreateHandler(Config.Is64BitMode ? OperatingMode::MODE_64BIT : OperatingMode::MODE_32BIT, this));
-    PassManager.RegisterSyscallHandler(SyscallHandler.get());
     LocalLoader = Loader;
     using namespace FEXCore::Core;
     FEXCore::Core::CPUState NewThreadState{};
@@ -389,9 +382,9 @@ namespace FEXCore::Context {
     Thread->IntBackend->Initialize();
     Thread->FallbackBackend->Initialize();
 
-    auto IRHandler = [this, Thread](uint64_t Addr, IR::IREmitter *IR) -> void {
+    auto IRHandler = [Thread](uint64_t Addr, IR::IREmitter *IR) -> void {
       // Run the passmanager over the IR from the dispatcher
-      PassManager.Run(IR);
+      Thread->PassManager->Run(IR);
       Thread->IRLists.try_emplace(Addr, IR->CreateIRCopy());
     };
 
@@ -433,6 +426,15 @@ namespace FEXCore::Context {
     Thread->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
     Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
     Thread->BlockCache = std::make_unique<FEXCore::BlockCache>(this);
+    Thread->FrontendDecoder = std::make_unique<FEXCore::Frontend::Decoder>(this);
+    Thread->PassManager = std::make_unique<FEXCore::IR::PassManager>();
+    Thread->PassManager->RegisterExitHandler([this]() {
+      ShouldStop = true;
+    });
+    Thread->PassManager->AddDefaultPasses();
+    Thread->PassManager->AddDefaultValidationPasses();
+    Thread->PassManager->RegisterSyscallHandler(SyscallHandler.get());
+
     Thread->CTX = this;
 
     // Copy over the new thread state to the new object
@@ -447,7 +449,10 @@ namespace FEXCore::Context {
       Thread->CPUBackend.reset(FEXCore::CPU::CreateInterpreterCore(this));
       Thread->IntBackend = Thread->CPUBackend;
       break;
-    case FEXCore::Config::CONFIG_IRJIT:       Thread->CPUBackend.reset(FEXCore::CPU::CreateJITCore(this, Thread)); break;
+    case FEXCore::Config::CONFIG_IRJIT:
+      Thread->PassManager->InsertRAPass(IR::CreateRegisterAllocationPass());
+      Thread->CPUBackend.reset(FEXCore::CPU::CreateJITCore(this, Thread));
+      break;
     case FEXCore::Config::CONFIG_LLVMJIT:     Thread->CPUBackend.reset(FEXCore::CPU::CreateLLVMCore(Thread)); break;
     case FEXCore::Config::CONFIG_CUSTOM:      Thread->CPUBackend.reset(CustomCPUFactory(this, &Thread->State)); break;
     default: LogMan::Msg::A("Unknown core configuration");
@@ -461,15 +466,6 @@ namespace FEXCore::Context {
     LogMan::Throw::A(!Thread->FallbackBackend->NeedsOpDispatch(), "Fallback CPU backend must not require OpDispatch");
 
     return Thread;
-  }
-
-  IR::RegisterAllocationPass *Context::GetRegisterAllocatorPass() {
-    if (!RAPass) {
-      RAPass = IR::CreateRegisterAllocationPass();
-      PassManager.InsertRAPass(RAPass);
-    }
-
-    return RAPass;
   }
 
   uintptr_t Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
@@ -502,10 +498,6 @@ namespace FEXCore::Context {
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    // XXX: Threaded mutex hack until we support proper threaded compilation. Issue #13
-    static std::mutex SyscallMutex;
-    std::scoped_lock<std::mutex> lk(SyscallMutex);
-
     void *CodePtr {nullptr};
     uint8_t const *GuestCode{};
     if (Thread->CTX->Config.UnifiedMemory) {
@@ -526,7 +518,7 @@ namespace FEXCore::Context {
       uint64_t TotalInstructions {0};
       uint64_t TotalInstructionsLength {0};
 
-      if (!FrontendDecoder.DecodeInstructionsAtEntry(GuestCode, GuestRIP)) {
+      if (!Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP)) {
         if (Config.BreakOnFrontendFailure) {
            LogMan::Msg::E("Had Frontend decoder error");
            ShouldStop = true;
@@ -534,7 +526,7 @@ namespace FEXCore::Context {
         return 0;
       }
 
-      auto CodeBlocks = FrontendDecoder.GetDecodedBlocks();
+      auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
 
       Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
 
@@ -598,12 +590,12 @@ namespace FEXCore::Context {
       Thread->OpDispatcher->Finalize();
 
       // Run the passmanager over the IR from the dispatcher
-      PassManager.Run(Thread->OpDispatcher.get());
+      Thread->PassManager->Run(Thread->OpDispatcher.get());
 
       if (Thread->OpDispatcher->ShouldDump) {
         std::stringstream out;
         auto NewIR = Thread->OpDispatcher->ViewIR();
-        FEXCore::IR::Dump(&out, &NewIR, RAPass);
+        FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass());
         printf("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
       }
 
