@@ -1,3 +1,4 @@
+#include "Common/MathUtils.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
@@ -11,13 +12,20 @@ public:
   bool Run(IREmitter *IREmit) override;
 
 private:
+  static constexpr size_t AlignSize = 0x2000;
   OpDispatchBuilder LocalBuilder;
   std::vector<IR::OrderedNodeWrapper::NodeOffsetType> OldToNewRemap;
+  struct CodeBlockData {
+    OrderedNode *OldNode;
+    OrderedNode *NewNode;
+  };
+
+  std::vector<CodeBlockData> GeneratedCodeBlocks{};
 };
 
 IRCompaction::IRCompaction()
   : LocalBuilder {nullptr} {
-  OldToNewRemap.resize(9000);
+  OldToNewRemap.resize(AlignSize);
 }
 
 bool IRCompaction::Run(IREmitter *IREmit) {
@@ -25,9 +33,10 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   uint32_t NodeCount = CurrentIR.GetSSACount();
 
   if (OldToNewRemap.size() < NodeCount) {
-    OldToNewRemap.resize(NodeCount);
+    OldToNewRemap.resize(std::max(OldToNewRemap.size() * 2U, AlignUp(NodeCount, AlignSize)));
   }
   memset(&OldToNewRemap.at(0), 0xFF, NodeCount * sizeof(IR::OrderedNodeWrapper::NodeOffsetType));
+  GeneratedCodeBlocks.clear();
 
   // Reset our local working list
   LocalBuilder.ResetWorkingList();
@@ -63,12 +72,6 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   OldToNewRemap[0] = 0;
   auto LocalHeaderOp = LocalBuilder._IRHeader(OrderedNodeWrapper::WrapOffset(0).GetNode(ListBegin), HeaderOp->Entry, HeaderOp->BlockCount, HeaderOp->ShouldInterpret);
   OldToNewRemap[HeaderNode->Wrapped(ListBegin).ID()] = LocalHeaderOp.Node->Wrapped(LocalListBegin).ID();
-
-  struct CodeBlockData {
-    OrderedNode *OldNode;
-    OrderedNode *NewNode;
-  };
-  std::vector<CodeBlockData> GeneratedCodeBlocks{};
 
   {
     // Generate our codeblocks and link them together

@@ -380,8 +380,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
   // Walk the list and calculate the control flow
   OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
 
-  ContextInfo LocalInfo;
-  ClassifyContextStruct(&LocalInfo);
+  ContextInfo LocalInfo = ClassifiedStruct;
 
   while (1) {
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
@@ -512,8 +511,8 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
 }
 
 bool RCLSE::Run(FEXCore::IR::IREmitter *IREmit) {
-  ResetClassificationAccesses(&ClassifiedStruct);
-  CalculateControlFlowInfo(IREmit);
+  // XXX: We don't do cross-block optimizations yet
+  //CalculateControlFlowInfo(IREmit);
   bool Changed = false;
   Changed |= RedundantStoreLoadElimination(IREmit);
 
