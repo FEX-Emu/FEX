@@ -3338,7 +3338,8 @@ void OpDispatchBuilder::CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder:
 
 void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
   Entry = RIP;
-  auto IRHeader = _IRHeader(InvalidNode, RIP, 0);
+  auto IRHeader = _IRHeader(InvalidNode, RIP, 0, false);
+  Current_Header = IRHeader.first;
   CreateJumpBlocks(Blocks);
 
   auto Block = GetNewJumpBlock(RIP);

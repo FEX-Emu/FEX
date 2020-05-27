@@ -386,6 +386,7 @@ namespace FEXCore::Context {
 
   void Context::InitializeThreadData(FEXCore::Core::InternalThreadState *Thread) {
     Thread->CPUBackend->Initialize();
+    Thread->IntBackend->Initialize();
     Thread->FallbackBackend->Initialize();
 
     auto IRHandler = [this, Thread](uint64_t Addr, IR::IREmitter *IR) -> void {
@@ -442,13 +443,19 @@ namespace FEXCore::Context {
 
     // Create CPU backend
     switch (Config.Core) {
-    case FEXCore::Config::CONFIG_INTERPRETER: Thread->CPUBackend.reset(FEXCore::CPU::CreateInterpreterCore(this)); break;
+    case FEXCore::Config::CONFIG_INTERPRETER:
+      Thread->CPUBackend.reset(FEXCore::CPU::CreateInterpreterCore(this));
+      Thread->IntBackend = Thread->CPUBackend;
+      break;
     case FEXCore::Config::CONFIG_IRJIT:       Thread->CPUBackend.reset(FEXCore::CPU::CreateJITCore(this, Thread)); break;
     case FEXCore::Config::CONFIG_LLVMJIT:     Thread->CPUBackend.reset(FEXCore::CPU::CreateLLVMCore(Thread)); break;
     case FEXCore::Config::CONFIG_CUSTOM:      Thread->CPUBackend.reset(CustomCPUFactory(this, &Thread->State)); break;
     default: LogMan::Msg::A("Unknown core configuration");
     }
 
+    if (!Thread->IntBackend) {
+      Thread->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this));
+    }
     Thread->FallbackBackend.reset(FallbackCPUFactory(this, &Thread->State));
 
     LogMan::Throw::A(!Thread->FallbackBackend->NeedsOpDispatch(), "Fallback CPU backend must not require OpDispatch");
@@ -485,6 +492,8 @@ namespace FEXCore::Context {
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     Thread->BlockCache->ClearCache();
     Thread->CPUBackend->ClearCache();
+    Thread->IntBackend->ClearCache();
+
     if (GuestRIP != 0) {
       auto IR = Thread->IRLists.find(GuestRIP)->second.release();
       Thread->IRLists.clear();

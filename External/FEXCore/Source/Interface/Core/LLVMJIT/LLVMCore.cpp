@@ -3916,15 +3916,6 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
 
   CurrentIR = IR;
 
-#if DESTMAP_AS_MAP
-  DestMap.clear();
-#else
-  uintptr_t ListSize = CurrentIR->GetListSize();
-  if (ListSize > DestMap.size()) {
-    DestMap.resize(std::max(DestMap.size() * 2, ListSize));
-  }
-#endif
-
   uintptr_t ListBegin = CurrentIR->GetListData();
   uintptr_t DataBegin = CurrentIR->GetData();
 
@@ -3933,6 +3924,19 @@ void* FEXCore::CPU::LLVMJITCore::CompileCode(FEXCore::IR::IRListView<true> const
   IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
   auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
   LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+
+  if (HeaderOp->ShouldInterpret) {
+    return ThreadState->IntBackend->CompileCode(IR, DebugData);
+  }
+
+#if DESTMAP_AS_MAP
+  DestMap.clear();
+#else
+  uintptr_t ListSize = CurrentIR->GetListSize();
+  if (ListSize > DestMap.size()) {
+    DestMap.resize(std::max(DestMap.size() * 2, ListSize));
+  }
+#endif
 
   std::ostringstream FunctionName;
   FunctionName << "Function_0x";
