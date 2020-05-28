@@ -105,5 +105,11 @@ static inline void ERR(const char *fmt, ...) {
     } \
   } while (0);
 
+#define ERROR_AND_DIE(...) \
+  do { \
+    LogMan::Msg::E(__VA_ARGS__); \
+    __builtin_trap(); \
+  } while(0)
+
 } // namespace Msg
 } // namespace LogMan

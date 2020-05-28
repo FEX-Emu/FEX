@@ -26,7 +26,7 @@
 
 namespace {
   uint64_t Unimplemented(FEXCore::Core::InternalThreadState *Thread) {
-    LogMan::Msg::A("Unhandled system call");
+    ERROR_AND_DIE("Unhandled system call");
     return -1;
   }
 
