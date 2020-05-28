@@ -42,7 +42,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
   OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
   IR::RegisterAllocationPass * RAPass{};
-  if (Manager->HasRAPass()) {
+  if (Manager->HasRAPass() && !HeaderOp->ShouldInterpret) {
     RAPass = Manager->GetRAPass();
   }
 

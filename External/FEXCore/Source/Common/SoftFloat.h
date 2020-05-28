@@ -111,7 +111,9 @@ struct X80SoftFloat {
   static X80SoftFloat F2XM1(X80SoftFloat const &lhs) {
     WARN_ONCE("x87: Application used F2XM1 which may have accuracy problems");
     BIGFLOAT Src1_d = lhs;
-    return exp2l(Src1_d) - 1.0;
+    BIGFLOAT Result = exp2l(Src1_d);
+    Result -= 1.0;
+    return Result;
   }
 
   static X80SoftFloat FYL2X(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
