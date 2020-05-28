@@ -514,6 +514,47 @@
       ]
     },
 
+    "VLoadMemElement": {
+      "OpClass": "Memory",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Addr",
+        "Value"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ],
+      "Args": [
+        "uint8_t", "Align",
+        "uint8_t", "Index"
+      ]
+    },
+
+    "VStoreMemElement": {
+      "HasSideEffects": true,
+      "OpClass": "Memory",
+      "SSAArgs": "2",
+      "DestSize": "ElementSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSANames": [
+        "Addr",
+        "Value"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ],
+      "Args": [
+        "uint8_t", "Index",
+        "uint8_t", "Align"
+      ]
+    },
+
     "Add": {
       "Desc": [ "Integer Add"
               ],
@@ -1792,6 +1833,24 @@
       ]
     },
 
+    "VBSL": {
+      "Desc": ["Does a vector bitwise select.",
+               "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",
+               "If the bit in the field is 0 then the corresponding bit is pulled from VectorFalse"
+              ],
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "3",
+      "SSANames": [
+        "VectorMask",
+        "VectorTrue",
+        "VectorFalse"
+      ]
+    },
+
     "VCMPEQ": {
       "OpClass": "Vector",
       "HasDest": true,
@@ -2719,6 +2778,297 @@
       ],
       "Args": [
         "uint8_t", "Flag"
+      ]
+    },
+
+    "F80Add": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80Sub": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80Mul": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80Div": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80ATAN": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80FPREM": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80FPREM1": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80SCALE": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80CVT": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "Size",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ],
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "F80CVTInt": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "Size",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ],
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "F80CVTTo": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ],
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "F80CVTToInt": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ],
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
+    "F80Round": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ]
+    },
+
+    "F80F2XM1": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ]
+    },
+
+    "F80FYL2X": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ]
+    },
+
+    "F80TAN": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ]
+    },
+
+    "F80SQRT": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ]
+    },
+
+    "F80SIN": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ]
+    },
+
+    "F80COS": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ]
+    },
+
+    "F80XTRACT_EXP": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ]
+    },
+
+    "F80XTRACT_SIG": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src"
+      ]
+    },
+
+    "F80Cmp": {
+      "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
+               "Ordering flag result is true if either float input is NaN"
+              ],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "4",
+      "SSAArgs": "2",
+      "SSANames": [
+        "X80Src1",
+        "X80Src2"
+      ],
+      "Args": [
+        "uint32_t", "Flags"
       ]
     },
 

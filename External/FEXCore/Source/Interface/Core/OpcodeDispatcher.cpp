@@ -3651,6 +3651,7 @@ void OpDispatchBuilder::ResetWorkingList() {
   BlockSetRIP = false;
   DecodeFailure = false;
   ShouldDump = false;
+  CurrentCodeBlock = nullptr;
 }
 
 template<unsigned BitOffset>
@@ -5035,26 +5036,41 @@ void OpDispatchBuilder::SetX87Top(OrderedNode *Value) {
 
 template<size_t width>
 void OpDispatchBuilder::FLD(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
   // Update TOP
   auto orig_top = GetX87Top();
-  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  auto mask = _Constant(7);
+  auto top = _And(_Sub(orig_top, _Constant(1)), mask);
   SetX87Top(top);
 
   size_t read_width = (width == 80) ? 16 : width / 8;
 
-  // Read from memory
-  auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
+  OrderedNode *data{};
 
-  OrderedNode *converted;
+  if (Op->Src[0].TypeNone.Type != 0) {
+    // Read from memory
+    data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
+  }
+  else {
+    // Implicit arg
+    auto offset = _Constant(Op->OP & 7);
+    data = _And(_Add(top, offset), mask);
+    data = _LoadContextIndexed(data, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  }
+  OrderedNode *converted = data;
 
   // Convert to 80bit float
   if (width == 32 || width == 64) {
+      converted = _F80CVTTo(data, width / 8);
+  }
+  else if (width == 32 || width == 64) {
     _Zext(32, data);
     if (width == 32)
       data = _Zext(32, data);
 
     constexpr size_t mantissa_bits = (width == 32) ? 23 : 52;
-    constexpr size_t sign_bits = width - (mantissa_bits + 1);
+    constexpr size_t exponent_bits = width - (mantissa_bits + 1);
 
     uint64_t sign_mask = (width == 32) ? 0x80000000 : 0x8000000000000000;
     uint64_t exponent_mask = (width == 32) ? 0x7F800000 : 0x7FE0000000000000;
@@ -5064,7 +5080,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
     auto lower = _Lshl(_And(data, _Constant(lower_mask)), _Constant(63 - mantissa_bits));
 
     // XXX: Need to handle NaN/Infinities
-    constexpr size_t exponent_zero = (1 << (sign_bits-1));
+    constexpr size_t exponent_zero = (1 << (exponent_bits-1));
     auto adjusted_exponent = _Add(exponent, _Constant(0x4000 - exponent_zero));
     auto upper = _Or(sign, adjusted_exponent);
 
@@ -5074,23 +5090,80 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
     converted = _VCastFromGPR(16, 8, _Or(intergerBit, lower));
     converted = _VInsElement(16, 8, 1, 0, converted, _VCastFromGPR(16, 8, upper));
   }
-  else if (width == 80) {
-    // TODO
-  }
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
   //_StoreContext(converted, 16, offsetof(FEXCore::Core::CPUState, mm[7][0]));
 }
 
+template<uint64_t Lower, uint32_t Upper>
+void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+  // Update TOP
+  auto orig_top = GetX87Top();
+  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
+
+  auto low = _Constant(Lower);
+  auto high = _Constant(Upper);
+  OrderedNode *data = _VCastFromGPR(16, 8, low);
+  data = _VInsGPR(16, 8, data, high, 1);
+  // Write to ST[TOP]
+  _StoreContextIndexed(data, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+template<size_t width>
+void OpDispatchBuilder::FILD(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  // Update TOP
+  auto orig_top = GetX87Top();
+  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
+
+  size_t read_width = width / 8;
+
+  // Read from memory
+  auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
+
+  auto zero = _Constant(0);
+
+  // Sign extend to 64bits
+  if (width != 64)
+    data = _Sext(width, data);
+
+  // Extract sign and make interger absolute
+  auto sign = _Select(COND_SLT, data, zero, _Constant(0x8000), zero);
+  auto absolute =  _Select(COND_SLT, data, zero, _Sub(zero, data), data);
+
+  // left justify the absolute interger
+  auto shift = _Sub(_Constant(63), _FindMSB(absolute));
+  auto shifted = _Lshl(absolute, shift);
+
+  auto adjusted_exponent = _Sub(_Constant(0x3fff + 63), shift);
+  auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
+  auto upper = _Or(sign, zeroed_exponent);
+
+
+  OrderedNode *converted = _VCastFromGPR(16, 8, shifted);
+  converted = _VInsElement(16, 8, 1, 0, converted, _VCastFromGPR(16, 8, upper));
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
 template<size_t width, bool pop>
 void OpDispatchBuilder::FST(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
   auto orig_top = GetX87Top();
+  auto data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
   if (width == 80) {
-    auto data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, data, 10, 1);
   }
-
-  // TODO: Other widths
+  else if (width == 32 || width == 64) {
+    auto result = _F80CVT(data, width / 8);
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, result, width / 8, 1);
+  }
 
   if (pop) {
     auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
@@ -5098,72 +5171,954 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
   }
 }
 
+template<size_t width, bool pop>
+void OpDispatchBuilder::FIST(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto orig_top = GetX87Top();
+  OrderedNode *data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  data = _F80CVTInt(data, width / 8);
+
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, width / 8, 1);
+
+  if (pop) {
+    auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+    SetX87Top(top);
+  }
+}
+
+template <size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FADD(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
   auto top = GetX87Top();
-  OrderedNode* arg;
+  OrderedNode *StackLocation = top;
+
+  OrderedNode *arg{};
+  OrderedNode *b{};
 
   auto mask = _Constant(7);
 
   if (Op->Src[0].TypeNone.Type != 0) {
     // Memory arg
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
+        b = _F80CVTToInt(arg, width / 8);
+      }
+      else {
+        b = _F80CVTTo(arg, width / 8);
+      }
+    }
   } else {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
     arg = _And(_Add(top, offset), mask);
+    if (ResInST0 == OpResult::RES_STI) {
+      StackLocation = arg;
+    }
+    b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
   }
 
   auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
-  auto b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
-
-  // _StoreContext(a, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]));
-  // _StoreContext(b, 16, offsetof(FEXCore::Core::CPUState, mm[1][0]));
-
-  auto ExponentMask = _Constant(0x7FFF);
-
-  //auto result = _F80Add(a, b);
-  // TODO: Handle sign and negative additions.
-
-  // TODO: handle NANs (and other weird numbers?)
-
-  auto a_Exponent = _And(_VExtractToGPR(16, 8, a, 1), ExponentMask);
-  auto b_Exponent = _And(_VExtractToGPR(16, 8, b, 1), ExponentMask);
-  auto shift = _Sub(a_Exponent, b_Exponent);
-
-  auto zero = _Constant(0);
-
-  auto ExponentLarger  = _Select(COND_ULT, shift, zero, a_Exponent, b_Exponent);
-
-  auto a_Mantissa = _VExtractToGPR(16, 8, a, 0);
-  auto b_Mantissa = _VExtractToGPR(16, 8, b, 0);
-  auto MantissaLarger  = _Select(COND_ULT, shift, zero, a_Mantissa, b_Mantissa);
-  auto MantissaSmaller = _Select(COND_ULT, shift, zero, b_Mantissa, a_Mantissa);
-
-  auto invertedShift   = _Select(COND_ULT, shift, zero, _Neg(shift), shift);
-  auto MantissaSmallerShifted = _Lshr(MantissaSmaller, invertedShift);
-
-  auto MantissaSummed = _Add(MantissaLarger, MantissaSmallerShifted);
-
-  auto one = _Constant(1);
-  // Hacky way to detect overflow and adjust
-  auto ExponentAdjusted = _Select(COND_ULT, MantissaLarger, MantissaSummed, ExponentLarger, _Add(ExponentLarger, one));
-  auto MantissaShifted = _Or(_Constant(1ULL << 63), _Lshr(MantissaSummed, one));
-  auto MantissaAdjusted = _Select(COND_ULT, MantissaLarger, MantissaSummed, MantissaSummed, MantissaShifted);
-
-  // TODO: Rounding, Infinities, exceptions, precision, tags?
-
-  auto lower = _VCastFromGPR(16, 8, MantissaAdjusted);
-  auto upper = _VCastFromGPR(16, 8, ExponentAdjusted);
-
-  auto result = _VInsElement(16, 8, 1, 0, lower, upper);
+  auto result = _F80Add(a, b);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    top = _And(_Add(top, one), mask);
+    top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
 
   // Write to ST[TOP]
+  _StoreContextIndexed(result, StackLocation, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
+void OpDispatchBuilder::FMUL(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  OrderedNode *StackLocation = top;
+  OrderedNode *arg{};
+  OrderedNode *b{};
+
+  auto mask = _Constant(7);
+
+  if (Op->Src[0].TypeNone.Type != 0) {
+    // Memory arg
+    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
+        b = _F80CVTToInt(arg, width / 8);
+      }
+      else {
+        b = _F80CVTTo(arg, width / 8);
+      }
+    }
+  } else {
+    // Implicit arg
+    auto offset = _Constant(Op->OP & 7);
+    arg = _And(_Add(top, offset), mask);
+    if (ResInST0 == OpResult::RES_STI) {
+      StackLocation = arg;
+    }
+
+    b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  }
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto result = _F80Mul(a, b);
+
+  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    top = _And(_Add(top, _Constant(1)), mask);
+    SetX87Top(top);
+  }
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, StackLocation, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
+void OpDispatchBuilder::FDIV(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  OrderedNode *StackLocation = top;
+  OrderedNode *arg{};
+  OrderedNode *b{};
+
+  auto mask = _Constant(7);
+
+  if (Op->Src[0].TypeNone.Type != 0) {
+    // Memory arg
+    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
+        b = _F80CVTToInt(arg, width / 8);
+      }
+      else {
+        b = _F80CVTTo(arg, width / 8);
+      }
+    }
+  } else {
+    // Implicit arg
+    auto offset = _Constant(Op->OP & 7);
+    arg = _And(_Add(top, offset), mask);
+    if (ResInST0 == OpResult::RES_STI) {
+      StackLocation = arg;
+    }
+
+    b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  }
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  OrderedNode *result{};
+  if (reverse) {
+    result = _F80Div(b, a);
+  }
+  else {
+    result = _F80Div(a, b);
+  }
+
+  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    top = _And(_Add(top, _Constant(1)), mask);
+    SetX87Top(top);
+  }
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, StackLocation, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
+void OpDispatchBuilder::FSUB(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  OrderedNode *StackLocation = top;
+  OrderedNode *arg{};
+  OrderedNode *b{};
+
+  auto mask = _Constant(7);
+
+  if (Op->Src[0].TypeNone.Type != 0) {
+    // Memory arg
+    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
+        b = _F80CVTToInt(arg, width / 8);
+      }
+      else {
+        b = _F80CVTTo(arg, width / 8);
+      }
+    }
+  } else {
+    // Implicit arg
+    auto offset = _Constant(Op->OP & 7);
+    arg = _And(_Add(top, offset), mask);
+    if (ResInST0 == OpResult::RES_STI) {
+      StackLocation = arg;
+    }
+    b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  }
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  OrderedNode *result{};
+  if (reverse) {
+    result = _F80Sub(b, a);
+  }
+  else {
+    result = _F80Sub(a, b);
+  }
+
+  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    top = _And(_Add(top, _Constant(1)), mask);
+    SetX87Top(top);
+  }
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, StackLocation, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::FCHS(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto low = _Constant(0);
+  auto high = _Constant(0b1'000'0000'0000'0000);
+  OrderedNode *data = _VCastFromGPR(16, 8, low);
+  data = _VInsGPR(16, 8, data, high, 1);
+
+  auto result = _VXor(a, data, 16, 1);
+
+  // Write to ST[TOP]
   _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::FABS(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto low = _Constant(~0ULL);
+  auto high = _Constant(0b0'111'1111'1111'1111);
+  OrderedNode *data = _VCastFromGPR(16, 8, low);
+  data = _VInsGPR(16, 8, data, high, 1);
+
+  auto result = _VAnd(a, data, 16, 1);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::FTST(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto low = _Constant(0);
+  OrderedNode *data = _VCastFromGPR(16, 8, low);
+
+  OrderedNode *Res = _F80Cmp(a, data,
+    (1 << FCMP_FLAG_EQ) |
+    (1 << FCMP_FLAG_LT) |
+    (1 << FCMP_FLAG_UNORDERED));
+
+  OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
+  OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
+  OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
+  HostFlag_CF = _Or(HostFlag_CF, HostFlag_Unordered);
+  HostFlag_ZF = _Or(HostFlag_ZF, HostFlag_Unordered);
+
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
+}
+
+void OpDispatchBuilder::FRNDINT(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto result = _F80Round(a);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto orig_top = GetX87Top();
+  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
+
+  auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto exp = _F80XTRACT_EXP(a);
+  auto sig = _F80XTRACT_SIG(a);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(exp, orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  _StoreContextIndexed(sig, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::FNINIT(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  SetX87Top(_Constant(0));
+}
+
+template<size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool pop>
+void OpDispatchBuilder::FCOMI(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  auto mask = _Constant(7);
+
+  OrderedNode *arg{};
+  OrderedNode *b{};
+
+  if (Op->Src[0].TypeNone.Type != 0) {
+    // Memory arg
+    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
+        b = _F80CVTToInt(arg, width / 8);
+      }
+      else {
+        b = _F80CVTTo(arg, width / 8);
+      }
+    }
+  } else {
+    // Implicit arg
+    auto offset = _Constant(Op->OP & 7);
+    arg = _And(_Add(top, offset), mask);
+    b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  }
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  OrderedNode *Res = _F80Cmp(a, b,
+    (1 << FCMP_FLAG_EQ) |
+    (1 << FCMP_FLAG_LT) |
+    (1 << FCMP_FLAG_UNORDERED));
+
+  OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
+  OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
+  OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
+  HostFlag_CF = _Or(HostFlag_CF, HostFlag_Unordered);
+  HostFlag_ZF = _Or(HostFlag_ZF, HostFlag_Unordered);
+
+  if (whichflags == FCOMIFlags::FLAGS_X87) {
+    SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
+    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
+    SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
+  }
+  else {
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(HostFlag_CF);
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(HostFlag_ZF);
+    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(HostFlag_Unordered);
+  }
+
+  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    top = _And(_Add(top, _Constant(1)), mask);
+    SetX87Top(top);
+  }
+}
+
+void OpDispatchBuilder::FXCH(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  OrderedNode* arg;
+
+  auto mask = _Constant(7);
+
+  // Implicit arg
+  auto offset = _Constant(Op->OP & 7);
+  arg = _And(_Add(top, offset), mask);
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  auto b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(b, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  _StoreContextIndexed(a, arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+template<bool pop>
+void OpDispatchBuilder::FST(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  OrderedNode* arg;
+
+  auto mask = _Constant(7);
+
+  // Implicit arg
+  auto offset = _Constant(Op->OP & 7);
+  arg = _And(_Add(top, offset), mask);
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(a, arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  if (pop) {
+    top = _And(_Add(top, _Constant(1)), _Constant(7));
+    SetX87Top(top);
+  }
+}
+
+template<FEXCore::IR::IROps IROp>
+void OpDispatchBuilder::X87UnaryOp(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto top = GetX87Top();
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto result = _F80Round(a);
+  // Overwrite the op
+  result.first->Header.Op = IROp;
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+template<FEXCore::IR::IROps IROp>
+void OpDispatchBuilder::X87BinaryOp(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+  auto top = GetX87Top();
+
+  auto mask = _Constant(7);
+  OrderedNode *st1 = _And(_Add(top, _Constant(1)), mask);
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  st1 = _LoadContextIndexed(st1, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto result = _F80Add(a, st1);
+  // Overwrite the op
+  result.first->Header.Op = IROp;
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+template<bool Inc>
+void OpDispatchBuilder::X87ModifySTP(OpcodeArgs) {
+  auto orig_top = GetX87Top();
+  if (Inc) {
+    auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+    SetX87Top(top);
+  }
+  else {
+    auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+    SetX87Top(top);
+  }
+}
+
+void OpDispatchBuilder::X87SinCos(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto orig_top = GetX87Top();
+  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
+
+  auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto sin = _F80SIN(a);
+  auto cos = _F80COS(a);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(sin, orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  _StoreContextIndexed(cos, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+template<bool Plus1>
+void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto orig_top = GetX87Top();
+  auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
+
+  auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  OrderedNode *st1 = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  if (Plus1) {
+    auto low = _Constant(0x8000'0000'0000'0000);
+    auto high = _Constant(0b0'011'1111'1111'1111);
+    OrderedNode *data = _VCastFromGPR(16, 8, low);
+    data = _VInsGPR(16, 8, data, high, 1);
+    st1 = _F80Add(st1, data);
+  }
+
+  auto result = _F80FYL2X(st1, a);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::X87TAN(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto orig_top = GetX87Top();
+  auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
+
+  auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto result = _F80TAN(a);
+
+  auto low = _Constant(0x8000'0000'0000'0000);
+  auto high = _Constant(0b0'011'1111'1111'1111);
+  OrderedNode *data = _VCastFromGPR(16, 8, low);
+  data = _VInsGPR(16, 8, data, high, 1);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  _StoreContextIndexed(data, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::X87ATAN(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto orig_top = GetX87Top();
+  auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
+
+  auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  OrderedNode *st1 = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  auto result = _F80ATAN(st1, a);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+
+  OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
+  auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
+
+  // Strip out the FSW information
+  auto Top = _Bfe(3, 11, NewFSW);
+  SetX87Top(Top);
+
+  auto C0 = _Bfe(1, 8,  NewFSW);
+  auto C1 = _Bfe(1, 9,  NewFSW);
+  auto C2 = _Bfe(1, 10, NewFSW);
+  auto C3 = _Bfe(1, 14, NewFSW);
+
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+}
+
+void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+	// 14 bytes for 16bit
+	// 2 Bytes : FCW
+	// 2 Bytes : FSW
+	// 2 bytes : FTW
+	// 2 bytes : Instruction offset
+	// 2 bytes : Instruction CS selector
+	// 2 bytes : Data offset
+	// 2 bytes : Data selector
+
+	// 28 bytes for 32bit
+	// 4 bytes : FCW
+	// 4 bytes : FSW
+	// 4 bytes : FTW
+	// 4 bytes : Instruction pointer
+	// 2 bytes : instruction pointer selector
+	// 2 bytes : Opcode
+	// 4 bytes : data pointer offset
+	// 4 bytes : data pointer selector
+
+  auto Size = GetDstSize(Op);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+
+	{
+		// FCW store default
+		_StoreMem(GPRClass, Size, Mem, _Constant(0x37F), Size);
+	}
+
+	{
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
+		// We must construct the FSW from our various bits
+		OrderedNode *FSW = _Constant(0);
+		auto Top = GetX87Top();
+		FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+
+		auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
+		auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
+		auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
+		auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
+
+		FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
+		FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
+		FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
+		FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+    _StoreMem(GPRClass, Size, MemLocation, FSW, Size);
+	}
+
+	auto ZeroConst = _Constant(0);
+
+	{
+		// FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+	{
+		// Instruction Offset
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 3));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+	{
+		// Instruction CS selector (+ Opcode)
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 4));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+	{
+		// Data pointer offset
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 5));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+	{
+		// Data pointer selector
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 6));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+}
+
+void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
+  StoreResult(GPRClass, Op, _Constant(0x37F), -1);
+}
+
+void OpDispatchBuilder::X87LDSW(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+  OrderedNode *NewFSW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  // Strip out the FSW information
+  auto Top = _Bfe(3, 11, NewFSW);
+  SetX87Top(Top);
+
+  auto C0 = _Bfe(1, 8,  NewFSW);
+  auto C1 = _Bfe(1, 9,  NewFSW);
+  auto C2 = _Bfe(1, 10, NewFSW);
+  auto C3 = _Bfe(1, 14, NewFSW);
+
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+}
+
+void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+  // We must construct the FSW from our various bits
+  OrderedNode *FSW = _Constant(0);
+  auto Top = GetX87Top();
+  FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+
+  auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
+  auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
+  auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
+  auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
+
+  FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
+  FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
+  FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
+  FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+
+  StoreResult(GPRClass, Op, FSW, -1);
+}
+
+void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+	// 14 bytes for 16bit
+	// 2 Bytes : FCW
+	// 2 Bytes : FSW
+	// 2 bytes : FTW
+	// 2 bytes : Instruction offset
+	// 2 bytes : Instruction CS selector
+	// 2 bytes : Data offset
+	// 2 bytes : Data selector
+
+	// 28 bytes for 32bit
+	// 4 bytes : FCW
+	// 4 bytes : FSW
+	// 4 bytes : FTW
+	// 4 bytes : Instruction pointer
+	// 2 bytes : instruction pointer selector
+	// 2 bytes : Opcode
+	// 4 bytes : data pointer offset
+	// 4 bytes : data pointer selector
+
+  auto Size = GetDstSize(Op);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+
+  OrderedNode *Top = GetX87Top();
+	{
+		// FCW store default
+		_StoreMem(GPRClass, Size, Mem, _Constant(0x37F), Size);
+	}
+
+	{
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
+		// We must construct the FSW from our various bits
+		OrderedNode *FSW = _Constant(0);
+		FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+
+		auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
+		auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
+		auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
+		auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
+
+		FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
+		FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
+		FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
+		FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+    _StoreMem(GPRClass, Size, MemLocation, FSW, Size);
+	}
+
+	auto ZeroConst = _Constant(0);
+
+	{
+		// FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+	{
+		// Instruction Offset
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 3));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+	{
+		// Instruction CS selector (+ Opcode)
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 4));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+	{
+		// Data pointer offset
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 5));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+	{
+		// Data pointer selector
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 6));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+	}
+
+  OrderedNode *ST0Location = _Add(Mem, _Constant(Size * 7));
+
+  auto OneConst = _Constant(1);
+  auto SevenConst = _Constant(7);
+  auto TenConst = _Constant(10);
+  for (int i = 0; i < 7; ++i) {
+    auto data = _LoadContextIndexed(Top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+    _StoreMem(FPRClass, 16, ST0Location, data, 1);
+    ST0Location = _Add(ST0Location, TenConst);
+    Top = _And(_Add(Top, OneConst), SevenConst);
+  }
+
+  // The final st(7) needs a bit of special handling here
+  auto data = _LoadContextIndexed(Top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  // ST7 broken in to two parts
+  // Lower 64bits [63:0]
+  // upper 16 bits [79:64]
+  _StoreMem(FPRClass, 8, ST0Location, data, 1);
+  ST0Location = _Add(ST0Location, _Constant(8));
+  _VStoreMemElement(16, 2, ST0Location, data, 4, 1);
+}
+
+void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+
+  OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
+  auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
+
+  // Strip out the FSW information
+  OrderedNode *Top = _Bfe(3, 11, NewFSW);
+  SetX87Top(Top);
+
+  auto C0 = _Bfe(1, 8,  NewFSW);
+  auto C1 = _Bfe(1, 9,  NewFSW);
+  auto C2 = _Bfe(1, 10, NewFSW);
+  auto C3 = _Bfe(1, 14, NewFSW);
+
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+
+  OrderedNode *ST0Location = _Add(Mem, _Constant(Size * 7));
+
+  auto OneConst = _Constant(1);
+  auto SevenConst = _Constant(7);
+  auto TenConst = _Constant(10);
+
+  auto low = _Constant(~0ULL);
+  auto high = _Constant(0xFFFF);
+  OrderedNode *Mask = _VCastFromGPR(16, 8, low);
+  Mask = _VInsGPR(16, 8, Mask, high, 1);
+
+  for (int i = 0; i < 7; ++i) {
+    OrderedNode *Reg = _LoadMem(FPRClass, 16, ST0Location, 1);
+    // Mask off the top bits
+    Reg = _VAnd(16, 16, Reg, Mask);
+
+    _StoreContextIndexed(Reg, Top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+    ST0Location = _Add(ST0Location, TenConst);
+    Top = _And(_Add(Top, OneConst), SevenConst);
+  }
+
+  // The final st(7) needs a bit of special handling here
+  // ST7 broken in to two parts
+  // Lower 64bits [63:0]
+  // upper 16 bits [79:64]
+
+  OrderedNode *Reg = _LoadMem(FPRClass, 8, ST0Location, 1);
+  ST0Location = _Add(ST0Location, _Constant(8));
+  Reg = _VLoadMemElement(16, 2, ST0Location, Reg, 4, 1);
+  _StoreContextIndexed(Reg, Top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
+  auto top = GetX87Top();
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  OrderedNode *Result = _VExtractToGPR(16, 8, a, 1);
+
+  // Extract the sign bit
+  Result = _Lshr(Result, _Constant(15));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Result);
+
+  // Claim this is a normal number
+  // We don't support anything else
+  auto ZeroConst = _Constant(0);
+  auto OneConst = _Constant(1);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(ZeroConst);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(OneConst);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(ZeroConst);
+}
+
+void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+  enum CompareType {
+    COMPARE_ZERO,
+    COMPARE_NOTZERO,
+  };
+  uint32_t FLAGMask{};
+  CompareType Type = COMPARE_ZERO;
+  OrderedNode *SrcCond;
+
+  auto ZeroConst = _Constant(0);
+  auto OneConst = _Constant(1);
+
+  uint16_t Opcode = Op->OP & 0b1111'1111'1000;
+  switch (Opcode) {
+  case 0x3'C0:
+    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
+    Type = COMPARE_NOTZERO;
+  break;
+  case 0x2'C0:
+    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
+    Type = COMPARE_ZERO;
+  break;
+  case 0x2'C8:
+    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
+    Type = COMPARE_NOTZERO;
+  break;
+  case 0x3'C8:
+    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
+    Type = COMPARE_ZERO;
+  break;
+  case 0x2'D0:
+    FLAGMask = (1 << FEXCore::X86State::RFLAG_ZF_LOC) | (1 << FEXCore::X86State::RFLAG_CF_LOC);
+    Type = COMPARE_NOTZERO;
+  break;
+  case 0x3'D0:
+    FLAGMask = (1 << FEXCore::X86State::RFLAG_ZF_LOC) | (1 << FEXCore::X86State::RFLAG_CF_LOC);
+    Type = COMPARE_ZERO;
+  break;
+  case 0x2'D8:
+    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
+    Type = COMPARE_NOTZERO;
+  break;
+  case 0x3'D8:
+    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
+    Type = COMPARE_ZERO;
+  break;
+  default:
+    LogMan::Msg::A("Unhandled FCMOV op: 0x%x", Opcode);
+  break;
+  }
+
+  auto MaskConst = _Constant(FLAGMask);
+
+  auto RFLAG = GetPackedRFLAG(false);
+
+  auto AndOp = _And(RFLAG, MaskConst);
+  switch (Type) {
+    case COMPARE_ZERO: {
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+      AndOp, ZeroConst, OneConst, ZeroConst);
+      break;
+    }
+    case COMPARE_NOTZERO: {
+      SrcCond = _Select(FEXCore::IR::COND_NEQ,
+      AndOp, ZeroConst, OneConst, ZeroConst);
+      break;
+    }
+  }
+
+  SrcCond = _Sbfe(1, 0, SrcCond);
+
+  OrderedNode *VecCond = _VCastFromGPR(16, 8, SrcCond);
+  VecCond = _VInsGPR(16, 8, VecCond, SrcCond, 1);
+
+  auto top = GetX87Top();
+  OrderedNode* arg;
+
+  auto mask = _Constant(7);
+
+  // Implicit arg
+  auto offset = _Constant(Op->OP & 7);
+  arg = _And(_Add(top, offset), mask);
+
+  auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  auto b = _LoadContextIndexed(arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  auto Result = _VBSL(VecCond, b, a);
+
+  // Write to ST[TOP]
+  _StoreContextIndexed(Result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 }
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
@@ -5182,6 +6137,30 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
     // ------------------------------------------
     //   00 | FCW | FSW | FTW | <R>   | FOP | FIP[31:0] | FCS | <R> |
     //   16 | FDP[31:0] | FDS         | <R> | MXCSR     | MXCSR_MASK|
+  }
+
+  {
+    // FCW store default
+    _StoreMem(GPRClass, 2, Mem, _Constant(0x37F), 2);
+  }
+
+  {
+    // We must construct the FSW from our various bits
+    OrderedNode *MemLocation = _Add(Mem, _Constant(2));
+    OrderedNode *FSW = _Constant(0);
+    auto Top = GetX87Top();
+    FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+
+    auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
+    auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
+    auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
+    auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
+
+    FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
+    FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
+    FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
+    FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+    _StoreMem(GPRClass, 2, MemLocation, FSW, 2);
   }
 
   // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
@@ -5244,6 +6223,25 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  {
+    OrderedNode *MemLocation = _Add(Mem, _Constant(2));
+    auto NewFSW = _LoadMem(GPRClass, 2, MemLocation, 2);
+
+    // Strip out the FSW information
+    auto Top = _Bfe(3, 11, NewFSW);
+    SetX87Top(Top);
+
+    auto C0 = _Bfe(1, 8,  NewFSW);
+    auto C1 = _Bfe(1, 9,  NewFSW);
+    auto C2 = _Bfe(1, 10, NewFSW);
+    auto C3 = _Bfe(1, 14, NewFSW);
+
+    SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
+    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
+    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
+    SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+  }
+
   for (unsigned i = 0; i < 8; ++i) {
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 32));
     auto MMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
@@ -6136,27 +7134,345 @@ constexpr uint16_t PF_F2 = 3;
 #define OPDReg(op, reg) (((op - 0xD8) << 8) | (reg << 3))
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> X87OpTable = {
+    {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 0) | 0x40, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 0) | 0x80, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 1) | 0x40, 8, &OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 1) | 0x80, 8, &OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xD8, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xD8, 2) | 0x40, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xD8, 2) | 0x80, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+    {OPDReg(0xD8, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPDReg(0xD8, 3) | 0x40, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPDReg(0xD8, 3) | 0x80, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+
+    {OPDReg(0xD8, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 4) | 0x40, 8, &OpDispatchBuilder::FSUB<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 4) | 0x80, 8, &OpDispatchBuilder::FSUB<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xD8, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 5) | 0x40, 8, &OpDispatchBuilder::FSUB<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 5) | 0x80, 8, &OpDispatchBuilder::FSUB<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xD8, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 6) | 0x40, 8, &OpDispatchBuilder::FDIV<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 6) | 0x80, 8, &OpDispatchBuilder::FDIV<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xD8, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 7) | 0x40, 8, &OpDispatchBuilder::FDIV<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 7) | 0x80, 8, &OpDispatchBuilder::FDIV<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+      {OPD(0xD8, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_ST0>},
+      {OPD(0xD8, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_ST0>},
+      {OPD(0xD8, 0xD0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+      {OPD(0xD8, 0xD8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+      {OPD(0xD8, 0xE0), 8, &OpDispatchBuilder::FSUB<80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+      {OPD(0xD8, 0xE8), 8, &OpDispatchBuilder::FSUB<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+      {OPD(0xD8, 0xF0), 8, &OpDispatchBuilder::FDIV<80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+      {OPD(0xD8, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
     {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::FLD<32>},
     {OPDReg(0xD9, 0) | 0x40, 8, &OpDispatchBuilder::FLD<32>},
     {OPDReg(0xD9, 0) | 0x80, 8, &OpDispatchBuilder::FLD<32>},
+
+    // 1 = Invalid
+
+    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::FST<32, false>},
+    {OPDReg(0xD9, 2) | 0x40, 8, &OpDispatchBuilder::FST<32, false>},
+    {OPDReg(0xD9, 2) | 0x80, 8, &OpDispatchBuilder::FST<32, false>},
+
+    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::FST<32, true>},
+    {OPDReg(0xD9, 3) | 0x40, 8, &OpDispatchBuilder::FST<32, true>},
+    {OPDReg(0xD9, 3) | 0x80, 8, &OpDispatchBuilder::FST<32, true>},
+
+    {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENV},
+    {OPDReg(0xD9, 4) | 0x40, 8, &OpDispatchBuilder::X87LDENV},
+    {OPDReg(0xD9, 4) | 0x80, 8, &OpDispatchBuilder::X87LDENV},
 
     {OPDReg(0xD9, 5) | 0x00, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
     {OPDReg(0xD9, 5) | 0x40, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
     {OPDReg(0xD9, 5) | 0x80, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
 
-    {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
-    {OPDReg(0xD9, 7) | 0x40, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
-    {OPDReg(0xD9, 7) | 0x80, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FNSTCW
+    {OPDReg(0xD9, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSTENV},
+    {OPDReg(0xD9, 6) | 0x40, 8, &OpDispatchBuilder::X87FNSTENV},
+    {OPDReg(0xD9, 6) | 0x80, 8, &OpDispatchBuilder::X87FNSTENV},
+
+    {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::X87FSTCW},
+    {OPDReg(0xD9, 7) | 0x40, 8, &OpDispatchBuilder::X87FSTCW},
+    {OPDReg(0xD9, 7) | 0x80, 8, &OpDispatchBuilder::X87FSTCW},
+
+      {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::FLD<80>},
+      {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
+      {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
+      // D1 = Invalid
+      // D8 = Invalid
+      {OPD(0xD9, 0xE0), 1, &OpDispatchBuilder::FCHS},
+      {OPD(0xD9, 0xE1), 1, &OpDispatchBuilder::FABS},
+      // E2 = Invalid
+      {OPD(0xD9, 0xE4), 1, &OpDispatchBuilder::FTST},
+      {OPD(0xD9, 0xE5), 1, &OpDispatchBuilder::X87FXAM},
+      // E6 = Invalid
+      {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::FLD_Const<0x8000'0000'0000'0000, 0b0'011'1111'1111'1111>}, // 1.0
+      {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::FLD_Const<0xD49A'784B'CD1B'8AFE, 0x4000>}, // log2l(10)
+      {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::FLD_Const<0xB8AA'3B29'5C17'F0BC, 0x3FFF>}, // log2l(e)
+      {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::FLD_Const<0xC90F'DAA2'2168'C235, 0x4000>}, // pi
+      {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::FLD_Const<0x9A20'9A84'FBCF'F799, 0x3FFD>}, // log10l(2)
+      {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::FLD_Const<0xB172'17F7'D1CF'79AC, 0x3FFE>}, // log(2)
+      {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::FLD_Const<0, 0>}, // 0.0
+
+      // EF = Invalid
+      {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80F2XM1>},
+      {OPD(0xD9, 0xF1), 1, &OpDispatchBuilder::X87FYL2X<false>},
+      {OPD(0xD9, 0xF2), 1, &OpDispatchBuilder::X87TAN},
+      {OPD(0xD9, 0xF3), 1, &OpDispatchBuilder::X87ATAN},
+      {OPD(0xD9, 0xF4), 1, &OpDispatchBuilder::FXTRACT},
+      {OPD(0xD9, 0xF5), 1, &OpDispatchBuilder::X87BinaryOp<IR::OP_F80FPREM1>},
+      {OPD(0xD9, 0xF6), 1, &OpDispatchBuilder::X87ModifySTP<false>},
+      {OPD(0xD9, 0xF7), 1, &OpDispatchBuilder::X87ModifySTP<true>},
+      {OPD(0xD9, 0xF8), 1, &OpDispatchBuilder::X87BinaryOp<IR::OP_F80FPREM>},
+      {OPD(0xD9, 0xF9), 1, &OpDispatchBuilder::X87FYL2X<true>},
+      {OPD(0xD9, 0xFA), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80SQRT>},
+      {OPD(0xD9, 0xFB), 1, &OpDispatchBuilder::X87SinCos},
+      {OPD(0xD9, 0xFC), 1, &OpDispatchBuilder::FRNDINT},
+      {OPD(0xD9, 0xFD), 1, &OpDispatchBuilder::X87BinaryOp<IR::OP_F80SCALE>},
+      {OPD(0xD9, 0xFE), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80SIN>},
+      {OPD(0xD9, 0xFF), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80COS>},
+
+    {OPDReg(0xDA, 0) | 0x00, 8, &OpDispatchBuilder::FADD<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 0) | 0x40, 8, &OpDispatchBuilder::FADD<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 0) | 0x80, 8, &OpDispatchBuilder::FADD<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDA, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 1) | 0x40, 8, &OpDispatchBuilder::FMUL<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 1) | 0x80, 8, &OpDispatchBuilder::FMUL<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDA, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDA, 2) | 0x40, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDA, 2) | 0x80, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+    {OPDReg(0xDA, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPDReg(0xDA, 3) | 0x40, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPDReg(0xDA, 3) | 0x80, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+
+    {OPDReg(0xDA, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 4) | 0x40, 8, &OpDispatchBuilder::FSUB<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 4) | 0x80, 8, &OpDispatchBuilder::FSUB<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDA, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 5) | 0x40, 8, &OpDispatchBuilder::FSUB<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 5) | 0x80, 8, &OpDispatchBuilder::FSUB<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDA, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 6) | 0x40, 8, &OpDispatchBuilder::FDIV<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 6) | 0x80, 8, &OpDispatchBuilder::FDIV<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDA, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 7) | 0x40, 8, &OpDispatchBuilder::FDIV<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 7) | 0x80, 8, &OpDispatchBuilder::FDIV<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+      {OPD(0xDA, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
+      {OPD(0xDA, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
+      {OPD(0xDA, 0xD0), 8, &OpDispatchBuilder::X87FCMOV},
+      {OPD(0xDA, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
+      // E0 = Invalid
+      // E8 = Invalid
+      {OPD(0xDA, 0xE9), 1, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+      // EA = Invalid
+      // F0 = Invalid
+      // F8 = Invalid
+
+    {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILD<32>},
+    {OPDReg(0xDB, 0) | 0x40, 8, &OpDispatchBuilder::FILD<32>},
+    {OPDReg(0xDB, 0) | 0x80, 8, &OpDispatchBuilder::FILD<32>},
+
+    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::FIST<32, true>},
+    {OPDReg(0xDB, 1) | 0x40, 8, &OpDispatchBuilder::FIST<32, true>},
+    {OPDReg(0xDB, 1) | 0x80, 8, &OpDispatchBuilder::FIST<32, true>},
+
+    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::FIST<32, false>},
+    {OPDReg(0xDB, 2) | 0x40, 8, &OpDispatchBuilder::FIST<32, false>},
+    {OPDReg(0xDB, 2) | 0x80, 8, &OpDispatchBuilder::FIST<32, false>},
+
+    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::FIST<32, true>},
+    {OPDReg(0xDB, 3) | 0x40, 8, &OpDispatchBuilder::FIST<32, true>},
+    {OPDReg(0xDB, 3) | 0x80, 8, &OpDispatchBuilder::FIST<32, true>},
+
+    // 4 = Invalid
+
+    {OPDReg(0xDB, 5) | 0x00, 8, &OpDispatchBuilder::FLD<80>},
+    {OPDReg(0xDB, 5) | 0x40, 8, &OpDispatchBuilder::FLD<80>},
+    {OPDReg(0xDB, 5) | 0x80, 8, &OpDispatchBuilder::FLD<80>},
+
+    // 6 = Invalid
 
     {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::FST<80, true>},
     {OPDReg(0xDB, 7) | 0x40, 8, &OpDispatchBuilder::FST<80, true>},
     {OPDReg(0xDB, 7) | 0x80, 8, &OpDispatchBuilder::FST<80, true>},
 
+
+      {OPD(0xDB, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
+      {OPD(0xDB, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
+      {OPD(0xDB, 0xD0), 8, &OpDispatchBuilder::X87FCMOV},
+      {OPD(0xDB, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
+      // E0 = Invalid
+      {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::NOPOp}, // FNCLEX
+      {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINIT},
+      // E4 = Invalid
+      {OPD(0xDB, 0xE8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+      {OPD(0xDB, 0xF0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+
+      // F8 = Invalid
+
+    {OPDReg(0xDC, 0) | 0x00, 8, &OpDispatchBuilder::FADD<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 0) | 0x40, 8, &OpDispatchBuilder::FADD<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 0) | 0x80, 8, &OpDispatchBuilder::FADD<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDC, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 1) | 0x40, 8, &OpDispatchBuilder::FMUL<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 1) | 0x80, 8, &OpDispatchBuilder::FMUL<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDC, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDC, 2) | 0x40, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDC, 2) | 0x80, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+    {OPDReg(0xDC, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPDReg(0xDC, 3) | 0x40, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPDReg(0xDC, 3) | 0x80, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+
+    {OPDReg(0xDC, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 4) | 0x40, 8, &OpDispatchBuilder::FSUB<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 4) | 0x80, 8, &OpDispatchBuilder::FSUB<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDC, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 5) | 0x40, 8, &OpDispatchBuilder::FSUB<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 5) | 0x80, 8, &OpDispatchBuilder::FSUB<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDC, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 6) | 0x40, 8, &OpDispatchBuilder::FDIV<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 6) | 0x80, 8, &OpDispatchBuilder::FDIV<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDC, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 7) | 0x40, 8, &OpDispatchBuilder::FDIV<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 7) | 0x80, 8, &OpDispatchBuilder::FDIV<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+      {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::FSUB<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::FSUB<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::FDIV<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDC, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+
     {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::FLD<64>},
     {OPDReg(0xDD, 0) | 0x40, 8, &OpDispatchBuilder::FLD<64>},
     {OPDReg(0xDD, 0) | 0x80, 8, &OpDispatchBuilder::FLD<64>},
 
-    {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::FADD},
+    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::FIST<64, true>},
+    {OPDReg(0xDD, 1) | 0x40, 8, &OpDispatchBuilder::FIST<64, true>},
+    {OPDReg(0xDD, 1) | 0x80, 8, &OpDispatchBuilder::FIST<64, true>},
+
+    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::FST<64, false>},
+    {OPDReg(0xDD, 2) | 0x40, 8, &OpDispatchBuilder::FST<64, false>},
+    {OPDReg(0xDD, 2) | 0x80, 8, &OpDispatchBuilder::FST<64, false>},
+
+    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::FST<64, true>},
+    {OPDReg(0xDD, 3) | 0x40, 8, &OpDispatchBuilder::FST<64, true>},
+    {OPDReg(0xDD, 3) | 0x80, 8, &OpDispatchBuilder::FST<64, true>},
+
+    {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
+    {OPDReg(0xDD, 4) | 0x40, 8, &OpDispatchBuilder::X87FRSTOR},
+    {OPDReg(0xDD, 4) | 0x80, 8, &OpDispatchBuilder::X87FRSTOR},
+
+    // 5 = Invalid
+    {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVE},
+    {OPDReg(0xDD, 6) | 0x40, 8, &OpDispatchBuilder::X87FNSAVE},
+    {OPDReg(0xDD, 6) | 0x80, 8, &OpDispatchBuilder::X87FNSAVE},
+
+    {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
+    {OPDReg(0xDD, 7) | 0x40, 8, &OpDispatchBuilder::X87FNSTSW},
+    {OPDReg(0xDD, 7) | 0x80, 8, &OpDispatchBuilder::X87FNSTSW},
+
+      {OPD(0xDD, 0xC0), 8, &OpDispatchBuilder::NOPOp}, // stubbed FFREE
+      {OPD(0xDD, 0xD0), 8, &OpDispatchBuilder::FST<false>},
+      {OPD(0xDD, 0xD8), 8, &OpDispatchBuilder::FST<true>},
+
+      {OPD(0xDD, 0xE0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+      {OPD(0xDD, 0xE8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+
+    {OPDReg(0xDE, 0) | 0x00, 8, &OpDispatchBuilder::FADD<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 0) | 0x40, 8, &OpDispatchBuilder::FADD<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 0) | 0x80, 8, &OpDispatchBuilder::FADD<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDE, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 1) | 0x40, 8, &OpDispatchBuilder::FMUL<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 1) | 0x80, 8, &OpDispatchBuilder::FMUL<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDE, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDE, 2) | 0x40, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDE, 2) | 0x80, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+    {OPDReg(0xDE, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPDReg(0xDE, 3) | 0x40, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPDReg(0xDE, 3) | 0x80, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+
+    {OPDReg(0xDE, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 4) | 0x40, 8, &OpDispatchBuilder::FSUB<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 4) | 0x80, 8, &OpDispatchBuilder::FSUB<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDE, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 5) | 0x40, 8, &OpDispatchBuilder::FSUB<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 5) | 0x80, 8, &OpDispatchBuilder::FSUB<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDE, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 6) | 0x40, 8, &OpDispatchBuilder::FDIV<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 6) | 0x80, 8, &OpDispatchBuilder::FDIV<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+    {OPDReg(0xDE, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 7) | 0x40, 8, &OpDispatchBuilder::FDIV<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 7) | 0x80, 8, &OpDispatchBuilder::FDIV<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+      {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDE, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDE, 0xD9), 1, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+      {OPD(0xDE, 0xE0), 8, &OpDispatchBuilder::FSUB<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDE, 0xE8), 8, &OpDispatchBuilder::FSUB<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDE, 0xF0), 8, &OpDispatchBuilder::FDIV<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+      {OPD(0xDE, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+
+    {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILD<16>},
+    {OPDReg(0xDF, 0) | 0x40, 8, &OpDispatchBuilder::FILD<16>},
+    {OPDReg(0xDF, 0) | 0x80, 8, &OpDispatchBuilder::FILD<16>},
+
+    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::FIST<16, true>},
+    {OPDReg(0xDF, 1) | 0x40, 8, &OpDispatchBuilder::FIST<16, true>},
+    {OPDReg(0xDF, 1) | 0x80, 8, &OpDispatchBuilder::FIST<16, true>},
+
+    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::FIST<16, false>},
+    {OPDReg(0xDF, 2) | 0x40, 8, &OpDispatchBuilder::FIST<16, false>},
+    {OPDReg(0xDF, 2) | 0x80, 8, &OpDispatchBuilder::FIST<16, false>},
+
+    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::FIST<16, true>},
+    {OPDReg(0xDF, 3) | 0x40, 8, &OpDispatchBuilder::FIST<16, true>},
+    {OPDReg(0xDF, 3) | 0x80, 8, &OpDispatchBuilder::FIST<16, true>},
+
+    // 4 = FBLD
+
+    {OPDReg(0xDF, 5) | 0x00, 8, &OpDispatchBuilder::FILD<64>},
+    {OPDReg(0xDF, 5) | 0x40, 8, &OpDispatchBuilder::FILD<64>},
+    {OPDReg(0xDF, 5) | 0x80, 8, &OpDispatchBuilder::FILD<64>},
+
+    // 6 = FTSTB
+
+    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::FIST<64, true>},
+    {OPDReg(0xDF, 7) | 0x40, 8, &OpDispatchBuilder::FIST<64, true>},
+    {OPDReg(0xDF, 7) | 0x80, 8, &OpDispatchBuilder::FIST<64, true>},
+
+      {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::X87FNSTSW},
+      {OPD(0xDF, 0xE8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, true>},
+      {OPD(0xDF, 0xF0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, true>},
   };
 #undef OPD
 #undef OPDReg

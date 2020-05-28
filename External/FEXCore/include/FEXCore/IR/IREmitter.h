@@ -64,14 +64,23 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
     return _Bfe(ssa0, Width, lsb);
   }
+  IRPair<IROp_Sbfe> _Sbfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
+    return _Sbfe(ssa0, Width, lsb);
+  }
   IRPair<IROp_Bfi> _Bfi(uint8_t Width, uint8_t lsb, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _Bfi(ssa0, ssa1, Width, lsb);
   }
   IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Align = 1) {
     return _StoreMem(ssa0, ssa1, Size, Align, Class);
   }
+  IRPair<IROp_VStoreMemElement> _VStoreMemElement(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index, uint8_t Align = 1) {
+    return _VStoreMemElement(ssa0, ssa1, Index, Align, RegisterSize, ElementSize);
+  }
   IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
     return _LoadMem(ssa0, Size, Align, Class);
+  }
+  IRPair<IROp_VLoadMemElement> _VLoadMemElement(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index, uint8_t Align = 1) {
+    return _VLoadMemElement(ssa0, ssa1, Index, Align, RegisterSize, ElementSize);
   }
   IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3) {
     return _Select(ssa0, ssa1, ssa2, ssa3, {Cond});
