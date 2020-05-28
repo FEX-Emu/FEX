@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 namespace FEXCore::Core {
@@ -55,4 +57,6 @@ namespace FEXCore::HLE {
   uint64_t Memfd_Create(FEXCore::Core::InternalThreadState *Thread, const char *name, uint32_t flags);
   uint64_t Statx(FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf);
   uint64_t Ppoll(FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize);
+  uint64_t Name_to_handle_at(FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, struct file_handle *handle, int *mount_id, int flags);
+  uint64_t Open_by_handle_at(FEXCore::Core::InternalThreadState *Thread, int mount_fd, struct file_handle *handle, int flags);
 }

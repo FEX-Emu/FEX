@@ -16,6 +16,7 @@ namespace FEXCore::HLE {
   uint64_t Rmdir(FEXCore::Core::InternalThreadState *Thread, const char *pathname);
   uint64_t Link(FEXCore::Core::InternalThreadState *Thread, const char *oldpath, const char *newpath);
   uint64_t Unlink(FEXCore::Core::InternalThreadState *Thread, const char *pathname);
+  uint64_t Symlink(FEXCore::Core::InternalThreadState *Thread, const char *target, const char *linkpath);
   uint64_t Readlink(FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *buf, size_t bufsiz);
   uint64_t Chmod(FEXCore::Core::InternalThreadState *Thread, const char *pathname, mode_t mode);
   uint64_t Umask(FEXCore::Core::InternalThreadState *Thread, mode_t mask);

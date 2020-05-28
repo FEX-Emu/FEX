@@ -298,4 +298,16 @@ namespace FEXCore::HLE {
     uint64_t Result = ::ppoll(fds, nfds, timeout_ts, sigmask);
     SYSCALL_ERRNO();
   }
+
+  uint64_t Name_to_handle_at(FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, struct file_handle *handle, int *mount_id, int flags) {
+    flags = RemapFlags(flags);
+    uint64_t Result = ::name_to_handle_at(dirfd, pathname, handle, mount_id, flags);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Open_by_handle_at(FEXCore::Core::InternalThreadState *Thread, int mount_fd, struct file_handle *handle, int flags) {
+    flags = RemapFlags(flags);
+    uint64_t Result = ::open_by_handle_at(mount_fd, handle, flags);
+    SYSCALL_ERRNO();
+  }
 }

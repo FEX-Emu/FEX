@@ -96,6 +96,7 @@ enum Syscalls {
   SYSCALL_RMDIR           = 84,  ///< __NR_rmdir
   SYSCALL_LINK            = 86,  ///< __NR_link
   SYSCALL_UNLINK          = 87,  ///< __NR_unlink
+  SYSCALL_SYMLINK         = 88,  ///< __NR_symlink
   SYSCALL_READLINK        = 89,  ///< __NR_readlink
   SYSCALL_CHMOD           = 90,  ///< __NR_chmod
   SYSCALL_FCHMOD          = 91,  ///< __NR_fchmod
@@ -182,6 +183,8 @@ enum Syscalls {
   SYSCALL_PIPE2           = 293, ///< __NR_pipe2
   SYSCALL_INOTIFY_INIT1   = 294, ///< __NR_inotify_init1
   SYSCALL_PRLIMIT64       = 302, ///< __NR_prlimit64
+  SYSCALL_NAME_TO_HANDLE_AT = 303, ///< __NR_name_to_handle_at
+  SYSCALL_OPEN_BY_HANDLE_AT = 304, ///< __NR_open_by_handle_at
   SYSCALL_SENDMMSG        = 307, ///< __NR_sendmmsg
   SYSCALL_SCHED_SETATTR   = 314, ///< __NR_sched_setattr
   SYSCALL_SCHED_GETATTR   = 315, ///< __NR_sched_getattr
