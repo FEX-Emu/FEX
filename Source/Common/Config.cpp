@@ -1,9 +1,12 @@
 #include "Common/Config.h"
+#include "LogManager.h"
+
 #include <cassert>
 #include <cstring>
 #include <fstream>
 #include <memory>
 #include <list>
+#include <unistd.h>
 #include <unordered_map>
 #include <vector>
 #include <tiny-json.h>
@@ -28,7 +31,47 @@ namespace FEX::Config {
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
+  bool LoadConfigFile(std::vector<char> &Data) {
+    std::fstream ConfigFile;
+    ConfigFile.open("Config.json", std::fstream::in);
+
+    if (!ConfigFile.is_open()) {
+      return false;
+    }
+
+    if (!ConfigFile.seekg(0, std::fstream::end)) {
+      LogMan::Msg::D("Couldn't load configuration file: Seek end");
+      return false;
+    }
+    size_t FileSize = ConfigFile.tellg();
+    if (ConfigFile.fail()) {
+      LogMan::Msg::D("Couldn't load configuration file: tellg");
+      return false;
+    }
+
+    if (!ConfigFile.seekg(0, std::fstream::beg)) {
+      LogMan::Msg::D("Couldn't load configuration file: Seek beginning");
+      return false;
+    }
+
+    if (FileSize > 0) {
+      Data.resize(FileSize);
+      if (ConfigFile.read(&Data.at(0), FileSize)) {
+        LogMan::Msg::D("Couldn't load configuration file: Read");
+        return false;
+      }
+      ConfigFile.close();
+    }
+
+    return true;
+  }
+
   void Init() {
+    std::vector<char> Data;
+    if (!LoadConfigFile(Data)) {
+      return;
+    }
+
     JsonAllocator Pool {
       .PoolObject = {
         .init = PoolInit,
@@ -36,32 +79,36 @@ namespace FEX::Config {
       },
     };
 
-    std::fstream ConfigFile;
-    std::vector<char> Data;
-    ConfigFile.open("Config.json", std::fstream::in);
+    json_t const *json = json_createWithPool(&Data.at(0), &Pool.PoolObject);
+    if (!json) {
+      LogMan::Msg::E("Couldn't create json");
+      return;
+    }
 
-    if (ConfigFile.is_open()) {
-      ConfigFile.seekg(0, std::fstream::end);
-      size_t FileSize = ConfigFile.tellg();
-      ConfigFile.seekg(0, std::fstream::beg);
+    json_t const* ConfigList = json_getProperty(json, "Config");
 
-      if (FileSize > 0) {
-        Data.resize(FileSize);
-        ConfigFile.read(&Data.at(0), FileSize);
-        ConfigFile.close();
+    if (!ConfigList) {
+      LogMan::Msg::E("Couldn't get config list");
+      return;
+    }
 
-        json_t const *json = json_createWithPool(&Data.at(0), &Pool.PoolObject);
-        json_t const* ConfigList = json_getProperty(json, "Config");
+    for (json_t const* ConfigItem = json_getChild(ConfigList);
+      ConfigItem != nullptr;
+      ConfigItem = json_getSibling(ConfigItem)) {
+      const char* ConfigName = json_getName(ConfigItem);
+      const char* ConfigString = json_getValue(ConfigItem);
 
-        for (json_t const* ConfigItem = json_getChild(ConfigList);
-          ConfigItem != nullptr;
-          ConfigItem = json_getSibling(ConfigItem)) {
-          const char* ConfigName = json_getName(ConfigItem);
-          const char* ConfigString = json_getValue(ConfigItem);
-
-          FEX::Config::Add(ConfigName, ConfigString);
-        }
+      if (!ConfigName) {
+        LogMan::Msg::E("Couldn't get config name");
+        return;
       }
+
+      if (!ConfigString) {
+        LogMan::Msg::E("Couldn't get ConfigString for '%s'", ConfigName);
+        return;
+      }
+
+      FEX::Config::Add(ConfigName, ConfigString);
     }
   }
 
@@ -77,13 +124,13 @@ namespace FEX::Config {
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-    std::fstream ConfigFile;
-    ConfigFile.open("Config.json", std::fstream::out);
-
-    if (ConfigFile.is_open()) {
-      ConfigFile.write(Buffer, strlen(Buffer));
-      ConfigFile.close();
-    }
+    // Write the config to a temporary file first then move it to the correct location
+    // This is to solve threading issues when multiple applications are loading and storing the configuration
+    char TmpName[] = "/tmp/ConfigXXXXXXX";
+    int tmp = mkstemp(TmpName);
+    write(tmp, Buffer, strlen(Buffer));
+    close(tmp);
+    rename(TmpName, "Config.json");
 
     ConfigMap.clear();
   }
