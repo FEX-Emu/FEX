@@ -318,6 +318,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_UNLINK:
     LogMan::Msg::D("unlink(\"%s\") = %ld", reinterpret_cast<char const*>(Args->Argument[1]), Ret);
     break;
+  case SYSCALL_SYMLINK:
+    LogMan::Msg::D("symlink(\"%s\", \"%s\") = %ld", reinterpret_cast<char const*>(Args->Argument[1]), reinterpret_cast<char const*>(Args->Argument[2]), Ret);
+    break;
   case SYSCALL_READLINK:
     LogMan::Msg::D("readlink(\"%s\") = %ld", reinterpret_cast<char const*>(Args->Argument[1]), Ret);
     break;
@@ -794,6 +797,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_RMDIR,                  cvt(&FEXCore::HLE::Rmdir),                  1},
     {SYSCALL_LINK,                   cvt(&FEXCore::HLE::Link),                   2},
     {SYSCALL_UNLINK,                 cvt(&FEXCore::HLE::Unlink),                 1},
+    {SYSCALL_SYMLINK,                cvt(&FEXCore::HLE::Symlink),                2},
     {SYSCALL_READLINK,               cvt(&FEXCore::HLE::Readlink),               3},
     {SYSCALL_CHMOD,                  cvt(&FEXCore::HLE::Chmod),                  2},
     {SYSCALL_FCHMOD,                 cvt(&FEXCore::HLE::Fchmod),                 2},

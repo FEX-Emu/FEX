@@ -48,6 +48,11 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Symlink(FEXCore::Core::InternalThreadState *Thread, const char *target, const char *linkpath) {
+    uint64_t Result = ::symlink(target, linkpath);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Readlink(FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *buf, size_t bufsiz) {
     uint64_t Result = Thread->CTX->SyscallHandler->FM.Readlink(pathname, buf, bufsiz);
     SYSCALL_ERRNO();

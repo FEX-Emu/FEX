@@ -96,6 +96,7 @@ enum Syscalls {
   SYSCALL_RMDIR           = 84,  ///< __NR_rmdir
   SYSCALL_LINK            = 86,  ///< __NR_link
   SYSCALL_UNLINK          = 87,  ///< __NR_unlink
+  SYSCALL_SYMLINK         = 88,  ///< __NR_symlink
   SYSCALL_READLINK        = 89,  ///< __NR_readlink
   SYSCALL_CHMOD           = 90,  ///< __NR_chmod
   SYSCALL_FCHMOD          = 91,  ///< __NR_fchmod
