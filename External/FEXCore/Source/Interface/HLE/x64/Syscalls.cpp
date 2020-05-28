@@ -431,6 +431,22 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_PRLIMIT64:
     LogMan::Msg::D("prlimit64(%ld, %ld, %p, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
     break;
+  case SYSCALL_NAME_TO_HANDLE_AT:
+    LogMan::Msg::D("name_to_handle_at(%ld, \"%s\", %p, %p, %x) = %ld",
+      Args->Argument[1],
+      reinterpret_cast<char const*>(Args->Argument[2]),
+      Args->Argument[3],
+      Args->Argument[4],
+      Args->Argument[5],
+      Ret);
+    break;
+  case SYSCALL_OPEN_BY_HANDLE_AT:
+    LogMan::Msg::D("open_by_handle_at(%ld, %p, %x) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Ret);
+    break;
   case SYSCALL_SENDMMSG:
     LogMan::Msg::D("sendmmsg(%ld, 0x%lx, %ld, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
     break;
@@ -882,6 +898,8 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_PIPE2,                  cvt(&FEXCore::HLE::Pipe2),                  2},
     {SYSCALL_INOTIFY_INIT1,          cvt(&FEXCore::HLE::Inotify_init1),          1},
     {SYSCALL_PRLIMIT64,              cvt(&FEXCore::HLE::Prlimit64),              4},
+    {SYSCALL_NAME_TO_HANDLE_AT,      cvt(&FEXCore::HLE::Name_to_handle_at),      5},
+    {SYSCALL_OPEN_BY_HANDLE_AT,      cvt(&FEXCore::HLE::Open_by_handle_at),      3},
     {SYSCALL_SENDMMSG,               cvt(&FEXCore::HLE::Sendmmsg),               4},
     {SYSCALL_SCHED_SETATTR,          cvt(&FEXCore::HLE::Sched_Setattr),          3},
     {SYSCALL_SCHED_GETATTR,          cvt(&FEXCore::HLE::Sched_Getattr),          4},
