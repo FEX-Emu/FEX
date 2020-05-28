@@ -55,6 +55,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     add_test(NAME ${TEST_NAME}
       COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Known_Failures"
+      "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests"
       "Test_${ASM_NAME}"
       "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
       ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
