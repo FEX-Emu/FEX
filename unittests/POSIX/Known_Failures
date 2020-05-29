@@ -13,13 +13,10 @@ conformance-interfaces-killpg-1-1.test
 conformance-interfaces-mlockall-8-1.test
 conformance-interfaces-mmap-11-2.test
 conformance-interfaces-mmap-14-1.test
-conformance-interfaces-mmap-7-1.test
-conformance-interfaces-mmap-7-2.test
 conformance-interfaces-munlockall-5-1.test
 conformance-interfaces-munmap-1-1.test
 conformance-interfaces-munmap-1-2.test
 conformance-interfaces-munmap-2-1.test
-conformance-interfaces-munmap-4-1.test
 conformance-interfaces-nanosleep-10000-1.test
 conformance-interfaces-nanosleep-5-1.test
 conformance-interfaces-nanosleep-6-1.test
@@ -29,7 +26,6 @@ conformance-interfaces-raise-2-1.test
 conformance-interfaces-raise-4-1.test
 conformance-interfaces-raise-6-1.test
 conformance-interfaces-raise-7-1.test
-conformance-interfaces-sched_rr_get_interval-1-1.test
 conformance-interfaces-sigaction-1-10.test
 conformance-interfaces-sigaction-1-11.test
 conformance-interfaces-sigaction-1-12.test

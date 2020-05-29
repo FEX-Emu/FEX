@@ -220,6 +220,13 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
     LogMan::Msg::D("munlockall(0x%lx) = %ld",
       Ret);
     break;
+  case SYSCALL_MSYNC:
+  LogMan::Msg::D("msync(%p, 0x%lx, 0x%lx) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Ret);
+    break;
   case SYSCALL_PRCTL:
     LogMan::Msg::D("arch_prctl(%ld, %p, %p, %p, %p) = %ld",
       Args->Argument[1], Args->Argument[2],
@@ -763,6 +770,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_SELECT,                 cvt(&FEXCore::HLE::Select),                 5},
     {SYSCALL_SCHED_YIELD,            cvt(&FEXCore::HLE::Sched_Yield),            0},
     {SYSCALL_MREMAP,                 cvt(&FEXCore::HLE::Mremap),                 5},
+    {SYSCALL_MSYNC,                  cvt(&FEXCore::HLE::Msync),                  3},
     {SYSCALL_MINCORE,                cvt(&FEXCore::HLE::Mincore),                3},
     {SYSCALL_MADVISE,                cvt(&FEXCore::HLE::Madvise),                3},
     {SYSCALL_SHMGET,                 cvt(&FEXCore::HLE::Shmget),                 3},
