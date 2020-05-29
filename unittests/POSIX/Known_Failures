@@ -29,7 +29,6 @@ conformance-interfaces-raise-2-1.test
 conformance-interfaces-raise-4-1.test
 conformance-interfaces-raise-6-1.test
 conformance-interfaces-raise-7-1.test
-conformance-interfaces-sched_rr_get_interval-1-1.test
 conformance-interfaces-sigaction-1-10.test
 conformance-interfaces-sigaction-1-11.test
 conformance-interfaces-sigaction-1-12.test
