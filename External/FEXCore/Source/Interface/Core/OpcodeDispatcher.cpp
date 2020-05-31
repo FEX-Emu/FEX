@@ -4910,7 +4910,7 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   size_t ElementSize = SrcElementSize;
-  size_t Size = GetDstSize(Op);
+  size_t Size = GetSrcSize(Op);
   if (Widen) {
     Src = _VSXTL(Src, Size, ElementSize);
     ElementSize <<= 1;
