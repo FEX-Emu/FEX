@@ -238,7 +238,7 @@ void InitializeSecondaryTables() {
     {0xF3, 1, X86InstInfo{"PSLLQ",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xF4, 1, X86InstInfo{"PMULUDQ",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xF5, 1, X86InstInfo{"PMADDWD",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
-    {0xF6, 1, X86InstInfo{"PSADBW",   TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                       0, nullptr}},
+    {0xF6, 1, X86InstInfo{"PSADBW",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xF7, 1, X86InstInfo{"MASKMOVQ", TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                       0, nullptr}},
     {0xF8, 1, X86InstInfo{"PSUBB",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xF9, 1, X86InstInfo{"PSUBW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
