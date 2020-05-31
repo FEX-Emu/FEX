@@ -1514,6 +1514,43 @@
       ]
     },
 
+    "VAddV": {
+      "OpClass": "Vector",
+      "Desc": ["Does a horizontal vector add of elements across the source vector",
+               "Result is a zero extended scalar"
+              ],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VAbs": {
+      "OpClass": "Vector",
+      "Desc": ["Does an signed integer absolute"
+              ],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VFAdd": {
       "OpClass": "Vector",
       "HasDest": true,
