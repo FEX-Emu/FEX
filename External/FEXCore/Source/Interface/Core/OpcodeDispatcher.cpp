@@ -2415,6 +2415,104 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::LODSOp(OpcodeArgs) {
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
+  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "LODS doesn't support REPNE");
+
+  auto Size = GetSrcSize(Op);
+  bool Repeat = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
+
+  if (!Repeat) {
+    OrderedNode *Dest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+
+    auto Src = _LoadMem(GPRClass, Size, Dest_RSI, Size);
+
+    StoreResult(GPRClass, Op, Src, -1);
+
+    auto SizeConst = _Constant(Size);
+    auto NegSizeConst = _Constant(-Size);
+
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+        DF, _Constant(0),
+        SizeConst, NegSizeConst);
+
+    // Offset the pointer
+    OrderedNode *TailDest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+    TailDest_RSI = _Add(TailDest_RSI, PtrDir);
+    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), TailDest_RSI);
+  }
+  else {
+    // XXX: Theoretically LODS could be optimized to
+    // RSI += {-}(RCX * Size)
+    // RAX = [RSI - Size]
+    // But this might violate the case of an application scanning pages for read permission and catching the fault
+    // May or may not matter
+    auto JumpStart = _Jump();
+    // Make sure to start a new block after ending this one
+      auto LoopStart = CreateNewCodeBlock();
+      SetJumpTarget(JumpStart, LoopStart);
+      SetCurrentCodeBlock(LoopStart);
+
+        auto ZeroConst = _Constant(0);
+        auto OneConst = _Constant(1);
+
+        OrderedNode *Counter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+
+        // Can we end the block?
+        OrderedNode *CanLeaveCond = _Select(FEXCore::IR::COND_EQ,
+          Counter, ZeroConst,
+          OneConst, ZeroConst);
+
+      // We leave if RCX = 0
+      auto CondJump = _CondJump(CanLeaveCond);
+
+      auto LoopTail = CreateNewCodeBlock();
+      SetFalseJumpTarget(CondJump, LoopTail);
+      SetCurrentCodeBlock(LoopTail);
+
+      // Working loop
+      {
+        OrderedNode *Dest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+
+        auto Src = _LoadMem(GPRClass, Size, Dest_RSI, Size);
+
+        StoreResult(GPRClass, Op, Src, -1);
+
+        OrderedNode *TailCounter = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+        OrderedNode *TailDest_RSI = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+
+        // Decrement counter
+        TailCounter = _Sub(TailCounter, _Constant(1));
+
+        // Store the counter so we don't have to deal with PHI here
+        _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
+
+        auto SizeConst = _Constant(Size);
+        auto NegSizeConst = _Constant(-Size);
+
+        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+            DF, _Constant(0),
+            SizeConst, NegSizeConst);
+
+        // Offset the pointer
+        TailDest_RSI = _Add(TailDest_RSI, PtrDir);
+        _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), TailDest_RSI);
+
+        // Jump back to the start, we have more work to do
+        _Jump(LoopStart);
+    }
+    // Make sure to start a new block after ending this one
+    auto LoopEnd = CreateNewCodeBlock();
+    SetTrueJumpTarget(CondJump, LoopEnd);
+    SetCurrentCodeBlock(LoopEnd);
+  }
+}
+
+
 void OpDispatchBuilder::SCASOp(OpcodeArgs) {
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
@@ -6679,6 +6777,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xA6, 2, &OpDispatchBuilder::CMPSOp},
     {0xA8, 2, &OpDispatchBuilder::TESTOp<0>},
     {0xAA, 2, &OpDispatchBuilder::STOSOp},
+    {0xAC, 2, &OpDispatchBuilder::LODSOp},
     {0xAE, 2, &OpDispatchBuilder::SCASOp},
     {0xB0, 16, &OpDispatchBuilder::MOVGPROp<0>},
     {0xC2, 2, &OpDispatchBuilder::RETOp},

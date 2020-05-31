@@ -172,6 +172,7 @@ public:
   void STOSOp(OpcodeArgs);
   void MOVSOp(OpcodeArgs);
   void CMPSOp(OpcodeArgs);
+  void LODSOp(OpcodeArgs);
   void SCASOp(OpcodeArgs);
   void BSWAPOp(OpcodeArgs);
   void PUSHFOp(OpcodeArgs);
