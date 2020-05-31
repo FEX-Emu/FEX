@@ -19,6 +19,16 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Accept(FEXCore::Core::InternalThreadState *Thread, int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+    uint64_t Result = ::accept(sockfd, addr, addrlen);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Accept4(FEXCore::Core::InternalThreadState *Thread, int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
+    uint64_t Result = ::accept4(sockfd, addr, addrlen, flags);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Sendto(FEXCore::Core::InternalThreadState *Thread, int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
     uint64_t Result = ::sendto(sockfd, buf, len, flags, dest_addr, addrlen);
     SYSCALL_ERRNO();
