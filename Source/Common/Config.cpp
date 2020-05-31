@@ -62,6 +62,9 @@ namespace FEX::Config {
       }
       ConfigFile.close();
     }
+    else {
+      return false;
+    }
 
     return true;
   }
