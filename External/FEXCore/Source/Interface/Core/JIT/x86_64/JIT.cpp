@@ -2374,6 +2374,59 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VADDV: {
+          auto Op = IROp->C<IR::IROp_VAddV>();
+          auto Src = GetSrc(Op->Header.Args[0].ID());
+          auto Dest = GetDst(Node);
+          vpxor(xmm15, xmm15, xmm15);
+          switch (Op->Header.ElementSize) {
+            case 2: {
+              for (int i = 0; i < (Op->Header.Size / 4); ++i) {
+                phaddw(Dest, Src);
+                Src = Dest;
+              }
+              pextrw(eax, Dest, 0);
+              pinsrw(xmm15, eax, 0);
+            break;
+            }
+            case 4: {
+              for (int i = 0; i < (Op->Header.Size / 8); ++i) {
+                phaddd(Dest, Src);
+                Src = Dest;
+              }
+              pextrd(eax, Dest, 0);
+              pinsrd(xmm15, eax, 0);
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+          }
+
+          movaps(Dest, xmm15);
+          break;
+        }
+        case IR::OP_VABS: {
+          auto Op = IROp->C<IR::IROp_VAbs>();
+          switch (Op->Header.ElementSize) {
+            case 1: {
+              vpabsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+            break;
+            }
+            case 2: {
+              vpabsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+            break;
+            }
+            case 4: {
+              vpabsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+            break;
+            }
+            case 8: {
+              vpabsq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+          }
+          break;
+        }
         case IR::OP_VUMUL:
         case IR::OP_VSMUL: {
           auto Op = IROp->C<IR::IROp_VUMul>();
