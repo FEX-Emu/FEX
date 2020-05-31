@@ -417,6 +417,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_TIMERFD_CREATE:
     LogMan::Msg::D("timerfd_create(%lx, %lx) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
+  case SYSCALL_ACCEPT4:
+    LogMan::Msg::D("accept4(%ld, %p, %p, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret);
+    break;
   case SYSCALL_EVENTFD:
     LogMan::Msg::D("eventfd(%lx, %ld) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
@@ -471,6 +474,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
     break;
   case SYSCALL_CONNECT:
     LogMan::Msg::D("connect(%ld, 0x%lx, %ld) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
+    break;
+  case SYSCALL_ACCEPT:
+    LogMan::Msg::D("accept(%ld, %p, %p) = %ld", Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret);
     break;
   case SYSCALL_SENDTO:
     LogMan::Msg::D("sendto(%ld, 0x%lx, %ld, %lx, 0x%lx, %ld) = %ld",
@@ -786,6 +792,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_GETPID,                 cvt(&FEXCore::HLE::Getpid),                 0},
     {SYSCALL_SOCKET,                 cvt(&FEXCore::HLE::Socket),                 3},
     {SYSCALL_CONNECT,                cvt(&FEXCore::HLE::Connect),                3},
+    {SYSCALL_ACCEPT,                 cvt(&FEXCore::HLE::Accept),                 3},
     {SYSCALL_SENDTO,                 cvt(&FEXCore::HLE::Sendto),                 6},
     {SYSCALL_RECVFROM,               cvt(&FEXCore::HLE::Recvfrom),               6},
     {SYSCALL_SENDMSG,                cvt(&FEXCore::HLE::Sendmsg),                3},
@@ -900,6 +907,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_GET_ROBUST_LIST,        cvt(&FEXCore::HLE::Get_robust_list),        3},
     {SYSCALL_EPOLL_PWAIT,            cvt(&FEXCore::HLE::EPoll_Pwait),            5},
     {SYSCALL_TIMERFD_CREATE,         cvt(&FEXCore::HLE::Timerfd_Create),         2},
+    {SYSCALL_ACCEPT4,                cvt(&FEXCore::HLE::Accept4),                4},
     {SYSCALL_EVENTFD,                cvt(&FEXCore::HLE::Eventfd),                2},
     {SYSCALL_EPOLL_CREATE1,          cvt(&FEXCore::HLE::EPoll_Create1),          1},
     {SYSCALL_DUP3,                   cvt(&FEXCore::HLE::Dup3),                   3},

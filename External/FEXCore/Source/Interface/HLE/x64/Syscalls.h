@@ -61,6 +61,7 @@ enum Syscalls {
   SYSCALL_GETPID          = 39,  ///< __NR_getpid
   SYSCALL_SOCKET          = 41,  ///< __NR_socket
   SYSCALL_CONNECT         = 42,  ///< __NR_connect
+  SYSCALL_ACCEPT          = 43,  ///< __NR_accept
   SYSCALL_SENDTO          = 44,  ///< __NR_sendto
   SYSCALL_RECVFROM        = 45,  ///< __NR_recvfrom
   SYSCALL_SENDMSG         = 46,  ///< __NR_sendmsg
@@ -177,6 +178,7 @@ enum Syscalls {
   SYSCALL_GET_ROBUST_LIST = 274, ///< __NR_get_robust_list
   SYSCALL_EPOLL_PWAIT     = 281, ///< __NR_epoll_pwait
   SYSCALL_TIMERFD_CREATE  = 283, ///< __NR_timerfd_create
+  SYSCALL_ACCEPT4         = 288, ///< __NR_accept4
   SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
   SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1
   SYSCALL_DUP3            = 292, ///< __NR_dup3

@@ -10,6 +10,8 @@ struct InternalThreadState;
 namespace FEXCore::HLE {
   uint64_t Socket(FEXCore::Core::InternalThreadState *Thread, int domain, int type, int protocol);
   uint64_t Connect(FEXCore::Core::InternalThreadState *Thread, int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+  uint64_t Accept(FEXCore::Core::InternalThreadState *Thread, int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+  uint64_t Accept4(FEXCore::Core::InternalThreadState *Thread, int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
   uint64_t Sendto(FEXCore::Core::InternalThreadState *Thread, int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
   uint64_t Recvfrom(FEXCore::Core::InternalThreadState *Thread, int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen);
   uint64_t Sendmsg(FEXCore::Core::InternalThreadState *Thread, int sockfd, const struct msghdr *msg, int flags);
