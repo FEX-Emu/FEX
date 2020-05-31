@@ -391,6 +391,16 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
       Args->Argument[4],
       Ret);
     break;
+  case SYSCALL_PSELECT6:
+    LogMan::Msg::D("pselect6(%d, %p, %p, %p, %p, %p) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Args->Argument[4],
+      Args->Argument[5],
+      Args->Argument[6],
+      Ret);
+    break;
   case SYSCALL_PPOLL:
     LogMan::Msg::D("ppoll(%p, %d, %p, %p, %d) = %ld",
       Args->Argument[1],
@@ -895,6 +905,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_NEWFSTATAT,             cvt(&FEXCore::HLE::NewFStatat),             4},
     {SYSCALL_READLINKAT,             cvt(&FEXCore::HLE::Readlinkat),             4},
     {SYSCALL_FACCESSAT,              cvt(&FEXCore::HLE::FAccessat),              4},
+    {SYSCALL_PSELECT6,               cvt(&FEXCore::HLE::Pselect6),               6},
     {SYSCALL_PPOLL,                  cvt(&FEXCore::HLE::Ppoll),                  5},
     {SYSCALL_SET_ROBUST_LIST,        cvt(&FEXCore::HLE::Set_robust_list),        2},
     {SYSCALL_GET_ROBUST_LIST,        cvt(&FEXCore::HLE::Get_robust_list),        3},
