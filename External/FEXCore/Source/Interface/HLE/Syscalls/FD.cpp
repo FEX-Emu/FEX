@@ -293,6 +293,11 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Pselect6(FEXCore::Core::InternalThreadState *Thread, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const sigset_t *sigmask) {
+    uint64_t Result = pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Ppoll(FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize) {
     // sigsetsize is unused here since it is currently a constant and not exposed through glibc
     uint64_t Result = ::ppoll(fds, nfds, timeout_ts, sigmask);

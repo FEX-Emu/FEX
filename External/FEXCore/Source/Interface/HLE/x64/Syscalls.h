@@ -172,6 +172,7 @@ enum Syscalls {
   SYSCALL_NEWFSTATAT      = 262, ///< __NR_newfstatat
   SYSCALL_READLINKAT      = 267, ///< __NR_readlinkat
   SYSCALL_FACCESSAT       = 269, ///< __NR_faccessat
+  SYSCALL_PSELECT6        = 270, ///< __NR_pselect6
   SYSCALL_PPOLL           = 271, ///< __NR_ppoll
   SYSCALL_SET_ROBUST_LIST = 273, ///< __NR_set_robust_list
   SYSCALL_GET_ROBUST_LIST = 274, ///< __NR_get_robust_list
