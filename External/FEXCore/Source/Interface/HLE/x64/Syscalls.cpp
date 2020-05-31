@@ -20,8 +20,8 @@
 #include "LogManager.h"
 
 namespace {
-  uint64_t Unimplemented(FEXCore::Core::InternalThreadState *Thread) {
-    ERROR_AND_DIE("Unhandled system call");
+  uint64_t Unimplemented(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber) {
+    ERROR_AND_DIE("Unhandled system call: %d", SyscallNumber);
     return -1;
   }
 
@@ -740,7 +740,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
 
   // Clear all definitions
   for (auto &Def : Definitions) {
-    Def.NumArgs = 0;
+    Def.NumArgs = 255;
     Def.Ptr = cvt(&Unimplemented);
   }
 
@@ -936,6 +936,8 @@ uint64_t x64SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Th
   case 4: return std::invoke(Def.Ptr4, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4]);
   case 5: return std::invoke(Def.Ptr5, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5]);
   case 6: return std::invoke(Def.Ptr6, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6]);
+  // for missing syscalls
+  case 255: return std::invoke(Def.Ptr1, Thread, Args->Argument[0]);
   default: break;
   }
 
