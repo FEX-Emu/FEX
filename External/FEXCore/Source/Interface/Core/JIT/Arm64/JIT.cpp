@@ -2825,6 +2825,48 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         break;
       }
+      case IR::OP_VABS: {
+        auto Op = IROp->C<IR::IROp_VAbs>();
+        uint8_t Elements = OpSize / Op->Header.ElementSize;
+        if (Op->Header.ElementSize == OpSize) {
+          // Scalar
+          switch (Op->Header.ElementSize) {
+            case 8: {
+              abs(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D());
+            break;
+            }
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+          }
+        }
+        else {
+          // Vector
+          switch (Op->Header.ElementSize) {
+            case 1:
+            case 2:
+            case 4:
+            case 8:
+              abs(GetDst(Node).VCast(OpSize * 8, Elements), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
+              break;
+            default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+          }
+        }
+        break;
+      }
+      case IR::OP_VADDV: {
+        auto Op = IROp->C<IR::IROp_VAddV>();
+        uint8_t Elements = OpSize / Op->Header.ElementSize;
+        // Vector
+        switch (Op->Header.ElementSize) {
+          case 1:
+          case 2:
+          case 4:
+          case 8:
+            addv(GetDst(Node).VCast(OpSize * 8, Elements), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
+            break;
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+        }
+        break;
+      }
       case IR::OP_VFADD: {
         auto Op = IROp->C<IR::IROp_VFAdd>();
         if (Op->Header.ElementSize == OpSize) {

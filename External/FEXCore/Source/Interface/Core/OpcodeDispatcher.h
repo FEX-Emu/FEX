@@ -393,6 +393,8 @@ public:
   template<uint8_t FenceType>
   void FenceOp(OpcodeArgs);
 
+  void PSADBW(OpcodeArgs);
+
   void UnimplementedOp(OpcodeArgs);
 
 #undef OpcodeArgs

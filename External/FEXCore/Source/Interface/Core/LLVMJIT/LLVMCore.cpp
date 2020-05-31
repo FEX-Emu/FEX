@@ -626,6 +626,22 @@ private:
     return Result;
   }
 
+  llvm::Value *VADDV(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
+    uint8_t NumElements = RegisterSize / ElementSize;
+    std::vector<llvm::Value*> Values;
+
+    for (size_t i = 0; i < NumElements; ++i) {
+      Values.emplace_back(JITState.IRBuilder->CreateExtractElement(Arg, i));
+    }
+
+    llvm::Value *Result = Values[0];
+    for (size_t i = 1; i < NumElements; ++i) {
+      Result = JITState.IRBuilder->CreateAdd(Result, Values[i]);
+    }
+
+    return Result;
+  }
+
   llvm::Value *VFADDP(llvm::Value *ArgLower, llvm::Value *ArgUpper, uint8_t RegisterSize, uint8_t ElementSize) {
 #ifdef _M_X86_64
     // Will generate VPHADD
@@ -1380,6 +1396,8 @@ llvm::Value *LLVMJITCore::CastVectorToType(llvm::Value *Arg, bool Integer, uint8
   uint8_t NumElements = RegisterSize / ElementSize;
 
   llvm::Type *ElementType;
+  llvm::Value *ZeroScalar = JITState.IRBuilder->getIntN(ElementSize * 8, 0);
+
   if (Integer) {
     ElementType = llvm::Type::getIntNTy(*Con, ElementSize * 8);
   }
@@ -1390,6 +1408,8 @@ llvm::Value *LLVMJITCore::CastVectorToType(llvm::Value *Arg, bool Integer, uint8
     else {
       ElementType = llvm::Type::getDoubleTy(*Con);
     }
+
+    ZeroScalar = JITState.IRBuilder->CreateBitCast(ZeroScalar, ElementType);
   }
 
   llvm::Type *VectorType = llvm::VectorType::get(ElementType, NumElements);
@@ -1406,7 +1426,8 @@ llvm::Value *LLVMJITCore::CastVectorToType(llvm::Value *Arg, bool Integer, uint8
   // First thing we need to cast the argument type to a vector size that is supported by the source type
   Arg = JITState.IRBuilder->CreateBitCast(Arg, SrcVectorType);
 
-  llvm::Value *Undef = llvm::UndefValue::get(SrcVectorType);
+  auto Zero = JITState.IRBuilder->CreateVectorSplat(NumSrcElements, JITState.IRBuilder->getIntN(ElementSize * 8, 0));
+
   std::vector<uint32_t> Mask;
   // We then need to shuffle the elements to match the size we want
   // If the destination size is smaller then we can just shuffle the low elements
@@ -1414,7 +1435,7 @@ llvm::Value *LLVMJITCore::CastVectorToType(llvm::Value *Arg, bool Integer, uint8
   for (uint32_t i = 0; i < NumElements; ++i)
     Mask.emplace_back(i);
 
-  return JITState.IRBuilder->CreateShuffleVector(Arg, Undef, Mask);
+  return JITState.IRBuilder->CreateShuffleVector(Arg, Zero, Mask);
 }
 
 llvm::Value *LLVMJITCore::CastScalarToType(llvm::Value *Arg, bool Integer, uint8_t ElementSize) {
@@ -2551,7 +2572,7 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Src = GetSrc(Op->Header.Args[0]);
 
       // Cast to the type we want
-      Src = CastVectorToType(Src, true, OpSize, Op->Header.ElementSize);
+      Src = CastVectorToType(Src, true, Src->getType()->getPrimitiveSizeInBits() / 8, Op->Header.ElementSize);
 
       auto Result = JITState.IRBuilder->CreateExtractElement(Src, JITState.IRBuilder->getInt32(Op->Index));
       SetDest(*WrapperOp, Result);
@@ -2650,6 +2671,31 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
 
       SetDest(*WrapperOp, Result);
     break;
+    }
+    case IR::OP_VABS: {
+      auto Op = IROp->C<IR::IROp_VAbs>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, OpSize, Op->Header.ElementSize);
+      auto NegSrc = JITState.IRBuilder->CreateNeg(Src);
+
+      auto Zero = JITState.IRBuilder->CreateVectorSplat(OpSize / Op->Header.ElementSize, JITState.IRBuilder->getIntN(Op->Header.ElementSize * 8, 0));
+      auto Compare = JITState.IRBuilder->CreateICmpSLT(Src, Zero);
+      auto Result = JITState.IRBuilder->CreateSelect(Compare, NegSrc, Src);
+
+      SetDest(*WrapperOp, Result);
+      break;
+    }
+    case IR::OP_VADDV: {
+      auto Op = IROp->C<IR::IROp_VAddV>();
+      auto Src = GetSrc(Op->Header.Args[0]);
+
+      // Cast to the type we want
+      Src = CastVectorToType(Src, true, OpSize, Op->Header.ElementSize);
+
+      SetDest(*WrapperOp, VADDV(Src, OpSize, Op->Header.ElementSize));
+      break;
     }
     case IR::OP_VUMUL:
     case IR::OP_VSMUL: {

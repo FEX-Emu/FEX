@@ -2213,6 +2213,17 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }                                                 \
             break;                                            \
             }
+          #define DO_VECTOR_REDUCE_1SRC_OP(size, type, func, start_val)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+            auto *Src_d = reinterpret_cast<type*>(Src); \
+            type begin = start_val;                           \
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              begin = func(begin, Src_d[i]);          \
+            }                                                 \
+            Dst_d[0] = begin;                                 \
+            break;                                            \
+            }
           #define DO_VECTOR_SAT_OP(size, type, func, min, max)              \
             case size: {                                      \
             auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
@@ -2505,6 +2516,42 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               DO_VECTOR_PAIR_OP(2, uint16_t, Func)
               DO_VECTOR_PAIR_OP(4, uint32_t, Func)
               DO_VECTOR_PAIR_OP(8, uint64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
+          case IR::OP_VADDV: {
+            auto Op = IROp->C<IR::IROp_VAddV>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func = [](auto current, auto a) { return current + a; };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_REDUCE_1SRC_OP(1, int8_t, Func, 0)
+              DO_VECTOR_REDUCE_1SRC_OP(2, int16_t, Func, 0)
+              DO_VECTOR_REDUCE_1SRC_OP(4, int32_t, Func, 0)
+              DO_VECTOR_REDUCE_1SRC_OP(8, int64_t, Func, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->Header.ElementSize);
+            break;
+          }
+          case IR::OP_VABS: {
+            auto Op = IROp->C<IR::IROp_VAbs>();
+            void *Src = GetSrc<void*>(Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func = [](auto a) { return std::abs(a); };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_1SRC_OP(1, int8_t, Func)
+              DO_VECTOR_1SRC_OP(2, int16_t, Func)
+              DO_VECTOR_1SRC_OP(4, int32_t, Func)
+              DO_VECTOR_1SRC_OP(8, int64_t, Func)
               default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);

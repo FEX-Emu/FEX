@@ -4910,7 +4910,7 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   size_t ElementSize = SrcElementSize;
-  size_t Size = GetDstSize(Op);
+  size_t Size = GetSrcSize(Op);
   if (Widen) {
     Src = _VSXTL(Src, Size, ElementSize);
     ElementSize <<= 1;
@@ -6535,6 +6535,59 @@ void OpDispatchBuilder::FenceOp(OpcodeArgs) {
   _Fence({FenceType});
 }
 
+void OpDispatchBuilder::PSADBW(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode *SubResult = _VSub(Size, 1, Dest, Src);
+  OrderedNode *AbsResult = _VAbs(Size, 1, SubResult);
+
+  OrderedNode *Result{};
+
+  if (Size == 8) {
+    // First we need to extract the 8bit values and extend them to 16bits
+    OrderedNode *Result_Low = _VUXTL(Size, 1, AbsResult);
+    // Now extract the upper 8bits and extend to 16bits
+    OrderedNode *Result_High = _VUShrI(Size, 2, AbsResult, 8);
+    // Now vector-wide add the results for each
+    Result_Low = _VAddV(Size, 2, Result_Low);
+    Result_High = _VAddV(Size, 2, Result_High);
+    // Now add the two scalar results back together
+    // Easy with only 8 byte registers
+    Result = _VAdd(Size, 2, Result_Low, Result_High);
+  }
+  else {
+    // For 16byte registers we need to do a bit more work
+    // First we need to extract the 8bit values and extend them to 16bits
+    OrderedNode *Result_Low_Low = _VUXTL(Size, 1, AbsResult);
+    //// Then we need to extract the upper 8 bits of the lower 64bit result and extend them to 16bits
+    OrderedNode *Result_Low_High = _VUShrI(Size, 2, AbsResult, 8);
+
+    // Now we need to extract the upper 64bits and do the same thing
+    OrderedNode *Result_High = _VExtractElement(Size, 8, AbsResult, 1);
+    OrderedNode *Result_High_Low = _VUXTL(Size, 1, Result_High);
+    OrderedNode *Result_High_High = _VUShrI(Size, 2, Result_High, 8);
+
+    // Now vector pairwise add all four of these
+    Result_Low_Low  = _VAddV(8, 2, Result_Low_Low);
+    Result_Low_High = _VAddV(8, 2, Result_Low_High);
+
+    Result_High_Low  = _VAddV(8, 2, Result_High_Low);
+    Result_High_High = _VAddV(8, 2, Result_High_High);
+
+    //// Now add the low and high scalar results together
+    OrderedNode * Added_Result      = _VAdd(8, 2, Result_Low_Low, Result_Low_High);
+    OrderedNode * Added_Result_High = _VAdd(8, 2, Result_High_Low, Result_High_High);
+
+    // Now generate a new 128bit value for this
+    Result = _VInsElement(Size, 8, 1, 0, Added_Result, Added_Result_High);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
@@ -6779,6 +6832,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF3, 1, &OpDispatchBuilder::PSLL<8, true, 0>},
     {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
     {0xF5, 1, &OpDispatchBuilder::PMADDWD},
+    {0xF6, 1, &OpDispatchBuilder::PSADBW},
     {0xF8, 1, &OpDispatchBuilder::PSUBQOp<1>},
     {0xF9, 1, &OpDispatchBuilder::PSUBQOp<2>},
     {0xFA, 1, &OpDispatchBuilder::PSUBQOp<4>},
@@ -7037,6 +7091,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF3, 1, &OpDispatchBuilder::PSLL<8, true, 0>},
     {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
     {0xF5, 1, &OpDispatchBuilder::PMADDWD},
+    {0xF6, 1, &OpDispatchBuilder::PSADBW},
     {0xF8, 1, &OpDispatchBuilder::PSUBQOp<1>},
     {0xF9, 1, &OpDispatchBuilder::PSUBQOp<2>},
     {0xFA, 1, &OpDispatchBuilder::PSUBQOp<4>},
