@@ -23,6 +23,11 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Fchdir(FEXCore::Core::InternalThreadState *Thread, int fd) {
+    uint64_t Result = ::fchdir(fd);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Rename(FEXCore::Core::InternalThreadState *Thread, const char *oldpath, const char *newpath) {
     uint64_t Result = ::rename(oldpath, newpath);
     SYSCALL_ERRNO();

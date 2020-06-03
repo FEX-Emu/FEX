@@ -310,6 +310,9 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_CHDIR:
     LogMan::Msg::D("chdir(\"%s\") = %ld", reinterpret_cast<char const*>(Args->Argument[1]), Ret);
     break;
+  case SYSCALL_CHDIR:
+    LogMan::Msg::D("fchdir(\"%d\") = %ld", reinterpret_cast<int>(Args->Argument[1]), Ret);
+    break;
   case SYSCALL_RENAME:
     LogMan::Msg::D("rename(\"%s\", \"%s\") = %ld", reinterpret_cast<char const*>(Args->Argument[1]), reinterpret_cast<char const*>(Args->Argument[2]), Ret);
     break;
@@ -833,6 +836,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_GETDENTS,               cvt(&FEXCore::HLE::Getdents),               3},
     {SYSCALL_GETCWD,                 cvt(&FEXCore::HLE::Getcwd),                 2},
     {SYSCALL_CHDIR,                  cvt(&FEXCore::HLE::Chdir),                  1},
+    {SYSCALL_FCHDIR,                 cvt(&FEXCore::HLE::Fchdir),                 1},
     {SYSCALL_RENAME,                 cvt(&FEXCore::HLE::Rename),                 2},
     {SYSCALL_MKDIR,                  cvt(&FEXCore::HLE::Mkdir),                  2},
     {SYSCALL_RMDIR,                  cvt(&FEXCore::HLE::Rmdir),                  1},

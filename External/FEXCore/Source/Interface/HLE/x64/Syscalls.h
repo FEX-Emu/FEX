@@ -92,6 +92,7 @@ enum Syscalls {
   SYSCALL_GETDENTS        = 78,  ///< __NR_getdents
   SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
   SYSCALL_CHDIR           = 80,  ///< __NR_chdir
+  SYSCALL_FCHDIR          = 81,  ///< __NR_fchdir
   SYSCALL_RENAME          = 82,  ///< __NR_rename
   SYSCALL_MKDIR           = 83,  ///< __NR_mkdir
   SYSCALL_RMDIR           = 84,  ///< __NR_rmdir
