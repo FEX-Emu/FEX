@@ -1655,12 +1655,9 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
-    uint32_t Size = GetSrcSize(Op);
-    uint32_t Mask = Size * 8 - 1;
-    OrderedNode *SizeMask = _Constant(Mask);
 
     // Get the bit selection from the src
-    OrderedNode *BitSelect = _And(Src, SizeMask);
+    OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
     // Address is provided as bits we want BYTE offsets
     // Just shift by 3 to get the offset
@@ -1671,7 +1668,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    Result = _LoadMem(GPRClass, Size, MemoryLocation, Size);
+    Result = _LoadMem(GPRClass, 1, MemoryLocation, 1);
 
     // Now shift in to the correct bit location
     Result = _Lshr(Result, BitSelect);
@@ -1703,12 +1700,9 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
-    uint32_t Size = GetSrcSize(Op);
-    uint32_t Mask = Size * 8 - 1;
-    OrderedNode *SizeMask = _Constant(Mask);
 
     // Get the bit selection from the src
-    OrderedNode *BitSelect = _And(Src, SizeMask);
+    OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
     // Address is provided as bits we want BYTE offsets
     // Just shift by 3 to get the offset
@@ -1719,14 +1713,14 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *Value = _LoadMem(GPRClass, Size, MemoryLocation, Size);
+    OrderedNode *Value = _LoadMem(GPRClass, 1, MemoryLocation, 1);
 
     // Now shift in to the correct bit location
     Result = _Lshr(Value, BitSelect);
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     BitMask = _Not(BitMask);
     Value = _And(Value, BitMask);
-    _StoreMem(GPRClass, Size, MemoryLocation, Value, Size);
+    _StoreMem(GPRClass, 1, MemoryLocation, Value, 1);
   }
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
 }
@@ -1754,12 +1748,9 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
-    uint32_t Size = GetSrcSize(Op);
-    uint32_t Mask = Size * 8 - 1;
-    OrderedNode *SizeMask = _Constant(Mask);
 
     // Get the bit selection from the src
-    OrderedNode *BitSelect = _And(Src, SizeMask);
+    OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
     // Address is provided as bits we want BYTE offsets
     // Just shift by 3 to get the offset
@@ -1770,13 +1761,13 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *Value = _LoadMem(GPRClass, Size, MemoryLocation, Size);
+    OrderedNode *Value = _LoadMem(GPRClass, 1, MemoryLocation, 1);
 
     // Now shift in to the correct bit location
     Result = _Lshr(Value, BitSelect);
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     Value = _Or(Value, BitMask);
-    _StoreMem(GPRClass, Size, MemoryLocation, Value, Size);
+    _StoreMem(GPRClass, 1, MemoryLocation, Value, 1);
   }
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
 }
@@ -1804,12 +1795,8 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
-    uint32_t Size = GetSrcSize(Op);
-    uint32_t Mask = Size * 8 - 1;
-    OrderedNode *SizeMask = _Constant(Mask);
-
     // Get the bit selection from the src
-    OrderedNode *BitSelect = _And(Src, SizeMask);
+    OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
     // Address is provided as bits we want BYTE offsets
     // Just shift by 3 to get the offset
@@ -1820,13 +1807,13 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *Value = _LoadMem(GPRClass, Size, MemoryLocation, Size);
+    OrderedNode *Value = _LoadMem(GPRClass, 1, MemoryLocation, 1);
 
     // Now shift in to the correct bit location
     Result = _Lshr(Value, BitSelect);
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     Value = _Xor(Value, BitMask);
-    _StoreMem(GPRClass, Size, MemoryLocation, Value, Size);
+    _StoreMem(GPRClass, 1, MemoryLocation, Value, 1);
   }
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
 }
