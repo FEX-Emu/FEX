@@ -73,6 +73,10 @@ namespace FEX::EnvLoader {
       if ((Value = GetVar("FEX_GDB_SERVER")).size()) {
         if (isdigit(Value[0])) Config::Add("GdbServer", Value);
       }
+
+      if ((Value = GetVar("FEX_THREADS")).size()) {
+        if (isdigit(Value[0])) Config::Add("Threads", Value);
+      }
     }
 
     {

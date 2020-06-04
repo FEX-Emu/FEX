@@ -57,6 +57,11 @@ namespace FEX::ArgLoader {
         .action("store_true")
         .help("Enables the GDB server");
 
+    CPUGroup.add_option("-T", "--Threads")
+        .dest("Threads")
+        .help("Number of physical hardware threads to tell the process we have")
+        .set_default(1);
+
       Parser.add_option_group(CPUGroup);
     }
     {
@@ -153,6 +158,11 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("GdbServer")) {
         bool GdbServer = Options.get("GdbServer");
         Config::Add("GdbServer", std::to_string(GdbServer));
+      }
+
+      if (Options.is_set_by_user("Threads")) {
+        uint64_t Config = Options.get("Threads");
+        Config::Add("Threads", std::to_string(Config));
       }
     }
 

@@ -1,3 +1,4 @@
+#include "Interface/Context/Context.h"
 #include "Interface/HLE/Syscalls.h"
 
 #include <stdint.h>
@@ -67,15 +68,20 @@ namespace FEXCore::HLE {
   }
 
   uint64_t Sched_Getaffinity(FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, unsigned long *mask) {
+    uint64_t Cores = Thread->CTX->Config.EmulatedCPUCores;
+    uint64_t BytesPerCore = Cores >> 3;
     // If we don't have at least one byte in the resulting structure
     // then we need to return -EINVAL
-    if (cpusetsize < 1) {
+    if (cpusetsize < BytesPerCore) {
       return -EINVAL;
     }
-    // Claim 1 CPU core
-    mask[0] |= 1;
+
+    for (uint64_t i = 0; i < Cores; ++i) {
+      mask[Cores / 8] |= (1 << (i % 8));
+    }
+
     // Returns the number of bytes written in to mask
-    return 1;
+    return BytesPerCore;
   }
 
   uint64_t Sched_Setattr(FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_attr *attr, unsigned int flags) {

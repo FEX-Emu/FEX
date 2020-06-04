@@ -53,6 +53,7 @@ namespace FEXCore::Context {
       std::string RootFSPath;
 
       bool Is64BitMode {true};
+      uint64_t EmulatedCPUCores{1};
 
       // LLVM JIT options
       bool LLVM_MemoryValidation {false};

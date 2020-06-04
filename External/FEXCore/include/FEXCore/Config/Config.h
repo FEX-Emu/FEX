@@ -14,6 +14,7 @@ namespace FEXCore::Config {
     CONFIG_ROOTFSPATH,
     CONFIG_UNIFIED_MEMORY,
     CONFIG_IS64BIT_MODE,
+    CONFIG_EMULATED_CPU_CORES,
   };
 
   enum ConfigCore {
