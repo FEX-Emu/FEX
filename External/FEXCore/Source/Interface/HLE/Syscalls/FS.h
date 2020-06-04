@@ -11,6 +11,7 @@ struct InternalThreadState;
 namespace FEXCore::HLE {
   uint64_t Getcwd(FEXCore::Core::InternalThreadState *Thread, char *buf, size_t size);
   uint64_t Chdir(FEXCore::Core::InternalThreadState *Thread, const char *path);
+  uint64_t Fchdir(FEXCore::Core::InternalThreadState *Thread, int fd);
   uint64_t Rename(FEXCore::Core::InternalThreadState *Thread, const char *oldpath, const char *newpath);
   uint64_t Mkdir(FEXCore::Core::InternalThreadState *Thread, const char *pathname, mode_t mode);
   uint64_t Rmdir(FEXCore::Core::InternalThreadState *Thread, const char *pathname);
