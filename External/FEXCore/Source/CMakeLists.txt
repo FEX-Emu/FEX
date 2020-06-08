@@ -201,12 +201,17 @@ if (ENABLE_JITSYMBOLS)
 endif()
 
 # Generate IR include file
-set(OUTPUT_NAME "${CMAKE_BINARY_DIR}/include/FEXCore/IR/IRDefines.inc")
+set(OUTPUT_IR_FOLDER "${CMAKE_BINARY_DIR}/include/FEXCore/IR")
+set(OUTPUT_NAME "${OUTPUT_IR_FOLDER}/IRDefines.inc")
 set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/Interface/IR/IR.json")
+
+add_custom_target(CREATE_IR_FOLDER ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTPUT_IR_FOLDER}")
 
 add_custom_command(
   OUTPUT "${OUTPUT_NAME}"
   DEPENDS "${INPUT_NAME}"
+  DEPENDS CREATE_IR_FOLDER
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}"
   )
@@ -220,6 +225,7 @@ set(OUTPUT_IR_DOC "${CMAKE_BINARY_DIR}/IR.md")
 add_custom_command(
   OUTPUT "${OUTPUT_IR_DOC}"
   DEPENDS "${INPUT_NAME}"
+  DEPENDS CREATE_IR_FOLDER
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py"
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py" "${INPUT_NAME}" "${OUTPUT_IR_DOC}"
   )
