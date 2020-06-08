@@ -195,9 +195,9 @@ def print_ir_hassideeffects(ops, defines):
     for op_key, op_vals in ops.items():
         HasSideEffects = False
         if ("HasSideEffects" in op_vals):
-            SSAArgs = op_vals["HasSideEffects"]
+            HasSideEffects = op_vals["HasSideEffects"]
 
-        output_file.write("\t%s,\n" % ("true" if SSAArgs else "false"))
+        output_file.write("\t%s,\n" % ("true" if HasSideEffects else "false"))
 
     output_file.write("};\n\n")
 
