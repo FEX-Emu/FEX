@@ -128,7 +128,7 @@ uint8_t Decoder::PeekByte(uint8_t Offset) {
 }
 
 uint64_t Decoder::ReadData(uint8_t Size) {
-  uint64_t Res;
+  uint64_t Res{};
 #define READ_DATA(x, y) \
   case x: { \
     y const *Data = reinterpret_cast<y const*>(&InstStream[InstructionSize]); \
@@ -140,6 +140,7 @@ uint64_t Decoder::ReadData(uint8_t Size) {
   case 0: return 0;
   READ_DATA(1, uint8_t);
   READ_DATA(2, uint16_t);
+  case 3: memcpy(&Res, &InstStream[InstructionSize], Size);
   READ_DATA(4, uint32_t);
   READ_DATA(8, uint64_t);
   default:
