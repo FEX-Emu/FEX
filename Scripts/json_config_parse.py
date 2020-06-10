@@ -58,6 +58,10 @@ class ABI(Flag) :
     ABI_WIN64   = 1
     ABI_NONE    = 2
 
+class Mode(Flag) :
+    MODE_32   = 0
+    MODE_64   = 1
+
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
     "RAX":   Regs.REG_RAX,
@@ -114,11 +118,17 @@ ABIStringLookup = {
     "NONE": ABI.ABI_NONE,
 }
 
+ModeStringLookup = {
+    "32BIT": Mode.MODE_32,
+    "64BIT": Mode.MODE_64,
+}
+
 def parse_json(json_text, output_file):
     # Default options
     OptionMatch = Regs.REG_INVALID
     OptionIgnore = Regs.REG_NONE
     OptionABI = ABI.ABI_SYSTEMV
+    OptionMode = Mode.MODE_64
     OptionStackSize = 4096
     OptionEntryPoint = 1
     OptionRegData = {}
@@ -163,6 +173,13 @@ def parse_json(json_text, output_file):
         if not (data in ABIStringLookup):
             sys.exit("Invalid ABI")
         OptionABI = ABIStringLookup[data]
+
+    if ("MODE" in json_object):
+        data = json_object["MODE"]
+        data = data.upper()
+        if not (data in ModeStringLookup):
+            sys.exit("Invalid Mode")
+        OptionMode = ModeStringLookup[data]
 
     if ("STACKSIZE" in json_object):
         data = json_object["STACKSIZE"]
@@ -212,6 +229,7 @@ def parse_json(json_text, output_file):
     config_file.write(struct.pack('Q', OptionStackSize))
     config_file.write(struct.pack('Q', OptionEntryPoint))
     config_file.write(struct.pack('I', OptionABI.value))
+    config_file.write(struct.pack('I', OptionMode.value))
 
     # Number of memory regions
     config_file.write(struct.pack('I', len(OptionMemoryRegions)))
