@@ -161,8 +161,8 @@ namespace FEXCore::Context {
     std::string hash_string;
 
     if (GetFilenameHash(Filename, hash_string)) {
-      auto DataPath = FEXCore::Paths::GetDataPath();
-      DataPath += "/EntryCache/Entries_" + hash_string;
+      auto DataPath = FEXCore::Paths::GetEntryCachePath();
+      DataPath += "Entries_" + hash_string;
 
       std::ofstream Output (DataPath.c_str(), std::ios::out | std::ios::binary);
       if (Output.is_open()) {
@@ -179,8 +179,8 @@ namespace FEXCore::Context {
     std::string hash_string;
 
     if (GetFilenameHash(Filename, hash_string)) {
-      auto DataPath = FEXCore::Paths::GetDataPath();
-      DataPath += "/EntryCache/Entries_" + hash_string;
+      auto DataPath = FEXCore::Paths::GetEntryCachePath();
+      DataPath += "Entries_" + hash_string;
 
       std::ifstream Input (DataPath.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
       if (Input.is_open()) {
