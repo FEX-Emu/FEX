@@ -99,7 +99,7 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::Value<bool> MultiblockConfig{"Multiblock", false};
   FEX::Config::Value<bool> GdbServerConfig{"GdbServer", false};
   FEX::Config::Value<uint64_t> ThreadsConfig{"Threads", 1};
-  FEX::Config::Value<bool> UnifiedMemory{"UnifiedMemory", false};
+  FEX::Config::Value<bool> UnifiedMemory{"UnifiedMemory", true};
   FEX::Config::Value<std::string> LDPath{"RootFS", ""};
   FEX::Config::Value<bool> SilentLog{"SilentLog", false};
 
