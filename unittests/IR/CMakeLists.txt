@@ -14,6 +14,7 @@ foreach(IR_SRC ${IR_SOURCES})
 
   add_custom_command(OUTPUT ${OUTPUT_CONFIG_NAME}
     DEPENDS "${IR_SRC}"
+    DEPENDS "${CMAKE_SOURCE_DIR}/Scripts/json_asm_config_parse.py"
     COMMAND "python3" ARGS "${CMAKE_SOURCE_DIR}/Scripts/json_ir_config_parse.py" "${IR_SRC}" "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_CONFIG_NAME}")
 
   list(APPEND IR_DEPENDS "${OUTPUT_CONFIG_NAME}")
