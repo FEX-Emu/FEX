@@ -6824,6 +6824,11 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xFC, 2, &OpDispatchBuilder::FLAGControlOp},
   };
 
+  const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable_32 = {
+    {0x40, 8, &OpDispatchBuilder::INCOp},
+    {0x48, 8, &OpDispatchBuilder::DECOp},
+  };
+
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable = {
     // Instructions
     {0x00, 1, nullptr}, // GROUP 6
@@ -7750,6 +7755,9 @@ constexpr uint16_t PF_F2 = 3;
   };
 
   InstallToTable(FEXCore::X86Tables::BaseOps, BaseOpTable);
+  if (Mode == Context::MODE_32BIT) {
+    InstallToTable(FEXCore::X86Tables::BaseOps, BaseOpTable_32);
+  }
   InstallToTable(FEXCore::X86Tables::SecondBaseOps, TwoByteOpTable);
   InstallToTable(FEXCore::X86Tables::PrimaryInstGroupOps, PrimaryGroupOpTable);
 

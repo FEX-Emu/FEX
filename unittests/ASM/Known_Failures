@@ -1,4 +1,4 @@
-Test_14_XX_02.asm
-Test_0F_2E.asm
-Test_0F_2F.asm
-Test_D9_FD.asm
+Test_Secondary/14_XX_02.asm
+Test_TwoByte/0F_2E.asm
+Test_TwoByte/0F_2F.asm
+Test_X87/D9_FD.asm

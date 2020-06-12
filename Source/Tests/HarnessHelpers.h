@@ -263,6 +263,8 @@ namespace FEX::HarnessHelper {
       return Matches;
     }
 
+    bool Is64BitMode() const { return BaseConfig.OptionMode == 1; }
+
   private:
     FEX::Config::Value<bool> ConfigDumpGPRs{"DumpGPRs", false};
 
@@ -272,6 +274,7 @@ namespace FEX::HarnessHelper {
       uint64_t OptionStackSize;
       uint64_t OptionEntryPoint;
       uint32_t OptionABI;
+      uint32_t OptionMode;
       uint32_t OptionMemoryRegionCount;
       uint32_t OptionRegDataCount;
       uint8_t  AdditionalData[];
@@ -365,6 +368,8 @@ namespace FEX::HarnessHelper {
     bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
       return Config.CompareStates(State1, State2);
     }
+
+    bool Is64BitMode() const { return Config.Is64BitMode(); }
 
   private:
     constexpr static uint64_t STACK_SIZE = PAGE_SIZE;

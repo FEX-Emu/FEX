@@ -9,22 +9,19 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
   const U8U8InfoStruct BaseOpTable[] = {
     // Prefixes
     // Operand size overide
-    {0x66, 1, X86InstInfo{"",      TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
+    {0x66, 1, X86InstInfo{"",      TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
     // Address size override
-    {0x67, 1, X86InstInfo{"",      TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
-    {0x2E, 1, X86InstInfo{"CS",    TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
-    {0x3E, 1, X86InstInfo{"DS",    TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
+    {0x67, 1, X86InstInfo{"",      TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
     {0x26, 1, X86InstInfo{"ES",    TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
+    {0x2E, 1, X86InstInfo{"CS",    TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
+    {0x36, 1, X86InstInfo{"SS",    TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
+    {0x3E, 1, X86InstInfo{"DS",    TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
     // These are still invalid on 64bit
     {0x64, 1, X86InstInfo{"FS",    TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
     {0x65, 1, X86InstInfo{"GS",    TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
-    {0x36, 1, X86InstInfo{"SS",    TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
-    {0xF0, 1, X86InstInfo{"LOCK",  TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
-    {0xF2, 1, X86InstInfo{"REPNE", TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
-    {0xF3, 1, X86InstInfo{"REP",   TYPE_LEGACY_PREFIX, FLAGS_NONE, 0, nullptr}},
-
-    // REX
-    {0x40, 16, X86InstInfo{"", TYPE_REX_PREFIX, FLAGS_NONE,        0, nullptr}},
+    {0xF0, 1, X86InstInfo{"LOCK",  TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
+    {0xF2, 1, X86InstInfo{"REPNE", TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
+    {0xF3, 1, X86InstInfo{"REP",   TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
 
     // Instructions
     {0x00, 1, X86InstInfo{"ADD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                   0, nullptr}},
@@ -135,9 +132,9 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0x89, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                         0, nullptr}},
     {0x8A, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM,         0, nullptr}},
     {0x8B, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_MODRM,                         0, nullptr}},
-    {0x8C, 1, X86InstInfo{"MOV",    TYPE_INVALID, FLAGS_MODRM | FLAGS_SF_MOD_DST,                      0, nullptr}},
+    {0x8C, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                      0, nullptr}},
     {0x8D, 1, X86InstInfo{"LEA",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_MODRM,                         0, nullptr}},
-    {0x8E, 1, X86InstInfo{"MOV",    TYPE_INVALID, FLAGS_MODRM,                      0, nullptr}}, // MOV seg, modrM == invalid on x86-64
+    {0x8E, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_MODRM,                      0, nullptr}}, // MOV seg, modrM == invalid on x86-64
     {0x8F, 1, X86InstInfo{"POP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DEBUG_MEM_ACCESS, 0, nullptr}},
     {0x90, 8, X86InstInfo{"XCHG",   TYPE_INST, FLAGS_SF_REX_IN_BYTE | FLAGS_SF_SRC_RAX, 0, nullptr}},
     {0x98, 1, X86InstInfo{"CDQE",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX,     0, nullptr}},
@@ -246,7 +243,24 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xC4, 2, X86InstInfo{"",   TYPE_VEX_TABLE_PREFIX, FLAGS_NONE, 0, nullptr}},
   };
 
+  const U8U8InfoStruct BaseOpTable_64[] = {
+    // REX
+    {0x40, 16, X86InstInfo{"", TYPE_REX_PREFIX, FLAGS_NONE,        0, nullptr}},
+  };
+
+  const U8U8InfoStruct BaseOpTable_32[] = {
+    {0x40, 8, X86InstInfo{"INC", TYPE_INST, FLAGS_SF_REX_IN_BYTE,        0, nullptr}},
+    {0x48, 8, X86InstInfo{"DEC", TYPE_INST, FLAGS_SF_REX_IN_BYTE,        0, nullptr}},
+  };
+
   GenerateTable(BaseOps, BaseOpTable, sizeof(BaseOpTable) / sizeof(BaseOpTable[0]));
+
+  if (Mode == Context::MODE_64BIT) {
+    GenerateTable(BaseOps, BaseOpTable_64, sizeof(BaseOpTable_64) / sizeof(BaseOpTable_64[0]));
+  }
+  else {
+    GenerateTable(BaseOps, BaseOpTable_32, sizeof(BaseOpTable_32) / sizeof(BaseOpTable_32[0]));
+  }
 }
 }
 
