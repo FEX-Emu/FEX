@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <list>
@@ -20,6 +21,35 @@ namespace FEX::Config {
     std::unique_ptr<std::list<json_t>> json_objects;
   };
 
+  std::string GetConfigFileLocation() {
+    char const *HomeDir = getenv("HOME");
+
+    if (!HomeDir) {
+      HomeDir = getenv("PWD");
+    }
+
+    if (!HomeDir) {
+      HomeDir = "";
+    }
+
+    char const *ConfigXDG = getenv("XDG_CONFIG_HOME");
+    std::string ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
+    ConfigDir += "/.fex-emu/";
+
+    // Ensure the folder structure is created for our configuration
+    if (!std::filesystem::exists(ConfigDir) &&
+        !std::filesystem::create_directories(ConfigDir)) {
+      LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigDir.c_str());
+      // Let's go local in this case
+      return "Config.json";
+    }
+
+    std::string ConfigFile = ConfigDir;
+    ConfigFile += "Config.json";
+
+    return ConfigFile;
+  }
+
   json_t* PoolInit(jsonPool_t* Pool) {
     JsonAllocator* alloc = json_containerOf(Pool, JsonAllocator, PoolObject);
     alloc->json_objects = std::make_unique<std::list<json_t>>();
@@ -33,7 +63,7 @@ namespace FEX::Config {
 
   bool LoadConfigFile(std::vector<char> &Data) {
     std::fstream ConfigFile;
-    ConfigFile.open("Config.json", std::fstream::in);
+    ConfigFile.open(GetConfigFileLocation(), std::fstream::in);
 
     if (!ConfigFile.is_open()) {
       return false;
@@ -129,11 +159,21 @@ namespace FEX::Config {
 
     // Write the config to a temporary file first then move it to the correct location
     // This is to solve threading issues when multiple applications are loading and storing the configuration
-    char TmpName[] = "/tmp/ConfigXXXXXXX";
-    int tmp = mkstemp(TmpName);
+    std::string Config = GetConfigFileLocation();
+    std::string ConfigTmp{Config};
+    ConfigTmp.resize(Config.size() + 6);
+
+    auto it = ConfigTmp.rbegin();
+    for (int i = 6; i > 0; --i) {
+      *it = 'X';
+      ++it;
+    }
+
+    int tmp = mkstemp(&ConfigTmp.at(0));
     write(tmp, Buffer, strlen(Buffer));
     close(tmp);
-    rename(TmpName, "Config.json");
+    // Rename only works if ther files are in the same filesystem
+    rename(ConfigTmp.c_str(), GetConfigFileLocation().c_str());
 
     ConfigMap.clear();
   }
