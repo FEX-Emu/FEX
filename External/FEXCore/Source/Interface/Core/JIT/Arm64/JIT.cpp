@@ -4392,7 +4392,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   }
 #endif
 
-  LogMan::Msg::D("RIP: %p disas %p,%p", HeaderOp->Entry, Entry, CodeEnd);
   return reinterpret_cast<void*>(Entry);
 }
 
