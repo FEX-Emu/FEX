@@ -180,6 +180,8 @@ enum Syscalls {
   SYSCALL_GET_ROBUST_LIST = 274, ///< __NR_get_robust_list
   SYSCALL_EPOLL_PWAIT     = 281, ///< __NR_epoll_pwait
   SYSCALL_TIMERFD_CREATE  = 283, ///< __NR_timerfd_create
+  SYSCALL_TIMERFD_SETTIME = 286, ///< __NR_timerfd_settime
+  SYSCALL_TIMERFD_GETTIME = 287, ///< __NR_timerfd_gettime
   SYSCALL_ACCEPT4         = 288, ///< __NR_accept4
   SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
   SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1

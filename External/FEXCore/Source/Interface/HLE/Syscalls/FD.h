@@ -51,6 +51,8 @@ namespace FEXCore::HLE {
   uint64_t Readlinkat(FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, char *buf, size_t bufsiz);
   uint64_t FAccessat(FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int mode, int flags);
   uint64_t Timerfd_Create(FEXCore::Core::InternalThreadState *Thread, int32_t clockid, int32_t flags);
+  uint64_t Timerfd_Settime(FEXCore::Core::InternalThreadState *Thread, int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value);
+  uint64_t Timerfd_Gettime(FEXCore::Core::InternalThreadState *Thread, int fd, struct itimerspec *curr_value);
   uint64_t Eventfd(FEXCore::Core::InternalThreadState *Thread, uint32_t initval, uint32_t flags);
   uint64_t Pipe2(FEXCore::Core::InternalThreadState *Thread, int pipefd[2], int flags);
   uint64_t Inotify_init1(FEXCore::Core::InternalThreadState *Thread, int flags);
