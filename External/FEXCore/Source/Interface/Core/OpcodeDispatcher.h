@@ -134,6 +134,7 @@ public:
   void XCHGOp(OpcodeArgs);
   void SAHFOp(OpcodeArgs);
   void LAHFOp(OpcodeArgs);
+  template<bool ToSeg>
   void MOVSegOp(OpcodeArgs);
   void FLAGControlOp(OpcodeArgs);
   void MOVOffsetOp(OpcodeArgs);

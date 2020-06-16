@@ -1104,11 +1104,92 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
   SetRFLAG(Result, Flag);
 }
 
+
+template<bool ToSeg>
 void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
   // In x86-64 mode the accesses to the segment registers end up being constant zero moves
   // Aside from FS/GS
-  LogMan::Msg::A("Wanting reg: %d\n", Op->Src[0].TypeGPR.GPR);
-  //  StoreResult(Op, Src);
+  // In x86-64 mode the accesses to segment registers can actually still touch the segments
+  // These write to the selector portion of the register
+  //
+  // FS and GS are specially handled here though
+  // AMD documentation is /wrong/ in this regard
+  // AMD documentation claims that the MOV to SReg and POP SReg registers will load a 32bit
+  // value in to the HIDDEN portions of the FS and GS registers /OR/ ignored if a null selector is
+  // selected for the registers
+  // This statement is actually untrue, the instructions will /actually/ load 16bits in to the selector portion of the register!
+  // Tested on a Zen+ CPU, the selector is the portion that is modified!
+  // We don't currently support FS/GS selector modifying, so this needs to be asserted out
+  // The loads here also load the selector, NOT the base
+
+  if (ToSeg) {
+    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 2, Op->Flags, -1);
+
+    switch (Op->Dest.TypeGPR.GPR) {
+      case 0: // ES
+        _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, es), Src);
+        break;
+      case 1: // DS
+        _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ds), Src);
+        break;
+      case 2: // CS
+        // CPL3 can't write to this
+        _Break(4, 0);
+        break;
+      case 3: // SS
+        _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), Src);
+        break;
+      case 6: // GS
+        LogMan::Throw::A(!CTX->Config.Is64BitMode, "We don't support modifying GS selector in 64bit mode!");
+        if (!CTX->Config.Is64BitMode) {
+          _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, gs), Src);
+        }
+        break;
+      case 7: // FS
+        LogMan::Throw::A(!CTX->Config.Is64BitMode, "We don't support modifying FS selector in 64bit mode!");
+        if (!CTX->Config.Is64BitMode) {
+          _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, fs), Src);
+        }
+        break;
+      default: LogMan::Msg::A("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
+    }
+  }
+  else {
+    OrderedNode *Segment{};
+
+    switch (Op->Src[0].TypeGPR.GPR) {
+      case 0: // ES
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, es), GPRClass);
+        break;
+      case 1: // DS
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, ds), GPRClass);
+        break;
+      case 2: // CS
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, cs), GPRClass);
+        break;
+      case 3: // SS
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, ss), GPRClass);
+        break;
+      case 6: // GS
+        if (CTX->Config.Is64BitMode) {
+          Segment = _Constant(0);
+        }
+        else {
+          Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, gs), GPRClass);
+        }
+        break;
+      case 7: // FS
+        if (CTX->Config.Is64BitMode) {
+          Segment = _Constant(0);
+        }
+        else {
+          Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, fs), GPRClass);
+        }
+        break;
+      default: LogMan::Msg::A("Unknown segment register: %d", Op->Src[0].TypeGPR.GPR);
+    }
+    StoreResult(GPRClass, Op, Segment, -1);
+  }
 }
 
 void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
@@ -6924,7 +7005,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x86, 2, &OpDispatchBuilder::XCHGOp},
     {0x88, 4, &OpDispatchBuilder::MOVGPROp<0>},
 
+    {0x8C, 1, &OpDispatchBuilder::MOVSegOp<false>},
     {0x8D, 1, &OpDispatchBuilder::LEAOp},
+    {0x8E, 1, &OpDispatchBuilder::MOVSegOp<true>},
     {0x8F, 1, &OpDispatchBuilder::POPOp},
     {0x90, 8, &OpDispatchBuilder::XCHGOp},
 

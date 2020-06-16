@@ -1267,6 +1267,10 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
         ArrayType::get(i64, 16), // Gregs
         i64, // Pad to ensure alignment
         ArrayType::get(i128, 16), // XMMs
+        i16, // es
+        i16, // cs
+        i16, // ss
+        i16, // ds
         i64, i64, // GS, FS
         ArrayType::get(i8, 48), //rflags
         ArrayType::get(i128, 8), // MMs
@@ -1303,17 +1307,33 @@ llvm::Value *LLVMJITCore::CreateContextGEP(uint64_t Offset, uint8_t Size) {
     GEPValues.emplace_back(JITState.IRBuilder->getInt32(3));
     GEPValues.emplace_back(JITState.IRBuilder->getInt32((Offset - offsetof(FEXCore::Core::CPUState, xmm)) / 16));
   }
+  else if (Offset == offsetof(FEXCore::Core::CPUState, es)) {
+    if (Size != 2) return nullptr;
+    GEPValues.emplace_back(JITState.IRBuilder->getInt32(4));
+  }
+  else if (Offset == offsetof(FEXCore::Core::CPUState, cs)) {
+    if (Size != 2) return nullptr;
+    GEPValues.emplace_back(JITState.IRBuilder->getInt32(5));
+  }
+  else if (Offset == offsetof(FEXCore::Core::CPUState, ss)) {
+    if (Size != 2) return nullptr;
+    GEPValues.emplace_back(JITState.IRBuilder->getInt32(6));
+  }
+  else if (Offset == offsetof(FEXCore::Core::CPUState, ds)) {
+    if (Size != 2) return nullptr;
+    GEPValues.emplace_back(JITState.IRBuilder->getInt32(7));
+  }
   else if (Offset == offsetof(FEXCore::Core::CPUState, gs)) {
     if (Size != 8) return nullptr;
-    GEPValues.emplace_back(JITState.IRBuilder->getInt32(4));
+    GEPValues.emplace_back(JITState.IRBuilder->getInt32(8));
   }
   else if (Offset == offsetof(FEXCore::Core::CPUState, fs)) {
     if (Size != 8) return nullptr;
-    GEPValues.emplace_back(JITState.IRBuilder->getInt32(5));
+    GEPValues.emplace_back(JITState.IRBuilder->getInt32(9));
   }
   else if (Offset >= offsetof(FEXCore::Core::CPUState, flags)) {
     if (Size != 1) return nullptr;
-    GEPValues.emplace_back(JITState.IRBuilder->getInt32(6));
+    GEPValues.emplace_back(JITState.IRBuilder->getInt32(10));
     GEPValues.emplace_back(JITState.IRBuilder->getInt32(Offset - offsetof(FEXCore::Core::CPUState, flags[0])));
   }
   else
