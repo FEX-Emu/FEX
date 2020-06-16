@@ -7149,7 +7149,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 8>},
     {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>},
-    {0x5B, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
+    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 8>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 8>},
     {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 8>},
