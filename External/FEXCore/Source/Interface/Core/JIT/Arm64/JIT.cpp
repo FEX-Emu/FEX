@@ -199,6 +199,7 @@ private:
   vixl::aarch64::Decoder Decoder;
 #endif
   vixl::aarch64::CPU CPU;
+  bool SupportsAtomics{};
 
 #if DEBUG
   vixl::aarch64::Disassembler Disasm;
@@ -255,8 +256,20 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   , Sim {&Decoder}
 #endif
 {
-  // XXX: Set this to a real minimum feature set in the future
-  SetCPUFeatures(vixl::CPUFeatures::All());
+
+#if _M_X86_64
+  auto Features = vixl::CPUFeatures::All();
+  SupportsAtomics = true;
+#else
+  auto Features = vixl::CPUFeatures::InferFromOS();
+  SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
+#endif
+
+  SetCPUFeatures(Features);
+
+  if (!SupportsAtomics) {
+    WARN_ONCE("Host CPU doesn't support atomics. Expect bad performance");
+  }
 
   RAPass = Thread->PassManager->GetRAPass();
 
@@ -1031,21 +1044,78 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        mov(TMP3, Expected.first);
-        mov(TMP4, Expected.second);
+        if (SupportsAtomics) {
+          mov(TMP3, Expected.first);
+          mov(TMP4, Expected.second);
 
-        switch (OpSize) {
-        case 4:
-          caspal(TMP3.W(), TMP4.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
-          mov(Dst.first.W(), TMP3.W());
-          mov(Dst.second.W(), TMP4.W());
-          break;
-        case 8:
-          caspal(TMP3.X(), TMP4.X(), Desired.first.X(), Desired.second.X(), MemOperand(MemSrc));
-          mov(Dst.first, TMP3);
-          mov(Dst.second, TMP4);
-          break;
-        default: LogMan::Msg::A("Unsupported: %d", OpSize);
+          switch (OpSize) {
+          case 4:
+            caspal(TMP3.W(), TMP4.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
+            mov(Dst.first.W(), TMP3.W());
+            mov(Dst.second.W(), TMP4.W());
+            break;
+          case 8:
+            caspal(TMP3.X(), TMP4.X(), Desired.first.X(), Desired.second.X(), MemOperand(MemSrc));
+            mov(Dst.first, TMP3);
+            mov(Dst.second, TMP4);
+            break;
+          default: LogMan::Msg::A("Unsupported: %d", OpSize);
+          }
+        }
+        else {
+          switch (OpSize) {
+            case 4: {
+              aarch64::Label LoopTop;
+              aarch64::Label LoopNotExpected;
+              aarch64::Label LoopExpected;
+              bind(&LoopTop);
+              ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc));
+              cmp(TMP2.W(), Expected.first.W());
+              ccmp(TMP3.W(), Expected.second.W(), NoFlag, Condition::eq);
+              b(&LoopNotExpected, Condition::ne);
+              stlxp(TMP2.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              mov(Dst.first.W(), Expected.first.W());
+              mov(Dst.second.W(), Expected.second.W());
+
+              b(&LoopExpected);
+
+                bind(&LoopNotExpected);
+                mov(Dst.first.W(), TMP2.W());
+                mov(Dst.second.W(), TMP3.W());
+                // exclusive monitor needs to be cleared here
+                // Might have hit the case where ldaxr was hit but stlxr wasn't
+                clrex();
+              bind(&LoopExpected);
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              aarch64::Label LoopNotExpected;
+              aarch64::Label LoopExpected;
+              bind(&LoopTop);
+              ldaxp(TMP2.X(), TMP3.X(), MemOperand(MemSrc));
+              cmp(TMP2.X(), Expected.first.X());
+              ccmp(TMP3.X(), Expected.second.X(), NoFlag, Condition::eq);
+              b(&LoopNotExpected, Condition::ne);
+              stlxp(TMP2.X(), Desired.first.X(), Desired.second.X(), MemOperand(MemSrc));
+              cbnz(TMP2.X(), &LoopTop);
+              mov(Dst.first.X(), Expected.first.X());
+              mov(Dst.second.X(), Expected.second.X());
+
+              b(&LoopExpected);
+
+                bind(&LoopNotExpected);
+                mov(Dst.first.X(), TMP2.X());
+                mov(Dst.second.X(), TMP3.X());
+                // exclusive monitor needs to be cleared here
+                // Might have hit the case where ldaxr was hit but stlxr wasn't
+                clrex();
+              bind(&LoopExpected);
+              break;
+            }
+            default: LogMan::Msg::A("Unsupported: %d", OpSize);
+          }
         }
         break;
       }
@@ -1564,17 +1634,109 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           add(TMP1, TMP1, MemSrc);
           MemSrc = TMP1;
         }
-        mov(TMP2, Expected);
 
-        switch (OpSize) {
-        case 1: casalb(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
-        case 2: casalh(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
-        case 4: casal(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
-        case 8: casal(TMP2.X(), Desired.X(), MemOperand(MemSrc)); break;
-        default: LogMan::Msg::A("Unsupported: %d", OpSize);
+        if (SupportsAtomics) {
+          mov(TMP2, Expected);
+          switch (OpSize) {
+          case 1: casalb(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
+          case 2: casalh(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
+          case 4: casal(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
+          case 8: casal(TMP2.X(), Desired.X(), MemOperand(MemSrc)); break;
+          default: LogMan::Msg::A("Unsupported: %d", OpSize);
+          }
+          mov(GetDst<RA_64>(Node), TMP2);
+        }
+        else {
+          switch (OpSize) {
+            case 1: {
+              aarch64::Label LoopTop;
+              aarch64::Label LoopNotExpected;
+              aarch64::Label LoopExpected;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              cmp(TMP2.W(), Operand(Expected.W(), Extend::UXTB));
+              b(&LoopNotExpected, Condition::ne);
+              stlxrb(TMP3.W(), Desired.W(), MemOperand(MemSrc));
+              cbnz(TMP3.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), Expected.W());
+              b(&LoopExpected);
+
+                bind(&LoopNotExpected);
+                mov(GetDst<RA_32>(Node), TMP2.W());
+                // exclusive monitor needs to be cleared here
+                // Might have hit the case where ldaxr was hit but stlxr wasn't
+                clrex();
+              bind(&LoopExpected);
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              aarch64::Label LoopNotExpected;
+              aarch64::Label LoopExpected;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              cmp(TMP2.W(), Operand(Expected.W(), Extend::UXTH));
+              b(&LoopNotExpected, Condition::ne);
+              stlxrh(TMP3.W(), Desired.W(), MemOperand(MemSrc));
+              cbnz(TMP3.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), Expected.W());
+              b(&LoopExpected);
+
+                bind(&LoopNotExpected);
+                mov(GetDst<RA_32>(Node), TMP2.W());
+                // exclusive monitor needs to be cleared here
+                // Might have hit the case where ldaxr was hit but stlxr wasn't
+                clrex();
+              bind(&LoopExpected);
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              aarch64::Label LoopNotExpected;
+              aarch64::Label LoopExpected;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              cmp(TMP2.W(), Expected.W());
+              b(&LoopNotExpected, Condition::ne);
+              stlxr(TMP3.W(), Desired.W(), MemOperand(MemSrc));
+              cbnz(TMP3.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), Expected.W());
+              b(&LoopExpected);
+
+                bind(&LoopNotExpected);
+                mov(GetDst<RA_32>(Node), TMP2.W());
+                // exclusive monitor needs to be cleared here
+                // Might have hit the case where ldaxr was hit but stlxr wasn't
+                clrex();
+              bind(&LoopExpected);
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              aarch64::Label LoopNotExpected;
+              aarch64::Label LoopExpected;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              cmp(TMP2, Expected);
+              b(&LoopNotExpected, Condition::ne);
+              stlxr(TMP2, Desired, MemOperand(MemSrc));
+              cbnz(TMP2, &LoopTop);
+              mov(GetDst<RA_64>(Node), Expected);
+              b(&LoopExpected);
+
+                bind(&LoopNotExpected);
+                mov(GetDst<RA_64>(Node), TMP2);
+                // exclusive monitor needs to be cleared here
+                // Might have hit the case where ldaxr was hit but stlxr wasn't
+                clrex();
+              bind(&LoopExpected);
+
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", OpSize);
+          }
         }
 
-        mov(GetDst<RA_64>(Node), TMP2);
         break;
       }
       case IR::OP_ATOMICADD: {
@@ -1587,12 +1749,56 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        switch (Op->Size) {
-        case 1: staddlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 2: staddlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 4: staddl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 8: staddl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          switch (Op->Size) {
+          case 1: staddlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 2: staddlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 4: staddl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 8: staddl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              add(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              add(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              add(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              add(TMP2, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP2, TMP2, MemOperand(MemSrc));
+              cbnz(TMP2, &LoopTop);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1606,13 +1812,57 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        switch (Op->Size) {
-        case 1: staddlb(TMP2.W(), MemOperand(MemSrc)); break;
-        case 2: staddlh(TMP2.W(), MemOperand(MemSrc)); break;
-        case 4: staddl(TMP2.W(), MemOperand(MemSrc)); break;
-        case 8: staddl(TMP2.X(), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          switch (Op->Size) {
+          case 1: staddlb(TMP2.W(), MemOperand(MemSrc)); break;
+          case 2: staddlh(TMP2.W(), MemOperand(MemSrc)); break;
+          case 4: staddl(TMP2.W(), MemOperand(MemSrc)); break;
+          case 8: staddl(TMP2.X(), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              sub(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              sub(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              sub(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              sub(TMP2, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP2, TMP2, MemOperand(MemSrc));
+              cbnz(TMP2, &LoopTop);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1626,13 +1876,57 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        switch (Op->Size) {
-        case 1: stclrlb(TMP2.W(), MemOperand(MemSrc)); break;
-        case 2: stclrlh(TMP2.W(), MemOperand(MemSrc)); break;
-        case 4: stclrl(TMP2.W(), MemOperand(MemSrc)); break;
-        case 8: stclrl(TMP2.X(), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          switch (Op->Size) {
+          case 1: stclrlb(TMP2.W(), MemOperand(MemSrc)); break;
+          case 2: stclrlh(TMP2.W(), MemOperand(MemSrc)); break;
+          case 4: stclrl(TMP2.W(), MemOperand(MemSrc)); break;
+          case 8: stclrl(TMP2.X(), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              and_(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              and_(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              and_(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              and_(TMP2, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP2, TMP2, MemOperand(MemSrc));
+              cbnz(TMP2, &LoopTop);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1646,12 +1940,56 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        switch (Op->Size) {
-        case 1: stsetlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 2: stsetlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 4: stsetl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 8: stsetl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          switch (Op->Size) {
+          case 1: stsetlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 2: stsetlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 4: stsetl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 8: stsetl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              orr(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              orr(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              orr(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              orr(TMP2, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP2, TMP2, MemOperand(MemSrc));
+              cbnz(TMP2, &LoopTop);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1665,12 +2003,56 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        switch (Op->Size) {
-        case 1: steorlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 2: steorlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 4: steorl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        case 8: steorl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          switch (Op->Size) {
+          case 1: steorlb(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 2: steorlh(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 4: steorl(GetSrc<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          case 8: steorl(GetSrc<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              eor(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              eor(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              eor(TMP2.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              eor(TMP2, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP2, TMP2, MemOperand(MemSrc));
+              cbnz(TMP2, &LoopTop);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1685,12 +2067,52 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
 
         mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        switch (Op->Size) {
-        case 1: swplb(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
-        case 2: swplh(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
-        case 4: swpl(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
-        case 8: swpl(GetDst<RA_64>(Node), xzr, MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          switch (Op->Size) {
+          case 1: swplb(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
+          case 2: swplh(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
+          case 4: swpl(GetDst<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
+          case 8: swpl(GetDst<RA_64>(Node), xzr, MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              stlxrb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              stlxrh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              stlxr(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc));
+              cbnz(TMP2.W(), &LoopTop);
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              stlxr(TMP2, GetDst<RA_64>(Node), MemOperand(MemSrc));
+              cbnz(TMP2, &LoopTop);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1703,12 +2125,60 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        switch (Op->Size) {
-        case 1: ldaddalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 2: ldaddalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 4: ldaddal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 8: ldaddal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          switch (Op->Size) {
+          case 1: ldaddalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 2: ldaddalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 4: ldaddal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 8: ldaddal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              add(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              add(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              add(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              add(TMP3, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP4, TMP3, MemOperand(MemSrc));
+              cbnz(TMP4, &LoopTop);
+              mov(GetDst<RA_64>(Node), TMP2);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
 
         break;
@@ -1722,13 +2192,62 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        switch (Op->Size) {
-        case 1: ldaddalb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 2: ldaddalh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 4: ldaddal(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 8: ldaddal(TMP2.X(), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+
+        if (SupportsAtomics) {
+          neg(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          switch (Op->Size) {
+          case 1: ldaddalb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 2: ldaddalh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 4: ldaddal(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 8: ldaddal(TMP2.X(), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              sub(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              sub(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              sub(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              sub(TMP3, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP4, TMP3, MemOperand(MemSrc));
+              cbnz(TMP4, &LoopTop);
+              mov(GetDst<RA_64>(Node), TMP2);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1741,13 +2260,61 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-        switch (Op->Size) {
-        case 1: ldclralb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 2: ldclralh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 4: ldclral(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 8: ldclral(TMP2.X(), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          mvn(TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          switch (Op->Size) {
+          case 1: ldclralb(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 2: ldclralh(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 4: ldclral(TMP2.W(), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 8: ldclral(TMP2.X(), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              and_(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              and_(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              and_(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              and_(TMP3, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP4, TMP3, MemOperand(MemSrc));
+              cbnz(TMP4, &LoopTop);
+              mov(GetDst<RA_64>(Node), TMP2);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
         break;
       }
@@ -1760,12 +2327,60 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        switch (Op->Size) {
-        case 1: ldsetalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 2: ldsetalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 4: ldsetal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 8: ldsetal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          switch (Op->Size) {
+          case 1: ldsetalb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 2: ldsetalh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 4: ldsetal(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 8: ldsetal(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              orr(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              orr(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              orr(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              orr(TMP3, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP4, TMP3, MemOperand(MemSrc));
+              cbnz(TMP4, &LoopTop);
+              mov(GetDst<RA_64>(Node), TMP2);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
 
         break;
@@ -1779,14 +2394,61 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           MemSrc = TMP1;
         }
 
-        switch (Op->Size) {
-        case 1: ldeoralb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 2: ldeoralh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 4: ldeoral(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
-        case 8: ldeoral(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
-        default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+        if (SupportsAtomics) {
+          switch (Op->Size) {
+          case 1: ldeoralb(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 2: ldeoralh(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 4: ldeoral(GetSrc<RA_32>(Op->Header.Args[1].ID()), GetDst<RA_32>(Node), MemOperand(MemSrc)); break;
+          case 8: ldeoral(GetSrc<RA_64>(Op->Header.Args[1].ID()), GetDst<RA_64>(Node), MemOperand(MemSrc)); break;
+          default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
         }
-
+        else {
+          // TMP2-TMP3
+          switch (Op->Size) {
+            case 1: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrb(TMP2.W(), MemOperand(MemSrc));
+              eor(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 2: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxrh(TMP2.W(), MemOperand(MemSrc));
+              eor(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 4: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2.W(), MemOperand(MemSrc));
+              eor(TMP3.W(), TMP2.W(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+              cbnz(TMP4.W(), &LoopTop);
+              mov(GetDst<RA_32>(Node), TMP2.W());
+              break;
+            }
+            case 8: {
+              aarch64::Label LoopTop;
+              bind(&LoopTop);
+              ldaxr(TMP2, MemOperand(MemSrc));
+              eor(TMP3, TMP2, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              stlxr(TMP4, TMP3, MemOperand(MemSrc));
+              cbnz(TMP4, &LoopTop);
+              mov(GetDst<RA_64>(Node), TMP2);
+              break;
+            }
+            default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+          }
+        }
         break;
       }
       case IR::OP_SELECT: {
