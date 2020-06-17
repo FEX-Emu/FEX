@@ -266,6 +266,16 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Timerfd_Settime(FEXCore::Core::InternalThreadState *Thread, int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) {
+    uint64_t Result = ::timerfd_settime(fd, flags, new_value, old_value);
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t Timerfd_Gettime(FEXCore::Core::InternalThreadState *Thread, int fd, struct itimerspec *curr_value) {
+    uint64_t Result = ::timerfd_gettime(fd, curr_value);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Eventfd(FEXCore::Core::InternalThreadState *Thread, uint32_t initval, uint32_t flags) {
     uint64_t Result = ::eventfd(initval, flags);
     SYSCALL_ERRNO();
