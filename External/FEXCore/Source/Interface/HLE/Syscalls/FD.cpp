@@ -190,6 +190,11 @@ namespace FEXCore::HLE {
     SYSCALL_ERRNO();
   }
 
+  uint64_t Fallocate(FEXCore::Core::InternalThreadState *Thread, int fd, int mode, off_t offset, off_t len) {
+    uint64_t Result = ::fallocate(fd, mode, offset, len);
+    SYSCALL_ERRNO();
+  }
+
   uint64_t Getdents(FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count) {
 #ifdef SYS_getdents
     uint64_t Result = syscall(SYS_getdents,

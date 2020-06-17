@@ -430,6 +430,13 @@ void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
   case SYSCALL_TIMERFD_CREATE:
     LogMan::Msg::D("timerfd_create(%lx, %lx) = %ld", Args->Argument[1], Args->Argument[2], Ret);
     break;
+  case SYSCALL_FALLOCATE:
+    LogMan::Msg::D("fallocate(%lx, %lx, %p, %p) = %ld",
+      Args->Argument[1],
+      Args->Argument[2],
+      Args->Argument[3],
+      Args->Argument[4],
+      Ret);
   case SYSCALL_TIMERFD_SETTIME:
     LogMan::Msg::D("timerfd_settime(%ld, %lx, %p, %p) = %ld",
       Args->Argument[1],
@@ -936,6 +943,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_GET_ROBUST_LIST,        cvt(&FEXCore::HLE::Get_robust_list),        3},
     {SYSCALL_EPOLL_PWAIT,            cvt(&FEXCore::HLE::EPoll_Pwait),            5},
     {SYSCALL_TIMERFD_CREATE,         cvt(&FEXCore::HLE::Timerfd_Create),         2},
+    {SYSCALL_FALLOCATE,              cvt(&FEXCore::HLE::Fallocate),              4},
     {SYSCALL_TIMERFD_SETTIME,        cvt(&FEXCore::HLE::Timerfd_Settime),        4},
     {SYSCALL_TIMERFD_GETTIME,        cvt(&FEXCore::HLE::Timerfd_Gettime),        2},
     {SYSCALL_ACCEPT4,                cvt(&FEXCore::HLE::Accept4),                4},
