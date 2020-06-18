@@ -6,8 +6,7 @@
 #include "Interface/HLE/x32/Memory.h"
 #include "Interface/HLE/x32/Thread.h"
 
-#include "Interface/HLE/Syscalls/EPoll.h"
-#include "Interface/HLE/Syscalls/FD.h"
+#if 0
 #include "Interface/HLE/Syscalls/FS.h"
 #include "Interface/HLE/Syscalls/Info.h"
 #include "Interface/HLE/Syscalls/Ioctl.h"
@@ -21,6 +20,8 @@
 #include "Interface/HLE/Syscalls/Thread.h"
 #include "Interface/HLE/Syscalls/Time.h"
 #include "Interface/HLE/Syscalls/Timer.h"
+
+#endif
 
 #include "LogManager.h"
 
@@ -84,6 +85,7 @@ void x32SyscallHandler::RegisterSyscallHandlers() {
   }
 
   const std::vector<std::tuple<uint16_t, void*, uint8_t>> Syscalls = {
+    #if 0
     {SYSCALL_READ,                     cvt(&FEXCore::HLE::Read),                   3},
     {SYSCALL_EXIT,                     cvt(&FEXCore::HLE::Exit),                   1},
     {SYSCALL_WRITE,                    cvt(&FEXCore::HLE::Write),                  3},
@@ -101,6 +103,7 @@ void x32SyscallHandler::RegisterSyscallHandlers() {
     {SYSCALL_EXIT_GROUP,               cvt(&FEXCore::HLE::Exit_group),             1},
     {SYSCALL_ARCH_PRCTL,               cvt(&FEXCore::HLE::Arch_Prctl),             2},
     {SYSCALL_OPENAT,                   cvt(&FEXCore::HLE::Openat),                 4},
+    #endif
   };
 
   // Set all the new definitions

@@ -20,188 +20,457 @@ namespace FEXCore::HLE::x64 {
 
 ///< Enum containing all support x86-64 linux syscalls that we support
 enum Syscalls {
-  SYSCALL_READ            = 0,   ///< __NR_read
-  SYSCALL_WRITE           = 1,   ///< __NR_write
-  SYSCALL_OPEN            = 2,   ///< __NR_open
-  SYSCALL_CLOSE           = 3,   ///< __NR_close
-  SYSCALL_STAT            = 4,   ///< __NR_stat
-  SYSCALL_FSTAT           = 5,   ///< __NR_fstat
-  SYSCALL_LSTAT           = 6,   ///< __NR_lstat
-  SYSCALL_POLL            = 7,   ///< __NR_poll
-  SYSCALL_LSEEK           = 8,   ///< __NR_lseek
-  SYSCALL_MMAP            = 9,   ///< __NR_mmap
-  SYSCALL_MPROTECT        = 10,  ///< __NR_mprotect
-  SYSCALL_MUNMAP          = 11,  ///< __NR_munmap
-  SYSCALL_BRK             = 12,  ///< __NR_brk
-  SYSCALL_RT_SIGACTION    = 13,  ///< __NR_rt_sigaction
-  SYSCALL_RT_SIGPROCMASK  = 14,  ///< __NR_rt_sigprocmask
-  SYSCALL_IOCTL           = 16,  ///< __NR_ioctl
-  SYSCALL_PREAD64         = 17,  ///< __NR_pread64
-  SYSCALL_PWRITE64        = 18,  ///< __NR_pwrite64
-  SYSCALL_READV           = 19,  ///< __NR_readv
-  SYSCALL_WRITEV          = 20,  ///< __NR_writev
-  SYSCALL_ACCESS          = 21,  ///< __NR_access
-  SYSCALL_PIPE            = 22,  ///< __NR_pipe
-  SYSCALL_SELECT          = 23,  ///< __NR_select
-  SYSCALL_SCHED_YIELD     = 24,  ///< __NR_sched_yield
-  SYSCALL_MREMAP          = 25,  ///< __NR_mremap
-  SYSCALL_MSYNC           = 26,  ///< __NR_msync
-  SYSCALL_MINCORE         = 27,  ///< __NR_mincore
-  SYSCALL_MADVISE         = 28,  ///< __NR_madvise
-  SYSCALL_SHMGET          = 29,  ///< __NR_shmget
-  SYSCALL_SHMAT           = 30,  ///< __NR_shmat
-  SYSCALL_SHMCTL          = 31,  ///< __NR_shmctl
-  SYSCALL_DUP             = 32,  ///< __NR_dup
-  SYSCALL_DUP2            = 33,  ///< __NR_dup2
-  SYSCALL_PAUSE           = 34,  ///< __NR_pause
-  SYSCALL_NANOSLEEP       = 35,  ///< __NR_nanosleep
-  SYSCALL_GETITIMER       = 36,  ///< __NR_getitimer
-  SYSCALL_ALARM           = 37,  ///< __NR_alarm
-  SYSCALL_SETITIMER       = 38,  ///< __NR_setitimer
-  SYSCALL_GETPID          = 39,  ///< __NR_getpid
-  SYSCALL_SOCKET          = 41,  ///< __NR_socket
-  SYSCALL_CONNECT         = 42,  ///< __NR_connect
-  SYSCALL_ACCEPT          = 43,  ///< __NR_accept
-  SYSCALL_SENDTO          = 44,  ///< __NR_sendto
-  SYSCALL_RECVFROM        = 45,  ///< __NR_recvfrom
-  SYSCALL_SENDMSG         = 46,  ///< __NR_sendmsg
-  SYSCALL_RECVMSG         = 47,  ///< __NR_recvmsg
-  SYSCALL_SHUTDOWN        = 48,  ///< __NR_shutdown
-  SYSCALL_BIND            = 49,  ///< __NR_bind
-  SYSCALL_LISTEN          = 50,  ///< __NR_listen
-  SYSCALL_GETSOCKNAME     = 51,  ///< __NR_getsockname
-  SYSCALL_GETPEERNAME     = 52,  ///< __NR_getpeername
-  SYSCALL_SOCKETPAIR      = 53,  ///< __NR_socketpair
-  SYSCALL_SETSOCKOPT      = 54,  ///< __NR_setsockopt
-  SYSCALL_GETSOCKOPT      = 55,  ///< __NR_getsockopt
-  SYSCALL_CLONE           = 56,  ///< __NR_clone
-  SYSCALL_EXECVE          = 59,  ///< __NR_execve
-  SYSCALL_EXIT            = 60,  ///< __NR_exit
-  SYSCALL_WAIT4           = 61,  ///< __NR_wait4
-  SYSCALL_KILL            = 62,  ///< __NR_kill
-  SYSCALL_UNAME           = 63,  ///< __NR_uname
-  SYSCALL_SEMGET          = 64,  ///< __NR_semget
-  SYSCALL_SEMOP           = 65,  ///< __NR_semop
-  SYSCALL_SEMCTL          = 66,  ///< __NR_semctl
-  SYSCALL_SHMDT           = 67,  ///< __NR_shmdt
-  SYSCALL_FCNTL           = 72,  ///< __NR_fcntl
-  SYSCALL_FLOCK           = 73,  ///< __NR_flock
-  SYSCALL_FSYNC           = 74,  ///< __NR_fsync
-  SYSCALL_FDATASYNC       = 75,  ///< __NR_fdatasync
-  SYSCALL_FTRUNCATE       = 77,  ///< __NR_ftruncate
-  SYSCALL_GETDENTS        = 78,  ///< __NR_getdents
-  SYSCALL_GETCWD          = 79,  ///< __NR_getcwd
-  SYSCALL_CHDIR           = 80,  ///< __NR_chdir
-  SYSCALL_FCHDIR          = 81,  ///< __NR_fchdir
-  SYSCALL_RENAME          = 82,  ///< __NR_rename
-  SYSCALL_MKDIR           = 83,  ///< __NR_mkdir
-  SYSCALL_RMDIR           = 84,  ///< __NR_rmdir
-  SYSCALL_LINK            = 86,  ///< __NR_link
-  SYSCALL_UNLINK          = 87,  ///< __NR_unlink
-  SYSCALL_SYMLINK         = 88,  ///< __NR_symlink
-  SYSCALL_READLINK        = 89,  ///< __NR_readlink
-  SYSCALL_CHMOD           = 90,  ///< __NR_chmod
-  SYSCALL_FCHMOD          = 91,  ///< __NR_fchmod
-  SYSCALL_UMASK           = 95,  ///< __NR_umask
-  SYSCALL_GETTIMEOFDAY    = 96,  ///< __NR_gettimeofday
-  SYSCALL_GETRUSAGE       = 98,  ///< __NR_getrusage
-  SYSCALL_SYSINFO         = 99,  ///< __NR_sysinfo
-  SYSCALL_PTRACE          = 101, ///< __NR_ptrace
-  SYSCALL_GETUID          = 102, ///< __NR_getuid
-  SYSCALL_SYSLOG          = 103, ///< __NR_syslog
-  SYSCALL_GETGID          = 104, ///< __NR_getgid
-  SYSCALL_SETUID          = 105, ///< __NR_setuid
-  SYSCALL_GETEUID         = 107, ///< __NR_geteuid
-  SYSCALL_GETEGID         = 108, ///< __NR_getegid
-  SYSCALL_GETPPID         = 110, ///< __NR_getppid
-  SYSCALL_GETPGRP         = 111, ///< __NR_getpgrp
-  SYSCALL_SETSID          = 112, ///< __NR_setsid
-  SYSCALL_SETREUID        = 113, ///< __NR_setreuid
-  SYSCALL_SETREGID        = 114, ///< __NR_setregid
-  SYSCALL_SETRESUID       = 117, ///< __NR_setresuid
-  SYSCALL_GETRESUID       = 118, ///< __NR_getresuid
-  SYSCALL_SETRESGID       = 119, ///< __NR_setresgid
-  SYSCALL_GETRESGID       = 120, ///< __NR_getresgid
-  SYSCALL_SIGALTSTACK     = 131, ///< __NR_sigaltstack
-  SYSCALL_MKNOD           = 133, ///< __NR_mknod
-  SYSCALL_PERSONALITY     = 135, ///< __NR_personality
-  SYSCALL_STATFS          = 137, ///< __NR_statfs
-  SYSCALL_FSTATFS         = 138, ///< __NR_fstatfs
-  SYSCALL_GETPRIORITY     = 140, ///< __NR_getpriority
-  SYSCALL_SETPRIORITY     = 141, ///< __NR_getpriority
-  SYSCALL_SCHED_SETPARAM  = 142, ///< __NR_sched_setparam
-  SYSCALL_SCHED_GETPARAM  = 143, ///< __NR_sched_getparam
-  SYSCALL_SCHED_SETSCHEDULER = 144, ///< __NR_sched_setscheduler
-  SYSCALL_SCHED_GETSCHEDULER = 145, ///< __NR_sched_getscheduler
-  SYSCALL_SCHED_GET_PRIORITY_MAX = 146, ///< __NR_sched_get_priority_max
-  SYSCALL_SCHED_GET_PRIORITY_MIN = 147, ///< __NR_sched_get_priority_min
-  SYSCALL_SCHED_RR_GET_INTERVAL  = 148, ///< __NR_sched_rr_get_interval
-  SYSCALL_MLOCK           = 149, ///< __NR_mlock
-  SYSCALL_MUNLOCK         = 150, ///< __NR_munlock
-  SYSCALL_MLOCKALL        = 151, ///< __NR_mlockall
-  SYSCALL_MUNLOCKALL      = 152, ///< __NR_munlockall
-  SYSCALL_PRCTL           = 157, ///< __NR_prctl
-  SYSCALL_ARCH_PRCTL      = 158, ///< __NR_arch_prctl
-  SYSCALL_GETTID          = 186, ///< __NR_gettid
-  SYSCALL_TIME            = 201, ///< __NR_time
-  SYSCALL_FUTEX           = 202, ///< __NR_futex
-  SYSCALL_SCHED_SETAFFINITY = 203, ///< __NR_sched_setaffinity
-  SYSCALL_SCHED_GETAFFINITY = 204, ///< __NR_sched_getaffinity
-  SYSCALL_EPOLL_CREATE    = 213, ///< __NR_epoll_create
-  SYSCALL_EPOLL_CTL_OLD   = 214, ///< __NR_epoll_ctl_old
-  SYSCALL_EPOLL_WAIT_OLD  = 215, ///< __NR_epoll_wait_old
-  SYSCALL_GETDENTS64      = 217, ///< __NR_getdents64
-  SYSCALL_SET_TID_ADDRESS = 218, ///< __NR_set_tid_address
-  SYSCALL_SEMTIMEDOP      = 220, ///< __NR_semtimedop
-  SYSCALL_FADVISE64       = 221, ///< __NR_fadvise64
-  SYSCALL_TIMER_CREATE    = 222, ///< __NR_timer_create
-  SYSCALL_TIMER_SETTIME   = 223, ///< __NR_timer_settime
-  SYSCALL_TIMER_GETTIME   = 224, ///< __NR_timer_gettime
-  SYSCALL_TIMER_GETOVERRUN= 225, ///< __NR_timer_getoverrun
-  SYSCALL_TIMER_DELETE    = 226, ///< __NR_timer_delete
-  SYSCALL_CLOCK_GETTIME   = 228, ///< __NR_clock_gettime
-  SYSCALL_CLOCK_GETRES    = 229, ///< __NR_clock_getres
-  SYSCALL_CLOCK_NANOSLEEP = 230, ///< __NR_clock_nanosleep
-  SYSCALL_EXIT_GROUP      = 231, ///< __NR_exit_group
-  SYSCALL_EPOLL_WAIT      = 232, ///< __NR_epoll_wait
-  SYSCALL_EPOLL_CTL       = 233, ///< __NR_epoll_ctl
-  SYSCALL_TGKILL          = 234, ///< __NR_tgkill
-  SYSCALL_GET_MEMPOLICY   = 239, ///< __NR_get_mempolicy
-  SYSCALL_INOTIFY_INIT      = 253, ///< __NR_inotify_init
-  SYSCALL_INOTIFY_ADD_WATCH = 254, ///< __NR_inotify_add_watch
-  SYSCALL_INOTIFY_RM_WATCH  = 255, ///< __NR_inotify_rm_watch
-  SYSCALL_OPENAT          = 257, ///< __NR_openat
-  SYSCALL_NEWFSTATAT      = 262, ///< __NR_newfstatat
-  SYSCALL_READLINKAT      = 267, ///< __NR_readlinkat
-  SYSCALL_FACCESSAT       = 269, ///< __NR_faccessat
-  SYSCALL_PSELECT6        = 270, ///< __NR_pselect6
-  SYSCALL_PPOLL           = 271, ///< __NR_ppoll
-  SYSCALL_SET_ROBUST_LIST = 273, ///< __NR_set_robust_list
-  SYSCALL_GET_ROBUST_LIST = 274, ///< __NR_get_robust_list
-  SYSCALL_EPOLL_PWAIT     = 281, ///< __NR_epoll_pwait
-  SYSCALL_TIMERFD_CREATE  = 283, ///< __NR_timerfd_create
-  SYSCALL_FALLOCATE       = 285, ///< __NR_fallocate
-  SYSCALL_TIMERFD_SETTIME = 286, ///< __NR_timerfd_settime
-  SYSCALL_TIMERFD_GETTIME = 287, ///< __NR_timerfd_gettime
-  SYSCALL_ACCEPT4         = 288, ///< __NR_accept4
-  SYSCALL_EVENTFD         = 290, ///< __NR_eventfd
-  SYSCALL_EPOLL_CREATE1   = 291, ///< __NR_epoll_create1
-  SYSCALL_DUP3            = 292, ///< __NR_dup3
-  SYSCALL_PIPE2           = 293, ///< __NR_pipe2
-  SYSCALL_INOTIFY_INIT1   = 294, ///< __NR_inotify_init1
-  SYSCALL_PRLIMIT64       = 302, ///< __NR_prlimit64
-  SYSCALL_NAME_TO_HANDLE_AT = 303, ///< __NR_name_to_handle_at
-  SYSCALL_OPEN_BY_HANDLE_AT = 304, ///< __NR_open_by_handle_at
-  SYSCALL_SENDMMSG        = 307, ///< __NR_sendmmsg
-  SYSCALL_SCHED_SETATTR   = 314, ///< __NR_sched_setattr
-  SYSCALL_SCHED_GETATTR   = 315, ///< __NR_sched_getattr
-  SYSCALL_GETRANDOM       = 318, ///< __NR_getrandom
-  SYSCALL_MEMFD_CREATE    = 319, ///< __NR_memfd_create
-  SYSCALL_MLOCK2          = 325, ///< __NR_mlock2
-  SYSCALL_STATX           = 332, ///< __NR_statx
+  SYSCALL_x64_read = 0,
+  SYSCALL_x64_write = 1,
+  SYSCALL_x64_open = 2,
+  SYSCALL_x64_close = 3,
+  SYSCALL_x64_stat = 4,
+  SYSCALL_x64_fstat = 5,
+  SYSCALL_x64_lstat = 6,
+  SYSCALL_x64_poll = 7,
+  SYSCALL_x64_lseek = 8,
+  SYSCALL_x64_mmap = 9,
+  SYSCALL_x64_mprotect = 10,
+  SYSCALL_x64_munmap = 11,
+  SYSCALL_x64_brk = 12,
+  SYSCALL_x64_rt_sigaction = 13,
+  SYSCALL_x64_rt_sigprocmask = 14,
+  SYSCALL_x64_rt_sigreturn = 15,
+  SYSCALL_x64_ioctl = 16,
+  SYSCALL_x64_pread64 = 17,
+  SYSCALL_x64_pwrite64 = 18,
+  SYSCALL_x64_readv = 19,
+  SYSCALL_x64_writev = 20,
+  SYSCALL_x64_access = 21,
+  SYSCALL_x64_pipe = 22,
+  SYSCALL_x64_select = 23,
+  SYSCALL_x64_sched_yield = 24,
+  SYSCALL_x64_mremap = 25,
+  SYSCALL_x64_msync = 26,
+  SYSCALL_x64_mincore = 27,
+  SYSCALL_x64_madvise = 28,
+  SYSCALL_x64_shmget = 29,
+  SYSCALL_x64_shmat = 30,
+  SYSCALL_x64_shmctl = 31,
+  SYSCALL_x64_dup = 32,
+  SYSCALL_x64_dup2 = 33,
+  SYSCALL_x64_pause = 34,
+  SYSCALL_x64_nanosleep = 35,
+  SYSCALL_x64_getitimer = 36,
+  SYSCALL_x64_alarm = 37,
+  SYSCALL_x64_setitimer = 38,
+  SYSCALL_x64_getpid = 39,
+  SYSCALL_x64_sendfile = 40,
+  SYSCALL_x64_socket = 41,
+  SYSCALL_x64_connect = 42,
+  SYSCALL_x64_accept = 43,
+  SYSCALL_x64_sendto = 44,
+  SYSCALL_x64_recvfrom = 45,
+  SYSCALL_x64_sendmsg = 46,
+  SYSCALL_x64_recvmsg = 47,
+  SYSCALL_x64_shutdown = 48,
+  SYSCALL_x64_bind = 49,
+  SYSCALL_x64_listen = 50,
+  SYSCALL_x64_getsockname = 51,
+  SYSCALL_x64_getpeername = 52,
+  SYSCALL_x64_socketpair = 53,
+  SYSCALL_x64_setsockopt = 54,
+  SYSCALL_x64_getsockopt = 55,
+  SYSCALL_x64_clone = 56,
+  SYSCALL_x64_fork = 57,
+  SYSCALL_x64_vfork = 58,
+  SYSCALL_x64_execve = 59,
+  SYSCALL_x64_exit = 60,
+  SYSCALL_x64_wait4 = 61,
+  SYSCALL_x64_kill = 62,
+  SYSCALL_x64_uname = 63,
+  SYSCALL_x64_semget = 64,
+  SYSCALL_x64_semop = 65,
+  SYSCALL_x64_semctl = 66,
+  SYSCALL_x64_shmdt = 67,
+  SYSCALL_x64_msgget = 68,
+  SYSCALL_x64_msgsnd = 69,
+  SYSCALL_x64_msgrcv = 70,
+  SYSCALL_x64_msgctl = 71,
+  SYSCALL_x64_fcntl = 72,
+  SYSCALL_x64_flock = 73,
+  SYSCALL_x64_fsync = 74,
+  SYSCALL_x64_fdatasync = 75,
+  SYSCALL_x64_truncate = 76,
+  SYSCALL_x64_ftruncate = 77,
+  SYSCALL_x64_getdents = 78,
+  SYSCALL_x64_getcwd = 79,
+  SYSCALL_x64_chdir = 80,
+  SYSCALL_x64_fchdir = 81,
+  SYSCALL_x64_rename = 82,
+  SYSCALL_x64_mkdir = 83,
+  SYSCALL_x64_rmdir = 84,
+  SYSCALL_x64_creat = 85,
+  SYSCALL_x64_link = 86,
+  SYSCALL_x64_unlink = 87,
+  SYSCALL_x64_symlink = 88,
+  SYSCALL_x64_readlink = 89,
+  SYSCALL_x64_chmod = 90,
+  SYSCALL_x64_fchmod = 91,
+  SYSCALL_x64_chown = 92,
+  SYSCALL_x64_fchown = 93,
+  SYSCALL_x64_lchown = 94,
+  SYSCALL_x64_umask = 95,
+  SYSCALL_x64_gettimeofday = 96,
+  SYSCALL_x64_getrlimit = 97,
+  SYSCALL_x64_getrusage = 98,
+  SYSCALL_x64_sysinfo = 99,
+  SYSCALL_x64_times = 100,
+  SYSCALL_x64_ptrace = 101,
+  SYSCALL_x64_getuid = 102,
+  SYSCALL_x64_syslog = 103,
+  SYSCALL_x64_getgid = 104,
+  SYSCALL_x64_setuid = 105,
+  SYSCALL_x64_setgid = 106,
+  SYSCALL_x64_geteuid = 107,
+  SYSCALL_x64_getegid = 108,
+  SYSCALL_x64_setpgid = 109,
+  SYSCALL_x64_getppid = 110,
+  SYSCALL_x64_getpgrp = 111,
+  SYSCALL_x64_setsid = 112,
+  SYSCALL_x64_setreuid = 113,
+  SYSCALL_x64_setregid = 114,
+  SYSCALL_x64_getgroups = 115,
+  SYSCALL_x64_setgroups = 116,
+  SYSCALL_x64_setresuid = 117,
+  SYSCALL_x64_getresuid = 118,
+  SYSCALL_x64_setresgid = 119,
+  SYSCALL_x64_getresgid = 120,
+  SYSCALL_x64_getpgid = 121,
+  SYSCALL_x64_setfsuid = 122,
+  SYSCALL_x64_setfsgid = 123,
+  SYSCALL_x64_getsid = 124,
+  SYSCALL_x64_capget = 125,
+  SYSCALL_x64_capset = 126,
+  SYSCALL_x64_rt_sigpending = 127,
+  SYSCALL_x64_rt_sigtimedwait = 128,
+  SYSCALL_x64_rt_sigqueueinfo = 129,
+  SYSCALL_x64_rt_sigsuspend = 130,
+  SYSCALL_x64_sigaltstack = 131,
+  SYSCALL_x64_utime = 132,
+  SYSCALL_x64_mknod = 133,
+  SYSCALL_x64_uselib = 134,
+  SYSCALL_x64_personality = 135,
+  SYSCALL_x64_ustat = 136,
+  SYSCALL_x64_statfs = 137,
+  SYSCALL_x64_fstatfs = 138,
+  SYSCALL_x64_sysfs = 139,
+  SYSCALL_x64_getpriority = 140,
+  SYSCALL_x64_setpriority = 141,
+  SYSCALL_x64_sched_setparam = 142,
+  SYSCALL_x64_sched_getparam = 143,
+  SYSCALL_x64_sched_setscheduler = 144,
+  SYSCALL_x64_sched_getscheduler = 145,
+  SYSCALL_x64_sched_get_priority_max = 146,
+  SYSCALL_x64_sched_get_priority_min = 147,
+  SYSCALL_x64_sched_rr_get_interval = 148,
+  SYSCALL_x64_mlock = 149,
+  SYSCALL_x64_munlock = 150,
+  SYSCALL_x64_mlockall = 151,
+  SYSCALL_x64_munlockall = 152,
+  SYSCALL_x64_vhangup = 153,
+  SYSCALL_x64_modify_ldt = 154,
+  SYSCALL_x64_pivot_root = 155,
+  SYSCALL_x64__sysctl = 156,
+  SYSCALL_x64_prctl = 157,
+  SYSCALL_x64_arch_prctl = 158,
+  SYSCALL_x64_adjtimex = 159,
+  SYSCALL_x64_setrlimit = 160,
+  SYSCALL_x64_chroot = 161,
+  SYSCALL_x64_sync = 162,
+  SYSCALL_x64_acct = 163,
+  SYSCALL_x64_settimeofday = 164,
+  SYSCALL_x64_mount = 165,
+  SYSCALL_x64_umount2 = 166,
+  SYSCALL_x64_swapon = 167,
+  SYSCALL_x64_swapoff = 168,
+  SYSCALL_x64_reboot = 169,
+  SYSCALL_x64_sethostname = 170,
+  SYSCALL_x64_setdomainname = 171,
+  SYSCALL_x64_iopl = 172,
+  SYSCALL_x64_ioperm = 173,
+  SYSCALL_x64_create_module = 174,
+  SYSCALL_x64_init_module = 175,
+  SYSCALL_x64_delete_module = 176,
+  SYSCALL_x64_get_kernel_syms = 177,
+  SYSCALL_x64_query_module = 178,
+  SYSCALL_x64_quotactl = 179,
+  SYSCALL_x64_nfsservctl = 180,
+  SYSCALL_x64_getpmsg = 181,
+  SYSCALL_x64_putpmsg = 182,
+  SYSCALL_x64_afs_syscall = 183,
+  SYSCALL_x64_tuxcall = 184,
+  SYSCALL_x64_security = 185,
+  SYSCALL_x64_gettid = 186,
+  SYSCALL_x64_readahead = 187,
+  SYSCALL_x64_setxattr = 188,
+  SYSCALL_x64_lsetxattr = 189,
+  SYSCALL_x64_fsetxattr = 190,
+  SYSCALL_x64_getxattr = 191,
+  SYSCALL_x64_lgetxattr = 192,
+  SYSCALL_x64_fgetxattr = 193,
+  SYSCALL_x64_listxattr = 194,
+  SYSCALL_x64_llistxattr = 195,
+  SYSCALL_x64_flistxattr = 196,
+  SYSCALL_x64_removexattr = 197,
+  SYSCALL_x64_lremovexattr = 198,
+  SYSCALL_x64_fremovexattr = 199,
+  SYSCALL_x64_tkill = 200,
+  SYSCALL_x64_time = 201,
+  SYSCALL_x64_futex = 202,
+  SYSCALL_x64_sched_setaffinity = 203,
+  SYSCALL_x64_sched_getaffinity = 204,
+  SYSCALL_x64_set_thread_area = 205,
+  SYSCALL_x64_io_setup = 206,
+  SYSCALL_x64_io_destroy = 207,
+  SYSCALL_x64_io_getevents = 208,
+  SYSCALL_x64_io_submit = 209,
+  SYSCALL_x64_io_cancel = 210,
+  SYSCALL_x64_get_thread_area = 211,
+  SYSCALL_x64_lookup_dcookie = 212,
+  SYSCALL_x64_epoll_create = 213,
+  SYSCALL_x64_epoll_ctl_old = 214,
+  SYSCALL_x64_epoll_wait_old = 215,
+  SYSCALL_x64_remap_file_pages = 216,
+  SYSCALL_x64_getdents64 = 217,
+  SYSCALL_x64_set_tid_address = 218,
+  SYSCALL_x64_restart_syscall = 219,
+  SYSCALL_x64_semtimedop = 220,
+  SYSCALL_x64_fadvise64 = 221,
+  SYSCALL_x64_timer_create = 222,
+  SYSCALL_x64_timer_settime = 223,
+  SYSCALL_x64_timer_gettime = 224,
+  SYSCALL_x64_timer_getoverrun = 225,
+  SYSCALL_x64_timer_delete = 226,
+  SYSCALL_x64_clock_settime = 227,
+  SYSCALL_x64_clock_gettime = 228,
+  SYSCALL_x64_clock_getres = 229,
+  SYSCALL_x64_clock_nanosleep = 230,
+  SYSCALL_x64_exit_group = 231,
+  SYSCALL_x64_epoll_wait = 232,
+  SYSCALL_x64_epoll_ctl = 233,
+  SYSCALL_x64_tgkill = 234,
+  SYSCALL_x64_utimes = 235,
+  SYSCALL_x64_vserver = 236,
+  SYSCALL_x64_mbind = 237,
+  SYSCALL_x64_set_mempolicy = 238,
+  SYSCALL_x64_get_mempolicy = 239,
+  SYSCALL_x64_mq_open = 240,
+  SYSCALL_x64_mq_unlink = 241,
+  SYSCALL_x64_mq_timedsend = 242,
+  SYSCALL_x64_mq_timedreceive = 243,
+  SYSCALL_x64_mq_notify = 244,
+  SYSCALL_x64_mq_getsetattr = 245,
+  SYSCALL_x64_kexec_load = 246,
+  SYSCALL_x64_waitid = 247,
+  SYSCALL_x64_add_key = 248,
+  SYSCALL_x64_request_key = 249,
+  SYSCALL_x64_keyctl = 250,
+  SYSCALL_x64_ioprio_set = 251,
+  SYSCALL_x64_ioprio_get = 252,
+  SYSCALL_x64_inotify_init = 253,
+  SYSCALL_x64_inotify_add_watch = 254,
+  SYSCALL_x64_inotify_rm_watch = 255,
+  SYSCALL_x64_migrate_pages = 256,
+  SYSCALL_x64_openat = 257,
+  SYSCALL_x64_mkdirat = 258,
+  SYSCALL_x64_mknodat = 259,
+  SYSCALL_x64_fchownat = 260,
+  SYSCALL_x64_futimesat = 261,
+  SYSCALL_x64_newfstatat = 262,
+  SYSCALL_x64_unlinkat = 263,
+  SYSCALL_x64_renameat = 264,
+  SYSCALL_x64_linkat = 265,
+  SYSCALL_x64_symlinkat = 266,
+  SYSCALL_x64_readlinkat = 267,
+  SYSCALL_x64_fchmodat = 268,
+  SYSCALL_x64_faccessat = 269,
+  SYSCALL_x64_pselect6 = 270,
+  SYSCALL_x64_ppoll = 271,
+  SYSCALL_x64_unshare = 272,
+  SYSCALL_x64_set_robust_list = 273,
+  SYSCALL_x64_get_robust_list = 274,
+  SYSCALL_x64_splice = 275,
+  SYSCALL_x64_tee = 276,
+  SYSCALL_x64_sync_file_range = 277,
+  SYSCALL_x64_vmsplice = 278,
+  SYSCALL_x64_move_pages = 279,
+  SYSCALL_x64_utimensat = 280,
+  SYSCALL_x64_epoll_pwait = 281,
+  SYSCALL_x64_signalfd = 282,
+  SYSCALL_x64_timerfd_create = 283,
+  SYSCALL_x64_eventfd = 284,
+  SYSCALL_x64_fallocate = 285,
+  SYSCALL_x64_timerfd_settime = 286,
+  SYSCALL_x64_timerfd_gettime = 287,
+  SYSCALL_x64_accept4 = 288,
+  SYSCALL_x64_signalfd4 = 289,
+  SYSCALL_x64_eventfd2 = 290,
+  SYSCALL_x64_epoll_create1 = 291,
+  SYSCALL_x64_dup3 = 292,
+  SYSCALL_x64_pipe2 = 293,
+  SYSCALL_x64_inotify_init1 = 294,
+  SYSCALL_x64_preadv = 295,
+  SYSCALL_x64_pwritev = 296,
+  SYSCALL_x64_rt_tgsigqueueinfo = 297,
+  SYSCALL_x64_perf_event_open = 298,
+  SYSCALL_x64_recvmmsg = 299,
+  SYSCALL_x64_fanotify_init = 300,
+  SYSCALL_x64_fanotify_mark = 301,
+  SYSCALL_x64_prlimit64 = 302,
+  SYSCALL_x64_name_to_handle_at = 303,
+  SYSCALL_x64_open_by_handle_at = 304,
+  SYSCALL_x64_clock_adjtime = 305,
+  SYSCALL_x64_syncfs = 306,
+  SYSCALL_x64_sendmmsg = 307,
+  SYSCALL_x64_setns = 308,
+  SYSCALL_x64_getcpu = 309,
+  SYSCALL_x64_process_vm_readv = 310,
+  SYSCALL_x64_process_vm_writev = 311,
+  SYSCALL_x64_kcmp = 312,
+  SYSCALL_x64_finit_module = 313,
+  SYSCALL_x64_sched_setattr = 314,
+  SYSCALL_x64_sched_getattr = 315,
+  SYSCALL_x64_renameat2 = 316,
+  SYSCALL_x64_seccomp = 317,
+  SYSCALL_x64_getrandom = 318,
+  SYSCALL_x64_memfd_create = 319,
+  SYSCALL_x64_kexec_file_load = 320,
+  SYSCALL_x64_bpf = 321,
+  SYSCALL_x64_execveat = 322,
+  SYSCALL_x64_userfaultfd = 323,
+  SYSCALL_x64_membarrier = 324,
+  SYSCALL_x64_mlock2 = 325,
+  SYSCALL_x64_copy_file_range = 326,
+  SYSCALL_x64_preadv2 = 327,
+  SYSCALL_x64_pwritev2 = 328,
+  SYSCALL_x64_pkey_mprotect = 329,
+  SYSCALL_x64_pkey_alloc = 330,
+  SYSCALL_x64_pkey_free = 331,
+  SYSCALL_x64_statx = 332,
+  SYSCALL_x64_io_pgetevents = 333,
+  SYSCALL_x64_rseq = 334,
+  SYSCALL_x64_pidfd_send_signal = 424,
+  SYSCALL_x64_io_uring_setup = 425,
+  SYSCALL_x64_io_uring_enter = 426,
+  SYSCALL_x64_io_uring_register = 427,
+  SYSCALL_x64_open_tree = 428,
+  SYSCALL_x64_move_mount = 429,
+  SYSCALL_x64_fsopen = 430,
+  SYSCALL_x64_fsconfig = 431,
+  SYSCALL_x64_fsmount = 432,
+  SYSCALL_x64_fspick = 433,
+  SYSCALL_x64_pidfd_open = 434,
+  SYSCALL_x64_clone3 = 435,
+  SYSCALL_x64_openat2 = 437,
+  SYSCALL_x64_pidfd_getfd = 438,
   SYSCALL_MAX             = 512,
 };
 
 FEXCore::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx);
+void RegisterSyscallInternal(int num, const std::string& trace_fmt, void* fn, int nargs);
 
 }
+
+
+template<typename T>
+struct arg_to_string {
+  // fail on unknown types
+};
+
+#define ARG_TO_STR(tpy, str) template<> struct arg_to_string<tpy> { inline static const std::string format = str; };
+
+// Base types
+ARG_TO_STR(int, "%d")
+ARG_TO_STR(unsigned int, "%u")
+ARG_TO_STR(long, "%ld")
+ARG_TO_STR(unsigned long, "%lu")
+
+//string types
+ARG_TO_STR(char*, "%s")
+ARG_TO_STR(const char*, "%s")
+
+// Pointers
+template<typename T>
+struct arg_to_string<T*> {
+  inline static const std::string format = "%p";
+};
+
+template<typename ...Args>
+std::string collect_args() {
+  std::string array[] = { arg_to_string<Args>::format... };
+
+  std::string rv;
+  bool first = true;
+
+  for (auto &str: array) {
+    if (!first) rv += ", ";
+    first = false;
+    rv += str;
+  }
+
+  return rv;
+}
+
+template <class T>
+class FI {
+
+};
+
+template<typename R, typename... Args>
+struct FI<R(*)(Args...)> {
+	using r_type = R;
+
+	static R(*forward(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
+		return fn;
+	}
+};
+
+template<typename R, typename... Args>
+struct FI<R(*)(Args...) noexcept> {
+	using r_type = R;
+
+	static R(*forward(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
+		return fn;
+	}
+};
+
+template<class FPtr>
+struct function_traits;
+
+template<class T, class C, class ...Args>
+struct function_traits<T (C::*)(Args...) const>
+{
+    typedef T(*type)(Args...);
+};
+
+
+template<typename R, typename ...Args>
+bool RegisterSyscall(int num, const char *name, R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)) {
+  FEXCore::HLE::x64::RegisterSyscallInternal(num, std::string(name) + "(" + collect_args<Args...>() + ") = %ld", reinterpret_cast<void*>(fn), sizeof...(Args));
+  return true;
+}
+
+template<class F>
+bool RegisterSyscall(int num, const char *name, F f){
+  typedef typename function_traits<decltype(&F::operator())>::type signature;
+  return RegisterSyscall(num, name, (signature)f);
+}
+
+#define REGISTER_SYSCALL_IMPL(name, lambda) do { RegisterSyscall(x64::SYSCALL_x64_##name, #name, lambda); } while(0)
+
+
+#define SYSCALL_FORWARD_ERRNO(function) \
+  FI<decltype(&::function)>::forward([](FEXCore::Core::InternalThreadState *Thread, auto... args) { \
+    FI<decltype(&::function)>::r_type Result = ::function(args...); \
+    do { if (Result == -1) return (FI<decltype(&::function)>::r_type)-errno; return Result; } while(0); \
+  })
+
+
+
+#define REGISTER_SYSCALL_FORWARD_ERRNO(function) do { RegisterSyscall(x64::SYSCALL_x64_##function, #function, SYSCALL_FORWARD_ERRNO(function)); } while(0)
