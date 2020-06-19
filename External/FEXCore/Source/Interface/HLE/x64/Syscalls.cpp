@@ -43,8 +43,8 @@ namespace FEXCore::HLE::x64 {
 
 std::vector<std::tuple<int, void*, int, std::string>> syscalls_x64;
 
-void RegisterSyscallInternal(int num, const std::string& trace_fmt, void* fn, int nargs) {
-  syscalls_x64.push_back({num, fn, nargs, trace_fmt});
+void RegisterSyscallInternal(int SyscallNumber, const std::string& TraceFormatString, void* SyscallHandler, int ArgumentCount) {
+  syscalls_x64.push_back({SyscallNumber, SyscallHandler, ArgumentCount, TraceFormatString});
 }
 
 class x64SyscallHandler final : public FEXCore::SyscallHandler {
