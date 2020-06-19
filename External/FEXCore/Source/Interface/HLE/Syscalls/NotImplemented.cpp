@@ -34,5 +34,6 @@ namespace FEXCore::HLE {
       REGISTER_SYSCALL_NOT_IMPL(epoll_ctl_old);
       REGISTER_SYSCALL_NOT_IMPL(epoll_wait_old);
       REGISTER_SYSCALL_NOT_IMPL(vserver);
+      REGISTER_SYSCALL_NOT_IMPL(_sysctl);
   }
 }

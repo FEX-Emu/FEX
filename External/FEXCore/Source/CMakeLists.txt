@@ -162,6 +162,7 @@ set (SRCS
   Interface/HLE/Syscalls/Time.cpp
   Interface/HLE/Syscalls/Timer.cpp
   Interface/HLE/Syscalls/NotImplemented.cpp
+  Interface/HLE/Syscalls/Stubs.cpp
   Interface/Memory/MemMapper.cpp
   Interface/Memory/SharedMem.cpp
   Interface/IR/IR.cpp

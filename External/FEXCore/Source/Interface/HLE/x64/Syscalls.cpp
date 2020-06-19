@@ -22,6 +22,7 @@ namespace FEXCore::HLE {
     void RegisterTime();
     void RegisterTimer();
     void RegisterNotImplemented();
+    void RegisterStubs();
 }
 
 namespace FEXCore::HLE::x64 {
@@ -122,6 +123,7 @@ namespace FEXCore::HLE::x64 {
     RegisterTime();
     RegisterTimer();
     RegisterNotImplemented();
+    RegisterStubs();
 
     // Set all the new definitions
     for (auto &Syscall : syscalls_x64) {
@@ -134,7 +136,7 @@ namespace FEXCore::HLE::x64 {
       Def.StraceFmt = std::get<3>(Syscall);
     }
 
-#if 0
+#if PRINT_MISSING_SYSCALLS
     for (auto &Syscall: SyscallNames) {
       if (Definitions[Syscall.first].Ptr == cvt(&Unimplemented)) {
         LogMan::Msg::D("Unimplemented syscall: %s", Syscall.second);
