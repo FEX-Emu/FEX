@@ -7884,6 +7884,10 @@ constexpr uint16_t PF_F2 = 3;
     {OPDReg(0xDF, 7) | 0x40, 8, &OpDispatchBuilder::FIST<64, true>},
     {OPDReg(0xDF, 7) | 0x80, 8, &OpDispatchBuilder::FIST<64, true>},
 
+      // XXX: This should also set the x87 tag bits to empty
+      // We don't support this currently, so just pop the stack
+      {OPD(0xDF, 0xC0), 8, &OpDispatchBuilder::X87ModifySTP<true>},
+
       {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::X87FNSTSW},
       {OPD(0xDF, 0xE8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, true>},
       {OPD(0xDF, 0xF0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, true>},

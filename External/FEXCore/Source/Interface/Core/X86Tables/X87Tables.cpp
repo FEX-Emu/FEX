@@ -226,7 +226,15 @@ void InitializeX87Tables() {
     {OPDReg(0xDF, 6), 1, X86InstInfo{"FBSTP", TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
     {OPDReg(0xDF, 7), 1, X86InstInfo{"FISTP", TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
       //  / 0
-      {OPD(0xDF, 0xC0), 8, X86InstInfo{"",        TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
+      //  This instruction is a bit special. This is an undocumented(Almost) x87 instruction.
+      //  https://en.wikipedia.org/wiki/X86_instruction_listings#Undocumented_x87_instructions
+      //  https://www.pagetable.com/?p=16
+      //  AMD Athlon Processor x86 Code Optimization Guide - `Use FFREEP Macro to Pop One Register from the FPU Stack`
+      //  ISA architecture manuals don't talk about this instruction at all
+      //  At some point the Nvidia OpenGL binary driver uses this instruction.
+      //  GCC may also end up emitting this instruction in some rare edge case!
+      //  Almost all x86 CPUs implement this, and it is expected to be around
+      {OPD(0xDF, 0xC0), 8, X86InstInfo{"FFREEP",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 1
       {OPD(0xDF, 0xC8), 8, X86InstInfo{"",        TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
       //  / 2
