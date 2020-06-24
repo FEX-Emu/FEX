@@ -188,3 +188,4 @@ conformance-interfaces-clock_nanosleep-9-1.test
 conformance-behavior-WIFEXITED-1-2.test
 conformance-behavior-WIFEXITED-1-1.test
 conformance-behavior-WIFEXITED-1-3.test
+conformance-interfaces-strftime-2-1.test
