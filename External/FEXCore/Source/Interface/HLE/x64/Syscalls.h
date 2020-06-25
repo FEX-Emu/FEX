@@ -105,7 +105,8 @@ bool RegisterSyscall(int num, const char *name, F f){
 }
 
 // Helper to register a syscall implementation
-#define REGISTER_SYSCALL_IMPL(name, lambda) do { RegisterSyscall(x64::SYSCALL_x64_##name, #name, lambda); } while(0)
+
+#define REGISTER_SYSCALL_IMPL(name, lambda) struct impl_##name { impl_##name() { RegisterSyscall(x64::SYSCALL_x64_##name, #name, lambda); } } impl_##name
 
 
 /////
