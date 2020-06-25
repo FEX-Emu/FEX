@@ -38,7 +38,7 @@ namespace FEXCore {
     __kernel_long_t   __unused[3];
   };
 
-// #define DEBUG_STRACE
+#define DEBUG_STRACE
 class SyscallHandler {
 public:
   SyscallHandler(FEXCore::Context::Context *ctx);
