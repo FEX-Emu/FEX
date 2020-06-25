@@ -53,7 +53,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the posixtest
-      run: /home/buildbot/actions-runner/_work/FEX/FEX/External/fex-posixtest-bins/conformance/interfaces/strftime/2-1.test
+      run: /home/buildbot/actions-runner/_work/FEX/FEX/External/2-1.test
 
     - name: Posix Tests
       working-directory: ${{runner.workspace}}/build
