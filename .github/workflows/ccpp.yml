@@ -49,6 +49,12 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
 
+    - name: Posix Test native
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the posixtest
+      run: /home/buildbot/actions-runner/_work/FEX/FEX/External/fex-posixtest-bins/conformance/interfaces/strftime/2-1.test
+
     - name: Posix Tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
