@@ -143,8 +143,8 @@ struct FunctionToLambda<R(*)(Args...) noexcept> {
 // also handles errno
 #define SYSCALL_FORWARD_ERRNO(function) \
   FunctionToLambda<decltype(&::function)>::ReturnFunctionPointer([](FEXCore::Core::InternalThreadState *Thread, auto... Args) { \
-    FunctionToLambda<decltype(&::function)>::RType Result = ::function(args...); \
-    do { if (Result == -1) return (FI<decltype(&::function)>::RType)-errno; return Result; } while(0); \
+    FunctionToLambda<decltype(&::function)>::RType Result = ::function(Args...); \
+    do { if (Result == -1) return (FunctionToLambda<decltype(&::function)>::RType)-errno; return Result; } while(0); \
   })
 
 // Creates a syscall forward from a glibc wrapper, and registers it
