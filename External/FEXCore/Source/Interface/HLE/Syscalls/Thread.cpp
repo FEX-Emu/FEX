@@ -71,63 +71,69 @@ namespace FEXCore::HLE {
     return NewThread;
   }
 
-  uint64_t DoFork(FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
-    LogMan::Msg::E("FORKING!");
-    uint64_t PrevTID = Thread->State.ThreadManager.TID;
-    pid_t pid = fork();
-    if (pid == 0) {
+  uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
+    pid_t Result = fork();
+
+    if (Result == 0) {
       // Child
-      // uhhh...
-      Thread->CTX->HandleForkChildSide(PrevTID);
+      // update the internal TID
       Thread->State.ThreadManager.TID = ::gettid();
-    }
-    else {
+
+      // only a  single thread running so no need to remove anything from the thread array
+
+      // Handle child setup now
+      if (stack != nullptr) {
+        // use specified stack
+        LogMan::Msg::D("@@@@@@@ Fork uses custom stack");
+        Thread->State.State.gregs[X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack);
+      } else {
+        // In the case of fork and nullptr stack then the child uses the same stack space as the parent
+        // Same virtual address, different addressspace
+        LogMan::Msg::D("@@@@@@@ Fork uses parent stack");
+      }
+
+      if (flags & CLONE_SETTLS) {
+        Thread->State.State.fs = reinterpret_cast<uint64_t>(tls);
+      }
+
+      // Sets the child TID to the pointer in ChildTID
+      if (flags & CLONE_CHILD_SETTID) {
+        Thread->State.ThreadManager.set_child_tid = child_tid;
+        *child_tid = Thread->State.ThreadManager.TID;
+      }
+
+      // When the thread exits, clear the child thread ID at ChildTID
+      // Additionally wakeup a futex at that address
+      // Address /may/ be changed with SET_TID_ADDRESS syscall
+      if (flags & CLONE_CHILD_CLEARTID) {
+        Thread->State.ThreadManager.clear_child_tid = child_tid;
+      }
+
+      // the rest of the context remains as is, this thread will keep executing
+      return 0;
+    } else {
+      if (Result != -1) {
+        if (flags & CLONE_PARENT_SETTID) {
+          *parent_tid = Result;
+        }
+      }
       // Parent
-      return pid;
+      SYSCALL_ERRNO();
     }
-
-    // Handle child setup now
-    if (stack == nullptr) {
-      // In the case of fork and nullptr stack then the child uses the same stack space as the parent
-      // Same virtual address, different addressspace
-      LogMan::Msg::D("@@@@@@@ Had to setup custom stack");
-      stack = (void*)Thread->State.State.gregs[X86State::REG_RSP];
-    }
-
-    LogMan::Msg::D("Time to spin up fork thread with Stack: 0x%lx\n", stack);
-    auto NewThread = CreateNewThread(Thread, flags, stack, 0, child_tid, tls);
-
-    NewThread->State.State.gregs[FEXCore::X86State::REG_RAX] = 0;
-    // Return the new threads TID
-    uint64_t Result = NewThread->State.ThreadManager.GetTID();
-    LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->State.State.rip, Thread->State.State.rip);
-
-    // Actually start the thread
-    Thread->CTX->RunThread(NewThread);
-
-    // This thread needs to die now
-    // New thread becomes the new thread
-    Thread->State.ThreadManager.parent_tid = ~0ULL;
-    Thread->State.RunningEvents.ShouldStop = true;
-
-    return 0;
   }
 
+  bool AnyFlagsSet(uint64_t Flags, uint64_t Mask) {
+    return (Flags & Mask) != 0;
+  }
+
+  bool AllFlagsSet(uint64_t Flags, uint64_t Mask) {
+    return (Flags & Mask) == Mask;
+  }
 
   void RegisterThread() {
     REGISTER_SYSCALL_IMPL(getpid, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
-  #if 1
-      uint64_t Result = Thread->CTX->GetPIDHack();
-      if (Result == ~0ULL) {
-        Result = ::getpid();
-        SYSCALL_ERRNO();
-      }
-      return Result;
-
-  #else
       uint64_t Result = ::getpid();
       SYSCALL_ERRNO();
-  #endif
     });
 
     REGISTER_SYSCALL_IMPL(clone, [](FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) -> uint64_t {
@@ -157,34 +163,53 @@ namespace FEXCore::HLE {
       FLAGPRINT(CLONE_NEWNET,         0x40000000);
       FLAGPRINT(CLONE_IO,             0x80000000);
 
-      if (!(flags & CLONE_VM)) {
-        LogMan::Msg::D("Parent [%d] Leaving syscall at rip: 0x%lx", Thread->State.ThreadManager.GetTID(), Thread->State.State.rip);
-        return DoFork(Thread, flags, stack, parent_tid, child_tid, tls);
+      if (AnyFlagsSet(flags, CLONE_UNTRACED | CLONE_PTRACE)) {
+        ERROR_AND_DIE("clone: Ptrace* not supported");
       }
 
-      auto NewThread = CreateNewThread(Thread, flags, stack, parent_tid, child_tid, tls);
-
-      // Return the new threads TID
-      uint64_t Result = NewThread->State.ThreadManager.GetTID();
-      LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->State.State.rip, Thread->State.State.rip);
-
-      // Actually start the thread
-      Thread->CTX->RunThread(NewThread);
-
-      if (flags & CLONE_VFORK) {
-        // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
-        NewThread->ExecutionThread.join();
+      if (AnyFlagsSet(flags, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID | CLONE_NEWNET)) {
+        ERROR_AND_DIE("clone: Namespaces are not supported");
       }
 
-      if (!(flags & CLONE_VM)) {
-        // This thread needs to die now
-        // New thread becomes the new thread
-        NewThread->ExecutionThread.join();
-        Thread->State.ThreadManager.parent_tid = ~0ULL;
-        Thread->State.RunningEvents.ShouldStop = true;
-      }
+      if (!(flags & CLONE_THREAD)) {
+        if (AnyFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
+          ERROR_AND_DIE("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), %X", flags);
+        }
 
-      SYSCALL_ERRNO();
+        if (flags & CLONE_VFORK) {
+          ERROR_AND_DIE("clone: Unsupported CLONE_VFORK w/o CLONE_THREAD");
+        }
+
+        // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
+
+        if (Thread->CTX->GetThreadCount() != 1) {
+          ERROR_AND_DIE("clone: Fork only supported on single threaded applications");
+        } else {
+          LogMan::Msg::D("clone: Forking process");
+        }
+
+        return ForkGuest(Thread, flags, stack, parent_tid, child_tid, tls);
+      } else {
+
+        if (!AllFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND)) {
+          ERROR_AND_DIE("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), %X", flags);
+        }
+
+        auto NewThread = CreateNewThread(Thread, flags, stack, parent_tid, child_tid, tls);
+
+        // Return the new threads TID
+        uint64_t Result = NewThread->State.ThreadManager.GetTID();
+        LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->State.State.rip, Thread->State.State.rip);
+
+        // Actually start the thread
+        Thread->CTX->RunThread(NewThread);
+
+        if (flags & CLONE_VFORK) {
+          // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
+          NewThread->ExecutionThread.join();
+        }
+        SYSCALL_ERRNO();
+      }
     });
 
     REGISTER_SYSCALL_IMPL(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {

@@ -497,34 +497,6 @@ namespace FEXCore::Context {
     }
   }
 
-  static int indent = 0;
-
-  void Context::HandleForkChildSide(uint64_t PrevTID) {
-    // Whoa okay, we have forked. Time to clean up
-
-    // Every thread that thinks it exists right now? Not real. Delete them
-    for(auto iter = Threads.begin(); iter != Threads.end(); ++iter) {
-      // Walk the thread list and delete every thread that isn't this one
-      auto Thread = *iter;
-      LogMan::Msg::D("[Child] Deleted a thread");
-      //Thread->ExecutionThread.detach();
-      //delete Thread;
-      //Threads.erase(iter);
-    }
-    indent = 1;
-  }
-
-  uint64_t Context::GetPIDHack() {
-    std::lock_guard<std::mutex> lk(ThreadCreationMutex);
-    for (auto &Thread : Threads) {
-      if (Thread->State.ThreadManager.parent_tid == 0) {
-        return Thread->State.ThreadManager.GetTID();
-      }
-    }
-
-    return ~0ULL;
-  }
-
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     void *CodePtr {nullptr};
     uint8_t const *GuestCode{};
@@ -772,8 +744,7 @@ namespace FEXCore::Context {
 
         if (CoreDebugLevel >= 1) {
           char const *Name = LocalLoader->FindSymbolNameInRange(GuestRIP);
-          std::string Index[2] = {"", "\t"};
-          LogMan::Msg::D("%s[%d] >>>>RIP: 0x%lx(0x%lx): '%s'", Index[indent].c_str(), ::gettid(), GuestRIP, GuestRIP - MemoryBase, Name ? Name : "<Unknown>");
+          LogMan::Msg::D("[%d:%d] >>>>RIP: 0x%lx(0x%lx): '%s'", ::getpid(), ::gettid(), GuestRIP, GuestRIP - MemoryBase, Name ? Name : "<Unknown>");
         }
 
         if (!Thread->CPUBackend->NeedsOpDispatch()) {
