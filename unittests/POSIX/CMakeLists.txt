@@ -26,7 +26,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
     "${TEST_NAME}"
     "${CMAKE_BINARY_DIR}/Bin/ELFLoader"
-    "-U" "-c" "irint" "-n" "500" "-R" $ENV{ROOTFS} "--"
+    "-U" "-c" "irjit" "-n" "500" "-R" $ENV{ROOTFS} "--"
     "${POSIX_TEST}")
 
 

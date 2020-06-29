@@ -34,7 +34,7 @@ with open(disabled_tests_file) as dtf:
         disabled_tests[line.strip()] = 1
 
 # run with timeout to avoid locking up
-RunnerArgs = ["timeout", "45s"]
+RunnerArgs = ["timeout", "300s"]
 
 # Add the rest of the arguments
 for i in range(len(sys.argv) - 5):
