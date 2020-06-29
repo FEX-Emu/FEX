@@ -21,17 +21,23 @@ disabled_tests = { }
 # Open the known failures file and add it to a dictionary
 with open(known_failures_file) as kff:
     for line in kff:
-        known_failures[line.strip()] = 1
+        test = line.split("#")[0].strip() # remove comments and empty spaces
+        if len(test) > 0:
+            known_failures[test] = 1
 
 # Open expected outputs and add it to dictionary
 with open(expected_output_file) as eof:
     for line in eof:
-        parts = line.strip().split(" ")
-        expected_output[parts[0]] = int(parts[1])
+        line = test = line.split("#")[0].strip() # remove comments and empty spaces
+        if len(line) > 0:
+            parts = line.split(" ")
+            expected_output[parts[0]] = int(parts[1])
 
 with open(disabled_tests_file) as dtf:
     for line in dtf:
-        disabled_tests[line.strip()] = 1
+        test = line.split("#")[0].strip() # remove comments and empty spaces
+        if len(test) > 0:
+            disabled_tests[test] = 1
 
 # run with timeout to avoid locking up
 RunnerArgs = ["timeout", "45s"]
