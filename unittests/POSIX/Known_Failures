@@ -1,4 +1,3 @@
-conformance-interfaces-clock-1-1.test
 conformance-interfaces-clock_getcpuclockid-1-1.test
 conformance-interfaces-clock_getcpuclockid-2-1.test
 conformance-interfaces-clock_gettime-4-1.test
