@@ -6932,9 +6932,16 @@ void OpDispatchBuilder::PSADBW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+
   // We don't actually support this instruction
   // Multiblock may hit it though
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), _Constant(Op->PC));
   _Break(0, 0);
+  BlockSetRIP = true;
+
+  auto NextBlock = CreateNewCodeBlock();
+  SetCurrentCodeBlock(NextBlock);
 }
 
 #undef OpcodeArgs
