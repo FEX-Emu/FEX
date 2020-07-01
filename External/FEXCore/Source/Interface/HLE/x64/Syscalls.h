@@ -21,10 +21,15 @@ namespace FEXCore::HLE::x64 {
 #include "SyscallsEnum.h"
 
 FEXCore::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx);
-void RegisterSyscallInternal(int SyscallNumber, const std::string& TraceFormatString, void* SyscallHandler, int ArgumentCount);
+void RegisterSyscallInternal(int SyscallNumber,
+#ifdef DEBUG_STRACE
+  const std::string& TraceFormatString,
+#endif
+  void* SyscallHandler, int ArgumentCount);
 
 }
 
+#ifdef DEBUG_STRACE
 //////
 /// Templates to map parameters to format string for syscalls
 //////
@@ -68,6 +73,7 @@ std::string CollectArgsFmtString() {
 
   return rv;
 }
+#endif
 
 //////
 // REGISTER_SYSCALL_IMPL implementation
@@ -80,8 +86,14 @@ std::string CollectArgsFmtString() {
 // Does not work with lambas, because they are objects with operator (), not functions
 template<typename R, typename ...Args>
 bool RegisterSyscall(int SyscallNumber, const char *Name, R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)) {
+#ifdef DEBUG_STRACE
   auto TraceFormatString = std::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
-  FEXCore::HLE::x64::RegisterSyscallInternal(SyscallNumber, TraceFormatString, reinterpret_cast<void*>(fn), sizeof...(Args));
+#endif
+  FEXCore::HLE::x64::RegisterSyscallInternal(SyscallNumber,
+#ifdef DEBUG_STRACE
+    TraceFormatString,
+#endif
+    reinterpret_cast<void*>(fn), sizeof...(Args));
   return true;
 }
 

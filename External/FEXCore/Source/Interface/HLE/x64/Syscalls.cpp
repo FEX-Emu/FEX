@@ -40,10 +40,29 @@ namespace FEXCore::HLE::x64 {
     return name;
   }
 
-  std::vector<std::tuple<int, void*, int, std::string>> syscalls_x64;
+  struct InternalSyscallDefinition {
+    int SyscallNumber;
+    void* SyscallHandler;
+    int ArgumentCount;
+#ifdef DEBUG_STRACE
+    std::string TraceFormatString;
+#endif
+  };
 
-  void RegisterSyscallInternal(int SyscallNumber, const std::string& TraceFormatString, void* SyscallHandler, int ArgumentCount) {
-    syscalls_x64.push_back({SyscallNumber, SyscallHandler, ArgumentCount, TraceFormatString});
+  std::vector<InternalSyscallDefinition> syscalls_x64;
+
+  void RegisterSyscallInternal(int SyscallNumber,
+#ifdef DEBUG_STRACE
+    const std::string& TraceFormatString,
+#endif
+    void* SyscallHandler, int ArgumentCount) {
+    syscalls_x64.push_back({SyscallNumber,
+      SyscallHandler,
+      ArgumentCount,
+#ifdef DEBUG_STRACE
+      TraceFormatString
+#endif
+      });
   }
 
   class x64SyscallHandler final : public FEXCore::SyscallHandler {
@@ -127,13 +146,15 @@ namespace FEXCore::HLE::x64 {
 
     // Set all the new definitions
     for (auto &Syscall : syscalls_x64) {
-      auto SyscallNumber = std::get<0>(Syscall);
+      auto SyscallNumber = Syscall.SyscallNumber;
       auto Name = GetSyscallName(SyscallNumber);
       auto &Def = Definitions.at(SyscallNumber);
       LogMan::Throw::A(Def.Ptr == cvt(&Unimplemented), "Oops overwriting sysall problem, %d, %s", SyscallNumber, Name);
-      Def.Ptr = std::get<1>(Syscall);
-      Def.NumArgs = std::get<2>(Syscall);
-      Def.StraceFmt = std::get<3>(Syscall);
+      Def.Ptr = Syscall.SyscallHandler;
+      Def.NumArgs = Syscall.ArgumentCount;
+#ifdef DEBUG_STRACE
+      Def.StraceFmt = Syscall.TraceFormatString;
+#endif
     }
 
 #if PRINT_MISSING_SYSCALLS
