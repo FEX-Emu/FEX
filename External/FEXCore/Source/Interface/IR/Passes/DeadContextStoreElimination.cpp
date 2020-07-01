@@ -29,7 +29,7 @@ namespace {
 
   using ContextInfo = std::vector<ContextMemberInfo>;
 
-  constexpr static std::array<LastAccessType, 13> DefaultAccess = {
+  constexpr static std::array<LastAccessType, 14> DefaultAccess = {
     ACCESS_NONE,
     ACCESS_NONE,
     ACCESS_INVALID, // PAD
@@ -41,6 +41,7 @@ namespace {
     ACCESS_NONE,
     ACCESS_NONE,
     ACCESS_NONE,
+    ACCESS_INVALID, // PAD
     ACCESS_NONE,
     ACCESS_NONE,
   };
@@ -104,7 +105,6 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
-
     ContextClassification->emplace_back(ContextMemberInfo{
       ContextMemberClassification {
         offsetof(FEXCore::Core::CPUState, cs),
@@ -152,13 +152,22 @@ namespace {
       });
     }
 
+    ContextClassification->emplace_back(ContextMemberInfo{
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, flags[48]),
+        sizeof(uint64_t),
+      },
+      DefaultAccess[11], ///< NOP padding
+      FEXCore::IR::InvalidClass,
+    });
+
     for (size_t i = 0; i < 8; ++i) {
       ContextClassification->emplace_back(ContextMemberInfo{
         ContextMemberClassification {
           offsetof(FEXCore::Core::CPUState, mm[0][0]) + sizeof(FEXCore::Core::CPUState::mm[0]) * i,
           sizeof(FEXCore::Core::CPUState::mm[0]),
         },
-        DefaultAccess[11],
+        DefaultAccess[12],
         FEXCore::IR::InvalidClass,
       });
     }
@@ -170,7 +179,7 @@ namespace {
           offsetof(FEXCore::Core::CPUState, gdt[0]) + sizeof(FEXCore::Core::CPUState::gdt[0]) * i,
           sizeof(FEXCore::Core::CPUState::gdt[0]),
         },
-        DefaultAccess[12],
+        DefaultAccess[13],
         FEXCore::IR::InvalidClass,
       });
     }
@@ -214,12 +223,14 @@ namespace {
       SetAccess(Offset++, DefaultAccess[10]);
     }
 
+    SetAccess(Offset++, DefaultAccess[11]);
+
     for (size_t i = 0; i < 8; ++i) {
-      SetAccess(Offset++, DefaultAccess[11]);
+      SetAccess(Offset++, DefaultAccess[12]);
     }
 
     for (size_t i = 0; i < 32; ++i) {
-      SetAccess(Offset++, DefaultAccess[12]);
+      SetAccess(Offset++, DefaultAccess[13]);
     }
   }
 
