@@ -71,7 +71,9 @@ public:
       SyscallPtrArg5 Ptr5;
       SyscallPtrArg6 Ptr6;
     };
+#ifdef DEBUG_STRACE
     std::string StraceFmt;
+#endif
   };
 
   SyscallFunctionDefinition const *GetDefinition(uint64_t Syscall) {
