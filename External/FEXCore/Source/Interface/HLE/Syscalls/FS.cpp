@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <sys/vfs.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/xattr.h>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
@@ -90,5 +92,99 @@ namespace FEXCore::HLE {
       uint64_t Result = ::fstatfs(fd, buf);
       SYSCALL_ERRNO();
     });
+
+    /*REGISTER_SYSCALL_IMPL(truncate, [](FEXCore::Core::InternalThreadState *Thread, const char *path, off_t length) -> uint64_t {
+      SYSCALL_STUB(truncate);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(truncate);
+
+    /*REGISTER_SYSCALL_IMPL(creat, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, mode_t mode) -> uint64_t {
+      SYSCALL_STUB(creat);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(creat);
+
+    REGISTER_SYSCALL_IMPL(sync, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
+      sync();
+      return 0; // always successful
+    });
+
+    /*
+    REGISTER_SYSCALL_IMPL(syncfs, [](FEXCore::Core::InternalThreadState *Thread, int fd) -> uint64_t {
+      SYSCALL_STUB(syncfs);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(syncfs);
+
+    /*
+    REGISTER_SYSCALL_IMPL(setxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name, const void *value, size_t size, int flags) -> uint64_t {
+      SYSCALL_STUB(setxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(setxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(lsetxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name, const void *value, size_t size, int flags) -> uint64_t {
+      SYSCALL_STUB(lsetxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(lsetxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(fsetxattr, [](FEXCore::Core::InternalThreadState *Thread, int fd, const char *name, const void *value, size_t size, int flags) -> uint64_t {
+      SYSCALL_STUB(fsetxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(fsetxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(getxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name, void *value, size_t size) -> uint64_t {
+      SYSCALL_STUB(getxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(getxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(lgetxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name, void *value, size_t size) -> uint64_t {
+      SYSCALL_STUB(lgetxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(lgetxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(fgetxattr, [](FEXCore::Core::InternalThreadState *Thread, int fd, const char *name, void *value, size_t size) -> uint64_t {
+      SYSCALL_STUB(fgetxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(fgetxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(listxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, char *list, size_t size) -> uint64_t {
+      SYSCALL_STUB(listxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(listxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(llistxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, char *list, size_t size) -> uint64_t {
+      SYSCALL_STUB(llistxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(llistxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(flistxattr, [](FEXCore::Core::InternalThreadState *Thread, int fd, char *list, size_t size) -> uint64_t {
+      SYSCALL_STUB(flistxattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(flistxattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(removexattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name) -> uint64_t {
+      SYSCALL_STUB(removexattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(removexattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(lremovexattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name) -> uint64_t {
+      SYSCALL_STUB(lremovexattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(lremovexattr);
+
+    /*
+    REGISTER_SYSCALL_IMPL(fremovexattr, [](FEXCore::Core::InternalThreadState *Thread, int fd, const char *name) -> uint64_t {
+      SYSCALL_STUB(fremovexattr);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(fremovexattr);
+
   }
 }
