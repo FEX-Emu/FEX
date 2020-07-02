@@ -100,6 +100,8 @@ public:
   }
 #endif
 
+  void ClearCache() override;
+
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
@@ -127,6 +129,8 @@ private:
   constexpr static uint8_t RA_32 = 0;
   constexpr static uint8_t RA_64 = 1;
   constexpr static uint8_t RA_FPR = 2;
+
+  static constexpr uint32_t MAX_CODE_SIZE = 1024 * 1024 * 128;
 
   template<uint8_t RAType>
   aarch64::Register GetReg(uint32_t Node);
@@ -169,6 +173,13 @@ private:
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant);
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
+  void GenerateDispatchHelpers();
+  ptrdiff_t ConstantCodeCacheOffset{};
+  /**
+   * @name Dispatch Helper functions
+   * @{ */
+  /**  @} */
+
   bool CustomDispatchGenerated {false};
   using CustomDispatch = void(*)(FEXCore::Core::InternalThreadState *Thread);
   CustomDispatch DispatchPtr{};

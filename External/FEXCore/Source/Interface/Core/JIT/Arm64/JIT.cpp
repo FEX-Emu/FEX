@@ -61,7 +61,7 @@ void JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 }
 
 JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : vixl::aarch64::MacroAssembler(1024 * 1024 * 128, vixl::aarch64::PositionDependentCode)
+  : vixl::aarch64::MacroAssembler(MAX_CODE_SIZE, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
   , State {Thread}
 #if _M_X86_64
@@ -97,6 +97,9 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   CPU.SetUp();
   SetAllowAssembler(true);
   CreateCustomDispatch(Thread);
+  GenerateDispatchHelpers();
+
+  ConstantCodeCacheOffset = GetCursorOffset();
 
   uint32_t NumUsedGPRs = NumGPRs;
   uint32_t NumUsedGPRPairs = NumGPRPairs;
@@ -136,6 +139,17 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   RegisterMiscHandlers();
   RegisterMoveHandlers();
   RegisterVectorHandlers();
+}
+
+void JITCore::ClearCache() {
+  // Get the backing code buffer
+  auto Buffer = GetBuffer();
+
+  // Rewind the code buffer's cursor back to just after the helpers
+  Buffer->Rewind(ConstantCodeCacheOffset);
+
+  // Make sure to set internal state as clean
+  Buffer->SetClean();
 }
 
 JITCore::~JITCore() {
@@ -203,7 +217,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   using namespace aarch64;
   JumpTargets.clear();
   CurrentIR = IR;
-
+  uint32_t SSACount = CurrentIR->GetSSACount();
   uintptr_t ListBegin = CurrentIR->GetListData();
   uintptr_t DataBegin = CurrentIR->GetData();
 
@@ -215,6 +229,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   if (HeaderOp->ShouldInterpret) {
     return State->IntBackend->CompileCode(IR, DebugData);
+  }
+
+  // Fairly excessive buffer range to make sure we don't overflow
+  uint32_t BufferRange = SSACount * 16;
+  if ((GetCursorOffset() + BufferRange) > MAX_CODE_SIZE) {
+    State->CTX->ClearCodeCache(State, HeaderOp->Entry);
   }
 
   LogMan::Throw::A(RAPass->HasFullRA(), "Arm64 JIT only works with RA");
@@ -297,7 +317,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   }
 
   FinalizeCode();
-
 
   auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(Entry));
@@ -478,6 +497,11 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(DispatchPtr));
   // Disabling will be useful for debugging ThreadState
   //CustomDispatchGenerated = true;
+}
+
+
+void JITCore::GenerateDispatchHelpers() {
+  // Nothing here yet
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
