@@ -192,7 +192,17 @@ if (ENABLE_JIT)
     add_definitions(-D_M_ARM_64=1)
     add_definitions(-DVIXL_INCLUDE_TARGET_AARCH64=1)
     add_definitions(-DVIXL_CODE_BUFFER_MMAP=1)
-    list(APPEND SRCS Interface/Core/JIT/Arm64/JIT.cpp)
+    list(APPEND SRCS
+      Interface/Core/JIT/Arm64/JIT.cpp
+      Interface/Core/JIT/Arm64/ALUOps.cpp
+      Interface/Core/JIT/Arm64/AtomicOps.cpp
+      Interface/Core/JIT/Arm64/BranchOps.cpp
+      Interface/Core/JIT/Arm64/ConversionOps.cpp
+      Interface/Core/JIT/Arm64/FlagOps.cpp
+      Interface/Core/JIT/Arm64/MemoryOps.cpp
+      Interface/Core/JIT/Arm64/MiscOps.cpp
+      Interface/Core/JIT/Arm64/MoveOps.cpp
+      Interface/Core/JIT/Arm64/VectorOps.cpp)
     list(APPEND JIT_LIBS vixl)
   endif()
 endif()
