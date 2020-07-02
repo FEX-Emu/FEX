@@ -1,7 +1,5 @@
 conformance-interfaces-clock-1-1.test
-conformance-interfaces-clock_getcpuclockid-1-1.test
 conformance-interfaces-clock_getcpuclockid-2-1.test
-conformance-interfaces-clock_gettime-4-1.test
 conformance-interfaces-clock_nanosleep-11-1.test
 conformance-interfaces-clock_nanosleep-13-1.test
 conformance-interfaces-clock_settime-17-1.test
@@ -12,7 +10,6 @@ conformance-interfaces-kill-1-1.test
 conformance-interfaces-killpg-1-1.test
 conformance-interfaces-mlockall-8-1.test
 conformance-interfaces-mmap-11-2.test
-conformance-interfaces-mmap-14-1.test
 conformance-interfaces-munmap-1-1.test
 conformance-interfaces-munmap-1-2.test
 conformance-interfaces-munmap-2-1.test
@@ -145,3 +142,11 @@ conformance-interfaces-sigwaitinfo-6-1.test
 conformance-interfaces-sigwaitinfo-7-1.test
 conformance-interfaces-sigwaitinfo-8-1.test
 conformance-interfaces-sigwaitinfo-9-1.test
+conformance-interfaces-clock_nanosleep-10-1.test # uses sigabort
+conformance-interfaces-clock_nanosleep-9-1.test # uses sigabort
+conformance-interfaces-kill-1-2.test # uses rt_sigtimedwait
+conformance-interfaces-killpg-1-2.test # uses getpgid, setpgid
+conformance-interfaces-nanosleep-3-1.test # uses sigabort
+conformance-interfaces-nanosleep-5-2.test # uses sigabort
+conformance-interfaces-nanosleep-7-1.test # uses sigabort
+conformance-interfaces-nanosleep-7-2.test # uses sigabort
