@@ -111,6 +111,24 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    /*
+    REGISTER_SYSCALL_IMPL(chown, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
+      SYSCALL_STUB(chown);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(chown);
+
+    /*
+    REGISTER_SYSCALL_IMPL(fchown, [](FEXCore::Core::InternalThreadState *Thread, int fd, uid_t owner, gid_t group) -> uint64_t {
+      SYSCALL_STUB(fchown);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(fchown);
+
+    /*
+    REGISTER_SYSCALL_IMPL(lchown, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
+      SYSCALL_STUB(lchown);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(lchown);
+
     REGISTER_SYSCALL_IMPL(poll, [](FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
       uint64_t Result = ::poll(fds, nfds, timeout);
       SYSCALL_ERRNO();

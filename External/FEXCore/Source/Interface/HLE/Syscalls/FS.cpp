@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/vfs.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
@@ -90,5 +91,26 @@ namespace FEXCore::HLE {
       uint64_t Result = ::fstatfs(fd, buf);
       SYSCALL_ERRNO();
     });
+
+    /*REGISTER_SYSCALL_IMPL(truncate, [](FEXCore::Core::InternalThreadState *Thread, const char *path, off_t length) -> uint64_t {
+      SYSCALL_STUB(truncate);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(truncate);
+
+    /*REGISTER_SYSCALL_IMPL(creat, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, mode_t mode) -> uint64_t {
+      SYSCALL_STUB(creat);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(creat);
+
+    REGISTER_SYSCALL_IMPL(sync, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
+      sync();
+      return 0; // always successful
+    });
+
+    /*
+    REGISTER_SYSCALL_IMPL(syncfs, [](FEXCore::Core::InternalThreadState *Thread, int fd) -> uint64_t {
+      SYSCALL_STUB(syncfs);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(syncfs);
   }
 }

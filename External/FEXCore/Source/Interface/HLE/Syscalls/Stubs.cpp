@@ -78,26 +78,6 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(msgctl);
     });
 
-    REGISTER_SYSCALL_IMPL(truncate, [](FEXCore::Core::InternalThreadState *Thread, const char *path, off_t length) -> uint64_t {
-      SYSCALL_STUB(truncate);
-    });
-
-    REGISTER_SYSCALL_IMPL(creat, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, mode_t mode) -> uint64_t {
-      SYSCALL_STUB(creat);
-    });
-
-    REGISTER_SYSCALL_IMPL(chown, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
-      SYSCALL_STUB(chown);
-    });
-
-    REGISTER_SYSCALL_IMPL(fchown, [](FEXCore::Core::InternalThreadState *Thread, int fd, uid_t owner, gid_t group) -> uint64_t {
-      SYSCALL_STUB(fchown);
-    });
-
-    REGISTER_SYSCALL_IMPL(lchown, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
-      SYSCALL_STUB(lchown);
-    });
-
     REGISTER_SYSCALL_IMPL(getrlimit, [](FEXCore::Core::InternalThreadState *Thread, int resource, struct rlimit *rlim) -> uint64_t {
       SYSCALL_STUB(getrlimit);
     });
@@ -110,9 +90,7 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(ptrace);
     });
 
-    REGISTER_SYSCALL_IMPL(setpgid, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, pid_t pgid) -> uint64_t {
-      SYSCALL_STUB(setpgid);
-    });
+
 
     REGISTER_SYSCALL_IMPL(getgroups, [](FEXCore::Core::InternalThreadState *Thread, int size, gid_t list[]) -> uint64_t {
       SYSCALL_STUB(getgroups);
@@ -120,22 +98,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(setgroups, [](FEXCore::Core::InternalThreadState *Thread, size_t size, const gid_t *list) -> uint64_t {
       SYSCALL_STUB(setgroups);
-    });
-
-    REGISTER_SYSCALL_IMPL(getpgid, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid) -> uint64_t {
-      SYSCALL_STUB(getpgid);
-    });
-
-    REGISTER_SYSCALL_IMPL(setfsuid, [](FEXCore::Core::InternalThreadState *Thread, uid_t fsuid) -> uint64_t {
-      SYSCALL_STUB(setfsuid);
-    });
-
-    REGISTER_SYSCALL_IMPL(setfsgid, [](FEXCore::Core::InternalThreadState *Thread, uid_t fsgid) -> uint64_t {
-      SYSCALL_STUB(setfsgid);
-    });
-
-    REGISTER_SYSCALL_IMPL(getsid, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid) -> uint64_t {
-      SYSCALL_STUB(getsid);
     });
 
     REGISTER_SYSCALL_IMPL(capget, [](FEXCore::Core::InternalThreadState *Thread, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
@@ -200,10 +162,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(chroot, [](FEXCore::Core::InternalThreadState *Thread, const char *path) -> uint64_t {
       SYSCALL_STUB(chroot);
-    });
-
-    REGISTER_SYSCALL_IMPL(sync, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
-      SYSCALL_STUB(sync);
     });
 
     REGISTER_SYSCALL_IMPL(acct, [](FEXCore::Core::InternalThreadState *Thread, const char *filename) -> uint64_t {
@@ -525,10 +483,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(clock_adjtime, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clk_id, struct timex *buf) -> uint64_t {
       SYSCALL_STUB(clock_adjtime);
-    });
-
-    REGISTER_SYSCALL_IMPL(syncfs, [](FEXCore::Core::InternalThreadState *Thread, int fd) -> uint64_t {
-      SYSCALL_STUB(syncfs);
     });
 
     REGISTER_SYSCALL_IMPL(setns, [](FEXCore::Core::InternalThreadState *Thread, int fd, int nstype) -> uint64_t {

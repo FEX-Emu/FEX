@@ -134,7 +134,7 @@ struct FunctionToLambda;
 
 template<typename R, typename... Args>
 struct FunctionToLambda<R(*)(Args...)> {
-	using r_type = R;
+	using RType = R;
 
 	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
 		return fn;

@@ -17,6 +17,7 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/fsuid.h>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
@@ -313,5 +314,31 @@ namespace FEXCore::HLE {
       uint64_t Result = ::prlimit(pid, (enum __rlimit_resource)(resource), new_limit, old_limit);
       SYSCALL_ERRNO();
     });
+
+    /*
+    REGISTER_SYSCALL_IMPL(setpgid, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, pid_t pgid) -> uint64_t {
+      SYSCALL_STUB(setpgid);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(setpgid);
+   
+    /*REGISTER_SYSCALL_IMPL(getpgid, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid) -> uint64_t {
+      SYSCALL_STUB(getpgid);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(getpgid);
+
+    /*REGISTER_SYSCALL_IMPL(setfsuid, [](FEXCore::Core::InternalThreadState *Thread, uid_t fsuid) -> uint64_t {
+      SYSCALL_STUB(setfsuid);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(setfsuid);
+
+    /*REGISTER_SYSCALL_IMPL(setfsgid, [](FEXCore::Core::InternalThreadState *Thread, uid_t fsgid) -> uint64_t {
+      SYSCALL_STUB(setfsgid);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(setfsgid);
+
+    /*REGISTER_SYSCALL_IMPL(getsid, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid) -> uint64_t {
+      SYSCALL_STUB(getsid);
+    });*/
+    REGISTER_SYSCALL_FORWARD_ERRNO(getsid);
   }
 }
