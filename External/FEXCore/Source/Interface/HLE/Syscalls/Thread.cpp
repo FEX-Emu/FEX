@@ -3,6 +3,7 @@
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
 
+#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/X86Enums.h>
 
 #include <limits.h>
@@ -113,9 +114,29 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    // launch a new process under fex
+    // currently does not propagate argv[0] correctly
     REGISTER_SYSCALL_IMPL(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
-      // XXX: Disallow execve for now
-      return -ENOEXEC;
+      std::vector<const char*> Args;
+      
+      Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
+
+      Args.push_back("--");
+
+      Args.push_back(pathname);
+
+      for (int i = 0; argv[i]; i++) {
+        if (i == 0)
+          continue;
+
+          Args.push_back(argv[i]);
+      }
+
+      Args.push_back(nullptr);
+
+      uint64_t Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), envp);
+      
+      SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(exit, [](FEXCore::Core::InternalThreadState *Thread, int status) -> uint64_t {
