@@ -224,54 +224,6 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(readahead);
     });
 
-    REGISTER_SYSCALL_IMPL(setxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name, const void *value, size_t size, int flags) -> uint64_t {
-      SYSCALL_STUB(setxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(lsetxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name, const void *value, size_t size, int flags) -> uint64_t {
-      SYSCALL_STUB(lsetxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(fsetxattr, [](FEXCore::Core::InternalThreadState *Thread, int fd, const char *name, const void *value, size_t size, int flags) -> uint64_t {
-      SYSCALL_STUB(fsetxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(getxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name, void *value, size_t size) -> uint64_t {
-      SYSCALL_STUB(getxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(lgetxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name, void *value, size_t size) -> uint64_t {
-      SYSCALL_STUB(lgetxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(fgetxattr, [](FEXCore::Core::InternalThreadState *Thread, int fd, const char *name, void *value, size_t size) -> uint64_t {
-      SYSCALL_STUB(fgetxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(listxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, char *list, size_t size) -> uint64_t {
-      SYSCALL_STUB(listxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(llistxattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, char *list, size_t size) -> uint64_t {
-      SYSCALL_STUB(llistxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(flistxattr, [](FEXCore::Core::InternalThreadState *Thread, int fd, char *list, size_t size) -> uint64_t {
-      SYSCALL_STUB(flistxattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(removexattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name) -> uint64_t {
-      SYSCALL_STUB(removexattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(lremovexattr, [](FEXCore::Core::InternalThreadState *Thread, const char *path, const char *name) -> uint64_t {
-      SYSCALL_STUB(lremovexattr);
-    });
-
-    REGISTER_SYSCALL_IMPL(fremovexattr, [](FEXCore::Core::InternalThreadState *Thread, int fd, const char *name) -> uint64_t {
-      SYSCALL_STUB(fremovexattr);
-    });
-
     REGISTER_SYSCALL_IMPL(io_setup, [](FEXCore::Core::InternalThreadState *Thread, unsigned nr_events, aio_context_t *ctx_idp) -> uint64_t {
       SYSCALL_STUB(io_setup);
     });
