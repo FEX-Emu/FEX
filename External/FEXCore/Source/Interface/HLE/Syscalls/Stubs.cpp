@@ -54,14 +54,6 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(sendfile);
     });
 
-    REGISTER_SYSCALL_IMPL(fork, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
-      SYSCALL_STUB(fork);
-    });
-
-    REGISTER_SYSCALL_IMPL(vfork, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
-      SYSCALL_STUB(vfork);
-    });
-
     REGISTER_SYSCALL_IMPL(msgget, [](FEXCore::Core::InternalThreadState *Thread, key_t key, int msgflg) -> uint64_t {
       SYSCALL_STUB(msgget);
     });
@@ -399,10 +391,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(signalfd4, [](FEXCore::Core::InternalThreadState *Thread, int fd, const sigset_t *mask, size_t sizemask, int flags) -> uint64_t {
       SYSCALL_STUB(signalfd4);
-    });
-
-    REGISTER_SYSCALL_IMPL(eventfd2, [](FEXCore::Core::InternalThreadState *Thread, unsigned int initval, int flags) -> uint64_t {
-      SYSCALL_STUB(eventfd2);
     });
 
     REGISTER_SYSCALL_IMPL(preadv, [](FEXCore::Core::InternalThreadState *Thread, int fd, const struct iovec *iov, int iovcnt, off_t offset) -> uint64_t {

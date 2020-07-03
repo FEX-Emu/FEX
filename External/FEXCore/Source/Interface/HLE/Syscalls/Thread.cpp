@@ -173,12 +173,15 @@ namespace FEXCore::HLE {
       }
 
       if (!(flags & CLONE_THREAD)) {
-        if (AnyFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
-          ERROR_AND_DIE("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), %X", flags);
+        
+        if (flags & CLONE_VFORK) {
+          flags &= ~CLONE_VFORK;
+          flags &= ~CLONE_VM;
+          LogMan::Msg::D("clone: WARNING: CLONE_VFORK w/o CLONE_THREAD");
         }
 
-        if (flags & CLONE_VFORK) {
-          ERROR_AND_DIE("clone: Unsupported CLONE_VFORK w/o CLONE_THREAD");
+        if (AnyFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
+          ERROR_AND_DIE("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), %X", flags);
         }
 
         // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
@@ -211,6 +214,26 @@ namespace FEXCore::HLE {
         }
         SYSCALL_ERRNO();
       }
+    });
+
+
+    REGISTER_SYSCALL_IMPL(fork, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
+      if (Thread->CTX->GetThreadCount() != 1) {
+        ERROR_AND_DIE("fork: Fork only supported on single threaded applications");
+      } else {
+        LogMan::Msg::D("fork: Forking process");
+      }
+
+      return ForkGuest(Thread, 0, 0, 0, 0, 0);
+    });
+
+    REGISTER_SYSCALL_IMPL(vfork, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
+      if (Thread->CTX->GetThreadCount() != 1) {
+        ERROR_AND_DIE("vfork: Fork only supported on single threaded applications");
+      } else {
+        LogMan::Msg::D("vfork: WARNING: Forking process using fork semantics");
+      }
+      return ForkGuest(Thread, 0, 0, 0, 0, 0);
     });
 
     // launch a new process under fex
