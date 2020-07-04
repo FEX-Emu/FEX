@@ -5133,6 +5133,16 @@ void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+template<size_t ElementSize>
+void OpDispatchBuilder::PAVGOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  auto Result = _VURAvg(Size, ElementSize, Dest, Src);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Res =  _SplatVector2(Src);
@@ -7171,8 +7181,10 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xDD, 1, &OpDispatchBuilder::PADDSOp<2, false>},
     {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
     {0xDF, 1, &OpDispatchBuilder::ANDNOp},
+    {0xE0, 1, &OpDispatchBuilder::PAVGOp<1>},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2, true, 0>},
     {0xE2, 1, &OpDispatchBuilder::PSRAOp<4, true, 0>},
+    {0xE3, 1, &OpDispatchBuilder::PAVGOp<2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
     {0xE7, 1, &OpDispatchBuilder::MOVUPSOp},
@@ -7437,8 +7449,10 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xDD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 2>},
     {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
     {0xDF, 1, &OpDispatchBuilder::ANDNOp},
+    {0xE0, 1, &OpDispatchBuilder::PAVGOp<1>},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2, true, 0>},
     {0xE2, 1, &OpDispatchBuilder::PSRAOp<4, true, 0>},
+    {0xE3, 1, &OpDispatchBuilder::PAVGOp<2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
     {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},

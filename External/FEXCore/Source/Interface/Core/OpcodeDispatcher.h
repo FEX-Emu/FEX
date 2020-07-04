@@ -258,6 +258,8 @@ public:
   void PSLLDQ(OpcodeArgs);
   template<size_t ElementSize>
   void PSRAIOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void PAVGOp(OpcodeArgs);
   void MOVDDUPOp(OpcodeArgs);
   template<size_t DstElementSize, bool Signed>
   void CVTGPR_To_FPR(OpcodeArgs);

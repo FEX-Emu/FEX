@@ -276,6 +276,21 @@ DEF_OP(VAddV) {
   }
 }
 
+DEF_OP(VURAvg) {
+  auto Op = IROp->C<IR::IROp_VURAvg>();
+  switch (Op->Header.ElementSize) {
+    case 1: {
+      urhadd(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+    break;
+    }
+    case 2: {
+      urhadd(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+    break;
+    }
+    default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+  }
+}
+
 DEF_OP(VAbs) {
   auto Op = IROp->C<IR::IROp_VAbs>();
   uint8_t OpSize = IROp->Size;
