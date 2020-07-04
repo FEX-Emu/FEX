@@ -1875,6 +1875,7 @@ void JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSQSUB,            VSQSub);
   REGISTER_OP(VADDP,             VAddP);
   REGISTER_OP(VADDV,             VAddV);
+  REGISTER_OP(VURAVG,            VURAvg);
   REGISTER_OP(VABS,              VAbs);
   REGISTER_OP(VFADD,             VFAdd);
   REGISTER_OP(VFADDP,            VFAddP);

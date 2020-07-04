@@ -340,6 +340,7 @@ private:
   DEF_OP(VSQSub);
   DEF_OP(VAddP);
   DEF_OP(VAddV);
+  DEF_OP(VURAvg);
   DEF_OP(VAbs);
   DEF_OP(VFAdd);
   DEF_OP(VFAddP);
