@@ -102,6 +102,9 @@ public:
 
   void ClearCache() override;
 
+  bool HandleSIGBUS(int Signal, void *info, void *ucontext);
+  bool HandleSIGSEGV(int Signal, void *info, void *ucontext);
+
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
