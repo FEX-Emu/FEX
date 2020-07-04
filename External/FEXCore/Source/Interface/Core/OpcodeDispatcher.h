@@ -100,6 +100,7 @@ public:
   void ALUOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs);
+  void ThunkOp(OpcodeArgs);
   void LEAOp(OpcodeArgs);
   void NOPOp(OpcodeArgs);
   void RETOp(OpcodeArgs);

@@ -19,6 +19,8 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/X86Enums.h>
 
+#include "Interface/HLE/Thunks/Thunks.h"
+
 #include <fstream>
 #include <unistd.h>
 
@@ -228,6 +230,8 @@ namespace FEXCore::Context {
 
   bool Context::InitCore(FEXCore::CodeLoader *Loader) {
     SyscallHandler.reset(FEXCore::CreateHandler(Config.Is64BitMode ? OperatingMode::MODE_64BIT : OperatingMode::MODE_32BIT, this));
+    ThunkHandler.reset(FEXCore::ThunkHandler::Create());
+
     LocalLoader = Loader;
     using namespace FEXCore::Core;
     FEXCore::Core::CPUState NewThreadState{};

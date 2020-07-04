@@ -16,6 +16,7 @@
 
 namespace FEXCore {
 class SyscallHandler;
+class ThunkHandler;
 class BlockSamplingData;
 class GdbServer;
 
@@ -79,6 +80,8 @@ namespace FEXCore::Context {
 
     FEXCore::CPUIDEmu CPUID;
     std::unique_ptr<FEXCore::SyscallHandler> SyscallHandler;
+    std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
+
     CustomCPUFactoryType CustomCPUFactory;
     CustomCPUFactoryType FallbackCPUFactory;
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;

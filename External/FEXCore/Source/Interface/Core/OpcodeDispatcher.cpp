@@ -1,5 +1,7 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
+#include "Interface/HLE/Thunks/Thunks.h"
+
 #include <FEXCore/Core/CoreState.h>
 #include <climits>
 #include <cstddef>
@@ -83,6 +85,37 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes->at(6) * 8, GPRClass));
 
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), SyscallOp);
+}
+
+void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const char *name = (const char*)(Op->PC + 2);
+
+  auto ThunkOp = _Thunk(
+    _Constant(Op->PC + 2),
+    _Constant((uintptr_t)CTX->ThunkHandler->LookupThunk(name)),
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + FEXCore::X86State::REG_RDI * 8, GPRClass)
+  );
+
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ThunkOp);
+
+  auto Constant = _Constant(GPRSize);
+
+  auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
+
+  OrderedNode *NewSP;
+  
+  NewSP = _Add(OldSP, Constant);
+
+  // Store the new stack pointer
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+
+  // Store the new RIP
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
+  _ExitFunction();
+  BlockSetRIP = true;
 }
 
 void OpDispatchBuilder::LEAOp(OpcodeArgs) {
@@ -4959,6 +4992,11 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     if (Literal == 0x80) {
       // Syscall on linux
       SyscallOp(Op);
+      return;
+    }
+    if (Literal == 0x7F) {
+      // special thunk op
+      ThunkOp(Op);
       return;
     }
   break;
