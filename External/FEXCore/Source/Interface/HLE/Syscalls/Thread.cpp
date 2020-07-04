@@ -165,7 +165,7 @@ namespace FEXCore::HLE {
       FLAGPRINT(CLONE_IO,             0x80000000);
 
       if (AnyFlagsSet(flags, CLONE_UNTRACED | CLONE_PTRACE)) {
-        ERROR_AND_DIE("clone: Ptrace* not supported");
+        LogMan::Msg::D("clone: Ptrace* not supported");
       }
 
       if (AnyFlagsSet(flags, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID | CLONE_NEWNET)) {
