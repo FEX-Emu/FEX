@@ -629,33 +629,26 @@ private:
   llvm::Value *VURAVG(llvm::Value *Arg1, llvm::Value *Arg2, uint8_t RegisterSize, uint8_t ElementSize) {
 
     uint8_t NumElements = RegisterSize / ElementSize;
-    std::vector<llvm::Value*> Values1;
-    std::vector<llvm::Value*> Values2;
-    std::vector<llvm::Value*> Results;
-
-    // XXX: these need to be widening to ElementSize * 2 for overflows
-    for (size_t i = 0; i < NumElements; ++i) {
-      Values1.emplace_back(JITState.IRBuilder->CreateExtractElement(Arg1, i));;
-      Values2.emplace_back(JITState.IRBuilder->CreateExtractElement(Arg2, i));;
-    }
-
-    for (size_t i = 0; i < NumElements; ++i) {
-
-      // XXX: These need to operate on ElementSize * 2 for overflows
-      auto sum = JITState.IRBuilder->CreateAdd(Values1[i], Values2[i]);
-      sum = JITState.IRBuilder->CreateAdd(sum, JITState.IRBuilder->getIntN(ElementSize, 1));
-      
-      // XXX: This needs to be narrowing to ElementSize
-      auto Result = JITState.IRBuilder->CreateLShr(sum, JITState.IRBuilder->getIntN(ElementSize, 1));
-
-      Results.emplace_back(Result);
-    }
 
     // Cast to the type we want
     llvm::Value *Result = llvm::UndefValue::get(Arg1->getType());
 
     for (size_t i = 0; i < NumElements; ++i) {
-      Result = JITState.IRBuilder->CreateInsertElement(Result, Results[i], i);
+
+      // get args, zext to ElementSize * 2
+      auto Src1 = JITState.IRBuilder->CreateZExt(JITState.IRBuilder->CreateExtractElement(Arg1, i), llvm::Type::getIntNTy(*Con, ElementSize * 2 * 8));
+      auto Src2 = JITState.IRBuilder->CreateZExt(JITState.IRBuilder->CreateExtractElement(Arg2, i), llvm::Type::getIntNTy(*Con, ElementSize * 2 * 8));
+
+      // Add Src1 + Src2 + 1
+      auto Sum = JITState.IRBuilder->CreateAdd(Src1, Src2);
+      Sum = JITState.IRBuilder->CreateAdd(Sum, JITState.IRBuilder->getIntN(ElementSize * 2 * 8, 1));
+      
+      // Shift left and trunc to ElementSize
+      auto Avg = JITState.IRBuilder->CreateLShr(Sum, JITState.IRBuilder->getIntN(ElementSize * 2 * 8, 1));
+      Avg = JITState.IRBuilder->CreateTrunc(Avg, llvm::Type::getIntNTy(*Con, ElementSize * 8));
+
+      // Insert in the dst vector
+      Result = JITState.IRBuilder->CreateInsertElement(Result, Avg, i);
     }
 
     return Result;
