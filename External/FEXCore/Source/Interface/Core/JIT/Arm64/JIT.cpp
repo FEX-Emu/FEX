@@ -231,6 +231,61 @@ void JITCore::FreeCodeBuffer(CodeBuffer Buffer) {
   munmap(Buffer.Ptr, Buffer.Size);
 }
 
+bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+  uint32_t *PC = (uint32_t*)_mcontext->pc;
+  uint32_t Instr = PC[0];
+
+  auto Buffer = GetBuffer();
+  uint64_t CodeBase = Buffer->GetOffsetAddress<uint64_t>(0);
+  uint64_t CodeEnd = CodeBase + Buffer->GetCapacity();
+
+  if (_mcontext->pc < CodeBase &&
+      _mcontext->pc > CodeEnd) {
+    // Wasn't a sigbus in JIT code
+    return false;
+  }
+
+  // 1 = 16bit
+  // 2 = 32bit
+  // 3 = 64bit
+  uint32_t Size = (Instr & 0xC000'0000) >> 30;
+  uint32_t AddrReg = (Instr >> 5) & 0x1F;
+  uint32_t DataReg = Instr & 0x1F;
+  uint32_t DMB = 0b1101'0101'0000'0011'0011'0000'1011'1111 |
+    0b1011'0000'0000; // Inner shareable all
+  if ((Instr & 0x3F'FF'FC'00) == 0x08'9F'7C'00) {
+    // STLLR*
+    uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
+    STR |= Size << 30;
+    STR |= AddrReg << 5;
+    STR |= DataReg;
+    PC[-1] = DMB;
+    PC[0] = STR;
+    PC[1] = DMB;
+  }
+  else if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'7C'00) {
+    // LDLLR*
+    uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
+    LDR |= Size << 30;
+    LDR |= AddrReg << 5;
+    LDR |= DataReg;
+    PC[-1] = DMB;
+    PC[0] = LDR;
+    PC[1] = DMB;
+  }
+  else {
+    LogMan::Msg::E("Unhandled JIT SIGBUS: PC: %p Instruction: 0x%08x", PC, PC[0]);
+    return false;
+  }
+
+  // Back up one instruction and have another go
+  _mcontext->pc -= 4;
+  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&PC[-1], 16);
+  return true;
+}
+
 JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer)
   : vixl::aarch64::MacroAssembler(Buffer.Ptr, Buffer.Size, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
@@ -304,6 +359,11 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   CTX->SignalDelegation.RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
     JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
     return Core->HandleSIGILL(Signal, info, ucontext);
+  });
+
+  CTX->SignalDelegation.RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+    return Core->HandleSIGBUS(Signal, info, ucontext);
   });
 
   auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
