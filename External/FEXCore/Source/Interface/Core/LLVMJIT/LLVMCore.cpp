@@ -626,6 +626,34 @@ private:
     return Result;
   }
 
+  llvm::Value *VURAVG(llvm::Value *Arg1, llvm::Value *Arg2, uint8_t RegisterSize, uint8_t ElementSize) {
+
+    uint8_t NumElements = RegisterSize / ElementSize;
+
+    // Cast to the type we want
+    llvm::Value *Result = llvm::UndefValue::get(Arg1->getType());
+
+    for (size_t i = 0; i < NumElements; ++i) {
+
+      // get args, zext to ElementSize * 2
+      auto Src1 = JITState.IRBuilder->CreateZExt(JITState.IRBuilder->CreateExtractElement(Arg1, i), llvm::Type::getIntNTy(*Con, ElementSize * 2 * 8));
+      auto Src2 = JITState.IRBuilder->CreateZExt(JITState.IRBuilder->CreateExtractElement(Arg2, i), llvm::Type::getIntNTy(*Con, ElementSize * 2 * 8));
+
+      // Add Src1 + Src2 + 1
+      auto Sum = JITState.IRBuilder->CreateAdd(Src1, Src2);
+      Sum = JITState.IRBuilder->CreateAdd(Sum, JITState.IRBuilder->getIntN(ElementSize * 2 * 8, 1));
+      
+      // Shift left and trunc to ElementSize
+      auto Avg = JITState.IRBuilder->CreateLShr(Sum, JITState.IRBuilder->getIntN(ElementSize * 2 * 8, 1));
+      Avg = JITState.IRBuilder->CreateTrunc(Avg, llvm::Type::getIntNTy(*Con, ElementSize * 8));
+
+      // Insert in the dst vector
+      Result = JITState.IRBuilder->CreateInsertElement(Result, Avg, i);
+    }
+
+    return Result;
+  }
+
   llvm::Value *VADDV(llvm::Value *Arg, uint8_t RegisterSize, uint8_t ElementSize) {
     uint8_t NumElements = RegisterSize / ElementSize;
     std::vector<llvm::Value*> Values;
@@ -2689,6 +2717,20 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       Src2 = CastVectorToType(Src2, true, OpSize, Op->Header.ElementSize);
 
       auto Result = VADDP(Src1, Src2, OpSize, Op->Header.ElementSize);
+
+      SetDest(*WrapperOp, Result);
+    break;
+    }
+    case IR::OP_VURAVG: {
+      auto Op = IROp->C<IR::IROp_VURAvg>();
+      auto Src1 = GetSrc(Op->Header.Args[0]);
+      auto Src2 = GetSrc(Op->Header.Args[1]);
+
+      // Cast to the type we want
+      Src1 = CastVectorToType(Src1, true, OpSize, Op->Header.ElementSize);
+      Src2 = CastVectorToType(Src2, true, OpSize, Op->Header.ElementSize);
+
+      auto Result = VURAVG(Src1, Src2, OpSize, Op->Header.ElementSize);
 
       SetDest(*WrapperOp, Result);
     break;

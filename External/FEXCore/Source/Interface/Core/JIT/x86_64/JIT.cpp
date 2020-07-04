@@ -2404,6 +2404,21 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           movaps(Dest, xmm15);
           break;
         }
+        case IR::OP_VURAVG: {
+          auto Op = IROp->C<IR::IROp_VURAvg>();
+          switch (Op->Header.ElementSize) {
+          case 1: {
+            vpavgb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          case 2: {
+            vpavgw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+          }
+          default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+          }
+          break;
+        }
         case IR::OP_VABS: {
           auto Op = IROp->C<IR::IROp_VAbs>();
           switch (Op->Header.ElementSize) {

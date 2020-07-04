@@ -1533,6 +1533,24 @@
       ]
     },
 
+    "VURAvg": {
+      "OpClass": "Vector",
+      "Desc": ["Does an unsigned rounded average", "dst_elem = (src1_elem + src2_elem + 1) >> 1"],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Vector1",
+        "Vector2"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VAbs": {
       "OpClass": "Vector",
       "Desc": ["Does an signed integer absolute"

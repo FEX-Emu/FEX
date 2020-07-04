@@ -215,10 +215,10 @@ void InitializeSecondaryTables() {
     {0xDE, 1, X86InstInfo{"PMAXUB",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xDF, 1, X86InstInfo{"PANDN",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
 
-    {0xE0, 1, X86InstInfo{"PAVGB",    TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                       0, nullptr}},
+    {0xE0, 1, X86InstInfo{"PAVGB",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xE1, 1, X86InstInfo{"PSRAW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xE2, 1, X86InstInfo{"PSRAD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
-    {0xE3, 1, X86InstInfo{"PAVGW",    TYPE_MMX, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                       0, nullptr}},
+    {0xE3, 1, X86InstInfo{"PAVGW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                       0, nullptr}},
     {0xE4, 1, X86InstInfo{"PMULHUW",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xE5, 1, X86InstInfo{"PMULHW",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xE6, 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE,                                                                                         0, nullptr}},
