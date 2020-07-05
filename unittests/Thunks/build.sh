@@ -1,0 +1,1 @@
+g++ gl3example.cpp -lGL -lX11 -o ../../build/gl3example.elf
