@@ -8,3 +8,11 @@ python3 generate-thunk.py thunkmap > ../../External/FEXCore/Source/Interface/HLE
 python3 generate-thunk.py initializers > ../../External/FEXCore/Source/Interface/HLE/Thunks/GLX_forwards.inl
 python3 generate-thunk.py forwards >> ../../External/FEXCore/Source/Interface/HLE/Thunks/GLX_forwards.inl
 
+#./build.sh  2>&1 | grep previous | tr '’‘' '|' | cut -f 4 -d '|'
+g++ -shared -fPIC glx-thunks.cpp -o libThunk.so
+mkdir -p ../../build/rootfs/lib/x86_64-linux-gnu/
+mv -f libThunk.so ../../build/rootfs/lib/x86_64-linux-gnu/libThunk.so
+ln -s ../../build/rootfs/lib/x86_64-linux-gnu/libThunk.so ../../build/rootfs/lib/x86_64-linux-gnu/libX11.so.6
+ln -s ../../build/rootfs/lib/x86_64-linux-gnu/libThunk.so ../../build/rootfs/lib/x86_64-linux-gnu/libGLdispatch.so.0
+ln -s ../../build/rootfs/lib/x86_64-linux-gnu/libThunk.so ../../build/rootfs/lib/x86_64-linux-gnu/libGL.so.1
+ln -s ../../build/rootfs/lib/x86_64-linux-gnu/libThunk.so ../../build/rootfs/lib/x86_64-linux-gnu/libGLX.so.0

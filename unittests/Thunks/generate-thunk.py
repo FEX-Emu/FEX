@@ -43,6 +43,12 @@ def arg(type):
 
     CurrentFunction["args"].append(type)
 
+def args(types):
+    arr = types.split(",")
+    for type in arr:
+        type = type.strip()
+        arg(type)
+
 def GenerateThunk_args(args):
     rv = [ ]
     rv.append("(")
@@ -307,6 +313,13 @@ arg("int")
 arg("const int *")
 arg("int *")
 
+function("glXQueryDrawable")
+args("Display*, GLXDrawable, int, unsigned int*")
+
+function("glXGetSwapIntervalMESA")
+returns("int")
+arg("unsigned int")
+
 # some GL ones
 
 #void glClearColor(	GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
@@ -321,6 +334,97 @@ arg("GLclampf")
 function("glClear")
 returns("void")
 arg("GLbitfield")
+
+function("glBegin")
+returns("void")
+args("GLenum")
+
+function("glCallList")
+returns("void")
+args("GLuint")
+
+function("glDeleteLists")
+returns("void")
+args("GLuint")
+args("GLsizei")
+
+function("glDrawBuffer")
+returns("void")
+args("GLenum")
+
+function("glEnable")
+returns("void")
+args("GLenum")
+
+function("glFrustum")
+returns("void")
+args("GLdouble")
+args("GLdouble")
+args("GLdouble")
+args("GLdouble")
+args("GLdouble")
+args("GLdouble")
+
+function("glGenLists")
+returns("GLuint")
+args("GLsizei")
+
+function("glGetString")
+returns("const GLubyte *")
+args("GLenum")
+
+function("glLightfv")
+returns("void")
+args("GLenum")
+args("GLenum")
+args("const GLfloat*")
+
+function("glMaterialfv")
+returns("void")
+args("GLenum, GLenum, const GLfloat*")
+
+function("glMatrixMode")
+returns("void")
+args("GLenum")
+
+function("glNewList")
+returns("void")
+args("GLuint, GLenum")
+
+function("glNormal3f")
+returns("void")
+args("GLfloat, GLfloat, GLfloat")
+
+function("glRotatef")
+returns("void")
+args("GLfloat, GLfloat, GLfloat, GLfloat")
+
+function("glShadeModel")
+returns("void")
+args("GLenum")
+
+function("glTranslated")
+returns("void")
+args("GLdouble, GLdouble, GLdouble")
+
+function("glTranslatef")
+returns("void")
+args("GLfloat, GLfloat, GLfloat")
+
+function("glVertex3f")
+returns("void")
+args("GLfloat, GLfloat, GLfloat")
+
+function("glViewport")
+returns("void")
+args("GLint, GLint, GLsizei, GLsizei")
+
+function("glEnd")
+function("glEndList")
+function("glLoadIdentity")
+function("glPopMatrix")
+function("glPushMatrix")
+
 
 ## fexthunk
 ### lib("fexthunk")
@@ -366,6 +470,96 @@ function("XMapWindow");
 returns("int");
 arg("Display *");
 arg("Window")
+
+
+#
+function("XChangeProperty")
+returns("int")
+arg("Display *")
+arg("Window")
+arg("Atom")
+arg("Atom")
+arg("int")
+arg("int")
+arg("const unsigned char *")
+arg("int")
+
+#
+function("XCloseDisplay")
+returns("int")
+arg("Display *")
+
+#
+function("XDestroyWindow")
+returns("int")
+arg("Display *")
+arg("Window")
+
+#
+function("XFree")
+returns("int")
+arg("void*")
+
+#
+function("XInternAtom")
+returns("Atom")
+arg("Display *")
+arg("const char *")
+arg("Bool")
+
+#
+function("XLookupKeysym")
+returns("KeySym")
+arg("XKeyEvent *")
+arg("int")
+
+#
+function("XLookupString")
+returns("int")
+arg("XKeyEvent *")
+arg("char *")
+arg("int")
+arg("KeySym *")
+arg("XComposeStatus*")
+
+#
+function("XNextEvent")
+returns("int")
+arg("Display *")
+arg("XEvent *")
+
+#
+function("XParseGeometry")
+returns("int")
+arg("const char *")
+arg("int *")
+arg("int *")
+arg("unsigned int *")
+arg("unsigned int *")
+
+#
+function("XPending")
+returns("int")
+arg("Display *")
+
+#
+function("XSetNormalHints")
+returns("int")
+arg("Display *")
+arg("Window")
+arg("XSizeHints *")
+
+#
+function("XSetStandardProperties")
+returns("int")
+arg("Display *")
+arg("Window")
+arg("const char *")
+arg("const char *")
+arg("Pixmap")
+arg("char **")
+arg("int")
+arg("XSizeHints *")
 
 # generate
 WhatToGenerate = "all"
