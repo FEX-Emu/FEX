@@ -124,159 +124,248 @@ def GenerateForwards(libs):
         GenerateForward_lib(lib)
 
 def GenerateInitializer_function(lib, function):
-    print("void* fexthunks_init_" + lib["name"] + "_" + function["name"] + ";")
+    print("typedef " + function["return"]  + " fexthunks_type_" + lib["name"] + "_" + function["name"] + GenerateThunk_args(function["args"]) + ";")
+    print("fexthunks_type_" + lib["name"] + "_" + function["name"] + " *fexthunks_impl_" + lib["name"] + "_" + function["name"] + ";")
+
+def GenerateInitializer_function_loader(lib, function, handle):
+    print("(void*&)fexthunks_impl_" + lib["name"] + "_" + function["name"] + " = dlsym(" + handle + ', "' + function["name"] + '");')
 
 def GenerateInitializer_lib(lib):
-    handle =  "fexthunks_init_" + lib["name"] + "_so"
+    handle =  "fexthunks_impl_" + lib["name"] + "_so"
     print("void* " + handle + ";")
     
     for function in lib["functions"].values():
         GenerateInitializer_function(lib, function)
 
     print("bool fexthunks_init_" + lib["name"] + "() {")
-    print(handle + " = dlopen(\""+ lib["name"] +"\", RTLD_LOCAL | RTLD_LAZY);");
+    print(handle + " = dlopen(\""+ lib["name"] +".so\", RTLD_LOCAL | RTLD_LAZY);");
     print("if (!" + handle + ") { return false; }");
+    for function in lib["functions"].values():
+        GenerateInitializer_function_loader(lib, function, handle)
+    print("return true;")
     print("}")
 
 def GenerateInitializers(libs):
     for lib in libs.values():
         GenerateInitializer_lib(lib)
 
+def GenerateThunkmap_function(lib, function):
+    print("thunks[\"" + lib["name"]  + ":" + function["name"] + "\"] = &fexthunks_forward_" + lib["name"]  + "_" + function["name"] + ";")
+
+def GenerateThunkmap_lib(lib):
+    for function in lib["functions"].values():
+        GenerateThunkmap_function(lib, function)
+
+def GenerateThunkmap(libs):
+    for lib in libs.values():
+        GenerateThunkmap_lib(lib)
+
 # define libs here
-### lib("libGL")
-### 
-### #XVisualInfo* glXChooseVisual( Display *dpy, int screen, int *attribList );
-### function("glXChooseVisual")
-### returns("extern XVisualInfo *")
-### arg("Display *")
-### arg("int")
-### arg("int *")
-### 
-### #GLXContext glXCreateContext( Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct );
-### function("glXCreateContext")
-### returns("GLXContext")
-### arg("Display *")
-### arg("XVisualInfo *")
-### arg("GLXContext *")
-### arg("Bool *")
-### 
-### #void glXDestroyContext( Display *dpy, GLXContext ctx );
-### function("glXDestroyContext")
-### returns("void")
-### arg("Display *")
-### arg("GLXContext")
-### 
-### #Bool glXMakeCurrent( Display *dpy, GLXDrawable drawable, GLXContext ctx);
-### function("glXMakeCurrent")
-### returns("Bool")
-### arg("Display *")
-### arg("GLXDrawable")
-### arg("GLXContext")
-### 
-### #void glXCopyContext( Display *dpy, GLXContext src, GLXContext dst, GLuint mask );
-### function("glXCopyContext")
-### returns("void")
-### arg("Display *")
-### arg("GLXContext")
-### arg("GLXContext")
-### arg("GLuint")
-### 
-### #void glXSwapBuffers( Display *dpy, GLXDrawable drawable );
-### function("glXSwapBuffers")
-### returns("void")
-### arg("Display *")
-### arg("GLXDrawable")
-### 
-### #GLXPixmap glXCreateGLXPixmap( Display *dpy, XVisualInfo *visual, Pixmap pixmap );
-### function("glXCreateGLXPixmap")
-### returns("GLXPixmap")
-### arg("Display *")
-### arg("XVisualInfo *")
-### arg("Pixmap")
-### 
-### #void glXDestroyGLXPixmap( Display *dpy, GLXPixmap pixmap );
-### function("glXDestroyGLXPixmap")
-### returns("void")
-### arg("Display *")
-### arg("GLXPixmap")
-### 
-### #Bool glXQueryExtension( Display *dpy, int *errorb, int *event );
-### function("glXQueryExtension")
-### returns("Bool")
-### arg("Display *")
-### arg("int *")
-### arg("int *")
-### 
-### #Bool glXQueryVersion( Display *dpy, int *maj, int *min );
-### function("glXQueryVersion")
-### returns("Bool")
-### arg("Display *")
-### arg("int *")
-### arg("int *")
-### 
-### #Bool glXIsDirect( Display *dpy, GLXContext ctx );
-### function("glXIsDirect")
-### returns("Bool")
-### arg("Display *")
-### arg("GLXContext")
-### 
-### #int glXGetConfig( Display *dpy, XVisualInfo *visual, int attrib, int *value );
-### function("glXGetConfig")
-### returns("int")
-### arg("Display *")
-### arg("XVisualInfo *")
-### arg("int")
-### arg("int *")
-### 
-### #GLXContext glXGetCurrentContext( void );
-### function("glXGetCurrentContext")
-### returns("GLXContext")
-### 
-### #GLXDrawable glXGetCurrentDrawable( void );
-### function("glXGetCurrentDrawable")
-### returns("GLXDrawable")
-### 
-### #void glXWaitGL( void );
-### function("glXWaitGL")
-### returns("void")
-### 
-### #void glXWaitX( void );
-### function("glXWaitX")
-### returns("void")
-### 
-### #void glXUseXFont( Font font, int first, int count, int list );
-### function("glXUseXFont")
-### returns("void")
-### arg("Font")
-### arg("int")
-### arg("int")
-### arg("int")
-### 
-### #const char *glXQueryExtensionsString( Display *dpy, int screen );
-### function("glXQueryExtensionsString")
-### returns("const char *")
-### arg("Display *")
-### arg("int")
-### 
-### #const char *glXQueryServerString( Display *dpy, int screen, int name );
-### function("glXQueryServerString")
-### returns("const char *")
-### arg("Display *")
-### arg("int")
-### arg("int")
-### 
-### #const char *glXGetClientString( Display *dpy, int name );
-### function("glXGetClientString")
-### returns("const char *")
-### arg("Display *")
-### arg("int")
+lib("libGL")
+
+#XVisualInfo* glXChooseVisual( Display *dpy, int screen, int *attribList );
+function("glXChooseVisual")
+returns("XVisualInfo *")
+arg("Display *")
+arg("int")
+arg("int *")
+
+#GLXContext glXCreateContext( Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct );
+function("glXCreateContext")
+returns("GLXContext")
+arg("Display *")
+arg("XVisualInfo *")
+arg("GLXContext")
+arg("Bool")
+
+#void glXDestroyContext( Display *dpy, GLXContext ctx );
+function("glXDestroyContext")
+returns("void")
+arg("Display *")
+arg("GLXContext")
+
+#Bool glXMakeCurrent( Display *dpy, GLXDrawable drawable, GLXContext ctx);
+function("glXMakeCurrent")
+returns("Bool")
+arg("Display *")
+arg("GLXDrawable")
+arg("GLXContext")
+
+#void glXCopyContext( Display *dpy, GLXContext src, GLXContext dst, GLuint mask );
+function("glXCopyContext")
+returns("void")
+arg("Display *")
+arg("GLXContext")
+arg("GLXContext")
+arg("long unsigned int")
+
+#void glXSwapBuffers( Display *dpy, GLXDrawable drawable );
+function("glXSwapBuffers")
+returns("void")
+arg("Display *")
+arg("GLXDrawable")
+
+#GLXPixmap glXCreateGLXPixmap( Display *dpy, XVisualInfo *visual, Pixmap pixmap );
+function("glXCreateGLXPixmap")
+returns("GLXPixmap")
+arg("Display *")
+arg("XVisualInfo *")
+arg("Pixmap")
+
+#void glXDestroyGLXPixmap( Display *dpy, GLXPixmap pixmap );
+function("glXDestroyGLXPixmap")
+returns("void")
+arg("Display *")
+arg("GLXPixmap")
+
+#Bool glXQueryExtension( Display *dpy, int *errorb, int *event );
+function("glXQueryExtension")
+returns("Bool")
+arg("Display *")
+arg("int *")
+arg("int *")
+
+#Bool glXQueryVersion( Display *dpy, int *maj, int *min );
+function("glXQueryVersion")
+returns("Bool")
+arg("Display *")
+arg("int *")
+arg("int *")
+
+#Bool glXIsDirect( Display *dpy, GLXContext ctx );
+function("glXIsDirect")
+returns("Bool")
+arg("Display *")
+arg("GLXContext")
+
+#int glXGetConfig( Display *dpy, XVisualInfo *visual, int attrib, int *value );
+function("glXGetConfig")
+returns("int")
+arg("Display *")
+arg("XVisualInfo *")
+arg("int")
+arg("int *")
+
+#GLXContext glXGetCurrentContext( void );
+function("glXGetCurrentContext")
+returns("GLXContext")
+
+#GLXDrawable glXGetCurrentDrawable( void );
+function("glXGetCurrentDrawable")
+returns("GLXDrawable")
+
+#void glXWaitGL( void );
+function("glXWaitGL")
+returns("void")
+
+#void glXWaitX( void );
+function("glXWaitX")
+returns("void")
+
+#void glXUseXFont( Font font, int first, int count, int list );
+function("glXUseXFont")
+returns("void")
+arg("Font")
+arg("int")
+arg("int")
+arg("int")
+
+#const char *glXQueryExtensionsString( Display *dpy, int screen );
+function("glXQueryExtensionsString")
+returns("const char *")
+arg("Display *")
+arg("int")
+
+#const char *glXQueryServerString( Display *dpy, int screen, int name );
+function("glXQueryServerString")
+returns("const char *")
+arg("Display *")
+arg("int")
+arg("int")
+
+#const char *glXGetClientString( Display *dpy, int name );
+function("glXGetClientString")
+returns("const char *")
+arg("Display *")
+arg("int")
+
+#GLXContext (*GLXCREATECONTEXTATTRIBSARBPROC)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+function("glXCreateContextAttribsARB")
+returns("GLXContext")
+arg("Display *")
+arg("GLXFBConfig")
+arg("GLXContext");
+arg("Bool");
+arg("const int *")
+
+
+#GLXFBConfig * glXChooseFBConfig(	Display * dpy, int screen, const int * attrib_list, int * nelements);
+function("glXChooseFBConfig")
+returns("GLXFBConfig *")
+arg("Display *")
+arg("int")
+arg("const int *")
+arg("int *")
+
+# some GL ones
+
+#void glClearColor(	GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
+function("glClearColor")
+returns("void")
+arg("GLclampf")
+arg("GLclampf")
+arg("GLclampf")
+arg("GLclampf")
+
+#void glClear(	GLbitfield mask);
+function("glClear")
+returns("void")
+arg("GLbitfield")
 
 ## fexthunk
-lib("fexthunk")
+### lib("fexthunk")
+### 
+### function("test"); returns("int"); arg("int")
+### function("test_void"); arg("int")
+### function("add"); returns("int"); arg("int"); arg("int")
 
-function("test"); returns("int"); arg("int")
-function("test_void"); arg("int")
-function("add"); returns("int"); arg("int"); arg("int")
+lib("libX11")
+
+#Display *XOpenDisplay(char *display_name);
+function("XOpenDisplay");
+returns("Display *");
+arg("const char *");
+
+#Colormap XCreateColormap(Display *display, Window w, Visual *visual, int alloc);
+function("XCreateColormap");
+returns("Colormap");
+arg("Display *");
+arg("Window");
+arg("Visual *");
+arg("int");
+
+#Window XCreateWindow(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth, 
+#unsigned int class, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes);
+function("XCreateWindow");
+returns("Window");
+arg("Display *");
+arg("Window");
+arg("int")
+arg("int")
+arg("unsigned int")
+arg("unsigned int")
+arg("unsigned int")
+arg("int")
+arg("unsigned int")
+arg("Visual *")
+arg("unsigned long")
+arg("XSetWindowAttributes *")
+
+#int XMapWindow(Display *display, Window w);
+function("XMapWindow");
+returns("int");
+arg("Display *");
+arg("Window")
 
 # generate
 WhatToGenerate = "all"
@@ -286,11 +375,19 @@ if len(sys.argv) == 2:
 
 if WhatToGenerate == "all" or  WhatToGenerate == "thunks":
     print("// thunks")
+    #print('#define MAKE_THUNK(lib, name) __attribute__((naked)) int fexthunks_##lib##_##name(void* args) { asm("int $0x7F\\n"); asm(".asciz " #lib ":" #name "\\n"); }')
+    print('extern "C" {')
     GenerateThunks(Libs)
+    print('}')
 
 if WhatToGenerate == "all" or  WhatToGenerate == "forwards":
     print("// forwards")
     GenerateForwards(Libs)
 
-#if WhatToGenerate == "all" or  WhatToGenerate == "initializers":
-#    GenerateInitializers(Libs)
+if WhatToGenerate == "all" or  WhatToGenerate == "initializers":
+    print("// initializers")
+    GenerateInitializers(Libs)
+
+if WhatToGenerate == "all" or  WhatToGenerate == "thunkmap":
+    print("// thunkmap")
+    GenerateThunkmap(Libs)

@@ -16,6 +16,12 @@ void fexthunks_impl_fexthunk_test_void(int a) {
 
 #include "FexThunk_forwards.inl"
 
+#include <GL/glx.h>
+#include <GL/gl.h>
+#include <dlfcn.h>
+
+#include "GLX_forwards.inl"
+
 #include <string>
 #include <map>
 
@@ -33,9 +39,14 @@ namespace FEXCore {
         }
 
         ThunkHandler_impl() {
-            thunks["fexthunk:add"] = (ThunkedFunction*)&fexthunks_forward_fexthunk_add;
-            thunks["fexthunk:test"] = (ThunkedFunction*)&fexthunks_forward_fexthunk_test;
-            thunks["fexthunk:test_void"] = (ThunkedFunction*)&fexthunks_forward_fexthunk_test_void;
+            thunks["fexthunk:add"] = &fexthunks_forward_fexthunk_add;
+            thunks["fexthunk:test"] = &fexthunks_forward_fexthunk_test;
+            thunks["fexthunk:test_void"] = &fexthunks_forward_fexthunk_test_void;
+
+            #include "GLX_thunkmap.inl"
+
+            fexthunks_init_libGL();
+            fexthunks_init_libX11();
         }
     };
 
