@@ -20,6 +20,9 @@ void fexthunks_impl_fexthunk_test_void(int a) {
 #include <GL/gl.h>
 #include <dlfcn.h>
 
+typedef int XSetErrorHandlerFN(Display*, XErrorEvent*);
+typedef int XIfEventFN(Display*, XEvent*, XPointer);
+
 #include "GLX_forwards.inl"
 
 #include <string>
