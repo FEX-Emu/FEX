@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/eventfd.h>
 
 namespace FEXCore::HLE {
   static void CopyStat(FEXCore::guest_stat *guest, struct stat *host) {
@@ -353,6 +354,12 @@ namespace FEXCore::HLE {
     REGISTER_SYSCALL_IMPL(open_by_handle_at, [](FEXCore::Core::InternalThreadState *Thread, int mount_fd, struct file_handle *handle, int flags) -> uint64_t {
       flags = RemapFlags(flags);
       uint64_t Result = ::open_by_handle_at(mount_fd, handle, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(eventfd2, [](FEXCore::Core::InternalThreadState *Thread, unsigned int initval, int flags) -> uint64_t {
+      uint64_t Result = eventfd(initval, flags);
+
       SYSCALL_ERRNO();
     });
   }
