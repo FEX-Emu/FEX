@@ -1,3 +1,6 @@
+g++ -shared -fPIC libEGL/libEGL_Guest.cpp -o libEGL-guest.so
+g++ -shared -fPIC libEGL/libEGL_Host.cpp -o libEGL-host.so
+
 g++ -shared -fPIC libGL/libGL_Guest.cpp -o libGL-guest.so
 g++ -shared -fPIC libGL/libGL_Host.cpp -o libGL-host.so
 
