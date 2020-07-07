@@ -34,3 +34,36 @@ python3 libEGL-thunks.py thunks > ../ThunkLibs/libEGL/libEGL_Thunks.inl
 python3 libEGL-thunks.py thunkmap     > ../ThunkLibs/libEGL/libEGL_Thunkmap.inl
 python3 libEGL-thunks.py initializers > ../ThunkLibs/libEGL/libEGL_Forwards.inl
 python3 libEGL-thunks.py forwards    >> ../ThunkLibs/libEGL/libEGL_Forwards.inl
+
+
+# libXfixes
+
+## guest side
+python3 libXfixes-thunks.py thunks > ../ThunkLibs/libXfixes/libXfixes_Thunks.inl
+
+## host side
+python3 libXfixes-thunks.py thunkmap     > ../ThunkLibs/libXfixes/libXfixes_Thunkmap.inl
+python3 libXfixes-thunks.py initializers > ../ThunkLibs/libXfixes/libXfixes_Forwards.inl
+python3 libXfixes-thunks.py forwards    >> ../ThunkLibs/libXfixes/libXfixes_Forwards.inl
+
+# libXrender
+
+## guest side
+python3 libXrender-thunks.py thunks > ../ThunkLibs/libXrender/libXrender_Thunks.inl
+
+## host side
+python3 libXrender-thunks.py thunkmap     > ../ThunkLibs/libXrender/libXrender_Thunkmap.inl
+python3 libXrender-thunks.py initializers > ../ThunkLibs/libXrender/libXrender_Forwards.inl
+python3 libXrender-thunks.py forwards    >> ../ThunkLibs/libXrender/libXrender_Forwards.inl
+
+
+# libXext
+
+## guest side
+python3 libXext-thunks.py thunks > ../ThunkLibs/libXext/libXext_Thunks.inl
+
+## host side
+python3 libXext-thunks.py thunkmap     > ../ThunkLibs/libXext/libXext_Thunkmap.inl
+python3 libXext-thunks.py initializers > ../ThunkLibs/libXext/libXext_Forwards.inl
+python3 libXext-thunks.py forwards    >> ../ThunkLibs/libXext/libXext_Forwards.inl
+
