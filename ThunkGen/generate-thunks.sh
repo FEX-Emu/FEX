@@ -67,3 +67,12 @@ python3 libXext-thunks.py thunkmap     > ../ThunkLibs/libXext/libXext_Thunkmap.i
 python3 libXext-thunks.py initializers > ../ThunkLibs/libXext/libXext_Forwards.inl
 python3 libXext-thunks.py forwards    >> ../ThunkLibs/libXext/libXext_Forwards.inl
 
+# libSDL2
+
+## guest side
+python3 libSDL2-thunks.py thunks > ../ThunkLibs/libSDL2/libSDL2_Thunks.inl
+
+## host side
+python3 libSDL2-thunks.py thunkmap     > ../ThunkLibs/libSDL2/libSDL2_Thunkmap.inl
+python3 libSDL2-thunks.py initializers > ../ThunkLibs/libSDL2/libSDL2_Forwards.inl
+python3 libSDL2-thunks.py forwards    >> ../ThunkLibs/libSDL2/libSDL2_Forwards.inl

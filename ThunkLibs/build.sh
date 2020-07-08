@@ -1,3 +1,6 @@
+g++ -shared -fPIC libSDL2/libSDL2_Guest.cpp -o libSDL2-guest.so
+g++ -shared -fPIC libSDL2/libSDL2_Host.cpp -o libSDL2-host.so
+
 g++ -shared -fPIC libXext/libXext_Guest.cpp -o libXext-guest.so
 g++ -shared -fPIC libXext/libXext_Host.cpp -o libXext-host.so
 

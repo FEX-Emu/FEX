@@ -26,8 +26,11 @@ _XIC *fexthunks_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned l
         case 7: return fexthunks_impl_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
         default:
         printf("XCreateIC_internal FAILURE\n");
+        return nullptr;
     }
 }
+
+static char ErrorReply[] = "FEX: Unable to match arg count";
 
 char* fexthunks_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned long *list) {
     switch(count) {
@@ -41,6 +44,7 @@ char* fexthunks_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigne
         case 7: return fexthunks_impl_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
         default:
         printf("XCreateIC_internal FAILURE\n");
+        return ErrorReply;
     }
 }
 
