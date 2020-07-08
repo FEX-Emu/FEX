@@ -9,4 +9,5 @@ Config.json
 out/
 .vscode/
 .vs/
-
+ThunkLibs/*/*.inl
+ThunkLibs/*.so
