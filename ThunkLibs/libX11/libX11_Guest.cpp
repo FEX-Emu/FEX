@@ -56,5 +56,11 @@ extern "C" {
         printf("RV: %p\n", rv);
         return rv;
     }
+
+    int (*XESetCloseDisplay(Display *display, int extension, int (*proc)()))() {
+        printf("libX11: XESetCloseDisplay\n");
+        return nullptr;
+    }
+      
 }
 

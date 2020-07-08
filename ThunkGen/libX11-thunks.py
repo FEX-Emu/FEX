@@ -46,6 +46,10 @@ lib("libX11")
 # fn("int (* XSynchronize(Display*, int))(Display*)")
 # fn("int XrmEnumerateDatabase(XrmDatabase, XrmNameList, XrmClassList, int, int (*)(_XrmHashBucketRec**, XrmBindingList, XrmQuarkList, XrmRepresentation*, XrmValue*, XPointer), XPointer)")
 
+# these is internal? libcairo uses it
+fn("void _XReadEvents(Display *)")
+
+fn("int XInitImage(XImage*)")
 fn("char* XrmQuarkToString(XrmQuark)")
 fn("int XrmCombineFileDatabase(const char*, _XrmHashBucketRec**, int)")
 fn("int XrmGetResource(XrmDatabase, const char*, const char*, char**, XrmValue*)")
