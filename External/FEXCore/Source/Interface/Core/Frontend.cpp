@@ -116,9 +116,9 @@ Decoder::Decoder(FEXCore::Context::Context *ctx)
 
 uint8_t Decoder::ReadByte() {
   uint8_t Byte = InstStream[InstructionSize];
-  InstructionSize++;
   LogMan::Throw::A(InstructionSize < MAX_INST_SIZE, "Max instruction size exceeded!");
   Instruction[InstructionSize] = Byte;
+  InstructionSize++;
   return Byte;
 }
 
