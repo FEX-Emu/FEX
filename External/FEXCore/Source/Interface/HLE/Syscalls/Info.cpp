@@ -27,7 +27,7 @@ namespace FEXCore::HLE {
       strcpy(buf->nodename, "FEXCore");
       strcpy(buf->release, "5.0.0");
       strcpy(buf->version, "#" FEXCORE_VERSION);
-      strcpy(buf->machine, "x64_64");
+      strcpy(buf->machine, "x86_64");
       return 0;
     });
 
