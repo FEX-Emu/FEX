@@ -514,6 +514,41 @@
       ]
     },
 
+    "LoadMemTSO": {
+      "Desc": ["Does a x86 TSO compatible load from memory."
+              ],
+      "OpClass": "Memory",
+      "HasDest": true,
+      "DestClass": "Complex",
+      "DestSize": "Size",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Addr"
+      ],
+      "Args": [
+        "uint8_t", "Size",
+        "uint8_t", "Align",
+        "RegisterClassType", "Class"
+      ]
+    },
+
+    "StoreMemTSO": {
+      "Desc": ["Does a x86 TSO compatible store to memory."
+              ],
+      "HasSideEffects": true,
+      "OpClass": "Memory",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Addr",
+        "Value"
+      ],
+      "Args": [
+        "uint8_t", "Size",
+        "uint8_t", "Align",
+        "RegisterClassType", "Class"
+      ]
+    },
+
     "VLoadMemElement": {
       "OpClass": "Memory",
       "HasDest": true,
