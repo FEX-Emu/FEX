@@ -385,7 +385,7 @@ namespace FEX::HarnessHelper {
 
 class ELFCodeLoader final : public FEXCore::CodeLoader {
 public:
-  ELFCodeLoader(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr)
+  ELFCodeLoader(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEX::Config::Value<std::string> *AdditionalEnvp = nullptr)
     : File {Filename, RootFS, false}
     , DB {&File}
     , Args {args} {
@@ -402,6 +402,13 @@ public:
         if (envp[i] == nullptr)
           break;
         EnvironmentVariables.emplace_back(envp[i]);
+      }
+    }
+
+    if (!!AdditionalEnvp) {
+      auto EnvpList = AdditionalEnvp->All();
+      for (auto iter = EnvpList.begin(); iter != EnvpList.end(); ++iter) {
+        EnvironmentVariables.emplace_back(*iter);
       }
     }
 
