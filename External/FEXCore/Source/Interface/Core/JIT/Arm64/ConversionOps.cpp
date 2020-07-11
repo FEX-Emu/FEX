@@ -138,11 +138,11 @@ DEF_OP(Vector_FToF) {
 
   switch (Conv) {
     case 0x0804: { // Double <- Float
-      fcvtl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V4S());
+      fcvtl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2S());
       break;
     }
     case 0x0408: { // Float <- Double
-      fcvtn(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      fcvtn(GetDst(Node).V2S(), GetSrc(Op->Header.Args[0].ID()).V2D());
       break;
     }
     default: LogMan::Msg::A("Unknown Conversion Type : 0%04x", Conv); break;
