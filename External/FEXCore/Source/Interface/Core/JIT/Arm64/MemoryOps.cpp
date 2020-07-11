@@ -41,7 +41,7 @@ DEF_OP(StoreContextPair) {
 DEF_OP(LoadContext) {
   auto Op = IROp->C<IR::IROp_LoadContext>();
   uint8_t OpSize = IROp->Size;
-  if (Op->Class.Val == 0) {
+  if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
     case 1:
       ldrb(GetReg<RA_32>(Node), MemOperand(STATE, Op->Offset));
@@ -84,7 +84,7 @@ DEF_OP(LoadContext) {
 DEF_OP(StoreContext) {
   auto Op = IROp->C<IR::IROp_StoreContext>();
   uint8_t OpSize = IROp->Size;
-  if (Op->Class.Val == 0) {
+  if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
     case 1:
       strb(GetReg<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
@@ -129,7 +129,7 @@ DEF_OP(LoadContextIndexed) {
   size_t size = Op->Size;
   auto index = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == FEXCore::IR::GPRClass) {
     switch (Op->Stride) {
     case 1:
     case 2:
@@ -213,7 +213,7 @@ DEF_OP(StoreContextIndexed) {
   size_t size = Op->Size;
   auto index = GetReg<RA_64>(Op->Header.Args[1].ID());
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == FEXCore::IR::GPRClass) {
     auto value = GetReg<RA_64>(Op->Header.Args[0].ID());
 
     switch (Op->Stride) {
@@ -376,7 +376,7 @@ DEF_OP(LoadMem) {
     MemSrc = MemOperand(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == FEXCore::IR::GPRClass) {
     auto Dst = GetReg<RA_64>(Node);
     switch (Op->Size) {
       case 1:
@@ -417,6 +417,84 @@ DEF_OP(LoadMem) {
   }
 }
 
+DEF_OP(LoadMemTSO) {
+  auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+
+  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  if (!CTX->Config.UnifiedMemory) {
+    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+    add(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+    MemSrc = MemOperand(TMP1);
+  }
+
+  if (!SupportsAtomics && Op->Class == FEXCore::IR::GPRClass) {
+    // ARMv8.0 doesn't support atomic memory ops or LORegion ops, so we need to fall down the DMB path
+    auto Dst = GetReg<RA_64>(Node);
+    dmb(InnerShareable, BarrierAll);
+    switch (Op->Size) {
+      case 1:
+        ldrb(Dst, MemSrc);
+        break;
+      case 2:
+        ldrh(Dst, MemSrc);
+        break;
+      case 4:
+        ldr(Dst.W(), MemSrc);
+        break;
+      case 8:
+        ldr(Dst, MemSrc);
+        break;
+      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+    }
+    dmb(InnerShareable, BarrierAll);
+  }
+  else if (Op->Class == FEXCore::IR::GPRClass) {
+    if (Op->Size == 1) {
+      // 8bit load is always aligned to natural alignment
+      auto Dst = GetReg<RA_64>(Node);
+      ldlarb(Dst, MemSrc);
+    }
+    else {
+      // Aligned
+      auto Dst = GetReg<RA_64>(Node);
+      nop();
+      switch (Op->Size) {
+        case 2:
+          ldlarh(Dst, MemSrc);
+          break;
+        case 4:
+          ldlar(Dst.W(), MemSrc);
+          break;
+        case 8:
+          ldlar(Dst, MemSrc);
+          break;
+        default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+      }
+      nop();
+    }
+  }
+  else {
+    dmb(InnerShareable, BarrierAll);
+    auto Dst = GetDst(Node);
+    switch (Op->Size) {
+      case 2:
+        ldr(Dst.H(), MemSrc);
+        break;
+      case 4:
+        ldr(Dst.S(), MemSrc);
+        break;
+      case 8:
+        ldr(Dst.D(), MemSrc);
+        break;
+      case 16:
+        ldr(Dst, MemSrc);
+        break;
+      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+    }
+    dmb(InnerShareable, BarrierAll);
+  }
+}
+
 DEF_OP(StoreMem) {
   auto Op = IROp->C<IR::IROp_StoreMem>();
   auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
@@ -425,43 +503,119 @@ DEF_OP(StoreMem) {
     MemSrc = MemOperand(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == FEXCore::IR::GPRClass) {
     switch (Op->Size) {
-    case 1:
-      strb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
-    break;
-    case 2:
-      strh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
-    break;
-    case 4:
-      str(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
-    break;
-    case 8:
-      str(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
-    break;
-    default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+      case 1:
+        strb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        break;
+      case 2:
+        strh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        break;
+      case 4:
+        str(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
+        break;
+      case 8:
+        str(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        break;
+      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
     }
   }
   else {
     auto Src = GetSrc(Op->Header.Args[1].ID());
     switch (Op->Size) {
-    case 1:
-      str(Src.B(), MemSrc);
-    break;
-    case 2:
-      str(Src.H(), MemSrc);
-    break;
-    case 4:
-      str(Src.S(), MemSrc);
-    break;
-    case 8:
-      str(Src.D(), MemSrc);
-    break;
-    case 16:
-      str(Src, MemSrc);
-    break;
-    default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+      case 1:
+        str(Src.B(), MemSrc);
+        break;
+      case 2:
+        str(Src.H(), MemSrc);
+        break;
+      case 4:
+        str(Src.S(), MemSrc);
+        break;
+      case 8:
+        str(Src.D(), MemSrc);
+        break;
+      case 16:
+        str(Src, MemSrc);
+        break;
+      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
     }
+  }
+}
+
+DEF_OP(StoreMemTSO) {
+  auto Op = IROp->C<IR::IROp_StoreMemTSO>();
+  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  if (!CTX->Config.UnifiedMemory) {
+    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+    add(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+    MemSrc = MemOperand(TMP1);
+  }
+
+  if (!SupportsAtomics && Op->Class == FEXCore::IR::GPRClass) {
+    // ARMv8.0 doesn't support atomic memory ops or LORegion ops, so we need to fall down the DMB path
+    dmb(InnerShareable, BarrierAll);
+    switch (Op->Size) {
+      case 1:
+        strb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        break;
+      case 2:
+        strh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        break;
+      case 4:
+        str(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
+        break;
+      case 8:
+        str(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        break;
+      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+    }
+    dmb(InnerShareable, BarrierAll);
+  }
+  else if (Op->Class == FEXCore::IR::GPRClass) {
+    if (Op->Size == 1) {
+      // 8bit load is always aligned to natural alignment
+      stllrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+    }
+    else {
+      nop();
+      switch (Op->Size) {
+        case 2:
+          stllrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          break;
+        case 4:
+          stllr(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
+          break;
+        case 8:
+          stllr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          break;
+        default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+      }
+      nop();
+    }
+  }
+  else {
+    dmb(InnerShareable, BarrierAll);
+    auto Src = GetSrc(Op->Header.Args[1].ID());
+    switch (Op->Size) {
+      case 1:
+        str(Src.B(), MemSrc);
+        break;
+      case 2:
+        str(Src.H(), MemSrc);
+        break;
+      case 4:
+        str(Src.S(), MemSrc);
+        break;
+      case 8:
+        str(Src.D(), MemSrc);
+        break;
+      case 16:
+        str(Src, MemSrc);
+        break;
+      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+    }
+    dmb(InnerShareable, BarrierAll);
   }
 }
 
@@ -488,6 +642,8 @@ void JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STOREFLAG,           StoreFlag);
   REGISTER_OP(LOADMEM,             LoadMem);
   REGISTER_OP(STOREMEM,            StoreMem);
+  REGISTER_OP(LOADMEMTSO,          LoadMemTSO);
+  REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
 #undef REGISTER_OP
