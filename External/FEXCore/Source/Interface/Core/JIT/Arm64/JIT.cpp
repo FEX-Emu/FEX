@@ -369,7 +369,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   }
 
   if (SpillSlots) {
+    add(TMP1, sp, 0); // Move that supports SP
     sub(sp, sp, SpillSlots * 16);
+    stp(TMP1, lr, MemOperand(sp, -16, PreIndex));
+  }
+  else {
+    add(TMP1, sp, 0); // Move that supports SP
+    stp(TMP1, lr, MemOperand(sp, -16, PreIndex));
   }
 
   IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
