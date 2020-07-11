@@ -75,6 +75,10 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 #else
   auto Features = vixl::CPUFeatures::InferFromOS();
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
+  if (SupportsAtomics) {
+    // Hypervisor can hide this on the c630?
+    Features.Combine(vixl::CPUFeatures::Feature::kLORegions);
+  }
 #endif
 
   SetCPUFeatures(Features);
