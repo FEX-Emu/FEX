@@ -14,7 +14,7 @@
 #include <json-maker.h>
 
 namespace FEX::Config {
-  std::unordered_map<std::string, std::string> ConfigMap;
+  std::unordered_map<std::string, FEX::Config::Value<std::string>> ConfigMap;
 
   struct JsonAllocator {
     jsonPool_t PoolObject;
@@ -151,7 +151,9 @@ namespace FEX::Config {
     Dest = json_objOpen(Buffer, nullptr);
     Dest = json_objOpen(Dest, "Config");
     for (auto &it : ConfigMap) {
-      Dest = json_str(Dest, it.first.data(), it.second.c_str());
+      if (!it.second().empty()) {
+        Dest = json_str(Dest, it.first.data(), it.second().c_str());
+      }
     }
     Dest = json_objClose(Dest);
     Dest = json_objClose(Dest);
@@ -179,27 +181,78 @@ namespace FEX::Config {
   }
 
   void Add(std::string const &Key, std::string_view const Value) {
-    ConfigMap[Key] = Value;
+    FEX::Config::Value<std::string> Val{Key, Value, true};
+    ConfigMap.try_emplace(Key, Val);
+  }
+
+  void Append(std::string const &Key, std::string_view const Value) {
+    auto Iter = ConfigMap.find(Key);
+    if (Iter == ConfigMap.end()) {
+      FEX::Config::Value<std::string> Val{Key, "", true};
+      Iter = ConfigMap.try_emplace(Key, Val).first;
+    }
+    Iter->second.Append(std::string(Value));
   }
 
   bool Exists(std::string const &Key) {
     return ConfigMap.find(Key) != ConfigMap.end();
   }
 
-  std::string_view Get(std::string const &Key) {
+  Value<std::string> &Get(std::string const &Key) {
     auto Value = ConfigMap.find(Key);
     if (Value == ConfigMap.end())
       assert(0 && "Not a real config value");
-    std::string_view ValueView = Value->second;
-    return ValueView;
+    return Value->second;
   }
 
-  std::string_view GetIfExists(std::string const &Key, std::string_view const Default) {
+  Value<std::string> *GetIfExists(std::string const &Key) {
     auto Value = ConfigMap.find(Key);
     if (Value == ConfigMap.end())
-      return Default;
+      return nullptr;
 
-    std::string_view ValueView = Value->second;
-    return ValueView;
+    return &Value->second;
+  }
+
+  template<typename T>
+  T Get(std::string const &Key) {
+    T Value;
+    if (!FEX::StrConv::Conv(Get(Key)(), &Value)) {
+      assert(0 && "Attempted to convert invalid value");
+    }
+    return Value;
+  }
+
+  template<typename T>
+  T GetIfExists(std::string const &Key, T Default) {
+    T Value;
+    if (Exists(Key) && FEX::StrConv::Conv(FEX::Config::Get(Key)(), &Value)) {
+      return Value;
+    }
+    else {
+      return Default;
+    }
+  }
+
+  template<>
+  std::string GetIfExists(std::string const &Key, std::string Default) {
+    auto Res = GetIfExists(Key);
+    if (Res) {
+      return (*Res)();
+    }
+    else {
+      return Default;
+    }
+  }
+
+  template bool GetIfExists(std::string const &Key, bool Default);
+  template uint8_t GetIfExists(std::string const &Key, uint8_t Default);
+  template uint64_t GetIfExists(std::string const &Key, uint64_t Default);
+
+  void GetListIfExists(std::string const &Key, std::list<std::string> *List) {
+    List->clear();
+    auto Res = GetIfExists(Key);
+    if (Res) {
+      *List = Res->All();
+    }
   }
 }
