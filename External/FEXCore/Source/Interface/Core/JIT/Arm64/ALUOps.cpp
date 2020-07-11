@@ -486,13 +486,14 @@ DEF_OP(LDiv) {
       uxth(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
       bfi(TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
       sxth(TMP2, GetReg<RA_32>(Op->Header.Args[2].ID()));
-      sdiv(GetReg<RA_32>(Node), TMP1, TMP2);
+      sdiv(GetReg<RA_32>(Node), TMP1.W(), TMP2.W());
     break;
     }
     case 4: {
       mov(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-      sdiv(GetReg<RA_32>(Node), TMP1, GetReg<RA_32>(Op->Header.Args[2].ID()));
+      sxtw(TMP2, GetReg<RA_32>(Op->Header.Args[2].ID()));
+      sdiv(GetReg<RA_64>(Node), TMP1, TMP2);
     break;
     }
     case 8: {
