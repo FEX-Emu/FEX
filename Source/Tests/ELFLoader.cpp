@@ -102,6 +102,7 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::Value<bool> UnifiedMemory{"UnifiedMemory", true};
   FEX::Config::Value<std::string> LDPath{"RootFS", ""};
   FEX::Config::Value<bool> SilentLog{"SilentLog", false};
+  FEX::Config::Value<std::string> Environment{"Env", ""};
 
   ::SilentLog = SilentLog();
 
@@ -110,7 +111,7 @@ int main(int argc, char **argv, char **const envp) {
 
   LogMan::Throw::A(!Args.empty(), "Not enough arguments");
 
-  FEX::HarnessHelper::ELFCodeLoader Loader{Args[0], LDPath(), Args, ParsedArgs, envp};
+  FEX::HarnessHelper::ELFCodeLoader Loader{Args[0], LDPath(), Args, ParsedArgs, envp, &Environment};
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
   uint64_t VMemSize = 1ULL << 36;
