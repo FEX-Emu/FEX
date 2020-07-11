@@ -17,16 +17,12 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
+#if _M_X86_64
 static uint64_t CompileBlockThunk(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
   uint64_t Result = CTX->CompileBlock(Thread, RIP);
   return Result;
 }
 
-static uint64_t CompileFallbackBlockThunk(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-  uint64_t Result = CTX->CompileFallbackBlock(Thread, RIP);
-  return Result;
-}
-#if _M_X86_64
 void JITCore::ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) {
   PrintDisassembler PrintDisasm(stdout);
   PrintDisasm.DisassembleBuffer(vixl::aarch64::Instruction::Cast(DispatchPtr), vixl::aarch64::Instruction::Cast(CustomDispatchEnd));
@@ -323,7 +319,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   FinalizeCode();
 
   auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(Entry));
+  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), CodeEnd - reinterpret_cast<uint64_t>(Entry));
 #if _M_X86_64
   if (!CustomDispatchGenerated) {
     HostToGuest[State->State.State.rip] = std::make_pair(Entry, CodeEnd);
