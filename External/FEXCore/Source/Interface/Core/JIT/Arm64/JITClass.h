@@ -310,6 +310,8 @@ private:
   DEF_OP(StoreFlag);
   DEF_OP(LoadMem);
   DEF_OP(StoreMem);
+  DEF_OP(LoadMemTSO);
+  DEF_OP(StoreMemTSO);
   DEF_OP(VLoadMemElement);
   DEF_OP(VStoreMemElement);
 
