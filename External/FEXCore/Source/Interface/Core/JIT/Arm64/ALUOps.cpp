@@ -745,13 +745,13 @@ DEF_OP(Zext) {
     // FPR -> GPR transfer with free truncation
     switch (Op->SrcSize) {
     case 8:
-      mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
+      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
     break;
     case 16:
-      mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
+      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
     break;
     case 32:
-      mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
+      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
     break;
     case 64:
       mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
