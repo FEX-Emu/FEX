@@ -1828,7 +1828,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov (Dst, rax);
           break;
         }
-        case IR::OP_LOADMEM: {
+        case IR::OP_LOADMEM:
+        case IR::OP_LOADMEMTSO: {
           auto Op = IROp->C<IR::IROp_LoadMem>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
@@ -1899,7 +1900,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
-        case IR::OP_STOREMEM: {
+        case IR::OP_STOREMEM:
+        case IR::OP_STOREMEMTSO: {
           auto Op = IROp->C<IR::IROp_StoreMem>();
           uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
