@@ -269,8 +269,10 @@ DEF_OP(VAddV) {
     case 1:
     case 2:
     case 4:
+      addv(GetDst(Node).VCast(Op->Header.ElementSize * 8, 1), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
+      break;
     case 8:
-      addv(GetDst(Node).VCast(OpSize * 8, Elements), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
+      addp(GetDst(Node).VCast(OpSize * 8, 1), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
       break;
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
