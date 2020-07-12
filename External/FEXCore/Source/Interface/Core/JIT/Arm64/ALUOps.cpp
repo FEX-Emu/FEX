@@ -449,17 +449,17 @@ DEF_OP(Ror) {
 
   switch (OpSize) {
     case 1: {
-      mov(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
-      rorv(GetReg<RA_32>(Node), TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
+      rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
     }
     case 2: {
-      mov(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
-      rorv(GetReg<RA_32>(Node), TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
+      rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
     }
     case 4: {
@@ -483,9 +483,9 @@ DEF_OP(LDiv) {
   auto Size = OpSize;
   switch (Size) {
     case 2: {
-      uxth(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
-      sxth(TMP2, GetReg<RA_32>(Op->Header.Args[2].ID()));
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+      sxth(TMP2.W(), GetReg<RA_32>(Op->Header.Args[2].ID()));
       sdiv(GetReg<RA_32>(Node), TMP1.W(), TMP2.W());
     break;
     }
@@ -546,9 +546,9 @@ DEF_OP(LUDiv) {
   auto Size = OpSize;
   switch (Size) {
     case 2: {
-      uxth(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
-      udiv(GetReg<RA_32>(Node), TMP1, GetReg<RA_32>(Op->Header.Args[2].ID()));
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+      udiv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[2].ID()));
     break;
     }
     case 4: {
@@ -679,8 +679,8 @@ DEF_OP(LURem) {
     case 2: {
       auto Divisor = GetReg<RA_32>(Op->Header.Args[2].ID());
 
-      uxth(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
       udiv(TMP2.W(), TMP1.W(), Divisor);
       msub(GetReg<RA_32>(Node), TMP2.W(), Divisor, TMP1.W());
     break;
