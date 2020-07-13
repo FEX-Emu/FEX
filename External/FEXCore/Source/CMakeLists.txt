@@ -122,6 +122,7 @@ set (SRCS
   Interface/Core/Frontend.cpp
   Interface/Core/GdbServer.cpp
   Interface/Core/OpcodeDispatcher.cpp
+  Interface/Core/SignalDelegator.cpp
   Interface/Core/X86Tables.cpp
   Interface/Core/X86DebugInfo.cpp
   Interface/Core/Interpreter/InterpreterCore.cpp

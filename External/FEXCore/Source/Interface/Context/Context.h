@@ -3,6 +3,7 @@
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/InternalThreadState.h"
+#include "Interface/Core/SignalDelegator.h"
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/Memory/MemMapper.h"
 #include "Interface/IR/PassManager.h"
@@ -83,11 +84,11 @@ namespace FEXCore::Context {
     CustomCPUFactoryType FallbackCPUFactory;
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
 
-
-
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif
+
+    SignalDelegator SignalDelegation;
 
     Context();
     ~Context();
@@ -161,6 +162,5 @@ namespace FEXCore::Context {
 #if ENABLE_JITSYMBOLS
     FEXCore::JITSymbols Symbols;
 #endif
-
   };
 }

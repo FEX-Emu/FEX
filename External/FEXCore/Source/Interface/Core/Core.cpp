@@ -124,7 +124,8 @@ namespace DefaultFallbackCore {
 }
 
 namespace FEXCore::Context {
-  Context::Context() {
+  Context::Context()
+    : SignalDelegation {this} {
     FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
@@ -679,6 +680,7 @@ namespace FEXCore::Context {
 
     // Let's do some initial bookkeeping here
     Thread->State.ThreadManager.TID = ::gettid();
+    SignalDelegation.RegisterTLSState(Thread);
     ++IdleWaitRefCount;
 
     LogMan::Msg::D("[%d] Waiting to run", Thread->State.ThreadManager.TID.load());
