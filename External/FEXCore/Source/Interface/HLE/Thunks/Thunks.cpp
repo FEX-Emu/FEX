@@ -7,50 +7,69 @@
 
 #include <string>
 #include <map>
-
+#include <Interface/Context/Context.h>
+#include <LogManager.h>
+#include <mutex>
 
 namespace FEXCore {
+    
+    struct ExportEntry { const char* Name; ThunkedFunction* Fn; };
 
-    namespace {
-        struct ExportEntry { const char* name; void(*fn)(void*); };
+    class ThunkHandler_impl: public ThunkHandler {
+        std::mutex ThunksMutex;
 
-        static void loadlib(void* name);
-
-        static std::map<std::string, ThunkedFunction*> thunks = {
+        std::map<std::string, ThunkedFunction*> Thunks = {
             { "fex:loadlib", &loadlib}
         };
 
-        void loadlib(void* name) {
+        static void loadlib(FEXCore::Context::Context *CTX, void* Name) {
             //TODO: pass path via env / parameter / relative to bin path
-            auto soname = std::string("/home/skmp/projects/FEX/ThunkLibs/") + (const char*)name + "-host.so";
+            
+            auto SOName = CTX->Config.ThunkLibsPath + "/" + (const char*)Name + "-host.so";
 
-            printf("Load lib: %s -> %s\n", name, soname.c_str());
-            auto handle = dlopen(soname.c_str(), RTLD_LOCAL | RTLD_NOW);
+            LogMan::Msg::D("Load lib: %s -> %s", Name, SOName.c_str());
+            
+            auto Handle = dlopen(SOName.c_str(), RTLD_LOCAL | RTLD_NOW);
 
-            ExportEntry* (*init_fn)();
-
-            auto init_sym = std::string("fexthunks_exports_") + (const char*)name;
-
-            (void*&)init_fn = dlsym(handle, init_sym.c_str());
-
-            auto exports = init_fn();
-
-            // TODO: lock
-            int i;
-            for (i = 0; exports[i].name; i++) {
-                thunks[exports[i].name] = exports[i].fn;
+            if (!Handle) {
+                LogMan::Msg::E("Load lib: failed to dlopen %s", SOName.c_str());
+                return;
             }
 
-            printf("Loaded %d syms\n", i);
-        }
-    }
+            ExportEntry* (*InitFN)();
 
-    class ThunkHandler_impl: public ThunkHandler {
+            auto InitSym = std::string("fexthunks_exports_") + (const char*)Name;
+
+            (void*&)InitFN = dlsym(Handle, InitSym.c_str());
+
+            if (!InitFN) {
+                LogMan::Msg::E("Load lib: failed to find export %s", InitSym.c_str());
+                return;
+            }
+            
+            auto Exports = InitFN();
+
+            auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
+
+            {
+                std::lock_guard<std::mutex> lk(That->ThunksMutex);
+
+                int i;
+                for (i = 0; Exports[i].Name; i++) {
+                    That->Thunks[Exports[i].Name] = Exports[i].Fn;
+                }
+
+                LogMan::Msg::D("Loaded %d syms", i);
+            }
+        }
+
         public:
 
-        ThunkedFunction* LookupThunk(const char *name) {
-            if (thunks.count(name)) {
-                return thunks[name];
+        ThunkedFunction* LookupThunk(const char *Name) {
+            auto it = Thunks.find(Name);
+
+            if (it != Thunks.end()) {
+                return it->second;
             } else {
                 return nullptr;
             }

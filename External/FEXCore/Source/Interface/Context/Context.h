@@ -53,6 +53,7 @@ namespace FEXCore::Context {
       bool GdbServer {false};
       bool UnifiedMemory {true};
       std::string RootFSPath;
+      std::string ThunkLibsPath;
 
       bool Is64BitMode {true};
       uint64_t EmulatedCPUCores{1};

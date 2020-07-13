@@ -1,5 +1,9 @@
+namespace FEXCore::Context {
+  struct Context;
+}
+
 namespace FEXCore {
-    typedef void ThunkedFunction(void* ArgsRv);
+    typedef void ThunkedFunction(FEXCore::Context::Context *CTX, void* ArgsRv);
 
     class ThunkHandler {
     public:

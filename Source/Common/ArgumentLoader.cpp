@@ -66,10 +66,15 @@ namespace FEX::ArgLoader {
     }
     {
       Parser.set_defaults("RootFS", "");
+      Parser.set_defaults("ThunkLibs", "");
 
       EmulationGroup.add_option("-R", "--rootfs")
         .dest("RootFS")
         .help("Which Root filesystem prefix to use");
+
+      EmulationGroup.add_option("-t", "--thunklibs")
+        .dest("ThunkLibs")
+        .help("Folder to find the host-side thunking libs");
 
       EmulationGroup.add_option("-U", "--unified-memory")
         .dest("UnifiedMemory")
@@ -175,6 +180,11 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("RootFS")) {
         std::string Option = Options["RootFS"];
         Config::Add("RootFS", Option);
+      }
+
+      if (Options.is_set_by_user("ThunkLibs")) {
+        std::string Option = Options["ThunkLibs"];
+        Config::Add("ThunkLibs", Option);
       }
 
       if (Options.is_set_by_user("UnifiedMemory")) {

@@ -42,6 +42,9 @@ namespace FEXCore::Config {
     case CONFIG_ROOTFSPATH:
       CTX->Config.RootFSPath = Config;
       break;
+    case CONFIG_THUNKLIBSPATH:
+      CTX->Config.ThunkLibsPath = Config;
+      break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
   }

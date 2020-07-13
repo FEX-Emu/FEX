@@ -171,7 +171,7 @@ def GenerateForward_args(args):
     return "".join(rv)
 
 def GenerateForward_function(lib, function):
-    print("static void fexthunks_forward_" + lib["name"] + "_" + function["name"] + "(void *argsv){")
+    print("static void fexthunks_forward_" + lib["name"] + "_" + function["name"] + "(FEXCore::Context::Context *ctx, void *argsv){")
     print("struct arg_t "+ GenerateThunk_struct(function["return"], function["args"]) + ";")
     print("auto args = (arg_t*)argsv;")
 
