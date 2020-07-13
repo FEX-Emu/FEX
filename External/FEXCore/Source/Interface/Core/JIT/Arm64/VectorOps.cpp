@@ -269,8 +269,10 @@ DEF_OP(VAddV) {
     case 1:
     case 2:
     case 4:
+      addv(GetDst(Node).VCast(Op->Header.ElementSize * 8, 1), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
+      break;
     case 8:
-      addv(GetDst(Node).VCast(OpSize * 8, Elements), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
+      addp(GetDst(Node).VCast(OpSize * 8, 1), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
       break;
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
@@ -1822,15 +1824,15 @@ DEF_OP(VUMull2) {
   auto Op = IROp->C<IR::IROp_VUMull2>();
   switch (Op->Header.ElementSize) {
     case 2: {
-      umull2(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+      umull2(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
     break;
     }
     case 4: {
-      umull2(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+      umull2(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
     break;
     }
     case 8: {
-      umull2(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+      umull2(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
     break;
     }
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize >> 1); break;
@@ -1841,15 +1843,15 @@ DEF_OP(VSMull2) {
   auto Op = IROp->C<IR::IROp_VSMull2>();
   switch (Op->Header.ElementSize) {
     case 2: {
-      smull2(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+      smull2(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
     break;
     }
     case 4: {
-      smull2(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+      smull2(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
     break;
     }
     case 8: {
-      smull2(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+      smull2(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
     break;
     }
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize >> 1); break;

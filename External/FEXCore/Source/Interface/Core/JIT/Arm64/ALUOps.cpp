@@ -449,17 +449,17 @@ DEF_OP(Ror) {
 
   switch (OpSize) {
     case 1: {
-      mov(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
-      rorv(GetReg<RA_32>(Node), TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
+      rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
     }
     case 2: {
-      mov(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
-      rorv(GetReg<RA_32>(Node), TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
+      rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
     }
     case 4: {
@@ -483,16 +483,17 @@ DEF_OP(LDiv) {
   auto Size = OpSize;
   switch (Size) {
     case 2: {
-      uxth(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
-      sxth(TMP2, GetReg<RA_32>(Op->Header.Args[2].ID()));
-      sdiv(GetReg<RA_32>(Node), TMP1, TMP2);
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+      sxth(TMP2.W(), GetReg<RA_32>(Op->Header.Args[2].ID()));
+      sdiv(GetReg<RA_32>(Node), TMP1.W(), TMP2.W());
     break;
     }
     case 4: {
       mov(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-      sdiv(GetReg<RA_32>(Node), TMP1, GetReg<RA_32>(Op->Header.Args[2].ID()));
+      sxtw(TMP2, GetReg<RA_32>(Op->Header.Args[2].ID()));
+      sdiv(GetReg<RA_64>(Node), TMP1, TMP2);
     break;
     }
     case 8: {
@@ -545,9 +546,9 @@ DEF_OP(LUDiv) {
   auto Size = OpSize;
   switch (Size) {
     case 2: {
-      uxth(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
-      udiv(GetReg<RA_32>(Node), TMP1, GetReg<RA_32>(Op->Header.Args[2].ID()));
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+      udiv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[2].ID()));
     break;
     }
     case 4: {
@@ -678,8 +679,8 @@ DEF_OP(LURem) {
     case 2: {
       auto Divisor = GetReg<RA_32>(Op->Header.Args[2].ID());
 
-      uxth(TMP1, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
       udiv(TMP2.W(), TMP1.W(), Divisor);
       msub(GetReg<RA_32>(Node), TMP2.W(), Divisor, TMP1.W());
     break;
@@ -744,13 +745,13 @@ DEF_OP(Zext) {
     // FPR -> GPR transfer with free truncation
     switch (Op->SrcSize) {
     case 8:
-      mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
+      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
     break;
     case 16:
-      mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
+      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
     break;
     case 32:
-      mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
+      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
     break;
     case 64:
       mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
