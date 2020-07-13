@@ -123,6 +123,44 @@ DEF_OP(Syscall) {
   add(sp, sp, SPOffset);
 }
 
+DEF_OP(Thunk) {
+  auto Op = IROp->C<IR::IROp_Thunk>();
+  // Arguments are passed as follows:
+  // X0: CTX
+  // X1: Args (from guest stack)
+
+  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
+
+  sub(sp, sp, SPOffset);
+
+  int i = 0;
+  for (auto RA : RA64) {
+    str(RA, MemOperand(sp, i * 8));
+    i++;
+  }
+  str(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+  LoadConstant(x0, reinterpret_cast<uint64_t>(CTX));
+  mov(x1, GetReg<RA_64>(Op->Header.Args[2].ID()));
+
+#if _M_X86_64
+  ERROR_AND_DIE("JIT: OP_THUNK not supported with arm simulator")
+#else
+  blr(GetSrc<RA_64>(Op->Header.Args[1].ID()));
+#endif
+
+  // Fix the stack and any values that were stepped on
+  i = 0;
+  for (auto RA : RA64) {
+    ldr(RA, MemOperand(sp, i * 8));
+    i++;
+  }
+
+  ldr(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+  add(sp, sp, SPOffset);
+}
+
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
   uint64_t SPOffset = AlignUp((RA64.size() + 2 + 2) * 8, 16);
@@ -173,6 +211,7 @@ void JITCore::RegisterBranchHandlers() {
   REGISTER_OP(JUMP,              Jump);
   REGISTER_OP(CONDJUMP,          CondJump);
   REGISTER_OP(SYSCALL,           Syscall);
+  REGISTER_OP(THUNK,             Thunk);
   REGISTER_OP(CPUID,             CPUID);
 #undef REGISTER_OP
 }
