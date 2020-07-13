@@ -76,6 +76,11 @@ namespace FEX::ArgLoader {
         .action("store_true")
         .help("Enable unified memory for the emulator");
 
+      EmulationGroup.add_option("-E", "--env")
+        .dest("Env")
+        .help("Adds an environment variable")
+        .action("append");
+
       Parser.add_option_group(EmulationGroup);
     }
     {
@@ -113,7 +118,7 @@ namespace FEX::ArgLoader {
 
       Parser.add_option_group(LoggingGroup);
     }
-      
+
     optparse::Values Options = Parser.parse_args(argc, argv);
 
     {
@@ -175,6 +180,12 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("UnifiedMemory")) {
         bool Option = Options.get("UnifiedMemory");
         Config::Add("UnifiedMemory", std::to_string(Option));
+      }
+
+      if (Options.is_set_by_user("Env")) {
+        for (auto iter = Options.all("Env").begin(); iter != Options.all("Env").end(); ++iter) {
+          Config::Append("Env", *iter);
+        }
       }
     }
 
