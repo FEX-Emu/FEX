@@ -13,7 +13,7 @@ WORKDIR /opt/FEX/build
 
 ARG CC=clang-10
 ARG CXX=clang++-10
-RUN cmake -G Ninja ..
+RUN cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
 RUN ninja
 RUN echo "PATH=\$PATH:/opt/FEX/build/Bin" >> ~/.bashrc
 
