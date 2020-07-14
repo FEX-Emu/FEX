@@ -39,6 +39,7 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_01h() {
   Res.Res[3] = ~0U; // Let's say we support every feature for fun
 
   Res.Res[3]  &= ~(
+      (1 << 1) |  // Remove CLMUL
       (3 << 26) | // Let's say that XSAVE isn't enabled by the OS. Prevents glibc from using XSAVE/XGETBV
       (1 << 9)  | // Remove SSSE3
       (1 << 19) | // Remove SSE4.1
