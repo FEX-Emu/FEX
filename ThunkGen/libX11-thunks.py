@@ -1841,6 +1841,10 @@ fn("char* XGetICValues_internal(XIC, size_t, unsigned long*)"); noinit(); noload
 fn("_XIC* XCreateIC(XIM, ...)"); nothunkmap(); noforward(); nothunk()
 fn("_XIC* XCreateIC_internal(XIM, size_t, unsigned long*)"); noinit(); noload()
 
+fn("int XIfEvent(Display*, XEvent*, XIfEventFN*, XPointer)"); nothunkmap(); noforward(); nothunk()
+fn("int XIfEvent_internal(Display*, XEvent*, XIfEventFN*, XPointer)"); noinit(); noload()
+
+
 fn("Atom XInternAtom(Display*, const char*, int)")
 fn("char** XListExtensions(Display*, int*)")
 fn("char* XSetLocaleModifiers(const char*)")
@@ -1871,7 +1875,6 @@ fn("int XGetWindowProperty(Display*, Window, Atom, long int, long int, int, Atom
 fn("int XGrabPointer(Display*, Window, int, unsigned int, int, int, Window, Cursor, Time)")
 fn("int XGrabServer(Display*)")
 fn("int XIconifyWindow(Display*, Window, int)")
-fn("int XIfEvent(Display*, XEvent*, XIfEventFN*, XPointer)")
 fn("int XInitThreads()")
 fn("int XLookupString(XKeyEvent*, char*, int, KeySym*, XComposeStatus*)")
 fn("int XMapRaised(Display*, Window)")

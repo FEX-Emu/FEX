@@ -11,6 +11,7 @@ typedef int XIfEventFN(Display*, XEvent*, XPointer);
 
 static _XIC *fexthunks_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned long *list);
 static char* fexthunks_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned long *list);
+static int fexthunks_impl_libX11_XIfEvent_internal(Display* a0, XEvent* a1, XIfEventFN* a2, XPointer a3);
 
 #include "libX11_Forwards.inl"
 
@@ -46,6 +47,16 @@ char* fexthunks_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigne
         printf("XCreateIC_internal FAILURE\n");
         return ErrorReply;
     }
+}
+
+static int XIfEventCB(Display*, XEvent*, XPointer) {
+    printf("XIfEventCB\n");
+    return 1;
+}
+
+int fexthunks_impl_libX11_XIfEvent_internal(Display* a0, XEvent* a1, XIfEventFN* a2, XPointer a3) {
+    printf("fexthunks_impl_libX11_XIfEvent_internal");
+    return fexthunks_impl_libX11_XIfEvent(a0, a1, &XIfEventCB, a3);
 }
 
 

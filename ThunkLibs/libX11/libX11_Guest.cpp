@@ -57,6 +57,10 @@ extern "C" {
         return rv;
     }
 
+    int XIfEvent(Display* a0, XEvent* a1, XIfEventFN* a2, XPointer a3) {
+        return XIfEvent_internal(a0, a1, a2, a3);
+    }
+
     int (*XESetCloseDisplay(Display *display, int extension, int (*proc)()))() {
         printf("libX11: XESetCloseDisplay\n");
         return nullptr;
