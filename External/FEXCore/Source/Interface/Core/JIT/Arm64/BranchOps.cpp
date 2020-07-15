@@ -146,7 +146,7 @@ DEF_OP(Thunk) {
 #if _M_X86_64
   ERROR_AND_DIE("JIT: OP_THUNK not supported with arm simulator")
 #else
-  blr(GetSrc<RA_64>(Op->Header.Args[1].ID()));
+  blr(GetReg<RA_64>(Op->Header.Args[1].ID()));
 #endif
 
   // Fix the stack and any values that were stepped on

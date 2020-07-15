@@ -29,7 +29,7 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
       // Found the interpreter in the rootfs
     }
     else if (!LoadELF(RawString)) {
-      LogMan::Msg::E("Couldn't load dynamic ELF file's interpreter");
+      LogMan::Msg::E("Couldn't load dynamic ELF file's interpreter, %s, %s", RawString, RootFS.c_str());
       return;
     }
   }

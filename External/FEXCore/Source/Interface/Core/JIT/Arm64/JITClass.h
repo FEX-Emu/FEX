@@ -277,6 +277,7 @@ private:
   DEF_OP(Jump);
   DEF_OP(CondJump);
   DEF_OP(Syscall);
+  DEF_OP(Thunk);
   DEF_OP(CPUID);
 
   ///< Conversion ops
