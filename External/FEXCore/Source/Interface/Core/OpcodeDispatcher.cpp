@@ -87,15 +87,15 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
 
 void OpDispatchBuilder::LEAOp(OpcodeArgs) {
   if (CTX->Config.Is64BitMode) {
-    uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 :
-      X86Tables::DecodeFlags::GetOpAddr(Op->Flags) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 : 4;
+    uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 :
+      X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 : 4;
     uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
 
     OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   }
   else {
-    uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
+    uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
     uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 2 : 4;
 
     OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
