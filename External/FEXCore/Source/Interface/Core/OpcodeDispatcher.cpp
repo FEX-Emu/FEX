@@ -2234,7 +2234,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, ALUOp, -1);
 
     auto Size = GetSrcSize(Op) * 8;
-    GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+    GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst), false);
   }
   else {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -2244,7 +2244,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, ALUOp, -1);
 
     auto Size = GetSrcSize(Op) * 8;
-    GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+    GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst), false);
   }
 }
 
@@ -2260,7 +2260,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, ALUOp, -1);
 
     auto Size = GetSrcSize(Op) * 8;
-    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst), false);
   }
   else {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -2270,7 +2270,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, ALUOp, -1);
 
     auto Size = GetSrcSize(Op) * 8;
-    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst));
+    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst), false);
   }
 }
 
@@ -4192,7 +4192,7 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 }
 
-void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
   // AF
   {
     OrderedNode *AFRes = _Xor(_Xor(Src1, Src2), Res);
@@ -4227,7 +4227,7 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // CF
-  {
+  if (UpdateCF) {
     auto ZeroConst = _Constant(0);
     auto OneConst = _Constant(1);
 
@@ -4248,7 +4248,7 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 }
 
-void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
   // AF
   {
     OrderedNode *AFRes = _Xor(_Xor(Src1, Src2), Res);
@@ -4279,7 +4279,7 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
   // CF
-  {
+  if (UpdateCF) {
     auto Dst8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
     auto Src8 = _Bfe(GetSrcSize(Op) * 8, 0, Src2);
 
