@@ -76,3 +76,13 @@ python3 libSDL2-thunks.py thunks > ../ThunkLibs/libSDL2/libSDL2_Thunks.inl
 python3 libSDL2-thunks.py thunkmap     > ../ThunkLibs/libSDL2/libSDL2_Thunkmap.inl
 python3 libSDL2-thunks.py initializers > ../ThunkLibs/libSDL2/libSDL2_Forwards.inl
 python3 libSDL2-thunks.py forwards    >> ../ThunkLibs/libSDL2/libSDL2_Forwards.inl
+
+# libasound
+
+## guest side
+python3 libasound-thunks.py thunks > ../ThunkLibs/libasound/libasound_Thunks.inl
+
+## host side
+python3 libasound-thunks.py thunkmap     > ../ThunkLibs/libasound/libasound_Thunkmap.inl
+python3 libasound-thunks.py initializers > ../ThunkLibs/libasound/libasound_Forwards.inl
+python3 libasound-thunks.py forwards    >> ../ThunkLibs/libasound/libasound_Forwards.inl
