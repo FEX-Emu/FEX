@@ -49,10 +49,13 @@ constexpr uint32_t SIZE_128BIT       = 0b101;
 constexpr uint32_t SIZE_256BIT       = 0b110;
 
 constexpr uint32_t FLAG_OPADDR_OFF = (FLAG_SIZE_SRC_OFF + 3);
-constexpr uint32_t FLAG_OPADDR_MASK = (0b11 << FLAG_OPADDR_OFF);
+constexpr uint32_t FLAG_OPADDR_STACKSIZE = 4; // Two level deep stack
+constexpr uint32_t FLAG_OPADDR_FLAG_SIZE = 2;
+constexpr uint32_t FLAG_OPADDR_MASK = (((1 << FLAG_OPADDR_STACKSIZE) - 1) << FLAG_OPADDR_OFF);
 
-constexpr uint32_t FLAG_OPERAND_SIZE_LAST = (0b01 << FLAG_OPADDR_OFF);
-constexpr uint32_t FLAG_WIDENING_SIZE_LAST = (0b10 << FLAG_OPADDR_OFF);
+// 00 = NONE
+constexpr uint32_t FLAG_OPERAND_SIZE_LAST = 0b01;
+constexpr uint32_t FLAG_WIDENING_SIZE_LAST = 0b10;
 
 inline uint32_t GetSizeDstFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_DST_OFF) & SIZE_MASK; }
 inline uint32_t GetSizeSrcFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_SRC_OFF) & SIZE_MASK; }
@@ -60,7 +63,38 @@ inline uint32_t GetSizeSrcFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_SRC
 inline uint32_t GenSizeDstSize(uint32_t Size) { return Size << FLAG_SIZE_DST_OFF; }
 inline uint32_t GenSizeSrcSize(uint32_t Size) { return Size << FLAG_SIZE_SRC_OFF; }
 
-inline uint32_t GetOpAddr(uint32_t Flags) { return Flags & FLAG_OPADDR_MASK; }
+inline uint32_t GetOpAddr(uint32_t Flags, int Index) { return (((Flags & FLAG_OPADDR_MASK) >> FLAG_OPADDR_OFF) >> (Index * 2)) & ((1 << FLAG_OPADDR_FLAG_SIZE) - 1); }
+
+inline void PushOpAddr(uint32_t *Flags, uint32_t Flag) {
+  uint32_t TmpFlags  = *Flags;
+  uint32_t BottomOfStack = ((TmpFlags & FLAG_OPADDR_MASK) >> FLAG_OPADDR_OFF) & ((1 << FLAG_OPADDR_FLAG_SIZE) - 1);
+
+  TmpFlags &= ~(FLAG_OPADDR_MASK);
+  TmpFlags |=
+    (BottomOfStack << (FLAG_OPADDR_OFF + FLAG_OPADDR_FLAG_SIZE)) |
+    (Flag << FLAG_OPADDR_OFF);
+
+  *Flags = TmpFlags;
+}
+
+inline void PopOpAddrIf(uint32_t *Flags, uint32_t Flag) {
+  uint32_t TmpFlags  = *Flags;
+  uint32_t BottomOfStack = ((TmpFlags & FLAG_OPADDR_MASK) >> FLAG_OPADDR_OFF) & ((1 << FLAG_OPADDR_FLAG_SIZE) - 1);
+
+  // Only pop the stack if the bottom flag is the one we care about
+  // Necessary for escape prefixes that overlap regular prefixes
+  if (BottomOfStack != Flag) {
+    return;
+  }
+
+  uint32_t TopOfStack = ((TmpFlags & FLAG_OPADDR_MASK) >> (FLAG_OPADDR_OFF + FLAG_OPADDR_FLAG_SIZE)) & ((1 << FLAG_OPADDR_FLAG_SIZE) - 1);
+
+  TmpFlags &= ~(FLAG_OPADDR_MASK);
+  TmpFlags |= (TopOfStack << FLAG_OPADDR_OFF);
+
+  *Flags = TmpFlags;
+}
+
 }
 
 union DecodedOperand {

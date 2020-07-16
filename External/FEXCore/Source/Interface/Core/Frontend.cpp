@@ -223,6 +223,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     "Group Ops should have been decoded before this!");
 
   uint8_t DestSize{};
+  bool HasWideningDisplacement = FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST;
+  bool HasNarrowingDisplacement = FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST;
 
   // New instruction size decoding
   {
@@ -242,7 +244,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_128BIT);
       DestSize = 16;
     }
-    else if (DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE &&
+    else if (HasNarrowingDisplacement &&
       (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF ||
        DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
       // See table 1-2. Operand-Size Overrides for this decoding
@@ -251,7 +253,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       DestSize = 2;
     }
     else if (CTX->Config.Is64BitMode &&
-      (DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING ||
+      (HasWideningDisplacement ||
       DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
       DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_64BIT);
@@ -272,7 +274,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     else if (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_128BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_128BIT);
     }
-    else if (DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE &&
+    else if (HasNarrowingDisplacement &&
       (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF ||
        SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
       // See table 1-2. Operand-Size Overrides for this decoding
@@ -280,7 +282,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_16BIT);
     }
     else if (CTX->Config.Is64BitMode &&
-      (DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING ||
+      (HasWideningDisplacement ||
       SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
       SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_64BIT);
@@ -295,21 +297,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   HasMODRM |= !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM);
 
   bool HasSIB = false;
-  bool HasWideningDisplacement = DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING;
-  bool HasNarrowingDisplacement = DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE;
 
-  if (HasWideningDisplacement && HasNarrowingDisplacement) {
-    // This is a fun edge case where widening displacement has a precedence over narrowing displacement
-    // If you have both then widening (REX.W) takes precedence over narrowing (66h)
-    // Found with a fun CALL instruction in libLLVM for `call __tls_get_addr`
-    // Instruction was: 66 66 48 e8 a7 ff ec ff
-    // 66: Operand size override
-    // 66: Operand Size override
-    // 48: REX.W
-    // E8: call
-    // a7 ff ec ff: Immediate offset
-    HasNarrowingDisplacement = false;
-  }
   // This is used for ModRM register modification
   // For both modrm.reg and modrm.rm(when mod == 0b11) when value is >= 0b100
   // then it changes from expected registers to the high 8bits of the lower registers
@@ -650,7 +638,7 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     // Widening displacement
     if (Op & 0b1000) {
       DecodeInst->Flags |= DecodeFlags::FLAG_REX_WIDENING;
-      DecodeInst->Flags = (DecodeInst->Flags & ~DecodeFlags::FLAG_OPADDR_MASK) | DecodeFlags::FLAG_WIDENING_SIZE_LAST;
+      DecodeFlags::PushOpAddr(&DecodeInst->Flags, DecodeFlags::FLAG_WIDENING_SIZE_LAST);
     }
 
     // XGPR_B bit set
@@ -782,6 +770,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
           // Remove prefix so it doesn't effect calculations.
           // This is only an escape prefix rather tan modifier now
           DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
+          DecodeFlags::PopOpAddrIf(&DecodeInst->Flags, DecodeFlags::FLAG_OPERAND_SIZE_LAST);
           if (NormalOpHeader(&FEXCore::X86Tables::OpSizeModOps[EscapeOp], EscapeOp)) {
             InstructionDecoded = true;
           }
@@ -796,7 +785,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
     case 0x66: // Operand Size prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_OPERAND_SIZE;
       DecodeInst->LastEscapePrefix = Op;
-      DecodeInst->Flags = (DecodeInst->Flags & ~DecodeFlags::FLAG_OPADDR_MASK) | DecodeFlags::FLAG_OPERAND_SIZE_LAST;
+      DecodeFlags::PushOpAddr(&DecodeInst->Flags, DecodeFlags::FLAG_OPERAND_SIZE_LAST);
     break;
     case 0x67: // Address Size override prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_ADDRESS_SIZE;
