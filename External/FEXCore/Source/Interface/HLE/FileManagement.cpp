@@ -19,6 +19,15 @@ namespace FEXCore {
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : CTX {ctx}
   , EmuFD {ctx} {
+
+    // calculate the non-self link to exe
+    // Some executables do getpid, stat("/proc/$pid/exe")
+    int pid = getpid();
+
+    char buf[50];
+    snprintf(buf, 50, "/proc/%i/exe", pid);
+
+    PidSelfPath = std::string(buf);
 }
 
 FileManager::~FileManager() {
@@ -85,7 +94,7 @@ uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode, int f
 }
 
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
-  if (strcmp(pathname, "/proc/self/exe") == 0) {
+  if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, PidSelfPath.c_str()) == 0) {
     strncpy(buf, Filename.c_str(), bufsiz);
     return std::min(bufsiz, Filename.size());
   }

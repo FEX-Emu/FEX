@@ -49,6 +49,7 @@ private:
 
   std::unordered_map<int32_t, std::string> FDToNameMap;
   std::string Filename;
+  std::string PidSelfPath;
   std::string GetEmulatedPath(const char *pathname);
 };
 }
