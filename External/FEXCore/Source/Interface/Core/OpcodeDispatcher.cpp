@@ -4992,11 +4992,6 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
       SyscallOp(Op);
       return;
     }
-    if (Literal == 0x7F) {
-      // special thunk op
-      ThunkOp(Op);
-      return;
-    }
   break;
   case 0xCE:
     Reason = 2;
@@ -7118,6 +7113,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {0x31, 1, &OpDispatchBuilder::RDTSCOp},
 
+    {0x3F, 1, &OpDispatchBuilder::ThunkOp},
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
     {0x6E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {0x6F, 1, &OpDispatchBuilder::MOVUPSOp},

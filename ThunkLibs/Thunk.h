@@ -4,7 +4,7 @@ namespace FEXCore::Context {
   struct Context;
 }
 
-#define MAKE_THUNK(lib, name) static __attribute__((naked)) int fexthunks_##lib##_##name(void *args) { asm("int $0x7F"); asm(".asciz \"" #lib ":" #name "\""); }
+#define MAKE_THUNK(lib, name) static __attribute__((naked)) void fexthunks_##lib##_##name(void *args) { asm(".byte 0xF, 0x3F"); asm(".asciz \"" #lib ":" #name "\""); }
 
 #define LOAD_LIB(name) MAKE_THUNK(fex, loadlib) __attribute__((constructor)) static void loadlib() { char libname[] = #name; fexthunks_fex_loadlib(libname); }
 
