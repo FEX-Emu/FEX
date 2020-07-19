@@ -91,13 +91,11 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   const char *name = (const char*)(Op->PC + 2);
 
-  auto ThunkOp = _Thunk(
-    _Constant(Op->PC + 2),
-    _Constant((uintptr_t)CTX->ThunkHandler->LookupThunk(name)),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + FEXCore::X86State::REG_RDI * 8, GPRClass)
+  _Thunk(
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + FEXCore::X86State::REG_RDI * 8, GPRClass),
+    name,
+    (uintptr_t)CTX->ThunkHandler->LookupThunk(name)
   );
-
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ThunkOp);
 
   auto Constant = _Constant(GPRSize);
 

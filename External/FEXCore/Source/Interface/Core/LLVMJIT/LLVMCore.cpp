@@ -1012,7 +1012,6 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
     };
     PtrCast Ptr;
     Ptr.ClassPtr = [](void(*fn)(void*, void*), void* ctx, void* args) {
-      printf("Thunk: %p, %p, %p\n", fn, ctx, args);
       fn(ctx, args); 
     };
     Engine->addGlobalMapping(JITCurrentState.ThunkFunction, Ptr.Data);
@@ -1718,9 +1717,9 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Op = IROp->C<IR::IROp_Thunk>();
       std::vector<llvm::Value*> Args{};
 
-      Args.emplace_back(GetSrc(Op->Header.Args[1])); // function to call
+      Args.emplace_back(JITState.IRBuilder->getInt64(Op->ThunkFnPtr)); // function to call
       Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(CTX))); // context
-      Args.emplace_back(GetSrc(Op->Header.Args[2])); // params
+      Args.emplace_back(GetSrc(Op->Header.Args[0])); // params
 
       JITState.IRBuilder->CreateCall(JITCurrentState.ThunkFunction, Args);
       break;

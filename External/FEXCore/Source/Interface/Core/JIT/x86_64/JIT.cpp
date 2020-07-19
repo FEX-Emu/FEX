@@ -2019,8 +2019,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             sub(rsp, 8); // Align
           
           mov(rdi, reinterpret_cast<uintptr_t>(CTX));
-          mov(rsi, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-          call(GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mov(rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+
+          mov(rax, reinterpret_cast<uintptr_t>(Op->ThunkFnPtr));
+          call(rax);
 
           if (NumPush & 1)
             add(rsp, 8); // Align
@@ -2029,6 +2031,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             pop(RA64[i - 1]);
 
           pop(rdi);
+          break;
         }
         case IR::OP_VEXTRACTTOGPR: {
           auto Op = IROp->C<IR::IROp_VExtractToGPR>();

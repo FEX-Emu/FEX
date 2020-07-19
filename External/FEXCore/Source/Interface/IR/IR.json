@@ -486,11 +486,13 @@
     "Thunk": {
       "HasSideEffects": true,
       "OpClass": "Branch",
-      "SSAArgs": "3",
+      "SSAArgs": "1",
       "SSANames": [
-        "ThunkName",
-        "ThunkPtr",
         "ArgPtr"
+      ],
+      "Args":[
+        "const char*", "ThunkName",
+        "uintptr_t", "ThunkFnPtr"
       ]
     },
 

@@ -15,6 +15,10 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
   *out << "#0x" << std::hex << Arg;
 }
 
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, const char* Arg) {
+  *out <<  Arg;
+}
+
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, CondClassType Arg) {
   std::array<std::string, 14> CondNames = {
     "EQ",
