@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
-        arch: [[self-hosted, x64], [self-hosted, ARM64]]
+        arch: [[self-hosted, x64], [self-hosted, ARMv8.0], [self-hosted, ARMv8.2]]
 
     steps:
     - uses: actions/checkout@v2
