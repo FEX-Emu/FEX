@@ -2,6 +2,10 @@
 #include "Common/MathUtils.h"
 #include "Interface/Core/LLVMJIT/LLVMMemoryManager.h"
 
+#if defined (_M_ARM_64)
+#include "aarch64/cpu-aarch64.h"
+#endif
+
 #include <sys/mman.h>
 
 namespace FEXCore::CPU {
@@ -33,6 +37,7 @@ uint8_t *LLVMMemoryManager::allocateCodeSection(uintptr_t Size, unsigned Alignme
 
   AllocateOffset = NewEnd;
   LastCodeSize = Size;
+  LastCodeBase = CodeMemory + Base;
   return reinterpret_cast<uint8_t*>(CodeMemory + Base);
 }
 
@@ -55,6 +60,10 @@ uint8_t *LLVMMemoryManager::allocateDataSection(uintptr_t Size, unsigned Alignme
 }
 
 bool LLVMMemoryManager::finalizeMemory([[maybe_unused]] std::string *ErrMsg) {
+#if defined (_M_ARM_64)
+  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(reinterpret_cast<void*>(LastCodeBase), LastCodeSize);
+#endif
+
   return true;
 }
 

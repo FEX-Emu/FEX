@@ -29,6 +29,7 @@ private:
   uintptr_t CodeMemory {};
   size_t AllocateOffset {};
 
+  uintptr_t LastCodeBase {};
   size_t LastCodeSize {};
 };
 }
