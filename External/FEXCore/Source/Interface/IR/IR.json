@@ -486,9 +486,6 @@
     "Thunk": {
       "HasSideEffects": true,
       "OpClass": "Branch",
-      "HasDest": true,
-      "DestClass": "GPR",
-      "FixedDestSize": "8",
       "SSAArgs": "3",
       "SSANames": [
         "ThunkName",
