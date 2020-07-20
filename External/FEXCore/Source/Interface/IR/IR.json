@@ -483,6 +483,19 @@
       ]
     },
 
+    "Thunk": {
+      "HasSideEffects": true,
+      "OpClass": "Branch",
+      "SSAArgs": "1",
+      "SSANames": [
+        "ArgPtr"
+      ],
+      "Args":[
+        "const char*", "ThunkName",
+        "uintptr_t", "ThunkFnPtr"
+      ]
+    },
+
     "LoadMem": {
       "OpClass": "Memory",
       "HasDest": true,
