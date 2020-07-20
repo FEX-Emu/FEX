@@ -10,13 +10,14 @@
 #include <Interface/Context/Context.h>
 #include <LogManager.h>
 #include <mutex>
+#include <shared_mutex>
 
 namespace FEXCore {
     
     struct ExportEntry { const char* Name; ThunkedFunction* Fn; };
 
-    class ThunkHandler_impl: public ThunkHandler {
-        std::mutex ThunksMutex;
+    class ThunkHandler_impl final: public ThunkHandler {
+        std::shared_mutex ThunksMutex;
 
         std::map<std::string, ThunkedFunction*> Thunks = {
             { "fex:loadlib", &loadlib}
@@ -54,7 +55,7 @@ namespace FEXCore {
             auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
 
             {
-                std::lock_guard<std::mutex> lk(That->ThunksMutex);
+                std::unique_lock lk(That->ThunksMutex);
 
                 int i;
                 for (i = 0; Exports[i].Name; i++) {
@@ -69,7 +70,7 @@ namespace FEXCore {
 
         ThunkedFunction* LookupThunk(const char *Name) {
 
-            std::lock_guard<std::mutex> lk(ThunksMutex);
+            std::shared_lock lk(ThunksMutex);
 
             auto it = Thunks.find(Name);
 
