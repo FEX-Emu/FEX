@@ -11,6 +11,8 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 
+#include "Interface/HLE/Thunks/Thunks.h"
+
 #include <atomic>
 #include <cmath>
 #include <limits>
@@ -246,6 +248,15 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             uint64_t Res = FEXCore::HandleSyscall(CTX->SyscallHandler.get(), Thread, &Args);
             GD = Res;
+            break;
+          }
+          case IR::OP_THUNK: {
+            auto Op = IROp->C<IR::IROp_Thunk>();
+
+            //LogMan::Msg::D("Thunk function: %s, %p, %p\n", Op->ThunkName, Op->ThunkFnPtr, *GetSrc<void**>(Op->Header.Args[0]));
+
+            reinterpret_cast<ThunkedFunction*>(Op->ThunkFnPtr)(CTX, *GetSrc<void**>(Op->Header.Args[0]));
+
             break;
           }
           case IR::OP_CPUID: {

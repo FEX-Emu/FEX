@@ -2006,6 +2006,33 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov (GetDst<RA_64>(Node), rax);
           break;
         }
+        case IR::OP_THUNK: {
+          auto Op = IROp->C<IR::IROp_Thunk>();
+
+          auto NumPush = 1 + RA64.size();
+          push(rdi);
+
+          for (auto &Reg : RA64)
+            push(Reg);
+
+          if (NumPush & 1)
+            sub(rsp, 8); // Align
+          
+          mov(rdi, reinterpret_cast<uintptr_t>(CTX));
+          mov(rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+
+          mov(rax, reinterpret_cast<uintptr_t>(Op->ThunkFnPtr));
+          call(rax);
+
+          if (NumPush & 1)
+            add(rsp, 8); // Align
+          
+          for (uint32_t i = RA64.size(); i > 0; --i)
+            pop(RA64[i - 1]);
+
+          pop(rdi);
+          break;
+        }
         case IR::OP_VEXTRACTTOGPR: {
           auto Op = IROp->C<IR::IROp_VExtractToGPR>();
 

@@ -106,6 +106,7 @@ private:
 
   struct LLVMCurrentState {
     llvm::Function *SyscallFunction;
+    llvm::Function *ThunkFunction;
     llvm::Function *CPUIDFunction;
     llvm::Function *ExitVMFunction;
     llvm::Function *ValuePrinter;
@@ -991,6 +992,31 @@ void LLVMJITCore::CreateGlobalVariables(llvm::ExecutionEngine *Engine, llvm::Mod
     Engine->addGlobalMapping(JITCurrentState.SyscallFunction, Ptr.Data);
   }
 
+  // Thunk Function
+  {
+    auto FuncType = FunctionType::get(voidTy,
+      {
+        i64, // Technically a this pointer
+        i64, // Technically a this pointer
+        i64, // Technically a this pointer
+      },
+      false);
+    JITCurrentState.ThunkFunction = Function::Create(FuncType,
+      Function::ExternalLinkage,
+      "ThunkCaller",
+      FunctionModule);
+    using ClassPtrType = void (*)(void (*)(void*, void*), void*, void*);
+    union PtrCast {
+      ClassPtrType ClassPtr;
+      void* Data;
+    };
+    PtrCast Ptr;
+    Ptr.ClassPtr = [](void(*fn)(void*, void*), void* ctx, void* args) {
+      fn(ctx, args); 
+    };
+    Engine->addGlobalMapping(JITCurrentState.ThunkFunction, Ptr.Data);
+  }
+
   // CPUID Function
   {
     auto FuncType = FunctionType::get(i128,
@@ -1686,6 +1712,17 @@ void LLVMJITCore::HandleIR(FEXCore::IR::IRListView<true> const *IR, IR::NodeWrap
       auto Result = JITState.IRBuilder->CreateCall(JITCurrentState.SyscallFunction, Args);
       SetDest(*WrapperOp, Result);
     break;
+    }
+    case IR::OP_THUNK: {
+      auto Op = IROp->C<IR::IROp_Thunk>();
+      std::vector<llvm::Value*> Args{};
+
+      Args.emplace_back(JITState.IRBuilder->getInt64(Op->ThunkFnPtr)); // function to call
+      Args.emplace_back(JITState.IRBuilder->getInt64(reinterpret_cast<uint64_t>(CTX))); // context
+      Args.emplace_back(GetSrc(Op->Header.Args[0])); // params
+
+      JITState.IRBuilder->CreateCall(JITCurrentState.ThunkFunction, Args);
+      break;
     }
     case IR::OP_CPUID: {
       auto Op = IROp->C<IR::IROp_CPUID>();

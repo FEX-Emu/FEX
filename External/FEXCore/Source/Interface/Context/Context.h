@@ -17,6 +17,7 @@
 
 namespace FEXCore {
 class SyscallHandler;
+class ThunkHandler;
 class BlockSamplingData;
 class GdbServer;
 
@@ -52,6 +53,7 @@ namespace FEXCore::Context {
       bool GdbServer {false};
       bool UnifiedMemory {true};
       std::string RootFSPath;
+      std::string ThunkLibsPath;
 
       bool Is64BitMode {true};
       uint64_t EmulatedCPUCores{1};
@@ -80,6 +82,8 @@ namespace FEXCore::Context {
 
     FEXCore::CPUIDEmu CPUID;
     std::unique_ptr<FEXCore::SyscallHandler> SyscallHandler;
+    std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
+
     CustomCPUFactoryType CustomCPUFactory;
     CustomCPUFactoryType FallbackCPUFactory;
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
