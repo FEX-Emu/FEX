@@ -473,11 +473,11 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         if (LastAccess == ACCESS_WRITE &&
             LastClass == Op->Class &&
             LastOffset == Op->Offset &&
-            LastSize == IROp->Size &&
-            Info->Accessed == ACCESS_WRITE) {
+            LastSize == IROp->Size) {
           // Remove the last store because this one overwrites it entirely
           // Happens when we store in to a location then store again
           IREmit->Remove(LastStoreNode);
+          Changed = true;
         }
       }
       else if (IROp->Op == OP_LOADCONTEXT) {
