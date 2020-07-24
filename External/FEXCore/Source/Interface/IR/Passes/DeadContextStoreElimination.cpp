@@ -294,7 +294,8 @@ ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, FEXCore::IR::Reg
   Info->AccessOffset = Offset;
   Info->AccessSize = Size;
   Info->Node = Node;
-  Info->StoreNode = StoreNode;
+  if (StoreNode != nullptr)
+    Info->StoreNode = StoreNode;
   return Info;
 }
 
@@ -523,7 +524,16 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
       }
       else if (IROp->Op == OP_STOREFLAG) {
         auto Op = IROp->CW<IR::IROp_StoreFlag>();
+        auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
+        auto LastStoreNode = Info->StoreNode;
         RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
+
+        // Flags don't alias, so we can take the simple route here. Kill any flags that have been overwritten
+        if (LastStoreNode != nullptr)
+        {
+          IREmit->Remove(LastStoreNode);
+          Changed = true;
+        }
       }
       else if (IROp->Op == OP_LOADFLAG) {
         auto Op = IROp->CW<IR::IROp_LoadFlag>();
