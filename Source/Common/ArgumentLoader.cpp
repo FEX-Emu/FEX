@@ -111,9 +111,14 @@ namespace FEX::ArgLoader {
           .help("Disable logging")
           .action("store_true");
 
+      LoggingGroup.add_option("-o", "--output-log")
+          .dest("OutputLog")
+          .help("File to write FEX output to [stdout, stderr, <Filename>]")
+          .set_default("stderr");
+
       Parser.add_option_group(LoggingGroup);
     }
-      
+
     optparse::Values Options = Parser.parse_args(argc, argv);
 
     {
@@ -203,6 +208,11 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("SilentLog")) {
         bool SilentLog = Options.get("SilentLog");
         Config::Add("SilentLog", std::to_string(SilentLog));
+      }
+
+      if (Options.is_set_by_user("OutputLog")) {
+        std::string OutputLog = Options["OutputLog"];
+        Config::Add("OutputLog", OutputLog);
       }
     }
 
