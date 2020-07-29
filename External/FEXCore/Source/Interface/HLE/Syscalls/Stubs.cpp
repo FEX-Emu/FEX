@@ -38,16 +38,8 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(pause);
     });
 
-    REGISTER_SYSCALL_IMPL(getitimer, [](FEXCore::Core::InternalThreadState *Thread, int which, struct itimerval *curr_value) -> uint64_t {
-      SYSCALL_STUB(getitimer);
-    });
-
     REGISTER_SYSCALL_IMPL(alarm, [](FEXCore::Core::InternalThreadState *Thread, unsigned int seconds) -> uint64_t {
       SYSCALL_STUB(alarm);
-    });
-
-    REGISTER_SYSCALL_IMPL(setitimer, [](FEXCore::Core::InternalThreadState *Thread, int which, const struct itimerval *new_value, struct itimerval *old_value) -> uint64_t {
-      SYSCALL_STUB(setitimer);
     });
 
     REGISTER_SYSCALL_IMPL(sendfile, [](FEXCore::Core::InternalThreadState *Thread, int out_fd, int in_fd, off_t *offset, size_t count) -> uint64_t {
