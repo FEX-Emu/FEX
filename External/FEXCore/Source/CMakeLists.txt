@@ -125,6 +125,7 @@ set (SRCS
   Interface/Core/SignalDelegator.cpp
   Interface/Core/X86Tables.cpp
   Interface/Core/X86DebugInfo.cpp
+  Interface/Core/X86HelperGen.cpp
   Interface/Core/Interpreter/InterpreterCore.cpp
   Interface/Core/LLVMJIT/LLVMCore.cpp
   Interface/Core/LLVMJIT/LLVMMemoryManager.cpp

@@ -4,6 +4,7 @@
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/SignalDelegator.h"
+#include "Interface/Core/X86HelperGen.h"
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/Memory/MemMapper.h"
 #include "Interface/IR/PassManager.h"
@@ -89,6 +90,7 @@ namespace FEXCore::Context {
 #endif
 
     SignalDelegator SignalDelegation;
+    X86GeneratedCode X86CodeGen;
 
     Context();
     ~Context();
