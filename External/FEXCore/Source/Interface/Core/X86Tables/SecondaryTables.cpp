@@ -53,11 +53,10 @@ void InitializeSecondaryTables() {
     {0x33, 1, X86InstInfo{"RDPMC",      TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
     {0x34, 1, X86InstInfo{"SYSENTER",   TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
     {0x35, 1, X86InstInfo{"SYSEXIT",    TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
-    {0x36, 2, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0, nullptr}},
     {0x38, 1, X86InstInfo{"",           TYPE_0F38_TABLE, FLAGS_NO_OVERLAY,                                                                       0, nullptr}},
     {0x39, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0, nullptr}},
     {0x3A, 1, X86InstInfo{"",           TYPE_0F3A_TABLE, FLAGS_NO_OVERLAY,                                                                       0, nullptr}},
-    {0x3B, 5, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0, nullptr}},
+    {0x3B, 4, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0, nullptr}},
 
     {0x40, 1, X86InstInfo{"CMOVO",      TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                               0, nullptr}},
     {0x41, 1, X86InstInfo{"CMOVNO",     TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                               0, nullptr}},
@@ -248,6 +247,14 @@ void InitializeSecondaryTables() {
     {0xFD, 1, X86InstInfo{"PADDW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xFE, 1, X86InstInfo{"PADDD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xFF, 1, X86InstInfo{"UD0",      TYPE_INST, FLAGS_DEBUG | FLAGS_BLOCK_END,                                                                                           0, nullptr}},
+
+    // FEX reserved instructions
+    // Unused x86 encoding instruction.
+    // Used by FEX to know when to do a signal reteurn
+    {0x36, 1, X86InstInfo{"SIGRET",       TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY,                                                            0, nullptr}},
+
+    // This was originally used by VIA to jump to its alternative instruction set
+    {0x3F, 1, X86InstInfo{"ALTINST",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY,                                                            0, nullptr}},
   };
 
   const U8U8InfoStruct RepModOpTable[] = {
