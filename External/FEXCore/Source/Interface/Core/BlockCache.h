@@ -76,6 +76,7 @@ public:
   void HintUsedRange(uint64_t Address, uint64_t Size);
 
   uintptr_t GetPagePointer() { return PagePointer; }
+  uintptr_t GetVirtualMemorySize() const { return VirtualMemSize; }
 
 private:
   uintptr_t AllocateBackingForPage() {
