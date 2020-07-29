@@ -123,6 +123,11 @@
       ]
     },
 
+    "SignalReturn": {
+      "HasSideEffects": true,
+      "OpClass": "Branch"
+    },
+
     "CASPair": {
       "HasSideEffects": true,
       "OpClass": "Atomic",
