@@ -24,6 +24,17 @@ DEF_OP(GuestReturn) {
   LogMan::Msg::D("Unimplemented");
 }
 
+DEF_OP(SignalReturn) {
+  // First we must reset the stack
+  ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
+  add(sp, TMP1, 0); // Move that supports SP
+
+  // Now branch to our signal return helper
+  // This can't be a direct branch since the code needs to live at a constant location
+  LoadConstant(x0, SignalReturnInstruction);
+  br(x0);
+}
+
 DEF_OP(ExitFunction) {
   ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
   add(sp, TMP1, 0); // Move that supports SP
@@ -167,6 +178,7 @@ void JITCore::RegisterBranchHandlers() {
   REGISTER_OP(GUESTCALLDIRECT,   GuestCallDirect);
   REGISTER_OP(GUESTCALLINDIRECT, GuestCallIndirect);
   REGISTER_OP(GUESTRETURN,       GuestReturn);
+  REGISTER_OP(SIGNALRETURN,      SignalReturn);
   REGISTER_OP(EXITFUNCTION,      ExitFunction);
   REGISTER_OP(JUMP,              Jump);
   REGISTER_OP(CONDJUMP,          CondJump);

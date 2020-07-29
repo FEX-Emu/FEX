@@ -77,7 +77,12 @@ const std::array<aarch64::VRegister, 22> RAFPR = {
 // XXX: Switch from MacroAssembler to Assembler once we drop the simulator
 class JITCore final : public CPUBackend, public vixl::aarch64::MacroAssembler  {
 public:
-  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
+  struct CodeBuffer {
+    uint8_t *Ptr;
+    size_t Size;
+  };
+
+  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer);
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
   void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
@@ -104,6 +109,11 @@ public:
 
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
   bool HandleSIGSEGV(int Signal, void *info, void *ucontext);
+  bool HandleSIGILL(int Signal, void *info, void *ucontext);
+  bool HandleGuestSignal(int Signal, void *info, void *ucontext, struct sigaction *GuestAction, stack_t *GuestStack);
+
+  static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+  static CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
 private:
   FEXCore::Context::Context *CTX;
@@ -132,8 +142,6 @@ private:
   constexpr static uint8_t RA_32 = 0;
   constexpr static uint8_t RA_64 = 1;
   constexpr static uint8_t RA_FPR = 2;
-
-  static constexpr uint32_t MAX_CODE_SIZE = 1024 * 1024 * 128;
 
   template<uint8_t RAType>
   aarch64::Register GetReg(uint32_t Node);
@@ -165,6 +173,32 @@ private:
   vixl::aarch64::CPU CPU;
   bool SupportsAtomics{};
 
+  void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
+    CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
+  }
+
+  void FreeCodeBuffer(CodeBuffer Buffer);
+
+  // This is the initial code buffer that we will fall back to
+  // In a program without signals and code clearing, we will typically
+  // only have this code buffer
+  CodeBuffer InitialCodeBuffer{};
+  // This is the array of /additional/ code buffers that we may need to allocate
+  // Allocation only occurs when we've hit signals and need to clear code cache
+  // For code safety we can't delete code buffers until outside of all signals
+  std::vector<CodeBuffer> CodeBuffers{};
+
+  // This is the codebuffer that our dispatcher lives in
+  CodeBuffer DispatcherCodeBuffer{};
+  // This is the current code buffer that we are tracking
+  CodeBuffer *CurrentCodeBuffer{};
+
+  // We don't want to mvoe above 128MB atm because that means we will have to encode longer jumps
+  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
+  static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
+
+  bool IsAddressInJITCode(uint64_t Address);
+
 #if DEBUG
   vixl::aarch64::Disassembler Disasm;
 #endif
@@ -177,10 +211,14 @@ private:
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   void GenerateDispatchHelpers();
-  ptrdiff_t ConstantCodeCacheOffset{};
+
   /**
    * @name Dispatch Helper functions
    * @{ */
+  uint64_t AbsoluteLoopTopAddress{};
+
+  uint64_t SignalReturnInstruction{};
+  uint32_t SignalHandlerRefCounter{};
   /**  @} */
 
   bool CustomDispatchGenerated {false};
@@ -276,6 +314,7 @@ private:
   DEF_OP(GuestCallDirect);
   DEF_OP(GuestCallIndirect);
   DEF_OP(GuestReturn);
+  DEF_OP(SignalReturn);
   DEF_OP(ExitFunction);
   DEF_OP(Jump);
   DEF_OP(CondJump);
