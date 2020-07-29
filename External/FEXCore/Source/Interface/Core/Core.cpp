@@ -863,6 +863,8 @@ namespace FEXCore::Context {
       }
     }
 
+    SignalDelegation.UninstallTLSState(Thread);
+
     Thread->State.RunningEvents.WaitingToStart = false;
     Thread->State.RunningEvents.Running = false;
   }
