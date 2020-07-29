@@ -26,7 +26,7 @@ namespace FEX::EnvLoader {
     }
 
     std::function GetVar = [=](const string_view id)  -> const string_view {
-      if (EnvMap.find(id) != EnvMap.end()) 
+      if (EnvMap.find(id) != EnvMap.end())
         return EnvMap.at(id);
 
       // If envp[] was empty, search using std::getenv()
@@ -81,7 +81,7 @@ namespace FEX::EnvLoader {
 
     {
       if ((Value = GetVar("FEX_ROOTFS")).size()) {
-        Config::Add("RootFS", Value);        
+        Config::Add("RootFS", Value);
         if (!std::filesystem::exists(Value)) {
           LogMan::Msg::D("FEX_ROOTFS '%s' doesn't exist", Value.data());
           Config::Add("RootFS", "");
@@ -108,6 +108,16 @@ namespace FEX::EnvLoader {
 
       if ((Value = GetVar("FEX_IPCID")).size()) {
         Config::Add("IPCID", Value);
+      }
+    }
+
+    {
+      if ((Value = GetVar("FEX_SILENTLOG")).size()) {
+        Config::Add("SilentLog", Value);
+      }
+
+      if ((Value = GetVar("FEX_OUTPUTLOG")).size()) {
+        Config::Add("OutputLog", Value);
       }
     }
   }
