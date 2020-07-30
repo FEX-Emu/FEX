@@ -9,7 +9,7 @@
 
 namespace FEXCore {
   constexpr static uint32_t SS_AUTODISARM = (1U << 31);
-  constexpr static uint32_t X86_SIGSTKSZ  = 0x2000U;
+  constexpr static uint32_t X86_MINSIGSTKSZ  = 0x2000U;
 
   // We can only have one delegator per process
   static SignalDelegator *GlobalDelegator{};
@@ -384,8 +384,8 @@ namespace FEXCore {
         return -EINVAL;
       }
 
-      // stack size needs to be minimum SIGSTKSZ (0x2000)
-      if (ss->ss_size < X86_SIGSTKSZ) {
+      // stack size needs to be MINSIGSTKSZ (0x2000)
+      if (ss->ss_size < X86_MINSIGSTKSZ) {
         return -ENOMEM;
       }
 
