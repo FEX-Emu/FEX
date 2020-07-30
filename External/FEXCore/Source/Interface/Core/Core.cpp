@@ -451,6 +451,7 @@ namespace FEXCore::Context {
       break;
     case FEXCore::Config::CONFIG_IRJIT:
       Thread->PassManager->InsertRAPass(IR::CreateRegisterAllocationPass());
+      Thread->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this));
       Thread->CPUBackend.reset(FEXCore::CPU::CreateJITCore(this, Thread));
       break;
     case FEXCore::Config::CONFIG_LLVMJIT:     Thread->CPUBackend.reset(FEXCore::CPU::CreateLLVMCore(Thread)); break;
