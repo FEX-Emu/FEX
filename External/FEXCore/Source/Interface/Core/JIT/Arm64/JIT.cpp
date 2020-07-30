@@ -506,7 +506,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
   if (HeaderOp->ShouldInterpret) {
-    return State->IntBackend->CompileCode(IR, DebugData);
+    return reinterpret_cast<void*>(InterpreterFallbackHelperAddress);
   }
 
   // Fairly excessive buffer range to make sure we don't overflow
@@ -798,6 +798,17 @@ void JITCore::GenerateDispatchHelpers() {
     // Now to get back to our old location we need to do a fault dance
     // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
     hlt(0);
+  }
+
+  {
+    Label InterpreterFallback{};
+    Bind(&InterpreterFallback);
+    InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    mov(x0, STATE);
+    LoadConstant(x1, reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr)));
+    // This is a tail-call optimized call
+    // We will return to the dispatcher at this point
+    br(x1);
   }
 
   auto HelperEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
