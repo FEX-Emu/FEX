@@ -1,14 +1,6 @@
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
-static uint64_t SyscallThunk(FEXCore::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
-  return FEXCore::HandleSyscall(Handler, Thread, Args);
-}
-
-static FEXCore::CPUIDEmu::FunctionResults CPUIDThunk(FEXCore::CPUIDEmu *CPUID, uint64_t Function) {
-  return CPUID->RunFunction(Function);
-}
-
 using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
@@ -109,12 +101,8 @@ DEF_OP(Syscall) {
   mov(x1, STATE);
   mov(x2, sp);
 
-#if _M_X86_64
-  CallRuntime(SyscallThunk);
-#else
   LoadConstant(x3, reinterpret_cast<uint64_t>(FEXCore::HandleSyscall));
   blr(x3);
-#endif
 
   // Result is now in x0
   // Fix the stack and any values that were stepped on
@@ -149,12 +137,18 @@ DEF_OP(CPUID) {
   // x1 = CPUID Function
   LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->CPUID));
   mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-#if _M_X86_64
-  CallRuntime(CPUIDThunk);
-#else
-  LoadConstant(x3, (uint64_t)CPUIDThunk);
+
+  using ClassPtrType = FEXCore::CPUIDEmu::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t);
+  union PtrCast {
+    ClassPtrType ClassPtr;
+    uintptr_t Data;
+  };
+
+  PtrCast Ptr;
+  Ptr.ClassPtr = &FEXCore::CPUIDEmu::RunFunction;
+  LoadConstant(x3, Ptr.Data);
   blr(x3);
-#endif
+
   i = 0;
   for (auto RA : RA64) {
     ldr(RA, MemOperand(sp, 0 + i * 8));

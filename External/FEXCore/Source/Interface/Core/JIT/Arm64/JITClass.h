@@ -3,10 +3,6 @@
 #include "Interface/Core/BlockCache.h"
 #include "Interface/Core/InternalThreadState.h"
 
-#if _M_X86_64
-#define VIXL_INCLUDE_SIMULATOR_AARCH64
-#include "aarch64/simulator-aarch64.h"
-#endif
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
 #include "aarch64/disasm-aarch64.h"
@@ -91,19 +87,11 @@ public:
 
   bool NeedsOpDispatch() override { return true; }
 
-#if _M_X86_64
-  void SimulationExecution(FEXCore::Core::InternalThreadState *Thread);
-#endif
-
   bool HasCustomDispatch() const override { return CustomDispatchGenerated; }
 
-#if _M_X86_64
-  void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override;
-#else
   void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override {
     DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread));
   }
-#endif
 
   void ClearCache() override;
 
@@ -167,7 +155,7 @@ private:
     uint32_t End;
   };
 
-#if DEBUG || _M_X86_64
+#if DEBUG
   vixl::aarch64::Decoder Decoder;
 #endif
   vixl::aarch64::CPU CPU;
@@ -203,10 +191,6 @@ private:
   vixl::aarch64::Disassembler Disasm;
 #endif
 
-#if _M_X86_64
-  vixl::aarch64::Simulator Sim;
-  std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> HostToGuest;
-#endif
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant);
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
@@ -226,9 +210,6 @@ private:
   CustomDispatch DispatchPtr{};
   IR::RegisterAllocationPass *RAPass;
 
-#if _M_X86_64
-  uint64_t CustomDispatchEnd;
-#endif
   uint32_t SpillSlots{};
 
   using OpHandler = void (JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);

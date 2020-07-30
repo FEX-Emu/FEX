@@ -20,42 +20,6 @@ using namespace vixl;
 using namespace vixl::aarch64;
 
 
-#if _M_X86_64
-static uint64_t CompileBlockThunk(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-  uint64_t Result = CTX->CompileBlock(Thread, RIP);
-  return Result;
-}
-
-static uint64_t CompileFallbackBlockThunk(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-  uint64_t Result = CTX->CompileFallbackBlock(Thread, RIP);
-  return Result;
-}
-
-void JITCore::ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) {
-  PrintDisassembler PrintDisasm(stdout);
-  PrintDisasm.DisassembleBuffer(vixl::aarch64::Instruction::Cast(DispatchPtr), vixl::aarch64::Instruction::Cast(CustomDispatchEnd));
-
-  Sim.WriteXRegister(0, reinterpret_cast<uint64_t>(Thread));
-  Sim.RunFrom(vixl::aarch64::Instruction::Cast(DispatchPtr));
-}
-
-static void SimulatorExecution(FEXCore::Core::InternalThreadState *Thread) {
-  JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
-  Core->SimulationExecution(Thread);
-}
-
-void JITCore::SimulationExecution(FEXCore::Core::InternalThreadState *Thread) {
-  using namespace vixl::aarch64;
-  auto SimulatorAddress = HostToGuest[Thread->State.State.rip];
-  // PrintDisassembler PrintDisasm(stdout);
-  // PrintDisasm.DisassembleBuffer(vixl::aarch64::Instruction::Cast(SimulatorAddress.first), vixl::aarch64::Instruction::Cast(SimulatorAddress.second));
-
-  Sim.WriteXRegister(0, reinterpret_cast<uint64_t>(Thread));
-  Sim.RunFrom(vixl::aarch64::Instruction::Cast(SimulatorAddress.first));
-}
-
-#endif
-
 void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   auto Name = FEXCore::IR::GetName(IROp->Op);
   LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
@@ -96,10 +60,37 @@ bool JITCore::IsAddressInJITCode(uint64_t Address) {
   return false;
 }
 
+struct HostCTXHeader {
+  uint32_t Magic;
+  uint32_t Size;
+};
+
+constexpr uint32_t FPR_MAGIC = 0x46508001U;
+
+struct HostFPRState {
+  HostCTXHeader Head;
+  uint32_t FPSR;
+  uint32_t FPCR;
+  __uint128_t FPRs[32];
+};
+
+struct ContextBackup {
+  // Host State
+  uint64_t GPRs[31];
+  uint64_t PrevSP;
+  uint64_t PrevPC;
+  uint64_t PState;
+  uint32_t FPSR;
+  uint32_t FPCR;
+  __uint128_t FPRs[32];
+
+  // Guest state
+  int Signal;
+  struct sigaction *GuestAction;
+  FEXCore::Core::CPUState GuestState;
+};
+
 bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
-#if _M_X86_64
-  return false;
-#else
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
@@ -148,13 +139,9 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
   _mcontext->pc -= 4;
   vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&PC[-1], 16);
   return true;
-#endif
 }
 
 bool JITCore::HandleSIGSEGV(int Signal, void *info, void *ucontext) {
-#if _M_X86_64
-  return false;
-#else
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
@@ -164,43 +151,9 @@ bool JITCore::HandleSIGSEGV(int Signal, void *info, void *ucontext) {
   }
 
   return false;
-#endif
 }
 
-struct HostCTXHeader {
-  uint32_t Magic;
-  uint32_t Size;
-};
-
-constexpr uint32_t FPR_MAGIC = 0x46508001U;
-
-struct HostFPRState {
-  HostCTXHeader Head;
-  uint32_t FPSR;
-  uint32_t FPCR;
-  __uint128_t FPRs[32];
-};
-
-struct ContextBackup {
-  // Host State
-  uint64_t GPRs[31];
-  uint64_t PrevSP;
-  uint64_t PrevPC;
-  uint64_t PState;
-  uint32_t FPSR;
-  uint32_t FPCR;
-  __uint128_t FPRs[32];
-
-  // Guest state
-  int Signal;
-  struct sigaction *GuestAction;
-  FEXCore::Core::CPUState GuestState;
-};
-
 bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
-#if _M_X86_64
-  return false;
-#else
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
@@ -233,13 +186,9 @@ bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
   }
 
   return false;
-#endif
 }
 
 bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, struct sigaction *GuestAction, stack_t *GuestStack) {
-#if _M_X86_64
-  return false;
-#else
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
@@ -323,7 +272,6 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, struct s
   State->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
 
   return true;
-#endif
 }
 
 JITCore::CodeBuffer JITCore::AllocateNewCodeBuffer(size_t Size) {
@@ -347,19 +295,11 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   : vixl::aarch64::MacroAssembler(Buffer.Ptr, Buffer.Size, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
   , State {Thread}
-#if _M_X86_64
-  , Sim {&Decoder}
-#endif
   , InitialCodeBuffer {Buffer}
 {
-#if _M_X86_64
-  auto Features = vixl::CPUFeatures::All();
-  SupportsAtomics = true;
-#else
   auto Features = vixl::CPUFeatures::InferFromOS();
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
   Features.Combine(vixl::CPUFeatures::Feature::kLORegions);
-#endif
 
   SetCPUFeatures(Features);
 
@@ -371,9 +311,6 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 
 #if DEBUG
   Decoder.AppendVisitor(&Disasm)
-#endif
-#if _M_X86_64
-  Sim.SetCPUFeatures(vixl::CPUFeatures::All());
 #endif
   CPU.SetUp();
   SetAllowAssembler(true);
@@ -662,13 +599,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   FinalizeCode();
 
   auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), CodeEnd);
-#if _M_X86_64
-  if (!CustomDispatchGenerated) {
-    HostToGuest[State->State.State.rip] = std::make_pair(Entry, CodeEnd);
-    return (void*)SimulatorExecution;
-  }
-#endif
+  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), CodeEnd - reinterpret_cast<uint64_t>(Entry));
 
   return reinterpret_cast<void*>(Entry);
 }
@@ -785,9 +716,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
     mov(x1, STATE);
 
-#if _M_X86_64
-    CallRuntime(CompileBlockThunk);
-#else
     using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
     union PtrCast {
       ClassPtrType ClassPtr;
@@ -800,7 +728,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
     // X2 contains our guest RIP
     blr(x3); // { CTX, ThreadState, RIP}
-#endif
+
     // X0 now contains either nullptr or block pointer
     cbz(x0, &FallbackCore);
     blr(x0);
@@ -813,11 +741,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     bind(&FallbackCore);
 
-#if _M_X86_64
-    // XXX: Fallback core doesn't work on x86-64
-    // We can't tell the difference between simulator entry points and not
-    b(&ExitError);
-#else
     LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
     mov(x1, STATE);
 
@@ -833,7 +756,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
     // X2 contains our guest RIP
     blr(x3); // {ThreadState, RIP}
-#endif
+
     // X0 now contains either nullptr or block pointer
     cbz(x0, &ExitError);
     blr(x0);
@@ -849,10 +772,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     stlrb(x0, MemOperand(x1));
     b(&ExitCheck);
   }
-
-#if _M_X86_64
-  CustomDispatchEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-#endif
 
   FinalizeCode();
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(DispatchPtr));
