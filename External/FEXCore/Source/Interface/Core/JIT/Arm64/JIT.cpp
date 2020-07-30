@@ -86,7 +86,7 @@ struct ContextBackup {
 
   // Guest state
   int Signal;
-  struct sigaction *GuestAction;
+  SignalDelegator::GuestSigAction *GuestAction;
   FEXCore::Core::CPUState GuestState;
 };
 
@@ -178,6 +178,10 @@ bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
     _mcontext->sp = Context->PrevSP;
     memcpy(&_mcontext->regs[0], &Context->GPRs[0], 31 * sizeof(uint64_t));
 
+    // Restore the previous signal state
+    // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
+    CTX->SignalDelegation.SetCurrentSignal(Context->Signal);
+
     // Ref count our faults
     // We use this to track if it is safe to clear cache
     --SignalHandlerRefCounter;
@@ -188,7 +192,7 @@ bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
   return false;
 }
 
-bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, struct sigaction *GuestAction, stack_t *GuestStack) {
+bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
@@ -260,10 +264,10 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, struct s
     // XXX: siginfo_t(RSI), ucontext (RDX)
     State->State.State.gregs[X86State::REG_RSI] = 0;
     State->State.State.gregs[X86State::REG_RDX] = 0;
-    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sa_sigaction);
+    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   }
   else {
-    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sa_handler);
+    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
   }
 
   // Set up the new SP for stack handling
@@ -372,7 +376,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
     return Core->HandleSIGILL(Signal, info, ucontext);
   });
 
-  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, struct sigaction *GuestAction, stack_t *GuestStack) -> bool {
+  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
     JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
     return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
   };

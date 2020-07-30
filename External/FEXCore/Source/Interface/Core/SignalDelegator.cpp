@@ -1,11 +1,16 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/SignalDelegator.h"
+
+#include <FEXCore/Core/X86Enums.h>
 #include <LogManager.h>
 
 #include <string.h>
 
 namespace FEXCore {
+  constexpr static uint32_t SS_AUTODISARM = (1U << 31);
+  constexpr static uint32_t X86_SIGSTKSZ  = 0x2000U;
+
   // We can only have one delegator per process
   static SignalDelegator *GlobalDelegator{};
 
@@ -13,6 +18,9 @@ namespace FEXCore {
     FEXCore::Core::InternalThreadState *Thread{};
     void *AltStackPtr{};
     stack_t GuestAltStack{};
+    // Guest signal sa_mask is per thread!
+    SignalDelegator::GuestSAMask Guest_sa_mask[SignalDelegator::MAX_SIGNALS]{};
+    uint32_t CurrentSignal{};
   };
 
   thread_local ThreadState ThreadData{};
@@ -34,6 +42,16 @@ namespace FEXCore {
     return false;
   }
 
+  uint64_t SigIsMember(SignalDelegator::GuestSAMask *Set, int Signal) {
+    // Signal 0 isn't real, so everything is offset by one inside the set
+    Signal -= 1;
+    return (Set->Val >> Signal) & 1;
+  }
+
+  void SignalDelegator::SetCurrentSignal(uint32_t Signal) {
+    ThreadData.CurrentSignal = Signal;
+  }
+
   void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
     siginfo_t *SigInfo = static_cast<siginfo_t*>(Info);
@@ -51,12 +69,16 @@ namespace FEXCore {
       return;
     }
 
+    // If the signal was sent by the user with kill then we can't block it
+    // If it was sent by raise() then we /can/ block it
+    bool SentByUser = SigInfo->si_code <= 0;
+
     if (Signal == SIGCHLD) {
       // Do some special handling around this signal
       // If the guest has a signal handler installed with SA_NOCLDSTOP or SA_NOCHLDWAIT then
       // handle carefully
       if (Handler.GuestAction.sa_flags & SA_NOCLDSTOP &&
-          SigInfo->si_code != SI_TKILL) {
+          !SentByUser) {
         // If we were sent the signal from kill, tkill, or tgkill
         // then si_code is set to SI_TKILL and should be delivered to the guest
         // Otherwise if NOCLDSTOP is set without this code, just drop the signal
@@ -71,13 +93,20 @@ namespace FEXCore {
       }
     }
 
+    if (SigIsMember(&ThreadData.Guest_sa_mask[ThreadData.CurrentSignal], Signal)) {
+      // If we are in a signal and our signal mask is blocking this signal then ignore it
+      return;
+    }
+
+    ThreadData.CurrentSignal = Signal;
+
     // We have an emulation thread pointer, we can now modify its state
-    if (Handler.GuestAction.sa_handler == SIG_DFL) {
+    if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
       // XXX: Maybe this should actually go down guest handler state?
       signal(Signal, SIG_DFL);
       return;
     }
-    else if (Handler.GuestAction.sa_handler == SIG_IGN) {
+    else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
       return;
     }
     else {
@@ -177,8 +206,7 @@ namespace FEXCore {
     }
   }
 
-  SignalDelegator::SignalDelegator(FEXCore::Context::Context *ctx)
-    : CTX {ctx} {
+  SignalDelegator::SignalDelegator() {
     // Register this delegate
     LogMan::Throw::A(!GlobalDelegator, "Can't register global delegator multiple times!");
     GlobalDelegator = this;
@@ -291,7 +319,7 @@ namespace FEXCore {
     InstallHostThunk(Signal);
   }
 
-  uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const struct sigaction *Action, struct sigaction *OldAction) {
+  uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const GuestSigAction *Action, GuestSigAction *OldAction) {
     std::lock_guard<std::mutex> lk(GuestDelegatorMutex);
 
     // If we have an old signal set then give it back
@@ -307,6 +335,7 @@ namespace FEXCore {
       }
 
       HostHandlers[Signal].GuestAction = *Action;
+      ThreadData.Guest_sa_mask[Signal] = Action->sa_mask;
       // Only attempt to install a new thunk handler if we were installing a new guest action
       if (!InstallHostThunk(Signal)) {
         UpdateHostThunk(Signal);
@@ -317,13 +346,49 @@ namespace FEXCore {
   }
 
   uint64_t SignalDelegator::RegisterGuestSigAltStack(const stack_t *ss, stack_t *old_ss) {
+    bool UsingAltStack{};
+    uint64_t AltStackBase = reinterpret_cast<uint64_t>(ThreadData.GuestAltStack.ss_sp);
+    uint64_t AltStackEnd = AltStackBase + ThreadData.GuestAltStack.ss_size;
+    uint64_t GuestSP = ThreadData.Thread->State.State.gregs[X86State::REG_RSP];
+
+    if (GuestSP >= AltStackBase &&
+        GuestSP <= AltStackEnd) {
+      UsingAltStack = true;
+    }
+
     // If we have an old signal set then give it back
     if (old_ss) {
       *old_ss = ThreadData.GuestAltStack;
+
+      if (UsingAltStack) {
+        // We are currently operating on the alt stack
+        // Let the guest know
+        old_ss->ss_flags |= SS_ONSTACK;
+      }
+      else {
+        old_ss->ss_flags |= SS_DISABLE;
+      }
     }
 
     // Now assign the new action
     if (ss) {
+      // If we tried setting the alt stack while we are using it then throw an error
+      if (UsingAltStack) {
+        return -EPERM;
+      }
+
+      // We need to check for invalid flags
+      // The only flag that can be passed is SS_AUTODISARM
+      if (ss->ss_flags & ~SS_AUTODISARM) {
+        // A flag remained that isn't one of the supported ones?
+        return -EINVAL;
+      }
+
+      // stack size needs to be minimum SIGSTKSZ (0x2000)
+      if (ss->ss_size < X86_SIGSTKSZ) {
+        return -ENOMEM;
+      }
+
       ThreadData.GuestAltStack = *ss;
     }
 

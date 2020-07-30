@@ -124,8 +124,7 @@ namespace DefaultFallbackCore {
 }
 
 namespace FEXCore::Context {
-  Context::Context()
-    : SignalDelegation {this} {
+  Context::Context() {
     FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();

@@ -10,7 +10,7 @@
 namespace FEXCore::HLE {
 
   void RegisterSignals() {
-    REGISTER_SYSCALL_IMPL(rt_sigaction, [](FEXCore::Core::InternalThreadState *Thread, int signum, const struct sigaction *act, struct sigaction *oldact) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(rt_sigaction, [](FEXCore::Core::InternalThreadState *Thread, int signum, const SignalDelegator::GuestSigAction *act, SignalDelegator::GuestSigAction *oldact) -> uint64_t {
       return Thread->CTX->SignalDelegation.RegisterGuestSignalHandler(signum, act, oldact);
     });
 

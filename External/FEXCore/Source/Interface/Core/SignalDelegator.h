@@ -15,11 +15,26 @@ namespace Core {
 
   class SignalDelegator {
   public:
+    struct __attribute__((packed)) GuestSAMask {
+      uint64_t Val;
+    };
+
+    struct __attribute__((packed)) GuestSigAction {
+      union {
+        void (*handler)(int);
+        void (*sigaction)(int, siginfo_t *, void*);
+      } sigaction_handler;
+
+      uint64_t sa_flags;
+      void (*restorer)(void);
+      GuestSAMask sa_mask;
+    };
+
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler
     using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext)>;
-    using HostSignalDelegatorFunctionForGuest = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, struct sigaction *GuestAction, stack_t *GuestStack)>;
-    SignalDelegator(FEXCore::Context::Context *ctx);
+    using HostSignalDelegatorFunctionForGuest = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack)>;
+    SignalDelegator();
 
     /**
      * @brief Registers an emulated thread's object to a TLS object
@@ -63,25 +78,25 @@ namespace Core {
     /**
      * @brief Allows the guest to register a signal handler that is run after the host attempts to resolve the handler first
      */
-    uint64_t RegisterGuestSignalHandler(int Signal, const struct sigaction *Action, struct sigaction *OldAction);
+    uint64_t RegisterGuestSignalHandler(int Signal, const GuestSigAction *Action, struct GuestSigAction *OldAction);
 
     uint64_t RegisterGuestSigAltStack(const stack_t *ss, stack_t *old_ss);
 
     // Called from the thunk handler to handle the signal
     void HandleSignal(int Signal, void *Info, void *UContext);
 
+    void SetCurrentSignal(uint32_t Signal);
+
     constexpr static size_t MAX_SIGNALS {64};
 
   private:
-    FEXCore::Context::Context *CTX;
-
     struct SignalHandler {
       std::atomic<bool> Installed{};
       struct sigaction HostAction{};
       struct sigaction OldAction{};
       HostSignalDelegatorFunction Handler{};
       HostSignalDelegatorFunctionForGuest GuestHandler{};
-      struct sigaction GuestAction{};
+      GuestSigAction GuestAction{};
     };
 
     SignalHandler HostHandlers[MAX_SIGNALS]{};
