@@ -827,17 +827,6 @@ namespace FEXCore::Context {
 
         if (Thread->State.RunningEvents.ShouldStop.load()) {
           LogMan::Msg::D("[%d] Thread Event Should Stop", Thread->State.ThreadManager.TID.load());
-
-          // If it is the parent thread that died then just leave
-          // XXX: This doesn't make sense when the parent thread doesn't outlive its children
-          if (Thread->State.ThreadManager.parent_tid == 0) {
-            LogMan::Msg::D("[%d] Thread Event Everything should stop", Thread->State.ThreadManager.TID.load());
-            ShouldStop = true;
-            Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
-          }
-
-          --IdleWaitRefCount;
-          IdleWaitCV.notify_all();
           break;
         }
 
@@ -866,6 +855,17 @@ namespace FEXCore::Context {
         }
       }
     }
+
+    // If it is the parent thread that died then just leave
+    // XXX: This doesn't make sense when the parent thread doesn't outlive its children
+    if (Thread->State.ThreadManager.parent_tid == 0) {
+      LogMan::Msg::D("[%d] Thread Event Everything should stop", Thread->State.ThreadManager.TID.load());
+      ShouldStop = true;
+      Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
+    }
+
+    --IdleWaitRefCount;
+    IdleWaitCV.notify_all();
 
     Thread->State.RunningEvents.WaitingToStart = false;
     Thread->State.RunningEvents.Running = false;
