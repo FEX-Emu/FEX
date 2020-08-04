@@ -87,7 +87,7 @@ namespace FEX::Config {
     if (FileSize > 0) {
       Data.resize(FileSize);
       if (ConfigFile.read(&Data.at(0), FileSize)) {
-        LogMan::Msg::D("Couldn't load configuration file: Read");
+        // Probably means permissions aren't set. Just early exit
         return false;
       }
       ConfigFile.close();
