@@ -170,6 +170,14 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   BlockSetRIP = true;
 }
 
+void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
+  // Store the new RIP
+  _SignalReturn();
+  // This ExitFunction won't actually get hit but needs to exist
+  _ExitFunction();
+  BlockSetRIP = true;
+}
+
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   FEXCore::IR::IROps IROp;
@@ -7248,6 +7256,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xFC, 1, &OpDispatchBuilder::PADDQOp<1>},
     {0xFD, 1, &OpDispatchBuilder::PADDQOp<2>},
     {0xFE, 1, &OpDispatchBuilder::PADDQOp<4>},
+
+    // FEX reserved instructions
+    {0x36, 1, &OpDispatchBuilder::SIGRETOp},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable_32 = {

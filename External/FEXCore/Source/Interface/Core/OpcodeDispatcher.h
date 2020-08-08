@@ -104,6 +104,7 @@ public:
   void LEAOp(OpcodeArgs);
   void NOPOp(OpcodeArgs);
   void RETOp(OpcodeArgs);
+  void SIGRETOp(OpcodeArgs);
   template<uint32_t SrcIndex>
   void SecondaryALUOp(OpcodeArgs);
   template<uint32_t SrcIndex>
