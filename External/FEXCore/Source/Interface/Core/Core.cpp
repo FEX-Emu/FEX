@@ -456,6 +456,9 @@ namespace FEXCore::Context {
       break;
     case FEXCore::Config::CONFIG_IRJIT:
       Thread->PassManager->InsertRAPass(IR::CreateRegisterAllocationPass());
+      // Initialization order matters here, the IR JIT may want to have the interpreter created first to get a pointer to its execution function
+      // This is useful for JIT to interpreter fallback support
+      Thread->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this));
       Thread->CPUBackend.reset(FEXCore::CPU::CreateJITCore(this, Thread));
       break;
     case FEXCore::Config::CONFIG_LLVMJIT:     Thread->CPUBackend.reset(FEXCore::CPU::CreateLLVMCore(Thread)); break;
