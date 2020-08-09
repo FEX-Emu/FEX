@@ -196,19 +196,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
           Changed = true;
         }
 
-        break;
-      }
-      case OP_ZEXT: {
-        auto Op = IROp->C<IR::IROp_Zext>();
-        uint64_t Constant;
-        if (Op->SrcSize != 64 &&
-            IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
-          uint64_t NewConstant = Constant & ((1ULL << Op->SrcSize) - 1);
-          IREmit->SetWriteCursor(CodeNode);
-          auto ConstantVal = IREmit->_Constant(NewConstant);
-          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
-          Changed = true;
-        }
       break;
       }
       case OP_MUL: {

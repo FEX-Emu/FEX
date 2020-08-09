@@ -851,20 +851,6 @@
       ]
     },
 
-    "Zext": {
-      "Desc": ["Integer zero extension",
-               "Extends from the source bitsize to the next byte size up from that size"
-              ],
-      "OpClass": "ALU",
-      "HasDest": true,
-      "DestClass": "Complex",
-      "DestSize": "SrcSize / 4",
-      "SSAArgs": "1",
-      "Args": [
-        "uint8_t", "SrcSize"
-      ]
-    },
-
     "Sext": {
       "Desc": ["Integer sign extension",
                "Extends from the source bitsize to the next byte size up from that size"
@@ -983,8 +969,14 @@
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
-      "DestSize": "GetOpSize(ssa0)",
+      "DestSize": "DestSize != 0 ? DestSize : GetOpSize(ssa0)",
       "SSAArgs": "1",
+      "SSANames": [
+        "Src"
+      ],
+      "HelperArgs": [
+        "uint8_t", "DestSize"
+      ],
       "Args": [
         "uint8_t", "Width",
         "uint8_t", "lsb"

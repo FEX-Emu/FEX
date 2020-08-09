@@ -110,7 +110,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
 
   OrderedNode *NewSP;
-  
+
   NewSP = _Add(OldSP, Constant);
 
   // Store the new stack pointer
@@ -984,8 +984,7 @@ void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Src, -1);
   }
   else {
-    // Without REX.W then Zext
-    Src = _Zext(Size * 8, Src);
+    // Without REX.W then Zext (store result implicitly zero extends)
     StoreResult(GPRClass, Op, Src, -1);
   }
 }
@@ -1000,10 +999,8 @@ void OpDispatchBuilder::MOVSXOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVZXOp(OpcodeArgs) {
-  uint8_t Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  // Just make sure this is zero extended
-  Src = _Zext(Size * 8, Src);
+  // Store result implicitly zero extends
   StoreResult(GPRClass, Op, Src, -1);
 }
 
@@ -1079,11 +1076,6 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
   uint8_t SrcSize = DstSize >> 1;
 
   Src = _Sext(SrcSize * 8, Src);
-  if (SrcSize == 2) {
-    Src = _Zext(DstSize * 8, Src);
-    DstSize *= 2;
-  }
-
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
 }
 
@@ -2022,8 +2014,6 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::IMULOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
   uint8_t Size = GetSrcSize(Op);
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
@@ -2053,14 +2043,10 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     // 32bits stored in EAX
     // 32bits stored in EDX
     // Make sure they get Zext correctly
-    OrderedNode *ResultLow = _Bfe(32, 0, Result);
-    ResultHigh = _Bfe(32, 32, Result);
-    if (GPRSize == 8) {
-      ResultLow = _Zext(Size * 8, ResultLow);
-      ResultHigh = _Zext(Size * 8, ResultHigh);
-    }
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ResultLow);
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
+    OrderedNode *ResultLow = _Bfe(4, 32, 0, Result);
+    ResultHigh = _Bfe(4, 32, 32, Result);
+    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ResultLow);
+    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
   }
   else if (Size == 8) {
     LogMan::Throw::A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");
@@ -2075,14 +2061,12 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
   uint8_t Size = GetSrcSize(Op);
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
   if (Size != 8) {
-    Src1 = _Zext(Size * 8, Src1);
-    Src2 = _Zext(Size * 8, Src2);
+    Src1 = _Bfe(8, Size * 8, 0, Src1);
+    Src2 = _Bfe(8, Size * 8, 0, Src2);
   }
   OrderedNode *Result = _UMul(Src1, Src2);
   OrderedNode *ResultHigh{};
@@ -2102,14 +2086,10 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
   else if (Size == 4) {
     // 32bits stored in EAX
     // 32bits stored in EDX
-    // Make sure they get Zext correctly
-    OrderedNode *ResultLow = Result;
-    if (GPRSize == 8) {
-      ResultLow = _Bfe(32, 0, Result);
-      ResultHigh = _Bfe(32, 32, Result);
-    }
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ResultLow);
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
+    OrderedNode *ResultLow = _Bfe(32, 0, Result);
+    ResultHigh = _Bfe(32, 32, Result);
+    _StoreContext(GPRClass, 4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ResultLow);
+    _StoreContext(GPRClass, 4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
 
   }
   else if (Size == 8) {
@@ -2956,13 +2936,8 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     OrderedNode *UDivOp = _LUDiv(Src1, Src2, Divisor);
     OrderedNode *URemOp = _LURem(Src1, Src2, Divisor);
 
-    if (GPRSize == 8) {
-      UDivOp = _Zext(32, UDivOp);
-      URemOp = _Zext(32, URemOp);
-    }
-
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), UDivOp);
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), URemOp);
+    _StoreContext(GPRClass, 4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), UDivOp);
+    _StoreContext(GPRClass, 4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), URemOp);
   }
   else if (Size == 8) {
     LogMan::Throw::A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");
@@ -3010,13 +2985,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     OrderedNode *UDivOp = _LDiv(Src1, Src2, Divisor);
     OrderedNode *URemOp = _LRem(Src1, Src2, Divisor);
 
-    if (GPRSize == 8) {
-      UDivOp = _Zext(32, UDivOp);
-      URemOp = _Zext(32, URemOp);
-    }
-
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), UDivOp);
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), URemOp);
+    _StoreContext(GPRClass, 4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), UDivOp);
+    _StoreContext(GPRClass, 4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), URemOp);
   }
   else if (Size == 8) {
     LogMan::Throw::A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");
@@ -3159,8 +3129,6 @@ void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
     // MOVSS xmm1, mem32
     // xmm1[127:0] <- zext(mem32)
     OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
-    Src = _Zext(32, Src);
-    Src = _Zext(64, Src);
     StoreResult(FPRClass, Op, Src, -1);
   }
   else {
@@ -3182,7 +3150,6 @@ void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
   else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     // xmm1[127:0] <- zext(mem64)
     OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 8, Op->Flags, -1);
-    Src = _Zext(64, Src);
     StoreResult(FPRClass, Op, Src, -1);
   }
   else {
@@ -3566,15 +3533,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 
     // Set ZF
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
-    if (Size < 4) {
-      _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
-    }
-    else {
-      if (GPRSize == 8 && Size == 4) {
-        RAXResult = _Zext(32, RAXResult);
-      }
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
-    }
+    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
 
     // Store in to GPR Dest
     // Have to make sure this is after the result store in RAX for when Dest == RAX
@@ -3594,15 +3553,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       OneConst, ZeroConst);
 
     // RAX gets the result of the CAS op
-    if (Size < 4) {
-      _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), CASResult);
-    }
-    else {
-      if (GPRSize == 8 && Size == 4) {
-        CASResult = _Zext(32, CASResult);
-      }
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), CASResult);
-    }
+    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), CASResult);
 
     auto Size = GetDstSize(Op) * 8;
     auto ALUOp = _Sub(CASResult, Src3);
@@ -3654,13 +3605,8 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   OrderedNode *Result_Lower = _ExtractElementPair(CASResult, 0);
   OrderedNode *Result_Upper = _ExtractElementPair(CASResult, 1);
 
-  if (GPRSize == 8 && Size == 4) {
-    Result_Lower = _Zext(32, Result_Lower);
-    Result_Upper = _Zext(32, Result_Upper);
-  }
-
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Result_Lower);
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), Result_Upper);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Result_Lower);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), Result_Upper);
 
   // Set ZF if memory result was expected
   OrderedNode *EOR_Lower = _Xor(Result_Lower, Expected_Lower);
@@ -3783,7 +3729,14 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
   if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL) {
-    Src = _Constant(Operand.TypeLiteral.Size * 8, Operand.TypeLiteral.Literal);
+    uint64_t constant = Operand.TypeLiteral.Literal;
+    uint64_t width = Operand.TypeLiteral.Size * 8;
+
+    if (Operand.TypeLiteral.Size != 8) {
+      // zero extend
+      constant = constant & ((1ULL << width) - 1);
+    }
+    Src = _Constant(width, constant);
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_MM_0) {
@@ -3934,9 +3887,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     else {
       if (GPRSize == 8 && OpSize == 4) {
         LogMan::Throw::A(!Operand.TypeGPR.HighBits, "Can't handle 32bit store to high 8bit register");
-        auto ZextOp = _Zext(Src, 32);
-
-        _StoreContext(Class, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), ZextOp);
+        _StoreContext(Class, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), Src);
       }
       else {
         LogMan::Throw::A(!(GPRSize == 4 && OpSize > 4), "Oops had a %d GPR load", OpSize);
@@ -4115,7 +4066,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(bool Lower8) {
 
   for (int i = 0; i < NumFlags; ++i) {
     OrderedNode *Flag = _LoadFlag(FlagOffsets[i]);
-    Flag = _Zext(32, Flag);
+    Flag = _Bfe(4, 32, 0, Flag);
     Flag = _Lshl(Flag, _Constant(FlagOffsets[i]));
     Original = _Or(Original, Flag);
   }
@@ -5236,7 +5187,7 @@ void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
       if (Signed)
         Src = _Sext(32, Src);
       else
-        Src = _Zext(32, Src);
+        Src = _Bfe(8, 32, 0, Src);
     }
   }
 
@@ -5356,14 +5307,9 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
       Op->Dest.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-    // When destination is XMM then it is zext to 128bit
-    uint64_t SrcSize = GetSrcSize(Op) * 8;
-
-    while (SrcSize != 128) {
-      Src = _Zext(SrcSize, Src);
-      SrcSize *= 2;
-    }
-    StoreResult(FPRClass, Op, Op->Dest, Src, -1);
+    // zext to 128bit
+    auto Converted = _VCastFromGPR(16, GetSrcSize(Op), Src);
+    StoreResult(FPRClass, Op, Op->Dest, Converted, -1);
   }
   else {
     // Destination is GPR or mem
@@ -5487,32 +5433,6 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   // Convert to 80bit float
   if (width == 32 || width == 64) {
       converted = _F80CVTTo(data, width / 8);
-  }
-  else if (width == 32 || width == 64) {
-    _Zext(32, data);
-    if (width == 32)
-      data = _Zext(32, data);
-
-    constexpr size_t mantissa_bits = (width == 32) ? 23 : 52;
-    constexpr size_t exponent_bits = width - (mantissa_bits + 1);
-
-    uint64_t sign_mask = (width == 32) ? 0x80000000 : 0x8000000000000000;
-    uint64_t exponent_mask = (width == 32) ? 0x7F800000 : 0x7FE0000000000000;
-    uint64_t lower_mask = (width == 32) ? 0x007FFFFF : 0x001FFFFFFFFFFFFF;
-    auto sign = _Lshr(_And(data, _Constant(sign_mask)), _Constant(width - 16));
-    auto exponent = _Lshr(_And(data, _Constant(exponent_mask)), _Constant(mantissa_bits));
-    auto lower = _Lshl(_And(data, _Constant(lower_mask)), _Constant(63 - mantissa_bits));
-
-    // XXX: Need to handle NaN/Infinities
-    constexpr size_t exponent_zero = (1 << (exponent_bits-1));
-    auto adjusted_exponent = _Add(exponent, _Constant(0x4000 - exponent_zero));
-    auto upper = _Or(sign, adjusted_exponent);
-
-    // XXX: Need to support decoding of denormals
-    auto intergerBit = _Constant(1ULL << 63);
-
-    converted = _VCastFromGPR(16, 8, _Or(intergerBit, lower));
-    converted = _VInsElement(16, 8, 1, 0, converted, _VCastFromGPR(16, 8, upper));
   }
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);

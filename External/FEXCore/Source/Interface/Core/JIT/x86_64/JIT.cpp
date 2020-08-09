@@ -1097,45 +1097,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           not_(Dst);
           break;
         }
-        case IR::OP_ZEXT: {
-          auto Op = IROp->C<IR::IROp_Zext>();
-          LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-
-          uint64_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
-          if (PhysReg >= XMMBase) {
-            // XMM -> GPR transfer with free truncation
-            switch (Op->SrcSize) {
-            case 8:
-              pextrb(al, GetSrc(Op->Header.Args[0].ID()), 0);
-            break;
-            case 16:
-              pextrw(ax, GetSrc(Op->Header.Args[0].ID()), 0);
-            break;
-            case 32:
-              pextrd(eax, GetSrc(Op->Header.Args[0].ID()), 0);
-            break;
-            case 64:
-              pextrw(rax, GetSrc(Op->Header.Args[0].ID()), 0);
-            break;
-            default: LogMan::Msg::A("Unhandled Zext size: %d", Op->SrcSize); break;
-            }
-            auto Dst = GetDst<RA_64>(Node);
-            mov(Dst, rax);
-          }
-          else {
-            if (Op->SrcSize == 64) {
-              vmovq(xmm15, Reg64(GetSrc<RA_64>(Op->Header.Args[0].ID()).getIdx()));
-              movapd(GetDst(Node), xmm15);
-            }
-            else {
-              auto Dst = GetDst<RA_64>(Node);
-              mov(rax, uint64_t((1ULL << Op->SrcSize) - 1));
-              and(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-              mov(Dst, rax);
-            }
-          }
-          break;
-        }
         case IR::OP_SEXT: {
           auto Op = IROp->C<IR::IROp_Sext>();
           LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
@@ -2019,7 +1980,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           if (NumPush & 1)
             sub(rsp, 8); // Align
-          
+
           mov(rdi, reinterpret_cast<uintptr_t>(CTX));
           mov(rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
@@ -2028,7 +1989,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           if (NumPush & 1)
             add(rsp, 8); // Align
-          
+
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
 

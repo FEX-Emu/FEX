@@ -74,6 +74,9 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx)
 uint32_t InterpreterCore::AllocateTmpSpace(size_t Size) {
   // XXX: IR generation has a bug where the size can periodically end up being zero
   // LogMan::Throw::A(Size !=0, "Dest Op had zero destination size");
+
+  // Some IR ops rely on the upper bits of registers being allocaed and zeroed
+  // to do an implicit zero extend
   Size = Size < 16 ? 16 : Size;
 
   // Force alignment by size
@@ -875,20 +878,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
             uint8_t Mask = OpSize * 8 - 1;
             GD = (~Src) & Mask;
-            break;
-          }
-          case IR::OP_ZEXT: {
-            auto Op = IROp->C<IR::IROp_Zext>();
-            LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-            uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
-            if (Op->SrcSize == 64) {
-              // Zext 64bit to 128bit
-              __uint128_t SrcLarge = Src;
-              memcpy(GDP, &SrcLarge, 16);
-            }
-            else {
-              GD = Src & ((1ULL << Op->SrcSize) - 1);
-            }
             break;
           }
           case IR::OP_SEXT: {
