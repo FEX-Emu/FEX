@@ -126,8 +126,7 @@ namespace DefaultFallbackCore {
 }
 
 namespace FEXCore::Context {
-  Context::Context()
-    : SignalDelegation {this} {
+  Context::Context() {
     FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
@@ -869,6 +868,8 @@ namespace FEXCore::Context {
 
     --IdleWaitRefCount;
     IdleWaitCV.notify_all();
+
+    SignalDelegation.UninstallTLSState(Thread);
 
     Thread->State.RunningEvents.WaitingToStart = false;
     Thread->State.RunningEvents.Running = false;
