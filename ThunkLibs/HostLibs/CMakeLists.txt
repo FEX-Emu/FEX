@@ -34,8 +34,10 @@ generate(libGL thunkmap initializers forwards)
 add_host_lib(GL)
 target_link_libraries(GL-host PRIVATE GL)
 
+find_package(SDL2 REQUIRED)
 generate(libSDL2 thunkmap initializers forwards)
 add_host_lib(SDL2)
+target_include_directories(SDL2-host PRIVATE ${SDL2_INCLUDE_DIRS})
 
 generate(libX11 thunkmap initializers forwards)
 add_host_lib(X11)
