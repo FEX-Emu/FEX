@@ -455,6 +455,10 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
     auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
     auto CodeLast = CurrentIR.at(BlockIROp->Last);
 
+    auto OpSize = [&](OrderedNode *node) {
+      return node->Op(ListBegin)->Size;
+    };
+
     while (1) {
       auto CodeOp = CodeBegin();
       OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
@@ -486,8 +490,10 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         uint8_t LastClass = Info->AccessRegClass;
         uint32_t LastOffset = Info->AccessOffset;
         uint8_t LastSize = Info->AccessSize;
+        RegisterClassType RegClass = Info->AccessRegClass;
         LastAccessType LastAccess = Info->Accessed;
         OrderedNode *LastNode = Info->Node;
+        OrderedNode *LastStoreNode = Info->StoreNode;
         RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, CodeNode);
 
         if (LastAccess == ACCESS_WRITE &&
@@ -495,13 +501,29 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
             LastOffset == Op->Offset &&
             LastSize == IROp->Size &&
             Info->Accessed == ACCESS_READ) {
+
+          IREmit->SetWriteCursor(CodeNode);
+
+          // Did store context do an implicit truncation?
+          if (OpSize(LastStoreNode) < OpSize(LastNode)) {
+            uint8_t TruncateSize = OpSize(LastStoreNode);
+            // We need to insert an explict truncation
+            if (RegClass == FPRClass)
+              LastNode = IREmit->_Bfe(TruncateSize * 8, 0, LastNode); // XXX FIXME: BFE shouldn't be used on FPR registers
+            else if (RegClass == GPRPairClass)
+              LastNode = IREmit->_TruncElementPair(LastNode, TruncateSize);
+            else if (RegClass == GPRClass)
+              LastNode = IREmit->_Bfe(TruncateSize * 8, 0, LastNode);
+          }
+
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
+
           if (Op->Offset >= offsetof(FEXCore::Core::CPUState, xmm[0]) &&
               Op->Offset <= offsetof(FEXCore::Core::CPUState, xmm[15])) {
 
-            IREmit->SetWriteCursor(CodeNode);
+
             // XMM needs a bit of special help
-            auto BitCast = IREmit->_VBitcast(IROp->Size * 8, 1, LastNode);
+            auto BitCast = IREmit->_VBitcast(IROp->Size * 8, 1, LastNode); // FIXME
             IREmit->ReplaceAllUsesWithInclusive(CodeNode, BitCast, CodeBegin, CodeLast);
             RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           }
