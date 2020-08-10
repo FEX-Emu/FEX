@@ -36,10 +36,11 @@ add_guest_lib(EGL)
 generate(libGL thunks symtab)
 add_guest_lib(GL)
 
-find_package(SDL2 REQUIRED)
-generate(libSDL2 thunks)
-add_guest_lib(SDL2)
-target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
+# disabled for now, headers are platform specific
+# find_package(SDL2 REQUIRED)
+# generate(libSDL2 thunks)
+# add_guest_lib(SDL2)
+# target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
 
 generate(libX11 thunks)
 add_guest_lib(X11)
