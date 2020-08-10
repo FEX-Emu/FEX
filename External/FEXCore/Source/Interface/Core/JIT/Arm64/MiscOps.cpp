@@ -49,9 +49,8 @@ DEF_OP(Break) {
 
       stlrb(TMP1, MemOperand(TMP2));
 
-      if (SpillSlots) {
-        add(sp, sp, SpillSlots * 16);
-      }
+      ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
+      add(sp, TMP1, 0); // Move that supports SP
       ret();
       break;
     }
