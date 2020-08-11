@@ -1,0 +1,38 @@
+#!/usr/bin/python3
+from ThunkHelpers import *
+
+lib("libasound")
+
+fn("int snd_pcm_hw_params_set_rate_resample(snd_pcm_t*, snd_pcm_hw_params_t*, unsigned int)")
+fn("int snd_pcm_wait(snd_pcm_t*, int)")
+fn("int snd_pcm_hw_params_set_access(snd_pcm_t*, snd_pcm_hw_params_t*, snd_pcm_access_t)")
+fn("int snd_pcm_recover(snd_pcm_t*, int, int)")
+fn("int snd_pcm_hw_params_get_buffer_size(const snd_pcm_hw_params_t*, snd_pcm_uframes_t*)")
+fn("int snd_pcm_hw_params_set_format(snd_pcm_t*, snd_pcm_hw_params_t*, snd_pcm_format_t)")
+fn("int snd_pcm_drop(snd_pcm_t*)")
+fn("int snd_pcm_hw_params_set_rate(snd_pcm_t*, snd_pcm_hw_params_t*, unsigned int, int)")
+fn("size_t snd_pcm_sw_params_sizeof()")
+fn("int snd_pcm_open(snd_pcm_t**, const char*, snd_pcm_stream_t, int)")
+fn("int snd_pcm_hw_params_get_period_size_min(const snd_pcm_hw_params_t*, snd_pcm_uframes_t*, int*)")
+fn("int snd_pcm_hw_params_set_period_size_near(snd_pcm_t*, snd_pcm_hw_params_t*, snd_pcm_uframes_t*, int*)")
+fn("int snd_pcm_hw_params_get_period_size(const snd_pcm_hw_params_t*, snd_pcm_uframes_t*, int*)")
+fn("snd_pcm_sframes_t snd_pcm_writei(snd_pcm_t*, const void*, snd_pcm_uframes_t)")
+fn("int snd_pcm_hw_params(snd_pcm_t*, snd_pcm_hw_params_t*)")
+fn("int snd_pcm_hw_params_set_buffer_size_near(snd_pcm_t*, snd_pcm_hw_params_t*, snd_pcm_uframes_t*)")
+fn("int snd_pcm_hw_params_set_rate_near(snd_pcm_t*, snd_pcm_hw_params_t*, unsigned int*, int*)")
+fn("int snd_pcm_hw_params_get_buffer_size_max(const snd_pcm_hw_params_t*, snd_pcm_uframes_t*)")
+fn("size_t snd_pcm_hw_params_sizeof()")
+fn("int snd_pcm_close(snd_pcm_t*)")
+fn("int snd_pcm_drain(snd_pcm_t*)")
+fn("int snd_pcm_hw_params_get_buffer_size_min(const snd_pcm_hw_params_t*, snd_pcm_uframes_t*)")
+fn("int snd_pcm_hw_params_set_channels(snd_pcm_t*, snd_pcm_hw_params_t*, unsigned int)")
+fn("int snd_pcm_hw_params_get_period_size_max(const snd_pcm_hw_params_t*, snd_pcm_uframes_t*, int*)")
+fn("int snd_pcm_nonblock(snd_pcm_t*, int)")
+fn("int snd_pcm_hw_params_get_rate(const snd_pcm_hw_params_t*, unsigned int*, int*)")
+fn("int snd_pcm_hw_params_any(snd_pcm_t*, snd_pcm_hw_params_t*)")
+fn("int snd_pcm_sw_params_current(snd_pcm_t*, snd_pcm_sw_params_t*)")
+fn("int snd_pcm_sw_params(snd_pcm_t*, snd_pcm_sw_params_t*)")
+fn("int snd_pcm_sw_params_set_avail_min(snd_pcm_t*, snd_pcm_sw_params_t*, snd_pcm_uframes_t)")
+
+
+Generate()

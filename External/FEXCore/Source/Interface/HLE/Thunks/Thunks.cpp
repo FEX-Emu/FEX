@@ -35,7 +35,7 @@ namespace FEXCore {
             auto Handle = dlopen(SOName.c_str(), RTLD_LOCAL | RTLD_NOW);
 
             if (!Handle) {
-                LogMan::Msg::E("Load lib: failed to dlopen %s", SOName.c_str());
+                LogMan::Msg::E("Load lib: failed to dlopen %s: %s", SOName.c_str(), dlerror());
                 return;
             }
 

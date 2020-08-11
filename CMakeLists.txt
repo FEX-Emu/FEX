@@ -121,3 +121,21 @@ if (BUILD_TESTS)
   message(STATUS "Unit tests are enabled")
   add_subdirectory(unittests/)
 endif()
+
+include(ExternalProject)
+
+ExternalProject_Add(host-libs
+	PREFIX host-libs
+	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/HostLibs"
+	BINARY_DIR "Host"
+	INSTALL_COMMAND ""
+  BUILD_ALWAYS ON
+)
+
+ExternalProject_Add(guest-libs
+	PREFIX guest-libs
+	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
+	BINARY_DIR "Guest"
+	INSTALL_COMMAND ""
+  BUILD_ALWAYS ON
+)
