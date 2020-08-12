@@ -6,6 +6,8 @@
 
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
+#include <FEXCore/Core/X86Enums.h>
+
 #include <sys/mman.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -17,37 +19,6 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-#if _M_X86_64
-static uint64_t CompileBlockThunk(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-  uint64_t Result = CTX->CompileBlock(Thread, RIP);
-  return Result;
-}
-
-void JITCore::ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) {
-  PrintDisassembler PrintDisasm(stdout);
-  PrintDisasm.DisassembleBuffer(vixl::aarch64::Instruction::Cast(DispatchPtr), vixl::aarch64::Instruction::Cast(CustomDispatchEnd));
-
-  Sim.WriteXRegister(0, reinterpret_cast<uint64_t>(Thread));
-  Sim.RunFrom(vixl::aarch64::Instruction::Cast(DispatchPtr));
-}
-
-static void SimulatorExecution(FEXCore::Core::InternalThreadState *Thread) {
-  JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
-  Core->SimulationExecution(Thread);
-}
-
-void JITCore::SimulationExecution(FEXCore::Core::InternalThreadState *Thread) {
-  using namespace vixl::aarch64;
-  auto SimulatorAddress = HostToGuest[Thread->State.State.rip];
-  // PrintDisassembler PrintDisasm(stdout);
-  // PrintDisasm.DisassembleBuffer(vixl::aarch64::Instruction::Cast(SimulatorAddress.first), vixl::aarch64::Instruction::Cast(SimulatorAddress.second));
-
-  Sim.WriteXRegister(0, reinterpret_cast<uint64_t>(Thread));
-  Sim.RunFrom(vixl::aarch64::Instruction::Cast(SimulatorAddress.first));
-}
-
-#endif
-
 void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   auto Name = FEXCore::IR::GetName(IROp->Op);
   LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
@@ -56,26 +27,223 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 void JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 }
 
-JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : vixl::aarch64::MacroAssembler(MAX_CODE_SIZE, vixl::aarch64::PositionDependentCode)
+bool JITCore::IsAddressInJITCode(uint64_t Address) {
+  // Check the initial code buffer first
+  // It's the most likely place to end up
+
+  uint64_t CodeBase = reinterpret_cast<uint64_t>(InitialCodeBuffer.Ptr);
+  uint64_t CodeEnd = CodeBase + InitialCodeBuffer.Size;
+  if (Address >= CodeBase &&
+      Address < CodeEnd) {
+    return true;
+  }
+
+  // Check the generated code buffers
+  // Not likely to have any but can happen with recursive signals
+  for (auto &CodeBuffer : CodeBuffers) {
+    CodeBase = reinterpret_cast<uint64_t>(CodeBuffer.Ptr);
+    CodeEnd = CodeBase + CodeBuffer.Size;
+    if (Address >= CodeBase &&
+        Address < CodeEnd) {
+      return true;
+    }
+  }
+
+  // Check the dispatcher. Unlikely to crash here but not impossible
+  CodeBase = reinterpret_cast<uint64_t>(DispatcherCodeBuffer.Ptr);
+  CodeEnd = CodeBase + DispatcherCodeBuffer.Size;
+  if (Address >= CodeBase &&
+      Address < CodeEnd) {
+    return true;
+  }
+  return false;
+}
+
+struct HostCTXHeader {
+  uint32_t Magic;
+  uint32_t Size;
+};
+
+constexpr uint32_t FPR_MAGIC = 0x46508001U;
+
+struct HostFPRState {
+  HostCTXHeader Head;
+  uint32_t FPSR;
+  uint32_t FPCR;
+  __uint128_t FPRs[32];
+};
+
+struct ContextBackup {
+  // Host State
+  uint64_t GPRs[31];
+  uint64_t PrevSP;
+  uint64_t PrevPC;
+  uint64_t PState;
+  uint32_t FPSR;
+  uint32_t FPCR;
+  __uint128_t FPRs[32];
+
+  // Guest state
+  int Signal;
+  SignalDelegator::GuestSigAction *GuestAction;
+  FEXCore::Core::CPUState GuestState;
+};
+
+bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  if (_mcontext->pc == SignalReturnInstruction) {
+    uint64_t OldSP = _mcontext->sp;
+    uintptr_t NewSP = OldSP;
+    ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
+
+    // First thing, reset the guest state
+    memcpy(&State->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
+
+    // Now restore host state
+    HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
+    LogMan::Throw::A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
+    memcpy(&HostState->FPRs[0], &Context->FPRs[0], 32 * sizeof(__uint128_t));
+    Context->FPCR = HostState->FPCR;
+    Context->FPSR = HostState->FPSR;
+
+    // Restore GPRs and other state
+    _mcontext->pstate = Context->PState;
+    _mcontext->pc = Context->PrevPC;
+    _mcontext->sp = Context->PrevSP;
+    memcpy(&_mcontext->regs[0], &Context->GPRs[0], 31 * sizeof(uint64_t));
+
+    // Restore the previous signal state
+    // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
+    CTX->SignalDelegation.SetCurrentSignal(Context->Signal);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    --SignalHandlerRefCounter;
+
+    return true;
+  }
+
+  return false;
+}
+
+bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  // We can end up getting a signal at any point in our host state
+  // Jump to a handler that saves all state so we can safely return
+  uint64_t OldSP = _mcontext->sp;
+  uintptr_t NewSP = OldSP;
+
+  size_t StackOffset = sizeof(ContextBackup);
+  NewSP -= StackOffset;
+  NewSP = AlignDown(NewSP, 16);
+
+  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
+  memcpy(&Context->GPRs[0], &_mcontext->regs[0], 31 * sizeof(uint64_t));
+  Context->PrevSP = _mcontext->sp;
+  Context->PrevPC = _mcontext->pc;
+  Context->PState = _mcontext->pstate;
+
+  // Host FPR state starts at _mcontext->reserved[0];
+  HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
+  LogMan::Throw::A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
+  Context->FPSR = HostState->FPSR;
+  Context->FPCR = HostState->FPCR;
+  memcpy(&Context->FPRs[0], &HostState->FPRs[0], 32 * sizeof(__uint128_t));
+
+  // Retain the action pointer so we can see it when we return
+  Context->Signal = Signal;
+  Context->GuestAction = GuestAction;
+
+  // Save guest state
+  // We can't guarantee if registers are in context or host GPRs
+  // So we need to save everything
+  memcpy(&Context->GuestState, &State->State, sizeof(FEXCore::Core::CPUState));
+
+  // Set the new SP
+  _mcontext->sp = NewSP;
+  // Set the new PC
+  _mcontext->pc = AbsoluteLoopTopAddress;
+  // Set x28 (which is our state register) to point to our guest thread data
+  _mcontext->regs[28 /* STATE */] = reinterpret_cast<uint64_t>(State);
+
+  // Ref count our faults
+  // We use this to track if it is safe to clear cache
+  ++SignalHandlerRefCounter;
+
+  State->State.State.gregs[X86State::REG_RDI] = Signal;
+  uint64_t OldGuestSP = State->State.State.gregs[X86State::REG_RSP];
+  uint64_t NewGuestSP = OldGuestSP;
+
+  if (!!GuestStack->ss_sp) {
+    // If our guest is already inside of the alternative stack
+    // Then that means we are hitting recursive signals and we need to walk back the stack correctly
+    uint64_t AltStackBase = reinterpret_cast<uint64_t>(GuestStack->ss_sp);
+    uint64_t AltStackEnd = AltStackBase + GuestStack->ss_size;
+    if (OldGuestSP >= AltStackBase &&
+        OldGuestSP <= AltStackEnd) {
+      // We are already in the alt stack, the rest of the code will handle adjusting this
+    }
+    else {
+      NewGuestSP = AltStackEnd;
+    }
+  }
+
+  // Back up past the redzone, which is 128bytes
+  // Don't need this offset if we aren't going to be putting siginfo in to it
+  NewGuestSP -= 128;
+
+  if (GuestAction->sa_flags & SA_SIGINFO) {
+    // XXX: siginfo_t(RSI), ucontext (RDX)
+    State->State.State.gregs[X86State::REG_RSI] = 0;
+    State->State.State.gregs[X86State::REG_RDX] = 0;
+    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
+  }
+  else {
+    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
+  }
+
+  // Set up the new SP for stack handling
+  NewGuestSP -= 8;
+  *(uint64_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
+  State->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
+
+  return true;
+}
+
+JITCore::CodeBuffer JITCore::AllocateNewCodeBuffer(size_t Size) {
+  CodeBuffer Buffer;
+  Buffer.Size = Size;
+  Buffer.Ptr = static_cast<uint8_t*>(
+               mmap(nullptr,
+                    Buffer.Size,
+                    PROT_READ | PROT_WRITE | PROT_EXEC,
+                    MAP_PRIVATE | MAP_ANONYMOUS,
+                    -1, 0));
+  LogMan::Throw::A(!!Buffer.Ptr, "Couldn't allocate code buffer");
+  return Buffer;
+}
+
+void JITCore::FreeCodeBuffer(CodeBuffer Buffer) {
+  munmap(Buffer.Ptr, Buffer.Size);
+}
+
+JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer)
+  : vixl::aarch64::MacroAssembler(Buffer.Ptr, Buffer.Size, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
   , State {Thread}
-#if _M_X86_64
-  , Sim {&Decoder}
-#endif
+  , InitialCodeBuffer {Buffer}
 {
-
-#if _M_X86_64
-  auto Features = vixl::CPUFeatures::All();
-  SupportsAtomics = true;
-#else
   auto Features = vixl::CPUFeatures::InferFromOS();
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
+
   if (SupportsAtomics) {
     // Hypervisor can hide this on the c630?
     Features.Combine(vixl::CPUFeatures::Feature::kLORegions);
   }
-#endif
 
   SetCPUFeatures(Features);
 
@@ -85,27 +253,19 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 
   RAPass = Thread->PassManager->GetRAPass();
 
-  // Just set the entire range as executable
-  auto Buffer = GetBuffer();
-  mprotect(Buffer->GetOffsetAddress<void*>(0), Buffer->GetCapacity(), PROT_READ | PROT_WRITE | PROT_EXEC);
 #if DEBUG
   Decoder.AppendVisitor(&Disasm)
-#endif
-#if _M_X86_64
-  Sim.SetCPUFeatures(vixl::CPUFeatures::All());
 #endif
   CPU.SetUp();
   SetAllowAssembler(true);
   CreateCustomDispatch(Thread);
-  GenerateDispatchHelpers();
-
-  ConstantCodeCacheOffset = GetCursorOffset();
 
   uint32_t NumUsedGPRs = NumGPRs;
   uint32_t NumUsedGPRPairs = NumGPRPairs;
   uint32_t UsedRegisterCount = RegisterCount;
 
   if (!CustomDispatchGenerated) {
+    ERROR_AND_DIE("THIS IS A CODE PATH THAT WILL BREAK! We now REQUIRE custom dispatch!");
     // If we aren't using our custom dispatcher then cut out the callee saved registers
     NumUsedGPRs -= NumCalleeGPRs;
     NumUsedGPRPairs -= NumCalleeGPRPairs;
@@ -139,20 +299,68 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   RegisterMiscHandlers();
   RegisterMoveHandlers();
   RegisterVectorHandlers();
+
+  // This will register the host signal handler per thread, which is fine
+  CTX->SignalDelegation.RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+    return Core->HandleSIGILL(Signal, info, ucontext);
+  });
+
+  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+    return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+  };
+
+  for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
+    CTX->SignalDelegation.RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+  }
 }
 
 void JITCore::ClearCache() {
   // Get the backing code buffer
   auto Buffer = GetBuffer();
+  if (SignalHandlerRefCounter == 0) {
+    if (!CodeBuffers.empty()) {
+      // If we have more than one code buffer we are tracking then walk them and delete
+      // This is a cleanup step
+      for (auto CodeBuffer : CodeBuffers) {
+        FreeCodeBuffer(CodeBuffer);
+      }
+      CodeBuffers.clear();
 
-  // Rewind the code buffer's cursor back to just after the helpers
-  Buffer->Rewind(ConstantCodeCacheOffset);
+      // Set the current code buffer to the initial
+      *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+      CurrentCodeBuffer = &InitialCodeBuffer;
+    }
 
-  // Make sure to set internal state as clean
-  Buffer->SetClean();
+    if (CurrentCodeBuffer->Size == MAX_CODE_SIZE) {
+      // Rewind to the start of the code cache start
+      Buffer->Reset();
+    }
+    else {
+      // Resize the code buffer and reallocate our code size
+      CurrentCodeBuffer->Size *= 1.5;
+      CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MAX_CODE_SIZE);
+
+      FreeCodeBuffer(InitialCodeBuffer);
+      InitialCodeBuffer = JITCore::AllocateNewCodeBuffer(CurrentCodeBuffer->Size);
+      *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+    }
+  }
+  else {
+    // We have signal handlers that have generated code
+    // This means that we can not safely clear the code at this point in time
+    // Allocate some new code buffers that we can switch over to instead
+    auto NewCodeBuffer = JITCore::AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE);
+    CurrentCodeBuffer->Size = JITCore::INITIAL_CODE_SIZE;
+    EmplaceNewCodeBuffer(NewCodeBuffer);
+    *Buffer = vixl::CodeBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
+  }
 }
 
 JITCore::~JITCore() {
+  FreeCodeBuffer(DispatcherCodeBuffer);
+  FreeCodeBuffer(InitialCodeBuffer);
 }
 
 void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
@@ -228,7 +436,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
   if (HeaderOp->ShouldInterpret) {
-    return State->IntBackend->CompileCode(IR, DebugData);
+    return reinterpret_cast<void*>(InterpreterFallbackHelperAddress);
   }
 
   // Fairly excessive buffer range to make sure we don't overflow
@@ -269,7 +477,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   }
 
   if (SpillSlots) {
+    add(TMP1, sp, 0); // Move that supports SP
     sub(sp, sp, SpillSlots * 16);
+    stp(TMP1, lr, MemOperand(sp, -16, PreIndex));
+  }
+  else {
+    add(TMP1, sp, 0); // Move that supports SP
+    stp(TMP1, lr, MemOperand(sp, -16, PreIndex));
   }
 
   IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
@@ -320,18 +534,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), CodeEnd - reinterpret_cast<uint64_t>(Entry));
-#if _M_X86_64
-  if (!CustomDispatchGenerated) {
-    HostToGuest[State->State.State.rip] = std::make_pair(Entry, CodeEnd);
-    return (void*)SimulatorExecution;
-  }
-#endif
 
   return reinterpret_cast<void*>(Entry);
 }
 
 void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
+  auto OriginalBuffer = *GetBuffer();
+
+  // Dispatcher lives outside of traditional space-time
+  DispatcherCodeBuffer = JITCore::AllocateNewCodeBuffer(MAX_DISPATCHER_CODE_SIZE);
+  *GetBuffer() = vixl::CodeBuffer(DispatcherCodeBuffer.Ptr, DispatcherCodeBuffer.Size);
+
   auto Buffer = GetBuffer();
+
   DispatchPtr = Buffer->GetOffsetAddress<CustomDispatch>(GetCursorOffset());
   EmissionCheckScope(this, 0);
 
@@ -361,56 +576,71 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // This is passed in to parameter 0 (x0)
   mov(STATE, x0);
 
-  aarch64::Label LoopTop;
+  aarch64::Label LoopTop{};
   bind(&LoopTop);
+  AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
 
   // Load in our RIP
   // Don't modify x2 since it contains our RIP once the block doesn't exist
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
   auto RipReg = x2;
-  if (CTX->Config.UnifiedMemory) {
-    LoadConstant(x3, reinterpret_cast<uint64_t>(CTX->MemoryMapper.GetMemoryBase()));
-    sub(x3, x2, x3);
-    RipReg = x3;
-  }
-  LoadConstant(x0, Thread->BlockCache->GetPagePointer());
 
-  // Offset the address and add to our page pointer
-  lsr(x1, RipReg, 12);
+  // Mask the address by the virtual address size so we can check for aliases
+  LoadConstant(x3, Thread->BlockCache->GetVirtualMemorySize() - 1);
+  and_(x3, RipReg, x3);
 
-  // Load the pointer from the offset
-  ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
   aarch64::Label NoBlock;
-
-  // If page pointer is zero then we have no block
-  cbz(x0, &NoBlock);
-
-  // Steal the page offset
-  and_(x1, RipReg, 0x0FFF);
-
-  // Now load from that pointer offset by the page offset to get our real block
-  ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
-  cbz(x0, &NoBlock);
-
-  // If we've made it here then we have a real compiled block
   {
-    blr(x0);
+    // This is the block cache lookup routine
+    // It matches what is going on it BlockCache.h::FindBlock
+    LoadConstant(x0, Thread->BlockCache->GetPagePointer());
+
+    // Offset the address and add to our page pointer
+    lsr(x1, x3, 12);
+
+    // Load the pointer from the offset
+    ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
+
+    // If page pointer is zero then we have no block
+    cbz(x0, &NoBlock);
+
+    // Steal the page offset
+    and_(x1, x3, 0x0FFF);
+
+    // Shift the offset by the size of the block cache entry
+    add(x0, x0, Operand(x1, Shift::LSL, (int)log2(sizeof(FEXCore::BlockCache::BlockCacheEntry))));
+
+    // Load the guest address first to ensure it maps to the address we are currently at
+    // This fixes aliasing problems
+    ldr(x1, MemOperand(x0, offsetof(FEXCore::BlockCache::BlockCacheEntry, GuestCode)));
+    cmp(x1, RipReg);
+    b(&NoBlock, Condition::ne);
+
+    // Now load the actual host block to execute if we can
+    ldr(x0, MemOperand(x0, offsetof(FEXCore::BlockCache::BlockCacheEntry, HostCode)));
+    cbz(x0, &NoBlock);
+
+    // If we've made it here then we have a real compiled block
+    {
+      blr(x0);
+    }
   }
 
   aarch64::Label ExitCheck;
-  bind(&ExitCheck);
+  {
+    bind(&ExitCheck);
 
-  constexpr uint64_t ShouldStopOffset = offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop);
-  // If we don't need to stop then keep going
-  add(x1, STATE, ShouldStopOffset);
-  ldarb(x0, MemOperand(x1));
-  cbz(x0, &LoopTop);
+    // If we don't need to stop then keep going
+    add(x1, STATE, offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop));
+    ldarb(x0, MemOperand(x1));
+    cbz(x0, &LoopTop);
 
-  PopCalleeSavedRegisters();
+    PopCalleeSavedRegisters();
 
-  // Return from the function
-  // LR is set to the correct return location now
-  ret();
+    // Return from the function
+    // LR is set to the correct return location now
+    ret();
+  }
 
   aarch64::Label FallbackCore;
   // Need to create the block
@@ -420,9 +650,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
     mov(x1, STATE);
 
-#if _M_X86_64
-    CallRuntime(CompileBlockThunk);
-#else
     using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
     union PtrCast {
       ClassPtrType ClassPtr;
@@ -433,11 +660,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
     LoadConstant(x3, Ptr.Data);
 
-    str(STATE, MemOperand(sp, -16, PreIndex));
     // X2 contains our guest RIP
     blr(x3); // { CTX, ThreadState, RIP}
-    ldr(STATE, MemOperand(sp, 16, PostIndex));
-#endif
+
     // X0 now contains either nullptr or block pointer
     cbz(x0, &FallbackCore);
     blr(x0);
@@ -450,11 +675,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     bind(&FallbackCore);
 
-#if _M_X86_64
-    // XXX: Fallback core doesn't work on x86-64
-    // We can't tell the difference between simulator entry points and not
-    b(&ExitError);
-#else
     LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
     mov(x1, STATE);
 
@@ -468,11 +688,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     Ptr.ClassPtr = &FEXCore::Context::Context::CompileFallbackBlock;
     LoadConstant(x3, Ptr.Data);
 
-    str(STATE, MemOperand(sp, -16, PreIndex));
     // X2 contains our guest RIP
     blr(x3); // {ThreadState, RIP}
-    ldr(STATE, MemOperand(sp, 16, PostIndex));
-#endif
+
     // X0 now contains either nullptr or block pointer
     cbz(x0, &ExitError);
     blr(x0);
@@ -484,27 +702,51 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     bind(&ExitError);
     LoadConstant(x0, 1);
-    add(x1, STATE, ShouldStopOffset);
+    add(x1, STATE, offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop));
     stlrb(x0, MemOperand(x1));
     b(&ExitCheck);
   }
 
-#if _M_X86_64
-  CustomDispatchEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-#endif
-
   FinalizeCode();
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(DispatchPtr));
+
   // Disabling will be useful for debugging ThreadState
-  //CustomDispatchGenerated = true;
+  CustomDispatchGenerated = true;
+  GenerateDispatchHelpers();
+  *GetBuffer() = OriginalBuffer;
 }
 
-
 void JITCore::GenerateDispatchHelpers() {
-  // Nothing here yet
+  auto Buffer = GetBuffer();
+  auto HelperStart = Buffer->GetOffsetAddress<void*>(GetCursorOffset());
+
+  {
+    Label RestoreContextStateHelperLabel{};
+    Bind(&RestoreContextStateHelperLabel);
+    SignalReturnInstruction = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+
+    // Now to get back to our old location we need to do a fault dance
+    // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
+    hlt(0);
+  }
+
+  {
+    Label InterpreterFallback{};
+    Bind(&InterpreterFallback);
+    InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    mov(x0, STATE);
+    LoadConstant(x1, reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr)));
+    // This is a tail-call optimized call
+    // We will return to the dispatcher at this point
+    br(x1);
+  }
+
+  auto HelperEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  FinalizeCode();
+  CPU.EnsureIAndDCacheCoherency(HelperStart, HelperEnd - reinterpret_cast<uint64_t>(HelperStart));
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return new JITCore(ctx, Thread);
+  return new JITCore(ctx, Thread, JITCore::AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE));
 }
 }
