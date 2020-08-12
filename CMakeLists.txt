@@ -24,6 +24,12 @@ else()
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
 endif()
 
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  message(STATUS "CCache enabled")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+endif()
+
 if (ENABLE_XRAY)
   add_compile_options(-fxray-instrument)
   link_libraries(-fxray-instrument)
