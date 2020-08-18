@@ -205,7 +205,9 @@ struct X80SoftFloat {
   }
 
   X80SoftFloat(extFloat80_t rhs) {
-    memcpy(this, &rhs, sizeof(*this));
+    Significand = rhs.signif;
+    Exponent = rhs.signExp & 0x7FFF;
+    Sign = rhs.signExp >> 15;
   }
 
   X80SoftFloat(const float rhs) {
@@ -229,11 +231,16 @@ struct X80SoftFloat {
   }
 
   void operator=(extFloat80_t rhs) {
-    memcpy(this, &rhs, sizeof(*this));
+    Significand = rhs.signif;
+    Exponent = rhs.signExp & 0x7FFF;
+    Sign = rhs.signExp >> 15;
   }
 
   operator extFloat80_t() const {
-    return *(extFloat80_t*)this;
+    extFloat80_t Result{};
+    Result.signif = Significand;
+    Result.signExp = Exponent | (Sign << 15);
+    return Result;
   }
 
   static bool IsNan(X80SoftFloat const &lhs) {
