@@ -427,32 +427,11 @@ DEF_OP(LoadMemTSO) {
     MemSrc = MemOperand(TMP1);
   }
 
-  if (!SupportsAtomics && Op->Class == FEXCore::IR::GPRClass) {
-    // ARMv8.0 doesn't support atomic memory ops or LORegion ops, so we need to fall down the DMB path
-    auto Dst = GetReg<RA_64>(Node);
-    dmb(InnerShareable, BarrierAll);
-    switch (Op->Size) {
-      case 1:
-        ldrb(Dst, MemSrc);
-        break;
-      case 2:
-        ldrh(Dst, MemSrc);
-        break;
-      case 4:
-        ldr(Dst.W(), MemSrc);
-        break;
-      case 8:
-        ldr(Dst, MemSrc);
-        break;
-      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
-    }
-    dmb(InnerShareable, BarrierAll);
-  }
-  else if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == FEXCore::IR::GPRClass) {
     if (Op->Size == 1) {
       // 8bit load is always aligned to natural alignment
       auto Dst = GetReg<RA_64>(Node);
-      ldlarb(Dst, MemSrc);
+      ldarb(Dst, MemSrc);
     }
     else {
       // Aligned
@@ -460,13 +439,13 @@ DEF_OP(LoadMemTSO) {
       nop();
       switch (Op->Size) {
         case 2:
-          ldlarh(Dst, MemSrc);
+          ldarh(Dst, MemSrc);
           break;
         case 4:
-          ldlar(Dst.W(), MemSrc);
+          ldar(Dst.W(), MemSrc);
           break;
         case 8:
-          ldlar(Dst, MemSrc);
+          ldar(Dst, MemSrc);
           break;
         default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
       }
@@ -552,42 +531,22 @@ DEF_OP(StoreMemTSO) {
     MemSrc = MemOperand(TMP1);
   }
 
-  if (!SupportsAtomics && Op->Class == FEXCore::IR::GPRClass) {
-    // ARMv8.0 doesn't support atomic memory ops or LORegion ops, so we need to fall down the DMB path
-    dmb(InnerShareable, BarrierAll);
-    switch (Op->Size) {
-      case 1:
-        strb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
-        break;
-      case 2:
-        strh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
-        break;
-      case 4:
-        str(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
-        break;
-      case 8:
-        str(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
-        break;
-      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
-    }
-    dmb(InnerShareable, BarrierAll);
-  }
-  else if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == FEXCore::IR::GPRClass) {
     if (Op->Size == 1) {
       // 8bit load is always aligned to natural alignment
-      stllrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+      stlrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
     }
     else {
       nop();
       switch (Op->Size) {
         case 2:
-          stllrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          stlrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
         case 4:
-          stllr(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
+          stlr(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
           break;
         case 8:
-          stllr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          stlr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
         default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
       }

@@ -237,12 +237,7 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
   uint32_t *PC = (uint32_t*)_mcontext->pc;
   uint32_t Instr = PC[0];
 
-  auto Buffer = GetBuffer();
-  uint64_t CodeBase = Buffer->GetOffsetAddress<uint64_t>(0);
-  uint64_t CodeEnd = CodeBase + Buffer->GetCapacity();
-
-  if (_mcontext->pc < CodeBase &&
-      _mcontext->pc > CodeEnd) {
+  if (!IsAddressInJITCode(_mcontext->pc)) {
     // Wasn't a sigbus in JIT code
     return false;
   }
@@ -255,18 +250,7 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
   uint32_t DataReg = Instr & 0x1F;
   uint32_t DMB = 0b1101'0101'0000'0011'0011'0000'1011'1111 |
     0b1011'0000'0000; // Inner shareable all
-  if ((Instr & 0x3F'FF'FC'00) == 0x08'9F'7C'00) {
-    // STLLR*
-    uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
-    STR |= Size << 30;
-    STR |= AddrReg << 5;
-    STR |= DataReg;
-    PC[-1] = DMB;
-    PC[0] = STR;
-    PC[1] = DMB;
-  }
-  else if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'7C'00) {
-    // LDLLR*
+  if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00) { // LDAR*
     uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
     LDR |= Size << 30;
     LDR |= AddrReg << 5;
@@ -275,8 +259,18 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
     PC[0] = LDR;
     PC[1] = DMB;
   }
+  else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
+    uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
+    STR |= Size << 30;
+    STR |= AddrReg << 5;
+    STR |= DataReg;
+    PC[-1] = DMB;
+    PC[0] = STR;
+    PC[1] = DMB;
+
+  }
   else {
-    LogMan::Msg::E("Unhandled JIT SIGBUS: PC: %p Instruction: 0x%08x", PC, PC[0]);
+    LogMan::Msg::E("Unhandled JIT SIGBUS: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
     return false;
   }
 
