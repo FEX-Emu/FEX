@@ -544,49 +544,54 @@ DEF_OP(AtomicSwap) {
     MemSrc = TMP1;
   }
 
-  mov(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[1].ID()));
   if (SupportsAtomics) {
+    mov(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (Op->Size) {
-    case 1: swplb(GetReg<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
-    case 2: swplh(GetReg<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
-    case 4: swpl(GetReg<RA_32>(Node), xzr, MemOperand(MemSrc)); break;
-    case 8: swpl(GetReg<RA_64>(Node), xzr, MemOperand(MemSrc)); break;
+    case 1: swplb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 2: swplh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 4: swpl(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 8: swpl(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
     default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
     // TMP2-TMP3
+    mov(TMP3, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (Op->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        stlxrb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc));
+        stlxrb(TMP2.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
+        uxtb(GetReg<RA_64>(Node), TMP3.W());
         break;
       }
       case 2: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        stlxrh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc));
+        stlxrh(TMP2.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
+        uxtw(GetReg<RA_64>(Node), TMP3.W());
         break;
       }
       case 4: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        stlxr(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc));
+        stlxr(TMP2.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
+        mov(GetReg<RA_32>(Node), TMP3.W());
         break;
       }
       case 8: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        stlxr(TMP2, GetReg<RA_64>(Node), MemOperand(MemSrc));
+        stlxr(TMP2, TMP3.X(), MemOperand(MemSrc));
         cbnz(TMP2, &LoopTop);
+        mov(GetReg<RA_64>(Node), TMP3.X());
         break;
       }
       default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
