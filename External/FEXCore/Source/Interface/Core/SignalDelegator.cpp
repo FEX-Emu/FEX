@@ -21,6 +21,7 @@ namespace FEXCore {
     // Guest signal sa_mask is per thread!
     SignalDelegator::GuestSAMask Guest_sa_mask[SignalDelegator::MAX_SIGNALS]{};
     uint32_t CurrentSignal{};
+    uint64_t GuestProcMask{};
   };
 
   thread_local ThreadState ThreadData{};
@@ -94,8 +95,15 @@ namespace FEXCore {
       }
     }
 
+    // Signal specific mask check
     if (SigIsMember(&ThreadData.Guest_sa_mask[ThreadData.CurrentSignal], Signal)) {
       // If we are in a signal and our signal mask is blocking this signal then ignore it
+      return;
+    }
+
+    // Thread specific mask check
+    if (ThreadData.GuestProcMask & (Signal - 1)) {
+      // If the thread specific mask masks the signal then it is hidden from the guest
       return;
     }
 
@@ -396,4 +404,27 @@ namespace FEXCore {
     return 0;
   }
 
+  uint64_t SignalDelegator::GuestSigProcMask(int how, const uint64_t *set, uint64_t *oldset) {
+    if (!!oldset) {
+      *oldset = ThreadData.GuestProcMask;
+    }
+
+    if (!!set) {
+      uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
+      if (how == SIG_BLOCK) {
+        ThreadData.GuestProcMask |= *set & IgnoredSignalsMask;
+      }
+      else if (how == SIG_UNBLOCK) {
+        ThreadData.GuestProcMask &= *set & IgnoredSignalsMask;
+      }
+      else if (how == SIG_SETMASK) {
+        ThreadData.GuestProcMask = *set & IgnoredSignalsMask;
+      }
+      else {
+        return -EINVAL;
+      }
+    }
+
+    return 0;
+  }
 }

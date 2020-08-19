@@ -572,7 +572,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             *Data = Arg;
             break;
           }
-          case IR::OP_LOADMEM: {
+          case IR::OP_LOADMEM:
+          case IR::OP_LOADMEMTSO: {
             auto Op = IROp->C<IR::IROp_LoadMem>();
             void const *Data{};
             if (Thread->CTX->Config.UnifiedMemory) {
@@ -601,7 +602,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               Data, Op->Header.ElementSize);
             break;
           }
-          case IR::OP_STOREMEM: {
+          case IR::OP_STOREMEM:
+          case IR::OP_STOREMEMTSO: {
             #define STORE_DATA(x, y) \
               case x: { \
                 y *Data{}; \

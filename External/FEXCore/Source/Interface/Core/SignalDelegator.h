@@ -82,6 +82,8 @@ namespace Core {
 
     uint64_t RegisterGuestSigAltStack(const stack_t *ss, stack_t *old_ss);
 
+    uint64_t GuestSigProcMask(int how, const uint64_t *set, uint64_t *oldset);
+
     // Called from the thunk handler to handle the signal
     void HandleSignal(int Signal, void *Info, void *UContext);
 

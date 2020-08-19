@@ -227,7 +227,8 @@ namespace {
         return Op->Class;
         break;
       }
-      case IR::OP_LOADMEM: {
+      case IR::OP_LOADMEM:
+      case IR::OP_LOADMEMTSO: {
         auto Op = IROp->C<IR::IROp_LoadMem>();
         return Op->Class;
         break;
@@ -445,7 +446,10 @@ namespace FEXCore::IR {
           case IR::OP_CONSTANT: LiveRanges[Node].RematCost = 1; break;
           case IR::OP_LOADFLAG:
           case IR::OP_LOADCONTEXT: LiveRanges[Node].RematCost = 10; break;
-          case IR::OP_LOADMEM: LiveRanges[Node].RematCost = 100; break;
+          case IR::OP_LOADMEM:
+          case IR::OP_LOADMEMTSO:
+            LiveRanges[Node].RematCost = 100;
+            break;
           case IR::OP_FILLREGISTER: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST + 1; break;
           // We want PHI to be very expensive to spill
           case IR::OP_PHI: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST * 10; break;
