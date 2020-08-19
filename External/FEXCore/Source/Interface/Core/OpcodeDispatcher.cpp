@@ -1049,8 +1049,16 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   }
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  if (DestIsLockedMem(Op)) {
+  if (DestIsMem(Op)) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+
+    if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
+      Dest = _Add(Dest, _LoadContext(8, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
+    }
+    else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+      Dest = _Add(Dest, _LoadContext(8, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
+    }
+
     auto Result = _AtomicSwap(Dest, Src, GetSrcSize(Op));
     StoreResult(GPRClass, Op, Op->Src[0], Result, -1);
   }
