@@ -6,7 +6,7 @@
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
 #include "aarch64/disasm-aarch64.h"
-#include "aarch64/macro-assembler-aarch64.h"
+#include "aarch64/assembler-aarch64.h"
 
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
@@ -26,21 +26,21 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-const std::array<aarch64::Register, 22> RA64 = {
+const std::array<aarch64::Register, 24> RA64 = {
   x4, x5, x6, x7, x8, x9,
   x10, x11, x12, x13, x14, x15,
-  /*x16, x17,*/ // We can't use these until we move away from the MacroAssembler
+  x16, x17,
   x18, x19, x20, x21, x22, x23,
   x24, x25, x26, x27};
 
-const std::array<std::pair<aarch64::Register, aarch64::Register>, 11> RA64Pair = {{
+const std::array<std::pair<aarch64::Register, aarch64::Register>, 12> RA64Pair = {{
   {x4, x5},
   {x6, x7},
   {x8, x9},
   {x10, x11},
   {x12, x13},
   {x14, x15},
-  /* {x16, x17}, */
+  {x16, x17},
   {x18, x19},
   {x20, x21},
   {x22, x23},
@@ -48,14 +48,14 @@ const std::array<std::pair<aarch64::Register, aarch64::Register>, 11> RA64Pair =
   {x26, x27},
 }};
 
-const std::array<std::pair<aarch64::Register, aarch64::Register>, 11> RA32Pair = {{
+const std::array<std::pair<aarch64::Register, aarch64::Register>, 12> RA32Pair = {{
   {w4, w5},
   {w6, w7},
   {w8, w9},
   {w10, w11},
   {w12, w13},
   {w14, w15},
-  /* {w16, w17}, */
+  {w16, w17},
   {w18, w19},
   {w20, w21},
   {w22, w23},
@@ -70,8 +70,7 @@ const std::array<aarch64::VRegister, 22> RAFPR = {
   v23, v24, v25, v26, v27, v28,
   v29, v30, v31};
 
-// XXX: Switch from MacroAssembler to Assembler once we drop the simulator
-class JITCore final : public CPUBackend, public vixl::aarch64::MacroAssembler  {
+class JITCore final : public CPUBackend, public vixl::aarch64::Assembler  {
 public:
   struct CodeBuffer {
     uint8_t *Ptr;
@@ -79,6 +78,7 @@ public:
   };
 
   explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer);
+
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
   void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
@@ -194,6 +194,8 @@ private:
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   void GenerateDispatchHelpers();
+  void PushCalleeSavedRegisters();
+  void PopCalleeSavedRegisters();
 
   /**
    * @name Dispatch Helper functions

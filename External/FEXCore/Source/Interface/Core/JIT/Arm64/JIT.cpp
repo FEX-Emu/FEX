@@ -281,7 +281,7 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
 }
 
 JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer)
-  : vixl::aarch64::MacroAssembler(Buffer.Ptr, Buffer.Size, vixl::aarch64::PositionDependentCode)
+  : vixl::aarch64::Assembler(Buffer.Ptr, Buffer.Size, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
   , State {Thread}
   , InitialCodeBuffer {Buffer}
@@ -593,7 +593,89 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   return reinterpret_cast<void*>(Entry);
 }
 
+void JITCore::PushCalleeSavedRegisters() {
+  // We need to save pairs of registers
+  // We save r19-r30
+  MemOperand PairOffset(sp, -16, PreIndex);
+  const std::array<std::pair<vixl::aarch64::XRegister, vixl::aarch64::XRegister>, 6> CalleeSaved = {{
+    {x19, x20},
+    {x21, x22},
+    {x23, x24},
+    {x25, x26},
+    {x27, x28},
+    {x29, x30},
+  }};
+
+  for (auto &RegPair : CalleeSaved) {
+    stp(RegPair.first, RegPair.second, PairOffset);
+  }
+
+  // Additionally we need to store the lower 64bits of v8-v15
+  // Here's a fun thing, we can use two ST4 instructions to store everything
+  // We just need a single sub to sp before that
+  const std::array<
+    std::tuple<vixl::aarch64::VRegister,
+               vixl::aarch64::VRegister,
+               vixl::aarch64::VRegister,
+               vixl::aarch64::VRegister>, 2> FPRs = {{
+    {v8, v9, v10, v11},
+    {v12, v13, v14, v15},
+  }};
+
+  uint32_t VectorSaveSize = sizeof(uint64_t) * 8;
+  sub(sp, sp, VectorSaveSize);
+  // SP supporting move
+  // We just saved x19 so it is safe
+  add(x19, sp, 0);
+
+  MemOperand QuadOffset(x19, 32, PostIndex);
+  for (auto &RegQuad : FPRs) {
+    st4(std::get<0>(RegQuad).D(),
+        std::get<1>(RegQuad).D(),
+        std::get<2>(RegQuad).D(),
+        std::get<3>(RegQuad).D(),
+        0,
+        QuadOffset);
+  }
+}
+
+void JITCore::PopCalleeSavedRegisters() {
+  const std::array<
+    std::tuple<vixl::aarch64::VRegister,
+               vixl::aarch64::VRegister,
+               vixl::aarch64::VRegister,
+               vixl::aarch64::VRegister>, 2> FPRs = {{
+    {v12, v13, v14, v15},
+    {v8, v9, v10, v11},
+  }};
+
+  MemOperand QuadOffset(sp, 32, PostIndex);
+  for (auto &RegQuad : FPRs) {
+    ld4(std::get<0>(RegQuad).D(),
+        std::get<1>(RegQuad).D(),
+        std::get<2>(RegQuad).D(),
+        std::get<3>(RegQuad).D(),
+        0,
+        QuadOffset);
+  }
+
+  MemOperand PairOffset(sp, 16, PostIndex);
+  const std::array<std::pair<vixl::aarch64::XRegister, vixl::aarch64::XRegister>, 6> CalleeSaved = {{
+    {x29, x30},
+    {x27, x28},
+    {x25, x26},
+    {x23, x24},
+    {x21, x22},
+    {x19, x20},
+  }};
+
+  for (auto &RegPair : CalleeSaved) {
+    ldp(RegPair.first, RegPair.second, PairOffset);
+  }
+}
+
 void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
+
   auto OriginalBuffer = *GetBuffer();
 
   // Dispatcher lives outside of traditional space-time
@@ -603,7 +685,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   auto Buffer = GetBuffer();
 
   DispatchPtr = Buffer->GetOffsetAddress<CustomDispatch>(GetCursorOffset());
-  EmissionCheckScope(this, 0);
 
   // while (!Thread->State.RunningEvents.ShouldStop.load()) {
   //    Ptr = FindBlock(RIP)
@@ -762,22 +843,22 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     b(&ExitCheck);
   }
 
-  FinalizeCode();
-  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset()) - reinterpret_cast<uint64_t>(DispatchPtr));
-
   // Disabling will be useful for debugging ThreadState
   CustomDispatchGenerated = true;
   GenerateDispatchHelpers();
+
+  FinalizeCode();
+  uint64_t CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), CodeEnd - reinterpret_cast<uint64_t>(DispatchPtr));
+
   *GetBuffer() = OriginalBuffer;
 }
 
 void JITCore::GenerateDispatchHelpers() {
   auto Buffer = GetBuffer();
-  auto HelperStart = Buffer->GetOffsetAddress<void*>(GetCursorOffset());
-
   {
     Label RestoreContextStateHelperLabel{};
-    Bind(&RestoreContextStateHelperLabel);
+    bind(&RestoreContextStateHelperLabel);
     SignalReturnInstruction = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
     // Now to get back to our old location we need to do a fault dance
@@ -787,7 +868,7 @@ void JITCore::GenerateDispatchHelpers() {
 
   {
     Label InterpreterFallback{};
-    Bind(&InterpreterFallback);
+    bind(&InterpreterFallback);
     InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     mov(x0, STATE);
     LoadConstant(x1, reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr)));
@@ -795,10 +876,6 @@ void JITCore::GenerateDispatchHelpers() {
     // We will return to the dispatcher at this point
     br(x1);
   }
-
-  auto HelperEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-  FinalizeCode();
-  CPU.EnsureIAndDCacheCoherency(HelperStart, HelperEnd - reinterpret_cast<uint64_t>(HelperStart));
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
