@@ -20,6 +20,7 @@ jobs:
     strategy:
       matrix:
         arch: [[self-hosted, x64], [self-hosted, ARMv8.0], [self-hosted, ARMv8.2]]
+      fail-fast: false
 
     steps:
     - uses: actions/checkout@v2
