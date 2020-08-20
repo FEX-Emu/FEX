@@ -15,12 +15,8 @@ conformance-interfaces-nanosleep-5-1.test
 conformance-interfaces-nanosleep-6-1.test
 conformance-interfaces-raise-1-1.test
 conformance-interfaces-raise-4-1.test
-conformance-interfaces-sigpending-1-1.test
 conformance-interfaces-sigpending-1-2.test
 conformance-interfaces-sigpending-1-3.test
-conformance-interfaces-sigpending-2-1.test
-conformance-interfaces-sigprocmask-4-1.test
-conformance-interfaces-sigprocmask-5-1.test
 conformance-interfaces-sigprocmask-6-1.test
 conformance-interfaces-sigqueue-10-1.test
 conformance-interfaces-sigqueue-11-1.test
