@@ -14,14 +14,6 @@ check_pie_supported()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(LLVM CONFIG QUIET)
-if(LLVM_FOUND AND TARGET LLVM)
-  message(STATUS "LLVM found!")
-  include_directories(${LLVM_INCLUDE_DIRS})
-else()
-  message("Couldn't find LLVM and this project requires it")
-endif()
-
 include(CheckCXXCompilerFlag)
 include(CheckIncludeFileCXX)
 

@@ -58,11 +58,6 @@ namespace FEXCore::Context {
 
       bool Is64BitMode {true};
       uint64_t EmulatedCPUCores{1};
-
-      // LLVM JIT options
-      bool LLVM_MemoryValidation {false};
-      bool LLVM_IRValidation {false};
-      bool LLVM_PrinterPass {false};
     } Config;
 
     FEXCore::Memory::MemMapper MemoryMapper;

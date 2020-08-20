@@ -61,8 +61,6 @@ namespace CPUState {
         FEX::DebuggerState::SetCoreType(FEXCore::Config::ConfigCore::CONFIG_INTERPRETER);
       if (ImGui::MenuItem("IR JIT", nullptr, FEX::DebuggerState::GetCoreType() == FEXCore::Config::ConfigCore::CONFIG_IRJIT, !FEX::DebuggerState::ActiveCore()))
         FEX::DebuggerState::SetCoreType(FEXCore::Config::ConfigCore::CONFIG_IRJIT);
-      if (ImGui::MenuItem("LLVM", nullptr, FEX::DebuggerState::GetCoreType() == FEXCore::Config::ConfigCore::CONFIG_LLVMJIT, !FEX::DebuggerState::ActiveCore()))
-        FEX::DebuggerState::SetCoreType(FEXCore::Config::ConfigCore::CONFIG_LLVMJIT);
       ImGui::EndMenu();
     }
 

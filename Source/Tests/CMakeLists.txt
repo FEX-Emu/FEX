@@ -7,7 +7,7 @@ if(NOT CMAKE_ASM_NASM_COMPILER_LOADED)
 endif()
 
 
-set(LIBS FEXCore Common CommonCore SonicUtils pthread LLVM)
+set(LIBS FEXCore Common CommonCore SonicUtils pthread)
 set(NAME ELFLoader)
 set(SRCS ELFLoader.cpp)
 

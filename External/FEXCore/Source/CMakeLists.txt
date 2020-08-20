@@ -127,8 +127,6 @@ set (SRCS
   Interface/Core/X86DebugInfo.cpp
   Interface/Core/X86HelperGen.cpp
   Interface/Core/Interpreter/InterpreterCore.cpp
-  Interface/Core/LLVMJIT/LLVMCore.cpp
-  Interface/Core/LLVMJIT/LLVMMemoryManager.cpp
   Interface/Core/X86Tables/BaseTables.cpp
   Interface/Core/X86Tables/DDDTables.cpp
   Interface/Core/X86Tables/EVEXTables.cpp
@@ -263,7 +261,7 @@ set(LINUX_LIBS
 function(AddLibrary Name Type)
   add_library(${Name} ${Type} ${SRCS})
   add_dependencies(${Name} IR_INC)
-  target_link_libraries(${Name} LLVM pthread rt ${JIT_LIBS} ${LINUX_LIBS} dl)
+  target_link_libraries(${Name} pthread rt ${JIT_LIBS} ${LINUX_LIBS} dl)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
