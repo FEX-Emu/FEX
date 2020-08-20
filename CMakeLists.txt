@@ -9,6 +9,9 @@ option(ENABLE_LLD "Enable linking with LLD" FALSE)
 option(ENABLE_ASAN "Enables Clang ASAN" FALSE)
 option(ENABLE_TSAN "Enables Clang TSAN" FALSE)
 
+set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
+set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Bin)
@@ -135,7 +138,7 @@ include(ExternalProject)
 ExternalProject_Add(host-libs
 	PREFIX host-libs
 	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/HostLibs"
-	BINARY_DIR "Host"
+  BINARY_DIR "Host"
 	INSTALL_COMMAND ""
   BUILD_ALWAYS ON
 )
@@ -143,7 +146,8 @@ ExternalProject_Add(host-libs
 ExternalProject_Add(guest-libs
 	PREFIX guest-libs
 	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
-	BINARY_DIR "Guest"
+  BINARY_DIR "Guest"
+  CMAKE_ARGS "-DX86_C_COMPILER:STRING=${X86_C_COMPILER}" "-DX86_CXX_COMPILER:STRING=${X86_CXX_COMPILER}"
 	INSTALL_COMMAND ""
   BUILD_ALWAYS ON
 )
