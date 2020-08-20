@@ -151,6 +151,7 @@ set (SRCS
   Interface/HLE/Syscalls/FD.cpp
   Interface/HLE/Syscalls/FS.cpp
   Interface/HLE/Syscalls/Info.cpp
+  Interface/HLE/Syscalls/IO.cpp
   Interface/HLE/Syscalls/Ioctl.cpp
   Interface/HLE/Syscalls/Memory.cpp
   Interface/HLE/Syscalls/Sched.cpp
