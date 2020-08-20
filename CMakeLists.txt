@@ -66,6 +66,11 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   include_directories(External/vixl/src/)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # This means we were attempted to get compiled with GCC
+  message(FATAL_ERROR "FEX doesn't support getting compiled with GCC!")
+endif()
+
 add_definitions(-Wno-trigraphs)
 
 add_subdirectory(External/SonicUtils/)
