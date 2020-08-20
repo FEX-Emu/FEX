@@ -100,6 +100,7 @@ namespace FEXCore::Context {
     bool IsPaused() const { return !Running; }
     void Pause();
     void Run();
+    void WaitForThreadsToRun();
     void Step();
 
     bool GetGdbServerStatus() { return (bool)DebugServer; }
