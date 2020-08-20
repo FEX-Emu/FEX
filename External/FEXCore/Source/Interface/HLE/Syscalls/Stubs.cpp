@@ -92,10 +92,6 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(capset);
     });
 
-    REGISTER_SYSCALL_IMPL(rt_sigpending, [](FEXCore::Core::InternalThreadState *Thread, sigset_t *set, size_t sigsetsize) -> uint64_t {
-      SYSCALL_STUB(rt_sigpending);
-    });
-
     REGISTER_SYSCALL_IMPL(rt_sigtimedwait, [](FEXCore::Core::InternalThreadState *Thread, sigset_t *set, const struct timespec*, size_t sigsetsize) -> uint64_t {
       SYSCALL_STUB(rt_sigtimedwait);
     });

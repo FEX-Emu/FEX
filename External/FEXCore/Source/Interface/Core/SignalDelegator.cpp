@@ -22,6 +22,7 @@ namespace FEXCore {
     SignalDelegator::GuestSAMask Guest_sa_mask[SignalDelegator::MAX_SIGNALS]{};
     uint32_t CurrentSignal{};
     uint64_t GuestProcMask{};
+    uint64_t PendingSignals{};
   };
 
   thread_local ThreadState ThreadData{};
@@ -104,6 +105,8 @@ namespace FEXCore {
     // Thread specific mask check
     if (ThreadData.GuestProcMask & (Signal - 1)) {
       // If the thread specific mask masks the signal then it is hidden from the guest
+      // It gets put in to the pending signals mask
+      ThreadData.PendingSignals |= 1ULL << (Signal - 1);
       return;
     }
 
@@ -425,6 +428,15 @@ namespace FEXCore {
       }
     }
 
+    return 0;
+  }
+
+  uint64_t SignalDelegator::GuestSigPending(uint64_t *set, size_t sigsetsize) {
+    if (sigsetsize > sizeof(uint64_t)) {
+      return -EINVAL;
+    }
+
+    *set = ThreadData.PendingSignals;
     return 0;
   }
 }

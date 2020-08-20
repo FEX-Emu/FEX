@@ -21,5 +21,9 @@ namespace FEXCore::HLE {
     REGISTER_SYSCALL_IMPL(sigaltstack, [](FEXCore::Core::InternalThreadState *Thread, const stack_t *ss, stack_t *old_ss) -> uint64_t {
       return Thread->CTX->SignalDelegation.RegisterGuestSigAltStack(ss, old_ss);
     });
+
+    REGISTER_SYSCALL_IMPL(rt_sigpending, [](FEXCore::Core::InternalThreadState *Thread, uint64_t *set, size_t sigsetsize) -> uint64_t {
+      return Thread->CTX->SignalDelegation.GuestSigPending(set, sigsetsize);
+    });
   }
 }
