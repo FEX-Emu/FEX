@@ -26,9 +26,6 @@ foreach(IR_SRC ${IR_SOURCES})
     "-c irjit -n 1"      "ir_jit_1"
     "-c irjit -n 500"    "ir_jit_500"
     "-c irjit -n 500 -m" "ir_jit_500_m"
-    "-c llvm -n 1"       "ir_llvm_1"
-    "-c llvm -n 500"     "ir_llvm_500"
-    "-c llvm -n 500 -m"  "ir_llvm_500_m"
     )
 
   list(LENGTH TEST_ARGS ARG_COUNT)
