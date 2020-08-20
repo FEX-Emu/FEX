@@ -133,6 +133,7 @@ namespace FEXCore::Context {
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
+    std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
