@@ -17,6 +17,7 @@ private:
             socket = socketfd;
             reset_output_buffer();
         }
+        virtual ~NetBuf();
 
     protected:
         virtual std::streamsize xsputn(const char* buffer, std::streamsize size);
