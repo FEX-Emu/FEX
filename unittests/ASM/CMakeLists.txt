@@ -48,9 +48,6 @@ foreach(ASM_SRC ${ASM_SOURCES})
     "-c irjit -n 1"      "jit_1"
     "-c irjit -n 500"    "jit_500"
     "-c irjit -n 500 -m" "jit_500_m"
-    "-c llvm -n 1"       "llvm_1"
-    "-c llvm -n 500"     "llvm_500"
-    "-c llvm -n 500 -m"  "llvm_500_m"
     )
 
   list(LENGTH TEST_ARGS ARG_COUNT)

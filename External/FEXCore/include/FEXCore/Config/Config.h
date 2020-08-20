@@ -21,7 +21,6 @@ namespace FEXCore::Config {
   enum ConfigCore {
     CONFIG_INTERPRETER,
     CONFIG_IRJIT,
-    CONFIG_LLVMJIT,
     CONFIG_CUSTOM,
   };
 
