@@ -44,10 +44,17 @@
 ;   - Key indicates the memory base
 ;   - Value indicates the memory region size
 ;   - WARNING: Emulator sets up some default regions that you don't want to intersect with
-;   - Additionally the VM only has 64GB of virtual memory. If you go past this sizer, expect failure
+;   - Additionally the VM only has 64GB of virtual memory. If you go past this size, expect failure
 ;   - 0xb000'0000 - FS Memory base
 ;   - 0xc000'0000 - Stack pointer base
 ;   - 0xd000'0000 - Linux BRK memory base
+; MemoryData: Prepopulate one or more memory regions with data
+;   - Default: None
+;   - Dict of key:value pairs
+;   - Key is address
+;   - Value is a string with hex data.
+;       - No leading 0x needed.
+;       - Spaces allowed
 
 %ifdef CONFIG
 {
@@ -58,6 +65,11 @@
   },
   "MemoryRegions": {
     "0x100000000": "4096"
+  },
+  "MemoryData": {
+    "0x100000000" : "00000001 00000000 00000000 00000000",
+    "0x100000020" : "fa aa 55 33",
+    "0x100000038" : "0x123456789"
   }
 }
 %endif
