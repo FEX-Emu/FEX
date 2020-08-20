@@ -830,7 +830,7 @@ namespace FEXCore::Context {
           break;
         }
 
-        if (RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP || Thread->State.RunningEvents.ShouldPause) {
+        if (Config.RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP || Thread->State.RunningEvents.ShouldPause) {
           Thread->State.RunningEvents.Running = false;
           Thread->State.RunningEvents.WaitingToStart = false;
 
