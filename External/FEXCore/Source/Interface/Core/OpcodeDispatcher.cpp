@@ -178,7 +178,6 @@ void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
   BlockSetRIP = true;
 }
 
-template<uint32_t SrcIndex>
 void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   FEXCore::IR::IROps IROp;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
@@ -219,7 +218,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   };
 #undef OPD
   // X86 basic ALU ops just do the operation between the destination and a single source
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
   auto ALUOp = _Add(Dest, Src);
@@ -680,8 +679,10 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   }
 }
 
-template<bool CheckZF, bool ZFTrue>
 void OpDispatchBuilder::LoopOp(OpcodeArgs) {
+  bool CheckZF = Op->OP != 0xE2;
+  bool ZFTrue = Op->OP == 0xE1;
+
   BlockSetRIP = true;
   auto ZeroConst = _Constant(0);
   IRPair<IROp_Header> SrcCond;
@@ -4889,7 +4890,6 @@ void OpDispatchBuilder::MOVVectorOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, 1);
 }
 
-template<uint32_t SrcIndex>
 void OpDispatchBuilder::ALUOp(OpcodeArgs) {
   FEXCore::IR::IROps IROp;
   switch (Op->OP) {
@@ -4940,7 +4940,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
   }
 
   // X86 basic ALU ops just do the operation between the destination and a single source
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   OrderedNode *Result{};
   OrderedNode *Dest{};
@@ -5527,7 +5527,6 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
   _StoreContextIndexed(data, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 }
 
-template<size_t width>
 void OpDispatchBuilder::FILD(OpcodeArgs) {
   Current_Header->ShouldInterpret = true;
 
@@ -5536,7 +5535,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
-  size_t read_width = width / 8;
+  size_t read_width = GetSrcSize(Op);
 
   // Read from memory
   auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
@@ -5544,8 +5543,8 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto zero = _Constant(0);
 
   // Sign extend to 64bits
-  if (width != 64)
-    data = _Sext(width, data);
+  if (read_width != 8)
+    data = _Sext(read_width * 8, data);
 
   // Extract sign and make interger absolute
   auto sign = _Select(COND_SLT, data, zero, _Constant(0x8000), zero);
@@ -5567,7 +5566,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 }
 
-template<size_t width, bool pop>
+template<size_t width>
 void OpDispatchBuilder::FST(OpcodeArgs) {
   Current_Header->ShouldInterpret = true;
 
@@ -5581,23 +5580,24 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, result, width / 8, 1);
   }
 
-  if (pop) {
+  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
 }
 
-template<size_t width, bool pop>
 void OpDispatchBuilder::FIST(OpcodeArgs) {
   Current_Header->ShouldInterpret = true;
 
+  auto Size = GetSrcSize(Op);
+
   auto orig_top = GetX87Top();
   OrderedNode *data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
-  data = _F80CVTInt(data, width / 8);
+  data = _F80CVTInt(data, Size);
 
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, width / 8, 1);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, 1);
 
-  if (pop) {
+  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
@@ -5974,7 +5974,6 @@ void OpDispatchBuilder::FXCH(OpcodeArgs) {
   _StoreContextIndexed(a, arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 }
 
-template<bool pop>
 void OpDispatchBuilder::FST(OpcodeArgs) {
   Current_Header->ShouldInterpret = true;
 
@@ -5992,7 +5991,7 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
   // Write to ST[TOP]
   _StoreContextIndexed(a, arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 
-  if (pop) {
+  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     top = _And(_Add(top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
@@ -6062,8 +6061,8 @@ void OpDispatchBuilder::X87SinCos(OpcodeArgs) {
   _StoreContextIndexed(cos, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 }
 
-template<bool Plus1>
 void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
+  bool Plus1 = Op->OP == 0x01F9; // FYL2XP
   Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
@@ -7022,54 +7021,19 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
 void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable = {
     // Instructions
-    {0x00, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x01, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x02, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x03, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x04, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x05, 1, &OpDispatchBuilder::ALUOp<0>},
+    {0x00, 6, &OpDispatchBuilder::ALUOp},
 
-    {0x08, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x09, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x0A, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x0B, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x0C, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x0D, 1, &OpDispatchBuilder::ALUOp<0>},
+    {0x08, 6, &OpDispatchBuilder::ALUOp},
 
-    {0x10, 1, &OpDispatchBuilder::ADCOp<0>},
-    {0x11, 1, &OpDispatchBuilder::ADCOp<0>},
-    {0x12, 1, &OpDispatchBuilder::ADCOp<0>},
-    {0x13, 1, &OpDispatchBuilder::ADCOp<0>},
-    {0x14, 1, &OpDispatchBuilder::ADCOp<0>},
-    {0x15, 1, &OpDispatchBuilder::ADCOp<0>},
+    {0x10, 6, &OpDispatchBuilder::ADCOp<0>},
 
-    {0x18, 1, &OpDispatchBuilder::SBBOp<0>},
-    {0x19, 1, &OpDispatchBuilder::SBBOp<0>},
-    {0x1A, 1, &OpDispatchBuilder::SBBOp<0>},
-    {0x1B, 1, &OpDispatchBuilder::SBBOp<0>},
-    {0x1C, 1, &OpDispatchBuilder::SBBOp<0>},
-    {0x1D, 1, &OpDispatchBuilder::SBBOp<0>},
+    {0x18, 6, &OpDispatchBuilder::SBBOp<0>},
 
-    {0x20, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x21, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x22, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x23, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x24, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x25, 1, &OpDispatchBuilder::ALUOp<0>},
+    {0x20, 6, &OpDispatchBuilder::ALUOp},
 
-    {0x28, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x29, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x2A, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x2B, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x2C, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x2D, 1, &OpDispatchBuilder::ALUOp<0>},
+    {0x28, 6, &OpDispatchBuilder::ALUOp},
 
-    {0x30, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x31, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x32, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x33, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x34, 1, &OpDispatchBuilder::ALUOp<0>},
-    {0x35, 1, &OpDispatchBuilder::ALUOp<0>},
+    {0x30, 6, &OpDispatchBuilder::ALUOp},
 
     {0x38, 6, &OpDispatchBuilder::CMPOp<0>},
     {0x50, 8, &OpDispatchBuilder::PUSHREGOp},
@@ -7112,9 +7076,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xC9, 1, &OpDispatchBuilder::LEAVEOp},
     {0xCC, 2, &OpDispatchBuilder::INTOp},
     {0xD7, 2, &OpDispatchBuilder::XLATOp},
-    {0xE0, 1, &OpDispatchBuilder::LoopOp<true, false>},
-    {0xE1, 1, &OpDispatchBuilder::LoopOp<true, true>},
-    {0xE2, 1, &OpDispatchBuilder::LoopOp<false, false>},
+    {0xE0, 3, &OpDispatchBuilder::LoopOp},
     {0xE3, 1, &OpDispatchBuilder::CondJUMPRCXOp},
     {0xE8, 1, &OpDispatchBuilder::CALLOp},
     {0xE9, 1, &OpDispatchBuilder::JUMPOp},
@@ -7134,12 +7096,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable = {
     // Instructions
-    {0x00, 1, nullptr}, // GROUP 6
-    {0x01, 1, nullptr}, // GROUP 7
     {0x0B, 1, &OpDispatchBuilder::INTOp},
-    {0x0D, 1, nullptr}, // GROUP P
     {0x0E, 1, &OpDispatchBuilder::NOPOp},
-    {0x18, 1, nullptr}, // GROUP 16
 
     {0x19, 7, &OpDispatchBuilder::NOPOp}, // NOP with ModRM
 
@@ -7215,22 +7173,14 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x6A, 1, &OpDispatchBuilder::PUNPCKHOp<4>},
     {0x6B, 1, &OpDispatchBuilder::PACKSSOp<4>},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, false, true>},
-    {0x71, 1, nullptr}, // GROUP 12
-    {0x72, 1, nullptr}, // GROUP 13
-    {0x73, 1, nullptr}, // GROUP 14
 
     {0x74, 1, &OpDispatchBuilder::PCMPEQOp<1>},
     {0x75, 1, &OpDispatchBuilder::PCMPEQOp<2>},
     {0x76, 1, &OpDispatchBuilder::PCMPEQOp<4>},
     {0x77, 1, &OpDispatchBuilder::NOPOp},
 
-    {0xAE, 1, nullptr}, // GROUP 15
-    {0xB9, 1, nullptr}, // GROUP 10
-    {0xBA, 1, nullptr}, // GROUP 8
-
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4, false>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<4>},
-    {0xC7, 1, nullptr}, // GROUP 9
 
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2, true, 0>},
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4, true, 0>},
@@ -7290,31 +7240,31 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> PrimaryGroupOpTable = {
     // GROUP 1
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 0), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 1), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 2), 1, &OpDispatchBuilder::ADCOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 3), 1, &OpDispatchBuilder::SBBOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 4), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 5), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 6), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 7), 1, &OpDispatchBuilder::CMPOp<1>}, // CMP
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 0), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 1), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 2), 1, &OpDispatchBuilder::ADCOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 3), 1, &OpDispatchBuilder::SBBOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 4), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 5), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 6), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 7), 1, &OpDispatchBuilder::CMPOp<1>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 0), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 1), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 2), 1, &OpDispatchBuilder::ADCOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 3), 1, &OpDispatchBuilder::SBBOp<1>}, // Unit tests find this setting flags incorrectly
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 4), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 5), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 6), 1, &OpDispatchBuilder::SecondaryALUOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 7), 1, &OpDispatchBuilder::CMPOp<1>},
 
     // GROUP 2
@@ -7633,40 +7583,26 @@ constexpr uint16_t PF_F2 = 3;
     // REG /2
     {((1 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
   };
-#define OPDReg(op, reg) (((op - 0xD8) << 8) | (reg << 3))
+// Top bit indicating if it needs to be repeated with {0x40, 0x80} or'd in
+// All OPDReg versions need it
+#define OPDReg(op, reg) ((1 << 15) | ((op - 0xD8) << 8) | (reg << 3))
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> X87OpTable = {
     {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 0) | 0x40, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 0) | 0x80, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 1) | 0x40, 8, &OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 1) | 0x80, 8, &OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPDReg(0xD8, 2) | 0x40, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPDReg(0xD8, 2) | 0x80, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
     {OPDReg(0xD8, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPDReg(0xD8, 3) | 0x40, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPDReg(0xD8, 3) | 0x80, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
 
     {OPDReg(0xD8, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 4) | 0x40, 8, &OpDispatchBuilder::FSUB<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 4) | 0x80, 8, &OpDispatchBuilder::FSUB<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 5) | 0x40, 8, &OpDispatchBuilder::FSUB<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 5) | 0x80, 8, &OpDispatchBuilder::FSUB<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 6) | 0x40, 8, &OpDispatchBuilder::FDIV<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 6) | 0x80, 8, &OpDispatchBuilder::FDIV<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 7) | 0x40, 8, &OpDispatchBuilder::FDIV<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xD8, 7) | 0x80, 8, &OpDispatchBuilder::FDIV<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
       {OPD(0xD8, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_ST0>},
       {OPD(0xD8, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_ST0>},
@@ -7678,34 +7614,20 @@ constexpr uint16_t PF_F2 = 3;
       {OPD(0xD8, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::FLD<32>},
-    {OPDReg(0xD9, 0) | 0x40, 8, &OpDispatchBuilder::FLD<32>},
-    {OPDReg(0xD9, 0) | 0x80, 8, &OpDispatchBuilder::FLD<32>},
 
     // 1 = Invalid
 
-    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::FST<32, false>},
-    {OPDReg(0xD9, 2) | 0x40, 8, &OpDispatchBuilder::FST<32, false>},
-    {OPDReg(0xD9, 2) | 0x80, 8, &OpDispatchBuilder::FST<32, false>},
+    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::FST<32>},
 
-    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::FST<32, true>},
-    {OPDReg(0xD9, 3) | 0x40, 8, &OpDispatchBuilder::FST<32, true>},
-    {OPDReg(0xD9, 3) | 0x80, 8, &OpDispatchBuilder::FST<32, true>},
+    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::FST<32>},
 
     {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENV},
-    {OPDReg(0xD9, 4) | 0x40, 8, &OpDispatchBuilder::X87LDENV},
-    {OPDReg(0xD9, 4) | 0x80, 8, &OpDispatchBuilder::X87LDENV},
 
     {OPDReg(0xD9, 5) | 0x00, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
-    {OPDReg(0xD9, 5) | 0x40, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
-    {OPDReg(0xD9, 5) | 0x80, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
 
     {OPDReg(0xD9, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSTENV},
-    {OPDReg(0xD9, 6) | 0x40, 8, &OpDispatchBuilder::X87FNSTENV},
-    {OPDReg(0xD9, 6) | 0x80, 8, &OpDispatchBuilder::X87FNSTENV},
 
     {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::X87FSTCW},
-    {OPDReg(0xD9, 7) | 0x40, 8, &OpDispatchBuilder::X87FSTCW},
-    {OPDReg(0xD9, 7) | 0x80, 8, &OpDispatchBuilder::X87FSTCW},
 
       {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::FLD<80>},
       {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
@@ -7728,7 +7650,7 @@ constexpr uint16_t PF_F2 = 3;
 
       // EF = Invalid
       {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80F2XM1>},
-      {OPD(0xD9, 0xF1), 1, &OpDispatchBuilder::X87FYL2X<false>},
+      {OPD(0xD9, 0xF1), 1, &OpDispatchBuilder::X87FYL2X},
       {OPD(0xD9, 0xF2), 1, &OpDispatchBuilder::X87TAN},
       {OPD(0xD9, 0xF3), 1, &OpDispatchBuilder::X87ATAN},
       {OPD(0xD9, 0xF4), 1, &OpDispatchBuilder::FXTRACT},
@@ -7736,7 +7658,7 @@ constexpr uint16_t PF_F2 = 3;
       {OPD(0xD9, 0xF6), 1, &OpDispatchBuilder::X87ModifySTP<false>},
       {OPD(0xD9, 0xF7), 1, &OpDispatchBuilder::X87ModifySTP<true>},
       {OPD(0xD9, 0xF8), 1, &OpDispatchBuilder::X87BinaryOp<IR::OP_F80FPREM>},
-      {OPD(0xD9, 0xF9), 1, &OpDispatchBuilder::X87FYL2X<true>},
+      {OPD(0xD9, 0xF9), 1, &OpDispatchBuilder::X87FYL2X},
       {OPD(0xD9, 0xFA), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80SQRT>},
       {OPD(0xD9, 0xFB), 1, &OpDispatchBuilder::X87SinCos},
       {OPD(0xD9, 0xFC), 1, &OpDispatchBuilder::FRNDINT},
@@ -7745,36 +7667,20 @@ constexpr uint16_t PF_F2 = 3;
       {OPD(0xD9, 0xFF), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80COS>},
 
     {OPDReg(0xDA, 0) | 0x00, 8, &OpDispatchBuilder::FADD<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 0) | 0x40, 8, &OpDispatchBuilder::FADD<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 0) | 0x80, 8, &OpDispatchBuilder::FADD<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDA, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 1) | 0x40, 8, &OpDispatchBuilder::FMUL<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 1) | 0x80, 8, &OpDispatchBuilder::FMUL<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDA, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPDReg(0xDA, 2) | 0x40, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPDReg(0xDA, 2) | 0x80, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
     {OPDReg(0xDA, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPDReg(0xDA, 3) | 0x40, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPDReg(0xDA, 3) | 0x80, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
 
     {OPDReg(0xDA, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 4) | 0x40, 8, &OpDispatchBuilder::FSUB<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 4) | 0x80, 8, &OpDispatchBuilder::FSUB<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDA, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 5) | 0x40, 8, &OpDispatchBuilder::FSUB<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 5) | 0x80, 8, &OpDispatchBuilder::FSUB<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDA, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 6) | 0x40, 8, &OpDispatchBuilder::FDIV<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 6) | 0x80, 8, &OpDispatchBuilder::FDIV<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDA, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 7) | 0x40, 8, &OpDispatchBuilder::FDIV<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDA, 7) | 0x80, 8, &OpDispatchBuilder::FDIV<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
       {OPD(0xDA, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
       {OPD(0xDA, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
@@ -7787,33 +7693,21 @@ constexpr uint16_t PF_F2 = 3;
       // F0 = Invalid
       // F8 = Invalid
 
-    {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILD<32>},
-    {OPDReg(0xDB, 0) | 0x40, 8, &OpDispatchBuilder::FILD<32>},
-    {OPDReg(0xDB, 0) | 0x80, 8, &OpDispatchBuilder::FILD<32>},
+    {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILD},
 
-    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::FIST<32, true>},
-    {OPDReg(0xDB, 1) | 0x40, 8, &OpDispatchBuilder::FIST<32, true>},
-    {OPDReg(0xDB, 1) | 0x80, 8, &OpDispatchBuilder::FIST<32, true>},
+    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::FIST},
 
-    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::FIST<32, false>},
-    {OPDReg(0xDB, 2) | 0x40, 8, &OpDispatchBuilder::FIST<32, false>},
-    {OPDReg(0xDB, 2) | 0x80, 8, &OpDispatchBuilder::FIST<32, false>},
+    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::FIST},
 
-    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::FIST<32, true>},
-    {OPDReg(0xDB, 3) | 0x40, 8, &OpDispatchBuilder::FIST<32, true>},
-    {OPDReg(0xDB, 3) | 0x80, 8, &OpDispatchBuilder::FIST<32, true>},
+    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::FIST},
 
     // 4 = Invalid
 
     {OPDReg(0xDB, 5) | 0x00, 8, &OpDispatchBuilder::FLD<80>},
-    {OPDReg(0xDB, 5) | 0x40, 8, &OpDispatchBuilder::FLD<80>},
-    {OPDReg(0xDB, 5) | 0x80, 8, &OpDispatchBuilder::FLD<80>},
 
     // 6 = Invalid
 
-    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::FST<80, true>},
-    {OPDReg(0xDB, 7) | 0x40, 8, &OpDispatchBuilder::FST<80, true>},
-    {OPDReg(0xDB, 7) | 0x80, 8, &OpDispatchBuilder::FST<80, true>},
+    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::FST<80>},
 
 
       {OPD(0xDB, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
@@ -7830,36 +7724,20 @@ constexpr uint16_t PF_F2 = 3;
       // F8 = Invalid
 
     {OPDReg(0xDC, 0) | 0x00, 8, &OpDispatchBuilder::FADD<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 0) | 0x40, 8, &OpDispatchBuilder::FADD<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 0) | 0x80, 8, &OpDispatchBuilder::FADD<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDC, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 1) | 0x40, 8, &OpDispatchBuilder::FMUL<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 1) | 0x80, 8, &OpDispatchBuilder::FMUL<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDC, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPDReg(0xDC, 2) | 0x40, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPDReg(0xDC, 2) | 0x80, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
     {OPDReg(0xDC, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPDReg(0xDC, 3) | 0x40, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPDReg(0xDC, 3) | 0x80, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
 
     {OPDReg(0xDC, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 4) | 0x40, 8, &OpDispatchBuilder::FSUB<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 4) | 0x80, 8, &OpDispatchBuilder::FSUB<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDC, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 5) | 0x40, 8, &OpDispatchBuilder::FSUB<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 5) | 0x80, 8, &OpDispatchBuilder::FSUB<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDC, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 6) | 0x40, 8, &OpDispatchBuilder::FDIV<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 6) | 0x80, 8, &OpDispatchBuilder::FDIV<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDC, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 7) | 0x40, 8, &OpDispatchBuilder::FDIV<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDC, 7) | 0x80, 8, &OpDispatchBuilder::FDIV<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
       {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_STI>},
       {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_STI>},
@@ -7869,72 +7747,42 @@ constexpr uint16_t PF_F2 = 3;
       {OPD(0xDC, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
 
     {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::FLD<64>},
-    {OPDReg(0xDD, 0) | 0x40, 8, &OpDispatchBuilder::FLD<64>},
-    {OPDReg(0xDD, 0) | 0x80, 8, &OpDispatchBuilder::FLD<64>},
 
-    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::FIST<64, true>},
-    {OPDReg(0xDD, 1) | 0x40, 8, &OpDispatchBuilder::FIST<64, true>},
-    {OPDReg(0xDD, 1) | 0x80, 8, &OpDispatchBuilder::FIST<64, true>},
+    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::FIST},
 
-    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::FST<64, false>},
-    {OPDReg(0xDD, 2) | 0x40, 8, &OpDispatchBuilder::FST<64, false>},
-    {OPDReg(0xDD, 2) | 0x80, 8, &OpDispatchBuilder::FST<64, false>},
+    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::FST<64>},
 
-    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::FST<64, true>},
-    {OPDReg(0xDD, 3) | 0x40, 8, &OpDispatchBuilder::FST<64, true>},
-    {OPDReg(0xDD, 3) | 0x80, 8, &OpDispatchBuilder::FST<64, true>},
+    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::FST<64>},
 
     {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
-    {OPDReg(0xDD, 4) | 0x40, 8, &OpDispatchBuilder::X87FRSTOR},
-    {OPDReg(0xDD, 4) | 0x80, 8, &OpDispatchBuilder::X87FRSTOR},
 
     // 5 = Invalid
     {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVE},
-    {OPDReg(0xDD, 6) | 0x40, 8, &OpDispatchBuilder::X87FNSAVE},
-    {OPDReg(0xDD, 6) | 0x80, 8, &OpDispatchBuilder::X87FNSAVE},
 
     {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
-    {OPDReg(0xDD, 7) | 0x40, 8, &OpDispatchBuilder::X87FNSTSW},
-    {OPDReg(0xDD, 7) | 0x80, 8, &OpDispatchBuilder::X87FNSTSW},
 
       {OPD(0xDD, 0xC0), 8, &OpDispatchBuilder::NOPOp}, // stubbed FFREE
-      {OPD(0xDD, 0xD0), 8, &OpDispatchBuilder::FST<false>},
-      {OPD(0xDD, 0xD8), 8, &OpDispatchBuilder::FST<true>},
+      {OPD(0xDD, 0xD0), 8, &OpDispatchBuilder::FST},
+      {OPD(0xDD, 0xD8), 8, &OpDispatchBuilder::FST},
 
       {OPD(0xDD, 0xE0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
       {OPD(0xDD, 0xE8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
 
     {OPDReg(0xDE, 0) | 0x00, 8, &OpDispatchBuilder::FADD<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 0) | 0x40, 8, &OpDispatchBuilder::FADD<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 0) | 0x80, 8, &OpDispatchBuilder::FADD<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDE, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 1) | 0x40, 8, &OpDispatchBuilder::FMUL<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 1) | 0x80, 8, &OpDispatchBuilder::FMUL<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDE, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPDReg(0xDE, 2) | 0x40, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPDReg(0xDE, 2) | 0x80, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
     {OPDReg(0xDE, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPDReg(0xDE, 3) | 0x40, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPDReg(0xDE, 3) | 0x80, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
 
     {OPDReg(0xDE, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 4) | 0x40, 8, &OpDispatchBuilder::FSUB<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 4) | 0x80, 8, &OpDispatchBuilder::FSUB<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDE, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 5) | 0x40, 8, &OpDispatchBuilder::FSUB<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 5) | 0x80, 8, &OpDispatchBuilder::FSUB<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDE, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 6) | 0x40, 8, &OpDispatchBuilder::FDIV<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 6) | 0x80, 8, &OpDispatchBuilder::FDIV<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xDE, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 7) | 0x40, 8, &OpDispatchBuilder::FDIV<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPDReg(0xDE, 7) | 0x80, 8, &OpDispatchBuilder::FDIV<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
       {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_STI>},
       {OPD(0xDE, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_STI>},
@@ -7944,33 +7792,21 @@ constexpr uint16_t PF_F2 = 3;
       {OPD(0xDE, 0xF0), 8, &OpDispatchBuilder::FDIV<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
       {OPD(0xDE, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
 
-    {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILD<16>},
-    {OPDReg(0xDF, 0) | 0x40, 8, &OpDispatchBuilder::FILD<16>},
-    {OPDReg(0xDF, 0) | 0x80, 8, &OpDispatchBuilder::FILD<16>},
+    {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILD},
 
-    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::FIST<16, true>},
-    {OPDReg(0xDF, 1) | 0x40, 8, &OpDispatchBuilder::FIST<16, true>},
-    {OPDReg(0xDF, 1) | 0x80, 8, &OpDispatchBuilder::FIST<16, true>},
+    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::FIST},
 
-    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::FIST<16, false>},
-    {OPDReg(0xDF, 2) | 0x40, 8, &OpDispatchBuilder::FIST<16, false>},
-    {OPDReg(0xDF, 2) | 0x80, 8, &OpDispatchBuilder::FIST<16, false>},
+    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::FIST},
 
-    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::FIST<16, true>},
-    {OPDReg(0xDF, 3) | 0x40, 8, &OpDispatchBuilder::FIST<16, true>},
-    {OPDReg(0xDF, 3) | 0x80, 8, &OpDispatchBuilder::FIST<16, true>},
+    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::FIST},
 
     // 4 = FBLD
 
-    {OPDReg(0xDF, 5) | 0x00, 8, &OpDispatchBuilder::FILD<64>},
-    {OPDReg(0xDF, 5) | 0x40, 8, &OpDispatchBuilder::FILD<64>},
-    {OPDReg(0xDF, 5) | 0x80, 8, &OpDispatchBuilder::FILD<64>},
+    {OPDReg(0xDF, 5) | 0x00, 8, &OpDispatchBuilder::FILD},
 
     // 6 = FTSTB
 
-    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::FIST<64, true>},
-    {OPDReg(0xDF, 7) | 0x40, 8, &OpDispatchBuilder::FIST<64, true>},
-    {OPDReg(0xDF, 7) | 0x80, 8, &OpDispatchBuilder::FIST<64, true>},
+    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::FIST},
 
       // XXX: This should also set the x87 tag bits to empty
       // We don't support this currently, so just pop the stack
@@ -7991,10 +7827,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(PF_38_66,   0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
 
-    {OPD(PF_38_NONE, 0xF0), 1, &OpDispatchBuilder::MOVBEOp},
-    {OPD(PF_38_NONE, 0xF1), 1, &OpDispatchBuilder::MOVBEOp},
-    {OPD(PF_38_66, 0xF0), 1, &OpDispatchBuilder::MOVBEOp},
-    {OPD(PF_38_66, 0xF1), 1, &OpDispatchBuilder::MOVBEOp},
+    {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
+    {OPD(PF_38_66, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
 
   };
 #undef OPD
@@ -8013,14 +7847,11 @@ constexpr uint16_t PF_F2 = 3;
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> VEXTable = {
-    {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b01, 0x6E), 2, &OpDispatchBuilder::UnimplementedOp},
 
-    {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::UnimplementedOp},
 
-    {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(1, 0b01, 0x76), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b01, 0x74), 3, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::UnimplementedOp},
 
@@ -8035,9 +7866,7 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
 
-    {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(2, 0b01, 0x5A), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(2, 0b01, 0x58), 3, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::UnimplementedOp},
@@ -8045,8 +7874,7 @@ constexpr uint16_t PF_F2 = 3;
 #undef OPD
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> EVEXTable = {
-    {0x10, 1, &OpDispatchBuilder::UnimplementedOp},
-    {0x11, 1, &OpDispatchBuilder::UnimplementedOp},
+    {0x10, 2, &OpDispatchBuilder::UnimplementedOp},
     {0x59, 1, &OpDispatchBuilder::UnimplementedOp},
     {0x7F, 1, &OpDispatchBuilder::UnimplementedOp},
   };
@@ -8064,14 +7892,21 @@ constexpr uint16_t PF_F2 = 3;
       }
     }
   };
+  auto InstallToX87Table = [&NumInsts](auto& FinalTable, auto& LocalTable) {
+    for (auto Op : LocalTable) {
+      auto OpNum = std::get<0>(Op);
+      auto Dispatcher = std::get<2>(Op);
+      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
+        LogMan::Throw::A(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
+        FinalTable[(OpNum & 0x7FF) + i].OpcodeDispatcher = Dispatcher;
 
-  [[maybe_unused]] auto CheckTable = [](auto& FinalTable) {
-    for (size_t i = 0; i < FinalTable.size(); ++i) {
-      auto const &Op = FinalTable.at(i);
-
-      if (Op.Type != X86Tables::TYPE_INST) continue; // Invalid op, we don't care
-      if (Op.OpcodeDispatcher == nullptr) {
-        LogMan::Msg::D("Op: 0x%lx %s didn't have an OpDispatcher", i, Op.Name);
+        // Flag to indicate if we need to repeat this op in {0x40, 0x80} ranges
+        if (OpNum & 0x8000) {
+          FinalTable[((OpNum & 0x7FF) | 0x40) + i].OpcodeDispatcher = Dispatcher;
+          FinalTable[((OpNum & 0x7FF) | 0x80) + i].OpcodeDispatcher = Dispatcher;
+        }
+        if (Dispatcher)
+          ++NumInsts;
       }
     }
   };
@@ -8095,15 +7930,13 @@ constexpr uint16_t PF_F2 = 3;
 
   InstallToTable(FEXCore::X86Tables::SecondModRMTableOps, SecondaryModRMExtensionOpTable);
 
-  InstallToTable(FEXCore::X86Tables::X87Ops, X87OpTable);
+  InstallToX87Table(FEXCore::X86Tables::X87Ops, X87OpTable);
 
   InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38Table);
   InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3ATable);
   InstallToTable(FEXCore::X86Tables::VEXTableOps, VEXTable);
   InstallToTable(FEXCore::X86Tables::EVEXTableOps, EVEXTable);
 
-  // Useful for debugging
-  // CheckTable(FEXCore::X86Tables::BaseOps);
   LogMan::Msg::D("We installed %ld instructions to the tables", NumInsts);
 }
 

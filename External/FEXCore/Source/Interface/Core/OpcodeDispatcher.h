@@ -96,7 +96,6 @@ public:
   template<uint32_t SrcIndex>
   void MOVGPROp(OpcodeArgs);
   void MOVVectorOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
   void ALUOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs);
@@ -105,7 +104,6 @@ public:
   void NOPOp(OpcodeArgs);
   void RETOp(OpcodeArgs);
   void SIGRETOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
   void SecondaryALUOp(OpcodeArgs);
   template<uint32_t SrcIndex>
   void ADCOp(OpcodeArgs);
@@ -119,7 +117,6 @@ public:
   void CALLAbsoluteOp(OpcodeArgs);
   void CondJUMPOp(OpcodeArgs);
   void CondJUMPRCXOp(OpcodeArgs);
-  template<bool CheckZF, bool ZFTrue>
   void LoopOp(OpcodeArgs);
   void JUMPOp(OpcodeArgs);
   void JUMPAbsoluteOp(OpcodeArgs);
@@ -298,16 +295,12 @@ public:
   template<uint64_t Lower, uint32_t Upper>
   void FLD_Const(OpcodeArgs);
 
-  template<size_t width>
   void FILD(OpcodeArgs);
 
-  template<size_t width, bool pop>
+  template<size_t width>
   void FST(OpcodeArgs);
 
-  template<bool pop>
   void FST(OpcodeArgs);
-
-  template<size_t width, bool pop>
   void FIST(OpcodeArgs);
 
   enum class OpResult {
@@ -336,7 +329,6 @@ public:
   template<bool Inc>
   void X87ModifySTP(OpcodeArgs);
   void X87SinCos(OpcodeArgs);
-  template<bool Plus1>
   void X87FYL2X(OpcodeArgs);
   void X87TAN(OpcodeArgs);
   void X87ATAN(OpcodeArgs);
