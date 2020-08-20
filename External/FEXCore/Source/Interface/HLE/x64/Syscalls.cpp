@@ -10,6 +10,7 @@ namespace FEXCore::HLE {
     void RegisterFD();
     void RegisterFS();
     void RegisterInfo();
+    void RegisterIO();
     void RegisterIoctl();
     void RegisterMemory();
     void RegisterNuma();
@@ -131,6 +132,7 @@ namespace FEXCore::HLE::x64 {
     RegisterFD();
     RegisterFS();
     RegisterInfo();
+    RegisterIO();
     RegisterIoctl();
     RegisterMemory();
     RegisterSched();

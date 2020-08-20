@@ -188,10 +188,6 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(iopl);
     });
 
-    REGISTER_SYSCALL_IMPL(ioperm, [](FEXCore::Core::InternalThreadState *Thread, unsigned long from, unsigned long num, int turn_on) -> uint64_t {
-      SYSCALL_STUB(ioperm);
-    });
-
     REGISTER_SYSCALL_IMPL(init_module, [](FEXCore::Core::InternalThreadState *Thread, void *module_image, unsigned long len, const char *param_values) -> uint64_t {
       SYSCALL_STUB(init_module);
     });
