@@ -455,6 +455,10 @@ private:
     return Op->Dest.TypeNone.Type !=FEXCore::X86Tables::DecodedOperand::TYPE_GPR && (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK);
   }
 
+  bool DestIsMem(FEXCore::X86Tables::DecodedOp Op) {
+    return Op->Dest.TypeNone.Type !=FEXCore::X86Tables::DecodedOperand::TYPE_GPR;
+  }
+
   void CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   bool BlockSetRIP {false};
 
