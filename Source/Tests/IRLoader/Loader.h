@@ -39,6 +39,16 @@ namespace FEX::IRLoader {
         return Config.CompareStates(State, nullptr);
       }
 
+      void LoadMemory(uint64_t MemoryBase, FEXCore::CodeLoader::MemoryWriter Writer) {
+        Config.LoadMemory(MemoryBase, Writer);
+      }
+
+      void MapRegions(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) {
+        for (auto& [region, size] : Config.GetMemoryRegions()) {
+          Mapper(region, size, true, true);
+        }
+      }
+
 #define IROP_PARSER_ALLOCATE_HELPERS
 #include <FEXCore/IR/IRDefines.inc>
     private:

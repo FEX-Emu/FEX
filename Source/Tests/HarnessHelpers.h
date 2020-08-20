@@ -157,7 +157,6 @@ namespace FEX::HarnessHelper {
       }
 
       if (BaseConfig.OptionRegDataCount > 0) {
-        uintptr_t DataOffset = sizeof(ConfigStructBase);
         constexpr std::array<std::pair<uint64_t, unsigned>, 45> OffsetArray = {{
           {offsetof(FEXCore::Core::CPUState, rip), 1},
           {offsetof(FEXCore::Core::CPUState, gregs[0]), 1},
@@ -206,8 +205,7 @@ namespace FEX::HarnessHelper {
           {offsetof(FEXCore::Core::CPUState, mm[8][0]), 2},
         }};
 
-        // Offset past the Memory regions if there are any
-        DataOffset += sizeof(MemoryRegionBase) * BaseConfig.OptionMemoryRegionCount;
+        uintptr_t DataOffset = BaseConfig.OptionRegDataOffset;
         for (unsigned i = 0; i < BaseConfig.OptionRegDataCount; ++i) {
           RegDataStructBase *RegData = reinterpret_cast<RegDataStructBase*>(RawConfigFile.data() + DataOffset);
           [[maybe_unused]] std::bitset<64> RegFlags = RegData->RegKey;
@@ -263,6 +261,31 @@ namespace FEX::HarnessHelper {
       return Matches;
     }
 
+    std::map<uintptr_t, size_t> GetMemoryRegions() {
+      std::map<uintptr_t, size_t> regions;
+
+      uintptr_t DataOffset = BaseConfig.OptionMemoryRegionOffset;
+      for (unsigned i = 0; i < BaseConfig.OptionMemoryRegionCount; ++i) {
+        MemoryRegionBase *Region = reinterpret_cast<MemoryRegionBase*>(RawConfigFile.data() + DataOffset);
+        regions[Region->Region] = Region->Size;
+
+        DataOffset += sizeof(MemoryRegionBase);
+      }
+
+      return regions;
+    }
+
+    void LoadMemory(uint64_t MemoryBase, FEXCore::CodeLoader::MemoryWriter Writer) {
+      uintptr_t DataOffset = BaseConfig.OptionMemDataOffset;
+      for (unsigned i = 0; i < BaseConfig.OptionMemDataCount; ++i) {
+        MemDataStructBase *MemData = reinterpret_cast<MemDataStructBase*>(RawConfigFile.data() + DataOffset);
+
+        Writer(&MemData->data, MemoryBase + MemData->address, MemData->length);
+
+        DataOffset += sizeof(MemDataStructBase) + MemData->length;
+      }
+    }
+
     bool Is64BitMode() const { return BaseConfig.OptionMode == 1; }
 
   private:
@@ -275,8 +298,12 @@ namespace FEX::HarnessHelper {
       uint64_t OptionEntryPoint;
       uint32_t OptionABI;
       uint32_t OptionMode;
+      uint32_t OptionMemoryRegionOffset;
       uint32_t OptionMemoryRegionCount;
+      uint32_t OptionRegDataOffset;
       uint32_t OptionRegDataCount;
+      uint32_t OptionMemDataOffset;
+      uint32_t OptionMemDataCount;
       uint8_t  AdditionalData[];
     }__attribute__((packed));
 
@@ -289,6 +316,12 @@ namespace FEX::HarnessHelper {
       uint32_t RegDataCount;
       uint64_t RegKey;
       uint64_t RegValues[];
+    } __attribute__((packed));
+
+    struct MemDataStructBase {
+      uint64_t address;
+      uint32_t length;
+      uint8_t data[];
     } __attribute__((packed));
 
     std::vector<char> RawConfigFile;
@@ -355,12 +388,19 @@ namespace FEX::HarnessHelper {
 
       // Map in the memory region for the test file
       Mapper(CODE_START_PAGE, AlignUp(RawFile.size(), PAGE_SIZE), true, true);
+
+      // Map the memory regions the test file asks for
+      for (auto& [region, size] : Config.GetMemoryRegions()) {
+        Mapper(region, size, true, true);
+      }
     }
 
     void LoadMemory(MemoryWriter Writer) override {
       // Memory base here starts at the start location we passed back with GetLayout()
       // This will write at [CODE_START_RANGE + 0, RawFile.size() )
       Writer(&RawFile.at(0), MemoryBase + CODE_START_RANGE, RawFile.size());
+
+      Config.LoadMemory(MemoryBase, Writer);
     }
 
     uint64_t GetFinalRIP() override { return CODE_START_RANGE + RawFile.size(); }

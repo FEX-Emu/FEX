@@ -123,6 +123,20 @@ ModeStringLookup = {
     "64BIT": Mode.MODE_64,
 }
 
+def parse_hexstring(s):
+    length = 0
+    byte_data = []
+    for num in s.split(' '):
+        if s.startswith("0x"):
+            num = num[2:]
+        while len(num) > 0:
+            byte_num = num[-2:]
+            byte_data.append(int(byte_num, 16))
+            length += 1
+            num = num[0:-2]
+    return length, byte_data
+
+
 def parse_json(json_text, output_file):
     # Default options
     OptionMatch = Regs.REG_INVALID
@@ -133,6 +147,7 @@ def parse_json(json_text, output_file):
     OptionEntryPoint = 1
     OptionRegData = {}
     OptionMemoryRegions = {}
+    OptionMemoryData = {}
 
 
     json_object = json.loads(json_text)
@@ -195,9 +210,9 @@ def parse_json(json_text, output_file):
     if ("MEMORYREGIONS" in json_object):
         data = json_object["MEMORYREGIONS"]
         if not (type(data) is dict):
-            sys.exit("RegData value must be list of key:value pairs")
+            sys.exit("MemoryRegions value must be list of key:value pairs")
         for data_key, data_val in data.items():
-            OptionMemoryRegions[int(data_key, 0)] = int(data_val, 0);
+            OptionMemoryRegions[int(data_key, 0)] = int(data_val, 0)
 
     if ("REGDATA" in json_object):
         data = json_object["REGDATA"]
@@ -219,9 +234,42 @@ def parse_json(json_text, output_file):
                 data_key_values.append(int(data_val, 0))
             OptionRegData[data_key_index] = data_key_values
 
+    if ("MEMORYDATA" in json_object):
+        data = json_object["MEMORYDATA"]
+        if not (type(data) is dict):
+            sys.exit("MemoryData value must be list of key:value pairs")
+        for data_key, data_val in data.items():
+            length, byte_data = parse_hexstring(data_val)
+            OptionMemoryData[int(data_key, 0)] = (length, byte_data)
+
     # If Match option wasn't touched then set it to the default
     if (OptionMatch == Regs.REG_INVALID):
         OptionMatch = Regs.REG_NONE
+
+
+    memRegions = bytes()
+    regData = bytes()
+    memData = bytes()
+
+    # Write memory regions
+    for key, val in OptionMemoryRegions.items():
+        memRegions += struct.pack('Q', key)
+        memRegions += struct.pack('Q', val)
+
+    # Write Register values
+    for reg_key, reg_val in OptionRegData.items():
+        regData += struct.pack('I', len(reg_val))
+        regData += struct.pack('Q', reg_key.value)
+        for val in reg_val:
+            regData += struct.pack('Q', val)
+
+    # Write Memory data
+    for reg_key, reg_val in OptionMemoryData.items():
+        length, data = reg_val
+        memData += struct.pack('Q', reg_key) # address
+        memData += struct.pack('I', length)
+        for byte in data:
+            memData += struct.pack('B', byte)
 
     config_file = open(output_file, "wb")
     config_file.write(struct.pack('Q', OptionMatch.value))
@@ -231,23 +279,29 @@ def parse_json(json_text, output_file):
     config_file.write(struct.pack('I', OptionABI.value))
     config_file.write(struct.pack('I', OptionMode.value))
 
-    # Number of memory regions
+    # Total length of header, including offsets/counts below
+    headerLength = (8 * 4) + (4 * 2) + (4 * 6)
+    offset = headerLength
+
+    #  memory regions offset/count
+    config_file.write(struct.pack('I', offset))
     config_file.write(struct.pack('I', len(OptionMemoryRegions)))
+    offset += len(memRegions)
 
-    # Number of register values
+    # register values offset/count
+    config_file.write(struct.pack('I', offset))
     config_file.write(struct.pack('I', len(OptionRegData)))
+    offset += len(regData)
 
-    # Print number of memory regions
-    for reg_key, reg_val in OptionMemoryRegions.items():
-        config_file.write(struct.pack('Q', reg_key))
-        config_file.write(struct.pack('Q', reg_val))
+    # memory data offset/count
+    config_file.write(struct.pack('I', offset))
+    config_file.write(struct.pack('I', len(OptionMemoryData)))
+    offset += len(memData)
 
-   # Print Register values
-    for reg_key, reg_val in OptionRegData.items():
-        config_file.write(struct.pack('I', len(reg_val)))
-        config_file.write(struct.pack('Q', reg_key.value))
-        for reg_vals in reg_val:
-            config_file.write(struct.pack('Q', reg_vals))
+    # write out the actual data for memory regions, reg data and memory data
+    config_file.write(memRegions)
+    config_file.write(regData)
+    config_file.write(memData)
 
     config_file.close()
 

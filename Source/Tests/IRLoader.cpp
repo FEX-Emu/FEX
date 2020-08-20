@@ -62,6 +62,7 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
     }
 
     void SetMemoryBase(uint64_t Base, bool Unified) override {
+      MemoryBase = Base;
     }
 
     uint64_t SetupStack([[maybe_unused]] void *HostPtr, uint64_t GuestPtr) const override {
@@ -73,9 +74,12 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
     }
 
     void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
+      // Map the memory regions the test file asks for
+      IR->MapRegions(Mapper);
     }
 
     void LoadMemory(MemoryWriter Writer) override {
+      IR->LoadMemory(MemoryBase, Writer);
     }
 
     uint64_t GetFinalRIP() override { return 0; }
@@ -87,6 +91,7 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
   private:
     FEX::IRLoader::Loader *IR;
     constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
+    uint64_t MemoryBase = 0;
 };
 
 int main(int argc, char **argv, char **const envp) {

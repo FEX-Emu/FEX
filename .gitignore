@@ -9,4 +9,4 @@ Config.json
 out/
 .vscode/
 .vs/
-
+*.pyc
