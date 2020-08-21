@@ -456,7 +456,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
     auto CodeLast = CurrentIR.at(BlockIROp->Last);
 
     auto OpSize = [&](OrderedNode *node) {
-      return node->Op(ListBegin)->Size;
+      return node->Op(DataBegin)->Size;
     };
 
     while (1) {
@@ -513,7 +513,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
             else if (RegClass == GPRPairClass)
               LastNode = IREmit->_TruncElementPair(LastNode, TruncateSize);
             else if (RegClass == GPRClass)
-              LastNode = IREmit->_Bfe(TruncateSize * 8, 0, LastNode);
+              LastNode = IREmit->_Bfe(IROp->Size, TruncateSize * 8, 0, LastNode);
           }
 
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
