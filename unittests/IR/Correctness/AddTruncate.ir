@@ -1,0 +1,38 @@
+;%ifdef CONFIG
+;{
+;  "RegData": {
+;    "RAX": "0x00000000fffffff9",
+;    "RBX": "0xfffffffffffffff9",
+;    "RCX": "0x00000000fffffff9",
+;    "RDX": "0xfffffffffffffff9"
+;  },
+;  "MemoryRegions": {
+;    "0x1000000": "4096"
+;  },
+;  "MemoryData": {
+;    "0x1000000": "0xaaaaaaaaaaaaaaa8",
+;    "0x1000010": "51 55 55 55 55 55 55 55"
+;  }
+;}
+;%endif
+
+(%ssa1) IRHeader #0x1000, %ssa2, #0
+  (%ssa2) CodeBlock %ssa6, %ssa12, %ssa1
+    (%ssa6 i0) Dummy
+    %AddrA i64 = Constant #0x1000000
+    %MemValueA i64 = LoadMem %AddrA i64, #0x8, #0x8, GPR
+    %AddrB i64 = Constant #0x1000010
+    %MemValueB i64 = LoadMem %AddrB i64, #0x8, #0x8, GPR
+    %ResultA i32 = Add %MemValueA, %MemValueB
+    %ResultB i64 = Add %MemValueA, %MemValueB
+    (%Store i64) StoreContext %ResultA i64, #0x08, GPR
+    (%Store i64) StoreContext %ResultB i64, #0x10, GPR
+;  Constant optimisable version
+    %ValueC i64 = Constant #0xaaaaaaaaaaaaaaa8
+    %ValueD i64 = Constant #0x5555555555555551
+    %ResultC i32 = Add %ValueC, %ValueD
+    %ResultD i64 = Add %ValueC, %ValueD
+    (%Store i64) StoreContext %ResultC i64, #0x18, GPR
+    (%Store i64) StoreContext %ResultD i64, #0x20, GPR
+    (%ssa7 i0) Break #4, #4
+    (%ssa12 i0) EndBlock #0x0
