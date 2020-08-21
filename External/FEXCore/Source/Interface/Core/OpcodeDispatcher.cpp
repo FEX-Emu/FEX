@@ -129,8 +129,6 @@ void OpDispatchBuilder::LEAOp(OpcodeArgs) {
     uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
 
     OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
-    if (DstSize == 4)
-      Src = _Bfe(4, 32, 0, Src);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   }
   else {
@@ -277,15 +275,11 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   auto Carry = _Add(ALUOp, CF);
 
   OrderedNode *Result = Carry;
-  auto Size = GetDstSize(Op);
-  if (Size < 4) {
-    ALUOp.first->Header.Size = 4;
-    Carry.first->Header.Size = 4;
-
-    Result = _Bfe(Size, Size * 8, 0, Carry);
-  }
 
   StoreResult(GPRClass, Op, Result, -1);
+  auto Size = GetDstSize(Op);
+  if (Size < 4)
+    Result = _Bfe(Size, Size * 8, 0, Carry);
   GenerateFlags_ADC(Op, Result, Dest, Src, CF);
 }
 
@@ -300,16 +294,13 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   auto Carry = _Sub(ALUOp, CF);
 
   OrderedNode *Result = Carry;
-  auto Size = GetDstSize(Op);
-  if (Size < 4) {
-    ALUOp.first->Header.Size = 4;
-    Carry.first->Header.Size = 4;
-
-    Result = _Bfe(Size, Size * 8, 0, Carry);
-  }
 
   StoreResult(GPRClass, Op, Result, -1);
-  GenerateFlags_SBB(Op, ALUOp, Dest, Src, CF);
+  auto Size = GetDstSize(Op);
+  if (Size < 4) {
+    Result = _Bfe(Size, Size * 8, 0, Carry);
+  }
+  GenerateFlags_SBB(Op, Result, Dest, Src, CF);
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
@@ -1054,21 +1045,16 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
 
   OrderedNode *Result = ALUOp;
   if (Size < 4) {
-    ALUOp.first->Header.Size = 4;
     Result = _Bfe(Size, Size * 8, 0, ALUOp);
   }
 
-  GenerateFlags_SUB(Op, _Bfe(Bits, 0, Result), _Bfe(Bits, 0, Dest), _Bfe(Bits, 0, Src));
+  GenerateFlags_SUB(Op, Result, _Bfe(Bits, 0, Dest), _Bfe(Bits, 0, Src));
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Size = GetSrcSize(Op);
   OrderedNode *Upper = _Sbfe(1, Size * 8 - 1, Src);
-
-  // Truncate upper bits for 32bit store
-  if (Size == 4)
-    Upper = _Bfe(4, 32, 0, Upper);
 
   StoreResult(GPRClass, Op, Upper, -1);
 }
@@ -1123,11 +1109,6 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
   uint8_t SrcSize = DstSize >> 1;
 
   Src = _Sbfe(SrcSize * 8, 0, Src);
-
-  if (DstSize == 4) {
-    // FIXME: Remove when we support 32bit _Sbfe
-    Src = _Bfe(4, 32, 0, Src);
-  }
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
 }
@@ -5244,12 +5225,9 @@ void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
     }
   }
   else {
-    // Source is 32bit
-    if (DstElementSize == 8) {
-      if (Signed)
-        Src = _Sext(32, Src);
-      else
-        Src = _Bfe(8, 32, 0, Src);
+    // Source is 32bit and Signed
+    if (DstElementSize == 8 && Signed) {
+      Src = _Sext(32, Src);
     }
   }
 
