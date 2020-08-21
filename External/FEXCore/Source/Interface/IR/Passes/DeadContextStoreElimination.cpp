@@ -533,7 +533,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           }
           Changed = true;
         }
-        else if (LastAccess == ACCESS_READ &&
+        else if ((LastAccess == ACCESS_READ || LastAccess == ACCESS_PARTIAL_READ) &&
                  LastClass == Op->Class &&
                  LastOffset == Op->Offset &&
                  LastSize == IROp->Size &&
@@ -541,6 +541,18 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           // Did we read and then read again?
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
           RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
+          Changed = true;
+        }
+        else if (LastClass == Op->Class &&
+                 LastClass == 0 && // We only support GPRs
+                 LastOffset == Op->Offset &&
+                 LastSize > IROp->Size) {
+          // We are reading only part of the previous write
+          // XXX: This is just a temporary optimisation until this pass is improved
+          IREmit->SetWriteCursor(CodeNode);
+          auto Narrowed = IREmit->_Bfe(IROp->Size, IROp->Size * 8, 0, LastNode);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Narrowed, CodeBegin, CodeLast);
+          RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_PARTIAL_READ, Narrowed);
           Changed = true;
         }
       }
