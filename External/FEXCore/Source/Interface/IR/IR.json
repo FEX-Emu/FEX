@@ -615,29 +615,35 @@
     },
 
     "Add": {
-      "Desc": [ "Integer Add"
+      "Desc": [ "Integer Add",
+                "Will truncate to 64 or 32bits"
               ],
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "SSAArgs": "2"
     },
 
     "Sub": {
-      "Desc": [ "Integer Sub"
+      "Desc": [ "Integer Sub",
+                "Will truncate to 64 or 32bits"
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Neg": {
       "Desc": ["Integer negation",
-               "Dest = -Src"
+               "Dest = -Src",
+               "Will truncate to 64 or 32bits"
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
       "DestClass": "GPR",
       "SSAArgs": "1"
     },
@@ -647,6 +653,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -656,6 +663,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -752,6 +760,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -997,6 +1006,7 @@
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
+      "DestSize": "8",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "Width",

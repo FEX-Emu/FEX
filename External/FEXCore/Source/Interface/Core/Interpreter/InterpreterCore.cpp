@@ -690,8 +690,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Func = [](auto a, auto b) { return a + b; };
 
             switch (OpSize) {
-              DO_OP(1, uint8_t,  Func)
-              DO_OP(2, uint16_t, Func)
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
               default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
@@ -705,8 +703,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Func = [](auto a, auto b) { return a - b; };
 
             switch (OpSize) {
-              DO_OP(1, uint8_t,  Func)
-              DO_OP(2, uint16_t, Func)
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
               default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
@@ -717,12 +713,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_Neg>();
             uint64_t Src = *GetSrc<int64_t*>(Op->Header.Args[0]);
             switch (OpSize) {
-              case 1:
-                GD = -static_cast<int8_t>(Src);
-                break;
-              case 2:
-                GD = -static_cast<int16_t>(Src);
-                break;
               case 4:
                 GD = -static_cast<int32_t>(Src);
                 break;
@@ -784,7 +774,15 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src1 = *GetSrc<uint64_t*>(Op->Header.Args[0]);
             uint64_t Src2 = *GetSrc<uint64_t*>(Op->Header.Args[1]);
             uint8_t Mask = OpSize * 8 - 1;
-            GD = Src1 << (Src2 & Mask);
+            switch (OpSize) {
+              case 4:
+                GD = static_cast<int32_t>(Src1) << (Src2 & Mask);
+                break;
+              case 8:
+                GD = static_cast<int64_t>(Src1) << (Src2 & Mask);
+                break;
+              default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
+            };
             break;
           }
           case IR::OP_LSHR: {

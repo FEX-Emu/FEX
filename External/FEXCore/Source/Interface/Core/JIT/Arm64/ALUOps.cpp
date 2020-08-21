@@ -61,12 +61,29 @@ DEF_OP(CycleCounter) {
 
 DEF_OP(Add) {
   auto Op = IROp->C<IR::IROp_Add>();
-  add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+  switch (IROp->Size;) {
+    case 4:
+      add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      break;
+    case 8:
+      add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      break;
+    default: LogMan::Msg::A("Unsupported Add size: %d", OpSize);
+  }
 }
 
 DEF_OP(Sub) {
   auto Op = IROp->C<IR::IROp_Sub>();
-  sub(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+  switch (IROp->Size;) {
+    case 4:
+      sub(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      break;
+    case 8:
+      sub(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      break;
+    default: LogMan::Msg::A("Unsupported Sub size: %d", OpSize);
+  }
+
 }
 
 DEF_OP(Neg) {

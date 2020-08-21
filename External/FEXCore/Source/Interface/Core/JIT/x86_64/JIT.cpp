@@ -991,10 +991,20 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_ADD: {
           auto Op = IROp->C<IR::IROp_Add>();
-          auto Dst = GetDst<RA_64>(Node);
+          Xbyak::Reg SrcA;
+          Xbyak::Reg Dst;
           mov(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          mov(Dst, rax);
+          switch (OpSize) {
+          case 4:
+            add(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            break;
+          case 8:
+            add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            break;
+          default:  LogMan::Msg::A("Unhandled Add size: %d", OpSize);
+            continue;
+          }
+          mov(GetDst<RA_64>(Node), rax);
           break;
         }
         case IR::OP_NEG: {
@@ -1002,14 +1012,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           Xbyak::Reg Src;
           Xbyak::Reg Dst;
           switch (OpSize) {
-          case 1:
-            Src = GetSrc<RA_8>(Op->Header.Args[0].ID());
-            Dst = GetDst<RA_8>(Node);
-            break;
-          case 2:
-            Src = GetSrc<RA_16>(Op->Header.Args[0].ID());
-            Dst = GetDst<RA_16>(Node);
-            break;
           case 4:
             Src = GetSrc<RA_32>(Op->Header.Args[0].ID());
             Dst = GetDst<RA_32>(Node);
@@ -1027,10 +1029,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_SUB: {
           auto Op = IROp->C<IR::IROp_Sub>();
-          auto Dst = GetDst<RA_64>(Node);
           mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          sub(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-          mov(Dst, rax);
+          switch (OpSize) {
+          case 4:
+            sub(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            break;
+          case 8:
+            sub(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            break;
+          default:  LogMan::Msg::A("Unhandled Sub size: %d", OpSize);
+            continue;
+          }
+          mov(GetDst<RA_64>(Node), rax);
           break;
         }
         case IR::OP_XOR: {
@@ -1235,14 +1245,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           and(rcx, Mask);
 
           switch (OpSize) {
-            case 1:
-              movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
-              shl(GetDst<RA_32>(Node).cvt8(), cl);
-              break;
-            case 2:
-              movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
-              shl(GetDst<RA_32>(Node).cvt16(), cl);
-              break;
             case 4:
               mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
               shl(GetDst<RA_32>(Node), cl);
@@ -1251,7 +1253,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
               shl(GetDst<RA_64>(Node), cl);
               break;
-            default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
+            default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
           };
           break;
         }
