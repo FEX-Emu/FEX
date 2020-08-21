@@ -61,7 +61,8 @@ DEF_OP(CycleCounter) {
 
 DEF_OP(Add) {
   auto Op = IROp->C<IR::IROp_Add>();
-  switch (IROp->Size;) {
+  uint8_t OpSize = IROp->Size;
+  switch (OpSize) {
     case 4:
       add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
       break;
@@ -74,7 +75,8 @@ DEF_OP(Add) {
 
 DEF_OP(Sub) {
   auto Op = IROp->C<IR::IROp_Sub>();
-  switch (IROp->Size;) {
+  uint8_t OpSize = IROp->Size;
+  switch (OpSize) {
     case 4:
       sub(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
       break;
@@ -754,41 +756,6 @@ DEF_OP(LURem) {
   }
 }
 
-DEF_OP(Zext) {
-  auto Op = IROp->C<IR::IROp_Zext>();
-  LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-  uint64_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
-  if (PhysReg >= FPRBase) {
-    // FPR -> GPR transfer with free truncation
-    switch (Op->SrcSize) {
-    case 8:
-      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
-    break;
-    case 16:
-      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
-    break;
-    case 32:
-      mov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
-    break;
-    case 64:
-      mov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
-    break;
-    default: LogMan::Msg::A("Unhandled Zext size: %d", Op->SrcSize); break;
-    }
-  }
-  else {
-    if (Op->SrcSize == 64) {
-      // GPR->FPR transfer
-      auto Dst = GetDst(Node);
-      eor(Dst.V16B(), Dst.V16B(), Dst.V16B());
-      ins(Dst.V2D(), 0, GetReg<RA_64>(Op->Header.Args[0].ID()));
-    }
-    else {
-      and_(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), ((1ULL << Op->SrcSize) - 1));
-    }
-  }
-}
-
 DEF_OP(Sext) {
   auto Op = IROp->C<IR::IROp_Sext>();
   LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
@@ -955,7 +922,15 @@ DEF_OP(Bfe) {
 }
 
 DEF_OP(Sbfe) {
-  LogMan::Msg::D("Unimplemented");
+  auto Op = IROp->C<IR::IROp_Bfe>();
+  uint8_t OpSize = IROp->Size;
+
+  auto Dst = GetReg<RA_64>(Node);
+  if (OpSize == 8) {
+    sbfx(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), Op->lsb, Op->Width);
+  } else {
+    LogMan::Msg::D("Unimplemented Sbfe size");
+  }
 }
 
 DEF_OP(Select) {
@@ -1101,7 +1076,6 @@ void JITCore::RegisterALUHandlers() {
   REGISTER_OP(LUDIV,             LUDiv);
   REGISTER_OP(LREM,              LRem);
   REGISTER_OP(LUREM,             LURem);
-  REGISTER_OP(ZEXT,              Zext);
   REGISTER_OP(SEXT,              Sext);
   REGISTER_OP(NOT,               Not);
   REGISTER_OP(POPCOUNT,          Popcount);
