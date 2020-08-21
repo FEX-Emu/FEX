@@ -1160,6 +1160,44 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_SBFE: {
+          auto Op = IROp->C<IR::IROp_Sbfe>();
+
+          auto Dst = GetDst<RA_64>(Node);
+
+          // Special cases for fast signed extends
+          if (Op->lsb == 0) {
+            switch (Op->Width / 8) {
+            case 1:
+              movsx(Dst, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+              goto Sbfe_done;
+            case 2:
+              movsx(Dst, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              goto Sbfe_done;
+            case 4:
+              movsxd(Dst.cvt64(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              goto Sbfe_done;
+            case 8:
+              mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              goto Sbfe_done;
+            default:
+              // Need to use slower general case
+              break;
+            }
+          }
+
+          // Slightly slower general case
+          {
+            uint64_t ShiftLeftAmount = (64 - (Op->Width + Op->lsb));
+            uint64_t ShiftRightAmount = ShiftLeftAmount + Op->lsb;
+            mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            shl(Dst, ShiftLeftAmount);
+            sar(Dst, ShiftRightAmount);
+          }
+
+          Sbfe_done:
+          break;
+        }
         case IR::OP_LSHR: {
           auto Op = IROp->C<IR::IROp_Lshr>();
           uint8_t Mask = OpSize * 8 - 1;

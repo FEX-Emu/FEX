@@ -1214,7 +1214,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             LogMan::Throw::A(OpSize < 16, "OpSize is too large for BFE: %d", OpSize);
             int64_t Src = *GetSrc<int64_t*>(Op->Header.Args[0]);
             uint64_t ShiftLeftAmount = (64 - (Op->Width + Op->lsb));
-            uint64_t ShiftRightAmount = ShiftLeftAmount - Op->lsb;
+            uint64_t ShiftRightAmount = ShiftLeftAmount + Op->lsb;
             Src <<= ShiftLeftAmount;
             Src >>= ShiftRightAmount;
             GD = Src;
