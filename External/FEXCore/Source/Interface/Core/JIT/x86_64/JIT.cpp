@@ -520,11 +520,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           else {
             switch (OpSize) {
             case 1: {
-              pinsrb(GetDst(Node), byte [STATE + Op->Offset], 0);
+              movzx(rax, byte [STATE + Op->Offset]);
+              vmovq(GetDst(Node), rax);
             }
             break;
             case 2: {
-              pinsrw(GetDst(Node), word [STATE + Op->Offset], 0);
+              movzx(rax, word [STATE + Op->Offset]);
+              vmovq(GetDst(Node), rax);
             }
             break;
             case 4: {
@@ -594,10 +596,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               lea(rax, dword [STATE + Op->BaseOffset]);
               switch (size) {
               case 1:
-                pinsrb(GetDst(Node), byte [rax + index * Op->Stride], 0);
+                movzx(eax, byte [rax + index * Op->Stride]);
+                vmovd(GetDst(Node), eax);
                 break;
               case 2:
-                pinsrw(GetDst(Node), word [rax + index * Op->Stride], 0);
+                movzx(eax, word [rax + index * Op->Stride]);
+                vmovd(GetDst(Node), eax);
                 break;
               case 4:
                 vmovd(GetDst(Node),  dword [rax + index * Op->Stride]);
@@ -1871,11 +1875,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
             switch (Op->Size) {
               case 1: {
-                pinsrb(Dst, byte [MemReg], 0);
+                movzx(eax, byte [MemReg]);
+                vmovd(Dst, eax);
               }
               break;
               case 2: {
-                pinsrw(Dst, word [MemReg], 0);
+                movzx(eax, byte [MemReg]);
+                vmovd(Dst, eax);
               }
               break;
               case 4: {

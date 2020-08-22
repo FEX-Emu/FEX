@@ -1,0 +1,49 @@
+;%ifdef CONFIG
+;{
+;  "RegData": {
+;    "XMM4": ["0x2726252423222120","0x0000000000000000"],
+;    "XMM5": ["0x0000000023222120","0x0000000000000000"],
+;    "XMM6": ["0x0000000000002120","0x0000000000000000"],
+;    "XMM7": ["0x0000000000000020","0x0000000000000000"]
+;  },
+;  "MemoryRegions": {
+;    "0x1000000": "4096"
+;  },
+;  "MemoryData": {
+;    "0x1000000": "20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f",
+;    "0x1000010": "11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11"
+;  }
+;}
+;%endif
+
+
+
+(%ssa1) IRHeader #0x1000, %ssa2, #0
+  (%ssa2) CodeBlock %ssa6, %end, %begin
+    (%begin i0) Dummy
+; Clear registers
+    %AddrB i64 = Constant #0x1000010
+    %ClearVal i128 = LoadMem %AddrB i64, #0x10, #0x10, FPR
+    (%Clear1 i128) StoreContext %ClearVal i128, #0x90, FPR
+    (%Clear2 i128) StoreContext %ClearVal i128, #0xa0, FPR
+    (%Clear3 i128) StoreContext %ClearVal i128, #0xb0, FPR
+    (%Clear4 i128) StoreContext %ClearVal i128, #0xc0, FPR
+
+    %AddrA i64 = Constant #0x1000000
+    %MemValueA i128 = LoadMem %AddrA i64, #0x10, #0x10, FPR
+
+    (%Store1 i64) StoreContext %MemValueA i128, #0x90, FPR
+    (%Store2 i32) StoreContext %MemValueA i128, #0xa0, FPR
+    (%Store3 i16) StoreContext %MemValueA i128, #0xb0, FPR
+    (%Store4 i8)  StoreContext %MemValueA i128, #0xc0, FPR
+    %Truncated64 i64 = LoadContext #0x90, FPR
+    %Truncated32 i32 = LoadContext #0xa0, FPR
+    %Truncated16 i16 = LoadContext #0xb0, FPR
+    %Truncated8  i8 = LoadContext #0xc0, FPR
+    (%Store5 i128) StoreContext %Truncated64 i128, #0xd0, FPR
+    (%Store6 i128) StoreContext %Truncated32 i128, #0xe0, FPR
+    (%Store7 i128) StoreContext %Truncated16 i128, #0xf0, FPR
+    (%Store8 i128)  StoreContext %Truncated8 i128, #0x100, FPR
+    (%Store9 i128)  StoreContext %MemValueA i128, #0x110, FPR
+    (%ssa7 i0) Break #4, #4
+    (%end i0) EndBlock #0x0
