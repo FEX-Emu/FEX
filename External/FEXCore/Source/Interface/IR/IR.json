@@ -1391,13 +1391,17 @@
     },
 
     "VMov": {
+      "Desc" : ["Copy vector register",
+                "When Register size is smaller than Source register size,",
+                "this op is defined to truncate and zero extend"
+               ],
       "OpClass": "Vector",
       "HasDest": true,
       "DestClass": "FPR",
       "DestSize": "RegisterSize",
       "SSAArgs": "1",
       "SSANames": [
-        "Vector"
+        "Source"
       ],
       "HelperArgs": [
         "uint8_t", "RegisterSize"

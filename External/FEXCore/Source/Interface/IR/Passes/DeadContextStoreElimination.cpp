@@ -487,50 +487,50 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
       else if (IROp->Op == OP_LOADCONTEXT) {
         auto Op = IROp->CW<IR::IROp_LoadContext>();
         auto Info = FindMemberInfo(&LocalInfo, Op->Offset, IROp->Size);
-        uint8_t LastClass = Info->AccessRegClass;
+        RegisterClassType LastClass = Info->AccessRegClass;
         uint32_t LastOffset = Info->AccessOffset;
         uint8_t LastSize = Info->AccessSize;
-        RegisterClassType RegClass = Info->AccessRegClass;
         LastAccessType LastAccess = Info->Accessed;
         OrderedNode *LastNode = Info->Node;
         OrderedNode *LastStoreNode = Info->StoreNode;
         RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, CodeNode);
 
-        if (LastAccess == ACCESS_WRITE &&
+        if ((LastAccess == ACCESS_WRITE || LastAccess == ACCESS_PARTIAL_WRITE) &&
             LastClass == Op->Class &&
             LastOffset == Op->Offset &&
-            LastSize == IROp->Size &&
-            Info->Accessed == ACCESS_READ) {
+            LastClass == GPRClass &&
+            IROp->Size <= LastSize) {
+          // If the last store matches this load value then we can replace the loaded value with the previous valid one
 
           IREmit->SetWriteCursor(CodeNode);
 
+          uint8_t TruncateSize = OpSize(LastNode);
+
           // Did store context do an implicit truncation?
-          if (OpSize(LastStoreNode) < OpSize(LastNode)) {
-            uint8_t TruncateSize = OpSize(LastStoreNode);
+          if (OpSize(LastStoreNode) < TruncateSize)
+             TruncateSize = OpSize(LastStoreNode);
+
+          // Or are we doing a partial read
+          if (IROp->Size < TruncateSize)
+             TruncateSize = IROp->Size;
+
+          if (TruncateSize != OpSize(LastNode)) {
             // We need to insert an explict truncation
-            if (RegClass == FPRClass)
-              LastNode = IREmit->_Bfe(TruncateSize * 8, 0, LastNode); // XXX FIXME: BFE shouldn't be used on FPR registers
-            else if (RegClass == GPRPairClass)
+            if (LastClass == FPRClass) {
+              LastNode = IREmit->_VMov(LastNode, TruncateSize); // Vmov truncates and zexts when register width is smaller than source
+            }
+            else if (LastClass == GPRPairClass) {
               LastNode = IREmit->_TruncElementPair(LastNode, TruncateSize);
-            else if (RegClass == GPRClass)
-              LastNode = IREmit->_Bfe(IROp->Size, TruncateSize * 8, 0, LastNode);
+            }
+            else if (LastClass == GPRClass) {
+              LastNode = IREmit->_Bfe(Info->AccessSize, TruncateSize * 8, 0, LastNode);
+            } else {
+              LogMan::Msg::A("Unhandled Register class");
+            }
           }
 
-          // If the last store matches this load value then we can replace the loaded value with the previous valid one
-
-          if (Op->Offset >= offsetof(FEXCore::Core::CPUState, xmm[0]) &&
-              Op->Offset <= offsetof(FEXCore::Core::CPUState, xmm[15])) {
-
-
-            // XMM needs a bit of special help
-            auto BitCast = IREmit->_VBitcast(IROp->Size * 8, 1, LastNode); // FIXME
-            IREmit->ReplaceAllUsesWithInclusive(CodeNode, BitCast, CodeBegin, CodeLast);
-            RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
-          }
-          else {
-            IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
-            RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
-          }
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+          RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           Changed = true;
         }
         else if ((LastAccess == ACCESS_READ || LastAccess == ACCESS_PARTIAL_READ) &&
@@ -541,18 +541,6 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           // Did we read and then read again?
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
           RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
-          Changed = true;
-        }
-        else if (LastClass == Op->Class &&
-                 LastClass == 0 && // We only support GPRs
-                 LastOffset == Op->Offset &&
-                 LastSize > IROp->Size) {
-          // We are reading only part of the previous write
-          // XXX: This is just a temporary optimisation until this pass is improved
-          IREmit->SetWriteCursor(CodeNode);
-          auto Narrowed = IREmit->_Bfe(IROp->Size, IROp->Size * 8, 0, LastNode);
-          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Narrowed, CodeBegin, CodeLast);
-          RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_PARTIAL_READ, Narrowed);
           Changed = true;
         }
       }
