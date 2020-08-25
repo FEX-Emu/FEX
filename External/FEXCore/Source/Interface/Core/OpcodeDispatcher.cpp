@@ -7903,15 +7903,17 @@ constexpr uint16_t PF_F2 = 3;
   auto InstallToX87Table = [&NumInsts](auto& FinalTable, auto& LocalTable) {
     for (auto Op : LocalTable) {
       auto OpNum = std::get<0>(Op);
+      bool Repeat = (OpNum & 0x8000) != 0;
+      OpNum = OpNum & 0x7FF;
       auto Dispatcher = std::get<2>(Op);
       for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
         LogMan::Throw::A(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
-        FinalTable[(OpNum & 0x7FF) + i].OpcodeDispatcher = Dispatcher;
+        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
 
         // Flag to indicate if we need to repeat this op in {0x40, 0x80} ranges
-        if (OpNum & 0x8000) {
-          FinalTable[((OpNum & 0x7FF) | 0x40) + i].OpcodeDispatcher = Dispatcher;
-          FinalTable[((OpNum & 0x7FF) | 0x80) + i].OpcodeDispatcher = Dispatcher;
+        if (Repeat) {
+          FinalTable[(OpNum | 0x40) + i].OpcodeDispatcher = Dispatcher;
+          FinalTable[(OpNum | 0x80) + i].OpcodeDispatcher = Dispatcher;
         }
         if (Dispatcher)
           ++NumInsts;
