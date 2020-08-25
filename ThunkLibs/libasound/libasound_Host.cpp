@@ -2,16 +2,18 @@
 
 #include <alsa/asoundlib.h>
 
-#include "Thunk.h"
+#include "common/Host.h"
 #include <dlfcn.h>
 
-#include "libasound_initializers.inl"
-#include "libasound_forwards.inl"
+#include "ldr_ptrs.inl"
+#include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
-    #include "libasound_thunkmap.inl"
+    #include "tab_function_unpacks.inl"
     { nullptr, nullptr }
 };
+
+#include "ldr.inl"
 
 EXPORTS(libasound) 
 

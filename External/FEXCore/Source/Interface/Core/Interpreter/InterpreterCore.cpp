@@ -228,7 +228,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             //LogMan::Msg::D("Thunk function: %s, %p, %p\n", Op->ThunkName, Op->ThunkFnPtr, *GetSrc<void**>(Op->Header.Args[0]));
 
-            reinterpret_cast<ThunkedFunction*>(Op->ThunkFnPtr)(CTX, *GetSrc<void**>(SSAData, Op->Header.Args[0]));
+            reinterpret_cast<ThunkedFunction*>(Op->ThunkFnPtr)(*GetSrc<void**>(SSAData, Op->Header.Args[0]));
 
             break;
           }

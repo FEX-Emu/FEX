@@ -7,10 +7,11 @@
 #include <map>
 #include <string>
 
-#include "Thunk.h"
+#include "common/Guest.h"
 #include <stdarg.h>
 
-LOAD_LIB(libasound)
+#include "thunks.inl"
+#include "function_packs.inl"
+#include "function_packs_public.inl"
 
-#include "libasound_thunks.inl"
-#include <vector>
+LOAD_LIB(libasound)

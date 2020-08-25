@@ -10,16 +10,16 @@
 #include <stdio.h>
 #include <cstring>
 
-#include "Thunk.h"
+#include "common/Guest.h"
 
-LOAD_LIB(libGL)
-
-#include "libGL_thunks.inl"
+#include "thunks.inl"
+#include "function_packs.inl"
+#include "function_packs_public.inl"
 
 typedef void voidFunc();
 
 static struct { const char* name; voidFunc* fn; } symtab[] = {
-	#include "libGL_symtab.inl"
+	#include "tab_function_packs.inl"
 	{ nullptr, nullptr }
 };
 
@@ -43,3 +43,4 @@ extern "C" {
 	}
 }
 
+LOAD_LIB(libGL)

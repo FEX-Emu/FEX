@@ -4,16 +4,17 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/Xfixes.h>
 
-#include "Thunk.h"
+#include "common/Host.h"
 #include <dlfcn.h>
 
-#include "libXfixes_initializers.inl"
-#include "libXfixes_forwards.inl"
+#include "ldr_ptrs.inl"
+#include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
-    #include "libXfixes_thunkmap.inl"
+    #include "tab_function_unpacks.inl"
     { nullptr, nullptr }
 };
 
+#include "ldr.inl"
 EXPORTS(libXfixes) 
 

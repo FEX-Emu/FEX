@@ -2272,8 +2272,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           if (NumPush & 1)
             sub(rsp, 8); // Align
 
-          mov(rdi, reinterpret_cast<uintptr_t>(CTX));
-          mov(rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          mov(rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
           mov(rax, reinterpret_cast<uintptr_t>(Op->ThunkFnPtr));
           call(rax);

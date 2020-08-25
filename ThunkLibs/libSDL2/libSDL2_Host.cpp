@@ -3,16 +3,18 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 
-#include "Thunk.h"
+#include "common/Host.h"
 #include <dlfcn.h>
 
-#include "libSDL2_initializers.inl"
-#include "libSDL2_forwards.inl"
+#include "ldr_ptrs.inl"
+#include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
-    #include "libSDL2_thunkmap.inl"
+    #include "tab_function_unpacks.inl"
     { nullptr, nullptr }
 };
+
+#include "ldr.inl"
 
 EXPORTS(libSDL2)
 

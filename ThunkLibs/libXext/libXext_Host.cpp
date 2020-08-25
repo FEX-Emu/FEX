@@ -27,16 +27,18 @@
 #include <X11/extensions/syncproto.h>
 //#include <X11/extensions/XTest.h>
 
-#include "Thunk.h"
+#include "common/Host.h"
 #include <dlfcn.h>
 
-#include "libXext_initializers.inl"
-#include "libXext_forwards.inl"
+#include "ldr_ptrs.inl"
+#include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
-    #include "libXext_thunkmap.inl"
+    #include "tab_function_unpacks.inl"
     { nullptr, nullptr }
 };
 
-EXPORTS(libXext) 
+#include "ldr.inl"
+
+EXPORTS(libXext)
 
