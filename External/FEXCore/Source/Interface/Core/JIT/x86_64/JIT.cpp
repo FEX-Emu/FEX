@@ -1135,43 +1135,42 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_BFE: {
           auto Op = IROp->C<IR::IROp_Bfe>();
-          LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
-          if (OpSize == 16) {
-            LogMan::Throw::A(!(Op->lsb < 64 && (Op->lsb + Op->Width > 64)), "Trying to BFE an XMM across the 64bit split: Beginning at %d, ending at %d", Op->lsb, Op->lsb + Op->Width);
-            movups(xmm15, GetSrc(Op->Header.Args[0].ID()));
-            uint8_t Offset = Op->lsb;
-            if (Offset < 64) {
-              pextrq(rax, xmm15, 0);
-            }
-            else {
-              pextrq(rax, xmm15, 1);
-              Offset -= 64;
-            }
+          LogMan::Throw::A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
 
-            if (Offset) {
-              shr(rax, Offset);
-            }
+          auto Dst = GetDst<RA_64>(Node);
 
-            if (Op->Width != 64) {
-              mov(rcx, uint64_t((1ULL << Op->Width) - 1));
-              and(rax, rcx);
+          // Special cases for fast extends
+          if (Op->lsb == 0) {
+            switch (Op->Width / 8) {
+            case 1:
+              movzx(Dst, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+              goto Bfe_done;
+            case 2:
+              movzx(Dst, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              goto Bfe_done;
+            case 4:
+              mov(Dst.cvt32(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              goto Bfe_done;
+            case 8:
+              mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              goto Bfe_done;
+            default:
+              // Need to use slower general case
+              break;
             }
-
-            mov (GetDst<RA_64>(Node), rax);
           }
-          else {
-            auto Dst = GetDst<RA_64>(Node);
-            mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
-            if (Op->lsb != 0)
-              shr(rax, Op->lsb);
+          mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
-            if (Op->Width != 64) {
-              mov(rcx, uint64_t((1ULL << Op->Width) - 1));
-              and(rax, rcx);
-            }
-            mov(Dst, rax);
+          if (Op->lsb != 0)
+            shr(Dst, Op->lsb);
+
+          if (Op->Width != 64) {
+            mov(rcx, uint64_t((1ULL << Op->Width) - 1));
+            and(Dst, rcx);
           }
+
+          Bfe_done:
           break;
         }
         case IR::OP_SBFE: {

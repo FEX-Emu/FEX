@@ -893,32 +893,11 @@ DEF_OP(Bfi) {
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
   uint8_t OpSize = IROp->Size;
-  LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
+  LogMan::Throw::A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
   LogMan::Throw::A(Op->Width != 0, "Invalid BFE width of 0");
 
   auto Dst = GetReg<RA_64>(Node);
-  if (OpSize == 16) {
-    LogMan::Throw::A(!(Op->lsb < 64 && (Op->lsb + Op->Width > 64)), "Trying to BFE an XMM across the 64bit split: Beginning at %d, ending at %d", Op->lsb, Op->lsb + Op->Width);
-    uint8_t Offset = Op->lsb;
-    if (Offset < 64) {
-      mov(Dst, GetSrc(Op->Header.Args[0].ID()).D(), 0);
-    }
-    else {
-      mov(Dst, GetSrc(Op->Header.Args[0].ID()).D(), 1);
-      Offset -= 64;
-    }
-
-    if (Offset) {
-      lsr(Dst, Dst, Offset);
-    }
-
-    if (Op->Width != 64) {
-      ubfx(Dst, Dst, 0, Op->Width);
-    }
-  }
-  else {
-    ubfx(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), Op->lsb, Op->Width);
-  }
+  ubfx(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), Op->lsb, Op->Width);
 }
 
 DEF_OP(Sbfe) {

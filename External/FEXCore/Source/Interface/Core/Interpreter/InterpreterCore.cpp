@@ -1220,24 +1220,13 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_BFE: {
             auto Op = IROp->C<IR::IROp_Bfe>();
-            LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
-            if (OpSize == 16) {
-              LogMan::Throw::A(Op->Width <= 64, "Can't extract width of %d", Op->Width);
-              __uint128_t SourceMask = (1ULL << Op->Width) - 1;
-              if (Op->Width == 64)
-                SourceMask = ~0ULL;
-              SourceMask <<= Op->lsb;
-              __uint128_t Src = (*GetSrc<__uint128_t*>(Op->Header.Args[0]) & SourceMask) >> Op->lsb;
-              memcpy(GDP, &Src, OpSize);
-            }
-            else {
-              uint64_t SourceMask = (1ULL << Op->Width) - 1;
-              if (Op->Width == 64)
-                SourceMask = ~0ULL;
-              SourceMask <<= Op->lsb;
-              uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
-              GD = (Src & SourceMask) >> Op->lsb;
-            }
+            LogMan::Throw::A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
+            uint64_t SourceMask = (1ULL << Op->Width) - 1;
+            if (Op->Width == 64)
+              SourceMask = ~0ULL;
+            SourceMask <<= Op->lsb;
+            uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
+            GD = (Src & SourceMask) >> Op->lsb;
             break;
           }
           case IR::OP_SELECT: {
