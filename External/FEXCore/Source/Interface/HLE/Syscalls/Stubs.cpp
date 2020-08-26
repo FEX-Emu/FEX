@@ -38,10 +38,6 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(pause);
     });
 
-    REGISTER_SYSCALL_IMPL(alarm, [](FEXCore::Core::InternalThreadState *Thread, unsigned int seconds) -> uint64_t {
-      SYSCALL_STUB(alarm);
-    });
-
     REGISTER_SYSCALL_IMPL(sendfile, [](FEXCore::Core::InternalThreadState *Thread, int out_fd, int in_fd, off_t *offset, size_t count) -> uint64_t {
       SYSCALL_STUB(sendfile);
     });

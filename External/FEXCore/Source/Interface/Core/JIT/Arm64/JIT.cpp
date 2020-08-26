@@ -16,6 +16,18 @@
 #include <ucontext.h>
 
 namespace FEXCore::CPU {
+static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  --ctx->IdleWaitRefCount;
+  ctx->IdleWaitCV.notify_all();
+
+  // Go to sleep
+  Thread->StartRunning.Wait();
+
+  Thread->State.RunningEvents.Running = true;
+  ++ctx->IdleWaitRefCount;
+  ctx->IdleWaitCV.notify_all();
+}
+
 using namespace vixl;
 using namespace vixl::aarch64;
 
@@ -85,50 +97,10 @@ struct ContextBackup {
 
   // Guest state
   int Signal;
-  SignalDelegator::GuestSigAction *GuestAction;
   FEXCore::Core::CPUState GuestState;
 };
 
-bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
-  if (_mcontext->pc == SignalReturnInstruction) {
-    uint64_t OldSP = _mcontext->sp;
-    uintptr_t NewSP = OldSP;
-    ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
-
-    // First thing, reset the guest state
-    memcpy(&State->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
-
-    // Now restore host state
-    HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
-    LogMan::Throw::A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
-    memcpy(&HostState->FPRs[0], &Context->FPRs[0], 32 * sizeof(__uint128_t));
-    Context->FPCR = HostState->FPCR;
-    Context->FPSR = HostState->FPSR;
-
-    // Restore GPRs and other state
-    _mcontext->pstate = Context->PState;
-    _mcontext->pc = Context->PrevPC;
-    _mcontext->sp = Context->PrevSP;
-    memcpy(&_mcontext->regs[0], &Context->GPRs[0], 31 * sizeof(uint64_t));
-
-    // Restore the previous signal state
-    // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
-    CTX->SignalDelegation.SetCurrentSignal(Context->Signal);
-
-    // Ref count our faults
-    // We use this to track if it is safe to clear cache
-    --SignalHandlerRefCounter;
-
-    return true;
-  }
-
-  return false;
-}
-
-bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {
+void JITCore::StoreThreadState(int Signal, void *ucontext) {
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
@@ -156,7 +128,6 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDe
 
   // Retain the action pointer so we can see it when we return
   Context->Signal = Signal;
-  Context->GuestAction = GuestAction;
 
   // Save guest state
   // We can't guarantee if registers are in context or host GPRs
@@ -165,6 +136,68 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDe
 
   // Set the new SP
   _mcontext->sp = NewSP;
+}
+
+void JITCore::RestoreThreadState(void *ucontext) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  uint64_t OldSP = _mcontext->sp;
+  uintptr_t NewSP = OldSP;
+  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
+
+  // First thing, reset the guest state
+  memcpy(&State->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
+
+  // Now restore host state
+  HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
+  LogMan::Throw::A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
+  memcpy(&HostState->FPRs[0], &Context->FPRs[0], 32 * sizeof(__uint128_t));
+  Context->FPCR = HostState->FPCR;
+  Context->FPSR = HostState->FPSR;
+
+  // Restore GPRs and other state
+  _mcontext->pstate = Context->PState;
+  _mcontext->pc = Context->PrevPC;
+  _mcontext->sp = Context->PrevSP;
+  memcpy(&_mcontext->regs[0], &Context->GPRs[0], 31 * sizeof(uint64_t));
+
+  // Restore the previous signal state
+  // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
+  CTX->SignalDelegation.SetCurrentSignal(Context->Signal);
+}
+
+bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  if (_mcontext->pc == SignalReturnInstruction) {
+    RestoreThreadState(ucontext);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    --SignalHandlerRefCounter;
+    return true;
+  }
+
+  if (_mcontext->pc == PauseReturnInstruction) {
+    RestoreThreadState(ucontext);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    --SignalHandlerRefCounter;
+    return true;
+  }
+
+  return false;
+}
+
+bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  StoreThreadState(Signal, ucontext);
+
   // Set the new PC
   _mcontext->pc = AbsoluteLoopTopAddress;
   // Set x28 (which is our state register) to point to our guest thread data
@@ -280,6 +313,62 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
   return true;
 }
 
+bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
+  FEXCore::Core::SignalEvent SignalReason = State->SignalReason.load();
+
+  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE) {
+    ucontext_t* _context = (ucontext_t*)ucontext;
+    mcontext_t* _mcontext = &_context->uc_mcontext;
+
+    // Store our thread state so we can come back to this
+    StoreThreadState(Signal, ucontext);
+
+    // Set the new PC
+    _mcontext->pc = ThreadPauseHandlerAddress;
+
+    // Set x28 (which is our state register) to point to our guest thread data
+    _mcontext->regs[28 /* STATE */] = reinterpret_cast<uint64_t>(State);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    ++SignalHandlerRefCounter;
+
+    State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    return true;
+  }
+
+  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_RETURN) {
+    RestoreThreadState(ucontext);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    --SignalHandlerRefCounter;
+
+    State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    return true;
+  }
+
+  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_STOP) {
+    ucontext_t* _context = (ucontext_t*)ucontext;
+    mcontext_t* _mcontext = &_context->uc_mcontext;
+
+    // Our thread is stopping
+    // We don't care about anything at this point
+    // Set the stack to our starting location when we entered the JIT and get out safely
+    _mcontext->sp = State->State.ReturningStackLocation;
+
+    // Our ref counting doesn't matter anymore
+    SignalHandlerRefCounter = 0;
+
+    // Set the new PC
+    _mcontext->pc = ThreadStopHandlerAddress;
+    State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    return true;
+  }
+
+  return false;
+}
+
 JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer)
   : vixl::aarch64::Assembler(Buffer.Ptr, Buffer.Size, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
@@ -313,14 +402,6 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   uint32_t NumUsedGPRs = NumGPRs;
   uint32_t NumUsedGPRPairs = NumGPRPairs;
   uint32_t UsedRegisterCount = RegisterCount;
-
-  if (!CustomDispatchGenerated) {
-    ERROR_AND_DIE("THIS IS A CODE PATH THAT WILL BREAK! We now REQUIRE custom dispatch!");
-    // If we aren't using our custom dispatcher then cut out the callee saved registers
-    NumUsedGPRs -= NumCalleeGPRs;
-    NumUsedGPRPairs -= NumCalleeGPRPairs;
-    UsedRegisterCount -= NumCalleeGPRs + NumCalleeGPRPairs;
-  }
 
   RAPass->AllocateRegisterSet(UsedRegisterCount, RegisterClasses);
 
@@ -359,6 +440,11 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   CTX->SignalDelegation.RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
     JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
     return Core->HandleSIGBUS(Signal, info, ucontext);
+  });
+
+  CTX->SignalDelegation.RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+    return Core->HandleSignalPause(Signal, info, ucontext);
   });
 
   auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
@@ -416,6 +502,9 @@ void JITCore::ClearCache() {
 JITCore::~JITCore() {
   FreeCodeBuffer(DispatcherCodeBuffer);
   FreeCodeBuffer(InitialCodeBuffer);
+  for (auto &Buffer : CodeBuffers) {
+    FreeCodeBuffer(Buffer);
+  }
 }
 
 void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
@@ -526,10 +615,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   auto Buffer = GetBuffer();
   auto Entry = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-
-  if (!CustomDispatchGenerated) {
-    mov(STATE, x0);
-  }
 
   if (SpillSlots) {
     add(TMP1, sp, 0); // Move that supports SP
@@ -675,7 +760,6 @@ void JITCore::PopCalleeSavedRegisters() {
 }
 
 void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
-
   auto OriginalBuffer = *GetBuffer();
 
   // Dispatcher lives outside of traditional space-time
@@ -684,7 +768,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
   auto Buffer = GetBuffer();
 
-  DispatchPtr = Buffer->GetOffsetAddress<CustomDispatch>(GetCursorOffset());
+  DispatchPtr = Buffer->GetOffsetAddress<CPUBackend::AsmDispatch>(GetCursorOffset());
 
   // while (!Thread->State.RunningEvents.ShouldStop.load()) {
   //    Ptr = FindBlock(RIP)
@@ -712,7 +796,11 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // This is passed in to parameter 0 (x0)
   mov(STATE, x0);
 
-  aarch64::Label LoopTop{};
+  // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
+  // regardless of where we were in the stack
+  add(x0, sp, 0);
+  str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)));
+
   bind(&LoopTop);
   AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
 
@@ -760,17 +848,29 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     {
       blr(x0);
     }
+
+    if (CTX->GetGdbServerStatus()) {
+      // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
+      // This happens when single stepping
+
+      static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
+      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, CTX)));
+      ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
+      // If the value == 0 then branch to the top
+      cbz(x0, &LoopTop);
+      // Else we need to pause now
+      b(&ThreadPauseHandler);
+    }
+    else {
+      // Unconditionally loop to the top
+      // We will only stop on error when compiling a block or signal
+      b(&LoopTop);
+    }
   }
 
-  aarch64::Label ExitCheck;
   {
-    bind(&ExitCheck);
-
-    // If we don't need to stop then keep going
-    add(x1, STATE, offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop));
-    ldarb(x0, MemOperand(x1));
-    cbz(x0, &LoopTop);
-
+    bind(&Exit);
+    ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     PopCalleeSavedRegisters();
 
     // Return from the function
@@ -783,7 +883,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     bind(&NoBlock);
 
-    LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
+    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, CTX)));
     mov(x1, STATE);
 
     using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
@@ -803,10 +903,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     cbz(x0, &FallbackCore);
     blr(x0);
 
-    b(&ExitCheck);
+    b(&LoopTop);
   }
 
-  aarch64::Label ExitError;
   // We need to fallback to our fallback core
   {
     bind(&FallbackCore);
@@ -828,34 +927,12 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     blr(x3); // {ThreadState, RIP}
 
     // X0 now contains either nullptr or block pointer
-    cbz(x0, &ExitError);
+    cbz(x0, &Exit);
     blr(x0);
 
-    b(&ExitCheck);
+    b(&LoopTop);
   }
 
-  // Exit error
-  {
-    bind(&ExitError);
-    LoadConstant(x0, 1);
-    add(x1, STATE, offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop));
-    stlrb(x0, MemOperand(x1));
-    b(&ExitCheck);
-  }
-
-  // Disabling will be useful for debugging ThreadState
-  CustomDispatchGenerated = true;
-  GenerateDispatchHelpers();
-
-  FinalizeCode();
-  uint64_t CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), CodeEnd - reinterpret_cast<uint64_t>(DispatchPtr));
-
-  *GetBuffer() = OriginalBuffer;
-}
-
-void JITCore::GenerateDispatchHelpers() {
-  auto Buffer = GetBuffer();
   {
     Label RestoreContextStateHelperLabel{};
     bind(&RestoreContextStateHelperLabel);
@@ -872,10 +949,34 @@ void JITCore::GenerateDispatchHelpers() {
     InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     mov(x0, STATE);
     LoadConstant(x1, reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr)));
-    // This is a tail-call optimized call
-    // We will return to the dispatcher at this point
-    br(x1);
+    blr(x1);
+
+    b(&LoopTop);
   }
+
+  {
+    bind(&ThreadPauseHandler);
+    ThreadPauseHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    // We are pausing, this means the frontend should be waiting for this thread to idle
+    // We will have faulted and jumped to this location at this point
+
+    // Call our sleep handler
+    LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
+    mov(x1, STATE);
+    LoadConstant(x2, reinterpret_cast<uint64_t>(SleepThread));
+    blr(x2);
+
+    PauseReturnInstruction = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+
+    // Fault to start running again
+    hlt(0);
+  }
+
+  FinalizeCode();
+  uint64_t CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), CodeEnd - reinterpret_cast<uint64_t>(DispatchPtr));
+
+  *GetBuffer() = OriginalBuffer;
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

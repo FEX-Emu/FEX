@@ -79,6 +79,7 @@ namespace FEXCore::HLE {
       // Child
       // update the internal TID
       Thread->State.ThreadManager.TID = ::gettid();
+      Thread->State.ThreadManager.PID = ::getpid();
 
       // only a  single thread running so no need to remove anything from the thread array
 
@@ -262,7 +263,6 @@ namespace FEXCore::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(exit, [](FEXCore::Core::InternalThreadState *Thread, int status) -> uint64_t {
-      Thread->State.RunningEvents.ShouldStop = true;
       if (Thread->State.ThreadManager.clear_child_tid) {
         std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->State.ThreadManager.clear_child_tid);
         Addr->store(0);
@@ -276,6 +276,7 @@ namespace FEXCore::HLE {
       }
 
       Thread->StatusCode = status;
+      Thread->CTX->StopThread(Thread);
 
       return 0;
     });
@@ -410,7 +411,6 @@ namespace FEXCore::HLE {
         default:
           LogMan::Msg::E("Unknown prctl: 0x%x", code);
           Result = -EINVAL;
-          Thread->CTX->ShouldStop = true;
         break;
       }
       SYSCALL_ERRNO();
@@ -438,7 +438,10 @@ namespace FEXCore::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(exit_group, [](FEXCore::Core::InternalThreadState *Thread, int status) -> uint64_t {
-      return 0;
+      Thread->StatusCode = status;
+      Thread->CTX->Stop(false /* Ignore current thread */);
+      // This will never be reached
+      std::unexpected();
     });
 
     REGISTER_SYSCALL_IMPL(set_robust_list, [](FEXCore::Core::InternalThreadState *Thread, struct robust_list_head *head, size_t len) -> uint64_t {

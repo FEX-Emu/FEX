@@ -38,20 +38,23 @@ DEF_OP(Break) {
     case 5: // Guest ud2
       hlt(4);
       break;
-    case 4: // HLT
+    case 4: { // HLT
+      // Time to quit
+      // Set our stack to the starting stack location
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)));
+      add(sp, TMP1, 0);
+
+      // Now we need to jump to the thread stop handler
+      LoadConstant(TMP1, ThreadStopHandlerAddress);
+      br(TMP1);
+      break;
+    }
     case 6: { // INT3
-      LoadConstant(TMP1, 1);
-      size_t offset = Op->Reason == 4 ?
-          offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop) // HLT
-        : offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldPause); // INT3
-
-      add(TMP2, STATE, offset);
-
-      stlrb(TMP1, MemOperand(TMP2));
-
       ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
       add(sp, TMP1, 0); // Move that supports SP
-      ret();
+
+      LoadConstant(TMP1, ThreadPauseHandlerAddress);
+      br(TMP1);
       break;
     }
     default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);

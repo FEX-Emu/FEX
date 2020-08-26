@@ -6,15 +6,12 @@ conformance-interfaces-clock_settime-17-1.test
 conformance-interfaces-clock_settime-17-2.test
 conformance-interfaces-clock_settime-20-1.test
 conformance-interfaces-clock_settime-6-1.test
-conformance-interfaces-kill-1-1.test
-conformance-interfaces-killpg-1-1.test
 conformance-interfaces-mlockall-8-1.test
 conformance-interfaces-munmap-2-1.test
 conformance-interfaces-nanosleep-10000-1.test
 conformance-interfaces-nanosleep-5-1.test
 conformance-interfaces-nanosleep-6-1.test
 conformance-interfaces-raise-1-1.test
-conformance-interfaces-raise-4-1.test
 conformance-interfaces-sigpending-1-2.test
 conformance-interfaces-sigpending-1-3.test
 conformance-interfaces-sigprocmask-6-1.test
@@ -51,7 +48,6 @@ conformance-interfaces-clock_nanosleep-10-1.test # uses sigabort
 conformance-interfaces-clock_nanosleep-9-1.test # uses sigabort
 conformance-interfaces-kill-1-2.test # uses rt_sigtimedwait
 conformance-interfaces-killpg-1-2.test # uses getpgid, setpgid
-conformance-interfaces-nanosleep-3-1.test # uses sigabort
 conformance-interfaces-nanosleep-5-2.test # uses sigabort
 conformance-interfaces-nanosleep-7-1.test # uses sigabort
 conformance-interfaces-nanosleep-7-2.test # uses sigabort

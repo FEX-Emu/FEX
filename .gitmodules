@@ -17,7 +17,7 @@
 [submodule "External/xbyak"]
       shallow = true
 	path = External/xbyak
-	url = https://github.com/herumi/xbyak.git
+	url = https://github.com/FEX-Emu/xbyak.git
 [submodule "External/fex-posixtest-bins"]
 	path = External/fex-posixtest-bins
 	url = https://github.com/FEX-Emu/fex-posixtest-bins.git

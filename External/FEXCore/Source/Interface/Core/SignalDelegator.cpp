@@ -62,71 +62,70 @@ namespace FEXCore {
 
     if (!Thread) {
       LogMan::Msg::E("Thread has received a signal and hasn't registered itself with the delegate! Programming error!");
-      exit(-1);
-      return;
-    }
-
-    if (Handler.Handler &&
-        Handler.Handler(Thread, Signal, Info, UContext)) {
-      // If the host handler handled the fault then we can continue now
-      return;
-    }
-
-    // If the signal was sent by the user with kill then we can't block it
-    // If it was sent by raise() then we /can/ block it
-    bool SentByUser = SigInfo->si_code <= 0;
-
-    if (Signal == SIGCHLD) {
-      // Do some special handling around this signal
-      // If the guest has a signal handler installed with SA_NOCLDSTOP or SA_NOCHLDWAIT then
-      // handle carefully
-      if (Handler.GuestAction.sa_flags & SA_NOCLDSTOP &&
-          !SentByUser) {
-        // If we were sent the signal from kill, tkill, or tgkill
-        // then si_code is set to SI_TKILL and should be delivered to the guest
-        // Otherwise if NOCLDSTOP is set without this code, just drop the signal
-        return;
-      }
-
-      if (Handler.GuestAction.sa_flags & SA_NOCLDWAIT) {
-        // Linux will still generate a signal for this
-        // POSIX leaves it unspecific
-        // "do not transform children in to zombies when they terminate"
-        // XXX: Handle this
-      }
-    }
-
-    // Signal specific mask check
-    if (SigIsMember(&ThreadData.Guest_sa_mask[ThreadData.CurrentSignal], Signal)) {
-      // If we are in a signal and our signal mask is blocking this signal then ignore it
-      return;
-    }
-
-    // Thread specific mask check
-    if (ThreadData.GuestProcMask & (Signal - 1)) {
-      // If the thread specific mask masks the signal then it is hidden from the guest
-      // It gets put in to the pending signals mask
-      ThreadData.PendingSignals |= 1ULL << (Signal - 1);
-      return;
-    }
-
-    ThreadData.CurrentSignal = Signal;
-
-    // We have an emulation thread pointer, we can now modify its state
-    if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
-      // XXX: Maybe this should actually go down guest handler state?
-      signal(Signal, SIG_DFL);
-      return;
-    }
-    else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
-      return;
     }
     else {
-      if (Handler.GuestHandler &&
-          Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
+      if (Handler.Handler &&
+          Handler.Handler(Thread, Signal, Info, UContext)) {
+        // If the host handler handled the fault then we can continue now
         return;
       }
-      ERROR_AND_DIE("Unhandled guest exception");
+
+      // If the signal was sent by the user with kill then we can't block it
+      // If it was sent by raise() then we /can/ block it
+      bool SentByUser = SigInfo->si_code <= 0;
+
+      if (Signal == SIGCHLD) {
+        // Do some special handling around this signal
+        // If the guest has a signal handler installed with SA_NOCLDSTOP or SA_NOCHLDWAIT then
+        // handle carefully
+        if (Handler.GuestAction.sa_flags & SA_NOCLDSTOP &&
+            !SentByUser) {
+          // If we were sent the signal from kill, tkill, or tgkill
+          // then si_code is set to SI_TKILL and should be delivered to the guest
+          // Otherwise if NOCLDSTOP is set without this code, just drop the signal
+          return;
+        }
+
+        if (Handler.GuestAction.sa_flags & SA_NOCLDWAIT) {
+          // Linux will still generate a signal for this
+          // POSIX leaves it unspecific
+          // "do not transform children in to zombies when they terminate"
+          // XXX: Handle this
+        }
+      }
+
+      // Signal specific mask check
+      if (SigIsMember(&ThreadData.Guest_sa_mask[ThreadData.CurrentSignal], Signal)) {
+        // If we are in a signal and our signal mask is blocking this signal then ignore it
+        return;
+      }
+
+      // Thread specific mask check
+      if (ThreadData.GuestProcMask & (Signal - 1)) {
+        // If the thread specific mask masks the signal then it is hidden from the guest
+        // It gets put in to the pending signals mask
+        ThreadData.PendingSignals |= 1ULL << (Signal - 1);
+        return;
+      }
+
+      ThreadData.CurrentSignal = Signal;
+
+      // We have an emulation thread pointer, we can now modify its state
+      if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
+        // XXX: Maybe this should actually go down guest handler state?
+        signal(Signal, SIG_DFL);
+        return;
+      }
+      else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
+        return;
+      }
+      else {
+        if (Handler.GuestHandler &&
+            Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
+          return;
+        }
+        ERROR_AND_DIE("Unhandled guest exception");
+      }
     }
 
     // Unhandled crash

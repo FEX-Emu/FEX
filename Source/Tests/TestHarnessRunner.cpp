@@ -89,8 +89,7 @@ int main(int argc, char **argv, char **const envp) {
   if (!Result1)
     return 1;
 
-  while (FEXCore::Context::RunUntilExit(CTX) == FEXCore::Context::ExitReason::EXIT_DEBUG)
-    ;
+  FEXCore::Context::RunUntilExit(CTX);
 
   // Just re-use compare state. It also checks against the expected values in config.
   FEXCore::Core::CPUState State;

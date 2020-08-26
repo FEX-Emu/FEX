@@ -36,8 +36,8 @@ namespace Validation {
 
 namespace FEXCore::Context {
   enum CoreRunningMode {
-    MODE_RUN,
-    MODE_SINGLESTEP,
+    MODE_RUN        = 0,
+    MODE_SINGLESTEP = 1,
   };
 
   struct Context {
@@ -67,7 +67,7 @@ namespace FEXCore::Context {
     uint64_t ThreadID{};
     FEXCore::Core::InternalThreadState* ParentThread;
     std::vector<FEXCore::Core::InternalThreadState*> Threads;
-    std::atomic_bool ShouldStop{};
+    std::atomic_bool CoreShuttingDown{false};
 
     std::mutex IdleWaitMutex;
     std::condition_variable IdleWaitCV;
@@ -102,6 +102,10 @@ namespace FEXCore::Context {
     void Run();
     void WaitForThreadsToRun();
     void Step();
+    void Stop(bool IgnoreCurrentThread);
+    void WaitForIdle();
+    void StopThread(FEXCore::Core::InternalThreadState *Thread);
+    void SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event);
 
     bool GetGdbServerStatus() { return (bool)DebugServer; }
     void StartGdbServer();
@@ -139,13 +143,13 @@ namespace FEXCore::Context {
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
   private:
-    void WaitForIdle();
+    void WaitForIdleWithTimeout();
+
     void *MapRegion(FEXCore::Core::InternalThreadState *Thread, uint64_t Offset, uint64_t Size, bool Fixed = false, bool RelativeToBase = true);
     void *ShmBase();
     void MirrorRegion(FEXCore::Core::InternalThreadState *Thread, void *HostPtr, uint64_t Offset, uint64_t Size);
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
     void NotifyPause();
-    void HandleExit(FEXCore::Core::InternalThreadState *Thread);
 
     uintptr_t AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr);
 

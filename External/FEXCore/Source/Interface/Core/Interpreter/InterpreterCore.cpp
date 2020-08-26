@@ -2,8 +2,10 @@
 #include "Common/MathUtils.h"
 #include "Common/SoftFloat.h"
 #include "Interface/Context/Context.h"
+#include "Interface/Core/BlockCache.h"
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/InternalThreadState.h"
+#include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/HLE/Syscalls.h"
 #include "LogManager.h"
 
@@ -20,55 +22,51 @@
 
 namespace FEXCore::CPU {
 
-#define DESTMAP_AS_MAP 0
-#if DESTMAP_AS_MAP
-using DestMapType = std::unordered_map<uint32_t, uint32_t>;
-#else
-using DestMapType = std::vector<uint32_t>;
-#endif
-
-class InterpreterCore final : public CPUBackend {
-public:
-  explicit InterpreterCore(FEXCore::Context::Context *ctx);
-  ~InterpreterCore() override = default;
-  std::string GetName() override { return "Interpreter"; }
-  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
-
-  void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
-
-  bool NeedsOpDispatch() override { return true; }
-
-  void ExecuteCode(FEXCore::Core::InternalThreadState *Thread);
-private:
-  FEXCore::Context::Context *CTX;
-  uint32_t AllocateTmpSpace(size_t Size);
-
-  template<typename Res>
-  Res GetDest(IR::OrderedNodeWrapper Op);
-
-  template<typename Res>
-  Res GetSrc(IR::OrderedNodeWrapper Src);
-
-  std::vector<uint8_t> TmpSpace;
-  DestMapType DestMap;
-  size_t TmpOffset{};
-
-  FEXCore::IR::IRListView<true> *CurrentIR;
-};
-
 static void InterpreterExecution(FEXCore::Core::InternalThreadState *Thread) {
   // IntBackend will always point to this interpreter object
   InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
   Core->ExecuteCode(Thread);
 }
 
-InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx)
-  : CTX {ctx} {
+[[noreturn]]
+static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
+  Thread->CTX->StopThread(Thread);
+  std::unexpected();
+}
+
+[[noreturn]]
+static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
+  Thread->CTX->SignalThread(Thread, FEXCore::Core::SIGNALEVENT_RETURN);
+  std::unexpected();
+}
+
+InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
+  : CTX {ctx}
+  , State {Thread} {
   // Grab our space for temporary data
   TmpSpace.resize(4096 * 32);
 #if !DESTMAP_AS_MAP
   DestMap.resize(4096);
 #endif
+
+  CreateAsmDispatch(ctx, Thread);
+  CTX->SignalDelegation.RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
+    return Core->HandleSignalPause(Signal, info, ucontext);
+  });
+
+  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+    InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
+    return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+  };
+
+  for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
+    CTX->SignalDelegation.RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+  }
+}
+
+InterpreterCore::~InterpreterCore() {
+  DeleteAsmDispatch();
 }
 
 uint32_t InterpreterCore::AllocateTmpSpace(size_t Size) {
@@ -232,12 +230,14 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_Break>();
             switch (Op->Reason) {
               case 4: // HLT
-                Thread->State.RunningEvents.ShouldStop = true;
-                BlockResults.Quit = true;
-                return;
+                StopThread(State);
               break;
             default: LogMan::Msg::A("Unknown Break Reason: %d", Op->Reason); break;
             }
+            break;
+          }
+          case IR::OP_SIGNALRETURN: {
+            SignalReturn(State);
             break;
           }
           case IR::OP_SYSCALL: {
@@ -4284,8 +4284,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
   }
 }
 
-FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx) {
-  return new InterpreterCore(ctx);
+FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  return new InterpreterCore(ctx, Thread);
 }
 
 }

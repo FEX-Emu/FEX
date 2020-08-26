@@ -88,8 +88,7 @@ namespace FEXCore::Context {
   }
 
   void Stop(FEXCore::Context::Context *CTX) {
-    CTX->ShouldStop = true;
-    CTX->Pause(); // Block until exit
+    CTX->Stop(false);
   }
 
   void SetCustomCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory) {
