@@ -25,8 +25,6 @@
 namespace FEXCore
 {
 
-static const std::string NO_REPLY = "}{\x7f}{"; // An "unlikely" packet
-
 void GdbServer::Break() {
     std::lock_guard lk(sendMutex);
     if (CommsStream)
@@ -170,10 +168,6 @@ static std::string escapePacket(std::string packet) {
 }
 
 void GdbServer::SendPacket(std::ostream &stream, std::string packet) {
-  // In-band signaling, not a great design
-  if (packet == NO_REPLY)
-    return;
-
   auto escaped = escapePacket(packet);
   std::ostringstream ss;
 
