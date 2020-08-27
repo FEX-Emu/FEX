@@ -19,7 +19,7 @@ namespace FEXCore::Config {
       CTX->Config.VirtualMemSize = Config;
     break;
     case FEXCore::Config::CONFIG_SINGLESTEP:
-      CTX->RunningMode = Config != 0 ? FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP : FEXCore::Context::CoreRunningMode::MODE_RUN;
+      CTX->Config.RunningMode = Config != 0 ? FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP : FEXCore::Context::CoreRunningMode::MODE_RUN;
     break;
     case FEXCore::Config::CONFIG_GDBSERVER:
       Config != 0 ? CTX->StartGdbServer() : CTX->StopGdbServer();
@@ -64,7 +64,7 @@ namespace FEXCore::Config {
       return CTX->Config.VirtualMemSize;
     break;
     case FEXCore::Config::CONFIG_SINGLESTEP:
-      return CTX->RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP ? 1 : 0;
+      return CTX->Config.RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP ? 1 : 0;
     case FEXCore::Config::CONFIG_GDBSERVER:
       return CTX->GetGdbServerStatus();
     break;

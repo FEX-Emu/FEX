@@ -326,11 +326,6 @@ namespace FEXCore::Context {
     for (auto &Thread : Threads) {
       Thread->State.RunningEvents.ShouldPause.store(true);
     }
-
-    for (auto &Thread : Threads) {
-      Thread->StartRunning.NotifyAll();
-    }
-    Running = true;
   }
 
   void Context::Pause() {
@@ -350,14 +345,42 @@ namespace FEXCore::Context {
     for (auto &Thread : Threads) {
       Thread->StartRunning.NotifyAll();
     }
+  }
+
+  void Context::WaitForThreadsToRun() {
+    size_t NumThreads{};
+    {
+      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      NumThreads = Threads.size();
+    }
+
+    // Spin while waiting for the threads to start up
+    std::unique_lock<std::mutex> lk(IdleWaitMutex);
+    IdleWaitCV.wait(lk, [this, NumThreads] {
+      return IdleWaitRefCount.load() >= NumThreads;
+    });
+
     Running = true;
   }
 
   void Context::Step() {
-    FEXCore::Config::SetConfig(this, FEXCore::Config::CONFIG_SINGLESTEP, 1);
+    {
+      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      // Walk the threads and tell them to clear their caches
+      // Useful when our block size is set to a large number and we need to step a single instruction
+      for (auto &Thread : Threads) {
+        ClearCodeCache(Thread, 0);
+      }
+    }
+    CoreRunningMode PreviousRunningMode = this->Config.RunningMode;
+    int64_t PreviousMaxIntPerBlock = this->Config.MaxInstPerBlock;
+    this->Config.RunningMode = FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP;
+    this->Config.MaxInstPerBlock = 1;
     Run();
+    WaitForThreadsToRun();
     WaitForIdle();
-    FEXCore::Config::SetConfig(this, FEXCore::Config::CONFIG_SINGLESTEP, 0);
+    this->Config.RunningMode = PreviousRunningMode;
+    this->Config.MaxInstPerBlock = PreviousMaxIntPerBlock;
   }
 
   FEXCore::Context::ExitReason Context::RunUntilExit() {
@@ -495,7 +518,10 @@ namespace FEXCore::Context {
     Thread->CPUBackend->ClearCache();
     Thread->IntBackend->ClearCache();
   
-    if (GuestRIP != 0) {
+    if (GuestRIP == 0) {
+      Thread->IRLists.clear();
+    }
+    else {
       auto IR = Thread->IRLists.find(GuestRIP)->second.release();
       Thread->IRLists.clear();
       Thread->IRLists.try_emplace(GuestRIP, IR);
@@ -830,7 +856,7 @@ namespace FEXCore::Context {
           break;
         }
 
-        if (RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP || Thread->State.RunningEvents.ShouldPause) {
+        if (Config.RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP || Thread->State.RunningEvents.ShouldPause) {
           Thread->State.RunningEvents.Running = false;
           Thread->State.RunningEvents.WaitingToStart = false;
 
@@ -841,8 +867,7 @@ namespace FEXCore::Context {
           --IdleWaitRefCount;
           IdleWaitCV.notify_all();
 
-          HandleExit(Thread);
-
+          // Go to sleep
           Thread->StartRunning.Wait();
 
           // If we set it to debug then set it back to none after this
@@ -852,6 +877,7 @@ namespace FEXCore::Context {
 
           Thread->State.RunningEvents.Running = true;
           ++IdleWaitRefCount;
+          IdleWaitCV.notify_all();
         }
       }
     }
@@ -866,6 +892,8 @@ namespace FEXCore::Context {
 
     --IdleWaitRefCount;
     IdleWaitCV.notify_all();
+
+    HandleExit(Thread);
 
     SignalDelegation.UninstallTLSState(Thread);
 

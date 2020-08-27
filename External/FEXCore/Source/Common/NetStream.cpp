@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 
 #include <stdio.h>
+#include <unistd.h>
 
 int NetStream::NetBuf::flushBuffer(const char *buffer, size_t size) {
     size_t total = 0;
@@ -78,4 +79,8 @@ std::streambuf::int_type NetStream::NetBuf::underflow() {
 
 NetStream::~NetStream() {
     delete rdbuf();
+}
+
+NetStream::NetBuf::~NetBuf() {
+  close(socket);
 }

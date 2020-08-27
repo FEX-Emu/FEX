@@ -50,6 +50,7 @@ namespace FEXCore::Context {
       bool BreakOnFrontendFailure {true};
       int64_t MaxInstPerBlock {-1LL};
       uint64_t VirtualMemSize {1ULL << 36};
+      CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};
       FEXCore::Config::ConfigCore Core {FEXCore::Config::CONFIG_INTERPRETER};
       bool GdbServer {false};
       bool UnifiedMemory {true};
@@ -74,7 +75,6 @@ namespace FEXCore::Context {
 
     Event PauseWait;
     bool Running{};
-    CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};
 
     FEXCore::CPUIDEmu CPUID;
     std::unique_ptr<FEXCore::SyscallHandler> SyscallHandler;
@@ -100,6 +100,7 @@ namespace FEXCore::Context {
     bool IsPaused() const { return !Running; }
     void Pause();
     void Run();
+    void WaitForThreadsToRun();
     void Step();
 
     bool GetGdbServerStatus() { return (bool)DebugServer; }
@@ -133,6 +134,7 @@ namespace FEXCore::Context {
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
+    std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
