@@ -874,7 +874,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_NOT: {
             auto Op = IROp->C<IR::IROp_Not>();
             uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
-            uint8_t Mask = OpSize * 8 - 1;
+            const uint64_t mask[9]= { 0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF, 0, 0, 0, 0xFFFFFFFFFFFFFFFFULL };
+            uint64_t Mask = mask[OpSize];
             GD = (~Src) & Mask;
             break;
           }
