@@ -520,11 +520,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           else {
             switch (OpSize) {
             case 1: {
-              pinsrb(GetDst(Node), byte [STATE + Op->Offset], 0);
+              movzx(rax, byte [STATE + Op->Offset]);
+              vmovq(GetDst(Node), rax);
             }
             break;
             case 2: {
-              pinsrw(GetDst(Node), word [STATE + Op->Offset], 0);
+              movzx(rax, word [STATE + Op->Offset]);
+              vmovq(GetDst(Node), rax);
             }
             break;
             case 4: {
@@ -594,10 +596,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               lea(rax, dword [STATE + Op->BaseOffset]);
               switch (size) {
               case 1:
-                pinsrb(GetDst(Node), byte [rax + index * Op->Stride], 0);
+                movzx(eax, byte [rax + index * Op->Stride]);
+                vmovd(GetDst(Node), eax);
                 break;
               case 2:
-                pinsrw(GetDst(Node), word [rax + index * Op->Stride], 0);
+                movzx(eax, word [rax + index * Op->Stride]);
+                vmovd(GetDst(Node), eax);
                 break;
               case 4:
                 vmovd(GetDst(Node),  dword [rax + index * Op->Stride]);
@@ -991,10 +995,20 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_ADD: {
           auto Op = IROp->C<IR::IROp_Add>();
-          auto Dst = GetDst<RA_64>(Node);
+          Xbyak::Reg SrcA;
+          Xbyak::Reg Dst;
           mov(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-          add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          mov(Dst, rax);
+          switch (OpSize) {
+          case 4:
+            add(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+            break;
+          case 8:
+            add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            break;
+          default:  LogMan::Msg::A("Unhandled Add size: %d", OpSize);
+            continue;
+          }
+          mov(GetDst<RA_64>(Node), rax);
           break;
         }
         case IR::OP_NEG: {
@@ -1002,14 +1016,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           Xbyak::Reg Src;
           Xbyak::Reg Dst;
           switch (OpSize) {
-          case 1:
-            Src = GetSrc<RA_8>(Op->Header.Args[0].ID());
-            Dst = GetDst<RA_8>(Node);
-            break;
-          case 2:
-            Src = GetSrc<RA_16>(Op->Header.Args[0].ID());
-            Dst = GetDst<RA_16>(Node);
-            break;
           case 4:
             Src = GetSrc<RA_32>(Op->Header.Args[0].ID());
             Dst = GetDst<RA_32>(Node);
@@ -1027,10 +1033,18 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_SUB: {
           auto Op = IROp->C<IR::IROp_Sub>();
-          auto Dst = GetDst<RA_64>(Node);
           mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          sub(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-          mov(Dst, rax);
+          switch (OpSize) {
+          case 4:
+            sub(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+            break;
+          case 8:
+            sub(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+            break;
+          default:  LogMan::Msg::A("Unhandled Sub size: %d", OpSize);
+            continue;
+          }
+          mov(GetDst<RA_64>(Node), rax);
           break;
         }
         case IR::OP_XOR: {
@@ -1097,45 +1111,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           not_(Dst);
           break;
         }
-        case IR::OP_ZEXT: {
-          auto Op = IROp->C<IR::IROp_Zext>();
-          LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-
-          uint64_t PhysReg = RAPass->GetNodeRegister(Op->Header.Args[0].ID());
-          if (PhysReg >= XMMBase) {
-            // XMM -> GPR transfer with free truncation
-            switch (Op->SrcSize) {
-            case 8:
-              pextrb(al, GetSrc(Op->Header.Args[0].ID()), 0);
-            break;
-            case 16:
-              pextrw(ax, GetSrc(Op->Header.Args[0].ID()), 0);
-            break;
-            case 32:
-              pextrd(eax, GetSrc(Op->Header.Args[0].ID()), 0);
-            break;
-            case 64:
-              pextrw(rax, GetSrc(Op->Header.Args[0].ID()), 0);
-            break;
-            default: LogMan::Msg::A("Unhandled Zext size: %d", Op->SrcSize); break;
-            }
-            auto Dst = GetDst<RA_64>(Node);
-            mov(Dst, rax);
-          }
-          else {
-            if (Op->SrcSize == 64) {
-              vmovq(xmm15, Reg64(GetSrc<RA_64>(Op->Header.Args[0].ID()).getIdx()));
-              movapd(GetDst(Node), xmm15);
-            }
-            else {
-              auto Dst = GetDst<RA_64>(Node);
-              mov(rax, uint64_t((1ULL << Op->SrcSize) - 1));
-              and(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-              mov(Dst, rax);
-            }
-          }
-          break;
-        }
         case IR::OP_SEXT: {
           auto Op = IROp->C<IR::IROp_Sext>();
           LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
@@ -1160,43 +1135,80 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_BFE: {
           auto Op = IROp->C<IR::IROp_Bfe>();
-          LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
-          if (OpSize == 16) {
-            LogMan::Throw::A(!(Op->lsb < 64 && (Op->lsb + Op->Width > 64)), "Trying to BFE an XMM across the 64bit split: Beginning at %d, ending at %d", Op->lsb, Op->lsb + Op->Width);
-            movups(xmm15, GetSrc(Op->Header.Args[0].ID()));
-            uint8_t Offset = Op->lsb;
-            if (Offset < 64) {
-              pextrq(rax, xmm15, 0);
-            }
-            else {
-              pextrq(rax, xmm15, 1);
-              Offset -= 64;
-            }
+          LogMan::Throw::A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
 
-            if (Offset) {
-              shr(rax, Offset);
-            }
+          auto Dst = GetDst<RA_64>(Node);
 
-            if (Op->Width != 64) {
-              mov(rcx, uint64_t((1ULL << Op->Width) - 1));
-              and(rax, rcx);
+          // Special cases for fast extends
+          if (Op->lsb == 0) {
+            switch (Op->Width / 8) {
+            case 1:
+              movzx(Dst, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+              goto Bfe_done;
+            case 2:
+              movzx(Dst, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              goto Bfe_done;
+            case 4:
+              mov(Dst.cvt32(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              goto Bfe_done;
+            case 8:
+              mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              goto Bfe_done;
+            default:
+              // Need to use slower general case
+              break;
             }
-
-            mov (GetDst<RA_64>(Node), rax);
           }
-          else {
-            auto Dst = GetDst<RA_64>(Node);
-            mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
-            if (Op->lsb != 0)
-              shr(rax, Op->lsb);
+          mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
-            if (Op->Width != 64) {
-              mov(rcx, uint64_t((1ULL << Op->Width) - 1));
-              and(rax, rcx);
-            }
-            mov(Dst, rax);
+          if (Op->lsb != 0)
+            shr(Dst, Op->lsb);
+
+          if (Op->Width != 64) {
+            mov(rcx, uint64_t((1ULL << Op->Width) - 1));
+            and(Dst, rcx);
           }
+
+          Bfe_done:
+          break;
+        }
+        case IR::OP_SBFE: {
+          auto Op = IROp->C<IR::IROp_Sbfe>();
+
+          auto Dst = GetDst<RA_64>(Node);
+
+          // Special cases for fast signed extends
+          if (Op->lsb == 0) {
+            switch (Op->Width / 8) {
+            case 1:
+              movsx(Dst, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+              goto Sbfe_done;
+            case 2:
+              movsx(Dst, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              goto Sbfe_done;
+            case 4:
+              movsxd(Dst.cvt64(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              goto Sbfe_done;
+            case 8:
+              mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              goto Sbfe_done;
+            default:
+              // Need to use slower general case
+              break;
+            }
+          }
+
+          // Slightly slower general case
+          {
+            uint64_t ShiftLeftAmount = (64 - (Op->Width + Op->lsb));
+            uint64_t ShiftRightAmount = ShiftLeftAmount + Op->lsb;
+            mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+            shl(Dst, ShiftLeftAmount);
+            sar(Dst, ShiftRightAmount);
+          }
+
+          Sbfe_done:
           break;
         }
         case IR::OP_LSHR: {
@@ -1236,14 +1248,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           and(rcx, Mask);
 
           switch (OpSize) {
-            case 1:
-              movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
-              shl(GetDst<RA_32>(Node).cvt8(), cl);
-              break;
-            case 2:
-              movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
-              shl(GetDst<RA_32>(Node).cvt16(), cl);
-              break;
             case 4:
               mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
               shl(GetDst<RA_32>(Node), cl);
@@ -1252,7 +1256,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
               mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
               shl(GetDst<RA_64>(Node), cl);
               break;
-            default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
+            default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
           };
           break;
         }
@@ -1870,11 +1874,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
             switch (Op->Size) {
               case 1: {
-                pinsrb(Dst, byte [MemReg], 0);
+                movzx(eax, byte [MemReg]);
+                vmovd(Dst, eax);
               }
               break;
               case 2: {
-                pinsrw(Dst, word [MemReg], 0);
+                movzx(eax, byte [MemReg]);
+                vmovd(Dst, eax);
               }
               break;
               case 4: {
@@ -2019,7 +2025,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           if (NumPush & 1)
             sub(rsp, 8); // Align
-          
+
           mov(rdi, reinterpret_cast<uintptr_t>(CTX));
           mov(rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
@@ -2028,7 +2034,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           if (NumPush & 1)
             add(rsp, 8); // Align
-          
+
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
 

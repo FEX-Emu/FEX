@@ -1,0 +1,36 @@
+;%ifdef CONFIG
+;{
+;  "RegData": {
+;    "RAX": "0x000000000eca8642",
+;    "RBX": "0x000000010eca8642",
+;    "RCX": "0x000000000eca8642",
+;    "RDX": "0x000000010eca8642"
+;  },
+;  "MemoryRegions": {
+;    "0x1000000": "4096"
+;  },
+;  "MemoryData": {
+;    "0x1000000": "0x87654321",
+;    "0x1000010": "51 55 55 55 55 55 55 55"
+;  }
+;}
+;%endif
+
+(%ssa1) IRHeader #0x1000, %ssa2, #0
+  (%ssa2) CodeBlock %ssa6, %ssa12, %ssa1
+    (%ssa6 i0) Dummy
+    %AddrA i64 = Constant #0x1000000
+    %MemValueA i32 = LoadMem %AddrA i64, #0x4, #0x4, GPR
+    %Shift i64 = Constant #0x1
+    %ResultA i32 = Lshl %MemValueA, %Shift
+    %ResultB i64 = Lshl %MemValueA, %Shift
+    (%Store i64) StoreContext %ResultA i64, #0x08, GPR
+    (%Store i64) StoreContext %ResultB i64, #0x10, GPR
+;  Constant optimisable version
+    %ValueB i64 = Constant #0x87654321
+    %ResultC i32 = Lshl %ValueB, %Shift
+    %ResultD i64 = Lshl %ValueB, %Shift
+    (%Store i64) StoreContext %ResultC i64, #0x18, GPR
+    (%Store i64) StoreContext %ResultD i64, #0x20, GPR
+    (%ssa7 i0) Break #4, #4
+    (%ssa12 i0) EndBlock #0x0

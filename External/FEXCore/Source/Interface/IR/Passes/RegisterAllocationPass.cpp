@@ -238,18 +238,6 @@ namespace {
         return Op->Class;
         break;
       }
-      case IR::OP_ZEXT: {
-        auto Op = IROp->C<IR::IROp_Zext>();
-        LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-
-        if (Op->SrcSize == 64) {
-          return FEXCore::IR::FPRClass;
-        }
-        else {
-          return FEXCore::IR::GPRClass;
-        }
-        break;
-      }
       case IR::OP_PHIVALUE: {
         // Unwrap the PHIValue to get the class
         auto Op = IROp->C<IR::IROp_PhiValue>();

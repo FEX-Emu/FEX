@@ -8,6 +8,12 @@ public:
   bool Run(IREmitter *IREmit) override;
 };
 
+template<typename T>
+static uint64_t getMask(T Op) {
+  uint64_t NumBits = Op->Header.Size * 8;
+  return (~0ULL) >> (64 - NumBits);
+}
+
 bool ConstProp::Run(IREmitter *IREmit) {
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
@@ -88,7 +94,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
         if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
             IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-          uint64_t NewConstant = Constant1 + Constant2;
+          uint64_t NewConstant = (Constant1 + Constant2) & getMask(Op) ;
           IREmit->SetWriteCursor(CodeNode);
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
@@ -103,7 +109,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
         if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
             IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-          uint64_t NewConstant = Constant1 - Constant2;
+          uint64_t NewConstant = (Constant1 - Constant2) & getMask(Op) ;
           IREmit->SetWriteCursor(CodeNode);
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
@@ -118,7 +124,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
         if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
             IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-          uint64_t NewConstant = Constant1 & Constant2;
+          uint64_t NewConstant = (Constant1 & Constant2) & getMask(Op) ;
           IREmit->SetWriteCursor(CodeNode);
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
@@ -163,7 +169,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
         if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
             IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-          uint64_t NewConstant = Constant1 << Constant2;
+          uint64_t NewConstant = (Constant1 << Constant2) & getMask(Op);
           IREmit->SetWriteCursor(CodeNode);
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
@@ -196,19 +202,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
           Changed = true;
         }
 
-        break;
-      }
-      case OP_ZEXT: {
-        auto Op = IROp->C<IR::IROp_Zext>();
-        uint64_t Constant;
-        if (Op->SrcSize != 64 &&
-            IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
-          uint64_t NewConstant = Constant & ((1ULL << Op->SrcSize) - 1);
-          IREmit->SetWriteCursor(CodeNode);
-          auto ConstantVal = IREmit->_Constant(NewConstant);
-          IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
-          Changed = true;
-        }
       break;
       }
       case OP_MUL: {
@@ -218,7 +211,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
         if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
             IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-          uint64_t NewConstant = Constant1 * Constant2;
+          uint64_t NewConstant = (Constant1 * Constant2) & getMask(Op);
           IREmit->SetWriteCursor(CodeNode);
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);

@@ -20,13 +20,10 @@ foreach(IR_SRC ${IR_SOURCES})
 
   list(APPEND IR_DEPENDS "${OUTPUT_CONFIG_NAME}")
 
+  # Since we pass in raw IR, we don't need to worry about various IR gen options
   set(TEST_ARGS
-    "-c irint -n 1"      "ir_int_1"
-    "-c irint -n 500"    "ir_int_500"
-    "-c irint -n 500 -m" "ir_int_500_m"
-    "-c irjit -n 1"      "ir_jit_1"
-    "-c irjit -n 500"    "ir_jit_500"
-    "-c irjit -n 500 -m" "ir_jit_500_m"
+    "-c irint -n 500" "ir_int"
+    "-c irjit -n 500" "ir_jit"
     )
 
   list(LENGTH TEST_ARGS ARG_COUNT)

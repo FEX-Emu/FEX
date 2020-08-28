@@ -74,6 +74,9 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx)
 uint32_t InterpreterCore::AllocateTmpSpace(size_t Size) {
   // XXX: IR generation has a bug where the size can periodically end up being zero
   // LogMan::Throw::A(Size !=0, "Dest Op had zero destination size");
+
+  // Some IR ops rely on the upper bits of registers being allocaed and zeroed
+  // to do an implicit zero extend
   Size = Size < 16 ? 16 : Size;
 
   // Force alignment by size
@@ -687,8 +690,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Func = [](auto a, auto b) { return a + b; };
 
             switch (OpSize) {
-              DO_OP(1, uint8_t,  Func)
-              DO_OP(2, uint16_t, Func)
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
               default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
@@ -702,8 +703,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Func = [](auto a, auto b) { return a - b; };
 
             switch (OpSize) {
-              DO_OP(1, uint8_t,  Func)
-              DO_OP(2, uint16_t, Func)
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
               default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
@@ -714,12 +713,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_Neg>();
             uint64_t Src = *GetSrc<int64_t*>(Op->Header.Args[0]);
             switch (OpSize) {
-              case 1:
-                GD = -static_cast<int8_t>(Src);
-                break;
-              case 2:
-                GD = -static_cast<int16_t>(Src);
-                break;
               case 4:
                 GD = -static_cast<int32_t>(Src);
                 break;
@@ -781,7 +774,15 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src1 = *GetSrc<uint64_t*>(Op->Header.Args[0]);
             uint64_t Src2 = *GetSrc<uint64_t*>(Op->Header.Args[1]);
             uint8_t Mask = OpSize * 8 - 1;
-            GD = Src1 << (Src2 & Mask);
+            switch (OpSize) {
+              case 4:
+                GD = static_cast<int32_t>(Src1) << (Src2 & Mask);
+                break;
+              case 8:
+                GD = static_cast<int64_t>(Src1) << (Src2 & Mask);
+                break;
+              default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
+            };
             break;
           }
           case IR::OP_LSHR: {
@@ -875,20 +876,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
             uint8_t Mask = OpSize * 8 - 1;
             GD = (~Src) & Mask;
-            break;
-          }
-          case IR::OP_ZEXT: {
-            auto Op = IROp->C<IR::IROp_Zext>();
-            LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-            uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
-            if (Op->SrcSize == 64) {
-              // Zext 64bit to 128bit
-              __uint128_t SrcLarge = Src;
-              memcpy(GDP, &SrcLarge, 16);
-            }
-            else {
-              GD = Src & ((1ULL << Op->SrcSize) - 1);
-            }
             break;
           }
           case IR::OP_SEXT: {
@@ -1225,7 +1212,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             LogMan::Throw::A(OpSize < 16, "OpSize is too large for BFE: %d", OpSize);
             int64_t Src = *GetSrc<int64_t*>(Op->Header.Args[0]);
             uint64_t ShiftLeftAmount = (64 - (Op->Width + Op->lsb));
-            uint64_t ShiftRightAmount = ShiftLeftAmount - Op->lsb;
+            uint64_t ShiftRightAmount = ShiftLeftAmount + Op->lsb;
             Src <<= ShiftLeftAmount;
             Src >>= ShiftRightAmount;
             GD = Src;
@@ -1233,24 +1220,13 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_BFE: {
             auto Op = IROp->C<IR::IROp_Bfe>();
-            LogMan::Throw::A(OpSize <= 16, "OpSize is too large for BFE: %d", OpSize);
-            if (OpSize == 16) {
-              LogMan::Throw::A(Op->Width <= 64, "Can't extract width of %d", Op->Width);
-              __uint128_t SourceMask = (1ULL << Op->Width) - 1;
-              if (Op->Width == 64)
-                SourceMask = ~0ULL;
-              SourceMask <<= Op->lsb;
-              __uint128_t Src = (*GetSrc<__uint128_t*>(Op->Header.Args[0]) & SourceMask) >> Op->lsb;
-              memcpy(GDP, &Src, OpSize);
-            }
-            else {
-              uint64_t SourceMask = (1ULL << Op->Width) - 1;
-              if (Op->Width == 64)
-                SourceMask = ~0ULL;
-              SourceMask <<= Op->lsb;
-              uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
-              GD = (Src & SourceMask) >> Op->lsb;
-            }
+            LogMan::Throw::A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
+            uint64_t SourceMask = (1ULL << Op->Width) - 1;
+            if (Op->Width == 64)
+              SourceMask = ~0ULL;
+            SourceMask <<= Op->lsb;
+            uint64_t Src = *GetSrc<uint64_t*>(Op->Header.Args[0]);
+            GD = (Src & SourceMask) >> Op->lsb;
             break;
           }
           case IR::OP_SELECT: {

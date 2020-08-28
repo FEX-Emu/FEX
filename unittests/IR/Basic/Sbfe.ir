@@ -1,0 +1,41 @@
+;%ifdef CONFIG
+;{
+;  "RegData": {
+;    "RAX": "0xffffffffffffff80",
+;    "RBX": "0xffffffffffff8080",
+;    "RCX": "0xffffffff80008080",
+;    "RDX": "0xfffffffffffffff0",
+;    "RSI": "0xfffffffffffffffc"
+;  },
+;  "MemoryRegions": {
+;    "0x1000000": "4096"
+;  },
+;  "MemoryData": {
+;    "0x1000000": "0x0000000080008080",
+;    "0x1000008": "0x0000000000000030"
+;  }
+;}
+;%endif
+
+(%ssa1) IRHeader #0x1000, %ssa2, #0
+  (%ssa2) CodeBlock %start, %end, %ssa1
+    (%start i0) Dummy
+    %Addr1 i64 = Constant #0x1000000
+    %Val i64 = LoadMem %Addr1 i64, #0x8, #0x8, GPR
+; Test aligned special cases
+    %Res1 i64 = Sbfe %Val, #0x8, #0x0
+    (%Store1 i64) StoreContext %Res1 i64, #0x08, GPR
+    %Res2 i64 = Sbfe %Val, #0x10, #0x0
+    (%Store2 i64) StoreContext %Res2 i64, #0x10, GPR
+    %Res3 i64 = Sbfe %Val, #0x20, #0x0
+    (%Store3 i64) StoreContext %Res3 i64, #0x18, GPR
+    %Addr2 i64 = Constant #0x1000008
+; Test non special width
+    %Val2 i64 = LoadMem %Addr2 i64, #0x8, #0x8, GPR
+    %Res4 i64 = Sbfe %Val2, #0x6, #0x0
+    (%Store4 i64) StoreContext %Res4 i64, #0x20, GPR
+; Test with + shift
+    %Res5 i64 = Sbfe %Val2, #0x4, #0x2
+    (%Store5 i64) StoreContext %Res5 i64, #0x28, GPR
+    (%brk i0) Break #4, #4
+    (%end i0) EndBlock #0x0

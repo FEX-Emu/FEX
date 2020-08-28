@@ -354,7 +354,9 @@
     "StoreContext": {
       "HasSideEffects": true,
       "Desc": ["Stores a value to the context with offset",
-               "Ctx[Offset] = Value"
+               "Ctx[Offset] = Value",
+               "Zero Extends if value's type is too small",
+               "Truncates if value's type is too large"
               ],
       "OpClass": "Memory",
       "SSAArgs": "1",
@@ -518,6 +520,10 @@
     },
 
     "StoreMem": {
+      "Desc": [ "Stores a value to memory.",
+                "Zero Extends if value's type is too small",
+                "Truncates if value's type is too large"
+              ],
       "HasSideEffects": true,
       "OpClass": "Memory",
       "SSAArgs": "2",
@@ -609,29 +615,35 @@
     },
 
     "Add": {
-      "Desc": [ "Integer Add"
+      "Desc": [ "Integer Add",
+                "Will truncate to 64 or 32bits"
               ],
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "SSAArgs": "2"
     },
 
     "Sub": {
-      "Desc": [ "Integer Sub"
+      "Desc": [ "Integer Sub",
+                "Will truncate to 64 or 32bits"
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
 
     "Neg": {
       "Desc": ["Integer negation",
-               "Dest = -Src"
+               "Dest = -Src",
+               "Will truncate to 64 or 32bits"
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
       "DestClass": "GPR",
       "SSAArgs": "1"
     },
@@ -641,6 +653,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -650,6 +663,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -746,6 +760,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -848,20 +863,6 @@
         "Lower",
         "Upper",
         "Divisor"
-      ]
-    },
-
-    "Zext": {
-      "Desc": ["Integer zero extension",
-               "Extends from the source bitsize to the next byte size up from that size"
-              ],
-      "OpClass": "ALU",
-      "HasDest": true,
-      "DestClass": "Complex",
-      "DestSize": "SrcSize / 4",
-      "SSAArgs": "1",
-      "Args": [
-        "uint8_t", "SrcSize"
       ]
     },
 
@@ -983,8 +984,14 @@
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
-      "DestSize": "GetOpSize(ssa0)",
+      "DestSize": "DestSize != 0 ? DestSize : GetOpSize(ssa0)",
       "SSAArgs": "1",
+      "SSANames": [
+        "Src"
+      ],
+      "HelperArgs": [
+        "uint8_t", "DestSize"
+      ],
       "Args": [
         "uint8_t", "Width",
         "uint8_t", "lsb"
@@ -999,6 +1006,7 @@
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
+      "DestSize": "8",
       "SSAArgs": "1",
       "Args": [
         "uint8_t", "Width",
@@ -1383,13 +1391,17 @@
     },
 
     "VMov": {
+      "Desc" : ["Copy vector register",
+                "When Register size is smaller than Source register size,",
+                "this op is defined to truncate and zero extend"
+               ],
       "OpClass": "Vector",
       "HasDest": true,
       "DestClass": "FPR",
       "DestSize": "RegisterSize",
       "SSAArgs": "1",
       "SSANames": [
-        "Vector"
+        "Source"
       ],
       "HelperArgs": [
         "uint8_t", "RegisterSize"
@@ -2458,6 +2470,7 @@
     },
 
     "VBitcast": {
+      "Dest": ["Workaround for issue with LLVM breaking when loading scalar elements to vectors"],
       "OpClass": "Vector",
       "HasDest": true,
       "DestClass": "FPR",
