@@ -1,3 +1,4 @@
+#include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include <FEXCore/Core/CoreState.h>
@@ -246,9 +247,12 @@ class RCLSE final : public FEXCore::IR::Pass {
 public:
   RCLSE() {
     ClassifyContextStruct(&ClassifiedStruct);
+    DCE.reset(FEXCore::IR::CreatePassDeadCodeElimination());
   }
   bool Run(FEXCore::IR::IREmitter *IREmit) override;
 private:
+  std::unique_ptr<FEXCore::IR::Pass> DCE;
+
   ContextInfo ClassifiedStruct;
   std::unordered_map<FEXCore::IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
 
@@ -608,7 +612,12 @@ bool RCLSE::Run(FEXCore::IR::IREmitter *IREmit) {
   // XXX: We don't do cross-block optimizations yet
   //CalculateControlFlowInfo(IREmit);
   bool Changed = false;
-  Changed |= RedundantStoreLoadElimination(IREmit);
+  
+  // Run up to 5 times
+  for( int i = 0; i < 5 && RedundantStoreLoadElimination(IREmit); i++) {
+    Changed = true;
+    DCE->Run(IREmit);
+  }
 
   return Changed;
 }
