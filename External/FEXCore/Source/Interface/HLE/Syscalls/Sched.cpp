@@ -73,21 +73,21 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(sched_getaffinity, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, unsigned char *mask) -> uint64_t {
       uint64_t Cores = Thread->CTX->Config.EmulatedCPUCores;
-      uint64_t BytesPerCore = Cores / 8;
+      uint64_t Bytes = ((Cores+7) / 8);
       // If we don't have at least one byte in the resulting structure
       // then we need to return -EINVAL
-      if (cpusetsize < BytesPerCore) {
+      if (cpusetsize < Bytes) {
         return -EINVAL;
       }
 
-      memset(mask, 0, cpusetsize);
-      
+      memset(mask, 0, Bytes);
+
       for (uint64_t i = 0; i < Cores; ++i) {
         mask[i / 8] |= (1 << (i % 8));
       }
 
       // Returns the number of bytes written in to mask
-      return BytesPerCore;
+      return Bytes;
     });
 
     REGISTER_SYSCALL_IMPL(sched_setattr, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_attr *attr, unsigned int flags) -> uint64_t {
