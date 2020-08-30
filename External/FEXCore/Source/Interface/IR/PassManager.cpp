@@ -17,7 +17,7 @@ void PassManager::AddDefaultPasses() {
 }
 
 void PassManager::AddDefaultValidationPasses() {
-#ifndef NDEBUG
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   InsertValidationPass(Validation::CreatePhiValidation());
   InsertValidationPass(Validation::CreateIRValidation());
   InsertValidationPass(Validation::CreateValueDominanceValidation());
@@ -30,7 +30,7 @@ bool PassManager::Run(IREmitter *IREmit) {
     Changed |= Pass->Run(IREmit);
   }
 
-#ifndef NDEBUG
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   for (auto const &Pass : ValidationPasses) {
     Changed |= Pass->Run(IREmit);
   }
