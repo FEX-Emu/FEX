@@ -422,6 +422,11 @@ void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
   bool Is64Bit = Reg.IsX();
   int Segments = Is64Bit ? 4 : 2;
 
+  if (Is64Bit && ((~Constant)>> 16) == 0) {
+    movn(Reg, (~Constant) & 0xFFFF);
+    return;
+  }
+
   movz(Reg, (Constant) & 0xFFFF, 0);
   for (int i = 1; i < Segments; ++i) {
     uint16_t Part = (Constant >> (i * 16)) & 0xFFFF;
