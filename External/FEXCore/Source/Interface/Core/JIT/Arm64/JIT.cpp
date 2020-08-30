@@ -479,12 +479,13 @@ void JITCore::ClearCache() {
       Buffer->Reset();
     }
     else {
-      // Resize the code buffer and reallocate our code size
-      CurrentCodeBuffer->Size *= 1.5;
-      CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MAX_CODE_SIZE);
-
       FreeCodeBuffer(InitialCodeBuffer);
-      InitialCodeBuffer = JITCore::AllocateNewCodeBuffer(CurrentCodeBuffer->Size);
+
+      // Resize the code buffer and reallocate our code size
+      InitialCodeBuffer.Size *= 1.5;
+      InitialCodeBuffer.Size = std::min(InitialCodeBuffer.Size, MAX_CODE_SIZE);
+
+      InitialCodeBuffer = JITCore::AllocateNewCodeBuffer(InitialCodeBuffer.Size);
       *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
     }
   }
