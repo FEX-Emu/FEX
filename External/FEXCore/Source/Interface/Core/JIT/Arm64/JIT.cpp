@@ -789,6 +789,42 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   //    }
   // }
 
+
+  uint64_t VirtualMemorySize = Thread->BlockCache->GetVirtualMemorySize();
+  Literal l_VirtualMemory {VirtualMemorySize};
+  Literal l_PagePtr {Thread->BlockCache->GetPagePointer()};
+  Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
+  Literal l_Interpreter {reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr))};
+  Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
+
+  uintptr_t CompileBlockPtr{};
+  uintptr_t CompileFallbackPtr{};
+  {
+    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
+    union PtrCast {
+      ClassPtrType ClassPtr;
+      uintptr_t Data;
+    };
+
+    PtrCast Ptr;
+    Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
+    CompileBlockPtr = Ptr.Data;
+  }
+  {
+    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
+    union PtrCast {
+      ClassPtrType ClassPtr;
+      uintptr_t Data;
+    };
+
+    PtrCast Ptr;
+    Ptr.ClassPtr = &FEXCore::Context::Context::CompileFallbackBlock;
+    CompileFallbackPtr = Ptr.Data;
+  }
+
+  Literal l_CompileBlock {CompileBlockPtr};
+  Literal l_CompileFallback {CompileFallbackPtr};
+
   // Push all the register we need to save
   PushCalleeSavedRegisters();
 
@@ -802,8 +838,22 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   add(x0, sp, 0);
   str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)));
 
+  auto Align16B = [&Buffer, this]() {
+    uint64_t CurrentOffset = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    for (uint64_t i = (16 - (CurrentOffset & 0xF)); i != 0; i -= 4) {
+      nop();
+    }
+  };
+
+  // We want to ensure that we are 16 byte aligned at the top of this loop
+  Align16B();
+
   bind(&LoopTop);
   AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
+
+  // This is the block cache lookup routine
+  // It matches what is going on it BlockCache.h::FindBlock
+  ldr(x0, &l_PagePtr);
 
   // Load in our RIP
   // Don't modify x2 since it contains our RIP once the block doesn't exist
@@ -811,15 +861,16 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   auto RipReg = x2;
 
   // Mask the address by the virtual address size so we can check for aliases
-  LoadConstant(x3, Thread->BlockCache->GetVirtualMemorySize() - 1);
-  and_(x3, RipReg, x3);
+  if (__builtin_popcountl(VirtualMemorySize) == 1) {
+    and_(x3, RipReg, Thread->BlockCache->GetVirtualMemorySize() - 1);
+  }
+  else {
+    ldr(x3, &l_VirtualMemory);
+    and_(x3, RipReg, x3);
+  }
 
   aarch64::Label NoBlock;
   {
-    // This is the block cache lookup routine
-    // It matches what is going on it BlockCache.h::FindBlock
-    LoadConstant(x0, Thread->BlockCache->GetPagePointer());
-
     // Offset the address and add to our page pointer
     lsr(x1, x3, 12);
 
@@ -886,16 +937,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
     ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, CTX)));
     mov(x1, STATE);
-
-    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
-    union PtrCast {
-      ClassPtrType ClassPtr;
-      uintptr_t Data;
-    };
-
-    PtrCast Ptr;
-    Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
-    LoadConstant(x3, Ptr.Data);
+    ldr(x3, &l_CompileBlock);
 
     // X2 contains our guest RIP
     blr(x3); // { CTX, ThreadState, RIP}
@@ -911,18 +953,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     bind(&FallbackCore);
 
-    LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
+    ldr(x0, &l_CTX);
     mov(x1, STATE);
-
-    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
-    union PtrCast {
-      ClassPtrType ClassPtr;
-      uintptr_t Data;
-    };
-
-    PtrCast Ptr;
-    Ptr.ClassPtr = &FEXCore::Context::Context::CompileFallbackBlock;
-    LoadConstant(x3, Ptr.Data);
+    ldr(x3, &l_CompileFallback);
 
     // X2 contains our guest RIP
     blr(x3); // {ThreadState, RIP}
@@ -949,9 +982,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     bind(&InterpreterFallback);
     InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     mov(x0, STATE);
-    LoadConstant(x1, reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr)));
-    blr(x1);
+    ldr(x1, &l_Interpreter);
 
+    blr(x1);
     b(&LoopTop);
   }
 
@@ -962,9 +995,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     // We will have faulted and jumped to this location at this point
 
     // Call our sleep handler
-    LoadConstant(x0, reinterpret_cast<uintptr_t>(CTX));
+    ldr(x0, &l_CTX);
     mov(x1, STATE);
-    LoadConstant(x2, reinterpret_cast<uint64_t>(SleepThread));
+    ldr(x2, &l_Sleep);
     blr(x2);
 
     PauseReturnInstruction = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
@@ -972,6 +1005,14 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     // Fault to start running again
     hlt(0);
   }
+
+  place(&l_VirtualMemory);
+  place(&l_PagePtr);
+  place(&l_CTX);
+  place(&l_Interpreter);
+  place(&l_Sleep);
+  place(&l_CompileBlock);
+  place(&l_CompileFallback);
 
   FinalizeCode();
   uint64_t CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
