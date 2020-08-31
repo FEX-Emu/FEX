@@ -8,9 +8,20 @@ option(ENABLE_XRAY "Enable building with LLVM X-Ray" FALSE)
 option(ENABLE_LLD "Enable linking with LLD" FALSE)
 option(ENABLE_ASAN "Enables Clang ASAN" FALSE)
 option(ENABLE_TSAN "Enables Clang TSAN" FALSE)
+option(ENABLE_ASSERTIONS "Enables assertions in build" FALSE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
+
+string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
+if (CMAKE_BUILD_TYPE MATCHES "DEBUG")
+  set(ENABLE_ASSERTIONS TRUE)
+endif()
+
+if (ENABLE_ASSERTIONS)
+  message(STATUS "Assertions enabled")
+  add_definitions(-DASSERTIONS_ENABLED=1)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

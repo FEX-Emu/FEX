@@ -70,7 +70,8 @@ private:
   Pass *RAPass{};
 
   std::vector<std::unique_ptr<Pass>> Passes;
-#ifndef NDEBUG
+
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   std::vector<std::unique_ptr<Pass>> ValidationPasses;
   void InsertValidationPass(Pass *Pass) {
     Pass->RegisterPassManager(this);

@@ -22,9 +22,7 @@ void InstallHandler(ThrowHandler Handler);
 
 [[noreturn]] void M(const char *fmt, va_list args);
 
-#ifdef NDEBUG
-static inline void A(bool, const char*, ...) {}
-#else
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
 static inline void A(bool Value, const char *fmt, ...) {
   if (MSG_LEVEL >= ASSERT && !Value) {
     va_list args;
@@ -33,6 +31,8 @@ static inline void A(bool Value, const char *fmt, ...) {
     va_end(args);
   }
 }
+#else
+static inline void A(bool, const char*, ...) {}
 #endif
 
 } // namespace Throw
@@ -43,9 +43,7 @@ void InstallHandler(MsgHandler Handler);
 
 void M(DebugLevels Level, const char *fmt, va_list args);
 
-#ifdef NDEBUG
-static inline void A(const char*, ...) {}
-#else
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
 static inline void A(const char *fmt, ...) {
   if (MSG_LEVEL >= ASSERT) {
     va_list args;
@@ -55,6 +53,8 @@ static inline void A(const char *fmt, ...) {
   }
   __builtin_trap();
 }
+#else
+static inline void A(const char*, ...) {}
 #endif
 
 static inline void E(const char *fmt, ...) {
