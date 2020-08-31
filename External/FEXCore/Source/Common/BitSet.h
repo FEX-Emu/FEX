@@ -25,7 +25,7 @@ struct BitSet final {
     Memory = nullptr;
   }
   bool Get(T Element) {
-    return (Memory[Element / MinimumSizeBits] & (1 << (Element % MinimumSizeBits))) != 0;
+    return (Memory[Element / MinimumSizeBits] & (1ULL << (Element % MinimumSizeBits))) != 0;
   }
   void Set(T Element) {
     Memory[Element / MinimumSizeBits] |= (1ULL << (Element % MinimumSizeBits));
@@ -62,7 +62,7 @@ struct BitSetView final {
   }
 
   bool Get(T Element) {
-    return (Memory[Element / MinimumSizeBits] & (1 << (Element % MinimumSizeBits))) != 0;
+    return (Memory[Element / MinimumSizeBits] & (1ULL << (Element % MinimumSizeBits))) != 0;
   }
   void Set(T Element) {
     Memory[Element / MinimumSizeBits] |= (1ULL << (Element % MinimumSizeBits));
