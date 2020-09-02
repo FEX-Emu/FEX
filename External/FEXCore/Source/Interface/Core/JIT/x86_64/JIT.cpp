@@ -4527,7 +4527,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_FINDLSB: {
           auto Op = IROp->C<IR::IROp_FindLSB>();
-          tzcnt(rcx, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          bsf(rcx, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          mov(rax, 0x40);
+          cmovz(rcx, rax);
           xor(rax, rax);
           cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), 1);
           sbb(rax, rax);
@@ -4575,13 +4577,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
           switch (OpSize) {
             case 2:
-              tzcnt(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              bsf(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+              mov(ax, 0x10);
+              cmovz(GetDst<RA_16>(Node), ax);
             break;
             case 4:
-              tzcnt(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              bsf(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov(eax, 0x20);
+              cmovz(GetDst<RA_32>(Node), eax);
               break;
             case 8:
-              tzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              bsf(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              mov(rax, 0x40);
+              cmovz(GetDst<RA_64>(Node), rax);
               break;
             default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
           }
