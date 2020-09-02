@@ -44,10 +44,18 @@ namespace FEXCore::Core {
     uint64_t RunCount; ///< Number of times this block of code has been run
   };
 
+  enum SignalEvent {
+    SIGNALEVENT_NONE, // If the guest uses our signal we need to know it was errant on our end
+    SIGNALEVENT_PAUSE,
+    SIGNALEVENT_STOP,
+    SIGNALEVENT_RETURN,
+  };
+
   struct InternalThreadState {
     FEXCore::Core::ThreadState State;
 
     FEXCore::Context::Context *CTX;
+    std::atomic<SignalEvent> SignalReason {SignalEvent::SIGNALEVENT_NONE};
 
     std::thread ExecutionThread;
     Event StartRunning;
@@ -61,8 +69,8 @@ namespace FEXCore::Core {
 
     std::unique_ptr<FEXCore::BlockCache> BlockCache;
 
-    std::map<uint64_t, std::unique_ptr<FEXCore::IR::IRListView<true>>> IRLists;
-    std::map<uint64_t, FEXCore::Core::DebugData> DebugData;
+    std::unordered_map<uint64_t, std::unique_ptr<FEXCore::IR::IRListView<true>>> IRLists;
+    std::unordered_map<uint64_t, FEXCore::Core::DebugData> DebugData;
 
     std::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     std::unique_ptr<FEXCore::IR::PassManager> PassManager;
@@ -71,7 +79,10 @@ namespace FEXCore::Core {
 
     int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
+
   };
+  static_assert(offsetof(InternalThreadState, State) == 0, "InternalThreadState must have State be the first object");
+  static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
 }
 
 

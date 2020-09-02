@@ -12,6 +12,7 @@ namespace IR {
 namespace Core {
   struct DebugData;
   struct ThreadState;
+  struct InternalThreadState;
 }
 
 namespace CPU {
@@ -70,11 +71,16 @@ class LLVMCore;
      */
     virtual bool NeedsOpDispatch() = 0;
 
-    virtual bool HasCustomDispatch() const { return false; }
-
-    virtual void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) {}
+    void ExecuteDispatch(FEXCore::Core::InternalThreadState *Thread) {
+      DispatchPtr(Thread);
+    }
 
     virtual void ClearCache() {}
+
+    using AsmDispatch = __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread);
+
+  protected:
+    AsmDispatch DispatchPtr{};
   };
 
 }

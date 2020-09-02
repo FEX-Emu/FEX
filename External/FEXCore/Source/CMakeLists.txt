@@ -182,6 +182,13 @@ set (SRCS
   Interface/IR/Passes/SyscallOptimization.cpp
   )
 
+if (_M_X86_64)
+  list(APPEND SRCS Interface/Core/Interpreter/x86_64Dispatcher.cpp)
+endif()
+if(_M_ARM_64)
+  list(APPEND SRCS Interface/Core/Interpreter/Arm64Dispatcher.cpp)
+endif()
+
 set (JIT_LIBS )
 if (ENABLE_JIT)
   if (_M_X86_64)

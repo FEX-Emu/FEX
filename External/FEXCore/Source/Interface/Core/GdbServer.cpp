@@ -773,7 +773,8 @@ GdbServer::HandledPacketType GdbServer::handleV(std::string& packet) {
             return {"OK", HandledPacketType::TYPE_ACK};
           }
         case 't':
-            CTX->ShouldStop = true;
+            // This thread isn't part of the thread pool
+            CTX->Stop(false /* Ignore current thread */);
  						return {"OK", HandledPacketType::TYPE_ACK};
         default:
  						return {"E00", HandledPacketType::TYPE_ACK};
@@ -859,8 +860,8 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(std::string &packet) {
     case 'Z': // Inserts breakpoint or watchpoint
       return handleBreakpoint(packet);
     case 'k': // Kill the process
-      CTX->ShouldStop = true;
-      CTX->Pause(); // Block until exit
+      CTX->Stop(false /* Ignore current thread */);
+      CTX->WaitForIdle(); // Block until exit
       return {"", HandledPacketType::TYPE_NONE};
     default:
       return {"", HandledPacketType::TYPE_UNKNOWN};
@@ -889,7 +890,7 @@ void GdbServer::SendPacketPair(HandledPacketType response) {
 }
 
 void GdbServer::GdbServerLoop() {
-  while (!CTX->ShouldStop) {
+  while (!CTX->CoreShuttingDown.load()) {
     CommsStream = OpenSocket();
 
     HandledPacketType response{};

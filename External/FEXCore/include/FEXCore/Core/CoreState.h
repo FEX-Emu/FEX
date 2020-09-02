@@ -30,15 +30,22 @@ namespace FEXCore::Core {
 
     struct {
       std::atomic_bool Running {false};
-      std::atomic_bool ShouldStop {false};
-      std::atomic_bool ShouldPause {false};
       std::atomic_bool WaitingToStart {false};
     } RunningEvents;
+
+    /**
+     * @brief Stack location for the CPU backends to return the stack pointer to
+     *
+     * Allows the CPU cores to do a long jump out of their execution and safely shut down
+     */
+    uint64_t ReturningStackLocation{};
 
     FEXCore::HLE::ThreadManagement ThreadManager;
   };
   static_assert(offsetof(ThreadState, State) == 0, "CPUState must be first member in threadstate");
   static_assert(offsetof(ThreadState, State.rip) == 0, "rip must be zero offset in threadstate");
+
+  static_assert(std::is_standard_layout<ThreadState>::value, "This needs to be standard layout");
 
   constexpr uint64_t PAGE_SIZE = 4096;
 

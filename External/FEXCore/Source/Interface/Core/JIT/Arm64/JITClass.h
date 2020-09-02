@@ -87,16 +87,11 @@ public:
 
   bool NeedsOpDispatch() override { return true; }
 
-  bool HasCustomDispatch() const override { return CustomDispatchGenerated; }
-
-  void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override {
-    DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread));
-  }
-
   void ClearCache() override;
 
   bool HandleSIGILL(int Signal, void *info, void *ucontext);
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
+  bool HandleSignalPause(int Signal, void *info, void *ucontext);
   bool HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack);
 
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
@@ -193,23 +188,29 @@ private:
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant);
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
-  void GenerateDispatchHelpers();
   void PushCalleeSavedRegisters();
   void PopCalleeSavedRegisters();
 
   /**
    * @name Dispatch Helper functions
    * @{ */
+  aarch64::Label LoopTop{};
+  aarch64::Label Exit{};
   uint64_t AbsoluteLoopTopAddress{};
   uint64_t InterpreterFallbackHelperAddress{};
+  uint64_t ThreadPauseHandlerAddress{};
+  Label ThreadPauseHandler{};
+  uint64_t ThreadStopHandlerAddress{};
 
   uint64_t SignalReturnInstruction{};
+  uint64_t PauseReturnInstruction{};
+
   uint32_t SignalHandlerRefCounter{};
+
+  void StoreThreadState(int Signal, void *ucontext);
+  void RestoreThreadState(void *ucontext);
   /**  @} */
 
-  bool CustomDispatchGenerated {false};
-  using CustomDispatch = void(*)(FEXCore::Core::InternalThreadState *Thread);
-  CustomDispatch DispatchPtr{};
   IR::RegisterAllocationPass *RAPass;
 
   uint32_t SpillSlots{};

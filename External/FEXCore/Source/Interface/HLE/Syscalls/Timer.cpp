@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
@@ -14,6 +15,12 @@ struct InternalThreadState;
 namespace FEXCore::HLE {
 
   void RegisterTimer() {
+
+    REGISTER_SYSCALL_IMPL(alarm, [](FEXCore::Core::InternalThreadState *Thread, unsigned int seconds) -> uint64_t {
+      uint64_t Result = ::alarm(seconds);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(timer_create, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clockid, struct sigevent *sevp, timer_t *timerid) -> uint64_t {
       uint64_t Result = ::timer_create(clockid, sevp, timerid);
       SYSCALL_ERRNO();

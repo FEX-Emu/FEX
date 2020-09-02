@@ -259,7 +259,6 @@ namespace VMFactory {
 
       // 5 = HLT
       if (ExitReason == 5) {
-        ThreadState->RunningEvents.ShouldStop = true;
       }
 
       // 8 = Shutdown. Due to an unhandled error
@@ -267,18 +266,15 @@ namespace VMFactory {
         LogMan::Msg::E("Unhandled VM Fault");
         VM->Debug();
         CopyGuestCPUToHost();
-        ThreadState->RunningEvents.ShouldStop = true;
       }
 
       // 9 = Failed Entry
       if (ExitReason == 9) {
         LogMan::Msg::E("Failed to enter VM due to: 0x%lx", VM->GetFailEntryReason());
-        ThreadState->RunningEvents.ShouldStop = true;
       }
     }
     else {
       LogMan::Msg::E("VM failed to run");
-      ThreadState->RunningEvents.ShouldStop = true;
     }
   }
 

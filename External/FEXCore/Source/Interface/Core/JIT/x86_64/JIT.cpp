@@ -1,126 +1,268 @@
 #include "Interface/Context/Context.h"
-#include "Interface/Core/BlockCache.h"
-#include "Interface/Core/BlockSamplingData.h"
-#include "Interface/Core/InternalThreadState.h"
-#include "Interface/IR/Passes/RegisterAllocationPass.h"
 
-#include "Interface/Core/JIT/x86_64/JIT.h"
-#include <xbyak/xbyak.h>
-using namespace Xbyak;
+#include "Interface/Core/JIT/x86_64/JITClass.h"
+#include <FEXCore/Core/X86Enums.h>
 
-#include <FEXCore/Core/CPUBackend.h>
-#include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
+#include <cmath>
+
 // #define DEBUG_RA 1
 // #define DEBUG_CYCLES
+
+namespace FEXCore::CPU {
+
+CodeBuffer AllocateNewCodeBuffer(size_t Size) {
+  CodeBuffer Buffer;
+  Buffer.Size = Size;
+  Buffer.Ptr = static_cast<uint8_t*>(
+               mmap(nullptr,
+                    Buffer.Size,
+                    PROT_READ | PROT_WRITE | PROT_EXEC,
+                    MAP_PRIVATE | MAP_ANONYMOUS,
+                    -1, 0));
+  LogMan::Throw::A(!!Buffer.Ptr, "Couldn't allocate code buffer");
+  return Buffer;
+}
+
+void FreeCodeBuffer(CodeBuffer Buffer) {
+  munmap(Buffer.Ptr, Buffer.Size);
+}
+
+}
 
 namespace FEXCore::CPU {
 static void PrintValue(uint64_t Value) {
   LogMan::Msg::D("Value: 0x%lx", Value);
 }
 
-// Temp registers
-// rax, rcx, rdx, rsi, r8, r9,
-// r10, r11
-//
-// Callee Saved
-// rbx, rbp, r12, r13, r14, r15
-//
-// 1St Argument: rdi <ThreadState>
-// XMM:
-// All temp
-#define STATE r14
-#define TMP1 rax
-#define TMP2 rcx
-#define TMP3 rdx
-#define TMP4 rdi
-#define TMP5 rbx
-using namespace Xbyak::util;
-const std::array<Xbyak::Reg, 9> RA64 = { rsi, r8, r9, r10, r11, rbp, r12, r13, r15 };
-const std::array<std::pair<Xbyak::Reg, Xbyak::Reg>, 4> RA64Pair = {{ {rsi, r8}, {r9, r10}, {r11, rbp}, {r12, r13} }};
-const std::array<Xbyak::Reg, 11> RAXMM = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
-const std::array<Xbyak::Xmm, 11> RAXMM_x = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10 };
+struct ContextBackup {
+  uint64_t StoredCookie;
+  // Host State
+  // RIP and RSP is stored in GPRs here
+  uint64_t GPRs[NGREG];
+  _libc_fpstate FPRState;
 
-class JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
-public:
-  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
-  ~JITCore() override;
-  std::string GetName() override { return "JIT"; }
-  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
-
-  void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
-
-  bool NeedsOpDispatch() override { return true; }
-
-  bool HasCustomDispatch() const override { return CustomDispatchGenerated; }
-
-  void ExecuteCustomDispatch(FEXCore::Core::ThreadState *Thread) override {
-    DispatchPtr(reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread));
-  }
-
-  void ClearCache() override {
-    reset();
-  }
-
-private:
-  FEXCore::Context::Context *CTX;
-  FEXCore::Core::InternalThreadState *ThreadState;
-  FEXCore::IR::IRListView<true> const *CurrentIR;
-  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
-
-  std::vector<uint8_t> Stack;
-  bool MemoryDebug = false;
-
-  /**
-   * @name Register Allocation
-   * @{ */
-  constexpr static uint32_t NumGPRs = RA64.size(); // 4 is the minimum required for GPR ops
-  constexpr static uint32_t NumXMMs = RAXMM.size();
-  constexpr static uint32_t NumGPRPairs = RA64Pair.size();
-  constexpr static uint32_t RegisterCount = NumGPRs + NumXMMs + NumGPRPairs;
-  constexpr static uint32_t RegisterClasses = 3;
-
-  constexpr static uint64_t GPRBase = (0ULL << 32);
-  constexpr static uint64_t XMMBase = (1ULL << 32);
-  constexpr static uint64_t GPRPairBase = (2ULL << 32);
-
-  /**  @} */
-
-  constexpr static uint8_t RA_8 = 0;
-  constexpr static uint8_t RA_16 = 1;
-  constexpr static uint8_t RA_32 = 2;
-  constexpr static uint8_t RA_64 = 3;
-  constexpr static uint8_t RA_XMM = 4;
-
-  uint32_t GetPhys(uint32_t Node);
-
-  template<uint8_t RAType>
-  Xbyak::Reg GetSrc(uint32_t Node);
-  template<uint8_t RAType>
-  std::pair<Xbyak::Reg, Xbyak::Reg> GetSrcPair(uint32_t Node);
-
-  template<uint8_t RAType>
-  Xbyak::Reg GetDst(uint32_t Node);
-
-  Xbyak::Xmm GetSrc(uint32_t Node);
-  Xbyak::Xmm GetDst(uint32_t Node);
-
-  void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
-  bool CustomDispatchGenerated {false};
-  using CustomDispatch = void(*)(FEXCore::Core::InternalThreadState *Thread);
-  CustomDispatch DispatchPtr{};
-  IR::RegisterAllocationPass *RAPass;
-
-#ifdef BLOCKSTATS
-  bool GetSamplingData {true};
-#endif
-  static constexpr uint32_t MAX_CODE_SIZE = 1024 * 1024 * 32;
+  // Guest state
+  int Signal;
+  FEXCore::Core::CPUState GuestState;
 };
 
-JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : CodeGenerator(MAX_CODE_SIZE)
+void JITCore::StoreThreadState(int Signal, void *ucontext) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  // We can end up getting a signal at any point in our host state
+  // Jump to a handler that saves all state so we can safely return
+  uint64_t OldSP = _mcontext->gregs[REG_RSP];
+  uintptr_t NewSP = OldSP;
+
+  size_t StackOffset = sizeof(ContextBackup);
+
+  // We need to back up behind the host's red zone
+  // We do this on the guest side as well
+  NewSP -= 128;
+  NewSP -= StackOffset;
+  NewSP = AlignDown(NewSP, 16);
+
+  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
+
+  Context->StoredCookie = 0x4142434445464748ULL;
+
+  // Copy the GPRs
+  memcpy(&Context->GPRs[0], &_mcontext->gregs[0], NGREG * sizeof(_mcontext->gregs[0]));
+  // Copy the FPRState
+  memcpy(&Context->FPRState, _mcontext->fpregs, sizeof(_libc_fpstate));
+
+  // XXX: Save 256bit and 512bit AVX register state
+
+  // Retain the action pointer so we can see it when we return
+  Context->Signal = Signal;
+
+  // Save guest state
+  // We can't guarantee if registers are in context or host GPRs
+  // So we need to save everything
+  memcpy(&Context->GuestState, &ThreadState->State, sizeof(FEXCore::Core::CPUState));
+
+  // Set the new SP
+  _mcontext->gregs[REG_RSP] = NewSP;
+
+  SignalFrames.push(NewSP);
+}
+
+void JITCore::RestoreThreadState(void *ucontext) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  uint64_t OldSP = SignalFrames.top();
+  SignalFrames.pop();
+  uintptr_t NewSP = OldSP;
+  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
+
+  if (Context->StoredCookie != 0x4142434445464748ULL) {
+    LogMan::Msg::D("COOKIE WAS NOT CORRECT!\n");
+    exit(-1);
+  }
+
+  // First thing, reset the guest state
+  memcpy(&ThreadState->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
+
+  // Now restore host state
+
+  // Copy the GPRs
+  memcpy(&_mcontext->gregs[0], &Context->GPRs[0], NGREG * sizeof(_mcontext->gregs[0]));
+  // Copy the FPRState
+  memcpy(_mcontext->fpregs, &Context->FPRState, sizeof(_libc_fpstate));
+
+  // Restore the previous signal state
+  // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
+  CTX->SignalDelegation.SetCurrentSignal(Context->Signal);
+}
+
+bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  StoreThreadState(Signal, ucontext);
+
+  // Set the new PC
+  _mcontext->gregs[REG_RIP] = AbsoluteLoopTopAddress;
+  // Set our state register to point to our guest thread data
+  _mcontext->gregs[REG_R14] = reinterpret_cast<uint64_t>(ThreadState);
+
+  // Ref count our faults
+  // We use this to track if it is safe to clear cache
+  ++SignalHandlerRefCounter;
+
+  uint64_t OldGuestSP = ThreadState->State.State.gregs[X86State::REG_RSP];
+  uint64_t NewGuestSP = OldGuestSP;
+
+  if (!!GuestStack->ss_sp) {
+    // If our guest is already inside of the alternative stack
+    // Then that means we are hitting recursive signals and we need to walk back the stack correctly
+    uint64_t AltStackBase = reinterpret_cast<uint64_t>(GuestStack->ss_sp);
+    uint64_t AltStackEnd = AltStackBase + GuestStack->ss_size;
+    if (OldGuestSP >= AltStackBase &&
+        OldGuestSP <= AltStackEnd) {
+      // We are already in the alt stack, the rest of the code will handle adjusting this
+    }
+    else {
+      NewGuestSP = AltStackEnd;
+    }
+  }
+
+  // Back up past the redzone, which is 128bytes
+  // Don't need this offset if we aren't going to be putting siginfo in to it
+  NewGuestSP -= 128;
+
+  ThreadState->State.State.gregs[X86State::REG_RDI] = Signal;
+
+  if (GuestAction->sa_flags & SA_SIGINFO) {
+    // XXX: siginfo_t(RSI), ucontext (RDX)
+    ThreadState->State.State.gregs[X86State::REG_RSI] = 0;
+    ThreadState->State.State.gregs[X86State::REG_RDX] = 0;
+    ThreadState->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
+  }
+  else {
+    ThreadState->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
+  }
+
+  // Set up the new SP for stack handling
+  NewGuestSP -= 8;
+  *(uint64_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
+  ThreadState->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
+
+  return true;
+}
+
+bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+
+  if (_mcontext->gregs[REG_RIP] == SignalHandlerReturnAddress) {
+    RestoreThreadState(ucontext);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    --SignalHandlerRefCounter;
+    return true;
+  }
+
+  if (_mcontext->gregs[REG_RIP] == PauseReturnInstruction) {
+    RestoreThreadState(ucontext);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    --SignalHandlerRefCounter;
+    return true;
+  }
+
+  return false;
+}
+
+bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
+  FEXCore::Core::SignalEvent SignalReason = ThreadState->SignalReason.load();
+
+  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE) {
+    ucontext_t* _context = (ucontext_t*)ucontext;
+    mcontext_t* _mcontext = &_context->uc_mcontext;
+
+    // Store our thread state so we can come back to this
+    StoreThreadState(Signal, ucontext);
+
+    // Set the new PC
+    _mcontext->gregs[REG_RIP] = ThreadPauseHandlerAddress;
+
+    // Set our state register to point to our guest thread data
+    _mcontext->gregs[REG_R14] = reinterpret_cast<uint64_t>(ThreadState);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    ++SignalHandlerRefCounter;
+
+    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    return true;
+  }
+
+  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_RETURN) {
+    RestoreThreadState(ucontext);
+
+    // Ref count our faults
+    // We use this to track if it is safe to clear cache
+    --SignalHandlerRefCounter;
+
+    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    return true;
+  }
+
+  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_STOP) {
+    ucontext_t* _context = (ucontext_t*)ucontext;
+    mcontext_t* _mcontext = &_context->uc_mcontext;
+
+    // Our thread is stopping
+    // We don't care about anything at this point
+    // Set the stack to our starting location when we entered the JIT and get out safely
+    _mcontext->gregs[REG_RSP] = ThreadState->State.ReturningStackLocation;
+
+    // Our ref counting doesn't matter anymore
+    SignalHandlerRefCounter = 0;
+
+    // Set the new PC
+    _mcontext->gregs[REG_RIP] = ThreadStopHandlerAddress;
+
+    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    return true;
+  }
+
+  return false;
+}
+
+
+JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer)
+  : CodeGenerator(Buffer.Size, Buffer.Ptr, nullptr)
   , CTX {ctx}
-  , ThreadState {Thread} {
+  , ThreadState {Thread}
+  , InitialCodeBuffer {Buffer}
+{
+  CurrentCodeBuffer = &InitialCodeBuffer;
   Stack.resize(9000 * 16 * 64);
 
   RAPass = Thread->PassManager->GetRAPass();
@@ -139,20 +281,74 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   }
 
   CreateCustomDispatch(Thread);
+
+  // This will register the host signal handler per thread, which is fine
+  CTX->SignalDelegation.RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+    return Core->HandleSIGILL(Signal, info, ucontext);
+  });
+
+  CTX->SignalDelegation.RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+    return Core->HandleSignalPause(Signal, info, ucontext);
+  });
+
+  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+    return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+  };
+
+  for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
+    CTX->SignalDelegation.RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+  }
+
 }
 
 JITCore::~JITCore() {
   LogMan::Msg::D("Used %ld bytes for compiling", getCurr<uintptr_t>() - getCode<uintptr_t>());
+  FreeCodeBuffer(DispatcherCodeBuffer);
+  FreeCodeBuffer(InitialCodeBuffer);
 }
 
-static void LoadMem(uint64_t Addr, uint64_t Data, uint8_t Size) {
-  LogMan::Msg::D("Loading from guestmem: 0x%lx (%d)", Addr, Size);
-  LogMan::Msg::D("\tLoading: 0x%016lx", Data);
-}
 
-static void StoreMem(uint64_t Addr, uint64_t Data, uint8_t Size) {
-  LogMan::Msg::D("Storing guestmem: 0x%lx (%d)", Addr, Size);
-  LogMan::Msg::D("\tStoring: 0x%016lx", Data);
+void JITCore::ClearCache() {
+  if (SignalHandlerRefCounter == 0) {
+    if (!CodeBuffers.empty()) {
+      // If we have more than one code buffer we are tracking then walk them and delete
+      // This is a cleanup step
+      for (auto CodeBuffer : CodeBuffers) {
+        FreeCodeBuffer(CodeBuffer);
+      }
+      CodeBuffers.clear();
+
+      // Set the current code buffer to the initial
+      setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+      CurrentCodeBuffer = &InitialCodeBuffer;
+    }
+
+    if (CurrentCodeBuffer->Size == MAX_CODE_SIZE) {
+      // Rewind to the start of the code cache start
+      reset();
+    }
+    else {
+      // Resize the code buffer and reallocate our code size
+      CurrentCodeBuffer->Size *= 1.5;
+      CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MAX_CODE_SIZE);
+
+      FreeCodeBuffer(InitialCodeBuffer);
+      InitialCodeBuffer = AllocateNewCodeBuffer(CurrentCodeBuffer->Size);
+      setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+    }
+  }
+  else {
+    // We have signal handlers that have generated code
+    // This means that we can not safely clear the code at this point in time
+    // Allocate some new code buffers that we can switch over to instead
+    auto NewCodeBuffer = AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE);
+    CurrentCodeBuffer->Size = JITCore::INITIAL_CODE_SIZE;
+    EmplaceNewCodeBuffer(NewCodeBuffer);
+    setNewBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
+  }
 }
 
 uint32_t JITCore::GetPhys(uint32_t Node) {
@@ -233,13 +429,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
   if (HeaderOp->ShouldInterpret) {
-    return ThreadState->IntBackend->CompileCode(IR, DebugData);
+    return InterpreterFallbackHelperAddress;
   }
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
-  if ((getSize() + BufferRange) > MAX_CODE_SIZE) {
-    LogMan::Msg::D("Gotta clear code cache: 0x%lx is too close to 0x%lx", getSize(), MAX_CODE_SIZE);
+  if ((getSize() + BufferRange) > CurrentCodeBuffer->Size) {
+    LogMan::Msg::D("Gotta clear code cache: 0x%lx is too close to 0x%lx", getSize(), CurrentCodeBuffer->Size);
     ThreadState->CTX->ClearCodeCache(ThreadState, HeaderOp->Entry);
   }
 
@@ -253,16 +449,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   LogMan::Throw::A(RAPass->HasFullRA(), "Needs RA");
 
   uint32_t SpillSlots = RAPass->SpillSlots();
-
-  if (!CustomDispatchGenerated) {
-    push(rbx);
-    push(rbp);
-    push(r12);
-    push(r13);
-    push(r14);
-    push(r15);
-    mov(STATE, rdi);
-  }
 
   if (SpillSlots) {
     sub(rsp, SpillSlots * 16 + 8);
@@ -322,14 +508,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       add(rsp, 8);
     }
 
-    if (!CustomDispatchGenerated) {
-      pop(r15);
-      pop(r14);
-      pop(r13);
-      pop(r12);
-      pop(rbp);
-      pop(rbx);
-    }
 #ifdef BLOCKSTATS
     ExitBlock();
 #endif
@@ -422,6 +600,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           RegularExit();
           break;
         }
+        case IR::OP_SIGNALRETURN: {
+          // Adjust the stack first for a regular return
+          if (SpillSlots) {
+            add(rsp, SpillSlots * 16 + 8 + 8); // + 8 to consume return address
+          }
+          else {
+            add(rsp, 8 + 8); // + 8 to consume return address
+          }
+
+          mov(TMP1, SignalHandlerReturnAddress);
+          jmp(TMP1);
+          break;
+        }
         case IR::OP_BREAK: {
           auto Op = IROp->C<IR::IROp_Break>();
           switch (Op->Reason) {
@@ -429,16 +620,40 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             case 5: // Guest ud2
               ud2();
             break;
-            case 4: // HLT
+            case 4: { // HLT
+              // Time to quit
+              // Set our stack to the starting stack location
+              mov(rsp, qword [STATE + offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)]);
+
+              // Now we need to jump to the thread stop handler
+              mov(TMP1, ThreadStopHandlerAddress);
+              jmp(TMP1);
+              break;
+            }
             case 6: // INT3
             {
-              mov(al, 1);
-              auto offset = Op->Reason == 4 ?
-                  offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop) // HLT
-                : offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldPause); // INT3
-              xchg(byte [STATE + offset], al);
+              if (CTX->GetGdbServerStatus()) {
+                // Adjust the stack first for a regular return
+                if (SpillSlots) {
+                  add(rsp, SpillSlots * 16 + 8);
+                }
+                else {
+                  add(rsp, 8);
+                }
 
-              RegularExit();
+                // This jump target needs to be a constant offset here
+                mov(TMP1, ThreadPauseHandlerAddress);
+                jmp(TMP1);
+              }
+              else {
+                // If we don't have a gdb server attached then....crash?
+                // Treat this case like HLT
+                mov(rsp, qword [STATE + offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)]);
+
+                // Now we need to jump to the thread stop handler
+                mov(TMP1, ThreadStopHandlerAddress);
+                jmp(TMP1);
+              }
             break;
             }
             default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
@@ -1966,8 +2181,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Op = IROp->C<IR::IROp_Syscall>();
           // XXX: This is very terrible, but I don't care for right now
 
-          auto NumPush = 1 + RA64.size();
-          push(rdi);
+          auto NumPush = RA64.size();
 
           for (auto &Reg : RA64)
             push(Reg);
@@ -1986,7 +2200,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             ++NumPush;
           }
 
-          mov(rsi, rdi); // Move thread in to rsi
+          mov(rsi, STATE); // Move thread in to rsi
           mov(rdi, reinterpret_cast<uint64_t>(CTX->SyscallHandler.get()));
           mov(rdx, rsp);
 
@@ -1994,7 +2208,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           if (NumPush & 1)
             sub(rsp, 8); // Align
-
+    // {rdi, rsi, rdx}
           call(rax);
 
           if (NumPush & 1)
@@ -2009,16 +2223,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
 
-          pop(rdi);
-
           mov (GetDst<RA_64>(Node), rax);
           break;
         }
         case IR::OP_THUNK: {
           auto Op = IROp->C<IR::IROp_Thunk>();
 
-          auto NumPush = 1 + RA64.size();
-          push(rdi);
+          auto NumPush = RA64.size();
 
           for (auto &Reg : RA64)
             push(Reg);
@@ -2038,7 +2249,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
 
-          pop(rdi);
           break;
         }
         case IR::OP_VEXTRACTTOGPR: {
@@ -2095,9 +2305,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         case IR::OP_PRINT: {
           auto Op = IROp->C<IR::IROp_Print>();
 
-          push(rdi);
-          push(rdi);
-
           for (auto &Reg : RA64)
             push(Reg);
 
@@ -2116,9 +2323,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
-
-          pop(rdi);
-          pop(rdi);
 
           break;
         }
@@ -2141,21 +2345,23 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           // Function: rsi
           //
           // Result: RAX, RDX. 4xi32
-          push(rdi);
+
           mov (rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
           mov (rdi, reinterpret_cast<uint64_t>(&CTX->CPUID));
 
-          auto NumPush = RA64.size() + 1;
+          auto NumPush = RA64.size();
+
           if (NumPush & 1)
             sub(rsp, 8); // Align
 
           mov(rax, Ptr.Raw);
+
+          // {rdi, rsi, rdx}
+
           call(rax);
 
           if (NumPush & 1)
             add(rsp, 8); // Align
-
-          pop(rdi);
 
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
@@ -4642,10 +4848,36 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   if (DebugData) {
     DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(Exit) - reinterpret_cast<uintptr_t>(Entry);
   }
+  // LogMan::Msg::D("RIP: 0x%lx ; disas %p,%p", HeaderOp->Entry, Entry, Exit);
   return Entry;
 }
 
+static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  --ctx->IdleWaitRefCount;
+  ctx->IdleWaitCV.notify_all();
+
+  // Go to sleep
+  Thread->StartRunning.Wait();
+
+  Thread->State.RunningEvents.Running = true;
+  ++ctx->IdleWaitRefCount;
+  ctx->IdleWaitCV.notify_all();
+}
+
+static void CookieFailure(uint64_t Cookie) {
+  if (Cookie != 0x3132333435363738ULL) {
+    LogMan::Msg::D("Cookie wasn't correct");
+    std::unexpected();
+  }
+  else {
+    LogMan::Msg::D("[JIT] Cookie was correct");
+  }
+}
+
 void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
+  DispatcherCodeBuffer = AllocateNewCodeBuffer(MAX_DISPATCHER_CODE_SIZE);
+  setNewBuffer(DispatcherCodeBuffer.Ptr, DispatcherCodeBuffer.Size);
+
 // Temp registers
 // rax, rcx, rdx, rsi, r8, r9,
 // r10, r11
@@ -4656,7 +4888,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 // 1St Argument: rdi <ThreadState>
 // XMM:
 // All temp
-  DispatchPtr = getCurr<CustomDispatch>();
+  DispatchPtr = getCurr<CPUBackend::AsmDispatch>();
 
   // while (!Thread->State.RunningEvents.ShouldStop.load()) {
   //    Ptr = FindBlock(RIP)
@@ -4676,63 +4908,92 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   //    }
   // }
   // Bunch of exit state stuff
+
+  // x86-64 ABI has the stack aligned when /call/ happens
+  // Which means the destination has a misaligned stack at that point
   push(rbx);
-  push(rbp);
   push(rbp);
   push(r12);
   push(r13);
   push(r14);
   push(r15);
+  sub(rsp, 8);
 
   mov(STATE, rdi);
 
+  // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
+  // regardless of where we were in the stack
+  mov(qword [STATE + offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)], rsp);
+
   Label LoopTop;
-  L(LoopTop);
-
-  mov(r13, Thread->BlockCache->GetPagePointer());
-
-  // Load our RIP
-  mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
-
-  mov(rax, rdx);
-  shr(rax, 12);
-
-  // Load page pointer
-  mov(rdi, qword [r13 + rax * 8]);
-
   Label NoBlock;
-  cmp(rdi, 0);
-  je(NoBlock);
 
-  mov (rax, rdx);
-  and(rax, 0x0FFF);
+  L(LoopTop);
+  AbsoluteLoopTopAddress = getCurr<uint64_t>();
 
-  // Load the block pointer
-  mov(rax, qword [rdi + rax * 8]);
+  {
+    mov(r13, Thread->BlockCache->GetPagePointer());
 
-  cmp(rax, 0);
-  je(NoBlock);
+    // Load our RIP
+    mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
 
-  // Real block if we made it here
-  push(0);
-  call(rax);
-  add(rsp, 8);
+    mov(rax, rdx);
+    mov(rbx, Thread->BlockCache->GetVirtualMemorySize() - 1);
+    and_(rax, rbx);
+    shr(rax, 12);
 
-  Label ExitCheck;
-  L(ExitCheck);
+    // Load page pointer
+    mov(rdi, qword [r13 + rax * 8]);
 
-  cmp(byte [STATE + offsetof(FEXCore::Core::ThreadState, RunningEvents.ShouldStop)], 0);
-  je(LoopTop);
+    cmp(rdi, 0);
+    je(NoBlock);
 
-  pop(r15);
-  pop(r14);
-  pop(r13);
-  pop(r12);
-  pop(rbp);
-  pop(rbp);
-  pop(rbx);
+    mov (rax, rdx);
+    and(rax, 0x0FFF);
 
-  ret();
+    shl(rax, (int)log2(sizeof(FEXCore::BlockCache::BlockCacheEntry)));
+
+    // Load the block pointer
+    mov(rax, qword [rdi + rax]);
+
+    cmp(rax, 0);
+    je(NoBlock);
+
+    // Real block if we made it here
+    call(rax);
+
+    if (CTX->GetGdbServerStatus()) {
+      // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
+      // This happens when single stepping
+      static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
+      mov(rax, qword [STATE + (offsetof(FEXCore::Core::InternalThreadState, CTX))]);
+
+      // If the value == 0 then branch to the top
+      cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
+      je(LoopTop);
+      // Else we need to pause now
+      jmp(ThreadPauseHandler);
+      ud2();
+    }
+    else {
+      jmp(LoopTop);
+    }
+  }
+
+  {
+    ThreadStopHandlerAddress = getCurr<uint64_t>();
+
+    add(rsp, 8);
+
+    pop(r15);
+    pop(r14);
+    pop(r13);
+    pop(r12);
+    pop(rbp);
+    pop(rbx);
+
+    ret();
+  }
 
   Label FallbackCore;
   // Block creation
@@ -4752,12 +5013,14 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     mov(rdi, reinterpret_cast<uint64_t>(CTX));
     mov(rsi, STATE);
     mov(rax, Ptr.Data);
+
     call(rax);
+
     // RAX contains nulptr or block ptr here
     cmp(rax, 0);
     je(FallbackCore);
     // rdx already contains RIP here
-    jmp(ExitCheck);
+    jmp(LoopTop);
   }
 
   {
@@ -4765,11 +5028,54 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ud2();
   }
 
+  {
+    // Interpreter fallback helper code
+    InterpreterFallbackHelperAddress = getCurr<void*>();
+    // This will get called so our stack is now misaligned
+    sub(rsp, 8);
+    mov(rdi, STATE);
+    mov(rax, reinterpret_cast<uint64_t>(ThreadState->IntBackend->CompileCode(nullptr, nullptr)));
+
+    call(rax);
+
+    // Adjust the stack to remove the alignment and also the return address
+    // We will have been called from the ASM dispatcher, so we know where we came from
+    add(rsp, 16);
+
+    jmp(LoopTop);
+  }
+
+  {
+    // Signal return handler
+    SignalHandlerReturnAddress = getCurr<uint64_t>();
+
+    ud2();
+  }
+
+  {
+    // Pause handler
+    ThreadPauseHandlerAddress = getCurr<uint64_t>();
+    L(ThreadPauseHandler);
+
+    mov(rdi, reinterpret_cast<uintptr_t>(CTX));
+    mov(rsi, STATE);
+    mov(rax, reinterpret_cast<uint64_t>(SleepThread));
+
+    call(rax);
+
+    PauseReturnInstruction = getCurr<uint64_t>();
+    ud2();
+  }
+
   ready();
-  // CustomDispatchGenerated = true;
+
+  void *Exit = getCurr<void*>();
+  LogMan::Msg::D("Dispatcher : disas %p,%p", DispatchPtr, Exit);
+
+  setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return new JITCore(ctx, Thread);
+  return new JITCore(ctx, Thread, AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE));
 }
 }

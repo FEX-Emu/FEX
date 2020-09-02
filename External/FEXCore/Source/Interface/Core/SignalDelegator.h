@@ -92,6 +92,10 @@ namespace Core {
 
     constexpr static size_t MAX_SIGNALS {64};
 
+    // Use the last signal just so we are less likely to ever conflict with something that the guest application is using
+    // 64 is used internally by Valgrind
+    constexpr static size_t SIGNAL_FOR_PAUSE {63};
+
   private:
     struct SignalHandler {
       std::atomic<bool> Installed{};
@@ -102,7 +106,7 @@ namespace Core {
       GuestSigAction GuestAction{};
     };
 
-    SignalHandler HostHandlers[MAX_SIGNALS]{};
+    SignalHandler HostHandlers[MAX_SIGNALS + 1]{};
     bool InstallHostThunk(int Signal);
     void UpdateHostThunk(int Signal);
 
