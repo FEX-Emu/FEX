@@ -2,6 +2,7 @@
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
+#include "Common/BitSet.h"
 
 #include <iostream>
 
@@ -33,6 +34,11 @@ bool IRValidation::Run(IREmitter *IREmit) {
   std::ostringstream Errors;
   std::ostringstream Warnings;
 
+  BitSet<uint64_t> NodeIsLive;
+  NodeIsLive.Allocate(CurrentIR.GetSSACount());
+
+  std::vector<uint32_t> Uses(CurrentIR.GetSSACount(), 0);
+
   auto Begin = CurrentIR.begin();
   auto Op = Begin();
 
@@ -51,6 +57,8 @@ bool IRValidation::Run(IREmitter *IREmit) {
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
     BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
+
+
 
     // We grab these nodes this way so we can iterate easily
     auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
@@ -106,6 +114,9 @@ bool IRValidation::Run(IREmitter *IREmit) {
       }
 
       uint8_t NumArgs = IR::GetArgs(IROp->Op);
+
+      if (NumArgs != IROp->NumArgs)
+        Errors << "%ssa" << CodeOp->ID() << ": Has wrong number of Args" << std::endl;
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         // Was an argument defined after this node?
@@ -113,7 +124,16 @@ bool IRValidation::Run(IREmitter *IREmit) {
           HadError |= true;
           Errors << "%ssa" << CodeOp->ID() << ": Arg[" << i << "] has definition after use at %ssa" << Arg.ID() << std::endl;
         }
+
+        if (!NodeIsLive.Get(Arg.ID())) {
+          HadError |= true;
+          Errors << "%ssa" << CodeOp->ID() << ": Arg[" << i << "] refrences dead %ssa" << Arg.ID() << std::endl;
+        }
+
+        Uses[Arg.ID()]++;
       }
+
+      NodeIsLive.Set(CodeOp->ID());
 
       switch (IROp->Op) {
         case IR::OP_EXITFUNCTION: {
@@ -229,6 +249,12 @@ bool IRValidation::Run(IREmitter *IREmit) {
     } else {
       BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
+  }
+
+  for (int i = 0; i < CurrentIR.GetSSACount(); i++) {
+    auto Node = OrderedNodeWrapper::WrapOffset(i * sizeof(IR::OrderedNode)).GetNode(ListBegin);
+    if (Node->NumUses != Uses[i])
+      Errors << "%ssa" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
   }
 
   std::stringstream Out;
