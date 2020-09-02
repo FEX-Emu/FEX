@@ -178,6 +178,7 @@ set (SRCS
   Interface/IR/Passes/ValueDominanceValidation.cpp
   Interface/IR/Passes/PhiValidation.cpp
   Interface/IR/Passes/RedundantFlagCalculationElimination.cpp
+  Interface/IR/Passes/DeadFlagStoreElimination.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
   )
