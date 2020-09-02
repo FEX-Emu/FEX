@@ -118,7 +118,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       break;
       }
       case OP_AND: {
-        auto Op = IROp->C<IR::IROp_And>();
+        auto Op = IROp->CW<IR::IROp_And>();
         uint64_t Constant1;
         uint64_t Constant2;
 
@@ -129,11 +129,15 @@ bool ConstProp::Run(IREmitter *IREmit) {
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
+        } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
+          // AND with same value results in original value
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Op->Header.Args[0].GetNode(ListBegin), CodeBegin, CodeLast);
+          Changed = true;
         }
       break;
       }
       case OP_OR: {
-        auto Op = IROp->C<IR::IROp_Or>();
+        auto Op = IROp->CW<IR::IROp_Or>();
         uint64_t Constant1;
         uint64_t Constant2;
 
@@ -144,11 +148,15 @@ bool ConstProp::Run(IREmitter *IREmit) {
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
           Changed = true;
+        } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
+          // OR with same value results in original value
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Op->Header.Args[0].GetNode(ListBegin), CodeBegin, CodeLast);
+          Changed = true;
         }
       break;
       }
       case OP_XOR: {
-        auto Op = IROp->C<IR::IROp_Xor>();
+        auto Op = IROp->CW<IR::IROp_Xor>();
         uint64_t Constant1;
         uint64_t Constant2;
 
@@ -158,6 +166,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
           IREmit->SetWriteCursor(CodeNode);
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
+          // XOR with same value results to zero
+          IREmit->SetWriteCursor(CodeNode);
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, IREmit->_Constant(0), CodeBegin, CodeLast);
           Changed = true;
         }
       break;
@@ -187,7 +200,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
 
       case OP_BFE: {
-        auto Op = IROp->C<IR::IROp_Bfe>();
+        auto Op = IROp->CW<IR::IROp_Bfe>();
         uint64_t Constant;
         if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
           uint64_t SourceMask = (1ULL << Op->Width) - 1;
@@ -199,6 +212,10 @@ bool ConstProp::Run(IREmitter *IREmit) {
           IREmit->SetWriteCursor(CodeNode);
           auto ConstantVal = IREmit->_Constant(NewConstant);
           IREmit->ReplaceAllUsesWithInclusive(CodeNode, ConstantVal, CodeBegin, CodeLast);
+          Changed = true;
+        } else if (IROp->Size == Op->Header.Args[0].GetNode(ListBegin)->Op(DataBegin)->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0 ) {
+          // A BFE that extracts all bits results in original value
+          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Op->Header.Args[0].GetNode(ListBegin), CodeBegin, CodeLast);
           Changed = true;
         }
 
