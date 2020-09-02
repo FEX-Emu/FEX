@@ -261,16 +261,8 @@ namespace {
     uintptr_t ListBegin = IR->GetListData();
     uintptr_t DataBegin = IR->GetData();
 
-    auto Begin = IR->begin();
-    auto Op = Begin();
-
-    FEXCore::IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
-    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == FEXCore::IR::OP_IRHEADER, "First op wasn't IRHeader");
-
-    FEXCore::IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-    while (1) {
+    for (auto Block : IR->getBlocks()) {
+      auto BlockNode = Block.GetNode(ListBegin);
       auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == FEXCore::IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -293,12 +285,6 @@ namespace {
           break;
         }
         ++CodeBegin;
-      }
-
-      if (BlockIROp->Next.ID() == 0) {
-        break;
-      } else {
-        BlockNode = BlockIROp->Next.GetNode(ListBegin);
       }
     }
   }
@@ -398,17 +384,9 @@ namespace FEXCore::IR {
     uintptr_t ListBegin = IR->GetListData();
     uintptr_t DataBegin = IR->GetData();
 
-    auto Begin = IR->begin();
-    auto Op = Begin();
-
-    IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
-    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
-    IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
-    while (1) {
+    for (auto Block : IR->getBlocks()) {
+      auto BlockNode = Block.GetNode(ListBegin);
       auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -482,12 +460,6 @@ namespace FEXCore::IR {
         }
         ++CodeBegin;
       }
-
-      if (BlockIROp->Next.ID() == 0) {
-        break;
-      } else {
-        BlockNode = BlockIROp->Next.GetNode(ListBegin);
-      }
     }
   }
 
@@ -496,16 +468,8 @@ namespace FEXCore::IR {
     uintptr_t ListBegin = IR->GetListData();
     uintptr_t DataBegin = IR->GetData();
 
-    auto Begin = IR->begin();
-    auto Op = Begin();
-
-    IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
-    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
-    IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-    while (1) {
+    for (auto Block : IR->getBlocks()) {
+      auto BlockNode = Block.GetNode(ListBegin);
       auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -537,12 +501,6 @@ namespace FEXCore::IR {
         }
         ++CodeBegin;
       }
-
-      if (BlockIROp->Next.ID() == 0) {
-        break;
-      } else {
-        BlockNode = BlockIROp->Next.GetNode(ListBegin);
-      }
     }
   }
 
@@ -565,16 +523,8 @@ namespace FEXCore::IR {
     uintptr_t ListBegin = IR->GetListData();
     uintptr_t DataBegin = IR->GetData();
 
-    auto Begin = IR->begin();
-    auto Op = Begin();
-
-    IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
-    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
-    IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-    while (1) {
+    for (auto Block : IR->getBlocks()) {
+      auto BlockNode = Block.GetNode(ListBegin);
       auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -623,12 +573,6 @@ namespace FEXCore::IR {
           break;
         }
         ++CodeBegin;
-      }
-
-      if (BlockIROp->Next.ID() == 0) {
-        break;
-      } else {
-        BlockNode = BlockIROp->Next.GetNode(ListBegin);
       }
     }
   }
@@ -1165,12 +1109,6 @@ namespace FEXCore::IR {
           break;
         }
         ++CodeBegin;
-      }
-
-      if (BlockIROp->Next.ID() == 0) {
-        break;
-      } else {
-        BlockNode = BlockIROp->Next.GetNode(ListBegin);
       }
     }
   }

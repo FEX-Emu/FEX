@@ -98,13 +98,53 @@ public:
   size_t GetListSize() const { return ListSize; }
   size_t GetSSACount() const { return ListSize / sizeof(OrderedNode); }
 
+  OrderedNode* GetHeaderNode() const {
+    OrderedNodeWrapper Wrapped;
+    Wrapped.NodeOffset = sizeof(OrderedNode);
+    return Wrapped.GetNode(GetListData());
+  }
+
+  const IROp_IRHeader *GetHeader() const {
+    auto Node = GetHeaderNode();
+    FEXCore::IR::IROp_Header* Header = Node->Op(GetData());
+
+    return Header->C<IROp_IRHeader>();
+  }
+
+private:
+  struct Blocks {
+    const IRListView *view;
+
+    Blocks(const IRListView *parent) : view(parent) {};
+
+    using iterator = NodeWrapperIterator;
+
+    iterator begin() const noexcept {
+      auto Header = view->GetHeader();
+      return iterator(reinterpret_cast<uintptr_t>(view->ListData), reinterpret_cast<uintptr_t>(view->IRData), Header->Blocks);
+    }
+
+    iterator end() const noexcept
+    {
+      OrderedNodeWrapper Wrapped;
+      Wrapped.NodeOffset = 0;
+      return iterator(reinterpret_cast<uintptr_t>(view->ListData), reinterpret_cast<uintptr_t>(view->IRData), Wrapped);
+    }
+  };
+
+public:
+
+  Blocks getBlocks() const {
+    return Blocks(this);
+  }
+
   using iterator = NodeWrapperIterator;
 
   iterator begin() const noexcept
   {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
-    return iterator(reinterpret_cast<uintptr_t>(ListData), Wrapped);
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
   }
 
   /**
@@ -116,7 +156,7 @@ public:
   {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = 0;
-    return iterator(reinterpret_cast<uintptr_t>(ListData), Wrapped);
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
   }
 
   /**
@@ -124,7 +164,7 @@ public:
    * @return Iterator for this op
    */
   iterator at(OrderedNodeWrapper Node) const noexcept {
-    return iterator(reinterpret_cast<uintptr_t>(ListData), Node);
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Node);
   }
 
 private:

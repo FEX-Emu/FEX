@@ -422,10 +422,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   uintptr_t ListBegin = CurrentIR->GetListData();
   uintptr_t DataBegin = CurrentIR->GetData();
 
-  auto HeaderIterator = CurrentIR->begin();
-  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  auto HeaderOp = CurrentIR->GetHeader();
   LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
   if (HeaderOp->ShouldInterpret) {
@@ -514,10 +511,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     ret();
   };
 
-  IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  while (1) {
+  for (auto Block : CurrentIR->getBlocks()) {
     using namespace FEXCore::IR;
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    auto BlockNode = Block.GetNode(ListBegin);
+    auto BlockIROp = BlockNode->Op(DataBegin)->CW<IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     // We grab these nodes this way so we can iterate easily
@@ -591,9 +588,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_ENDBLOCK: {
           auto Op = IROp->C<IR::IROp_EndBlock>();
-          if (Op->RIPIncrement) {
-            add(qword [STATE + offsetof(FEXCore::Core::CPUState, rip)], Op->RIPIncrement);
-          }
           break;
         }
         case IR::OP_EXITFUNCTION: {
@@ -4832,12 +4826,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         break;
       }
       ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 

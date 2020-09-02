@@ -20,19 +20,10 @@ bool DeadCodeElimination::Run(IREmitter *IREmit) {
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
-
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
-
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
   int NumRemoved = 0;
 
-  while (1) {
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+  for (auto Block : CurrentIR.getBlocks()) {
+    auto BlockIROp = Block.GetNode(ListBegin)->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
     // We grab these nodes this way so we can iterate easily
@@ -57,12 +48,6 @@ bool DeadCodeElimination::Run(IREmitter *IREmit) {
         break;
       }
       --CodeLast;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 

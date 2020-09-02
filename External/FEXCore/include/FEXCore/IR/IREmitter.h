@@ -454,21 +454,20 @@ friend class FEXCore::IR::PassManager;
    * @return OrderedNode
    */
   IRPair<IROp_CodeBlock> CreateCodeNode() {
-    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode, InvalidNode);
+    SetWriteCursor(nullptr); // Orphan from any previous nodes
+
+    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode);
     CodeBlocks.emplace_back(CodeNode);
+
+    SetWriteCursor(nullptr);// Orphan from any future nodes
+
+    auto Begin = _Dummy();
+    CodeNode.first->Begin = Begin.Node->Wrapped(ListData.Begin());
+
+    auto EndBlock = _EndBlock(CodeNode);
+    CodeNode.first->Last = EndBlock.Node->Wrapped(ListData.Begin());
+
     return CodeNode;
-  }
-
-  void SetCodeNodeBegin(OrderedNode *CodeNode, OrderedNode *Begin) {
-     FEXCore::IR::IROp_CodeBlock *IROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
-     LogMan::Throw::A(IROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
-     IROp->Begin = Begin->Wrapped(ListData.Begin());
-  }
-
-  void SetCodeNodeLast(OrderedNode *CodeNode, OrderedNode *Last) {
-     FEXCore::IR::IROp_CodeBlock *IROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
-     LogMan::Throw::A(IROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
-     IROp->Last = Last->Wrapped(ListData.Begin());
   }
 
   /**
@@ -483,22 +482,10 @@ friend class FEXCore::IR::PassManager;
    * @{ */
   /**  @} */
   void LinkCodeBlocks(OrderedNode *CodeNode, OrderedNode *Next) {
-     FEXCore::IR::IROp_CodeBlock *CurrentIROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
-     LogMan::Throw::A(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
+    FEXCore::IR::IROp_CodeBlock *CurrentIROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
 
-     OrderedNodeWrapper OldNext = CurrentIROp->Next;
-     // First thing is to assign CodeNode->Next to the incoming node
-     {
-       CurrentIROp->Next = Next->Wrapped(ListData.Begin());
-     }
-
-     // Second thing is to assign the incoming node's Next to what was in CodeNode->Next
-     {
-       FEXCore::IR::IROp_CodeBlock *NextIROp = Next->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
-       auto NewOldNext = NextIROp->Next;
-       NextIROp->Next = OldNext;
-       OldNext = NewOldNext;
-     }
+    CodeNode->append(ListData.Begin(), Next);
   }
 
   IRPair<IROp_CodeBlock> CreateNewCodeBlock();

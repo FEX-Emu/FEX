@@ -48,10 +48,8 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   uintptr_t ListBegin = CurrentIR.GetListData();
   uintptr_t DataBegin = CurrentIR.GetData();
 
-  auto HeaderIterator = CurrentIR.begin();
-  OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  auto HeaderNode = CurrentIR.GetHeaderNode();
+  auto HeaderOp = CurrentIR.GetHeader();
   LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   // This compaction pass is something that we need to ensure correct ordering and distances between IROps
@@ -75,32 +73,23 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   {
     // Generate our codeblocks and link them together
-    OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
     OrderedNode* PrevCodeBlock{};
-    while (1) {
+    for (auto Block : CurrentIR.getBlocks()) {
+      auto BlockNode = Block.GetNode(ListBegin);
       auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-      auto LocalBlockIRNode = LocalBuilder.CreateCodeNode();
+      auto LocalBlockIRNode = LocalBuilder._CodeBlock(LocalHeaderOp, LocalHeaderOp); // Use LocalHeaderOp as a dummy arg for now
       OldToNewRemap[BlockNode->Wrapped(ListBegin).ID()] = LocalBlockIRNode.Node->Wrapped(LocalListBegin).ID();
       GeneratedCodeBlocks.emplace_back(CodeBlockData{BlockNode, LocalBlockIRNode});
-
-      if (PrevCodeBlock) {
-        auto PrevLocalBlockIROp = PrevCodeBlock->Op(LocalDataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-        PrevLocalBlockIROp->Next = LocalBlockIRNode.Node->Wrapped(LocalListBegin);
-      }
-
-      if (BlockIROp->Next.ID() == 0) {
-        break;
-      } else {
-        BlockNode = BlockIROp->Next.GetNode(ListBegin);
-        PrevCodeBlock = LocalBlockIRNode;
-      }
     }
 
     // Link the IRHeader to the first code block
     LocalHeaderOp.first->Blocks = GeneratedCodeBlocks[0].NewNode->Wrapped(LocalListBegin);
   }
+
+  // Isolate the nodes from the Block headers
+  LocalBuilder.SetWriteCursor(nullptr);
 
   {
     // Copy all of our IR ops over to the new location

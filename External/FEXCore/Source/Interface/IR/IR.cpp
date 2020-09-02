@@ -115,14 +115,9 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
   uintptr_t ListBegin = IR->GetListData();
   uintptr_t DataBegin = IR->GetData();
 
-  auto Begin = IR->begin();
-  auto Op = Begin();
-
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  auto HeaderOp = IR->GetHeader();
   LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
   int8_t CurrentIndent = 0;
   auto AddIndent = [&out, &CurrentIndent]() {
     for (uint8_t i = 0; i < CurrentIndent; ++i) {
@@ -132,14 +127,15 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
 
   ++CurrentIndent;
   AddIndent();
-  *out << "(%ssa" << std::to_string(RealNode->Wrapped(ListBegin).ID()) << ") " << "IRHeader ";
+  *out << "(%ssa0) " << "IRHeader ";
   *out << "#0x" << std::hex << HeaderOp->Entry << ", ";
   *out << "%ssa" << HeaderOp->Blocks.ID() << ", ";
   *out << "#" << std::dec << HeaderOp->BlockCount << std::endl;
 
-  while (1) {
+  for (auto Block : IR->getBlocks()) {
+    auto BlockNode = Block.GetNode(ListBegin);
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+   // LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
     // We grab these nodes this way so we can iterate easily
     auto CodeBegin = IR->at(BlockIROp->Begin);
@@ -149,8 +145,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
     *out << "(%ssa" << std::to_string(BlockNode->Wrapped(ListBegin).ID()) << ") " << "CodeBlock ";
 
     *out << "%ssa" << std::to_string(BlockIROp->Begin.ID()) << ", ";
-    *out << "%ssa" << std::to_string(BlockIROp->Last.ID()) << ", ";
-    *out << "%ssa" << std::to_string(BlockIROp->Next.ID()) << std::endl;
+    *out << "%ssa" << std::to_string(BlockIROp->Last.ID()) << std::endl;
 
     ++CurrentIndent;
     while (1) {
@@ -268,12 +263,6 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
     }
 
     CurrentIndent = std::max(0, CurrentIndent - 1);
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
-    }
   }
 }
 

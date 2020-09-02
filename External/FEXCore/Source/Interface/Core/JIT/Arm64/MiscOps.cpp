@@ -10,7 +10,6 @@ DEF_OP(EndBlock) {
   auto Op = IROp->C<IR::IROp_EndBlock>();
   if (Op->RIPIncrement) {
     ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
-    add(TMP1, TMP1, Operand(Op->RIPIncrement));
     str(TMP1,  MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
   }
 }

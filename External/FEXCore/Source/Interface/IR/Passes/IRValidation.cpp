@@ -39,20 +39,16 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
   std::vector<uint32_t> Uses(CurrentIR.GetSSACount(), 0);
 
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
-
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
+  auto HeaderOp = CurrentIR.GetHeader();
   LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
   IR::RegisterAllocationPass * RAPass{};
   if (Manager->HasRAPass() && !HeaderOp->ShouldInterpret) {
     RAPass = Manager->GetRAPass();
   }
 
-  while (1) {
+  for (auto Block : CurrentIR.getBlocks()) {
+    auto BlockNode = Block.GetNode(ListBegin);
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -80,7 +76,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
         }
 
         // Does the node have zero uses? Should have been DCE'd
-        if (RealNode->GetUses() == 0) {
+        if (CodeNode->GetUses() == 0) {
           HadWarning |= true;
           Warnings << "%ssa" << CodeOp->ID() << ": Destination created but had no uses" << std::endl;
         }
@@ -242,12 +238,6 @@ bool IRValidation::Run(IREmitter *IREmit) {
             Errors << "%ssa" << BlockNode->Wrapped(ListBegin).ID() << " Didn't have an exit IR op as its last instruction" << std::endl;
         };
       }
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 

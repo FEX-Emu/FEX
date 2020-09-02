@@ -66,15 +66,8 @@ void IREmitter::Remove(OrderedNode *Node) {
 
 IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlock() {
   auto OldCursor = GetWriteCursor();
-  SetWriteCursor(CodeBlocks.back());
 
   auto CodeNode = CreateCodeNode();
-
-  auto NewNode = _Dummy();
-  SetCodeNodeBegin(CodeNode, NewNode);
-
-  auto EndBlock = _EndBlock(0);
-  SetCodeNodeLast(CodeNode, EndBlock);
 
   if (CurrentCodeBlock) {
     LinkCodeBlocks(CurrentCodeBlock, CodeNode);

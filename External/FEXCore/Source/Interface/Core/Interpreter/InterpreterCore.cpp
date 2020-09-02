@@ -99,7 +99,9 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
   auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
   LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
-  IR::OrderedNode const *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+  auto BlockIterator = CurrentIR->getBlocks().begin();
+  auto BlockEnd = CurrentIR->getBlocks().end();
+
 
   // Allocate 16 bytes per SSA
   void *SSAData = alloca(ListSize * 16);
@@ -117,6 +119,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
   while (1) {
     using namespace FEXCore::IR;
+    IR::OrderedNode const *BlockNode = BlockIterator()->GetNode(ListBegin);
     auto BlockIROp = BlockNode->Op(DataBegin)->C<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -142,7 +145,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             break;
           case IR::OP_ENDBLOCK: {
             auto Op = IROp->C<IR::IROp_EndBlock>();
-            Thread->State.State.rip += Op->RIPIncrement;
             break;
           }
           case IR::OP_FENCE: {
@@ -169,10 +171,10 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_CondJump>();
             uint64_t Arg = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
             if (!!Arg) {
-              BlockNode = Op->Header.Args[1].GetNode(ListBegin);
+              BlockIterator = NodeWrapperIterator(ListBegin, DataBegin, Op->Header.Args[1]);
             }
             else  {
-              BlockNode = Op->Header.Args[2].GetNode(ListBegin);
+              BlockIterator = NodeWrapperIterator(ListBegin, DataBegin, Op->Header.Args[2]);
             }
             BlockResults.Redo = true;
             return;
@@ -180,7 +182,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_JUMP: {
             auto Op = IROp->C<IR::IROp_Jump>();
-            BlockNode = Op->Header.Args[0].GetNode(ListBegin);
+            BlockIterator = NodeWrapperIterator(ListBegin, DataBegin, Op->Header.Args[0]);
             BlockResults.Redo = true;
             return;
             break;
@@ -4230,10 +4232,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
       continue;
     }
 
-    if (BlockIROp->Next.ID() == 0 || BlockResults.Quit) {
+    if (BlockResults.Quit || ++BlockIterator == BlockEnd) {
       break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 

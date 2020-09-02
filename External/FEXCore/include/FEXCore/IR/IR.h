@@ -89,7 +89,7 @@ static_assert(sizeof(OrderedNodeHeader) == sizeof(uint32_t) * 3);
 * This stores both the memory base and the provided NodeWrapper to be able to walk the list of nodes directly
 * Only the increment and decrement implementations of this class require understanding the implementation details of OrderedNode
 */
-class NodeWrapperIterator final {
+class NodeWrapperIterator {
 public:
 	using value_type              = OrderedNodeWrapper;
 	using size_type               = std::size_t;
@@ -108,8 +108,8 @@ public:
 	using NodePtr = value_type*;
 	using NodeRef = value_type&;
 
-	NodeWrapperIterator(uintptr_t Base) : BaseList {Base} {}
-	explicit NodeWrapperIterator(uintptr_t Base, NodeType Ptr) : BaseList {Base}, Node {Ptr} {}
+	NodeWrapperIterator(uintptr_t Base, uintptr_t IRBase) : BaseList {Base}, IRList{ IRBase } {}
+	explicit NodeWrapperIterator(uintptr_t Base, uintptr_t IRBase, NodeType Ptr) : BaseList {Base},  IRList{ IRBase }, Node {Ptr} {}
 
 	bool operator==(const NodeWrapperIterator &rhs) const {
 		return Node.NodeOffset == rhs.Node.NodeOffset;
@@ -119,17 +119,17 @@ public:
 		return !operator==(rhs);
 	}
 
-	NodeWrapperIterator operator++() {
+  NodeWrapperIterator operator++() {
 		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
-		Node = RealNode->Next;
-		return *this;
-	}
+    Node = RealNode->Next;
+    return *this;
+  }
 
-	NodeWrapperIterator operator--() {
-		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
-		Node = RealNode->Previous;
-		return *this;
-	}
+  NodeWrapperIterator operator--() {
+    OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
+    Node = RealNode->Previous;
+    return *this;
+  }
 
 	NodeRef operator*() {
 		return Node;
@@ -140,11 +140,12 @@ public:
 	}
 
   static NodeWrapperIterator Invalid() {
-    return NodeWrapperIterator(0);
+    return NodeWrapperIterator(0, 0);
   }
 
-private:
+protected:
 	uintptr_t BaseList{};
+  uintptr_t IRList{};
 	NodeType Node{};
 };
 

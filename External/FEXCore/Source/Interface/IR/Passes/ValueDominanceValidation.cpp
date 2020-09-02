@@ -30,16 +30,8 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
 
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
-
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
-
-  // Walk the list and calculate the control flow
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  while (1) {
+  for (auto Block : CurrentIR.getBlocks()) {
+    auto BlockNode = Block.GetNode(ListBegin);
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -96,16 +88,10 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
       }
       ++CodeBegin;
     }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
-    }
   }
 
-  BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  while (1) {
+  for (auto Block : CurrentIR.getBlocks()) {
+    auto BlockNode = Block.GetNode(ListBegin);
     auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -227,12 +213,6 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
         break;
       }
       ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 
