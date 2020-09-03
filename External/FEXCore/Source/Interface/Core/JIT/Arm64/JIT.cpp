@@ -681,6 +681,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), CodeEnd - reinterpret_cast<uint64_t>(Entry));
 
+  if (DebugData) {
+    DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(CodeEnd) - reinterpret_cast<uintptr_t>(Entry);
+  }
+
   return reinterpret_cast<void*>(Entry);
 }
 
