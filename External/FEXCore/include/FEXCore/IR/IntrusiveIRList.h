@@ -117,7 +117,7 @@ private:
 
     Blocks(const IRListView *parent) : view(parent) {};
 
-    using iterator = NodeWrapperIterator;
+    using iterator = NodeIterator;
 
     iterator begin() const noexcept {
       auto Header = view->GetHeader();

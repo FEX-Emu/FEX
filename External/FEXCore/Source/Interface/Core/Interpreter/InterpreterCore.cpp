@@ -119,8 +119,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
   while (1) {
     using namespace FEXCore::IR;
-    IR::OrderedNode const *BlockNode = BlockIterator()->GetNode(ListBegin);
-    auto BlockIROp = BlockNode->Op(DataBegin)->C<FEXCore::IR::IROp_CodeBlock>();
+    auto [BlockNode, BlockHeader] = BlockIterator();
+    auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     // We grab these nodes this way so we can iterate easily
@@ -142,11 +142,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
         switch (IROp->Op) {
           case IR::OP_DUMMY:
           case IR::OP_BEGINBLOCK:
+          case IR::OP_ENDBLOCK:
             break;
-          case IR::OP_ENDBLOCK: {
-            auto Op = IROp->C<IR::IROp_EndBlock>();
-            break;
-          }
           case IR::OP_FENCE: {
             auto Op = IROp->C<IR::IROp_Fence>();
             switch (Op->Fence) {
@@ -171,10 +168,10 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_CondJump>();
             uint64_t Arg = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
             if (!!Arg) {
-              BlockIterator = NodeWrapperIterator(ListBegin, DataBegin, Op->Header.Args[1]);
+              BlockIterator = NodeIterator(ListBegin, DataBegin, Op->Header.Args[1]);
             }
             else  {
-              BlockIterator = NodeWrapperIterator(ListBegin, DataBegin, Op->Header.Args[2]);
+              BlockIterator = NodeIterator(ListBegin, DataBegin, Op->Header.Args[2]);
             }
             BlockResults.Redo = true;
             return;
@@ -182,7 +179,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_JUMP: {
             auto Op = IROp->C<IR::IROp_Jump>();
-            BlockIterator = NodeWrapperIterator(ListBegin, DataBegin, Op->Header.Args[0]);
+            BlockIterator = NodeIterator(ListBegin, DataBegin, Op->Header.Args[0]);
             BlockResults.Redo = true;
             return;
             break;

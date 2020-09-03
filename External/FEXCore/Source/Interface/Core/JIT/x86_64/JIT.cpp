@@ -511,10 +511,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     ret();
   };
 
-  for (auto Block : CurrentIR->getBlocks()) {
+  for (auto [BlockNode, BlockHeader] : CurrentIR->getBlocks()) {
     using namespace FEXCore::IR;
-    auto BlockNode = Block.GetNode(ListBegin);
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<IROp_CodeBlock>();
+    auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     // We grab these nodes this way so we can iterate easily

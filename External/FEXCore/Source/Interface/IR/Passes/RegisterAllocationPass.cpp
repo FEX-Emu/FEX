@@ -261,9 +261,8 @@ namespace {
     uintptr_t ListBegin = IR->GetListData();
     uintptr_t DataBegin = IR->GetData();
 
-    for (auto Block : IR->getBlocks()) {
-      auto BlockNode = Block.GetNode(ListBegin);
-      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == FEXCore::IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
       // We grab these nodes this way so we can iterate easily
@@ -385,9 +384,8 @@ namespace FEXCore::IR {
     uintptr_t DataBegin = IR->GetData();
 
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
-    for (auto Block : IR->getBlocks()) {
-      auto BlockNode = Block.GetNode(ListBegin);
-      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
       // We grab these nodes this way so we can iterate easily
@@ -466,11 +464,9 @@ namespace FEXCore::IR {
   void ConstrainedRAPass::CalculateBlockInterferences(FEXCore::IR::IRListView<false> *IR) {
     using namespace FEXCore;
     uintptr_t ListBegin = IR->GetListData();
-    uintptr_t DataBegin = IR->GetData();
 
-    for (auto Block : IR->getBlocks()) {
-      auto BlockNode = Block.GetNode(ListBegin);
-      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
       BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
@@ -521,11 +517,9 @@ namespace FEXCore::IR {
     };
     using namespace FEXCore;
     uintptr_t ListBegin = IR->GetListData();
-    uintptr_t DataBegin = IR->GetData();
 
-    for (auto Block : IR->getBlocks()) {
-      auto BlockNode = Block.GetNode(ListBegin);
-      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
       BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;

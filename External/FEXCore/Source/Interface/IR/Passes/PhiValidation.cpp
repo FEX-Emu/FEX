@@ -19,8 +19,8 @@ bool PhiValidation::Run(IREmitter *IREmit) {
   std::ostringstream Errors;
 
   // Walk the list and calculate the control flow
-  for (auto Block : CurrentIR.getBlocks()) {
-    auto BlockIROp = Block.GetNode(ListBegin)->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+  for (auto [BlockNode, BlockHeader] : CurrentIR.getBlocks()) {
+    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
     // We grab these nodes this way so we can iterate easily
