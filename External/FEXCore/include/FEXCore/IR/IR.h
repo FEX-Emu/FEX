@@ -85,45 +85,6 @@ struct OrderedNodeHeader {
 
 static_assert(sizeof(OrderedNodeHeader) == sizeof(uint32_t) * 3);
 
-
-
-// class AllNodesIterator : public NodeWrapperIterator {
-//   AllNodesIterator operator++() {
-// 		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
-//     auto IROp = Node.GetNode(BaseList)->Op(IRList);
-
-//     // If this is the last node of a codeblock, we need to continue to the next block
-//     if (IROp->Op == OP_ENDBLOCK) {
-//       auto EndBlock = IROp->C<IROp_EndBlock>();
-
-//       OrderedNodeHeader *CurrentBlock = EndBlock->BlockHeader;
-
-//       Node = CurrentBlock->Next;
-//     } else if (IROp->Op == OP_CODEBLOCK) {
-//       auto CodeBlock = IROp->C<IROp_CodeBlock>();
-
-//       Node = CodeBlock->Begin;
-//     } else {
-//       Node = RealNode->Next;
-//     }
-
-// 		return *this;
-// 	}
-
-//   AllNodesIterator operator--() {
-// 		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
-//     auto IROp = Node.GetNode(BaseList)->Op(IRList);
-
-//     // Reverse iterator is a little harder
-//     if (IROp->Op == OP_CODEBLOCK) {
-
-//     }
-
-// 		Node = RealNode->Previous;
-// 		return *this;
-// 	}
-// };
-
 /**
  * @brief This is a node in our IR representation
  * Is a doubly linked list node that lives in a representation of a linearly allocated node list
@@ -428,9 +389,6 @@ public:
 	using const_reverse_iterator  = const_iterator;
 	using iterator_category       = std::bidirectional_iterator_tag;
 
-	using NodePtr = value_type*;
-	using NodeRef = value_type&;
-
 	NodeIterator(uintptr_t Base, uintptr_t IRBase) : BaseList {Base}, IRList{ IRBase } {}
 	explicit NodeIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : BaseList {Base},  IRList{ IRBase }, Node {Ptr} {}
 
@@ -479,6 +437,36 @@ protected:
 #define IROP_SIZES
 #define IROP_REG_CLASSES
 #include <FEXCore/IR/IRDefines.inc>
+
+class AllNodesIterator : public NodeIterator {
+  using iterator_category = std::forward_iterator_tag;
+public:
+  AllNodesIterator(uintptr_t Base, uintptr_t IRBase) : NodeIterator(Base, IRBase) {}
+	explicit AllNodesIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : NodeIterator(Base, IRBase, Ptr) {}
+
+  AllNodesIterator operator++() {
+		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
+    auto IROp = Node.GetNode(BaseList)->Op(IRList);
+
+    // If this is the last node of a codeblock, we need to continue to the next block
+    if (IROp->Op == OP_ENDBLOCK) {
+      auto EndBlock = IROp->C<IROp_EndBlock>();
+
+      auto CurrentBlock = EndBlock->BlockHeader.GetNode(BaseList);
+      Node = CurrentBlock->Header.Next;
+    } else if (IROp->Op == OP_CODEBLOCK) {
+      auto CodeBlock = IROp->C<IROp_CodeBlock>();
+
+      Node = CodeBlock->Begin;
+    } else {
+      Node = RealNode->Next;
+    }
+
+		return *this;
+	}
+
+  AllNodesIterator operator--() = delete;
+};
 
 template<bool>
 class IRListView;

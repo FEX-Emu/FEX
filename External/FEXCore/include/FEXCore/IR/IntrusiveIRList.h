@@ -129,30 +129,68 @@ public:
   }
 
 private:
-  struct Blocks {
-    const IRListView *view;
-
-    Blocks(const IRListView *parent) : view(parent) {};
-
+  struct BlockRange {
     using iterator = NodeIterator;
+    const IRListView *View;
+
+    BlockRange(const IRListView *parent) : View(parent) {};
 
     iterator begin() const noexcept {
-      auto Header = view->GetHeader();
-      return iterator(reinterpret_cast<uintptr_t>(view->ListData), reinterpret_cast<uintptr_t>(view->IRData), Header->Blocks);
+      auto Header = View->GetHeader();
+      return iterator(View->GetListData(), View->GetData(), Header->Blocks);
     }
 
-    iterator end() const noexcept
-    {
-      OrderedNodeWrapper Wrapped;
-      Wrapped.NodeOffset = 0;
-      return iterator(reinterpret_cast<uintptr_t>(view->ListData), reinterpret_cast<uintptr_t>(view->IRData), Wrapped);
+    iterator end() const noexcept {
+      return iterator(View->GetListData(), View->GetData());
     }
   };
 
+  struct CodeRange {
+    using iterator = NodeIterator;
+    const IRListView *View;
+    const OrderedNodeWrapper BlockWrapper;
+
+    CodeRange(const IRListView *parent, OrderedNodeWrapper block) : View(parent), BlockWrapper(block) {};
+
+    iterator begin() const noexcept {
+      auto Block = View->GetOp<IROp_CodeBlock>(BlockWrapper);
+      return iterator(View->GetListData(), View->GetData(), Block->Begin);
+    }
+
+    iterator end() const noexcept {
+      return iterator(View->GetListData(), View->GetData());
+    }
+  };
+
+  struct AllCodeRange {
+    using iterator = AllNodesIterator; // Diffrent Iterator
+    const IRListView *View;
+
+    AllCodeRange(const IRListView *parent) : View(parent) {};
+
+    iterator begin() const noexcept {
+      auto Header = View->GetHeader();
+      return iterator(View->GetListData(), View->GetData(), Header->Blocks);
+    }
+
+    iterator end() const noexcept {
+      return iterator(View->GetListData(), View->GetData());
+    }
+  };
+
+
 public:
 
-  Blocks getBlocks() const {
-    return Blocks(this);
+  BlockRange getBlocks() const {
+    return BlockRange(this);
+  }
+
+  CodeRange getCode(OrderedNode *block) const {
+    return CodeRange(this, block->Wrapped(GetListData()));
+  }
+
+  AllCodeRange GetAllCode() const {
+    return AllCodeRange(this);
   }
 
   using iterator = NodeWrapperIterator;
