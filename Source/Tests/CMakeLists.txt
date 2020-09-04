@@ -17,6 +17,11 @@ target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/External/
 
 target_link_libraries(${NAME} ${LIBS})
 
+install(TARGETS ${NAME}
+  RUNTIME
+    DESTINATION bin
+    COMPONENT runtime)
+
 set(NAME TestHarness)
 set(SRCS TestHarness.cpp)
 
