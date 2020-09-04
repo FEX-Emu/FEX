@@ -40,10 +40,6 @@ def print_ir_structs(ops, defines):
 
     output_file.write("};\n\n");
 
-    output_file.write("struct __attribute__((packed)) IROp_Empty {\n")
-    output_file.write("\tIROp_Header Header;\n")
-    output_file.write("};\n\n")
-
     output_file.write("// User defined IR Op structs\n")
     for op_key, op_vals in ops.items():
         SSAArgs = 0
@@ -59,34 +55,33 @@ def print_ir_structs(ops, defines):
         if ("SSANames" in op_vals and len(op_vals["SSANames"]) != 0):
             HasSSANames = True
 
-        if (HasArgs or SSAArgs != 0):
-            output_file.write("struct __attribute__((packed)) IROp_%s {\n" % op_key)
-            output_file.write("\tIROp_Header Header;\n\n")
+        output_file.write("struct __attribute__((packed)) IROp_%s {\n" % op_key)
+        output_file.write("\tIROp_Header Header;\n\n")
 
-            # SSA arguments have a hard requirement to appear after the header
-            if (SSAArgs != 0):
-                if (HasSSANames):
-                    for i in range(0, SSAArgs):
-                        output_file.write("\tOrderedNodeWrapper %s;\n" % (op_vals["SSANames"][i]));
+        # SSA arguments have a hard requirement to appear after the header
+        if (SSAArgs != 0):
+            if (HasSSANames):
+                for i in range(0, SSAArgs):
+                    output_file.write("\tOrderedNodeWrapper %s;\n" % (op_vals["SSANames"][i]));
 
-                else:
-                    output_file.write("private:\n")
-                    for i in range(0, SSAArgs):
-                        output_file.write("\tuint64_t : (sizeof(OrderedNodeWrapper) * 8);\n");
-                    output_file.write("public:\n")
+            else:
+                output_file.write("private:\n")
+                for i in range(0, SSAArgs):
+                    output_file.write("\tuint64_t : (sizeof(OrderedNodeWrapper) * 8);\n");
+                output_file.write("public:\n")
 
-            if (HasArgs):
-                output_file.write("\t// User defined data\n")
+        if (HasArgs):
+            output_file.write("\t// User defined data\n")
 
-                # Print out arguments in IR Op
-                for i in range(0, len(op_vals["Args"]), 2):
-                    data_type = op_vals["Args"][i]
-                    data_name = op_vals["Args"][i+1]
-                    output_file.write("\t%s %s;\n" % (data_type, data_name))
+            # Print out arguments in IR Op
+            for i in range(0, len(op_vals["Args"]), 2):
+                data_type = op_vals["Args"][i]
+                data_name = op_vals["Args"][i+1]
+                output_file.write("\t%s %s;\n" % (data_type, data_name))
 
-            output_file.write("};\n")
-        else:
-            output_file.write("using IROp_%s = IROp_Empty;\n" % op_key)
+        output_file.write("\tstatic constexpr IROps OPCODE = OP_%s;\n" % op_key.upper())
+
+        output_file.write("};\n")
 
         # Add a static assert that the IR ops must be pod
         output_file.write("static_assert(std::is_pod<IROp_%s>::value);\n\n" % op_key)

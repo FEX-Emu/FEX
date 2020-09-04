@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FEXCore/IR/IR.h"
+#include "LogManager.h"
 
 #include <cassert>
 #include <cstddef>
@@ -98,17 +99,33 @@ public:
   size_t GetListSize() const { return ListSize; }
   size_t GetSSACount() const { return ListSize / sizeof(OrderedNode); }
 
+  uint32_t GetID(OrderedNode *Node) const {
+    return Node->Wrapped(GetListData()).ID();
+  }
+
   OrderedNode* GetHeaderNode() const {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
     return Wrapped.GetNode(GetListData());
   }
 
-  const IROp_IRHeader *GetHeader() const {
-    auto Node = GetHeaderNode();
-    FEXCore::IR::IROp_Header* Header = Node->Op(GetData());
+  IROp_IRHeader *GetHeader() const {
+    return GetOp<IROp_IRHeader>(GetHeaderNode());
+  }
 
-    return Header->C<IROp_IRHeader>();
+  template <typename T>
+  T *GetOp(OrderedNode *Node) const {
+    auto OpHeader = Node->Op(GetData());
+    auto Op = OpHeader->template CW<T>();
+    LogMan::Throw::A(Op->OPCODE == Op->Header.Op, "Expected Node to be '%s'. Found '%s' instead", GetName(Op->OPCODE), GetName(Op->Header.Op));
+
+    return Op;
+  }
+
+  template <typename T>
+  T *GetOp(OrderedNodeWrapper Wrapper) const {
+    auto Node = Wrapper.GetNode(GetListData());
+    return GetOp<T>(Node);
   }
 
 private:
