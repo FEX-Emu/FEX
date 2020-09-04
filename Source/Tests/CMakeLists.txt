@@ -8,7 +8,7 @@ endif()
 
 
 set(LIBS FEXCore Common CommonCore SonicUtils pthread)
-set(NAME ELFLoader)
+set(NAME FEXLoader)
 set(SRCS ELFLoader.cpp)
 
 add_executable(${NAME} ${SRCS})
