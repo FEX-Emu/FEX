@@ -1,0 +1,3 @@
+#pragma once
+
+#define GIT_SHORT_HASH "@GIT_SHORT_HASH@"
