@@ -283,7 +283,8 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
   uint32_t DataReg = Instr & 0x1F;
   uint32_t DMB = 0b1101'0101'0000'0011'0011'0000'1011'1111 |
     0b1011'0000'0000; // Inner shareable all
-  if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00) { // LDAR*
+  if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00 || // LDAR*
+      (Instr & 0x3F'FF'FC'00) == 0x38'BF'C0'00) { // LDAPR*
     uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
     LDR |= Size << 30;
     LDR |= AddrReg << 5;
