@@ -15,7 +15,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Expected_Output"
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
     "${TEST_NAME}"
-    "${CMAKE_BINARY_DIR}/Bin/ELFLoader"
+    "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
     "-U" "-c" "irint" "-n" "500" "-R" $ENV{ROOTFS} "--"
     "${POSIX_TEST}")
   
@@ -25,7 +25,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Expected_Output"
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
     "${TEST_NAME}"
-    "${CMAKE_BINARY_DIR}/Bin/ELFLoader"
+    "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
     "-U" "-c" "irjit" "-n" "500" "-R" $ENV{ROOTFS} "--"
     "${POSIX_TEST}")
 
