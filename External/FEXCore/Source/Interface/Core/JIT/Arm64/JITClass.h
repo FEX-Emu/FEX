@@ -154,6 +154,7 @@ private:
 #endif
   vixl::aarch64::CPU CPU;
   bool SupportsAtomics{};
+  bool SupportsRCPC{};
 
   void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
     CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
