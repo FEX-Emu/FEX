@@ -62,6 +62,12 @@ namespace FEX::ArgLoader {
         .help("Number of physical hardware threads to tell the process we have")
         .set_default(1);
 
+      CPUGroup.add_option("--disable-tso")
+        .dest("TSOEnabled")
+        .action("store_false")
+        .help("Disables TSO IR ops. Highly likely to break any threaded application")
+        .set_default(true);
+
       Parser.add_option_group(CPUGroup);
     }
     {
@@ -178,6 +184,11 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("Threads")) {
         uint64_t Config = Options.get("Threads");
         Config::Add("Threads", std::to_string(Config));
+      }
+
+      if (Options.is_set_by_user("TSOEnabled")) {
+        bool TSOEnabled = Options.get("TSOEnabled");
+        Config::Add("TSOEnabled", std::to_string(TSOEnabled));
       }
     }
 

@@ -109,6 +109,7 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::Value<bool> SilentLog{"SilentLog", false};
   FEX::Config::Value<std::string> Environment{"Env", ""};
   FEX::Config::Value<std::string> OutputLog{"OutputLog", "stderr"};
+  FEX::Config::Value<bool> TSOEnabledConfig{"TSOEnabled", true};
 
   ::SilentLog = SilentLog();
 
@@ -152,6 +153,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, UnifiedMemory());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_EMULATED_CPU_CORES, ThreadsConfig());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_TSO_ENABLED, TSOEnabledConfig());
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, VMFactory::CPUCreationFactory);
   // FEXCore::Context::SetFallbackCPUBackendFactory(CTX, VMFactory::CPUCreationFactoryFallback);
 

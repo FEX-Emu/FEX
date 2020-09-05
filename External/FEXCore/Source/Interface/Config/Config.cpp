@@ -33,6 +33,9 @@ namespace FEXCore::Config {
     case FEXCore::Config::CONFIG_EMULATED_CPU_CORES:
       CTX->Config.EmulatedCPUCores = std::max(1UL, Config);
     break;
+    case FEXCore::Config::CONFIG_TSO_ENABLED:
+      CTX->Config.TSOEnabled = Config != 0;
+    break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
   }
@@ -76,6 +79,9 @@ namespace FEXCore::Config {
     break;
     case FEXCore::Config::CONFIG_EMULATED_CPU_CORES:
       return CTX->Config.EmulatedCPUCores;
+    break;
+    case FEXCore::Config::CONFIG_TSO_ENABLED:
+      return CTX->Config.TSOEnabled;
     break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
