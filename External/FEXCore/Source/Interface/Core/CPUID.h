@@ -20,8 +20,7 @@ public:
   void Init();
 
   struct FunctionResults {
-    // Results in registers EAX, EBX, EDX, ECX respectively
-    uint32_t Res[4];
+    uint32_t eax, ebx, ecx, edx;
   };
 
   FunctionResults RunFunction(uint32_t Function) {
@@ -40,9 +39,13 @@ private:
   // Functions
   FunctionResults Function_0h();
   FunctionResults Function_01h();
+  FunctionResults Function_06h();
   FunctionResults Function_07h();
   FunctionResults Function_8000_0000h();
   FunctionResults Function_8000_0001h();
+  FunctionResults Function_8000_0002h();
+  FunctionResults Function_8000_0003h();
+  FunctionResults Function_8000_0004h();
   FunctionResults Function_8000_0007h();
 
   FunctionResults Function_Reserved();
