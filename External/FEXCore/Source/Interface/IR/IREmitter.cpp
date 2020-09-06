@@ -11,18 +11,17 @@ void IREmitter::ResetWorkingList() {
   CurrentCodeBlock = nullptr;
 }
 
-void IREmitter::ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNode *NewNode, IR::NodeWrapperIterator After, IR::NodeWrapperIterator End) {
+void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After, AllNodesIterator End) {
   uintptr_t ListBegin = ListData.Begin();
   uintptr_t DataBegin = Data.Begin();
+  auto NodeId = Node->Wrapped(ListBegin).ID();
 
   while (After != End) {
-    OrderedNodeWrapper *WrapperOp = After();
-    OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-    FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+    auto [RealNode, IROp] = After();
 
     uint8_t NumArgs = IR::GetArgs(IROp->Op);
     for (uint8_t i = 0; i < NumArgs; ++i) {
-      if (IROp->Args[i].ID() == Node->Wrapped(ListBegin).ID()) {
+      if (IROp->Args[i].ID() == NodeId) {
         Node->RemoveUse();
         NewNode->AddUse();
         IROp->Args[i].NodeOffset = NewNode->Wrapped(ListBegin).NodeOffset;

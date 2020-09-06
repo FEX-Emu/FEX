@@ -117,7 +117,11 @@ public:
   T *GetOp(OrderedNode *Node) const {
     auto OpHeader = Node->Op(GetData());
     auto Op = OpHeader->template CW<T>();
-    LogMan::Throw::A(Op->OPCODE == Op->Header.Op, "Expected Node to be '%s'. Found '%s' instead", GetName(Op->OPCODE), GetName(Op->Header.Op));
+
+    // If we are casting to something narrower than just the header, check the opcode.
+    if constexpr (!std::is_same<T, IROp_Header>::value) {
+      LogMan::Throw::A(Op->OPCODE == Op->Header.Op, "Expected Node to be '%s'. Found '%s' instead", GetName(Op->OPCODE), GetName(Op->Header.Op));
+    }
 
     return Op;
   }
@@ -126,6 +130,10 @@ public:
   T *GetOp(OrderedNodeWrapper Wrapper) const {
     auto Node = Wrapper.GetNode(GetListData());
     return GetOp<T>(Node);
+  }
+
+  OrderedNode* GetNode(OrderedNodeWrapper Wrapper) const {
+    return Wrapper.GetNode(GetListData());
   }
 
 private:
@@ -181,11 +189,11 @@ private:
 
 public:
 
-  BlockRange getBlocks() const {
+  BlockRange GetBlocks() const {
     return BlockRange(this);
   }
 
-  CodeRange getCode(OrderedNode *block) const {
+  CodeRange GetCode(OrderedNode *block) const {
     return CodeRange(this, block->Wrapped(GetListData()));
   }
 

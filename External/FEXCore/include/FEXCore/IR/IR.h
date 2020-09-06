@@ -443,6 +443,7 @@ class AllNodesIterator : public NodeIterator {
 public:
   AllNodesIterator(uintptr_t Base, uintptr_t IRBase) : NodeIterator(Base, IRBase) {}
 	explicit AllNodesIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : NodeIterator(Base, IRBase, Ptr) {}
+  AllNodesIterator(NodeIterator other) : NodeIterator(other) {} // Allow NodeIterator to be upgraded
 
   AllNodesIterator operator++() {
 		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
@@ -466,6 +467,10 @@ public:
 	}
 
   AllNodesIterator operator--() = delete;
+
+  static AllNodesIterator Invalid() {
+    return AllNodesIterator(0, 0);
+  }
 };
 
 template<bool>

@@ -400,25 +400,30 @@ friend class FEXCore::IR::PassManager;
      return false;
   }
 
-  // This is fairly special in how it operates
-  // Since the node is decoupled from the backing op then we can swap out the backing op without much overhead
-  // This can potentially cause problems where multiple nodes are pointing to the same IROp
-  OrderedNode *ReplaceAllUsesWith(OrderedNode *Node, IROp_Header *Op) {
-    RemoveArgUses(Node);
-    Node->Header.Value.SetOffset(Data.Begin(), reinterpret_cast<uintptr_t>(Op));
-    return Node;
+  void ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After, AllNodesIterator End);
+
+  void ReplaceUsesWithAfter(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After) {
+    ReplaceAllUsesWithRange(Node, NewNode, After, AllNodesIterator(ListData.Begin(), Data.Begin()));
   }
 
-  // This is similar to the previous op except that we pass in a node
-  // This takes the op backing in the new node and replaces the node in the other node
-  // Again can cause problems where things are pointing to NewNode and haven't been decoupled
-  OrderedNode *ReplaceAllUsesWith(OrderedNode *Node, OrderedNode *NewNode) {
-    RemoveArgUses(Node);
-    Node->Header.Value.NodeOffset = NewNode->Header.Value.NodeOffset;
-    return Node;
+  void ReplaceUsesWithAfter(OrderedNode *Node, OrderedNode *NewNode, OrderedNode *After) {
+    auto Wrapped = Node->Wrapped(ListData.Begin());
+    AllNodesIterator It = AllNodesIterator(ListData.Begin(), Data.Begin(), Wrapped);
+
+    ReplaceUsesWithAfter(Node, NewNode, It);
   }
 
-  void ReplaceAllUsesWithInclusive(OrderedNode *Node, OrderedNode *NewNode, IR::NodeWrapperIterator After, IR::NodeWrapperIterator End);
+  void ReplaceAllUsesWith(OrderedNode *Node, OrderedNode *NewNode) {
+    auto Start = AllNodesIterator(ListData.Begin(), Data.Begin(), Node->Wrapped(ListData.Begin()));
+
+    ReplaceUsesWithAfter(Node, NewNode, Start);
+
+    LogMan::Throw::A(Node->NumUses == 0, "Node still used");
+
+    // Since we have deleted ALL uses, we can safely delete the node.
+    Remove(Node);
+  }
+
   void ReplaceNodeArgument(OrderedNode *Node, uint8_t Arg, OrderedNode *NewArg);
 
   void Remove(OrderedNode *Node);
