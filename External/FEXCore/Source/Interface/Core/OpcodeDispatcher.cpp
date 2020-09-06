@@ -1879,8 +1879,9 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
     // Address is provided as bits we want BYTE offsets
-    // Just shift by 3 to get the offset
-    Src = _Lshr(Src, _Constant(3));
+    // Extract Signed offset
+    uint32_t Size = GetSrcSize(Op) * 8;
+    Src = _Sbfe(Size-3,3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -1924,8 +1925,9 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
     // Address is provided as bits we want BYTE offsets
-    // Just shift by 3 to get the offset
-    Src = _Lshr(Src, _Constant(3));
+    // Extract Signed offset
+    uint32_t Size = GetSrcSize(Op) * 8;
+    Src = _Sbfe(Size-3,3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -1972,8 +1974,9 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
     OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
     // Address is provided as bits we want BYTE offsets
-    // Just shift by 3 to get the offset
-    Src = _Lshr(Src, _Constant(3));
+    // Extract Signed offset
+    uint32_t Size = GetSrcSize(Op) * 8;
+    Src = _Sbfe(Size-3,3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
@@ -2018,8 +2021,9 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
     OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
     // Address is provided as bits we want BYTE offsets
-    // Just shift by 3 to get the offset
-    Src = _Lshr(Src, _Constant(3));
+    // Extract Signed offset
+    uint32_t Size = GetSrcSize(Op) * 8;
+    Src = _Sbfe(Size-3,3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
