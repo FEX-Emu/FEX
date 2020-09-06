@@ -2307,10 +2307,8 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
     auto AtomicResult = _AtomicFetchAdd(Dest, OneConst, GetSrcSize(Op));
     auto ALUOp = _Add(AtomicResult, OneConst);
 
-    StoreResult(GPRClass, Op, ALUOp, -1);
-
     auto Size = GetSrcSize(Op) * 8;
-    GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst), false);
+    GenerateFlags_ADD(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, AtomicResult), _Bfe(Size, 0, OneConst), false);
   }
   else {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -2333,10 +2331,9 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     auto AtomicResult = _AtomicFetchSub(Dest, OneConst, GetSrcSize(Op));
     auto ALUOp = _Sub(AtomicResult, OneConst);
 
-    StoreResult(GPRClass, Op, ALUOp, -1);
 
     auto Size = GetSrcSize(Op) * 8;
-    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), _Bfe(Size, 0, OneConst), false);
+    GenerateFlags_SUB(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, AtomicResult), _Bfe(Size, 0, OneConst), false);
   }
   else {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
