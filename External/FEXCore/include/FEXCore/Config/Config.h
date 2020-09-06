@@ -16,6 +16,7 @@ namespace FEXCore::Config {
     CONFIG_UNIFIED_MEMORY,
     CONFIG_IS64BIT_MODE,
     CONFIG_EMULATED_CPU_CORES,
+    CONFIG_TSO_ENABLED,
   };
 
   enum ConfigCore {

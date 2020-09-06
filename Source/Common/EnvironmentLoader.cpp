@@ -77,6 +77,10 @@ namespace FEX::EnvLoader {
       if ((Value = GetVar("FEX_THREADS")).size()) {
         if (isdigit(Value[0])) Config::Add("Threads", Value);
       }
+
+      if ((Value = GetVar("FEX_TSO_ENABLED")).size()) {
+        if (isdigit(Value[0])) Config::Add("TSOEnabled", Value);
+      }
     }
 
     {

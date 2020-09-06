@@ -59,6 +59,7 @@ namespace FEXCore::Context {
 
       bool Is64BitMode {true};
       uint64_t EmulatedCPUCores{1};
+      bool TSOEnabled {true};
     } Config;
 
     FEXCore::Memory::MemMapper MemoryMapper;
