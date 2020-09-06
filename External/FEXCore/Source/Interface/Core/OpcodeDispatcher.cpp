@@ -724,7 +724,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].TypeLiteral.Literal;
 
   OrderedNode *CondReg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  CondReg = _Sub(CondReg, _Constant(SrcSize, 1));
+  CondReg = _Sub(CondReg, _Constant(SrcSize * 8, 1));
   StoreResult(GPRClass, Op, Op->Src[0], CondReg, -1);
 
   SrcCond = _Select(FEXCore::IR::COND_NEQ,
