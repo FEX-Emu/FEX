@@ -102,8 +102,8 @@ void InitializePrimaryGroupTables() {
     {OPD(TYPE_GROUP_3, OpToIndex(0xF6), 6), 1, X86InstInfo{"DIV",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                      0, nullptr}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF6), 7), 1, X86InstInfo{"IDIV", TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                      0, nullptr}},
 
-    {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 0), 1, X86InstInfo{"TEST", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
-    {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 1), 1, X86InstInfo{"TEST", TYPE_UNDEC, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
+    {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 0), 1, X86InstInfo{"TEST", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
+    {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 1), 1, X86InstInfo{"TEST", TYPE_UNDEC, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT64BIT | FLAGS_DISPLACE_SIZE_DIV_2,                          4, nullptr}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 2), 1, X86InstInfo{"NOT",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                      0, nullptr}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 3), 1, X86InstInfo{"NEG",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                      0, nullptr}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 4), 1, X86InstInfo{"MUL",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                      0, nullptr}},
