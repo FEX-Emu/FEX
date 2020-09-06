@@ -93,15 +93,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
   static_assert(sizeof(FEXCore::IR::IROp_Header) == 4);
   static_assert(sizeof(FEXCore::IR::OrderedNode) == 16);
 
-  auto HeaderIterator = CurrentIR->begin();
-  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
-  auto BlockIterator = CurrentIR->getBlocks().begin();
-  auto BlockEnd = CurrentIR->getBlocks().end();
-
+  auto BlockIterator = CurrentIR->GetBlocks().begin();
+  auto BlockEnd = CurrentIR->GetBlocks().end();
 
   // Allocate 16 bytes per SSA
   void *SSAData = alloca(ListSize * 16);
@@ -131,13 +124,11 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
       bool Redo;
     } BlockResults{};
 
-    auto HandleBlock = [&]() {
-      while (1) {
-        OrderedNodeWrapper WrapperOp = *CodeBegin();
-        OrderedNode *RealNode = WrapperOp.GetNode(ListBegin);
-        FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+    auto HandleBlock = [&](OrderedNode *BlockNode) {
+      for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
+        OrderedNodeWrapper WrapperOp = CodeNode->Wrapped(ListBegin);
         uint8_t OpSize = IROp->Size;
-        uint32_t Node = WrapperOp.ID();
+        uint32_t Node = CurrentIR->GetID(CodeNode);
 
         switch (IROp->Op) {
           case IR::OP_DUMMY:
@@ -4223,7 +4214,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
       }
     };
 
-    HandleBlock();
+    HandleBlock(BlockNode);
 
     if (BlockResults.Redo) {
       continue;

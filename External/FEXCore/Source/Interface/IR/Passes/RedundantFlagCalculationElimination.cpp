@@ -24,21 +24,9 @@ bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
 
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
 
-  for (auto [BlockNode, BlockHeader] : CurrentIR.getBlocks()) {
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
-
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_STOREFLAG) {
         auto Op = IROp->CW<IR::IROp_StoreFlag>();
         // Set this node as the last one valid for this flag
@@ -48,12 +36,6 @@ bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
         auto Op = IROp->CW<IR::IROp_LoadFlag>();
         LastValidFlagStores[Op->Flag] = nullptr;
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
     }
 
     // If any flags are stored but not loaded by the end of the block, then erase them

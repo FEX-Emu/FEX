@@ -74,9 +74,8 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   {
     // Generate our codeblocks and link them together
     OrderedNode* PrevCodeBlock{};
-    for (auto [BlockNode, BlockHeader] : CurrentIR.getBlocks()) {
-      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+    for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
+      LogMan::Throw::A(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
       auto LocalBlockIRNode = LocalBuilder._CodeBlock(LocalHeaderOp, LocalHeaderOp); // Use LocalHeaderOp as a dummy arg for now
       OldToNewRemap[BlockNode->Wrapped(ListBegin).ID()] = LocalBlockIRNode.Node->Wrapped(LocalListBegin).ID();
@@ -93,22 +92,11 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   {
     // Copy all of our IR ops over to the new location
     for (auto &Block : GeneratedCodeBlocks) {
-      auto BlockIROp = Block.OldNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
-
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-      auto CodeLast = CurrentIR.at(BlockIROp->Last);
 
       CodeBlockData FirstNode{};
       CodeBlockData LastNode{};
       uint32_t i {};
-      while (1) {
-        auto CodeOp = CodeBegin();
-        OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-        auto IROp = CodeNode->Op(DataBegin);
-        LogMan::Throw::A(IROp->Op != OP_IRHEADER, "%%ssa%d ended up being IRHeader. Shouldn't have hit this", CodeOp->ID());
-
+      for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block.OldNode)) {
         size_t OpSize = FEXCore::IR::GetSize(IROp->Op);
 
         // Allocate the ops locally for our local dispatch
@@ -124,20 +112,18 @@ bool IRCompaction::Run(IREmitter *IREmit) {
         // Set our map remapper to map the new location
         // Even nodes that don't have a destination need to be in this map
         // Need to be able to remap branch targets any other bits
-        OldToNewRemap[CodeOp->ID()] = LocalNodeWrapper.ID();
+        OldToNewRemap[CurrentIR.GetID(CodeNode)] = LocalNodeWrapper.ID();
 
         if (i == 0) {
           FirstNode.OldNode = CodeNode;
           FirstNode.NewNode = LocalPair.Node;
         }
 
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
+        if (IROp->Op == OP_ENDBLOCK) {
           LastNode.OldNode = CodeNode;
           LastNode.NewNode = LocalPair.Node;
-          break;
         }
-        ++CodeBegin;
+
         ++i;
       }
 
@@ -154,15 +140,9 @@ bool IRCompaction::Run(IREmitter *IREmit) {
       auto BlockIROp = Block.OldNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-      auto CodeLast = CurrentIR.at(BlockIROp->Last);
-      while (1) {
-        auto CodeOp = CodeBegin();
-        OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-        auto IROp = CodeNode->Op(DataBegin);
+      for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block.OldNode)) {
 
-        OrderedNodeWrapper LocalNodeWrapper = OrderedNodeWrapper::WrapOffset(OldToNewRemap[CodeOp->ID()] * sizeof(OrderedNode));
+        OrderedNodeWrapper LocalNodeWrapper = OrderedNodeWrapper::WrapOffset(OldToNewRemap[CurrentIR.GetID(CodeNode)] * sizeof(OrderedNode));
         OrderedNode *LocalNode = LocalNodeWrapper.GetNode(LocalListBegin);
         FEXCore::IR::IROp_Header *LocalIROp = LocalNode->Op(LocalDataBegin);
 
@@ -175,12 +155,6 @@ bool IRCompaction::Run(IREmitter *IREmit) {
           LogMan::Throw::A(OldToNewRemap[OldArg] != ~0U, "Tried remapping unfound node %%ssa%d", OldArg);
           LocalIROp->Args[i].NodeOffset = OldToNewRemap[OldArg] * sizeof(OrderedNode);
         }
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
       }
     }
   }

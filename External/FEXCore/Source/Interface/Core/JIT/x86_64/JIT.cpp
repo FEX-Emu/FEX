@@ -419,12 +419,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   JumpTargets.clear();
   CurrentIR = IR;
   uint32_t SSACount = CurrentIR->GetSSACount();
-  uintptr_t ListBegin = CurrentIR->GetListData();
-  uintptr_t DataBegin = CurrentIR->GetData();
 
   auto HeaderOp = CurrentIR->GetHeader();
-  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
   if (HeaderOp->ShouldInterpret) {
     return InterpreterFallbackHelperAddress;
   }
@@ -511,17 +507,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     ret();
   };
 
-  for (auto [BlockNode, BlockHeader] : CurrentIR->getBlocks()) {
+  for (auto [BlockNode, BlockHeader] : CurrentIR->GetBlocks()) {
     using namespace FEXCore::IR;
     auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR->at(BlockIROp->Last);
-
     {
-      uint32_t Node = BlockNode->Wrapped(ListBegin).ID();
+      uint32_t Node = CurrentIR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
       if (IsTarget == JumpTargets.end()) {
         IsTarget = JumpTargets.try_emplace(Node).first;
@@ -530,12 +522,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       L(IsTarget->second);
     }
 
-    while (1) {
-      OrderedNodeWrapper *WrapperOp = CodeBegin();
-      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-      FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+    for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
       uint8_t OpSize = IROp->Size;
-      uint32_t Node = WrapperOp->ID();
+      uint32_t Node = CurrentIR->GetID(CodeNode);
 
       #ifdef DEBUG_RA
       if (IROp->Op != IR::OP_BEGINBLOCK &&
@@ -4819,12 +4808,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
           break;
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
     }
   }
 

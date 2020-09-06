@@ -132,7 +132,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
   *out << "%ssa" << HeaderOp->Blocks.ID() << ", ";
   *out << "#" << std::dec << HeaderOp->BlockCount << std::endl;
 
-  for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     // LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 

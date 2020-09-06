@@ -30,21 +30,11 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
 
-  for (auto [BlockNode, BlockHeader] : CurrentIR.getBlocks()) {
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
-    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
+    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(BlockNode)).first->second;
 
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
-
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       switch (IROp->Op) {
         case IR::OP_CONDJUMP: {
           auto Op = IROp->CW<IR::IROp_CondJump>();
@@ -80,27 +70,14 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
         }
         default: break;
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
     }
   }
 
-  for (auto [BlockNode, BlockHeader] : CurrentIR.getBlocks()) {
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
+      uint32_t CodeID = CurrentIR.GetID(CodeNode);
 
       uint8_t NumArgs = IR::GetArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
@@ -123,9 +100,9 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           // %ssa_1 = Load
           // %ssa_2 = <Op> %ssa_1, %ssa_3
           // %ssa_3 = Load
-          if (Arg.ID() > CodeOp->ID()) {
+          if (Arg.ID() > CodeID) {
             HadError |= true;
-            Errors << "Inst %ssa" << CodeOp->ID() << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
+            Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
           }
         }
         else if (Arg.ID() < BlockIROp->Begin.ID()) {
@@ -188,7 +165,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
           if (!FoundPredDefine) {
             HadError |= true;
-            Errors << "Inst %ssa" << CodeOp->ID() << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use! But was defined before this block!" << std::endl;
+            Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use! But was defined before this block!" << std::endl;
           }
         }
         else if (Arg.ID() > BlockIROp->Last.ID()) {
@@ -202,15 +179,9 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           // CodeBlock_2:
           // %ssa_3 = Load
           HadError |= true;
-          Errors << "Inst %ssa" << CodeOp->ID() << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
+          Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
         }
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
     }
   }
 

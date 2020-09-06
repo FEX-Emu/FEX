@@ -261,7 +261,7 @@ namespace {
     uintptr_t ListBegin = IR->GetListData();
     uintptr_t DataBegin = IR->GetData();
 
-    for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == FEXCore::IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -384,7 +384,7 @@ namespace FEXCore::IR {
     uintptr_t DataBegin = IR->GetData();
 
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
-    for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -465,7 +465,7 @@ namespace FEXCore::IR {
     using namespace FEXCore;
     uintptr_t ListBegin = IR->GetListData();
 
-    for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -518,7 +518,7 @@ namespace FEXCore::IR {
     using namespace FEXCore;
     uintptr_t ListBegin = IR->GetListData();
 
-    for (auto [BlockNode, BlockHeader] : IR->getBlocks()) {
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
