@@ -106,7 +106,7 @@ void InitializeSecondaryTables() {
     {0x6A, 1, X86InstInfo{"PUNPCKHDQ",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x6B, 1, X86InstInfo{"PACKSSDW",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x6C, 2, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                                                       0, nullptr}},
-    {0x6E, 1, X86InstInfo{"MOVD",       TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_SRC_GPR | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                0, nullptr}},
+    {0x6E, 1, X86InstInfo{"MOVD",       TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | GenFlagsSrcSize(SIZE_32BIT) | FLAGS_MODRM | FLAGS_SF_SRC_GPR | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                0, nullptr}},
     {0x6F, 1, X86InstInfo{"MOVQ",       TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
 
     {0x70, 1, X86InstInfo{"PSHUFW",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   1, nullptr}},
