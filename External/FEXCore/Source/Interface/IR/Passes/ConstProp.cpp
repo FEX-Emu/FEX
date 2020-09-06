@@ -215,8 +215,9 @@ bool ConstProp::Run(IREmitter *IREmit) {
           Changed = true;
         } else if (IROp->Size == Op->Header.Args[0].GetNode(ListBegin)->Op(DataBegin)->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0 ) {
           // A BFE that extracts all bits results in original value
-          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Op->Header.Args[0].GetNode(ListBegin), CodeBegin, CodeLast);
-          Changed = true;
+	  // XXX - This is broken for now - see https://github.com/FEX-Emu/FEX/issues/351
+          // IREmit->ReplaceAllUsesWithInclusive(CodeNode, Op->Header.Args[0].GetNode(ListBegin), CodeBegin, CodeLast);
+          // Changed = true;
         }
 
       break;
