@@ -51,19 +51,10 @@ bool IRValidation::Run(IREmitter *IREmit) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
+    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(BlockNode)).first->second;
 
-
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
-      uint32_t Node = CodeOp->ID();
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
+      uint32_t ID = CurrentIR.GetID(CodeNode);
 
       uint8_t OpSize = IROp->Size;
 
@@ -71,18 +62,18 @@ bool IRValidation::Run(IREmitter *IREmit) {
         HadError |= OpSize == 0;
         // Does the op have a destination of size 0?
         if (OpSize == 0) {
-          Errors << "%ssa" << CodeOp->ID() << ": Had destination but with no size" << std::endl;
+          Errors << "%ssa" << ID << ": Had destination but with no size" << std::endl;
         }
 
         // Does the node have zero uses? Should have been DCE'd
         if (CodeNode->GetUses() == 0) {
           HadWarning |= true;
-          Warnings << "%ssa" << CodeOp->ID() << ": Destination created but had no uses" << std::endl;
+          Warnings << "%ssa" << ID << ": Destination created but had no uses" << std::endl;
         }
 
         if (RAPass) {
           // If we have a register allocator then the destination needs to be assigned a register and class
-          uint64_t Reg = RAPass->GetNodeRegister(Node);
+          uint64_t Reg = RAPass->GetNodeRegister(ID);
 
           FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
           FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType{uint32_t(Reg >> 32)};
@@ -90,20 +81,20 @@ bool IRValidation::Run(IREmitter *IREmit) {
           // If no register class was assigned
           if (AssignedClass == IR::InvalidClass) {
             HadError |= true;
-            Errors << "%ssa" << CodeOp->ID() << ": Had destination but with no register class assigned" << std::endl;
+            Errors << "%ssa" << ID << ": Had destination but with no register class assigned" << std::endl;
           }
 
           // If no physical register was assigned
           if ((uint32_t)Reg == ~0U) {
             HadError |= true;
-            Errors << "%ssa" << CodeOp->ID() << ": Had destination but with no register assigned" << std::endl;
+            Errors << "%ssa" << ID << ": Had destination but with no register assigned" << std::endl;
           }
 
           // Assigned class wasn't the expected class and it is a non-complex op
           if (AssignedClass != ExpectedClass &&
               ExpectedClass != IR::ComplexClass) {
             HadWarning |= true;
-            Warnings << "%ssa" << CodeOp->ID() << ": Destination had register class " << AssignedClass.Val << " When register class " << ExpectedClass.Val << " Was expected" << std::endl;
+            Warnings << "%ssa" << ID << ": Destination had register class " << AssignedClass.Val << " When register class " << ExpectedClass.Val << " Was expected" << std::endl;
           }
         }
       }
@@ -111,24 +102,24 @@ bool IRValidation::Run(IREmitter *IREmit) {
       uint8_t NumArgs = IR::GetArgs(IROp->Op);
 
       if (NumArgs != IROp->NumArgs)
-        Errors << "%ssa" << CodeOp->ID() << ": Has wrong number of Args" << std::endl;
+        Errors << "%ssa" << ID << ": Has wrong number of Args" << std::endl;
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         // Was an argument defined after this node?
-        if (Arg.ID() >= CodeOp->ID()) {
+        if (Arg.ID() >= ID) {
           HadError |= true;
-          Errors << "%ssa" << CodeOp->ID() << ": Arg[" << i << "] has definition after use at %ssa" << Arg.ID() << std::endl;
+          Errors << "%ssa" << ID << ": Arg[" << i << "] has definition after use at %ssa" << Arg.ID() << std::endl;
         }
 
         if (!NodeIsLive.Get(Arg.ID())) {
           HadError |= true;
-          Errors << "%ssa" << CodeOp->ID() << ": Arg[" << i << "] refrences dead %ssa" << Arg.ID() << std::endl;
+          Errors << "%ssa" << ID << ": Arg[" << i << "] refrences dead %ssa" << Arg.ID() << std::endl;
         }
 
         Uses[Arg.ID()]++;
       }
 
-      NodeIsLive.Set(CodeOp->ID());
+      NodeIsLive.Set(ID);
 
       switch (IROp->Op) {
         case IR::OP_EXITFUNCTION: {
@@ -149,7 +140,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
           if (TrueTargetOp->Op != OP_CODEBLOCK) {
             HadError |= true;
-            Errors << "CondJump %ssa" << CodeOp->ID() << ": True Target Jumps to Op that isn't the begining of a block" << std::endl;
+            Errors << "CondJump %ssa" << ID << ": True Target Jumps to Op that isn't the begining of a block" << std::endl;
           }
           else {
             auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[1].ID()).first;
@@ -158,7 +149,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
           if (FalseTargetOp->Op != OP_CODEBLOCK) {
             HadError |= true;
-            Errors << "CondJump %ssa" << CodeOp->ID() << ": False Target Jumps to Op that isn't the begining of a block" << std::endl;
+            Errors << "CondJump %ssa" << ID << ": False Target Jumps to Op that isn't the begining of a block" << std::endl;
           }
           else {
             auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[2].ID()).first;
@@ -175,7 +166,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
           FEXCore::IR::IROp_Header const *TargetOp = TargetNode->Op(DataBegin);
           if (TargetOp->Op != OP_CODEBLOCK) {
             HadError |= true;
-            Errors << "Jump %ssa" << CodeOp->ID() << ": Jump to Op that isn't the begining of a block" << std::endl;
+            Errors << "Jump %ssa" << ID << ": Jump to Op that isn't the begining of a block" << std::endl;
           }
           else {
             auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[0].ID()).first;
@@ -187,12 +178,6 @@ bool IRValidation::Run(IREmitter *IREmit) {
           // LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
         break;
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
     }
 
     // Blocks can only have zero (Exit), 1 (Unconditional branch) or 2 (Conditional) successors
@@ -203,14 +188,12 @@ bool IRValidation::Run(IREmitter *IREmit) {
     }
 
     {
-      auto GetOp = [&ListBegin, &DataBegin](auto Code) {
-        auto CodeOp = Code();
-        OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-        auto IROp = CodeNode->Op(DataBegin);
+      auto GetOp = [](auto Code) {
+        auto [CodeNode, IROp] = Code();
         return IROp->Op;
       };
 
-      auto CodeCurrent = CodeLast;
+      auto CodeCurrent = CurrentIR.at(BlockIROp->Last);
 
       // Last instruction in the block must be EndBlock
       {

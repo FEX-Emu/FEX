@@ -422,6 +422,10 @@ public:
 		return { RealNode, RealNode->Op(IRList) };
 	}
 
+  uint32_t ID() {
+    return Node.ID();
+  }
+
   static NodeIterator Invalid() {
     return NodeIterator(0, 0);
   }

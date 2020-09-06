@@ -112,11 +112,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
 }
 
 void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationPass *RAPass) {
-  uintptr_t ListBegin = IR->GetListData();
-  uintptr_t DataBegin = IR->GetData();
-
   auto HeaderOp = IR->GetHeader();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   int8_t CurrentIndent = 0;
   auto AddIndent = [&out, &CurrentIndent]() {
@@ -133,24 +129,19 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
   *out << "#" << std::dec << HeaderOp->BlockCount << std::endl;
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    // LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+    {
+      auto BlockIROp = BlockHeader->C<FEXCore::IR::IROp_CodeBlock>();
 
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = IR->at(BlockIROp->Begin);
-    auto CodeLast = IR->at(BlockIROp->Last);
+      AddIndent();
+      *out << "(%ssa" << std::to_string(IR->GetID(BlockNode)) << ") " << "CodeBlock ";
 
-    AddIndent();
-    *out << "(%ssa" << std::to_string(BlockNode->Wrapped(ListBegin).ID()) << ") " << "CodeBlock ";
-
-    *out << "%ssa" << std::to_string(BlockIROp->Begin.ID()) << ", ";
-    *out << "%ssa" << std::to_string(BlockIROp->Last.ID()) << std::endl;
+      *out << "%ssa" << std::to_string(BlockIROp->Begin.ID()) << ", ";
+      *out << "%ssa" << std::to_string(BlockIROp->Last.ID()) << std::endl;
+    }
 
     ++CurrentIndent;
-    while (1) {
-      OrderedNodeWrapper *CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      uint32_t ID = IR->GetID(CodeNode);
 
       auto Name = FEXCore::IR::GetName(IROp->Op);
       bool Skip{};
@@ -171,10 +162,10 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
           }
           uint32_t NumElements = IROp->Size / ElementSize;
 
-          *out << "%ssa" << std::to_string(CodeOp->ID());
+          *out << "%ssa" << std::to_string(ID);
 
           if (RAPass) {
-            uint64_t RegClass = RAPass->GetNodeRegister(CodeOp->ID());
+            uint64_t RegClass = RAPass->GetNodeRegister(ID);
             FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
             uint32_t Reg = RegClass;
             switch (Class) {
@@ -205,7 +196,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
             NumElements = IROp->Size / ElementSize;
           }
 
-          *out << "(%ssa" << std::to_string(CodeOp->ID()) << " ";
+          *out << "(%ssa" << std::to_string(ID) << " ";
           *out << "i" << std::dec << (ElementSize * 8);
           if (NumElements > 1) {
             *out << "v" << std::dec << NumElements;
@@ -215,7 +206,7 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
         *out << Name;
         switch (IROp->Op) {
           case IR::OP_BEGINBLOCK:
-            *out << " %ssa" << std::to_string(CodeOp->ID());
+            *out << " %ssa" << std::to_string(ID);
             break;
           case IR::OP_ENDBLOCK:
             break;
@@ -230,19 +221,18 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
           *out << " ";
 
           while (NodeBegin != NodeBegin.Invalid()) {
-            OrderedNodeWrapper *NodeOp = NodeBegin();
-            OrderedNode *NodeNode = NodeOp->GetNode(ListBegin);
-            auto IRNodeOp  = NodeNode->Op(DataBegin)->C<IR::IROp_PhiValue>();
+            auto [NodeNode, IROp] = NodeBegin();
+            auto PhiOp  = IROp->C<IR::IROp_PhiValue>();
             *out << "[ ";
-            PrintArg(out, IR, IRNodeOp->Value, RAPass);
+            PrintArg(out, IR, PhiOp->Value, RAPass);
             *out << ", ";
-            PrintArg(out, IR, IRNodeOp->Block, RAPass);
+            PrintArg(out, IR, PhiOp->Block, RAPass);
             *out << " ]";
 
-            if (IRNodeOp->Next.ID())
+            if (PhiOp->Next.ID())
               *out << ", ";
 
-            NodeBegin = IR->at(IRNodeOp->Next);
+            NodeBegin = IR->at(PhiOp->Next);
           }
           break;
         }
@@ -253,12 +243,6 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
 
         *out << "\n";
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
     }
 
     CurrentIndent = std::max(0, CurrentIndent - 1);

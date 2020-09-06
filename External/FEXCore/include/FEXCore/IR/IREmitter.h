@@ -466,7 +466,7 @@ friend class FEXCore::IR::PassManager;
 
     SetWriteCursor(nullptr);// Orphan from any future nodes
 
-    auto Begin = _Dummy();
+    auto Begin = _BeginBlock(CodeNode);
     CodeNode.first->Begin = Begin.Node->Wrapped(ListData.Begin());
 
     auto EndBlock = _EndBlock(CodeNode);

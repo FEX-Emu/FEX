@@ -201,7 +201,7 @@ public:
     return AllCodeRange(this);
   }
 
-  using iterator = NodeWrapperIterator;
+  using iterator = NodeIterator;
 
   iterator begin() const noexcept
   {
@@ -226,8 +226,19 @@ public:
    * @brief Convert a OrderedNodeWrapper to an interator that we can iterate over
    * @return Iterator for this op
    */
-  iterator at(OrderedNodeWrapper Node) const noexcept {
-    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Node);
+  iterator at(OrderedNodeWrapper Wrapped) const noexcept {
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+  }
+
+  iterator at(uint32_t ID) const noexcept {
+    OrderedNodeWrapper Wrapped;
+    Wrapped.NodeOffset = ID * sizeof(OrderedNode);
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+  }
+
+  iterator at(OrderedNode *Node) const noexcept {
+    auto Wrapped = Node->Wrapped(reinterpret_cast<uintptr_t>(ListData));
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
   }
 
 private:
