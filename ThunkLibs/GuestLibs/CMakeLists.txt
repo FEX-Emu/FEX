@@ -45,6 +45,7 @@ add_guest_lib(GL)
 # generate(libSDL2 thunks)
 # add_guest_lib(SDL2)
 # target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
+# target_link_libraries(SDL2-guest PRIVATE GL)
 
 generate(libX11 thunks)
 add_guest_lib(X11)
