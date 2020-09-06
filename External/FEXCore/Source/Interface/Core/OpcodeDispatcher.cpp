@@ -2992,7 +2992,9 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
   if (Size == 1) {
-    OrderedNode *Src1 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+    OrderedNode *Src1 = _LoadContext(2, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+    Src1 = _Sbfe(Src1, 16, 0);
+    Divisor = _Sbfe(Divisor, 8, 0);
 
     auto UDivOp = _Div(Src1, Divisor);
     auto URemOp = _Rem(Src1, Divisor);
