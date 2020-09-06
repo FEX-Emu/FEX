@@ -1455,8 +1455,8 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
 
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), _Bfe(32, 0,  Result_Lower));
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), _Bfe(32, 32, Result_Lower));
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), _Bfe(32, 0,  Result_Upper));
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), _Bfe(32, 32, Result_Upper));
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), _Bfe(32, 32, Result_Upper));
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), _Bfe(32, 0,  Result_Upper));
 }
 
 template<bool SHL1Bit>

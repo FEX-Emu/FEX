@@ -268,7 +268,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Arg = *GetSrc<uint64_t*>(Op->Header.Args[0]);
 
             auto Results = CTX->CPUID.RunFunction(Arg);
-            memcpy(DstPtr, &Results.Res, sizeof(uint32_t) * 4);
+            memcpy(DstPtr, &Results, sizeof(uint32_t) * 4);
             break;
           }
           case IR::OP_PRINT: {

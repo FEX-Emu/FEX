@@ -41,6 +41,27 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(${CMAKE_SOURCE_DIR}/External/SonicUtils/include/SonicUtils)
 
+# Find our git hash
+find_package(Git)
+
+set(GIT_SHORT_HASH "Unknown")
+
+if (GIT_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE GIT_SHORT_HASH
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+endif()
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/git_version.h.in
+  ${CMAKE_BINARY_DIR}/generated/git_version.h)
+
+include_directories(${CMAKE_BINARY_DIR}/generated)
+
 add_subdirectory(Source/)
 
 install (DIRECTORY include/FEXCore ${CMAKE_BINARY_DIR}/include/FEXCore
