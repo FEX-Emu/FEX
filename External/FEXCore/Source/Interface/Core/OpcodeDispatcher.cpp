@@ -3127,9 +3127,18 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
 void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
-    auto Result = _VInsScalarElement(16, 8, 0, Dest, Src);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 8, 16);
+    // xmm, xmm is movhlps special case
+    if (Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+      OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
+      Src = _VExtractElement(16, 8, Src, 1); 
+      auto Result = _VInsScalarElement(16, 8, 0, Dest, Src);
+      StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 8, 16);
+    }
+    else {
+      OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
+      auto Result = _VInsScalarElement(16, 8, 0, Dest, Src);
+      StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 8, 16);
+    }
   }
   else {
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, 8);
