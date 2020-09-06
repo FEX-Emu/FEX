@@ -17,7 +17,11 @@ namespace FEXCore {
   struct ThreadState {
     FEXCore::Core::InternalThreadState *Thread{};
     void *AltStackPtr{};
-    stack_t GuestAltStack{};
+    stack_t GuestAltStack {
+      .ss_sp = nullptr,
+      .ss_flags = SS_DISABLE, // By default the guest alt stack is disabled
+      .ss_size = 0,
+    };
     // Guest signal sa_mask is per thread!
     SignalDelegator::GuestSAMask Guest_sa_mask[SignalDelegator::MAX_SIGNALS]{};
     uint32_t CurrentSignal{};
@@ -362,7 +366,8 @@ namespace FEXCore {
     uint64_t AltStackEnd = AltStackBase + ThreadData.GuestAltStack.ss_size;
     uint64_t GuestSP = ThreadData.Thread->State.State.gregs[X86State::REG_RSP];
 
-    if (GuestSP >= AltStackBase &&
+    if (!(ThreadData.GuestAltStack.ss_flags & SS_DISABLE) &&
+        GuestSP >= AltStackBase &&
         GuestSP <= AltStackEnd) {
       UsingAltStack = true;
     }
@@ -389,10 +394,16 @@ namespace FEXCore {
       }
 
       // We need to check for invalid flags
-      // The only flag that can be passed is SS_AUTODISARM
-      if (ss->ss_flags & ~SS_AUTODISARM) {
+      // The only flag that can be passed is SS_AUTODISARM and SS_DISABLE
+      if (ss->ss_flags & ~(SS_AUTODISARM | SS_DISABLE)) {
         // A flag remained that isn't one of the supported ones?
         return -EINVAL;
+      }
+
+      if (ss->ss_flags & SS_DISABLE) {
+        // If SS_DISABLE Is specified then the rest of the details are ignored
+        ThreadData.GuestAltStack = *ss;
+        return 0;
       }
 
       // stack size needs to be MINSIGSTKSZ (0x2000)

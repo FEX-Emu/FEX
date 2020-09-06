@@ -425,7 +425,7 @@ bool DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucontext
   uint64_t OldGuestSP = State->State.State.gregs[X86State::REG_RSP];
   uint64_t NewGuestSP = OldGuestSP;
 
-  if (!!GuestStack->ss_sp) {
+  if (!(GuestStack->ss_flags & SS_DISABLE)) {
     // If our guest is already inside of the alternative stack
     // Then that means we are hitting recursive signals and we need to walk back the stack correctly
     uint64_t AltStackBase = reinterpret_cast<uint64_t>(GuestStack->ss_sp);
