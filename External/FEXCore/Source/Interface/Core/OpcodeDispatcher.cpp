@@ -72,7 +72,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     GPRIndexes = &GPRIndexes_32;
   }
 
-  auto NewRIP = _Constant(Op->PC);
+  auto NewRIP = _Constant(GPRSize * 8, Op->PC);
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
 
   auto SyscallOp = _Syscall(

@@ -665,8 +665,10 @@ namespace FEXCore::Context {
               return 0;
             }
             else {
+              uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
+
               // We had some instructions. Early exit
-              Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
+              Thread->OpDispatcher->_StoreContext(IR::GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry + BlockInstructionsLength));
               Thread->OpDispatcher->_ExitFunction();
               break;
             }
