@@ -178,6 +178,14 @@ void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
   BlockSetRIP = true;
 }
 
+void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
+  // Store the new RIP
+  _CallbackReturn();
+  // This ExitFunction won't actually get hit but needs to exist
+  _ExitFunction();
+  BlockSetRIP = true;
+}
+
 void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   bool RequiresMask = false;
   FEXCore::IR::IROps IROp;
@@ -7195,6 +7203,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     // FEX reserved instructions
     {0x36, 1, &OpDispatchBuilder::SIGRETOp},
+    {0x37, 1, &OpDispatchBuilder::CallbackReturnOp},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable_32 = {

@@ -16,6 +16,9 @@ class DispatchGenerator : public Xbyak::CodeGenerator {
     bool HandleSignalPause(int Signal, void *info, void *ucontext);
 
   CPUBackend::AsmDispatch DispatchPtr;
+  CPUBackend::JITCallback CallbackPtr;
+  InterpreterCore::CallbackReturn ReturnPtr;
+
   uint64_t ThreadStopHandlerAddress;
   uint64_t AbsoluteLoopTopAddress;
   uint64_t ThreadPauseHandlerAddress;
@@ -196,6 +199,61 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
     // ud2();
   }
 
+  {
+    CallbackPtr = getCurr<CPUBackend::JITCallback>();
+
+    push(rbx);
+    push(rbp);
+    push(r12);
+    push(r13);
+    push(r14);
+    push(r15);
+    sub(rsp, 8);
+
+    // First thing we need to move the thread state pointer back in to our register
+    mov(STATE, rdi);
+    // XXX: XMM?
+
+    // Now push the callback return trampoline to the guest stack
+    // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
+    mov(rax, CTX->X86CodeGen.CallbackReturn);
+
+    // Store the trampoline to the guest stack
+    // Guest stack is now correctly misaligned after a regular call instruction
+    sub(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])], 16);
+    mov(rbx, qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])]);
+    mov(qword [rbx], rax);
+
+    // Store RIP to the context state
+    mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], rsi);
+
+    // Back to the loop top now
+    jmp(LoopTop);
+  }
+
+
+  {
+    ReturnPtr = getCurr<InterpreterCore::CallbackReturn>();
+//  using CallbackReturn =  __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
+
+    // rdi = thread
+    // rsi = rsp
+
+    mov(rsp, rsi);
+
+    // Now jump back to the thunk
+    // XXX: XMM?
+    add(rsp, 8);
+
+    pop(r15);
+    pop(r14);
+    pop(r13);
+    pop(r12);
+    pop(rbp);
+    pop(rbx);
+
+    ret();
+  }
   ready();
 }
 
@@ -383,6 +441,8 @@ bool DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucontext
 void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
   Generator = new DispatchGenerator(ctx, Thread);
   DispatchPtr = Generator->DispatchPtr;
+  CallbackPtr = Generator->CallbackPtr;
+  ReturnPtr = Generator->ReturnPtr;
 }
 
 bool InterpreterCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {

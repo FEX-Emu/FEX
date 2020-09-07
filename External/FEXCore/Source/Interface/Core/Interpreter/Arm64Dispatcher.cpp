@@ -35,6 +35,8 @@ class DispatchGenerator : public vixl::aarch64::Assembler {
     bool HandleSignalPause(int Signal, void *info, void *ucontext);
 
   CPUBackend::AsmDispatch DispatchPtr;
+  CPUBackend::JITCallback CallbackPtr;
+
   uint64_t ThreadStopHandlerAddress;
   uint64_t AbsoluteLoopTopAddress;
   uint64_t ThreadPauseHandlerAddress;
@@ -306,6 +308,33 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
     //hlt(0);
   }
 
+  {
+    CallbackPtr = Buffer->GetOffsetAddress<CPUBackend::JITCallback>(GetCursorOffset());
+
+    // We expect the thunk to have previously pushed the registers it was using
+    PushCalleeSavedRegisters();
+
+    // First thing we need to move the thread state pointer back in to our register
+    mov(STATE, x0);
+
+    // Now push the callback return trampoline to the guest stack
+    // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
+    LoadConstant(x0, CTX->X86CodeGen.CallbackReturn);
+
+    ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+    sub(x2, x2, 16);
+    str(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+
+    // Store the trampoline to the guest stack
+    // Guest stack is now correctly misaligned after a regular call instruction
+    str(x0, MemOperand(x2));
+
+    // Store RIP to the context state
+    str(x1, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.rip)));
+
+    // Now go back to the regular dispatcher loop
+    b(&LoopTop);
+  }
 
   FinalizeCode();
   uint64_t CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
@@ -510,6 +539,7 @@ bool DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucontext
 void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
   Generator = new DispatchGenerator(ctx, Thread);
   DispatchPtr = Generator->DispatchPtr;
+  CallbackPtr = Generator->CallbackPtr;
 }
 
 bool InterpreterCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {

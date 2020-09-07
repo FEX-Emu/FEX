@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(host-thunks)
 
+set(CMAKE_CXX_STANDARD 17)
+
 function(generate NAME)
     foreach(WHAT IN LISTS ARGN)
         set(OUTFILE "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}_${WHAT}.inl")

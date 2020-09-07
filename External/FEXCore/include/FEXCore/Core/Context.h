@@ -237,4 +237,6 @@ namespace FEXCore::Context {
    */
   void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, uint64_t Syscall, FEXCore::HLE::SyscallVisitor *Visitor);
 
+  void HandleCallback(FEXCore::Context::Context *CTX, uint64_t RIP);
+
 }

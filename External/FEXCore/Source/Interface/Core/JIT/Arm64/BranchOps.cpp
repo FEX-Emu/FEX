@@ -1,4 +1,7 @@
 #include "Interface/Core/JIT/Arm64/JITClass.h"
+#include "Interface/Core/InternalThreadState.h"
+
+#include <FEXCore/Core/X86Enums.h>
 
 namespace FEXCore::CPU {
 using namespace vixl;
@@ -25,6 +28,28 @@ DEF_OP(SignalReturn) {
   // This can't be a direct branch since the code needs to live at a constant location
   LoadConstant(x0, SignalReturnInstruction);
   br(x0);
+}
+
+DEF_OP(CallbackReturn) {
+  // First we must reset the stack
+  ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
+  add(sp, TMP1, 0); // Move that supports SP
+
+  // We can now lower the ref counter again
+  LoadConstant(x0, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
+  ldr(w2, MemOperand(x0));
+  sub(w2, w2, 1);
+  str(w2, MemOperand(x0));
+
+  // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+  add(x2, x2, 8);
+  str(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+
+  PopCalleeSavedRegisters();
+
+  // Return to the thunk
+  ret();
 }
 
 DEF_OP(ExitFunction) {
@@ -212,6 +237,7 @@ void JITCore::RegisterBranchHandlers() {
   REGISTER_OP(GUESTCALLINDIRECT, GuestCallIndirect);
   REGISTER_OP(GUESTRETURN,       GuestReturn);
   REGISTER_OP(SIGNALRETURN,      SignalReturn);
+  REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
   REGISTER_OP(EXITFUNCTION,      ExitFunction);
   REGISTER_OP(JUMP,              Jump);
   REGISTER_OP(CONDJUMP,          CondJump);

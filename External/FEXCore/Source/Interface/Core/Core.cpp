@@ -39,6 +39,12 @@ namespace FEXCore::CPU {
 }
 
 namespace FEXCore::Core {
+struct ThreadLocalData {
+  FEXCore::Core::InternalThreadState* Thread;
+};
+
+thread_local ThreadLocalData ThreadData{};
+
 constexpr std::array<std::string_view const, 22> FlagNames = {
   "CF",
   "",
@@ -304,6 +310,11 @@ namespace FEXCore::Context {
 
   void Context::StopGdbServer() {
     DebugServer.reset();
+  }
+
+  void Context::HandleCallback(uint64_t RIP) {
+    auto Thread = Core::ThreadData.Thread;
+    Thread->CPUBackend->CallbackPtr(Thread, RIP);
   }
 
   void Context::WaitForIdle() {
@@ -741,6 +752,7 @@ namespace FEXCore::Context {
   }
 
   void Context::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {
+    Core::ThreadData.Thread = Thread;
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
     // Let's do some initial bookkeeping here

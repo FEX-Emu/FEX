@@ -613,6 +613,36 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           jmp(TMP1);
           break;
         }
+        case IR::OP_CALLBACKRETURN: {
+          // Adjust the stack first for a regular return
+          if (SpillSlots) {
+            add(rsp, SpillSlots * 16 + 8 + 8); // + 8 to consume return address
+          }
+          else {
+            add(rsp, 8 + 8); // + 8 to consume return address
+          }
+
+          // Make sure to adjust the refcounter so we don't clear the cache now
+          mov(rax, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
+          sub(dword [rax], 1);
+
+          // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
+          add(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])], 8);
+
+          // Now jump back to the thunk
+          // XXX: XMM?
+          add(rsp, 8);
+
+          pop(r15);
+          pop(r14);
+          pop(r13);
+          pop(r12);
+          pop(rbp);
+          pop(rbx);
+
+          ret();
+          break;
+        }
         case IR::OP_BREAK: {
           auto Op = IROp->C<IR::IROp_Break>();
           switch (Op->Reason) {
@@ -1210,8 +1240,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_ADD: {
           auto Op = IROp->C<IR::IROp_Add>();
-          Xbyak::Reg SrcA;
-          Xbyak::Reg Dst;
           mov(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
           switch (OpSize) {
           case 4:
@@ -4864,16 +4892,6 @@ static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalT
   ctx->IdleWaitCV.notify_all();
 }
 
-static void CookieFailure(uint64_t Cookie) {
-  if (Cookie != 0x3132333435363738ULL) {
-    LogMan::Msg::D("Cookie wasn't correct");
-    std::unexpected();
-  }
-  else {
-    LogMan::Msg::D("[JIT] Cookie was correct");
-  }
-}
-
 void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   DispatcherCodeBuffer = AllocateNewCodeBuffer(MAX_DISPATCHER_CODE_SIZE);
   setNewBuffer(DispatcherCodeBuffer.Ptr, DispatcherCodeBuffer.Size);
@@ -5065,6 +5083,42 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
     PauseReturnInstruction = getCurr<uint64_t>();
     ud2();
+  }
+
+  {
+    CallbackPtr = getCurr<CPUBackend::JITCallback>();
+
+    push(rbx);
+    push(rbp);
+    push(r12);
+    push(r13);
+    push(r14);
+    push(r15);
+    sub(rsp, 8);
+
+    // First thing we need to move the thread state pointer back in to our register
+    mov(STATE, rdi);
+    // XXX: XMM?
+
+    // Make sure to adjust the refcounter so we don't clear the cache now
+    mov(rax, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
+    add(dword [rax], 1);
+
+    // Now push the callback return trampoline to the guest stack
+    // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
+    mov(rax, CTX->X86CodeGen.CallbackReturn);
+
+    // Store the trampoline to the guest stack
+    // Guest stack is now correctly misaligned after a regular call instruction
+    sub(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])], 16);
+    mov(rbx, qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])]);
+    mov(qword [rbx], rax);
+
+    // Store RIP to the context state
+    mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], rsi);
+
+    // Back to the loop top now
+    jmp(LoopTop);
   }
 
   ready();
