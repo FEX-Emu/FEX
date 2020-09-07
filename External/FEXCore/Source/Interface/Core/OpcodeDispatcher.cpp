@@ -2166,12 +2166,14 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    // If this is a GPR then we can just do an Add and store
+    // If this is a GPR then we can just do an Add
     auto Result = _Add(Dest, Src);
-    StoreResult(GPRClass, Op, Result, -1);
 
     // Previous value in dest gets stored in src
     StoreResult(GPRClass, Op, Op->Src[0], Dest, -1);
+
+    // Calculated value gets stored in dst (order is important if dst is same as src)
+    StoreResult(GPRClass, Op, Result, -1);
 
     auto Size = GetSrcSize(Op) * 8;
     GenerateFlags_ADD(Op, _Bfe(Size, 0, Result), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
