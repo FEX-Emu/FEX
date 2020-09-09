@@ -5459,9 +5459,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto mask = _Constant(7);
-  auto top = _And(_Sub(orig_top, _Constant(1)), mask);
-  SetX87Top(top);
-
+  
   size_t read_width = (width == 80) ? 16 : width / 8;
 
   OrderedNode *data{};
@@ -5473,7 +5471,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   else {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
-    data = _And(_Add(top, offset), mask);
+    data = _And(_Add(orig_top, offset), mask);
     data = _LoadContextIndexed(data, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
   }
   OrderedNode *converted = data;
@@ -5482,6 +5480,9 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   if (width == 32 || width == 64) {
       converted = _F80CVTTo(data, width / 8);
   }
+
+  auto top = _And(_Sub(orig_top, _Constant(1)), mask);
+  SetX87Top(top);
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
   //_StoreContext(converted, 16, offsetof(FEXCore::Core::CPUState, mm[7][0]));
