@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/mman.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 #include <numaif.h>
 
 namespace FEXCore::Core {
@@ -88,6 +90,16 @@ namespace FEXCore::HLE {
     REGISTER_SYSCALL_IMPL(get_mempolicy, [](FEXCore::Core::InternalThreadState *Thread, int *mode, unsigned long *nodemask, unsigned long maxnode, void *addr, unsigned long flags) -> uint64_t {
       uint64_t Result = ::get_mempolicy(mode, nodemask, maxnode, addr, flags);
       SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(set_mempolicy, [](FEXCore::Core::InternalThreadState *Thread, int mode, const unsigned long *nodemask, unsigned long maxnode) -> uint64_t {
+      uint64_t Result = ::set_mempolicy(mode, nodemask, maxnode);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(membarrier, [](FEXCore::Core::InternalThreadState *Thread, int cmd, int flags) -> uint64_t {
+        uint64_t Result = syscall(SYS_membarrier, cmd, flags);
+        SYSCALL_ERRNO();
     });
   }
 }
