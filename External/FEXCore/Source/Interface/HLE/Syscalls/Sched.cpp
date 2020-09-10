@@ -16,14 +16,14 @@ struct InternalThreadState;
 namespace FEXCore::HLE {
 
   void RegisterSched() {
-      
+
     REGISTER_SYSCALL_IMPL(sched_yield, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
       uint64_t Result = ::sched_yield();
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(getpriority, [](FEXCore::Core::InternalThreadState *Thread, int which, int who) -> uint64_t {
-      uint64_t Result = ::getpriority(which, who);
+      uint64_t Result = ::syscall(SYS_getpriority, which, who);
       SYSCALL_ERRNO();
     });
 
