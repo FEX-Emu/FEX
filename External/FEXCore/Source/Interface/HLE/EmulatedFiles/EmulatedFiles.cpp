@@ -612,7 +612,12 @@ namespace FEXCore::EmulatedFile {
   }
 
   int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
-    string cpath = std::filesystem::exists(pathname) ? std::filesystem::canonical(pathname)
+    std::error_code ec;
+    bool exists = std::filesystem::exists(pathname, ec);
+    if (ec) {
+      return -1;
+    }
+    string cpath = exists ? std::filesystem::canonical(pathname)
       : std::filesystem::path(pathname).lexically_normal(); // *Note: this doesn't transform to absolute
 
     if (EmulatedMap.find(cpath) == EmulatedMap.end()) {
