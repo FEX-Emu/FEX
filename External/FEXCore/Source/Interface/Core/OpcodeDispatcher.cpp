@@ -1590,16 +1590,18 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   else
     Shift = _And(Shift, _Constant(0x1F));
 
-  auto ShiftRight = _Sub(_Constant(Size), Shift);
+  auto ShiftRight = _Sub(_Constant(Size-1), Shift);
 
   OrderedNode *Res{};
   auto Tmp1 = _Lshl(Dest, Shift);
   auto Tmp2 = _Lshr(Src, ShiftRight);
+  Tmp2 = _Lshr(Tmp2, _Constant(1));
+
   Res = _Or(Tmp1, Tmp2);
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  GenerateFlags_ShiftLeft(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  GenerateFlags_ShiftLeft(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Shift));
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
@@ -1644,15 +1646,16 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   else
     Shift = _And(Shift, _Constant(0x1F));
 
-  auto ShiftLeft = _Sub(_Constant(Size), Shift);
+  auto ShiftLeft = _Sub(_Constant(Size-1), Shift);
 
   OrderedNode *Res{};
   auto Tmp1 = _Lshr(Dest, Shift);
   auto Tmp2 = _Lshl(Src, ShiftLeft);
+  Tmp2 = _Lshl(Tmp2, _Constant(1));
   Res = _Or(Tmp1, Tmp2);
   StoreResult(GPRClass, Op, Res, -1);
 
-  GenerateFlags_ShiftRight(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  GenerateFlags_ShiftRight(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Shift));
 }
 
 void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
