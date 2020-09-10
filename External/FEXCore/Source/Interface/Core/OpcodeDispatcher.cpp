@@ -3660,9 +3660,6 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   OrderedNode *Result_Lower = _ExtractElementPair(CASResult, 0);
   OrderedNode *Result_Upper = _ExtractElementPair(CASResult, 1);
 
-  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Result_Lower);
-  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), Result_Upper);
-
   // Set ZF if memory result was expected
   OrderedNode *EOR_Lower = _Xor(Result_Lower, Expected_Lower);
   OrderedNode *EOR_Upper = _Xor(Result_Upper, Expected_Upper);
@@ -3676,6 +3673,22 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 
   // Set ZF
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
+
+  auto CondJump = _CondJump(ZFResult);
+
+  // Make sure to start a new block after ending this one
+  auto JumpTarget = CreateNewCodeBlock();
+  SetFalseJumpTarget(CondJump, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
+  
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Result_Lower);
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), Result_Upper);
+
+  auto Jump = _Jump();
+  auto NextJumpTarget = CreateNewCodeBlock();
+  SetJumpTarget(Jump, NextJumpTarget);
+  SetTrueJumpTarget(CondJump, NextJumpTarget);
+  SetCurrentCodeBlock(NextJumpTarget);
 }
 
 void OpDispatchBuilder::CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
