@@ -206,10 +206,8 @@ namespace {
     return false;
   }
 
-  FEXCore::IR::RegisterClassType GetRegClassFromNode(uintptr_t ListBegin, uintptr_t DataBegin, FEXCore::IR::OrderedNodeWrapper const WrapperOp) {
+  FEXCore::IR::RegisterClassType GetRegClassFromNode(FEXCore::IR::IRListView<false> *IR, FEXCore::IR::IROp_Header *IROp) {
     using namespace FEXCore;
-    IR::OrderedNode const *RealNode = WrapperOp.GetNode(ListBegin);
-    IR::IROp_Header const *IROp = RealNode->Op(DataBegin);
 
     FEXCore::IR::RegisterClassType Class = IR::GetRegClass(IROp->Op);
     if (Class != FEXCore::IR::ComplexClass)
@@ -241,13 +239,13 @@ namespace {
       case IR::OP_PHIVALUE: {
         // Unwrap the PHIValue to get the class
         auto Op = IROp->C<IR::IROp_PhiValue>();
-        return GetRegClassFromNode(ListBegin, DataBegin, Op->Value);
+        return GetRegClassFromNode(IR, IR->GetOp<IR::IROp_Header>(Op->Value));
       }
       case IR::OP_PHI: {
         // Class is defined from the values passed in
         // All Phi nodes should have its class be the same (Validation should confirm this
         auto Op = IROp->C<IR::IROp_Phi>();
-        return GetRegClassFromNode(ListBegin, DataBegin, Op->PhiBegin);
+        return GetRegClassFromNode(IR, IR->GetOp<IR::IROp_Header>(Op->PhiBegin));
       }
       default: break;
     }
@@ -258,32 +256,10 @@ namespace {
 
   // Walk the IR and set the node classes
   void FindNodeClasses(RegisterGraph *Graph, FEXCore::IR::IRListView<false> *IR) {
-    uintptr_t ListBegin = IR->GetListData();
-    uintptr_t DataBegin = IR->GetData();
-
-    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == FEXCore::IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = IR->at(BlockIROp->Begin);
-      auto CodeLast = IR->at(BlockIROp->Last);
-      while (1) {
-        FEXCore::IR::OrderedNodeWrapper *CodeOp = CodeBegin();
-        FEXCore::IR::OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-        auto IROp = CodeNode->Op(DataBegin);
-        uint32_t Node = CodeOp->ID();
-
-        // If the destination hasn't yet been set then set it now
-        if (IROp->HasDest) {
-          SetNodeClass(Graph, Node, GetRegClassFromNode(ListBegin, DataBegin, *CodeOp));
-        }
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
+    for (auto [CodeNode, IROp] : IR->GetAllCode()) {
+      // If the destination hasn't yet been set then set it now
+      if (IROp->HasDest) {
+        SetNodeClass(Graph, IR->GetID(CodeNode), GetRegClassFromNode(IR, IROp));
       }
     }
   }
@@ -329,8 +305,8 @@ namespace FEXCore::IR {
       void CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR);
       void AllocateVirtualRegisters();
 
-      FEXCore::IR::NodeWrapperIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End);
-      FEXCore::IR::NodeWrapperIterator FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End);
+      FEXCore::IR::AllNodesIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
+      FEXCore::IR::AllNodesIterator FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
 
       uint32_t FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost = -1);
       uint32_t FindSpillSlot(uint32_t Node, FEXCore::IR::RegisterClassType RegisterClass);
@@ -380,22 +356,10 @@ namespace FEXCore::IR {
     }
     LiveRanges.assign(Nodes * sizeof(LiveRange), {~0U, ~0U});
 
-    uintptr_t ListBegin = IR->GetListData();
-    uintptr_t DataBegin = IR->GetData();
-
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = IR->at(BlockIROp->Begin);
-      auto CodeLast = IR->at(BlockIROp->Last);
-      while (1) {
-        auto CodeOp = CodeBegin();
-        IR::OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-        auto IROp = CodeNode->Op(DataBegin);
-        uint32_t Node = CodeOp->ID();
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        uint32_t Node = IR->GetID(CodeNode);
 
         // If the destination hasn't yet been set then set it now
         if (IROp->HasDest) {
@@ -421,7 +385,7 @@ namespace FEXCore::IR {
         }
 
         // Set this node's block ID
-        Graph->Nodes[Node].Head.BlockID = BlockNode->Wrapped(ListBegin).ID();
+        Graph->Nodes[Node].Head.BlockID = IR->GetID(BlockNode);
 
         uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
@@ -440,23 +404,16 @@ namespace FEXCore::IR {
 
           uint32_t CurrentSourcePartner = Node;
           while (NodeBegin != NodeBegin.Invalid()) {
-            FEXCore::IR::OrderedNodeWrapper *NodeOp = NodeBegin();
-            FEXCore::IR::OrderedNode *NodeNode = NodeOp->GetNode(ListBegin);
-            auto IRNodeOp = NodeNode->Op(DataBegin)->C<IR::IROp_PhiValue>();
+            auto [ValueNode, ValueHeader] = NodeBegin();
+            auto ValueOp = ValueHeader->CW<IROp_PhiValue>();
 
             // Set the node partner to the current one
             // This creates a singly linked list of node partners to follow
-            SetNodePartner(Graph, CurrentSourcePartner, IRNodeOp->Value.ID());
-            CurrentSourcePartner = IRNodeOp->Value.ID();
-            NodeBegin = IR->at(IRNodeOp->Next);
+            SetNodePartner(Graph, CurrentSourcePartner, ValueOp->Value.ID());
+            CurrentSourcePartner = ValueOp->Value.ID();
+            NodeBegin = IR->at(ValueOp->Next);
           }
         }
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
       }
     }
   }
@@ -472,12 +429,8 @@ namespace FEXCore::IR {
       BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
       BlockInterferenceVector->reserve(BlockIROp->Last.ID() - BlockIROp->Begin.ID());
 
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = IR->at(BlockIROp->Begin);
-      auto CodeLast = IR->at(BlockIROp->Last);
-      while (1) {
-        auto CodeOp = CodeBegin();
-        uint32_t Node = CodeOp->ID();
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        uint32_t Node = IR->GetID(CodeNode);
         LiveRange *NodeLiveRange = &LiveRanges[Node];
 
         if (NodeLiveRange->Begin >= BlockIROp->Begin.ID() &&
@@ -490,12 +443,6 @@ namespace FEXCore::IR {
           // If the live range is not fully inside the block then add it to the global interference list
           GlobalBlockInterferences.emplace_back(Node);
         }
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
       }
     }
   }
@@ -516,23 +463,15 @@ namespace FEXCore::IR {
       }
     };
     using namespace FEXCore;
-    uintptr_t ListBegin = IR->GetListData();
 
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
+      BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(IR->GetID(BlockNode)).first->second;
 
       std::vector<uint32_t> Interferences;
       Interferences.reserve(BlockInterferenceVector->size() + GlobalBlockInterferences.size());
 
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = IR->at(BlockIROp->Begin);
-      auto CodeLast = IR->at(BlockIROp->Last);
-      while (1) {
-        auto CodeOp = CodeBegin();
-        uint32_t Node = CodeOp->ID();
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        uint32_t Node = IR->GetID(CodeNode);
 
         // Check for every interference with the local block's interference
         for (auto RHSNode : *BlockInterferenceVector) {
@@ -561,12 +500,6 @@ namespace FEXCore::IR {
         }
 
         Interferences.clear();
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
       }
     }
   }
@@ -657,18 +590,12 @@ namespace FEXCore::IR {
     }
   }
 
-  FEXCore::IR::NodeWrapperIterator ConstrainedRAPass::FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End) {
-    auto CurrentIR = IREmit->ViewIR();
-    uintptr_t ListBegin = CurrentIR.GetListData();
-    uintptr_t DataBegin = CurrentIR.GetData();
+  FEXCore::IR::AllNodesIterator ConstrainedRAPass::FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End) {
+    using namespace FEXCore::IR;
+    uint32_t SearchID = IREmit->ViewIR().GetID(Node);
 
-    uint32_t SearchID = Node->Wrapped(ListBegin).ID();
-
-    while (1) {
-      using namespace FEXCore::IR;
-      OrderedNodeWrapper *WrapperOp = Begin();
-      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-      FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+    while(1) {
+      auto [RealNode, IROp] = Begin();
 
       uint8_t NumArgs = FEXCore::IR::GetArgs(IROp->Op);
       for (uint8_t i = 0; i < NumArgs; ++i) {
@@ -686,21 +613,16 @@ namespace FEXCore::IR {
       ++Begin;
     }
 
-    return FEXCore::IR::NodeWrapperIterator::Invalid();
+    return AllNodesIterator::Invalid();
   }
 
-  FEXCore::IR::NodeWrapperIterator ConstrainedRAPass::FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::NodeWrapperIterator Begin, FEXCore::IR::NodeWrapperIterator End) {
+  FEXCore::IR::AllNodesIterator ConstrainedRAPass::FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End) {
     auto CurrentIR = IREmit->ViewIR();
-    uintptr_t ListBegin = CurrentIR.GetListData();
-    uintptr_t DataBegin = CurrentIR.GetData();
-
-    uint32_t SearchID = Node->Wrapped(ListBegin).ID();
+    uint32_t SearchID = CurrentIR.GetID(Node);
 
     while (1) {
       using namespace FEXCore::IR;
-      OrderedNodeWrapper *WrapperOp = End();
-      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-      FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+      auto [RealNode, IROp] = End();
 
       if (Node == RealNode) {
         // We walked back all the way to the definition of the IR op
@@ -723,7 +645,7 @@ namespace FEXCore::IR {
       --End;
     }
 
-    return FEXCore::IR::NodeWrapperIterator::Invalid();
+    return FEXCore::IR::AllNodesIterator::Invalid();
   }
 
   uint32_t ConstrainedRAPass::FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost) {
@@ -795,7 +717,7 @@ namespace FEXCore::IR {
           // does NOT have a use inside of this this node's live range
           // Search only inside the source node's live range to see if there is a use
           auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, NodeOpBeginIter, NodeOpEndIter);
-          if (FirstUseLocation == IR::NodeWrapperIterator::Invalid()) {
+          if (FirstUseLocation == IR::NodeIterator::Invalid()) {
             // Looks like there isn't a usage of this interference node inside our node's live range
             // This means it is safe to spill this node and it'll result in in lower RA
             // Proper calculation of cost to spill would be to calculate the two distances from
@@ -803,11 +725,11 @@ namespace FEXCore::IR {
             // This would ensure something will spill earlier if its previous use and next use are farther away
             auto InterferenceNodeNextUse = FindFirstUse(IREmit, InterferenceOrderedNode, NodeOpBeginIter, InterferenceNodeOpEndIter);
             auto InterferenceNodePrevUse = FindLastUseBefore(IREmit, InterferenceOrderedNode, InterferenceNodeOpBeginIter, NodeOpBeginIter);
-            LogMan::Throw::A(InterferenceNodeNextUse != IR::NodeWrapperIterator::Invalid(), "Couldn't find next usage of op");
+            LogMan::Throw::A(InterferenceNodeNextUse != IR::NodeIterator::Invalid(), "Couldn't find next usage of op");
             // If there is no use of the interference op prior to our op then it only has initial definition
-            if (InterferenceNodePrevUse == IR::NodeWrapperIterator::Invalid()) InterferenceNodePrevUse = InterferenceNodeOpBeginIter;
+            if (InterferenceNodePrevUse == IR::NodeIterator::Invalid()) InterferenceNodePrevUse = InterferenceNodeOpBeginIter;
 
-            uint32_t NextUseDistance = InterferenceNodeNextUse()->ID() - CurrentLocation;
+            uint32_t NextUseDistance = InterferenceNodeNextUse.ID() - CurrentLocation;
             if (NextUseDistance >= InterferenceFarthestNextUse) {
               Found = true;
               InterferenceToSpill = j;
@@ -870,11 +792,11 @@ namespace FEXCore::IR {
             OpLiveRange->End > InterferenceLiveRange->End) {
           auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, NodeOpBeginIter, NodeOpBeginIter);
 
-          if (FirstUseLocation == IR::NodeWrapperIterator::Invalid()) {
+          if (FirstUseLocation == IR::NodeIterator::Invalid()) {
             // This means that the assignment of our register doesn't use this interference node
             // So we are safe to spill this interference node before assignment of our current node
             auto InterferenceNodeNextUse = FindFirstUse(IREmit, InterferenceOrderedNode, NodeOpBeginIter, InterferenceNodeOpEndIter);
-            uint32_t NextUseDistance = InterferenceNodeNextUse()->ID() - CurrentLocation;
+            uint32_t NextUseDistance = InterferenceNodeNextUse.ID() - CurrentLocation;
             if (NextUseDistance >= InterferenceFarthestNextUse) {
               Found = true;
 
@@ -905,11 +827,11 @@ namespace FEXCore::IR {
             OpLiveRange->End <= InterferenceLiveRange->End) {
           auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, NodeOpEndIter, NodeOpEndIter);
 
-          if (FirstUseLocation == IR::NodeWrapperIterator::Invalid()) {
+          if (FirstUseLocation == IR::NodeIterator::Invalid()) {
             // This means that the assignment of our the interference register doesn't overlap
             // with the final usage of our register, we can spill it and reduce usage
             auto InterferenceNodeNextUse = FindFirstUse(IREmit, InterferenceOrderedNode, NodeOpBeginIter, InterferenceNodeOpEndIter);
-            uint32_t NextUseDistance = InterferenceNodeNextUse()->ID() - CurrentLocation;
+            uint32_t NextUseDistance = InterferenceNodeNextUse.ID() - CurrentLocation;
             if (NextUseDistance >= InterferenceFarthestNextUse) {
               Found = true;
 
@@ -969,36 +891,15 @@ namespace FEXCore::IR {
     using namespace FEXCore;
 
     auto IR = IREmit->ViewIR();
-    uintptr_t ListBegin = IR.GetListData();
-    uintptr_t DataBegin = IR.GetData();
-
-    auto Begin = IR.begin();
-    auto Op = Begin();
     auto LastCursor = IREmit->GetWriteCursor();
 
-    IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
-    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+    for (auto [BlockNode, BlockIRHeader] : IR.GetBlocks()) {
+      auto BlockIROp = BlockIRHeader->CW<FEXCore::IR::IROp_CodeBlock>();
 
-    IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-    while (1) {
-      auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      // We grab these nodes this way so we can iterate easily
-      auto CodeBegin = IR.at(BlockIROp->Begin);
-      auto CodeLast = IR.at(BlockIROp->Last);
-
-      auto BlockBegin = CodeBegin;
-
-      while (1) {
-        auto CodeOp = CodeBegin();
-        IR::OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-        auto IROp = CodeNode->Op(DataBegin);
+      for (auto [CodeNode, IROp] : IR.GetCode(BlockNode)) {
 
         if (IROp->HasDest) {
-          uint32_t Node = CodeOp->ID();
+          uint32_t Node = IR.GetID(CodeNode);
           RegisterNode *CurrentNode = &Graph->Nodes[Node];
           LiveRange *OpLiveRange = &LiveRanges[Node];
 
@@ -1014,21 +915,19 @@ namespace FEXCore::IR {
             uint32_t InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange, 1);
             if (InterferenceNode != ~0U) {
               // We want to end the live range of this value here and continue it on first use
-              IR::OrderedNodeWrapper ConstantOp = IR::OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(IR::OrderedNode));
-              IR::OrderedNode *ConstantNode = ConstantOp.GetNode(ListBegin);
-              FEXCore::IR::IROp_Constant const *ConstantIROp = ConstantNode->Op(DataBegin)->C<IR::IROp_Constant>();
-              LogMan::Throw::A(ConstantIROp->Header.Op == IR::OP_CONSTANT, "This needs to be const");
+              auto [ConstantNode, _] = IR.at(InterferenceNode)();
+              auto ConstantIROp = IR.GetOp<IR::IROp_Constant>(ConstantNode);
+
               // First op post Spill
-              auto NextIter = CodeBegin;
-              auto FirstUseLocation = FindFirstUse(IREmit, ConstantNode, NextIter, CodeLast);
-              LogMan::Throw::A(FirstUseLocation != IR::NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
-              if (FirstUseLocation != IR::NodeWrapperIterator::Invalid()) {
+              auto NextIter = IR.at(CodeNode);
+              auto FirstUseLocation = FindFirstUse(IREmit, ConstantNode, NextIter, NodeIterator::Invalid());
+              LogMan::Throw::A(FirstUseLocation != IR::NodeIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", Node, InterferenceNode);
+              if (FirstUseLocation != IR::NodeIterator::Invalid()) {
                 --FirstUseLocation;
-                IR::OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
-                IR::OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
+                auto [FirstUseOrderedNode, _] = FirstUseLocation();
                 IREmit->SetWriteCursor(FirstUseOrderedNode);
                 auto FilledConstant = IREmit->_Constant(ConstantIROp->Constant);
-                IREmit->ReplaceAllUsesWithInclusive(ConstantNode, FilledConstant, FirstUseLocation, CodeLast);
+                IREmit->ReplaceUsesWithAfter(ConstantNode, FilledConstant, FirstUseLocation);
                 Spilled = true;
               }
             }
@@ -1046,17 +945,17 @@ namespace FEXCore::IR {
                 LogMan::Throw::A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
 
                 // This is the op that we need to dump
-                FEXCore::IR::OrderedNodeWrapper InterferenceOp = IR::OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(IR::OrderedNode));
-                FEXCore::IR::OrderedNode *InterferenceOrderedNode = InterferenceOp.GetNode(ListBegin);
-                FEXCore::IR::IROp_Header *InterferenceIROp = InterferenceOrderedNode->Op(DataBegin);
+                auto [InterferenceOrderedNode, InterferenceIROp] = IR.at(InterferenceNode)();
+
 
                 // This will find the last use of this definition
                 // Walks from CodeBegin -> BlockBegin to find the last Use
                 // Which this is walking backwards to find the first use
-                auto LastUseOp = FindLastUseBefore(IREmit, InterferenceOrderedNode, BlockBegin, CodeBegin);
+                auto LastUseIterator = FindLastUseBefore(IREmit, InterferenceOrderedNode, NodeIterator::Invalid(), IR.at(CodeNode));
+                auto [LastUseNode, LastUseIROp] = LastUseIterator();
 
                 // Set the write cursor to point of last usage
-                IREmit->SetWriteCursor(LastUseOp()->GetNode(ListBegin));
+                IREmit->SetWriteCursor(LastUseNode);
 
                 // Actually spill the node now
                 auto SpillOp = IREmit->_SpillRegister(InterferenceOrderedNode, SpillSlot, InterferenceRegClass);
@@ -1066,24 +965,23 @@ namespace FEXCore::IR {
                 {
                   // Search from the point of spilling to find the first use
                   // Set the write cursor to the first location found and fill at that point
-                  auto FirstIter = IR.at(SpillOp.Node->Wrapped(ListBegin));
+                  auto FirstIter = IR.at(SpillOp.Node);
                   // Just past the spill
                   ++FirstIter;
-                  auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, FirstIter, CodeLast);
+                  auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, FirstIter, NodeIterator::Invalid());
 
-                  LogMan::Throw::A(FirstUseLocation != NodeWrapperIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", CodeOp->ID(), InterferenceNode);
-                  if (FirstUseLocation != IR::NodeWrapperIterator::Invalid()) {
+                  LogMan::Throw::A(FirstUseLocation != NodeIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", Node, InterferenceNode);
+                  if (FirstUseLocation != IR::NodeIterator::Invalid()) {
                     // We want to fill just before the first use
                     --FirstUseLocation;
-                    IR::OrderedNodeWrapper *FirstUseOp = FirstUseLocation();
-                    IR::OrderedNode *FirstUseOrderedNode = FirstUseOp->GetNode(ListBegin);
+                    auto [FirstUseOrderedNode, _] = FirstUseLocation();
 
                     IREmit->SetWriteCursor(FirstUseOrderedNode);
 
                     auto FilledInterference = IREmit->_FillRegister(SpillSlot, InterferenceRegClass);
                     FilledInterference.first->Header.Size = InterferenceIROp->Size;
                     FilledInterference.first->Header.ElementSize = InterferenceIROp->ElementSize;
-                    IREmit->ReplaceAllUsesWithInclusive(InterferenceOrderedNode, FilledInterference, FirstUseLocation, CodeLast);
+                    IREmit->ReplaceUsesWithAfter(InterferenceOrderedNode, FilledInterference, FirstUseLocation);
                     Spilled = true;
                   }
                 }
@@ -1097,12 +995,6 @@ namespace FEXCore::IR {
             }
           }
         }
-
-        // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-        if (CodeBegin == CodeLast) {
-          break;
-        }
-        ++CodeBegin;
       }
     }
   }
@@ -1145,16 +1037,8 @@ namespace FEXCore::IR {
     bool Changed = false;
 
     auto IR = IREmit->ViewIR();
-    uintptr_t ListBegin = IR.GetListData();
-    uintptr_t DataBegin = IR.GetData();
 
-    auto Begin = IR.begin();
-    auto Op = Begin();
-
-    IR::OrderedNode *RealNode = Op->GetNode(ListBegin);
-    auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-    LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
+    auto HeaderOp = IR.GetHeader();
     if (HeaderOp->ShouldInterpret) {
       return false;
     }

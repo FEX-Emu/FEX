@@ -73,7 +73,6 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   {
     // Generate our codeblocks and link them together
-    OrderedNode* PrevCodeBlock{};
     for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
       LogMan::Throw::A(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
@@ -86,12 +85,14 @@ bool IRCompaction::Run(IREmitter *IREmit) {
     LocalHeaderOp.first->Blocks = GeneratedCodeBlocks[0].NewNode->Wrapped(LocalListBegin);
   }
 
-  // Isolate the nodes from the Block headers
-  LocalBuilder.SetWriteCursor(nullptr);
+
 
   {
     // Copy all of our IR ops over to the new location
     for (auto &Block : GeneratedCodeBlocks) {
+
+      // Isolate block contents from any previous headers/blocks
+      LocalBuilder.SetWriteCursor(nullptr);
 
       CodeBlockData FirstNode{};
       CodeBlockData LastNode{};
