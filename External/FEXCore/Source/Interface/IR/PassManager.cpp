@@ -8,6 +8,7 @@ void PassManager::AddDefaultPasses() {
   InsertPass(CreateContextLoadStoreElimination());
   InsertPass(CreateConstProp());
   ////// InsertPass(CreateDeadFlagCalculationEliminination());
+  InsertPass(CreateDeadFlagStoreElimination());
   InsertPass(CreateSyscallOptimization());
   InsertPass(CreatePassDeadCodeElimination());
 
