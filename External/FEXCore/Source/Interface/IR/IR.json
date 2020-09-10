@@ -73,7 +73,14 @@
       ]
     },
     "BeginBlock": {
-      "OpClass": "Misc"
+      "HasSideEffects": true,
+      "OpClass": "Misc",
+      "SwitchGen": false,
+      "SSAArgs": "1",
+      "RAOverride": "0",
+      "SSANames": [
+        "BlockHeader"
+      ]
     },
 
     "EndBlock": {

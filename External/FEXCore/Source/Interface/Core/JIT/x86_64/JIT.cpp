@@ -509,10 +509,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   for (auto [BlockNode, BlockHeader] : CurrentIR->GetBlocks()) {
     using namespace FEXCore::IR;
-    auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     {
+      auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
+      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+
       uint32_t Node = CurrentIR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
       if (IsTarget == JumpTargets.end()) {
@@ -563,21 +564,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       #endif
 
       switch (IROp->Op) {
-        case IR::OP_BEGINBLOCK: {
-          auto IsTarget = JumpTargets.find(Node);
-          if (IsTarget == JumpTargets.end()) {
-            IsTarget = JumpTargets.try_emplace(Node).first;
-          }
-          else {
-          }
-
-          L(IsTarget->second);
-          break;
-        }
-        case IR::OP_ENDBLOCK: {
-          auto Op = IROp->C<IR::IROp_EndBlock>();
-          break;
-        }
         case IR::OP_EXITFUNCTION: {
           RegularExit();
           break;
@@ -4800,6 +4786,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           break;
         }
         case IR::OP_DUMMY:
+        case IR::OP_BEGINBLOCK:
+        case IR::OP_ENDBLOCK:
         case IR::OP_IRHEADER:
         case IR::OP_PHIVALUE:
         case IR::OP_PHI:

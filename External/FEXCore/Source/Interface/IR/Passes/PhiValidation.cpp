@@ -24,8 +24,8 @@ bool PhiValidation::Run(IREmitter *IREmit) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
 
       switch (IROp->Op) {
-        // DUMMY doesn't matter for us
-        case IR::OP_DUMMY: break;
+        // BEGINBLOCK doesn't matter for us
+        case IR::OP_BEGINBLOCK: break;
         case IR::OP_PHIVALUE:
         case IR::OP_PHI: {
           if (FoundNonPhi) {

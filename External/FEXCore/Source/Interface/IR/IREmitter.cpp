@@ -13,7 +13,6 @@ void IREmitter::ResetWorkingList() {
 
 void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After, AllNodesIterator End) {
   uintptr_t ListBegin = ListData.Begin();
-  uintptr_t DataBegin = Data.Begin();
   auto NodeId = Node->Wrapped(ListBegin).ID();
 
   while (After != End) {

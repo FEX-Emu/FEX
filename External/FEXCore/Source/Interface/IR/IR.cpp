@@ -204,14 +204,6 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
           *out << ") ";
         }
         *out << Name;
-        switch (IROp->Op) {
-          case IR::OP_BEGINBLOCK:
-            *out << " %ssa" << std::to_string(ID);
-            break;
-          case IR::OP_ENDBLOCK:
-            break;
-          default: break;
-        }
 
         #define IROP_ARGPRINTER_HELPER
         #include <FEXCore/IR/IRDefines.inc>

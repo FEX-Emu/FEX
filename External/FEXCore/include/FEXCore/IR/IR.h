@@ -374,6 +374,10 @@ protected:
 	NodeType Node{};
 };
 
+/* This iterator can be used to step though nodes.
+ * Due to how our IR is laid out, this can be used to either step
+ * though the CodeBlocks or though the code within a single block.
+ */
 class NodeIterator {
 public:
 	using value_type              = std::tuple<OrderedNode*, IROp_Header*>;
@@ -442,8 +446,13 @@ protected:
 #define IROP_REG_CLASSES
 #include <FEXCore/IR/IRDefines.inc>
 
+/* This iterator can be used to step though every single node in a multi-block in SSA order.
+ *
+ * Iterates in the order of:
+ *
+ * end <-- CodeBlockA <--> BlockAInst1 <--> BlockAInst2 <--> CodeBlockB <--> BlockBInst1 <--> BlockBInst2 --> end
+ */
 class AllNodesIterator : public NodeIterator {
-  using iterator_category = std::forward_iterator_tag;
 public:
   AllNodesIterator(uintptr_t Base, uintptr_t IRBase) : NodeIterator(Base, IRBase) {}
 	explicit AllNodesIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : NodeIterator(Base, IRBase, Ptr) {}
@@ -470,7 +479,24 @@ public:
 		return *this;
 	}
 
-  AllNodesIterator operator--() = delete;
+  AllNodesIterator operator--() {
+    auto IROp = Node.GetNode(BaseList)->Op(IRList);
+
+    if (IROp->Op == OP_BEGINBLOCK) {
+      auto BeginBlock = IROp->C<IROp_EndBlock>();
+
+      Node = BeginBlock->BlockHeader;
+    } else if (IROp->Op == OP_CODEBLOCK) {
+      auto PrevBlockWrapper = Node.GetNode(BaseList)->Header.Previous;
+      auto PrevCodeBlock = PrevBlockWrapper.GetNode(BaseList)->Op(IRList)->C<IROp_CodeBlock>();
+
+      Node = PrevCodeBlock->Last;
+    } else {
+      Node = Node.GetNode(BaseList)->Header.Previous;
+    }
+
+    return *this;
+  }
 
   static AllNodesIterator Invalid() {
     return AllNodesIterator(0, 0);
