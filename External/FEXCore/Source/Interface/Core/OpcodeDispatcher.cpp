@@ -7360,6 +7360,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
     {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, true>},
+    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},
     {0xF0, 1, &OpDispatchBuilder::MOVVectorOp},
   };
 
