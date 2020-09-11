@@ -53,7 +53,6 @@ void InitializeSecondaryTables() {
     {0x33, 1, X86InstInfo{"RDPMC",      TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
     {0x34, 1, X86InstInfo{"SYSENTER",   TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
     {0x35, 1, X86InstInfo{"SYSEXIT",    TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
-    {0x37, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0, nullptr}},
     {0x38, 1, X86InstInfo{"",           TYPE_0F38_TABLE, FLAGS_NO_OVERLAY,                                                                       0, nullptr}},
     {0x39, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                          0, nullptr}},
     {0x3A, 1, X86InstInfo{"",           TYPE_0F3A_TABLE, FLAGS_NO_OVERLAY,                                                                       0, nullptr}},
@@ -253,6 +252,8 @@ void InitializeSecondaryTables() {
     // Unused x86 encoding instruction.
     // Used by FEX to know when to do a signal return
     {0x36, 1, X86InstInfo{"SIGRET",       TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            0, nullptr}},
+
+    {0x37, 1, X86InstInfo{"CALLBACKRET",  TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                                          0, nullptr}},
 
     // This was originally used by VIA to jump to its alternative instruction set. Used for OP_THUNK
     {0x3F, 1, X86InstInfo{"ALTINST",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            0, nullptr}},

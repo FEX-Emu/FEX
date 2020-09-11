@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(guest-thunks)
 
+set(CMAKE_CXX_STANDARD 17)
+
 # These get passed in from the main cmake project
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")

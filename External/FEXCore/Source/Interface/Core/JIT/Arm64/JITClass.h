@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Interface/Core/BlockCache.h"
-#include "Interface/Core/InternalThreadState.h"
 
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
@@ -21,6 +20,10 @@
 #define VTMP1 v1
 #define VTMP2 v2
 #define VTMP3 v3
+
+namespace FEXCore::Core {
+  struct InternalThreadState;
+}
 
 namespace FEXCore::CPU {
 using namespace vixl;
@@ -300,6 +303,7 @@ private:
   DEF_OP(GuestCallIndirect);
   DEF_OP(GuestReturn);
   DEF_OP(SignalReturn);
+  DEF_OP(CallbackReturn);
   DEF_OP(ExitFunction);
   DEF_OP(Jump);
   DEF_OP(CondJump);

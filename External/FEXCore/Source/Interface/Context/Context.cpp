@@ -110,6 +110,10 @@ namespace FEXCore::Context {
   void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t Syscall, [[maybe_unused]] FEXCore::HLE::SyscallVisitor *Visitor) {
   }
 
+  void HandleCallback(FEXCore::Context::Context *CTX, uint64_t RIP) {
+    CTX->HandleCallback(RIP);
+  }
+
 namespace Debug {
   void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
     CTX->CompileRIP(CTX->ParentThread, RIP);

@@ -111,6 +111,7 @@ namespace FEXCore::Context {
     bool GetGdbServerStatus() { return (bool)DebugServer; }
     void StartGdbServer();
     void StopGdbServer();
+    void HandleCallback(uint64_t RIP);
 
     // Debugger interface
     void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
@@ -140,6 +141,7 @@ namespace FEXCore::Context {
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
     std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 

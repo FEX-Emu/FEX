@@ -1,8 +1,7 @@
 #include "Interface/Context/Context.h"
 
 #include "Interface/Core/JIT/Arm64/JITClass.h"
-
-#include "Interface/HLE/Syscalls.h"
+#include "Interface/Core/InternalThreadState.h"
 
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
@@ -1015,6 +1014,55 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
     // Fault to start running again
     hlt(0);
+  }
+
+  {
+    // The expectation here is that a thunked function needs to call back in to the JIT in a reentrant safe way
+    // To do this safely we need to do some state tracking and register saving
+    //
+    // eg:
+    // JIT Call->
+    //  Thunk->
+    //    Thunk callback->
+    //
+    // The thunk callback needs to execute JIT code and when it returns, it needs to safely return to the thunk rather than JIT space
+    // This is handled by pushing a return address trampoline to the stack so when the guest address returns it hits our custom thunk return
+    //  - This will safely return us to the thunk
+    //
+    // On return to the thunk, the thunk can get whatever its return value is from the thread context depending on ABI handling on its end
+    // When the thunk itself returns, it'll do its regular return logic there
+    // void ReentrantCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
+    CallbackPtr = Buffer->GetOffsetAddress<CPUBackend::JITCallback>(GetCursorOffset());
+
+    // We expect the thunk to have previously pushed the registers it was using
+    PushCalleeSavedRegisters();
+
+    // First thing we need to move the thread state pointer back in to our register
+    mov(STATE, x0);
+
+    // Make sure to adjust the refcounter so we don't clear the cache now
+    LoadConstant(x0, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
+    ldr(w2, MemOperand(x0));
+    add(w2, w2, 1);
+    str(w2, MemOperand(x0));
+
+    // Now push the callback return trampoline to the guest stack
+    // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
+    LoadConstant(x0, CTX->X86CodeGen.CallbackReturn);
+
+    ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+    sub(x2, x2, 16);
+    str(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+
+    // Store the trampoline to the guest stack
+    // Guest stack is now correctly misaligned after a regular call instruction
+    str(x0, MemOperand(x2));
+
+    // Store RIP to the context state
+    str(x1, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.rip)));
+
+    // Now go back to the regular dispatcher loop
+    b(&LoopTop);
   }
 
   place(&l_VirtualMemory);
