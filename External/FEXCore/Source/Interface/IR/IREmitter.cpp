@@ -24,6 +24,11 @@ void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode,
         Node->RemoveUse();
         NewNode->AddUse();
         IROp->Args[i].NodeOffset = NewNode->Wrapped(ListBegin).NodeOffset;
+
+        // We can stop searching once all uses of the node are gone.
+        if (Node->NumUses == 0) {
+          return;
+        }
       }
     }
 
