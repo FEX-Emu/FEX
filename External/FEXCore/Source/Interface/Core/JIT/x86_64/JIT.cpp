@@ -263,7 +263,6 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   , InitialCodeBuffer {Buffer}
 {
   CurrentCodeBuffer = &InitialCodeBuffer;
-  Stack.resize(9000 * 16 * 64);
 
   RAPass = Thread->PassManager->GetRAPass();
 
@@ -417,10 +416,9 @@ Xbyak::Xmm JITCore::GetDst(uint32_t Node) {
 
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
   JumpTargets.clear();
-  CurrentIR = IR;
-  uint32_t SSACount = CurrentIR->GetSSACount();
+  uint32_t SSACount = IR->GetSSACount();
 
-  auto HeaderOp = CurrentIR->GetHeader();
+  auto HeaderOp = IR->GetHeader();
   if (HeaderOp->ShouldInterpret) {
     return InterpreterFallbackHelperAddress;
   }
@@ -430,11 +428,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   if ((getSize() + BufferRange) > CurrentCodeBuffer->Size) {
     LogMan::Msg::D("Gotta clear code cache: 0x%lx is too close to 0x%lx", getSize(), CurrentCodeBuffer->Size);
     ThreadState->CTX->ClearCodeCache(ThreadState, HeaderOp->Entry);
-  }
-
-  uint64_t ListStackSize = SSACount * 16;
-  if (ListStackSize > Stack.size()) {
-    Stack.resize(ListStackSize);
   }
 
 	void *Entry = getCurr<void*>();
@@ -507,14 +500,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     ret();
   };
 
-  for (auto [BlockNode, BlockHeader] : CurrentIR->GetBlocks()) {
+  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
-
     {
       auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
-      uint32_t Node = CurrentIR->GetID(BlockNode);
+      uint32_t Node = IR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
       if (IsTarget == JumpTargets.end()) {
         IsTarget = JumpTargets.try_emplace(Node).first;
@@ -523,9 +515,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       L(IsTarget->second);
     }
 
-    for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
       uint8_t OpSize = IROp->Size;
-      uint32_t Node = CurrentIR->GetID(CodeNode);
+      uint32_t Node = IR->GetID(CodeNode);
 
       #ifdef DEBUG_RA
       if (IROp->Op != IR::OP_BEGINBLOCK &&

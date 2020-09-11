@@ -575,10 +575,9 @@ aarch64::VRegister JITCore::GetDst(uint32_t Node) {
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
   using namespace aarch64;
   JumpTargets.clear();
-  CurrentIR = IR;
-  uint32_t SSACount = CurrentIR->GetSSACount();
+  uint32_t SSACount = IR->GetSSACount();
 
-  auto HeaderOp = CurrentIR->GetHeader();
+  auto HeaderOp = IR->GetHeader();
   if (HeaderOp->ShouldInterpret) {
     return reinterpret_cast<void*>(InterpreterFallbackHelperAddress);
   }
@@ -626,13 +625,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     stp(TMP1, lr, MemOperand(sp, -16, PreIndex));
   }
 
-  for (auto [BlockNode, BlockHeader] : CurrentIR->GetBlocks()) {
+  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     {
-      uint32_t Node = CurrentIR->GetID(BlockNode);
+      uint32_t Node = IR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
       if (IsTarget == JumpTargets.end()) {
         IsTarget = JumpTargets.try_emplace(Node).first;
@@ -641,8 +640,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       bind(&IsTarget->second);
     }
 
-    for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
-      uint32_t ID = CurrentIR->GetID(CodeNode);
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      uint32_t ID = IR->GetID(CodeNode);
 
       // Execute handler
       OpHandler Handler = OpHandlers[IROp->Op];
