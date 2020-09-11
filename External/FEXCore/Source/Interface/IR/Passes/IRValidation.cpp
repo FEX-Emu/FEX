@@ -101,8 +101,21 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
       uint8_t NumArgs = IR::GetArgs(IROp->Op);
 
-      if (NumArgs != IROp->NumArgs)
-        Errors << "%ssa" << ID << ": Has wrong number of Args" << std::endl;
+      if (NumArgs != IROp->NumArgs) {
+        switch (IROp->Op) {
+          case OP_BEGINBLOCK:
+          case OP_ENDBLOCK:
+          case OP_PHI:
+          case OP_PHIVALUE:
+          case OP_CONDJUMP:
+          case OP_JUMP:
+            // These override the nubmer of args for RA, so ignore them.
+            break;
+          default:
+            HadError |= true;
+            Errors << "%ssa" << ID << ": Has wrong number of Args" << std::endl;
+        }
+      }
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         // Was an argument defined after this node?
@@ -111,12 +124,14 @@ bool IRValidation::Run(IREmitter *IREmit) {
           Errors << "%ssa" << ID << ": Arg[" << i << "] has definition after use at %ssa" << Arg.ID() << std::endl;
         }
 
-        if (!NodeIsLive.Get(Arg.ID())) {
+        if (Arg.ID() != 0 && !NodeIsLive.Get(Arg.ID())) {
           HadError |= true;
           Errors << "%ssa" << ID << ": Arg[" << i << "] refrences dead %ssa" << Arg.ID() << std::endl;
         }
 
-        Uses[Arg.ID()]++;
+        if (Arg.ID() != 0) {
+          Uses[Arg.ID()]++;
+        }
       }
 
       NodeIsLive.Set(ID);
@@ -226,7 +241,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
   for (int i = 0; i < CurrentIR.GetSSACount(); i++) {
     auto [Node, IROp] = CurrentIR.at(i)();
     if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
-      HadError = true;
+      HadError |= true;
       Errors << "%ssa" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
     }
   }
