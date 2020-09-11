@@ -80,14 +80,6 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(setgroups);
     });
 
-    REGISTER_SYSCALL_IMPL(capget, [](FEXCore::Core::InternalThreadState *Thread, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
-      SYSCALL_STUB(capget);
-    });
-
-    REGISTER_SYSCALL_IMPL(capset, [](FEXCore::Core::InternalThreadState *Thread, cap_user_header_t hdrp, const cap_user_data_t datap) -> uint64_t {
-      SYSCALL_STUB(capset);
-    });
-
     REGISTER_SYSCALL_IMPL(rt_sigtimedwait, [](FEXCore::Core::InternalThreadState *Thread, sigset_t *set, const struct timespec*, size_t sigsetsize) -> uint64_t {
       SYSCALL_STUB(rt_sigtimedwait);
     });

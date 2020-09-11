@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <syslog.h>
+#include <sys/capability.h>
 #include <sys/random.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
@@ -48,6 +49,16 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(getrandom, [](FEXCore::Core::InternalThreadState *Thread, void *buf, size_t buflen, unsigned int flags) -> uint64_t {
       uint64_t Result = ::getrandom(buf, buflen, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(capget, [](FEXCore::Core::InternalThreadState *Thread, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
+      uint64_t Result = ::capget(hdrp, datap);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(capset, [](FEXCore::Core::InternalThreadState *Thread, cap_user_header_t hdrp, const cap_user_data_t datap) -> uint64_t {
+      uint64_t Result = ::capset(hdrp, datap);
       SYSCALL_ERRNO();
     });
   }
