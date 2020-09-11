@@ -7,6 +7,10 @@
 
 #include <string.h>
 
+#include <linux/futex.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
 namespace FEXCore {
   constexpr static uint32_t SS_AUTODISARM = (1U << 31);
   constexpr static uint32_t X86_MINSIGSTKSZ  = 0x2000U;
@@ -116,9 +120,25 @@ namespace FEXCore {
 
       // We have an emulation thread pointer, we can now modify its state
       if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
-        // XXX: Maybe this should actually go down guest handler state?
-        signal(Signal, SIG_DFL);
-        return;
+        if (Handler.DefaultBehaviour == DEFAULT_TERM) {
+          if (Thread->State.ThreadManager.clear_child_tid) {
+            std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->State.ThreadManager.clear_child_tid);
+            Addr->store(0);
+            syscall(SYS_futex,
+                Thread->State.ThreadManager.clear_child_tid,
+                FUTEX_WAKE,
+                ~0ULL,
+                0,
+                0,
+                0);
+          }
+
+          Thread->StatusCode = -Signal;
+
+          // Doesn't return
+          Thread->CTX->StopThread(Thread);
+          std::unexpected();
+        }
       }
       else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
         return;
@@ -238,6 +258,29 @@ namespace FEXCore {
     // "Userspace" SIGRTMIN starts at 34 because of this
     HostHandlers[__SIGRTMIN].Installed   = true;
     HostHandlers[__SIGRTMIN+1].Installed = true;
+
+    // Most signals default to termination
+    // These ones are slightly different
+    const std::vector<std::pair<int, SignalDelegator::DefaultBehaviour>> SignalDefaultBehaviours = {
+      {SIGQUIT,   DEFAULT_COREDUMP},
+      {SIGILL,    DEFAULT_COREDUMP},
+      {SIGTRAP,   DEFAULT_COREDUMP},
+      {SIGABRT,   DEFAULT_COREDUMP},
+      {SIGBUS,    DEFAULT_COREDUMP},
+      {SIGFPE,    DEFAULT_COREDUMP},
+      {SIGSEGV,   DEFAULT_COREDUMP},
+      {SIGCHLD,   DEFAULT_IGNORE},
+      {SIGCONT,   DEFAULT_IGNORE},
+      {SIGURG,    DEFAULT_IGNORE},
+      {SIGXCPU,   DEFAULT_COREDUMP},
+      {SIGXFSZ,   DEFAULT_COREDUMP},
+      {SIGSYS,    DEFAULT_COREDUMP},
+      {SIGWINCH,  DEFAULT_IGNORE},
+    };
+
+    for (auto Behaviour : SignalDefaultBehaviours) {
+      HostHandlers[Behaviour.first].DefaultBehaviour = Behaviour.second;
+    }
   }
 
   void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
@@ -435,6 +478,17 @@ namespace FEXCore {
       }
       else {
         return -EINVAL;
+      }
+    }
+
+    // Do we have any pending signals that became unmasked?
+    uint64_t PendingSignals = ~ThreadData.GuestProcMask & ThreadData.PendingSignals;
+    if (PendingSignals != 0) {
+      for (int i = 0; i < 64; ++i) {
+        if (PendingSignals & (1ULL << i)) {
+          tgkill(ThreadData.Thread->State.ThreadManager.PID, ThreadData.Thread->State.ThreadManager.TID, i + 1);
+          PendingSignals &= ~(1ULL << i);
+        }
       }
     }
 
