@@ -105,8 +105,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 #define GD *GetDest<uint64_t*>(SSAData, WrapperOp)
 #define GDP GetDest<void*>(SSAData, WrapperOp)
   auto GetOpSize = [&](IR::OrderedNodeWrapper Node) {
-    FEXCore::IR::OrderedNode const *RealNode = Node.GetNode(ListBegin);
-    FEXCore::IR::IROp_Header const *IROp = RealNode->Op(DataBegin);
+    auto IROp = CurrentIR->GetOp<FEXCore::IR::IROp_Header>(Node);
     return IROp->Size;
   };
 

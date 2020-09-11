@@ -17,8 +17,6 @@ static uint64_t getMask(T Op) {
 bool ConstProp::Run(IREmitter *IREmit) {
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
 
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
@@ -113,7 +111,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         Changed = true;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // AND with same value results in original value
-        IREmit->ReplaceAllUsesWith(CodeNode, Op->Header.Args[0].GetNode(ListBegin));
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         Changed = true;
       }
     break;
@@ -132,7 +130,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         Changed = true;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // OR with same value results in original value
-        IREmit->ReplaceAllUsesWith(CodeNode, Op->Header.Args[0].GetNode(ListBegin));
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         Changed = true;
       }
     break;
@@ -173,7 +171,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
                 Constant2 == 0) {
         IREmit->SetWriteCursor(CodeNode);
-        OrderedNode *Arg = Op->Header.Args[0].GetNode(ListBegin);
+        OrderedNode *Arg = CurrentIR.GetNode(Op->Header.Args[0]);
         IREmit->ReplaceAllUsesWith(CodeNode, Arg);
         Changed = true;
       }
@@ -193,10 +191,10 @@ bool ConstProp::Run(IREmitter *IREmit) {
         auto ConstantVal = IREmit->_Constant(NewConstant);
         IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
         Changed = true;
-      } else if (IROp->Size == Op->Header.Args[0].GetNode(ListBegin)->Op(DataBegin)->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0 ) {
+      } else if (IROp->Size == CurrentIR.GetOp<IROp_Header>(Op->Header.Args[0])->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0 ) {
         // A BFE that extracts all bits results in original value
   // XXX - This is broken for now - see https://github.com/FEX-Emu/FEX/issues/351
-        // IREmit->ReplaceAllUsesWith(CodeNode, Op->Header.Args[0].GetNode(ListBegin));
+        // IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         // Changed = true;
       }
 

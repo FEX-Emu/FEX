@@ -23,8 +23,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   bool HadWarning = false;
   auto CurrentIR = IREmit->ViewIR();
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
+
   std::ostringstream Errors;
   std::ostringstream Warnings;
 
@@ -39,8 +38,8 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
         case IR::OP_CONDJUMP: {
           auto Op = IROp->CW<IR::IROp_CondJump>();
 
-          OrderedNode *TrueTargetNode = Op->Header.Args[1].GetNode(ListBegin);
-          OrderedNode *FalseTargetNode = Op->Header.Args[2].GetNode(ListBegin);
+          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->Header.Args[1]);
+          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->Header.Args[2]);
 
           CurrentBlock->Successors.emplace_back(TrueTargetNode);
           CurrentBlock->Successors.emplace_back(FalseTargetNode);
@@ -59,7 +58,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
         }
         case IR::OP_JUMP: {
           auto Op = IROp->CW<IR::IROp_Jump>();
-          OrderedNode *TargetNode = Op->Header.Args[0].GetNode(ListBegin);
+          OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
           CurrentBlock->Successors.emplace_back(TargetNode);
 
           {
@@ -134,7 +133,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           std::set<IR::OrderedNode *> Predecessors;
 
           std::function<void(IR::OrderedNode*)> AddPredecessors = [&] (IR::OrderedNode *Node) {
-            auto PredBlock = &OffsetToBlockMap.try_emplace(Node->Wrapped(ListBegin).ID()).first->second;
+            auto PredBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(Node)).first->second;
 
             // Current Block will always be in set
             // Walk each predecessor, adding their predecessors
@@ -153,14 +152,14 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
           for (auto it = Predecessors.begin(); it != Predecessors.end(); ++it) {
             IR::OrderedNode *Pred = *it;
-            auto PredIROp = Pred->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+            auto PredIROp = CurrentIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Pred);
 
             if (Arg.ID() >= PredIROp->Begin.ID() &&
                 Arg.ID() < PredIROp->Last.ID()) {
               FoundPredDefine = true;
               break;
             }
-            Errors << "\tChecking Pred %ssa" << Pred->Wrapped(ListBegin).ID() << std::endl;
+            Errors << "\tChecking Pred %ssa" << CurrentIR.GetID(Pred) << std::endl;
           }
 
           if (!FoundPredDefine) {

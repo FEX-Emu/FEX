@@ -69,7 +69,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   // Zero is always zero(invalid)
   OldToNewRemap[0] = 0;
   auto LocalHeaderOp = LocalBuilder._IRHeader(OrderedNodeWrapper::WrapOffset(0).GetNode(ListBegin), HeaderOp->Entry, HeaderOp->BlockCount, HeaderOp->ShouldInterpret);
-  OldToNewRemap[HeaderNode->Wrapped(ListBegin).ID()] = LocalHeaderOp.Node->Wrapped(LocalListBegin).ID();
+  OldToNewRemap[CurrentIR.GetID(HeaderNode)] = LocalIR.GetID(LocalHeaderOp.Node);
 
   {
     // Generate our codeblocks and link them together
@@ -77,7 +77,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
       LogMan::Throw::A(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
       auto LocalBlockIRNode = LocalBuilder._CodeBlock(LocalHeaderOp, LocalHeaderOp); // Use LocalHeaderOp as a dummy arg for now
-      OldToNewRemap[BlockNode->Wrapped(ListBegin).ID()] = LocalBlockIRNode.Node->Wrapped(LocalListBegin).ID();
+      OldToNewRemap[CurrentIR.GetID(BlockNode)] = LocalIR.GetID(LocalBlockIRNode.Node);
       GeneratedCodeBlocks.emplace_back(CodeBlockData{BlockNode, LocalBlockIRNode});
     }
 
@@ -102,7 +102,6 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
         // Allocate the ops locally for our local dispatch
         auto LocalPair = LocalBuilder.AllocateRawOp(OpSize);
-        IR::OrderedNodeWrapper LocalNodeWrapper = LocalPair.Node->Wrapped(LocalListBegin);
 
         // Copy usage infomation
         LocalPair.Node->NumUses = CodeNode->GetUses();
@@ -113,7 +112,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
         // Set our map remapper to map the new location
         // Even nodes that don't have a destination need to be in this map
         // Need to be able to remap branch targets any other bits
-        OldToNewRemap[CurrentIR.GetID(CodeNode)] = LocalNodeWrapper.ID();
+        OldToNewRemap[CurrentIR.GetID(CodeNode)] = LocalIR.GetID(LocalPair.Node);
 
         if (i == 0) {
           FirstNode.OldNode = CodeNode;
@@ -138,14 +137,11 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   {
     // Fixup the arguments of all the IROps
     for (auto &Block : GeneratedCodeBlocks) {
-      auto BlockIROp = Block.OldNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+      auto BlockIROp = CurrentIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Block.OldNode);
       LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block.OldNode)) {
-
-        OrderedNodeWrapper LocalNodeWrapper = OrderedNodeWrapper::WrapOffset(OldToNewRemap[CurrentIR.GetID(CodeNode)] * sizeof(OrderedNode));
-        OrderedNode *LocalNode = LocalNodeWrapper.GetNode(LocalListBegin);
-        FEXCore::IR::IROp_Header *LocalIROp = LocalNode->Op(LocalDataBegin);
+        auto [LocalNode, LocalIROp] = LocalIR.at(OldToNewRemap[CurrentIR.GetID(CodeNode)])();
 
         // Now that we have the op copied over, we need to modify SSA values to point to the new correct locations
         // This doesn't use IR::GetArgs(Op) because we need to remap all SSA nodes

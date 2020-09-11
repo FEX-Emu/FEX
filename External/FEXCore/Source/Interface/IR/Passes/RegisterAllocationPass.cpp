@@ -420,13 +420,12 @@ namespace FEXCore::IR {
 
   void ConstrainedRAPass::CalculateBlockInterferences(FEXCore::IR::IRListView<false> *IR) {
     using namespace FEXCore;
-    uintptr_t ListBegin = IR->GetListData();
 
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
-      BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
+      BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(IR->GetID(BlockNode)).first->second;
       BlockInterferenceVector->reserve(BlockIROp->Last.ID() - BlockIROp->Begin.ID());
 
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
@@ -650,7 +649,6 @@ namespace FEXCore::IR {
 
   uint32_t ConstrainedRAPass::FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost) {
     auto IR = IREmit->ViewIR();
-    uintptr_t ListBegin = IR.GetListData();
 
     uint32_t InterferenceToSpill = ~0U;
     uint32_t InterferenceFarthestNextUse = 0;
@@ -687,13 +685,9 @@ namespace FEXCore::IR {
           continue;
         }
 
-        FEXCore::IR::OrderedNodeWrapper InterferenceOp = IR::OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(IR::OrderedNode));
-        FEXCore::IR::OrderedNode *InterferenceOrderedNode = InterferenceOp.GetNode(ListBegin);
-
-        IR::OrderedNodeWrapper InterferenceNodeOpBegin = IR::OrderedNodeWrapper::WrapOffset(InterferenceLiveRange->Begin * sizeof(IR::OrderedNode));
-        IR::OrderedNodeWrapper InterferenceNodeOpEnd = IR::OrderedNodeWrapper::WrapOffset(InterferenceLiveRange->End * sizeof(IR::OrderedNode));
-        auto InterferenceNodeOpBeginIter = IR.at(InterferenceNodeOpBegin);
-        auto InterferenceNodeOpEndIter = IR.at(InterferenceNodeOpEnd);
+        auto [InterferenceOrderedNode, _] = IR.at(InterferenceNode)();
+        auto InterferenceNodeOpBeginIter = IR.at(InterferenceLiveRange->Begin);
+        auto InterferenceNodeOpEndIter = IR.at(InterferenceLiveRange->End);
 
         bool Found{};
 
@@ -765,11 +759,8 @@ namespace FEXCore::IR {
           continue;
         }
 
-        FEXCore::IR::OrderedNodeWrapper InterferenceOp = IR::OrderedNodeWrapper::WrapOffset(InterferenceNode * sizeof(IR::OrderedNode));
-        FEXCore::IR::OrderedNode *InterferenceOrderedNode = InterferenceOp.GetNode(ListBegin);
-
-        IR::OrderedNodeWrapper InterferenceNodeOpEnd = IR::OrderedNodeWrapper::WrapOffset(InterferenceLiveRange->End * sizeof(IR::OrderedNode));
-        auto InterferenceNodeOpEndIter = IR.at(InterferenceNodeOpEnd);
+        auto [InterferenceOrderedNode, _] = IR.at(InterferenceNode)();
+        auto InterferenceNodeOpEndIter = IR.at(InterferenceLiveRange->End);
 
         bool Found{};
 
@@ -894,8 +885,6 @@ namespace FEXCore::IR {
     auto LastCursor = IREmit->GetWriteCursor();
 
     for (auto [BlockNode, BlockIRHeader] : IR.GetBlocks()) {
-      auto BlockIROp = BlockIRHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-
       for (auto [CodeNode, IROp] : IR.GetCode(BlockNode)) {
 
         if (IROp->HasDest) {

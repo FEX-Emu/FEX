@@ -28,8 +28,6 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
   auto CurrentIR = IREmit->ViewIR();
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
 
   std::ostringstream Errors;
   std::ostringstream Warnings;
@@ -51,7 +49,9 @@ bool IRValidation::Run(IREmitter *IREmit) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(BlockNode)).first->second;
+    uint32_t BlockID = CurrentIR.GetID(BlockNode);
+
+    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockID).first->second;
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       uint32_t ID = CurrentIR.GetID(CodeNode);
@@ -129,14 +129,14 @@ bool IRValidation::Run(IREmitter *IREmit) {
         case IR::OP_CONDJUMP: {
           auto Op = IROp->C<IR::IROp_CondJump>();
 
-          OrderedNode const *TrueTargetNode = Op->Header.Args[1].GetNode(ListBegin);
-          OrderedNode const *FalseTargetNode = Op->Header.Args[2].GetNode(ListBegin);
+          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->Header.Args[1]);
+          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->Header.Args[2]);
 
           CurrentBlock->Successors.emplace_back(TrueTargetNode);
           CurrentBlock->Successors.emplace_back(FalseTargetNode);
 
-          FEXCore::IR::IROp_Header const *TrueTargetOp = TrueTargetNode->Op(DataBegin);
-          FEXCore::IR::IROp_Header const *FalseTargetOp = FalseTargetNode->Op(DataBegin);
+          FEXCore::IR::IROp_Header const *TrueTargetOp = CurrentIR.GetOp<IROp_Header>(TrueTargetNode);
+          FEXCore::IR::IROp_Header const *FalseTargetOp = CurrentIR.GetOp<IROp_Header>(FalseTargetNode);
 
           if (TrueTargetOp->Op != OP_CODEBLOCK) {
             HadError |= true;
@@ -160,10 +160,10 @@ bool IRValidation::Run(IREmitter *IREmit) {
         }
         case IR::OP_JUMP: {
           auto Op = IROp->C<IR::IROp_Jump>();
-          OrderedNode const *TargetNode = Op->Header.Args[0].GetNode(ListBegin);
+          OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
           CurrentBlock->Successors.emplace_back(TargetNode);
 
-          FEXCore::IR::IROp_Header const *TargetOp = TargetNode->Op(DataBegin);
+          FEXCore::IR::IROp_Header const *TargetOp = CurrentIR.GetOp<IROp_Header>(TargetNode);
           if (TargetOp->Op != OP_CODEBLOCK) {
             HadError |= true;
             Errors << "Jump %ssa" << ID << ": Jump to Op that isn't the begining of a block" << std::endl;
@@ -184,7 +184,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
     size_t NumSuccessors = CurrentBlock->Successors.size();
     if (NumSuccessors > 2) {
       HadError |= true;
-      Errors << "%ssa" << BlockNode->Wrapped(ListBegin).ID() << " Has " << NumSuccessors << " successors which is too many" << std::endl;
+      Errors << "%ssa" << BlockID << " Has " << NumSuccessors << " successors which is too many" << std::endl;
     }
 
     {
@@ -200,7 +200,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
         auto Op = GetOp(CodeCurrent);
         if (Op != IR::OP_ENDBLOCK) {
           HadError |= true;
-          Errors << "%ssa" << BlockNode->Wrapped(ListBegin).ID() << " Failed to end block with EndBlock" << std::endl;
+          Errors << "%ssa" << BlockID << " Failed to end block with EndBlock" << std::endl;
         }
       }
 
@@ -217,16 +217,18 @@ bool IRValidation::Run(IREmitter *IREmit) {
             break;
           default:
             HadError |= true;
-            Errors << "%ssa" << BlockNode->Wrapped(ListBegin).ID() << " Didn't have an exit IR op as its last instruction" << std::endl;
+            Errors << "%ssa" << BlockID << " Didn't have an exit IR op as its last instruction" << std::endl;
         };
       }
     }
   }
 
   for (int i = 0; i < CurrentIR.GetSSACount(); i++) {
-    auto Node = OrderedNodeWrapper::WrapOffset(i * sizeof(IR::OrderedNode)).GetNode(ListBegin);
-    if (Node->NumUses != Uses[i])
+    auto [Node, IROp] = CurrentIR.at(i)();
+    if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
+      HadError = true;
       Errors << "%ssa" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
+    }
   }
 
   std::stringstream Out;

@@ -52,11 +52,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
 }
 
 static void PrintArg(std::stringstream *out, IRListView<false> const* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationPass *RAPass) {
-  uintptr_t Data = IR->GetData();
-  uintptr_t ListBegin = IR->GetListData();
-
-  OrderedNode *RealNode = Arg.GetNode(ListBegin);
-  auto IROp = RealNode->Op(Data);
+  auto [CodeNode, IROp] = IR->at(Arg)();
 
   *out << "%ssa" << std::to_string(Arg.ID());
   if (RAPass) {
