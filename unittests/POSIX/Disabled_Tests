@@ -550,3 +550,10 @@ conformance-interfaces-munmap-1-2.test
 
 conformance-interfaces-killpg-1-2.test # uses rt_sigsuspend
 conformance-interfaces-kill-1-2.test # uses rt_sigtimedwait
+
+# Unstable tests
+conformance-interfaces-clock_nanosleep-10-1.test # uses sigabort
+conformance-interfaces-clock_nanosleep-9-1.test # uses sigabort
+conformance-interfaces-nanosleep-5-2.test # uses sigabort
+conformance-interfaces-nanosleep-7-1.test # uses sigabort
+conformance-interfaces-nanosleep-7-2.test # uses sigabort
