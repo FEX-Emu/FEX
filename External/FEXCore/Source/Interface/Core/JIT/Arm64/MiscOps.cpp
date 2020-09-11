@@ -6,14 +6,6 @@ using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 
-DEF_OP(EndBlock) {
-  auto Op = IROp->C<IR::IROp_EndBlock>();
-  if (Op->RIPIncrement) {
-    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
-    str(TMP1,  MemOperand(STATE, offsetof(FEXCore::Core::CPUState, rip)));
-  }
-}
-
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
   switch (Op->Fence) {
@@ -67,7 +59,7 @@ void JITCore::RegisterMiscHandlers() {
   REGISTER_OP(IRHEADER,   NoOp);
   REGISTER_OP(CODEBLOCK,  NoOp);
   REGISTER_OP(BEGINBLOCK, NoOp);
-  REGISTER_OP(ENDBLOCK,   EndBlock);
+  REGISTER_OP(ENDBLOCK,   NoOp);
   REGISTER_OP(FENCE,      Fence);
   REGISTER_OP(BREAK,      Break);
   REGISTER_OP(PHI,        NoOp);

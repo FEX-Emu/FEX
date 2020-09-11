@@ -578,15 +578,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   JumpTargets.clear();
   CurrentIR = IR;
   uint32_t SSACount = CurrentIR->GetSSACount();
-  uintptr_t ListBegin = CurrentIR->GetListData();
-  uintptr_t DataBegin = CurrentIR->GetData();
 
-  auto HeaderIterator = CurrentIR->begin();
-  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
+  auto HeaderOp = CurrentIR->GetHeader();
   if (HeaderOp->ShouldInterpret) {
     return reinterpret_cast<void*>(InterpreterFallbackHelperAddress);
   }
@@ -634,19 +627,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     stp(TMP1, lr, MemOperand(sp, -16, PreIndex));
   }
 
-  IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-
-  while (1) {
+  for (auto [BlockNode, BlockHeader] : CurrentIR->GetBlocks()) {
     using namespace FEXCore::IR;
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR->at(BlockIROp->Last);
-
     {
-      uint32_t Node = BlockNode->Wrapped(ListBegin).ID();
+      uint32_t Node = CurrentIR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
       if (IsTarget == JumpTargets.end()) {
         IsTarget = JumpTargets.try_emplace(Node).first;
@@ -655,26 +642,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       bind(&IsTarget->second);
     }
 
-    while (1) {
-      OrderedNodeWrapper *WrapperOp = CodeBegin();
-      FEXCore::IR::IROp_Header *IROp = WrapperOp->GetNode(ListBegin)->Op(DataBegin);
-      uint32_t Node = WrapperOp->ID();
+    for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
+      uint32_t ID = CurrentIR->GetID(CodeNode);
 
       // Execute handler
       OpHandler Handler = OpHandlers[IROp->Op];
-      (this->*Handler)(IROp, Node);
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
+      (this->*Handler)(IROp, ID);
     }
   }
 
