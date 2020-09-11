@@ -25,15 +25,20 @@
 
 constexpr uint64_t PAGE_SIZE = 4096;
 
+#define BRK_BASE 0xd000'0000
+#define BRK_SIZE 0x1000'0000
+
 namespace FEXCore {
 uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, void *Addr) {
   std::lock_guard<std::mutex> lk(MMapMutex);
   uint64_t Result;
+
+  if (DataSpace == 0) {
+    // XXX: We need to setup our default BRK space first
+    DefaultProgramBreak(Thread, BRK_BASE);
+  }
+
   if (Addr == nullptr) { // Just wants to get the location of the program break atm
-    if (DataSpace == 0) {
-      // XXX: We need to setup our default BRK space first
-      DefaultProgramBreak(Thread, 0xd000'0000);
-    }
     Result = DataSpace + DataSpaceSize;
   }
   else {
@@ -46,6 +51,11 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, v
     }
     else {
       uint64_t NewSize = NewEnd - DataSpace;
+      
+      // make sure we don't overflow to TLS storage
+      if (NewSize >= BRK_SIZE)
+        return -ENOMEM;
+
       DataSpaceSize = NewSize;
     }
     Result = DataSpace + DataSpaceSize;
@@ -130,8 +140,8 @@ uint64_t SyscallHandler::HandleMMAP(FEXCore::Core::InternalThreadState *Thread, 
 
 void SyscallHandler::DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread, uint64_t Addr) {
   DataSpaceSize = 0;
-  // Just allocate 1GB of data memory past the default program break location at this point
-  CTX->MapRegion(Thread, Addr, 0x1000'0000, true);
+  // Just allocate 16MB of data memory past the default program break location at this point
+  CTX->MapRegion(Thread, Addr, BRK_SIZE, true);
 
   Addr += CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
