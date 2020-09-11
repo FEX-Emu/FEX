@@ -80,6 +80,17 @@ namespace FEXCore::HLE {
       // update the internal TID
       Thread->State.ThreadManager.TID = ::gettid();
       Thread->State.ThreadManager.PID = ::getpid();
+      Thread->State.ThreadManager.clear_child_tid = nullptr;
+
+      // Clear all the other threads that are being tracked
+      for (auto &DeadThread : Thread->CTX->Threads) {
+        if (DeadThread == Thread) {
+          continue;
+        }
+
+        // Setting running to false ensures that when they shutdown we won't send signals to kill them
+        DeadThread->State.RunningEvents.Running = false;
+      }
 
       // only a  single thread running so no need to remove anything from the thread array
 
