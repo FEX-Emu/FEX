@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Interface/Core/Frontend.h"
+#include "Interface/Context/Context.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/X86Tables.h>
@@ -66,9 +67,11 @@ public:
     if (!BlockSetRIP) {
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end() && LastOp) {
+
+        uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), _Constant(NextRIP));
+        _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), _Constant(GPRSize * 8, NextRIP));
         _ExitFunction();
       }
       else if (it != JumpTargets.end()) {
