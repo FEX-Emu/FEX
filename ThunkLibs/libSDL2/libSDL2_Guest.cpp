@@ -1,4 +1,7 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
+
+#include <GL/glx.h>
 
 #include <stdio.h>
 #include <cstring>
@@ -15,6 +18,7 @@ LOAD_LIB(libSDL2)
 
 struct __va_list_tag;
 
+
 int SDL_snprintf(char*, size_t, const char*, ...) { return printf("SDL2: SDL_snprintf\n"); }
 int SDL_sscanf(const char*, const char*, ...) { return printf("SDL2: SDL_sscanf\n"); }
 void SDL_Log(const char*, ...) { printf("SDL2: SDL_Log\n"); }
@@ -30,3 +34,10 @@ int SDL_SetError(const char*, ...) { return printf("SDL2: SDL_SetError\n"); }
 void SDL_LogMessageV(int, SDL_LogPriority, const char*, __va_list_tag*) { printf("SDL2: SDL_LogMessageV\n");}
 int SDL_vsnprintf(char*, size_t, const char*, __va_list_tag*) { return printf("SDL2: SDL_vsnprintf\n");}
 int SDL_vsscanf(const char*, const char*, __va_list_tag*) { return printf("SDL2: SDL_vsscanf\n");}
+
+extern "C" {
+    void* SDL_GL_GetProcAddress(const char* name) {
+		// TODO: Fix this HACK
+		return (void*)glXGetProcAddress((const GLubyte*)name);
+    }
+}

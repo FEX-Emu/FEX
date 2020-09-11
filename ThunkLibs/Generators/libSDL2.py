@@ -591,7 +591,7 @@ fn("void* SDL_GL_CreateContext(SDL_Window*)")
 fn("void SDL_GL_DeleteContext(SDL_GLContext)")
 fn("void* SDL_GL_GetCurrentContext()")
 fn("void SDL_GL_GetDrawableSize(SDL_Window*, int*, int*)")
-fn("void* SDL_GL_GetProcAddress(const char*)")
+#fn("void* SDL_GL_GetProcAddress(const char*)") # native impl
 fn("void SDL_GL_ResetAttributes()")
 fn("void SDL_GL_SwapWindow(SDL_Window*)")
 fn("void SDL_GL_UnloadLibrary()")
@@ -674,7 +674,7 @@ fn("void SDL_VideoQuit()")
 fn("void SDL_WaitThread(SDL_Thread*, int*)")
 fn("void SDL_WarpMouseInWindow(SDL_Window*, int, int)")
 fn("wchar_t* SDL_wcsdup(const wchar_t*)")
-
+fn("SDL_bool SDL_GetWindowWMInfo(SDL_Window*, SDL_SysWMinfo*)");
 
 
 Generate()
