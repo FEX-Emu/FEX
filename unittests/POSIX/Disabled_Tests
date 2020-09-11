@@ -1,5 +1,8 @@
 # These tests are inconsistent
 conformance-interfaces-mmap-12-1.test
+conformance-interfaces-mmap-6-1.test
+conformance-interfaces-mmap-6-2.test
+conformance-interfaces-mmap-6-3.test
 
 # These tests take too long to run, and might timeout
 conformance-interfaces-clock-1-1.test
@@ -545,3 +548,5 @@ conformance-interfaces-mmap-11-2.test
 conformance-interfaces-munmap-1-1.test
 conformance-interfaces-munmap-1-2.test
 
+conformance-interfaces-killpg-1-2.test # uses rt_sigsuspend
+conformance-interfaces-kill-1-2.test # uses rt_sigtimedwait
