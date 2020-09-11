@@ -42,16 +42,10 @@ private:
   bool HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack);
 
   template<typename Res>
-  Res GetDest(IR::OrderedNodeWrapper Op);
+  Res GetDest(void* SSAData, IR::OrderedNodeWrapper Op);
 
   template<typename Res>
-  Res GetSrc(IR::OrderedNodeWrapper Src);
-
-  std::vector<uint8_t> TmpSpace;
-  DestMapType DestMap;
-  size_t TmpOffset{};
-
-  FEXCore::IR::IRListView<true> *CurrentIR;
+  Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src);
 
   DispatchGenerator *Generator{};
 };
