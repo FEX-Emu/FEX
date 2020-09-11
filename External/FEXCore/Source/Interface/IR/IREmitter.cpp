@@ -82,5 +82,29 @@ void IREmitter::SetCurrentCodeBlock(OrderedNode *Node) {
   SetWriteCursor(Node->Op(Data.Begin())->CW<IROp_CodeBlock>()->Begin.GetNode(ListData.Begin()));
 }
 
+void IREmitter::ReplaceWithConstant(OrderedNode *Node, uint64_t Value) {
+    auto Header = Node->Op(Data.Begin());
+
+    if (IRSizes[Header->Op] >= sizeof(IROp_Constant)) {
+      // Unlink any arguments the node currently has
+      RemoveArgUses(Node);
+
+      // Overwrite data with the new constant op
+      Header->Op = OP_CONSTANT;
+      Header->NumArgs = 0;
+      auto Const = Header->CW<IROp_Constant>();
+      Const->Constant = Value;
+    } else {
+      // Fallback path for when the node to overwrite is too small
+      auto cursor = GetWriteCursor();
+      SetWriteCursor(Node);
+
+      auto NewNode = _Constant(Value);
+      ReplaceAllUsesWith(Node, NewNode);
+
+      SetWriteCursor(cursor);
+    }
+  }
+
 }
 

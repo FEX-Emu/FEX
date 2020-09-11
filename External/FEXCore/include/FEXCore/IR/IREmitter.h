@@ -400,6 +400,11 @@ friend class FEXCore::IR::PassManager;
      return false;
   }
 
+  // Overwrite a node with a constant
+  // Depending on what node has been overwritten, there might be some unallocated space around the node
+  // Because we are overwriting the node, we don't have to worry about update all the arguments which use it
+  void ReplaceWithConstant(OrderedNode *Node, uint64_t Value);
+
   void ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After, AllNodesIterator End);
 
   void ReplaceUsesWithAfter(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After) {
