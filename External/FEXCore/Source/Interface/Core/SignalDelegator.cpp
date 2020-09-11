@@ -391,7 +391,7 @@ namespace FEXCore {
     // Now assign the new action
     if (Action) {
       // These signal dispositions can't be changed on Linux
-      if (Signal == SIGKILL || Signal == SIGSTOP) {
+      if (Signal == SIGKILL || Signal == SIGSTOP || Signal > MAX_SIGNALS) {
         return -EINVAL;
       }
 
