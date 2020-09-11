@@ -31,6 +31,7 @@ namespace FEXCore {
     uint32_t CurrentSignal{};
     uint64_t GuestProcMask{};
     uint64_t PendingSignals{};
+    bool Suspended {false};
   };
 
   thread_local ThreadState ThreadData{};
@@ -146,6 +147,8 @@ namespace FEXCore {
       else {
         if (Handler.GuestHandler &&
             Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
+          // If we were sigsuspended, then we will no longer be from here
+          ThreadData.Suspended = false;
           return;
         }
         ERROR_AND_DIE("Unhandled guest exception");
@@ -502,5 +505,49 @@ namespace FEXCore {
 
     *set = ThreadData.PendingSignals;
     return 0;
+  }
+
+  uint64_t SignalDelegator::GuestSigSuspend(uint64_t *set, size_t sigsetsize) {
+    if (sigsetsize > sizeof(uint64_t)) {
+      return -EINVAL;
+    }
+
+    uint64_t BackupMask = ThreadData.GuestProcMask;
+    uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
+    ThreadData.GuestProcMask = *set & IgnoredSignalsMask;
+    ThreadData.Suspended = true;
+    sigset_t HostSet{};
+
+    sigemptyset(&HostSet);
+
+    for (int32_t i = 0; i < MAX_SIGNALS; ++i) {
+      if (*set & (1ULL << i)) {
+        sigaddset(&HostSet, i + 1);
+      }
+    }
+
+    // Additionally we must always listen to SIGNAL_FOR_PAUSE
+    // This technically forces us in to a race but should be fine
+    // SIGBUS and SIGILL can't happen so we don't need to listen for them
+    sigaddset(&HostSet, SIGNAL_FOR_PAUSE);
+
+    // Spin this in a loop until we aren't sigsuspended
+    // This can happen in the case that the guest has sent signal that we can't block
+    uint64_t Result = 0;
+    while (ThreadData.Suspended) {
+      // This is technically a race on our end
+      Result = sigsuspend(&HostSet);
+
+      // On error then exit out
+      // It can only ever error on EINTR
+      if (Result == -1) {
+        ThreadData.Suspended = false;
+        break;
+      }
+    }
+
+    ThreadData.GuestProcMask = BackupMask;
+
+    SYSCALL_ERRNO();
   }
 }

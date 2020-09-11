@@ -95,11 +95,6 @@ namespace FEXCore::HLE {
     REGISTER_SYSCALL_IMPL(rt_sigqueueinfo, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, int sig, siginfo_t *uinfo) -> uint64_t {
       SYSCALL_STUB(rt_sigqueueinfo);
     });
-
-    REGISTER_SYSCALL_IMPL(rt_sigsuspend, [](FEXCore::Core::InternalThreadState *Thread, sigset_t *unewset, size_t sigsetsize) -> uint64_t {
-      SYSCALL_STUB(rt_sigsuspend);
-    });
-
     REGISTER_SYSCALL_IMPL(utime, [](FEXCore::Core::InternalThreadState *Thread, char* filename, const struct utimbuf* times) -> uint64_t {
       SYSCALL_STUB(utime);
     });
