@@ -232,10 +232,6 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(mbind);
     });
 
-    REGISTER_SYSCALL_IMPL(set_mempolicy, [](FEXCore::Core::InternalThreadState *Thread, int mode, const unsigned long *nodemask, unsigned long maxnode) -> uint64_t {
-      SYSCALL_STUB(set_mempolicy);
-    });
-
     // last two parameters are optional
     REGISTER_SYSCALL_IMPL(mq_open, [](FEXCore::Core::InternalThreadState *Thread, const char *name, int oflag, mode_t mode, struct mq_attr *attr) -> uint64_t {
       SYSCALL_STUB(mq_open);
@@ -445,10 +441,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(userfaultfd, [](FEXCore::Core::InternalThreadState *Thread, int flags) -> uint64_t {
       SYSCALL_STUB(userfaultfd);
-    });
-
-    REGISTER_SYSCALL_IMPL(membarrier, [](FEXCore::Core::InternalThreadState *Thread, int cmd, int flags) -> uint64_t {
-      SYSCALL_STUB(membarrier);
     });
 
     REGISTER_SYSCALL_IMPL(copy_file_range, [](FEXCore::Core::InternalThreadState *Thread, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
