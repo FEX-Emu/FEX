@@ -309,70 +309,7 @@ struct FenceType final {
   constexpr bool operator!=(FenceType const &rhs) const { return !operator==(rhs); }
 };
 
-/**
-* @brief This is our NodeWrapperIterator
-* This stores both the memory base and the provided NodeWrapper to be able to walk the list of nodes directly
-* Only the increment and decrement implementations of this class require understanding the implementation details of OrderedNode
-*/
-class NodeWrapperIterator {
-public:
-	using value_type              = OrderedNodeWrapper;
-	using size_type               = std::size_t;
-	using difference_type         = std::ptrdiff_t;
-	using reference               = value_type&;
-	using const_reference         = const value_type&;
-	using pointer                 = value_type*;
-	using const_pointer           = const value_type*;
-	using iterator                = NodeWrapperIterator;
-	using const_iterator          = const NodeWrapperIterator;
-	using reverse_iterator        = iterator;
-	using const_reverse_iterator  = const_iterator;
-	using iterator_category       = std::bidirectional_iterator_tag;
-
-	using NodeType = value_type;
-	using NodePtr = value_type*;
-	using NodeRef = value_type&;
-
-	NodeWrapperIterator(uintptr_t Base, uintptr_t IRBase) : BaseList {Base}, IRList{ IRBase } {}
-	explicit NodeWrapperIterator(uintptr_t Base, uintptr_t IRBase, NodeType Ptr) : BaseList {Base},  IRList{ IRBase }, Node {Ptr} {}
-
-	bool operator==(const NodeWrapperIterator &rhs) const {
-		return Node.NodeOffset == rhs.Node.NodeOffset;
-	}
-
-	bool operator!=(const NodeWrapperIterator &rhs) const {
-		return !operator==(rhs);
-	}
-
-  NodeWrapperIterator operator++() {
-		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
-    Node = RealNode->Next;
-    return *this;
-  }
-
-  NodeWrapperIterator operator--() {
-    OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
-    Node = RealNode->Previous;
-    return *this;
-  }
-
-	NodeRef operator*() {
-		return Node;
-	}
-
-	NodePtr operator()() {
-		return &Node;
-	}
-
-  static NodeWrapperIterator Invalid() {
-    return NodeWrapperIterator(0, 0);
-  }
-
-protected:
-	uintptr_t BaseList{};
-  uintptr_t IRList{};
-	NodeType Node{};
-};
+class NodeIterator;
 
 /* This iterator can be used to step though nodes.
  * Due to how our IR is laid out, this can be used to either step
@@ -387,8 +324,8 @@ public:
 	using const_reference         = const value_type&;
 	using pointer                 = value_type*;
 	using const_pointer           = const value_type*;
-	using iterator                = NodeWrapperIterator;
-	using const_iterator          = const NodeWrapperIterator;
+	using iterator                = NodeIterator;
+	using const_iterator          = const NodeIterator;
 	using reverse_iterator        = iterator;
 	using const_reverse_iterator  = const_iterator;
 	using iterator_category       = std::bidirectional_iterator_tag;
