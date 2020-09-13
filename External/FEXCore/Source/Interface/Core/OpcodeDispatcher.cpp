@@ -4581,21 +4581,16 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
 
   // ZF
   {
-    auto Dst8 = _Bfe(Size, 0, Res);
-
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Dst8, _Constant(0), _Constant(1), _Constant(0));
+        Res, _Constant(0), _Constant(1), _Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
 
   // CF
   // Unsigned
   {
-    auto Dst8 = _Bfe(Size, 0, Res);
-    auto Src8 = _Bfe(Size, 0, Src2);
-
-    auto SelectOpLT = _Select(FEXCore::IR::COND_ULT, Dst8, Src8, _Constant(1), _Constant(0));
-    auto SelectOpLE = _Select(FEXCore::IR::COND_ULE, Dst8, Src8, _Constant(1), _Constant(0));
+    auto SelectOpLT = _Select(FEXCore::IR::COND_ULT, Res, Src2, _Constant(1), _Constant(0));
+    auto SelectOpLE = _Select(FEXCore::IR::COND_ULE, Res, Src2, _Constant(1), _Constant(0));
     auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, _Constant(1), SelectOpLE, SelectOpLT);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
   }
@@ -4661,11 +4656,8 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
   // CF
   // Unsigned
   {
-    auto Dst8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
-    auto Src8_1 = _Bfe(GetSrcSize(Op) * 8, 0, Src1);
-
-    auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Dst8, Src8_1, _Constant(1), _Constant(0));
-    auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Dst8, Src8_1, _Constant(1), _Constant(0));
+    auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Res, Src1, _Constant(1), _Constant(0));
+    auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Res, Src1, _Constant(1), _Constant(0));
     auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, _Constant(1), SelectOpLE, SelectOpLT);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
   }
@@ -4724,9 +4716,8 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
   {
     auto ZeroConst = _Constant(0);
     auto OneConst = _Constant(1);
-    auto Bfe8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
     auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Bfe8, ZeroConst, OneConst, ZeroConst);
+        Res, ZeroConst, OneConst, ZeroConst);
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
   }
 
@@ -4784,10 +4775,7 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
   }
   // CF
   if (UpdateCF) {
-    auto Dst8 = _Bfe(GetSrcSize(Op) * 8, 0, Res);
-    auto Src8 = _Bfe(GetSrcSize(Op) * 8, 0, Src2);
-
-    auto SelectOp = _Select(FEXCore::IR::COND_ULT, Dst8, Src8, _Constant(1), _Constant(0));
+    auto SelectOp = _Select(FEXCore::IR::COND_ULT, Res, Src2, _Constant(1), _Constant(0));
 
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
   }
