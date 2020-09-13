@@ -5446,9 +5446,6 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
     case FEXCore::IR::IROps::OP_SUB:
       GenerateFlags_SUB(Op, Result, Dest, Src);
     break;
-    case FEXCore::IR::IROps::OP_MUL:
-      GenerateFlags_MUL(Op, Result, _MulH(Dest, Src));
-    break;
     case FEXCore::IR::IROps::OP_AND:
     case FEXCore::IR::IROps::OP_XOR:
     case FEXCore::IR::IROps::OP_OR: {
