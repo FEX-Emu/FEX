@@ -887,7 +887,25 @@ DEF_OP(Rev) {
 }
 
 DEF_OP(Bfi) {
-  LogMan::Msg::D("Unimplemented");
+  auto Op = IROp->C<IR::IROp_Bfi>();
+  uint8_t OpSize = IROp->Size;
+  switch (OpSize) {
+    case 1:
+    case 2:
+    case 4: {
+      auto Dst = GetReg<RA_32>(Node);
+      mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), Op->lsb, Op->Width);
+      ubfx(Dst, TMP1.W(), 0, OpSize * 8);
+      break;
+    }
+    case 8:
+      mov(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+      bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), Op->lsb, Op->Width);
+      mov(GetReg<RA_64>(Node), TMP1);
+      break;
+    default: LogMan::Msg::A("Unknown BFI size: %d", OpSize); break;
+  }
 }
 
 DEF_OP(Bfe) {
