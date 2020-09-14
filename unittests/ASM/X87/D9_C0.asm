@@ -17,7 +17,7 @@ fld tword [rdx + 8 * 0]
 lea rdx, [rel data2]
 fld tword [rdx + 8 * 0]
 
-fld st1
+fld st0
 
 hlt
 
