@@ -494,6 +494,24 @@ DEF_OP(Ror) {
   }
 }
 
+DEF_OP(Extr) {
+  auto Op = IROp->C<IR::IROp_Extr>();
+  uint8_t OpSize = IROp->Size;
+
+  switch (OpSize) {
+    case 4: {
+      extr(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()), Op->LSB);
+    break;
+    }
+    case 8: {
+      extr(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()), Op->LSB);
+    break;
+    }
+
+    default: LogMan::Msg::A("Unhandled EXTR size: %d", OpSize);
+  }
+}
+
 DEF_OP(LDiv) {
   auto Op = IROp->C<IR::IROp_LDiv>();
   uint8_t OpSize = IROp->Size;
@@ -1069,6 +1087,7 @@ void JITCore::RegisterALUHandlers() {
   REGISTER_OP(ASHR,              Ashr);
   REGISTER_OP(ROL,               Rol);
   REGISTER_OP(ROR,               Ror);
+  REGISTER_OP(EXTR,              Extr);
   REGISTER_OP(LDIV,              LDiv);
   REGISTER_OP(LUDIV,             LUDiv);
   REGISTER_OP(LREM,              LRem);
