@@ -1855,6 +1855,336 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
   GenerateFlags_RotateLeftImmediate(Op, _Bfe(Size, 0, ALUOp), _Bfe(Size, 0, Dest), Shift);
 }
 
+void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto Size = GetSrcSize(Op) * 8;
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+
+  uint32_t Shift = 1;
+
+  if (Size == 32 || Size == 64) {
+    // Rotate and insert CF in the upper bit
+    auto Res = _Extr(CF, Dest, Shift);
+
+    // Our new CF will be bit (Shift - 1) of the source
+    auto NewCF = _Bfe(1, Shift - 1, Dest);
+
+    StoreResult(GPRClass, Op, Res, -1);
+
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+
+    if (Shift == 1) {
+      // OF is the top two MSBs XOR'd together
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
+    }
+  }
+  else {
+    // Res = Src >> Shift
+    OrderedNode *Res = _Bfe(Size - Shift, Shift, Dest);
+
+    // inject the CF
+    Res = _Or(Res, _Lshl(CF, _Constant(Size, Size - Shift)));
+
+    StoreResult(GPRClass, Op, Res, -1);
+
+    // CF only changes if we actually shifted
+    // Our new CF will be bit (Shift - 1) of the source
+    auto NewCF = _Bfe(1, Shift - 1, Dest);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+
+    // OF is the top two MSBs XOR'd together
+    // Only when Shift == 1, it is undefined otherwise
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
+  }
+}
+
+void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto Size = GetSrcSize(Op) * 8;
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+
+  uint32_t Shift = 1;
+
+  // Rotate and insert CF in the upper bit
+  OrderedNode *Res = _Bfe(7, 1, Dest);
+  Res = _Bfi(1, 7, Res, CF);
+
+  // Our new CF will be bit (Shift - 1) of the source
+  auto NewCF = _Bfe(1, Shift - 1, Dest);
+
+  StoreResult(GPRClass, Op, Res, -1);
+
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+
+  if (Shift == 1) {
+    // OF is the top two MSBs XOR'd together
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res)));
+  }
+}
+
+void OpDispatchBuilder::RCROp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op) * 8;
+
+  if (Size == 8 || Size == 16) {
+    RCRSmallerOp(Op);
+    return;
+  }
+
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Src = _And(Src, _Constant(Size, 0x3F));
+  else
+    Src = _And(Src, _Constant(Size, 0x1F));
+
+  // Res = Src >> Shift
+  OrderedNode *Res = _Lshr(Dest, Src);
+
+  // Res |= (Src << (Size - Shift + 1));
+  OrderedNode *SrcShl = _Sub(_Constant(Size, Size + 1), Src);
+  auto TmpHigher = _Lshl(Dest, SrcShl);
+
+  auto One = _Constant(Size, 1);
+  auto Zero = _Constant(Size, 0);
+
+  auto CompareResult = _Select(FEXCore::IR::COND_UGT,
+    Src, One,
+    TmpHigher, Zero);
+
+  Res = _Or(Res, CompareResult);
+
+  // If Shift != 0 then we can inject the CF
+  OrderedNode *CFShl = _Sub(_Constant(Size, Size), Src);
+  OrderedNode *TmpCF = _Lshl(CF, CFShl);
+
+  CompareResult = _Select(FEXCore::IR::COND_UGE,
+    Src, One,
+    TmpCF, Zero);
+
+  Res = _Or(Res, CompareResult);
+
+  StoreResult(GPRClass, Op, Res, -1);
+
+  // CF only changes if we actually shifted
+  // Our new CF will be bit (Shift - 1) of the source
+  auto NewCF = _Lshr(Dest, _Sub(Src, One));
+  CompareResult = _Select(FEXCore::IR::COND_UGE,
+    Src, One,
+    NewCF, CF);
+
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CompareResult);
+
+  // OF is the top two MSBs XOR'd together
+  // Only when Shift == 1, it is undefined otherwise
+  // Only changed if shift isn't zero
+  auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+  auto NewOF = _Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res));
+  CompareResult = _Select(FEXCore::IR::COND_EQ,
+    Src, _Constant(0),
+    OF, NewOF);
+
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(CompareResult);
+}
+
+void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  Src = _And(Src, _Constant(Size, 0x1F));
+
+  OrderedNode *Tmp = _Constant(64, 0);
+
+  // Insert the incoming value across the temporary 64bit source
+  // Make sure to insert at <BitSize> + 1 offsets
+  // We need to cover 32bits plus the amount that could rotate in
+  for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
+    // Insert incoming value
+    Tmp = _Bfi(Size, i, Tmp, Dest);
+
+    // Insert CF
+    Tmp = _Bfi(1, i + Size, Tmp, CF);
+  }
+
+  // Entire bitfield has been setup
+  // Just extract the 8 or 16bits we need
+  OrderedNode *Res = _Lshr(Tmp, Src);
+
+  StoreResult(GPRClass, Op, Res, -1);
+
+  // CF only changes if we actually shifted
+  // Our new CF will be bit (Shift - 1) of the source
+  auto One = _Constant(Size, 1);
+  auto NewCF = _Lshr(Tmp, _Sub(Src, One));
+  auto CompareResult = _Select(FEXCore::IR::COND_UGE,
+    Src, One,
+    NewCF, CF);
+
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CompareResult);
+
+  // OF is the top two MSBs XOR'd together
+  // Only when Shift == 1, it is undefined otherwise
+  // Make it easier, just store it regardless
+  auto NewOF = _Xor(_Bfe(1, Size - 1, Res), _Bfe(1, Size - 2, Res));
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(NewOF);
+}
+
+void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto Size = GetSrcSize(Op) * 8;
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+
+  uint32_t Shift = 1;
+
+  // Rotate left and insert CF in to lowest bit
+  OrderedNode *Res = _Lshl(Dest, _Constant(Size, 1));
+  Res = _Or(Res, CF);
+
+  // Our new CF will be the top bit of the source
+  auto NewCF = _Bfe(1, Size - 1, Dest);
+
+  StoreResult(GPRClass, Op, Res, -1);
+
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+
+  if (Shift == 1) {
+    // OF is the top two MSBs XOR'd together
+    // Top two MSBs is CF and top bit of result
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, Size - 1, Res), NewCF));
+  }
+}
+
+void OpDispatchBuilder::RCLOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op) * 8;
+
+  if (Size == 8 || Size == 16) {
+    RCLSmallerOp(Op);
+    return;
+  }
+
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  if (Size == 64)
+    Src = _And(Src, _Constant(Size, 0x3F));
+  else
+    Src = _And(Src, _Constant(Size, 0x1F));
+
+  // Res = Src << Shift
+  OrderedNode *Res = _Lshl(Dest, Src);
+
+  // Res |= (Src << (Size - Shift + 1));
+  OrderedNode *SrcShl = _Sub(_Constant(Size, Size + 1), Src);
+  auto TmpHigher = _Lshr(Dest, SrcShl);
+
+  auto One = _Constant(Size, 1);
+  auto Zero = _Constant(Size, 0);
+
+  auto CompareResult = _Select(FEXCore::IR::COND_UGT,
+    Src, One,
+    TmpHigher, Zero);
+
+  Res = _Or(Res, CompareResult);
+
+  // If Shift != 0 then we can inject the CF
+  OrderedNode *CFShl = _Sub(Src, _Constant(Size, 1));
+  OrderedNode *TmpCF = _Lshl(CF, CFShl);
+
+  CompareResult = _Select(FEXCore::IR::COND_UGE,
+    Src, One,
+    TmpCF, Zero);
+
+  Res = _Or(Res, CompareResult);
+
+  StoreResult(GPRClass, Op, Res, -1);
+
+  {
+    // CF only changes if we actually shifted
+    // Our new CF will be bit (Shift - 1) of the source
+    auto NewCF = _Lshr(Dest, _Sub(_Constant(Size, Size), Src));
+    CompareResult = _Select(FEXCore::IR::COND_UGE,
+      Src, One,
+      NewCF, CF);
+
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CompareResult);
+
+    // OF is the top two MSBs XOR'd together
+    // Only when Shift == 1, it is undefined otherwise
+    // Only changed if shift isn't zero
+    auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+    auto NewOF = _Xor(_Bfe(1, Size - 1, Res), NewCF);
+    CompareResult = _Select(FEXCore::IR::COND_EQ,
+      Src, _Constant(0),
+      OF, NewOF);
+
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(CompareResult);
+  }
+}
+
+void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+
+  auto Size = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  Src = _And(Src, _Constant(Size, 0x1F));
+
+  OrderedNode *Tmp = _Constant(64, 0);
+
+  for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
+    // Insert incoming value
+    Tmp = _Bfi(Size, 63 - i - Size, Tmp, Dest);
+
+    // Insert CF
+    Tmp = _Bfi(1, 63 - i, Tmp, CF);
+  }
+
+  // Insert incoming value
+  Tmp = _Bfi(Size, 0, Tmp, Dest);
+
+  // The data is now set up like this
+  // [Data][CF]:[Data][CF]:[Data][CF]:[Data][CF]
+  // Shift 1 more bit that expected to get our result
+  // Shifting to the right will now behave like a rotate to the left
+  OrderedNode *Res = _Rol(Tmp, Src);
+
+  StoreResult(GPRClass, Op, Res, -1);
+
+  {
+    // Our new CF is now at the bit position that we are shifting
+    // Either 0 if CF hasn't changed (CF is living in bit 0)
+    // or higher
+    auto NewCF = _Rol(Tmp, _Add(Src, _Constant(1)));
+    auto CompareResult = _Select(FEXCore::IR::COND_UGE,
+      Src, _Constant(1),
+      NewCF, CF);
+
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CompareResult);
+
+    // OF is only defined for 1 bit shifts
+    // To make it easy, just always store a result
+    // OF is the XOR of the NewCF and the MSB of the result
+    // Only changed if shift isn't zero
+    auto OF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+    auto NewOF = _Xor(_Bfe(1, Size - 1, Res), NewCF);
+    CompareResult = _Select(FEXCore::IR::COND_EQ,
+      Src, _Constant(0),
+      OF, NewOF);
+
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(CompareResult);
+  }
+}
+
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::BTOp(OpcodeArgs) {
   OrderedNode *Result;
@@ -7247,36 +7577,48 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     // GROUP 2
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 0), 1, &OpDispatchBuilder::ROLImmediateOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 1), 1, &OpDispatchBuilder::RORImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 2), 1, &OpDispatchBuilder::RCLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 3), 1, &OpDispatchBuilder::RCROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 4), 1, &OpDispatchBuilder::SHLImmediateOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 5), 1, &OpDispatchBuilder::SHRImmediateOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 7), 1, &OpDispatchBuilder::ASHRImmediateOp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 0), 1, &OpDispatchBuilder::ROLImmediateOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 1), 1, &OpDispatchBuilder::RORImmediateOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 2), 1, &OpDispatchBuilder::RCLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 3), 1, &OpDispatchBuilder::RCROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 4), 1, &OpDispatchBuilder::SHLImmediateOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 5), 1, &OpDispatchBuilder::SHRImmediateOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 7), 1, &OpDispatchBuilder::ASHRImmediateOp}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0), 1, &OpDispatchBuilder::ROLOp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1), 1, &OpDispatchBuilder::ROROp<true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 2), 1, &OpDispatchBuilder::RCLOp1Bit},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 3), 1, &OpDispatchBuilder::RCROp8x1Bit},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 4), 1, &OpDispatchBuilder::SHLOp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 5), 1, &OpDispatchBuilder::SHROp<true>}, // 1Bit SHR
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 7), 1, &OpDispatchBuilder::ASHROp<true>}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0), 1, &OpDispatchBuilder::ROLOp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1), 1, &OpDispatchBuilder::ROROp<true>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 2), 1, &OpDispatchBuilder::RCLOp1Bit},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 3), 1, &OpDispatchBuilder::RCROp1Bit},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 4), 1, &OpDispatchBuilder::SHLOp<true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 5), 1, &OpDispatchBuilder::SHROp<true>}, // 1Bit SHR
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 7), 1, &OpDispatchBuilder::ASHROp<true>}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 0), 1, &OpDispatchBuilder::ROLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 1), 1, &OpDispatchBuilder::ROROp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 2), 1, &OpDispatchBuilder::RCLSmallerOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 3), 1, &OpDispatchBuilder::RCRSmallerOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 4), 1, &OpDispatchBuilder::SHLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 5), 1, &OpDispatchBuilder::SHROp<false>}, // SHR by CL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 7), 1, &OpDispatchBuilder::ASHROp<false>}, // SAR
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 0), 1, &OpDispatchBuilder::ROLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 1), 1, &OpDispatchBuilder::ROROp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 2), 1, &OpDispatchBuilder::RCLOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 3), 1, &OpDispatchBuilder::RCROp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 4), 1, &OpDispatchBuilder::SHLOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 5), 1, &OpDispatchBuilder::SHROp<false>}, // SHR by CL
     {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 7), 1, &OpDispatchBuilder::ASHROp<false>}, // SAR

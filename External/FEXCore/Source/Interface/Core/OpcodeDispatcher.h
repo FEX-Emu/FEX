@@ -162,6 +162,13 @@ public:
   template<bool Is1Bit>
   void ROLOp(OpcodeArgs);
   void ROLImmediateOp(OpcodeArgs);
+  void RCROp1Bit(OpcodeArgs);
+  void RCROp8x1Bit(OpcodeArgs);
+  void RCROp(OpcodeArgs);
+  void RCRSmallerOp(OpcodeArgs);
+  void RCLOp1Bit(OpcodeArgs);
+  void RCLOp(OpcodeArgs);
+  void RCLSmallerOp(OpcodeArgs);
   template<uint32_t SrcIndex>
   void BTOp(OpcodeArgs);
   template<uint32_t SrcIndex>
