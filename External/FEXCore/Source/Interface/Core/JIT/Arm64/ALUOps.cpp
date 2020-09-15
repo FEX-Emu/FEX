@@ -413,9 +413,13 @@ DEF_OP(Ashr) {
   uint8_t OpSize = IROp->Size;
   if (OpSize == 8)
     asrv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+  else if (OpSize == 4) {
+    asrv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+  }
   else {
     sbfx(TMP1.X(), GetReg<RA_64>(Op->Header.Args[0].ID()), 0, OpSize * 8);
     asrv(GetReg<RA_64>(Node), TMP1.X(), GetReg<RA_64>(Op->Header.Args[1].ID()));
+    ubfx(GetReg<RA_64>(Node),GetReg<RA_64>(Node), 0, OpSize * 8);
   }
 }
 
