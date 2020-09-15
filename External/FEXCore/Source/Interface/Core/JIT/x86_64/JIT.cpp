@@ -1454,6 +1454,31 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           Sbfe_done:
           break;
         }
+        case IR::OP_BFI: {
+          auto Op = IROp->C<IR::IROp_Bfi>();
+          auto Dst = GetDst<RA_64>(Node);
+
+          uint64_t SourceMask = (1ULL << Op->Width) - 1;
+          if (Op->Width == 64)
+            SourceMask = ~0ULL;
+          uint64_t DestMask = ~(SourceMask << Op->lsb);
+
+          mov(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+          mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+
+          mov(TMP2, DestMask);
+          and(Dst, TMP2);
+          mov(TMP2, SourceMask);
+          and(TMP1, TMP2);
+          shl(TMP1, Op->lsb);
+          or_(Dst, TMP1);
+
+          if (OpSize != 8) {
+            mov(rcx, uint64_t((1ULL << (OpSize * 8)) - 1));
+            and(Dst, rcx);
+          }
+          break;
+        }
         case IR::OP_LSHR: {
           auto Op = IROp->C<IR::IROp_Lshr>();
           uint8_t Mask = OpSize * 8 - 1;
@@ -1594,6 +1619,28 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov(GetDst<RA_64>(Node), rax);
           break;
         }
+        case IR::OP_EXTR: {
+          auto Op = IROp->C<IR::IROp_Extr>();
+
+          switch (OpSize) {
+            case 4: {
+              mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+              mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+              shrd(ecx, eax, Op->LSB);
+              mov(GetDst<RA_32>(Node), ecx);
+              break;
+            }
+            case 8: {
+              mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+              mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+              shrd(rcx, rax, Op->LSB);
+              mov(GetDst<RA_64>(Node), rcx);
+              break;
+            }
+          }
+          break;
+        }
+
         case IR::OP_MUL: {
           auto Op = IROp->C<IR::IROp_Mul>();
           auto Dst = GetDst<RA_64>(Node);

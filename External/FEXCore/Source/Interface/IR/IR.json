@@ -807,6 +807,22 @@
       "SSAArgs": "2"
     },
 
+    "Extr": {
+      "Desc": ["Concats the two GPRs to create a value that is the size of the full two GPRs",
+               "It then extracts a bitfield width that size of a GPR from the LSB",
+               "Valid LSB range is 0-31 for 32bit and 0-63 for 64bit",
+               "<Size * 2> ConcatValue = src0:src1",
+               "Result = ConcatValue<LSB+Size - 1: LSB>"
+              ],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "SSAArgs": "2",
+      "Args": [
+        "uint8_t", "LSB"
+      ]
+    },
+
     "LDiv": {
       "Desc": ["Integer long signed division returning lower bits",
                "The Lower and Upper registers will be concated together to generate a dividend twice the size",

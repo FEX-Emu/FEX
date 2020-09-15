@@ -835,6 +835,31 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          case IR::OP_EXTR: {
+            auto Op = IROp->C<IR::IROp_Extr>();
+            uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
+            uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
+            auto Extr = [] (auto Src1, auto Src2, uint8_t lsb) -> decltype(Src1) {
+              __uint128_t Result{};
+              Result = Src1;
+              Result <<= sizeof(Src1) * 8;
+              Result |= Src2;
+              Result >>= lsb;
+              return Result;
+            };
+
+            switch (OpSize) {
+              case 4:
+                GD = Extr(static_cast<uint32_t>(Src1), static_cast<uint32_t>(Src2), Op->LSB);
+                break;
+              case 8: {
+                GD = Extr(static_cast<uint64_t>(Src1), static_cast<uint64_t>(Src2), Op->LSB);
+                break;
+              }
+              default: LogMan::Msg::A("Unknown EXTR Size: %d\n", OpSize); break;
+            }
+            break;
+          }
           case IR::OP_NOT: {
             auto Op = IROp->C<IR::IROp_Not>();
             uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);

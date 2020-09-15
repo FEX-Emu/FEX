@@ -261,6 +261,7 @@ private:
   DEF_OP(Ashr);
   DEF_OP(Rol);
   DEF_OP(Ror);
+  DEF_OP(Extr);
   DEF_OP(LDiv);
   DEF_OP(LUDiv);
   DEF_OP(LRem);
