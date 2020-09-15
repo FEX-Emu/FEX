@@ -105,7 +105,7 @@ void InitializeSecondaryTables() {
     {0x6A, 1, X86InstInfo{"PUNPCKHDQ",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x6B, 1, X86InstInfo{"PACKSSDW",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
     {0x6C, 2, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                                                       0, nullptr}},
-    {0x6E, 1, X86InstInfo{"MOVD",       TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_SRC_GPR | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                0, nullptr}},
+    {0x6E, 1, X86InstInfo{"MOVD",       TYPE_INST, GenFlagsDstSize(SIZE_64BIT)   | FLAGS_MODRM | FLAGS_SF_SRC_GPR | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                0, nullptr}},
     {0x6F, 1, X86InstInfo{"MOVQ",       TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   0, nullptr}},
 
     {0x70, 1, X86InstInfo{"PSHUFW",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                   1, nullptr}},
@@ -117,7 +117,7 @@ void InitializeSecondaryTables() {
     {0x76, 1, X86InstInfo{"PCMPEQD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                         0, nullptr}},
     {0x77, 1, X86InstInfo{"EMMS",       TYPE_INST, FLAGS_NONE,                                                                                    0, nullptr}},
     {0x78, 6, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,                                                                                       0, nullptr}},
-    {0x7E, 1, X86InstInfo{"MOVD",       TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_DST_GPR | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
+    {0x7E, 1, X86InstInfo{"MOVD",       TYPE_INST, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_DST_GPR | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
     {0x7F, 1, X86InstInfo{"MOVQ",       TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                    0, nullptr}},
 
     {0x80, 1, X86InstInfo{"JO",      TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_NO_OVERLAY,    4, nullptr}},
