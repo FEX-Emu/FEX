@@ -60,6 +60,7 @@ namespace FEXCore::Context {
       bool Is64BitMode {true};
       uint64_t EmulatedCPUCores{1};
       bool TSOEnabled {true};
+      bool SMCChecks {false};
     } Config;
 
     FEXCore::Memory::MemMapper MemoryMapper;
@@ -112,6 +113,8 @@ namespace FEXCore::Context {
     void StartGdbServer();
     void StopGdbServer();
     void HandleCallback(uint64_t RIP);
+
+    static void RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
     // Debugger interface
     void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);

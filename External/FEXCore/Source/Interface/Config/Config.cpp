@@ -36,6 +36,9 @@ namespace FEXCore::Config {
     case FEXCore::Config::CONFIG_TSO_ENABLED:
       CTX->Config.TSOEnabled = Config != 0;
     break;
+    case FEXCore::Config::CONFIG_SMC_CHECKS:
+      CTX->Config.SMCChecks = Config != 0;
+    break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
   }
@@ -82,6 +85,9 @@ namespace FEXCore::Config {
     break;
     case FEXCore::Config::CONFIG_TSO_ENABLED:
       return CTX->Config.TSOEnabled;
+    break;
+    case FEXCore::Config::CONFIG_SMC_CHECKS:
+      return CTX->Config.SMCChecks;
     break;
     default: LogMan::Msg::A("Unknown configuration option");
     }

@@ -184,6 +184,82 @@ DEF_OP(Thunk) {
   add(sp, sp, SPOffset);
 }
 
+
+DEF_OP(ValidateCode) {
+  auto Op = IROp->C<IR::IROp_ValidateCode>();
+  uint8_t *NewCode = (uint8_t *)Op->CodePtr;
+  uint8_t *OldCode = (uint8_t *)&Op->CodeOriginal;
+  int len = Op->CodeLength;
+  int idx = 0;
+
+  LoadConstant(GetReg<RA_64>(Node), 0);
+  LoadConstant(x0, Op->CodePtr);
+  LoadConstant(x1, 1);
+
+  while (len >= 4)
+  {
+    ldr(w2, MemOperand(x0, idx));
+    LoadConstant(w3, *(uint32_t *)(OldCode + idx));
+    cmp(w2, w3);
+    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
+    len -= 4;
+    idx += 4;
+  }
+  while (len >= 2)
+  {
+    ldrh(w2, MemOperand(x0, idx));
+    LoadConstant(w3, *(uint16_t *)(OldCode + idx));
+    cmp(w2, w3);
+    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
+    len -= 2;
+    idx += 2;
+  }
+  while (len >= 1)
+  {
+    ldrb(w2, MemOperand(x0, idx));
+    LoadConstant(w3, *(uint8_t *)(OldCode + idx));
+    cmp(w2, w3);
+    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
+    len -= 1;
+    idx += 1;
+  }
+}
+
+DEF_OP(RemoveCodeEntry) {
+  auto Op = IROp->C<IR::IROp_RemoveCodeEntry>();
+  // Arguments are passed as follows:
+  // X0: Thread
+  // X1: RIP
+
+  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
+
+  sub(sp, sp, SPOffset);
+
+  int i = 0;
+  for (auto RA : RA64) {
+    str(RA, MemOperand(sp, i * 8));
+    i++;
+  }
+  str(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+  mov(x0, STATE);
+  LoadConstant(x1, Op->RIP);
+ 
+  LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
+  blr(x2);
+
+  // Fix the stack and any values that were stepped on
+  i = 0;
+  for (auto RA : RA64) {
+    ldr(RA, MemOperand(sp, i * 8));
+    i++;
+  }
+
+  ldr(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+  add(sp, sp, SPOffset);
+}
+
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
   uint64_t SPOffset = AlignUp((RA64.size() + 2 + 2) * 8, 16);
@@ -243,6 +319,8 @@ void JITCore::RegisterBranchHandlers() {
   REGISTER_OP(CONDJUMP,          CondJump);
   REGISTER_OP(SYSCALL,           Syscall);
   REGISTER_OP(THUNK,             Thunk);
+  REGISTER_OP(VALIDATECODE,      ValidateCode);
+  REGISTER_OP(REMOVECODEENTRY,   RemoveCodeEntry);
   REGISTER_OP(CPUID,             CPUID);
 #undef REGISTER_OP
 }

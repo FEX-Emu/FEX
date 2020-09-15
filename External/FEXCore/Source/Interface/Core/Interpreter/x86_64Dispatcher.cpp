@@ -115,6 +115,11 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
 
     shl(rax, (int)log2(sizeof(FEXCore::BlockCache::BlockCacheEntry)));
 
+    // check for aliasing
+    mov(rcx, qword [rdi + rax + 8]);
+    cmp(rcx, rdx);
+    jne(NoBlock);
+    
     // Load the block pointer
     mov(rax, qword [rdi + rax]);
 

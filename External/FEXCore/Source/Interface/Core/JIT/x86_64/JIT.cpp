@@ -4845,6 +4845,65 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VALIDATECODE:
+        {
+          auto Op = IROp->C<IR::IROp_ValidateCode>();
+          uint8_t* NewCode = (uint8_t*)Op->CodePtr;
+          uint8_t* OldCode = (uint8_t*)&Op->CodeOriginal;
+          int len = Op->CodeLength;
+          int idx = 0;
+
+          xor_(GetDst<RA_64>(Node), GetDst<RA_64>(Node));
+          mov(rax, Op->CodePtr);
+          mov(rbx, 1);
+          while (len >= 4) {
+            cmp(dword[rax + idx], *(uint32_t*)(OldCode + idx));
+            cmovne(GetDst<RA_64>(Node), rbx);
+            len-=4;
+            idx+=4;
+          }
+          while (len >= 2) {
+            mov(rcx, *(uint16_t*)(OldCode + idx));
+            cmp(word[rax + idx], cx);
+            cmovne(GetDst<RA_64>(Node), rbx);
+            len-=2;
+            idx+=2;
+          }
+          while (len >= 1) {
+            cmp(byte[rax + idx], *(uint8_t*)(OldCode + idx));
+            cmovne(GetDst<RA_64>(Node), rbx);
+            len-=1;
+            idx+=1;
+          }
+          break;
+        }
+        case IR::OP_REMOVECODEENTRY: {
+          auto Op = IROp->C<IR::IROp_RemoveCodeEntry>();
+          
+          auto NumPush = RA64.size();
+
+          for (auto &Reg : RA64)
+            push(Reg);
+
+          if (NumPush & 1)
+            sub(rsp, 8); // Align
+          
+          mov(rdi, STATE);
+          mov(rax, Op->RIP); // imm64 move
+          mov(rsi, rax);
+
+          
+          mov(rax, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
+          call(rax);
+
+          if (NumPush & 1)
+            add(rsp, 8); // Align
+
+          for (uint32_t i = RA64.size(); i > 0; --i)
+            pop(RA64[i - 1]);
+
+          break;
+        }
         case IR::OP_DUMMY:
         case IR::OP_IRHEADER:
         case IR::OP_PHIVALUE:
@@ -4970,6 +5029,11 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     and(rax, 0x0FFF);
 
     shl(rax, (int)log2(sizeof(FEXCore::BlockCache::BlockCacheEntry)));
+
+    // check for aliasing
+    mov(rcx, qword [rdi + rax + 8]);
+    cmp(rcx, rdx);
+    jne(NoBlock);
 
     // Load the block pointer
     mov(rax, qword [rdi + rax]);
