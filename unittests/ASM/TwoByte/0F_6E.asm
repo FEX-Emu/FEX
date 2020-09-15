@@ -2,7 +2,9 @@
 {
   "RegData": {
     "MM0": ["0x0000000045464748", "0x0"],
-    "MM1": ["0x5152535455565758", "0x0"]
+    "MM1": ["0x5152535455565758", "0x0"],
+    "MM2": ["0x0000000045464748", "0x0"],
+    "MM3": ["0x5152535455565758", "0x0"]
   },
   "MemoryRegions": {
     "0x100000000": "4096"
@@ -26,9 +28,13 @@ mov rax, 0x0
 mov [rdx + 8 * 4], rax
 mov [rdx + 8 * 5], rax
 
-mov eax, dword [rdx + 8 * 0]
+mov rax, qword [rdx + 8 * 0]
 mov rbx, qword [rdx + 8 * 1]
 
 movd mm0, eax
 movq mm1, rbx
+
+movd mm2, dword [rdx + 8 * 0]
+movq mm3, qword [rdx + 8 * 1]
+
 hlt
