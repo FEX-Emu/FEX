@@ -765,16 +765,16 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint8_t Mask = OpSize * 8 - 1;
             switch (OpSize) {
               case 1:
-                GD = static_cast<int8_t>(Src1) >> (Src2 & Mask);
+                GD = (uint8_t)(static_cast<int8_t>(Src1) >> (Src2 & Mask));
                 break;
               case 2:
-                GD = static_cast<int16_t>(Src1) >> (Src2 & Mask);
+                GD = (uint16_t)(static_cast<int16_t>(Src1) >> (Src2 & Mask));
                 break;
               case 4:
-                GD = static_cast<int32_t>(Src1) >> (Src2 & Mask);
+                GD = (uint32_t)(static_cast<int32_t>(Src1) >> (Src2 & Mask));
                 break;
               case 8:
-                GD = static_cast<int64_t>(Src1) >> (Src2 & Mask);
+                GD = (uint64_t)(static_cast<int64_t>(Src1) >> (Src2 & Mask));
                 break;
               default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
             };

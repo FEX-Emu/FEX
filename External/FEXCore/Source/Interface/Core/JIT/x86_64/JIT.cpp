@@ -1538,12 +1538,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           case 1:
             movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
             sar(al, cl);
-            movsx(GetDst<RA_64>(Node), al);
+            movzx(GetDst<RA_64>(Node), al);
           break;
           case 2:
             movsx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
             sar(ax, cl);
-            movsx(GetDst<RA_64>(Node), ax);
+            movzx(GetDst<RA_64>(Node), ax);
           break;
           case 4:
             mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
