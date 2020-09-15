@@ -310,8 +310,9 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_VEXTRACTELEMENT: {
             auto Op = IROp->C<IR::IROp_VExtractElement>();
+            uint32_t SourceSize = GetOpSize(Op->Header.Args[0]);
             LogMan::Throw::A(OpSize <= 16, "OpSize is too large for VExtractToGPR: %d", OpSize);
-            if (OpSize == 16) {
+            if (SourceSize == 16) {
               __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
               uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
               if (Op->Header.ElementSize == 8)
