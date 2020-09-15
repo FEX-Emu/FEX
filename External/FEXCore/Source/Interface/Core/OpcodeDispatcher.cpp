@@ -3132,7 +3132,7 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
       OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
       Src = _VExtractElement(16, 8, Src, 1); 
       auto Result = _VInsScalarElement(16, 8, 0, Dest, Src);
-      StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 8, 16);
+      StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 16, 16);
     }
     else {
       OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
