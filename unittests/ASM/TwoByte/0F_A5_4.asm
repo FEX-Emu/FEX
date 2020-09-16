@@ -1,7 +1,7 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "1",
+    "r10": "1",
     "RBX": "1",
     "RDX": "1",
     "RSI": "1",
@@ -19,7 +19,7 @@ mov r14, 0xFFFFFFFFFFFF4000
 mov r13, 0xFFFFFFFF40000000
 mov r12, 0x4000000000000000
 
-mov rax, 0
+mov r10, 0
 mov rbx, 0
 mov rdx, 0
 
@@ -40,7 +40,7 @@ mov rax, 0
 ror rax, 1
 
 shld r14w, r15w, cl
-cmovo rax, r11
+cmovo r10, r11
 
 ; Let's clear OF really quick
 mov rax, 0
