@@ -17,6 +17,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/eventfd.h>
+#include <sys/sendfile.h>
+#include <sys/time.h>
 
 namespace FEXCore::HLE {
   static void CopyStat(FEXCore::guest_stat *guest, struct stat *host) {
@@ -185,6 +187,11 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(sendfile, [](FEXCore::Core::InternalThreadState *Thread, int out_fd, int in_fd, off_t *offset, size_t count) -> uint64_t {
+      uint64_t Result = ::sendfile(out_fd, in_fd, offset, count);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(dup3, [](FEXCore::Core::InternalThreadState* Thread, int oldfd, int newfd, int flags) -> uint64_t {
       flags = RemapFlags(flags);
       uint64_t Result = ::dup3(oldfd, newfd, flags);
@@ -239,6 +246,11 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(readahead, [](FEXCore::Core::InternalThreadState *Thread, int fd, off64_t offset, size_t count) -> uint64_t {
+      uint64_t Result = ::readahead(fd, offset, count);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(getdents64, [](FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count) -> uint64_t {
       uint64_t Result = syscall(SYS_getdents64,
         static_cast<uint64_t>(fd),
@@ -273,6 +285,26 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(mkdirat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, mode_t mode) -> uint64_t {
+      uint64_t Result = ::mkdirat(dirfd, pathname, mode);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(mknodat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, mode_t mode, dev_t dev) -> uint64_t {
+      uint64_t Result = ::mknodat(dirfd, pathname, mode, dev);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(fchownat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, uid_t owner, gid_t group, int flags) -> uint64_t {
+      uint64_t Result = ::fchownat(dirfd, pathname, owner, group, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(futimesat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const struct timeval times[2]) -> uint64_t {
+      uint64_t Result = ::futimesat(dirfd, pathname, times);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(newfstatat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, FEXCore::guest_stat *buf, int flag) -> uint64_t {
       struct stat host_stat;
       uint64_t Result = ::fstatat(dirfd, pathname, &host_stat, flag);
@@ -282,13 +314,63 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(unlinkat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int flags) -> uint64_t {
+      uint64_t Result = ::unlinkat(dirfd, pathname, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(renameat, [](FEXCore::Core::InternalThreadState *Thread, int olddirfd, const char *oldpath, int newdirfd, const char *newpath) -> uint64_t {
+      uint64_t Result = ::renameat(olddirfd, oldpath, newdirfd, newpath);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(linkat, [](FEXCore::Core::InternalThreadState *Thread, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags) -> uint64_t {
+      uint64_t Result = ::linkat(olddirfd, oldpath, newdirfd, newpath, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(symlinkat, [](FEXCore::Core::InternalThreadState *Thread, const char *target, int newdirfd, const char *linkpath) -> uint64_t {
+      uint64_t Result = ::symlinkat(target, newdirfd, linkpath);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(readlinkat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, char *buf, size_t bufsiz) -> uint64_t {
       uint64_t Result = Thread->CTX->SyscallHandler->FM.Readlinkat(dirfd, pathname, buf, bufsiz);
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(fchmodat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, mode_t mode, int flags) -> uint64_t {
+      uint64_t Result = fchmodat(dirfd, pathname, mode, flags);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(faccessat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int mode, int flags) -> uint64_t {
       uint64_t Result = Thread->CTX->SyscallHandler->FM.FAccessat(dirfd, pathname, mode, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(splice, [](FEXCore::Core::InternalThreadState *Thread, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
+      uint64_t Result = ::splice(fd_in, off_in, fd_out, off_out, len, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(tee, [](FEXCore::Core::InternalThreadState *Thread, int fd_in, int fd_out, size_t len, unsigned int flags) -> uint64_t {
+      uint64_t Result = ::tee(fd_in, fd_out, len, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(sync_file_range, [](FEXCore::Core::InternalThreadState *Thread, int fd, off64_t offset, off64_t nbytes, unsigned int flags) -> uint64_t {
+      uint64_t Result = ::sync_file_range(fd, offset, nbytes, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(vmsplice, [](FEXCore::Core::InternalThreadState *Thread, int fd, const struct iovec *iov, unsigned long nr_segs, unsigned int flags) -> uint64_t {
+      uint64_t Result = ::vmsplice(fd, iov, nr_segs, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(utimensat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
+      uint64_t Result = ::utimensat(dirfd, pathname, times, flags);
       SYSCALL_ERRNO();
     });
 
@@ -321,6 +403,11 @@ namespace FEXCore::HLE {
     REGISTER_SYSCALL_IMPL(inotify_init1, [](FEXCore::Core::InternalThreadState *Thread, int flags) -> uint64_t {
       flags = RemapFlags(flags);
       uint64_t Result = ::inotify_init1(flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(renameat2, [](FEXCore::Core::InternalThreadState *Thread, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags) -> uint64_t {
+      uint64_t Result = ::renameat2(olddirfd, oldpath, newdirfd, newpath, flags);
       SYSCALL_ERRNO();
     });
 
@@ -358,8 +445,42 @@ namespace FEXCore::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(eventfd2, [](FEXCore::Core::InternalThreadState *Thread, unsigned int initval, int flags) -> uint64_t {
-      uint64_t Result = eventfd(initval, flags);
+      uint64_t Result = ::eventfd(initval, flags);
+      SYSCALL_ERRNO();
+    });
 
+    REGISTER_SYSCALL_IMPL(preadv, [](FEXCore::Core::InternalThreadState *Thread, int fd, const struct iovec *iov, int iovcnt, off_t offset) -> uint64_t {
+      uint64_t Result = ::preadv(fd, iov, iovcnt, offset);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(pwritev, [](FEXCore::Core::InternalThreadState *Thread, int fd, const struct iovec *iov, int iovcnt, off_t offset) -> uint64_t {
+      uint64_t Result = ::pwritev(fd, iov, iovcnt, offset);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(preadv2, [](FEXCore::Core::InternalThreadState *Thread, int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags) -> uint64_t {
+      uint64_t Result = ::preadv2(fd, iov, iovcnt, offset, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(pwritev2, [](FEXCore::Core::InternalThreadState *Thread, int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags) -> uint64_t {
+      uint64_t Result = ::pwritev2(fd, iov, iovcnt, offset, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(process_vm_readv, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, const struct iovec *local_iov, unsigned long liovcnt, const struct iovec *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
+      uint64_t Result = ::process_vm_readv(pid, local_iov, liovcnt, remote_iov, riovcnt, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(process_vm_writev, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, const struct iovec *local_iov, unsigned long liovcnt, const struct iovec *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
+      uint64_t Result = ::process_vm_writev(pid, local_iov, liovcnt, remote_iov, riovcnt, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(copy_file_range, [](FEXCore::Core::InternalThreadState *Thread, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
+      uint64_t Result = ::copy_file_range(fd_in, off_in, fd_out, off_out, len, flags);
       SYSCALL_ERRNO();
     });
   }

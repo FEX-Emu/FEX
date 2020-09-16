@@ -6,6 +6,7 @@
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/X86Enums.h>
 
+#include <grp.h>
 #include <limits.h>
 #include <linux/futex.h>
 #include <stdint.h>
@@ -185,7 +186,7 @@ namespace FEXCore::HLE {
       }
 
       if (!(flags & CLONE_THREAD)) {
-        
+
         if (flags & CLONE_VFORK) {
           flags &= ~CLONE_VFORK;
           flags &= ~CLONE_VM;
@@ -252,7 +253,7 @@ namespace FEXCore::HLE {
     // currently does not propagate argv[0] correctly
     REGISTER_SYSCALL_IMPL(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
       std::vector<const char*> Args;
-      
+
       Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
 
       Args.push_back("--");
@@ -269,7 +270,7 @@ namespace FEXCore::HLE {
       Args.push_back(nullptr);
 
       uint64_t Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), envp);
-      
+
       SYSCALL_ERRNO();
     });
 
@@ -364,6 +365,16 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(setregid, [](FEXCore::Core::InternalThreadState *Thread, gid_t rgid, gid_t egid) -> uint64_t {
       uint64_t Result = ::setregid(rgid, egid);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(getgroups, [](FEXCore::Core::InternalThreadState *Thread, int size, gid_t list[]) -> uint64_t {
+      uint64_t Result = ::getgroups(size, list);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(setgroups, [](FEXCore::Core::InternalThreadState *Thread, size_t size, const gid_t *list) -> uint64_t {
+      uint64_t Result = ::setgroups(size, list);
       SYSCALL_ERRNO();
     });
 
@@ -476,7 +487,7 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(setpgid);
     });*/
     REGISTER_SYSCALL_FORWARD_ERRNO(setpgid);
-   
+
     /*REGISTER_SYSCALL_IMPL(getpgid, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid) -> uint64_t {
       SYSCALL_STUB(getpgid);
     });*/
@@ -496,5 +507,20 @@ namespace FEXCore::HLE {
       SYSCALL_STUB(getsid);
     });*/
     REGISTER_SYSCALL_FORWARD_ERRNO(getsid);
+
+    REGISTER_SYSCALL_IMPL(waitid, [](FEXCore::Core::InternalThreadState *Thread, idtype_t idtype, id_t id, siginfo_t *infop, int options) -> uint64_t {
+      uint64_t Result = ::waitid(idtype, id, infop, options);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(unshare, [](FEXCore::Core::InternalThreadState *Thread, int flags) -> uint64_t {
+      uint64_t Result = ::unshare(flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(setns, [](FEXCore::Core::InternalThreadState *Thread, int fd, int nstype) -> uint64_t {
+      uint64_t Result = ::setns(fd, nstype);
+      SYSCALL_ERRNO();
+    });
   }
 }

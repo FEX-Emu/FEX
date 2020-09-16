@@ -153,7 +153,9 @@ set (SRCS
   Interface/HLE/Syscalls/Info.cpp
   Interface/HLE/Syscalls/IO.cpp
   Interface/HLE/Syscalls/Ioctl.cpp
+  Interface/HLE/Syscalls/Key.cpp
   Interface/HLE/Syscalls/Memory.cpp
+  Interface/HLE/Syscalls/Msg.cpp
   Interface/HLE/Syscalls/Sched.cpp
   Interface/HLE/Syscalls/Semaphore.cpp
   Interface/HLE/Syscalls/SHM.cpp

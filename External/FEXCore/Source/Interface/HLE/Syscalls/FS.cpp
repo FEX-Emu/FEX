@@ -4,6 +4,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/fanotify.h>
+#include <sys/mount.h>
+#include <sys/swap.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/vfs.h>
@@ -83,6 +86,29 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(ustat, [](FEXCore::Core::InternalThreadState *Thread, dev_t dev, struct ustat *ubuf) -> uint64_t {
+      // Since version 2.28 of GLIBC it has stopped providing a wrapper for this syscall
+#ifdef SYS_ustat
+      uint64_t Result = syscall(SYS_ustat, dev, ubuf);
+      SYSCALL_ERRNO();
+#else
+      return -ENOSYS;
+#endif
+    });
+
+    /*
+      arg1 is one of: void, unsigned int fs_index, const char *fsname
+      arg2 is one of: void, char *buf
+    */
+    REGISTER_SYSCALL_IMPL(sysfs, [](FEXCore::Core::InternalThreadState *Thread, int option,  uint64_t arg1,  uint64_t arg2) -> uint64_t {
+#ifdef SYS_sysfs
+      uint64_t Result = syscall(SYS_sysfs, option, arg1, arg2);
+      SYSCALL_ERRNO();
+#else
+      return -ENOSYS;
+#endif
+    });
+
     REGISTER_SYSCALL_IMPL(statfs, [](FEXCore::Core::InternalThreadState *Thread, const char *path, struct statfs *buf) -> uint64_t {
       uint64_t Result = Thread->CTX->SyscallHandler->FM.Statfs(path, buf);
       SYSCALL_ERRNO();
@@ -103,10 +129,41 @@ namespace FEXCore::HLE {
     });*/
     REGISTER_SYSCALL_FORWARD_ERRNO(creat);
 
+    REGISTER_SYSCALL_IMPL(chroot, [](FEXCore::Core::InternalThreadState *Thread, const char *path) -> uint64_t {
+      uint64_t Result = ::chroot(path);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(sync, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
       sync();
       return 0; // always successful
     });
+
+    REGISTER_SYSCALL_IMPL(acct, [](FEXCore::Core::InternalThreadState *Thread, const char *filename) -> uint64_t {
+      uint64_t Result = ::acct(filename);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(mount, [](FEXCore::Core::InternalThreadState *Thread, const char *source, const char *target, const char *filesystemtype, unsigned long mountflags, const void *data) -> uint64_t {
+      uint64_t Result = ::mount(source, target, filesystemtype, mountflags, data);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(umount2, [](FEXCore::Core::InternalThreadState *Thread, const char *target, int flags) -> uint64_t {
+      uint64_t Result = ::umount2(target, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(swapon, [](FEXCore::Core::InternalThreadState *Thread, const char *path, int swapflags) -> uint64_t {
+      uint64_t Result = ::swapon(path, swapflags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(swapoff, [](FEXCore::Core::InternalThreadState *Thread, const char *path) -> uint64_t {
+      uint64_t Result = ::swapoff(path);
+      SYSCALL_ERRNO();
+    });
+
 
     /*
     REGISTER_SYSCALL_IMPL(syncfs, [](FEXCore::Core::InternalThreadState *Thread, int fd) -> uint64_t {
@@ -186,5 +243,14 @@ namespace FEXCore::HLE {
     });*/
     REGISTER_SYSCALL_FORWARD_ERRNO(fremovexattr);
 
+    REGISTER_SYSCALL_IMPL(fanotify_init, [](FEXCore::Core::InternalThreadState *Thread, unsigned int flags, unsigned int event_f_flags) -> uint64_t {
+      uint64_t Result = ::fanotify_init(flags, event_f_flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(fanotify_mark, [](FEXCore::Core::InternalThreadState *Thread, int fanotify_fd, unsigned int flags, uint64_t mask, int dirfd, const char *pathname) -> uint64_t {
+      uint64_t Result = ::fanotify_mark(fanotify_fd, flags, mask, dirfd, pathname);
+      SYSCALL_ERRNO();
+    });
   }
 }
