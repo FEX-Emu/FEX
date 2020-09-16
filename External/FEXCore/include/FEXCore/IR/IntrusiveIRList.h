@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FEXCore/IR/IR.h"
+#include "LogManager.h"
 
 #include <cassert>
 #include <cstddef>
@@ -98,13 +99,115 @@ public:
   size_t GetListSize() const { return ListSize; }
   size_t GetSSACount() const { return ListSize / sizeof(OrderedNode); }
 
-  using iterator = NodeWrapperIterator;
+  uint32_t GetID(OrderedNode *Node) const {
+    return Node->Wrapped(GetListData()).ID();
+  }
+
+  OrderedNode* GetHeaderNode() const {
+    OrderedNodeWrapper Wrapped;
+    Wrapped.NodeOffset = sizeof(OrderedNode);
+    return Wrapped.GetNode(GetListData());
+  }
+
+  IROp_IRHeader *GetHeader() const {
+    return GetOp<IROp_IRHeader>(GetHeaderNode());
+  }
+
+  template <typename T>
+  T *GetOp(OrderedNode *Node) const {
+    auto OpHeader = Node->Op(GetData());
+    auto Op = OpHeader->template CW<T>();
+
+    // If we are casting to something narrower than just the header, check the opcode.
+    if constexpr (!std::is_same<T, IROp_Header>::value) {
+      LogMan::Throw::A(Op->OPCODE == Op->Header.Op, "Expected Node to be '%s'. Found '%s' instead", GetName(Op->OPCODE), GetName(Op->Header.Op));
+    }
+
+    return Op;
+  }
+
+  template <typename T>
+  T *GetOp(OrderedNodeWrapper Wrapper) const {
+    auto Node = Wrapper.GetNode(GetListData());
+    return GetOp<T>(Node);
+  }
+
+  OrderedNode* GetNode(OrderedNodeWrapper Wrapper) const {
+    return Wrapper.GetNode(GetListData());
+  }
+
+private:
+  struct BlockRange {
+    using iterator = NodeIterator;
+    const IRListView *View;
+
+    BlockRange(const IRListView *parent) : View(parent) {};
+
+    iterator begin() const noexcept {
+      auto Header = View->GetHeader();
+      return iterator(View->GetListData(), View->GetData(), Header->Blocks);
+    }
+
+    iterator end() const noexcept {
+      return iterator(View->GetListData(), View->GetData());
+    }
+  };
+
+  struct CodeRange {
+    using iterator = NodeIterator;
+    const IRListView *View;
+    const OrderedNodeWrapper BlockWrapper;
+
+    CodeRange(const IRListView *parent, OrderedNodeWrapper block) : View(parent), BlockWrapper(block) {};
+
+    iterator begin() const noexcept {
+      auto Block = View->GetOp<IROp_CodeBlock>(BlockWrapper);
+      return iterator(View->GetListData(), View->GetData(), Block->Begin);
+    }
+
+    iterator end() const noexcept {
+      return iterator(View->GetListData(), View->GetData());
+    }
+  };
+
+  struct AllCodeRange {
+    using iterator = AllNodesIterator; // Diffrent Iterator
+    const IRListView *View;
+
+    AllCodeRange(const IRListView *parent) : View(parent) {};
+
+    iterator begin() const noexcept {
+      auto Header = View->GetHeader();
+      return iterator(View->GetListData(), View->GetData(), Header->Blocks);
+    }
+
+    iterator end() const noexcept {
+      return iterator(View->GetListData(), View->GetData());
+    }
+  };
+
+
+public:
+
+  BlockRange GetBlocks() const {
+    return BlockRange(this);
+  }
+
+  CodeRange GetCode(OrderedNode *block) const {
+    return CodeRange(this, block->Wrapped(GetListData()));
+  }
+
+  AllCodeRange GetAllCode() const {
+    return AllCodeRange(this);
+  }
+
+  using iterator = NodeIterator;
 
   iterator begin() const noexcept
   {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
-    return iterator(reinterpret_cast<uintptr_t>(ListData), Wrapped);
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
   }
 
   /**
@@ -116,15 +219,26 @@ public:
   {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = 0;
-    return iterator(reinterpret_cast<uintptr_t>(ListData), Wrapped);
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
   }
 
   /**
    * @brief Convert a OrderedNodeWrapper to an interator that we can iterate over
    * @return Iterator for this op
    */
-  iterator at(OrderedNodeWrapper Node) const noexcept {
-    return iterator(reinterpret_cast<uintptr_t>(ListData), Node);
+  iterator at(OrderedNodeWrapper Wrapped) const noexcept {
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+  }
+
+  iterator at(uint32_t ID) const noexcept {
+    OrderedNodeWrapper Wrapped;
+    Wrapped.NodeOffset = ID * sizeof(OrderedNode);
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+  }
+
+  iterator at(OrderedNode *Node) const noexcept {
+    auto Wrapped = Node->Wrapped(reinterpret_cast<uintptr_t>(ListData));
+    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
   }
 
 private:

@@ -314,39 +314,18 @@ void RCLSE::CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit) {
 
   OffsetToBlockMap.clear();
   auto CurrentIR = IREmit->ViewIR();
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
 
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
+    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(BlockNode)).first->second;
 
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
-
-  // Walk the list and calculate the control flow
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  while (1) {
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
-
-    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
 
       switch (IROp->Op) {
         case IR::OP_CONDJUMP: {
           auto Op = IROp->CW<IR::IROp_CondJump>();
 
-          OrderedNode *TrueTargetNode = Op->Header.Args[1].GetNode(ListBegin);
-          OrderedNode *FalseTargetNode = Op->Header.Args[2].GetNode(ListBegin);
+          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->Header.Args[1]);
+          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->Header.Args[2]);
 
           CurrentBlock->Successors.emplace_back(TrueTargetNode);
           CurrentBlock->Successors.emplace_back(FalseTargetNode);
@@ -365,7 +344,7 @@ void RCLSE::CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit) {
         }
         case IR::OP_JUMP: {
           auto Op = IROp->CW<IR::IROp_Jump>();
-          OrderedNode *TargetNode = Op->Header.Args[0].GetNode(ListBegin);
+          OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
           CurrentBlock->Successors.emplace_back(TargetNode);
 
           {
@@ -376,18 +355,6 @@ void RCLSE::CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit) {
         }
         default: break;
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 }
@@ -433,41 +400,17 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
 
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
-
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
-
-  // Walk the list and calculate the control flow
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+  // XXX: Walk the list and calculate the control flow
 
   ContextInfo LocalInfo = ClassifiedStruct;
 
-  while (1) {
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
     ResetClassificationAccesses(&LocalInfo);
 
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    auto OpSize = [&](OrderedNode *node) {
-      return node->Op(DataBegin)->Size;
-    };
-
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
-
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_STORECONTEXT) {
         auto Op = IROp->CW<IR::IROp_StoreContext>();
         auto Info = FindMemberInfo(&LocalInfo, Op->Offset, IROp->Size);
@@ -476,7 +419,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         uint8_t LastSize = Info->AccessSize;
         LastAccessType LastAccess = Info->Accessed;
         OrderedNode *LastStoreNode = Info->StoreNode;
-        RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
+        RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_WRITE, CurrentIR.GetNode(Op->Header.Args[0]), CodeNode);
 
         if (LastAccess == ACCESS_WRITE &&
             LastClass == Op->Class &&
@@ -508,17 +451,17 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
 
           IREmit->SetWriteCursor(CodeNode);
 
-          uint8_t TruncateSize = OpSize(LastNode);
+          uint8_t TruncateSize = IREmit->GetOpSize(LastNode);
 
           // Did store context do an implicit truncation?
-          if (OpSize(LastStoreNode) < TruncateSize)
-             TruncateSize = OpSize(LastStoreNode);
+          if (IREmit->GetOpSize(LastStoreNode) < TruncateSize)
+             TruncateSize = IREmit->GetOpSize(LastStoreNode);
 
           // Or are we doing a partial read
           if (IROp->Size < TruncateSize)
              TruncateSize = IROp->Size;
 
-          if (TruncateSize != OpSize(LastNode)) {
+          if (TruncateSize != IREmit->GetOpSize(LastNode)) {
             // We need to insert an explict truncation
             if (LastClass == FPRClass) {
               LastNode = IREmit->_VMov(LastNode, TruncateSize); // Vmov truncates and zexts when register width is smaller than source
@@ -533,7 +476,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
             }
           }
 
-          IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+          IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
           RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           Changed = true;
         }
@@ -543,7 +486,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
                  LastSize == IROp->Size &&
                  Info->Accessed == ACCESS_READ) {
           // Did we read and then read again?
-          IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+          IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
           RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
           Changed = true;
         }
@@ -552,7 +495,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         auto Op = IROp->CW<IR::IROp_StoreFlag>();
         auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
         auto LastStoreNode = Info->StoreNode;
-        RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, Op->Header.Args[0].GetNode(ListBegin), CodeNode);
+        RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_WRITE, CurrentIR.GetNode(Op->Header.Args[0]), CodeNode);
 
         // Flags don't alias, so we can take the simple route here. Kill any flags that have been overwritten
         if (LastStoreNode != nullptr)
@@ -571,12 +514,12 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
           IREmit->SetWriteCursor(CodeNode);
           auto Res = IREmit->_Bfe(1, 0, LastNode);
-          IREmit->ReplaceAllUsesWithInclusive(CodeNode, Res, CodeBegin, CodeLast);
+          IREmit->ReplaceAllUsesWith(CodeNode, Res);
           RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastNode);
           Changed = true;
         }
         else if (LastAccess == ACCESS_READ) {
-          IREmit->ReplaceAllUsesWithInclusive(CodeNode, LastNode, CodeBegin, CodeLast);
+          IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
           RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastNode);
           Changed = true;
         }
@@ -588,18 +531,6 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         // We can't track through these
         ResetClassificationAccesses(&LocalInfo);
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 

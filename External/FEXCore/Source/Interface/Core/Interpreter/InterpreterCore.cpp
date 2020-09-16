@@ -94,13 +94,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
   static_assert(sizeof(FEXCore::IR::IROp_Header) == 4);
   static_assert(sizeof(FEXCore::IR::OrderedNode) == 16);
 
-  auto HeaderIterator = CurrentIR->begin();
-  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
-  IR::OrderedNode const *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
+  auto BlockIterator = CurrentIR->GetBlocks().begin();
+  auto BlockEnd = CurrentIR->GetBlocks().end();
 
   // Allocate 16 bytes per SSA
   void *SSAData = alloca(ListSize * 16);
@@ -111,14 +106,14 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 #define GD *GetDest<uint64_t*>(SSAData, WrapperOp)
 #define GDP GetDest<void*>(SSAData, WrapperOp)
   auto GetOpSize = [&](IR::OrderedNodeWrapper Node) {
-    FEXCore::IR::OrderedNode const *RealNode = Node.GetNode(ListBegin);
-    FEXCore::IR::IROp_Header const *IROp = RealNode->Op(DataBegin);
+    auto IROp = CurrentIR->GetOp<FEXCore::IR::IROp_Header>(Node);
     return IROp->Size;
   };
 
   while (1) {
     using namespace FEXCore::IR;
-    auto BlockIROp = BlockNode->Op(DataBegin)->C<FEXCore::IR::IROp_CodeBlock>();
+    auto [BlockNode, BlockHeader] = BlockIterator();
+    auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     // We grab these nodes this way so we can iterate easily
@@ -129,13 +124,11 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
       bool Redo;
     } BlockResults{};
 
-    auto HandleBlock = [&]() {
-      while (1) {
-        OrderedNodeWrapper WrapperOp = *CodeBegin();
-        OrderedNode *RealNode = WrapperOp.GetNode(ListBegin);
-        FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+    auto HandleBlock = [&](OrderedNode *BlockNode) {
+      for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
+        OrderedNodeWrapper WrapperOp = CodeNode->Wrapped(ListBegin);
         uint8_t OpSize = IROp->Size;
-        uint32_t Node = WrapperOp.ID();
+        uint32_t Node = CurrentIR->GetID(CodeNode);
 
         switch (IROp->Op) {
           case IR::OP_VALIDATECODE: {
@@ -157,12 +150,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
           case IR::OP_DUMMY:
           case IR::OP_BEGINBLOCK:
+          case IR::OP_ENDBLOCK:
             break;
-          case IR::OP_ENDBLOCK: {
-            auto Op = IROp->C<IR::IROp_EndBlock>();
-            Thread->State.State.rip += Op->RIPIncrement;
-            break;
-          }
           case IR::OP_FENCE: {
             auto Op = IROp->C<IR::IROp_Fence>();
             switch (Op->Fence) {
@@ -187,10 +176,10 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_CondJump>();
             uint64_t Arg = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
             if (!!Arg) {
-              BlockNode = Op->Header.Args[1].GetNode(ListBegin);
+              BlockIterator = NodeIterator(ListBegin, DataBegin, Op->Header.Args[1]);
             }
             else  {
-              BlockNode = Op->Header.Args[2].GetNode(ListBegin);
+              BlockIterator = NodeIterator(ListBegin, DataBegin, Op->Header.Args[2]);
             }
             BlockResults.Redo = true;
             return;
@@ -198,7 +187,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_JUMP: {
             auto Op = IROp->C<IR::IROp_Jump>();
-            BlockNode = Op->Header.Args[0].GetNode(ListBegin);
+            BlockIterator = NodeIterator(ListBegin, DataBegin, Op->Header.Args[0]);
             BlockResults.Redo = true;
             return;
             break;
@@ -4272,16 +4261,14 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
       }
     };
 
-    HandleBlock();
+    HandleBlock(BlockNode);
 
     if (BlockResults.Redo) {
       continue;
     }
 
-    if (BlockIROp->Next.ID() == 0 || BlockResults.Quit) {
+    if (BlockResults.Quit || ++BlockIterator == BlockEnd) {
       break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 

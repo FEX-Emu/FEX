@@ -13,45 +13,26 @@ public:
 bool PhiValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   auto CurrentIR = IREmit->ViewIR();
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
 
   std::ostringstream Errors;
 
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
-
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
-
   // Walk the list and calculate the control flow
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  while (1) {
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
     bool FoundNonPhi{};
 
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
 
       switch (IROp->Op) {
-        // DUMMY doesn't matter for us
-        case IR::OP_DUMMY: break;
+        // BEGINBLOCK doesn't matter for us
+        case IR::OP_BEGINBLOCK: break;
         case IR::OP_PHIVALUE:
         case IR::OP_PHI: {
           if (FoundNonPhi) {
             // If we have found a non-phi IR op and then had a Phi or PhiValue value then this is a programming mistake
             // PHI values MUST be defined at the top of the block only
             HadError |= true;
-            Errors << "Phi %ssa" << CodeOp->ID() << ": Was defined after non-phi operations. Which is invalid!" << std::endl;
+            Errors << "Phi %ssa" << CurrentIR.GetID(CodeNode) << ": Was defined after non-phi operations. Which is invalid!" << std::endl;
           }
 
           // Check all the phi values to ensure they have the same type
@@ -61,18 +42,6 @@ bool PhiValidation::Run(IREmitter *IREmit) {
           FoundNonPhi = true;
           break;
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 

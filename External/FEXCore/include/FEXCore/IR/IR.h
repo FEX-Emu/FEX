@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdint>
 #include <sstream>
+#include <tuple>
 
 namespace FEXCore::IR {
 class RegisterAllocationPass;
@@ -83,70 +84,6 @@ struct OrderedNodeHeader {
 };
 
 static_assert(sizeof(OrderedNodeHeader) == sizeof(uint32_t) * 3);
-
-/**
-* @brief This is our NodeWrapperIterator
-* This stores both the memory base and the provided NodeWrapper to be able to walk the list of nodes directly
-* Only the increment and decrement implementations of this class require understanding the implementation details of OrderedNode
-*/
-class NodeWrapperIterator final {
-public:
-	using value_type              = OrderedNodeWrapper;
-	using size_type               = std::size_t;
-	using difference_type         = std::ptrdiff_t;
-	using reference               = value_type&;
-	using const_reference         = const value_type&;
-	using pointer                 = value_type*;
-	using const_pointer           = const value_type*;
-	using iterator                = NodeWrapperIterator;
-	using const_iterator          = const NodeWrapperIterator;
-	using reverse_iterator        = iterator;
-	using const_reverse_iterator  = const_iterator;
-	using iterator_category       = std::bidirectional_iterator_tag;
-
-	using NodeType = value_type;
-	using NodePtr = value_type*;
-	using NodeRef = value_type&;
-
-	NodeWrapperIterator(uintptr_t Base) : BaseList {Base} {}
-	explicit NodeWrapperIterator(uintptr_t Base, NodeType Ptr) : BaseList {Base}, Node {Ptr} {}
-
-	bool operator==(const NodeWrapperIterator &rhs) const {
-		return Node.NodeOffset == rhs.Node.NodeOffset;
-	}
-
-	bool operator!=(const NodeWrapperIterator &rhs) const {
-		return !operator==(rhs);
-	}
-
-	NodeWrapperIterator operator++() {
-		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
-		Node = RealNode->Next;
-		return *this;
-	}
-
-	NodeWrapperIterator operator--() {
-		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
-		Node = RealNode->Previous;
-		return *this;
-	}
-
-	NodeRef operator*() {
-		return Node;
-	}
-
-	NodePtr operator()() {
-		return &Node;
-	}
-
-  static NodeWrapperIterator Invalid() {
-    return NodeWrapperIterator(0);
-  }
-
-private:
-	uintptr_t BaseList{};
-	NodeType Node{};
-};
 
 /**
  * @brief This is a node in our IR representation
@@ -372,11 +309,136 @@ struct FenceType final {
   constexpr bool operator!=(FenceType const &rhs) const { return !operator==(rhs); }
 };
 
+class NodeIterator;
+
+/* This iterator can be used to step though nodes.
+ * Due to how our IR is laid out, this can be used to either step
+ * though the CodeBlocks or though the code within a single block.
+ */
+class NodeIterator {
+public:
+	using value_type              = std::tuple<OrderedNode*, IROp_Header*>;
+	using size_type               = std::size_t;
+	using difference_type         = std::ptrdiff_t;
+	using reference               = value_type&;
+	using const_reference         = const value_type&;
+	using pointer                 = value_type*;
+	using const_pointer           = const value_type*;
+	using iterator                = NodeIterator;
+	using const_iterator          = const NodeIterator;
+	using reverse_iterator        = iterator;
+	using const_reverse_iterator  = const_iterator;
+	using iterator_category       = std::bidirectional_iterator_tag;
+
+	NodeIterator(uintptr_t Base, uintptr_t IRBase) : BaseList {Base}, IRList{ IRBase } {}
+	explicit NodeIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : BaseList {Base},  IRList{ IRBase }, Node {Ptr} {}
+
+	bool operator==(const NodeIterator &rhs) const {
+		return Node.NodeOffset == rhs.Node.NodeOffset;
+	}
+
+	bool operator!=(const NodeIterator &rhs) const {
+		return !operator==(rhs);
+	}
+
+  NodeIterator operator++() {
+		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
+    Node = RealNode->Next;
+    return *this;
+  }
+
+  NodeIterator operator--() {
+    OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
+    Node = RealNode->Previous;
+    return *this;
+  }
+
+	value_type operator*() {
+		OrderedNode *RealNode = Node.GetNode(BaseList);
+		return { RealNode, RealNode->Op(IRList) };
+	}
+
+	value_type operator()() {
+    OrderedNode *RealNode = Node.GetNode(BaseList);
+		return { RealNode, RealNode->Op(IRList) };
+	}
+
+  uint32_t ID() {
+    return Node.ID();
+  }
+
+  static NodeIterator Invalid() {
+    return NodeIterator(0, 0);
+  }
+
+protected:
+	uintptr_t BaseList{};
+  uintptr_t IRList{};
+  OrderedNodeWrapper Node{};
+};
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES
 #define IROP_REG_CLASSES
 #include <FEXCore/IR/IRDefines.inc>
+
+/* This iterator can be used to step though every single node in a multi-block in SSA order.
+ *
+ * Iterates in the order of:
+ *
+ * end <-- CodeBlockA <--> BlockAInst1 <--> BlockAInst2 <--> CodeBlockB <--> BlockBInst1 <--> BlockBInst2 --> end
+ */
+class AllNodesIterator : public NodeIterator {
+public:
+  AllNodesIterator(uintptr_t Base, uintptr_t IRBase) : NodeIterator(Base, IRBase) {}
+	explicit AllNodesIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : NodeIterator(Base, IRBase, Ptr) {}
+  AllNodesIterator(NodeIterator other) : NodeIterator(other) {} // Allow NodeIterator to be upgraded
+
+  AllNodesIterator operator++() {
+		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
+    auto IROp = Node.GetNode(BaseList)->Op(IRList);
+
+    // If this is the last node of a codeblock, we need to continue to the next block
+    if (IROp->Op == OP_ENDBLOCK) {
+      auto EndBlock = IROp->C<IROp_EndBlock>();
+
+      auto CurrentBlock = EndBlock->BlockHeader.GetNode(BaseList);
+      Node = CurrentBlock->Header.Next;
+    } else if (IROp->Op == OP_CODEBLOCK) {
+      auto CodeBlock = IROp->C<IROp_CodeBlock>();
+
+      Node = CodeBlock->Begin;
+    } else {
+      Node = RealNode->Next;
+    }
+
+		return *this;
+	}
+
+  AllNodesIterator operator--() {
+    auto IROp = Node.GetNode(BaseList)->Op(IRList);
+
+    if (IROp->Op == OP_BEGINBLOCK) {
+      auto BeginBlock = IROp->C<IROp_EndBlock>();
+
+      Node = BeginBlock->BlockHeader;
+    } else if (IROp->Op == OP_CODEBLOCK) {
+      auto PrevBlockWrapper = Node.GetNode(BaseList)->Header.Previous;
+      auto PrevCodeBlock = PrevBlockWrapper.GetNode(BaseList)->Op(IRList)->C<IROp_CodeBlock>();
+
+      Node = PrevCodeBlock->Last;
+    } else {
+      Node = Node.GetNode(BaseList)->Header.Previous;
+    }
+
+    return *this;
+  }
+
+  static AllNodesIterator Invalid() {
+    return AllNodesIterator(0, 0);
+  }
+};
 
 template<bool>
 class IRListView;

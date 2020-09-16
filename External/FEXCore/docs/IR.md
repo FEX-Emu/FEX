@@ -55,15 +55,15 @@ Additionally it also points to the first `CodeBlock` IROp
 
 ```
 (%%ssa3) CodeBlock %%ssa169, %%ssa173, %%ssa4
-	(%%ssa169) Dummy
+	(%%ssa169) BeginBlock %ssa3
 	%ssa170 i64 = Constant 0x41a9e1
 	(%%ssa171) StoreContext %ssa170 i64, 0x8, 0x0
 	(%%ssa172) ExitFunction
-	(%%ssa173) EndBlock 0x0
+	(%%ssa173) EndBlock %ssa3
 ```
 
-* Dummy op is just a sentinal op and may be removed in the future
-* EndBlock the ending op of a CodeBlock and may be used to increment the RIP independently of just setting it
+* BeginBlock points back to the CodeBlock SSA which helps with iterating across multiple blocks
+* EndBlock the ending op of a CodeBlock and also points back to the CodeBlock SSA.
 * ExitFunction will leave the function immediately and return back to the dispatcher
 * Every IR Op has an SSA value associated with it used for tracking the op itself
 	* If the IROp doesn't have a real destination then it is invalid to use it as an argument in most other ops
@@ -121,23 +121,19 @@ This is a doubly linked list of all of our IR nodes. This allows us to walk forw
 	* Then once you have the `OrderedNode*` from GetNode, Use the `Op(IRDataBegin)` function to get the IR data.
 	* I do **NOT** recommend using `GetNode` directly from `OpNodeWrapper` as it is VERY easy to mess it up
 
-### NodeWrapperIterator
-Provides a fairly straightforward wrapper object that allows easily walking the IR nodes with C++ increment and decrement operations
+### NodeIterator
+Provides a fairly straightforward interface that allows easily walking the IR nodes with C++ increment and decrement operations.
+Only iterates over a single block
 
-### Example usage
+#### Example usage
 ```cpp
-	IR::NodeWrapperIterator After = ...;
-	IR::NodeWrapperIterator End = ...;
+	IR::NodeIterator After = ...;
+	IR::NodeIterator End = ...;
 
 	while (After != End) {
-		// NodeWrapperIterator() returns a pointer or a reference to an OrderedNodeWrapper object
-		OrderedNodeWrapper *WrapperOp = After();
-		// OrderedNodeWrapper::GetNode(ListBegin) will return a pointer to our OrderedNode* object
-		OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-
-		// Now to get the IROp_Header
-		// We need to use OrderedNode::Op(DataBegin) to get the real data backing the object
-		FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+		// NodeIterator() returns a pair of pointers to the OrderedNode and IROp data
+		// You can unpack the result with structured bindings
+		auto [CodeNode, IROp] = After();
 
 		// IROp_Header contains a bunch of information about the IR object
 		// We can convert it with the object's C<typename Type> or CW<typename Type> functions
@@ -155,6 +151,48 @@ Provides a fairly straightforward wrapper object that allows easily walking the 
 		++After;
 	}
 
+```
+
+### AllNodesIterator
+This is like NodeIterator, except that it will cross block boundaries.
+
+### IRListView.GetBlocks()
+Provides a range for easy iterating over all the blocks in a multi-block with NodeIterator
+
+#### Example usage
+```c++
+	for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
+		// Do stuff for each block
+	}
+```
+
+### IRListView.GetCode(BlockNode)
+Provides a range for easy iterating over all the code in a block
+
+#### Example usage
+```c++
+	for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
+		// Do stuff for each op
+
+		switch(IROp->Op) {
+			case IR::OP_ADD: {
+				FEXCore::IR::IROp_Add const *Op = IROp->C<FEXCore::IR::IROp_Add>();
+				// Do stuff for each Add op.
+
+				break;
+			}
+		}
+	}
+```
+
+### IRListView.GetAllCode()
+Like GetCode, except it uses AllNodesIterator to allow easy iterating over every single op in the entire Multiblock
+
+#### Example usage
+```c++
+	for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
+		// Do stuff for each op
+	}
 ```
 
 ## JSON file

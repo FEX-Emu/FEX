@@ -366,16 +366,13 @@ namespace FEX::IRLoader {
       IRHeader = _IRHeader(InvalidNode, Entry.second, CodeBlockCount.second, false);
     }
 
+    SetWriteCursor(nullptr); // isolate the header from everything following
+
     // Spin through the blocks and generate basic block ops
-    IRPair<IROp_CodeBlock> PrevBlock{};
     for(size_t i = 0; i < Defs.size(); ++i) {
       auto &Def = Defs[i];
       if (Def.OpEnum == FEXCore::IR::IROps::OP_CODEBLOCK) {
-        auto CodeBlock = _CodeBlock(InvalidNode, InvalidNode, InvalidNode);
-        if (PrevBlock.first) {
-          PrevBlock.first->Next = CodeBlock.Node->Wrapped(ListData.Begin());
-        }
-        PrevBlock = CodeBlock;
+        auto CodeBlock = _CodeBlock(InvalidNode, InvalidNode);
         SSANameMapper[Def.Definition] = CodeBlock.Node;
         Def.Node = CodeBlock.Node;
 
@@ -386,6 +383,7 @@ namespace FEX::IRLoader {
         }
       }
     }
+    SetWriteCursor(nullptr); // isolate the block headers too
 
     // Spin through all the definitions and add the ops to the basic blocks
     OrderedNode *CurrentBlock{};
@@ -405,7 +403,6 @@ namespace FEX::IRLoader {
 
         CurrentBlock = DefTarget->second;
         CurrentBlockOp = CurrentBlock->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
-        SetWriteCursor(CurrentBlock);
       }
 
       if (Def.OpEnum == FEXCore::IR::IROps::OP_ENDBLOCK) {
@@ -420,7 +417,7 @@ namespace FEX::IRLoader {
 
         if (!CheckPrintError(Def, Adjust.first)) return false;
 
-        Def.Node = _EndBlock(Adjust.second);
+        Def.Node = _EndBlock(CurrentBlock);
         CurrentBlockOp->Last = Def.Node->Wrapped(ListData.Begin());
 
         CurrentBlock = nullptr;

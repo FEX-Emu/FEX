@@ -65,24 +65,32 @@
     "CodeBlock": {
       "OpClass": "Misc",
       "SwitchGen": false,
-      "SSAArgs": "3",
+      "SSAArgs": "2",
       "RAOverride": "0",
       "SSANames": [
         "Begin",
-        "Last",
-        "Next"
+        "Last"
       ]
     },
     "BeginBlock": {
-      "OpClass": "Misc"
+      "HasSideEffects": true,
+      "OpClass": "Misc",
+      "SwitchGen": false,
+      "SSAArgs": "1",
+      "RAOverride": "0",
+      "SSANames": [
+        "BlockHeader"
+      ]
     },
 
     "EndBlock": {
       "HasSideEffects": true,
       "OpClass": "Misc",
       "SwitchGen": false,
-      "Args": [
-        "uint64_t", "RIPIncrement"
+      "SSAArgs": "1",
+      "RAOverride": "0",
+      "SSANames": [
+        "BlockHeader"
       ]
     },
 

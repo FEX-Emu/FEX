@@ -419,15 +419,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   JumpTargets.clear();
   CurrentIR = IR;
   uint32_t SSACount = CurrentIR->GetSSACount();
-  uintptr_t ListBegin = CurrentIR->GetListData();
-  uintptr_t DataBegin = CurrentIR->GetData();
 
-  auto HeaderIterator = CurrentIR->begin();
-  IR::OrderedNodeWrapper *HeaderNodeWrapper = HeaderIterator();
-  IR::OrderedNode *HeaderNode = HeaderNodeWrapper->GetNode(ListBegin);
-  auto HeaderOp = HeaderNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
-
+  auto HeaderOp = CurrentIR->GetHeader();
   if (HeaderOp->ShouldInterpret) {
     return InterpreterFallbackHelperAddress;
   }
@@ -514,18 +507,14 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     ret();
   };
 
-  IR::OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  while (1) {
+  for (auto [BlockNode, BlockHeader] : CurrentIR->GetBlocks()) {
     using namespace FEXCore::IR;
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR->at(BlockIROp->Last);
 
     {
-      uint32_t Node = BlockNode->Wrapped(ListBegin).ID();
+      auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
+      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+
+      uint32_t Node = CurrentIR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
       if (IsTarget == JumpTargets.end()) {
         IsTarget = JumpTargets.try_emplace(Node).first;
@@ -534,12 +523,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       L(IsTarget->second);
     }
 
-    while (1) {
-      OrderedNodeWrapper *WrapperOp = CodeBegin();
-      OrderedNode *RealNode = WrapperOp->GetNode(ListBegin);
-      FEXCore::IR::IROp_Header *IROp = RealNode->Op(DataBegin);
+    for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
       uint8_t OpSize = IROp->Size;
-      uint32_t Node = WrapperOp->ID();
+      uint32_t Node = CurrentIR->GetID(CodeNode);
 
       #ifdef DEBUG_RA
       if (IROp->Op != IR::OP_BEGINBLOCK &&
@@ -578,24 +564,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       #endif
 
       switch (IROp->Op) {
-        case IR::OP_BEGINBLOCK: {
-          auto IsTarget = JumpTargets.find(Node);
-          if (IsTarget == JumpTargets.end()) {
-            IsTarget = JumpTargets.try_emplace(Node).first;
-          }
-          else {
-          }
-
-          L(IsTarget->second);
-          break;
-        }
-        case IR::OP_ENDBLOCK: {
-          auto Op = IROp->C<IR::IROp_EndBlock>();
-          if (Op->RIPIncrement) {
-            add(qword [STATE + offsetof(FEXCore::Core::CPUState, rip)], Op->RIPIncrement);
-          }
-          break;
-        }
         case IR::OP_EXITFUNCTION: {
           RegularExit();
           break;
@@ -4952,6 +4920,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           break;
         }
         case IR::OP_DUMMY:
+        case IR::OP_BEGINBLOCK:
+        case IR::OP_ENDBLOCK:
         case IR::OP_IRHEADER:
         case IR::OP_PHIVALUE:
         case IR::OP_PHI:
@@ -4960,18 +4930,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
           break;
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 

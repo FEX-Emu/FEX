@@ -4027,12 +4027,6 @@ void OpDispatchBuilder::CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder:
   for (auto &Target : *Blocks) {
     auto CodeNode = CreateCodeNode();
 
-    auto NewNode = _Dummy();
-    SetCodeNodeBegin(CodeNode, NewNode);
-
-    auto EndBlock = _EndBlock(0);
-    SetCodeNodeLast(CodeNode, EndBlock);
-
     JumpTargets.try_emplace(Target.Entry, JumpTargetInfo{CodeNode, false});
 
     if (PrevCodeBlock) {

@@ -23,43 +23,23 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   bool HadWarning = false;
   auto CurrentIR = IREmit->ViewIR();
-  uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
+
   std::ostringstream Errors;
   std::ostringstream Warnings;
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
 
-  auto Begin = CurrentIR.begin();
-  auto Op = Begin();
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
-  OrderedNode *RealNode = Op->GetNode(ListBegin);
-  auto HeaderOp = RealNode->Op(DataBegin)->CW<FEXCore::IR::IROp_IRHeader>();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(BlockNode)).first->second;
 
-  // Walk the list and calculate the control flow
-  OrderedNode *BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  while (1) {
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
-
-    BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockNode->Wrapped(ListBegin).ID()).first->second;
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
-
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       switch (IROp->Op) {
         case IR::OP_CONDJUMP: {
           auto Op = IROp->CW<IR::IROp_CondJump>();
 
-          OrderedNode *TrueTargetNode = Op->Header.Args[1].GetNode(ListBegin);
-          OrderedNode *FalseTargetNode = Op->Header.Args[2].GetNode(ListBegin);
+          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->Header.Args[1]);
+          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->Header.Args[2]);
 
           CurrentBlock->Successors.emplace_back(TrueTargetNode);
           CurrentBlock->Successors.emplace_back(FalseTargetNode);
@@ -78,7 +58,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
         }
         case IR::OP_JUMP: {
           auto Op = IROp->CW<IR::IROp_Jump>();
-          OrderedNode *TargetNode = Op->Header.Args[0].GetNode(ListBegin);
+          OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
           CurrentBlock->Successors.emplace_back(TargetNode);
 
           {
@@ -89,34 +69,14 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
         }
         default: break;
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 
-  BlockNode = HeaderOp->Blocks.GetNode(ListBegin);
-  while (1) {
-    auto BlockIROp = BlockNode->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
+    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
 
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    while (1) {
-      auto CodeOp = CodeBegin();
-      OrderedNode *CodeNode = CodeOp->GetNode(ListBegin);
-      auto IROp = CodeNode->Op(DataBegin);
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
+      uint32_t CodeID = CurrentIR.GetID(CodeNode);
 
       uint8_t NumArgs = IR::GetArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
@@ -139,9 +99,9 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           // %ssa_1 = Load
           // %ssa_2 = <Op> %ssa_1, %ssa_3
           // %ssa_3 = Load
-          if (Arg.ID() > CodeOp->ID()) {
+          if (Arg.ID() > CodeID) {
             HadError |= true;
-            Errors << "Inst %ssa" << CodeOp->ID() << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
+            Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
           }
         }
         else if (Arg.ID() < BlockIROp->Begin.ID()) {
@@ -173,7 +133,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           std::set<IR::OrderedNode *> Predecessors;
 
           std::function<void(IR::OrderedNode*)> AddPredecessors = [&] (IR::OrderedNode *Node) {
-            auto PredBlock = &OffsetToBlockMap.try_emplace(Node->Wrapped(ListBegin).ID()).first->second;
+            auto PredBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(Node)).first->second;
 
             // Current Block will always be in set
             // Walk each predecessor, adding their predecessors
@@ -192,19 +152,19 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
           for (auto it = Predecessors.begin(); it != Predecessors.end(); ++it) {
             IR::OrderedNode *Pred = *it;
-            auto PredIROp = Pred->Op(DataBegin)->CW<FEXCore::IR::IROp_CodeBlock>();
+            auto PredIROp = CurrentIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Pred);
 
             if (Arg.ID() >= PredIROp->Begin.ID() &&
                 Arg.ID() < PredIROp->Last.ID()) {
               FoundPredDefine = true;
               break;
             }
-            Errors << "\tChecking Pred %ssa" << Pred->Wrapped(ListBegin).ID() << std::endl;
+            Errors << "\tChecking Pred %ssa" << CurrentIR.GetID(Pred) << std::endl;
           }
 
           if (!FoundPredDefine) {
             HadError |= true;
-            Errors << "Inst %ssa" << CodeOp->ID() << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use! But was defined before this block!" << std::endl;
+            Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use! But was defined before this block!" << std::endl;
           }
         }
         else if (Arg.ID() > BlockIROp->Last.ID()) {
@@ -218,21 +178,9 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           // CodeBlock_2:
           // %ssa_3 = Load
           HadError |= true;
-          Errors << "Inst %ssa" << CodeOp->ID() << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
+          Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
         }
       }
-
-      // CodeLast is inclusive. So we still need to dump the CodeLast op as well
-      if (CodeBegin == CodeLast) {
-        break;
-      }
-      ++CodeBegin;
-    }
-
-    if (BlockIROp->Next.ID() == 0) {
-      break;
-    } else {
-      BlockNode = BlockIROp->Next.GetNode(ListBegin);
     }
   }
 
