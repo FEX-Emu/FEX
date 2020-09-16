@@ -75,9 +75,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
         uint64_t NewConstant = (Constant1 + Constant2) & getMask(Op) ;
-        IREmit->SetWriteCursor(CodeNode);
-        auto ConstantVal = IREmit->_Constant(NewConstant);
-        IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
     break;
@@ -90,9 +88,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
         uint64_t NewConstant = (Constant1 - Constant2) & getMask(Op) ;
-        IREmit->SetWriteCursor(CodeNode);
-        auto ConstantVal = IREmit->_Constant(NewConstant);
-        IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
     break;
@@ -105,9 +101,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
         uint64_t NewConstant = (Constant1 & Constant2) & getMask(Op) ;
-        IREmit->SetWriteCursor(CodeNode);
-        auto ConstantVal = IREmit->_Constant(NewConstant);
-        IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // AND with same value results in original value
@@ -124,9 +118,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
         uint64_t NewConstant = Constant1 | Constant2;
-        IREmit->SetWriteCursor(CodeNode);
-        auto ConstantVal = IREmit->_Constant(NewConstant);
-        IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // OR with same value results in original value
@@ -143,9 +135,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
         uint64_t NewConstant = Constant1 ^ Constant2;
-        IREmit->SetWriteCursor(CodeNode);
-        auto ConstantVal = IREmit->_Constant(NewConstant);
-        IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // XOR with same value results to zero
@@ -163,9 +153,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
         uint64_t NewConstant = (Constant1 << Constant2) & getMask(Op);
-        IREmit->SetWriteCursor(CodeNode);
-        auto ConstantVal = IREmit->_Constant(NewConstant);
-        IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
       else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
@@ -187,9 +175,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         SourceMask <<= Op->lsb;
 
         uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
-        IREmit->SetWriteCursor(CodeNode);
-        auto ConstantVal = IREmit->_Constant(NewConstant);
-        IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       } else if (IROp->Size == CurrentIR.GetOp<IROp_Header>(Op->Header.Args[0])->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0 ) {
         // A BFE that extracts all bits results in original value
@@ -208,9 +194,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
         uint64_t NewConstant = (Constant1 * Constant2) & getMask(Op);
-        IREmit->SetWriteCursor(CodeNode);
-        auto ConstantVal = IREmit->_Constant(NewConstant);
-        IREmit->ReplaceAllUsesWith(CodeNode, ConstantVal);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
     }

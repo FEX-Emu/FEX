@@ -24,6 +24,11 @@ void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode,
         Node->RemoveUse();
         NewNode->AddUse();
         IROp->Args[i].NodeOffset = NewNode->Wrapped(ListBegin).NodeOffset;
+
+        // We can stop searching once all uses of the node are gone.
+        if (Node->NumUses == 0) {
+          return;
+        }
       }
     }
 
@@ -81,6 +86,30 @@ void IREmitter::SetCurrentCodeBlock(OrderedNode *Node) {
   LogMan::Throw::A(Node->Op(Data.Begin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '%s'", std::string(IR::GetName(Node->Op(Data.Begin())->Op)).c_str());
   SetWriteCursor(Node->Op(Data.Begin())->CW<IROp_CodeBlock>()->Begin.GetNode(ListData.Begin()));
 }
+
+void IREmitter::ReplaceWithConstant(OrderedNode *Node, uint64_t Value) {
+    auto Header = Node->Op(Data.Begin());
+
+    if (IRSizes[Header->Op] >= sizeof(IROp_Constant)) {
+      // Unlink any arguments the node currently has
+      RemoveArgUses(Node);
+
+      // Overwrite data with the new constant op
+      Header->Op = OP_CONSTANT;
+      Header->NumArgs = 0;
+      auto Const = Header->CW<IROp_Constant>();
+      Const->Constant = Value;
+    } else {
+      // Fallback path for when the node to overwrite is too small
+      auto cursor = GetWriteCursor();
+      SetWriteCursor(Node);
+
+      auto NewNode = _Constant(Value);
+      ReplaceAllUsesWith(Node, NewNode);
+
+      SetWriteCursor(cursor);
+    }
+  }
 
 }
 
