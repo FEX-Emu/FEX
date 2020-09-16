@@ -138,6 +138,23 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
         uint32_t Node = WrapperOp.ID();
 
         switch (IROp->Op) {
+          case IR::OP_VALIDATECODE: {
+            auto Op = IROp->C<IR::IROp_ValidateCode>();
+
+            if (memcmp((void*)Op->CodePtr, &Op->CodeOriginal, Op->CodeLength) != 0) {
+              GD = 1;
+            } else {
+              GD = 0;
+            }
+            break;
+          }
+          
+          case IR::OP_REMOVECODEENTRY: {
+            auto Op = IROp->C<IR::IROp_RemoveCodeEntry>();
+            CTX->RemoveCodeEntry(Thread, Op->RIP);
+            break;
+          }
+
           case IR::OP_DUMMY:
           case IR::OP_BEGINBLOCK:
             break;

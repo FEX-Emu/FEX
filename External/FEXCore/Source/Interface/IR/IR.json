@@ -86,6 +86,27 @@
       ]
     },
 
+    "ValidateCode": {
+      "HasSideEffects": true,
+      "OpClass": "Misc",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "8",
+      "Args": [
+        "__uint128_t", "CodeOriginal",
+        "uint64_t", "CodePtr",
+        "uint8_t", "CodeLength"
+      ]
+    },
+
+    "RemoveCodeEntry": {
+      "HasSideEffects": true,
+      "OpClass": "Misc",
+      "Args": [
+        "uint64_t", "RIP"
+      ]
+    },
+
     "GuestCallDirect": {
       "OpClass": "Branch",
       "Args": [

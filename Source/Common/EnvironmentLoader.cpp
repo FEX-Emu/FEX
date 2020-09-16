@@ -81,6 +81,10 @@ namespace FEX::EnvLoader {
       if ((Value = GetVar("FEX_TSO_ENABLED")).size()) {
         if (isdigit(Value[0])) Config::Add("TSOEnabled", Value);
       }
+
+      if ((Value = GetVar("FEX_SMC_CHECKS")).size()) {
+        if (isdigit(Value[0])) Config::Add("SMCChecks", Value);
+      }
     }
 
     {

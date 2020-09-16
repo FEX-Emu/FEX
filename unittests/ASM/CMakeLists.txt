@@ -61,6 +61,11 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
     set(TEST_NAME "${TEST_DESC}/Test_${REL_TEST_ASM}")
     string(REPLACE " " ";" ARGS_LIST ${ARGS})
+
+    if (TEST_NAME MATCHES "SelfModifyingCode")
+      list(APPEND ARGS_LIST "--smc-full-checks")
+    endif()
+
     add_test(NAME ${TEST_NAME}
       COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Known_Failures"

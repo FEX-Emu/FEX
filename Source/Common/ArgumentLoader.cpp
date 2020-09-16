@@ -68,6 +68,12 @@ namespace FEX::ArgLoader {
         .help("Disables TSO IR ops. Highly likely to break any threaded application")
         .set_default(true);
 
+      CPUGroup.add_option("--smc-full-checks")
+        .dest("SMCChecks")
+        .action("store_true")
+        .help("Checks code for modification before execution. Slow.")
+        .set_default(false);
+
       Parser.add_option_group(CPUGroup);
     }
     {
@@ -189,6 +195,11 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("TSOEnabled")) {
         bool TSOEnabled = Options.get("TSOEnabled");
         Config::Add("TSOEnabled", std::to_string(TSOEnabled));
+      }
+      
+      if (Options.is_set_by_user("SMCChecks")) {
+        bool SMCChecks = Options.get("SMCChecks");
+        Config::Add("SMCChecks", std::to_string(SMCChecks));
       }
     }
 

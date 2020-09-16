@@ -647,6 +647,37 @@ namespace FEXCore::Context {
           TableInfo = Block.DecodedInstructions[i].TableInfo;
           DecodedInfo = &Block.DecodedInstructions[i];
 
+          if (Config.SMCChecks) {
+            __uint128_t existing;
+
+            uintptr_t ExistingCodePtr{};
+
+            if (Thread->CTX->Config.UnifiedMemory) {
+              ExistingCodePtr = reinterpret_cast<uintptr_t>(Block.Entry + BlockInstructionsLength);
+            }
+            else {
+              ExistingCodePtr = MemoryMapper.GetPointer<uintptr_t>(Block.Entry + BlockInstructionsLength);
+            }
+          
+            memcpy(&existing, (void*)(ExistingCodePtr), DecodedInfo->InstSize);
+            auto CodeChanged = Thread->OpDispatcher->_ValidateCode(existing, ExistingCodePtr, DecodedInfo->InstSize);
+
+            auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
+
+            auto CodeWasChangedBlock = Thread->OpDispatcher->CreateNewCodeBlock();
+            Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
+
+            Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
+            Thread->OpDispatcher->_RemoveCodeEntry(GuestRIP);
+            Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
+            Thread->OpDispatcher->_ExitFunction();
+            
+            auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlock();
+            
+            Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
+            Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
+          }
+
           if (TableInfo->OpcodeDispatcher) {
             auto Fn = TableInfo->OpcodeDispatcher;
             std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
@@ -797,6 +828,12 @@ namespace FEXCore::Context {
     IdleWaitCV.notify_all();
 
     SignalDelegation.UninstallTLSState(Thread);
+  }
+
+  void Context::RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    Thread->IRLists.erase(GuestRIP);
+    Thread->DebugData.erase(GuestRIP);
+    Thread->BlockCache->Erase(GuestRIP);
   }
 
   // Debug interface
