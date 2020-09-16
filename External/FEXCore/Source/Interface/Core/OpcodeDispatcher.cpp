@@ -1598,16 +1598,31 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   else
     Shift = _And(Shift, _Constant(0x1F));
 
+  auto CondJump = _CondJump(Shift);
+
+  // Do nothing if shift count is zero
+  auto JumpTarget = CreateNewCodeBlock();
+  SetTrueJumpTarget(CondJump, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
+
+
   auto ShiftRight = _Sub(_Constant(Size), Shift);
 
   OrderedNode *Res{};
   auto Tmp1 = _Lshl(Dest, Shift);
   auto Tmp2 = _Lshr(Src, ShiftRight);
+
   Res = _Or(Tmp1, Tmp2);
 
   StoreResult(GPRClass, Op, Res, -1);
 
-  GenerateFlags_ShiftLeft(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  GenerateFlags_ShiftLeft(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Shift));
+
+  auto Jump = _Jump();
+  auto NextJumpTarget = CreateNewCodeBlock();
+  SetJumpTarget(Jump, NextJumpTarget);
+  SetFalseJumpTarget(CondJump, NextJumpTarget);
+  SetCurrentCodeBlock(NextJumpTarget);
 }
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
@@ -1625,17 +1640,19 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
   else
     Shift &= 0x1F;
 
-  OrderedNode *ShiftLeft = _Constant(Shift);
-  auto ShiftRight = _Constant(Size - Shift);
+  if (Shift != 0) {
+    OrderedNode *ShiftLeft = _Constant(Shift);
+    auto ShiftRight = _Constant(Size - Shift);
 
-  OrderedNode *Res{};
-  auto Tmp1 = _Lshl(Dest, ShiftLeft);
-  auto Tmp2 = _Lshr(Src, ShiftRight);
-  Res = _Or(Tmp1, Tmp2);
+    OrderedNode *Res{};
+    auto Tmp1 = _Lshl(Dest, ShiftLeft);
+    auto Tmp2 = _Lshr(Src, ShiftRight);
+    Res = _Or(Tmp1, Tmp2);
 
-  StoreResult(GPRClass, Op, Res, -1);
+    StoreResult(GPRClass, Op, Res, -1);
 
-  GenerateFlags_ShiftLeftImmediate(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), Shift);
+    GenerateFlags_ShiftLeftImmediate(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), Shift);
+  }
 }
 
 void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
@@ -1652,6 +1669,14 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   else
     Shift = _And(Shift, _Constant(0x1F));
 
+
+  auto CondJump = _CondJump(Shift);
+
+  // Do nothing if shift count is zero
+  auto JumpTarget = CreateNewCodeBlock();
+  SetTrueJumpTarget(CondJump, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
+
   auto ShiftLeft = _Sub(_Constant(Size), Shift);
 
   OrderedNode *Res{};
@@ -1660,7 +1685,13 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   Res = _Or(Tmp1, Tmp2);
   StoreResult(GPRClass, Op, Res, -1);
 
-  GenerateFlags_ShiftRight(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Src));
+  GenerateFlags_ShiftRight(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), _Bfe(Size, 0, Shift));
+
+  auto Jump = _Jump();
+  auto NextJumpTarget = CreateNewCodeBlock();
+  SetJumpTarget(Jump, NextJumpTarget);
+  SetFalseJumpTarget(CondJump, NextJumpTarget);
+  SetCurrentCodeBlock(NextJumpTarget);
 }
 
 void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
@@ -1678,17 +1709,19 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   else
     Shift = Op->Src[1].TypeLiteral.Literal & 0x1F;
 
-  OrderedNode *ShiftRight = _Constant(Shift);
-  auto ShiftLeft = _Constant(Size - Shift);
+  if (Shift != 0) {
+    OrderedNode *ShiftRight = _Constant(Shift);
+    auto ShiftLeft = _Constant(Size - Shift);
 
-  OrderedNode *Res{};
-  auto Tmp1 = _Lshr(Dest, ShiftRight);
-  auto Tmp2 = _Lshl(Src, ShiftLeft);
-  Res = _Or(Tmp1, Tmp2);
+    OrderedNode *Res{};
+    auto Tmp1 = _Lshr(Dest, ShiftRight);
+    auto Tmp2 = _Lshl(Src, ShiftLeft);
+    Res = _Or(Tmp1, Tmp2);
 
-  StoreResult(GPRClass, Op, Res, -1);
+    StoreResult(GPRClass, Op, Res, -1);
 
-  GenerateFlags_ShiftRightImmediate(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), Shift);
+    GenerateFlags_ShiftRightImmediate(Op, _Bfe(Size, 0, Res), _Bfe(Size, 0, Dest), Shift);
+  }
 }
 
 template<bool SHR1Bit>
@@ -4863,16 +4896,14 @@ void OpDispatchBuilder::GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op
 
   // SF
   {
-    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, Res));
+  }
 
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
-
-    // OF
+  // OF
+  {
     // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
     // When Shift > 1 then OF is undefined
-    auto SourceBit = _Bfe(1, GetSrcSize(Op) * 8 - 1, Src1);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(SourceBit, LshrOp));
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, _Xor(Src1, Res)));
   }
 
   auto Jump = _Jump();
@@ -4923,17 +4954,15 @@ void OpDispatchBuilder::GenerateFlags_ShiftRight(FEXCore::X86Tables::DecodedOp O
 
   // SF
   {
-    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, Res));
   }
 
   // OF
   {
     // Only defined when Shift is 1 else undefined
-    // Is set to the MSB of the original value
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, Src1));
+    // OF flag is set if a sign change occurred
+
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, _Xor(Src1, Res)));
   }
 
   auto Jump = _Jump();
