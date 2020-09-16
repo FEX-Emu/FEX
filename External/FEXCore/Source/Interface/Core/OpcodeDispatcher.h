@@ -308,6 +308,9 @@ public:
   template<uint64_t Lower, uint32_t Upper>
   void FLD_Const(OpcodeArgs);
 
+  void FBLD(OpcodeArgs);
+  void FBSTP(OpcodeArgs);
+
   void FILD(OpcodeArgs);
 
   template<size_t width>

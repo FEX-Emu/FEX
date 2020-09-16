@@ -6060,6 +6060,35 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   //_StoreContext(converted, 16, offsetof(FEXCore::Core::CPUState, mm[7][0]));
 }
 
+void OpDispatchBuilder::FBLD(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  // Update TOP
+  auto orig_top = GetX87Top();
+  auto mask = _Constant(7);
+  auto top = _And(_Sub(orig_top, _Constant(1)), mask);
+  SetX87Top(top);
+
+  // Read from memory
+  OrderedNode *data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, -1);
+  OrderedNode *converted = _F80BCDLoad(data);
+  _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::FBSTP(OpcodeArgs) {
+  Current_Header->ShouldInterpret = true;
+
+  auto orig_top = GetX87Top();
+  auto data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+
+  OrderedNode *converted = _F80BCDStore(data);
+
+	StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
+
+	auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+	SetX87Top(top);
+}
+
 template<uint64_t Lower, uint32_t Upper>
 void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
   Current_Header->ShouldInterpret = true;
@@ -8367,11 +8396,11 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::FIST},
 
-    // 4 = FBLD
+    {OPDReg(0xDF, 4) | 0x00, 8, &OpDispatchBuilder::FBLD},
 
     {OPDReg(0xDF, 5) | 0x00, 8, &OpDispatchBuilder::FILD},
 
-    // 6 = FTSTB
+    {OPDReg(0xDF, 6) | 0x00, 8, &OpDispatchBuilder::FBSTP},
 
     {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::FIST},
 
