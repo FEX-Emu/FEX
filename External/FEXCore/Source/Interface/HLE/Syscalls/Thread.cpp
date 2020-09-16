@@ -200,7 +200,7 @@ namespace FEXCore::HLE {
         // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
 
         if (Thread->CTX->GetThreadCount() != 1) {
-          ERROR_AND_DIE("clone: Fork only supported on single threaded applications");
+          LogMan::Msg::E("clone: Fork only supported on single threaded applications. Allowing");
         } else {
           LogMan::Msg::D("clone: Forking process");
         }
@@ -232,7 +232,7 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(fork, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
       if (Thread->CTX->GetThreadCount() != 1) {
-        ERROR_AND_DIE("fork: Fork only supported on single threaded applications");
+        LogMan::Msg::E("fork: Fork only supported on single threaded applications. Allowing");
       } else {
         LogMan::Msg::D("fork: Forking process");
       }
@@ -242,7 +242,7 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(vfork, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
       if (Thread->CTX->GetThreadCount() != 1) {
-        ERROR_AND_DIE("vfork: Fork only supported on single threaded applications");
+        LogMan::Msg::E("vfork: Fork only supported on single threaded applications. Allowing");
       } else {
         LogMan::Msg::D("vfork: WARNING: Forking process using fork semantics");
       }
