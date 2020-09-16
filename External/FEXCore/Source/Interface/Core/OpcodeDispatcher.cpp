@@ -5181,19 +5181,28 @@ void OpDispatchBuilder::GenerateFlags_RotateRight(FEXCore::X86Tables::DecodedOp 
   auto OpSize = GetSrcSize(Op) * 8;
 
   // Extract the last bit shifted in to CF
-  auto ShiftAmt = _Sub(Src2, _Constant(1));
-  auto NewCF = _And(_Lshr(Src1, ShiftAmt), _Constant(1));
+  auto NewCF = _Bfe(1, OpSize - 1, Res);
 
   // CF
   {
+    auto OldCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    auto CF = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), OldCF, NewCF);
+
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CF);
   }
 
   // OF
   {
+    auto OldOF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+
     // OF is set to the XOR of the new CF bit and the most significant bit of the result
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, OpSize - 1, Res), NewCF));
+    auto NewOF = _Xor(_Bfe(1, OpSize - 2, Res), NewCF);
+
+    // If shift == 0, don't update flags
+    auto OF = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), OldOF, NewOF);
+
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OF);
   }
 }
 
@@ -5201,20 +5210,29 @@ void OpDispatchBuilder::GenerateFlags_RotateLeft(FEXCore::X86Tables::DecodedOp O
   auto OpSize = GetSrcSize(Op) * 8;
 
   // Extract the last bit shifted in to CF
-  auto Size = _Constant(GetSrcSize(Op) * 8);
-  auto ShiftAmt = _Sub(Size, Src2);
-  auto NewCF = _And(_Lshr(Src1, ShiftAmt), _Constant(1));
+  //auto Size = _Constant(GetSrcSize(Res) * 8);
+  //auto ShiftAmt = _Sub(Size, Src2);
+  auto NewCF = _Bfe(1, 0, Res);
 
   // CF
   {
+    auto OldCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    auto CF = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), OldCF, NewCF);
+
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CF);
   }
 
   // OF
   {
+    auto OldOF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
     // OF is set to the XOR of the new CF bit and the most significant bit of the result
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, OpSize - 1, Res), NewCF));
+    auto NewOF = _Xor(_Bfe(1, OpSize - 1, Res), NewCF);
+
+    auto OF = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), OldOF, NewOF);
+
+    // If shift == 0, don't update flags
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OF);
   }
 }
 
