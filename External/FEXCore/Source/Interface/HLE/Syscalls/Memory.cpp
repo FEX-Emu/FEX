@@ -87,6 +87,17 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(remap_file_pages, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t size, int prot, size_t pgoff, int flags) -> uint64_t {
+      // This syscall is deprecated, not sure when it will end up being removed
+      uint64_t Result = ::remap_file_pages(addr, size, prot, pgoff, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(mbind, [](FEXCore::Core::InternalThreadState *Thread, void *addr, unsigned long len, int mode, const unsigned long *nodemask, unsigned long maxnode, unsigned flags) -> uint64_t {
+      uint64_t Result = ::mbind(addr, len, mode, nodemask, maxnode, flags);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(get_mempolicy, [](FEXCore::Core::InternalThreadState *Thread, int *mode, unsigned long *nodemask, unsigned long maxnode, void *addr, unsigned long flags) -> uint64_t {
       uint64_t Result = ::get_mempolicy(mode, nodemask, maxnode, addr, flags);
       SYSCALL_ERRNO();
@@ -94,6 +105,16 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(set_mempolicy, [](FEXCore::Core::InternalThreadState *Thread, int mode, const unsigned long *nodemask, unsigned long maxnode) -> uint64_t {
       uint64_t Result = ::set_mempolicy(mode, nodemask, maxnode);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(migrate_pages, [](FEXCore::Core::InternalThreadState *Thread, int pid, unsigned long maxnode, const unsigned long *old_nodes, const unsigned long *new_nodes) -> uint64_t {
+      uint64_t Result = ::migrate_pages(pid, maxnode, old_nodes, new_nodes);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL(move_pages, [](FEXCore::Core::InternalThreadState *Thread, int pid, unsigned long count, void **pages, const int *nodes, int *status, int flags) -> uint64_t {
+      uint64_t Result = ::move_pages(pid, count, pages, nodes, status, flags);
       SYSCALL_ERRNO();
     });
 

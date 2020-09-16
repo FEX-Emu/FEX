@@ -12,7 +12,7 @@ struct InternalThreadState;
 namespace FEXCore::HLE {
 
   void RegisterSocket() {
-      
+
     REGISTER_SYSCALL_IMPL(socket, [](FEXCore::Core::InternalThreadState *Thread, int domain, int type, int protocol) -> uint64_t {
       uint64_t Result = ::socket(domain, type, protocol);
       SYSCALL_ERRNO();
@@ -93,9 +93,15 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(recvmmsg, [](FEXCore::Core::InternalThreadState *Thread, int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout) -> uint64_t {
+      uint64_t Result = ::recvmmsg(sockfd, msgvec, vlen, flags, timeout);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL(sendmmsg, [](FEXCore::Core::InternalThreadState *Thread, int sockfd, struct mmsghdr *msgvec, uint32_t vlen, int flags) -> uint64_t {
       uint64_t Result = ::sendmmsg(sockfd, msgvec, vlen, flags);
       SYSCALL_ERRNO();
     });
+
   }
 }
