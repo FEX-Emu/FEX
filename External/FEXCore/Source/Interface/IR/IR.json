@@ -794,7 +794,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
-      "DestSize": "std::max<uint8_t>(4, std::max(GetOpSize(ssa0), GetOpSize(ssa1)))",
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
