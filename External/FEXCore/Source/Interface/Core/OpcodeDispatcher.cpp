@@ -1746,24 +1746,15 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
-
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64)
     Src = _And(Src, _Constant(Size, 0x3F));
   else
     Src = _And(Src, _Constant(Size, 0x1F));
 
-  // Ashr only has 32 and 64 bit variants, so we need to sign extend for smaller operands
-  if (Size < 32)
-    Dest = _Sbfe(Size, 0, Dest);
-
   OrderedNode *Result = _Ashr(Dest, Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-
-  // And then truncate the extra bits again.
-  if (Size < 32)
-    Result = _Bfe(Size, 0, Result);
 
   if (SHR1Bit) {
     GenerateFlags_SignShiftRightImmediate(Op, Result, Dest, 1);
@@ -1791,9 +1782,6 @@ void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   OrderedNode *Result = _Ashr(Dest, Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-
-  if (Size < 32)
-    Result = _Bfe(Size, 0, Result);
 
   GenerateFlags_SignShiftRightImmediate(Op, Result, Dest, Shift);
 }
