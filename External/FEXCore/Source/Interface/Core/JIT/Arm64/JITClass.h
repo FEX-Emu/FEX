@@ -103,7 +103,6 @@ public:
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
-  FEXCore::IR::IRListView<true> const *CurrentIR;
 
   std::map<IR::OrderedNodeWrapper::NodeOffsetType, aarch64::Label> JumpTargets;
 

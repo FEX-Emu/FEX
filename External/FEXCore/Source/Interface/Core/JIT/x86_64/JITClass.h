@@ -73,10 +73,8 @@ public:
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
-  FEXCore::IR::IRListView<true> const *CurrentIR;
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
 
-  std::vector<uint8_t> Stack;
   bool MemoryDebug = false;
 
   /**
