@@ -126,16 +126,14 @@ void OpDispatchBuilder::LEAOp(OpcodeArgs) {
   if (CTX->Config.Is64BitMode) {
     uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 :
       X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 : 4;
-    uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
 
-    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
+    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GetSrcSize(Op), Op->Flags, -1, false);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   }
   else {
     uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
-    uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 2 : 4;
 
-    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
+    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GetSrcSize(Op), Op->Flags, -1, false);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   }
 }
@@ -4192,6 +4190,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   bool LoadableType = false;
   bool StackAccess = false;
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (GPRSize >> 1) : GPRSize;
 
   if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL) {
     uint64_t constant = Operand.TypeLiteral.Literal;
@@ -4215,12 +4214,12 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     }
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_DIRECT) {
-    Src = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), GPRClass);
+    Src = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), GPRClass);
     LoadableType = true;
     StackAccess = Operand.TypeGPR.GPR == FEXCore::X86State::REG_RSP;
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_INDIRECT) {
-    auto GPR = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPRIndirect.GPR]), GPRClass);
+    auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPRIndirect.GPR]), GPRClass);
     auto Constant = _Constant(GPRSize * 8, Operand.TypeGPRIndirect.Displacement);
 
 		Src = _Add(GPR, Constant);
@@ -4242,7 +4241,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_SIB) {
     OrderedNode *Tmp {};
     if (Operand.TypeSIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Index]), GPRClass);
+      Tmp = _LoadContext(AddrSize , offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Index]), GPRClass);
 
       if (Operand.TypeSIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.TypeSIB.Scale);
@@ -4252,7 +4251,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     }
 
     if (Operand.TypeSIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Base]), GPRClass);
+      auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Base]), GPRClass);
 
       if (Tmp != nullptr) {
         Tmp = _Add(Tmp, GPR);
@@ -4337,6 +4336,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   bool MemStore = false;
   bool StackAccess = false;
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (GPRSize >> 1) : GPRSize;
 
   if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL) {
     MemStoreDst = _Constant(Operand.TypeLiteral.Size * 8, Operand.TypeLiteral.Literal);
@@ -4365,12 +4365,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     }
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_DIRECT) {
-    MemStoreDst = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), GPRClass);
+    MemStoreDst = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), GPRClass);
     MemStore = true;
     StackAccess = Operand.TypeGPR.GPR == FEXCore::X86State::REG_RSP;
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_INDIRECT) {
-    auto GPR = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPRIndirect.GPR]), GPRClass);
+    auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPRIndirect.GPR]), GPRClass);
     auto Constant = _Constant(GPRSize * 8, Operand.TypeGPRIndirect.Displacement);
 
     MemStoreDst = _Add(GPR, Constant);
@@ -4384,7 +4384,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_SIB) {
     OrderedNode *Tmp {};
     if (Operand.TypeSIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Index]), GPRClass);
+      Tmp = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Index]), GPRClass);
 
       if (Operand.TypeSIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.TypeSIB.Scale);
@@ -4393,7 +4393,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     }
 
     if (Operand.TypeSIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Base]), GPRClass);
+      auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Base]), GPRClass);
 
       if (Tmp != nullptr) {
         Tmp = _Add(Tmp, GPR);
