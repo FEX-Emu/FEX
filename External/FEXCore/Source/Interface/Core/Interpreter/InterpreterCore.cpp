@@ -472,7 +472,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               case 4: {
                 std::atomic<uint64_t> *Data = {};
                 if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = GetSrc<std::atomic<uint64_t> *>(SSAData, Op->Header.Args[2]);
+                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[2]);
                 }
                 else {
                   Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
@@ -490,7 +490,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               case 8: {
                 std::atomic<__uint128_t> *Data = {};
                 if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = GetSrc<std::atomic<__uint128_t> *>(SSAData, Op->Header.Args[2]);
+                  Data = *GetSrc<std::atomic<__uint128_t> **>(SSAData, Op->Header.Args[2]);
                 }
                 else {
                   Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<__uint128_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
