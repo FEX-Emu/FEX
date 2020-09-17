@@ -2700,7 +2700,8 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
 
   OrderedNode *Dest;
   OrderedNode *Result;
-  auto OneConst = _Constant(1);
+  auto Size = GetSrcSize(Op) * 8;
+  auto OneConst = _Constant(Size, 1);
 
   bool IsLocked = DestIsLockedMem(Op);
 
@@ -2716,7 +2717,6 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
   if (!IsLocked)
     StoreResult(GPRClass, Op, Result, -1);
 
-  auto Size = GetSrcSize(Op) * 8;
   if (Size < 32) {
     Result = _Bfe(Size, 0, Result);
   }
@@ -2728,7 +2728,8 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 
   OrderedNode *Dest;
   OrderedNode *Result;
-  auto OneConst = _Constant(1);
+  auto Size = GetSrcSize(Op) * 8;
+  auto OneConst = _Constant(Size, 1);
 
   bool IsLocked = DestIsLockedMem(Op);
 
@@ -2744,7 +2745,6 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
   if (!IsLocked)
     StoreResult(GPRClass, Op, Result, -1);
 
-  auto Size = GetSrcSize(Op) * 8;
   if (Size < 32) {
     Result = _Bfe(Size, 0, Result);
   }
