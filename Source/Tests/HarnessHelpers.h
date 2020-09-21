@@ -359,51 +359,52 @@ namespace FEX::HarnessHelper {
     void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
       bool LimitedSize = true;
       if (LimitedSize) {
-        Mapper(0xe000'0000, PAGE_SIZE * 10, true, true);
+        Mapper(0xe000'0000, PAGE_SIZE * 10, true, false);
 
         // SIB8
         // We test [-128, -126] (Bottom)
         // We test [-8, 8] (Middle)
         // We test [120, 127] (Top)
         // Can fit in two pages
-        Mapper(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, true);
+        Mapper(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, false);
 
         // SIB32 Bottom
         // We test INT_MIN, INT_MIN + 8
-        Mapper(0x2'0000'0000, PAGE_SIZE, true, true);
+        Mapper(0x2'0000'0000, PAGE_SIZE, true, false);
         // SIB32 Middle
         // We test -8 + 8
-        Mapper(0x2'8000'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, true);
+        Mapper(0x2'8000'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, false);
 
         // SIB32 Top
         // We Test INT_MAX - 8, INT_MAX
-        Mapper(0x3'0000'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, true);
+        Mapper(0x3'0000'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, false);
       }
       else {
         // This is scratch memory location and SIB8 location
-        Mapper(0xe000'0000, 0x1000'0000, true, true);
+        Mapper(0xe000'0000, 0x1000'0000, true, false);
         // This is for large SIB 32bit displacement testing
-        Mapper(0x2'0000'0000, 0x1'0000'1000, true, true);
+        Mapper(0x2'0000'0000, 0x1'0000'1000, true, false);
       }
 
       // Map in the memory region for the test file
-      Mapper(CODE_START_PAGE, AlignUp(RawFile.size(), PAGE_SIZE), true, true);
+      Code_start_page = reinterpret_cast<uint64_t>(Mapper(Code_start_page, AlignUp(RawFile.size(), PAGE_SIZE), true, true));
+      RIP = Code_start_page + 1;
 
       // Map the memory regions the test file asks for
       for (auto& [region, size] : Config.GetMemoryRegions()) {
-        Mapper(region, size, true, true);
+        Mapper(region, size, true, false);
       }
     }
 
     void LoadMemory(MemoryWriter Writer) override {
       // Memory base here starts at the start location we passed back with GetLayout()
       // This will write at [CODE_START_RANGE + 0, RawFile.size() )
-      Writer(&RawFile.at(0), MemoryBase + CODE_START_RANGE, RawFile.size());
+      Writer(&RawFile.at(0), RIP, RawFile.size());
 
-      Config.LoadMemory(MemoryBase, Writer);
+      Config.LoadMemory(0, Writer);
     }
 
-    uint64_t GetFinalRIP() override { return CODE_START_RANGE + RawFile.size(); }
+    uint64_t GetFinalRIP() override { return RIP + RawFile.size(); }
 
     bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
       return Config.CompareStates(State1, State2);
@@ -414,9 +415,8 @@ namespace FEX::HarnessHelper {
   private:
     constexpr static uint64_t STACK_SIZE = PAGE_SIZE;
     // Zero is special case to know when we are done
-    constexpr static uint64_t CODE_START_PAGE = 0x0'1000;
-    constexpr static uint64_t CODE_START_RANGE = CODE_START_PAGE + 0x1;
-    constexpr static uint64_t RIP = CODE_START_RANGE;
+    uint64_t Code_start_page = 0x0'1000;
+    uint64_t RIP {};
     uint64_t MemoryBase{};
 
     std::vector<char> RawFile;

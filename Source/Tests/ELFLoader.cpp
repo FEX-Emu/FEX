@@ -103,7 +103,6 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::Value<bool> MultiblockConfig{"Multiblock", false};
   FEX::Config::Value<bool> GdbServerConfig{"GdbServer", false};
   FEX::Config::Value<uint64_t> ThreadsConfig{"Threads", 1};
-  FEX::Config::Value<bool> UnifiedMemory{"UnifiedMemory", true};
   FEX::Config::Value<std::string> LDPath{"RootFS", ""};
   FEX::Config::Value<std::string> ThunkLibsPath{"ThunkLibs", ""};
   FEX::Config::Value<bool> SilentLog{"SilentLog", false};
@@ -151,7 +150,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_GDBSERVER, GdbServerConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ROOTFSPATH, LDPath());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_THUNKLIBSPATH, ThunkLibsPath());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, UnifiedMemory());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, true);
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_EMULATED_CPU_CORES, ThreadsConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_TSO_ENABLED, TSOEnabledConfig());
