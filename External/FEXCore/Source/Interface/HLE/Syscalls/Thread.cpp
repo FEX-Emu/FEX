@@ -20,6 +20,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/fsuid.h>
+#include <filesystem>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
@@ -253,6 +254,12 @@ namespace FEXCore::HLE {
     // currently does not propagate argv[0] correctly
     REGISTER_SYSCALL_IMPL(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
       std::vector<const char*> Args;
+
+      std::error_code ec;
+      bool exists = std::filesystem::exists(pathname, ec);
+      if (ec || !exists) {
+        return -ENOENT;
+      }
 
       Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
 
