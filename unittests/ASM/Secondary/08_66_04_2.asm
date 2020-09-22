@@ -26,6 +26,7 @@ mov rdx, 0xe0000000
 mov rax, 0xFFFFFFFF80000002
 mov [rdx + 8 * 0], rax
 mov [rdx + 8 * 1], rax
+mov rax, 0x0
 mov [rdx + 8 * 2], rax
 mov rax, 0x01
 mov [rdx + 8 * 3], eax
@@ -35,19 +36,16 @@ mov [rdx + 8 * 3 + 4], eax
 xor r15, r15 ; Will contain our results
 
 movzx r12, word [rdx]
-db 0x66 ; Prefix with 66. Shouldn't change behaviour
 bt r12w, 1
 cfmerge
 
 mov r13, 32
 mov r12d, dword [rdx]
 
-db 0x66 ; Prefix with 66. Shouldn't change behaviour
 bt r12d, r13d
 cfmerge
 
 mov r12, qword [rdx]
-db 0x66 ; Prefix with 66. Shouldn't change behaviour
 bt r12, 64 * 3
 cfmerge
 

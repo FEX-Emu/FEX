@@ -2266,16 +2266,35 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::BTOp(OpcodeArgs) {
   OrderedNode *Result;
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Src{};
+  bool AlreadyMasked{};
+
+  uint32_t Size = GetDstSize(Op) * 8;
+  uint32_t Mask = Size - 1;
+
+  if (Op->Src[SrcIndex].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  }
+  else {
+    // Can only be an immediate
+    // Masked by operand size
+    Src = _Constant(Size, Op->Src[SrcIndex].TypeLiteral.Literal & Mask);
+    AlreadyMasked = true;
+  }
+
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-    uint32_t Size = GetSrcSize(Op);
-    uint32_t Mask = Size * 8 - 1;
-    OrderedNode *SizeMask = _Constant(Mask);
+    OrderedNode *BitSelect{};
+    if (AlreadyMasked) {
+      BitSelect = Src;
+    }
+    else {
+      OrderedNode *SizeMask = _Constant(Mask);
 
-    // Get the bit selection from the src
-    OrderedNode *BitSelect = _And(Src, SizeMask);
+      // Get the bit selection from the src
+      BitSelect = _And(Src, SizeMask);
+    }
 
     Result = _Lshr(Dest, BitSelect);
   }
@@ -2288,7 +2307,6 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    uint32_t Size = GetSrcSize(Op) * 8;
     Src = _Sbfe(Size-3,3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
@@ -2307,16 +2325,35 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::BTROp(OpcodeArgs) {
   OrderedNode *Result;
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Src{};
+  bool AlreadyMasked{};
+
+  uint32_t Size = GetDstSize(Op) * 8;
+  uint32_t Mask = Size - 1;
+
+  if (Op->Src[SrcIndex].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  }
+  else {
+    // Can only be an immediate
+    // Masked by operand size
+    Src = _Constant(Size, Op->Src[SrcIndex].TypeLiteral.Literal & Mask);
+    AlreadyMasked = true;
+  }
+
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-    uint32_t Size = GetSrcSize(Op);
-    uint32_t Mask = Size * 8 - 1;
-    OrderedNode *SizeMask = _Constant(Mask);
+    OrderedNode *BitSelect{};
+    if (AlreadyMasked) {
+      BitSelect = Src;
+    }
+    else {
+      OrderedNode *SizeMask = _Constant(Mask);
 
-    // Get the bit selection from the src
-    OrderedNode *BitSelect = _And(Src, SizeMask);
+      // Get the bit selection from the src
+      BitSelect = _And(Src, SizeMask);
+    }
 
     Result = _Lshr(Dest, BitSelect);
 
@@ -2334,7 +2371,6 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    uint32_t Size = GetSrcSize(Op) * 8;
     Src = _Sbfe(Size-3,3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
@@ -2357,16 +2393,35 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   OrderedNode *Result;
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Src{};
+  bool AlreadyMasked{};
+
+  uint32_t Size = GetDstSize(Op) * 8;
+  uint32_t Mask = Size - 1;
+
+  if (Op->Src[SrcIndex].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  }
+  else {
+    // Can only be an immediate
+    // Masked by operand size
+    Src = _Constant(Size, Op->Src[SrcIndex].TypeLiteral.Literal & Mask);
+    AlreadyMasked = true;
+  }
+
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-    uint32_t Size = GetSrcSize(Op);
-    uint32_t Mask = Size * 8 - 1;
-    OrderedNode *SizeMask = _Constant(Mask);
+    OrderedNode *BitSelect{};
+    if (AlreadyMasked) {
+      BitSelect = Src;
+    }
+    else {
+      OrderedNode *SizeMask = _Constant(Mask);
 
-    // Get the bit selection from the src
-    OrderedNode *BitSelect = _And(Src, SizeMask);
+      // Get the bit selection from the src
+      BitSelect = _And(Src, SizeMask);
+    }
 
     Result = _Lshr(Dest, BitSelect);
 
@@ -2383,7 +2438,6 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    uint32_t Size = GetSrcSize(Op) * 8;
     Src = _Sbfe(Size-3,3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
@@ -2405,16 +2459,35 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   OrderedNode *Result;
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  OrderedNode *Src{};
+  bool AlreadyMasked{};
+
+  uint32_t Size = GetDstSize(Op) * 8;
+  uint32_t Mask = Size - 1;
+
+  if (Op->Src[SrcIndex].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
+  }
+  else {
+    // Can only be an immediate
+    // Masked by operand size
+    Src = _Constant(Size, Op->Src[SrcIndex].TypeLiteral.Literal & Mask);
+    AlreadyMasked = true;
+  }
+
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-    uint32_t Size = GetSrcSize(Op);
-    uint32_t Mask = Size * 8 - 1;
-    OrderedNode *SizeMask = _Constant(Mask);
+    OrderedNode *BitSelect{};
+    if (AlreadyMasked) {
+      BitSelect = Src;
+    }
+    else {
+      OrderedNode *SizeMask = _Constant(Mask);
 
-    // Get the bit selection from the src
-    OrderedNode *BitSelect = _And(Src, SizeMask);
+      // Get the bit selection from the src
+      BitSelect = _And(Src, SizeMask);
+    }
 
     Result = _Lshr(Dest, BitSelect);
 
@@ -2430,7 +2503,6 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    uint32_t Size = GetSrcSize(Op) * 8;
     Src = _Sbfe(Size-3,3, Src);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)

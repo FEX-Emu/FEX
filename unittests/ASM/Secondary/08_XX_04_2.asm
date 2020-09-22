@@ -26,6 +26,7 @@ mov rdx, 0xe0000000
 mov rax, 0xFFFFFFFF80000002
 mov [rdx + 8 * 0], rax
 mov [rdx + 8 * 1], rax
+mov rax, 0x0
 mov [rdx + 8 * 2], rax
 mov rax, 0x01
 mov [rdx + 8 * 3], eax
