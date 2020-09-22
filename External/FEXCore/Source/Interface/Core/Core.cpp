@@ -317,6 +317,10 @@ namespace FEXCore::Context {
     Thread->CPUBackend->CallbackPtr(Thread, RIP);
   }
 
+  void Context::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
+    SignalDelegation.RegisterFrontendHostSignalHandler(Signal, Func);
+  }
+
   void Context::WaitForIdle() {
     std::unique_lock<std::mutex> lk(IdleWaitMutex);
     IdleWaitCV.wait(lk, [this] {

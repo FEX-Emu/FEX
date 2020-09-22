@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <string>
 
+#include <FEXCore/Core/SignalDelegator.h>
+
 namespace FEXCore {
   class CodeLoader;
 }
@@ -238,5 +240,7 @@ namespace FEXCore::Context {
   void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, uint64_t Syscall, FEXCore::HLE::SyscallVisitor *Visitor);
 
   void HandleCallback(FEXCore::Context::Context *CTX, uint64_t RIP);
+
+  void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func);
 
 }

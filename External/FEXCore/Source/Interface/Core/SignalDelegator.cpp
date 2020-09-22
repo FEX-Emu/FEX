@@ -79,6 +79,11 @@ namespace FEXCore {
         return;
       }
 
+      if (Handler.FrontendHandler &&
+          Handler.FrontendHandler(Thread, Signal, Info, UContext)) {
+        return;
+      }
+
       // If the signal was sent by the user with kill then we can't block it
       // If it was sent by raise() then we /can/ block it
       bool SentByUser = SigInfo->si_code <= 0;
@@ -371,6 +376,14 @@ namespace FEXCore {
     // Multiple threads could be calling in to this
     std::lock_guard<std::mutex> lk(HostDelegatorMutex);
     HostHandlers[Signal].Handler = Func;
+    InstallHostThunk(Signal);
+  }
+
+  void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
+    // Linux signal handlers are per-process rather than per thread
+    // Multiple threads could be calling in to this
+    std::lock_guard<std::mutex> lk(HostDelegatorMutex);
+    HostHandlers[Signal].FrontendHandler = Func;
     InstallHostThunk(Signal);
   }
 

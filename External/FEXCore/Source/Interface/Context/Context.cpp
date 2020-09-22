@@ -114,6 +114,10 @@ namespace FEXCore::Context {
     CTX->HandleCallback(RIP);
   }
 
+  void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func) {
+    CTX->RegisterFrontendHostSignalHandler(Signal, Func);
+  }
+
 namespace Debug {
   void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
     CTX->CompileRIP(CTX->ParentThread, RIP);
