@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cstring>
 #include <fstream>
+#include <sys/mman.h>
 #include <vector>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
@@ -387,7 +388,9 @@ namespace FEX::HarnessHelper {
       }
 
       // Map in the memory region for the test file
-      Code_start_page = reinterpret_cast<uint64_t>(Mapper(Code_start_page, AlignUp(RawFile.size(), PAGE_SIZE), true, true));
+      size_t Length = AlignUp(RawFile.size(), PAGE_SIZE);
+      Code_start_page = reinterpret_cast<uint64_t>(Mapper(Code_start_page, Length, true, true));
+      mprotect(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC);
       RIP = Code_start_page + 1;
 
       // Map the memory regions the test file asks for
