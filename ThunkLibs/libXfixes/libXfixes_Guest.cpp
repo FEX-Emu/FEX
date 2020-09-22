@@ -2,15 +2,10 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/Xfixes.h>
 
-#include <stdio.h>
-#include <cstring>
-#include <map>
-#include <string>
+#include "common/Guest.h"
 
-#include "Thunk.h"
-#include <stdarg.h>
+#include "thunks.inl"
+#include "function_packs.inl"
+#include "function_packs_public.inl"
 
 LOAD_LIB(libXfixes)
-
-#include "libXfixes_thunks.inl"
-#include <vector>

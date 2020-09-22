@@ -790,6 +790,8 @@ namespace FEXCore::Context {
     Thread->State.ThreadManager.TID = ::gettid();
     Thread->State.ThreadManager.PID = ::getpid();
     SignalDelegation.RegisterTLSState(Thread);
+    ThunkHandler->RegisterTLSState(Thread);
+    
     ++IdleWaitRefCount;
 
     LogMan::Msg::D("[%d] Waiting to run", Thread->State.ThreadManager.TID.load());

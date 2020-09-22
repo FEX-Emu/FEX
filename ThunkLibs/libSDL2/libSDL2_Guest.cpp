@@ -7,13 +7,16 @@
 #include <cstring>
 #include <map>
 #include <string>
-
-#include "Thunk.h"
 #include <stdarg.h>
+
+#include "common/Guest.h"
+
+#include "thunks.inl"
+#include "function_packs.inl"
+#include "function_packs_public.inl"
 
 LOAD_LIB(libSDL2)
 
-#include "libSDL2_thunks.inl"
 #include <vector>
 
 struct __va_list_tag;

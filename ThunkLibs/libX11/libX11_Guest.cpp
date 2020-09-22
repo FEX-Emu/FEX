@@ -7,15 +7,19 @@
 #include <map>
 #include <string>
 
-#include "Thunk.h"
+#include "common/Guest.h"
 #include <stdarg.h>
 
-LOAD_LIB(libX11)
+#include "callback_typedefs.inl"
 
-typedef int XSetErrorHandlerFN(Display*, XErrorEvent*);
-typedef int XIfEventFN(Display*, XEvent*, XPointer);
+#include "thunks.inl"
+#include "function_packs.inl"
+#include "function_packs_public.inl"
 
-#include "libX11_thunks.inl"
+#include "callback_unpacks.inl"
+
+// Custom implementations //
+
 #include <vector>
 
 extern "C" {
@@ -57,8 +61,12 @@ extern "C" {
         return rv;
     }
 
-    int XIfEvent(Display* a0, XEvent* a1, XIfEventFN* a2, XPointer a3) {
+    int XIfEvent(Display* a0, XEvent* a1, XIfEventCBFN* a2, XPointer a3) {
         return XIfEvent_internal(a0, a1, a2, a3);
+    }
+
+    XSetErrorHandlerCBFN* XSetErrorHandler(XErrorHandler a_0) {
+        return XSetErrorHandler_internal(a_0);
     }
 
     int (*XESetCloseDisplay(Display *display, int extension, int (*proc)()))() {
@@ -68,3 +76,10 @@ extern "C" {
       
 }
 
+struct {
+    #include "callback_unpacks_header.inl"
+} callback_unpacks = {
+    #include "callback_unpacks_header_init.inl"
+};
+
+LOAD_LIB_WITH_CALLBACKS(libX11)

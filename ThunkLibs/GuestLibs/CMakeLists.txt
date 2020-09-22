@@ -12,7 +12,7 @@ set(CMAKE_CXX_COMPILER "${X86_CXX_COMPILER}")
 
 function(generate NAME)
     foreach(WHAT IN LISTS ARGN)
-        set(OUTFILE "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}_${WHAT}.inl")
+        set(OUTFILE "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}/${WHAT}.inl")
         set(GENERATOR "${CMAKE_CURRENT_SOURCE_DIR}/../Generators/${NAME}.py")
         set(HELPER "${CMAKE_CURRENT_SOURCE_DIR}/../Generators/ThunkHelpers.py")
 
@@ -30,33 +30,33 @@ endfunction()
 
 function(add_guest_lib NAME)
     add_library(${NAME}-guest SHARED ../lib${NAME}/lib${NAME}_Guest.cpp ${GEN_lib${NAME}})
-    target_include_directories(${NAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen" "${CMAKE_CURRENT_SOURCE_DIR}/../common")
+    target_include_directories(${NAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 endfunction()
 
-generate(libasound thunks)
+generate(libasound thunks function_packs function_packs_public)
 add_guest_lib(asound)
 
-generate(libEGL thunks)
+generate(libEGL thunks function_packs function_packs_public)
 add_guest_lib(EGL)
 
-generate(libGL thunks symtab)
+generate(libGL thunks function_packs function_packs_public tab_function_packs)
 add_guest_lib(GL)
 
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)
-# generate(libSDL2 thunks)
+# generate(libSDL2 thunks function_packs function_packs_public)
 # add_guest_lib(SDL2)
 # target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
 # target_link_libraries(SDL2-guest PRIVATE GL)
 
-generate(libX11 thunks)
+generate(libX11 thunks function_packs function_packs_public callback_structs callback_unpacks_header callback_unpacks_header_init callback_unpacks callback_typedefs)
 add_guest_lib(X11)
 
-generate(libXext thunks)
+generate(libXext thunks function_packs function_packs_public)
 add_guest_lib(Xext)
 
-generate(libXrender thunks)
+generate(libXrender thunks function_packs function_packs_public)
 add_guest_lib(Xrender)
 
-generate(libXfixes thunks)
+generate(libXfixes thunks function_packs function_packs_public)
 add_guest_lib(Xfixes)

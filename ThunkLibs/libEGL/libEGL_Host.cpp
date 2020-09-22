@@ -3,14 +3,17 @@
 
 #include <EGL/egl.h>
 
-#include "Thunk.h"
+#include "common/Host.h"
+#include <dlfcn.h>
 
-#include "libEGL_initializers.inl"
-#include "libEGL_forwards.inl"
+#include "ldr_ptrs.inl"
+#include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
-    #include "libEGL_thunkmap.inl"
+    #include "tab_function_unpacks.inl"
     { nullptr, nullptr }
 };
+
+#include "ldr.inl"
 
 EXPORTS(libEGL) 

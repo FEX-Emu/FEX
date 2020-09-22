@@ -11,15 +11,18 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
-#include "Thunk.h"
-
 #define dlsym(so, name) (void*)glXGetProcAddress((const GLubyte*)name)
-#include "libGL_initializers.inl"
-#include "libGL_forwards.inl"
+
+#include "common/Host.h"
+
+#include "ldr_ptrs.inl"
+#include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
-    #include "libGL_thunkmap.inl"
+    #include "tab_function_unpacks.inl"
     { nullptr, nullptr }
 };
 
-EXPORTS(libGL) 
+#include "ldr.inl"
+
+EXPORTS(libGL)

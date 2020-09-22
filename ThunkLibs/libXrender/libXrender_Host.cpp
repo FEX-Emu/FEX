@@ -4,16 +4,18 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/Xrender.h>
 
-#include "Thunk.h"
+#include "common/Host.h"
 #include <dlfcn.h>
 
-#include "libXrender_initializers.inl"
-#include "libXrender_forwards.inl"
+#include "ldr_ptrs.inl"
+#include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
-    #include "libXrender_thunkmap.inl"
+    #include "tab_function_unpacks.inl"
     { nullptr, nullptr }
 };
+
+#include "ldr.inl"
 
 EXPORTS(libXrender) 
 

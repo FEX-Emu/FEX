@@ -26,16 +26,10 @@
 //#include <X11/extensions/XTest.h>
 
 
+#include "common/Guest.h"
 
-#include <stdio.h>
-#include <cstring>
-#include <map>
-#include <string>
-
-#include "Thunk.h"
-#include <stdarg.h>
+#include "thunks.inl"
+#include "function_packs.inl"
+#include "function_packs_public.inl"
 
 LOAD_LIB(libXext)
-
-#include "libXext_thunks.inl"
-#include <vector>

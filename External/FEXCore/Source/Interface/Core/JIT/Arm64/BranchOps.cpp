@@ -162,8 +162,7 @@ DEF_OP(Thunk) {
   }
   str(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
 
-  LoadConstant(x0, reinterpret_cast<uint64_t>(CTX));
-  mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+  mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
 
 #if _M_X86_64
   ERROR_AND_DIE("JIT: OP_THUNK not supported with arm simulator")

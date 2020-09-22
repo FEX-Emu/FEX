@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <cstring>
 
-#include "Thunk.h"
+#include "common/Guest.h"
 
-LOAD_LIB(libEGL)
-
-#include "libEGL_thunks.inl"
+#include "thunks.inl"
+#include "function_packs.inl"
+#include "function_packs_public.inl"
 
 typedef void voidFunc();
 
@@ -20,3 +20,4 @@ extern "C" {
 	}
 }
 
+LOAD_LIB(libEGL)
