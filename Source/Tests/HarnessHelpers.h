@@ -157,52 +157,52 @@ namespace FEX::HarnessHelper {
       }
 
       if (BaseConfig.OptionRegDataCount > 0) {
-        constexpr std::array<std::pair<uint64_t, unsigned>, 45> OffsetArray = {{
-          {offsetof(FEXCore::Core::CPUState, rip), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[0]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[1]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[2]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[3]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[4]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[5]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[6]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[7]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[8]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[9]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[10]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[11]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[12]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[13]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[14]), 1},
-          {offsetof(FEXCore::Core::CPUState, gregs[15]), 1},
-          {offsetof(FEXCore::Core::CPUState, xmm[0][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[1][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[2][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[3][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[4][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[5][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[6][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[7][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[8][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[9][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[10][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[11][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[12][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[13][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[14][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, xmm[15][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, gs), 1},
-          {offsetof(FEXCore::Core::CPUState, fs), 1},
-          {offsetof(FEXCore::Core::CPUState, flags), 8},
-          {offsetof(FEXCore::Core::CPUState, mm[0][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, mm[1][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, mm[2][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, mm[3][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, mm[4][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, mm[5][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, mm[6][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, mm[7][0]), 2},
-          {offsetof(FEXCore::Core::CPUState, mm[8][0]), 2},
+        constexpr std::array<uint64_t, 45> OffsetArray = {{
+          offsetof(FEXCore::Core::CPUState, rip),
+          offsetof(FEXCore::Core::CPUState, gregs[0]),
+          offsetof(FEXCore::Core::CPUState, gregs[1]),
+          offsetof(FEXCore::Core::CPUState, gregs[2]),
+          offsetof(FEXCore::Core::CPUState, gregs[3]),
+          offsetof(FEXCore::Core::CPUState, gregs[4]),
+          offsetof(FEXCore::Core::CPUState, gregs[5]),
+          offsetof(FEXCore::Core::CPUState, gregs[6]),
+          offsetof(FEXCore::Core::CPUState, gregs[7]),
+          offsetof(FEXCore::Core::CPUState, gregs[8]),
+          offsetof(FEXCore::Core::CPUState, gregs[9]),
+          offsetof(FEXCore::Core::CPUState, gregs[10]),
+          offsetof(FEXCore::Core::CPUState, gregs[11]),
+          offsetof(FEXCore::Core::CPUState, gregs[12]),
+          offsetof(FEXCore::Core::CPUState, gregs[13]),
+          offsetof(FEXCore::Core::CPUState, gregs[14]),
+          offsetof(FEXCore::Core::CPUState, gregs[15]),
+          offsetof(FEXCore::Core::CPUState, xmm[0][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[1][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[2][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[3][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[4][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[5][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[6][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[7][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[8][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[9][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[10][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[11][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[12][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[13][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[14][0]),
+          offsetof(FEXCore::Core::CPUState, xmm[15][0]),
+          offsetof(FEXCore::Core::CPUState, gs),
+          offsetof(FEXCore::Core::CPUState, fs),
+          offsetof(FEXCore::Core::CPUState, flags),
+          offsetof(FEXCore::Core::CPUState, mm[0][0]),
+          offsetof(FEXCore::Core::CPUState, mm[1][0]),
+          offsetof(FEXCore::Core::CPUState, mm[2][0]),
+          offsetof(FEXCore::Core::CPUState, mm[3][0]),
+          offsetof(FEXCore::Core::CPUState, mm[4][0]),
+          offsetof(FEXCore::Core::CPUState, mm[5][0]),
+          offsetof(FEXCore::Core::CPUState, mm[6][0]),
+          offsetof(FEXCore::Core::CPUState, mm[7][0]),
+          offsetof(FEXCore::Core::CPUState, mm[8][0]),
         }};
 
         uintptr_t DataOffset = BaseConfig.OptionRegDataOffset;
@@ -213,8 +213,8 @@ namespace FEX::HarnessHelper {
 
           size_t NameIndex = __builtin_ffsl(RegData->RegKey)- 1;
           auto Offset = OffsetArray[NameIndex];
-          uint64_t *State1Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State1) + Offset.first);
-          uint64_t *State2Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State2) + Offset.first);
+          uint64_t *State1Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State1) + Offset);
+          uint64_t *State2Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State2) + Offset);
 
           auto DumpGPRs = [this](auto Name, uint64_t A, uint64_t B) {
             if (!ConfigDumpGPRs())
@@ -228,7 +228,7 @@ namespace FEX::HarnessHelper {
             Matches &= A == B;
           };
 
-          for (unsigned j = 0; j < Offset.second; ++j) {
+          for (unsigned j = 0; j < RegData->RegDataCount; ++j) {
             std::string Name;
             if (NameIndex == 0) // RIP
               Name = "RIP";
@@ -255,7 +255,7 @@ namespace FEX::HarnessHelper {
           }
 
           // Get the correct data offset
-          DataOffset += sizeof(RegDataStructBase) + Offset.second * 8;
+          DataOffset += sizeof(RegDataStructBase) + RegData->RegDataCount * 8;
         }
       }
       return Matches;
