@@ -168,6 +168,44 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   BlockSetRIP = true;
 }
 
+/*
+stack contains:
+RIP
+CS
+EFLAGS
+RSP
+SS
+*/
+void OpDispatchBuilder::IRETOp(OpcodeArgs) {
+  LogMan::Throw::A(CTX->Config.Is64BitMode == true, "IRET only implemented for x64");
+  
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  
+  auto Constant = _Constant(GPRSize);
+
+  OrderedNode* SP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  // RIP (64 bits)
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+  SP = _Add(SP, Constant);
+  //CS (lower 16 used)
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, cs), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+  SP = _Add(SP, Constant);
+  //eflags (lower 16 used)
+  auto eflags = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
+  SetPackedRFLAG(false, eflags);
+  SP = _Add(SP, Constant);
+  // RSP
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+  SP = _Add(SP, Constant);
+  //ss
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+  SP = _Add(SP, Constant);
+  
+  _ExitFunction();
+  BlockSetRIP = true;
+}
+
 void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
   // Store the new RIP
   _SignalReturn();
@@ -7477,6 +7515,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xC8, 1, &OpDispatchBuilder::EnterOp},
     {0xC9, 1, &OpDispatchBuilder::LEAVEOp},
     {0xCC, 2, &OpDispatchBuilder::INTOp},
+    {0xCF, 1, &OpDispatchBuilder::IRETOp},
     {0xD7, 2, &OpDispatchBuilder::XLATOp},
     {0xE0, 3, &OpDispatchBuilder::LoopOp},
     {0xE3, 1, &OpDispatchBuilder::CondJUMPRCXOp},

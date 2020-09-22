@@ -179,7 +179,7 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xCC, 1, X86InstInfo{"INT3",   TYPE_INST, FLAGS_DEBUG,                                                                                      0, nullptr}},
     {0xCD, 1, X86InstInfo{"INT",    TYPE_INST, FLAGS_DEBUG ,                                                                  1, nullptr}},
     {0xCE, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0, nullptr}},
-    {0xCF, 1, X86InstInfo{"IRET",   TYPE_PRIV, FLAGS_NONE,                                                                                    0, nullptr}},
+    {0xCF, 1, X86InstInfo{"IRET",   TYPE_INST, FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                                                    0, nullptr}},
 
     {0xD4, 3, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0, nullptr}},
     {0xD7, 1, X86InstInfo{"XLAT",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                                                           0, nullptr}},
