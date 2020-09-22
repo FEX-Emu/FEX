@@ -5,6 +5,8 @@
 #include <mutex>
 #include <signal.h>
 
+#include <FEXCore/Core/SignalDelegator.h>
+
 namespace FEXCore {
 namespace Context {
   struct Context;
@@ -32,7 +34,6 @@ namespace Core {
 
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler
-    using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext)>;
     using HostSignalDelegatorFunctionForGuest = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack)>;
     SignalDelegator();
 
@@ -67,6 +68,7 @@ namespace Core {
      * It's a process level signal handler so one must be careful
      */
     void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func);
+    void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func);
 
     /**
      * @brief Registers a signal handler for the host to handle a signal specifically for guest handling
@@ -111,6 +113,7 @@ namespace Core {
       struct sigaction HostAction{};
       struct sigaction OldAction{};
       HostSignalDelegatorFunction Handler{};
+      HostSignalDelegatorFunction FrontendHandler{};
       HostSignalDelegatorFunctionForGuest GuestHandler{};
       GuestSigAction GuestAction{};
       DefaultBehaviour DefaultBehaviour {DEFAULT_TERM};
