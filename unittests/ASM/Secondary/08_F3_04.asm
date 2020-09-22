@@ -44,7 +44,7 @@ bt dword [rdx], r13d
 cfmerge
 
 db 0xF3 ; Prefix with F3. Shouldn't change behaviour
-bt qword [rdx], 64 * 3
+bt qword [rdx], 64 * 2 + 63
 cfmerge
 
 hlt
