@@ -71,11 +71,13 @@ set (CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-poin
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   set(_M_X86_64 1)
+  add_definitions(-D_M_X86_64=1)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
 endif()
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   set(_M_ARM_64 1)
+  add_definitions(-D_M_ARM_64=1)
   add_subdirectory(External/vixl/)
   include_directories(External/vixl/src/)
 endif()
