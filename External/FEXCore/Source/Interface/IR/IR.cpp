@@ -70,10 +70,14 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
 
   if (IROp->HasDest) {
     uint32_t ElementSize = IROp->ElementSize;
+    uint32_t NumElements = IROp->Size;
     if (!IROp->ElementSize) {
       ElementSize = IROp->Size;
     }
-    uint32_t NumElements = IROp->Size / ElementSize;
+
+    if (ElementSize) {
+      NumElements /= ElementSize;
+    }
 
     *out << " i" << std::dec << (ElementSize * 8);
 
@@ -153,10 +157,14 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
         if (IROp->HasDest) {
 
           uint32_t ElementSize = IROp->ElementSize;
+          uint32_t NumElements = IROp->Size;
           if (!IROp->ElementSize) {
             ElementSize = IROp->Size;
           }
-          uint32_t NumElements = IROp->Size / ElementSize;
+
+          if (ElementSize) {
+            NumElements /= ElementSize;
+          }
 
           *out << "%ssa" << std::to_string(ID);
 
