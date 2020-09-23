@@ -3066,11 +3066,11 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto Src1 = _LoadMemTSO(GPRClass, Size, Dest_RDI, Size);
     auto Src2 = _LoadMemTSO(GPRClass, Size, Dest_RSI, Size);
 
-    OrderedNode* Result = _Sub(Src1, Src2);
+    OrderedNode* Result = _Sub(Src2, Src1);
     if (Size < 4)
       Result = _Bfe(Size * 8, 0, Result);
 
-    GenerateFlags_SUB(Op, Result, Src1, Src2);
+    GenerateFlags_SUB(Op, Result, Src2, Src1);
 
     auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
     auto PtrDir = _Select(FEXCore::IR::COND_EQ,
@@ -3116,11 +3116,11 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         auto Src1 = _LoadMemTSO(GPRClass, Size, Dest_RDI, Size);
         auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
 
-        OrderedNode* Result = _Sub(Src1, Src2);
+        OrderedNode* Result = _Sub(Src2, Src1);
         if (Size < 4)
           Result = _Bfe(Size * 8, 0, Result);
 
-        GenerateFlags_SUB(Op, Result, Src1, Src2);
+        GenerateFlags_SUB(Op, Result, Src2, Src1);
 
         OrderedNode *TailCounter = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
 
