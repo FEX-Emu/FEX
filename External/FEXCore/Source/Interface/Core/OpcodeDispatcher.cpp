@@ -6653,7 +6653,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
-  auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  OrderedNode *st0 = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
   OrderedNode *st1 = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 
   if (Plus1) {
@@ -6661,10 +6661,10 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
     auto high = _Constant(0b0'011'1111'1111'1111);
     OrderedNode *data = _VCastFromGPR(16, 8, low);
     data = _VInsGPR(16, 8, data, high, 1);
-    st1 = _F80Add(st1, data);
+    st0 = _F80Add(st0, data);
   }
 
-  auto result = _F80FYL2X(st1, a);
+  auto result = _F80FYL2X(st0, st1);
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
