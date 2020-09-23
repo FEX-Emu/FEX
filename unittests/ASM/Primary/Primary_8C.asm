@@ -7,6 +7,7 @@
   }
 }
 %endif
+; This relies on some behaviour that isn't guaranteed in 64bit mode
 
 ; Technically this can result in an invalid selector which can cause faults
 ; We currently don't do any selector validation to enforce this

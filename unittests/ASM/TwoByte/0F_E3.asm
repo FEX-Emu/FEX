@@ -1,12 +1,12 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "MM0":  ["0x20f9b0697cd37844", "0x0"],
-    "MM1":  ["0x1ed685b8691d35ca", "0x0"],
-    "MM2":  ["0x15dc41a91ea818cc", "0x0"],
-    "MM3":  ["0x20f9b0697cd37844", "0x0"],
-    "MM4":  ["0x1ed685b8691d35ca", "0x0"],
-    "MM5":  ["0x15dc41a91ea818cc", "0x0"]
+    "MM0": "0x20f9b0697cd37844",
+    "MM1": "0x1ed685b8691d35ca",
+    "MM2": "0x15dc41a91ea818cc",
+    "MM3": "0x20f9b0697cd37844",
+    "MM4": "0x1ed685b8691d35ca",
+    "MM5": "0x15dc41a91ea818cc"
   },
   "MemoryRegions": {
     "0x100000000": "4096"

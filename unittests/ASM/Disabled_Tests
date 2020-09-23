@@ -1,1 +1,25 @@
+# Not guaranteed to work in 64bit mode
+Test_Primary/Primary_8C.asm
+
+# Needs Precision checking
+Test_REP/F3_52.asm
+Test_REP/F3_53.asm
+Test_TwoByte/0F_52.asm
+Test_TwoByte/0F_53.asm
+Test_X87/D9_FD.asm
+
+# Not supported in userspace in all cases
+Test_Secondary/15_F3_00.asm
+Test_Secondary/15_F3_01.asm
+Test_Secondary/15_F3_02.asm
+Test_Secondary/15_F3_03.asm
+Test_Primary/Primary_D7.asm
+
+# Can't test this in a real environment
+Test_Primary/Primary_E8.asm
+Test_Primary/Primary_E9.asm
+
+# Relies on undefined behaviour
+Test_X87/D9_F9.asm
+
 Test_X87/D9_F2.asm
