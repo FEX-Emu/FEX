@@ -7700,6 +7700,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8, true, 0>},
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
     {0xD5, 1, &OpDispatchBuilder::PMULOp<2, true>},
+    {0xD7, 1, &OpDispatchBuilder::MOVMSKOp<1>}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::PSUBSOp<1, false>},
     {0xD9, 1, &OpDispatchBuilder::PSUBSOp<2, false>},
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
