@@ -44,9 +44,9 @@ namespace FEX::EnvLoader {
           uint32_t CoreVal = 0;
                if (Value == string_view("irint")) CoreVal = 0; // default
           else if (Value == string_view("irjit")) CoreVal = 1;
-          else if (Value == string_view("llvm"))  CoreVal = 2;
-          else if (Value == string_view("host"))  CoreVal = 3;
-          else if (Value == string_view("vm"))    CoreVal = 4;
+#ifdef _M_X86_64
+          else if (Value == string_view("host"))  CoreVal = 2;
+#endif
           else { LogMan::Msg::D("FEX_CORE has invalid identifier"); }
           Config::Add("Core", std::to_string(CoreVal));
         }

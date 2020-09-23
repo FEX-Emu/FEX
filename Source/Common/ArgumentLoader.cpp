@@ -18,7 +18,11 @@ namespace FEX::ArgLoader {
       CPUGroup.add_option("-c", "--core")
         .dest("Core")
         .help("Which CPU core to use")
-        .choices({"irint", "irjit", "llvm", "host", "vm"})
+#ifdef _M_X86_64
+        .choices({"irint", "irjit", "host"})
+#else
+        .choices({"irint", "irjit"})
+#endif
         .set_default("irint");
 
       std::string BreakString = "Break";
@@ -150,12 +154,10 @@ namespace FEX::ArgLoader {
           Config::Add("Core", "0");
         else if (Core == "irjit")
           Config::Add("Core", "1");
-        else if (Core == "llvm")
-          Config::Add("Core", "2");
+#ifdef _M_X86_64
         else if (Core == "host")
-          Config::Add("Core", "3");
-        else if (Core == "vm")
-          Config::Add("Core", "4");
+          Config::Add("Core", "2");
+#endif
       }
 
       if (Options.is_set_by_user("Break")) {
