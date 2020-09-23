@@ -50,6 +50,11 @@ foreach(ASM_SRC ${ASM_SOURCES})
     "-g -c irjit -n 500"    "jit_500"   "jit"
     "-g -c irjit -n 500 -m" "jit_500_m" "jit"
     )
+  if (_M_X86_64)
+    list(APPEND TEST_ARGS
+      "-g -c host"       "host"      "host"
+      )
+  endif()
 
   list(LENGTH TEST_ARGS ARG_COUNT)
   math(EXPR ARG_COUNT "${ARG_COUNT}-1")
