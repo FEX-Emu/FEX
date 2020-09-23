@@ -27,6 +27,7 @@ mov rdx, rax
 
 mov rax, -1
 ; mov eax, [0xe0000000]
+db 0x67
 db 0xA1
 dd 0xe0000000
 
