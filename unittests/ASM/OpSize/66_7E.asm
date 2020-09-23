@@ -28,8 +28,8 @@ mov rax, 0x0
 mov [rdx + 8 * 4], rax
 mov [rdx + 8 * 5], rax
 
-movaps xmm2, [rdx + 8 * 2]
-movaps xmm3, [rdx + 8 * 3]
+movups xmm2, [rdx + 8 * 2]
+movups xmm3, [rdx + 8 * 3]
 
 movd dword [rdx + 8 * 4], xmm2
 ; AMD's Architecture programmer's manual claims this mnemonic is still movd, but compilers only accept movq
