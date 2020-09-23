@@ -1,8 +1,8 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "0x2",
-    "RBX": "0x2"
+    "RAX": "0x202",
+    "RBX": "0x202"
   },
   "MemoryRegions": {
     "0x100000000": "4096"
@@ -11,6 +11,11 @@
 %endif
 
 mov rsp, 0xe0000010
+
+; Setup to default state
+mov rax, 0
+push rax
+popfq
 
 ; These pushes will end up being the default rflags initialization value
 pushfq
