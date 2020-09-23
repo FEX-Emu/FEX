@@ -7253,11 +7253,19 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LDMXCSR(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  // We only support the rounding mode being set
+  OrderedNode *RoundingMode = _Bfe(4, 3, 13, Dest);
+  _SetRoundingMode(RoundingMode);
 }
 
 void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
   // Default MXCSR
-  StoreResult(GPRClass, Op, _Constant(0x1F80), -1);
+  OrderedNode *MXCSR = _Constant(32, 0x1F80);
+  OrderedNode *RoundingMode = _GetRoundingMode();
+  MXCSR = _Bfi(3, 13, MXCSR, RoundingMode);
+
+  StoreResult(GPRClass, Op, MXCSR, -1);
 }
 
 template<size_t ElementSize>
