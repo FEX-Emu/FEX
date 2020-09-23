@@ -23,7 +23,12 @@ mov [rdx + 8 * 2], rax
 
 fld qword [rdx + 8 * 0]
 fld qword [rdx + 8 * 1]
+
+; Do Some stack shenanigans
+fldz
+fincstp
 fdecstp
+
 fld qword [rdx + 8 * 2]
 
 hlt
