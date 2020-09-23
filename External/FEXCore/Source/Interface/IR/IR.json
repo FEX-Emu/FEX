@@ -40,7 +40,13 @@
 
     "static constexpr FEXCore::IR::FenceType Fence_Load      {0}",
     "static constexpr FEXCore::IR::FenceType Fence_Store     {1}",
-    "static constexpr FEXCore::IR::FenceType Fence_LoadStore {2}"
+    "static constexpr FEXCore::IR::FenceType Fence_LoadStore {2}",
+
+    "constexpr static uint8_t ROUND_MODE_NEAREST           = 0",
+    "constexpr static uint8_t ROUND_MODE_NEGATIVE_INFINITY = 1",
+    "constexpr static uint8_t ROUND_MODE_POSITIVE_INFINITY = 2",
+    "constexpr static uint8_t ROUND_MODE_TOWARDS_ZERO      = 3",
+    "constexpr static uint8_t ROUND_MODE_FLUSH_TO_ZERO     = 1 << 2"
   ],
 
   "Ops": {
@@ -258,6 +264,28 @@
       ],
       "Args": [
         "uint8_t", "Size"
+      ]
+    },
+
+    "GetRoundingMode": {
+      "Desc": ["Gets the current rounding mode options"
+              ],
+      "OpClass": "Misc",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "FixedDestSize": "4"
+    },
+
+    "SetRoundingMode": {
+      "Desc": ["Sets the current rounding mode options for the thread"
+              ],
+      "HasSideEffects": true,
+      "OpClass": "Misc",
+      "HasDest": false,
+      "DestClass": "GPR",
+      "SSAArgs": "1",
+      "SSANames": [
+        "RoundMode"
       ]
     },
 
@@ -1320,6 +1348,42 @@
       ],
       "Args": [
         "uint8_t", "Idx"
+      ]
+    },
+
+    "Float_ToGPR_U": {
+      "Desc": ["Moves the scalar element to a GPR with conversion",
+               "Converts the 32bit or 64bit float to an unsigned integer",
+               "Rounding mode determined by host flag's rounding mode"
+              ],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Scalar"
+      ],
+      "Args": [
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "Float_ToGPR_S": {
+      "Desc": ["Moves the scalar element to a GPR with conversion",
+               "Converts the 32bit or 64bit float to an signed integer",
+               "Rounding mode determined by host flag's rounding mode"
+              ],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Scalar"
+      ],
+      "Args": [
+        "uint8_t", "ElementSize"
       ]
     },
 
@@ -2764,6 +2828,44 @@
     "Vector_SToF": {
       "OpClass": "Conv",
       "Desc": "Vector op: Converts signed integer to same size float",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "Vector_FToU": {
+      "OpClass": "Conv",
+      "Desc": ["Vector op: Converts float to unsigned integer",
+               "Rounding mode determined by host rounding mode"
+              ],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "Vector_FToS": {
+      "OpClass": "Conv",
+      "Desc": ["Vector op: Converts float to signed integer, rounding towards zero",
+               "Rounding mode determined by host rounding mode"
+              ],
       "HasDest": true,
       "DestClass": "FPR",
       "DestSize": "RegisterSize",
