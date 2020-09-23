@@ -274,7 +274,7 @@ public:
   void MOVDDUPOp(OpcodeArgs);
   template<size_t DstElementSize, bool Signed>
   void CVTGPR_To_FPR(OpcodeArgs);
-  template<size_t SrcElementSize, bool Signed>
+  template<size_t SrcElementSize, bool Signed, bool HostRoundingMode>
   void CVTFPR_To_GPR(OpcodeArgs);
   template<size_t SrcElementSize, bool Signed, bool Widen>
   void Vector_CVT_Int_To_Float(OpcodeArgs);
@@ -282,7 +282,7 @@ public:
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
   template<size_t DstElementSize, size_t SrcElementSize>
   void Vector_CVT_Float_To_Float(OpcodeArgs);
-  template<size_t SrcElementSize, bool Signed, bool Narrow>
+  template<size_t SrcElementSize, bool Signed, bool Narrow, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   template<size_t SrcElementSize, bool Signed, bool Widen>
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
