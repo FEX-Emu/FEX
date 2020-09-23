@@ -3792,7 +3792,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 break;
               }
               case 0x0408: { // Float <- Double
-                uint8_t Elements = OpSize / Op->SrcElementSize;
+                uint8_t Elements = (OpSize << 1) / Op->SrcElementSize;
                 switch (Op->SrcElementSize) {
                 DO_VECTOR_1SRC_2TYPE_OP(8, float, double, Func, 0, 0)
                 }

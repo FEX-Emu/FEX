@@ -286,6 +286,8 @@ public:
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   template<size_t SrcElementSize, bool Signed, bool Widen>
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
+  template<size_t SrcElementSize, bool Signed, bool Narrow, bool HostRoundingMode>
+  void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs);
   void MASKMOVOp(OpcodeArgs);
   void MOVBetweenGPR_FPR(OpcodeArgs);
   void TZCNT(OpcodeArgs);
