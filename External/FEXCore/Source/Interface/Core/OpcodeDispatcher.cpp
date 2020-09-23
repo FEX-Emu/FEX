@@ -5792,16 +5792,37 @@ void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, -1);
 }
 
-template<size_t SrcElementSize, bool Signed>
+template<size_t SrcElementSize, bool Signed, bool HostRoundingMode>
 void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  if (Signed)
-    Src = _Float_ToGPR_ZS(Src, SrcElementSize);
-  else
-    Src = _Float_ToGPR_ZU(Src, SrcElementSize);
+  // GPR size is determined by REX.W
+  // Source Element size is determined by instruction
+  size_t GPRSize = GetDstSize(Op);
 
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, SrcElementSize, -1);
+  if (HostRoundingMode) {
+    if (Signed)
+      Src = _Float_ToGPR_S(Src, SrcElementSize);
+    else
+      Src = _Float_ToGPR_U(Src, SrcElementSize);
+  }
+  else {
+    if (Signed)
+      Src = _Float_ToGPR_ZS(Src, SrcElementSize);
+    else
+      Src = _Float_ToGPR_ZU(Src, SrcElementSize);
+  }
+
+  if (GPRSize > SrcElementSize) {
+    if (Signed) {
+      Src = _Sext(SrcElementSize * 8, Src);
+    }
+    else {
+      Src = _Bfe(SrcElementSize * 8, 0, Src);
+    }
+  }
+
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, GPRSize, -1);
 }
 
 template<size_t SrcElementSize, bool Signed, bool Widen>
@@ -5823,7 +5844,7 @@ void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, -1);
 }
 
-template<size_t SrcElementSize, bool Signed, bool Narrow>
+template<size_t SrcElementSize, bool Signed, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
@@ -5835,10 +5856,18 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
     ElementSize >>= 1;
   }
 
-  if (Signed)
-    Src = _Vector_FToZS(Src, Size, ElementSize);
-  else
-    Src = _Vector_FToZU(Src, Size, ElementSize);
+  if (HostRoundingMode) {
+    if (Signed)
+      Src = _Vector_FToS(Src, Size, ElementSize);
+    else
+      Src = _Vector_FToU(Src, Size, ElementSize);
+  }
+  else {
+    if (Signed)
+      Src = _Vector_FToZS(Src, Size, ElementSize);
+    else
+      Src = _Vector_FToZU(Src, Size, ElementSize);
+  }
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
 }
@@ -7706,7 +7735,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
     {0x2A, 1, &OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, true, false>},
     {0x2B, 1, &OpDispatchBuilder::MOVAPSOp},
-    {0x2C, 2, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false>},
+    {0x2C, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false, true>},
+    {0x2D, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false, false>},
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<4>},
     {0x50, 1, &OpDispatchBuilder::MOVMSKOp<4>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, false>},
@@ -7925,15 +7955,15 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVTGPR_To_FPR<4, true>},
     {0x2B, 1, &OpDispatchBuilder::MOVVectorOp},
-    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
-    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
+    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true, false>},
+    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true, true>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4, true>},
     {0x52, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4, true>},
     {0x53, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRECP, 4, true>},
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMUL, 4>},
     {0x5A, 1, &OpDispatchBuilder::Scalar_CVT_Float_To_Float<8, 4>},
-    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false>},
+    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false, false>},
     {0x5C, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFSUB, 4>},
     {0x5D, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMIN, 4>},
     {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 4>},
@@ -7955,8 +7985,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x2A, 1, &OpDispatchBuilder::CVTGPR_To_FPR<8, true>},
     {0x2B, 1, &OpDispatchBuilder::MOVVectorOp},
-    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
-    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
+    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true, false>},
+    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true, true>},
     {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8, true>},
     //x52 = Invalid
     {0x58, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFADD, 8>},
@@ -7971,7 +8001,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
     {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, true>},
-    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},
+    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true, true>},
     {0xF0, 1, &OpDispatchBuilder::MOVVectorOp},
   };
 
@@ -7995,7 +8025,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 8>},
     {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>},
-    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false>},
+    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false, true>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 8>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 8>},
     {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 8>},
@@ -8052,7 +8082,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xE3, 1, &OpDispatchBuilder::PAVGOp<2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
-    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},
+    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true, false>},
     {0xE7, 1, &OpDispatchBuilder::MOVVectorOp},
     {0xE8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 1>},
     {0xE9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 2>},

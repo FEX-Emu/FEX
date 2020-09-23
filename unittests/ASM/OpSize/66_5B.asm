@@ -27,6 +27,11 @@ mov [rdx + 8 * 4], rax
 mov rax, 0x5152535455565758
 mov [rdx + 8 * 5], rax
 
+; Set up MXCSR to truncate
+mov eax, 0x7F80
+mov [rdx + 8 * 6], eax
+ldmxcsr [rdx + 8 * 6]
+
 movapd xmm0, [rdx + 8 * 4]
 movapd xmm1, [rdx + 8 * 4]
 
