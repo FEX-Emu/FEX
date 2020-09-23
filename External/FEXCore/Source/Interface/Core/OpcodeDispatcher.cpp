@@ -3431,12 +3431,18 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
 
   auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
 
-  auto Src = _LoadMem(GPRClass, Size, OldSP, Size);
+  OrderedNode *Src = _LoadMem(GPRClass, Size, OldSP, Size);
 
   auto NewSP = _Add(OldSP, Constant);
 
   // Store the new stack pointer
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+
+  // Add back our flag constants
+  // Bit 1 is always 1
+  // Bit 9 is always 1 because we always have interrupts enabled
+
+  Src = _Or(Src, _Constant(Size * 8, 0x202));
 
   SetPackedRFLAG(false, Src);
 }

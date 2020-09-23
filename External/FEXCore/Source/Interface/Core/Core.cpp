@@ -250,6 +250,7 @@ namespace FEXCore::Context {
     memset(NewThreadState.flags, 0, 32);
     NewThreadState.gs = 0;
     NewThreadState.flags[1] = 1;
+    NewThreadState.flags[9] = 1;
 
     FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
 
