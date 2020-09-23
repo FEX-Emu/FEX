@@ -7045,11 +7045,11 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
   switch (Opcode) {
   case 0x3'C0:
     FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_NOTZERO;
+    Type = COMPARE_ZERO;
   break;
   case 0x2'C0:
     FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_ZERO;
+    Type = COMPARE_NOTZERO;
   break;
   case 0x2'C8:
     FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
@@ -7092,8 +7092,8 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
       break;
     }
     case COMPARE_NOTZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_NEQ,
-      AndOp, ZeroConst, OneConst, ZeroConst);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+      AndOp, ZeroConst, ZeroConst, OneConst);
       break;
     }
   }
