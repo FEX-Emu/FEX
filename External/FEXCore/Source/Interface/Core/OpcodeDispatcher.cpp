@@ -7487,15 +7487,15 @@ void OpDispatchBuilder::HSUBP(OpcodeArgs) {
   OrderedNode *Swizzle_Src = Src;
 
   if (ElementSize == 4) {
-    Swizzle_Dest = _VInsElement(Size, ElementSize, 0, 0, Swizzle_Dest, Dest_Neg);
-    Swizzle_Dest = _VInsElement(Size, ElementSize, 2, 2, Swizzle_Dest, Dest_Neg);
+    Swizzle_Dest = _VInsElement(Size, ElementSize, 1, 1, Swizzle_Dest, Dest_Neg);
+    Swizzle_Dest = _VInsElement(Size, ElementSize, 3, 3, Swizzle_Dest, Dest_Neg);
 
-    Swizzle_Src = _VInsElement(Size, ElementSize, 0, 0, Swizzle_Src, Src_Neg);
-    Swizzle_Src = _VInsElement(Size, ElementSize, 2, 2, Swizzle_Src, Src_Neg);
+    Swizzle_Src = _VInsElement(Size, ElementSize, 1, 1, Swizzle_Src, Src_Neg);
+    Swizzle_Src = _VInsElement(Size, ElementSize, 3, 3, Swizzle_Src, Src_Neg);
   }
   else {
-    Swizzle_Dest = _VInsElement(Size, ElementSize, 0, 0, Swizzle_Dest, Dest_Neg);
-    Swizzle_Src = _VInsElement(Size, ElementSize, 0, 0, Swizzle_Src, Src_Neg);
+    Swizzle_Dest = _VInsElement(Size, ElementSize, 1, 1, Swizzle_Dest, Dest_Neg);
+    Swizzle_Src = _VInsElement(Size, ElementSize, 1, 1, Swizzle_Src, Src_Neg);
   }
 
   OrderedNode *Res = _VFAddP(Size, ElementSize, Swizzle_Dest, Swizzle_Src);
