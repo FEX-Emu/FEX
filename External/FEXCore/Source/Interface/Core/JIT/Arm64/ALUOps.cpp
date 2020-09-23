@@ -1032,6 +1032,22 @@ DEF_OP(Float_ToGPR_ZS) {
   }
 }
 
+DEF_OP(Float_ToGPR_U) {
+  LogMan::Msg::D("Unimplemented");
+}
+
+DEF_OP(Float_ToGPR_S) {
+  auto Op = IROp->C<IR::IROp_Float_ToGPR_S>();
+  if (Op->Header.ElementSize == 8) {
+    frinti(VTMP1.D(), GetSrc(Op->Header.Args[0].ID()).D());
+    fcvtzs(GetReg<RA_64>(Node), VTMP1.D());
+  }
+  else {
+    frinti(VTMP1.S(), GetSrc(Op->Header.Args[0].ID()).S());
+    fcvtzs(GetReg<RA_32>(Node), VTMP1.S());
+  }
+}
+
 DEF_OP(FCmp) {
   auto Op = IROp->C<IR::IROp_FCmp>();
 
@@ -1110,6 +1126,8 @@ void JITCore::RegisterALUHandlers() {
   REGISTER_OP(VEXTRACTTOGPR,     VExtractToGPR);
   REGISTER_OP(FLOAT_TOGPR_ZU,    Float_ToGPR_ZU);
   REGISTER_OP(FLOAT_TOGPR_ZS,    Float_ToGPR_ZS);
+  REGISTER_OP(FLOAT_TOGPR_U,     Float_ToGPR_U);
+  REGISTER_OP(FLOAT_TOGPR_S,     Float_ToGPR_S);
   REGISTER_OP(FCMP,              FCmp);
   REGISTER_OP(F80CMP,            F80Cmp);
 

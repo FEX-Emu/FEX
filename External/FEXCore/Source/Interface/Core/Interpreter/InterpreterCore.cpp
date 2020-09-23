@@ -19,6 +19,9 @@
 #include <cmath>
 #include <limits>
 #include <vector>
+#ifdef _M_X86_64
+#include <xmmintrin.h>
+#endif
 
 namespace FEXCore::CPU {
 
@@ -2893,6 +2896,38 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, Tmp, OpSize);
             break;
           }
+          case IR::OP_VECTOR_FTOU: {
+            auto Op = IROp->C<IR::IROp_Vector_FToU>();
+            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func = [](auto a, auto min, auto max) { return a; };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, float, Func, 0, 0)
+              DO_VECTOR_1SRC_2TYPE_OP(8, uint64_t, double, Func, 0, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
+          case IR::OP_VECTOR_FTOS: {
+            auto Op = IROp->C<IR::IROp_Vector_FToS>();
+            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func = [](auto a, auto min, auto max) { return a; };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, float, Func, 0, 0)
+              DO_VECTOR_1SRC_2TYPE_OP(8, int64_t, double, Func, 0, 0)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
           case IR::OP_VUMUL: {
             auto Op = IROp->C<IR::IROp_VUMul>();
             void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -3698,6 +3733,30 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          case IR::OP_FLOAT_TOGPR_S: {
+            auto Op = IROp->C<IR::IROp_Float_ToGPR_S>();
+            if (Op->Header.ElementSize == 8) {
+              int64_t Dst = (int64_t)*GetSrc<double*>(SSAData, Op->Header.Args[0]);
+              memcpy(GDP, &Dst, Op->Header.ElementSize);
+            }
+            else {
+              int32_t Dst = (int32_t)*GetSrc<float*>(SSAData, Op->Header.Args[0]);
+              memcpy(GDP, &Dst, Op->Header.ElementSize);
+            }
+            break;
+          }
+          case IR::OP_FLOAT_TOGPR_U: {
+            auto Op = IROp->C<IR::IROp_Float_ToGPR_U>();
+            if (Op->Header.ElementSize == 8) {
+              uint64_t Dst = (uint64_t)*GetSrc<double*>(SSAData, Op->Header.Args[0]);
+              memcpy(GDP, &Dst, Op->Header.ElementSize);
+            }
+            else {
+              uint32_t Dst = (uint32_t)*GetSrc<float*>(SSAData, Op->Header.Args[0]);
+              memcpy(GDP, &Dst, Op->Header.ElementSize);
+            }
+            break;
+          }
           case IR::OP_FLOAT_FTOF: {
             auto Op = IROp->C<IR::IROp_Float_FToF>();
             uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
@@ -4246,6 +4305,77 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
 
             GD = ResultFlags;
+            break;
+          }
+          case IR::OP_GETROUNDINGMODE: {
+            uint32_t GuestRounding{};
+#ifdef _M_ARM_64
+            uint64_t Tmp{};
+            __asm(R"(
+              mrs %[Tmp], FPCR;
+            )"
+            : [Tmp] "=r" (Tmp));
+            // Extract the rounding
+            // On ARM the ordering is different than on x86
+            GuestRounding |= ((Tmp >> 24) & 1) ? ROUND_MODE_FLUSH_TO_ZERO : 0;
+            uint8_t RoundingMode = (Tmp >> 22) & 0b11;
+            if (RoundingMode == 0)
+              GuestRounding |= ROUND_MODE_NEAREST;
+            else if (RoundingMode == 1)
+              GuestRounding |= ROUND_MODE_POSITIVE_INFINITY;
+            else if (RoundingMode == 2)
+              GuestRounding |= ROUND_MODE_NEGATIVE_INFINITY;
+            else if (RoundingMode == 3)
+              GuestRounding |= ROUND_MODE_TOWARDS_ZERO;
+#else
+            GuestRounding = _mm_getcsr();
+
+            // Extract the rounding
+            GuestRounding = (GuestRounding >> 13) & 0b111;
+#endif
+            memcpy(GDP, &GuestRounding, sizeof(GuestRounding));
+            break;
+          }
+
+          case IR::OP_SETROUNDINGMODE: {
+            auto Op = IROp->C<IR::IROp_SetRoundingMode>();
+            uint8_t GuestRounding = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
+#ifdef _M_ARM_64
+            uint64_t HostRounding{};
+            __asm volatile(R"(
+              mrs %[Tmp], FPCR;
+            )"
+            : [Tmp] "=r" (HostRounding));
+            // Mask out the rounding
+            HostRounding &= ~(0b111 << 22);
+
+            HostRounding |= (GuestRounding & ROUND_MODE_FLUSH_TO_ZERO) ? (1U << 24) : 0;
+
+            uint8_t RoundingMode = GuestRounding & 0b11;
+            if (RoundingMode == ROUND_MODE_NEAREST)
+              HostRounding |= (0b00U << 22);
+            else if (RoundingMode == ROUND_MODE_POSITIVE_INFINITY)
+              HostRounding |= (0b01U << 22);
+            else if (RoundingMode == ROUND_MODE_NEGATIVE_INFINITY)
+              HostRounding |= (0b10U << 22);
+            else if (RoundingMode == ROUND_MODE_TOWARDS_ZERO)
+              HostRounding |= (0b11U << 22);
+
+            __asm volatile(R"(
+              msr FPCR, %[Tmp];
+            )"
+            :: [Tmp] "r" (HostRounding));
+#else
+            uint32_t HostRounding = _mm_getcsr();
+
+            // Cut out the host rounding mode
+            HostRounding &= ~(0b111 << 13);
+
+            // Insert our new rounding mode
+            HostRounding |= GuestRounding << 13;
+            _mm_setcsr(HostRounding);
+#endif
+
             break;
           }
           default:

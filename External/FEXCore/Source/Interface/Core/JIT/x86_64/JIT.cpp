@@ -3455,6 +3455,19 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VECTOR_FTOS: {
+          auto Op = IROp->C<IR::IROp_Vector_FToS>();
+          switch (Op->Header.ElementSize) {
+            case 4:
+              cvtps2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+            break;
+            case 8:
+              cvtpd2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+            break;
+            default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->Header.ElementSize);
+          }
+          break;
+        }
         case IR::OP_VECTOR_FTOF: {
           auto Op = IROp->C<IR::IROp_Vector_FToF>();
           uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
@@ -4143,6 +4156,15 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           else
             cvttss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+          break;
+        }
+        case IR::OP_FLOAT_TOGPR_S: {
+          auto Op = IROp->C<IR::IROp_Float_ToGPR_S>();
+          if (Op->Header.ElementSize == 8) {
+            cvtsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+          }
+          else
+            cvtss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
           break;
         }
         case IR::OP_FLOAT_FTOF: {
@@ -4908,6 +4930,39 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           for (uint32_t i = RA64.size(); i > 0; --i)
             pop(RA64[i - 1]);
 
+          break;
+        }
+        case IR::OP_GETROUNDINGMODE: {
+          auto Dst = GetDst<RA_32>(Node);
+          sub(rsp, 4);
+          // Only stores to memory
+          stmxcsr(dword [rsp]);
+          mov(Dst, dword [rsp]);
+          add(rsp, 4);
+          shr(Dst, 13);
+          break;
+        }
+        case IR::OP_SETROUNDINGMODE: {
+          auto Op = IROp->C<IR::IROp_SetRoundingMode>();
+          auto Src = GetSrc<RA_32>(Op->Header.Args[0].ID());
+
+          // Load old mxcsr
+          // Only stores to memory
+          sub(rsp, 4);
+          stmxcsr(dword [rsp]);
+          mov(TMP1.cvt32(), dword [rsp]);
+
+          // Insert the new rounding mode
+          and(TMP1.cvt32(), ~(0b111 << 13));
+          mov(TMP2.cvt32(), Src);
+          shl(TMP2.cvt32(), 13);
+          or(TMP1.cvt32(), TMP2.cvt32());
+
+          // Store it to mxcsr
+          // Only loads from memory
+          mov(dword [rsp], TMP1.cvt32());
+          ldmxcsr(dword [rsp]);
+          add(rsp, 4);
           break;
         }
         case IR::OP_DUMMY:

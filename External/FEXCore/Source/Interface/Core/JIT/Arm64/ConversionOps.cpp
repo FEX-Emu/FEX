@@ -132,6 +132,36 @@ DEF_OP(Vector_FToZS) {
   }
 }
 
+DEF_OP(Vector_FToU) {
+  auto Op = IROp->C<IR::IROp_Vector_FToU>();
+  switch (Op->Header.ElementSize) {
+    case 4:
+      frinti(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+      fcvtzu(GetDst(Node).V4S(), GetDst(Node).V4S());
+    break;
+    case 8:
+      frinti(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      fcvtzu(GetDst(Node).V2D(), GetDst(Node).V2D());
+    break;
+    default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->Header.ElementSize);
+  }
+}
+
+DEF_OP(Vector_FToS) {
+  auto Op = IROp->C<IR::IROp_Vector_FToS>();
+  switch (Op->Header.ElementSize) {
+    case 4:
+      frinti(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+      fcvtzs(GetDst(Node).V4S(), GetDst(Node).V4S());
+    break;
+    case 8:
+      frinti(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      fcvtzs(GetDst(Node).V2D(), GetDst(Node).V2D());
+    break;
+    default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->Header.ElementSize);
+  }
+}
+
 DEF_OP(Vector_FToF) {
   auto Op = IROp->C<IR::IROp_Vector_FToF>();
   uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
@@ -161,6 +191,8 @@ void JITCore::RegisterConversionHandlers() {
   REGISTER_OP(VECTOR_STOF,     Vector_SToF);
   REGISTER_OP(VECTOR_FTOZU,    Vector_FToZU);
   REGISTER_OP(VECTOR_FTOZS,    Vector_FToZS);
+  REGISTER_OP(VECTOR_FTOU,     Vector_FToU);
+  REGISTER_OP(VECTOR_FTOS,     Vector_FToS);
   REGISTER_OP(VECTOR_FTOF,     Vector_FToF);
 #undef REGISTER_OP
 }
