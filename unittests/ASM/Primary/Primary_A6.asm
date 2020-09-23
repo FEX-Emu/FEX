@@ -13,9 +13,9 @@
 
 mov rdx, 0xe0000000
 
-mov rax, 0x61
-mov [rdx + 8 * 0], rax
 mov rax, 0x47
+mov [rdx + 8 * 0], rax
+mov rax, 0x61
 mov [rdx + 8 * 1], rax
 
 lea rdi, [rdx + 8 * 1]

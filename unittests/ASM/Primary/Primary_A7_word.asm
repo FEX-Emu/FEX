@@ -1,7 +1,7 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "0x8700",
+    "RAX": "0x1200",
     "RDI": "0xE000000A",
     "RSI": "0xE0000002"
   },
