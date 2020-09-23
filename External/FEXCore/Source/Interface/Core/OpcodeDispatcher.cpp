@@ -5886,6 +5886,43 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
+void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
+  // Until we get correct PHI nodes this is required to be a loop unroll
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  auto Size = GetSrcSize(Op) * 8;
+
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  OrderedNode *MemDest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+
+  auto NumElements = Size / 64;
+  for (size_t Element = 0; Element < NumElements; ++Element) {
+    // Extract the current element
+    auto SrcElement = _VExtractToGPR(GetSrcSize(Op), 8, Src, Element);
+    auto DestElement = _VExtractToGPR(GetSrcSize(Op), 8, Dest, Element);
+
+    size_t NumSelectBits = 64 / 8;
+    for (size_t Select = 0; Select < NumSelectBits; ++Select) {
+      auto SelectMask = _Bfe(1, 8 * Select + 7, SrcElement);
+      auto CondJump = _CondJump(SelectMask);
+      auto StoreBlock = CreateNewCodeBlock();
+      SetTrueJumpTarget(CondJump, StoreBlock);
+      SetCurrentCodeBlock(StoreBlock);
+      {
+        auto DestByte = _Bfe(8, 8 * Select, DestElement);
+        auto MemLocation = _Add(MemDest, _Constant(Element * 8 + Select));
+        _StoreMemTSO(GPRClass, 1, MemLocation, DestByte, 1);
+      }
+      auto Jump = _Jump();
+      auto NextJumpTarget = CreateNewCodeBlock();
+      SetJumpTarget(Jump, NextJumpTarget);
+      SetFalseJumpTarget(CondJump, NextJumpTarget);
+      SetCurrentCodeBlock(NextJumpTarget);
+    }
+  }
+}
+
 void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
       Op->Dest.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
@@ -7730,6 +7767,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
     {0xF5, 1, &OpDispatchBuilder::PMADDWD},
     {0xF6, 1, &OpDispatchBuilder::PSADBW},
+    {0xF7, 1, &OpDispatchBuilder::MASKMOVOp},
     {0xF8, 1, &OpDispatchBuilder::PSUBQOp<1>},
     {0xF9, 1, &OpDispatchBuilder::PSUBQOp<2>},
     {0xFA, 1, &OpDispatchBuilder::PSUBQOp<4>},
@@ -8016,6 +8054,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
     {0xF5, 1, &OpDispatchBuilder::PMADDWD},
     {0xF6, 1, &OpDispatchBuilder::PSADBW},
+    {0xF7, 1, &OpDispatchBuilder::MASKMOVOp},
     {0xF8, 1, &OpDispatchBuilder::PSUBQOp<1>},
     {0xF9, 1, &OpDispatchBuilder::PSUBQOp<2>},
     {0xFA, 1, &OpDispatchBuilder::PSUBQOp<4>},
