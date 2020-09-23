@@ -150,9 +150,9 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0x9F, 1, X86InstInfo{"LAHF",   TYPE_INST, FLAGS_NONE,                              0, nullptr}},
 
     {0xA0, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  | FLAGS_MEM_OFFSET,                                         1, nullptr}},
-    {0xA1, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_DISPLACE_SIZE_MUL_2 | FLAGS_MEM_OFFSET, 4, nullptr}},
+    {0xA1, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_MEM_OFFSET, 8, nullptr}},
     {0xA2, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX  | FLAGS_MEM_OFFSET,                                         1, nullptr}},
-    {0xA3, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_DISPLACE_SIZE_MUL_2 | FLAGS_MEM_OFFSET, 4, nullptr}},
+    {0xA3, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_MEM_OFFSET, 8, nullptr}},
 
     {0xA4, 1, X86InstInfo{"MOVSB",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MEM_OFFSET  | FLAGS_SUPPORTS_REP,                                            0, nullptr}},
     {0xA5, 1, X86InstInfo{"MOVS",   TYPE_INST, FLAGS_MEM_OFFSET | FLAGS_SUPPORTS_REP,                                                            0, nullptr}},
