@@ -1,8 +1,8 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "MM0":  ["0xFD44929037E4ED40", "0x0"],
-    "MM1":  ["0xFD44929037E4ED40", "0x0"]
+    "MM0": "0xFD44929037E4ED40",
+    "MM1": "0xFD44929037E4ED40"
   },
   "MemoryRegions": {
     "0x100000000": "4096"

@@ -23,5 +23,7 @@ lahf
 ; ================
 ;         10000011
 
+; Mask out AF since it is undefined
+and rax, ~0x1000
 
 hlt
