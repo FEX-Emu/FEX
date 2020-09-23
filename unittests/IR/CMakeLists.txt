@@ -22,17 +22,19 @@ foreach(IR_SRC ${IR_SOURCES})
 
   # Since we pass in raw IR, we don't need to worry about various IR gen options
   set(TEST_ARGS
-    "-c irint -n 500" "ir_int"
-    "-c irjit -n 500" "ir_jit"
+    "-c irint -n 500" "ir_int" "int"
+    "-c irjit -n 500" "ir_jit" "jit"
     )
 
   list(LENGTH TEST_ARGS ARG_COUNT)
   math(EXPR ARG_COUNT "${ARG_COUNT}-1")
-  foreach(Index RANGE 0 ${ARG_COUNT} 2)
+  foreach(Index RANGE 0 ${ARG_COUNT} 3)
     math(EXPR TEST_NAME_INDEX "${Index}+1")
+    math(EXPR TEST_TYPE_INDEX "${Index}+2")
 
     list(GET TEST_ARGS ${Index} ARGS)
     list(GET TEST_ARGS ${TEST_NAME_INDEX} TEST_DESC)
+    list(GET TEST_ARGS ${TEST_TYPE_INDEX} TEST_TYPE)
 
     set(TEST_NAME "${TEST_DESC}/Test_${IR_NAME}")
     string(REPLACE " " ";" ARGS_LIST ${ARGS})
@@ -43,6 +45,7 @@ foreach(IR_SRC ${IR_SOURCES})
       COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
       "${CMAKE_SOURCE_DIR}/unittests/IR/Known_Failures"
       "${CMAKE_SOURCE_DIR}/unittests/IR/Disabled_Tests"
+      "${CMAKE_SOURCE_DIR}/unittests/IR/Disabled_Tests_${TEST_TYPE}"
       "Test_${IR_NAME}"
       "${CMAKE_BINARY_DIR}/Bin/IRLoader"
       ${ARGS_LIST} "${IR_SRC}" "${OUTPUT_CONFIG_NAME}")

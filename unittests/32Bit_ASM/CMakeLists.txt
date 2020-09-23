@@ -43,21 +43,23 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   # Format is "<Test Arguments>" "<Test Name>"
   set(TEST_ARGS
-    "-c irint -n 1"      "int_1"
-    "-c irint -n 500"    "int_500"
-    "-c irint -n 500 -m" "int_500_m"
-    "-c irjit -n 1"      "jit_1"
-    "-c irjit -n 500"    "jit_500"
-    "-c irjit -n 500 -m" "jit_500_m"
+    "-c irint -n 1"      "int_1"     "int"
+    "-c irint -n 500"    "int_500"   "int"
+    "-c irint -n 500 -m" "int_500_m" "int"
+    "-c irjit -n 1"      "jit_1"     "jit"
+    "-c irjit -n 500"    "jit_500"   "jit"
+    "-c irjit -n 500 -m" "jit_500_m" "jit"
     )
 
   list(LENGTH TEST_ARGS ARG_COUNT)
   math(EXPR ARG_COUNT "${ARG_COUNT}-1")
-  foreach(Index RANGE 0 ${ARG_COUNT} 2)
+  foreach(Index RANGE 0 ${ARG_COUNT} 3)
     math(EXPR TEST_NAME_INDEX "${Index}+1")
+    math(EXPR TEST_TYPE_INDEX "${Index}+2")
 
     list(GET TEST_ARGS ${Index} ARGS)
     list(GET TEST_ARGS ${TEST_NAME_INDEX} TEST_DESC)
+    list(GET TEST_ARGS ${TEST_TYPE_INDEX} TEST_TYPE)
 
     set(TEST_NAME "${TEST_DESC}/Test_32Bit_${REL_TEST_ASM}")
     string(REPLACE " " ";" ARGS_LIST ${ARGS})
@@ -65,6 +67,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
       COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
       "${CMAKE_SOURCE_DIR}/unittests/32Bit_ASM/Known_Failures"
       "${CMAKE_SOURCE_DIR}/unittests/32Bit_ASM/Disabled_Tests"
+      "${CMAKE_SOURCE_DIR}/unittests/32Bit_ASM/Disabled_Tests_${TEST_TYPE}"
       "Test_32Bit_${REL_TEST_ASM}"
       "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
       ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
