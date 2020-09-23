@@ -52,6 +52,65 @@ DEF_OP(Break) {
   }
 }
 
+DEF_OP(GetRoundingMode) {
+  auto Op = IROp->C<IR::IROp_GetRoundingMode>();
+  auto Dst = GetReg<RA_64>(Node);
+  mrs(Dst, FPCR);
+  lsr(Dst, Dst,  22);
+
+  // FTZ is already in the correct location
+  // Rounding mode is different
+  and_(TMP1, Dst, 0b11);
+
+  cmp(TMP1, 1);
+  LoadConstant(TMP3, IR::ROUND_MODE_POSITIVE_INFINITY);
+  csel(TMP2, TMP3, xzr, vixl::aarch64::Condition::eq);
+
+  cmp(TMP1, 2);
+  LoadConstant(TMP3, IR::ROUND_MODE_NEGATIVE_INFINITY);
+  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+
+  cmp(TMP1, 3);
+  LoadConstant(TMP3, IR::ROUND_MODE_TOWARDS_ZERO);
+  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+
+  orr(Dst, Dst, TMP2);
+
+  bfi(Dst, TMP2, 0, 2);
+}
+
+DEF_OP(SetRoundingMode) {
+  auto Op = IROp->C<IR::IROp_SetRoundingMode>();
+  auto Src = GetReg<RA_32>(Op->Header.Args[0].ID());
+
+  // Setup the rounding flags correctly
+  and_(TMP1, Src, 0b11);
+
+  cmp(TMP1, IR::ROUND_MODE_POSITIVE_INFINITY);
+  LoadConstant(TMP3, 1);
+  csel(TMP2, TMP3, xzr, vixl::aarch64::Condition::eq);
+
+  cmp(TMP1, IR::ROUND_MODE_NEGATIVE_INFINITY);
+  LoadConstant(TMP3, 2);
+  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+
+  cmp(TMP1, IR::ROUND_MODE_TOWARDS_ZERO);
+  LoadConstant(TMP3, 3);
+  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+
+  mrs(TMP1, FPCR);
+
+  // Insert the rounding flags
+  bfi(TMP1, TMP2, 22, 2);
+
+  // Insert the FTZ flag
+  lsr(TMP2, Src, 2);
+  bfi(TMP1, TMP2, 24, 1);
+
+  // Now save the new FPCR
+  msr(FPCR, TMP1);
+}
+
 #undef DEF_OP
 void JITCore::RegisterMiscHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
@@ -65,6 +124,8 @@ void JITCore::RegisterMiscHandlers() {
   REGISTER_OP(PHI,        NoOp);
   REGISTER_OP(PHIVALUE,   NoOp);
   REGISTER_OP(PRINT,      Unhandled);
+  REGISTER_OP(GETROUNDINGMODE, GetRoundingMode);
+  REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
 #undef REGISTER_OP
 }
 }

@@ -280,6 +280,8 @@ private:
   DEF_OP(VExtractToGPR);
   DEF_OP(Float_ToGPR_ZU);
   DEF_OP(Float_ToGPR_ZS);
+  DEF_OP(Float_ToGPR_U);
+  DEF_OP(Float_ToGPR_S);
   DEF_OP(FCmp);
   DEF_OP(F80Cmp);
 
@@ -323,6 +325,8 @@ private:
   DEF_OP(Vector_SToF);
   DEF_OP(Vector_FToZU);
   DEF_OP(Vector_FToZS);
+  DEF_OP(Vector_FToU);
+  DEF_OP(Vector_FToS);
   DEF_OP(Vector_FToF);
 
   ///< Flag ops
@@ -353,6 +357,8 @@ private:
   DEF_OP(Phi);
   DEF_OP(PhiValue);
   DEF_OP(Print);
+  DEF_OP(GetRoundingMode);
+  DEF_OP(SetRoundingMode);
 
   ///< Move ops
   DEF_OP(ExtractElementPair);
