@@ -10,10 +10,10 @@
 }
 %endif
 
-lea rdx, [rel data]
+lea rdx, [rel data2]
 fld tword [rdx + 8 * 0]
 
-lea rdx, [rel data2]
+lea rdx, [rel data]
 fld tword [rdx + 8 * 0]
 
 fyl2x

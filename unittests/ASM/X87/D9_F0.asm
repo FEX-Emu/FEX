@@ -1,7 +1,7 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "MM7":  ["0xC000000000000000", "0x4000"]
+    "MM7":  ["0x0000000000000000", "0x0000"]
   },
   "MemoryRegions": {
     "0x100000000": "4096"
@@ -17,5 +17,5 @@ hlt
 
 align 8
 data:
-  dt 2.0
+  dt 0.0
   dq 0

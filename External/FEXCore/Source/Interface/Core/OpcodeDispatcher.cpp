@@ -6653,7 +6653,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
-  auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+  OrderedNode *st0 = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
   OrderedNode *st1 = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 
   if (Plus1) {
@@ -6661,10 +6661,10 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
     auto high = _Constant(0b0'011'1111'1111'1111);
     OrderedNode *data = _VCastFromGPR(16, 8, low);
     data = _VInsGPR(16, 8, data, high, 1);
-    st1 = _F80Add(st1, data);
+    st0 = _F80Add(st0, data);
   }
 
-  auto result = _F80FYL2X(st1, a);
+  auto result = _F80FYL2X(st0, st1);
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -7045,11 +7045,11 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
   switch (Opcode) {
   case 0x3'C0:
     FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_NOTZERO;
+    Type = COMPARE_ZERO;
   break;
   case 0x2'C0:
     FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_ZERO;
+    Type = COMPARE_NOTZERO;
   break;
   case 0x2'C8:
     FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
@@ -7092,8 +7092,8 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
       break;
     }
     case COMPARE_NOTZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_NEQ,
-      AndOp, ZeroConst, OneConst, ZeroConst);
+      SrcCond = _Select(FEXCore::IR::COND_EQ,
+      AndOp, ZeroConst, ZeroConst, OneConst);
       break;
     }
   }
