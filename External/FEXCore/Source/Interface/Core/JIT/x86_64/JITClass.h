@@ -9,6 +9,8 @@
 #include "Common/MathUtils.h"
 
 #include <xbyak/xbyak.h>
+#include <xbyak/xbyak_util.h>
+
 using namespace Xbyak;
 
 #include <FEXCore/Core/CPUBackend.h>
@@ -74,6 +76,7 @@ private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
+  Xbyak::util::Cpu Features{};
 
   bool MemoryDebug = false;
 

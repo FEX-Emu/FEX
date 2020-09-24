@@ -4857,6 +4857,70 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_COUNTLEADINGZEROES: {
+          auto Op = IROp->C<IR::IROp_CountLeadingZeroes>();
+          if (Features.has(Xbyak::util::Cpu::tLZCNT)) {
+            switch (OpSize) {
+              case 2: {
+                lzcnt(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+                movzx(GetDst<RA_32>(Node), GetDst<RA_16>(Node));
+                break;
+              }
+              case 4: {
+                lzcnt(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+                break;
+              }
+              case 8: {
+                lzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+                break;
+              }
+              default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+            }
+          }
+          else {
+            switch (OpSize) {
+              case 2: {
+                test(GetSrc<RA_16>(Op->Header.Args[0].ID()), 0x8000);
+                Label Skip;
+                mov(GetDst<RA_32>(Node), 0);
+                jne(Skip);
+                  bsr(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+                  mov(eax, 0x0F);
+                  cmovz(GetDst<RA_32>(Node), eax);
+                  add(GetDst<RA_32>(Node), 1);
+                L(Skip);
+                break;
+              }
+              case 4: {
+                test(GetSrc<RA_32>(Op->Header.Args[0].ID()), 0x80000000);
+                Label Skip;
+                mov(GetDst<RA_32>(Node), 0);
+                jne(Skip);
+                  bsr(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+                  mov(eax, 0x1F);
+                  cmovz(GetDst<RA_32>(Node), eax);
+                  add(GetDst<RA_32>(Node), 1);
+                L(Skip);
+                break;
+              }
+              case 8: {
+                mov(rax, 0x8000000000000000ULL);
+                test(GetSrc<RA_64>(Op->Header.Args[0].ID()), rax);
+                Label Skip;
+                mov(GetDst<RA_32>(Node), 0);
+                jne(Skip);
+                  bsr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+                  mov(rax, 0x3F);
+                  cmovz(GetDst<RA_64>(Node), rax);
+                  add(GetDst<RA_64>(Node), 1);
+                L(Skip);
+                break;
+              }
+              default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+            }
+          }
+          break;
+        }
         case IR::OP_FENCE: {
           auto Op = IROp->C<IR::IROp_Fence>();
           switch (Op->Fence) {
