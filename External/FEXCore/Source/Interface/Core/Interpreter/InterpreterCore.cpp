@@ -1195,6 +1195,47 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
+          case IR::OP_COUNTLEADINGZEROES: {
+            auto Op = IROp->C<IR::IROp_CountLeadingZeroes>();
+            switch (OpSize) {
+              case 1: {
+                uint32_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
+                Src <<= 24;
+                if (Src)
+                  GD = __builtin_clz(Src);
+                else
+                  GD = 8;
+                break;
+              }
+              case 2: {
+                uint32_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]);
+                Src <<= 16;
+                if (Src)
+                  GD = __builtin_clz(Src);
+                else
+                  GD = 16;
+                break;
+              }
+              case 4: {
+                auto Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
+                if (Src)
+                  GD = __builtin_clz(Src);
+                else
+                  GD = sizeof(Src) * 8;
+                break;
+              }
+              case 8: {
+                auto Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
+                if (Src)
+                  GD = __builtin_clzll(Src);
+                else
+                  GD = sizeof(Src) * 8;
+                break;
+              }
+              default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+            }
+            break;
+          }
           case IR::OP_BFI: {
             auto Op = IROp->C<IR::IROp_Bfi>();
             uint64_t SourceMask = (1ULL << Op->Width) - 1;
