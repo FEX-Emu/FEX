@@ -7416,6 +7416,28 @@ void OpDispatchBuilder::PSUBSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+template<size_t ElementSize>
+void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode *ResAdd{};
+  OrderedNode *ResSub{};
+  ResAdd = _VFAdd(Size, ElementSize, Dest, Src);
+  ResSub = _VFSub(Size, ElementSize, Dest, Src);
+
+  // We now need to swizzle results
+  uint8_t NumElements = Size / ElementSize;
+  // Even elements are the sub result
+  // Odd elements are the add results
+  for (size_t i = 0; i < NumElements; i += 2) {
+    ResAdd = _VInsElement(Size, ElementSize, i, i, ResAdd, ResSub);
+  }
+  StoreResult(FPRClass, Op, ResAdd, -1);
+}
+
 void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
   // This is a pretty curious operation
   // Does two MADD operations across 4 16bit signed integers and accumulates to 32bit integers in the destination
@@ -7999,6 +8021,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, true, true>},
     {0x7C, 1, &OpDispatchBuilder::HADDP<4>},
     {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
+    {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<4>},
     {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8, true>},
     {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true, true>},
@@ -8061,6 +8084,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xC5, 1, &OpDispatchBuilder::PExtrOp<2>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<8>},
 
+    {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<8>},
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2, true, 0>},
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4, true, 0>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8, true, 0>},
