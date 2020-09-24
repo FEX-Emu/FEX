@@ -1012,6 +1012,17 @@
       "SSAArgs": "1"
     },
 
+    "CountLeadingZeroes": {
+      "Desc": ["Counts the number of leading zero bits in a GPR",
+               "Returns the number of bits that are zero leading",
+               "In the case of zero returns the size in bits of the input"
+              ],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "SSAArgs": "1"
+    },
+
     "Rev": {
       "Desc": ["Reverses the byte order of the register",
                "Specifically 8bit byte swap size. (Not 16bit or 32bit word swapping)"
