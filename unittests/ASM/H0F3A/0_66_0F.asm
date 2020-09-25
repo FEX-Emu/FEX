@@ -2,7 +2,9 @@
 {
   "RegData": {
     "XMM0": ["0x7861626364656667", "0x4871727374757677"],
-    "XMM2": ["0x7861626364656667", "0x4871727374757677"]
+    "XMM2": ["0x7861626364656667", "0x4871727374757677"],
+    "XMM3": ["0x5354555657584142", "0x0000000000005152"],
+    "XMM4": ["0x0", "0x0"]
   },
   "MemoryRegions": {
     "0x100000000": "4096"
@@ -32,5 +34,15 @@ movapd xmm3, [rdx + 16]
 
 db 0x48 ; Glues Rex.W to the start of the instruction
 palignr xmm2, xmm3, 1
+
+movapd xmm3, [rdx]
+movapd xmm4, [rdx + 16]
+
+palignr xmm3, xmm4, 22
+
+movapd xmm4, [rdx]
+movapd xmm5, [rdx + 16]
+
+palignr xmm4, xmm5, 32
 
 hlt
