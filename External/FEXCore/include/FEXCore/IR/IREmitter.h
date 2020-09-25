@@ -109,6 +109,9 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_VAnd> _VAnd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VAnd(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VOr> _VOr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VOr(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VAdd> _VAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VAdd(ssa0, ssa1, RegisterSize, ElementSize);
   }
@@ -160,8 +163,17 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_VCMPEQ> _VCMPEQ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VCMPEQ(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VCMPEQZ> _VCMPEQZ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VCMPEQZ(ssa0, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VCMPGT> _VCMPGT(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VCMPGT(ssa0, ssa1, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VCMPGTZ> _VCMPGTZ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VCMPGTZ(ssa0, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_VCMPLTZ> _VCMPLTZ(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VCMPLTZ(ssa0, RegisterSize, ElementSize);
   }
   IRPair<IROp_VFAdd> _VFAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VFAdd(ssa0, ssa1, RegisterSize, ElementSize);
