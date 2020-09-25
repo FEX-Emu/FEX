@@ -9,7 +9,7 @@ void InitializeH0F3ATables() {
   constexpr uint16_t PF_3A_66   = 1;
 
   const U16U8InfoStruct H0F3ATable[] = {
-    {OPD(0, PF_3A_NONE, 0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_UNDEC, FLAGS_NONE, 1, nullptr}},
+    {OPD(0, PF_3A_NONE, 0x0F), 1, X86InstInfo{"PALIGNR",         TYPE_INST, GenFlagsSameSize(SIZE_64BIT)  | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(0, PF_3A_66,   0x08), 1, X86InstInfo{"ROUNDPS",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x09), 1, X86InstInfo{"ROUNDPD",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x0A), 1, X86InstInfo{"ROUNDSS",         TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
