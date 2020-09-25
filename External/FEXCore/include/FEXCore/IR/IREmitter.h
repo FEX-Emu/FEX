@@ -112,6 +112,9 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_VOr> _VOr(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VOr(ssa0, ssa1, RegisterSize, ElementSize);
   }
+  IRPair<IROp_VXor> _VXor(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _VXor(ssa0, ssa1, RegisterSize, ElementSize);
+  }
   IRPair<IROp_VAdd> _VAdd(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VAdd(ssa0, ssa1, RegisterSize, ElementSize);
   }
