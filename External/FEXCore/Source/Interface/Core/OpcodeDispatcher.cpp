@@ -5903,22 +5903,57 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   size_t ElementSize = SrcElementSize;
-  size_t Size = GetSrcSize(Op);
+  size_t DstSize = GetDstSize(Op);
   if (Widen) {
-    Src = _VSXTL(Src, Size, ElementSize);
+    Src = _VSXTL(Src, DstSize, ElementSize);
     ElementSize <<= 1;
   }
 
   if (Signed)
-    Src = _Vector_SToF(Src, Size, ElementSize);
+    Src = _Vector_SToF(Src, DstSize, ElementSize);
   else
-    Src = _Vector_UToF(Src, Size, ElementSize);
+    Src = _Vector_UToF(Src, DstSize, ElementSize);
 
-  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
-  // Insert the lower bits
-  Dest = _VInsElement(GetDstSize(Op), 8, 0, 0, Dest, Src);
+  OrderedNode *Dest{};
+
+  if (Widen) {
+    Dest = Src;
+  }
+  else {
+    Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
+    // Insert the lower bits
+    Dest = _VInsElement(GetDstSize(Op), 8, 0, 0, Dest, Src);
+  }
 
   StoreResult(FPRClass, Op, Dest, -1);
+}
+
+template<size_t SrcElementSize, bool Signed, bool Narrow, bool HostRoundingMode>
+void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  size_t ElementSize = SrcElementSize;
+  size_t Size = GetDstSize(Op);
+
+  if (Narrow) {
+    Src = _Vector_FToF(Size, SrcElementSize >> 1, SrcElementSize, Src);
+    ElementSize >>= 1;
+  }
+
+  if (HostRoundingMode) {
+    if (Signed)
+      Src = _Vector_FToS(Src, Size, ElementSize);
+    else
+      Src = _Vector_FToU(Src, Size, ElementSize);
+  }
+  else {
+    if (Signed)
+      Src = _Vector_FToZS(Src, Size, ElementSize);
+    else
+      Src = _Vector_FToZU(Src, Size, ElementSize);
+  }
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
 }
 
 void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
@@ -8042,6 +8077,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x16, 2, &OpDispatchBuilder::MOVHPDOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x28, 2, &OpDispatchBuilder::MOVAPSOp},
+    {0x2A, 1, &OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, true, true>},
+    {0x2C, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, true, true>},
+    {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, true, false>},
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<8>},
 
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
