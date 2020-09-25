@@ -7373,9 +7373,17 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Size = GetDstSize(Op);
 
   uint8_t Index = Op->Src[1].TypeLiteral.Literal;
-  OrderedNode *Res = _VExtr(GetDstSize(Op), 1, Src1, Src2, Index);
+  OrderedNode *Res{};
+  if (Index >= (Size * 2)) {
+    // If the immediate is greater than both vectors combined then it zeroes the vector
+    Res = _VectorZero(Size);
+  }
+  else {
+    Res = _VExtr(Size, 1, Src1, Src2, Index);
+  }
   StoreResult(FPRClass, Op, Res, -1);
 }
 
