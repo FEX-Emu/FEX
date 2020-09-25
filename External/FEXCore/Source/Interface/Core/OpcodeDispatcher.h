@@ -308,6 +308,9 @@ public:
   template<size_t ElementSize>
   void PSIGN(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void PABS(OpcodeArgs);
+
   // X87 Ops
   template<size_t width>
   void FLD(OpcodeArgs);
