@@ -366,6 +366,7 @@ private:
   DEF_OP(Mov);
 
   ///< Vector ops
+  DEF_OP(VectorZero);
   DEF_OP(CreateVector2);
   DEF_OP(CreateVector4);
   DEF_OP(SplatVector2);
@@ -405,7 +406,10 @@ private:
   DEF_OP(VZip2);
   DEF_OP(VBSL);
   DEF_OP(VCMPEQ);
+  DEF_OP(VCMPEQZ);
   DEF_OP(VCMPGT);
+  DEF_OP(VCMPGTZ);
+  DEF_OP(VCMPLTZ);
   DEF_OP(VFCMPEQ);
   DEF_OP(VFCMPNEQ);
   DEF_OP(VFCMPLT);
