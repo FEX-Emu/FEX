@@ -302,6 +302,9 @@ public:
   template<size_t ElementSize, bool Signed>
   void PMULOp(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void PSIGN(OpcodeArgs);
+
   // X87 Ops
   template<size_t width>
   void FLD(OpcodeArgs);

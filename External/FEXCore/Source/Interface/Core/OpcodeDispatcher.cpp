@@ -4019,6 +4019,35 @@ void OpDispatchBuilder::PMULOp(OpcodeArgs) {
 }
 
 template<size_t ElementSize>
+void OpDispatchBuilder::PSIGN(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  auto ZeroVec = _VectorZero(Size);
+  auto NegVec = _VNeg(Size, ElementSize, Dest);
+
+  OrderedNode *CmpLT = _VCMPLTZ(Size, ElementSize, Src);
+  OrderedNode *CmpEQ = _VCMPEQZ(Size, ElementSize, Src);
+  OrderedNode *CmpGT = _VCMPGTZ(Size, ElementSize, Src);
+
+  // Negative elements return -dest
+  CmpLT = _VAnd(Size, ElementSize, CmpLT, NegVec);
+
+  // Zero elements return 0
+  CmpEQ = _VAnd(Size, ElementSize, CmpEQ, ZeroVec);
+
+  // Positive elements return dest
+  CmpGT = _VAnd(Size, ElementSize, CmpGT, Dest);
+
+  // Or our results
+  OrderedNode *Res = _VOr(Size, ElementSize, CmpGT, _VOr(Size, ElementSize, CmpLT, CmpEQ));
+
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+template<size_t ElementSize>
 void OpDispatchBuilder::PCMPEQOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -8435,6 +8464,13 @@ constexpr uint16_t PF_F2 = 3;
   constexpr uint16_t PF_38_66   = 1;
   constexpr uint16_t PF_38_F2   = 2;
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F38Table = {
+    {OPD(PF_38_NONE, 0x08), 1, &OpDispatchBuilder::PSIGN<1>},
+    {OPD(PF_38_66,   0x08), 1, &OpDispatchBuilder::PSIGN<1>},
+    {OPD(PF_38_NONE, 0x09), 1, &OpDispatchBuilder::PSIGN<2>},
+    {OPD(PF_38_66,   0x09), 1, &OpDispatchBuilder::PSIGN<2>},
+    {OPD(PF_38_NONE, 0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
+    {OPD(PF_38_66,   0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
+
     {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(PF_38_66,   0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
 
