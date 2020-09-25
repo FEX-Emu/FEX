@@ -3345,6 +3345,30 @@
       ]
     },
 
+    "F80BCDLoad": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "BCD"
+      ]
+    },
+
+    "F80BCDStore": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "NumElements": "1",
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80Src1"
+      ]
+    },
+
     "Last": {
       "Last": true,
       "Args": []

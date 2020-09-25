@@ -4375,7 +4375,76 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             HostRounding |= GuestRounding << 13;
             _mm_setcsr(HostRounding);
 #endif
+            break;
+          }
+          case IR::OP_F80BCDLOAD: {
+            auto Op = IROp->C<IR::IROp_F80BCDLoad>();
+            uint8_t *Src1 = GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
+            uint64_t BCD{};
+            // We walk through each uint8_t and pull out the BCD encoding
+            // Each 4bit split is a digit
+            // Only 0-9 is supported, A-F results in undefined data
+            // | 4 bit     | 4 bit    |
+            // | 10s place | 1s place |
+            // EG 0x48 = 48
+            // EG 0x4847 = 4847
+            // This gives us an 18digit value encoded in BCD
+            // The last byte lets us know if it negative or not
+            for (size_t i = 0; i < 9; ++i) {
+              uint8_t Digit = Src1[8 - i];
+              // First shift our last value over
+              BCD *= 100;
 
+              // Add the tens place digit
+              BCD += (Digit >> 4) * 10;
+
+              // Add the ones place digit
+              BCD += Digit & 0xF;
+            }
+
+            // Set negative flag once converted to x87
+            bool Negative = Src1[9] & 0x80;
+            X80SoftFloat Tmp;
+
+            Tmp = BCD;
+            Tmp.Sign = Negative;
+
+            memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
+            break;
+          }
+          case IR::OP_F80BCDSTORE: {
+            auto Op = IROp->C<IR::IROp_F80BCDStore>();
+            X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(SSAData, Op->Header.Args[0]);
+            bool Negative = Src1.Sign;
+
+            // Clear the Sign bit
+            Src1.Sign = 0;
+
+            uint64_t Tmp = Src1;
+            uint8_t BCD[10]{};
+
+            for (size_t i = 0; i < 9; ++i) {
+              if (Tmp == 0) {
+                // Nothing left? Just leave
+                break;
+              }
+              // Extract the lower 100 values
+              uint8_t Digit = Tmp % 100;
+
+              // Now divide it for the next iteration
+              Tmp /= 100;
+
+              uint8_t UpperNibble = Digit / 10;
+              uint8_t LowerNibble = Digit % 10;
+
+              // Now store the BCD
+              BCD[i] = (UpperNibble << 4) | LowerNibble;
+            }
+
+            // Set negative flag once converted to x87
+            BCD[9] = Negative ? 0x80 : 0;
+
+            memcpy(GDP, BCD, 10);
             break;
           }
           default:

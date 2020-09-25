@@ -184,6 +184,10 @@ struct X80SoftFloat {
     return extF80_to_i64(*this, softfloat_round_near_even, false);
   }
 
+  operator uint64_t() const {
+    return extF80_to_ui64(*this, softfloat_round_near_even, false);
+  }
+
   void operator=(const float rhs) {
     *this = f32_to_extF80(*(float32_t*)&rhs);
   }
@@ -198,6 +202,10 @@ struct X80SoftFloat {
 
   void operator=(const int32_t rhs) {
     *this = i32_to_extF80(rhs);
+  }
+
+  void operator=(const uint64_t rhs) {
+    *this = ui64_to_extF80(rhs);
   }
 
   operator void*() {
