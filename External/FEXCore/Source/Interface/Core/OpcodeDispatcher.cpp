@@ -7638,6 +7638,44 @@ void OpDispatchBuilder::PMULHW(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode *Res{};
+  if (Size == 8) {
+    // Implementation is more efficient for 8byte registers
+    Res = _VSMull(Size * 2, 2, Dest, Src);
+    Res = _VSShrI(Size * 2, 4, Res, 14);
+    auto OneVector = _VectorImm(1, Size * 2, 4);
+    Res = _VAdd(Size * 2, 4, Res, OneVector);
+    Res = _VUShrNI(Size * 2, 4, Res, 1);
+  }
+  else {
+    // 128bit is less efficient
+    OrderedNode *ResultLow;
+    OrderedNode *ResultHigh;
+
+    ResultLow = _VSMull(Size, 2, Dest, Src);
+    ResultHigh = _VSMull2(Size, 2, Dest, Src);
+
+    ResultLow = _VSShrI(Size, 4, ResultLow, 14);
+    ResultHigh = _VSShrI(Size, 4, ResultHigh, 14);
+    auto OneVector = _VectorImm(1, Size, 4);
+
+    ResultLow = _VAdd(Size, 4, ResultLow, OneVector);
+    ResultHigh = _VAdd(Size, 4, ResultHigh, OneVector);
+
+    // Combine the results
+    Res = _VUShrNI(Size, 4, ResultLow, 1);
+    Res = _VUShrNI2(Size, 4, Res, ResultHigh, 1);
+  }
+
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
   Src = _Rev(Src);
@@ -8602,6 +8640,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x09), 1, &OpDispatchBuilder::PSIGN<2>},
     {OPD(PF_38_NONE, 0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
     {OPD(PF_38_66,   0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
+    {OPD(PF_38_NONE, 0x0B), 1, &OpDispatchBuilder::PMULHRSW},
+    {OPD(PF_38_66,   0x0B), 1, &OpDispatchBuilder::PMULHRSW},
     {OPD(PF_38_NONE, 0x1C), 1, &OpDispatchBuilder::PABS<1>},
     {OPD(PF_38_66,   0x1C), 1, &OpDispatchBuilder::PABS<1>},
     {OPD(PF_38_NONE, 0x1D), 1, &OpDispatchBuilder::PABS<2>},
