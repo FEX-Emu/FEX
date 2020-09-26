@@ -4043,7 +4043,15 @@ void OpDispatchBuilder::PSIGN(OpcodeArgs) {
 
   // Or our results
   OrderedNode *Res = _VOr(Size, ElementSize, CmpGT, _VOr(Size, ElementSize, CmpLT, CmpEQ));
+  StoreResult(FPRClass, Op, Res, -1);
+}
 
+template<size_t ElementSize>
+void OpDispatchBuilder::PABS(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Res = _VAbs(Size, ElementSize, Src);
   StoreResult(FPRClass, Op, Res, -1);
 }
 
@@ -8586,6 +8594,12 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x09), 1, &OpDispatchBuilder::PSIGN<2>},
     {OPD(PF_38_NONE, 0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
     {OPD(PF_38_66,   0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
+    {OPD(PF_38_NONE, 0x1C), 1, &OpDispatchBuilder::PABS<1>},
+    {OPD(PF_38_66,   0x1C), 1, &OpDispatchBuilder::PABS<1>},
+    {OPD(PF_38_NONE, 0x1D), 1, &OpDispatchBuilder::PABS<2>},
+    {OPD(PF_38_66,   0x1D), 1, &OpDispatchBuilder::PABS<2>},
+    {OPD(PF_38_NONE, 0x1E), 1, &OpDispatchBuilder::PABS<4>},
+    {OPD(PF_38_66,   0x1E), 1, &OpDispatchBuilder::PABS<4>},
 
     {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(PF_38_66,   0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
