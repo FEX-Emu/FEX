@@ -2238,6 +2238,14 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }                                                 \
             break;                                            \
             }
+          #define DO_VECTOR_0SRC_OP(size, type, func)              \
+            case size: {                                      \
+            auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
+            for (uint8_t i = 0; i < Elements; ++i) {          \
+              Dst_d[i] = func();          \
+            }                                                 \
+            break;                                            \
+            }
           #define DO_VECTOR_1SRC_OP(size, type, func)              \
             case size: {                                      \
             auto *Dst_d  = reinterpret_cast<type*>(Tmp);  \
@@ -2268,6 +2276,24 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }                                                 \
             break;                                            \
             }
+          case IR::OP_VECTORIMM: {
+            auto Op = IROp->C<IR::IROp_VectorImm>();
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+            uint8_t Imm = Op->Immediate;
+
+            auto Func = [Imm]() { return Imm; };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_0SRC_OP(1, int8_t, Func)
+              DO_VECTOR_0SRC_OP(2, int16_t, Func)
+              DO_VECTOR_0SRC_OP(4, int32_t, Func)
+              DO_VECTOR_0SRC_OP(8, int64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
           case IR::OP_VNEG: {
             auto Op = IROp->C<IR::IROp_VNeg>();
             void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
