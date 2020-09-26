@@ -396,6 +396,9 @@ public:
   template<size_t ElementSize, bool Signed>
   void PSUBSOp(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void ADDSUBPOp(OpcodeArgs);
+
   void PMADDWD(OpcodeArgs);
 
   template<bool Signed>
