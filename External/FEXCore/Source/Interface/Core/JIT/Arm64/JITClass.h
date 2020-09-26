@@ -449,6 +449,7 @@ private:
   DEF_OP(VSMull);
   DEF_OP(VUMull2);
   DEF_OP(VSMull2);
+  DEF_OP(VTBL1);
 #undef DEF_OP
 };
 
