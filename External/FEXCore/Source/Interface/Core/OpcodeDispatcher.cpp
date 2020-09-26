@@ -7373,9 +7373,17 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Size = GetDstSize(Op);
 
   uint8_t Index = Op->Src[1].TypeLiteral.Literal;
-  OrderedNode *Res = _VExtr(GetDstSize(Op), 1, Src1, Src2, Index);
+  OrderedNode *Res{};
+  if (Index >= (Size * 2)) {
+    // If the immediate is greater than both vectors combined then it zeroes the vector
+    Res = _VectorZero(Size);
+  }
+  else {
+    Res = _VExtr(Size, 1, Src1, Src2, Index);
+  }
   StoreResult(FPRClass, Op, Res, -1);
 }
 
@@ -8614,6 +8622,7 @@ constexpr uint16_t PF_F2 = 3;
 #define PF_3A_NONE 0
 #define PF_3A_66   1
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F3ATable = {
+    {OPD(0, PF_3A_NONE, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
     {OPD(0, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::PAlignrOp},
     {OPD(1, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::PAlignrOp},
   };

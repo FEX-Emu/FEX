@@ -4130,7 +4130,17 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_VEXTR: {
           auto Op = IROp->C<IR::IROp_VExtr>();
-          vpalignr(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), Op->Index);
+          if (OpSize == 8) {
+            // No way to do this with 64bit source without dropping to MMX
+            // So emulate it
+            vpxor(xmm14, xmm14, xmm14);
+            movq(xmm15, GetSrc(Op->Header.Args[1].ID()));
+            vshufpd(xmm15, xmm15, GetSrc(Op->Header.Args[0].ID()), 0b00);
+            vpalignr(GetDst(Node), xmm14, xmm15, Op->Index);
+          }
+          else {
+            vpalignr(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), Op->Index);
+          }
           break;
         }
         case IR::OP_VUMIN: {

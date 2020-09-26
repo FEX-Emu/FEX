@@ -1548,8 +1548,29 @@ DEF_OP(VExtractElement) {
 
 DEF_OP(VExtr) {
   auto Op = IROp->C<IR::IROp_VExtr>();
+  uint8_t OpSize = IROp->Size;
+
   // AArch64 ext op has bit arrangement as [Vm:Vn] so arguments need to be swapped
-  ext(GetDst(Node).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index * Op->Header.ElementSize);
+  auto UpperBits = GetSrc(Op->Header.Args[0].ID());
+  auto LowerBits = GetSrc(Op->Header.Args[1].ID());
+  auto Index = Op->Index;
+
+  if (Index >= OpSize) {
+    // Upper bits have moved in to the lower bits
+    LowerBits = UpperBits;
+
+    // Upper bits are all now zero
+    UpperBits = VTMP1;
+    eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+    Index -= OpSize;
+  }
+
+  if (OpSize == 8) {
+    ext(GetDst(Node).V8B(), LowerBits.V8B(), UpperBits.V8B(), Index * Op->Header.ElementSize);
+  }
+  else {
+    ext(GetDst(Node).V16B(), LowerBits.V16B(), UpperBits.V16B(), Index * Op->Header.ElementSize);
+  }
 }
 
 DEF_OP(VSLI) {
