@@ -302,6 +302,18 @@
       ]
     },
 
+    "VectorZero": {
+      "Desc": ["Generates a vector zero",
+               "Useful to generate a zero vector without any previous dependencies"
+              ],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "HelperArgs": [
+        "uint8_t", "RegisterSize"
+      ]
+    },
+
     "Break": {
       "HasSideEffects": true,
       "OpClass": "Misc",
@@ -2113,7 +2125,26 @@
       ]
     },
 
+    "VCMPEQZ": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector1"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VCMPGT": {
+      "Desc": ["Vector compare signed greater than",
+               "Each element is compared, if the result is true then the resulting element is ~0, else zero"
+              ],
       "OpClass": "Vector",
       "HasDest": true,
       "DestClass": "FPR",
@@ -2123,6 +2154,46 @@
       "SSANames": [
         "Vector1",
         "Vector2"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VCMPGTZ": {
+      "Desc": ["Vector compare signed greater than",
+               "Each element is compared, if the result is true then the resulting element is ~0, else zero",
+               "Compares the vector against zero"
+              ],
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector1"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VCMPLTZ": {
+      "Desc": ["Vector compare signed less than",
+               "Each element is compared, if the result is true then the resulting element is ~0, else zero",
+               "Compares the vector against zero"
+              ],
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector1"
       ],
       "HelperArgs": [
         "uint8_t", "RegisterSize",

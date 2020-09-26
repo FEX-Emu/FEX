@@ -350,6 +350,10 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             GD = Op->Constant;
             break;
           }
+          case IR::OP_VECTORZERO: {
+            memset(GDP, 0, OpSize);
+            break;
+          }
           case IR::OP_LOADCONTEXT: {
             auto Op = IROp->C<IR::IROp_LoadContext>();
 
@@ -2264,6 +2268,24 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }                                                 \
             break;                                            \
             }
+          case IR::OP_VNEG: {
+            auto Op = IROp->C<IR::IROp_VNeg>();
+            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func = [](auto a) { return -a; };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_1SRC_OP(1, int8_t, Func)
+              DO_VECTOR_1SRC_OP(2, int16_t, Func)
+              DO_VECTOR_1SRC_OP(4, int32_t, Func)
+              DO_VECTOR_1SRC_OP(8, int64_t, Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
           case IR::OP_VFNEG: {
             auto Op = IROp->C<IR::IROp_VFNeg>();
             void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -3513,6 +3535,26 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(GDP, Tmp, OpSize);
             break;
           }
+          case IR::OP_VCMPEQZ: {
+            auto Op = IROp->C<IR::IROp_VCMPEQZ>();
+            void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Src2[16]{};
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+            auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
+
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_OP(1, uint8_t,   Func)
+              DO_VECTOR_OP(2, uint16_t,  Func)
+              DO_VECTOR_OP(4, uint32_t,  Func)
+              DO_VECTOR_OP(8, uint64_t,  Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
           case IR::OP_VCMPGT: {
             auto Op = IROp->C<IR::IROp_VCMPGT>();
             void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -3521,6 +3563,46 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
 
             uint8_t Elements = OpSize / Op->Header.ElementSize;
             auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
+
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_OP(1, int8_t,   Func)
+              DO_VECTOR_OP(2, int16_t,  Func)
+              DO_VECTOR_OP(4, int32_t,  Func)
+              DO_VECTOR_OP(8, int64_t,  Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
+          case IR::OP_VCMPGTZ: {
+            auto Op = IROp->C<IR::IROp_VCMPGTZ>();
+            void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Src2[16]{};
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+            auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
+
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_OP(1, int8_t,   Func)
+              DO_VECTOR_OP(2, int16_t,  Func)
+              DO_VECTOR_OP(4, int32_t,  Func)
+              DO_VECTOR_OP(8, int64_t,  Func)
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
+          case IR::OP_VCMPLTZ: {
+            auto Op = IROp->C<IR::IROp_VCMPLTZ>();
+            void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Src2[16]{};
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+            auto Func = [](auto a, auto b) { return a < b ? ~0ULL : 0; };
 
             switch (Op->Header.ElementSize) {
               DO_VECTOR_OP(1, int8_t,   Func)

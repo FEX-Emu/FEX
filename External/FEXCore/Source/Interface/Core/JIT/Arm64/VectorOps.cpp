@@ -5,6 +5,21 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+DEF_OP(VectorZero) {
+  uint8_t OpSize = IROp->Size;
+  switch (OpSize) {
+    case 8: {
+      eor(GetDst(Node).V8B(), GetDst(Node).V8B(), GetDst(Node).V8B());
+      break;
+    }
+    case 16: {
+       eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+       break;
+     }
+    default: LogMan::Msg::A("Unknown Element Size: %d", OpSize); break;
+  }
+}
+
 DEF_OP(CreateVector2) {
   LogMan::Msg::A("Unimplemented");
 }
@@ -646,7 +661,23 @@ DEF_OP(VFRSqrt) {
 }
 
 DEF_OP(VNeg) {
-  LogMan::Msg::D("Unimplemented");
+  auto Op = IROp->C<IR::IROp_VNeg>();
+  uint8_t OpSize = IROp->Size;
+  switch (Op->Header.ElementSize) {
+  case 1:
+    neg(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+    break;
+  case 2:
+    neg(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H());
+    break;
+  case 4:
+    neg(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+    break;
+  case 8:
+    neg(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+    break;
+  default: LogMan::Msg::A("Unsupported Not size: %d", OpSize);
+  }
 }
 
 DEF_OP(VFNeg) {
@@ -891,6 +922,47 @@ DEF_OP(VCMPEQ) {
   }
 }
 
+DEF_OP(VCMPEQZ) {
+  auto Op = IROp->C<IR::IROp_VCMPEQZ>();
+  uint8_t OpSize = IROp->Size;
+  if (Op->Header.ElementSize == OpSize) {
+    // Scalar
+    switch (Op->Header.ElementSize) {
+      case 4: {
+        cmeq(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), 0);
+      break;
+      }
+      case 8: {
+        cmeq(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), 0);
+      break;
+    }
+    default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    }
+  }
+  else {
+    // Vector
+    switch (Op->Header.ElementSize) {
+      case 1: {
+        cmeq(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
+      break;
+      }
+      case 2: {
+        cmeq(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
+      break;
+      }
+      case 4: {
+        cmeq(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
+      break;
+      }
+      case 8: {
+        cmeq(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
+      break;
+    }
+    default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    }
+  }
+}
+
 DEF_OP(VCMPGT) {
   auto Op = IROp->C<IR::IROp_VCMPGT>();
   uint8_t OpSize = IROp->Size;
@@ -925,6 +997,88 @@ DEF_OP(VCMPGT) {
       }
       case 8: {
         cmgt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+      break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    }
+  }
+}
+
+DEF_OP(VCMPGTZ) {
+  auto Op = IROp->C<IR::IROp_VCMPGTZ>();
+  uint8_t OpSize = IROp->Size;
+  if (Op->Header.ElementSize == OpSize) {
+    // Scalar
+    switch (Op->Header.ElementSize) {
+      case 4: {
+        cmgt(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), 0);
+      break;
+      }
+      case 8: {
+        cmgt(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), 0);
+      break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    }
+  }
+  else {
+    // Vector
+    switch (Op->Header.ElementSize) {
+      case 1: {
+        cmgt(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
+      break;
+      }
+      case 2: {
+        cmgt(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
+      break;
+      }
+      case 4: {
+        cmgt(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
+      break;
+      }
+      case 8: {
+        cmgt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
+      break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    }
+  }
+}
+
+DEF_OP(VCMPLTZ) {
+  auto Op = IROp->C<IR::IROp_VCMPLTZ>();
+  uint8_t OpSize = IROp->Size;
+  if (Op->Header.ElementSize == OpSize) {
+    // Scalar
+    switch (Op->Header.ElementSize) {
+      case 4: {
+        cmlt(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), 0);
+      break;
+      }
+      case 8: {
+        cmlt(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), 0);
+      break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    }
+  }
+  else {
+    // Vector
+    switch (Op->Header.ElementSize) {
+      case 1: {
+        cmlt(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), 0);
+      break;
+      }
+      case 2: {
+        cmlt(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), 0);
+      break;
+      }
+      case 4: {
+        cmlt(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), 0);
+      break;
+      }
+      case 8: {
+        cmlt(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), 0);
       break;
       }
       default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -1861,6 +2015,7 @@ DEF_OP(VSMull2) {
 #undef DEF_OP
 void JITCore::RegisterVectorHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+  REGISTER_OP(VECTORZERO,        VectorZero);
   REGISTER_OP(CREATEVECTOR2,     CreateVector2);
   REGISTER_OP(CREATEVECTOR4,     CreateVector4);
   REGISTER_OP(SPLATVECTOR2,      SplatVector2);
@@ -1900,7 +2055,10 @@ void JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VZIP2,             VZip2);
   REGISTER_OP(VBSL,              VBSL);
   REGISTER_OP(VCMPEQ,            VCMPEQ);
+  REGISTER_OP(VCMPEQZ,           VCMPEQZ);
   REGISTER_OP(VCMPGT,            VCMPGT);
+  REGISTER_OP(VCMPGTZ,           VCMPGTZ);
+  REGISTER_OP(VCMPLTZ,           VCMPLTZ);
   REGISTER_OP(VFCMPEQ,           VFCMPEQ);
   REGISTER_OP(VFCMPNEQ,          VFCMPNEQ);
   REGISTER_OP(VFCMPLT,           VFCMPLT);

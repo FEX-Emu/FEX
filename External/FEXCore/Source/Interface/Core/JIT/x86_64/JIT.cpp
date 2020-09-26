@@ -2405,6 +2405,11 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           mov(Dst.second, rdx);
           break;
         }
+        case IR::OP_VECTORZERO: {
+          auto Dst = GetDst(Node);
+          vpxor(Dst, Dst, Dst);
+          break;
+        }
         case IR::OP_SPLATVECTOR2:
         case IR::OP_SPLATVECTOR4: {
           auto Op = IROp->C<IR::IROp_SplatVector2>();
@@ -3531,6 +3536,27 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VCMPEQZ: {
+          auto Op = IROp->C<IR::IROp_VCMPEQZ>();
+          vpxor(xmm15, xmm15, xmm15);
+
+          switch (Op->Header.ElementSize) {
+          case 1:
+            vpcmpeqb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+          case 2:
+            vpcmpeqw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+          case 4:
+            vpcmpeqd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+          case 8:
+            vpcmpeqq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+          default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+          }
+          break;
+        }
         case IR::OP_VCMPGT: {
           auto Op = IROp->C<IR::IROp_VCMPGT>();
 
@@ -3551,6 +3577,49 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VCMPGTZ: {
+          auto Op = IROp->C<IR::IROp_VCMPGTZ>();
+          vpxor(xmm15, xmm15, xmm15);
+
+          switch (Op->Header.ElementSize) {
+          case 1:
+            vpcmpgtb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+          case 2:
+            vpcmpgtw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+          case 4:
+            vpcmpgtd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+          case 8:
+            vpcmpgtq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+          break;
+          default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+          }
+          break;
+        }
+        case IR::OP_VCMPLTZ: {
+          auto Op = IROp->C<IR::IROp_VCMPLTZ>();
+          vpxor(xmm15, xmm15, xmm15);
+
+          switch (Op->Header.ElementSize) {
+          case 1:
+            vpcmpgtb(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+          break;
+          case 2:
+            vpcmpgtw(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+          break;
+          case 4:
+            vpcmpgtd(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+          break;
+          case 8:
+            vpcmpgtq(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+          break;
+          default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+          }
+          break;
+        }
+
         case IR::OP_VFCMPEQ: {
           auto Op = IROp->C<IR::IROp_VFCMPEQ>();
 
