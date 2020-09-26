@@ -1,0 +1,9 @@
+# Uses thunks
+Test_TwoByte/0F_3F.asm
+
+# Intel doesn't support SSE4a, Technically neither does FEX
+Test_REP/F3_2B.asm
+Test_REPNE/F2_2B.asm
+
+# 3DNow! no longer exists on AMD Zen CPUs
+Test_TwoByte/0F_0E.asm
