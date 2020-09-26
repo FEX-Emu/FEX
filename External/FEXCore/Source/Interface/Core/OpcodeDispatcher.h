@@ -291,6 +291,7 @@ public:
   void MASKMOVOp(OpcodeArgs);
   void MOVBetweenGPR_FPR(OpcodeArgs);
   void TZCNT(OpcodeArgs);
+  void LZCNT(OpcodeArgs);
   void MOVSSOp(OpcodeArgs);
   template<size_t ElementSize, bool Scalar>
   void VFCMPOp(OpcodeArgs);

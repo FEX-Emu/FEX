@@ -6031,6 +6031,22 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, 0, Src));
 }
 
+void OpDispatchBuilder::LZCNT(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto Res = _CountLeadingZeroes(Src);
+  StoreResult(GPRClass, Op, Res, -1);
+
+  auto Zero = _Constant(0);
+  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
+      Src,  Zero,
+      _Constant(1), Zero);
+
+  // Set flags
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZFResult);
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, Src));
+}
+
 template<size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -8067,7 +8083,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x7E, 1, &OpDispatchBuilder::MOVQOp},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0xB8, 1, &OpDispatchBuilder::PopcountOp},
-    {0xBC, 2, &OpDispatchBuilder::TZCNT},
+    {0xBC, 1, &OpDispatchBuilder::TZCNT},
+    {0xBD, 1, &OpDispatchBuilder::LZCNT},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4, true>},
     {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<true>},
     {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true, true>},

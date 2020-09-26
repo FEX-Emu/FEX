@@ -890,6 +890,25 @@ DEF_OP(FindTrailingZeros) {
   }
 }
 
+DEF_OP(CountLeadingZeroes) {
+  auto Op = IROp->C<IR::IROp_CountLeadingZeroes>();
+  uint8_t OpSize = IROp->Size;
+  switch (OpSize) {
+    case 2:
+      lsl(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), 16);
+      orr(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0x8000);
+      clz(GetReg<RA_32>(Node), GetReg<RA_32>(Node));
+    break;
+    case 4:
+      clz(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      break;
+    case 8:
+      clz(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      break;
+    default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+  }
+}
+
 DEF_OP(Rev) {
   auto Op = IROp->C<IR::IROp_Rev>();
   uint8_t OpSize = IROp->Size;
@@ -1118,6 +1137,7 @@ void JITCore::RegisterALUHandlers() {
   REGISTER_OP(FINDLSB,           FindLSB);
   REGISTER_OP(FINDMSB,           FindMSB);
   REGISTER_OP(FINDTRAILINGZEROS, FindTrailingZeros);
+  REGISTER_OP(COUNTLEADINGZEROES, CountLeadingZeroes);
   REGISTER_OP(REV,               Rev);
   REGISTER_OP(BFI,               Bfi);
   REGISTER_OP(BFE,               Bfe);
