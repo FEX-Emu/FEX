@@ -368,6 +368,7 @@ private:
 
   ///< Vector ops
   DEF_OP(VectorZero);
+  DEF_OP(VectorImm);
   DEF_OP(CreateVector2);
   DEF_OP(CreateVector4);
   DEF_OP(SplatVector2);

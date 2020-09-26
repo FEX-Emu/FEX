@@ -20,6 +20,15 @@ DEF_OP(VectorZero) {
   }
 }
 
+DEF_OP(VectorImm) {
+  auto Op = IROp->C<IR::IROp_VectorImm>();
+
+  uint8_t OpSize = IROp->Size;
+  uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+  movi(GetDst(Node).VCast(OpSize * 8, Elements), Op->Immediate);
+}
+
 DEF_OP(CreateVector2) {
   LogMan::Msg::A("Unimplemented");
 }
@@ -2037,6 +2046,7 @@ DEF_OP(VSMull2) {
 void JITCore::RegisterVectorHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
   REGISTER_OP(VECTORZERO,        VectorZero);
+  REGISTER_OP(VECTORIMM,         VectorImm);
   REGISTER_OP(CREATEVECTOR2,     CreateVector2);
   REGISTER_OP(CREATEVECTOR4,     CreateVector4);
   REGISTER_OP(SPLATVECTOR2,      SplatVector2);
