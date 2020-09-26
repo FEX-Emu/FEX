@@ -5767,7 +5767,9 @@ template<size_t DstElementSize, bool Signed>
 void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
+  size_t GPRSize = GetSrcSize(Op);
+
+  if (GPRSize == 8) {
     // Source is 64bit
     if (DstElementSize == 4) {
       Src = _Bfe(32, 0, Src);
@@ -6004,9 +6006,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   else {
     // Destination is GPR or mem
     // Extract from XMM first
-    uint8_t ElementSize = 4;
-    if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING)
-      ElementSize = 8;
+    auto ElementSize = GetDstSize(Op);
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0],Op->Flags, -1);
 
     Src = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src, 0);
