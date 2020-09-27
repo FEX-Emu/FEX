@@ -7828,6 +7828,94 @@ void OpDispatchBuilder::PHSUB(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+void OpDispatchBuilder::PHADDS(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  if (Size == 8) {
+    // Implementation is more efficient for 8byte registers
+    auto Dest_Larger = _VSXTL(Size * 2, 2, Dest);
+    auto Src_Larger = _VSXTL(Size * 2, 2, Src);
+
+    OrderedNode *AddRes = _VAddP(Size * 2, 4, Dest_Larger, Src_Larger);
+
+    // Saturate back down to the result
+    OrderedNode *Res = _VSQXTN(Size * 2, 4, AddRes);
+    StoreResult(FPRClass, Op, Res, -1);
+  }
+  else {
+    auto Dest_Larger = _VSXTL(Size, 2, Dest);
+    auto Dest_Larger_H = _VSXTL2(Size, 2, Dest);
+
+    auto Src_Larger = _VSXTL(Size, 2, Src);
+    auto Src_Larger_H = _VSXTL2(Size, 2, Src);
+
+    OrderedNode *AddRes_L = _VAddP(Size, 4, Dest_Larger, Dest_Larger_H);
+    OrderedNode *AddRes_H = _VAddP(Size, 4, Src_Larger, Src_Larger_H);
+
+    // Saturate back down to the result
+    OrderedNode *Res = _VSQXTN(Size, 4, AddRes_L);
+    Res = _VSQXTN2(Size, 4, Res, AddRes_H);
+
+    StoreResult(FPRClass, Op, Res, -1);
+  }
+}
+
+void OpDispatchBuilder::PHSUBS(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  uint8_t ElementSize = 2;
+  uint8_t NumElements = Size / ElementSize;
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  // This is a bit complicated since AArch64 doesn't support a pairwise subtract
+  auto Dest_Neg = _VNeg(Size, ElementSize, Dest);
+  auto Src_Neg = _VNeg(Size, ElementSize, Src);
+
+  // Now we need to swizzle the values
+  OrderedNode *Swizzle_Dest = Dest;
+  OrderedNode *Swizzle_Src = Src;
+
+  // Odd elements turn in to negated elements
+  for (size_t i = 1; i < NumElements; i += 2) {
+    Swizzle_Dest = _VInsElement(Size, ElementSize, i, i, Swizzle_Dest, Dest_Neg);
+    Swizzle_Src = _VInsElement(Size, ElementSize, i, i, Swizzle_Src, Src_Neg);
+  }
+
+  Dest = Swizzle_Dest;
+  Src = Swizzle_Src;
+
+  if (Size == 8) {
+    // Implementation is more efficient for 8byte registers
+    auto Dest_Larger = _VSXTL(Size * 2, 2, Dest);
+    auto Src_Larger = _VSXTL(Size * 2, 2, Src);
+
+    OrderedNode *AddRes = _VAddP(Size * 2, 4, Dest_Larger, Src_Larger);
+
+    // Saturate back down to the result
+    OrderedNode *Res = _VSQXTN(Size * 2, 4, AddRes);
+    StoreResult(FPRClass, Op, Res, -1);
+  }
+  else {
+    auto Dest_Larger = _VSXTL(Size, 2, Dest);
+    auto Dest_Larger_H = _VSXTL2(Size, 2, Dest);
+
+    auto Src_Larger = _VSXTL(Size, 2, Src);
+    auto Src_Larger_H = _VSXTL2(Size, 2, Src);
+
+    OrderedNode *AddRes_L = _VAddP(Size, 4, Dest_Larger, Dest_Larger_H);
+    OrderedNode *AddRes_H = _VAddP(Size, 4, Src_Larger, Src_Larger_H);
+
+    // Saturate back down to the result
+    OrderedNode *Res = _VSQXTN(Size, 4, AddRes_L);
+    Res = _VSQXTN2(Size, 4, Res, AddRes_H);
+
+    StoreResult(FPRClass, Op, Res, -1);
+  }
+}
+
 template<uint8_t FenceType>
 void OpDispatchBuilder::FenceOp(OpcodeArgs) {
   _Fence({FenceType});
@@ -8746,12 +8834,16 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x01), 1, &OpDispatchBuilder::PHADD<2>},
     {OPD(PF_38_NONE, 0x02), 1, &OpDispatchBuilder::PHADD<4>},
     {OPD(PF_38_66,   0x02), 1, &OpDispatchBuilder::PHADD<4>},
+    {OPD(PF_38_NONE, 0x03), 1, &OpDispatchBuilder::PHADDS},
+    {OPD(PF_38_66,   0x03), 1, &OpDispatchBuilder::PHADDS},
     {OPD(PF_38_NONE, 0x04), 1, &OpDispatchBuilder::PMADDUBSW},
     {OPD(PF_38_66,   0x04), 1, &OpDispatchBuilder::PMADDUBSW},
     {OPD(PF_38_NONE, 0x05), 1, &OpDispatchBuilder::PHSUB<2>},
     {OPD(PF_38_66,   0x05), 1, &OpDispatchBuilder::PHSUB<2>},
     {OPD(PF_38_NONE, 0x06), 1, &OpDispatchBuilder::PHSUB<4>},
     {OPD(PF_38_66,   0x06), 1, &OpDispatchBuilder::PHSUB<4>},
+    {OPD(PF_38_NONE, 0x07), 1, &OpDispatchBuilder::PHSUBS},
+    {OPD(PF_38_66,   0x07), 1, &OpDispatchBuilder::PHSUBS},
     {OPD(PF_38_NONE, 0x08), 1, &OpDispatchBuilder::PSIGN<1>},
     {OPD(PF_38_66,   0x08), 1, &OpDispatchBuilder::PSIGN<1>},
     {OPD(PF_38_NONE, 0x09), 1, &OpDispatchBuilder::PSIGN<2>},

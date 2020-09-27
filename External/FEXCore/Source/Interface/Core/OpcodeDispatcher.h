@@ -426,6 +426,9 @@ public:
   template<size_t ElementSize>
   void PHSUB(OpcodeArgs);
 
+  void PHADDS(OpcodeArgs);
+  void PHSUBS(OpcodeArgs);
+
   template<uint8_t FenceType>
   void FenceOp(OpcodeArgs);
 
