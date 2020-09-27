@@ -3474,7 +3474,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_VUXTL2: {
           auto Op = IROp->C<IR::IROp_VUXTL2>();
-          vpslldq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), OpSize / 2);
+          vpsrldq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), OpSize / 2);
           switch (Op->Header.ElementSize) {
             case 2:
               pmovzxbw(GetDst(Node), GetDst(Node));
