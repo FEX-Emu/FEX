@@ -408,6 +408,7 @@ public:
   void ADDSUBPOp(OpcodeArgs);
 
   void PMADDWD(OpcodeArgs);
+  void PMADDUBSW(OpcodeArgs);
 
   template<bool Signed>
   void PMULHW(OpcodeArgs);

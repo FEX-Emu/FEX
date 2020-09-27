@@ -7606,6 +7606,67 @@ void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
+  // This is a pretty curious operation
+  // Does four MADD operations across 8 8bit signed and unsigned integers and accumulates to 16bit integers in the destination WITH saturation
+  //
+  // x86 PMADDUBSW: mm1, mm2
+  //    mm1[15:0]  = SaturateSigned16(((s8)mm2[15:8]  * (u8)mm1[15:8])  + ((s8)mm2[7:0]   * (u8)mm1[7:0]))
+  //    mm1[31:16] = SaturateSigned16(((s8)mm2[31:24] * (u8)mm1[31:24]) + ((s8)mm2[23:16] * (u8)mm1[23:16]))
+  //    mm1[47:32] = SaturateSigned16(((s8)mm2[47:40] * (u8)mm1[47:40]) + ((s8)mm2[39:32] * (u8)mm1[39:32]))
+  //    mm1[63:48] = SaturateSigned16(((s8)mm2[63:56] * (u8)mm1[63:56]) + ((s8)mm2[55:48] * (u8)mm1[55:48]))
+  // Extends to larger registers
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  if (Size == 8) {
+    // 64bit is more efficient
+
+    // Src1 is unsigned
+    auto Src1_16b = _VUXTL(Size * 2, 1, Src1);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+
+    // Src2 is signed
+    auto Src2_16b = _VSXTL(Size * 2, 1, Src2);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+
+    auto ResMul_L = _VSMull(Size * 2, 2, Src1_16b, Src2_16b);
+    auto ResMul_H = _VSMull2(Size * 2, 2, Src1_16b, Src2_16b);
+
+    // Now add pairwise across the vector
+    auto ResAdd = _VAddP(Size * 2, 4, ResMul_L, ResMul_H);
+
+    // Add saturate back down to 16bit
+    OrderedNode *Res = _VSQXTN(Size * 2, 4, ResAdd);
+    StoreResult(FPRClass, Op, Res, -1);
+  }
+  else {
+    // Src1 is unsigned
+    auto Src1_16b_L = _VUXTL(Size, 1, Src1);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+    auto Src1_16b_H = _VUXTL2(Size, 1, Src1);  // Offset to +64bits [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+
+    // Src2 is signed
+    auto Src2_16b_L = _VSXTL(Size, 1, Src2);  // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+    auto Src2_16b_H = _VSXTL2(Size, 1, Src2);  // Offset to +64bits [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+
+    auto ResMul_L   = _VSMull(Size, 2, Src1_16b_L, Src2_16b_L);
+    auto ResMul_L_H = _VSMull2(Size, 2, Src1_16b_L, Src2_16b_L);
+
+    auto ResMul_H   = _VSMull(Size, 2, Src1_16b_H, Src2_16b_H);
+    auto ResMul_H_H = _VSMull2(Size, 2, Src1_16b_H, Src2_16b_H);
+
+    // Now add pairwise across the vector
+    auto ResAdd_L = _VAddP(Size, 4, ResMul_L, ResMul_L_H);
+    auto ResAdd_H = _VAddP(Size, 4, ResMul_H, ResMul_H_H);
+
+    // Add saturate back down to 16bit
+    OrderedNode *Res = _VSQXTN(Size, 4, ResAdd_L);
+    Res = _VSQXTN2(Size, 4, Res, ResAdd_H);
+
+    StoreResult(FPRClass, Op, Res, -1);
+  }
+}
+
 template<bool Signed>
 void OpDispatchBuilder::PMULHW(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -8685,6 +8746,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x01), 1, &OpDispatchBuilder::PHADD<2>},
     {OPD(PF_38_NONE, 0x02), 1, &OpDispatchBuilder::PHADD<4>},
     {OPD(PF_38_66,   0x02), 1, &OpDispatchBuilder::PHADD<4>},
+    {OPD(PF_38_NONE, 0x04), 1, &OpDispatchBuilder::PMADDUBSW},
+    {OPD(PF_38_66,   0x04), 1, &OpDispatchBuilder::PMADDUBSW},
     {OPD(PF_38_NONE, 0x05), 1, &OpDispatchBuilder::PHSUB<2>},
     {OPD(PF_38_66,   0x05), 1, &OpDispatchBuilder::PHSUB<2>},
     {OPD(PF_38_NONE, 0x06), 1, &OpDispatchBuilder::PHSUB<4>},
