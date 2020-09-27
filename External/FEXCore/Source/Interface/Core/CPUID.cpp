@@ -48,7 +48,7 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_01h() {
     (0 <<  6) | // SMX
     (0 <<  7) | // Intel SpeedStep
     (0 <<  8) | // Thermal Monitor 2
-    (0 <<  9) | // SSSE3
+    (1 <<  9) | // SSSE3
     (0 << 10) | // L1 context ID
     (0 << 11) | // Silicon debug
     (0 << 12) | // FMA3
