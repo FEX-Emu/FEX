@@ -412,6 +412,8 @@ public:
   template<bool Signed>
   void PMULHW(OpcodeArgs);
 
+  void PMULHRSW(OpcodeArgs);
+
   void MOVBEOp(OpcodeArgs);
   template<size_t ElementSize>
   void HADDP(OpcodeArgs);

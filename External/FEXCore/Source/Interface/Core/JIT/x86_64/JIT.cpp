@@ -2410,6 +2410,50 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           vpxor(Dst, Dst, Dst);
           break;
         }
+        case IR::OP_VECTORIMM: {
+          auto Op = IROp->C<IR::IROp_VectorImm>();
+
+          auto Dst = GetDst(Node);
+          uint64_t Imm = Op->Immediate;
+
+          uint64_t Element{};
+          switch (Op->Header.ElementSize) {
+            case 1:
+              Element =
+                (Imm << (0 * 8)) |
+                (Imm << (1 * 8)) |
+                (Imm << (2 * 8)) |
+                (Imm << (3 * 8)) |
+                (Imm << (4 * 8)) |
+                (Imm << (5 * 8)) |
+                (Imm << (6 * 8)) |
+                (Imm << (7 * 8));
+              break;
+            case 2:
+              Element =
+                (Imm << (0 * 16)) |
+                (Imm << (1 * 16)) |
+                (Imm << (2 * 16)) |
+                (Imm << (3 * 16));
+              break;
+            case 4:
+              Element =
+                (Imm << (0 * 32)) |
+                (Imm << (1 * 32));
+              break;
+            case 8:
+              Element = Imm;
+              break;
+          }
+
+          mov(TMP1, Element);
+          vmovq(Dst, TMP1);
+          if (OpSize == 16) {
+            // Duplicate to the upper 64bits if we are 128bits
+            movddup(Dst, Dst);
+          }
+          break;
+        }
         case IR::OP_SPLATVECTOR2:
         case IR::OP_SPLATVECTOR4: {
           auto Op = IROp->C<IR::IROp_SplatVector2>();

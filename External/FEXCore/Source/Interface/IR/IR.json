@@ -314,6 +314,22 @@
       ]
     },
 
+    "VectorImm": {
+      "Desc": ["Generates a vector with each element containg the immediate zexted"
+              ],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ],
+      "Args": [
+        "uint8_t", "Immediate"
+      ]
+    },
+
     "Break": {
       "HasSideEffects": true,
       "OpClass": "Misc",

@@ -32,8 +32,8 @@ void InitializeH0F38Tables() {
     {OPD(PF_38_66,   0x09), 1, X86InstInfo{"PSIGNW",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(PF_38_NONE, 0x0A), 1, X86InstInfo{"PSIGND",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT)  | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
     {OPD(PF_38_66,   0x0A), 1, X86InstInfo{"PSIGND",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(PF_38_NONE, 0x0B), 1, X86InstInfo{"PMULHRSW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(PF_38_66,   0x0B), 1, X86InstInfo{"PMULHRSW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(PF_38_NONE, 0x0B), 1, X86InstInfo{"PMULHRSW",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT)  | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
+    {OPD(PF_38_66,   0x0B), 1, X86InstInfo{"PMULHRSW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(PF_38_66,   0x10), 1, X86InstInfo{"PBLENDVB",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x14), 1, X86InstInfo{"BLENDVPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
