@@ -10,7 +10,7 @@ void InitializeH0F38Tables() {
   constexpr uint16_t PF_38_F2   = 2;
 
   const U16U8InfoStruct H0F38Table[] = {
-    {OPD(PF_38_NONE, 0x00), 1, X86InstInfo{"PSHUFB",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(PF_38_NONE, 0x00), 1, X86InstInfo{"PSHUFB",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT)  | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
     {OPD(PF_38_66,   0x00), 1, X86InstInfo{"PSHUFB",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(PF_38_NONE, 0x01), 1, X86InstInfo{"PHADDW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x01), 1, X86InstInfo{"PHADDW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},

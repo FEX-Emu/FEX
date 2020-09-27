@@ -3123,6 +3123,27 @@
       ]
     },
 
+    "VTBL1": {
+      "Desc": ["Does a vector table lookup from one register in to the destination",
+               "Lookup is byte sized per byte element.",
+               "Any index larger than what the registers provide will result in zero for that element",
+               "Table is always treated as a 128bit register",
+               "Indices matches destination size. Either 64bit or 128bit"
+              ],
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Table",
+        "Indices"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize"
+      ]
+    },
+
     "GetHostFlag": {
       "OpClass": "Flags",
       "HasDest": true,

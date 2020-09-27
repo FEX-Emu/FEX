@@ -248,6 +248,7 @@ public:
   void PUNPCKLOp(OpcodeArgs);
   template<size_t ElementSize>
   void PUNPCKHOp(OpcodeArgs);
+  void PSHUFBOp(OpcodeArgs);
   template<size_t ElementSize, bool HalfSize, bool Low>
   void PSHUFDOp(OpcodeArgs);
   template<size_t ElementSize>

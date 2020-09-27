@@ -4219,6 +4219,23 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VTBL1: {
+          auto Op = IROp->C<IR::IROp_VTBL1>();
+          switch (OpSize) {
+          case 8: {
+            vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+            movq(GetDst(Node), GetDst(Node));
+            break;
+          }
+          case 16: {
+            vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+            break;
+          }
+          default: LogMan::Msg::A("Unknown OpSize: %d", OpSize); break;
+          }
+          break;
+        }
+
         case IR::OP_FLOAT_FROMGPR_S: {
           auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
           if (Op->Header.ElementSize == 8) {

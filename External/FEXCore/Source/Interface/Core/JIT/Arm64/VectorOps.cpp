@@ -2033,6 +2033,23 @@ DEF_OP(VSMull2) {
   }
 }
 
+DEF_OP(VTBL1) {
+  auto Op = IROp->C<IR::IROp_VTBL1>();
+  uint8_t OpSize = IROp->Size;
+
+  switch (OpSize) {
+    case 8: {
+      tbl(GetDst(Node).V8B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V8B());
+    break;
+    }
+    case 16: {
+      tbl(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+    break;
+    }
+    default: LogMan::Msg::A("Unknown OpSize: %d", OpSize); break;
+  }
+}
+
 #undef DEF_OP
 void JITCore::RegisterVectorHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
@@ -2119,6 +2136,7 @@ void JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSMULL,            VSMull);
   REGISTER_OP(VUMULL2,           VUMull2);
   REGISTER_OP(VSMULL2,           VSMull2);
+  REGISTER_OP(VTBL1,             VTBL1);
 #undef REGISTER_OP
 }
 }
