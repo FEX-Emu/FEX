@@ -7922,53 +7922,46 @@ void OpDispatchBuilder::FenceOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSADBW(OpcodeArgs) {
+  // The documentation is actually incorrect in how this instruction operates
+  // It strongly implies that the `abs(dest[i] - src[i])` operates in 8bit space
+  // but it actually operates in more than 8bit space
+  // This can be seen with `abs(0 - 0xFF)` returning a different result depending
+  // on bit length
   auto Size = GetSrcSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode *SubResult = _VSub(Size, 1, Dest, Src);
-  OrderedNode *AbsResult = _VAbs(Size, 1, SubResult);
-
   OrderedNode *Result{};
 
   if (Size == 8) {
-    // First we need to extract the 8bit values and extend them to 16bits
-    OrderedNode *Result_Low = _VUXTL(Size, 1, AbsResult);
-    // Now extract the upper 8bits and extend to 16bits
-    OrderedNode *Result_High = _VUShrI(Size, 2, AbsResult, 8);
+    Dest = _VUXTL(Size*2, 1, Dest);
+    Src = _VUXTL(Size*2, 1, Src);
+
+    OrderedNode *SubResult = _VSub(Size*2, 2, Dest, Src);
+    OrderedNode *AbsResult = _VAbs(Size*2, 2, SubResult);
+
     // Now vector-wide add the results for each
-    Result_Low = _VAddV(Size, 2, Result_Low);
-    Result_High = _VAddV(Size, 2, Result_High);
-    // Now add the two scalar results back together
-    // Easy with only 8 byte registers
-    Result = _VAdd(Size, 2, Result_Low, Result_High);
+    Result = _VAddV(Size * 2, 2, AbsResult);
   }
   else {
-    // For 16byte registers we need to do a bit more work
-    // First we need to extract the 8bit values and extend them to 16bits
-    OrderedNode *Result_Low_Low = _VUXTL(Size, 1, AbsResult);
-    //// Then we need to extract the upper 8 bits of the lower 64bit result and extend them to 16bits
-    OrderedNode *Result_Low_High = _VUShrI(Size, 2, AbsResult, 8);
+    OrderedNode *Dest_Low = _VUXTL(Size, 1, Dest);
+    OrderedNode *Dest_High = _VUXTL2(Size, 1, Dest);
 
-    // Now we need to extract the upper 64bits and do the same thing
-    OrderedNode *Result_High = _VExtractElement(Size, 8, AbsResult, 1);
-    OrderedNode *Result_High_Low = _VUXTL(Size, 1, Result_High);
-    OrderedNode *Result_High_High = _VUShrI(Size, 2, Result_High, 8);
+    OrderedNode *Src_Low = _VUXTL(Size, 1, Src);
+    OrderedNode *Src_High = _VUXTL2(Size, 1, Src);
+
+    OrderedNode *SubResult_Low = _VSub(Size, 2, Dest_Low, Src_Low);
+    OrderedNode *SubResult_High = _VSub(Size, 2, Dest_High, Src_High);
+
+    OrderedNode *AbsResult_Low = _VAbs(Size, 2, SubResult_Low);
+    OrderedNode *AbsResult_High = _VAbs(Size, 2, SubResult_High);
 
     // Now vector pairwise add all four of these
-    Result_Low_Low  = _VAddV(8, 2, Result_Low_Low);
-    Result_Low_High = _VAddV(8, 2, Result_Low_High);
+    OrderedNode * Result_Low = _VAddV(Size, 2, AbsResult_Low);
+    OrderedNode * Result_High = _VAddV(Size, 2, AbsResult_High);
 
-    Result_High_Low  = _VAddV(8, 2, Result_High_Low);
-    Result_High_High = _VAddV(8, 2, Result_High_High);
-
-    //// Now add the low and high scalar results together
-    OrderedNode * Added_Result      = _VAdd(8, 2, Result_Low_Low, Result_Low_High);
-    OrderedNode * Added_Result_High = _VAdd(8, 2, Result_High_Low, Result_High_High);
-
-    // Now generate a new 128bit value for this
-    Result = _VInsElement(Size, 8, 1, 0, Added_Result, Added_Result_High);
+    Result = _VInsElement(Size, 8, 1, 0, Result_Low, Result_High);
   }
 
   StoreResult(FPRClass, Op, Result, -1);
