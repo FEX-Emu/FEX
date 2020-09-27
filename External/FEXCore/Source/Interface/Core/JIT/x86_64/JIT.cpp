@@ -2643,14 +2643,34 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         }
         case IR::OP_VADDP: {
           auto Op = IROp->C<IR::IROp_VAddP>();
-          switch (Op->Header.ElementSize) {
-          case 2:
-            vphaddw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
-          break;
-          case 4:
-            vphaddd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
-          break;
-          default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+
+          if (OpSize == 8) {
+            // Can't handle this natively without dropping to MMX
+            // Emulate
+            vpxor(xmm14, xmm14, xmm14);
+            movq(xmm15, GetSrc(Op->Header.Args[0].ID()));
+            vshufpd(xmm15, xmm15, GetSrc(Op->Header.Args[1].ID()), 0b00);
+            vpaddw(GetDst(Node), xmm15, xmm14);
+            switch (Op->Header.ElementSize) {
+              case 2:
+                vphaddw(GetDst(Node), xmm15, xmm14);
+                break;
+              case 4:
+                vphaddd(GetDst(Node), xmm15, xmm14);
+                break;
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+          }
+          else {
+            switch (Op->Header.ElementSize) {
+              case 2:
+                vphaddw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+                break;
+              case 4:
+                vphaddd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+                break;
+              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
           }
           break;
         }

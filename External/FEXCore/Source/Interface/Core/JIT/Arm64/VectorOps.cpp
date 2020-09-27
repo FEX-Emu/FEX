@@ -254,24 +254,45 @@ DEF_OP(VSQSub) {
 
 DEF_OP(VAddP) {
   auto Op = IROp->C<IR::IROp_VAddP>();
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      addp(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
-    break;
+  uint8_t OpSize = IROp->Size;
+
+  if (OpSize == 8) {
+    switch (Op->Header.ElementSize) {
+      case 1: {
+        addp(GetDst(Node).V8B(), GetSrc(Op->Header.Args[0].ID()).V8B(), GetSrc(Op->Header.Args[1].ID()).V8B());
+        break;
+      }
+      case 2: {
+        addp(GetDst(Node).V4H(), GetSrc(Op->Header.Args[0].ID()).V4H(), GetSrc(Op->Header.Args[1].ID()).V4H());
+        break;
+      }
+      case 4: {
+        addp(GetDst(Node).V2S(), GetSrc(Op->Header.Args[0].ID()).V2S(), GetSrc(Op->Header.Args[1].ID()).V2S());
+        break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
     }
-    case 2: {
-      addp(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
-    break;
+  }
+  else {
+    switch (Op->Header.ElementSize) {
+      case 1: {
+        addp(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+        break;
+      }
+      case 2: {
+        addp(GetDst(Node).V8H(), GetSrc(Op->Header.Args[0].ID()).V8H(), GetSrc(Op->Header.Args[1].ID()).V8H());
+        break;
+      }
+      case 4: {
+        addp(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        break;
+      }
+      case 8: {
+        addp(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
     }
-    case 4: {
-      addp(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
-    break;
-    }
-    case 8: {
-      addp(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
-    break;
-    }
-    default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
 }
 

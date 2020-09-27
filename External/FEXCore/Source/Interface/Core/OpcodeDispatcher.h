@@ -418,6 +418,11 @@ public:
   template<size_t ElementSize>
   void HSUBP(OpcodeArgs);
 
+  template<size_t ElementSize>
+  void PHADD(OpcodeArgs);
+  template<size_t ElementSize>
+  void PHSUB(OpcodeArgs);
+
   template<uint8_t FenceType>
   void FenceOp(OpcodeArgs);
 
