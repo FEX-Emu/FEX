@@ -1636,7 +1636,6 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   SetTrueJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
 
-
   auto ShiftRight = _Sub(_Constant(Size), Shift);
 
   OrderedNode *Res{};
@@ -1788,8 +1787,11 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   else
     Src = _And(Src, _Constant(Size, 0x1F));
 
-  OrderedNode *Result = _Ashr(Dest, Src);
+  if (Size < 32) {
+    Dest = _Sbfe(Size, 0, Dest);
+  }
 
+  OrderedNode *Result = _Ashr(Dest, Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   if (SHR1Bit) {
