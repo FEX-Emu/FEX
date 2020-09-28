@@ -1629,13 +1629,6 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   else
     Shift = _And(Shift, _Constant(0x1F));
 
-  auto CondJump = _CondJump(Shift);
-
-  // Do nothing if shift count is zero
-  auto JumpTarget = CreateNewCodeBlock();
-  SetTrueJumpTarget(CondJump, JumpTarget);
-  SetCurrentCodeBlock(JumpTarget);
-
   auto ShiftRight = _Sub(_Constant(Size), Shift);
 
   OrderedNode *Res{};
@@ -1645,7 +1638,21 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   Res = _Or(Tmp1, Tmp2);
 
+  // If shift count was zero then output doesn't change
+  // Needs to be checked for the 32bit operand case
+  // where shift = 0 and the source register still gets Zext
+  Res = _Select(FEXCore::IR::COND_EQ,
+    Shift, _Constant(0),
+    Dest, Res);
+
   StoreResult(GPRClass, Op, Res, -1);
+
+  auto CondJump = _CondJump(Shift);
+
+  // Do nothing if shift count is zero
+  auto JumpTarget = CreateNewCodeBlock();
+  SetTrueJumpTarget(CondJump, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
 
   if (Size != 64)
     Res = _Bfe(Size, 0, Res);
@@ -1690,6 +1697,10 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
       Res = _Bfe(Size, 0, Res);
     GenerateFlags_ShiftLeftImmediate(Op, Res, Dest, Shift);
   }
+  else if (Shift == 0 && Size == 32) {
+    // Ensure Zext still occurs
+    StoreResult(GPRClass, Op, Dest, -1);
+  }
 }
 
 void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
@@ -1698,7 +1709,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
 
   OrderedNode *Shift = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
 
-  auto Size = GetSrcSize(Op) * 8;
+  auto Size = GetDstSize(Op) * 8;
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64)
@@ -1707,24 +1718,34 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
     Shift = _And(Shift, _Constant(0x1F));
 
 
-  auto CondJump = _CondJump(Shift);
-
-  // Do nothing if shift count is zero
-  auto JumpTarget = CreateNewCodeBlock();
-  SetTrueJumpTarget(CondJump, JumpTarget);
-  SetCurrentCodeBlock(JumpTarget);
+  OrderedNode *Res{};
 
   auto ShiftLeft = _Sub(_Constant(Size), Shift);
 
-  OrderedNode *Res{};
   auto Tmp1 = _Lshr(Dest, Shift);
   auto Tmp2 = _Lshl(Src, ShiftLeft);
   Tmp2.first->Header.Size = 8;
   Res = _Or(Tmp1, Tmp2);
+
+  // If shift count was zero then output doesn't change
+  // Needs to be checked for the 32bit operand case
+  // where shift = 0 and the source register still gets Zext
+  Res = _Select(FEXCore::IR::COND_EQ,
+    Shift, _Constant(0),
+    Dest, Res);
+
   StoreResult(GPRClass, Op, Res, -1);
+
+  auto CondJump = _CondJump(Shift);
+
+  // Do not change flags if shift count is zero
+  auto JumpTarget = CreateNewCodeBlock();
+  SetTrueJumpTarget(CondJump, JumpTarget);
+  SetCurrentCodeBlock(JumpTarget);
 
   if (Size != 64)
     Res = _Bfe(Size, 0, Res);
+
   GenerateFlags_ShiftRight(Op, Res, Dest, Shift);
 
   auto Jump = _Jump();
@@ -1764,6 +1785,10 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
     if (Size != 64)
       Res = _Bfe(Size, 0, Res);
     GenerateFlags_ShiftRightImmediate(Op, Res, Dest, Shift);
+  }
+  else if (Shift == 0 && Size == 32) {
+    // Ensure Zext still occurs
+    StoreResult(GPRClass, Op, Dest, -1);
   }
 }
 
