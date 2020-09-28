@@ -2723,9 +2723,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           auto Src = GetSrc(Op->Header.Args[0].ID());
           auto Dest = GetDst(Node);
           vpxor(xmm15, xmm15, xmm15);
+          uint8_t Elements = OpSize / Op->Header.ElementSize;
           switch (Op->Header.ElementSize) {
             case 2: {
-              for (int i = 0; i < (Op->Header.Size / 4); ++i) {
+              for (int i = Elements; i > 1; i >>= 1) {
                 phaddw(Dest, Src);
                 Src = Dest;
               }
@@ -2734,7 +2735,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
             break;
             }
             case 4: {
-              for (int i = 0; i < (Op->Header.Size / 8); ++i) {
+              for (int i = Elements; i > 1; i >>= 1) {
                 phaddd(Dest, Src);
                 Src = Dest;
               }
