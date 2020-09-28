@@ -10,16 +10,15 @@
 }
 %endif
 
-mov cl, 0
 mov r15, -1
 mov r14, 0x4141414141410000
 mov r13, 0
 mov r12, 0
 mov r11, -1
 
-shld r14w, r15w, cl
-shld r13d, r15d, cl
-shld r12, r15, cl
-shld r11d, r15d, cl
+shld r14w, r15w, 0
+shld r13d, r15d, 0
+shld r12, r15, 0
+shld r11d, r15d, 0
 
 hlt
