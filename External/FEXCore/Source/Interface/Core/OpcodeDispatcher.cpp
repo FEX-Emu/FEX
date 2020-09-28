@@ -3997,6 +3997,9 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs) {
   LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].TypeLiteral.Literal;
 
+  uint8_t NumElements = Size / ElementSize;
+  Index &= NumElements - 1;
+
   // This maps 1:1 to an AArch64 NEON Op
   auto ALUOp = _VInsGPR(Size, ElementSize, Dest, Src, Index);
   StoreResult(FPRClass, Op, ALUOp, -1);
@@ -4004,9 +4007,14 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].TypeLiteral.Literal;
+
+  uint8_t NumElements = Size / ElementSize;
+  Index &= NumElements - 1;
 
   auto Result = _VExtractToGPR(16, ElementSize, Src, Index);
   StoreResult(GPRClass, Op, Result, -1);
