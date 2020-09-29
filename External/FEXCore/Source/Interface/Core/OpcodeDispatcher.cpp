@@ -2581,25 +2581,25 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   if (Size == 1) {
     // Result is stored in AX
     _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Result);
-    ResultHigh = _Bfe(8, 8, Result);
-    ResultHigh = _Sext(Size * 8, ResultHigh);
+    ResultHigh = _Sbfe(8, 8, Result);
   }
   else if (Size == 2) {
     // 16bits stored in AX
     // 16bits stored in DX
     _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Result);
-    ResultHigh = _Bfe(16, 16, Result);
-    ResultHigh = _Sext(Size * 8, ResultHigh);
+    ResultHigh = _Sbfe(16, 16, Result);
     _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
   }
   else if (Size == 4) {
     // 32bits stored in EAX
     // 32bits stored in EDX
     // Make sure they get Zext correctly
-    OrderedNode *ResultLow = _Bfe(4, 32, 0, Result);
-    ResultHigh = _Bfe(4, 32, 32, Result);
-    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ResultLow);
-    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
+    auto LocalResult = _Bfe(32, 0, Result);
+    auto LocalResultHigh = _Bfe(32, 32, Result);
+    Result = _Sbfe(32, 0, Result);
+    ResultHigh = _Sbfe(32, 32, Result);
+    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), LocalResult);
+    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), LocalResultHigh);
   }
   else if (Size == 8) {
     LogMan::Throw::A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");
@@ -5013,8 +5013,6 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
 }
 
 void OpDispatchBuilder::GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *High) {
-  auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
-
   // PF/AF/ZF/SF
   // Undefined
   {
@@ -5029,7 +5027,7 @@ void OpDispatchBuilder::GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, Orde
     // CF and OF are set if the result of the operation can't be fit in to the destination register
     // If the value can fit then the top bits will be zero
 
-    auto SignBit = _Ashr(Res, SignBitConst);
+    auto SignBit = _Sbfe(1, GetSrcSize(Op) * 8 - 1, Res);
 
     auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, SignBit, _Constant(0), _Constant(1));
 
