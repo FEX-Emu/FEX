@@ -1652,8 +1652,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           case 4:
             movsxd(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
             imul(GetSrc<RA_32>(Op->Header.Args[1].ID()));
-            movsxd(rax, edx);
-            mov(GetDst<RA_64>(Node), rdx);
+            movsxd(GetDst<RA_64>(Node).cvt64(), edx);
           break;
           case 8:
             mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
