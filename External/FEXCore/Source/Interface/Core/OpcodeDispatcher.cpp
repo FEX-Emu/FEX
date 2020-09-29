@@ -4132,15 +4132,6 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
   auto Size = GetSrcSize(Op);
-  // If this is a memory location then we want the pointer to it
-  OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
-
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-    Src1 = _Add(Src1, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
-  }
-  else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-    Src1 = _Add(Src1, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
-  }
 
   // This is our source register
   OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -4152,19 +4143,30 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    OrderedNode *Src1{};
+    OrderedNode *Src1Lower{};
+    if (GPRSize == 8 && Size == 4) {
+      Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
+      Src1Lower = _Bfe(4, 32, 0, Src1);
+    }
+    else {
+      Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, Size, Op->Flags, -1);
+      Src1Lower = Src1;
+    }
+
     // If our destination is a GPR then this behaves differently
     // RAX = RAX == Op1 ? RAX : Op1
     // AKA if they match then don't touch RAX value
     // Otherwise set it to the rm operand
     OrderedNode *RAXResult = _Select(FEXCore::IR::COND_EQ,
-      Src1, Src3,
-      Src3, Src1);
+      Src1Lower, Src3,
+      Src3, Src1Lower);
 
     // Op1 = RAX == Op1 ? Op2 : Op1
     // If they match then set the rm operand to the input
     // else don't set the rm operand
     OrderedNode *DestResult = _Select(FEXCore::IR::COND_EQ,
-        Src1, Src3,
+        Src1Lower, Src3,
         Src2, Src1);
 
     // ZF = RAX == Op1 ? 1 : 0
@@ -4175,13 +4177,31 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 
     // Set ZF
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
-    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
 
     // Store in to GPR Dest
     // Have to make sure this is after the result store in RAX for when Dest == RAX
-    StoreResult(GPRClass, Op, DestResult, -1);
+    if (GPRSize == 8 && Size == 4) {
+      // When the size is 4 we need to make sure not zext the GPR when the comparison fails
+      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
+      StoreResult_WithOpSize(GPRClass, Op, Op->Dest, DestResult, GPRSize, -1);
+    }
+    else {
+      _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
+      StoreResult(GPRClass, Op, DestResult, -1);
+    }
   }
   else {
+    // If this is a memory location then we want the pointer to it
+    OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+
+    if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
+      Src1 = _Add(Src1, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
+    }
+    else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+      Src1 = _Add(Src1, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
+    }
+
+
     // DataSrc = *Src1
     // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
     // This will write to memory! Careful!
