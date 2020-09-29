@@ -6129,10 +6129,12 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
       Result = _VFCMPNEQ(Size, ElementSize, Src2, Src);
     break;
     case 0x05: case 0x0D: case 0x15: case 0x1D: // NLT, NGT(Swapped operand)
-      Result = _VFCMPLE(Size, ElementSize, Src, Src2);
+      Result = _VFCMPLT(Size, ElementSize, Src2, Src);
+      Result = _VNot(Size, ElementSize, Result);
     break;
     case 0x06: case 0x0E: case 0x16: case 0x1E: // NLE, NGE(Swapped operand)
-      Result = _VFCMPLT(Size, ElementSize, Src, Src2);
+      Result = _VFCMPLE(Size, ElementSize, Src2, Src);
+      Result = _VNot(Size, ElementSize, Result);
     break;
     case 0x07: case 0x0F: case 0x17: case 0x1F: // Ordered
       Result = _VFCMPORD(Size, ElementSize, Src2, Src);
