@@ -3,6 +3,8 @@
   "RegData": {
     "RAX": "0x41424344FFDC5C00",
     "RBX": "0xFFFFFFD554D45400",
+    "RCX": "0xFFFFFFFFFFFF0002",
+    "RDX": "0x0000000000000002",
     "RSI": "0x4ECE4DCD4CCC4C00",
     "RSP": "0xFFFFFFFFFFFFFFCF"
   },
@@ -35,6 +37,20 @@ mov rax, -128
 imul qword [r15 + 8 * 2 + 0]
 mov rsi, rax
 mov rsp, rdx
+
+; Ensure correct zext mechanics
+
+; 16bit - inserts
+mov rax, 0xFFFFFFFFFFFF0001
+mov rbx, 2
+imul bl
+mov rcx, rax
+
+; 32bit - Zexts to 64bit
+mov rax, 0xFFFFFFFF00000001
+mov rbx, 2
+imul ebx
+mov rdx, rax
 
 mov rax, [r15 + 8 * 0]
 mov rbx, [r15 + 8 * 1]
