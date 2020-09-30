@@ -214,6 +214,7 @@ if (ENABLE_JIT)
       Interface/Core/JIT/Arm64/AtomicOps.cpp
       Interface/Core/JIT/Arm64/BranchOps.cpp
       Interface/Core/JIT/Arm64/ConversionOps.cpp
+      Interface/Core/JIT/Arm64/EncryptionOps.cpp
       Interface/Core/JIT/Arm64/FlagOps.cpp
       Interface/Core/JIT/Arm64/MemoryOps.cpp
       Interface/Core/JIT/Arm64/MiscOps.cpp

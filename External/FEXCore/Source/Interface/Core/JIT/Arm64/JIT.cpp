@@ -431,6 +431,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   RegisterMiscHandlers();
   RegisterMoveHandlers();
   RegisterVectorHandlers();
+  RegisterEncryptionHandlers();
 
   // This will register the host signal handler per thread, which is fine
   CTX->SignalDelegation.RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {

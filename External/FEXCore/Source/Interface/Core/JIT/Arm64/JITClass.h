@@ -229,6 +229,7 @@ private:
   void RegisterMiscHandlers();
   void RegisterMoveHandlers();
   void RegisterVectorHandlers();
+  void RegisterEncryptionHandlers();
 #define DEF_OP(x) void Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 
   ///< Unhandled handler
@@ -451,6 +452,14 @@ private:
   DEF_OP(VUMull2);
   DEF_OP(VSMull2);
   DEF_OP(VTBL1);
+
+  ///< Encryption ops
+  DEF_OP(AESImc);
+  DEF_OP(AESEnc);
+  DEF_OP(AESEncLast);
+  DEF_OP(AESDec);
+  DEF_OP(AESDecLast);
+  DEF_OP(AESKeyGenAssist);
 #undef DEF_OP
 };
 
