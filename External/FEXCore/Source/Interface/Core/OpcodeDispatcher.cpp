@@ -2615,6 +2615,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
   if (Size != 8) {
@@ -2639,11 +2641,10 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
   else if (Size == 4) {
     // 32bits stored in EAX
     // 32bits stored in EDX
-    OrderedNode *ResultLow = _Bfe(32, 0, Result);
-    ResultHigh = _Bfe(32, 32, Result);
-    _StoreContext(GPRClass, 4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ResultLow);
-    _StoreContext(GPRClass, 4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
-
+    OrderedNode *ResultLow = _Bfe(GPRSize, 32, 0, Result);
+    ResultHigh = _Bfe(GPRSize, 32, 32, Result);
+    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), ResultLow);
+    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
   }
   else if (Size == 8) {
     LogMan::Throw::A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");

@@ -1,7 +1,8 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "0x414243444546008E"
+    "RAX": "0x414243444546008E",
+    "RBX": "0xFFFFFFFFFFFF0004"
   },
   "MemoryRegions": {
     "0x100000000": "4096"
@@ -19,6 +20,12 @@ mov [rdx + 8 * 1], rax
 mov al, 2
 mul byte [rdx + 8 * 0 + 1]
 mov word [rdx + 8 * 0], ax
+
+; Ensure this inserts in to AX
+mov rax, 0xFFFFFFFFFFFFFF02
+mov rbx, 0xFFFFFFFFFFFFFF02
+mul bl
+mov rbx, rax
 
 mov rax, [rdx + 8 * 0]
 
