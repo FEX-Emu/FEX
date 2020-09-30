@@ -2,8 +2,6 @@
 
 #include "Interface/Core/BlockCache.h"
 #include "Interface/Core/BlockSamplingData.h"
-#include "Interface/Core/InternalThreadState.h"
-#include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include "Interface/Core/JIT/x86_64/JIT.h"
 #include "Common/MathUtils.h"
@@ -157,6 +155,248 @@ private:
   void StoreThreadState(int Signal, void *ucontext);
   void RestoreThreadState(void *ucontext);
   std::stack<uint64_t> SignalFrames;
+  uint32_t SpillSlots{};
+
+  using OpHandler = void (JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
+  std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};
+  void RegisterALUHandlers();
+  void RegisterAtomicHandlers();
+  void RegisterBranchHandlers();
+  void RegisterConversionHandlers();
+  void RegisterFlagHandlers();
+  void RegisterMemoryHandlers();
+  void RegisterMiscHandlers();
+  void RegisterMoveHandlers();
+  void RegisterVectorHandlers();
+  void RegisterEncryptionHandlers();
+#define DEF_OP(x) void Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+
+  ///< Unhandled handler
+  DEF_OP(Unhandled);
+
+  ///< No-op Handler
+  DEF_OP(NoOp);
+
+  ///< ALU Ops
+  DEF_OP(TruncElementPair);
+  DEF_OP(Constant);
+  DEF_OP(CycleCounter);
+  DEF_OP(Add);
+  DEF_OP(Sub);
+  DEF_OP(Neg);
+  DEF_OP(Mul);
+  DEF_OP(UMul);
+  DEF_OP(Div);
+  DEF_OP(UDiv);
+  DEF_OP(Rem);
+  DEF_OP(URem);
+  DEF_OP(MulH);
+  DEF_OP(UMulH);
+  DEF_OP(Or);
+  DEF_OP(And);
+  DEF_OP(Xor);
+  DEF_OP(Lshl);
+  DEF_OP(Lshr);
+  DEF_OP(Ashr);
+  DEF_OP(Rol);
+  DEF_OP(Ror);
+  DEF_OP(Extr);
+  DEF_OP(LDiv);
+  DEF_OP(LUDiv);
+  DEF_OP(LRem);
+  DEF_OP(LURem);
+  DEF_OP(Zext);
+  DEF_OP(Sext);
+  DEF_OP(Not);
+  DEF_OP(Popcount);
+  DEF_OP(FindLSB);
+  DEF_OP(FindMSB);
+  DEF_OP(FindTrailingZeros);
+  DEF_OP(CountLeadingZeroes);
+  DEF_OP(Rev);
+  DEF_OP(Bfi);
+  DEF_OP(Bfe);
+  DEF_OP(Sbfe);
+  DEF_OP(Select);
+  DEF_OP(VExtractToGPR);
+  DEF_OP(Float_ToGPR_ZU);
+  DEF_OP(Float_ToGPR_ZS);
+  DEF_OP(Float_ToGPR_U);
+  DEF_OP(Float_ToGPR_S);
+  DEF_OP(FCmp);
+  DEF_OP(F80Cmp);
+
+  ///< Atomic ops
+  DEF_OP(CASPair);
+  DEF_OP(CAS);
+  DEF_OP(AtomicAdd);
+  DEF_OP(AtomicSub);
+  DEF_OP(AtomicAnd);
+  DEF_OP(AtomicOr);
+  DEF_OP(AtomicXor);
+  DEF_OP(AtomicSwap);
+  DEF_OP(AtomicFetchAdd);
+  DEF_OP(AtomicFetchSub);
+  DEF_OP(AtomicFetchAnd);
+  DEF_OP(AtomicFetchOr);
+  DEF_OP(AtomicFetchXor);
+
+  ///< Branch ops
+  DEF_OP(GuestCallDirect);
+  DEF_OP(GuestCallIndirect);
+  DEF_OP(GuestReturn);
+  DEF_OP(SignalReturn);
+  DEF_OP(CallbackReturn);
+  DEF_OP(ExitFunction);
+  DEF_OP(Jump);
+  DEF_OP(CondJump);
+  DEF_OP(Syscall);
+  DEF_OP(Thunk);
+  DEF_OP(ValidateCode);
+  DEF_OP(RemoveCodeEntry);
+  DEF_OP(CPUID);
+
+  ///< Conversion ops
+  DEF_OP(VInsGPR);
+  DEF_OP(VCastFromGPR);
+  DEF_OP(Float_FromGPR_U);
+  DEF_OP(Float_FromGPR_S);
+  DEF_OP(Float_FToF);
+  DEF_OP(Vector_UToF);
+  DEF_OP(Vector_SToF);
+  DEF_OP(Vector_FToZU);
+  DEF_OP(Vector_FToZS);
+  DEF_OP(Vector_FToU);
+  DEF_OP(Vector_FToS);
+  DEF_OP(Vector_FToF);
+
+  ///< Flag ops
+  DEF_OP(GetHostFlag);
+
+  ///< Memory ops
+  DEF_OP(LoadContextPair);
+  DEF_OP(StoreContextPair);
+  DEF_OP(LoadContext);
+  DEF_OP(StoreContext);
+  DEF_OP(LoadContextIndexed);
+  DEF_OP(StoreContextIndexed);
+  DEF_OP(SpillRegister);
+  DEF_OP(FillRegister);
+  DEF_OP(LoadFlag);
+  DEF_OP(StoreFlag);
+  DEF_OP(LoadMem);
+  DEF_OP(StoreMem);
+  DEF_OP(VLoadMemElement);
+  DEF_OP(VStoreMemElement);
+
+  ///< Misc ops
+  DEF_OP(EndBlock);
+  DEF_OP(Fence);
+  DEF_OP(Break);
+  DEF_OP(Phi);
+  DEF_OP(PhiValue);
+  DEF_OP(Print);
+  DEF_OP(GetRoundingMode);
+  DEF_OP(SetRoundingMode);
+
+  ///< Move ops
+  DEF_OP(ExtractElementPair);
+  DEF_OP(CreateElementPair);
+  DEF_OP(Mov);
+
+  ///< Vector ops
+  DEF_OP(VectorZero);
+  DEF_OP(VectorImm);
+  DEF_OP(CreateVector2);
+  DEF_OP(CreateVector4);
+  DEF_OP(SplatVector);
+  DEF_OP(VMov);
+  DEF_OP(VAnd);
+  DEF_OP(VOr);
+  DEF_OP(VXor);
+  DEF_OP(VAdd);
+  DEF_OP(VSub);
+  DEF_OP(VUQAdd);
+  DEF_OP(VUQSub);
+  DEF_OP(VSQAdd);
+  DEF_OP(VSQSub);
+  DEF_OP(VAddP);
+  DEF_OP(VAddV);
+  DEF_OP(VURAvg);
+  DEF_OP(VAbs);
+  DEF_OP(VFAdd);
+  DEF_OP(VFAddP);
+  DEF_OP(VFSub);
+  DEF_OP(VFMul);
+  DEF_OP(VFDiv);
+  DEF_OP(VFMin);
+  DEF_OP(VFMax);
+  DEF_OP(VFRecp);
+  DEF_OP(VFSqrt);
+  DEF_OP(VFRSqrt);
+  DEF_OP(VNeg);
+  DEF_OP(VFNeg);
+  DEF_OP(VNot);
+  DEF_OP(VUMin);
+  DEF_OP(VSMin);
+  DEF_OP(VUMax);
+  DEF_OP(VSMax);
+  DEF_OP(VZip);
+  DEF_OP(VZip2);
+  DEF_OP(VBSL);
+  DEF_OP(VCMPEQ);
+  DEF_OP(VCMPEQZ);
+  DEF_OP(VCMPGT);
+  DEF_OP(VCMPGTZ);
+  DEF_OP(VCMPLTZ);
+  DEF_OP(VFCMPEQ);
+  DEF_OP(VFCMPNEQ);
+  DEF_OP(VFCMPLT);
+  DEF_OP(VFCMPGT);
+  DEF_OP(VFCMPLE);
+  DEF_OP(VFCMPORD);
+  DEF_OP(VFCMPUNO);
+  DEF_OP(VUShl);
+  DEF_OP(VUShr);
+  DEF_OP(VSShr);
+  DEF_OP(VUShlS);
+  DEF_OP(VUShrS);
+  DEF_OP(VSShrS);
+  DEF_OP(VInsElement);
+  DEF_OP(VInsScalarElement);
+  DEF_OP(VExtractElement);
+  DEF_OP(VExtr);
+  DEF_OP(VSLI);
+  DEF_OP(VSRI);
+  DEF_OP(VUShrI);
+  DEF_OP(VSShrI);
+  DEF_OP(VShlI);
+  DEF_OP(VUShrNI);
+  DEF_OP(VUShrNI2);
+  DEF_OP(VBitcast);
+  DEF_OP(VSXTL);
+  DEF_OP(VSXTL2);
+  DEF_OP(VUXTL);
+  DEF_OP(VUXTL2);
+  DEF_OP(VSQXTN);
+  DEF_OP(VSQXTN2);
+  DEF_OP(VSQXTUN);
+  DEF_OP(VSQXTUN2);
+  DEF_OP(VMul);
+  DEF_OP(VUMull);
+  DEF_OP(VSMull);
+  DEF_OP(VUMull2);
+  DEF_OP(VSMull2);
+  DEF_OP(VTBL1);
+
+  ///< Encryption ops
+  DEF_OP(AESImc);
+  DEF_OP(AESEnc);
+  DEF_OP(AESEncLast);
+  DEF_OP(AESDec);
+  DEF_OP(AESDecLast);
+  DEF_OP(AESKeyGenAssist);
+#undef DEF_OP
 };
 
 }
