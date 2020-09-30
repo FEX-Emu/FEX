@@ -124,6 +124,7 @@ set (SRCS
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp
   Interface/Core/GdbServer.cpp
+  Interface/Core/HostFeatures.cpp
   Interface/Core/OpcodeDispatcher.cpp
   Interface/Core/SignalDelegator.cpp
   Interface/Core/X86Tables.cpp
