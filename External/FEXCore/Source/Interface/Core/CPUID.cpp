@@ -1,3 +1,4 @@
+#include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
 #include "git_version.h"
 
@@ -64,7 +65,7 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_01h() {
     (1 << 22) | // MOVBE
     (1 << 23) | // POPCNT
     (0 << 24) | // APIC TSC-Deadline
-    (0 << 25) | // AES
+    (CTX->HostFeatures.SupportsAES << 25) | // AES
     (0 << 26) | // XSAVE
     (0 << 27) | // OSXSAVE
     (0 << 28) | // AVX
@@ -350,7 +351,8 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_Reserved() {
   return Res;
 }
 
-void CPUIDEmu::Init() {
+void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
+  CTX = ctx;
   RegisterFunction(0, std::bind(&CPUIDEmu::Function_0h, this));
   RegisterFunction(1, std::bind(&CPUIDEmu::Function_01h, this));
   // Cache and TLB information
