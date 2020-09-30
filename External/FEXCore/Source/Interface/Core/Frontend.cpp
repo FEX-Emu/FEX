@@ -731,7 +731,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
         if (DecodeInst->LastEscapePrefix == 0x66) // Operand Size
           Prefix = PF_3A_66;
 
-        if (DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX)
+        if (DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING)
           Prefix |= PF_3A_REX;
 
         uint16_t LocalOp = (Prefix << 8) | ReadByte();

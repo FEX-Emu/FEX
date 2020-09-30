@@ -5,6 +5,9 @@
 #include "LogManager.h"
 
 namespace FEXCore {
+namespace Context {
+  struct Context;
+}
 
 class CPUIDEmu final {
 private:
@@ -17,7 +20,7 @@ private:
   constexpr static uint32_t CPUID_VENDOR_AMD3 = 0x444D4163; // "cAMD"
 
 public:
-  void Init();
+  void Init(FEXCore::Context::Context *ctx);
 
   struct FunctionResults {
     uint32_t eax, ebx, ecx, edx;
@@ -28,6 +31,7 @@ public:
     return FunctionHandlers[Function]();
   }
 private:
+  FEXCore::Context::Context *CTX;
 
   using FunctionHandler = std::function<FunctionResults()>;
   void RegisterFunction(uint32_t Function, FunctionHandler Handler) {

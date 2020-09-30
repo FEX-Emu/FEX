@@ -124,6 +124,7 @@ set (SRCS
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp
   Interface/Core/GdbServer.cpp
+  Interface/Core/HostFeatures.cpp
   Interface/Core/OpcodeDispatcher.cpp
   Interface/Core/SignalDelegator.cpp
   Interface/Core/X86Tables.cpp
@@ -213,6 +214,7 @@ if (ENABLE_JIT)
       Interface/Core/JIT/Arm64/AtomicOps.cpp
       Interface/Core/JIT/Arm64/BranchOps.cpp
       Interface/Core/JIT/Arm64/ConversionOps.cpp
+      Interface/Core/JIT/Arm64/EncryptionOps.cpp
       Interface/Core/JIT/Arm64/FlagOps.cpp
       Interface/Core/JIT/Arm64/MemoryOps.cpp
       Interface/Core/JIT/Arm64/MiscOps.cpp

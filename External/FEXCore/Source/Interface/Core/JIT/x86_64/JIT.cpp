@@ -2944,6 +2944,36 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
           }
           break;
         }
+        case IR::OP_VAESIMC: {
+          auto Op = IROp->C<IR::IROp_VAESImc>();
+          vaesimc(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+          break;
+        }
+        case IR::OP_VAESENC: {
+          auto Op = IROp->C<IR::IROp_VAESEnc>();
+          vaesenc(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+        }
+        case IR::OP_VAESENCLAST: {
+          auto Op = IROp->C<IR::IROp_VAESEncLast>();
+          vaesenclast(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+        }
+        case IR::OP_VAESDEC: {
+          auto Op = IROp->C<IR::IROp_VAESDec>();
+          vaesdec(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+        }
+        case IR::OP_VAESDECLAST: {
+          auto Op = IROp->C<IR::IROp_VAESDecLast>();
+          vaesdeclast(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+          break;
+        }
+        case IR::OP_VAESKEYGENASSIST: {
+          auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
+          vaeskeygenassist(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), Op->RCON);
+          break;
+        }
         case IR::OP_VMOV: {
           auto Op = IROp->C<IR::IROp_VMov>();
 

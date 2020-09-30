@@ -33,7 +33,7 @@ constexpr uint64_t FS_SIZE = 0x1000'0000;
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
     // This should be used for generating things that are shared between threads
-    CTX->CPUID.Init();
+    CTX->CPUID.Init(CTX);
     return true;
   }
 }

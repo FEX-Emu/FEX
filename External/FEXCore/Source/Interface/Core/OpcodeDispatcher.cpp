@@ -8023,6 +8023,49 @@ void OpDispatchBuilder::PSADBW(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Res = _VAESImc(Src);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Res = _VAESEnc(Dest, Src);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Res = _VAESEncLast(Dest, Src);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Res = _VAESDec(Dest, Src);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Res = _VAESDecLast(Dest, Src);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  LogMan::Throw::A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  uint64_t RCON = Op->Src[1].TypeLiteral.Literal;
+
+  auto Res = _VAESKeyGenAssist(Src, RCON);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
@@ -8908,6 +8951,13 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_NONE, 0x1E), 1, &OpDispatchBuilder::PABS<4>},
     {OPD(PF_38_66,   0x1E), 1, &OpDispatchBuilder::PABS<4>},
     {OPD(PF_38_66,   0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
+    {OPD(PF_38_66, 0xDC), 1, &OpDispatchBuilder::AESEncOp},
+    {OPD(PF_38_66, 0xDD), 1, &OpDispatchBuilder::AESEncLastOp},
+    {OPD(PF_38_66, 0xDE), 1, &OpDispatchBuilder::AESDecOp},
+    {OPD(PF_38_66, 0xDF), 1, &OpDispatchBuilder::AESDecLastOp},
+
     {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
     {OPD(PF_38_66, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
 
@@ -8921,6 +8971,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(0, PF_3A_NONE, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
     {OPD(0, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::PAlignrOp},
     {OPD(1, PF_3A_66,   0x0F), 1, &OpDispatchBuilder::PAlignrOp},
+
+    {OPD(0, PF_3A_66,   0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
   };
 #undef PF_3A_NONE
 #undef PF_3A_66

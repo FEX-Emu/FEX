@@ -3160,6 +3160,85 @@
       ]
     },
 
+    "VAESImc": {
+      "OpClass": "Vector",
+      "Dest": "Does a stage of the inverse mix column transformation",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Src"
+      ]
+    },
+
+    "VAESEnc": {
+      "OpClass": "Vector",
+      "Dest": "Does a step of AES encryption",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "SSAArgs": "2",
+      "SSANames": [
+        "State",
+        "Key"
+      ]
+    },
+
+    "VAESEncLast": {
+      "OpClass": "Vector",
+      "Dest": "Does the last step of AES encryption",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "SSAArgs": "2",
+      "SSANames": [
+        "State",
+        "Key"
+      ]
+    },
+
+    "VAESDec": {
+      "OpClass": "Vector",
+      "Dest": "Does a step of AES decryption",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "SSAArgs": "2",
+      "SSANames": [
+        "State",
+        "Key"
+      ]
+    },
+
+    "VAESDecLast": {
+      "OpClass": "Vector",
+      "Dest": "Does the last step of AES decryption",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "SSAArgs": "2",
+      "SSANames": [
+        "State",
+        "Key"
+      ]
+    },
+
+    "VAESKeyGenAssist": {
+      "OpClass": "Vector",
+      "Dest": "Assists in key generation",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "16",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Src"
+      ],
+      "Args": [
+        "uint8_t", "RCON"
+      ]
+    },
+
     "GetHostFlag": {
       "OpClass": "Flags",
       "HasDest": true,

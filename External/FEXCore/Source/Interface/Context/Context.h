@@ -2,6 +2,7 @@
 #include "Common/JitSymbols.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
+#include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/SignalDelegator.h"
 #include "Interface/Core/X86HelperGen.h"
@@ -64,6 +65,7 @@ namespace FEXCore::Context {
     } Config;
 
     FEXCore::Memory::MemMapper MemoryMapper;
+    FEXCore::HostFeatures HostFeatures;
 
     std::mutex ThreadCreationMutex;
     uint64_t ThreadID{};

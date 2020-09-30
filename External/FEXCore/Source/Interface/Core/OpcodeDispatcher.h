@@ -434,6 +434,13 @@ public:
 
   void PSADBW(OpcodeArgs);
 
+  void AESImcOp(OpcodeArgs);
+  void AESEncOp(OpcodeArgs);
+  void AESEncLastOp(OpcodeArgs);
+  void AESDecOp(OpcodeArgs);
+  void AESDecLastOp(OpcodeArgs);
+  void AESKeyGenAssist(OpcodeArgs);
+
   void UnimplementedOp(OpcodeArgs);
 
 #undef OpcodeArgs
