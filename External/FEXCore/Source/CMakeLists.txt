@@ -201,7 +201,18 @@ if (ENABLE_JIT)
   if (_M_X86_64)
     add_definitions(-D_M_X86_64=1)
     if (NOT FORCE_AARCH64)
-      list(APPEND SRCS Interface/Core/JIT/x86_64/JIT.cpp)
+      list(APPEND SRCS
+        Interface/Core/JIT/x86_64/JIT.cpp
+        Interface/Core/JIT/x86_64/ALUOps.cpp
+        Interface/Core/JIT/x86_64/AtomicOps.cpp
+        Interface/Core/JIT/x86_64/BranchOps.cpp
+        Interface/Core/JIT/x86_64/ConversionOps.cpp
+        Interface/Core/JIT/x86_64/EncryptionOps.cpp
+        Interface/Core/JIT/x86_64/FlagOps.cpp
+        Interface/Core/JIT/x86_64/MemoryOps.cpp
+        Interface/Core/JIT/x86_64/MiscOps.cpp
+        Interface/Core/JIT/x86_64/MoveOps.cpp
+        Interface/Core/JIT/x86_64/VectorOps.cpp)
     endif()
   endif()
   if(_M_ARM_64)
