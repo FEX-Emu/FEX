@@ -3932,6 +3932,21 @@ void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
+  // PSHUFB doesn't 100% match VTBL behaviour
+  // VTBL will set the element zero if the index is greater than the number of elements
+  // In the array
+  // Bit 7 is the only bit that is supposed to set elements to zero with PSHUFB
+  // Mask the selection bits and top bit correctly
+  // Bits [6:4] is reserved for 128bit
+  // Bits [6:3] is reserved for 64bit
+  if (Size == 8) {
+    auto MaskVector = _VectorImm(0b1000'0111, Size, 1);
+    Src = _VAnd(Size, Size, Src, MaskVector);
+  }
+  else {
+    auto MaskVector = _VectorImm(0b1000'1111, Size, 1);
+    Src = _VAnd(Size, Size, Src, MaskVector);
+  }
   auto Res = _VTBL1(Size, Dest, Src);
   StoreResult(FPRClass, Op, Res, -1);
 }
