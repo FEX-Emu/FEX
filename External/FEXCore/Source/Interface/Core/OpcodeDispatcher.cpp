@@ -8495,6 +8495,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x28, 2, &OpDispatchBuilder::MOVAPSOp},
     {0x2A, 1, &OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, true, true>},
+    {0x2B, 1, &OpDispatchBuilder::MOVAPSOp},
     {0x2C, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, true, true>},
     {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, true, false>},
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<8>},
