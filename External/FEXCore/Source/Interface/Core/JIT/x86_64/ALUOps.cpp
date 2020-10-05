@@ -844,40 +844,37 @@ DEF_OP(CountLeadingZeroes) {
   else {
     switch (OpSize) {
       case 2: {
-        test(GetSrc<RA_16>(Op->Header.Args[0].ID()), 0x8000);
+        test(GetSrc<RA_16>(Op->Header.Args[0].ID()), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        mov(eax, 0x10);
         Label Skip;
-        mov(GetDst<RA_32>(Node), 0);
-        jne(Skip);
-          bsr(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
-          mov(eax, 0x0F);
-          cmovz(GetDst<RA_32>(Node), eax);
-          add(GetDst<RA_32>(Node), 1);
+        je(Skip);
+          bsr(ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+          xor(ax, 0xF);
+          movzx(eax, ax);
         L(Skip);
+        mov(GetDst<RA_32>(Node), eax);
         break;
       }
       case 4: {
-        test(GetSrc<RA_32>(Op->Header.Args[0].ID()), 0x80000000);
+        test(GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        mov(eax, 0x20);
         Label Skip;
-        mov(GetDst<RA_32>(Node), 0);
-        jne(Skip);
-          bsr(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
-          mov(eax, 0x1F);
-          cmovz(GetDst<RA_32>(Node), eax);
-          add(GetDst<RA_32>(Node), 1);
+        je(Skip);
+          bsr(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          xor(eax, 0x1F);
         L(Skip);
+        mov(GetDst<RA_32>(Node), eax);
         break;
       }
       case 8: {
-        mov(rax, 0x8000000000000000ULL);
-        test(GetSrc<RA_64>(Op->Header.Args[0].ID()), rax);
+        test(GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(rax, 0x40);
         Label Skip;
-        mov(GetDst<RA_32>(Node), 0);
-        jne(Skip);
-          bsr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          mov(rax, 0x3F);
-          cmovz(GetDst<RA_64>(Node), rax);
-          add(GetDst<RA_64>(Node), 1);
+        je(Skip);
+          bsr(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          xor(rax, 0x3F);
         L(Skip);
+        mov(GetDst<RA_64>(Node), rax);
         break;
       }
       default: LogMan::Msg::A("Unknown size: %d", OpSize); break;

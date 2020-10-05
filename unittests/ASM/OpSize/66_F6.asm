@@ -55,9 +55,7 @@ psadbw xmm8, [rdx + 16 * 15]
 
 hlt
 
-; align directive isn't aligning the data to 16bytes
-nop
-nop
+align 16
 ; 256bytes of random data
 .data:
 db '\xe0\xfc\x2b\xa1\x06\x4f\x6c\xa7\x0f\x06\x6a\x1e\x7f\x76\x80\x9b'
