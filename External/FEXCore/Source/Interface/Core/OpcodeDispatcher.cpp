@@ -413,8 +413,6 @@ void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
   auto Constant = _Constant(Size);
 
-  LogMan::Throw::A(Size == 8, "Can't handle a LEAVE op with size %d", Size);
-
   auto OldBP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBP]), GPRClass);
 
   auto NewGPR = _LoadMem(GPRClass, Size, OldBP, Size);
