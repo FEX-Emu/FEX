@@ -18,6 +18,4 @@ namespace FEXCore::HLE::x32 {
     uint32_t seg_not_present : 1;
     uint32_t useable         : 1;
   };
-
-  uint32_t Set_thread_area(FEXCore::Core::InternalThreadState *Thread, struct user_desc *u_info);
 }

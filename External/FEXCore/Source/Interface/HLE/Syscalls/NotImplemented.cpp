@@ -1,5 +1,6 @@
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
+#include "Interface/HLE/x32/Syscalls.h"
 #include "LogManager.h"
 
 #include <stdint.h>
@@ -35,12 +36,6 @@ namespace FEXCore::HLE {
       REGISTER_SYSCALL_NOT_IMPL(getpmsg);
       REGISTER_SYSCALL_NOT_IMPL(putpmsg);
       REGISTER_SYSCALL_NOT_IMPL(afs_syscall);
-      REGISTER_SYSCALL_NOT_IMPL(tuxcall);
-      REGISTER_SYSCALL_NOT_IMPL(security);
-      REGISTER_SYSCALL_NOT_IMPL(set_thread_area);
-      REGISTER_SYSCALL_NOT_IMPL(get_thread_area);
-      REGISTER_SYSCALL_NOT_IMPL(epoll_ctl_old);
-      REGISTER_SYSCALL_NOT_IMPL(epoll_wait_old);
       REGISTER_SYSCALL_NOT_IMPL(vserver);
       REGISTER_SYSCALL_NOT_IMPL(_sysctl); // Was removed in Linux 5.5
 
@@ -50,7 +45,6 @@ namespace FEXCore::HLE {
       REGISTER_SYSCALL_NO_PERM(sethostname);
       REGISTER_SYSCALL_NO_PERM(setdomainname);
       REGISTER_SYSCALL_NO_PERM(kexec_load);
-      REGISTER_SYSCALL_NO_PERM(kexec_file_load);
       REGISTER_SYSCALL_NO_PERM(finit_module);
       REGISTER_SYSCALL_NO_PERM(bpf);
       REGISTER_SYSCALL_NO_PERM(lookup_dcookie);

@@ -2,6 +2,7 @@
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
+#include "Interface/HLE/x32/Syscalls.h"
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/X86Enums.h>
@@ -21,6 +22,8 @@
 #include <unistd.h>
 #include <sys/fsuid.h>
 #include <filesystem>
+
+ARG_TO_STR(idtype_t, "%u")
 
 namespace FEXCore::Core {
 struct InternalThreadState;
