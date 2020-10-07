@@ -27,54 +27,6 @@ void RegisterSyscallInternal(int SyscallNumber,
 #endif
   void* SyscallHandler, int ArgumentCount);
 
-}
-
-#ifdef DEBUG_STRACE
-//////
-/// Templates to map parameters to format string for syscalls
-//////
-
-template<typename T>
-struct ArgToFmtString {
-  // fail on unknown types
-};
-
-#define ARG_TO_STR(tpy, str) template<> struct ArgToFmtString<tpy> { inline static const std::string Format = str; };
-
-// Base types
-ARG_TO_STR(int, "%d")
-ARG_TO_STR(unsigned int, "%u")
-ARG_TO_STR(long, "%ld")
-ARG_TO_STR(unsigned long, "%lu")
-
-//string types
-ARG_TO_STR(char*, "%s")
-ARG_TO_STR(const char*, "%s")
-
-// Pointers
-template<typename T>
-struct ArgToFmtString<T*> {
-  inline static const std::string Format = "%p";
-};
-
-// Use ArgToFmtString and variadic template to create a format string from an args list
-template<typename ...Args>
-std::string CollectArgsFmtString() {
-  std::string array[] = { ArgToFmtString<Args>::Format... };
-
-  std::string rv;
-  bool first = true;
-
-  for (auto &str: array) {
-    if (!first) rv += ", ";
-    first = false;
-    rv += str;
-  }
-
-  return rv;
-}
-#endif
-
 //////
 // REGISTER_SYSCALL_IMPL implementation
 // Given a syscall name + a lambda, and it will generate an strace string, extract number of arguments
@@ -116,48 +68,16 @@ bool RegisterSyscall(int num, const char *name, F f){
   return RegisterSyscall(num, name, (Signature)f);
 }
 
-// Helper to register a syscall implementation
+}
 
-#define REGISTER_SYSCALL_IMPL(name, lambda) struct impl_##name { impl_##name() { RegisterSyscall(x64::SYSCALL_x64_##name, #name, lambda); } } impl_##name
-
-
-/////
-// REGISTER_SYSCALL_FORWARD_ERRNO implementation
-// Given a syscall wrapper, it generate a syscall implementation using the wrapper's signature, forward the arguments
-// and register to syscalls via RegisterSyscall
-/////
-
-// Helper that allows us to create a variadic template lambda from a given signature
-// by creating a function that expects a fuction pointer with the given signature as a parameter
-template <typename T>
-struct FunctionToLambda;
-
-template<typename R, typename... Args>
-struct FunctionToLambda<R(*)(Args...)> {
-	using RType = R;
-
-	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
-		return fn;
-	}
-};
-
-// copy to match noexcept functions
-template<typename R, typename... Args>
-struct FunctionToLambda<R(*)(Args...) noexcept> {
-	using RType = R;
-
-	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
-		return fn;
-	}
-};
-
-// Creates a variadic template lambda from a global function (via FunctionToLambda), then forwards the arguments to the specified function
-// also handles errno
-#define SYSCALL_FORWARD_ERRNO(function) \
-  FunctionToLambda<decltype(&::function)>::ReturnFunctionPointer([](FEXCore::Core::InternalThreadState *Thread, auto... Args) { \
-    FunctionToLambda<decltype(&::function)>::RType Result = ::function(Args...); \
-    do { if (Result == -1) return (FunctionToLambda<decltype(&::function)>::RType)-errno; return Result; } while(0); \
-  })
-
+// Helpers to register a syscall implementation
 // Creates a syscall forward from a glibc wrapper, and registers it
-#define REGISTER_SYSCALL_FORWARD_ERRNO(function) do { RegisterSyscall(x64::SYSCALL_x64_##function, #function, SYSCALL_FORWARD_ERRNO(function)); } while(0)
+#define REGISTER_SYSCALL_FORWARD_ERRNO_X64(function) do { RegisterSyscall(x64::SYSCALL_x64_##function, #function, SYSCALL_FORWARD_ERRNO(function)); } while(0)
+
+// Registers syscall for 64bit only
+#define REGISTER_SYSCALL_IMPL_X64(name, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEXCore::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##name, #name, lambda); \
+    } } impl_##name

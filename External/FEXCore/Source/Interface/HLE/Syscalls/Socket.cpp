@@ -1,5 +1,6 @@
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
+#include "Interface/HLE/x32/Syscalls.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -20,11 +21,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(connect, [](FEXCore::Core::InternalThreadState *Thread, int sockfd, const struct sockaddr *addr, socklen_t addrlen) -> uint64_t {
       uint64_t Result = ::connect(sockfd, addr, addrlen);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(accept, [](FEXCore::Core::InternalThreadState *Thread, int sockfd, struct sockaddr *addr, socklen_t *addrlen) -> uint64_t {
-      uint64_t Result = ::accept(sockfd, addr, addrlen);
       SYSCALL_ERRNO();
     });
 

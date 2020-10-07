@@ -2,6 +2,7 @@
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
+#include "Interface/HLE/x32/Syscalls.h"
 
 #include <FEXCore/Core/X86Enums.h>
 

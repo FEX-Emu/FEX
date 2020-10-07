@@ -1,6 +1,7 @@
 #include "Interface/Context/Context.h"
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
+#include "Interface/HLE/x32/Syscalls.h"
 
 #include <cstring>
 #include <linux/kcmp.h>
@@ -25,15 +26,6 @@
 namespace FEXCore::HLE {
 
   void RegisterInfo() {
-    REGISTER_SYSCALL_IMPL(uname, [](FEXCore::Core::InternalThreadState *Thread, struct utsname *buf) -> uint64_t {
-      strcpy(buf->sysname, "Linux");
-      strcpy(buf->nodename, "FEXCore");
-      strcpy(buf->release, "5.0.0");
-      strcpy(buf->version, "#" FEXCORE_VERSION);
-      strcpy(buf->machine, "x86_64");
-      return 0;
-    });
-
     REGISTER_SYSCALL_IMPL(getrlimit, [](FEXCore::Core::InternalThreadState *Thread, int resource, struct rlimit *rlim) -> uint64_t {
       uint64_t Result = ::getrlimit(resource, rlim);
       SYSCALL_ERRNO();

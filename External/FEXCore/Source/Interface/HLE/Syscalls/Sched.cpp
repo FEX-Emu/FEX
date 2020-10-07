@@ -1,6 +1,7 @@
 #include "Interface/Context/Context.h"
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
+#include "Interface/HLE/x32/Syscalls.h"
 
 #include <stdint.h>
 #include <sched.h>

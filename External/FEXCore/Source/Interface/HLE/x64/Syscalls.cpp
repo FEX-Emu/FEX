@@ -6,30 +6,36 @@
 #include "LogManager.h"
 
 namespace FEXCore::HLE {
-    void RegisterEpoll();
-    void RegisterFD();
-    void RegisterFS();
-    void RegisterInfo();
-    void RegisterIO();
-    void RegisterIoctl();
-    void RegisterKey();
-    void RegisterMemory();
-    void RegisterMsg();
-    void RegisterNuma();
-    void RegisterSched();
-    void RegisterSemaphore();
-    void RegisterSHM();
-    void RegisterSignals();
-    void RegisterSocket();
-    void RegisterThread();
-    void RegisterTime();
-    void RegisterTimer();
-    void RegisterNotImplemented();
-    void RegisterStubs();
+  void RegisterEpoll();
+  void RegisterFD();
+  void RegisterFS();
+  void RegisterInfo();
+  void RegisterIO();
+  void RegisterIoctl();
+  void RegisterKey();
+  void RegisterMemory();
+  void RegisterMsg();
+  void RegisterNuma();
+  void RegisterSched();
+  void RegisterSemaphore();
+  void RegisterSHM();
+  void RegisterSignals();
+  void RegisterSocket();
+  void RegisterThread();
+  void RegisterTime();
+  void RegisterTimer();
+  void RegisterNotImplemented();
+  void RegisterStubs();
 }
 
 namespace FEXCore::HLE::x64 {
-  
+  void RegisterFD();
+  void RegisterInfo();
+  void RegisterMemory();
+  void RegisterSocket();
+  void RegisterSemaphore();
+  void RegisterNotImplemented();
+
   std::map<int, const char*> SyscallNames = {
     #include "SyscallsNames.inl"
   };
@@ -130,25 +136,33 @@ namespace FEXCore::HLE::x64 {
       Def.Ptr = cvt(&Unimplemented);
     }
 
-    RegisterEpoll();
-    RegisterFD();
-    RegisterFS();
-    RegisterInfo();
-    RegisterIO();
-    RegisterIoctl();
-    RegisterKey();
-    RegisterMemory();
-    RegisterMsg();
-    RegisterSched();
-    RegisterSemaphore();
-    RegisterSHM();
-    RegisterSignals();
-    RegisterSocket();
-    RegisterThread();
-    RegisterTime();
-    RegisterTimer();
-    RegisterNotImplemented();
-    RegisterStubs();
+    FEXCore::HLE::RegisterEpoll();
+    FEXCore::HLE::RegisterFD();
+    FEXCore::HLE::RegisterFS();
+    FEXCore::HLE::RegisterInfo();
+    FEXCore::HLE::RegisterIO();
+    FEXCore::HLE::RegisterIoctl();
+    FEXCore::HLE::RegisterKey();
+    FEXCore::HLE::RegisterMemory();
+    FEXCore::HLE::RegisterMsg();
+    FEXCore::HLE::RegisterSched();
+    FEXCore::HLE::RegisterSemaphore();
+    FEXCore::HLE::RegisterSHM();
+    FEXCore::HLE::RegisterSignals();
+    FEXCore::HLE::RegisterSocket();
+    FEXCore::HLE::RegisterThread();
+    FEXCore::HLE::RegisterTime();
+    FEXCore::HLE::RegisterTimer();
+    FEXCore::HLE::RegisterNotImplemented();
+    FEXCore::HLE::RegisterStubs();
+
+    // 64bit specific
+    FEXCore::HLE::x64::RegisterFD();
+    FEXCore::HLE::x64::RegisterInfo();
+    FEXCore::HLE::x64::RegisterMemory();
+    FEXCore::HLE::x64::RegisterSocket();
+    FEXCore::HLE::x64::RegisterSemaphore();
+    FEXCore::HLE::x64::RegisterNotImplemented();
 
     // Set all the new definitions
     for (auto &Syscall : syscalls_x64) {

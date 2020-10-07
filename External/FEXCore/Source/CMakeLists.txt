@@ -148,8 +148,18 @@ set (SRCS
   Interface/HLE/Syscalls.cpp
   Interface/HLE/x32/Syscalls.cpp
   Interface/HLE/x32/FD.cpp
+  Interface/HLE/x32/FS.cpp
+  Interface/HLE/x32/Info.cpp
   Interface/HLE/x32/Memory.cpp
+  Interface/HLE/x32/NotImplemented.cpp
+  Interface/HLE/x32/Semaphore.cpp
   Interface/HLE/x32/Thread.cpp
+  Interface/HLE/x64/FD.cpp
+  Interface/HLE/x64/Info.cpp
+  Interface/HLE/x64/Memory.cpp
+  Interface/HLE/x64/NotImplemented.cpp
+  Interface/HLE/x64/Semaphore.cpp
+  Interface/HLE/x64/Socket.cpp
   Interface/HLE/x64/Syscalls.cpp
   Interface/HLE/Syscalls/EPoll.cpp
   Interface/HLE/Syscalls/FD.cpp

@@ -15,28 +15,6 @@ struct InternalThreadState;
 }
 
 namespace FEXCore {
-  struct __attribute__((packed)) guest_stat {
-    __kernel_ulong_t  st_dev;
-    __kernel_ulong_t  st_ino;
-    __kernel_ulong_t  st_nlink;
-
-    unsigned int    st_mode;
-    unsigned int    st_uid;
-    unsigned int    st_gid;
-    unsigned int    __pad0;
-    __kernel_ulong_t  st_rdev;
-    __kernel_long_t   st_size;
-    __kernel_long_t   st_blksize;
-    __kernel_long_t   st_blocks;  /* Number 512-byte blocks allocated. */
-
-    __kernel_ulong_t  st_atime_;
-    __kernel_ulong_t  st_atime_nsec;
-    __kernel_ulong_t  st_mtime_;
-    __kernel_ulong_t  st_mtime_nsec;
-    __kernel_ulong_t  st_ctime_;
-    __kernel_ulong_t  st_ctime_nsec;
-    __kernel_long_t   __unused[3];
-  };
 
 // #define DEBUG_STRACE
 class SyscallHandler {
@@ -116,3 +94,109 @@ uint64_t HandleSyscall(SyscallHandler *Handler, FEXCore::Core::InternalThreadSta
 #define SYSCALL_ERRNO() do { if (Result == -1) return -errno; return Result; } while(0)
 #define SYSCALL_ERRNO_NULL() do { if (Result == 0) return -errno; return Result; } while(0)
 }
+
+namespace FEXCore::HLE {
+
+#ifdef DEBUG_STRACE
+//////
+/// Templates to map parameters to format string for syscalls
+//////
+
+template<typename T>
+struct ArgToFmtString {
+  // fail on unknown types
+};
+
+#define ARG_TO_STR(tpy, str) template<> struct FEXCore::HLE::ArgToFmtString<tpy> { inline static const std::string Format = str; };
+
+// Base types
+ARG_TO_STR(int, "%d")
+ARG_TO_STR(unsigned int, "%u")
+ARG_TO_STR(long, "%ld")
+ARG_TO_STR(unsigned long, "%lu")
+
+//string types
+ARG_TO_STR(char*, "%s")
+ARG_TO_STR(const char*, "%s")
+
+// Pointers
+template<typename T>
+struct ArgToFmtString<T*> {
+  inline static const std::string Format = "%p";
+};
+
+// Use ArgToFmtString and variadic template to create a format string from an args list
+template<typename ...Args>
+std::string CollectArgsFmtString() {
+  std::string array[] = { ArgToFmtString<Args>::Format... };
+
+  std::string rv;
+  bool first = true;
+
+  for (auto &str: array) {
+    if (!first) rv += ", ";
+    first = false;
+    rv += str;
+  }
+
+  return rv;
+}
+#else
+#define ARG_TO_STR(tpy, str)
+#endif
+
+/////
+// REGISTER_SYSCALL_FORWARD_ERRNO implementation
+// Given a syscall wrapper, it generate a syscall implementation using the wrapper's signature, forward the arguments
+// and register to syscalls via RegisterSyscall
+/////
+
+// Helper that allows us to create a variadic template lambda from a given signature
+// by creating a function that expects a fuction pointer with the given signature as a parameter
+template <typename T>
+struct FunctionToLambda;
+
+template<typename R, typename... Args>
+struct FunctionToLambda<R(*)(Args...)> {
+	using RType = R;
+
+	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
+		return fn;
+	}
+};
+
+// copy to match noexcept functions
+template<typename R, typename... Args>
+struct FunctionToLambda<R(*)(Args...) noexcept> {
+	using RType = R;
+
+	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
+		return fn;
+	}
+};
+}
+
+// Creates a variadic template lambda from a global function (via FunctionToLambda), then forwards the arguments to the specified function
+// also handles errno
+#define SYSCALL_FORWARD_ERRNO(function) \
+  FEXCore::HLE::FunctionToLambda<decltype(&::function)>::ReturnFunctionPointer([](FEXCore::Core::InternalThreadState *Thread, auto... Args) { \
+    FEXCore::HLE::FunctionToLambda<decltype(&::function)>::RType Result = ::function(Args...); \
+    do { if (Result == -1) return (FEXCore::HLE::FunctionToLambda<decltype(&::function)>::RType)-errno; return Result; } while(0); \
+  })
+
+// Helpers to register a syscall implementation
+// Creates a syscall forward from a glibc wrapper, and registers it
+#define REGISTER_SYSCALL_FORWARD_ERRNO(function) do { \
+  FEXCore::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##function, #function, SYSCALL_FORWARD_ERRNO(function)); \
+  FEXCore::HLE::x32::RegisterSyscall(x32::SYSCALL_x86_##function, #function, SYSCALL_FORWARD_ERRNO(function)); \
+  } while(0)
+
+// Registers syscall for both 32bit and 64bit
+#define REGISTER_SYSCALL_IMPL(name, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEXCore::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##name, #name, lambda); \
+      FEXCore::HLE::x32::RegisterSyscall(x32::SYSCALL_x86_##name, #name, lambda); \
+    } } impl_##name
+
