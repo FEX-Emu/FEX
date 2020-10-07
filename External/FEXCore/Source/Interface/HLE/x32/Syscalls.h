@@ -2,6 +2,7 @@
 
 #include "Interface/HLE/FileManagement.h"
 #include <FEXCore/HLE/SyscallHandler.h>
+#include "Interface/HLE/x32/Types.h"
 
 #include <atomic>
 #include <condition_variable>

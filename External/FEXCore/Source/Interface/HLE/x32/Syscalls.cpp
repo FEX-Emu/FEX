@@ -7,6 +7,9 @@
 
 #include <FEXCore/Utils/LogManager.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
+
 namespace FEXCore::HLE {
   void RegisterEpoll();
   void RegisterFD();
@@ -35,8 +38,11 @@ namespace FEXCore::HLE::x32 {
   void RegisterInfo();
   void RegisterMemory();
   void RegisterNotImplemented();
+  void RegisterSched();
   void RegisterSemaphore();
+  void RegisterSocket();
   void RegisterThread();
+  void RegisterTime();
 
   std::map<int, const char*> SyscallNames = {
     #include "SyscallsNames.inl"
@@ -160,8 +166,11 @@ void x32SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
     FEXCore::HLE::x32::RegisterInfo();
     FEXCore::HLE::x32::RegisterMemory();
     FEXCore::HLE::x32::RegisterNotImplemented();
+    FEXCore::HLE::x32::RegisterSched();
     FEXCore::HLE::x32::RegisterSemaphore();
+    FEXCore::HLE::x32::RegisterSocket();
     FEXCore::HLE::x32::RegisterThread();
+    FEXCore::HLE::x32::RegisterTime();
 
     // Set all the new definitions
     for (auto &Syscall : syscalls_x32) {

@@ -154,7 +154,10 @@ set (SRCS
   Interface/HLE/x32/Memory.cpp
   Interface/HLE/x32/NotImplemented.cpp
   Interface/HLE/x32/Semaphore.cpp
+  Interface/HLE/x32/Sched.cpp
+  Interface/HLE/x32/Socket.cpp
   Interface/HLE/x32/Thread.cpp
+  Interface/HLE/x32/Time.cpp
   Interface/HLE/x64/FD.cpp
   Interface/HLE/x64/IO.cpp
   Interface/HLE/x64/Ioctl.cpp
