@@ -427,6 +427,12 @@ namespace FEX::HarnessHelper {
   };
 
 class ELFCodeLoader final : public FEXCore::CodeLoader {
+private:
+  struct auxv_t {
+    uint64_t key;
+    uint64_t val;
+  };
+
 public:
   ELFCodeLoader(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEX::Config::Value<std::string> *AdditionalEnvp = nullptr)
     : File {Filename, RootFS, false}
@@ -499,70 +505,39 @@ public:
       MemoryBase = 0;
     }
     // Set up our aux values here
-
     AuxVariables.emplace_back(auxv_t{3, MemoryBase}); // Program header
     AuxVariables.emplace_back(auxv_t{7, MemoryBase}); // Interpreter address
     AuxVariables.emplace_back(auxv_t{9, MemoryBase + DB.DefaultRIP()}); // AT_ENTRY
     AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
   }
 
-  uint64_t SetupStack(void *HostPtr, uint64_t GuestPtr) const override {
-    uintptr_t StackPointer = reinterpret_cast<uintptr_t>(HostPtr) + StackSize();
-    // Set up our initial CPU state
-    uint64_t rsp = GuestPtr + StackSize();
-
-    uint64_t TotalArgumentMemSize{};
-
-    TotalArgumentMemSize += 8; // Argument counter size
-    TotalArgumentMemSize += 8 * Args.size(); // Pointers to strings
-    TotalArgumentMemSize += 8; // Padding for something
-    TotalArgumentMemSize += 8 * EnvironmentVariables.size(); // Argument location for envp
-    TotalArgumentMemSize += 8; // envp nullptr ender
-
-    uint64_t AuxVOffset = TotalArgumentMemSize;
-    TotalArgumentMemSize += sizeof(auxv_t) * AuxVariables.size();
-
-    uint64_t ArgumentOffset = TotalArgumentMemSize;
-    TotalArgumentMemSize += ArgumentBackingSize;
-
-    uint64_t EnvpOffset = TotalArgumentMemSize;
-    TotalArgumentMemSize += EnvironmentBackingSize;
-
-    // Random number location
-    uint64_t RandomNumberLocation = TotalArgumentMemSize;
-    TotalArgumentMemSize += 16;
-
-    // Offset the stack by how much memory we need
-    rsp -= TotalArgumentMemSize;
-    StackPointer -= TotalArgumentMemSize;
-
-    // Stack setup
-    // [0, 8):   Argument Count
-    // [8, 16):  Argument Pointer 0
-    // [16, 24): Argument Pointer 1
-    // ....
-    // [Pad1, +8): Some Pointer
-    // [envp, +8): envp pointer
-    // [Pad2End, +8): Argument String 0
-    // [+8, +8): String 1
-    // ...
-    // [argvend, +8): envp[0]
-    // ...
-    // [envpend, +8): nullptr
-
+  template <typename PointerType, typename AuxType, size_t PointerSize>
+  static void SetupPointers(
+    uintptr_t StackPointer,
+    uint64_t rsp,
+    uint64_t AuxVOffset,
+    uint64_t ArgumentOffset,
+    uint64_t EnvpOffset,
+    const std::vector<std::string> &Args,
+    const std::vector<std::string> &EnvironmentVariables,
+    const std::vector<auxv_t> &AuxVariables,
+    uint64_t AuxTabBase,
+    uint64_t AuxTabSize,
+    PointerType RandomNumberOffset
+    ) {
     // Pointer list offsets
-    uint64_t *ArgumentPointers = reinterpret_cast<uint64_t*>(StackPointer + 8);
-    uint64_t *PadPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + Args.size() * 8);
-    uint64_t *EnvpPointers = reinterpret_cast<uint64_t*>(StackPointer + 8 + Args.size() * 8 + 8);
-    auxv_t *AuxVPointers = reinterpret_cast<auxv_t*>(StackPointer + AuxVOffset);
+    PointerType *ArgumentPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize);
+    PointerType *PadPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize + Args.size() * PointerSize);
+    PointerType *EnvpPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize + Args.size() * PointerSize + PointerSize);
+    AuxType *AuxVPointers = reinterpret_cast<AuxType *>(StackPointer + AuxVOffset);
 
     // Arguments memory lives after everything else
     uint8_t *ArgumentBackingBase = reinterpret_cast<uint8_t*>(StackPointer + ArgumentOffset);
     uint8_t *EnvpBackingBase = reinterpret_cast<uint8_t*>(StackPointer + EnvpOffset);
-    uint64_t ArgumentBackingBaseGuest = rsp + ArgumentOffset;
-    uint64_t EnvpBackingBaseGuest = rsp + EnvpOffset;
+    PointerType ArgumentBackingBaseGuest = rsp + ArgumentOffset;
+    PointerType EnvpBackingBaseGuest = rsp + EnvpOffset;
 
-    *reinterpret_cast<uint64_t*>(StackPointer + 0) = Args.size();
+    *reinterpret_cast<PointerType *>(StackPointer + 0) = Args.size();
     PadPointers[0] = 0;
 
     // If we don't have any, just make sure the first is nullptr
@@ -602,19 +577,104 @@ public:
 
     for (size_t i = 0; i < AuxVariables.size(); ++i) {
       if (AuxVariables[i].key == 25) {
-        auxv_t Random{25, rsp + RandomNumberLocation};
-        uint64_t *RandomLoc = reinterpret_cast<uint64_t*>(StackPointer + RandomNumberLocation);
+        // Random value is always 128bits
+        AuxType Random{25, static_cast<PointerType>(rsp + RandomNumberOffset)};
+        uint64_t *RandomLoc = reinterpret_cast<uint64_t*>(StackPointer + RandomNumberOffset);
         RandomLoc[0] = 0xDEAD;
         RandomLoc[1] = 0xDEAD2;
-        AuxVPointers[i] = Random;
+        AuxVPointers[i].key = Random.key;
+        AuxVPointers[i].val = Random.val;
       }
       else {
-        AuxVPointers[i] = AuxVariables[i];
+        AuxVPointers[i].key = AuxVariables[i].key;
+        AuxVPointers[i].val = AuxVariables[i].val;
       }
     }
 
-    *(uint64_t*)(&AuxTabBase) = uint64_t(AuxVPointers);
-    *(uint64_t*)(&AuxTabSize) = sizeof(auxv_t) * AuxVariables.size();
+    *(PointerType*)(&AuxTabBase) = static_cast<PointerType>(reinterpret_cast<uintptr_t>(AuxVPointers));
+    *(PointerType*)(&AuxTabSize) = sizeof(AuxType) * AuxVariables.size();
+  }
+
+  uint64_t SetupStack(void *HostPtr, uint64_t GuestPtr) const override {
+    uintptr_t StackPointer = reinterpret_cast<uintptr_t>(HostPtr) + StackSize();
+    // Set up our initial CPU state
+    uint64_t rsp = GuestPtr + StackSize();
+    uint64_t SizeOfPointer = File.GetMode() == ELFLoader::ELFContainer::MODE_64BIT ? 8 : 4;
+
+    uint64_t TotalArgumentMemSize{};
+
+    TotalArgumentMemSize += SizeOfPointer; // Argument counter size
+    TotalArgumentMemSize += SizeOfPointer * Args.size(); // Pointers to strings
+    TotalArgumentMemSize += SizeOfPointer; // Padding for something
+    TotalArgumentMemSize += SizeOfPointer * EnvironmentVariables.size(); // Argument location for envp
+    TotalArgumentMemSize += SizeOfPointer; // envp nullptr ender
+
+    uint64_t AuxVOffset = TotalArgumentMemSize;
+    if (SizeOfPointer == 8) {
+      TotalArgumentMemSize += sizeof(auxv_t) * AuxVariables.size();
+    }
+    else {
+      TotalArgumentMemSize += sizeof(auxv32_t) * AuxVariables.size();
+    }
+
+    uint64_t ArgumentOffset = TotalArgumentMemSize;
+    TotalArgumentMemSize += ArgumentBackingSize;
+
+    uint64_t EnvpOffset = TotalArgumentMemSize;
+    TotalArgumentMemSize += EnvironmentBackingSize;
+
+    // Random number location
+    uint32_t RandomNumberLocation = TotalArgumentMemSize;
+    TotalArgumentMemSize += 16;
+
+    // Offset the stack by how much memory we need
+    rsp -= TotalArgumentMemSize;
+    StackPointer -= TotalArgumentMemSize;
+
+    // Stack setup
+    // [0, 8):   Argument Count
+    // [8, 16):  Argument Pointer 0
+    // [16, 24): Argument Pointer 1
+    // ....
+    // [Pad1, +8): Some Pointer
+    // [envp, +8): envp pointer
+    // [Pad2End, +8): Argument String 0
+    // [+8, +8): String 1
+    // ...
+    // [argvend, +8): envp[0]
+    // ...
+    // [envpend, +8): nullptr
+
+    if (SizeOfPointer == 8) {
+      SetupPointers<uint64_t, auxv_t, 8>(
+        StackPointer,
+        rsp,
+        AuxVOffset,
+        ArgumentOffset,
+        EnvpOffset,
+        Args,
+        EnvironmentVariables,
+        AuxVariables,
+        AuxTabBase,
+        AuxTabSize,
+        RandomNumberLocation
+        );
+    }
+    else {
+      SetupPointers<uint32_t, auxv32_t, 4>(
+        StackPointer,
+        rsp,
+        AuxVOffset,
+        ArgumentOffset,
+        EnvpOffset,
+        Args,
+        EnvironmentVariables,
+        AuxVariables,
+        AuxTabBase,
+        AuxTabSize,
+        RandomNumberLocation
+        );
+    }
 
     return rsp;
   }
@@ -666,9 +726,9 @@ private:
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;
   std::vector<char const*> LoaderArgs;
-  struct auxv_t {
-    uint64_t key;
-    uint64_t val;
+  struct auxv32_t {
+    uint32_t key;
+    uint32_t val;
   };
   std::vector<auxv_t> AuxVariables;
   uint64_t AuxTabBase, AuxTabSize;
