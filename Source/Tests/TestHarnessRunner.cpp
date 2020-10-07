@@ -66,11 +66,11 @@ int main(int argc, char **argv, char **const envp) {
 
   LogMan::Throw::A(Args.size() > 1, "Not enough arguments");
 
-  FEXCore::Context::InitializeStaticTables();
+  FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
+
+  FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
   auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 34);
   auto CTX = FEXCore::Context::CreateNewContext();
-
-  FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
 
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, true);
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, CoreConfig());
