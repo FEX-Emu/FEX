@@ -13,9 +13,16 @@ namespace ELFLoader {
 void ELFSymbolDatabase::FillLibrarySearchPaths() {
   // XXX: Open /etc/ld.so.conf and parse the paths in that file
   // For now I'm just filling with regular search paths
-  LibrarySearchPaths.emplace_back("/usr/local/lib/x86_64-linux-gnu");
-  LibrarySearchPaths.emplace_back("/lib/x86_64-linux-gnu");
-  LibrarySearchPaths.emplace_back("/usr/lib/x86_64-linux-gnu");
+  if (File->GetMode() == ELFContainer::MODE_64BIT) {
+    LibrarySearchPaths.emplace_back("/usr/local/lib/x86_64-linux-gnu");
+    LibrarySearchPaths.emplace_back("/lib/x86_64-linux-gnu");
+    LibrarySearchPaths.emplace_back("/usr/lib/x86_64-linux-gnu");
+  }
+  else {
+    LibrarySearchPaths.emplace_back("/usr/local/lib/i386-linux-gnu");
+    LibrarySearchPaths.emplace_back("/lib/i386-linux-gnu");
+    LibrarySearchPaths.emplace_back("/usr/lib/i386-linux-gnu");
+  }
 
   // At least we can scan LD_LIBRARY_PATH
   auto EnvVar = getenv("LD_LIBRARY_PATH");
