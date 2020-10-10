@@ -351,7 +351,6 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  if (Op->OP == 0xFF && Size == 4) LogMan::Msg::A("Woops. Can't do 32bit for this PUSH op");
 
   auto Constant = _Constant(Size);
 
@@ -396,8 +395,6 @@ void OpDispatchBuilder::POPOp(OpcodeArgs) {
   auto NewGPR = _LoadMem(GPRClass, Size, OldSP, Size);
 
   auto NewSP = _Add(OldSP, Constant);
-
-  if (Op->OP == 0x8F && Size == 4) LogMan::Msg::A("Woops. Can't do 32bit for this POP op");
 
   // Store the new stack pointer
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
@@ -1122,12 +1119,7 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   if (DestIsMem(Op)) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
-    if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-      Dest = _Add(Dest, _LoadContext(8, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
-    }
-    else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-      Dest = _Add(Dest, _LoadContext(8, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
-    }
+    Dest = AppendSegmentOffset(Dest, Op->Flags);
 
     auto Result = _AtomicSwap(Dest, Src, GetSrcSize(Op));
     StoreResult(GPRClass, Op, Op->Src[0], Result, -1);
@@ -2729,12 +2721,8 @@ void OpDispatchBuilder::XLATOp(OpcodeArgs) {
   OrderedNode *Src = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), GPRClass);
   OrderedNode *Offset = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
 
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-    Src = _Add(Src, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
-  }
-  else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-    Src = _Add(Src, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
-  }
+  Src = AppendSegmentOffset(Src, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
+
   Src = _Add(Src, Offset);
 
   auto Res = _LoadMemTSO(GPRClass, 1, Src, 1);
@@ -2836,8 +2824,9 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
   }
 
   Result = _Add(Dest, OneConst);
-  if (!IsLocked)
+  if (!IsLocked) {
     StoreResult(GPRClass, Op, Result, -1);
+  }
 
   if (Size < 32) {
     Result = _Bfe(Size, 0, Result);
@@ -2877,9 +2866,6 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on STOS");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
-
   auto Size = GetSrcSize(Op);
 
   bool Repeat = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
@@ -2887,6 +2873,9 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   if (!Repeat) {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
     OrderedNode *Dest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+
+    // Only ES prefix
+    Dest = AppendSegmentOffset(Dest, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     // Store to memory where RDI points
     _StoreMemTSO(GPRClass, Size, Dest, Src, Size);
@@ -2936,6 +2925,9 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
         OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
         OrderedNode *Dest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
 
+        // Only ES prefix
+        Dest = AppendSegmentOffset(Dest, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+
         // Store to memory where RDI points
         _StoreMemTSO(GPRClass, Size, Dest, Src, Size);
 
@@ -2975,8 +2967,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on MOVS\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
 
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
     auto Size = GetSrcSize(Op);
@@ -3009,6 +2999,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
       {
         OrderedNode *Src = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
         OrderedNode *Dest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+        Dest = AppendSegmentOffset(Dest, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+        Src = AppendSegmentOffset(Src, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
         Src = _LoadMemTSO(GPRClass, Size, Src, Size);
 
@@ -3052,6 +3044,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     auto Size = GetSrcSize(Op);
     OrderedNode *RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
     OrderedNode *RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+    RDI= AppendSegmentOffset(RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    RSI = AppendSegmentOffset(RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
     auto Src = _LoadMemTSO(GPRClass, Size, RSI, Size);
 
@@ -3079,15 +3073,17 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
-
   auto Size = GetSrcSize(Op);
 
   bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
   if (!Repeat) {
     OrderedNode *Dest_RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
     OrderedNode *Dest_RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+
+    // Only ES prefix
+    Dest_RDI = AppendSegmentOffset(Dest_RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    // Default DS prefix
+    Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
     auto Src1 = _LoadMemTSO(GPRClass, Size, Dest_RDI, Size);
     auto Src2 = _LoadMemTSO(GPRClass, Size, Dest_RSI, Size);
@@ -3138,6 +3134,11 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       {
         OrderedNode *Dest_RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
         OrderedNode *Dest_RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+
+        // Only ES prefix
+        Dest_RDI = AppendSegmentOffset(Dest_RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+        // Default DS prefix
+        Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
         auto Src1 = _LoadMemTSO(GPRClass, Size, Dest_RDI, Size);
         auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
@@ -3199,8 +3200,6 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "LODS doesn't support REPNE");
 
   auto Size = GetSrcSize(Op);
@@ -3208,6 +3207,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
   if (!Repeat) {
     OrderedNode *Dest_RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+    Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
     auto Src = _LoadMemTSO(GPRClass, Size, Dest_RSI, Size);
 
@@ -3258,6 +3258,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
       // Working loop
       {
         OrderedNode *Dest_RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+        Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
         auto Src = _LoadMemTSO(GPRClass, Size, Dest_RSI, Size);
 
@@ -3296,8 +3297,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::SCASOp(OpcodeArgs) {
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX), "Can't handle FS\n");
-  LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX), "Can't handle GS\n");
+
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
   auto Size = GetSrcSize(Op);
@@ -3305,6 +3305,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
   if (!Repeat) {
     OrderedNode *Dest_RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+    Dest_RDI = AppendSegmentOffset(Dest_RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
     auto Src2 = _LoadMemTSO(GPRClass, Size, Dest_RDI, Size);
@@ -3358,6 +3359,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       // Working loop
       {
         OrderedNode *Dest_RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+        Dest_RDI = AppendSegmentOffset(Dest_RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
         auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
         auto Src2 = _LoadMemTSO(GPRClass, Size, Dest_RDI, Size);
@@ -3588,8 +3590,9 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::BSFOp(OpcodeArgs) {
-  uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : 8;
-  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the LSB of this source
@@ -3613,8 +3616,9 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
-  uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : 8;
-  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Find the MSB of this source
@@ -4216,13 +4220,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // If this is a memory location then we want the pointer to it
     OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
-    if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-      Src1 = _Add(Src1, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
-    }
-    else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-      Src1 = _Add(Src1, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
-    }
-
+    Src1 = AppendSegmentOffset(Src1, Op->Flags);
 
     // DataSrc = *Src1
     // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
@@ -4260,12 +4258,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // If this is a memory location then we want the pointer to it
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-    Src1 = _Add(Src1, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
-  }
-  else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-    Src1 = _Add(Src1, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
-  }
+  Src1 = AppendSegmentOffset(Src1, Op->Flags);
 
   OrderedNode *Expected_Lower = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
   OrderedNode *Expected_Upper = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), GPRClass);
@@ -4408,6 +4401,58 @@ uint8_t OpDispatchBuilder::GetSrcSize(FEXCore::X86Tables::DecodedOp Op) {
   return Size;
 }
 
+OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+
+  if (CTX->Config.Is64BitMode) {
+    if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
+      Value = _Add(Value, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
+    }
+    else if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+      Value = _Add(Value, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
+    }
+    // If there was any other segment in 64bit then it is ignored
+  }
+  else {
+    OrderedNode *Segment{};
+    uint32_t Prefix = Flags & FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS;
+    if (!Prefix || Override) {
+      // If there was no prefix then use the default one if available
+      // Or the argument only uses a specific prefix (with override set)
+      Prefix = DefaultPrefix;
+    }
+    switch (Prefix) {
+      case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, es), GPRClass);
+        break;
+      case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, cs), GPRClass);
+        break;
+      case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, ss), GPRClass);
+        break;
+      case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, ds), GPRClass);
+        break;
+      case FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX:
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, fs), GPRClass);
+        break;
+      case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
+        Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, gs), GPRClass);
+        break;
+      default: break; // Do nothing
+    }
+
+    if (Segment) {
+      Segment = _Lshr(Segment, _Constant(3));
+      auto data = _LoadContextIndexed(Segment, 4, offsetof(FEXCore::Core::CPUState, gdt[0]), 4, GPRClass);
+      Value = _Add(Value, data);
+    }
+  }
+
+  return Value;
+}
+
 OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad) {
   LogMan::Throw::A(Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR ||
           Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL ||
@@ -4517,25 +4562,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   }
 
   if ((LoadableType && LoadData) || ForceLoad) {
-    if (CTX->Config.Is64BitMode) {
-      if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-        Src = _Add(Src, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
-      }
-      else if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-        Src = _Add(Src, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
-      }
-    }
-    else {
-      if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-        LogMan::Msg::A("Don't support segment prefix on 32bit yet");
-      }
-      else if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-        OrderedNode *Segment = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass);
-        Segment = _Lshr(Segment, _Constant(3));
-        auto data = _LoadContextIndexed(Segment, 4, offsetof(FEXCore::Core::CPUState, gdt[0]), 4, GPRClass);
-        Src = _Add(Src, data);
-      }
-    }
+    Src = AppendSegmentOffset(Src, Flags);
 
     if (StackAccess) {
       Src = _LoadMem(Class, OpSize, Src, Align == -1 ? OpSize : Align);
@@ -4609,7 +4636,13 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     StackAccess = Operand.TypeGPRIndirect.GPR == FEXCore::X86State::REG_RSP;
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_RIP_RELATIVE) {
-    MemStoreDst = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal + Op->PC + Op->InstSize);
+    if (CTX->Config.Is64BitMode) {
+      MemStoreDst = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal + Op->PC + Op->InstSize);
+    }
+    else {
+      // 32bit this isn't RIP relative but instead absolute
+      MemStoreDst = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal);
+    }
     MemStore = true;
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_SIB) {
@@ -4655,25 +4688,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
 
   if (MemStore) {
-    if (CTX->Config.Is64BitMode) {
-      if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-        MemStoreDst = _Add(MemStoreDst, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass));
-      }
-      else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-        MemStoreDst = _Add(MemStoreDst, _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass));
-      }
-    }
-    else {
-      if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-        LogMan::Msg::A("Don't support segment prefix on 32bit yet");
-      }
-      else if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-        OrderedNode *Segment = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass);
-        Segment = _Lshr(Segment, _Constant(3));
-        auto data = _LoadContextIndexed(Segment, 4, offsetof(FEXCore::Core::CPUState, gdt[0]), 4, GPRClass);
-        MemStoreDst = _Add(MemStoreDst, data);
-      }
-    }
+    MemStoreDst = AppendSegmentOffset(MemStoreDst, Op->Flags);
 
     if (OpSize == 10) {
       // For X87 extended doubles, split before storing
@@ -5608,6 +5623,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
 
   OrderedNode *Result{};
   OrderedNode *Dest{};
+
   if (DestIsLockedMem(Op)) {
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     switch (IROp) {
