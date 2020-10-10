@@ -34,6 +34,8 @@ constexpr uint32_t FLAG_SS_PREFIX     = (1 << 13);
 constexpr uint32_t FLAG_DS_PREFIX     = (1 << 14);
 constexpr uint32_t FLAG_FS_PREFIX     = (1 << 15);
 constexpr uint32_t FLAG_GS_PREFIX     = (1 << 16);
+constexpr uint32_t FLAG_SEGMENTS      = (0b11'1111 << 11);
+
 constexpr uint32_t FLAG_REP_PREFIX    = (1 << 17);
 constexpr uint32_t FLAG_REPNE_PREFIX  = (1 << 18);
 // Size flags
