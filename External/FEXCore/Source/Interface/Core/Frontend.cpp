@@ -226,6 +226,19 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   bool HasWideningDisplacement = FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST;
   bool HasNarrowingDisplacement = FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST;
 
+  bool HasXMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_SRC);
+  bool HasXMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
+  bool HasMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
+    HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_SRC);
+  bool HasMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
+    HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
+
   // New instruction size decoding
   {
     // Decode destinations first
@@ -252,7 +265,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_16BIT);
       DestSize = 2;
     }
-    else if (CTX->Config.Is64BitMode &&
+    else if (
+      (HasXMMDst || HasMMDst || CTX->Config.Is64BitMode) &&
       (HasWideningDisplacement ||
       DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
       DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
@@ -281,7 +295,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       // If the default operating mode is 32bit and we have the operand size flag then the operating size drops to 16bit
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_16BIT);
     }
-    else if (CTX->Config.Is64BitMode &&
+    else if (
+      (HasXMMSrc || HasMMSrc || CTX->Config.Is64BitMode) &&
       (HasWideningDisplacement ||
       SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
       SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
@@ -306,18 +321,6 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   bool Is8BitSrc = (DecodeFlags::GetSizeSrcFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
   bool Is8BitDest = (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
   bool HasREX = !!(DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX);
-  bool HasXMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_SRC);
-  bool HasXMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
-  bool HasMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
-    HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_SRC);
-  bool HasMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
-    HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
   bool HasHighXMM = HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_HIGH_XMM_REG);
   uint8_t Displacement = 0;
 
@@ -431,11 +434,12 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       }
       else {
         uint8_t DisplacementSize = ModRM.mod == 1 ? 1 : 4;
-        uint32_t Literal;
+        uint32_t Literal{};
         Literal = ReadData(DisplacementSize);
         if (DisplacementSize == 1) {
           Literal = static_cast<int8_t>(Literal);
         }
+
         Bytes -= DisplacementSize;
 
         NonGPR.TypeGPRIndirect.Type = DecodedOperand::TYPE_GPR_INDIRECT;
