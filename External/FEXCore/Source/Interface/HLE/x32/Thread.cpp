@@ -11,6 +11,27 @@
 #include <unistd.h>
 
 namespace FEXCore::HLE::x32 {
+  uint64_t SetThreadArea(FEXCore::Core::InternalThreadState *Thread, void *tls) {
+    struct x32::user_desc* u_info = reinterpret_cast<struct x32::user_desc*>(tls);
+
+    static bool Initialized = false;
+    if (Initialized == true && u_info->entry_number == -1) {
+      LogMan::Msg::A("Trying to load a new GDT");
+    }
+    if (u_info->entry_number == -1) {
+      u_info->entry_number = 12; // Sure?
+      Initialized = true;
+    }
+    // Now we need to update the thread's GDT to handle this change
+    auto GDT = &Thread->State.State.gdt[u_info->entry_number];
+    GDT->base = u_info->base_addr;
+    return 0;
+  }
+
+  void AdjustRipForNewThread(FEXCore::Core::CPUState *Thread) {
+    Thread->rip += 2;
+  }
+
   void RegisterThread() {
     REGISTER_SYSCALL_IMPL_X32(waitpid, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, int32_t *status, int32_t options) -> uint32_t {
       uint64_t Result = ::waitpid(pid, status, options);

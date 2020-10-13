@@ -33,11 +33,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(io_getevents, [](FEXCore::Core::InternalThreadState *Thread, aio_context_t ctx_id, long min_nr, long nr, struct io_event *events, struct timespec *timeout) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_io_getevents, ctx_id, min_nr, nr, events, timeout);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(io_submit, [](FEXCore::Core::InternalThreadState *Thread, aio_context_t ctx_id, long nr, struct iocb **iocbpp) -> uint64_t {
       uint64_t Result = ::syscall(SYS_io_submit, ctx_id, nr, iocbpp);
       SYSCALL_ERRNO();
@@ -55,11 +50,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(ioprio_get, [](FEXCore::Core::InternalThreadState *Thread, int which, int who, int ioprio) -> uint64_t {
       uint64_t Result = ::syscall(SYS_ioprio_get, which, who, ioprio);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(io_pgetevents, [](FEXCore::Core::InternalThreadState *Thread, aio_context_t ctx_id, long min_nr, long nr, struct io_event *events, struct timespec *timeout, const struct io_sigset  *usig) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_io_pgetevents, ctx_id, min_nr, nr, events, timeout);
       SYSCALL_ERRNO();
     });
   }

@@ -16,6 +16,11 @@ namespace FEXCore::HLE::x64 {
   #endif
     });
 
+    REGISTER_SYSCALL_IMPL_X64(mremap, [](FEXCore::Core::InternalThreadState *Thread, void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) -> uint64_t {
+      uint64_t Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X64(mprotect, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t len, int prot) -> uint64_t {
       uint64_t Result = ::mprotect(addr, len, prot);
       SYSCALL_ERRNO();

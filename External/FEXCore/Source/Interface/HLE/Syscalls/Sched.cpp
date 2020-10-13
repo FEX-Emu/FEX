@@ -63,11 +63,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_rr_get_interval, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct timespec *tp) -> uint64_t {
-      uint64_t Result = ::sched_rr_get_interval(pid, tp);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(sched_setaffinity, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, const unsigned long *mask) -> uint64_t {
       return 0;
     });

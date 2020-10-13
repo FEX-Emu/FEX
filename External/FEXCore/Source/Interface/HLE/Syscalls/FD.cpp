@@ -18,7 +18,6 @@
 #include <unistd.h>
 #include <sys/eventfd.h>
 #include <sys/sendfile.h>
-#include <sys/time.h>
 
 namespace FEXCore::HLE {
   static int RemapFlags(int flags) {
@@ -79,11 +78,6 @@ namespace FEXCore::HLE {
     });*/
     REGISTER_SYSCALL_FORWARD_ERRNO(lchown);
 
-    REGISTER_SYSCALL_IMPL(poll, [](FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
-      uint64_t Result = ::poll(fds, nfds, timeout);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(lseek, [](FEXCore::Core::InternalThreadState *Thread, int fd, uint64_t offset, int whence) -> uint64_t {
       uint64_t Result = ::lseek(fd, offset, whence);
       SYSCALL_ERRNO();
@@ -109,11 +103,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(select, [](FEXCore::Core::InternalThreadState *Thread, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) -> uint64_t {
-      uint64_t Result = ::select(nfds, readfds, writefds, exceptfds, timeout);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(dup, [](FEXCore::Core::InternalThreadState *Thread, int oldfd) -> uint64_t {
       uint64_t Result = ::dup(oldfd);
       SYSCALL_ERRNO();
@@ -132,11 +121,6 @@ namespace FEXCore::HLE {
     REGISTER_SYSCALL_IMPL(dup3, [](FEXCore::Core::InternalThreadState* Thread, int oldfd, int newfd, int flags) -> uint64_t {
       flags = RemapFlags(flags);
       uint64_t Result = ::dup3(oldfd, newfd, flags);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(fcntl, [](FEXCore::Core::InternalThreadState *Thread, int fd, int cmd, uint64_t arg) -> uint64_t {
-      uint64_t Result = ::fcntl(fd, cmd, arg);
       SYSCALL_ERRNO();
     });
 
@@ -237,11 +221,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(futimesat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const struct timeval times[2]) -> uint64_t {
-      uint64_t Result = ::futimesat(dirfd, pathname, times);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(unlinkat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int flags) -> uint64_t {
       uint64_t Result = ::unlinkat(dirfd, pathname, flags);
       SYSCALL_ERRNO();
@@ -292,11 +271,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(utimensat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
-      uint64_t Result = ::utimensat(dirfd, pathname, times, flags);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(timerfd_create, [](FEXCore::Core::InternalThreadState *Thread, int32_t clockid, int32_t flags) -> uint64_t {
       uint64_t Result = ::timerfd_create(clockid, flags);
       SYSCALL_ERRNO();
@@ -344,12 +318,7 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(pselect6, [](FEXCore::Core::InternalThreadState *Thread, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const sigset_t *sigmask) -> uint64_t {
-      uint64_t Result = pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(ppoll, [](FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(ppoll, [](FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize) -> uint64_t {
       // sigsetsize is unused here since it is currently a constant and not exposed through glibc
       uint64_t Result = ::ppoll(fds, nfds, timeout_ts, sigmask);
       SYSCALL_ERRNO();

@@ -3,6 +3,7 @@
 
 namespace FEXCore::Core {
 struct InternalThreadState;
+struct CPUState;
 }
 
 namespace FEXCore::HLE::x32 {
@@ -18,4 +19,7 @@ namespace FEXCore::HLE::x32 {
     uint32_t seg_not_present : 1;
     uint32_t useable         : 1;
   };
+
+  uint64_t SetThreadArea(FEXCore::Core::InternalThreadState *Thread, void *tls);
+  void AdjustRipForNewThread(FEXCore::Core::CPUState *Thread);
 }

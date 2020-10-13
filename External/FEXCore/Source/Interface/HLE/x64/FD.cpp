@@ -3,6 +3,7 @@
 #include "Interface/Context/Context.h"
 
 #include <fcntl.h>
+#include <sys/time.h>
 #include <sys/uio.h>
 
 namespace FEXCore::HLE::x64 {
@@ -56,6 +57,36 @@ namespace FEXCore::HLE::x64 {
   }
 
   void RegisterFD() {
+    REGISTER_SYSCALL_IMPL_X64(poll, [](FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
+      uint64_t Result = ::poll(fds, nfds, timeout);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(select, [](FEXCore::Core::InternalThreadState *Thread, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) -> uint64_t {
+      uint64_t Result = ::select(nfds, readfds, writefds, exceptfds, timeout);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(fcntl, [](FEXCore::Core::InternalThreadState *Thread, int fd, int cmd, uint64_t arg) -> uint64_t {
+      uint64_t Result = ::fcntl(fd, cmd, arg);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(futimesat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const struct timeval times[2]) -> uint64_t {
+      uint64_t Result = ::futimesat(dirfd, pathname, times);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(utimensat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
+      uint64_t Result = ::utimensat(dirfd, pathname, times, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(pselect6, [](FEXCore::Core::InternalThreadState *Thread, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const sigset_t *sigmask) -> uint64_t {
+      uint64_t Result = pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X64(stat, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, guest_stat *buf) -> uint64_t {
       struct stat host_stat;
       uint64_t Result = Thread->CTX->SyscallHandler->FM.Stat(pathname, &host_stat);

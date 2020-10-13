@@ -13,7 +13,6 @@ namespace FEXCore::HLE {
   void RegisterFS();
   void RegisterInfo();
   void RegisterIO();
-  void RegisterIoctl();
   void RegisterKey();
   void RegisterMemory();
   void RegisterMsg();
@@ -141,7 +140,6 @@ void x32SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Re
     FEXCore::HLE::RegisterFS();
     FEXCore::HLE::RegisterInfo();
     FEXCore::HLE::RegisterIO();
-    FEXCore::HLE::RegisterIoctl();
     FEXCore::HLE::RegisterKey();
     FEXCore::HLE::RegisterMemory();
     FEXCore::HLE::RegisterMsg();
