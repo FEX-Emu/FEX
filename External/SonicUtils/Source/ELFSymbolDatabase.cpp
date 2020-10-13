@@ -101,7 +101,15 @@ ELFSymbolDatabase::~ELFSymbolDatabase() {
 }
 
 void ELFSymbolDatabase::FillMemoryLayouts() {
-  uint64_t ELFBases = 0x1'0000'0000;
+  uint64_t ELFBases = {};
+  if (File->GetMode() == ELFContainer::MODE_64BIT) {
+    ELFBases = 0x1'0000'0000;
+  }
+  else {
+    // 32bit we will just load at the lowest memory address we can
+    // Which on Linux is at 0x1'0000
+    ELFBases = 0x1'0000;
+  }
   // We can only relocate the passed in ELF if it is dynamic
   // If it is EXEC then it HAS to end up in the base offset it chose
   if (LocalInfo.Container->WasDynamic()) {
@@ -118,13 +126,18 @@ void ELFSymbolDatabase::FillMemoryLayouts() {
     std::get<2>(LocalInfo.CustomLayout) = CurrentELFAlignedSize;
     LocalInfo.GuestBase = ELFBases;
 
-    ELFBases += AlignUp(CurrentELFAlignedSize, 0x1'0000'0000);
+    ELFBases += CurrentELFAlignedSize;
   }
   else {
     LocalInfo.CustomLayout = File->GetLayout();
     uint64_t CurrentELFBase = std::get<0>(LocalInfo.CustomLayout);
     uint64_t CurrentELFEnd = std::get<1>(LocalInfo.CustomLayout);
     uint64_t CurrentELFAlignedSize = AlignUp(std::get<2>(LocalInfo.CustomLayout), 4096);
+    if (CurrentELFBase == 0) {
+      // Special handling that if it was mounted at zero then increase the base to the minimum
+      CurrentELFBase += 0x1'0000;
+      CurrentELFEnd += 0x1'0000;
+    }
 
     std::get<0>(LocalInfo.CustomLayout) = CurrentELFBase;
     std::get<1>(LocalInfo.CustomLayout) = CurrentELFEnd;
@@ -149,7 +162,7 @@ void ELFSymbolDatabase::FillMemoryLayouts() {
     DynamicELFInfo[i]->CustomLayout = Layout;
     DynamicELFInfo[i]->GuestBase = ELFBases;
 
-    ELFBases += AlignUp(CurrentELFAlignedSize, 0x1'0000'0000);
+    ELFBases += CurrentELFAlignedSize;
   }
 }
 
@@ -221,19 +234,9 @@ void ELFSymbolDatabase::FillSymbols() {
 }
 
 void ELFSymbolDatabase::MapMemoryRegions(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) {
-  // Need some special handling for the first 0x1'0000
   uint64_t ELFBase = std::get<0>(LocalInfo.CustomLayout);
   uint64_t ELFSize = std::get<2>(LocalInfo.CustomLayout);
-  if (ELFBase == 0 && !LocalInfo.Container->WasDynamic()) {
-    // Some special handling of non-dynamic applications that are mapped at 0
-    ELFBase = 0x1'0000;
-    ELFSize -= 0x1'0000;
-    LocalInfo.ELFBase = Mapper(ELFBase, ELFSize, true, false);
-    LocalInfo.ELFBase = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(LocalInfo.ELFBase) - 0x1'0000);
-  }
-  else {
-    LocalInfo.ELFBase = Mapper(ELFBase, ELFSize, true, false);
-  }
+  LocalInfo.ELFBase = Mapper(ELFBase, ELFSize, true, false);
 
   for (auto &ELF : DynamicELFInfo) {
     ELF->ELFBase = Mapper(std::get<0>(ELF->CustomLayout), std::get<2>(ELF->CustomLayout), true, false);

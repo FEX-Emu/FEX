@@ -470,23 +470,33 @@ public:
       EnvironmentBackingSize += EnvironmentVariables[i].size() + 1;
     }
 
-    AuxVariables.emplace_back(auxv_t{4, 0x38}); // AT_PHENT
-    AuxVariables.emplace_back(auxv_t{5, 0xb}); // XXX: AT_PHNUM
-    AuxVariables.emplace_back(auxv_t{6, 0x1000}); // AT_PAGESIZE
-    AuxVariables.emplace_back(auxv_t{8, 0}); // AT_FLAGS
     AuxVariables.emplace_back(auxv_t{11, 1000}); // AT_UID
     AuxVariables.emplace_back(auxv_t{12, 1000}); // AT_EUID
     AuxVariables.emplace_back(auxv_t{13, 1000}); // AT_GID
     AuxVariables.emplace_back(auxv_t{14, 1000}); // AT_EGID
-    AuxVariables.emplace_back(auxv_t{16, 0}); // AT_HWCAP
     AuxVariables.emplace_back(auxv_t{17, 0x64}); // AT_CLKTIK
-    AuxVariables.emplace_back(auxv_t{23, 0}); // AT_SECURE
-
-    //AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
+    AuxVariables.emplace_back(auxv_t{6, 0x1000}); // AT_PAGESIZE
     AuxVariables.emplace_back(auxv_t{25, ~0ULL}); // AT_RANDOM
-    //AuxVariables.emplace_back(auxv_t{26, 0}); // AT_HWCAP2
-    AuxVariables.emplace_back(auxv_t{32, 0ULL}); // sysinfo (vDSO)
-    AuxVariables.emplace_back(auxv_t{33, 0ULL}); // sysinfo (vDSO)
+    AuxVariables.emplace_back(auxv_t{23, 0}); // AT_SECURE
+    AuxVariables.emplace_back(auxv_t{8, 0}); // AT_FLAGS
+    AuxVariables.emplace_back(auxv_t{5, File.GetProgramHeaderCount()});
+
+    if (File.GetMode() == ELFLoader::ELFContainer::MODE_64BIT) {
+      AuxVariables.emplace_back(auxv_t{4, 0x38}); // AT_PHENT
+      // On x86 this is the value returned from CPUID 01h EDX
+      AuxVariables.emplace_back(auxv_t{16, 0}); // AT_HWCAP
+
+      //AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
+      // On x86 only allows userspace to check for monitor and fs/gs base writing in CPL3
+      //AuxVariables.emplace_back(auxv_t{26, 0}); // AT_HWCAP2
+      AuxVariables.emplace_back(auxv_t{32, 0ULL}); // sysinfo (vDSO)
+      AuxVariables.emplace_back(auxv_t{33, 0ULL}); // sysinfo (vDSO)
+    }
+    else {
+      AuxVariables.emplace_back(auxv_t{4, 0x20}); // AT_PHENT
+      AuxVariables.emplace_back(auxv_t{32, 0ULL}); // sysinfo (vDSO)
+      AuxVariables.emplace_back(auxv_t{33, 0ULL}); // sysinfo (vDSO)
+    }
 
     for (auto &Arg : ParsedArgs) {
       LoaderArgs.emplace_back(Arg.c_str());
@@ -505,9 +515,10 @@ public:
       MemoryBase = 0;
     }
     // Set up our aux values here
-    AuxVariables.emplace_back(auxv_t{3, MemoryBase}); // Program header
-    AuxVariables.emplace_back(auxv_t{7, MemoryBase}); // Interpreter address
-    AuxVariables.emplace_back(auxv_t{9, MemoryBase + DB.DefaultRIP()}); // AT_ENTRY
+    auto FileLayout = DB.GetFileLayout();
+    AuxVariables.emplace_back(auxv_t{3, std::get<0>(FileLayout)}); // Program header
+    AuxVariables.emplace_back(auxv_t{7, std::get<0>(FileLayout)}); // Interpreter address
+    AuxVariables.emplace_back(auxv_t{9, DB.DefaultRIP()}); // AT_ENTRY
     AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
   }
 
@@ -680,7 +691,7 @@ public:
   }
 
   uint64_t DefaultRIP() const override {
-    return MemoryBase + DB.DefaultRIP();
+    return DB.DefaultRIP();
   }
 
   void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
@@ -689,7 +700,7 @@ public:
 
   void LoadMemory(MemoryWriter Writer) override {
     auto ELFLoaderWrapper = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
-      Writer(Data, MemoryBase + Addr, Size);
+      Writer(Data, Addr, Size);
     };
     DB.WriteLoadableSections(ELFLoaderWrapper);
   }
