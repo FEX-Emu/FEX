@@ -84,7 +84,8 @@ def print_ir_structs(ops, defines):
         output_file.write("};\n")
 
         # Add a static assert that the IR ops must be pod
-        output_file.write("static_assert(std::is_pod<IROp_%s>::value);\n\n" % op_key)
+        output_file.write("static_assert(std::is_trivial<IROp_%s>::value);\n\n" % op_key)
+        output_file.write("static_assert(std::is_standard_layout<IROp_%s>::value);\n\n" % op_key)
 
     output_file.write("#undef IROP_STRUCTS\n")
     output_file.write("#endif\n\n")

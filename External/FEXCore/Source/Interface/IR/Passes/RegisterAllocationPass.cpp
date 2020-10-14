@@ -36,7 +36,7 @@ namespace {
     uint32_t *InterferenceList;
     BitSetView<uint64_t> Interference;
   };
-  static_assert(std::is_pod<RegisterNode>::value, "We want this to be POD");
+  static_assert(std::is_trivial<RegisterNode>::value, "We want this to be trivial");
 
   constexpr RegisterNode::VolatileHeader DefaultNodeHeader = {
     .RegAndClass = INVALID_REGCLASS,
