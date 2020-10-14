@@ -36,7 +36,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   endif()
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(${CMAKE_SOURCE_DIR}/External/SonicUtils/include/SonicUtils)
