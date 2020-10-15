@@ -230,7 +230,8 @@ namespace FEXCore::Context {
   }
 
   bool Context::InitCore(FEXCore::CodeLoader *Loader) {
-    SyscallHandler.reset(FEXCore::CreateHandler(Config.Is64BitMode ? OperatingMode::MODE_64BIT : OperatingMode::MODE_32BIT, this));
+    bool Is64Bit = Config.Is64BitMode;
+    SyscallHandler.reset(FEXCore::CreateHandler(Is64Bit ? OperatingMode::MODE_64BIT : OperatingMode::MODE_32BIT, this));
     ThunkHandler.reset(FEXCore::ThunkHandler::Create());
 
     LocalLoader = Loader;
@@ -248,11 +249,16 @@ namespace FEXCore::Context {
       NewThreadState.xmm[i][1] = 0xBAD0DAD1ULL;
     }
     memset(NewThreadState.flags, 0, 32);
-    NewThreadState.gs = 0;
     NewThreadState.flags[1] = 1;
     NewThreadState.flags[9] = 1;
 
     FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
+
+    if (Is64Bit) {
+      // Set up all of our memory mappings
+      NewThreadState.fs = reinterpret_cast<uint64_t>(MapRegion(Thread, FS_OFFSET, FS_SIZE, true, false));
+      NewThreadState.gs = 0;
+    }
 
     // We are the parent thread
     ParentThread = Thread;
@@ -266,9 +272,6 @@ namespace FEXCore::Context {
     };
 
     Loader->MapMemoryRegion(MemoryMapperFunction);
-
-    // Set up all of our memory mappings
-    NewThreadState.fs = reinterpret_cast<uint64_t>(MapRegion(Thread, FS_OFFSET, FS_SIZE, true, false));
 
     void *StackPointer = MapRegion(Thread, STACK_OFFSET, Loader->StackSize(), true, false);
 
