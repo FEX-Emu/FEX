@@ -27,8 +27,12 @@ public:
   };
 
   FunctionResults RunFunction(uint32_t Function) {
-    LogMan::Throw::A(FunctionHandlers.find(Function) != FunctionHandlers.end(), "Don't have a CPUID handler for 0x%08x", Function);
-    return FunctionHandlers[Function]();
+    auto Handler = FunctionHandlers.find(Function);
+
+    if (Handler == FunctionHandlers.end())
+      return Function_Reserved();
+
+    return Handler->second();
   }
 private:
   FEXCore::Context::Context *CTX;
