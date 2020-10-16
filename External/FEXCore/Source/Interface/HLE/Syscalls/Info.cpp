@@ -14,7 +14,6 @@
 #include <sys/random.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
-#include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <sys/klog.h>
 #include <unistd.h>
@@ -38,11 +37,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(getrusage, [](FEXCore::Core::InternalThreadState *Thread, int who, struct rusage *usage) -> uint64_t {
       uint64_t Result = ::getrusage(who, usage);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(sysinfo, [](FEXCore::Core::InternalThreadState *Thread, struct sysinfo *info) -> uint64_t {
-      uint64_t Result = ::sysinfo(info);
       SYSCALL_ERRNO();
     });
 

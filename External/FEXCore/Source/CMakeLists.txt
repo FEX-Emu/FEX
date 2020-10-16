@@ -155,18 +155,23 @@ set (SRCS
   Interface/HLE/x32/Semaphore.cpp
   Interface/HLE/x32/Thread.cpp
   Interface/HLE/x64/FD.cpp
+  Interface/HLE/x64/IO.cpp
+  Interface/HLE/x64/Ioctl.cpp
   Interface/HLE/x64/Info.cpp
   Interface/HLE/x64/Memory.cpp
+  Interface/HLE/x64/Msg.cpp
   Interface/HLE/x64/NotImplemented.cpp
   Interface/HLE/x64/Semaphore.cpp
+  Interface/HLE/x64/Sched.cpp
   Interface/HLE/x64/Socket.cpp
+  Interface/HLE/x64/Thread.cpp
   Interface/HLE/x64/Syscalls.cpp
+  Interface/HLE/x64/Time.cpp
   Interface/HLE/Syscalls/EPoll.cpp
   Interface/HLE/Syscalls/FD.cpp
   Interface/HLE/Syscalls/FS.cpp
   Interface/HLE/Syscalls/Info.cpp
   Interface/HLE/Syscalls/IO.cpp
-  Interface/HLE/Syscalls/Ioctl.cpp
   Interface/HLE/Syscalls/Key.cpp
   Interface/HLE/Syscalls/Memory.cpp
   Interface/HLE/Syscalls/Msg.cpp

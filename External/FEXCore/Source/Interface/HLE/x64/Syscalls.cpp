@@ -11,7 +11,6 @@ namespace FEXCore::HLE {
   void RegisterFS();
   void RegisterInfo();
   void RegisterIO();
-  void RegisterIoctl();
   void RegisterKey();
   void RegisterMemory();
   void RegisterMsg();
@@ -31,9 +30,15 @@ namespace FEXCore::HLE {
 namespace FEXCore::HLE::x64 {
   void RegisterFD();
   void RegisterInfo();
+  void RegisterIO();
+  void RegisterIoctl();
   void RegisterMemory();
+  void RegisterMsg();
+  void RegisterSched();
   void RegisterSocket();
   void RegisterSemaphore();
+  void RegisterThread();
+  void RegisterTime();
   void RegisterNotImplemented();
 
   std::map<int, const char*> SyscallNames = {
@@ -141,7 +146,6 @@ namespace FEXCore::HLE::x64 {
     FEXCore::HLE::RegisterFS();
     FEXCore::HLE::RegisterInfo();
     FEXCore::HLE::RegisterIO();
-    FEXCore::HLE::RegisterIoctl();
     FEXCore::HLE::RegisterKey();
     FEXCore::HLE::RegisterMemory();
     FEXCore::HLE::RegisterMsg();
@@ -159,9 +163,15 @@ namespace FEXCore::HLE::x64 {
     // 64bit specific
     FEXCore::HLE::x64::RegisterFD();
     FEXCore::HLE::x64::RegisterInfo();
+    FEXCore::HLE::x64::RegisterIO();
+    FEXCore::HLE::x64::RegisterIoctl();
     FEXCore::HLE::x64::RegisterMemory();
+    FEXCore::HLE::x64::RegisterMsg();
+    FEXCore::HLE::x64::RegisterSched();
     FEXCore::HLE::x64::RegisterSocket();
     FEXCore::HLE::x64::RegisterSemaphore();
+    FEXCore::HLE::x64::RegisterThread();
+    FEXCore::HLE::x64::RegisterTime();
     FEXCore::HLE::x64::RegisterNotImplemented();
 
     // Set all the new definitions

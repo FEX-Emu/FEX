@@ -29,11 +29,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(mremap, [](FEXCore::Core::InternalThreadState *Thread, void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) -> uint64_t {
-      uint64_t Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(msync, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int32_t flags) -> uint64_t {
       uint64_t Result = ::msync(addr, length, flags);
       SYSCALL_ERRNO();

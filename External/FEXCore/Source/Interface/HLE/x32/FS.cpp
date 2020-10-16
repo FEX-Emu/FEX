@@ -9,7 +9,7 @@
 
 namespace FEXCore::HLE::x32 {
   void RegisterFS() {
-    REGISTER_SYSCALL_IMPL_X32(umount, [](FEXCore::Core::InternalThreadState *Thread, const char *target) -> uint32_t {
+    REGISTER_SYSCALL_IMPL_X32(umount, [](FEXCore::Core::InternalThreadState *Thread, const char *target) -> uint64_t {
       uint64_t Result = ::umount(target);
       SYSCALL_ERRNO();
     });
