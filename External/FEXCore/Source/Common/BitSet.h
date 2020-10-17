@@ -86,7 +86,7 @@ struct BitSetView final {
 };
 
 static_assert(sizeof(BitSet<uint32_t>) == sizeof(uintptr_t), "Needs to just be a pointer");
-static_assert(std::is_pod<BitSet<uint32_t>>::value, "Needs to POD");
+static_assert(std::is_trivially_copyable<BitSet<uint32_t>>::value, "Needs to trivially copyable");
 
 static_assert(sizeof(BitSetView<uint32_t>) == sizeof(uintptr_t), "Needs to just be a pointer");
-static_assert(std::is_pod<BitSetView<uint32_t>>::value, "Needs to POD");
+static_assert(std::is_trivially_copyable<BitSetView<uint32_t>>::value, "Needs to trivially copyable");

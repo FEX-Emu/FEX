@@ -71,7 +71,8 @@ struct NodeWrapperBase final {
   bool operator==(NodeWrapperBase const &rhs) { return NodeOffset == rhs.NodeOffset; }
 };
 
-static_assert(std::is_pod<NodeWrapperBase<OrderedNode>>::value);
+static_assert(std::is_trivial<NodeWrapperBase<OrderedNode>>::value);
+
 static_assert(sizeof(NodeWrapperBase<OrderedNode>) == sizeof(uint32_t));
 
 using OpNodeWrapper = NodeWrapperBase<IROp_Header>;
@@ -250,7 +251,7 @@ class OrderedNode final {
     void SetUses(uint32_t Uses) { NumUses = Uses; }
 };
 
-static_assert(std::is_pod<OrderedNode>::value);
+static_assert(std::is_trivial<OrderedNode>::value);
 static_assert(std::is_trivially_copyable<OrderedNode>::value);
 static_assert(offsetof(OrderedNode, Header) == 0);
 static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_t)));
@@ -298,7 +299,7 @@ struct TypeDefinition final {
   }
 };
 
-static_assert(std::is_pod<TypeDefinition>::value);
+static_assert(std::is_trivial<TypeDefinition>::value);
 
 struct FenceType final {
   uint8_t Val;

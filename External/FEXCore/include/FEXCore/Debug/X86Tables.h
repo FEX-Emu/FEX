@@ -413,7 +413,7 @@ struct X86InstInfo {
   }
 };
 
-static_assert(std::is_pod<X86InstInfo>::value, "Pod?");
+static_assert(std::is_trivial<X86InstInfo>::value, "X86InstInfo needs to be trivial");
 
 constexpr size_t MAX_PRIMARY_TABLE_SIZE = 256;
 constexpr size_t MAX_SECOND_TABLE_SIZE = 256;
