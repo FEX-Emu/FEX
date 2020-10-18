@@ -365,12 +365,13 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_MUL_2) && HasWideningDisplacement) {
     Bytes <<= 1;
   }
-  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_DIV_2) &&
-      (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MEM_OFFSET) &&
-      (DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE)) {
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_DIV_2) && HasNarrowingDisplacement) {
     Bytes >>= 1;
   }
-  else if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_DIV_2) && HasNarrowingDisplacement) {
+
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MEM_OFFSET) &&
+      (DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE)) {
+    // If we have a memory offset and have the address size override then divide it just like narrowing displacement
     Bytes >>= 1;
   }
 
