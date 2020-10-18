@@ -128,7 +128,10 @@ union DecodedOperand {
 
   struct {
     uint8_t Type;
-    int32_t Literal;
+    union {
+      int32_t s;
+      uint32_t u;
+    } Literal;
   } TypeRIPLiteral;
 
   struct {

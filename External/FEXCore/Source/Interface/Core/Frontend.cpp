@@ -365,12 +365,13 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_MUL_2) && HasWideningDisplacement) {
     Bytes <<= 1;
   }
-  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_DIV_2) &&
-      (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MEM_OFFSET) &&
-      (DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE)) {
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_DIV_2) && HasNarrowingDisplacement) {
     Bytes >>= 1;
   }
-  else if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_DIV_2) && HasNarrowingDisplacement) {
+
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MEM_OFFSET) &&
+      (DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE)) {
+    // If we have a memory offset and have the address size override then divide it just like narrowing displacement
     Bytes >>= 1;
   }
 
@@ -424,7 +425,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
           Bytes -= 4;
 
           NonGPR.TypeRIPLiteral.Type = DecodedOperand::TYPE_RIP_RELATIVE;
-          NonGPR.TypeRIPLiteral.Literal = Literal;
+          NonGPR.TypeRIPLiteral.Literal.u = Literal;
         }
         else {
           // Register-direct addressing
@@ -477,7 +478,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   if (Bytes != 0) {
     LogMan::Throw::A(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
 
-    DecodeInst->Src[CurrentSrc].TypeLiteral.Size = DestSize;
+    DecodeInst->Src[CurrentSrc].TypeLiteral.Size = Bytes;
 
     uint64_t Literal {0};
     Literal = ReadData(Bytes);
@@ -493,6 +494,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       else {
         Literal = static_cast<int32_t>(Literal);
       }
+      DecodeInst->Src[CurrentSrc].TypeLiteral.Size = DestSize;
     }
 
     Bytes = 0;

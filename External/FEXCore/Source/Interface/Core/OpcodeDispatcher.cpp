@@ -4505,11 +4505,11 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_RIP_RELATIVE) {
     if (CTX->Config.Is64BitMode) {
-      Src = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal + Op->PC + Op->InstSize);
+      Src = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal.s + Op->PC + Op->InstSize);
     }
     else {
       // 32bit this isn't RIP relative but instead absolute
-      Src = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal);
+      Src = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal.u);
     }
 
     LoadableType = true;
@@ -4637,11 +4637,11 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
   else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_RIP_RELATIVE) {
     if (CTX->Config.Is64BitMode) {
-      MemStoreDst = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal + Op->PC + Op->InstSize);
+      MemStoreDst = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal.s + Op->PC + Op->InstSize);
     }
     else {
       // 32bit this isn't RIP relative but instead absolute
-      MemStoreDst = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal);
+      MemStoreDst = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal.u);
     }
     MemStore = true;
   }

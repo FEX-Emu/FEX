@@ -23,7 +23,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     DEPENDS "${OUTPUT_ASM_FOLDER}"
     DEPENDS "${ASM_SRC}"
     COMMAND "cp" ARGS "${ASM_SRC}" "${TMP_FILE}"
-    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
+    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\norg 10000h\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
     )
 
   set(OUTPUT_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.bin")
