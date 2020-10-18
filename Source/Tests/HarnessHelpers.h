@@ -389,7 +389,7 @@ namespace FEX::HarnessHelper {
 
       // Map in the memory region for the test file
       size_t Length = AlignUp(RawFile.size(), PAGE_SIZE);
-      Code_start_page = reinterpret_cast<uint64_t>(Mapper(Code_start_page, Length, true, true));
+      Code_start_page = reinterpret_cast<uint64_t>(Mapper(Code_start_page, Length, true, false));
       mprotect(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC);
       RIP = Code_start_page;
 
@@ -418,7 +418,7 @@ namespace FEX::HarnessHelper {
   private:
     constexpr static uint64_t STACK_SIZE = PAGE_SIZE;
     // Zero is special case to know when we are done
-    uint64_t Code_start_page = 0x0'1000;
+    uint64_t Code_start_page = 0x1'0000;
     uint64_t RIP {};
     uint64_t MemoryBase{};
 
