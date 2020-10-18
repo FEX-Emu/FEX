@@ -424,7 +424,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
           Bytes -= 4;
 
           NonGPR.TypeRIPLiteral.Type = DecodedOperand::TYPE_RIP_RELATIVE;
-          NonGPR.TypeRIPLiteral.Literal = Literal;
+          NonGPR.TypeRIPLiteral.Literal.u = Literal;
         }
         else {
           // Register-direct addressing
