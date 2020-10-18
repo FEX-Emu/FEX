@@ -477,7 +477,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   if (Bytes != 0) {
     LogMan::Throw::A(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
 
-    DecodeInst->Src[CurrentSrc].TypeLiteral.Size = DestSize;
+    DecodeInst->Src[CurrentSrc].TypeLiteral.Size = Bytes;
 
     uint64_t Literal {0};
     Literal = ReadData(Bytes);
@@ -493,6 +493,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       else {
         Literal = static_cast<int32_t>(Literal);
       }
+      DecodeInst->Src[CurrentSrc].TypeLiteral.Size = DestSize;
     }
 
     Bytes = 0;
