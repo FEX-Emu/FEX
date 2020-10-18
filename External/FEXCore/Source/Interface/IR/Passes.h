@@ -4,7 +4,7 @@ namespace FEXCore::IR {
 class Pass;
 class RegisterAllocationPass;
 
-FEXCore::IR::Pass* CreateConstProp();
+FEXCore::IR::Pass* CreateConstProp(bool InlineConstants);
 FEXCore::IR::Pass* CreateContextLoadStoreElimination();
 FEXCore::IR::Pass* CreateSyscallOptimization();
 FEXCore::IR::Pass* CreateDeadFlagCalculationEliminination();

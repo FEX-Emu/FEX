@@ -573,6 +573,20 @@ aarch64::VRegister JITCore::GetDst(uint32_t Node) {
   return RAFPR[Reg];
 }
 
+bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
+  auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
+
+  if (OpHeader->Op == IR::IROps::OP_INLINECONSTANT) {
+    auto Op = OpHeader->C<IR::IROp_InlineConstant>();
+    if (Value) {
+      *Value = Op->Constant;
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
   using namespace aarch64;
   JumpTargets.clear();
@@ -582,6 +596,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   if (HeaderOp->ShouldInterpret) {
     return reinterpret_cast<void*>(InterpreterFallbackHelperAddress);
   }
+
+  this->IR = IR;
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
@@ -658,6 +674,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   if (DebugData) {
     DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(CodeEnd) - reinterpret_cast<uintptr_t>(Entry);
   }
+
+  this->IR = nullptr;
 
   return reinterpret_cast<void*>(Entry);
 }

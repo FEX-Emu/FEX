@@ -4,9 +4,9 @@
 
 namespace FEXCore::IR {
 
-void PassManager::AddDefaultPasses() {
+void PassManager::AddDefaultPasses(bool InlineConstants) {
   InsertPass(CreateContextLoadStoreElimination());
-  InsertPass(CreateConstProp());
+  InsertPass(CreateConstProp(InlineConstants));
   ////// InsertPass(CreateDeadFlagCalculationEliminination());
   InsertPass(CreateDeadFlagStoreElimination());
   InsertPass(CreateSyscallOptimization());

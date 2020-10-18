@@ -421,6 +421,15 @@ friend class FEXCore::IR::PassManager;
      return false;
   }
 
+  bool IsValueInlineConstant(OrderedNodeWrapper ssa) {
+     OrderedNode *RealNode = ssa.GetNode(ListData.Begin());
+     FEXCore::IR::IROp_Header *IROp = RealNode->Op(Data.Begin());
+     if (IROp->Op == OP_INLINECONSTANT) {
+       return true;
+     }
+     return false;
+  }
+
   // Overwrite a node with a constant
   // Depending on what node has been overwritten, there might be some unallocated space around the node
   // Because we are overwriting the node, we don't have to worry about update all the arguments which use it

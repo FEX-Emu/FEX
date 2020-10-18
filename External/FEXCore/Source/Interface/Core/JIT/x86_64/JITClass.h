@@ -73,6 +73,8 @@ public:
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
+  FEXCore::IR::IRListView<true> const *IR;
+
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
   Xbyak::util::Cpu Features{};
 
@@ -111,6 +113,8 @@ private:
 
   Xbyak::Xmm GetSrc(uint32_t Node);
   Xbyak::Xmm GetDst(uint32_t Node);
+
+  bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   IR::RegisterAllocationPass *RAPass;
@@ -180,6 +184,7 @@ private:
   ///< ALU Ops
   DEF_OP(TruncElementPair);
   DEF_OP(Constant);
+  DEF_OP(InlineConstant);
   DEF_OP(CycleCounter);
   DEF_OP(Add);
   DEF_OP(Sub);

@@ -51,6 +51,10 @@ DEF_OP(Constant) {
   LoadConstant(Dst, Op->Constant);
 }
 
+DEF_OP(InlineConstant) {
+  //nop
+}
+
 DEF_OP(CycleCounter) {
 #ifdef DEBUG_CYCLES
   movz(GetReg<RA_64>(Node), 0);
@@ -59,31 +63,59 @@ DEF_OP(CycleCounter) {
 #endif
 }
 
+#define GRS(Node) (IROp->Size <= 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
+
 DEF_OP(Add) {
   auto Op = IROp->C<IR::IROp_Add>();
   uint8_t OpSize = IROp->Size;
-  switch (OpSize) {
-    case 4:
-      add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
-      break;
-    case 8:
-      add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
-      break;
-    default: LogMan::Msg::A("Unsupported Add size: %d", OpSize);
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    switch (OpSize) {
+      case 4:
+        add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), Const);
+        break;
+      case 8:
+        add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), Const);
+        break;
+      default: LogMan::Msg::A("Unsupported Add size: %d", OpSize);
+    }
+  } else {
+    switch (OpSize) {
+      case 4:
+        add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        break;
+      case 8:
+        add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+        break;
+      default: LogMan::Msg::A("Unsupported Add size: %d", OpSize);
+    }
   }
 }
 
 DEF_OP(Sub) {
   auto Op = IROp->C<IR::IROp_Sub>();
   uint8_t OpSize = IROp->Size;
-  switch (OpSize) {
-    case 4:
-      sub(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
-      break;
-    case 8:
-      sub(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
-      break;
-    default: LogMan::Msg::A("Unsupported Sub size: %d", OpSize);
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    switch (OpSize) {
+      case 4:
+      case 8:
+        sub(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
+        break;
+      default: LogMan::Msg::A("Unsupported Sub size: %d", OpSize);
+    }
+  } else {
+    switch (OpSize) {
+      case 4:
+        sub(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        break;
+      case 8:
+        sub(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+        break;
+      default: LogMan::Msg::A("Unsupported Sub size: %d", OpSize);
+    }
   }
 
 }
@@ -377,49 +409,79 @@ DEF_OP(UMulH) {
 
 DEF_OP(Or) {
   auto Op = IROp->C<IR::IROp_Or>();
-  orr(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    orr(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
+  } else {
+    orr(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+  }
 }
 
 DEF_OP(And) {
   auto Op = IROp->C<IR::IROp_And>();
-  and_(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    and_(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
+  } else {
+    and_(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+  }
 }
 
 DEF_OP(Xor) {
   auto Op = IROp->C<IR::IROp_Xor>();
-  eor(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    eor(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
+  } else {
+    eor(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+  }
 }
 
 DEF_OP(Lshl) {
   auto Op = IROp->C<IR::IROp_Lshl>();
   uint8_t OpSize = IROp->Size;
-  if (OpSize == 8)
-    lslv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
-  else
-    lslv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    lsl(GRS(Node), GRS(Op->Header.Args[0].ID()), (unsigned int)Const);
+  } else {
+    lslv(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+  }
 }
 
 DEF_OP(Lshr) {
   auto Op = IROp->C<IR::IROp_Lshr>();
   uint8_t OpSize = IROp->Size;
-  if (OpSize == 8)
-    lsrv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
-  else
-    lsrv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    lsr(GRS(Node), GRS(Op->Header.Args[0].ID()), (unsigned int)Const);
+  } else {
+    lsrv(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+  }
 }
 
 DEF_OP(Ashr) {
   auto Op = IROp->C<IR::IROp_Ashr>();
   uint8_t OpSize = IROp->Size;
-  if (OpSize == 8)
-    asrv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
-  else if (OpSize == 4) {
-    asrv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
-  }
-  else {
-    sbfx(TMP1.X(), GetReg<RA_64>(Op->Header.Args[0].ID()), 0, OpSize * 8);
-    asrv(GetReg<RA_64>(Node), TMP1.X(), GetReg<RA_64>(Op->Header.Args[1].ID()));
-    ubfx(GetReg<RA_64>(Node),GetReg<RA_64>(Node), 0, OpSize * 8);
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    if (OpSize >= 4) {
+      asr(GRS(Node), GRS(Op->Header.Args[0].ID()), (unsigned int)Const);
+    }
+    else {
+      sbfx(TMP1.X(), GetReg<RA_64>(Op->Header.Args[0].ID()), 0, OpSize * 8);
+      asr(GetReg<RA_64>(Node), TMP1.X(), (unsigned int)Const);
+      ubfx(GetReg<RA_64>(Node),GetReg<RA_64>(Node), 0, OpSize * 8);
+    }
+  } else {
+    if (OpSize >= 4) {
+      asrv(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+    }
+    else {
+      sbfx(TMP1.X(), GetReg<RA_64>(Op->Header.Args[0].ID()), 0, OpSize * 8);
+      asrv(GetReg<RA_64>(Node), TMP1.X(), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      ubfx(GetReg<RA_64>(Node),GetReg<RA_64>(Node), 0, OpSize * 8);
+    }
   }
 }
 
@@ -427,42 +489,73 @@ DEF_OP(Rol) {
   auto Op = IROp->C<IR::IROp_Rol>();
   uint8_t OpSize = IROp->Size;
 
-  switch (OpSize) {
-    case 1: {
-      movz(TMP1, 8);
-      sub(TMP1.W(), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
-
-      mov(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 8, 8);
-      bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 16, 8);
-      bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 24, 8);
-      rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Node), TMP1.W());
-      and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFF);
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    switch (OpSize) {
+      case 1: {
+        mov(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+        bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 8, 8);
+        bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 16, 8);
+        bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 24, 8);
+        ror(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 8 - (unsigned int)Const);
+        and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFF);
+        break;
+      }
+      case 2: {
+        mov(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+        bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 16, 16);
+        ror(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 16 - (unsigned int)Const);
+        and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFFFF);
+        break;
+      }
+      case 4: {
+        ror(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), 32 - (unsigned int)Const);
       break;
-    }
-    case 2: {
-      movz(TMP1, 16);
-      sub(TMP1.W(), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
-
-      mov(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 16, 16);
-      rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Node), TMP1.W());
-      and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFFFF);
+      }
+      case 8: {
+        ror(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), 64 - (unsigned int)Const);
       break;
+      }
+      default: LogMan::Msg::A("Unhandled ROL size: %d", OpSize);
     }
-    case 4: {
-      movz(TMP1, 32);
-      sub(TMP1.W(), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
-      rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), TMP1.W());
-    break;
+  } else {
+    switch (OpSize) {
+      case 1: {
+        movz(TMP1, 8);
+        sub(TMP1.W(), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+
+        mov(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+        bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 8, 8);
+        bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 16, 8);
+        bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 24, 8);
+        rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Node), TMP1.W());
+        and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFF);
+        break;
+      }
+      case 2: {
+        movz(TMP1, 16);
+        sub(TMP1.W(), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+
+        mov(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+        bfi(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 16, 16);
+        rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Node), TMP1.W());
+        and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFFFF);
+        break;
+      }
+      case 4: {
+        movz(TMP1, 32);
+        sub(TMP1.W(), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), TMP1.W());
+      break;
+      }
+      case 8: {
+        movz(TMP1, 64);
+        sub(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        rorv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), TMP1);
+      break;
+      }
+      default: LogMan::Msg::A("Unhandled ROL size: %d", OpSize);
     }
-    case 8: {
-      movz(TMP1, 64);
-      sub(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      rorv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), TMP1);
-    break;
-    }
-    default: LogMan::Msg::A("Unhandled ROL size: %d", OpSize);
   }
 }
 
@@ -470,31 +563,61 @@ DEF_OP(Ror) {
   auto Op = IROp->C<IR::IROp_Ror>();
   uint8_t OpSize = IROp->Size;
 
-  switch (OpSize) {
-    case 1: {
-      mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
-      rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
-    break;
-    }
-    case 2: {
-      mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
-      rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
-    break;
-    }
-    case 4: {
-      rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
-    break;
-    }
-    case 8: {
-      rorv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
-    break;
-    }
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    switch (OpSize) {
+      case 1: {
+        mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
+        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
+        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
+        ror(GetReg<RA_32>(Node), TMP1.W(), (unsigned int)Const);
+      break;
+      }
+      case 2: {
+        mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
+        ror(GetReg<RA_32>(Node), TMP1.W(), (unsigned int)Const);
+      break;
+      }
+      case 4: {
+        ror(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), (unsigned int)Const);
+      break;
+      }
+      case 8: {
+        ror(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), (unsigned int)Const);
+      break;
+      }
 
-    default: LogMan::Msg::A("Unhandled ROR size: %d", OpSize);
+      default: LogMan::Msg::A("Unhandled ROR size: %d", OpSize);
+    }
+  } else {
+    switch (OpSize) {
+      case 1: {
+        mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
+        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
+        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
+        rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      break;
+      }
+      case 2: {
+        mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
+        rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      break;
+      }
+      case 4: {
+        rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      break;
+      }
+      case 8: {
+        rorv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      break;
+      }
+
+      default: LogMan::Msg::A("Unhandled ROR size: %d", OpSize);
+    }
   }
 }
 
@@ -1106,6 +1229,7 @@ void JITCore::RegisterALUHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
   REGISTER_OP(TRUNCELEMENTPAIR,  TruncElementPair);
   REGISTER_OP(CONSTANT,          Constant);
+  REGISTER_OP(INLINECONSTANT,    InlineConstant);
   REGISTER_OP(CYCLECOUNTER,      CycleCounter);
   REGISTER_OP(ADD,               Add);
   REGISTER_OP(SUB,               Sub);

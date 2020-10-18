@@ -464,6 +464,20 @@ Xbyak::Xmm JITCore::GetDst(uint32_t Node) {
   return RAXMM_x[Reg];
 }
 
+bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
+  auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
+
+  if (OpHeader->Op == IR::IROps::OP_INLINECONSTANT) {
+    auto Op = OpHeader->C<IR::IROp_InlineConstant>();
+    if (Value) {
+      *Value = Op->Constant;
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
@@ -481,6 +495,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   }
 
 	void *Entry = getCurr<void*>();
+  this->IR = IR;
 
   LogMan::Throw::A(RAPass->HasFullRA(), "Needs RA");
 
@@ -597,6 +612,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   void *Exit = getCurr<void*>();
 
+  this->IR = nullptr;
+  
   ready();
 
   if (DebugData) {
