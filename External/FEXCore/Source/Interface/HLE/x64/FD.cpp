@@ -167,5 +167,11 @@ namespace FEXCore::HLE::x64 {
       uint64_t Result = ::process_vm_writev(pid, local_iov, liovcnt, remote_iov, riovcnt, flags);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X64(ppoll, [](FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize) -> uint64_t {
+      // sigsetsize is unused here since it is currently a constant and not exposed through glibc
+      uint64_t Result = ::ppoll(fds, nfds, timeout_ts, sigmask);
+      SYSCALL_ERRNO();
+    });
   }
 }
