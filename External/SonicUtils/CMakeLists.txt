@@ -15,15 +15,5 @@ else()
   list(APPEND SRCS Source/VM_Noop.cpp)
 endif()
 
-add_library(${NAME} SHARED ${SRCS})
+add_library(${NAME} STATIC ${SRCS})
 target_include_directories(${NAME} PUBLIC include/)
-
-install(TARGETS ${NAME}
-  LIBRARY
-    DESTINATION lib
-    COMPONENT Libraries)
-
-install(DIRECTORY include/SonicUtils
-  DESTINATION include
-  COMPONENT Development)
-
