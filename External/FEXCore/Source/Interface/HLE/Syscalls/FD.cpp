@@ -318,12 +318,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(ppoll, [](FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize) -> uint64_t {
-      // sigsetsize is unused here since it is currently a constant and not exposed through glibc
-      uint64_t Result = ::ppoll(fds, nfds, timeout_ts, sigmask);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(name_to_handle_at, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, struct file_handle *handle, int *mount_id, int flags) -> uint64_t {
       flags = RemapFlags(flags);
       uint64_t Result = ::name_to_handle_at(dirfd, pathname, handle, mount_id, flags);
