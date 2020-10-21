@@ -81,7 +81,7 @@ DEF_OP(GetRoundingMode) {
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
-  auto Src = GetReg<RA_32>(Op->Header.Args[0].ID());
+  auto Src = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   // Setup the rounding flags correctly
   and_(TMP1, Src, 0b11);
