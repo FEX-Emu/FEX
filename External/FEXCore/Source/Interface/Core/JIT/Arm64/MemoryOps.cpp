@@ -410,6 +410,10 @@ DEF_OP(LoadMem) {
     MemSrc = MemOperand(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
 
+  if (!Op->Header.Args[1].IsInvalid()) {
+    MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+  }
+
   if (Op->Class == FEXCore::IR::GPRClass) {
     auto Dst = GetReg<RA_64>(Node);
     switch (Op->Size) {
@@ -539,6 +543,10 @@ DEF_OP(StoreMem) {
   if (!CTX->Config.UnifiedMemory) {
     LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
     MemSrc = MemOperand(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+  }
+
+  if (!Op->Header.Args[2].IsInvalid()) {
+    MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[2].ID()));
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {

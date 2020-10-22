@@ -95,12 +95,14 @@ bool ConstProp::Run(IREmitter *IREmit) {
     break;
     }
 */
+/*
     case OP_LOADMEMTSO:
+*/
     case OP_LOADMEM: {
-      auto Op = IROp->CW<IR::IROp_LoadMem>();
+      auto Op = IROp->C<IR::IROp_LoadMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
-      if (AddressHeader->Op == OP_ADD && !Header->ShouldInterpret) {
+      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
 
         // use offset addressing
         IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwarpNode(AddressHeader->Args[0]));
@@ -110,13 +112,14 @@ bool ConstProp::Run(IREmitter *IREmit) {
       }
       break;
     }
-
+/*
     case OP_STOREMEMTSO:
+*/
     case OP_STOREMEM: {
-      auto Op = IROp->CW<IR::IROp_LoadMem>();
+      auto Op = IROp->C<IR::IROp_LoadMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
-      if (AddressHeader->Op == OP_ADD && !Header->ShouldInterpret) {
+      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
 
         // use offset addressing
         IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwarpNode(AddressHeader->Args[0]));
