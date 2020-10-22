@@ -404,14 +404,18 @@ DEF_OP(StoreFlag) {
 DEF_OP(LoadMem) {
   auto Op = IROp->C<IR::IROp_LoadMem>();
 
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+
   if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    MemSrc = MemOperand(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+    MemReg = TMP1;
+    LoadConstant(MemReg, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+    add(MemReg, MemReg, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
 
+  auto MemSrc = MemOperand(MemReg);
+
   if (!Op->Header.Args[1].IsInvalid()) {
-    MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+    MemSrc = MemOperand(MemReg, GetReg<RA_64>(Op->Header.Args[1].ID()));
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -539,16 +543,20 @@ DEF_OP(LoadMemTSO) {
 
 DEF_OP(StoreMem) {
   auto Op = IROp->C<IR::IROp_StoreMem>();
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  
+  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+
   if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    MemSrc = MemOperand(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+    MemReg = TMP1;
+    LoadConstant(MemReg, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+    add(MemReg, MemReg, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
+
+  auto MemSrc = MemOperand(MemReg);
 
   if (!Op->Header.Args[2].IsInvalid()) {
-    MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[2].ID()));
+    MemSrc = MemOperand(MemReg, GetReg<RA_64>(Op->Header.Args[2].ID()));
   }
-
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (Op->Size) {
       case 1:
