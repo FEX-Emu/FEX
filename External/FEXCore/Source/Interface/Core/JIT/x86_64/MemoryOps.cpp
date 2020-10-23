@@ -1,6 +1,8 @@
 #include "Interface/Core/JIT/x86_64/JITClass.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
+#include <cmath>
+
 namespace FEXCore::CPU {
 
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
@@ -470,7 +472,20 @@ DEF_OP(LoadMem) {
 
   auto MemPtr = MemReg + 0;
   if (!Op->Header.Args[1].IsInvalid())
-    MemPtr = MemReg + GetSrc<RA_64>(Op->Header.Args[1].ID());
+  {
+    auto MemOffset = GetSrc<RA_64>(Op->Header.Args[1].ID());
+
+    if (Op->OffsetScale != 1) {
+      mov(rcx, MemOffset); shl(rcx, (int)std::log2(Op->OffsetScale));
+      MemOffset = rcx;
+    }
+
+    switch(Op->OffsetType) {
+      case IR::MEM_OFFSET_SXTX: MemPtr = MemReg + MemOffset; break;
+      case IR::MEM_OFFSET_UXTW: mov(ecx, MemOffset.cvt32()); MemPtr = MemReg + rcx; break;
+      case IR::MEM_OFFSET_SXTW: movsxd(rcx, MemOffset.cvt32()); MemPtr = MemReg + rcx; break;
+    }
+  }
 
   if (Op->Class.Val == 0) {
     auto Dst = GetDst<RA_64>(Node);
@@ -547,8 +562,21 @@ DEF_OP(StoreMem) {
   }
 
   auto MemPtr = MemReg + 0;
-  if (!Op->Header.Args[2].IsInvalid())
-    MemPtr = MemReg + GetSrc<RA_64>(Op->Header.Args[2].ID());
+  if (!Op->Header.Args[2].IsInvalid()) {
+    auto MemOffset = GetSrc<RA_64>(Op->Header.Args[2].ID());
+
+    if (Op->OffsetScale != 1) {
+      mov(rcx, MemOffset); shl(rcx, (int)std::log2(Op->OffsetScale));
+      MemOffset = rcx;
+    }
+
+    switch(Op->OffsetType) {
+      case IR::MEM_OFFSET_SXTX: MemPtr = MemReg + MemOffset; break;
+      case IR::MEM_OFFSET_UXTW: mov(ecx, MemOffset.cvt32()); MemPtr = MemReg + rcx; break;
+      case IR::MEM_OFFSET_SXTW: movsxd(rcx, MemOffset.cvt32()); MemPtr = MemReg + rcx; break;
+    }
+  }
+    
 
   if (Op->Class.Val == 0) {
     switch (Op->Size) {

@@ -46,7 +46,11 @@
     "constexpr static uint8_t ROUND_MODE_NEGATIVE_INFINITY = 1",
     "constexpr static uint8_t ROUND_MODE_POSITIVE_INFINITY = 2",
     "constexpr static uint8_t ROUND_MODE_TOWARDS_ZERO      = 3",
-    "constexpr static uint8_t ROUND_MODE_FLUSH_TO_ZERO     = 1 << 2"
+    "constexpr static uint8_t ROUND_MODE_FLUSH_TO_ZERO     = 1 << 2",
+
+    "constexpr static uint8_t MEM_OFFSET_SXTX              = 0",
+    "constexpr static uint8_t MEM_OFFSET_UXTW              = 1",
+    "constexpr static uint8_t MEM_OFFSET_SXTW              = 2"
   ],
 
   "Ops": {
@@ -624,7 +628,9 @@
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
-        "RegisterClassType", "Class"
+        "RegisterClassType", "Class",
+        "uint8_t", "OffsetType",
+        "uint8_t", "OffsetScale"
       ]
     },
 
@@ -644,7 +650,9 @@
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
-        "RegisterClassType", "Class"
+        "RegisterClassType", "Class",
+        "uint8_t", "OffsetType",
+        "uint8_t", "OffsetScale"
       ]
     },
 
@@ -663,7 +671,9 @@
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
-        "RegisterClassType", "Class"
+        "RegisterClassType", "Class",
+        "uint8_t", "OffsetType",
+        "uint8_t", "OffsetScale"
       ]
     },
 
@@ -681,7 +691,9 @@
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
-        "RegisterClassType", "Class"
+        "RegisterClassType", "Class",
+        "uint8_t", "OffsetType",
+        "uint8_t", "OffsetScale"
       ]
     },
 

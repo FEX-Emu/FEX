@@ -415,7 +415,13 @@ DEF_OP(LoadMem) {
   auto MemSrc = MemOperand(MemReg);
 
   if (!Op->Header.Args[1].IsInvalid()) {
-    MemSrc = MemOperand(MemReg, GetReg<RA_64>(Op->Header.Args[1].ID()));
+    auto MemOffset = GetReg<RA_64>(Op->Header.Args[1].ID());
+
+    switch(Op->OffsetType) {
+      case IR::MEM_OFFSET_SXTX: MemSrc = MemOperand(MemReg, MemOffset, Extend::SXTX, (int)std::log2(Op->OffsetScale) ); break;
+      case IR::MEM_OFFSET_UXTW: MemSrc = MemOperand(MemReg, MemOffset.W(), Extend::UXTW, (int)std::log2(Op->OffsetScale) ); break;
+      case IR::MEM_OFFSET_SXTW: MemSrc = MemOperand(MemReg, MemOffset.W(), Extend::SXTW, (int)std::log2(Op->OffsetScale) ); break;
+    }
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -555,8 +561,15 @@ DEF_OP(StoreMem) {
   auto MemSrc = MemOperand(MemReg);
 
   if (!Op->Header.Args[2].IsInvalid()) {
-    MemSrc = MemOperand(MemReg, GetReg<RA_64>(Op->Header.Args[2].ID()));
+    auto MemOffset = GetReg<RA_64>(Op->Header.Args[2].ID());
+
+    switch(Op->OffsetType) {
+      case IR::MEM_OFFSET_SXTX: MemSrc = MemOperand(MemReg, MemOffset, Extend::SXTX, (int)std::log2(Op->OffsetScale) ); break;
+      case IR::MEM_OFFSET_UXTW: MemSrc = MemOperand(MemReg, MemOffset.W(), Extend::UXTW, (int)std::log2(Op->OffsetScale) ); break;
+      case IR::MEM_OFFSET_SXTW: MemSrc = MemOperand(MemReg, MemOffset.W(), Extend::SXTW, (int)std::log2(Op->OffsetScale) ); break;
+    }
   }
+  
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (Op->Size) {
       case 1:

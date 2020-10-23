@@ -36,6 +36,69 @@ static bool IsImmAddSub(uint64_t imm) { return vixl::aarch64::Assembler::IsImmAd
 #error No inline constant heuristics for this target
 #endif
 
+/*
+  if (IREmit->IsValueConstant(AddressHeader->Args[1], &Constant2) &&
+      ( 
+        (((int64_t)Constant2 >= -255) && ((int64_t)Constant2 <= 256)) ||
+        ( (Constant2 & Op_Size) == 0 &&  Constant2/Op_Size <= 4095)
+      )
+  )
+  {
+    printf("IMM address gen %ld %d\n", Constant2, Op_Size);
+    // no return here, default handling (just add)
+    // will do INLINE_CONST at a later pass
+  }
+*/
+std::tuple<uint8_t, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t Op_Size,  IROp_Header* AddressHeader) {
+  
+  uint64_t Constant2;
+  uint8_t LSL_Size = Op_Size;
+
+  auto Src0Header = IREmit->GetOpHeader(AddressHeader->Args[0]);
+  if (Src0Header->Size == 8) {
+    if (Src0Header->Op == OP_MUL) {
+      uint64_t Constant2;
+      if (IREmit->IsValueConstant(Src0Header->Args[1], &Constant2)) {
+        if (Constant2 == LSL_Size) {
+          //printf("MUL*%d address gen\n", Op_Size);
+          return { MEM_OFFSET_SXTX, LSL_Size, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+        } else if (Constant2 == 1) {
+          //printf("MUL*1 address gen\n");
+          return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+        }
+      }
+    } 
+    else if (Src0Header->Op == OP_LSHL) {
+      uint64_t Constant2;
+      if (IREmit->IsValueConstant(Src0Header->Args[1], &Constant2)) {
+        if ((1<<Constant2) == LSL_Size) {
+          //printf("LSHL*%d address gen\n", Op_Size);
+          return { MEM_OFFSET_SXTX, LSL_Size, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+        } else if (Constant2 == 0) {
+          //printf("LSHL<<0 address gen\n");
+          return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+        }
+      }
+    } else if (Src0Header->Op == OP_BFE) {
+      auto Bfe = Src0Header->C<IROp_Bfe>();
+      if (Bfe->lsb == 0 && Bfe->Width == 32) {
+        //printf("UXTW address gen\n"); // todo: scale
+        return { MEM_OFFSET_UXTW, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+      }
+    } else if (Src0Header->Op == OP_SBFE) {
+      auto Sbfe = Src0Header->C<IROp_Sbfe>();
+      if (Sbfe->lsb == 0 && Sbfe->Width == 32) {
+        //printf("SXTW address gen\n"); // todo: scale
+        return { MEM_OFFSET_SXTW, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+      }
+    }
+  }
+
+  // no match anywhere, just add
+  //printf("SXTX address gen\n");
+  return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[0]), IREmit->UnwarpNode(AddressHeader->Args[1]) };
+}
+
 bool ConstProp::Run(IREmitter *IREmit) {
   
   bool Changed = false;
@@ -95,35 +158,41 @@ bool ConstProp::Run(IREmitter *IREmit) {
     break;
     }
 */
-/*
+    /*
     case OP_LOADMEMTSO:
-*/
+    */
     case OP_LOADMEM: {
-      auto Op = IROp->C<IR::IROp_LoadMem>();
+      auto Op = IROp->CW<IR::IROp_LoadMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
       if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
 
-        // use offset addressing
-        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwarpNode(AddressHeader->Args[0]));
-        IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwarpNode(AddressHeader->Args[1]));
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
+
+        Op->OffsetType = OffsetType;
+        Op->OffsetScale = OffsetScale;
+        IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
+        IREmit->ReplaceNodeArgument(CodeNode, 1, Arg1);
         
         Changed = true;
       }
       break;
     }
-/*
+
+    /*
     case OP_STOREMEMTSO:
-*/
+    */
     case OP_STOREMEM: {
-      auto Op = IROp->C<IR::IROp_LoadMem>();
+      auto Op = IROp->CW<IR::IROp_StoreMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
       if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
 
-        // use offset addressing
-        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwarpNode(AddressHeader->Args[0]));
-        IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->UnwarpNode(AddressHeader->Args[1]));
+        Op->OffsetType = OffsetType;
+        Op->OffsetScale = OffsetScale;
+        IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
+        IREmit->ReplaceNodeArgument(CodeNode, 2, Arg1);
         
         Changed = true;
       }
