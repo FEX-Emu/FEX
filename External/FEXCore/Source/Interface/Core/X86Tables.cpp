@@ -30,8 +30,8 @@ X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
 X86InstInfo EVEXTableOps[MAX_EVEX_TABLE_SIZE];
 
 void InitializeBaseTables(Context::OperatingMode Mode);
-void InitializeSecondaryTables();
-void InitializePrimaryGroupTables();
+void InitializeSecondaryTables(Context::OperatingMode Mode);
+void InitializePrimaryGroupTables(Context::OperatingMode Mode);
 void InitializeSecondaryGroupTables();
 void InitializeSecondaryModRMTables();
 void InitializeX87Tables();
@@ -87,8 +87,8 @@ void InitializeInfoTables(Context::OperatingMode Mode) {
       BaseOp = UnknownOp;
 
   InitializeBaseTables(Mode);
-  InitializeSecondaryTables();
-  InitializePrimaryGroupTables();
+  InitializeSecondaryTables(Mode);
+  InitializePrimaryGroupTables(Mode);
   InitializeSecondaryGroupTables();
   InitializeSecondaryModRMTables();
   InitializeX87Tables();
