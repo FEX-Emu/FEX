@@ -36,19 +36,15 @@ static bool IsImmAddSub(uint64_t imm) { return vixl::aarch64::Assembler::IsImmAd
 #error No inline constant heuristics for this target
 #endif
 
-/*
-  if (IREmit->IsValueConstant(AddressHeader->Args[1], &Constant2) &&
-      ( 
-        (((int64_t)Constant2 >= -255) && ((int64_t)Constant2 <= 256)) ||
-        ( (Constant2 & Op_Size) == 0 &&  Constant2/Op_Size <= 4095)
-      )
-  )
-  {
-    printf("IMM address gen %ld %d\n", Constant2, Op_Size);
-    // no return here, default handling (just add)
-    // will do INLINE_CONST at a later pass
-  }
-*/
+static bool IsImmMemory(uint64_t imm, uint8_t Op_Size) {
+  if ( ((int64_t)imm >= -255) && ((int64_t)imm <= 256) )
+	return true;
+  else if ( (imm & (Op_Size-1)) == 0 &&  imm/Op_Size <= 4095 )
+	return true;
+  else
+	return false;
+}
+
 std::tuple<uint8_t, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t Op_Size,  IROp_Header* AddressHeader) {
   
   uint64_t Constant2;
@@ -510,6 +506,40 @@ bool ConstProp::Run(IREmitter *IREmit) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
               IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+
+              Changed = true;
+            }
+          }
+          break;
+        }
+
+	case OP_LOADMEM:
+        {
+          auto Op = IROp->CW<IR::IROp_LoadMem>();
+
+          uint64_t Constant2;
+          if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+            if (IsImmMemory(Constant2, IROp->Size)) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+
+              IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+
+              Changed = true;
+            }
+          }
+          break;
+        }
+
+	case OP_STOREMEM:
+        {
+          auto Op = IROp->CW<IR::IROp_LoadMem>();
+
+          uint64_t Constant2;
+          if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[2], &Constant2)) {
+            if (IsImmMemory(Constant2, IROp->Size)) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
+
+              IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
 
               Changed = true;
             }
