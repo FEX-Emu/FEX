@@ -123,8 +123,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     case OP_AND: {
       auto Op = IROp->CW<IR::IROp_And>();
-      uint64_t Constant1;
-      uint64_t Constant2;
+      uint64_t Constant1 = 0;
+      uint64_t Constant2 = 0;
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -132,6 +132,21 @@ bool ConstProp::Run(IREmitter *IREmit) {
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
         continue;
+      } else if (Constant2 == 1) {
+        // happens from flag calcs
+        auto val = IREmit->GetOpHeader(Op->Header.Args[0]);
+
+        uint64_t Constant3;
+        if (val->Op == OP_SELECT && 
+            IREmit->IsValueConstant(val->Args[2], &Constant2) &&
+            IREmit->IsValueConstant(val->Args[3], &Constant3) &&
+            Constant2 == 1 &&
+            Constant3 == 0)
+        {
+          IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+          Changed = true;
+          continue;
+        }
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // AND with same value results in original value
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
@@ -219,6 +234,22 @@ bool ConstProp::Run(IREmitter *IREmit) {
   // XXX - This is broken for now - see https://github.com/FEX-Emu/FEX/issues/351
         // IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         // Changed = true;
+      } else if (Op->Width == 1 && Op->lsb == 0) {
+        // common from flag codegen
+        auto val = IREmit->GetOpHeader(Op->Header.Args[0]);
+
+        uint64_t Constant2;
+        uint64_t Constant3;
+        if (val->Op == OP_SELECT && 
+            IREmit->IsValueConstant(val->Args[2], &Constant2) &&
+            IREmit->IsValueConstant(val->Args[3], &Constant3) &&
+            Constant2 == 1 &&
+            Constant3 == 0)
+        {
+          IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+          Changed = true;
+          continue;
+        }
       }
 
     break;
@@ -282,6 +313,37 @@ bool ConstProp::Run(IREmitter *IREmit) {
               Changed = true;
             }
           }
+          break;
+        }
+
+        case OP_SELECT:
+        {
+          auto Op = IROp->C<IR::IROp_Select>();
+
+          uint64_t Constant1;
+          if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
+            if (IsImmAddSub(Constant1)) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+
+              IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant1));
+              
+              Changed = true;
+            }
+          }
+
+          uint64_t Constant2;
+          uint64_t Constant3;
+          if (IREmit->IsValueConstant(Op->Header.Args[2], &Constant2) &&
+              IREmit->IsValueConstant(Op->Header.Args[3], &Constant3) &&
+              Constant2 == 1 &&
+              Constant3 == 0)
+          {
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
+
+            IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
+            IREmit->ReplaceNodeArgument(CodeNode, 3, IREmit->_InlineConstant(Constant3));
+          }
+
           break;
         }
 

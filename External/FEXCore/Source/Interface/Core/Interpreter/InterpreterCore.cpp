@@ -352,6 +352,52 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 }
 
+template<typename unsigned_type, typename signed_type>
+bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
+  bool CompResult = false;
+  switch (Cond) {
+    case FEXCore::IR::COND_EQ:
+      CompResult = static_cast<unsigned_type>(Src1) == static_cast<unsigned_type>(Src2);
+      break;
+    case FEXCore::IR::COND_NEQ:
+      CompResult = static_cast<unsigned_type>(Src1) != static_cast<unsigned_type>(Src2);
+      break;
+    case FEXCore::IR::COND_SGE:
+      CompResult = static_cast<signed_type>(Src1) >= static_cast<signed_type>(Src2);
+      break;
+    case FEXCore::IR::COND_SLT:
+      CompResult = static_cast<signed_type>(Src1) < static_cast<signed_type>(Src2);
+      break;
+    case FEXCore::IR::COND_SGT:
+      CompResult = static_cast<signed_type>(Src1) > static_cast<signed_type>(Src2);
+      break;
+    case FEXCore::IR::COND_SLE:
+      CompResult = static_cast<signed_type>(Src1) <= static_cast<signed_type>(Src2);
+      break;
+    case FEXCore::IR::COND_UGE:
+      CompResult = static_cast<unsigned_type>(Src1) >= static_cast<unsigned_type>(Src2);
+      break;
+    case FEXCore::IR::COND_ULT:
+      CompResult = static_cast<unsigned_type>(Src1) < static_cast<unsigned_type>(Src2);
+      break;
+    case FEXCore::IR::COND_UGT:
+      CompResult = static_cast<unsigned_type>(Src1) > static_cast<unsigned_type>(Src2);
+      break;
+    case FEXCore::IR::COND_ULE:
+      CompResult = static_cast<unsigned_type>(Src1) <= static_cast<unsigned_type>(Src2);
+      break;
+    case FEXCore::IR::COND_MI:
+    case FEXCore::IR::COND_PL:
+    case FEXCore::IR::COND_VS:
+    case FEXCore::IR::COND_VC:
+    default:
+      LogMan::Msg::A("Unsupported compare type");
+      break;
+  }
+
+  return CompResult;
+}
+
 InterpreterCore::~InterpreterCore() {
   DeleteAsmDispatch();
 }
@@ -1564,52 +1610,28 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_SELECT: {
             auto Op = IROp->C<IR::IROp_Select>();
-            bool CompResult = false;
+            
             uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
 
-            uint64_t ArgTrue = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]);
-            uint64_t ArgFalse = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[3]);
+            uint64_t ArgTrue;
+            uint64_t ArgFalse;
 
-            switch (Op->Cond.Val) {
-              case FEXCore::IR::COND_EQ:
-                CompResult = Src1 == Src2;
-                break;
-              case FEXCore::IR::COND_NEQ:
-                CompResult = Src1 != Src2;
-                break;
-              case FEXCore::IR::COND_SGE:
-                CompResult = static_cast<int64_t>(Src1) >= static_cast<int64_t>(Src2);
-                break;
-              case FEXCore::IR::COND_SLT:
-                CompResult = static_cast<int64_t>(Src1) < static_cast<int64_t>(Src2);
-                break;
-              case FEXCore::IR::COND_SGT:
-                CompResult = static_cast<int64_t>(Src1) > static_cast<int64_t>(Src2);
-                break;
-              case FEXCore::IR::COND_SLE:
-                CompResult = static_cast<int64_t>(Src1) <= static_cast<int64_t>(Src2);
-                break;
-              case FEXCore::IR::COND_UGE:
-                CompResult = Src1 >= Src2;
-                break;
-              case FEXCore::IR::COND_ULT:
-                CompResult = Src1 < Src2;
-                break;
-              case FEXCore::IR::COND_UGT:
-                CompResult = Src1 > Src2;
-                break;
-              case FEXCore::IR::COND_ULE:
-                CompResult = Src1 <= Src2;
-                break;
-              case FEXCore::IR::COND_MI:
-              case FEXCore::IR::COND_PL:
-              case FEXCore::IR::COND_VS:
-              case FEXCore::IR::COND_VC:
-              default:
-                LogMan::Msg::A("Unsupported compare type");
-                break;
+            if (OpSize == 4) {
+              ArgTrue = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[2]);
+              ArgFalse = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[3]);
+            } else {
+              ArgTrue = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]);
+              ArgFalse = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[3]);
             }
+            
+            bool CompResult;
+
+            if (Op->CompareSize == 4)
+              CompResult = IsConditionTrue<uint32_t, int32_t>(Op->Cond.Val, Src1, Src2);
+            else
+              CompResult = IsConditionTrue<uint64_t, int64_t>(Op->Cond.Val, Src1, Src2);
+
             GD = CompResult ? ArgTrue : ArgFalse;
             break;
           }

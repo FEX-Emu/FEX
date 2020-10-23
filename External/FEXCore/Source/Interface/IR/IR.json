@@ -1147,6 +1147,7 @@
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
+      "DestSize": "std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(ssa2), GetOpSize(ssa3)))",
       "SSAArgs": "4",
       "SSANames": [
         "Cmp1",
@@ -1155,7 +1156,8 @@
         "FalseVal"
       ],
       "Args": [
-        "CondClassType", "Cond"
+        "CondClassType", "Cond",
+        "uint8_t", "CompareSize"
       ]
     },
 
