@@ -116,7 +116,13 @@ public:
   void SBBOp(OpcodeArgs);
   void PUSHOp(OpcodeArgs);
   void PUSHREGOp(OpcodeArgs);
+  void PUSHAOp(OpcodeArgs);
+  template<uint32_t SegmentReg>
+  void PUSHSegmentOp(OpcodeArgs);
   void POPOp(OpcodeArgs);
+  void POPAOp(OpcodeArgs);
+  template<uint32_t SegmentReg>
+  void POPSegmentOp(OpcodeArgs);
   void LEAVEOp(OpcodeArgs);
   void CALLOp(OpcodeArgs);
   void CALLAbsoluteOp(OpcodeArgs);
