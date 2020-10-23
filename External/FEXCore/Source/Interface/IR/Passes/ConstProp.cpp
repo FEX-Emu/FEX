@@ -41,8 +41,10 @@ static bool IsImmMemory(uint64_t imm, uint8_t Op_Size) {
 	return true;
   else if ( (imm & (Op_Size-1)) == 0 &&  imm/Op_Size <= 4095 )
 	return true;
-  else
-	return false;
+  else {
+    //printf("Rejected MemImm %ld, %d\n", imm, Op_Size);
+	  return false;
+  }
 }
 
 std::tuple<uint8_t, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t Op_Size,  IROp_Header* AddressHeader) {
@@ -519,7 +521,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
           uint64_t Constant2;
           if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-            if (IsImmMemory(Constant2, IROp->Size)) {
+            if (IsImmMemory(Constant2, Op->Size)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
               IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
@@ -532,11 +534,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
 	case OP_STOREMEM:
         {
-          auto Op = IROp->CW<IR::IROp_LoadMem>();
+          auto Op = IROp->CW<IR::IROp_StoreMem>();
 
           uint64_t Constant2;
           if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[2], &Constant2)) {
-            if (IsImmMemory(Constant2, IROp->Size)) {
+            if (IsImmMemory(Constant2, Op->Size)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
 
               IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));

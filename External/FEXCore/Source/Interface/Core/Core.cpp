@@ -253,7 +253,6 @@ namespace FEXCore::Context {
     NewThreadState.flags[9] = 1;
 
     FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
-
     if (Is64Bit) {
       // Set up all of our memory mappings
       NewThreadState.fs = reinterpret_cast<uint64_t>(MapRegion(Thread, FS_OFFSET, FS_SIZE, true, false));
