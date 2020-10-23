@@ -48,23 +48,23 @@ namespace FEX::ArgLoader {
         .dest("MaxInst")
         .help("Maximum number of instructions to stick in a block")
         .set_default(~0U);
-     CPUGroup.add_option("-m", "--multiblock")
-        .dest("Multiblock")
-        .action("store_true")
-        .help("Enable Multiblock code compilation");
-     CPUGroup.add_option("--no-multiblock")
-        .dest("Multiblock")
-        .action("store_false")
-        .help("Enable Multiblock code compilation");
-    CPUGroup.add_option("-G", "--gdb")
-        .dest("GdbServer")
-        .action("store_true")
-        .help("Enables the GDB server");
+      CPUGroup.add_option("-m", "--multiblock")
+          .dest("Multiblock")
+          .action("store_true")
+          .help("Enable Multiblock code compilation");
+      CPUGroup.add_option("--no-multiblock")
+          .dest("Multiblock")
+          .action("store_false")
+          .help("Enable Multiblock code compilation");
+      CPUGroup.add_option("-G", "--gdb")
+          .dest("GdbServer")
+          .action("store_true")
+          .help("Enables the GDB server");
 
-    CPUGroup.add_option("-T", "--Threads")
-        .dest("Threads")
-        .help("Number of physical hardware threads to tell the process we have")
-        .set_default(1);
+      CPUGroup.add_option("-T", "--Threads")
+          .dest("Threads")
+          .help("Number of physical hardware threads to tell the process we have")
+          .set_default(1);
 
       CPUGroup.add_option("--disable-tso")
         .dest("TSOEnabled")
@@ -76,6 +76,11 @@ namespace FEX::ArgLoader {
         .dest("SMCChecks")
         .action("store_true")
         .help("Checks code for modification before execution. Slow.")
+        .set_default(false);
+      CPUGroup.add_option("--abi-local-flags")
+        .dest("AbiLocalFlags")
+        .action("store_true")
+        .help("Assume flags are not preserved across calls")
         .set_default(false);
 
       Parser.add_option_group(CPUGroup);
@@ -207,6 +212,10 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("SMCChecks")) {
         bool SMCChecks = Options.get("SMCChecks");
         Config::Add("SMCChecks", std::to_string(SMCChecks));
+      }
+      if (Options.is_set_by_user("AbiLocalFlags")) {
+        bool AbiLocalFlags = Options.get("AbiLocalFlags");
+        Config::Add("AbiLocalFlags", std::to_string(AbiLocalFlags));
       }
     }
 

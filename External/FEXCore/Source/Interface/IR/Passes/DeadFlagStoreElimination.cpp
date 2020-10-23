@@ -42,6 +42,9 @@ bool DeadFlagStoreElimination::Run(IREmitter *IREmit) {
           auto Op = IROp->CW<IR::IROp_StoreFlag>();
           FlagMap[BlockNode].writes |= 1 << Op->Flag;
         }
+        else if  (IROp->Op == OP_INVALIDATEFLAGS) {
+          FlagMap[BlockNode].writes = -1;
+        }
         else if (IROp->Op == OP_LOADFLAG) {
           auto Op = IROp->CW<IR::IROp_LoadFlag>();
           FlagMap[BlockNode].reads |= 1 << Op->Flag;
