@@ -239,8 +239,10 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     default: break;
     }
+  }
 
-    if (!HeaderOp->ShouldInterpret && InlineConstants) {
+  if (!HeaderOp->ShouldInterpret && InlineConstants) {
+    for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
       switch(IROp->Op) {
         case OP_LSHR:
         case OP_ASHR:
