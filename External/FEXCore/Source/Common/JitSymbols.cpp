@@ -28,7 +28,7 @@ namespace FEXCore {
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
     std::stringstream String;
-    String << std::hex << HostAddr << " " << CodeSize << " " << "JIT_0x" << GuestAddr << std::endl;
+    String << std::hex << HostAddr << " " << CodeSize << " " << "JIT_0x" << GuestAddr << "_" << HostAddr << std::endl;
     fwrite(String.str().c_str(), 1, String.str().size(), fp);
   }
 }
