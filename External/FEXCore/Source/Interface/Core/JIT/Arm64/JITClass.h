@@ -101,6 +101,7 @@ public:
   static CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
 private:
+  Label *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
   FEXCore::IR::IRListView<true> const *IR;
