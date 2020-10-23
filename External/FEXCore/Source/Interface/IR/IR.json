@@ -302,6 +302,14 @@
       ]
     },
 
+    "InlineConstant": {
+      "Desc": ["Generates a 64bit constant to be used directly, non-FPR"],
+      "OpClass": "ALU",
+      "Args": [
+        "uint64_t", "Constant"
+      ]
+    },
+
     "VectorZero": {
       "Desc": ["Generates a vector zero",
                "Useful to generate a zero vector without any previous dependencies"

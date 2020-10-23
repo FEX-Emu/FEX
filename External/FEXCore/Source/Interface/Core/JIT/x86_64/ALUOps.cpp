@@ -23,6 +23,10 @@ DEF_OP(Constant) {
   mov(GetDst<RA_64>(Node), Op->Constant);
 }
 
+DEF_OP(InlineConstant) {
+  //nop
+}
+
 DEF_OP(CycleCounter) {
 #ifdef DEBUG_CYCLES
   mov (GetDst<RA_64>(Node), 0);
@@ -38,16 +42,31 @@ DEF_OP(Add) {
   auto Op = IROp->C<IR::IROp_Add>();
   uint8_t OpSize = IROp->Size;
 
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  switch (OpSize) {
-  case 4:
-    add(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-    break;
-  case 8:
-    add(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-    break;
-  default:  LogMan::Msg::A("Unhandled Add size: %d", OpSize);
-    break;
+  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    switch (OpSize) {
+    case 4:
+      add(eax, Const);
+      break;
+    case 8:
+      add(rax, Const);
+      break;
+    default:  LogMan::Msg::A("Unhandled Add size: %d", OpSize);
+      break;
+    }
+  } else {
+    switch (OpSize) {
+    case 4:
+      add(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      break;
+    case 8:
+      add(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      break;
+    default:  LogMan::Msg::A("Unhandled Add size: %d", OpSize);
+      break;
+    }
   }
   mov(GetDst<RA_64>(Node), rax);
 }
@@ -57,15 +76,30 @@ DEF_OP(Sub) {
   uint8_t OpSize = IROp->Size;
 
   mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  switch (OpSize) {
-  case 4:
-    sub(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-    break;
-  case 8:
-    sub(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-    break;
-  default:  LogMan::Msg::A("Unhandled Sub size: %d", OpSize);
-    break;
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    switch (OpSize) {
+    case 4:
+      sub(eax, Const);
+      break;
+    case 8:
+      sub(rax, Const);
+      break;
+    default:  LogMan::Msg::A("Unhandled Sub size: %d", OpSize);
+      break;
+    }
+  } else {
+    switch (OpSize) {
+    case 4:
+      sub(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      break;
+    case 8:
+      sub(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      break;
+    default:  LogMan::Msg::A("Unhandled Sub size: %d", OpSize);
+      break;
+    }
   }
   mov(GetDst<RA_64>(Node), rax);
 }
@@ -389,24 +423,40 @@ DEF_OP(UMulH) {
 DEF_OP(Or) {
   auto Op = IROp->C<IR::IROp_Or>();
   auto Dst = GetDst<RA_64>(Node);
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  or (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    or (rax, Const);
+  } else {
+    or (rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+  }
   mov(Dst, rax);
 }
 
 DEF_OP(And) {
   auto Op = IROp->C<IR::IROp_And>();
   auto Dst = GetDst<RA_64>(Node);
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  and(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    and (rax, Const);
+  } else {
+    and(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+  }
   mov(Dst, rax);
 }
 
 DEF_OP(Xor) {
   auto Op = IROp->C<IR::IROp_Xor>();
   auto Dst = GetDst<RA_64>(Node);
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  xor(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    xor(rax, Const);
+  } else {
+    xor(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+  }
   mov(Dst, rax);
 }
 
@@ -416,20 +466,36 @@ DEF_OP(Lshl) {
 
   uint8_t Mask = OpSize * 8 - 1;
 
-  mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  and(rcx, Mask);
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    Const &= Mask;
+    switch (OpSize) {
+      case 4:
+        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        shl(GetDst<RA_32>(Node), Const);
+        break;
+      case 8:
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        shl(GetDst<RA_64>(Node), Const);
+        break;
+      default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
+    };
+  } else {
+    mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    and(rcx, Mask);
 
-  switch (OpSize) {
-    case 4:
-      mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      shl(GetDst<RA_32>(Node), cl);
-      break;
-    case 8:
-      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      shl(GetDst<RA_64>(Node), cl);
-      break;
-    default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
-  };
+    switch (OpSize) {
+      case 4:
+        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        shl(GetDst<RA_32>(Node), cl);
+        break;
+      case 8:
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        shl(GetDst<RA_64>(Node), cl);
+        break;
+      default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
+    };
+  }
 }
 
 DEF_OP(Lshr) {
@@ -438,28 +504,54 @@ DEF_OP(Lshr) {
 
   uint8_t Mask = OpSize * 8 - 1;
 
-  mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  and(rcx, Mask);
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    Const &= Mask;
 
-  switch (OpSize) {
-    case 1:
-      movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
-      shr(GetDst<RA_32>(Node).cvt8(), cl);
-      break;
-    case 2:
-      movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
-      shr(GetDst<RA_32>(Node).cvt16(), cl);
-      break;
-    case 4:
-      mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      shr(GetDst<RA_32>(Node), cl);
-      break;
-    case 8:
-      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      shr(GetDst<RA_64>(Node), cl);
-      break;
-    default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
-  };
+    switch (OpSize) {
+      case 1:
+        movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        shr(GetDst<RA_32>(Node).cvt8(), Const);
+        break;
+      case 2:
+        movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        shr(GetDst<RA_32>(Node).cvt16(), Const);
+        break;
+      case 4:
+        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        shr(GetDst<RA_32>(Node), Const);
+        break;
+      case 8:
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        shr(GetDst<RA_64>(Node), Const);
+        break;
+      default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
+    };
+
+  } else {
+    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    and(rcx, Mask);
+
+    switch (OpSize) {
+      case 1:
+        movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        shr(GetDst<RA_32>(Node).cvt8(), cl);
+        break;
+      case 2:
+        movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        shr(GetDst<RA_32>(Node).cvt16(), cl);
+        break;
+      case 4:
+        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        shr(GetDst<RA_32>(Node), cl);
+        break;
+      case 8:
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        shr(GetDst<RA_64>(Node), cl);
+        break;
+      default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
+    };
+  }
 }
 
 DEF_OP(Ashr) {
@@ -468,29 +560,57 @@ DEF_OP(Ashr) {
 
   uint8_t Mask = OpSize * 8 - 1;
 
-  mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  and(rcx, Mask);
-  switch (OpSize) {
-  case 1:
-    movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-    sar(al, cl);
-    movzx(GetDst<RA_64>(Node), al);
-  break;
-  case 2:
-    movsx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-    sar(ax, cl);
-    movzx(GetDst<RA_64>(Node), ax);
-  break;
-  case 4:
-    mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
-    sar(GetDst<RA_32>(Node), cl);
-  break;
-  case 8:
-    mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
-    sar(GetDst<RA_64>(Node), cl);
-  break;
-  default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
-  };
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    Const &= Mask;
+
+    switch (OpSize) {
+    case 1:
+      movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      sar(al, Const);
+      movzx(GetDst<RA_64>(Node), al);
+    break;
+    case 2:
+      movsx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      sar(ax, Const);
+      movzx(GetDst<RA_64>(Node), ax);
+    break;
+    case 4:
+      mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      sar(GetDst<RA_32>(Node), Const);
+    break;
+    case 8:
+      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      sar(GetDst<RA_64>(Node), Const);
+    break;
+    default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
+    };
+
+  } else {
+    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    and(rcx, Mask);
+    switch (OpSize) {
+    case 1:
+      movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      sar(al, cl);
+      movzx(GetDst<RA_64>(Node), al);
+    break;
+    case 2:
+      movsx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      sar(ax, cl);
+      movzx(GetDst<RA_64>(Node), ax);
+    break;
+    case 4:
+      mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      sar(GetDst<RA_32>(Node), cl);
+    break;
+    case 8:
+      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      sar(GetDst<RA_64>(Node), cl);
+    break;
+    default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
+    };
+  }
 }
 
 DEF_OP(Rol) {
@@ -499,28 +619,55 @@ DEF_OP(Rol) {
 
   uint8_t Mask = OpSize * 8 - 1;
 
-  mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  and(rcx, Mask);
-  switch (OpSize) {
-    case 1: {
-      movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-      rol(al, cl);
-    break;
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    Const &= Mask;
+    switch (OpSize) {
+      case 1: {
+        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        rol(al, Const);
+      break;
+      }
+      case 2: {
+        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        rol(ax, Const);
+      break;
+      }
+      case 4: {
+        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        rol(eax, Const);
+      break;
+      }
+      case 8: {
+        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        rol(rax, Const);
+      break;
+      }
     }
-    case 2: {
-      movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-      rol(ax, cl);
-    break;
-    }
-    case 4: {
-      mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      rol(eax, cl);
-    break;
-    }
-    case 8: {
-      mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      rol(rax, cl);
-    break;
+  } else {
+    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    and(rcx, Mask);
+    switch (OpSize) {
+      case 1: {
+        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        rol(al, cl);
+      break;
+      }
+      case 2: {
+        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        rol(ax, cl);
+      break;
+      }
+      case 4: {
+        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        rol(eax, cl);
+      break;
+      }
+      case 8: {
+        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        rol(rax, cl);
+      break;
+      }
     }
   }
   mov(GetDst<RA_64>(Node), rax);
@@ -532,28 +679,55 @@ DEF_OP(Ror) {
 
   uint8_t Mask = OpSize * 8 - 1;
 
-  mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  and(rcx, Mask);
-  switch (OpSize) {
-    case 1: {
-      movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-      ror(al, cl);
-    break;
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+    Const &= Mask;
+    switch (OpSize) {
+      case 1: {
+        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        ror(al, Const);
+      break;
+      }
+      case 2: {
+        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        ror(ax, Const);
+      break;
+      }
+      case 4: {
+        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        ror(eax, Const);
+      break;
+      }
+      case 8: {
+        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        ror(rax, Const);
+      break;
+      }
     }
-    case 2: {
-      movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-      ror(ax, cl);
-    break;
-    }
-    case 4: {
-      mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      ror(eax, cl);
-    break;
-    }
-    case 8: {
-      mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      ror(rax, cl);
-    break;
+  } else {
+    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    and(rcx, Mask);
+    switch (OpSize) {
+      case 1: {
+        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        ror(al, cl);
+      break;
+      }
+      case 2: {
+        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        ror(ax, cl);
+      break;
+      }
+      case 4: {
+        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        ror(eax, cl);
+      break;
+      }
+      case 8: {
+        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        ror(rax, cl);
+      break;
+      }
     }
   }
   mov(GetDst<RA_64>(Node), rax);
@@ -1158,6 +1332,7 @@ void JITCore::RegisterALUHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
   REGISTER_OP(TRUNCELEMENTPAIR,  TruncElementPair);
   REGISTER_OP(CONSTANT,          Constant);
+  REGISTER_OP(INLINECONSTANT,    InlineConstant);
   REGISTER_OP(CYCLECOUNTER,      CycleCounter);
   REGISTER_OP(ADD,               Add);
   REGISTER_OP(SUB,               Sub);

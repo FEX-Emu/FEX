@@ -103,6 +103,7 @@ public:
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
+  FEXCore::IR::IRListView<true> const *IR;
 
   std::map<IR::OrderedNodeWrapper::NodeOffsetType, aarch64::Label> JumpTargets;
 
@@ -145,6 +146,8 @@ private:
 
   aarch64::VRegister GetSrc(uint32_t Node);
   aarch64::VRegister GetDst(uint32_t Node);
+
+  bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
 
   struct LiveRange {
     uint32_t Begin;
@@ -241,6 +244,7 @@ private:
   ///< ALU Ops
   DEF_OP(TruncElementPair);
   DEF_OP(Constant);
+  DEF_OP(InlineConstant);
   DEF_OP(CycleCounter);
   DEF_OP(Add);
   DEF_OP(Sub);

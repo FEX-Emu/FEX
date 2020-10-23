@@ -537,7 +537,7 @@ namespace FEXCore::Context {
     Thread->PassManager->RegisterExitHandler([this]() {
         Stop(false /* Ignore current thread */);
     });
-    Thread->PassManager->AddDefaultPasses();
+    Thread->PassManager->AddDefaultPasses(Config.Core == FEXCore::Config::CONFIG_IRJIT);
     Thread->PassManager->AddDefaultValidationPasses();
     Thread->PassManager->RegisterSyscallHandler(SyscallHandler.get());
 
