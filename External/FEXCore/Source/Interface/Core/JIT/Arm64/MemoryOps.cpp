@@ -694,8 +694,8 @@ void JITCore::RegisterMemoryHandlers() {
     REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
   }
   else {
-    REGISTER_OP(LOADMEMTSO,          LoadMem);
-    REGISTER_OP(STOREMEMTSO,         StoreMem);
+    REGISTER_OP(LOADMEMTSO,          Unhandled);
+    REGISTER_OP(STOREMEMTSO,         Unhandled);
   }
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
