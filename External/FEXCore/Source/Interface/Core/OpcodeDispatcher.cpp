@@ -384,6 +384,106 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 }
 
+void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
+  // 32bit only
+  uint8_t Size = GetSrcSize(Op);
+  uint8_t GPRSize = 4;
+
+  auto Constant = _Constant(Size);
+
+  auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  // PUSHA order:
+  // Tmp = SP
+  // push EAX
+  // push ECX
+  // push EDX
+  // push EBX
+  // push Tmp
+  // push EBP
+  // push ESI
+  // push EDI
+
+  OrderedNode *Src{};
+  OrderedNode *NewSP = OldSP;
+  NewSP = _Sub(NewSP, Constant);
+  Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+
+  NewSP = _Sub(NewSP, Constant);
+  Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+
+  NewSP = _Sub(NewSP, Constant);
+  Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), GPRClass);
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+
+  NewSP = _Sub(NewSP, Constant);
+  Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), GPRClass);
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+
+  NewSP = _Sub(NewSP, Constant);
+  _StoreMem(GPRClass, Size, NewSP, OldSP, Size);
+
+  NewSP = _Sub(NewSP, Constant);
+  Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBP]), GPRClass);
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+
+  NewSP = _Sub(NewSP, Constant);
+  Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+
+  NewSP = _Sub(NewSP, Constant);
+  Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+  _StoreMem(GPRClass, Size, NewSP, Src, Size);
+
+  // Store the new stack pointer
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+}
+
+template<uint32_t SegmentReg>
+void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
+  uint8_t SrcSize = GetSrcSize(Op);
+  uint8_t DstSize = GetDstSize(Op);
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  auto Constant = _Constant(DstSize);
+
+  auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  auto NewSP = _Sub(OldSP, Constant);
+
+  // Store the new stack pointer
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+
+  OrderedNode *Src{};
+  switch (SegmentReg) {
+    case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
+      Src = _LoadContext(SrcSize, offsetof(FEXCore::Core::CPUState, es), GPRClass);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
+      Src = _LoadContext(SrcSize, offsetof(FEXCore::Core::CPUState, cs), GPRClass);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
+      Src = _LoadContext(SrcSize, offsetof(FEXCore::Core::CPUState, ss), GPRClass);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
+      Src = _LoadContext(SrcSize, offsetof(FEXCore::Core::CPUState, ds), GPRClass);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX:
+      Src = _LoadContext(SrcSize, offsetof(FEXCore::Core::CPUState, fs), GPRClass);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
+      Src = _LoadContext(SrcSize, offsetof(FEXCore::Core::CPUState, gs), GPRClass);
+      break;
+    default: break; // Do nothing
+  }
+
+  // Store our value to the new stack location
+  // AMD hardware zexts segment selector to 32bit
+  // Intel hardware inserts segment selector
+  _StoreMem(GPRClass, DstSize, NewSP, Src, DstSize);
+}
+
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
@@ -401,6 +501,101 @@ void OpDispatchBuilder::POPOp(OpcodeArgs) {
 
   // Store what we loaded from the stack
   StoreResult(GPRClass, Op, NewGPR, -1);
+}
+
+void OpDispatchBuilder::POPAOp(OpcodeArgs) {
+  // 32bit only
+  uint8_t Size = GetSrcSize(Op);
+  uint8_t GPRSize = 4;
+
+  auto Constant = _Constant(Size);
+
+  auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  // POPA order:
+  // pop EDI
+  // pop ESI
+  // pop EBP
+  // ESP += 4; // Skip RSP because it'll be correct at the end
+  // pop EBX
+  // pop EDX
+  // pop ECX
+  // pop EAX
+
+  OrderedNode *Src{};
+  OrderedNode *NewSP = OldSP;
+  Src = _LoadMem(GPRClass, Size, NewSP, Size);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), Src);
+  NewSP = _Add(NewSP, Constant);
+
+  Src = _LoadMem(GPRClass, Size, NewSP, Size);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), Src);
+  NewSP = _Add(NewSP, Constant);
+
+  Src = _LoadMem(GPRClass, Size, NewSP, Size);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBP]), Src);
+  NewSP = _Add(NewSP, _Constant(Size * 2));
+
+  // Skip SP loading
+  Src = _LoadMem(GPRClass, Size, NewSP, Size);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), Src);
+  NewSP = _Add(NewSP, Constant);
+
+  Src = _LoadMem(GPRClass, Size, NewSP, Size);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), Src);
+  NewSP = _Add(NewSP, Constant);
+
+  Src = _LoadMem(GPRClass, Size, NewSP, Size);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), Src);
+  NewSP = _Add(NewSP, Constant);
+
+  Src = _LoadMem(GPRClass, Size, NewSP, Size);
+  _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), Src);
+  NewSP = _Add(NewSP, Constant);
+
+  // Store the new stack pointer
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+}
+
+template<uint32_t SegmentReg>
+void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
+  uint8_t SrcSize = GetSrcSize(Op);
+  uint8_t DstSize = GetDstSize(Op);
+
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+
+  auto Constant = _Constant(SrcSize);
+
+  auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
+
+  auto NewSegment = _LoadMem(GPRClass, SrcSize, OldSP, SrcSize);
+
+  auto NewSP = _Add(OldSP, Constant);
+
+  // Store the new stack pointer
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
+
+  switch (SegmentReg) {
+    case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
+      _StoreContext(GPRClass, DstSize, offsetof(FEXCore::Core::CPUState, es), NewSegment);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
+      _StoreContext(GPRClass, DstSize, offsetof(FEXCore::Core::CPUState, cs), NewSegment);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
+      _StoreContext(GPRClass, DstSize, offsetof(FEXCore::Core::CPUState, ss), NewSegment);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
+      _StoreContext(GPRClass, DstSize, offsetof(FEXCore::Core::CPUState, ds), NewSegment);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX:
+      _StoreContext(GPRClass, DstSize, offsetof(FEXCore::Core::CPUState, fs), NewSegment);
+      break;
+    case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
+      _StoreContext(GPRClass, DstSize, offsetof(FEXCore::Core::CPUState, gs), NewSegment);
+      break;
+    default: break; // Do nothing
+  }
 }
 
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
@@ -8130,7 +8325,6 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x38, 6, &OpDispatchBuilder::CMPOp<0>},
     {0x50, 8, &OpDispatchBuilder::PUSHREGOp},
     {0x58, 8, &OpDispatchBuilder::POPOp},
-    {0x63, 1, &OpDispatchBuilder::MOVSXDOp},
     {0x68, 1, &OpDispatchBuilder::PUSHOp},
     {0x69, 1, &OpDispatchBuilder::IMUL2SrcOp},
     {0x6A, 1, &OpDispatchBuilder::PUSHOp},
@@ -8183,8 +8377,22 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable_32 = {
+    {0x06, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
+    {0x07, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
+    {0x0E, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX>},
+    {0x16, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
+    {0x17, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
+    {0x1E, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
+    {0x1F, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
     {0x40, 8, &OpDispatchBuilder::INCOp},
     {0x48, 8, &OpDispatchBuilder::DECOp},
+
+    {0x60, 1, &OpDispatchBuilder::PUSHAOp},
+    {0x61, 1, &OpDispatchBuilder::POPAOp},
+  };
+
+  const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable_64 = {
+    {0x63, 1, &OpDispatchBuilder::MOVSXDOp},
   };
 
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable = {
@@ -8204,10 +8412,14 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x80, 16, &OpDispatchBuilder::CondJUMPOp},
     {0x90, 16, &OpDispatchBuilder::SETccOp},
+    {0xA0, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
+    {0xA1, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
     {0xA2, 1, &OpDispatchBuilder::CPUIDOp},
     {0xA3, 1, &OpDispatchBuilder::BTOp<0>}, // BT
     {0xA4, 1, &OpDispatchBuilder::SHLDImmediateOp},
     {0xA5, 1, &OpDispatchBuilder::SHLDOp},
+    {0xA8, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
+    {0xA9, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
     {0xAB, 1, &OpDispatchBuilder::BTSOp<0>},
     {0xAC, 1, &OpDispatchBuilder::SHRDImmediateOp},
     {0xAD, 1, &OpDispatchBuilder::SHRDOp},
@@ -9083,6 +9295,7 @@ constexpr uint16_t PF_F2 = 3;
     InstallToTable(FEXCore::X86Tables::SecondBaseOps, TwoByteOpTable_32);
   }
   else {
+    InstallToTable(FEXCore::X86Tables::BaseOps, BaseOpTable_64);
     InstallToTable(FEXCore::X86Tables::SecondBaseOps, TwoByteOpTable_64);
   }
 

@@ -3,7 +3,7 @@
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
-void InitializeSecondaryTables() {
+void InitializeSecondaryTables(Context::OperatingMode Mode) {
   const U8U8InfoStruct TwoByteOpTable[] = {
     // Instructions
     {0x00, 1, X86InstInfo{"",           TYPE_GROUP_6, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
@@ -154,15 +154,11 @@ void InitializeSecondaryTables() {
     {0x9E, 1, X86InstInfo{"SETLE",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                        0, nullptr}},
     {0x9F, 1, X86InstInfo{"SETNLE",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                        0, nullptr}},
 
-    {0xA0, 1, X86InstInfo{"PUSH",    TYPE_INVALID,  FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
-    {0xA1, 1, X86InstInfo{"POP FS",  TYPE_INVALID,  FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
     {0xA2, 1, X86InstInfo{"CPUID",   TYPE_INST,     FLAGS_DEBUG | FLAGS_SF_SRC_RAX | FLAGS_NO_OVERLAY,                                              0, nullptr}},
     {0xA3, 1, X86InstInfo{"BT",      TYPE_INST,     FLAGS_DEBUG_MEM_ACCESS | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                     0, nullptr}},
     {0xA4, 1, X86InstInfo{"SHLD",    TYPE_INST,     FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                                              1, nullptr}},
     {0xA5, 1, X86InstInfo{"SHLD",    TYPE_INST,     FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_SRC_RCX | FLAGS_NO_OVERLAY,                           0, nullptr}},
     {0xA6, 2, X86InstInfo{"",        TYPE_INVALID,  FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
-    {0xA8, 1, X86InstInfo{"PUSH",    TYPE_INVALID,  FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
-    {0xA9, 1, X86InstInfo{"POP GS",  TYPE_INVALID,  FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
     {0xAA, 1, X86InstInfo{"RSM",     TYPE_PRIV,     FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
     {0xAB, 1, X86InstInfo{"BTS",     TYPE_INST,     FLAGS_DEBUG_MEM_ACCESS | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                     0, nullptr}},
     {0xAC, 1, X86InstInfo{"SHRD",    TYPE_INST,     FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_NO_OVERLAY,                                              1, nullptr}},
@@ -257,6 +253,22 @@ void InitializeSecondaryTables() {
 
     // This was originally used by VIA to jump to its alternative instruction set. Used for OP_THUNK
     {0x3F, 1, X86InstInfo{"ALTINST",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            0, nullptr}},
+  };
+
+  const U8U8InfoStruct TwoByteOpTable_32[] = {
+    {0xA0, 1, X86InstInfo{"PUSH FS", TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
+    {0xA1, 1, X86InstInfo{"POP FS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
+
+    {0xA8, 1, X86InstInfo{"PUSH GS", TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
+    {0xA9, 1, X86InstInfo{"POP GS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
+  };
+
+  const U8U8InfoStruct TwoByteOpTable_64[] = {
+    {0xA0, 1, X86InstInfo{"PUSH FS", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                0, nullptr}},
+    {0xA1, 1, X86InstInfo{"POP FS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                0, nullptr}},
+
+    {0xA8, 1, X86InstInfo{"PUSH GS", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                0, nullptr}},
+    {0xA9, 1, X86InstInfo{"POP GS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                0, nullptr}},
   };
 
   const U8U8InfoStruct RepModOpTable[] = {
@@ -560,6 +572,13 @@ void InitializeSecondaryTables() {
   };
 
   GenerateTable(SecondBaseOps, TwoByteOpTable, sizeof(TwoByteOpTable) / sizeof(TwoByteOpTable[0]));
+
+if (Mode == Context::MODE_64BIT) {
+    GenerateTable(SecondBaseOps, TwoByteOpTable_64, sizeof(TwoByteOpTable_64) / sizeof(TwoByteOpTable_64[0]));
+  }
+  else {
+    GenerateTable(SecondBaseOps, TwoByteOpTable_32, sizeof(TwoByteOpTable_32) / sizeof(TwoByteOpTable_32[0]));
+  }
 
   GenerateTableWithCopy(RepModOps, RepModOpTable, sizeof(RepModOpTable) / sizeof(RepModOpTable[0]), SecondBaseOps);
   GenerateTableWithCopy(RepNEModOps, RepNEModOpTable,   sizeof(RepNEModOpTable) / sizeof(RepNEModOpTable[0]), SecondBaseOps);
