@@ -140,14 +140,14 @@ void InitializeX87Tables() {
       //  / 7
       {OPD(0xDB, 0xF8), 8, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     // 0xDC
-    {OPDReg(0xDC, 0), 1, X86InstInfo{"FADD", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM, 0, nullptr}},
-    {OPDReg(0xDC, 1), 1, X86InstInfo{"FMUL", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM, 0, nullptr}},
-    {OPDReg(0xDC, 2), 1, X86InstInfo{"FCOM", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM, 0, nullptr}},
-    {OPDReg(0xDC, 3), 1, X86InstInfo{"FCOMP", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_POP, 0, nullptr}},
-    {OPDReg(0xDC, 4), 1, X86InstInfo{"FSUB", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM, 0, nullptr}},
-    {OPDReg(0xDC, 5), 1, X86InstInfo{"FSUBR", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM, 0, nullptr}},
-    {OPDReg(0xDC, 6), 1, X86InstInfo{"FDIV", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM, 0, nullptr}},
-    {OPDReg(0xDC, 7), 1, X86InstInfo{"FDIVR", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM, 0, nullptr}},
+    {OPDReg(0xDC, 0), 1, X86InstInfo{"FADD", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS, 0, nullptr}},
+    {OPDReg(0xDC, 1), 1, X86InstInfo{"FMUL", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS, 0, nullptr}},
+    {OPDReg(0xDC, 2), 1, X86InstInfo{"FCOM", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS, 0, nullptr}},
+    {OPDReg(0xDC, 3), 1, X86InstInfo{"FCOMP", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS | FLAGS_POP, 0, nullptr}},
+    {OPDReg(0xDC, 4), 1, X86InstInfo{"FSUB", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS, 0, nullptr}},
+    {OPDReg(0xDC, 5), 1, X86InstInfo{"FSUBR", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS, 0, nullptr}},
+    {OPDReg(0xDC, 6), 1, X86InstInfo{"FDIV", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS, 0, nullptr}},
+    {OPDReg(0xDC, 7), 1, X86InstInfo{"FDIVR", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS, 0, nullptr}},
       //  / 0
       {OPD(0xDC, 0xC0), 8, X86InstInfo{"FADD", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 1
@@ -166,7 +166,7 @@ void InitializeX87Tables() {
       {OPD(0xDC, 0xF8), 8, X86InstInfo{"FDIV", TYPE_X87, FLAGS_NONE, 0, nullptr}},
     // 0xDD
     {OPDReg(0xDD, 0), 1, X86InstInfo{"FLD", TYPE_X87, FLAGS_MODRM, 0, nullptr}},
-    {OPDReg(0xDD, 1), 1, X86InstInfo{"FISTTP", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
+    {OPDReg(0xDD, 1), 1, X86InstInfo{"FISTTP", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
     {OPDReg(0xDD, 2), 1, X86InstInfo{"FST", TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
     {OPDReg(0xDD, 3), 1, X86InstInfo{"FSTP", TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
     {OPDReg(0xDD, 4), 1, X86InstInfo{"FRSTOR", TYPE_X87, FLAGS_MODRM, 0, nullptr}},
@@ -222,9 +222,9 @@ void InitializeX87Tables() {
     {OPDReg(0xDF, 2), 1, X86InstInfo{"FIST",   TYPE_X87, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
     {OPDReg(0xDF, 3), 1, X86InstInfo{"FISTP",  TYPE_X87, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
     {OPDReg(0xDF, 4), 1, X86InstInfo{"FBLD", TYPE_X87, FLAGS_MODRM, 0, nullptr}},
-    {OPDReg(0xDF, 5), 1, X86InstInfo{"FILD", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM, 0, nullptr}},
+    {OPDReg(0xDF, 5), 1, X86InstInfo{"FILD", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS, 0, nullptr}},
     {OPDReg(0xDF, 6), 1, X86InstInfo{"FBSTP", TYPE_X87, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
-    {OPDReg(0xDF, 7), 1, X86InstInfo{"FISTP", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
+    {OPDReg(0xDF, 7), 1, X86InstInfo{"FISTP", TYPE_X87, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_X87_FLAGS | FLAGS_SF_MOD_DST | FLAGS_POP, 0, nullptr}},
       //  / 0
       //  This instruction is a bit special. This is an undocumented(Almost) x87 instruction.
       //  https://en.wikipedia.org/wiki/X86_instruction_listings#Undocumented_x87_instructions
