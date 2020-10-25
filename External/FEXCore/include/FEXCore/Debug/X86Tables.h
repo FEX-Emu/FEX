@@ -268,6 +268,10 @@ constexpr uint32_t FLAGS_MEM_OFFSET            = (1 << 9);
 // Current reserved range for this SF is [10, 15]
 constexpr uint32_t FLAGS_XMM_FLAGS             = (1 << 10);
 
+// X87 flags aliased to XMM flags selection
+// Allows X87 instruction table that is abusing the flag for 64BIT selection to work
+constexpr uint32_t FLAGS_X87_FLAGS             = (1 << 10);
+
   // Non-XMM subflags
   constexpr uint32_t FLAGS_SF_DST_RAX               = (1 << 11);
   constexpr uint32_t FLAGS_SF_DST_RDX               = (1 << 12);
