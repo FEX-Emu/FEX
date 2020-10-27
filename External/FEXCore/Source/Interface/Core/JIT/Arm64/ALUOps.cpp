@@ -153,9 +153,7 @@ DEF_OP(Mul) {
       sxth(Dst, Dst);
     break;
     case 4:
-      sxtw(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      sxtw(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(Dst.W(), TMP1.W(), TMP2.W());
+      mul(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
       sxtw(Dst, Dst);
     break;
     case 8:
@@ -184,10 +182,7 @@ DEF_OP(UMul) {
       uxth(Dst, Dst);
     break;
     case 4:
-      uxtw(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      uxtw(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(Dst.W(), TMP1.W(), TMP2.W());
-      uxtw(Dst, Dst);
+      mul(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
     case 8:
       mul(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
