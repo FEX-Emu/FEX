@@ -1,0 +1,7 @@
+# Needs Precision checking
+Test_32Bit_X87/D9_FD.asm
+
+# Relies on undefined behaviour
+Test_32Bit_X87/D9_F9.asm
+
+Test_32Bit_X87/D9_F2.asm
