@@ -1075,7 +1075,6 @@ void OpDispatchBuilder::SETccOp(OpcodeArgs) {
   enum CompareType {
     COMPARE_ZERO,
     COMPARE_NOTZERO,
-    COMPARE_EQUALMASK,
     COMPARE_OTHER,
   };
   uint32_t FLAGMask;
@@ -1180,11 +1179,20 @@ void OpDispatchBuilder::SETccOp(OpcodeArgs) {
   }
 
   if (Type != COMPARE_OTHER) {
-    auto MaskConst = _Constant(FLAGMask);
+    OrderedNode* AndOp = nullptr;
 
-    auto RFLAG = GetPackedRFLAG(false);
-
-    auto AndOp = _And(RFLAG, MaskConst);
+    for (int i=0; i<32; i++) {
+      if (FLAGMask & (1 << i)) {
+        auto flag = GetRFLAG(i);
+        auto sflag = _Lshl(flag, _Constant(i));
+        FLAGMask &=  ~(1 << i);
+        if (!AndOp) { 
+          AndOp = FLAGMask ? sflag : flag;
+        } else {
+          AndOp = _Or(AndOp, sflag);
+        }
+      }
+    }
 
     switch (Type) {
     case COMPARE_ZERO: {
@@ -1195,11 +1203,6 @@ void OpDispatchBuilder::SETccOp(OpcodeArgs) {
     case COMPARE_NOTZERO: {
       SrcCond = _Select(FEXCore::IR::COND_NEQ,
           AndOp, ZeroConst, OneConst, ZeroConst);
-    break;
-    }
-    case COMPARE_EQUALMASK: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-          AndOp, MaskConst, OneConst, ZeroConst);
     break;
     }
     case COMPARE_OTHER: break;
@@ -1525,7 +1528,6 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
   enum CompareType {
     COMPARE_ZERO,
     COMPARE_NOTZERO,
-    COMPARE_EQUALMASK,
     COMPARE_OTHER,
   };
   uint32_t FLAGMask;
@@ -1641,11 +1643,22 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
   }
 
   if (Type != COMPARE_OTHER) {
-    auto MaskConst = _Constant(FLAGMask);
+  
+    OrderedNode* AndOp = nullptr;
 
-    auto RFLAG = GetPackedRFLAG(false);
+    for (int i=0; i<32; i++) {
+      if (FLAGMask & (1 << i)) {
+        auto flag = GetRFLAG(i);
+        auto sflag = _Lshl(flag, _Constant(i));
+        FLAGMask &=  ~(1 << i);
+        if (!AndOp) { 
+          AndOp = FLAGMask ? sflag : flag;
+        } else {
+          AndOp = _Or(AndOp, sflag);
+        }
+      }
+    }
 
-    auto AndOp = _And(RFLAG, MaskConst);
     switch (Type) {
     case COMPARE_ZERO: {
       SrcCond = _Select(FEXCore::IR::COND_EQ,
@@ -1655,11 +1668,6 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
     case COMPARE_NOTZERO: {
       SrcCond = _Select(FEXCore::IR::COND_NEQ,
           AndOp, ZeroConst, Src, Dest);
-    break;
-    }
-    case COMPARE_EQUALMASK: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-          AndOp, MaskConst, Src, Dest);
     break;
     }
 
