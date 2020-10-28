@@ -23,7 +23,7 @@ void InitializeX87Tables() {
       //  / 2
       {OPD(0xD8, 0xD0), 8, X86InstInfo{"FCOM", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 3
-      {OPD(0xD8, 0xD8), 8, X86InstInfo{"FCOMP", TYPE_X87, FLAGS_NONE, 0, nullptr}},
+      {OPD(0xD8, 0xD8), 8, X86InstInfo{"FCOMP", TYPE_X87, FLAGS_POP, 0, nullptr}},
       //  / 4
       {OPD(0xD8, 0xE0), 8, X86InstInfo{"FSUB", TYPE_X87, FLAGS_NONE, 0, nullptr}},
       //  / 5
@@ -234,7 +234,7 @@ void InitializeX87Tables() {
       //  At some point the Nvidia OpenGL binary driver uses this instruction.
       //  GCC may also end up emitting this instruction in some rare edge case!
       //  Almost all x86 CPUs implement this, and it is expected to be around
-      {OPD(0xDF, 0xC0), 8, X86InstInfo{"FFREEP",  TYPE_X87, FLAGS_NONE, 0, nullptr}},
+      {OPD(0xDF, 0xC0), 8, X86InstInfo{"FFREEP",  TYPE_X87, FLAGS_POP, 0, nullptr}},
       //  / 1
       {OPD(0xDF, 0xC8), 8, X86InstInfo{"",        TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
       //  / 2
