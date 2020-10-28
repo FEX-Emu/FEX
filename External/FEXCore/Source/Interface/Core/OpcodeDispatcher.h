@@ -380,7 +380,7 @@ public:
     FLAGS_X87,
     FLAGS_RFLAGS,
   };
-  template<size_t width, bool Integer, FCOMIFlags whichflags, bool pop>
+  template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
   void FCOMI(OpcodeArgs);
 
   void FXSaveOp(OpcodeArgs);
