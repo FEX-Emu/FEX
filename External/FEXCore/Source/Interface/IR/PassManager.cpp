@@ -9,6 +9,7 @@ void PassManager::AddDefaultPasses(bool InlineConstants) {
   InsertPass(CreateConstProp(InlineConstants));
   ////// InsertPass(CreateDeadFlagCalculationEliminination());
   InsertPass(CreateDeadFlagStoreElimination());
+  InsertPass(CreateDeadGPRStoreElimination());
   InsertPass(CreateSyscallOptimization());
   InsertPass(CreatePassDeadCodeElimination());
 
