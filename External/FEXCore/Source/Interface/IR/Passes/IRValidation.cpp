@@ -144,8 +144,8 @@ bool IRValidation::Run(IREmitter *IREmit) {
         case IR::OP_CONDJUMP: {
           auto Op = IROp->C<IR::IROp_CondJump>();
 
-          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->Header.Args[1]);
-          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->Header.Args[2]);
+          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
+          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
 
           CurrentBlock->Successors.emplace_back(TrueTargetNode);
           CurrentBlock->Successors.emplace_back(FalseTargetNode);
@@ -158,7 +158,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
             Errors << "CondJump %ssa" << ID << ": True Target Jumps to Op that isn't the begining of a block" << std::endl;
           }
           else {
-            auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[1].ID()).first;
+            auto Block = OffsetToBlockMap.try_emplace(Op->TrueBlock.ID()).first;
             Block->second.Predecessors.emplace_back(BlockNode);
           }
 
@@ -167,7 +167,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
             Errors << "CondJump %ssa" << ID << ": False Target Jumps to Op that isn't the begining of a block" << std::endl;
           }
           else {
-            auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[2].ID()).first;
+            auto Block = OffsetToBlockMap.try_emplace(Op->FalseBlock.ID()).first;
             Block->second.Predecessors.emplace_back(BlockNode);
           }
 

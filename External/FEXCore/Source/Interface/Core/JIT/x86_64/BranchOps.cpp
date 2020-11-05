@@ -95,25 +95,25 @@ DEF_OP(CondJump) {
   Label *TrueTargetLabel;
   Label *FalseTargetLabel;
 
-  auto TrueIter = JumpTargets.find(Op->Header.Args[1].ID());
-  auto FalseIter = JumpTargets.find(Op->Header.Args[2].ID());
+  auto TrueIter = JumpTargets.find(Op->TrueBlock.ID());
+  auto FalseIter = JumpTargets.find(Op->FalseBlock.ID());
 
   if (TrueIter == JumpTargets.end()) {
-    TrueTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
+    TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
   }
   else {
     TrueTargetLabel = &TrueIter->second;
   }
 
   if (FalseIter == JumpTargets.end()) {
-    FalseTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[2].ID()).first->second;
+    FalseTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
   }
   else {
     FalseTargetLabel = &FalseIter->second;
   }
 
   // Take branch if (src != 0)
-  cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), 0);
+  cmp(GetSrc<RA_64>(Op->Cmp1.ID()), 0);
   jne(*TrueTargetLabel, T_NEAR);
 
   PendingTargetLabel = FalseTargetLabel;
