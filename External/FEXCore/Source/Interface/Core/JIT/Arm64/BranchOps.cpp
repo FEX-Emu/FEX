@@ -113,16 +113,21 @@ DEF_OP(CondJump) {
     TrueTargetLabel = &TrueIter->second;
   }
 
-  if (Op->Header.Args[1].IsInvalid()) {
-    cbnz(GetReg<RA_64>(Op->Header.Args[0].ID()), TrueTargetLabel);
-  } else {
-      uint64_t Const;
-      if (IsInlineConstant(Op->Header.Args[1], &Const))
-        cmp(GRCMP(Op->Header.Args[0].ID()), Const);
-      else
-        cmp(GRCMP(Op->Header.Args[0].ID()), GRCMP(Op->Header.Args[1].ID()));
 
-      b(TrueTargetLabel, MapBranchCC(Op->Operation));
+  uint64_t Const;
+  bool isConst = IsInlineConstant(Op->Cmp2, &Const);
+
+  if (isConst && Const == 0 && Op->Operation.Val == FEXCore::IR::COND_EQ) {
+    cbz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
+  } else if (isConst && Const == 0 && Op->Operation.Val == FEXCore::IR::COND_NEQ) {
+    cbnz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
+  } else {
+    if (isConst)
+      cmp(GRCMP(Op->Cmp1.ID()), Const);
+    else
+      cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+
+    b(TrueTargetLabel, MapBranchCC(Op->Operation));
   }
   
   if (FalseIter == JumpTargets.end()) {
