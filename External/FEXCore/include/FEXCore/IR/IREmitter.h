@@ -443,6 +443,10 @@ friend class FEXCore::IR::PassManager;
     return RealNode->Op(Data.Begin());
   }
 
+  OrderedNode *UnwarpNode(OrderedNodeWrapper ssa) {
+    return ssa.GetNode(ListData.Begin());
+  }
+
   // Overwrite a node with a constant
   // Depending on what node has been overwritten, there might be some unallocated space around the node
   // Because we are overwriting the node, we don't have to worry about update all the arguments which use it

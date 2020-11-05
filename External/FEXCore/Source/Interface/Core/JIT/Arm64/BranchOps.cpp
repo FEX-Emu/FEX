@@ -72,6 +72,31 @@ DEF_OP(Jump) {
   PendingTargetLabel = TargetLabel;
 }
 
+#define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
+
+Condition MapBranchCC(IR::CondClassType Cond) {
+  switch (Cond.Val) {
+  case FEXCore::IR::COND_EQ: return Condition::eq;
+  case FEXCore::IR::COND_NEQ: return Condition::ne;
+  case FEXCore::IR::COND_SGE: return Condition::ge;
+  case FEXCore::IR::COND_SLT: return Condition::lt;
+  case FEXCore::IR::COND_SGT: return Condition::gt;
+  case FEXCore::IR::COND_SLE: return Condition::le;
+  case FEXCore::IR::COND_UGE: return Condition::cs;
+  case FEXCore::IR::COND_ULT: return Condition::cc;
+  case FEXCore::IR::COND_UGT: return Condition::hi;
+  case FEXCore::IR::COND_ULE: return Condition::ls;
+  case FEXCore::IR::COND_MI:
+  case FEXCore::IR::COND_PL:
+  case FEXCore::IR::COND_VS:
+  case FEXCore::IR::COND_VC:
+  default:
+  LogMan::Msg::A("Unsupported compare type");
+  return Condition::nv;
+  }
+}
+
+
 DEF_OP(CondJump) {
   auto Op = IROp->C<IR::IROp_CondJump>();
 
@@ -88,7 +113,18 @@ DEF_OP(CondJump) {
     TrueTargetLabel = &TrueIter->second;
   }
 
-  cbnz(GetReg<RA_64>(Op->Cond.ID()), TrueTargetLabel);
+  if (Op->Header.Args[1].IsInvalid()) {
+    cbnz(GetReg<RA_64>(Op->Header.Args[0].ID()), TrueTargetLabel);
+  } else {
+      uint64_t Const;
+      if (IsInlineConstant(Op->Header.Args[1], &Const))
+        cmp(GRCMP(Op->Header.Args[0].ID()), Const);
+      else
+        cmp(GRCMP(Op->Header.Args[0].ID()), GRCMP(Op->Header.Args[1].ID()));
+
+      b(TrueTargetLabel, MapBranchCC(Op->Operation));
+  }
+  
   if (FalseIter == JumpTargets.end()) {
     FalseTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
   }
