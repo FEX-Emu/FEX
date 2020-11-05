@@ -117,9 +117,9 @@ DEF_OP(CondJump) {
   uint64_t Const;
   bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
-  if (isConst && Const == 0 && Op->Operation.Val == FEXCore::IR::COND_EQ) {
+  if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_EQ) {
     cbz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
-  } else if (isConst && Const == 0 && Op->Operation.Val == FEXCore::IR::COND_NEQ) {
+  } else if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_NEQ) {
     cbnz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
   } else {
     if (isConst)
@@ -127,7 +127,7 @@ DEF_OP(CondJump) {
     else
       cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
 
-    b(TrueTargetLabel, MapBranchCC(Op->Operation));
+    b(TrueTargetLabel, MapBranchCC(Op->Cond));
   }
   
   if (FalseIter == JumpTargets.end()) {
