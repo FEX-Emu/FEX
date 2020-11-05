@@ -643,6 +643,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   }
 
   PendingTargetLabel = nullptr;
+
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
@@ -655,11 +656,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
         IsTarget = JumpTargets.try_emplace(Node).first;
       }
 
+      // if there's a pending branch, and it is not fall-through
       if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
       {
         b(PendingTargetLabel);
       }
       PendingTargetLabel = nullptr;
+      
       bind(&IsTarget->second);
     }
 

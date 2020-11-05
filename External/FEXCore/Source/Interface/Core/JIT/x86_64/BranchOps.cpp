@@ -86,7 +86,7 @@ DEF_OP(Jump) {
     TargetLabel = &IsTarget->second;
   }
 
-  jmp(*TargetLabel, T_NEAR);
+  PendingTargetLabel = TargetLabel;
 }
 
 DEF_OP(CondJump) {
@@ -115,7 +115,8 @@ DEF_OP(CondJump) {
   // Take branch if (src != 0)
   cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), 0);
   jne(*TrueTargetLabel, T_NEAR);
-  jmp(*FalseTargetLabel, T_NEAR);
+
+  PendingTargetLabel = FalseTargetLabel;
 }
 
 DEF_OP(Syscall) {
