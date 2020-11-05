@@ -273,7 +273,10 @@ bool ConstProp::Run(IREmitter *IREmit) {
       auto Op = IROp->CW<IR::IROp_CondJump>();
 
       auto Select = IREmit->GetOpHeader(Op->Header.Args[0]);
-      if (Select->Op == OP_SELECT) {
+      
+      uint64_t Constant;
+      // Fold the select into the CondJump if possible. Could handle more complex cases, too.
+      if (Op->Cond.Val == COND_NEQ && IREmit->IsValueConstant(Op->Cmp2, &Constant) && Constant == 0 &&  Select->Op == OP_SELECT) {
         
         uint64_t Constant1;
         uint64_t Constant2;
