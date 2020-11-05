@@ -300,28 +300,45 @@ DEF_OP(SpillRegister) {
   auto Op = IROp->C<IR::IROp_SpillRegister>();
   uint8_t OpSize = IROp->Size;
   uint32_t SlotOffset = Op->Slot * 16 + 16;
-  switch (OpSize) {
-  case 1: {
-    strb(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
-    break;
-  }
-  case 2: {
-    strh(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
-    break;
-  }
-  case 4: {
-    str(GetReg<RA_32>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
-    break;
-  }
-  case 8: {
-    str(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
-    break;
-  }
-  case 16: {
-    str(GetSrc(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
-    break;
-  }
-  default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    switch (OpSize) {
+    case 1: {
+      strb(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 2: {
+      strh(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 4: {
+      str(GetReg<RA_32>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 8: {
+      str(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      break;
+    }
+    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+    }
+  } else if (Op->Class == FEXCore::IR::FPRClass) {
+    switch (OpSize) {
+    case 4: {
+      str(GetSrc(Op->Header.Args[0].ID()).S(), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 8: {
+      str(GetSrc(Op->Header.Args[0].ID()).D(), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 16: {
+      str(GetSrc(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      break;
+    }
+    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+    }
+  } else {
+    LogMan::Msg::A("Unhandled SpillRegister class: %d", Op->Class.Val);
   }
 }
 
@@ -329,28 +346,45 @@ DEF_OP(FillRegister) {
   auto Op = IROp->C<IR::IROp_FillRegister>();
   uint8_t OpSize = IROp->Size;
   uint32_t SlotOffset = Op->Slot * 16 + 16;
-  switch (OpSize) {
-  case 1: {
-    ldrb(GetReg<RA_64>(Node), MemOperand(sp, SlotOffset));
-    break;
-  }
-  case 2: {
-    ldrh(GetReg<RA_64>(Node), MemOperand(sp, SlotOffset));
-    break;
-  }
-  case 4: {
-    ldr(GetReg<RA_32>(Node), MemOperand(sp, SlotOffset));
-    break;
-  }
-  case 8: {
-    ldr(GetReg<RA_64>(Node), MemOperand(sp, SlotOffset));
-    break;
-  }
-  case 16: {
-    ldr(GetDst(Node), MemOperand(sp, SlotOffset));
-    break;
-  }
-  default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    switch (OpSize) {
+    case 1: {
+      ldrb(GetReg<RA_64>(Node), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 2: {
+      ldrh(GetReg<RA_64>(Node), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 4: {
+      ldr(GetReg<RA_32>(Node), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 8: {
+      ldr(GetReg<RA_64>(Node), MemOperand(sp, SlotOffset));
+      break;
+    }
+    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+    }
+  } else if (Op->Class == FEXCore::IR::FPRClass) {
+    switch (OpSize) {
+    case 4: {
+      ldr(GetDst(Node).S(), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 8: {
+      ldr(GetDst(Node).D(), MemOperand(sp, SlotOffset));
+      break;
+    }
+    case 16: {
+      ldr(GetDst(Node), MemOperand(sp, SlotOffset));
+      break;
+    }
+    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+    }
+  } else {
+    LogMan::Msg::A("Unhandled FillRegister class: %d", Op->Class.Val);
   }
 }
 

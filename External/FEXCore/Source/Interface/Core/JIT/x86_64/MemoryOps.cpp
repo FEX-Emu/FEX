@@ -350,29 +350,47 @@ DEF_OP(SpillRegister) {
   uint8_t OpSize = IROp->Size;
 
   uint32_t SlotOffset = Op->Slot * 16;
-  switch (OpSize) {
-    case 1: {
-      mov(byte [rsp + SlotOffset], GetSrc<RA_8>(Op->Header.Args[0].ID()));
-      break;
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    switch (OpSize) {
+      case 1: {
+        mov(byte [rsp + SlotOffset], GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        break;
+      }
+      case 2: {
+        mov(word [rsp + SlotOffset], GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        break;
+      }
+      case 4: {
+        mov(dword [rsp + SlotOffset], GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        break;
+      }
+      case 8: {
+        mov(qword [rsp + SlotOffset], GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        break;
+      }
+      default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
     }
-    case 2: {
-      mov(word [rsp + SlotOffset], GetSrc<RA_16>(Op->Header.Args[0].ID()));
-      break;
+  } else if (Op->Class == FEXCore::IR::FPRClass) {
+    switch (OpSize) {
+      case 4: {
+        movss(dword [rsp + SlotOffset], GetSrc(Op->Header.Args[0].ID()));
+        break;
+      }
+      case 8: {
+        movsd(qword [rsp + SlotOffset], GetSrc(Op->Header.Args[0].ID()));
+        break;
+      }
+      case 16: {
+        movaps(xword [rsp + SlotOffset], GetSrc(Op->Header.Args[0].ID()));
+        break;
+      }
+      default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
     }
-    case 4: {
-      mov(dword [rsp + SlotOffset], GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      break;
-    }
-    case 8: {
-      mov(qword [rsp + SlotOffset], GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      break;
-    }
-    case 16: {
-      movaps(xword [rsp + SlotOffset], GetSrc(Op->Header.Args[0].ID()));
-      break;
-    }
-    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+  } else {
+    LogMan::Msg::A("Unhandled SpillRegister class: %d", Op->Class.Val);
   }
+
+
 }
 
 DEF_OP(FillRegister) {
@@ -380,28 +398,44 @@ DEF_OP(FillRegister) {
   uint8_t OpSize = IROp->Size;
 
   uint32_t SlotOffset = Op->Slot * 16;
-  switch (OpSize) {
-    case 1: {
-      movzx(GetDst<RA_32>(Node), byte [rsp + SlotOffset]);
-      break;
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    switch (OpSize) {
+      case 1: {
+        movzx(GetDst<RA_32>(Node), byte [rsp + SlotOffset]);
+        break;
+      }
+      case 2: {
+        movzx(GetDst<RA_32>(Node), word [rsp + SlotOffset]);
+        break;
+      }
+      case 4: {
+        mov(GetDst<RA_32>(Node), dword [rsp + SlotOffset]);
+        break;
+      }
+      case 8: {
+        mov(GetDst<RA_64>(Node), qword [rsp + SlotOffset]);
+        break;
+      }
+      default:  LogMan::Msg::A("Unhandled FillRegister size: %d", OpSize);
     }
-    case 2: {
-      movzx(GetDst<RA_32>(Node), word [rsp + SlotOffset]);
-      break;
+  } else if (Op->Class == FEXCore::IR::FPRClass) {
+    switch (OpSize) {
+      case 4: {
+        movss(GetDst(Node), dword [rsp + SlotOffset]);
+        break;
+      }
+      case 8: {
+        movsd(GetDst(Node), qword [rsp + SlotOffset]);
+        break;
+      }
+      case 16: {
+        movaps(GetDst(Node), xword [rsp + SlotOffset]);
+        break;
+      }
+      default:  LogMan::Msg::A("Unhandled FillRegister size: %d", OpSize);
     }
-    case 4: {
-      mov(GetDst<RA_32>(Node), dword [rsp + SlotOffset]);
-      break;
-    }
-    case 8: {
-      mov(GetDst<RA_64>(Node), qword [rsp + SlotOffset]);
-      break;
-    }
-    case 16: {
-      movaps(GetDst(Node), xword [rsp + SlotOffset]);
-      break;
-    }
-    default:  LogMan::Msg::A("Unhandled FillRegister size: %d", OpSize);
+  } else {
+    LogMan::Msg::A("Unhandled FillRegister class: %d", Op->Class.Val);
   }
 }
 
