@@ -668,125 +668,104 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   _ExitFunction(); // If we get here then leave the function now
 }
 
-void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
-  BlockSetRIP = true;
-
+OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue) {
+  OrderedNode *SrcCond = nullptr;
+  
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
-  IRPair<IROp_Header> SrcCond;
 
-  IRPair<IROp_Constant> TakeBranch;
-  IRPair<IROp_Constant> DoNotTakeBranch;
-  TakeBranch = _Constant(1);
-  DoNotTakeBranch = _Constant(0);
-
-  switch (Op->OP) {
-    case 0x70:
-    case 0x80: { // JO - Jump if OF == 1
+  switch (OP) {
+    case 0x0: { // JO - Jump if OF == 1
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x71:
-    case 0x81: { // JNO - Jump if OF == 0
+    case 0x1:{ // JNO - Jump if OF == 0
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x72:
-    case 0x82: { // JC - Jump if CF == 1
+    case 0x2: { // JC - Jump if CF == 1
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x73:
-    case 0x83: { // JNC - Jump if CF == 0
+    case 0x3: { // JNC - Jump if CF == 0
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x74:
-    case 0x84: { // JE - Jump if ZF == 1
+    case 0x4: { // JE - Jump if ZF == 1
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x75:
-    case 0x85: { // JNE - Jump if ZF == 0
+    case 0x5: { // JNE - Jump if ZF == 0
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x76:
-    case 0x86: { // JNA - Jump if CF == 1 || ZC == 1
+    case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
       auto Check = _Or(Flag1, Flag2);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Check, OneConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Check, OneConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x77:
-    case 0x87: { // JA - Jump if CF == 0 && ZF == 0
+    case 0x7: { // JA - Jump if CF == 0 && ZF == 0
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
       auto Check = _Or(Flag1, _Lshl(Flag2, _Constant(1)));
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Check, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Check, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x78:
-    case 0x88: { // JS - Jump if SF == 1
+    case 0x8: { // JS - Jump if SF == 1
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x79:
-    case 0x89: { // JNS - Jump if SF == 0
+    case 0x9: { // JNS - Jump if SF == 0
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x7A:
-    case 0x8A: { // JP - Jump if PF == 1
+    case 0xA: { // JP - Jump if PF == 1
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x7B:
-    case 0x8B: { // JNP - Jump if PF == 0
+    case 0xB: { // JNP - Jump if PF == 0
       auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Flag, ZeroConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag, ZeroConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x7C: // SF <> OF
-    case 0x8C: {
+    case 0xC: { // SF <> OF
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          Flag1, Flag2, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag1, Flag2, TrueValue, FalseValue);
+      break;
     }
-    case 0x7D: // SF = OF
-    case 0x8D: {
+    case 0xD: { // SF = OF
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Flag1, Flag2, TakeBranch, DoNotTakeBranch);
-    break;
+          Flag1, Flag2, TrueValue, FalseValue);
+      break;
     }
-    case 0x7E: // ZF = 1 || SF <> OF
-    case 0x8E: {
+    case 0xE: {// ZF = 1 || SF <> OF
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
       auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
@@ -799,11 +778,10 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
       auto Check = _Or(Select1, Select2);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Check, OneConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Check, OneConst, TrueValue, FalseValue);
+      break;
     }
-    case 0x7F: // ZF = 0 && SF = OF
-    case 0x8F: {
+    case 0xF: {// ZF = 0 && SF = OF
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
       auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
@@ -816,11 +794,40 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
       auto Check = _And(Select1, Select2);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-          Check, OneConst, TakeBranch, DoNotTakeBranch);
-    break;
+          Check, OneConst, TrueValue, FalseValue);
+      break;
     }
-    default: LogMan::Msg::A("Unknown Jmp Op: 0x%x\n", Op->OP); return;
+    default: LogMan::Msg::A("Unknown CC Op: 0x%x\n", OP); return nullptr;
   }
+
+  return SrcCond;
+}
+
+void OpDispatchBuilder::SETccOp(OpcodeArgs) {
+  auto ZeroConst = _Constant(0);
+  auto OneConst = _Constant(1);
+
+  auto SrcCond = SelectCC(Op->OP & 0xF, OneConst, ZeroConst);
+
+  StoreResult(GPRClass, Op, SrcCond, -1);
+}
+
+void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  auto SrcCond = SelectCC(Op->OP & 0xF, Src, Dest);
+
+  StoreResult(GPRClass, Op, SrcCond, -1);
+}
+
+void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
+  BlockSetRIP = true;
+
+  auto TakeBranch = _Constant(1);
+  auto DoNotTakeBranch = _Constant(0);
+
+  auto SrcCond = SelectCC(Op->OP & 0xF, TakeBranch, DoNotTakeBranch);
 
   LogMan::Throw::A(Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
 
@@ -1069,144 +1076,6 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   // Store the new RIP
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), RIPOffset);
   _ExitFunction();
-}
-
-void OpDispatchBuilder::SETccOp(OpcodeArgs) {
-  enum CompareType {
-    COMPARE_ZERO,
-    COMPARE_NOTZERO,
-    COMPARE_EQUALMASK,
-    COMPARE_OTHER,
-  };
-  uint32_t FLAGMask;
-  CompareType Type = COMPARE_OTHER;
-  OrderedNode *SrcCond;
-
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
-  switch (Op->OP) {
-  case 0x90:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_OF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x91:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_OF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x92:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x93:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x94:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x95:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x96:
-    FLAGMask = (1 << FEXCore::X86State::RFLAG_ZF_LOC) | (1 << FEXCore::X86State::RFLAG_CF_LOC);
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x97:
-    FLAGMask = (1 << FEXCore::X86State::RFLAG_ZF_LOC) | (1 << FEXCore::X86State::RFLAG_CF_LOC);
-    Type = COMPARE_ZERO;
-  break;
-  case 0x98:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_SF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x99:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_SF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x9A:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x9B:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x9D: { // SF = OF
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag1, Flag2, OneConst, ZeroConst);
-  break;
-  }
-  case 0x9C: { // SF <> OF
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag1, Flag2, OneConst, ZeroConst);
-  break;
-  }
-  case 0x9E: { // ZF = 1 || SF <> OF
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-    auto Select1 = _Select(FEXCore::IR::COND_EQ,
-        Flag1, OneConst, OneConst, ZeroConst);
-
-    auto Select2 = _Select(FEXCore::IR::COND_NEQ,
-        Flag2, Flag3, OneConst, ZeroConst);
-    SrcCond = _Or(Select1, Select2);
-  break;
-  }
-  case 0x9F: { // ZF = 0 && SF = OF
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-    auto Select1 = _Select(FEXCore::IR::COND_EQ,
-        Flag1, ZeroConst, OneConst, ZeroConst);
-
-    auto Select2 = _Select(FEXCore::IR::COND_EQ,
-        Flag2, Flag3, OneConst, ZeroConst);
-    SrcCond = _And(Select1, Select2);
-  break;
-  }
-  default:
-    LogMan::Msg::A("Unhandled SetCC op: 0x%x", Op->OP);
-  break;
-  }
-
-  if (Type != COMPARE_OTHER) {
-    auto MaskConst = _Constant(FLAGMask);
-
-    auto RFLAG = GetPackedRFLAG(false);
-
-    auto AndOp = _And(RFLAG, MaskConst);
-
-    switch (Type) {
-    case COMPARE_ZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-          AndOp, ZeroConst, OneConst, ZeroConst);
-    break;
-    }
-    case COMPARE_NOTZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          AndOp, ZeroConst, OneConst, ZeroConst);
-    break;
-    }
-    case COMPARE_EQUALMASK: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-          AndOp, MaskConst, OneConst, ZeroConst);
-    break;
-    }
-    case COMPARE_OTHER: break;
-    }
-  }
-
-  StoreResult(GPRClass, Op, SrcCond, -1);
 }
 
 template<uint32_t SrcIndex>
@@ -1519,155 +1388,6 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Op->Src[1], Src, -1);
     break;
   }
-}
-
-void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
-  enum CompareType {
-    COMPARE_ZERO,
-    COMPARE_NOTZERO,
-    COMPARE_EQUALMASK,
-    COMPARE_OTHER,
-  };
-  uint32_t FLAGMask;
-  CompareType Type = COMPARE_OTHER;
-  OrderedNode *SrcCond;
-
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  switch (Op->OP) {
-  case 0x40:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_OF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x41:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_OF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x42:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x43:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_CF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x44:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x45:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_ZF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x46:
-    FLAGMask = (1 << FEXCore::X86State::RFLAG_ZF_LOC) | (1 << FEXCore::X86State::RFLAG_CF_LOC);
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x47:
-    FLAGMask = (1 << FEXCore::X86State::RFLAG_ZF_LOC) | (1 << FEXCore::X86State::RFLAG_CF_LOC);
-    Type = COMPARE_ZERO;
-  break;
-  case 0x48:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_SF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x49:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_SF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x4A:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
-    Type = COMPARE_NOTZERO;
-  break;
-  case 0x4B:
-    FLAGMask = 1 << FEXCore::X86State::RFLAG_PF_LOC;
-    Type = COMPARE_ZERO;
-  break;
-  case 0x4C: { // SF <> OF
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_NEQ,
-        Flag1, Flag2, Src, Dest);
-  break;
-  }
-  case 0x4D: { // SF = OF
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Flag1, Flag2, Src, Dest);
-  break;
-  }
-
-  case 0x4E: { // ZF = 1 || SF <> OF
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-    auto Select1 = _Select(FEXCore::IR::COND_EQ,
-        Flag1, OneConst, OneConst, ZeroConst);
-
-    auto Select2 = _Select(FEXCore::IR::COND_NEQ,
-        Flag2, Flag3, OneConst, ZeroConst);
-    auto Check = _Or(Select1, Select2);
-
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, OneConst, Src, Dest);
-  break;
-  }
-
-  case 0x4F: { // ZF = 0 && SSF = OF
-    auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
-    auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_SF_LOC);
-    auto Flag3 = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-    auto Select1 = _Select(FEXCore::IR::COND_EQ,
-        Flag1, ZeroConst, OneConst, ZeroConst);
-
-    auto Select2 = _Select(FEXCore::IR::COND_EQ,
-        Flag2, Flag3, OneConst, ZeroConst);
-    auto Check = _And(Select1, Select2);
-
-    SrcCond = _Select(FEXCore::IR::COND_EQ,
-        Check, OneConst, Src, Dest);
-  break;
-  }
-  default:
-    LogMan::Msg::A("Unhandled CMOV op: 0x%x", Op->OP);
-  break;
-  }
-
-  if (Type != COMPARE_OTHER) {
-    auto MaskConst = _Constant(FLAGMask);
-
-    auto RFLAG = GetPackedRFLAG(false);
-
-    auto AndOp = _And(RFLAG, MaskConst);
-    switch (Type) {
-    case COMPARE_ZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-          AndOp, ZeroConst, Src, Dest);
-    break;
-    }
-    case COMPARE_NOTZERO: {
-      SrcCond = _Select(FEXCore::IR::COND_NEQ,
-          AndOp, ZeroConst, Src, Dest);
-    break;
-    }
-    case COMPARE_EQUALMASK: {
-      SrcCond = _Select(FEXCore::IR::COND_EQ,
-          AndOp, MaskConst, Src, Dest);
-    break;
-    }
-
-    case COMPARE_OTHER: break;
-    }
-  }
-
-  StoreResult(GPRClass, Op, SrcCond, -1);
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
