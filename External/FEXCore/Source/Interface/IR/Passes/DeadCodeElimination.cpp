@@ -18,15 +18,31 @@ bool DeadCodeElimination::Run(IREmitter *IREmit) {
   auto CurrentIR = IREmit->ViewIR();
   int NumRemoved = 0;
 
-  for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
-    // Skip over anything that has side effects
-    // Use count tracking can't safely remove anything with side effects
-    if (!IR::HasSideEffects(IROp->Op)) {
-      if (CodeNode->GetUses() == 0) {
-        NumRemoved++;
-        IREmit->Remove(CodeNode);
+    // Reverse iteration is not yet working with the iterators
+    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+
+    // We grab these nodes this way so we can iterate easily
+    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
+    auto CodeLast = CurrentIR.at(BlockIROp->Last);
+
+    while (1) {
+      auto [CodeNode, IROp] = CodeLast();
+
+      // Skip over anything that has side effects
+      // Use count tracking can't safely remove anything with side effects
+      if (!IR::HasSideEffects(IROp->Op)) {
+        if (CodeNode->GetUses() == 0) {
+          NumRemoved++;
+          IREmit->Remove(CodeNode);
+        }
       }
+
+      if (CodeLast == CodeBegin) {
+        break;
+      }
+      --CodeLast;
     }
   }
 
