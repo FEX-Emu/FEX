@@ -4,6 +4,7 @@
 #include "LogManager.h"
 
 #include <array>
+#include <algorithm>
 #include <cstring>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/X86Tables.h>
@@ -1003,6 +1004,11 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
     CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer.at(BlockStartOffset);
   }
 
+
+  // sort for better branching
+  std::sort(Blocks.begin(), Blocks.end(), [](const FEXCore::Frontend::Decoder::DecodedBlocks& a, const FEXCore::Frontend::Decoder::DecodedBlocks& b) {
+    return a.Entry < b.Entry;
+  });
   return !ErrorDuringDecoding;
 }
 

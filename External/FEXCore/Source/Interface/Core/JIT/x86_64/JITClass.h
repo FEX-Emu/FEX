@@ -71,6 +71,7 @@ public:
   bool HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack);
 
 private:
+  Label* PendingTargetLabel{};
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
   FEXCore::IR::IRListView<true> const *IR;

@@ -551,6 +551,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   };
 #endif
 
+  PendingTargetLabel = nullptr;
+
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
     {
@@ -562,6 +564,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       if (IsTarget == JumpTargets.end()) {
         IsTarget = JumpTargets.try_emplace(Node).first;
       }
+
+      // if there is a pending branch, and it is not fall-through
+      if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
+      {
+        jmp(*PendingTargetLabel, T_NEAR);
+      }
+      PendingTargetLabel = nullptr;
 
       L(IsTarget->second);
     }
@@ -609,6 +618,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       (this->*Handler)(IROp, ID);
     }
   }
+
+  // Make sure last branch is generated. It certainly can't be eliminated here.
+  if (PendingTargetLabel)
+  {
+    jmp(*PendingTargetLabel, T_NEAR);
+  }
+  PendingTargetLabel = nullptr;
 
   void *Exit = getCurr<void*>();
 

@@ -69,8 +69,7 @@ DEF_OP(Jump) {
   else {
     TargetLabel = &IsTarget->second;
   }
-
-  b(TargetLabel);
+  PendingTargetLabel = TargetLabel;
 }
 
 DEF_OP(CondJump) {
@@ -79,25 +78,24 @@ DEF_OP(CondJump) {
   Label *TrueTargetLabel;
   Label *FalseTargetLabel;
 
-  auto TrueIter = JumpTargets.find(Op->Header.Args[1].ID());
-  auto FalseIter = JumpTargets.find(Op->Header.Args[2].ID());
+  auto TrueIter = JumpTargets.find(Op->TrueBlock.ID());
+  auto FalseIter = JumpTargets.find(Op->FalseBlock.ID());
 
   if (TrueIter == JumpTargets.end()) {
-    TrueTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
+    TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
   }
   else {
     TrueTargetLabel = &TrueIter->second;
   }
 
+  cbnz(GetReg<RA_64>(Op->Cond.ID()), TrueTargetLabel);
   if (FalseIter == JumpTargets.end()) {
-    FalseTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[2].ID()).first->second;
+    FalseTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
   }
   else {
     FalseTargetLabel = &FalseIter->second;
   }
-
-  cbnz(GetReg<RA_64>(Op->Header.Args[0].ID()), TrueTargetLabel);
-  b(FalseTargetLabel);
+  PendingTargetLabel = FalseTargetLabel;
 }
 
 DEF_OP(Syscall) {
