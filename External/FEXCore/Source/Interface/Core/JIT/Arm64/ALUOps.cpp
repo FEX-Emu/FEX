@@ -1089,49 +1089,52 @@ DEF_OP(Sbfe) {
   }
 }
 
-DEF_OP(Select) {
-  auto Op = IROp->C<IR::IROp_Select>();
+#define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 
-  cmp(GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
-
-  switch (Op->Cond.Val) {
-  case FEXCore::IR::COND_EQ:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::eq);
-  break;
-  case FEXCore::IR::COND_NEQ:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::ne);
-  break;
-  case FEXCore::IR::COND_SGE:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::ge);
-  break;
-  case FEXCore::IR::COND_SLT:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::lt);
-  break;
-  case FEXCore::IR::COND_SGT:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::gt);
-  break;
-  case FEXCore::IR::COND_SLE:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::le);
-  break;
-  case FEXCore::IR::COND_UGE:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::cs);
-  break;
-  case FEXCore::IR::COND_ULT:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::cc);
-  break;
-  case FEXCore::IR::COND_UGT:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::hi);
-  break;
-  case FEXCore::IR::COND_ULE:
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[2].ID()), GetReg<RA_64>(Op->Header.Args[3].ID()), Condition::ls);
-  break;
+Condition MapSelectCC(IR::CondClassType Cond) {
+  switch (Cond.Val) {
+  case FEXCore::IR::COND_EQ: return Condition::eq;
+  case FEXCore::IR::COND_NEQ: return Condition::ne;
+  case FEXCore::IR::COND_SGE: return Condition::ge;
+  case FEXCore::IR::COND_SLT: return Condition::lt;
+  case FEXCore::IR::COND_SGT: return Condition::gt;
+  case FEXCore::IR::COND_SLE: return Condition::le;
+  case FEXCore::IR::COND_UGE: return Condition::cs;
+  case FEXCore::IR::COND_ULT: return Condition::cc;
+  case FEXCore::IR::COND_UGT: return Condition::hi;
+  case FEXCore::IR::COND_ULE: return Condition::ls;
   case FEXCore::IR::COND_MI:
   case FEXCore::IR::COND_PL:
   case FEXCore::IR::COND_VS:
   case FEXCore::IR::COND_VC:
   default:
   LogMan::Msg::A("Unsupported compare type");
-  break;
+  return Condition::nv;
+  }
+}
+
+DEF_OP(Select) {
+  auto Op = IROp->C<IR::IROp_Select>();
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[1], &Const))
+    cmp(GRCMP(Op->Header.Args[0].ID()), Const);
+  else
+    cmp(GRCMP(Op->Header.Args[0].ID()), GRCMP(Op->Header.Args[1].ID()));
+
+  auto cc = MapSelectCC(Op->Cond);
+
+  uint64_t const_true, const_false;
+  bool is_const_true = IsInlineConstant(Op->Header.Args[2], &const_true);
+  bool is_const_false = IsInlineConstant(Op->Header.Args[3], &const_false);
+  
+  if (is_const_true || is_const_false) {
+    if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
+      LogMan::Msg::A("Select: Unsupported compare inline parameters");
+    }
+    cset(GRS(Node), cc);
+  } else {
+    csel(GRS(Node), GRS(Op->Header.Args[2].ID()), GRS(Op->Header.Args[3].ID()), cc);
   }
 }
 

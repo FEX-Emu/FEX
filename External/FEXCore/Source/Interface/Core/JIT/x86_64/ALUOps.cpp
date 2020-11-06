@@ -1179,63 +1179,75 @@ DEF_OP(Sbfe) {
   }
 }
 
+#define GRS(Node) (IROp->Size <= 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
+#define GRD(Node) (IROp->Size <= 4 ? GetDst<RA_32>(Node) : GetDst<RA_64>(Node))
+#define GRCMP(Node) (Op->CompareSize == 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
+
 DEF_OP(Select) {
   auto Op = IROp->C<IR::IROp_Select>();
-  auto Dst = GetDst<RA_64>(Node);
+  auto Dst = GRD(Node);
 
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  cmp(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-
-  switch (Op->Cond.Val) {
-  case FEXCore::IR::COND_EQ:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmove(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_NEQ:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmovne(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_SGE:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmovge(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_SLT:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmovl(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_SGT:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmovg(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_SLE:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmovle(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_UGE:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmovae(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_ULT:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmovb(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_UGT:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmova(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  break;
-  case FEXCore::IR::COND_ULE:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[3].ID()));
-    cmovna(rax, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-    break;
-  case FEXCore::IR::COND_MI:
-  case FEXCore::IR::COND_PL:
-  case FEXCore::IR::COND_VS:
-  case FEXCore::IR::COND_VC:
-  default:
-  LogMan::Msg::A("Unsupported compare type");
-  break;
+  uint64_t Const;
+  if (IsInlineConstant(Op->Cmp2, &Const)) {
+    cmp(GRCMP(Op->Cmp1.ID()), Const);
+  } else {
+    cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
   }
-  mov (Dst, rax);
+  
+  uint64_t const_true, const_false;
+  bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
+  bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
+  
+  if (is_const_true || is_const_false) {
+    if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
+      LogMan::Msg::A("Select: Unsupported compare inline parameters");
+    }
+
+    switch (Op->Cond.Val) {
+      case FEXCore::IR::COND_EQ:  sete(al); break;
+      case FEXCore::IR::COND_NEQ: setne(al); break;
+      case FEXCore::IR::COND_SGE: setge(al); break;
+      case FEXCore::IR::COND_SLT: setl(al); break;
+      case FEXCore::IR::COND_SGT: setg(al); break;
+      case FEXCore::IR::COND_SLE: setle(al); break;
+      case FEXCore::IR::COND_UGE: setae(al); break;
+      case FEXCore::IR::COND_ULT: setb(al); break;
+      case FEXCore::IR::COND_UGT: seta(al); break;
+      case FEXCore::IR::COND_ULE: setna(al); break;
+      
+      case FEXCore::IR::COND_MI:
+      case FEXCore::IR::COND_PL:
+      case FEXCore::IR::COND_VS:
+      case FEXCore::IR::COND_VC:
+      default:
+        LogMan::Msg::A("Unsupported compare type");
+        break;
+    }
+    movzx(Dst, al);
+  } else {
+    mov(rax, GetSrc<RA_64>(Op->FalseVal.ID()));
+    switch (Op->Cond.Val) {
+      case FEXCore::IR::COND_EQ:  cmove(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_NEQ: cmovne(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_SGE: cmovge(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_SLT: cmovl(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_SGT: cmovg(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_SLE: cmovle(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_UGE: cmovae(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_ULT: cmovb(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_UGT: cmova(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      case FEXCore::IR::COND_ULE: cmovna(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
+      
+      case FEXCore::IR::COND_MI:
+      case FEXCore::IR::COND_PL:
+      case FEXCore::IR::COND_VS:
+      case FEXCore::IR::COND_VC:
+      default:
+        LogMan::Msg::A("Unsupported compare type");
+        break;
+    }
+    mov (Dst, rax.changeBit(IROp->Size * 8));
+  }
 }
 
 DEF_OP(VExtractToGPR) {
