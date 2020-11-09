@@ -63,7 +63,8 @@ namespace FEXCore::Context {
       bool TSOEnabled {true};
       bool SMCChecks {false};
       bool ABILocalFlags {false};
-      
+      bool ABINoPF {false};
+
       std::string DumpIR;
       
     } Config;

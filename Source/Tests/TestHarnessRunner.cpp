@@ -63,6 +63,8 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::Value<bool> TSOEnabledConfig{"TSOEnabled", true};
   FEX::Config::Value<bool> SMCChecksConfig{"SMCChecks", false};
   FEX::Config::Value<bool> ABILocalFlags{"ABILocalFlags", false};
+  FEX::Config::Value<bool> AbiNoPF{"AbiNoPF", false};
+
   auto Args = FEX::ArgLoader::Get();
 
   LogMan::Throw::A(Args.size() > 1, "Not enough arguments");
@@ -82,6 +84,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_TSO_ENABLED, TSOEnabledConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SMC_CHECKS, SMCChecksConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, ABILocalFlags());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_NO_PF, AbiNoPF());
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostCPUFactory::HostCPUCreationFactory);
 
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);

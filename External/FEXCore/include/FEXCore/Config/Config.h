@@ -19,6 +19,7 @@ namespace FEXCore::Config {
     CONFIG_TSO_ENABLED,
     CONFIG_SMC_CHECKS,
     CONFIG_ABI_LOCAL_FLAGS,
+    CONFIG_ABI_NO_PF,
     CONFIG_DUMPIR,
   };
 

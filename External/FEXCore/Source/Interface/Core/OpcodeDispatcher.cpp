@@ -4732,7 +4732,7 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto PopCountOp = _Popcount(_And(Res, _Constant(0xFF)));
 
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -4799,7 +4799,7 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto PopCountOp = _Popcount(_And(Res, _Constant(0xFF)));
 
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -4865,7 +4865,7 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -4920,7 +4920,7 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5030,7 +5030,7 @@ void OpDispatchBuilder::GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, 
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5067,7 +5067,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5113,7 +5113,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftRight(FEXCore::X86Tables::DecodedOp O
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5159,7 +5159,7 @@ void OpDispatchBuilder::GenerateFlags_SignShiftRight(FEXCore::X86Tables::Decoded
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5205,7 +5205,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::Dec
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5252,7 +5252,7 @@ void OpDispatchBuilder::GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5301,7 +5301,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::De
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));

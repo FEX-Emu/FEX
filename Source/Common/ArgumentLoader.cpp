@@ -81,7 +81,13 @@ namespace FEX::ArgLoader {
       CPUGroup.add_option("--unsafe-local-flags")
         .dest("AbiLocalFlags")
         .action("store_true")
-        .help("Assumes flags are not used across calls")
+        .help("Assumes flags are not used across calls. Hand-written asm could violate this assumption")
+        .set_default(false);
+
+      CPUGroup.add_option("--unsafe-no-pf")
+        .dest("AbiNoPF")
+        .action("store_true")
+        .help("Does not calculate the parity flag on integer operations")
         .set_default(false);
 
       Parser.add_option_group(CPUGroup);
@@ -217,6 +223,10 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("AbiLocalFlags")) {
         bool AbiLocalFlags = Options.get("AbiLocalFlags");
         Config::Add("AbiLocalFlags", std::to_string(AbiLocalFlags));
+      }
+      if (Options.is_set_by_user("AbiNoPF")) {
+        bool AbiNoPF = Options.get("AbiNoPF");
+        Config::Add("AbiNoPF", std::to_string(AbiNoPF));
       }
     }
 

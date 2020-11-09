@@ -42,6 +42,9 @@ namespace FEXCore::Config {
     case FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS:
       CTX->Config.ABILocalFlags = Config != 0;
     break;
+    case FEXCore::Config::CONFIG_ABI_NO_PF:
+      CTX->Config.ABINoPF = Config != 0;
+    break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
   }
@@ -97,6 +100,9 @@ namespace FEXCore::Config {
     break;
     case FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS:
       return CTX->Config.ABILocalFlags;
+    break;
+    case FEXCore::Config::CONFIG_ABI_NO_PF:
+      return CTX->Config.ABINoPF;
     break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
