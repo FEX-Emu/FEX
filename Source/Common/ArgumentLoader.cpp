@@ -66,21 +66,22 @@ namespace FEX::ArgLoader {
           .help("Number of physical hardware threads to tell the process we have")
           .set_default(1);
 
-      CPUGroup.add_option("--disable-tso")
-        .dest("TSOEnabled")
-        .action("store_false")
-        .help("Disables TSO IR ops. Highly likely to break any threaded application")
-        .set_default(true);
-
       CPUGroup.add_option("--smc-full-checks")
         .dest("SMCChecks")
         .action("store_true")
         .help("Checks code for modification before execution. Slow.")
         .set_default(false);
-      CPUGroup.add_option("--abi-local-flags")
+
+      CPUGroup.add_option("--unsafe-no-tso")
+        .dest("TSOEnabled")
+        .action("store_false")
+        .help("Disables TSO IR ops. Highly likely to break any threaded application")
+        .set_default(true);
+
+      CPUGroup.add_option("--unsafe-local-flags")
         .dest("AbiLocalFlags")
         .action("store_true")
-        .help("Assume flags are not preserved across calls")
+        .help("Assumes flags are not used across calls")
         .set_default(false);
 
       Parser.add_option_group(CPUGroup);
