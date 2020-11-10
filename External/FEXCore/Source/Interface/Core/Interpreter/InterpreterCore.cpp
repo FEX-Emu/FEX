@@ -488,6 +488,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_DUMMY:
           case IR::OP_BEGINBLOCK:
           case IR::OP_ENDBLOCK:
+          case IR::OP_INVALIDATEFLAGS:
             break;
           case IR::OP_FENCE: {
             auto Op = IROp->C<IR::IROp_Fence>();
