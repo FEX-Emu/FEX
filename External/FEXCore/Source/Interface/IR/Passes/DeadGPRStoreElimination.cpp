@@ -1,6 +1,9 @@
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
+// Higher values might result in more stores getting eliminated but will make the optimization take more time
+constexpr int PropagationRounds = 5;
+
 namespace FEXCore::IR {
 
 class DeadGPRStoreElimination final : public FEXCore::IR::Pass {
@@ -92,7 +95,7 @@ bool DeadGPRStoreElimination::Run(IREmitter *IREmit) {
   // Pass 2
   // Compute GPRs that are stored, but always ovewritten in the next blocks
   // Propagate the information a few times to eliminate more
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < PropagationRounds; i++)
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
@@ -135,7 +138,6 @@ bool DeadGPRStoreElimination::Run(IREmitter *IREmit) {
           // If this OP_STORECONTEXT is never read, remove it
           if (GPRMap[BlockNode].kill & GPRBit(Op->Offset)) {
             IREmit->Remove(CodeNode);
-            //printf("Removed dead store %d, %d\n", Op->Offset, IROp->Size);  
             Changed = true;
           }
         }
