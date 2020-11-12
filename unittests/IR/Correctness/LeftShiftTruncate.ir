@@ -20,7 +20,7 @@
   (%ssa2) CodeBlock %ssa6, %ssa12, %ssa1
     (%ssa6 i0) Dummy
     %AddrA i64 = Constant #0x1000000
-    %MemValueA i32 = LoadMem %AddrA i64, #0x4, #0x4, GPR
+    %MemValueA i32 = LoadMem %AddrA i64, %Invalid, #0x4, #0x4, GPR, SXTX, #0x1
     %Shift i64 = Constant #0x1
     %ResultA i32 = Lshl %MemValueA, %Shift
     %ResultB i64 = Lshl %MemValueA, %Shift

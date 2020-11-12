@@ -20,9 +20,9 @@
   (%ssa2) CodeBlock %ssa6, %ssa12, %ssa1
     (%ssa6 i0) Dummy
     %AddrA i64 = Constant #0x1000000
-    %MemValueA i64 = LoadMem %AddrA i64, #0x8, #0x8, GPR
+    %MemValueA i64 = LoadMem %AddrA i64, %Invalid, #0x8, #0x8, GPR, SXTX, #0x1
     %AddrB i64 = Constant #0x1000010
-    %MemValueB i64 = LoadMem %AddrB i64, #0x8, #0x8, GPR
+    %MemValueB i64 = LoadMem %AddrB i64, %Invalid, #0x8, #0x8, GPR, SXTX, #0x1
     %ResultA i32 = Add %MemValueA, %MemValueB
     %ResultB i64 = Add %MemValueA, %MemValueB
     (%Store i64) StoreContext %ResultA i64, #0x08, GPR
