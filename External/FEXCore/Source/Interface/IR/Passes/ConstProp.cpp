@@ -28,72 +28,82 @@ static uint64_t getMask(T Op) {
 // very lazy heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) { return imm < 0x8000'0000; }
 static bool IsImmAddSub(uint64_t imm) { return imm < 0x8000'0000; }
+static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
+  return Scale  == 1 || Scale  == 2 || Scale  == 4 || Scale  == 8;
+}
 #elif defined(_M_ARM_64)
 //aarch64 heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) { if (width < 32) width = 32; return vixl::aarch64::Assembler::IsImmLogical(imm, width); }
 static bool IsImmAddSub(uint64_t imm) { return vixl::aarch64::Assembler::IsImmAddSub(imm); }
+static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
+  return Scale  == AccessSize;
+}
 #else
 #error No inline constant heuristics for this target
 #endif
 
-static bool IsImmMemory(uint64_t imm, uint8_t Op_Size) {
+static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
   if ( ((int64_t)imm >= -255) && ((int64_t)imm <= 256) )
-	return true;
-  else if ( (imm & (Op_Size-1)) == 0 &&  imm/Op_Size <= 4095 )
-	return true;
+	  return true;
+  else if ( (imm & (AccessSize-1)) == 0 &&  imm/AccessSize <= 4095 )
+	  return true;
   else {
-    //printf("Rejected MemImm %ld, %d\n", imm, Op_Size);
 	  return false;
   }
 }
 
-std::tuple<uint8_t, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t Op_Size,  IROp_Header* AddressHeader) {
+std::tuple<uint8_t, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t AccessSize,  IROp_Header* AddressHeader) {
   
-  uint64_t Constant2;
-  uint8_t LSL_Size = Op_Size;
-
   auto Src0Header = IREmit->GetOpHeader(AddressHeader->Args[0]);
   if (Src0Header->Size == 8) {
+    //Try to optimize: Base + MUL(Offset, Scale)
     if (Src0Header->Op == OP_MUL) {
-      uint64_t Constant2;
-      if (IREmit->IsValueConstant(Src0Header->Args[1], &Constant2)) {
-        if (Constant2 == LSL_Size) {
-          //printf("MUL*%d address gen\n", Op_Size);
-          return { MEM_OFFSET_SXTX, LSL_Size, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
-        } else if (Constant2 == 1) {
-          //printf("MUL*1 address gen\n");
+      uint64_t Scale;
+      if (IREmit->IsValueConstant(Src0Header->Args[1], &Scale)) {
+        if (IsMemoryScale(Scale, AccessSize)) {
+          // remove mul as it can be folded to the mem op
+          return { MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+        } else if (Scale == 1) {
+          // remove nop mul
           return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
         }
       }
-    } 
+    }
+    //Try to optimize: Base + LSHL(Offset, Scale)
     else if (Src0Header->Op == OP_LSHL) {
       uint64_t Constant2;
       if (IREmit->IsValueConstant(Src0Header->Args[1], &Constant2)) {
-        if ((1<<Constant2) == LSL_Size) {
-          //printf("LSHL*%d address gen\n", Op_Size);
-          return { MEM_OFFSET_SXTX, LSL_Size, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
-        } else if (Constant2 == 0) {
-          //printf("LSHL<<0 address gen\n");
+        uint64_t Scale = 1<<Constant2;
+        if (IsMemoryScale(Scale, AccessSize)) {
+          // remove shift as it can be folded to the mem op
+          return { MEM_OFFSET_SXTX, Scale, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+        } else if (Scale == 1) {
+          // remove nop shift
           return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
         }
       }
-    } else if (Src0Header->Op == OP_BFE) {
+    }
+#if defined(_M_ARM_64) // x86 can't sext or zext on mem ops
+    //Try to optimize: Base + (u32)Offset
+    else if (Src0Header->Op == OP_BFE) {
       auto Bfe = Src0Header->C<IROp_Bfe>();
       if (Bfe->lsb == 0 && Bfe->Width == 32) {
-        //printf("UXTW address gen\n"); // todo: scale
+        //todo: arm can also scale here
         return { MEM_OFFSET_UXTW, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
       }
-    } else if (Src0Header->Op == OP_SBFE) {
+    }
+    //Try to optimize: Base + (s32)Offset
+    else if (Src0Header->Op == OP_SBFE) {
       auto Sbfe = Src0Header->C<IROp_Sbfe>();
       if (Sbfe->lsb == 0 && Sbfe->Width == 32) {
-        //printf("SXTW address gen\n"); // todo: scale
+        //todo: arm can also scale here
         return { MEM_OFFSET_SXTW, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
       }
     }
+#endif
   }
 
   // no match anywhere, just add
-  //printf("SXTX address gen\n");
   return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[0]), IREmit->UnwarpNode(AddressHeader->Args[1]) };
 }
 
@@ -156,9 +166,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
     break;
     }
 */
-    /*
-    case OP_LOADMEMTSO:
-    */
+
     case OP_LOADMEM: {
       auto Op = IROp->CW<IR::IROp_LoadMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
@@ -177,9 +185,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
       break;
     }
 
-    /*
-    case OP_STOREMEMTSO:
-    */
     case OP_STOREMEM: {
       auto Op = IROp->CW<IR::IROp_StoreMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);

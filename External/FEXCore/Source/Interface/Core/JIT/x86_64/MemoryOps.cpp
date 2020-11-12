@@ -457,35 +457,43 @@ DEF_OP(StoreFlag) {
   mov(byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)], al);
 }
 
+Xbyak::RegExp JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, uint8_t OffsetType, uint8_t OffsetScale) {
+  if (Offset.IsInvalid()) {
+    return Base;
+  } else {
+    if (OffsetScale != 1 && OffsetScale != 2 && OffsetScale != 4 && OffsetScale != 8) {
+      LogMan::Msg::A("Unhandled GenerateModRM OffsetScale: %d", OffsetScale);
+    }
+
+    if (OffsetType != IR::MEM_OFFSET_SXTX) {
+      LogMan::Msg::A("Unhandled GenerateModRM OffsetType: %d", OffsetType);
+    }
+
+    uint64_t Const;
+    if (IsInlineConstant(Offset, &Const)) {
+      return Base + Const;
+    } else {
+      auto MemOffset = GetSrc<RA_64>(Offset.ID());
+
+      return Base + MemOffset * OffsetScale;
+    }
+  }
+}
+
 DEF_OP(LoadMem) {
   auto Op = IROp->C<IR::IROp_LoadMem>();
   uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
   Xbyak::Reg MemReg = rax;
   if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+    MemReg = GetSrc<RA_64>(Op->Addr.ID());
   }
   else {
     mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+    add(MemReg, GetSrc<RA_64>(Op->Addr.ID()));
   }
 
-  auto MemPtr = MemReg + 0;
-  if (!Op->Header.Args[1].IsInvalid())
-  {
-    auto MemOffset = GetSrc<RA_64>(Op->Header.Args[1].ID());
-
-    if (Op->OffsetScale != 1) {
-      mov(rcx, MemOffset); shl(rcx, (int)std::log2(Op->OffsetScale));
-      MemOffset = rcx;
-    }
-
-    switch(Op->OffsetType) {
-      case IR::MEM_OFFSET_SXTX: MemPtr = MemReg + MemOffset; break;
-      case IR::MEM_OFFSET_UXTW: mov(ecx, MemOffset.cvt32()); MemPtr = MemReg + rcx; break;
-      case IR::MEM_OFFSET_SXTW: movsxd(rcx, MemOffset.cvt32()); MemPtr = MemReg + rcx; break;
-    }
-  }
+  auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class.Val == 0) {
     auto Dst = GetDst<RA_64>(Node);
@@ -554,29 +562,14 @@ DEF_OP(StoreMem) {
 
   Xbyak::Reg MemReg = rax;
   if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+    MemReg = GetSrc<RA_64>(Op->Addr.ID());
   }
   else {
     mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+    add(MemReg, GetSrc<RA_64>(Op->Addr.ID()));
   }
 
-  auto MemPtr = MemReg + 0;
-  if (!Op->Header.Args[2].IsInvalid()) {
-    auto MemOffset = GetSrc<RA_64>(Op->Header.Args[2].ID());
-
-    if (Op->OffsetScale != 1) {
-      mov(rcx, MemOffset); shl(rcx, (int)std::log2(Op->OffsetScale));
-      MemOffset = rcx;
-    }
-
-    switch(Op->OffsetType) {
-      case IR::MEM_OFFSET_SXTX: MemPtr = MemReg + MemOffset; break;
-      case IR::MEM_OFFSET_UXTW: mov(ecx, MemOffset.cvt32()); MemPtr = MemReg + rcx; break;
-      case IR::MEM_OFFSET_SXTW: movsxd(rcx, MemOffset.cvt32()); MemPtr = MemReg + rcx; break;
-    }
-  }
-    
+  auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class.Val == 0) {
     switch (Op->Size) {

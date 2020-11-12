@@ -401,6 +401,29 @@ DEF_OP(StoreFlag) {
   strb(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
 }
 
+MemOperand JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, uint8_t OffsetType, uint8_t OffsetScale) {
+  if (Offset.IsInvalid()) {
+    return MemOperand(Base);
+  } else {
+    if (OffsetScale != 1 && OffsetScale != AccessSize) {
+        LogMan::Msg::A("Unhandled GenerateMemOperand OffsetScale: %d", OffsetScale);
+    }
+    uint64_t Const;
+    if (IsInlineConstant(Offset, &Const)) {
+        return MemOperand(Base, Const);
+    } else {
+      auto RegOffset = GetReg<RA_64>(Offset.ID());
+      switch(OffsetType) {
+        case IR::MEM_OFFSET_SXTX: return MemOperand(Base, RegOffset, Extend::SXTX, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_UXTW: return MemOperand(Base, RegOffset.W(), Extend::UXTW, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_SXTW: return MemOperand(Base, RegOffset.W(), Extend::SXTW, (int)std::log2(OffsetScale) );
+
+        default: LogMan::Msg::A("Unhandled GenerateMemOperand OffsetType: %d", OffsetType); break;
+      }
+    }
+  }
+}
+
 DEF_OP(LoadMem) {
   auto Op = IROp->C<IR::IROp_LoadMem>();
 
@@ -412,21 +435,7 @@ DEF_OP(LoadMem) {
     add(MemReg, MemReg, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
 
-  auto MemSrc = MemOperand(MemReg);
-
-  if (!Op->Header.Args[1].IsInvalid()) {
-    uint64_t Const;
-    if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-        MemSrc = MemOperand(MemReg, Const);
-    } else {
-      auto MemOffset = GetReg<RA_64>(Op->Header.Args[1].ID());
-      switch(Op->OffsetType) {
-        case IR::MEM_OFFSET_SXTX: MemSrc = MemOperand(MemReg, MemOffset, Extend::SXTX, (int)std::log2(Op->OffsetScale) ); break;
-        case IR::MEM_OFFSET_UXTW: MemSrc = MemOperand(MemReg, MemOffset.W(), Extend::UXTW, (int)std::log2(Op->OffsetScale) ); break;
-        case IR::MEM_OFFSET_SXTW: MemSrc = MemOperand(MemReg, MemOffset.W(), Extend::SXTW, (int)std::log2(Op->OffsetScale) ); break;
-      }
-    }
-  }
+  auto MemSrc = GenerateMemOperand(Op->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     auto Dst = GetReg<RA_64>(Node);
@@ -477,6 +486,10 @@ DEF_OP(LoadMemTSO) {
     LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
     add(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
     MemSrc = MemOperand(TMP1);
+  }
+
+  if (!Op->Offset.IsInvalid()) {
+    LogMan::Msg::A("LoadMemTSO: No offset allowed");
   }
 
   if (SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
@@ -562,21 +575,7 @@ DEF_OP(StoreMem) {
     add(MemReg, MemReg, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
 
-  auto MemSrc = MemOperand(MemReg);
-
-  if (!Op->Header.Args[2].IsInvalid()) {
-    uint64_t Const;
-    if (IsInlineConstant(Op->Header.Args[2], &Const)) {
-        MemSrc = MemOperand(MemReg, Const);
-    } else {
-      auto MemOffset = GetReg<RA_64>(Op->Header.Args[2].ID());
-      switch(Op->OffsetType) {
-        case IR::MEM_OFFSET_SXTX: MemSrc = MemOperand(MemReg, MemOffset, Extend::SXTX, (int)std::log2(Op->OffsetScale) ); break;
-        case IR::MEM_OFFSET_UXTW: MemSrc = MemOperand(MemReg, MemOffset.W(), Extend::UXTW, (int)std::log2(Op->OffsetScale) ); break;
-        case IR::MEM_OFFSET_SXTW: MemSrc = MemOperand(MemReg, MemOffset.W(), Extend::SXTW, (int)std::log2(Op->OffsetScale) ); break;
-      }
-    }
-  }
+  auto MemSrc = GenerateMemOperand(Op->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (Op->Size) {
@@ -625,6 +624,10 @@ DEF_OP(StoreMemTSO) {
     LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
     add(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
     MemSrc = MemOperand(TMP1);
+  }
+
+  if (!Op->Offset.IsInvalid()) {
+    LogMan::Msg::A("StoreMemTSO: No offset allowed");
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
