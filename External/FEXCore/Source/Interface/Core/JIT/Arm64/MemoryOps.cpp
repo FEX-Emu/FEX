@@ -401,7 +401,7 @@ DEF_OP(StoreFlag) {
   strb(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
 }
 
-MemOperand JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, uint8_t OffsetType, uint8_t OffsetScale) {
+MemOperand JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return MemOperand(Base);
   } else {
@@ -413,12 +413,12 @@ MemOperand JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Bas
         return MemOperand(Base, Const);
     } else {
       auto RegOffset = GetReg<RA_64>(Offset.ID());
-      switch(OffsetType) {
-        case IR::MEM_OFFSET_SXTX: return MemOperand(Base, RegOffset, Extend::SXTX, (int)std::log2(OffsetScale) );
-        case IR::MEM_OFFSET_UXTW: return MemOperand(Base, RegOffset.W(), Extend::UXTW, (int)std::log2(OffsetScale) );
-        case IR::MEM_OFFSET_SXTW: return MemOperand(Base, RegOffset.W(), Extend::SXTW, (int)std::log2(OffsetScale) );
+      switch(OffsetType.Val) {
+        case IR::MEM_OFFSET_SXTX.Val: return MemOperand(Base, RegOffset, Extend::SXTX, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_UXTW.Val: return MemOperand(Base, RegOffset.W(), Extend::UXTW, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_SXTW.Val: return MemOperand(Base, RegOffset.W(), Extend::SXTW, (int)std::log2(OffsetScale) );
 
-        default: LogMan::Msg::A("Unhandled GenerateMemOperand OffsetType: %d", OffsetType); break;
+        default: LogMan::Msg::A("Unhandled GenerateMemOperand OffsetType: %d", OffsetType.Val); break;
       }
     }
   }

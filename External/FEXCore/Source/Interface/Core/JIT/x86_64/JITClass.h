@@ -290,7 +290,7 @@ private:
   DEF_OP(FillRegister);
   DEF_OP(LoadFlag);
   DEF_OP(StoreFlag);
-  Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, uint8_t OffsetType, uint8_t OffsetScale);
+  Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
   DEF_OP(LoadMem);
   DEF_OP(StoreMem);
   DEF_OP(VLoadMemElement);

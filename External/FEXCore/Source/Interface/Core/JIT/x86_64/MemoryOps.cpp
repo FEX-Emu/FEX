@@ -457,7 +457,7 @@ DEF_OP(StoreFlag) {
   mov(byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)], al);
 }
 
-Xbyak::RegExp JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, uint8_t OffsetType, uint8_t OffsetScale) {
+Xbyak::RegExp JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return Base;
   } else {
@@ -466,7 +466,7 @@ Xbyak::RegExp JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Off
     }
 
     if (OffsetType != IR::MEM_OFFSET_SXTX) {
-      LogMan::Msg::A("Unhandled GenerateModRM OffsetType: %d", OffsetType);
+      LogMan::Msg::A("Unhandled GenerateModRM OffsetType: %d", OffsetType.Val);
     }
 
     uint64_t Const;

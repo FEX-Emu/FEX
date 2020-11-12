@@ -48,9 +48,9 @@
     "constexpr static uint8_t ROUND_MODE_TOWARDS_ZERO      = 3",
     "constexpr static uint8_t ROUND_MODE_FLUSH_TO_ZERO     = 1 << 2",
 
-    "constexpr static uint8_t MEM_OFFSET_SXTX              = 0",
-    "constexpr static uint8_t MEM_OFFSET_UXTW              = 1",
-    "constexpr static uint8_t MEM_OFFSET_SXTW              = 2"
+    "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTX {0};",
+    "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1};",
+    "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2};"
   ],
 
   "Ops": {
@@ -629,7 +629,7 @@
         "uint8_t", "Size",
         "uint8_t", "Align",
         "RegisterClassType", "Class",
-        "uint8_t", "OffsetType",
+        "MemOffsetType", "OffsetType",
         "uint8_t", "OffsetScale"
       ]
     },
@@ -651,7 +651,7 @@
         "uint8_t", "Size",
         "uint8_t", "Align",
         "RegisterClassType", "Class",
-        "uint8_t", "OffsetType",
+        "MemOffsetType", "OffsetType",
         "uint8_t", "OffsetScale"
       ]
     },
@@ -672,7 +672,7 @@
         "uint8_t", "Size",
         "uint8_t", "Align",
         "RegisterClassType", "Class",
-        "uint8_t", "OffsetType",
+        "MemOffsetType", "OffsetType",
         "uint8_t", "OffsetScale"
       ]
     },
@@ -692,7 +692,7 @@
         "uint8_t", "Size",
         "uint8_t", "Align",
         "RegisterClassType", "Class",
-        "uint8_t", "OffsetType",
+        "MemOffsetType", "OffsetType",
         "uint8_t", "OffsetScale"
       ]
     },

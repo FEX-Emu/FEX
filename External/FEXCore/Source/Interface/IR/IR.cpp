@@ -40,6 +40,16 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
   *out << CondNames[Arg];
 }
 
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, MemOffsetType Arg) {
+  std::array<std::string, 3> Names = {
+    "SXTX",
+    "UXTW",
+    "SXTW",
+  };
+
+  *out << Names[Arg];
+}
+
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, RegisterClassType Arg) {
   if (Arg == 0)
     *out << "GPR";

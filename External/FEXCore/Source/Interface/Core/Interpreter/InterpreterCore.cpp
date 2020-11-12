@@ -912,10 +912,10 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             if (!Op->Offset.IsInvalid()) {
               auto Offset = *GetSrc<uintptr_t const*>(SSAData, Op->Offset) * Op->OffsetScale;
 
-              switch(Op->OffsetType) {
-                case MEM_OFFSET_SXTX: Data +=  Offset; break;
-                case MEM_OFFSET_UXTW: Data += (uint32_t)Offset; break;
-                case MEM_OFFSET_SXTW: Data += (int32_t)Offset; break;
+              switch(Op->OffsetType.Val) {
+                case MEM_OFFSET_SXTX.Val: Data +=  Offset; break;
+                case MEM_OFFSET_UXTW.Val: Data += (uint32_t)Offset; break;
+                case MEM_OFFSET_SXTW.Val: Data += (int32_t)Offset; break;
               }
             }
 
@@ -953,10 +953,10 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 if (!Op->Offset.IsInvalid()) {\
                   auto Offset = *GetSrc<uintptr_t const*>(SSAData, Op->Offset) * Op->OffsetScale;\
                   \
-                  switch(Op->OffsetType) {\
-                    case MEM_OFFSET_SXTX: Data +=  Offset; break;\
-                    case MEM_OFFSET_UXTW: Data += (uint32_t)Offset; break;\
-                    case MEM_OFFSET_SXTW: Data += (int32_t)Offset; break;\
+                  switch(Op->OffsetType.Val) {\
+                    case MEM_OFFSET_SXTX.Val: Data +=  Offset; break;\
+                    case MEM_OFFSET_UXTW.Val: Data += (uint32_t)Offset; break;\
+                    case MEM_OFFSET_SXTW.Val: Data += (int32_t)Offset; break;\
                   }\
                 }\
                 memcpy((y*)Data, GetSrc<y*>(SSAData, Op->Value), sizeof(y)); \
