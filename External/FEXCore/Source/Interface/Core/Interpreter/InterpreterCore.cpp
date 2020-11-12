@@ -902,15 +902,15 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_LoadMem>();
             uint8_t const *Data{};
             if (Thread->CTX->Config.UnifiedMemory) {
-              Data = *GetSrc<uint8_t const**>(SSAData, Op->Header.Args[0]);
+              Data = *GetSrc<uint8_t const**>(SSAData, Op->Addr);
             }
             else {
-              Data = Thread->CTX->MemoryMapper.GetPointer<uint8_t const*>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-              LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
+              Data = Thread->CTX->MemoryMapper.GetPointer<uint8_t const*>(*GetSrc<uint64_t*>(SSAData, Op->Addr));
+              LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Addr));
             }
 
-            if (!Op->Header.Args[2].IsInvalid()) {
-              auto Offset = *GetSrc<uintptr_t const*>(SSAData, Op->Header.Args[1]) * Op->OffsetScale;
+            if (!Op->Offset.IsInvalid()) {
+              auto Offset = *GetSrc<uintptr_t const*>(SSAData, Op->Offset) * Op->OffsetScale;
 
               switch(Op->OffsetType) {
                 case MEM_OFFSET_SXTX: Data +=  Offset; break;
@@ -944,14 +944,14 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               case x: { \
                 uint8_t *Data{}; \
                 if (Thread->CTX->Config.UnifiedMemory) { \
-                  Data = *GetSrc<uint8_t**>(SSAData, Op->Header.Args[0]); \
+                  Data = *GetSrc<uint8_t**>(SSAData, Op->Addr); \
                 } \
                 else { \
-                  Data = Thread->CTX->MemoryMapper.GetPointer<uint8_t*>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0])); \
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0])); \
+                  Data = Thread->CTX->MemoryMapper.GetPointer<uint8_t*>(*GetSrc<uint64_t*>(SSAData, Op->Addr)); \
+                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Addr)); \
                 } \
-                if (!Op->Header.Args[2].IsInvalid()) {\
-                  auto Offset = *GetSrc<uintptr_t const*>(SSAData, Op->Header.Args[2]) * Op->OffsetScale;\
+                if (!Op->Offset.IsInvalid()) {\
+                  auto Offset = *GetSrc<uintptr_t const*>(SSAData, Op->Offset) * Op->OffsetScale;\
                   \
                   switch(Op->OffsetType) {\
                     case MEM_OFFSET_SXTX: Data +=  Offset; break;\
@@ -959,7 +959,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                     case MEM_OFFSET_SXTW: Data += (int32_t)Offset; break;\
                   }\
                 }\
-                memcpy((y*)Data, GetSrc<y*>(SSAData, Op->Header.Args[1]), sizeof(y)); \
+                memcpy((y*)Data, GetSrc<y*>(SSAData, Op->Value), sizeof(y)); \
                 break; \
               }
 
