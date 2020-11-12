@@ -41,6 +41,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
 
+  auto Header = CurrentIR.GetHeader();
+
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
   auto HeaderOp = CurrentIR.GetHeader();
@@ -93,6 +95,38 @@ bool ConstProp::Run(IREmitter *IREmit) {
     break;
     }
 */
+    case OP_LOADMEMTSO:
+    case OP_LOADMEM: {
+      auto Op = IROp->CW<IR::IROp_LoadMem>();
+      auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
+
+      if (AddressHeader->Op == OP_ADD && !Header->ShouldInterpret) {
+
+        // use offset addressing
+        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwarpNode(AddressHeader->Args[0]));
+        IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwarpNode(AddressHeader->Args[1]));
+        
+        Changed = true;
+      }
+      break;
+    }
+
+    case OP_STOREMEMTSO:
+    case OP_STOREMEM: {
+      auto Op = IROp->CW<IR::IROp_LoadMem>();
+      auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
+
+      if (AddressHeader->Op == OP_ADD && !Header->ShouldInterpret) {
+
+        // use offset addressing
+        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwarpNode(AddressHeader->Args[0]));
+        IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->UnwarpNode(AddressHeader->Args[1]));
+        
+        Changed = true;
+      }
+      break;
+    }
+
     case OP_ADD: {
       auto Op = IROp->C<IR::IROp_Add>();
       uint64_t Constant1;

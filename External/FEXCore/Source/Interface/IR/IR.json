@@ -616,9 +616,10 @@
       "HasDest": true,
       "DestClass": "Complex",
       "DestSize": "Size",
-      "SSAArgs": "1",
+      "SSAArgs": "2",
       "SSANames": [
-        "Addr"
+        "Addr",
+        "Offset"
       ],
       "Args": [
         "uint8_t", "Size",
@@ -634,10 +635,11 @@
               ],
       "HasSideEffects": true,
       "OpClass": "Memory",
-      "SSAArgs": "2",
+      "SSAArgs": "3",
       "SSANames": [
         "Addr",
-        "Value"
+        "Value",
+        "Offset"
       ],
       "Args": [
         "uint8_t", "Size",
@@ -647,15 +649,16 @@
     },
 
     "LoadMemTSO": {
-      "Desc": ["Does a x86 TSO compatible load from memory."
+      "Desc": ["Does a x86 TSO compatible load from memory. Offset must be Invalid()."
               ],
       "OpClass": "Memory",
       "HasDest": true,
       "DestClass": "Complex",
       "DestSize": "Size",
-      "SSAArgs": "1",
+      "SSAArgs": "2",
       "SSANames": [
-        "Addr"
+        "Addr",
+        "Offset"
       ],
       "Args": [
         "uint8_t", "Size",
@@ -665,14 +668,15 @@
     },
 
     "StoreMemTSO": {
-      "Desc": ["Does a x86 TSO compatible store to memory."
+      "Desc": ["Does a x86 TSO compatible store to memory. Offset must be Invalid()."
               ],
       "HasSideEffects": true,
       "OpClass": "Memory",
-      "SSAArgs": "2",
+      "SSAArgs": "3",
       "SSANames": [
         "Addr",
-        "Value"
+        "Value",
+        "Offset"
       ],
       "Args": [
         "uint8_t", "Size",

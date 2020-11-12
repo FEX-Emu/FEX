@@ -467,24 +467,29 @@ DEF_OP(LoadMem) {
     mov(MemReg, Memory);
     add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
   }
+
+  auto MemPtr = MemReg + 0;
+  if (!Op->Header.Args[1].IsInvalid())
+    MemPtr = MemReg + GetSrc<RA_64>(Op->Header.Args[1].ID());
+
   if (Op->Class.Val == 0) {
     auto Dst = GetDst<RA_64>(Node);
 
     switch (Op->Size) {
       case 1: {
-        movzx (Dst, byte [MemReg]);
+        movzx (Dst, byte [MemPtr]);
       }
       break;
       case 2: {
-        movzx (Dst, word [MemReg]);
+        movzx (Dst, word [MemPtr]);
       }
       break;
       case 4: {
-        mov(Dst.cvt32(), dword [MemReg]);
+        mov(Dst.cvt32(), dword [MemPtr]);
       }
       break;
       case 8: {
-        mov(Dst, qword [MemReg]);
+        mov(Dst, qword [MemPtr]);
       }
       break;
       default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
@@ -496,28 +501,28 @@ DEF_OP(LoadMem) {
 
     switch (Op->Size) {
       case 1: {
-        movzx(eax, byte [MemReg]);
+        movzx(eax, byte [MemPtr]);
         vmovd(Dst, eax);
       }
       break;
       case 2: {
-        movzx(eax, byte [MemReg]);
+        movzx(eax, word [MemPtr]);
         vmovd(Dst, eax);
       }
       break;
       case 4: {
-        vmovd(Dst, dword [MemReg]);
+        vmovd(Dst, dword [MemPtr]);
       }
       break;
       case 8: {
-        vmovq(Dst, qword [MemReg]);
+        vmovq(Dst, qword [MemPtr]);
       }
       break;
       case 16: {
          if (Op->Size == Op->Align)
-           movups(GetDst(Node), xword [MemReg]);
+           movups(GetDst(Node), xword [MemPtr]);
          else
-           movups(GetDst(Node), xword [MemReg]);
+           movups(GetDst(Node), xword [MemPtr]);
          if (MemoryDebug) {
            movq(rcx, GetDst(Node));
          }
@@ -541,19 +546,23 @@ DEF_OP(StoreMem) {
     add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
   }
 
+  auto MemPtr = MemReg + 0;
+  if (!Op->Header.Args[2].IsInvalid())
+    MemPtr = MemReg + GetSrc<RA_64>(Op->Header.Args[2].ID());
+
   if (Op->Class.Val == 0) {
     switch (Op->Size) {
     case 1:
-      mov(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      mov(byte [MemPtr], GetSrc<RA_8>(Op->Header.Args[1].ID()));
     break;
     case 2:
-      mov(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      mov(word [MemPtr], GetSrc<RA_16>(Op->Header.Args[1].ID()));
     break;
     case 4:
-      mov(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      mov(dword [MemPtr], GetSrc<RA_32>(Op->Header.Args[1].ID()));
     break;
     case 8:
-      mov(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      mov(qword [MemPtr], GetSrc<RA_64>(Op->Header.Args[1].ID()));
     break;
     default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
     }
@@ -561,22 +570,22 @@ DEF_OP(StoreMem) {
   else {
     switch (Op->Size) {
     case 1:
-      pextrb(byte [MemReg], GetSrc(Op->Header.Args[1].ID()), 0);
+      pextrb(byte [MemPtr], GetSrc(Op->Header.Args[1].ID()), 0);
     break;
     case 2:
-      pextrw(word [MemReg], GetSrc(Op->Header.Args[1].ID()), 0);
+      pextrw(word [MemPtr], GetSrc(Op->Header.Args[1].ID()), 0);
     break;
     case 4:
-      vmovd(dword [MemReg], GetSrc(Op->Header.Args[1].ID()));
+      vmovd(dword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
     break;
     case 8:
-      vmovq(qword [MemReg], GetSrc(Op->Header.Args[1].ID()));
+      vmovq(qword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
     break;
     case 16:
       if (Op->Size == Op->Align)
-        movups(xword [MemReg], GetSrc(Op->Header.Args[1].ID()));
+        movups(xword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
       else
-        movups(xword [MemReg], GetSrc(Op->Header.Args[1].ID()));
+        movups(xword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
     break;
     default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
     }
