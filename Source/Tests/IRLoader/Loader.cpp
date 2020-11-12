@@ -36,6 +36,7 @@ std::string DecodeErrorToString(DecodeFailure Failure) {
     case DecodeFailure::DECODE_INVALIDREGISTERCLASS: return "Invalid register class";
     case DecodeFailure::DECODE_UNKNOWN_SSA: return "Unknown SSA value";
     case DecodeFailure::DECODE_INVALID_CONDFLAG: return "Invalid Conditional name";
+    case DecodeFailure::DECODE_INVALID_MEMOFFSETTYPE: return "Invalid Memory Offset Type";
   };
 }
 
@@ -135,6 +136,22 @@ namespace FEX::IRLoader {
       }
     }
     return {DecodeFailure::DECODE_INVALID_CONDFLAG, {}};
+  }
+
+  template<>
+  std::pair<DecodeFailure, FEXCore::IR::MemOffsetType> Loader::DecodeValue(std::string &Arg) {
+    std::array<std::string, 3> Names = {
+      "SXTX",
+      "UXTW",
+      "SXTW",
+    };
+
+    for (size_t i = 0; i < Names.size(); ++i) {
+      if (Names[i] == Arg) {
+        return {DecodeFailure::DECODE_OKAY, MemOffsetType{static_cast<uint8_t>(i)}};
+      }
+    }
+    return {DecodeFailure::DECODE_INVALID_MEMOFFSETTYPE, {}};
   }
 
   template<>
@@ -367,6 +384,9 @@ namespace FEX::IRLoader {
     }
 
     SetWriteCursor(nullptr); // isolate the header from everything following
+
+    // Initialize SSANameMapper with Invalid value
+    SSANameMapper["%Invalid"] = Invalid();
 
     // Spin through the blocks and generate basic block ops
     for(size_t i = 0; i < Defs.size(); ++i) {

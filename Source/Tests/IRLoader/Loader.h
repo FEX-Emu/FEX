@@ -23,6 +23,7 @@ enum class DecodeFailure {
   DECODE_INVALIDREGISTERCLASS,
   DECODE_UNKNOWN_SSA,
   DECODE_INVALID_CONDFLAG,
+  DECODE_INVALID_MEMOFFSETTYPE,
 };
 
 }
@@ -91,6 +92,10 @@ namespace FEX::IRLoader {
 
       template<>
       std::pair<DecodeFailure, FEXCore::IR::CondClassType>
+      DecodeValue(std::string &Arg);
+
+      template<>
+      std::pair<DecodeFailure, FEXCore::IR::MemOffsetType>
       DecodeValue(std::string &Arg);
 
       template<>
