@@ -17,7 +17,8 @@ namespace FEXCore::Config {
     CONFIG_IS64BIT_MODE,
     CONFIG_EMULATED_CPU_CORES,
     CONFIG_TSO_ENABLED,
-    CONFIG_SMC_CHECKS
+    CONFIG_SMC_CHECKS,
+    CONFIG_DUMPIR
   };
 
   enum ConfigCore {

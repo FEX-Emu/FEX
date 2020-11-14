@@ -127,6 +127,10 @@ namespace FEX::EnvLoader {
       if ((Value = GetVar("FEX_OUTPUTLOG")).size()) {
         Config::Add("OutputLog", Value);
       }
+
+      if ((Value = GetVar("FEX_DUMPIR")).size()) {
+        Config::Add("DumpIR", Value);
+      }
     }
   }
 

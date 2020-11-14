@@ -142,6 +142,11 @@ namespace FEX::ArgLoader {
           .help("File to write FEX output to [stdout, stderr, <Filename>]")
           .set_default("stderr");
 
+      LoggingGroup.add_option("--dump-ir")
+          .dest("DumpIR")
+          .help("Folder to dump the IR [no, stdout, stderr, <Folder>]")
+          .set_default("no");
+
       Parser.add_option_group(LoggingGroup);
     }
 
@@ -258,6 +263,11 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("OutputLog")) {
         std::string OutputLog = Options["OutputLog"];
         Config::Add("OutputLog", OutputLog);
+      }
+
+      if (Options.is_set_by_user("DumpIR")) {
+        std::string DumpIR = Options["DumpIR"];
+        Config::Add("DumpIR", DumpIR);
       }
     }
 
