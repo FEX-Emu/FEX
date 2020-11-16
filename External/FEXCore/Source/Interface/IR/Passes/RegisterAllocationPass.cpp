@@ -71,6 +71,8 @@ namespace {
     uint32_t NodeCount;
     uint32_t MaxNodeCount;
     std::vector<SpillStackUnit> SpillStack;
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> BlockPredecessors;
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> VisitedNodePredecessors;
   };
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount);
@@ -304,6 +306,8 @@ namespace FEXCore::IR {
       void CalculateBlockNodeInterference(FEXCore::IR::IRListView<false> *IR);
       void CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR);
       void AllocateVirtualRegisters();
+      void CalculatePrecessors(FEXCore::IR::IRListView<false> *IR);
+      void RecursiveLiveRangeExpansion(FEXCore::IR::IRListView<false> *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors);
 
       FEXCore::IR::AllNodesIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
       FEXCore::IR::AllNodesIterator FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
@@ -348,6 +352,29 @@ namespace FEXCore::IR {
     return Graph->Nodes[Node].Head.RegAndClass;
   }
 
+  void ConstrainedRAPass::RecursiveLiveRangeExpansion(FEXCore::IR::IRListView<false> *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors) {
+    for (auto PredecessorId: Predecessors) {
+      if (DefiningBlockID != PredecessorId && !VisitedPredecessors.contains(PredecessorId)) {
+        // do the magic
+        VisitedPredecessors.insert(PredecessorId);
+
+        auto [_, IROp] = *IR->at(PredecessorId);
+
+        auto Op = IROp->C<IROp_CodeBlock>();
+
+        LogMan::Throw::A(Op->Header.Op == OP_CODEBLOCK, "Block not defined by codeblock?");
+
+        LiveRange->Begin = std::min(LiveRange->Begin, Op->Begin.ID());
+        LiveRange->End = std::max(LiveRange->End, Op->Begin.ID());
+
+        LiveRange->Begin = std::min(LiveRange->Begin, Op->Last.ID());
+        LiveRange->End = std::max(LiveRange->End, Op->Last.ID());
+
+        RecursiveLiveRangeExpansion(IR, Node, DefiningBlockID, LiveRange, Graph->BlockPredecessors[PredecessorId], VisitedPredecessors);
+      }
+    }
+  }
+
   void ConstrainedRAPass::CalculateLiveRange(FEXCore::IR::IRListView<false> *IR) {
     using namespace FEXCore;
     size_t Nodes = IR->GetSSACount();
@@ -358,6 +385,7 @@ namespace FEXCore::IR {
 
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+      uint32_t BlockNodeID = IR->GetID(BlockNode);
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         uint32_t Node = IR->GetID(CodeNode);
 
@@ -385,16 +413,30 @@ namespace FEXCore::IR {
         }
 
         // Set this node's block ID
-        Graph->Nodes[Node].Head.BlockID = IR->GetID(BlockNode);
+        Graph->Nodes[Node].Head.BlockID = BlockNodeID;
 
         uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
           uint32_t ArgNode = IROp->Args[i].ID();
-          // Set the node end to be at least here
-          LiveRanges[ArgNode].End = Node;
           LogMan::Throw::A(LiveRanges[ArgNode].Begin != ~0U, "%%ssa%d used by %%ssa%d before defined?", ArgNode, Node);
+
+          auto ArgNodeBlockID = Graph->Nodes[ArgNode].Head.BlockID;
+          if ( ArgNodeBlockID== BlockNodeID) {
+            // Set the node end to be at least here
+            LiveRanges[ArgNode].End = Node;
+          } else {
+            // Grow the live range to include this use
+            LiveRanges[ArgNode].Begin = std::min(LiveRanges[ArgNode].Begin, Node);
+            LiveRanges[ArgNode].End = std::max(LiveRanges[ArgNode].End, Node);
+
+            // Can't spill this range, it is MB
+            LiveRanges[ArgNode].RematCost = -1;
+
+            // Include any blocks this value passes through in the live range
+            RecursiveLiveRangeExpansion(IR, ArgNode, ArgNodeBlockID, &LiveRanges[ArgNode], Graph->BlockPredecessors[BlockNodeID], Graph->VisitedNodePredecessors[ArgNode]);
+          }
         }
 
         if (IROp->Op == IR::OP_PHI) {
@@ -1023,6 +1065,23 @@ namespace FEXCore::IR {
   }
 
 
+  void ConstrainedRAPass::CalculatePrecessors(FEXCore::IR::IRListView<false> *IR) {
+    Graph->BlockPredecessors.clear();
+
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        if (IROp->Op == OP_JUMP) {
+          auto Op = IROp->C<IROp_Jump>();
+          Graph->BlockPredecessors[Op->Target.ID()].insert(IR->GetID(BlockNode));
+        } else if (IROp->Op == OP_CONDJUMP) {
+          auto Op = IROp->C<IROp_CondJump>();
+          Graph->BlockPredecessors[Op->TrueBlock.ID()].insert(IR->GetID(BlockNode));
+          Graph->BlockPredecessors[Op->FalseBlock.ID()].insert(IR->GetID(BlockNode));
+        }
+      }
+    }
+  }
+
   bool ConstrainedRAPass::Run(IREmitter *IREmit) {
     bool Changed = false;
 
@@ -1035,6 +1094,8 @@ namespace FEXCore::IR {
 
     SpillSlotCount = 0;
     Graph->SpillStack.clear();
+
+    CalculatePrecessors(&IR);
 
     while (1) {
       HadFullRA = true;
