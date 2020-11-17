@@ -62,10 +62,10 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
       if (IREmit->IsValueConstant(Src0Header->Args[1], &Scale)) {
         if (IsMemoryScale(Scale, AccessSize)) {
           // remove mul as it can be folded to the mem op
-          return { MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+          return { MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
         } else if (Scale == 1) {
           // remove nop mul
-          return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+          return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
         }
       }
     }
@@ -76,10 +76,10 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
         uint64_t Scale = 1<<Constant2;
         if (IsMemoryScale(Scale, AccessSize)) {
           // remove shift as it can be folded to the mem op
-          return { MEM_OFFSET_SXTX, Scale, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+          return { MEM_OFFSET_SXTX, Scale, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
         } else if (Scale == 1) {
           // remove nop shift
-          return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+          return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
         }
       }
     }
@@ -89,7 +89,7 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
       auto Bfe = Src0Header->C<IROp_Bfe>();
       if (Bfe->lsb == 0 && Bfe->Width == 32) {
         //todo: arm can also scale here
-        return { MEM_OFFSET_UXTW, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+        return { MEM_OFFSET_UXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
       }
     }
     //Try to optimize: Base + (s32)Offset
@@ -97,14 +97,14 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
       auto Sbfe = Src0Header->C<IROp_Sbfe>();
       if (Sbfe->lsb == 0 && Sbfe->Width == 32) {
         //todo: arm can also scale here
-        return { MEM_OFFSET_SXTW, 1, IREmit->UnwarpNode(AddressHeader->Args[1]), IREmit->UnwarpNode(Src0Header->Args[0]) };
+        return { MEM_OFFSET_SXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
       }
     }
 #endif
   }
 
   // no match anywhere, just add
-  return { MEM_OFFSET_SXTX, 1, IREmit->UnwarpNode(AddressHeader->Args[0]), IREmit->UnwarpNode(AddressHeader->Args[1]) };
+  return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[0]), IREmit->UnwrapNode(AddressHeader->Args[1]) };
 }
 
 bool ConstProp::Run(IREmitter *IREmit) {
