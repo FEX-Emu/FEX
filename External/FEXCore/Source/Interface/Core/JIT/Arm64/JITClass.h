@@ -148,6 +148,8 @@ private:
   aarch64::VRegister GetSrc(uint32_t Node);
   aarch64::VRegister GetDst(uint32_t Node);
 
+  MemOperand GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
+
   bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
 
   struct LiveRange {
@@ -350,7 +352,6 @@ private:
   DEF_OP(FillRegister);
   DEF_OP(LoadFlag);
   DEF_OP(StoreFlag);
-  MemOperand GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
   DEF_OP(LoadMem);
   DEF_OP(StoreMem);
   DEF_OP(LoadMemTSO);

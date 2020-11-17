@@ -115,6 +115,8 @@ private:
   Xbyak::Xmm GetSrc(uint32_t Node);
   Xbyak::Xmm GetDst(uint32_t Node);
 
+  Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
+
   bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
@@ -290,7 +292,6 @@ private:
   DEF_OP(FillRegister);
   DEF_OP(LoadFlag);
   DEF_OP(StoreFlag);
-  Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
   DEF_OP(LoadMem);
   DEF_OP(StoreMem);
   DEF_OP(VLoadMemElement);
