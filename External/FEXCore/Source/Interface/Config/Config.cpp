@@ -51,6 +51,9 @@ namespace FEXCore::Config {
     case CONFIG_THUNKLIBSPATH:
       CTX->Config.ThunkLibsPath = Config;
       break;
+    case FEXCore::Config::CONFIG_DUMPIR:
+      CTX->Config.DumpIR = Config;
+      break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
   }

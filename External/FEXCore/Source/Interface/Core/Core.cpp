@@ -732,8 +732,48 @@ namespace FEXCore::Context {
 
       Thread->OpDispatcher->Finalize();
 
+
+
+      auto IRDumper = [Thread, GuestRIP](IR::RegisterAllocationPass* RA) {
+        FILE* f = nullptr;
+        bool CloseAfter = false;
+
+        if (Thread->CTX->Config.DumpIR=="stderr") {
+          f = stderr;
+        }
+        else if (Thread->CTX->Config.DumpIR=="stdout") { 
+          f = stdout;
+        }
+        else {
+          std::stringstream fileName;
+          fileName << Thread->CTX->Config.DumpIR  << "/" << std::hex << GuestRIP << (RA ? "-post.ir" : "-pre.ir");
+
+          f = fopen(fileName.str().c_str(), "w");
+          CloseAfter = true;
+        }
+
+        if (f) {
+          std::stringstream out;
+          auto NewIR = Thread->OpDispatcher->ViewIR();
+          FEXCore::IR::Dump(&out, &NewIR, RA);
+          fprintf(f,"IR-%s 0x%lx:\n%s\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str().c_str());
+
+          if (CloseAfter) {
+            fclose(f);
+          }
+        }
+      };
+
+      if (Thread->CTX->Config.DumpIR != "no") {
+        IRDumper(nullptr);
+      }
+
       // Run the passmanager over the IR from the dispatcher
       Thread->PassManager->Run(Thread->OpDispatcher.get());
+
+      if (Thread->CTX->Config.DumpIR != "no") {
+        IRDumper(Thread->PassManager->GetRAPass());
+      }
 
       if (Thread->OpDispatcher->ShouldDump) {
         std::stringstream out;
