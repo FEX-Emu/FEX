@@ -62,8 +62,11 @@ namespace FEXCore::Context {
       uint64_t EmulatedCPUCores{1};
       bool TSOEnabled {true};
       bool SMCChecks {false};
+      bool ABILocalFlags {false};
+      bool ABINoPF {false};
 
       std::string DumpIR;
+      
     } Config;
 
     FEXCore::Memory::MemMapper MemoryMapper;

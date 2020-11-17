@@ -142,6 +142,7 @@ void JITCore::RegisterMiscHandlers() {
   REGISTER_OP(PRINT,      Print);
   REGISTER_OP(GETROUNDINGMODE, GetRoundingMode);
   REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
+  REGISTER_OP(INVALIDATEFLAGS,   NoOp);
 #undef REGISTER_OP
 }
 }

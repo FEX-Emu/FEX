@@ -144,6 +144,11 @@ void OpDispatchBuilder::NOPOp(OpcodeArgs) {
 void OpDispatchBuilder::RETOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
+  // ABI Optimization: Flags don't survive calls or rets
+  if (CTX->Config.ABILocalFlags) {
+    _InvalidateFlags();
+  }
+  
   auto Constant = _Constant(GPRSize);
 
   auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
@@ -622,6 +627,12 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
   BlockSetRIP = true;
+
+  // ABI Optimization: Flags don't survive calls or rets
+  if (CTX->Config.ABILocalFlags) {
+    _InvalidateFlags();
+  }
+
   auto ConstantPC = _Constant(Op->PC + Op->InstSize);
 
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -4721,7 +4732,7 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto PopCountOp = _Popcount(_And(Res, _Constant(0xFF)));
 
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -4788,7 +4799,7 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto PopCountOp = _Popcount(_And(Res, _Constant(0xFF)));
 
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -4854,7 +4865,7 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -4909,7 +4920,7 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5019,7 +5030,7 @@ void OpDispatchBuilder::GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, 
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5056,7 +5067,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5102,7 +5113,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftRight(FEXCore::X86Tables::DecodedOp O
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5148,7 +5159,7 @@ void OpDispatchBuilder::GenerateFlags_SignShiftRight(FEXCore::X86Tables::Decoded
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5194,7 +5205,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::Dec
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5241,7 +5252,7 @@ void OpDispatchBuilder::GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
@@ -5290,7 +5301,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::De
   }
 
   // PF
-  {
+  if (!CTX->Config.ABINoPF) {
     auto EightBitMask = _Constant(0xFF);
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
