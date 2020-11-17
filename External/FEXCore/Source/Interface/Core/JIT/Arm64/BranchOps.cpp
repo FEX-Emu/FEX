@@ -26,7 +26,7 @@ DEF_OP(SignalReturn) {
 
   // Now branch to our signal return helper
   // This can't be a direct branch since the code needs to live at a constant location
-  LoadConstant(x0, SignalReturnInstruction);
+  LoadConstant(x0, ThreadSharedData.SignalReturnInstruction);
   br(x0);
 }
 
@@ -36,7 +36,7 @@ DEF_OP(CallbackReturn) {
   add(sp, TMP1, 0); // Move that supports SP
 
   // We can now lower the ref counter again
-  LoadConstant(x0, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
+  LoadConstant(x0, reinterpret_cast<uint64_t>(ThreadSharedData.SignalHandlerRefCounterPtr));
   ldr(w2, MemOperand(x0));
   sub(w2, w2, 1);
   str(w2, MemOperand(x0));

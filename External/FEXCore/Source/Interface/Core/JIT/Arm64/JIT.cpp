@@ -15,6 +15,12 @@
 #include <ucontext.h>
 
 namespace FEXCore::CPU {
+
+void JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
+  JITCore *Core = reinterpret_cast<JITCore*>(Original);
+  ThreadSharedData = Core->ThreadSharedData;
+}
+
 static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
   --ctx->IdleWaitRefCount;
   ctx->IdleWaitCV.notify_all();
@@ -170,7 +176,7 @@ bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
-  if (_mcontext->pc == SignalReturnInstruction) {
+  if (_mcontext->pc == ThreadSharedData.SignalReturnInstruction) {
     RestoreThreadState(ucontext);
 
     // Ref count our faults
@@ -376,6 +382,8 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   , InitialCodeBuffer {Buffer}
 {
   CurrentCodeBuffer = &InitialCodeBuffer;
+  ThreadSharedData.SignalHandlerRefCounterPtr = &SignalHandlerRefCounter;
+
   auto Features = vixl::CPUFeatures::InferFromOS();
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
   SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
@@ -462,7 +470,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 void JITCore::ClearCache() {
   // Get the backing code buffer
   auto Buffer = GetBuffer();
-  if (SignalHandlerRefCounter == 0) {
+  if (*ThreadSharedData.SignalHandlerRefCounterPtr == 0) {
     if (!CodeBuffers.empty()) {
       // If we have more than one code buffer we are tracking then walk them and delete
       // This is a cleanup step
@@ -594,7 +602,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   auto HeaderOp = IR->GetHeader();
   if (HeaderOp->ShouldInterpret) {
-    return reinterpret_cast<void*>(InterpreterFallbackHelperAddress);
+    return reinterpret_cast<void*>(ThreadSharedData.InterpreterFallbackHelperAddress);
   }
 
   this->IR = IR;
@@ -987,7 +995,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     Label RestoreContextStateHelperLabel{};
     bind(&RestoreContextStateHelperLabel);
-    SignalReturnInstruction = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    ThreadSharedData.SignalReturnInstruction = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
     // Now to get back to our old location we need to do a fault dance
     // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
@@ -997,7 +1005,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     Label InterpreterFallback{};
     bind(&InterpreterFallback);
-    InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    ThreadSharedData.InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     mov(x0, STATE);
     ldr(x1, &l_Interpreter);
 

@@ -69,6 +69,7 @@ public:
   bool HandleSIGILL(int Signal, void *info, void *ucontext);
   bool HandleSignalPause(int Signal, void *info, void *ucontext);
   bool HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack);
+  void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
 private:
   Label* PendingTargetLabel{};
@@ -120,8 +121,6 @@ private:
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   IR::RegisterAllocationPass *RAPass;
 
-  void *InterpreterFallbackHelperAddress;
-
 #ifdef BLOCKSTATS
   bool GetSamplingData {true};
 #endif
@@ -150,12 +149,20 @@ private:
   uint64_t AbsoluteLoopTopAddress{};
   uint64_t ThreadStopHandlerAddress{};
   uint64_t ThreadPauseHandlerAddress{};
-  Label ThreadPauseHandler{};
 
-  uint64_t SignalHandlerReturnAddress{};
   uint64_t PauseReturnInstruction{};
 
   uint32_t SignalHandlerRefCounter{};
+
+  struct CompilerSharedData {
+    void *InterpreterFallbackHelperAddress;
+
+    uint64_t SignalHandlerReturnAddress{};
+
+    uint32_t *SignalHandlerRefCounterPtr{};
+  };
+
+  CompilerSharedData ThreadSharedData;
 
   void StoreThreadState(int Signal, void *ucontext);
   void RestoreThreadState(void *ucontext);

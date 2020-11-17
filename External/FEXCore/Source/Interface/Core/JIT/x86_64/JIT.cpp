@@ -23,7 +23,7 @@ CodeBuffer AllocateNewCodeBuffer(size_t Size) {
                     PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE | MAP_ANONYMOUS,
                     -1, 0));
-  LogMan::Throw::A(!!Buffer.Ptr, "Couldn't allocate code buffer");
+  LogMan::Throw::A(Buffer.Ptr != reinterpret_cast<uint8_t*>(~0ULL), "Couldn't allocate code buffer");
   return Buffer;
 }
 
@@ -173,11 +173,16 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDe
   return true;
 }
 
+void JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
+  JITCore *Core = reinterpret_cast<JITCore*>(Original);
+  ThreadSharedData = Core->ThreadSharedData;
+}
+
 bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
-  if (_mcontext->gregs[REG_RIP] == SignalHandlerReturnAddress) {
+  if (_mcontext->gregs[REG_RIP] == ThreadSharedData.SignalHandlerReturnAddress) {
     RestoreThreadState(ucontext);
 
     // Ref count our faults
@@ -269,6 +274,8 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   , ThreadState {Thread}
   , InitialCodeBuffer {Buffer}
 {
+  ThreadSharedData.SignalHandlerRefCounterPtr = &SignalHandlerRefCounter;
+
   CurrentCodeBuffer = &InitialCodeBuffer;
 
   RAPass = Thread->PassManager->GetRAPass();
@@ -331,7 +338,7 @@ JITCore::~JITCore() {
 }
 
 void JITCore::ClearCache() {
-  if (SignalHandlerRefCounter == 0) {
+  if (*ThreadSharedData.SignalHandlerRefCounterPtr == 0) {
     if (!CodeBuffers.empty()) {
       // If we have more than one code buffer we are tracking then walk them and delete
       // This is a cleanup step
@@ -484,7 +491,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   auto HeaderOp = IR->GetHeader();
   if (HeaderOp->ShouldInterpret) {
-    return InterpreterFallbackHelperAddress;
+    return ThreadSharedData.InterpreterFallbackHelperAddress;
   }
 
   // Fairly excessive buffer range to make sure we don't overflow
@@ -704,6 +711,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
   Label LoopTop;
   Label NoBlock;
+  Label ThreadPauseHandler{};
 
   L(LoopTop);
   AbsoluteLoopTopAddress = getCurr<uint64_t>();
@@ -812,7 +820,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
   {
     // Interpreter fallback helper code
-    InterpreterFallbackHelperAddress = getCurr<void*>();
+    ThreadSharedData.InterpreterFallbackHelperAddress = getCurr<void*>();
     // This will get called so our stack is now misaligned
     sub(rsp, 8);
     mov(rdi, STATE);
@@ -829,7 +837,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
   {
     // Signal return handler
-    SignalHandlerReturnAddress = getCurr<uint64_t>();
+    ThreadSharedData.SignalHandlerReturnAddress = getCurr<uint64_t>();
 
     ud2();
   }

@@ -100,6 +100,8 @@ public:
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   static CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
+  void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
+
 private:
   Label *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
@@ -204,12 +206,10 @@ private:
   aarch64::Label LoopTop{};
   aarch64::Label Exit{};
   uint64_t AbsoluteLoopTopAddress{};
-  uint64_t InterpreterFallbackHelperAddress{};
   uint64_t ThreadPauseHandlerAddress{};
+
   Label ThreadPauseHandler{};
   uint64_t ThreadStopHandlerAddress{};
-
-  uint64_t SignalReturnInstruction{};
   uint64_t PauseReturnInstruction{};
 
   uint32_t SignalHandlerRefCounter{};
@@ -218,6 +218,15 @@ private:
   void RestoreThreadState(void *ucontext);
   /**  @} */
 
+  struct CompilerSharedData {
+    uint64_t InterpreterFallbackHelperAddress{};
+
+    uint64_t SignalReturnInstruction{};
+
+    uint32_t *SignalHandlerRefCounterPtr{};
+  };
+
+  CompilerSharedData ThreadSharedData;
   IR::RegisterAllocationPass *RAPass;
 
   uint32_t SpillSlots{};
