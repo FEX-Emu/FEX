@@ -424,10 +424,14 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         if (LastAccess == ACCESS_WRITE &&
             LastClass == Op->Class &&
             LastOffset == Op->Offset &&
-            LastSize == IROp->Size) {
+            LastSize <= IROp->Size) {
           // Remove the last store because this one overwrites it entirely
           // Happens when we store in to a location then store again
           IREmit->Remove(LastStoreNode);
+
+          if (LastSize < IROp->Size) {
+            //printf("RCLSE: Eliminated partial write\n");
+          }
           Changed = true;
         }
       }
@@ -445,46 +449,76 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         if ((LastAccess == ACCESS_WRITE || LastAccess == ACCESS_PARTIAL_WRITE) &&
             LastClass == Op->Class &&
             LastOffset == Op->Offset &&
-            LastClass == GPRClass &&
             IROp->Size <= LastSize) {
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
 
-          IREmit->SetWriteCursor(CodeNode);
+          if (LastClass == GPRClass) {
+            IREmit->SetWriteCursor(CodeNode);
 
-          uint8_t TruncateSize = IREmit->GetOpSize(LastNode);
+            uint8_t TruncateSize = IREmit->GetOpSize(LastNode);
 
-          // Did store context do an implicit truncation?
-          if (IREmit->GetOpSize(LastStoreNode) < TruncateSize)
-             TruncateSize = IREmit->GetOpSize(LastStoreNode);
+            // Did store context do an implicit truncation?
+            if (IREmit->GetOpSize(LastStoreNode) < TruncateSize)
+              TruncateSize = IREmit->GetOpSize(LastStoreNode);
 
-          // Or are we doing a partial read
-          if (IROp->Size < TruncateSize)
-             TruncateSize = IROp->Size;
+            // Or are we doing a partial read
+            if (IROp->Size < TruncateSize)
+              TruncateSize = IROp->Size;
 
-          if (TruncateSize != IREmit->GetOpSize(LastNode)) {
-            // We need to insert an explict truncation
-            if (LastClass == FPRClass) {
-              LastNode = IREmit->_VMov(LastNode, TruncateSize); // Vmov truncates and zexts when register width is smaller than source
+            if (TruncateSize != IREmit->GetOpSize(LastNode)) {
+              // We need to insert an explict truncation
+              if (LastClass == FPRClass) {
+                LastNode = IREmit->_VMov(LastNode, TruncateSize); // Vmov truncates and zexts when register width is smaller than source
+              }
+              else if (LastClass == GPRPairClass) {
+                LastNode = IREmit->_TruncElementPair(LastNode, TruncateSize);
+              }
+              else if (LastClass == GPRClass) {
+                LastNode = IREmit->_Bfe(Info->AccessSize, TruncateSize * 8, 0, LastNode);
+              } else {
+                LogMan::Msg::A("Unhandled Register class");
+              }
             }
-            else if (LastClass == GPRPairClass) {
-              LastNode = IREmit->_TruncElementPair(LastNode, TruncateSize);
-            }
-            else if (LastClass == GPRClass) {
-              LastNode = IREmit->_Bfe(Info->AccessSize, TruncateSize * 8, 0, LastNode);
+
+            IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
+            RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
+            Changed = true;
+          } else {
+            if (LastClass == FPRClass && LastSize == IROp->Size && LastSize == IREmit->GetOpSize(LastNode)) {
+              // LoadCtx matches StoreCtx and Node Size
+              IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
+              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
+              Changed = true;
+            } else if (LastClass == FPRClass && LastSize >= IROp->Size && IROp->Size == IREmit->GetOpSize(LastNode)) {
+              // LoadCtx is <= StoreCtx and Node is LoadCtx
+              IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
+              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
+              Changed = true;
+            } else if (LastClass == FPRClass && LastSize >= IROp->Size && IROp->Size < IREmit->GetOpSize(LastNode)) {
+              IREmit->SetWriteCursor(CodeNode);
+              // trucate to size
+              LastNode = IREmit->_VMov(LastNode, IROp->Size);
+              IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
+              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
+              Changed = true;
+            } else if (LastClass == FPRClass && LastSize >= IROp->Size && IROp->Size > IREmit->GetOpSize(LastNode)) {
+              IREmit->SetWriteCursor(CodeNode);
+              // zext to size
+              LastNode = IREmit->_VMov(LastNode, IROp->Size);
+
+              IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
+              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
+              Changed = true;
             } else {
-              LogMan::Msg::A("Unhandled Register class");
+              //printf("RCLSE: Not GPR class, missed, %d, lastS: %d, S: %d, Node S: %d\n", LastClass, LastSize, IROp->Size, IREmit->GetOpSize(LastNode));
             }
           }
-
-          IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
-          RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
-          Changed = true;
         }
         else if ((LastAccess == ACCESS_READ || LastAccess == ACCESS_PARTIAL_READ) &&
                  LastClass == Op->Class &&
                  LastOffset == Op->Offset &&
                  LastSize == IROp->Size &&
-                 Info->Accessed == ACCESS_READ) {
+                 (Info->Accessed == ACCESS_READ || Info->Accessed == ACCESS_PARTIAL_READ)) {
           // Did we read and then read again?
           IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
           RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
