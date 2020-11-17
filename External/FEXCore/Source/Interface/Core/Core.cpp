@@ -533,7 +533,7 @@ namespace FEXCore::Context {
       State->IntBackend = State->CPUBackend;
       break;
     case FEXCore::Config::CONFIG_IRJIT:
-      State->PassManager->InsertRAPass(IR::CreateRegisterAllocationPass());
+      State->PassManager->InsertRegisterAllocationPass();
       // Initialization order matters here, the IR JIT may want to have the interpreter created first to get a pointer to its execution function
       // This is useful for JIT to interpreter fallback support
       State->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread));

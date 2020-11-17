@@ -39,10 +39,8 @@ public:
     Pass->RegisterPassManager(this);
     Passes.emplace_back(Pass);
   }
-  void InsertRAPass(Pass *Pass) {
-    RAPass = Pass;
-    InsertPass(Pass);
-  }
+
+  void InsertRegisterAllocationPass();
 
   bool Run(IREmitter *IREmit);
 
@@ -68,6 +66,7 @@ protected:
 
 private:
   Pass *RAPass{};
+  FEXCore::IR::Pass *CompactionPass{};
 
   std::vector<std::unique_ptr<Pass>> Passes;
 
