@@ -512,12 +512,21 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             break;
           case IR::OP_CONDJUMP: {
             auto Op = IROp->C<IR::IROp_CondJump>();
-            uint64_t Arg = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-            if (!!Arg) {
-              BlockIterator = NodeIterator(ListBegin, DataBegin, Op->Header.Args[1]);
+            bool CompResult;
+
+            uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Cmp1);
+            uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Cmp2);
+
+            if (Op->CompareSize == 4)
+              CompResult = IsConditionTrue<uint32_t, int32_t>(Op->Cond.Val, Src1, Src2);
+            else
+              CompResult = IsConditionTrue<uint64_t, int64_t>(Op->Cond.Val, Src1, Src2);
+
+            if (CompResult) {
+              BlockIterator = NodeIterator(ListBegin, DataBegin, Op->TrueBlock);
             }
             else  {
-              BlockIterator = NodeIterator(ListBegin, DataBegin, Op->Header.Args[2]);
+              BlockIterator = NodeIterator(ListBegin, DataBegin, Op->FalseBlock);
             }
             BlockResults.Redo = true;
             return;

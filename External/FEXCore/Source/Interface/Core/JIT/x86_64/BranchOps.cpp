@@ -89,32 +89,60 @@ DEF_OP(Jump) {
   PendingTargetLabel = TargetLabel;
 }
 
+#define GRCMP(Node) (Op->CompareSize == 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
+
 DEF_OP(CondJump) {
   auto Op = IROp->C<IR::IROp_CondJump>();
 
   Label *TrueTargetLabel;
   Label *FalseTargetLabel;
 
-  auto TrueIter = JumpTargets.find(Op->Header.Args[1].ID());
-  auto FalseIter = JumpTargets.find(Op->Header.Args[2].ID());
+  auto TrueIter = JumpTargets.find(Op->TrueBlock.ID());
+  auto FalseIter = JumpTargets.find(Op->FalseBlock.ID());
 
   if (TrueIter == JumpTargets.end()) {
-    TrueTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[1].ID()).first->second;
+    TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
   }
   else {
     TrueTargetLabel = &TrueIter->second;
   }
 
+
+  uint64_t Const;
+  bool isConst = IsInlineConstant(Op->Cmp2, &Const);
+
+  if (isConst)
+    cmp(GRCMP(Op->Cmp1.ID()), Const);
+  else
+    cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+
+  switch (Op->Cond.Val) {
+    case FEXCore::IR::COND_EQ:  je(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_NEQ: jne(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_SGE: jge(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_SLT: jl(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_SGT: jg(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_SLE: jle(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_UGE: jae(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_ULT: jb(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_UGT: ja(*TrueTargetLabel, T_NEAR); break;
+    case FEXCore::IR::COND_ULE: jna(*TrueTargetLabel, T_NEAR); break;
+
+    case FEXCore::IR::COND_MI:
+    case FEXCore::IR::COND_PL:
+    case FEXCore::IR::COND_VS:
+    case FEXCore::IR::COND_VC:
+    default:
+      LogMan::Msg::A("Unsupported compare type");
+      break;
+  }
+
   if (FalseIter == JumpTargets.end()) {
-    FalseTargetLabel = &JumpTargets.try_emplace(Op->Header.Args[2].ID()).first->second;
+    FalseTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
   }
   else {
     FalseTargetLabel = &FalseIter->second;
   }
-
-  // Take branch if (src != 0)
-  cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), 0);
-  jne(*TrueTargetLabel, T_NEAR);
 
   PendingTargetLabel = FalseTargetLabel;
 }

@@ -331,8 +331,13 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }
+
   IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0) {
-    return _CondJump(ssa0, InvalidNode, InvalidNode);
+    return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, {COND_NEQ}, GetOpSize(ssa0));
+  }
+
+  IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2) {
+    return _CondJump(ssa0, _Constant(0), ssa1, ssa2, {COND_NEQ}, GetOpSize(ssa0));
   }
 
   IRPair<IROp_Phi> _Phi() {
@@ -377,7 +382,7 @@ friend class FEXCore::IR::PassManager;
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
 
-    Op->Header.Args[1].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+    Op->TrueBlock.NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
   void SetFalseJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
     LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
@@ -385,7 +390,7 @@ friend class FEXCore::IR::PassManager;
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
 
-    Op->Header.Args[2].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+    Op->FalseBlock.NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
 
   void SetJumpTarget(IRPair<IROp_Jump> Op, OrderedNode *Target) {
@@ -401,14 +406,14 @@ friend class FEXCore::IR::PassManager;
         "Tried setting CondJump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
-    Op.first->Header.Args[1].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+    Op.first->TrueBlock.NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
   void SetFalseJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
     LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting CondJump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
-    Op.first->Header.Args[2].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
+    Op.first->FalseBlock.NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
 
   /**  @} */
@@ -436,6 +441,10 @@ friend class FEXCore::IR::PassManager;
   FEXCore::IR::IROp_Header *GetOpHeader(OrderedNodeWrapper ssa) {
     OrderedNode *RealNode = ssa.GetNode(ListData.Begin());
     return RealNode->Op(Data.Begin());
+  }
+
+  OrderedNode *UnwrapNode(OrderedNodeWrapper ssa) {
+    return ssa.GetNode(ListData.Begin());
   }
 
   // Overwrite a node with a constant
