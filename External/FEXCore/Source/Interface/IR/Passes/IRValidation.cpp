@@ -260,7 +260,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
       Out << "Warnings:" << std::endl << Warnings.str() << std::endl;
     }
 
-    std::cerr << Out.str() << std::endl;
+    LogMan::Msg::E("%s", Out.str().c_str());
   }
 
   return false;
