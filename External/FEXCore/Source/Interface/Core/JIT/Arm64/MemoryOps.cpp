@@ -700,14 +700,8 @@ void JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STOREFLAG,           StoreFlag);
   REGISTER_OP(LOADMEM,             LoadMem);
   REGISTER_OP(STOREMEM,            StoreMem);
-  if (CTX->Config.TSOEnabled) {
-    REGISTER_OP(LOADMEMTSO,          LoadMemTSO);
-    REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
-  }
-  else {
-    REGISTER_OP(LOADMEMTSO,          Unhandled);
-    REGISTER_OP(STOREMEMTSO,         Unhandled);
-  }
+  REGISTER_OP(LOADMEMTSO,          LoadMemTSO);
+  REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
 #undef REGISTER_OP
