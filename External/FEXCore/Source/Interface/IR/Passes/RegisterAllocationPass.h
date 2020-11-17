@@ -1,3 +1,4 @@
+#pragma once
 #include "Interface/IR/PassManager.h"
 #include <vector>
 
