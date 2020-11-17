@@ -983,9 +983,17 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
         break;
       }
 
-      if (DecodedSize >= CTX->Config.MaxInstPerBlock ||
-          DecodedSize >= DecodedBuffer.size()) {
+      if (DecodedSize >= CTX->Config.MaxInstPerBlock) {
         break;
+      }
+
+      if (DecodedSize >= DecodedBuffer.size() &&
+          DecodedBuffer.size() == MaxDecodedBufferSize) {
+        break;
+      }
+      else if (DecodedSize >= DecodedBuffer.size()) {
+        // We can keep going
+        DecodedBuffer.resize(std::min(static_cast<size_t>(DecodedBuffer.size() * 1.5), MaxDecodedBufferSize));
       }
 
       if (TotalInstructions >= CTX->Config.MaxInstPerBlock) {
