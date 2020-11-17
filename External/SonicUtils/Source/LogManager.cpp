@@ -9,8 +9,16 @@ std::vector<ThrowHandler> Handlers;
 void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
 
 [[noreturn]] void M(const char *fmt, va_list args) {
-  char Buffer[1024];
-  vsnprintf(Buffer, 1024, fmt, args);
+  size_t MsgSize = 1024;
+  char *Buffer = reinterpret_cast<char*>(alloca(MsgSize));
+  size_t Return = vsnprintf(Buffer, MsgSize, fmt, args);
+  if (Return >= MsgSize) {
+    // Allocate a bigger size on failure
+    MsgSize = Return;
+    Buffer = reinterpret_cast<char*>(alloca(MsgSize));
+    vsnprintf(Buffer, MsgSize, fmt, args);
+  }
+
   for (auto &Handler : Handlers) {
     Handler(Buffer);
   }
@@ -24,8 +32,15 @@ std::vector<MsgHandler> Handlers;
 void InstallHandler(MsgHandler Handler) { Handlers.emplace_back(Handler); }
 
 void M(DebugLevels Level, const char *fmt, va_list args) {
-  char Buffer[1024];
-  vsnprintf(Buffer, 1024, fmt, args);
+  size_t MsgSize = 1024;
+  char *Buffer = reinterpret_cast<char*>(alloca(MsgSize));
+  size_t Return = vsnprintf(Buffer, MsgSize, fmt, args);
+  if (Return >= MsgSize) {
+    // Allocate a bigger size on failure
+    MsgSize = Return;
+    Buffer = reinterpret_cast<char*>(alloca(MsgSize));
+    vsnprintf(Buffer, MsgSize, fmt, args);
+  }
   for (auto &Handler : Handlers) {
     Handler(Level, Buffer);
   }
