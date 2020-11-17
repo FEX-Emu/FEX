@@ -284,8 +284,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
         if (IREmit->IsValueConstant(Select->Args[2], &Constant1) && IREmit->IsValueConstant(Select->Args[3], &Constant2)) {
           if (Constant1 == 1 && Constant2 == 0) {
             auto slc = Select->C<IR::IROp_Select>();
-            IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwarpNode(Select->Args[0]));
-            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwarpNode(Select->Args[1]));
+            IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(Select->Args[0]));
+            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(Select->Args[1]));
             Op->Cond = slc->Cond;
             Op->CompareSize = slc->CompareSize;
             Changed = true;

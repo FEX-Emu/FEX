@@ -443,7 +443,7 @@ friend class FEXCore::IR::PassManager;
     return RealNode->Op(Data.Begin());
   }
 
-  OrderedNode *UnwarpNode(OrderedNodeWrapper ssa) {
+  OrderedNode *UnwrapNode(OrderedNodeWrapper ssa) {
     return ssa.GetNode(ListData.Begin());
   }
 
