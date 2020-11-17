@@ -519,6 +519,45 @@ namespace FEXCore::Context {
     Thread->StartRunning.NotifyAll();
   }
 
+  void Context::InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread) {
+    State->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
+    State->OpDispatcher->SetMultiblock(Config.Multiblock);
+    State->BlockCache = std::make_unique<FEXCore::BlockCache>(this);
+    State->FrontendDecoder = std::make_unique<FEXCore::Frontend::Decoder>(this);
+    State->PassManager = std::make_unique<FEXCore::IR::PassManager>();
+    State->PassManager->RegisterExitHandler([this]() {
+        Stop(false /* Ignore current thread */);
+    });
+
+    State->PassManager->AddDefaultPasses(Config.Core == FEXCore::Config::CONFIG_IRJIT);
+    State->PassManager->AddDefaultValidationPasses();
+    State->PassManager->RegisterSyscallHandler(SyscallHandler.get());
+
+    State->CTX = this;
+
+    // Create CPU backend
+    switch (Config.Core) {
+    case FEXCore::Config::CONFIG_INTERPRETER:
+      State->CPUBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread));
+      State->IntBackend = State->CPUBackend;
+      break;
+    case FEXCore::Config::CONFIG_IRJIT:
+      State->PassManager->InsertRAPass(IR::CreateRegisterAllocationPass());
+      // Initialization order matters here, the IR JIT may want to have the interpreter created first to get a pointer to its execution function
+      // This is useful for JIT to interpreter fallback support
+      State->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread));
+      State->CPUBackend.reset(FEXCore::CPU::CreateJITCore(this, State, CompileThread));
+      break;
+    case FEXCore::Config::CONFIG_CUSTOM:      State->CPUBackend.reset(CustomCPUFactory(this, &State->State)); break;
+    default: LogMan::Msg::A("Unknown core configuration");
+    }
+
+    if (!State->IntBackend) {
+      State->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread));
+    }
+    State->FallbackBackend.reset(FallbackCPUFactory(this, &State->State));
+  }
+
   FEXCore::Core::InternalThreadState* Context::CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
     FEXCore::Core::InternalThreadState *Thread{};
 
@@ -529,47 +568,13 @@ namespace FEXCore::Context {
       Thread->State.ThreadManager.TID = ++ThreadID;
     }
 
-    Thread->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
-    Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
-    Thread->BlockCache = std::make_unique<FEXCore::BlockCache>(this);
-    Thread->FrontendDecoder = std::make_unique<FEXCore::Frontend::Decoder>(this);
-    Thread->PassManager = std::make_unique<FEXCore::IR::PassManager>();
-    Thread->PassManager->RegisterExitHandler([this]() {
-        Stop(false /* Ignore current thread */);
-    });
-    Thread->PassManager->AddDefaultPasses(Config.Core == FEXCore::Config::CONFIG_IRJIT);
-    Thread->PassManager->AddDefaultValidationPasses();
-    Thread->PassManager->RegisterSyscallHandler(SyscallHandler.get());
-
-    Thread->CTX = this;
-
     // Copy over the new thread state to the new object
     memcpy(&Thread->State.State, NewThreadState, sizeof(FEXCore::Core::CPUState));
 
     // Set up the thread manager state
     Thread->State.ThreadManager.parent_tid = ParentTID;
 
-    // Create CPU backend
-    switch (Config.Core) {
-    case FEXCore::Config::CONFIG_INTERPRETER:
-      Thread->CPUBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, Thread));
-      Thread->IntBackend = Thread->CPUBackend;
-      break;
-    case FEXCore::Config::CONFIG_IRJIT:
-      Thread->PassManager->InsertRAPass(IR::CreateRegisterAllocationPass());
-      // Initialization order matters here, the IR JIT may want to have the interpreter created first to get a pointer to its execution function
-      // This is useful for JIT to interpreter fallback support
-      Thread->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, Thread));
-      Thread->CPUBackend.reset(FEXCore::CPU::CreateJITCore(this, Thread));
-      break;
-    case FEXCore::Config::CONFIG_CUSTOM:      Thread->CPUBackend.reset(CustomCPUFactory(this, &Thread->State)); break;
-    default: LogMan::Msg::A("Unknown core configuration");
-    }
-
-    if (!Thread->IntBackend) {
-      Thread->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, Thread));
-    }
-    Thread->FallbackBackend.reset(FallbackCPUFactory(this, &Thread->State));
+    InitializeCompiler(Thread, false);
 
     LogMan::Throw::A(!Thread->FallbackBackend->NeedsOpDispatch(), "Fallback CPU backend must not require OpDispatch");
     return Thread;

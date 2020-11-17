@@ -53,7 +53,7 @@ const std::array<Xbyak::Xmm, 11> RAXMM_x = { xmm0, xmm1, xmm2, xmm3, xmm4, xmm5,
 
 class JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
 public:
-  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer);
+  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
   void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
@@ -64,7 +64,8 @@ public:
 
   void ClearCache() override;
 
-  static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 256;
+  static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
 
   bool HandleSIGILL(int Signal, void *info, void *ucontext);
   bool HandleSignalPause(int Signal, void *info, void *ucontext);
@@ -125,9 +126,8 @@ private:
 #ifdef BLOCKSTATS
   bool GetSamplingData {true};
 #endif
-  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
 
-  static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
+  static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 1;
 
   void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
     CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);

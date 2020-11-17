@@ -80,7 +80,7 @@ public:
     size_t Size;
   };
 
-  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer);
+  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
 
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }

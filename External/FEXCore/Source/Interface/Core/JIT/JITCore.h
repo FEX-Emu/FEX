@@ -11,5 +11,5 @@ struct InternalThreadState;
 namespace FEXCore::CPU {
 class CPUBackend;
 
-FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
+FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
 }
