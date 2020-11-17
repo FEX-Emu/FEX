@@ -496,18 +496,22 @@ void JITCore::ClearCache() {
     // This means that we can not safely clear the code at this point in time
     // Allocate some new code buffers that we can switch over to instead
     auto NewCodeBuffer = JITCore::AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE);
-    CurrentCodeBuffer->Size = JITCore::INITIAL_CODE_SIZE;
     EmplaceNewCodeBuffer(NewCodeBuffer);
     *Buffer = vixl::CodeBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
   }
 }
 
 JITCore::~JITCore() {
-  FreeCodeBuffer(DispatcherCodeBuffer);
-  FreeCodeBuffer(InitialCodeBuffer);
-  for (auto &Buffer : CodeBuffers) {
-    FreeCodeBuffer(Buffer);
+  for (auto CodeBuffer : CodeBuffers) {
+    FreeCodeBuffer(CodeBuffer);
   }
+  CodeBuffers.clear();
+
+  if (DispatcherCodeBuffer.Ptr) {
+    // Dispatcher may not exist if this is a compile thread
+    FreeCodeBuffer(DispatcherCodeBuffer);
+  }
+  FreeCodeBuffer(InitialCodeBuffer);
 }
 
 void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {

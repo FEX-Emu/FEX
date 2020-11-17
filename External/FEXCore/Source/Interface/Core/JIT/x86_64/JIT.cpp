@@ -325,8 +325,15 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 }
 
 JITCore::~JITCore() {
-  LogMan::Msg::D("Used %ld bytes for compiling", getCurr<uintptr_t>() - getCode<uintptr_t>());
-  FreeCodeBuffer(DispatcherCodeBuffer);
+  for (auto CodeBuffer : CodeBuffers) {
+    FreeCodeBuffer(CodeBuffer);
+  }
+  CodeBuffers.clear();
+
+  if (DispatcherCodeBuffer.Ptr) {
+    // Dispatcher may not exist if this is a compile thread
+    FreeCodeBuffer(DispatcherCodeBuffer);
+  }
   FreeCodeBuffer(InitialCodeBuffer);
 }
 
@@ -364,7 +371,6 @@ void JITCore::ClearCache() {
     // This means that we can not safely clear the code at this point in time
     // Allocate some new code buffers that we can switch over to instead
     auto NewCodeBuffer = AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE);
-    CurrentCodeBuffer->Size = JITCore::INITIAL_CODE_SIZE;
     EmplaceNewCodeBuffer(NewCodeBuffer);
     setNewBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
   }
