@@ -331,24 +331,26 @@ namespace AES {
   }
 }
 
-InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
+InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
   : CTX {ctx}
   , State {Thread} {
   // Grab our space for temporary data
 
-  CreateAsmDispatch(ctx, Thread);
-  CTX->SignalDelegation.RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
-    return Core->HandleSignalPause(Signal, info, ucontext);
-  });
+  if (!CompileThread) {
+    CreateAsmDispatch(ctx, Thread);
+    CTX->SignalDelegation.RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+      InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
+      return Core->HandleSignalPause(Signal, info, ucontext);
+    });
 
-  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-    InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
-    return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
-  };
+    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+      InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
+      return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+    };
 
-  for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
-    CTX->SignalDelegation.RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+    for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
+      CTX->SignalDelegation.RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+    }
   }
 }
 
@@ -5096,8 +5098,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
   }
 }
 
-FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return new InterpreterCore(ctx, Thread);
+FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
+  return new InterpreterCore(ctx, Thread, CompileThread);
 }
 
 }

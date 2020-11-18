@@ -11,6 +11,6 @@ namespace FEXCore::Core {
 namespace FEXCore::CPU {
 class CPUBackend;
 
-FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
+FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
 
 }

@@ -375,7 +375,7 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
   return false;
 }
 
-JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer)
+JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread)
   : vixl::aarch64::Assembler(Buffer.Ptr, Buffer.Size, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
   , State {Thread}
@@ -406,7 +406,6 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 #endif
   CPU.SetUp();
   SetAllowAssembler(true);
-  CreateCustomDispatch(Thread);
 
   uint32_t NumUsedGPRs = NumGPRs;
   uint32_t NumUsedGPRPairs = NumGPRPairs;
@@ -441,29 +440,33 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   RegisterVectorHandlers();
   RegisterEncryptionHandlers();
 
-  // This will register the host signal handler per thread, which is fine
-  CTX->SignalDelegation.RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
-    return Core->HandleSIGILL(Signal, info, ucontext);
-  });
+  if (!CompileThread) {
+    CreateCustomDispatch(Thread);
 
-  CTX->SignalDelegation.RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
-    return Core->HandleSIGBUS(Signal, info, ucontext);
-  });
+    // This will register the host signal handler per thread, which is fine
+    CTX->SignalDelegation.RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+      JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+      return Core->HandleSIGILL(Signal, info, ucontext);
+    });
 
-  CTX->SignalDelegation.RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
-    return Core->HandleSignalPause(Signal, info, ucontext);
-  });
+    CTX->SignalDelegation.RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+      JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+      return Core->HandleSIGBUS(Signal, info, ucontext);
+    });
 
-  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-    JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
-    return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
-  };
+    CTX->SignalDelegation.RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+      JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+      return Core->HandleSignalPause(Signal, info, ucontext);
+    });
 
-  for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
-    CTX->SignalDelegation.RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+      JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+      return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+    };
+
+    for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
+      CTX->SignalDelegation.RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+    }
   }
 }
 
@@ -504,18 +507,22 @@ void JITCore::ClearCache() {
     // This means that we can not safely clear the code at this point in time
     // Allocate some new code buffers that we can switch over to instead
     auto NewCodeBuffer = JITCore::AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE);
-    CurrentCodeBuffer->Size = JITCore::INITIAL_CODE_SIZE;
     EmplaceNewCodeBuffer(NewCodeBuffer);
     *Buffer = vixl::CodeBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
   }
 }
 
 JITCore::~JITCore() {
-  FreeCodeBuffer(DispatcherCodeBuffer);
-  FreeCodeBuffer(InitialCodeBuffer);
-  for (auto &Buffer : CodeBuffers) {
-    FreeCodeBuffer(Buffer);
+  for (auto CodeBuffer : CodeBuffers) {
+    FreeCodeBuffer(CodeBuffer);
   }
+  CodeBuffers.clear();
+
+  if (DispatcherCodeBuffer.Ptr) {
+    // Dispatcher may not exist if this is a compile thread
+    FreeCodeBuffer(DispatcherCodeBuffer);
+  }
+  FreeCodeBuffer(InitialCodeBuffer);
 }
 
 void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
@@ -1095,7 +1102,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   *GetBuffer() = OriginalBuffer;
 }
 
-FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return new JITCore(ctx, Thread, JITCore::AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE));
+FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
+  return new JITCore(ctx, Thread, JITCore::AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE), CompileThread);
 }
 }
