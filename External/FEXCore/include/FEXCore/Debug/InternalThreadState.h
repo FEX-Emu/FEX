@@ -9,6 +9,7 @@
 
 namespace FEXCore {
   class BlockCache;
+  class CompileService;
 }
 
 namespace FEXCore::Context {
@@ -79,7 +80,9 @@ namespace FEXCore::Core {
 
     int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
-
+    uint32_t CompileBlockReentrantRefCount{};
+    std::shared_ptr<FEXCore::CompileService> CompileService;
+    bool IsCompileService{false};
   };
   static_assert(offsetof(InternalThreadState, State) == 0, "InternalThreadState must have State be the first object");
   static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
