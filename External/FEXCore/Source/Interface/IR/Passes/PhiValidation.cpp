@@ -52,7 +52,7 @@ bool PhiValidation::Run(IREmitter *IREmit) {
 
     Out << "Errors:" << std::endl << Errors.str() << std::endl;
 
-    std::cerr << Out.str() << std::endl;
+    LogMan::Msg::E(Out.str().c_str());
   }
 
 
