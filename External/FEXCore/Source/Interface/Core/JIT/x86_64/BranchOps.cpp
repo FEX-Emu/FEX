@@ -26,7 +26,7 @@ DEF_OP(SignalReturn) {
     add(rsp, 8 + 8); // + 8 to consume return address
   }
 
-  mov(TMP1, SignalHandlerReturnAddress);
+  mov(TMP1, ThreadSharedData.SignalHandlerReturnAddress);
   jmp(TMP1);
 }
 
@@ -40,7 +40,7 @@ DEF_OP(CallbackReturn) {
   }
 
   // Make sure to adjust the refcounter so we don't clear the cache now
-  mov(rax, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
+  mov(rax, reinterpret_cast<uint64_t>(ThreadSharedData.SignalHandlerRefCounterPtr));
   sub(dword [rax], 1);
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state

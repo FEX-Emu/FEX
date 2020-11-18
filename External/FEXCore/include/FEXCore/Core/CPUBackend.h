@@ -76,6 +76,7 @@ class LLVMCore;
     }
 
     virtual void ClearCache() {}
+    virtual void CopyNecessaryDataForCompileThread(CPUBackend *Original) {}
 
     using AsmDispatch = __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread);
     using JITCallback = __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
