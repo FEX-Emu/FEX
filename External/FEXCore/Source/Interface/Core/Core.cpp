@@ -4,6 +4,7 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/BlockCache.h"
 #include "Interface/Core/BlockSamplingData.h"
+#include "Interface/Core/CompileService.h"
 #include "Interface/Core/Core.h"
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -221,6 +222,10 @@ namespace FEXCore::Context {
       }
 
       for (auto &Thread : Threads) {
+
+        if (Thread->CompileService) {
+          Thread->CompileService->Shutdown();
+        }
         delete Thread;
       }
       Threads.clear();
@@ -587,9 +592,12 @@ namespace FEXCore::Context {
 
       // Pull out the current IR we added and store it back after we cleared the rest of the list
       // Needed in the case the the block mapping has aliased
-      auto IR = Thread->IRLists.find(Address)->second.release();
-      Thread->IRLists.clear();
-      Thread->IRLists.try_emplace(Address, IR);
+      auto iter = Thread->IRLists.find(Address);
+      if (iter != Thread->IRLists.end()) {
+        auto IR = iter->second.release();
+        Thread->IRLists.clear();
+        Thread->IRLists.try_emplace(Address, IR);
+      }
       BlockMapPtr = Thread->BlockCache->AddBlockMapping(Address, Ptr);
       LogMan::Throw::A(BlockMapPtr, "Couldn't add mapping after clearing mapping cache");
     }
@@ -601,7 +609,11 @@ namespace FEXCore::Context {
     Thread->BlockCache->ClearCache();
     Thread->CPUBackend->ClearCache();
     Thread->IntBackend->ClearCache();
-  
+
+    if (Thread->CompileService) {
+      Thread->CompileService->ClearCache(Thread, GuestRIP);
+    }
+
     if (GuestRIP == 0) {
       Thread->IRLists.clear();
     }
@@ -612,10 +624,9 @@ namespace FEXCore::Context {
     }
   }
 
-  uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    void *CodePtr {nullptr};
+  void *Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
-    if (Thread->CTX->Config.UnifiedMemory) {
+    if (Config.UnifiedMemory) {
       GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
     }
     else {
@@ -638,7 +649,7 @@ namespace FEXCore::Context {
           LogMan::Msg::E("Had Frontend decoder error");
           Stop(false /* Ignore Current Thread */);
         }
-        return 0;
+        return nullptr;
       }
 
       auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
@@ -671,7 +682,7 @@ namespace FEXCore::Context {
             else {
               ExistingCodePtr = MemoryMapper.GetPointer<uintptr_t>(Block.Entry + BlockInstructionsLength);
             }
-          
+
             memcpy(&existing, (void*)(ExistingCodePtr), DecodedInfo->InstSize);
             auto CodeChanged = Thread->OpDispatcher->_ValidateCode(existing, ExistingCodePtr, DecodedInfo->InstSize);
 
@@ -684,9 +695,9 @@ namespace FEXCore::Context {
             Thread->OpDispatcher->_RemoveCodeEntry(GuestRIP);
             Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
             Thread->OpDispatcher->_ExitFunction();
-            
+
             auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlock();
-            
+
             Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
             Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
           }
@@ -717,7 +728,7 @@ namespace FEXCore::Context {
             if (TotalInstructions == 0) {
               // Couldn't handle any instruction in op dispatcher
               Thread->OpDispatcher->ResetWorkingList();
-              return 0;
+              return nullptr;
             }
             else {
               uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
@@ -808,7 +819,28 @@ namespace FEXCore::Context {
     }
 
     // Attempt to get the CPU backend to compile this code
-    CodePtr = Thread->CPUBackend->CompileCode(IRList, DebugData);
+    return Thread->CPUBackend->CompileCode(IRList, DebugData);
+  }
+
+  uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    if (Thread->CompileBlockReentrantRefCount != 0) {
+      if (!Thread->CompileService) {
+        Thread->CompileService = std::make_shared<FEXCore::CompileService>(this, Thread);
+        Thread->CompileService->Initialize();
+      }
+      auto WorkItem = Thread->CompileService->CompileCode(GuestRIP);
+      WorkItem->ServiceWorkDone.Wait();
+      // Return here with the data in place
+      Thread->IRLists.try_emplace(GuestRIP, WorkItem->IRList->CreateCopy());
+      uintptr_t Ptr = AddBlockMapping(Thread, GuestRIP, WorkItem->CodePtr);
+      LogMan::Throw::A(Ptr, "Couldn't add mapping from compile service!");
+      WorkItem->SafeToClear = true;
+      return Ptr;
+    }
+
+    ++Thread->CompileBlockReentrantRefCount;
+
+    void *CodePtr = CompileCode(Thread, GuestRIP);
 
     if (CodePtr != nullptr) {
       // The core managed to compile the code.
@@ -816,9 +848,11 @@ namespace FEXCore::Context {
       Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
 #endif
 
+      --Thread->CompileBlockReentrantRefCount;
       return AddBlockMapping(Thread, GuestRIP, CodePtr);
     }
 
+    --Thread->CompileBlockReentrantRefCount;
     return 0;
   }
 
@@ -889,6 +923,10 @@ namespace FEXCore::Context {
     Thread->IRLists.erase(GuestRIP);
     Thread->DebugData.erase(GuestRIP);
     Thread->BlockCache->Erase(GuestRIP);
+
+    if (Thread->CompileService) {
+      Thread->CompileService->RemoveCodeEntry(GuestRIP);
+    }
   }
 
   // Debug interface
