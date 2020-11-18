@@ -84,6 +84,51 @@ bool CheckMemMapping() {
 }
 }
 
+void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::vector<std::string> *args) {
+  // Open the file pointer to the filename and see if we need to find an interpreter
+  std::fstream File;
+  size_t FileSize{0};
+  File.open(*Filename, std::fstream::in | std::fstream::binary);
+
+  if (!File.is_open())
+    return;
+
+  File.seekg(0, File.end);
+  FileSize = File.tellg();
+  File.seekg(0, File.beg);
+
+  // Is the file large enough for shebang
+  if (FileSize <= 2)
+    return;
+
+  // Handle shebang files
+  if (File.get() == '#' &&
+      File.get() == '!') {
+    std::string InterpreterLine;
+    std::getline(File, InterpreterLine);
+
+    // Shebang line can have a single argument
+    std::istringstream InterpreterSS(InterpreterLine);
+    std::string Argument;
+    if (std::getline(InterpreterSS, Argument, ' ')) {
+      // Push the filename in to the argument
+      args->emplace(args->begin(), Argument);
+
+      // Replace the filename
+      *Filename = Argument;
+    }
+
+    // Now check for argument
+    if (std::getline(InterpreterSS, Argument, ' ')) {
+      // Insert after the interpreter filename
+      args->emplace(args->begin() + 1, Argument);
+    }
+
+    // Done here
+    return;
+  }
+}
+
 int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
@@ -134,7 +179,11 @@ int main(int argc, char **argv, char **const envp) {
 
   LogMan::Throw::A(!Args.empty(), "Not enough arguments");
 
-  FEX::HarnessHelper::ELFCodeLoader Loader{Args[0], LDPath(), Args, ParsedArgs, envp, &Environment};
+  std::string Program = Args[0];
+
+  InterpreterHandler(&Program, LDPath(), &Args);
+
+  FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
   uint64_t VMemSize = 1ULL << 36;
@@ -161,13 +210,13 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, ABILocalFlags());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_NO_PF, AbiNoPF());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DUMPIR, DumpIR());
-  
+
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, VMFactory::CPUCreationFactory);
   // FEXCore::Context::SetFallbackCPUBackendFactory(CTX, VMFactory::CPUCreationFactoryFallback);
 
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
   FEXCore::Context::InitCore(CTX, &Loader);
-  FEXCore::Context::SetApplicationFile(CTX, std::filesystem::canonical(Args[0]));
+  FEXCore::Context::SetApplicationFile(CTX, std::filesystem::canonical(Program));
 
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
