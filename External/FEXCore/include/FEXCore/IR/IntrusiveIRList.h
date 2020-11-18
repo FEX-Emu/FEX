@@ -85,11 +85,24 @@ public:
     }
   }
 
+  IRListView<true>(IRListView<true> *Old) {
+    DataSize = Old->DataSize;
+    ListSize = Old->ListSize;
+    IRData = malloc(DataSize + ListSize);
+    ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
+    memcpy(IRData, Old->IRData, DataSize);
+    memcpy(ListData, Old->ListData, ListSize);
+  }
+
   ~IRListView() {
     if (Copy) {
       free (IRData);
       // ListData is just offset from IRData
     }
+  }
+
+  IRListView<true> *CreateCopy() {
+    return new IRListView<true>(this);
   }
 
   uintptr_t const GetData() const { return reinterpret_cast<uintptr_t>(IRData); }
