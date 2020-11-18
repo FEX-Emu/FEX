@@ -585,13 +585,16 @@ namespace FEXCore::EmulatedFile {
       int32_t f = fileno(fp);
       return f;
     };
-    FDReadCreators["/sys/devices/system/cpu/online"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+    auto NumCPUCores = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
       FILE *fp = tmpfile();
       fwrite((void*)&cpus_online.at(0), sizeof(uint8_t), cpus_online.size(), fp);
       fseek(fp, 0, SEEK_SET);
       int32_t f = fileno(fp);
       return f;
     };
+
+    FDReadCreators["/sys/devices/system/cpu/online"] = NumCPUCores;
+    FDReadCreators["/sys/devices/system/cpu/present"] = NumCPUCores;
 
     string procAuxv = string("/proc/") + std::to_string(getpid()) + string("/auxv");
     EmulatedMap.emplace(procAuxv);
