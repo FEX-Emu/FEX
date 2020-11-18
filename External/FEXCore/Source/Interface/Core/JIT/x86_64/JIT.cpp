@@ -350,11 +350,12 @@ void JITCore::ClearCache() {
       reset();
     }
     else {
+      FreeCodeBuffer(InitialCodeBuffer);
+
       // Resize the code buffer and reallocate our code size
       CurrentCodeBuffer->Size *= 1.5;
       CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MAX_CODE_SIZE);
 
-      FreeCodeBuffer(InitialCodeBuffer);
       InitialCodeBuffer = AllocateNewCodeBuffer(CurrentCodeBuffer->Size);
       setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
     }
