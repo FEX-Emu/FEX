@@ -557,6 +557,7 @@ conformance-interfaces-clock_nanosleep-9-1.test # uses sigabort
 conformance-interfaces-nanosleep-5-2.test # uses sigabort
 conformance-interfaces-nanosleep-7-1.test # uses sigabort
 conformance-interfaces-nanosleep-7-2.test # uses sigabort
+conformance-interfaces-sigprocmask-6-1.test
 
 # Race happy
 conformance-interfaces-nanosleep-1-3.test
