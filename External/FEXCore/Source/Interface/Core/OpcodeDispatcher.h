@@ -23,7 +23,19 @@ class PassManager;
 class OpDispatchBuilder final : public IREmitter {
 friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
+
+enum {
+  FLAGS_OP_NONE,  // must rely on x86 flags
+  FLAGS_OP_CMP,   // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
+  FLAGS_OP_AND,   // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
+};
+
 public:
+  int flagsOp;
+  uint8_t flagsOpSize;
+  OrderedNode* flagsOpDest, *flagsOpSrc;
+  OrderedNode* flagsOpDestSigned, *flagsOpSrcSigned;
+
   FEXCore::Context::Context *CTX{};
   bool ShouldDump {false};
 
@@ -51,6 +63,10 @@ public:
     // We have hit a RIP that is a jump target
     // Thus we need to end up in a new block
     SetCurrentCodeBlock(it->second.BlockEntry);
+  }
+
+  void StartNewBlock() {
+    flagsOp = FLAGS_OP_NONE;
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {

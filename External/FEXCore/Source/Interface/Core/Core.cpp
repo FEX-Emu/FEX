@@ -660,7 +660,11 @@ namespace FEXCore::Context {
         // Set the block entry point
         Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
 
+
         uint64_t BlockInstructionsLength {};
+
+        // Reset any block-specific state
+        Thread->OpDispatcher->StartNewBlock();
 
         uint64_t InstsInBlock = Block.NumInstructions;
         for (size_t i = 0; i < InstsInBlock; ++i) {

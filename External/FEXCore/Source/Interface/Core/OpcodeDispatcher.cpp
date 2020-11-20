@@ -811,6 +811,47 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
     default: LogMan::Msg::A("Unknown CC Op: 0x%x\n", OP); return nullptr;
   }
 
+  // Try folding the flags generation in the select op
+  if (flagsOp == FLAGS_OP_CMP) {
+    switch(OP) {
+      // SGT
+      case 0xF: SrcCond = _Select(FEXCore::IR::COND_SGT, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
+      // SLE
+      case 0xE: SrcCond = _Select(FEXCore::IR::COND_SLE, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
+      // SGE
+      case 0xD: SrcCond = _Select(FEXCore::IR::COND_SGE, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
+      // SL
+      case 0xC: SrcCond = _Select(FEXCore::IR::COND_SLT, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
+      
+      // not sign
+      //case 0x99: SrcCond = _Select(FEXCore::IR::COND_, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
+      // sign
+      //case 0x98: SrcCond = _Select(FEXCore::IR::COND_, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
+      
+      // UABove
+      case 0x7: SrcCond = _Select(FEXCore::IR::COND_UGT, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize); break;
+      // UBE
+      case 0x6: SrcCond = _Select(FEXCore::IR::COND_ULE, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize); break;
+      // NE
+      case 0x5: SrcCond = _Select(FEXCore::IR::COND_NEQ, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize); break;
+      // EQ/Zero
+      case 0x4: SrcCond = _Select(FEXCore::IR::COND_EQ, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize); break;
+      // UAE
+      case 0x3: SrcCond = _Select(FEXCore::IR::COND_UGE, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize); break;
+      // UBelow
+      case 0x2: SrcCond = _Select(FEXCore::IR::COND_ULT, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize); break;
+
+      //default: printf("Missed Condition %04X OP_CMP\n", OP); break;
+    }
+  }
+  else if (flagsOp == FLAGS_OP_AND) {
+    switch(OP) {
+      case 0x4: SrcCond = _Select(FEXCore::IR::COND_EQ, flagsOpDest, ZeroConst, TrueValue, FalseValue, flagsOpSize); break;
+      case 0x5: SrcCond = _Select(FEXCore::IR::COND_NEQ, flagsOpDest, ZeroConst, TrueValue, FalseValue, flagsOpSize); break;
+      //default: printf("Missed Condition %04X OP_AND\n", OP); break;
+    }
+  }
+
   return SrcCond;
 }
 
@@ -1098,6 +1139,18 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto ALUOp = _And(Dest, Src);
   GenerateFlags_Logical(Op, ALUOp, Dest, Src);
+  
+  auto Size = GetDstSize(Op);
+  
+  if (Size >=4) {
+    flagsOp = FLAGS_OP_AND;
+    flagsOpDest = ALUOp;
+    flagsOpSize = Size;
+  } else {
+    flagsOp = FLAGS_OP_AND;
+    flagsOpDest = ALUOp;
+    flagsOpSize = 4;  // assuming ZEXT semantics here
+  }
 }
 
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
@@ -1160,6 +1213,18 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
   }
 
   GenerateFlags_SUB(Op, Result, Dest, Src);
+
+  if (Size >= 4) {
+    flagsOpSize = Size;
+    flagsOp = FLAGS_OP_CMP;
+    flagsOpDestSigned = flagsOpDest = Dest;
+    flagsOpSrcSigned = flagsOpSrc = Src;
+  } else {
+    flagsOpSize = 4;
+    flagsOp = FLAGS_OP_CMP;
+    flagsOpDestSigned = _Sext(Size * 8, flagsOpDest = Dest);
+    flagsOpSrcSigned = _Sext(Size * 8, flagsOpSrc = Src);
+  }
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
@@ -4657,9 +4722,11 @@ void OpDispatchBuilder::ResetWorkingList() {
 
 template<unsigned BitOffset>
 void OpDispatchBuilder::SetRFLAG(OrderedNode *Value) {
+  flagsOp = FLAGS_OP_NONE;
   _StoreFlag(Value, BitOffset);
 }
 void OpDispatchBuilder::SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
+  flagsOp = FLAGS_OP_NONE;
   _StoreFlag(Value, BitOffset);
 }
 
