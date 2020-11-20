@@ -45,9 +45,7 @@ private:
   bool NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op);
   bool NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op);
 
-  static constexpr size_t DefaultDecodedBufferSize = 0x200;
-  static constexpr size_t MaxDecodedBufferSize = 0x10000;
-
+  static constexpr size_t DefaultDecodedBufferSize = 0x10000;
   std::vector<FEXCore::X86Tables::DecodedInst> DecodedBuffer;
   size_t DecodedSize {};
 
