@@ -21,7 +21,7 @@
   (%ssa2) CodeBlock %start, %end, %ssa1
     (%start i0) Dummy
     %Addr1 i64 = Constant #0x1000000
-    %Val i64 = LoadMem %Addr1 i64, #0x8, #0x8, GPR
+    %Val i64 = LoadMem %Addr1 i64, %Invalid, #0x8, #0x8, GPR, SXTX, #0x1
 ; Test aligned special cases
     %Res1 i64 = Sbfe %Val, #0x8, #0x0
     (%Store1 i64) StoreContext %Res1 i64, #0x08, GPR
@@ -31,7 +31,7 @@
     (%Store3 i64) StoreContext %Res3 i64, #0x18, GPR
     %Addr2 i64 = Constant #0x1000008
 ; Test non special width
-    %Val2 i64 = LoadMem %Addr2 i64, #0x8, #0x8, GPR
+    %Val2 i64 = LoadMem %Addr2 i64, %Invalid, #0x8, #0x8, GPR, SXTX, #0x1
     %Res4 i64 = Sbfe %Val2, #0x6, #0x0
     (%Store4 i64) StoreContext %Res4 i64, #0x20, GPR
 ; Test with + shift

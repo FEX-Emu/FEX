@@ -117,6 +117,8 @@ private:
   Xbyak::Xmm GetSrc(uint32_t Node);
   Xbyak::Xmm GetDst(uint32_t Node);
 
+  Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
+
   bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);

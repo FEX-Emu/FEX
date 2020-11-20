@@ -16,7 +16,7 @@
   (%ssa2) CodeBlock %start, %end, %ssa1
     (%start i0) Dummy
     %Addr i64 = Constant #0x100000
-    %Val i32 = LoadMem %Addr i64, #0x8, #0x8, GPR
+    %Val i32 = LoadMem %Addr i64, %Invalid, #0x8, #0x8, GPR, SXTX, #0x1
     (%Store i64) StoreContext %Val i64, #0x08, GPR
     (%brk i0) Break #4, #4
     (%end i0) EndBlock #0x0

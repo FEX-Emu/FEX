@@ -23,14 +23,14 @@
     (%begin i0) Dummy
 ; Clear registers
     %AddrB i64 = Constant #0x1000010
-    %ClearVal i128 = LoadMem %AddrB i64, #0x10, #0x10, FPR
+    %ClearVal i128 = LoadMem %AddrB i64, %Invalid, #0x10, #0x10, FPR, SXTX, #0x1
     (%Clear1 i128) StoreContext %ClearVal i128, #0x90, FPR
     (%Clear2 i128) StoreContext %ClearVal i128, #0xa0, FPR
     (%Clear3 i128) StoreContext %ClearVal i128, #0xb0, FPR
     (%Clear4 i128) StoreContext %ClearVal i128, #0xc0, FPR
 
     %AddrA i64 = Constant #0x1000000
-    %MemValueA i128 = LoadMem %AddrA i64, #0x10, #0x10, FPR
+    %MemValueA i128 = LoadMem %AddrA i64, %Invalid, #0x10, #0x10, FPR, SXTX, #0x1
 
     (%Store1 i64) StoreContext %MemValueA i128, #0x90, FPR
     (%Store2 i32) StoreContext %MemValueA i128, #0xa0, FPR

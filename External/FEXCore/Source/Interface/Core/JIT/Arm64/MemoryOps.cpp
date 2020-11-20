@@ -401,14 +401,41 @@ DEF_OP(StoreFlag) {
   strb(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
 }
 
+MemOperand JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
+  if (Offset.IsInvalid()) {
+    return MemOperand(Base);
+  } else {
+    if (OffsetScale != 1 && OffsetScale != AccessSize) {
+        LogMan::Msg::A("Unhandled GenerateMemOperand OffsetScale: %d", OffsetScale);
+    }
+    uint64_t Const;
+    if (IsInlineConstant(Offset, &Const)) {
+        return MemOperand(Base, Const);
+    } else {
+      auto RegOffset = GetReg<RA_64>(Offset.ID());
+      switch(OffsetType.Val) {
+        case IR::MEM_OFFSET_SXTX.Val: return MemOperand(Base, RegOffset, Extend::SXTX, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_UXTW.Val: return MemOperand(Base, RegOffset.W(), Extend::UXTW, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_SXTW.Val: return MemOperand(Base, RegOffset.W(), Extend::SXTW, (int)std::log2(OffsetScale) );
+
+        default: LogMan::Msg::A("Unhandled GenerateMemOperand OffsetType: %d", OffsetType.Val); break;
+      }
+    }
+  }
+}
+
 DEF_OP(LoadMem) {
   auto Op = IROp->C<IR::IROp_LoadMem>();
 
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+
   if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    MemSrc = MemOperand(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+    MemReg = TMP1;
+    LoadConstant(MemReg, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+    add(MemReg, MemReg, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
+
+  auto MemSrc = GenerateMemOperand(Op->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     auto Dst = GetReg<RA_64>(Node);
@@ -459,6 +486,10 @@ DEF_OP(LoadMemTSO) {
     LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
     add(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
     MemSrc = MemOperand(TMP1);
+  }
+
+  if (!Op->Offset.IsInvalid()) {
+    LogMan::Msg::A("LoadMemTSO: No offset allowed");
   }
 
   if (SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
@@ -535,11 +566,16 @@ DEF_OP(LoadMemTSO) {
 
 DEF_OP(StoreMem) {
   auto Op = IROp->C<IR::IROp_StoreMem>();
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  
+  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+
   if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    MemSrc = MemOperand(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+    MemReg = TMP1;
+    LoadConstant(MemReg, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
+    add(MemReg, MemReg, GetReg<RA_64>(Op->Header.Args[0].ID()));
   }
+
+  auto MemSrc = GenerateMemOperand(Op->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (Op->Size) {
@@ -588,6 +624,10 @@ DEF_OP(StoreMemTSO) {
     LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
     add(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
     MemSrc = MemOperand(TMP1);
+  }
+
+  if (!Op->Offset.IsInvalid()) {
+    LogMan::Msg::A("StoreMemTSO: No offset allowed");
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -660,14 +700,8 @@ void JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STOREFLAG,           StoreFlag);
   REGISTER_OP(LOADMEM,             LoadMem);
   REGISTER_OP(STOREMEM,            StoreMem);
-  if (CTX->Config.TSOEnabled) {
-    REGISTER_OP(LOADMEMTSO,          LoadMemTSO);
-    REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
-  }
-  else {
-    REGISTER_OP(LOADMEMTSO,          LoadMem);
-    REGISTER_OP(STOREMEMTSO,         StoreMem);
-  }
+  REGISTER_OP(LOADMEMTSO,          LoadMemTSO);
+  REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
 #undef REGISTER_OP

@@ -272,6 +272,19 @@ struct CondClassType final {
   }
 };
 
+struct MemOffsetType final {
+  uint8_t Val;
+  operator uint8_t() {
+    return Val;
+  }
+  int operator ==(const MemOffsetType other) {
+    return Val == other.Val;
+  }
+  int operator !=(const MemOffsetType other) {
+    return Val != other.Val;
+  }
+};
+
 struct TypeDefinition final {
   uint8_t Val;
   operator uint8_t() const {

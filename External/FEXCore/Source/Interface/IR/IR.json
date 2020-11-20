@@ -46,7 +46,11 @@
     "constexpr static uint8_t ROUND_MODE_NEGATIVE_INFINITY = 1",
     "constexpr static uint8_t ROUND_MODE_POSITIVE_INFINITY = 2",
     "constexpr static uint8_t ROUND_MODE_TOWARDS_ZERO      = 3",
-    "constexpr static uint8_t ROUND_MODE_FLUSH_TO_ZERO     = 1 << 2"
+    "constexpr static uint8_t ROUND_MODE_FLUSH_TO_ZERO     = 1 << 2",
+
+    "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTX {0};",
+    "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1};",
+    "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2};"
   ],
 
   "Ops": {
@@ -616,14 +620,17 @@
       "HasDest": true,
       "DestClass": "Complex",
       "DestSize": "Size",
-      "SSAArgs": "1",
+      "SSAArgs": "2",
       "SSANames": [
-        "Addr"
+        "Addr",
+        "Offset"
       ],
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
-        "RegisterClassType", "Class"
+        "RegisterClassType", "Class",
+        "MemOffsetType", "OffsetType",
+        "uint8_t", "OffsetScale"
       ]
     },
 
@@ -634,50 +641,59 @@
               ],
       "HasSideEffects": true,
       "OpClass": "Memory",
-      "SSAArgs": "2",
+      "SSAArgs": "3",
       "SSANames": [
         "Addr",
-        "Value"
+        "Value",
+        "Offset"
       ],
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
-        "RegisterClassType", "Class"
+        "RegisterClassType", "Class",
+        "MemOffsetType", "OffsetType",
+        "uint8_t", "OffsetScale"
       ]
     },
 
     "LoadMemTSO": {
-      "Desc": ["Does a x86 TSO compatible load from memory."
+      "Desc": ["Does a x86 TSO compatible load from memory. Offset must be Invalid()."
               ],
       "OpClass": "Memory",
       "HasDest": true,
       "DestClass": "Complex",
       "DestSize": "Size",
-      "SSAArgs": "1",
+      "SSAArgs": "2",
       "SSANames": [
-        "Addr"
+        "Addr",
+        "Offset"
       ],
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
-        "RegisterClassType", "Class"
+        "RegisterClassType", "Class",
+        "MemOffsetType", "OffsetType",
+        "uint8_t", "OffsetScale"
       ]
     },
 
     "StoreMemTSO": {
-      "Desc": ["Does a x86 TSO compatible store to memory."
+      "Desc": ["Does a x86 TSO compatible store to memory. Offset must be Invalid()."
               ],
       "HasSideEffects": true,
       "OpClass": "Memory",
-      "SSAArgs": "2",
+      "SSAArgs": "3",
       "SSANames": [
         "Addr",
-        "Value"
+        "Value",
+        "Offset"
       ],
       "Args": [
         "uint8_t", "Size",
         "uint8_t", "Align",
-        "RegisterClassType", "Class"
+        "RegisterClassType", "Class",
+        "MemOffsetType", "OffsetType",
+        "uint8_t", "OffsetScale"
       ]
     },
 

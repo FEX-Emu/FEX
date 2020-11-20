@@ -28,18 +28,91 @@ static uint64_t getMask(T Op) {
 // very lazy heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) { return imm < 0x8000'0000; }
 static bool IsImmAddSub(uint64_t imm) { return imm < 0x8000'0000; }
+static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
+  return Scale  == 1 || Scale  == 2 || Scale  == 4 || Scale  == 8;
+}
 #elif defined(_M_ARM_64)
 //aarch64 heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) { if (width < 32) width = 32; return vixl::aarch64::Assembler::IsImmLogical(imm, width); }
 static bool IsImmAddSub(uint64_t imm) { return vixl::aarch64::Assembler::IsImmAddSub(imm); }
+static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
+  return Scale  == AccessSize;
+}
 #else
 #error No inline constant heuristics for this target
 #endif
+
+static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
+  if ( ((int64_t)imm >= -255) && ((int64_t)imm <= 256) )
+	  return true;
+  else if ( (imm & (AccessSize-1)) == 0 &&  imm/AccessSize <= 4095 )
+	  return true;
+  else {
+	  return false;
+  }
+}
+
+std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t AccessSize,  IROp_Header* AddressHeader) {
+  
+  auto Src0Header = IREmit->GetOpHeader(AddressHeader->Args[0]);
+  if (Src0Header->Size == 8) {
+    //Try to optimize: Base + MUL(Offset, Scale)
+    if (Src0Header->Op == OP_MUL) {
+      uint64_t Scale;
+      if (IREmit->IsValueConstant(Src0Header->Args[1], &Scale)) {
+        if (IsMemoryScale(Scale, AccessSize)) {
+          // remove mul as it can be folded to the mem op
+          return { MEM_OFFSET_SXTX, (uint8_t)Scale, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+        } else if (Scale == 1) {
+          // remove nop mul
+          return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+        }
+      }
+    }
+    //Try to optimize: Base + LSHL(Offset, Scale)
+    else if (Src0Header->Op == OP_LSHL) {
+      uint64_t Constant2;
+      if (IREmit->IsValueConstant(Src0Header->Args[1], &Constant2)) {
+        uint64_t Scale = 1<<Constant2;
+        if (IsMemoryScale(Scale, AccessSize)) {
+          // remove shift as it can be folded to the mem op
+          return { MEM_OFFSET_SXTX, Scale, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+        } else if (Scale == 1) {
+          // remove nop shift
+          return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+        }
+      }
+    }
+#if defined(_M_ARM_64) // x86 can't sext or zext on mem ops
+    //Try to optimize: Base + (u32)Offset
+    else if (Src0Header->Op == OP_BFE) {
+      auto Bfe = Src0Header->C<IROp_Bfe>();
+      if (Bfe->lsb == 0 && Bfe->Width == 32) {
+        //todo: arm can also scale here
+        return { MEM_OFFSET_UXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+      }
+    }
+    //Try to optimize: Base + (s32)Offset
+    else if (Src0Header->Op == OP_SBFE) {
+      auto Sbfe = Src0Header->C<IROp_Sbfe>();
+      if (Sbfe->lsb == 0 && Sbfe->Width == 32) {
+        //todo: arm can also scale here
+        return { MEM_OFFSET_SXTW, 1, IREmit->UnwrapNode(AddressHeader->Args[1]), IREmit->UnwrapNode(Src0Header->Args[0]) };
+      }
+    }
+#endif
+  }
+
+  // no match anywhere, just add
+  return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[0]), IREmit->UnwrapNode(AddressHeader->Args[1]) };
+}
 
 bool ConstProp::Run(IREmitter *IREmit) {
   
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
+
+  auto Header = CurrentIR.GetHeader();
 
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
@@ -93,6 +166,42 @@ bool ConstProp::Run(IREmitter *IREmit) {
     break;
     }
 */
+
+    case OP_LOADMEM: {
+      auto Op = IROp->CW<IR::IROp_LoadMem>();
+      auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
+
+      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
+
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
+
+        Op->OffsetType = OffsetType;
+        Op->OffsetScale = OffsetScale;
+        IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
+        IREmit->ReplaceNodeArgument(CodeNode, 1, Arg1);
+        
+        Changed = true;
+      }
+      break;
+    }
+
+    case OP_STOREMEM: {
+      auto Op = IROp->CW<IR::IROp_StoreMem>();
+      auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
+
+      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
+
+        Op->OffsetType = OffsetType;
+        Op->OffsetScale = OffsetScale;
+        IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
+        IREmit->ReplaceNodeArgument(CodeNode, 2, Arg1);
+        
+        Changed = true;
+      }
+      break;
+    }
+
     case OP_ADD: {
       auto Op = IROp->C<IR::IROp_Add>();
       uint64_t Constant1;
@@ -404,6 +513,40 @@ bool ConstProp::Run(IREmitter *IREmit) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
               IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+
+              Changed = true;
+            }
+          }
+          break;
+        }
+
+	case OP_LOADMEM:
+        {
+          auto Op = IROp->CW<IR::IROp_LoadMem>();
+
+          uint64_t Constant2;
+          if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+            if (IsImmMemory(Constant2, Op->Size)) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+
+              IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+
+              Changed = true;
+            }
+          }
+          break;
+        }
+
+	case OP_STOREMEM:
+        {
+          auto Op = IROp->CW<IR::IROp_StoreMem>();
+
+          uint64_t Constant2;
+          if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[2], &Constant2)) {
+            if (IsImmMemory(Constant2, Op->Size)) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
+
+              IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
 
               Changed = true;
             }
