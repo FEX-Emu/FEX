@@ -118,26 +118,23 @@ include_directories(External/xbyak/)
 include_directories(Source/)
 include_directories("${CMAKE_BINARY_DIR}/Source/")
 
-add_subdirectory(External/FEXCore)
-
-find_package(LLVM CONFIG QUIET)
-if(LLVM_FOUND AND TARGET LLVM)
-  message(STATUS "LLVM found!")
-  include_directories(${LLVM_INCLUDE_DIRS})
-endif()
-
 include(CheckCXXCompilerFlag)
 
 # Add in diagnostic colours if the option is available.
 # Ninja code generator will kill colours if this isn't here
 check_cxx_compiler_flag(-fdiagnostics-color=always GCC_COLOR)
 check_cxx_compiler_flag(-fcolor-diagnostics CLANG_COLOR)
+check_cxx_compiler_flag(-Wno-deprecated-enum-enum-conversion ENUM_ENUM_WARNING)
 
 if (GCC_COLOR)
   add_compile_options(-fdiagnostics-color=always)
 endif()
 if (CLANG_COLOR)
   add_compile_options(-fcolor-diagnostics)
+endif()
+
+if(ENUM_ENUM_WARNING)
+  add_compile_options(-Wno-deprecated-enum-enum-conversion)
 endif()
 
 check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
@@ -147,6 +144,13 @@ endif()
 
 add_compile_options(-Wall)
 
+add_subdirectory(External/FEXCore)
+
+find_package(LLVM CONFIG QUIET)
+if(LLVM_FOUND AND TARGET LLVM)
+  message(STATUS "LLVM found!")
+  include_directories(${LLVM_INCLUDE_DIRS})
+endif()
 add_subdirectory(Source/)
 
 if (BUILD_TESTS)
