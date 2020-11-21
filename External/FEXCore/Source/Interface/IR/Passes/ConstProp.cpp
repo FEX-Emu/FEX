@@ -374,6 +374,13 @@ bool ConstProp::Run(IREmitter *IREmit) {
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
         continue;
+      } else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && __builtin_popcountl(Constant2) == 1) {
+        if (IROp->Size == 4 || IROp->Size == 8) {
+          uint64_t amt = __builtin_ctzl(Constant2);
+          IREmit->SetWriteCursor(CodeNode);
+          auto shift = IREmit->_Lshl(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(amt));
+          IREmit->ReplaceAllUsesWith(CodeNode, shift);
+        }
       }
       break;
     }
