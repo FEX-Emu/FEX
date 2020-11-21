@@ -6,6 +6,7 @@
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Core/UContext.h>
 
 #include <cmath>
 
@@ -153,22 +154,97 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDe
   // Don't need this offset if we aren't going to be putting siginfo in to it
   NewGuestSP -= 128;
 
-  ThreadState->State.State.gregs[X86State::REG_RDI] = Signal;
-
   if (GuestAction->sa_flags & SA_SIGINFO) {
-    // XXX: siginfo_t(RSI), ucontext (RDX)
-    ThreadState->State.State.gregs[X86State::REG_RSI] = 0;
-    ThreadState->State.State.gregs[X86State::REG_RDX] = 0;
+    // Setup ucontext a bit
+    if (CTX->Config.Is64BitMode) {
+      NewGuestSP -= sizeof(FEXCore::x86_64::ucontext_t);
+      uint64_t UContextLocation = NewGuestSP;
+
+      FEXCore::x86_64::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(UContextLocation);
+
+      // We have extended float information
+      guest_uctx->uc_flags |= FEXCore::x86_64::UC_FP_XSTATE;
+
+      // Pointer to where the fpreg memory is
+      guest_uctx->uc_mcontext.fpregs = &guest_uctx->__fpregs_mem;
+
+#define COPY_REG(x) \
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_##x] = ThreadState->State.State.gregs[X86State::REG_##x];
+      COPY_REG(R8);
+      COPY_REG(R9);
+      COPY_REG(R10);
+      COPY_REG(R11);
+      COPY_REG(R12);
+      COPY_REG(R13);
+      COPY_REG(R14);
+      COPY_REG(R15);
+      COPY_REG(RDI);
+      COPY_REG(RSI);
+      COPY_REG(RBP);
+      COPY_REG(RBX);
+      COPY_REG(RDX);
+      COPY_REG(RAX);
+      COPY_REG(RCX);
+      COPY_REG(RSP);
+#undef COPY_REG
+
+      // Copy float registers
+      memcpy(guest_uctx->__fpregs_mem._st, ThreadState->State.State.mm, sizeof(ThreadState->State.State.mm));
+      memcpy(guest_uctx->__fpregs_mem._xmm, ThreadState->State.State.xmm, sizeof(ThreadState->State.State.xmm));
+
+      // FCW store default
+      guest_uctx->__fpregs_mem.fcw = 0x37F;
+
+      // Reconstruct FSW
+      guest_uctx->__fpregs_mem.fsw =
+        (ThreadState->State.State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
+        (ThreadState->State.State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
+        (ThreadState->State.State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
+        (ThreadState->State.State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
+        (ThreadState->State.State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
+
+      // Copy over signal stack information
+      guest_uctx->uc_stack.ss_flags = GuestStack->ss_flags;
+      guest_uctx->uc_stack.ss_sp = GuestStack->ss_sp;
+      guest_uctx->uc_stack.ss_size = GuestStack->ss_size;
+
+      // XXX: siginfo_t(RSI)
+      ThreadState->State.State.gregs[X86State::REG_RSI] = 0x4142434445460000;
+      ThreadState->State.State.gregs[X86State::REG_RDX] = UContextLocation;
+    }
+    else {
+      // XXX: 32bit Support
+      NewGuestSP -= sizeof(FEXCore::x86::ucontext_t);
+      uint64_t UContextLocation = 0; // NewGuestSP;
+      NewGuestSP -= sizeof(FEXCore::x86::siginfo_t);
+      uint64_t SigInfoLocation = 0; // NewGuestSP;
+
+      NewGuestSP -= 4;
+      *(uint32_t*)NewGuestSP = UContextLocation;
+      NewGuestSP -= 4;
+      *(uint32_t*)NewGuestSP = SigInfoLocation;
+    }
+
     ThreadState->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   }
   else {
     ThreadState->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
   }
 
-  // Set up the new SP for stack handling
-  NewGuestSP -= 8;
-  *(uint64_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
-  ThreadState->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
+  if (CTX->Config.Is64BitMode) {
+    ThreadState->State.State.gregs[X86State::REG_RDI] = Signal;
+
+    // Set up the new SP for stack handling
+    NewGuestSP -= 8;
+    *(uint64_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
+    ThreadState->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
+  }
+  else {
+    NewGuestSP -= 4;
+    *(uint32_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
+    LogMan::Throw::A(CTX->X86CodeGen.SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
+    ThreadState->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
+  }
 
   return true;
 }

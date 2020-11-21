@@ -27,9 +27,14 @@ namespace FEXCore {
       .ss_size = 0,
     };
     // Guest signal sa_mask is per thread!
+    // This is the sa_mask from sigaction which is orr'd to the current signal mask
     SignalDelegator::GuestSAMask Guest_sa_mask[SignalDelegator::MAX_SIGNALS]{};
+    // This is the thread's current signal mask
+    SignalDelegator::GuestSAMask CurrentSignalMask{};
+    // The mask prior to a suspend
+    SignalDelegator::GuestSAMask PreviousSuspendMask{};
+
     uint32_t CurrentSignal{};
-    uint64_t GuestProcMask{};
     uint64_t PendingSignals{};
     bool Suspended {false};
   };
@@ -59,6 +64,12 @@ namespace FEXCore {
     return (Set->Val >> Signal) & 1;
   }
 
+  uint64_t SetSignal(SignalDelegator::GuestSAMask *Set, int Signal) {
+    // Signal 0 isn't real, so everything is offset by one inside the set
+    Signal -= 1;
+    return Set->Val | (1ULL << Signal);
+  }
+
   void SignalDelegator::SetCurrentSignal(uint32_t Signal) {
     ThreadData.CurrentSignal = Signal;
   }
@@ -70,7 +81,7 @@ namespace FEXCore {
     SignalHandler &Handler = HostHandlers[Signal];
 
     if (!Thread) {
-      LogMan::Msg::E("Thread has received a signal and hasn't registered itself with the delegate! Programming error!");
+      LogMan::Msg::E("[%d] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", gettid());
     }
     else {
       if (Handler.Handler &&
@@ -108,21 +119,31 @@ namespace FEXCore {
         }
       }
 
-      // Signal specific mask check
-      if (SigIsMember(&ThreadData.Guest_sa_mask[ThreadData.CurrentSignal], Signal)) {
-        // If we are in a signal and our signal mask is blocking this signal then ignore it
-        return;
-      }
-
-      // Thread specific mask check
-      if (ThreadData.GuestProcMask & (Signal - 1)) {
-        // If the thread specific mask masks the signal then it is hidden from the guest
-        // It gets put in to the pending signals mask
+      // Check the thread's current signal mask
+      if (SigIsMember(&ThreadData.CurrentSignalMask, Signal) != ThreadData.Suspended) {
         ThreadData.PendingSignals |= 1ULL << (Signal - 1);
         return;
       }
 
+      if (ThreadData.Suspended) {
+        // If we were suspended then swap the mask back to the original
+        ThreadData.CurrentSignalMask = ThreadData.PreviousSuspendMask;
+        ThreadData.PreviousSuspendMask.Val = 0;
+        ThreadData.Suspended = false;
+      }
+
+      // OR in the sa_mask
+      ThreadData.CurrentSignalMask.Val |= ThreadData.Guest_sa_mask[Signal].Val;
+
+      // If NODEFER isn't set then also mask the current signal
+      if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
+        SetSignal(&ThreadData.CurrentSignalMask, Signal);
+      }
+
       ThreadData.CurrentSignal = Signal;
+
+      // Remove the pending signal
+      ThreadData.PendingSignals &= ~(1ULL << (Signal - 1));
 
       // We have an emulation thread pointer, we can now modify its state
       if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
@@ -152,8 +173,6 @@ namespace FEXCore {
       else {
         if (Handler.GuestHandler &&
             Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
-          // If we were sigsuspended, then we will no longer be from here
-          ThreadData.Suspended = false;
           return;
         }
         ERROR_AND_DIE("Unhandled guest exception");
@@ -476,37 +495,41 @@ namespace FEXCore {
     return 0;
   }
 
+  static void CheckForPendingSignals() {
+    // Do we have any pending signals that became unmasked?
+    uint64_t PendingSignals = ~ThreadData.CurrentSignalMask.Val & ThreadData.PendingSignals;
+    if (PendingSignals != 0) {
+      for (int i = 0; i < 64; ++i) {
+        if (PendingSignals & (1ULL << i)) {
+          tgkill(ThreadData.Thread->State.ThreadManager.PID, ThreadData.Thread->State.ThreadManager.TID, i + 1);
+          // We might not even return here which is spooky
+        }
+      }
+    }
+  }
+
   uint64_t SignalDelegator::GuestSigProcMask(int how, const uint64_t *set, uint64_t *oldset) {
     if (!!oldset) {
-      *oldset = ThreadData.GuestProcMask;
+      *oldset = ThreadData.CurrentSignalMask.Val;
     }
 
     if (!!set) {
       uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
       if (how == SIG_BLOCK) {
-        ThreadData.GuestProcMask |= *set & IgnoredSignalsMask;
+        ThreadData.CurrentSignalMask.Val |= *set & IgnoredSignalsMask;
       }
       else if (how == SIG_UNBLOCK) {
-        ThreadData.GuestProcMask &= *set & IgnoredSignalsMask;
+        ThreadData.CurrentSignalMask.Val &= ~(*set & IgnoredSignalsMask);
       }
       else if (how == SIG_SETMASK) {
-        ThreadData.GuestProcMask = *set & IgnoredSignalsMask;
+        ThreadData.CurrentSignalMask.Val = *set & IgnoredSignalsMask;
       }
       else {
         return -EINVAL;
       }
     }
 
-    // Do we have any pending signals that became unmasked?
-    uint64_t PendingSignals = ~ThreadData.GuestProcMask & ThreadData.PendingSignals;
-    if (PendingSignals != 0) {
-      for (int i = 0; i < 64; ++i) {
-        if (PendingSignals & (1ULL << i)) {
-          tgkill(ThreadData.Thread->State.ThreadManager.PID, ThreadData.Thread->State.ThreadManager.TID, i + 1);
-          PendingSignals &= ~(1ULL << i);
-        }
-      }
-    }
+    CheckForPendingSignals();
 
     return 0;
   }
@@ -525,9 +548,12 @@ namespace FEXCore {
       return -EINVAL;
     }
 
-    uint64_t BackupMask = ThreadData.GuestProcMask;
     uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
-    ThreadData.GuestProcMask = *set & IgnoredSignalsMask;
+
+    // Backup the mask
+    ThreadData.PreviousSuspendMask = ThreadData.CurrentSignalMask;
+    // Set the new mask
+    ThreadData.CurrentSignalMask.Val = *set & IgnoredSignalsMask;
     ThreadData.Suspended = true;
     sigset_t HostSet{};
 
@@ -542,24 +568,13 @@ namespace FEXCore {
     // Additionally we must always listen to SIGNAL_FOR_PAUSE
     // This technically forces us in to a race but should be fine
     // SIGBUS and SIGILL can't happen so we don't need to listen for them
-    sigaddset(&HostSet, SIGNAL_FOR_PAUSE);
+    //sigaddset(&HostSet, SIGNAL_FOR_PAUSE);
 
     // Spin this in a loop until we aren't sigsuspended
     // This can happen in the case that the guest has sent signal that we can't block
-    uint64_t Result = 0;
-    while (ThreadData.Suspended) {
-      // This is technically a race on our end
-      Result = sigsuspend(&HostSet);
+    uint64_t Result = sigsuspend(&HostSet);
 
-      // On error then exit out
-      // It can only ever error on EINTR
-      if (Result == -1) {
-        ThreadData.Suspended = false;
-        break;
-      }
-    }
-
-    ThreadData.GuestProcMask = BackupMask;
+    CheckForPendingSignals();
 
     SYSCALL_ERRNO();
   }
