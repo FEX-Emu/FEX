@@ -11,21 +11,26 @@ set(CMAKE_C_COMPILER "${X86_C_COMPILER}")
 set(CMAKE_CXX_COMPILER "${X86_CXX_COMPILER}")
 
 function(generate NAME)
-    foreach(WHAT IN LISTS ARGN)
-        set(OUTFILE "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}/${WHAT}.inl")
-        set(GENERATOR "${CMAKE_CURRENT_SOURCE_DIR}/../Generators/${NAME}.py")
-        set(HELPER "${CMAKE_CURRENT_SOURCE_DIR}/../Generators/ThunkHelpers.py")
+  foreach(WHAT IN LISTS ARGN)
+    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}")
+    set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
+    set(GENERATOR "${CMAKE_CURRENT_SOURCE_DIR}/../Generators/${NAME}.py")
+    set(HELPER "${CMAKE_CURRENT_SOURCE_DIR}/../Generators/ThunkHelpers.py")
 
-        add_custom_command(
-            OUTPUT "${OUTFILE}"
-            DEPENDS "${GENERATOR}"
-            DEPENDS "${HELPER}"
-            COMMAND "python3" "${GENERATOR}" "${WHAT}" > "${OUTFILE}"
-        )
+    add_custom_command(OUTPUT ${OUTFOLDER}
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTFOLDER}")
 
-        list(APPEND OUTPUTS "${OUTFILE}")
-    endforeach()
-    set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
+    add_custom_command(
+      OUTPUT "${OUTFILE}"
+      DEPENDS "${GENERATOR}"
+      DEPENDS "${HELPER}"
+      DEPENDS "${OUTFOLDER}"
+      COMMAND "python3" "${GENERATOR}" "${WHAT}" > "${OUTFILE}"
+      )
+
+    list(APPEND OUTPUTS "${OUTFILE}")
+  endforeach()
+  set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
 function(add_guest_lib NAME)
