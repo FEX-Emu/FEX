@@ -567,12 +567,14 @@ DEF_OP(Ror) {
         bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
         bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
         ror(GetReg<RA_32>(Node), TMP1.W(), (unsigned int)Const);
+        and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFF);
       break;
       }
       case 2: {
         mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
         bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
         ror(GetReg<RA_32>(Node), TMP1.W(), (unsigned int)Const);
+        and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFFFF);
       break;
       }
       case 4: {
@@ -594,12 +596,14 @@ DEF_OP(Ror) {
         bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
         bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
         rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFF);
       break;
       }
       case 2: {
         mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
         bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
         rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        and_(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0xFFFF);
       break;
       }
       case 4: {
