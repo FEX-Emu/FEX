@@ -9,7 +9,7 @@ public:
   ELFSymbolDatabase(::ELFLoader::ELFContainer *file);
   ~ELFSymbolDatabase();
 
-  ::ELFLoader::ELFContainer::MemoryLayout GetFileLayout() const;
+  uint64_t GetElfBase() const;
 
   void MapMemoryRegions(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper);
   void WriteLoadableSections(::ELFLoader::ELFContainer::MemoryWriter Writer);

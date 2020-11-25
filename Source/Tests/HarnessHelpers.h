@@ -515,9 +515,8 @@ public:
       MemoryBase = 0;
     }
     // Set up our aux values here
-    auto FileLayout = DB.GetFileLayout();
-    AuxVariables.emplace_back(auxv_t{3, std::get<0>(FileLayout)}); // Program header
-    AuxVariables.emplace_back(auxv_t{7, std::get<0>(FileLayout)}); // Interpreter address
+    AuxVariables.emplace_back(auxv_t{3, DB.GetElfBase()}); // Program header
+    AuxVariables.emplace_back(auxv_t{7, DB.GetElfBase()}); // Interpreter address
     AuxVariables.emplace_back(auxv_t{9, DB.DefaultRIP()}); // AT_ENTRY
     AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
   }

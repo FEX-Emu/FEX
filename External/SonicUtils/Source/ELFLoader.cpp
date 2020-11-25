@@ -266,8 +266,15 @@ void ELFContainer::CalculateMemoryLayouts() {
   else {
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
       Elf64_Phdr *hdr = ProgramHeaders.at(i)._64;
-      MinPhysAddr = std::min(MinPhysAddr, hdr->p_paddr);
-      MaxPhysAddr = std::max(MaxPhysAddr, hdr->p_paddr + hdr->p_memsz);
+
+      // Many elfs have program region labeled .GNU_STACK which is empty and has a null address.
+      // It's used to mark the memory protection flags of the stack.
+      //
+      // We need to ignore such empty sections, or we will mistakenly assume the elf starts at zero.
+      if (hdr->p_memsz > 0) {
+        MinPhysAddr = std::min(MinPhysAddr, hdr->p_paddr);
+        MaxPhysAddr = std::max(MaxPhysAddr, hdr->p_paddr + hdr->p_memsz);
+      }
       if (hdr->p_type == PT_TLS) {
         TLSHeader._64 = hdr;
       }
