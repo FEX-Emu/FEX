@@ -418,12 +418,12 @@ friend class FEXCore::IR::PassManager;
 
   /**  @} */
 
-  bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t *Constant) {
+  bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t *Constant = nullptr) {
      OrderedNode *RealNode = ssa.GetNode(ListData.Begin());
      FEXCore::IR::IROp_Header *IROp = RealNode->Op(Data.Begin());
      if (IROp->Op == OP_CONSTANT) {
        auto Op = IROp->C<IR::IROp_Constant>();
-       *Constant = Op->Constant;
+       if (Constant) *Constant = Op->Constant;
        return true;
      }
      return false;
@@ -445,6 +445,14 @@ friend class FEXCore::IR::PassManager;
 
   OrderedNode *UnwrapNode(OrderedNodeWrapper ssa) {
     return ssa.GetNode(ListData.Begin());
+  }
+
+  OrderedNodeWrapper WrapNode(OrderedNode *node) {
+    return node->Wrapped(ListData.Begin());
+  }
+
+  NodeIterator GetIterator(OrderedNodeWrapper wrapper) {
+    return NodeIterator(ListData.Begin(), Data.Begin(), wrapper);
   }
 
   // Overwrite a node with a constant

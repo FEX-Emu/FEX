@@ -117,6 +117,62 @@ bool ConstProp::Run(IREmitter *IREmit) {
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
   auto HeaderOp = CurrentIR.GetHeader();
+  
+  // Code motion around selects
+  // Moves unary ops that depend on a select before the select, if both inputs are constants
+  // assumes that unary ops without side effects on constants will be constprop'd
+  for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
+    auto BlockOp = BlockIROp->CW<FEXCore::IR::IROp_CodeBlock>();
+    for (auto [UnaryOpNode, UnaryOpHdr] : CurrentIR.GetCode(BlockNode)) {
+      if (UnaryOpHdr->NumArgs == 1 && !HasSideEffects(UnaryOpHdr->Op)) {
+        // could be moved
+        auto SelectOpNode = IREmit->UnwrapNode(UnaryOpHdr->Args[0]);
+        auto SelectOpHdr = IREmit->GetOpHeader(UnaryOpHdr->Args[0]);
+        auto SelectOp = SelectOpHdr->CW<IR::IROp_Select>();
+
+        // the value isn't used after the select otherwise
+        if (SelectOpHdr->Op == OP_SELECT && SelectOpNode->NumUses == 1
+          && IREmit->IsValueConstant(SelectOp->TrueVal)
+          && IREmit->IsValueConstant(SelectOp->FalseVal)) {
+
+          IREmit->SetWriteCursor(IREmit->UnwrapNode(SelectOpNode->Header.Previous));
+
+          size_t OpSize = FEXCore::IR::GetSize(UnaryOpHdr->Op);
+
+          /// copy for TrueVal ///
+          auto NewUnaryOp1 = IREmit->AllocateRawOp(OpSize);
+
+          // Copy over the op
+          memcpy(NewUnaryOp1.first, UnaryOpHdr, OpSize);
+          
+          for (int i = 0; i < NewUnaryOp1.first->NumArgs; i++) {
+            NewUnaryOp1.first->Args[i] = IREmit->WrapNode(IREmit->Invalid());
+          }
+          // Set New Op to operate on the constant
+          IREmit->ReplaceNodeArgument(NewUnaryOp1, 0, IREmit->UnwrapNode(SelectOp->TrueVal));
+          // Make select use the operated constant
+          IREmit->ReplaceNodeArgument(SelectOpNode, 2, NewUnaryOp1);
+
+          /// copy for FalseVal ///
+          auto NewUnaryOp2 = IREmit->AllocateRawOp(OpSize);
+
+          // Copy over the op
+          memcpy(NewUnaryOp2.first, UnaryOpHdr, OpSize);
+          
+          for (int i = 0; i < NewUnaryOp2.first->NumArgs; i++) {
+            NewUnaryOp2.first->Args[i] = IREmit->WrapNode(IREmit->Invalid());
+          }
+          // Set New Op to operate on the constant
+          IREmit->ReplaceNodeArgument(NewUnaryOp2, 0, IREmit->UnwrapNode(SelectOp->FalseVal));
+          // Make select use the operated constant
+          IREmit->ReplaceNodeArgument(SelectOpNode, 3, NewUnaryOp2);
+
+          // Replace uses of the defuct unary op w/ select
+          IREmit->ReplaceAllUsesWithRange(UnaryOpNode, SelectOpNode, IREmit->GetIterator(IREmit->WrapNode(UnaryOpNode)), IREmit->GetIterator(BlockOp->Last));
+        }
+      }
+    }
+  }
 
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {

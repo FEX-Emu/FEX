@@ -8,6 +8,7 @@ namespace FEXCore::IR {
 #define IROP_GETRAARGS_IMPL
 #define IROP_REG_CLASSES_IMPL
 #define IROP_HASSIDEEFFECTS_IMPL
+#define IROP_SIZES_IMPL
 
 #include <FEXCore/IR/IRDefines.inc>
 
