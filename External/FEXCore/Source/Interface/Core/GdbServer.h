@@ -13,7 +13,7 @@ public:
     GdbServer(FEXCore::Context::Context *ctx);
 
 private:
-    void Break();
+    void Break(int signal);
 
     std::unique_ptr<std::iostream> OpenSocket();
     void StartThread();
