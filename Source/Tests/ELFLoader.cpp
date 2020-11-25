@@ -111,11 +111,17 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
     std::istringstream InterpreterSS(InterpreterLine);
     std::string Argument;
     if (std::getline(InterpreterSS, Argument, ' ')) {
-      // Push the filename in to the argument
-      args->emplace(args->begin(), Argument);
+      // If the filename is absolute then prepend the rootfs
+      // If it is relative then don't append the rootfs
+      if (Argument[0] == '/') {
+        *Filename = RootFS + Argument;
+      }
+      else {
+        *Filename = Argument;
+      }
 
-      // Replace the filename
-      *Filename = Argument;
+      // Push the filename in to the argument
+      args->emplace(args->begin(), *Filename);
     }
 
     // Now check for argument
@@ -177,11 +183,21 @@ int main(int argc, char **argv, char **const envp) {
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
 
-  LogMan::Throw::A(!Args.empty(), "Not enough arguments");
+  if (Args.empty()) {
+    // Early exit if we weren't passed an argument
+    return 0;
+  }
 
   std::string Program = Args[0];
 
   InterpreterHandler(&Program, LDPath(), &Args);
+
+  if (!std::filesystem::exists(Program)) {
+    // Early exit if the program passed in doesn't exist
+    // Will prevent a crash later
+    LogMan::Msg::E("%s: command not found", Program.c_str());
+    return 0;
+  }
 
   FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
 
