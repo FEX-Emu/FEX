@@ -1115,11 +1115,14 @@
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
-      "DestSize": "GetOpSize(ssa0)",
+      "DestSize": "DestSize",
       "SSAArgs": "2",
       "SSANames": [
         "Dest",
         "Src"
+      ],
+      "HelperArgs": [
+        "uint8_t", "DestSize"
       ],
       "Args": [
         "uint8_t", "Width",

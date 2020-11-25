@@ -1991,7 +1991,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 
   // Rotate and insert CF in the upper bit
   OrderedNode *Res = _Bfe(7, 1, Dest);
-  Res = _Bfi(1, 7, Res, CF);
+  Res = _Bfi(Size/8, 1, 7, Res, CF);
 
   // Our new CF will be bit (Shift - 1) of the source
   auto NewCF = _Bfe(1, Shift - 1, Dest);
@@ -2091,10 +2091,10 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   // We need to cover 32bits plus the amount that could rotate in
   for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
     // Insert incoming value
-    Tmp = _Bfi(Size, i, Tmp, Dest);
+    Tmp = _Bfi(8, Size, i, Tmp, Dest);
 
     // Insert CF
-    Tmp = _Bfi(1, i + Size, Tmp, CF);
+    Tmp = _Bfi(8, 1, i + Size, Tmp, CF);
   }
 
   // Entire bitfield has been setup
@@ -2229,14 +2229,14 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
   for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
     // Insert incoming value
-    Tmp = _Bfi(Size, 63 - i - Size, Tmp, Dest);
+    Tmp = _Bfi(8, Size, 63 - i - Size, Tmp, Dest);
 
     // Insert CF
-    Tmp = _Bfi(1, 63 - i, Tmp, CF);
+    Tmp = _Bfi(8, 1, 63 - i, Tmp, CF);
   }
 
   // Insert incoming value
-  Tmp = _Bfi(Size, 0, Tmp, Dest);
+  Tmp = _Bfi(8, Size, 0, Tmp, Dest);
 
   // The data is now set up like this
   // [Data][CF]:[Data][CF]:[Data][CF]:[Data][CF]
@@ -7481,7 +7481,7 @@ void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
   // Default MXCSR
   OrderedNode *MXCSR = _Constant(32, 0x1F80);
   OrderedNode *RoundingMode = _GetRoundingMode();
-  MXCSR = _Bfi(3, 13, MXCSR, RoundingMode);
+  MXCSR = _Bfi(4, 3, 13, MXCSR, RoundingMode);
 
   StoreResult(GPRClass, Op, MXCSR, -1);
 }
