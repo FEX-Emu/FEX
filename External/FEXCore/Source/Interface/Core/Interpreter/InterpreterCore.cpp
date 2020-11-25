@@ -1170,12 +1170,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             };
 
             switch (OpSize) {
-              case 1:
-                GD = Ror(static_cast<uint8_t>(Src1), static_cast<uint8_t>(Src2));
-                break;
-              case 2:
-                GD = Ror(static_cast<uint16_t>(Src1), static_cast<uint16_t>(Src2));
-                break;
               case 4:
                 GD = Ror(static_cast<uint32_t>(Src1), static_cast<uint32_t>(Src2));
                 break;
@@ -1642,7 +1636,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_SELECT: {
             auto Op = IROp->C<IR::IROp_Select>();
-            
+
             uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
 
@@ -1656,7 +1650,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               ArgTrue = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]);
               ArgFalse = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[3]);
             }
-            
+
             bool CompResult;
 
             if (Op->CompareSize == 4)

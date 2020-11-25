@@ -561,20 +561,6 @@ DEF_OP(Ror) {
   uint64_t Const;
   if (IsInlineConstant(Op->Header.Args[1], &Const)) {
     switch (OpSize) {
-      case 1: {
-        mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
-        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
-        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
-        ror(GetReg<RA_32>(Node), TMP1.W(), (unsigned int)Const);
-      break;
-      }
-      case 2: {
-        mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
-        ror(GetReg<RA_32>(Node), TMP1.W(), (unsigned int)Const);
-      break;
-      }
       case 4: {
         ror(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), (unsigned int)Const);
       break;
@@ -588,20 +574,6 @@ DEF_OP(Ror) {
     }
   } else {
     switch (OpSize) {
-      case 1: {
-        mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 8, 8);
-        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 8);
-        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 24, 8);
-        rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
-      break;
-      }
-      case 2: {
-        mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-        bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16, 16);
-        rorv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
-      break;
-      }
       case 4: {
         rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
       break;
@@ -1127,7 +1099,7 @@ DEF_OP(Select) {
   uint64_t const_true, const_false;
   bool is_const_true = IsInlineConstant(Op->Header.Args[2], &const_true);
   bool is_const_false = IsInlineConstant(Op->Header.Args[3], &const_false);
-  
+
   if (is_const_true || is_const_false) {
     if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
       LogMan::Msg::A("Select: Unsupported compare inline parameters");
