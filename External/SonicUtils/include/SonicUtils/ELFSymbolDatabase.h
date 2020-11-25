@@ -22,7 +22,6 @@ public:
   ::ELFLoader::ELFSymbol const *GetNoWeakSymbolInRange(RangeType Address);
 
   void GetInitLocations(std::vector<uint64_t> *Locations);
-  uint64_t InitializeThreadSlot(std::function<void(void const*, uint64_t)> Writer) const;
 
 private:
   ::ELFLoader::ELFContainer *File;

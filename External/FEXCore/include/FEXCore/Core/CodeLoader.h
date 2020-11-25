@@ -40,7 +40,6 @@ public:
   virtual uint64_t DefaultRIP() const = 0;
 
   virtual void GetInitLocations(std::vector<uint64_t> *Locations) {}
-  virtual uint64_t InitializeThreadSlot(std::function<void(void const*, uint64_t)> Writer) const { return 0; };
 
   /**
    * @brief Lets the core tell the CodeLoader where the virtual memory region starts and if we are running in an environment

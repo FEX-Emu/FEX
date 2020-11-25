@@ -28,9 +28,6 @@
 
 constexpr uint64_t STACK_OFFSET = 0xc000'0000;
 
-constexpr uint64_t FS_OFFSET = 0xb000'0000;
-constexpr uint64_t FS_SIZE = 0x1000'0000;
-
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
     // This should be used for generating things that are shared between threads
@@ -258,11 +255,6 @@ namespace FEXCore::Context {
     NewThreadState.flags[9] = 1;
 
     FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
-    if (Is64Bit) {
-      // Set up all of our memory mappings
-      NewThreadState.fs = reinterpret_cast<uint64_t>(MapRegion(Thread, FS_OFFSET, FS_SIZE, true, false));
-      NewThreadState.gs = 0;
-    }
 
     // We are the parent thread
     ParentThread = Thread;
@@ -294,15 +286,7 @@ namespace FEXCore::Context {
     Loader->LoadMemory(MemoryWriterFunction);
     Loader->GetInitLocations(&InitLocations);
 
-    auto TLSSlotWriter = [&](void const *Data, uint64_t Size) -> void {
-      memcpy(reinterpret_cast<void*>(NewThreadState.fs), Data, Size);
-    };
-
-    // Offset next thread's FS_OFFSET by slot size
-    uint64_t SlotSize = Loader->InitializeThreadSlot(TLSSlotWriter);
-    uint64_t RIP = Loader->DefaultRIP();
-
-    Thread->State.State.rip = StartingRIP = RIP;
+    Thread->State.State.rip = StartingRIP = Loader->DefaultRIP();
 
     InitializeThreadData(Thread);
 

@@ -67,7 +67,6 @@ public:
   void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
 
   bool HasTLS() const { return TLSHeader._64 != nullptr; }
-  uint64_t InitializeThreadSlot(void *ELFBase, std::function<void(void const*, uint64_t)> Writer) const;
 
   enum ELFMode {
     MODE_32BIT,

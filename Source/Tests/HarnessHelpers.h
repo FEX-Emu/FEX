@@ -717,10 +717,6 @@ public:
     DB.GetInitLocations(Locations);
   }
 
-  uint64_t InitializeThreadSlot(std::function<void(void const*, uint64_t)> Writer) const override {
-    return DB.InitializeThreadSlot(Writer);
-  };
-
   void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
 
   void GetAuxv(uint64_t& addr, uint64_t& size) override {

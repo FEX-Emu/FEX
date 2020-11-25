@@ -313,14 +313,4 @@ void ELFSymbolDatabase::GetInitLocations(std::vector<uint64_t> *Locations) {
   }
 }
 
-uint64_t ELFSymbolDatabase::InitializeThreadSlot(std::function<void(void const*, uint64_t)> Writer) const {
-  for (auto ELF : InitializationOrder) {
-    if (ELF->Container->HasTLS()) {
-      return ELF->Container->InitializeThreadSlot(ELF->ELFBase, Writer);
-    }
-  }
-
-  return 0;
-}
-
 }
