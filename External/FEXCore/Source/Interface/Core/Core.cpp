@@ -370,9 +370,12 @@ namespace FEXCore::Context {
   }
 
   void Context::Pause() {
-    NotifyPause();
+    // If we aren't running, WaitForIdle will never compete.
+    if (Running) {
+      NotifyPause();
 
-    WaitForIdle();
+      WaitForIdle();
+    }
   }
 
   void Context::Run() {
@@ -760,7 +763,7 @@ namespace FEXCore::Context {
         if (Thread->CTX->Config.DumpIR=="stderr") {
           f = stderr;
         }
-        else if (Thread->CTX->Config.DumpIR=="stdout") { 
+        else if (Thread->CTX->Config.DumpIR=="stdout") {
           f = stdout;
         }
         else {
@@ -881,7 +884,7 @@ namespace FEXCore::Context {
     Thread->State.ThreadManager.PID = ::getpid();
     SignalDelegation.RegisterTLSState(Thread);
     ThunkHandler->RegisterTLSState(Thread);
-    
+
     ++IdleWaitRefCount;
 
     LogMan::Msg::D("[%d] Waiting to run", Thread->State.ThreadManager.TID.load());
@@ -889,7 +892,7 @@ namespace FEXCore::Context {
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
 
-    if (Thread != Thread->CTX->ParentThread) {
+    if (Thread != Thread->CTX->ParentThread || StartPaused) {
       // Parent thread doesn't need to wait to run
       Thread->StartRunning.Wait();
     }
