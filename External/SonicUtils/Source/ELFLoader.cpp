@@ -212,17 +212,6 @@ void ELFContainer::WriteLoadableSections(MemoryWriter Writer, uint64_t Offset) {
   }
 }
 
-uint64_t ELFContainer::InitializeThreadSlot(void *ELFBase, std::function<void(void const*, uint64_t)> Writer) const {
-  if (Mode == MODE_32BIT) {
-    Writer(reinterpret_cast<void const*>(reinterpret_cast<uint64_t>(ELFBase) + TLSHeader._32->p_paddr), TLSHeader._32->p_memsz);
-    return TLSHeader._32->p_memsz;
-  }
-  else {
-    Writer(reinterpret_cast<void const*>(reinterpret_cast<uint64_t>(ELFBase) + TLSHeader._64->p_paddr), TLSHeader._64->p_memsz);
-    return TLSHeader._64->p_memsz;
-  }
-}
-
 ELFSymbol const *ELFContainer::GetSymbol(char const *Name) {
   auto Sym = SymbolMap.find(Name);
   if (Sym == SymbolMap.end())
