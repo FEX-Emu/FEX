@@ -25,18 +25,35 @@
 namespace FEXCore
 {
 
-void GdbServer::Break() {
+void GdbServer::Break(int signal) {
     std::lock_guard lk(sendMutex);
+
+    std::ostringstream ss;
+    ss << "S" << std::setfill('0') << std::setw(2) << std::hex << signal;
+
     if (CommsStream)
-        SendPacket(*CommsStream, "S05");
+        SendPacket(*CommsStream, ss.str());
 }
 
 GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
-    ctx->CustomExitHandler = [&](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
+    ctx->CustomExitHandler = [this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
         if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
-            this->Break();
+            this->Break(SIGTRAP);
         }
     };
+
+    // This is a total hack as there is currently no way to resume once hitting a segfault
+    // But it's semi-useful for debugging.
+    ctx->SignalDelegation.RegisterHostSignalHandler(SIGSEGV, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+        this->Break(SIGSEGV);
+
+        this->CTX->Config.RunningMode = FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP;
+
+        for (;;)
+          usleep(100000);
+
+        return true;
+    });
 
     StartThread();
 }
