@@ -70,8 +70,8 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Sbfe> _Sbfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
     return _Sbfe(ssa0, Width, lsb);
   }
-  IRPair<IROp_Bfi> _Bfi(uint8_t Width, uint8_t lsb, OrderedNode *ssa0, OrderedNode *ssa1) {
-    return _Bfi(ssa0, ssa1, Width, lsb);
+  IRPair<IROp_Bfi> _Bfi(uint8_t DestSize, uint8_t Width, uint8_t lsb, OrderedNode *ssa0, OrderedNode *ssa1) {
+    return _Bfi(ssa0, ssa1, Width, lsb, DestSize);
   }
   IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Align = 1) {
     return _StoreMem(ssa0, ssa1, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
@@ -94,7 +94,7 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3, uint8_t CompareSize = 0) {
     if (CompareSize == 0)
       CompareSize = std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(ssa0), GetOpSize(ssa1)));
-      
+
     return _Select(ssa0, ssa1, ssa2, ssa3, {Cond}, CompareSize);
   }
   IRPair<IROp_Sext> _Sext(uint8_t SrcSize, OrderedNode *ssa0) {

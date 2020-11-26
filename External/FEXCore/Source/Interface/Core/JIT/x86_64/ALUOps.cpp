@@ -613,66 +613,6 @@ DEF_OP(Ashr) {
   }
 }
 
-DEF_OP(Rol) {
-  auto Op = IROp->C<IR::IROp_Rol>();
-  uint8_t OpSize = IROp->Size;
-
-  uint8_t Mask = OpSize * 8 - 1;
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    Const &= Mask;
-    switch (OpSize) {
-      case 1: {
-        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-        rol(al, Const);
-      break;
-      }
-      case 2: {
-        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-        rol(ax, Const);
-      break;
-      }
-      case 4: {
-        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-        rol(eax, Const);
-      break;
-      }
-      case 8: {
-        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        rol(rax, Const);
-      break;
-      }
-    }
-  } else {
-    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-    and(rcx, Mask);
-    switch (OpSize) {
-      case 1: {
-        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-        rol(al, cl);
-      break;
-      }
-      case 2: {
-        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-        rol(ax, cl);
-      break;
-      }
-      case 4: {
-        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-        rol(eax, cl);
-      break;
-      }
-      case 8: {
-        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        rol(rax, cl);
-      break;
-      }
-    }
-  }
-  mov(GetDst<RA_64>(Node), rax);
-}
-
 DEF_OP(Ror) {
   auto Op = IROp->C<IR::IROp_Ror>();
   uint8_t OpSize = IROp->Size;
@@ -683,16 +623,6 @@ DEF_OP(Ror) {
   if (IsInlineConstant(Op->Header.Args[1], &Const)) {
     Const &= Mask;
     switch (OpSize) {
-      case 1: {
-        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-        ror(al, Const);
-      break;
-      }
-      case 2: {
-        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-        ror(ax, Const);
-      break;
-      }
       case 4: {
         mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
         ror(eax, Const);
@@ -703,21 +633,12 @@ DEF_OP(Ror) {
         ror(rax, Const);
       break;
       }
+      default: LogMan::Msg::A("Unknown ROR Size: %d\n", OpSize); break;
     }
   } else {
     mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
     and(rcx, Mask);
     switch (OpSize) {
-      case 1: {
-        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-        ror(al, cl);
-      break;
-      }
-      case 2: {
-        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-        ror(ax, cl);
-      break;
-      }
       case 4: {
         mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
         ror(eax, cl);
@@ -728,6 +649,7 @@ DEF_OP(Ror) {
         ror(rax, cl);
       break;
       }
+      default: LogMan::Msg::A("Unknown ROR Size: %d\n", OpSize); break;
     }
   }
   mov(GetDst<RA_64>(Node), rax);
@@ -1193,11 +1115,11 @@ DEF_OP(Select) {
   } else {
     cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
   }
-  
+
   uint64_t const_true, const_false;
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
   bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
-  
+
   if (is_const_true || is_const_false) {
     if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
       LogMan::Msg::A("Select: Unsupported compare inline parameters");
@@ -1214,7 +1136,7 @@ DEF_OP(Select) {
       case FEXCore::IR::COND_ULT: setb(al); break;
       case FEXCore::IR::COND_UGT: seta(al); break;
       case FEXCore::IR::COND_ULE: setna(al); break;
-      
+
       case FEXCore::IR::COND_MI:
       case FEXCore::IR::COND_PL:
       case FEXCore::IR::COND_VS:
@@ -1237,7 +1159,7 @@ DEF_OP(Select) {
       case FEXCore::IR::COND_ULT: cmovb(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
       case FEXCore::IR::COND_UGT: cmova(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
       case FEXCore::IR::COND_ULE: cmovna(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      
+
       case FEXCore::IR::COND_MI:
       case FEXCore::IR::COND_PL:
       case FEXCore::IR::COND_VS:
@@ -1363,7 +1285,6 @@ void JITCore::RegisterALUHandlers() {
   REGISTER_OP(LSHL,              Lshl);
   REGISTER_OP(LSHR,              Lshr);
   REGISTER_OP(ASHR,              Ashr);
-  REGISTER_OP(ROL,               Rol);
   REGISTER_OP(ROR,               Ror);
   REGISTER_OP(EXTR,              Extr);
   REGISTER_OP(LDIV,              LDiv);

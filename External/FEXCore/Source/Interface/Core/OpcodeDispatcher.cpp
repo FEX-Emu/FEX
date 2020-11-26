@@ -148,7 +148,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags();
   }
-  
+
   auto Constant = _Constant(GPRSize);
 
   auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
@@ -183,9 +183,9 @@ SS
 */
 void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   LogMan::Throw::A(CTX->Config.Is64BitMode == true, "IRET only implemented for x64");
-  
+
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  
+
   auto Constant = _Constant(GPRSize);
 
   OrderedNode* SP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
@@ -206,7 +206,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   //ss
   _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
   SP = _Add(SP, Constant);
-  
+
   _ExitFunction();
   BlockSetRIP = true;
 }
@@ -681,7 +681,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
 
 OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue) {
   OrderedNode *SrcCond = nullptr;
-  
+
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
 
@@ -822,12 +822,12 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
       case 0xD: SrcCond = _Select(FEXCore::IR::COND_SGE, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
       // SL
       case 0xC: SrcCond = _Select(FEXCore::IR::COND_SLT, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
-      
+
       // not sign
       //case 0x99: SrcCond = _Select(FEXCore::IR::COND_, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
       // sign
       //case 0x98: SrcCond = _Select(FEXCore::IR::COND_, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
-      
+
       // UABove
       case 0x7: SrcCond = _Select(FEXCore::IR::COND_UGT, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize); break;
       // UBE
@@ -1139,9 +1139,9 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto ALUOp = _And(Dest, Src);
   GenerateFlags_Logical(Op, ALUOp, Dest, Src);
-  
+
   auto Size = GetDstSize(Op);
-  
+
   if (Size >=4) {
     flagsOp = FLAGS_OP_AND;
     flagsOpDest = ALUOp;
@@ -1837,7 +1837,7 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op) * 8;
   if (Is1Bit) {
-    Src = _Constant(Size, 1);
+    Src = _Constant(std::max(32, Size), 1);
   }
   else {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
@@ -1848,6 +1848,17 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
     Src = _And(Src, _Constant(Size, 0x3F));
   else
     Src = _And(Src, _Constant(Size, 0x1F));
+
+  if (Size < 32) {
+    // ARM doesn't support 8/16bit rotates. Emulate with an insert
+    // StoreResult truncates back to a 8/16 bit value
+    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    if (Size == 8 && !Is1Bit) {
+      // And because the shift size isn't masked to 8 bits, we need to fill the
+      // the full 32bits to get the correct result.
+      Dest = _Bfi(4, 16, 16, Dest, Dest);
+    }
+  }
 
   auto ALUOp = _Ror(Dest, Src);
 
@@ -1875,7 +1886,18 @@ void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
   else
     Shift &= 0x1F;
 
-  OrderedNode *Src = _Constant(Size, Shift);
+  OrderedNode *Src = _Constant(std::max(32, Size), Shift);
+
+  if (Size < 32) {
+    // ARM doesn't support 8/16bit rotates. Emulate with an insert
+    // StoreResult truncates back to a 8/16 bit value
+    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    if (Size == 8 && Shift > 8) {
+      // And because the shift size isn't masked to 8 bits, we need to fill the
+      // the full 32bits to get the correct result.
+      Dest = _Bfi(4, 16, 16, Dest, Dest);
+    }
+  }
 
   auto ALUOp = _Ror(Dest, Src);
 
@@ -1891,6 +1913,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op) * 8;
 
+  // Need to negate the shift so we can use ROR instead
   if (Is1Bit) {
     Src = _Constant(Size, 1);
   }
@@ -1904,7 +1927,18 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   else
     Src = _And(Src, _Constant(Size, 0x1F));
 
-  auto ALUOp = _Rol(Dest, Src);
+  if (Size < 32) {
+    // ARM doesn't support 8/16bit rotates. Emulate with an insert
+    // StoreResult truncates back to a 8/16 bit value
+    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    if (Size == 8) {
+      // And because the shift size isn't masked to 8 bits, we need to fill the
+      // the full 32bits to get the correct result.
+      Dest = _Bfi(4, 16, 16, Dest, Dest);
+    }
+  }
+
+  auto ALUOp = _Ror(Dest, _Sub(_Constant(Size, std::max(32, Size)), Src));
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -1926,13 +1960,26 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64)
-    Shift &= 0x3F;
+    Shift = Shift & 0x3F;
   else
-    Shift &= 0x1F;
+    Shift = Shift & 0x1F;
 
-  OrderedNode *Src = _Constant(Size, Shift);
+  // We also negate the shift so we can emulate Rol with Ror.
+  auto NegatedShift = std::max(32, Size) - Shift;
+  OrderedNode *Src = _Constant(Size, NegatedShift);
 
-  auto ALUOp = _Rol(Dest, Src);
+  if (Size < 32) {
+    // ARM doesn't support 8/16bit rotates. Emulate with an insert
+    // StoreResult truncates back to a 8/16 bit value
+    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    if (Size == 8) {
+      // And because the shift size isn't masked to 8 bits, we need to fill the
+      // the full 32bits to get the correct result.
+      Dest = _Bfi(4, 16, 16, Dest, Dest);
+    }
+  }
+
+  auto ALUOp = _Ror(Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -1991,7 +2038,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 
   // Rotate and insert CF in the upper bit
   OrderedNode *Res = _Bfe(7, 1, Dest);
-  Res = _Bfi(1, 7, Res, CF);
+  Res = _Bfi(Size/8, 1, 7, Res, CF);
 
   // Our new CF will be bit (Shift - 1) of the source
   auto NewCF = _Bfe(1, Shift - 1, Dest);
@@ -2091,10 +2138,10 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   // We need to cover 32bits plus the amount that could rotate in
   for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
     // Insert incoming value
-    Tmp = _Bfi(Size, i, Tmp, Dest);
+    Tmp = _Bfi(8, Size, i, Tmp, Dest);
 
     // Insert CF
-    Tmp = _Bfi(1, i + Size, Tmp, CF);
+    Tmp = _Bfi(8, 1, i + Size, Tmp, CF);
   }
 
   // Entire bitfield has been setup
@@ -2229,20 +2276,21 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
   for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
     // Insert incoming value
-    Tmp = _Bfi(Size, 63 - i - Size, Tmp, Dest);
+    Tmp = _Bfi(8, Size, 63 - i - Size, Tmp, Dest);
 
     // Insert CF
-    Tmp = _Bfi(1, 63 - i, Tmp, CF);
+    Tmp = _Bfi(8, 1, 63 - i, Tmp, CF);
   }
 
   // Insert incoming value
-  Tmp = _Bfi(Size, 0, Tmp, Dest);
+  Tmp = _Bfi(8, Size, 0, Tmp, Dest);
 
   // The data is now set up like this
   // [Data][CF]:[Data][CF]:[Data][CF]:[Data][CF]
   // Shift 1 more bit that expected to get our result
   // Shifting to the right will now behave like a rotate to the left
-  OrderedNode *Res = _Rol(Tmp, Src);
+  // Which we emulate with a _Ror
+  OrderedNode *Res = _Ror(Tmp, _Sub(_Constant(Size, 64), Src));
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -2250,7 +2298,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
-    auto NewCF = _Rol(Tmp, _Add(Src, _Constant(1)));
+    auto NewCF = _Ror(Tmp, _Sub(_Constant(63), Src));
     auto CompareResult = _Select(FEXCore::IR::COND_UGE,
       Src, _Constant(1),
       NewCF, CF);
@@ -5129,7 +5177,7 @@ void OpDispatchBuilder::GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op
     // Extract the last bit shifted in to CF
     auto Size = _Constant(GetSrcSize(Op) * 8);
     auto ShiftAmt = _Sub(Size, Src2);
-    auto LastBit = _And(_Lshr(Src1, ShiftAmt), _Constant(1));  
+    auto LastBit = _And(_Lshr(Src1, ShiftAmt), _Constant(1));
     COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
   }
 
@@ -7481,7 +7529,7 @@ void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
   // Default MXCSR
   OrderedNode *MXCSR = _Constant(32, 0x1F80);
   OrderedNode *RoundingMode = _GetRoundingMode();
-  MXCSR = _Bfi(3, 13, MXCSR, RoundingMode);
+  MXCSR = _Bfi(4, 3, 13, MXCSR, RoundingMode);
 
   StoreResult(GPRClass, Op, MXCSR, -1);
 }
