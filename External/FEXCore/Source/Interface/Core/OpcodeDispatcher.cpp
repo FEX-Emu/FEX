@@ -1913,6 +1913,7 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op) * 8;
 
+  // Need to negate the shift so we can use ROR instead
   if (Is1Bit) {
     Src = _Constant(Size, 1);
   }
@@ -1926,7 +1927,18 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   else
     Src = _And(Src, _Constant(Size, 0x1F));
 
-  auto ALUOp = _Rol(Dest, Src);
+  if (Size < 32) {
+    // ARM doesn't support 8/16bit rotates. Emulate with an insert
+    // StoreResult truncates back to a 8/16 bit value
+    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    if (Size == 8) {
+      // And because the shift size isn't masked to 8 bits, we need to fill the
+      // the full 32bits to get the correct result.
+      Dest = _Bfi(4, 16, 16, Dest, Dest);
+    }
+  }
+
+  auto ALUOp = _Ror(Dest, _Sub(_Constant(Size, std::max(32, Size)), Src));
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -1948,13 +1960,26 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64)
-    Shift &= 0x3F;
+    Shift = Shift & 0x3F;
   else
-    Shift &= 0x1F;
+    Shift = Shift & 0x1F;
 
-  OrderedNode *Src = _Constant(Size, Shift);
+  // We also negate the shift so we can emulate Rol with Ror.
+  auto NegatedShift = std::max(32, Size) - Shift;
+  OrderedNode *Src = _Constant(Size, NegatedShift);
 
-  auto ALUOp = _Rol(Dest, Src);
+  if (Size < 32) {
+    // ARM doesn't support 8/16bit rotates. Emulate with an insert
+    // StoreResult truncates back to a 8/16 bit value
+    Dest = _Bfi(4, Size, Size, Dest, Dest);
+    if (Size == 8) {
+      // And because the shift size isn't masked to 8 bits, we need to fill the
+      // the full 32bits to get the correct result.
+      Dest = _Bfi(4, 16, 16, Dest, Dest);
+    }
+  }
+
+  auto ALUOp = _Ror(Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
@@ -2264,7 +2289,8 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   // [Data][CF]:[Data][CF]:[Data][CF]:[Data][CF]
   // Shift 1 more bit that expected to get our result
   // Shifting to the right will now behave like a rotate to the left
-  OrderedNode *Res = _Rol(Tmp, Src);
+  // Which we emulate with a _Ror
+  OrderedNode *Res = _Ror(Tmp, _Sub(_Constant(Size, 64), Src));
 
   StoreResult(GPRClass, Op, Res, -1);
 
@@ -2272,7 +2298,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
-    auto NewCF = _Rol(Tmp, _Add(Src, _Constant(1)));
+    auto NewCF = _Ror(Tmp, _Sub(_Constant(63), Src));
     auto CompareResult = _Select(FEXCore::IR::COND_UGE,
       Src, _Constant(1),
       NewCF, CF);

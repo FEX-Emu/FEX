@@ -907,16 +907,6 @@
       "SSAArgs": "2"
     },
 
-    "Rol": {
-      "Desc": ["Integer rotate left",
-               "```diff\n- Warning! Not a native op on AArch64. Will negate rotate value and do a ROR\n```"
-              ],
-      "OpClass": "ALU",
-      "HasDest": true,
-      "DestClass": "GPR",
-      "SSAArgs": "2"
-    },
-
     "Ror": {
       "Desc": ["Integer rotate right"
               ],

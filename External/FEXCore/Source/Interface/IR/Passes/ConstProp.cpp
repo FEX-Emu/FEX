@@ -53,7 +53,7 @@ static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
 }
 
 std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t AccessSize,  IROp_Header* AddressHeader) {
-  
+
   auto Src0Header = IREmit->GetOpHeader(AddressHeader->Args[0]);
   if (Src0Header->Size == 8) {
     //Try to optimize: Base + MUL(Offset, Scale)
@@ -108,7 +108,7 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
 }
 
 bool ConstProp::Run(IREmitter *IREmit) {
-  
+
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
 
@@ -117,7 +117,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
   auto HeaderOp = CurrentIR.GetHeader();
-  
+
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
 
@@ -179,7 +179,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         Op->OffsetScale = OffsetScale;
         IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
         IREmit->ReplaceNodeArgument(CodeNode, 1, Arg1);
-        
+
         Changed = true;
       }
       break;
@@ -196,7 +196,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         Op->OffsetScale = OffsetScale;
         IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
         IREmit->ReplaceNodeArgument(CodeNode, 2, Arg1);
-        
+
         Changed = true;
       }
       break;
@@ -246,7 +246,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         auto val = IREmit->GetOpHeader(Op->Header.Args[0]);
 
         uint64_t Constant3;
-        if (val->Op == OP_SELECT && 
+        if (val->Op == OP_SELECT &&
             IREmit->IsValueConstant(val->Args[2], &Constant2) &&
             IREmit->IsValueConstant(val->Args[3], &Constant3) &&
             Constant2 == 1 &&
@@ -349,7 +349,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
         uint64_t Constant2;
         uint64_t Constant3;
-        if (val->Op == OP_SELECT && 
+        if (val->Op == OP_SELECT &&
             IREmit->IsValueConstant(val->Args[2], &Constant2) &&
             IREmit->IsValueConstant(val->Args[3], &Constant3) &&
             Constant2 == 1 &&
@@ -382,11 +382,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
       auto Op = IROp->CW<IR::IROp_CondJump>();
 
       auto Select = IREmit->GetOpHeader(Op->Header.Args[0]);
-      
+
       uint64_t Constant;
       // Fold the select into the CondJump if possible. Could handle more complex cases, too.
       if (Op->Cond.Val == COND_NEQ && IREmit->IsValueConstant(Op->Cmp2, &Constant) && Constant == 0 &&  Select->Op == OP_SELECT) {
-        
+
         uint64_t Constant1;
         uint64_t Constant2;
 
@@ -412,7 +412,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
       switch(IROp->Op) {
         case OP_LSHR:
         case OP_ASHR:
-        case OP_ROL:
         case OP_ROR:
         case OP_LSHL:
         {
@@ -446,7 +445,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
               IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
-              
+
               Changed = true;
             }
           }
@@ -463,7 +462,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
               IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant1));
-              
+
               Changed = true;
             }
           }
@@ -494,7 +493,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
               IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
-              
+
               Changed = true;
             }
           }

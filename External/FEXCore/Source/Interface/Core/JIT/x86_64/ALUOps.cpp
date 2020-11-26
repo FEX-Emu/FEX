@@ -613,66 +613,6 @@ DEF_OP(Ashr) {
   }
 }
 
-DEF_OP(Rol) {
-  auto Op = IROp->C<IR::IROp_Rol>();
-  uint8_t OpSize = IROp->Size;
-
-  uint8_t Mask = OpSize * 8 - 1;
-
-  uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    Const &= Mask;
-    switch (OpSize) {
-      case 1: {
-        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-        rol(al, Const);
-      break;
-      }
-      case 2: {
-        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-        rol(ax, Const);
-      break;
-      }
-      case 4: {
-        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-        rol(eax, Const);
-      break;
-      }
-      case 8: {
-        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        rol(rax, Const);
-      break;
-      }
-    }
-  } else {
-    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-    and(rcx, Mask);
-    switch (OpSize) {
-      case 1: {
-        movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-        rol(al, cl);
-      break;
-      }
-      case 2: {
-        movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-        rol(ax, cl);
-      break;
-      }
-      case 4: {
-        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-        rol(eax, cl);
-      break;
-      }
-      case 8: {
-        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-        rol(rax, cl);
-      break;
-      }
-    }
-  }
-  mov(GetDst<RA_64>(Node), rax);
-}
-
 DEF_OP(Ror) {
   auto Op = IROp->C<IR::IROp_Ror>();
   uint8_t OpSize = IROp->Size;
@@ -1345,7 +1285,6 @@ void JITCore::RegisterALUHandlers() {
   REGISTER_OP(LSHL,              Lshl);
   REGISTER_OP(LSHR,              Lshr);
   REGISTER_OP(ASHR,              Ashr);
-  REGISTER_OP(ROL,               Rol);
   REGISTER_OP(ROR,               Ror);
   REGISTER_OP(EXTR,              Extr);
   REGISTER_OP(LDIV,              LDiv);

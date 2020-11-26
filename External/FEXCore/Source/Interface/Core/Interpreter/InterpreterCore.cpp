@@ -1181,34 +1181,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
-          case IR::OP_ROL: {
-            auto Op = IROp->C<IR::IROp_Rol>();
-            uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-            uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
-            auto Rol = [] (auto In, auto R) {
-            auto RotateMask = sizeof(In) * 8 - 1;
-              R &= RotateMask;
-              return (In << R) | (In >> (sizeof(In) * 8 - R));
-            };
-
-            switch (OpSize) {
-            case 1:
-              GD = Rol(static_cast<uint8_t>(Src1), static_cast<uint8_t>(Src2));
-              break;
-            case 2:
-              GD = Rol(static_cast<uint16_t>(Src1), static_cast<uint16_t>(Src2));
-              break;
-            case 4:
-              GD = Rol(static_cast<uint32_t>(Src1), static_cast<uint32_t>(Src2));
-              break;
-            case 8: {
-              GD = Rol(static_cast<uint64_t>(Src1), static_cast<uint64_t>(Src2));
-              break;
-            }
-            default: LogMan::Msg::A("Unknown ROL Size: %d\n", OpSize); break;
-            }
-            break;
-          }
           case IR::OP_EXTR: {
             auto Op = IROp->C<IR::IROp_Extr>();
             uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
