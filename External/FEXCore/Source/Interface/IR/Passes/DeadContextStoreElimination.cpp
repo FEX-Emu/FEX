@@ -421,7 +421,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         OrderedNode *LastStoreNode = Info->StoreNode;
         RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_WRITE, CurrentIR.GetNode(Op->Header.Args[0]), CodeNode);
 
-        if (LastAccess == ACCESS_WRITE &&
+        if ((LastAccess == ACCESS_WRITE || LastAccess == ACCESS_PARTIAL_WRITE) &&
             LastClass == Op->Class &&
             LastOffset == Op->Offset &&
             LastSize <= IROp->Size) {
