@@ -19,11 +19,6 @@ struct InternalThreadState;
 namespace FEXCore::HLE {
 
   void RegisterMemory() {
-    REGISTER_SYSCALL_IMPL(munmap, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length) -> uint64_t {
-      uint64_t Result = ::munmap(addr, length);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(brk, [](FEXCore::Core::InternalThreadState *Thread, void *addr) -> uint64_t {
       uint64_t Result = Thread->CTX->SyscallHandler->HandleBRK(Thread, addr);
       SYSCALL_ERRNO();
@@ -51,16 +46,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(munlock, [](FEXCore::Core::InternalThreadState *Thread, const void *addr, size_t len) -> uint64_t {
       uint64_t Result = ::munlock(addr, len);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(mlockall, [](FEXCore::Core::InternalThreadState *Thread, int flags) -> uint64_t {
-      uint64_t Result = ::mlockall(flags);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(munlockall, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
-      uint64_t Result = ::munlockall();
       SYSCALL_ERRNO();
     });
 
