@@ -24,6 +24,13 @@ static uint64_t getMask(T Op) {
   return (~0ULL) >> (64 - NumBits);
 }
 
+
+template<>
+static uint64_t getMask(IROp_Header* Op) {
+  uint64_t NumBits = Op->Size * 8;
+  return (~0ULL) >> (64 - NumBits);
+}
+
 #ifdef _M_X86_64
 // very lazy heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) { return imm < 0x8000'0000; }
@@ -105,6 +112,29 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
 
   // no match anywhere, just add
   return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[0]), IREmit->UnwrapNode(AddressHeader->Args[1]) };
+}
+
+OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t mask) {
+  auto IROp = IREmit->GetOpHeader(src);
+  if (IROp->Op == OP_AND) {
+    auto Op = IROp->C<IR::IROp_And>();
+    uint64_t imm;
+    if (IREmit->IsValueConstant(IROp->Args[1], &imm) && ((imm & mask) == mask)) {
+      return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
+    }
+  } else if (IROp->Op == OP_BFE) {
+    auto Op = IROp->C<IR::IROp_Bfe>();
+    if (Op->lsb == 0) {
+      uint64_t imm = 1ULL << (Op->Width-1);
+      imm = (imm-1) *2 + 1;
+
+      if ((imm & mask) == mask) {
+        return RemoveUselessMasking(IREmit, IROp->Args[0], mask); 
+      }
+    }
+  }
+
+  return src;
 }
 
 bool ConstProp::Run(IREmitter *IREmit) {
@@ -226,6 +256,28 @@ bool ConstProp::Run(IREmitter *IREmit) {
   }
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
+    switch (IROp->Op) {
+      case OP_AND:
+      case OP_OR:
+      case OP_XOR:
+      case OP_NOT:
+      case OP_ADD:
+      case OP_SUB:
+      case OP_LSHR:
+      case OP_ASHR:
+      case OP_LSHL:
+      case OP_BFE: {
+        for (int i = 0; i < IROp->NumArgs; i++) {
+          auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], getMask(IROp));
+          if (newArg != IROp->Args[i]) {
+            IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
+            Changed = true;
+          }
+        }
+        break;
+      }
+    }
+
     switch (IROp->Op) {
 /*
     case OP_UMUL:
@@ -427,6 +479,42 @@ bool ConstProp::Run(IREmitter *IREmit) {
         IREmit->ReplaceAllUsesWith(CodeNode, Arg);
         Changed = true;
         continue;
+      } else {
+        auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
+        if (newArg != Op->Header.Args[1]) {
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
+          Changed = true;
+          continue;
+        }
+      }
+    break;
+    }
+    case OP_LSHR: {
+      auto Op = IROp->CW<IR::IROp_Lshr>();
+      uint64_t Constant1;
+      uint64_t Constant2;
+
+      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        uint64_t NewConstant = (Constant1 >> Constant2) & getMask(Op);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+        continue;
+      }
+      else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
+                Constant2 == 0) {
+        IREmit->SetWriteCursor(CodeNode);
+        OrderedNode *Arg = CurrentIR.GetNode(Op->Header.Args[0]);
+        IREmit->ReplaceAllUsesWith(CodeNode, Arg);
+        Changed = true;
+        continue;
+      } else {
+        auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
+        if (newArg != Op->Header.Args[1]) {
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
+          Changed = true;
+          continue;
+        }
       }
     break;
     }
