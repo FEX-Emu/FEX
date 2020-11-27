@@ -230,6 +230,18 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_07h() {
 CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0000h() {
   CPUIDEmu::FunctionResults Res{};
   Res.eax = 0x8000001F;
+
+  // EBX, EDX, ECX become the manufacturer id string
+  // Just like cpuid function 0
+#ifdef CPUID_AMD
+  Res.ebx = CPUID_VENDOR_AMD1;
+  Res.edx = CPUID_VENDOR_AMD2;
+  Res.ecx = CPUID_VENDOR_AMD3;
+#else
+  Res.ebx = CPUID_VENDOR_INTEL1;
+  Res.edx = CPUID_VENDOR_INTEL2;
+  Res.ecx = CPUID_VENDOR_INTEL3;
+#endif
   return Res;
 }
 
