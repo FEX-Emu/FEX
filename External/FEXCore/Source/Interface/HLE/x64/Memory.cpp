@@ -3,6 +3,7 @@
 #include "Interface/Context/Context.h"
 
 #include <sys/mman.h>
+#include <sys/shm.h>
 
 #define MEM_PASSTHROUGH
 namespace FEXCore::HLE::x64 {
@@ -38,6 +39,11 @@ namespace FEXCore::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(munlockall, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
       uint64_t Result = ::munlockall();
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(shmat, [](FEXCore::Core::InternalThreadState *Thread, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
+      uint64_t Result = reinterpret_cast<uint64_t>(shmat(shmid, shmaddr, shmflg));
       SYSCALL_ERRNO();
     });
   }
