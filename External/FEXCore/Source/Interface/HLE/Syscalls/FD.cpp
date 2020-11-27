@@ -9,7 +9,6 @@
 #include <sys/eventfd.h>
 #include <sys/inotify.h>
 #include <sys/mman.h>
-#include <sys/syscall.h>
 #include <sys/timerfd.h>
 #include <poll.h>
 #include <stddef.h>
@@ -149,19 +148,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(getdents, [](FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count) -> uint64_t {
-  #ifdef SYS_getdents
-      uint64_t Result = syscall(SYS_getdents,
-        static_cast<uint64_t>(fd),
-        reinterpret_cast<uint64_t>(dirp),
-        static_cast<uint64_t>(count));
-      SYSCALL_ERRNO();
-  #else
-      // XXX: Emulate
-      return -EFAULT;
-  #endif
-    });
-
     REGISTER_SYSCALL_IMPL(fchmod, [](FEXCore::Core::InternalThreadState *Thread, int fd, int mode) -> uint64_t {
       uint64_t Result = ::fchmod(fd, mode);
       SYSCALL_ERRNO();
@@ -169,14 +155,6 @@ namespace FEXCore::HLE {
 
     REGISTER_SYSCALL_IMPL(readahead, [](FEXCore::Core::InternalThreadState *Thread, int fd, off64_t offset, size_t count) -> uint64_t {
       uint64_t Result = ::readahead(fd, offset, count);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(getdents64, [](FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count) -> uint64_t {
-      uint64_t Result = syscall(SYS_getdents64,
-        static_cast<uint64_t>(fd),
-        reinterpret_cast<uint64_t>(dirp),
-        static_cast<uint64_t>(count));
       SYSCALL_ERRNO();
     });
 
