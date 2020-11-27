@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/uio.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 namespace FEXCore::HLE::x64 {
   struct __attribute__((packed)) guest_stat {
@@ -171,6 +173,27 @@ namespace FEXCore::HLE::x64 {
     REGISTER_SYSCALL_IMPL_X64(ppoll, [](FEXCore::Core::InternalThreadState *Thread, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize) -> uint64_t {
       // sigsetsize is unused here since it is currently a constant and not exposed through glibc
       uint64_t Result = ::ppoll(fds, nfds, timeout_ts, sigmask);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(getdents, [](FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count) -> uint64_t {
+  #ifdef SYS_getdents
+      uint64_t Result = syscall(SYS_getdents,
+        static_cast<uint64_t>(fd),
+        reinterpret_cast<uint64_t>(dirp),
+        static_cast<uint64_t>(count));
+      SYSCALL_ERRNO();
+  #else
+      // XXX: Emulate
+      return -EFAULT;
+  #endif
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(getdents64, [](FEXCore::Core::InternalThreadState *Thread, int fd, void *dirp, uint32_t count) -> uint64_t {
+      uint64_t Result = syscall(SYS_getdents64,
+        static_cast<uint64_t>(fd),
+        reinterpret_cast<uint64_t>(dirp),
+        static_cast<uint64_t>(count));
       SYSCALL_ERRNO();
     });
   }
