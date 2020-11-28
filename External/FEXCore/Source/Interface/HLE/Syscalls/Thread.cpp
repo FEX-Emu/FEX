@@ -7,7 +7,6 @@
 #include "Interface/HLE/x32/Syscalls.h"
 #include "Interface/HLE/x32/Thread.h"
 
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/X86Enums.h>
 
 #include <grp.h>
@@ -24,7 +23,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/fsuid.h>
-#include <filesystem>
 
 ARG_TO_STR(idtype_t, "%u")
 
@@ -185,37 +183,6 @@ namespace FEXCore::HLE {
         LogMan::Msg::D("vfork: WARNING: Forking process using fork semantics");
       }
       return ForkGuest(Thread, 0, 0, 0, 0, 0);
-    });
-
-    // launch a new process under fex
-    // currently does not propagate argv[0] correctly
-    REGISTER_SYSCALL_IMPL(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
-      std::vector<const char*> Args;
-
-      std::error_code ec;
-      bool exists = std::filesystem::exists(pathname, ec);
-      if (ec || !exists) {
-        return -ENOENT;
-      }
-
-      Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
-
-      Args.push_back("--");
-
-      Args.push_back(pathname);
-
-      for (int i = 0; argv[i]; i++) {
-        if (i == 0)
-          continue;
-
-          Args.push_back(argv[i]);
-      }
-
-      Args.push_back(nullptr);
-
-      uint64_t Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), envp);
-
-      SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(exit, [](FEXCore::Core::InternalThreadState *Thread, int status) -> uint64_t {
