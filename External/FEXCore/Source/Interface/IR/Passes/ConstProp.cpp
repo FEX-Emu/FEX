@@ -258,22 +258,62 @@ bool ConstProp::Run(IREmitter *IREmit) {
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
     // zext / masking elimination
     switch (IROp->Op) {
-      case OP_AND:
+      // Generic handling
       case OP_OR:
       case OP_XOR:
       case OP_NOT:
       case OP_ADD:
       case OP_SUB:
+      case OP_MUL:
+      case OP_UMUL:
+      case OP_DIV:
+      case OP_UDIV:
       case OP_LSHR:
       case OP_ASHR:
       case OP_LSHL:
-      case OP_BFE: {
+      case OP_ROL:
+      case OP_ROR: {
         for (int i = 0; i < IROp->NumArgs; i++) {
           auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], getMask(IROp));
           if (newArg != IROp->Args[i]) {
             IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
             Changed = true;
           }
+        }
+        break;
+      }
+
+      case OP_AND: {
+        // if AND's arguments are imms, they are masking
+        for (int i = 0; i < IROp->NumArgs; i++) {
+          auto mask = getMask(IROp);
+          uint64_t imm = 0;
+          if (IREmit->IsValueConstant(IROp->Args[i^1], &imm))
+            mask = imm;
+
+          auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], imm);
+          
+          if (newArg != IROp->Args[i]) {
+            IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
+            Changed = true;
+          }
+        }
+        break;
+      }
+
+      case OP_BFE: {
+        auto Op = IROp->C<IR::IROp_Bfe>();
+
+        // BFE does implicit masking
+        uint64_t imm = 1ULL << (Op->Width-1);
+        imm = (imm-1) *2 + 1;
+        imm <<= Op->lsb;
+        
+        auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
+        
+        if (newArg != IROp->Args[0]) {
+          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
+          Changed = true;
         }
         break;
       }
