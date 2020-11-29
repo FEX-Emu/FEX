@@ -2,12 +2,12 @@
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
 
-#include "LogManager.h"
 #include <cstdio>
 #include <limits>
 #include <vector>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/Utils/LogManager.h>
 
 constexpr std::array<std::pair<int16_t, int16_t>, 3> Disp8Ranges = {{
   {static_cast<int16_t>(-16), 16},

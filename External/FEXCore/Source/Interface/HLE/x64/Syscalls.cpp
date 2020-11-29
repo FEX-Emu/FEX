@@ -1,9 +1,8 @@
-#include <map>
-
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
 
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
+#include <map>
 
 namespace FEXCore::HLE {
   void RegisterEpoll();

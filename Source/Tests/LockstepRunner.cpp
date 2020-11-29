@@ -1,15 +1,14 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
-#include "CommonCore/VMFactory.h"
 #include "HarnessHelpers.h"
-#include "LogManager.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Memory/SharedMem.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
 #include <fcntl.h>
@@ -583,10 +582,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, CoreConfig() > 3 ? FEXCore::Config::CONFIG_CUSTOM : CoreConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SINGLESTEP, 1);
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MAXBLOCKINST, 1);
-
-  if (CoreConfig() == 4) {
-    FEXCore::Context::SetCustomCPUBackendFactory(CTX, VMFactory::CPUCreationFactory);
-  }
 
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 

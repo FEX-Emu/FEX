@@ -1,9 +1,6 @@
 #pragma once
 #include "Common/Config.h"
 #include "Common/MathUtils.h"
-#include "ELFLoader.h"
-#include "ELFSymbolDatabase.h"
-#include "LogManager.h"
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <bitset>
@@ -15,6 +12,9 @@
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/ELFSymbolDatabase.h>
 
 namespace FEX::HarnessHelper {
   inline bool CompareStates(FEXCore::Core::CPUState const& State1,

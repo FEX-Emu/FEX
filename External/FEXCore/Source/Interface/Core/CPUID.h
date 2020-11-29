@@ -2,8 +2,6 @@
 #include <functional>
 #include <unordered_map>
 
-#include "LogManager.h"
-
 namespace FEXCore {
 namespace Context {
   struct Context;

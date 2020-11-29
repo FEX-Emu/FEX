@@ -8,7 +8,7 @@
 #include <optional>
 #include "Common/NetStream.h"
 #include "Common/SoftFloat.h"
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>

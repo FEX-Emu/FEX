@@ -1,3 +1,4 @@
+#include <FEXCore/Utils/LogManager.h>
 #include "Common/MathUtils.h"
 
 #include "Interface/Context/Context.h"
@@ -5,8 +6,6 @@
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
 #include "Interface/HLE/x32/Syscalls.h"
-
-#include "LogManager.h"
 
 #include <FEXCore/Core/X86Enums.h>
 #include <fcntl.h>

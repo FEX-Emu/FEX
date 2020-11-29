@@ -1,14 +1,12 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
-#include "CommonCore/VMFactory.h"
 #include "Tests/HarnessHelpers.h"
 #include "MainWindow.h"
 #include "Context.h"
 #include "GLUtils.h"
 #include "IMGui_I.h"
 #include "DebuggerState.h"
-#include "LogManager.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -16,6 +14,7 @@
 #include <FEXCore/Debug/ContextDebug.h>
 #include <FEXCore/Memory/SharedMem.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <imgui.h>
 #include <epoxy/gl.h>
@@ -49,7 +48,6 @@ void CreateCoreCallback(char const *Filename, bool ELF) {
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, FEX::DebuggerState::GetCoreType());
-  FEXCore::Context::SetFallbackCPUBackendFactory(CTX, VMFactory::CPUCreationFactoryFallback);
 
   FEXCore::Context::InitializeContext(CTX);
 

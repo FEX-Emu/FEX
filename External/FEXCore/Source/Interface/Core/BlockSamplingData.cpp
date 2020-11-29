@@ -1,5 +1,5 @@
 #include "Interface/Core/BlockSamplingData.h"
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 #include <cstring>
 #include <fstream>
 

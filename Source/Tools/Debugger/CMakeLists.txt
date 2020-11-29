@@ -23,7 +23,6 @@ target_link_libraries(${NAME} PRIVATE LLVM)
 target_include_directories(${NAME} PRIVATE ${LLVM_INCLUDE_DIRS})
 
 target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/)
-target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/SonicUtils/)
 target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/imgui/examples/)
 
-target_link_libraries(${NAME} PRIVATE FEXCore Common CommonCore SonicUtils pthread LLVM epoxy glfw X11 EGL imgui tiny-json json-maker)
+target_link_libraries(${NAME} PRIVATE FEXCore Common CommonCore pthread LLVM epoxy glfw X11 EGL imgui tiny-json json-maker)

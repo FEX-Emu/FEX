@@ -1,4 +1,4 @@
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/X86Tables.h>

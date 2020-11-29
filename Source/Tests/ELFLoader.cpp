@@ -1,15 +1,14 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
-#include "CommonCore/VMFactory.h"
 #include "Common/Config.h"
-#include "ELFLoader.h"
 #include "HarnessHelpers.h"
-#include "LogManager.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Memory/SharedMem.h>
+#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
 #include <filesystem>
@@ -226,9 +225,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, ABILocalFlags());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_NO_PF, AbiNoPF());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DUMPIR, DumpIR());
-
-  FEXCore::Context::SetCustomCPUBackendFactory(CTX, VMFactory::CPUCreationFactory);
-  // FEXCore::Context::SetFallbackCPUBackendFactory(CTX, VMFactory::CPUCreationFactoryFallback);
 
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
   FEXCore::Context::InitCore(CTX, &Loader);

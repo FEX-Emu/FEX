@@ -1,5 +1,5 @@
 #include "Common/Paths.h"
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cstdlib>
 #include <filesystem>

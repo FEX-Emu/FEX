@@ -25,6 +25,5 @@ RUN DEBIAN_FRONTEND="noninteractive" apt install -y libboost-dev \
 libnuma-dev libcap-dev libglfw3-dev libepoxy-dev
 
 COPY --from=builder /opt/FEX/build/Bin/* /usr/bin/
-COPY --from=builder /opt/FEX/build/External/SonicUtils/libSonicUtils.so /usr/lib/
 
 WORKDIR /root

@@ -1,13 +1,13 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/InternalThreadState.h"
-#include "LogManager.h"
 
 #include <array>
 #include <algorithm>
 #include <cstring>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore::Frontend {
 using namespace FEXCore::X86Tables;

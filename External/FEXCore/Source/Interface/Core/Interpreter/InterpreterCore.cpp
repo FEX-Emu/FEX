@@ -1,4 +1,3 @@
-#include "LogManager.h"
 #include "Common/MathUtils.h"
 #include "Common/SoftFloat.h"
 #include "Interface/Context/Context.h"
@@ -7,7 +6,7 @@
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/HLE/Syscalls.h"
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>

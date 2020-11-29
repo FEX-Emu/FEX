@@ -1,6 +1,6 @@
 #pragma once
 #include "Interface/Context/Context.h"
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore {
 class BlockCache {

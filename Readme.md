@@ -2,7 +2,6 @@
 This is the frontend application and tooling used for development and debugging of the FEXCore library.
 
 ### Dependencies
-* [SonicUtils](https://github.com/Sonicadvance1/SonicUtils)
 * FEXCore
 * cpp-optparse
 * imgui

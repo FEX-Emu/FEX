@@ -5,7 +5,7 @@
 #include "Core/CPU/IR.h"
 #include "Core/CPU/IntrusiveIRList.h"
 #include "Core/CPU/HostCore/HostCore.h"
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 #include <ucontext.h>
 
 #include <cassert>

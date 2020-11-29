@@ -9,7 +9,7 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
 
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
 #include <functional>

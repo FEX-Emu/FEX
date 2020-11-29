@@ -1,8 +1,7 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
-#include "CommonCore/VMFactory.h"
+#include "CommonCore/HostFactory.h"
 #include "HarnessHelpers.h"
-#include "LogManager.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -13,6 +12,7 @@
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Memory/SharedMem.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cassert>
 #include <cstdint>
@@ -85,7 +85,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SMC_CHECKS, SMCChecksConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, ABILocalFlags());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_NO_PF, AbiNoPF());
-  FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostCPUFactory::HostCPUCreationFactory);
+  FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostFactory::CPUCreationFactory);
 
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 
