@@ -256,6 +256,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
   }
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
+    // zext / masking elimination
     switch (IROp->Op) {
       case OP_AND:
       case OP_OR:
@@ -278,6 +279,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       }
     }
 
+    // constprop + some more per instruction logic
     switch (IROp->Op) {
 /*
     case OP_UMUL:
@@ -383,7 +385,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 - Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       }
     break;
     }
@@ -397,7 +398,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 & Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (Constant2 == 1) {
         // happens from flag calcs
         auto val = IREmit->GetOpHeader(Op->Header.Args[0]);
@@ -411,13 +411,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
           Changed = true;
-          continue;
         }
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // AND with same value results in original value
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         Changed = true;
-        continue;
       }
     break;
     }
@@ -431,12 +429,10 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = Constant1 | Constant2;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // OR with same value results in original value
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         Changed = true;
-        continue;
       }
     break;
     }
@@ -450,13 +446,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = Constant1 ^ Constant2;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // XOR with same value results to zero
         IREmit->SetWriteCursor(CodeNode);
         IREmit->ReplaceAllUsesWith(CodeNode, IREmit->_Constant(0));
         Changed = true;
-        continue;
       }
     break;
     }
@@ -470,7 +464,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 << Constant2) & getMask(Op);
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       }
       else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
                 Constant2 == 0) {
@@ -478,13 +471,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
         OrderedNode *Arg = CurrentIR.GetNode(Op->Header.Args[0]);
         IREmit->ReplaceAllUsesWith(CodeNode, Arg);
         Changed = true;
-        continue;
       } else {
         auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
         if (newArg != Op->Header.Args[1]) {
           IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
           Changed = true;
-          continue;
         }
       }
     break;
@@ -499,7 +490,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 >> Constant2) & getMask(Op);
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       }
       else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
                 Constant2 == 0) {
@@ -507,13 +497,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
         OrderedNode *Arg = CurrentIR.GetNode(Op->Header.Args[0]);
         IREmit->ReplaceAllUsesWith(CodeNode, Arg);
         Changed = true;
-        continue;
       } else {
         auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
         if (newArg != Op->Header.Args[1]) {
           IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
           Changed = true;
-          continue;
         }
       }
     break;
@@ -530,7 +518,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (IROp->Size == CurrentIR.GetOp<IROp_Header>(Op->Header.Args[0])->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0 ) {
         // A BFE that extracts all bits results in original value
   // XXX - This is broken for now - see https://github.com/FEX-Emu/FEX/issues/351
@@ -550,7 +537,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
           Changed = true;
-          continue;
         }
       }
 
@@ -566,7 +552,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 * Constant2) & getMask(Op);
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && __builtin_popcountl(Constant2) == 1) {
         if (IROp->Size == 4 || IROp->Size == 8) {
           uint64_t amt = __builtin_ctzl(Constant2);
@@ -598,7 +583,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
             Op->Cond = slc->Cond;
             Op->CompareSize = slc->CompareSize;
             Changed = true;
-            continue;
           }
         }
       }
@@ -607,6 +591,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
   }
 
+  // constant inlining
   if (!HeaderOp->ShouldInterpret && InlineConstants) {
     for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
       switch(IROp->Op) {
