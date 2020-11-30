@@ -2633,6 +2633,12 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
+  uint8_t Size = GetSrcSize(Op);
+  if (Size != 8) {
+    Src1 = _Sext(Size * 8, Src1);
+    Src2 = _Sext(Size * 8, Src2);
+  }
+
   auto Dest = _Mul(Src1, Src2);
   StoreResult(GPRClass, Op, Dest, -1);
   GenerateFlags_MUL(Op, Dest, _MulH(Src1, Src2));
@@ -2641,6 +2647,12 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
 void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  uint8_t Size = GetSrcSize(Op);
+  if (Size != 8) {
+    Src1 = _Sext(Size * 8, Src1);
+    Src2 = _Sext(Size * 8, Src2);
+  }
 
   auto Dest = _Mul(Src1, Src2);
   StoreResult(GPRClass, Op, Dest, -1);

@@ -1238,12 +1238,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
 
             switch (OpSize) {
-              case 1:
-                GD = static_cast<int64_t>(static_cast<int8_t>(Src1)) * static_cast<int64_t>(static_cast<int8_t>(Src2));
-                break;
-              case 2:
-                GD = static_cast<int64_t>(static_cast<int16_t>(Src1)) * static_cast<int64_t>(static_cast<int16_t>(Src2));
-                break;
               case 4:
                 GD = static_cast<int64_t>(static_cast<int32_t>(Src1)) * static_cast<int64_t>(static_cast<int32_t>(Src2));
                 break;
@@ -1265,16 +1259,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
 
             switch (OpSize) {
-              case 1: {
-                int64_t Tmp = static_cast<int64_t>(static_cast<int8_t>(Src1)) * static_cast<int64_t>(static_cast<int8_t>(Src2));
-                GD = Tmp >> 8;
-                break;
-              }
-              case 2: {
-                int64_t Tmp = static_cast<int64_t>(static_cast<int16_t>(Src1)) * static_cast<int64_t>(static_cast<int16_t>(Src2));
-                GD = Tmp >> 16;
-                break;
-              }
               case 4: {
                 int64_t Tmp = static_cast<int64_t>(static_cast<int32_t>(Src1)) * static_cast<int64_t>(static_cast<int32_t>(Src2));
                 GD = Tmp >> 32;
@@ -1295,12 +1279,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
 
             switch (OpSize) {
-              case 1:
-                GD = static_cast<uint8_t>(Src1) * static_cast<uint8_t>(Src2);
-                break;
-              case 2:
-                GD = static_cast<uint16_t>(Src1) * static_cast<uint16_t>(Src2);
-                break;
               case 4:
                 GD = static_cast<uint32_t>(Src1) * static_cast<uint32_t>(Src2);
                 break;
@@ -1321,14 +1299,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
             switch (OpSize) {
-              case 1:
-                GD = static_cast<uint16_t>(Src1) * static_cast<uint16_t>(Src2);
-                GD >>= 8;
-                break;
-              case 2:
-                GD = static_cast<uint32_t>(Src1) * static_cast<uint32_t>(Src2);
-                GD >>= 16;
-                break;
               case 4:
                 GD = static_cast<uint64_t>(Src1) * static_cast<uint64_t>(Src2);
                 GD >>= 32;
