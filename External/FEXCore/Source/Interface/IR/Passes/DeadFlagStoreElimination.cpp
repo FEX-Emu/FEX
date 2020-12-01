@@ -9,9 +9,9 @@ public:
 };
 
 struct FlagInfo {
-  uint32_t reads { 0 };
-  uint32_t writes { 0 };
-  uint32_t kill { 0 };
+  uint64_t reads { 0 };
+  uint64_t writes { 0 };
+  uint64_t kill { 0 };
 };
 
 /**
@@ -40,14 +40,14 @@ bool DeadFlagStoreElimination::Run(IREmitter *IREmit) {
 
         if (IROp->Op == OP_STOREFLAG) {
           auto Op = IROp->CW<IR::IROp_StoreFlag>();
-          FlagMap[BlockNode].writes |= 1 << Op->Flag;
+          FlagMap[BlockNode].writes |= 1UL << Op->Flag;
         }
         else if  (IROp->Op == OP_INVALIDATEFLAGS) {
-          FlagMap[BlockNode].writes = -1;
+          FlagMap[BlockNode].writes = -1UL;
         }
         else if (IROp->Op == OP_LOADFLAG) {
           auto Op = IROp->CW<IR::IROp_LoadFlag>();
-          FlagMap[BlockNode].reads |= 1 << Op->Flag;
+          FlagMap[BlockNode].reads |= 1UL << Op->Flag;
         }
 
       }
@@ -98,7 +98,7 @@ bool DeadFlagStoreElimination::Run(IREmitter *IREmit) {
         if (IROp->Op == OP_STOREFLAG) {
           auto Op = IROp->CW<IR::IROp_StoreFlag>();
           // If this StoreFlag is never read, remove it
-          if (FlagMap[BlockNode].kill & (1 << Op->Flag)) {
+          if (FlagMap[BlockNode].kill & (1UL << Op->Flag)) {
             IREmit->Remove(CodeNode);
             Changed = true;
           }
