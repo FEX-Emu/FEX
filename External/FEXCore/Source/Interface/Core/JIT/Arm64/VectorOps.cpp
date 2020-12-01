@@ -101,7 +101,8 @@ DEF_OP(VMov) {
 			break;
 		}
 		case 16: {
-			mov(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+      if (GetDst(Node).GetCode() != GetSrc(Op->Header.Args[0].ID()).GetCode())
+			  mov(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
 			break;
 		}
 		default: LogMan::Msg::A("Unknown Element Size: %d", OpSize); break;
