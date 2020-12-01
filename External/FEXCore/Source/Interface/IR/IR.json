@@ -14,6 +14,14 @@
     "constexpr static uint8_t COND_SLT  = 11",
     "constexpr static uint8_t COND_SGT  = 12",
     "constexpr static uint8_t COND_SLE  = 13",
+
+    "constexpr static uint8_t COND_FLU  = 16 /* float less or unordred */",
+    "constexpr static uint8_t COND_FGE  = 17 /* float greater or equal */",
+    "constexpr static uint8_t COND_FLEU = 18 /* float less or equal or unordred */",
+    "constexpr static uint8_t COND_FGT  = 19 /* float greater */",
+    "constexpr static uint8_t COND_FU   = 20 /* float unordred */",
+    "constexpr static uint8_t COND_FNU  = 21 /* float not unordred */",
+
     "static constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
     "static constexpr FEXCore::IR::RegisterClassType FPRClass {1}",
     "static constexpr FEXCore::IR::RegisterClassType GPRPairClass {2}",

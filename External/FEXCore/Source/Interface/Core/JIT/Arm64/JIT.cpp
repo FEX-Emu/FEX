@@ -680,6 +680,12 @@ bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Va
   }
 }
 
+FEXCore::IR::RegisterClassType JITCore::GetRegClass(uint32_t Node) {
+  auto Reg = GetPhys(RAPass, Node);
+
+  return FEXCore::IR::RegisterClassType {Reg.Class};
+}
+
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
   using namespace aarch64;
   JumpTargets.clear();

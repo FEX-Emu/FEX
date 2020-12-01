@@ -967,6 +967,8 @@ DEF_OP(Sbfe) {
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 
+#define GRFCMP(Node) (Op->CompareSize == 4 ? GetDst(Node).S() : GetDst(Node).D())
+
 Condition MapSelectCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
   case FEXCore::IR::COND_EQ: return Condition::eq;
@@ -979,10 +981,16 @@ Condition MapSelectCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_ULT: return Condition::cc;
   case FEXCore::IR::COND_UGT: return Condition::hi;
   case FEXCore::IR::COND_ULE: return Condition::ls;
+  case FEXCore::IR::COND_FLU: return Condition::lt;
+  case FEXCore::IR::COND_FGE: return Condition::ge;
+  case FEXCore::IR::COND_FLEU:return Condition::le;
+  case FEXCore::IR::COND_FGT: return Condition::hi;
+  case FEXCore::IR::COND_FU:  return Condition::vs;
+  case FEXCore::IR::COND_FNU: return Condition::vc;
+  case FEXCore::IR::COND_VS:;
+  case FEXCore::IR::COND_VC:;
   case FEXCore::IR::COND_MI:
   case FEXCore::IR::COND_PL:
-  case FEXCore::IR::COND_VS:
-  case FEXCore::IR::COND_VC:
   default:
   LogMan::Msg::A("Unsupported compare type");
   return Condition::nv;
@@ -993,10 +1001,20 @@ DEF_OP(Select) {
   auto Op = IROp->C<IR::IROp_Select>();
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const))
-    cmp(GRCMP(Op->Header.Args[0].ID()), Const);
-  else
-    cmp(GRCMP(Op->Header.Args[0].ID()), GRCMP(Op->Header.Args[1].ID()));
+
+  auto RegClass = GetRegClass(Op->Header.Args[0].ID());
+  
+  if (RegClass == IR::GPRClass || RegClass == IR::GPRFixedClass) {
+    if (IsInlineConstant(Op->Header.Args[1], &Const))
+      cmp(GRCMP(Op->Header.Args[0].ID()), Const);
+    else
+      cmp(GRCMP(Op->Header.Args[0].ID()), GRCMP(Op->Header.Args[1].ID()));
+  } else if (RegClass == IR::FPRClass || RegClass == IR::FPRFixedClass) {
+    fcmp(GRFCMP(Op->Header.Args[0].ID()), GRFCMP(Op->Header.Args[1].ID()));
+  } else {
+    assert(false);
+  }
+  
 
   auto cc = MapSelectCC(Op->Cond);
 

@@ -28,6 +28,7 @@ enum {
   FLAGS_OP_NONE,  // must rely on x86 flags
   FLAGS_OP_CMP,   // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
   FLAGS_OP_AND,   // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
+  FLAGS_OP_FCMP,  // flags were set by a ucomis* / comis*
 };
 
 public:
