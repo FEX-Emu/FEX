@@ -1508,52 +1508,72 @@ DEF_OP(VSShrS) {
 
 DEF_OP(VInsElement) {
   auto Op = IROp->C<IR::IROp_VInsElement>();
-  mov(VTMP1, GetSrc(Op->Header.Args[0].ID()));
+  
+  auto reg = GetSrc(Op->Header.Args[0].ID());
+
+  if (GetDst(Node).GetCode() != reg.GetCode()) {
+    mov(VTMP1, reg);
+    reg = VTMP1;
+  }
+
   switch (Op->Header.ElementSize) {
     case 1: {
-      mov(VTMP1.V16B(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V16B(), Op->SrcIdx);
+      mov(reg.V16B(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V16B(), Op->SrcIdx);
     break;
     }
     case 2: {
-      mov(VTMP1.V8H(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V8H(), Op->SrcIdx);
+      mov(reg.V8H(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V8H(), Op->SrcIdx);
     break;
     }
     case 4: {
-      mov(VTMP1.V4S(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V4S(), Op->SrcIdx);
+      mov(reg.V4S(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V4S(), Op->SrcIdx);
     break;
     }
     case 8: {
-      mov(VTMP1.V2D(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V2D(), Op->SrcIdx);
+      mov(reg.V2D(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V2D(), Op->SrcIdx);
     break;
     }
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
-  mov(GetDst(Node), VTMP1);
+
+  if (GetDst(Node).GetCode() != reg.GetCode()) {
+    mov(GetDst(Node), reg);
+  }
 }
 
 DEF_OP(VInsScalarElement) {
   auto Op = IROp->C<IR::IROp_VInsScalarElement>();
-  mov(VTMP1, GetSrc(Op->Header.Args[0].ID()));
+  
+  auto reg = GetSrc(Op->Header.Args[0].ID());
+
+  if (GetDst(Node).GetCode() != reg.GetCode()) {
+    mov(VTMP1, reg);
+    reg = VTMP1;
+  }
+
   switch (Op->Header.ElementSize) {
     case 1: {
-      mov(VTMP1.V16B(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V16B(), 0);
+      mov(reg.V16B(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V16B(), 0);
     break;
     }
     case 2: {
-      mov(VTMP1.V8H(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V8H(), 0);
+      mov(reg.V8H(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V8H(), 0);
     break;
     }
     case 4: {
-      mov(VTMP1.V4S(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V4S(), 0);
+      mov(reg.V4S(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V4S(), 0);
     break;
     }
     case 8: {
-      mov(VTMP1.V2D(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V2D(), 0);
+      mov(reg.V2D(), Op->DestIdx, GetSrc(Op->Header.Args[1].ID()).V2D(), 0);
     break;
     }
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
-  mov(GetDst(Node), VTMP1);
+
+  if (GetDst(Node).GetCode() != reg.GetCode()) {
+    mov(GetDst(Node), reg);
+  }
 }
 
 DEF_OP(VExtractElement) {
