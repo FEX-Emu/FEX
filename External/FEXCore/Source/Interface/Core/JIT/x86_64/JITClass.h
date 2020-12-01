@@ -221,7 +221,6 @@ private:
   DEF_OP(LRem);
   DEF_OP(LURem);
   DEF_OP(Zext);
-  DEF_OP(Sext);
   DEF_OP(Not);
   DEF_OP(Popcount);
   DEF_OP(FindLSB);

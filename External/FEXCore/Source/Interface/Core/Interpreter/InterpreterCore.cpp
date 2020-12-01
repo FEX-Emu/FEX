@@ -1213,26 +1213,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             GD = (~Src) & Mask;
             break;
           }
-          case IR::OP_SEXT: {
-            auto Op = IROp->C<IR::IROp_Sext>();
-            LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-            switch (Op->SrcSize / 8) {
-              case 1:
-                GD = *GetSrc<int8_t*>(SSAData, Op->Header.Args[0]);
-                break;
-              case 2:
-                GD = *GetSrc<int16_t*>(SSAData, Op->Header.Args[0]);
-                break;
-              case 4:
-                GD = *GetSrc<int32_t*>(SSAData, Op->Header.Args[0]);
-                break;
-              case 8:
-                GD = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-                break;
-              default: LogMan::Msg::A("Unknown Sext size: %d", Op->SrcSize / 8);
-            }
-            break;
-          }
           case IR::OP_MUL: {
             auto Op = IROp->C<IR::IROp_Mul>();
             uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
