@@ -2944,6 +2944,18 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     // So we need to re-load and re-calculate essential values each iteration of the loop.
 
     // First thing we need to do is finish this block and jump to the start of the loop.
+
+    // RA can now better allocate things, move these ops before the header, to avoid accessing
+    // DF on every iteration
+    auto SizeConst = _Constant(Size);
+    auto NegSizeConst = _Constant(-Size);
+
+    // Calculate direction.
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+        DF,  _Constant(0),
+        SizeConst, NegSizeConst);
+        
     _Jump(LoopHead);
 
       SetCurrentCodeBlock(LoopHead);
@@ -2979,15 +2991,6 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
         // Store the counter so we don't have to deal with PHI here
         _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
 
-        auto SizeConst = _Constant(Size);
-        auto NegSizeConst = _Constant(-Size);
-
-        // Calculate direction.
-        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-            DF,  _Constant(0),
-            SizeConst, NegSizeConst);
-
         // Offset the pointer
         TailDest = _Add(TailDest, PtrDir);
         _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), TailDest);
@@ -3007,9 +3010,16 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on MOVS\n");
   LogMan::Throw::A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
 
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-    auto Size = GetSrcSize(Op);
+  // RA now can handle these to be here, to avoud DF accesses
+  auto Size = GetSrcSize(Op);
+  auto SizeConst = _Constant(Size);
+  auto NegSizeConst = _Constant(-Size);
 
+  // Calculate direction.
+  auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+  auto PtrDir = _Select(FEXCore::IR::COND_EQ, DF,  _Constant(0), SizeConst, NegSizeConst);
+
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
     // Create all our blocks
     auto LoopHead = CreateNewCodeBlock();
     auto LoopTail = CreateNewCodeBlock();
@@ -3019,6 +3029,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     // So we need to re-load and re-calculate essential values each iteration of the loop.
 
     // First thing we need to do is finish this block and jump to the start of the loop.
+
     _Jump(LoopHead);
 
       SetCurrentCodeBlock(LoopHead);
@@ -3054,15 +3065,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
         // Store the counter so we don't have to deal with PHI here
         _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
 
-        auto SizeConst = _Constant(Size);
-        auto NegSizeConst = _Constant(-Size);
-
-        // Calculate direction.
-        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-            DF,  _Constant(0),
-            SizeConst, NegSizeConst);
-
         // Offset the pointer
         OrderedNode *TailSrc = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
         OrderedNode *TailDest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
@@ -3080,7 +3082,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     SetCurrentCodeBlock(LoopEnd);
   }
   else {
-    auto Size = GetSrcSize(Op);
     OrderedNode *RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
     OrderedNode *RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
     RDI= AppendSegmentOffset(RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -3090,15 +3091,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 
     // Store to memory where RDI points
     _StoreMemAutoTSO(GPRClass, Size, RDI, Src, Size);
-
-    auto SizeConst = _Constant(Size);
-    auto NegSizeConst = _Constant(-Size);
-
-    // Calculate direction.
-    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-        DF,  _Constant(0),
-        SizeConst, NegSizeConst);
 
     RSI = _Add(RSI, PtrDir);
     RDI = _Add(RDI, PtrDir);
@@ -3149,6 +3141,12 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
   else {
     bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
+    // read DF once
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+        DF, _Constant(0),
+        _Constant(Size), _Constant(-Size));
+        
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
       auto LoopStart = CreateNewCodeBlock();
@@ -3195,11 +3193,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
         // Store the counter so we don't have to deal with PHI here
         _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
-
-        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-            DF, _Constant(0),
-            _Constant(Size), _Constant(-Size));
 
         // Offset the pointer
         Dest_RDI = _Add(Dest_RDI, PtrDir);
@@ -3271,6 +3264,16 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     // RAX = [RSI - Size]
     // But this might violate the case of an application scanning pages for read permission and catching the fault
     // May or may not matter
+
+    // Read DF once
+    auto SizeConst = _Constant(Size);
+    auto NegSizeConst = _Constant(-Size);
+
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+        DF, _Constant(0),
+        SizeConst, NegSizeConst);
+
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
       auto LoopStart = CreateNewCodeBlock();
@@ -3311,14 +3314,6 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
         // Store the counter so we don't have to deal with PHI here
         _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
-
-        auto SizeConst = _Constant(Size);
-        auto NegSizeConst = _Constant(-Size);
-
-        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-            DF, _Constant(0),
-            SizeConst, NegSizeConst);
 
         // Offset the pointer
         TailDest_RSI = _Add(TailDest_RSI, PtrDir);
@@ -3371,6 +3366,16 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
   else {
     bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
+    // read DF once
+
+    auto SizeConst = _Constant(Size);
+    auto NegSizeConst = _Constant(-Size);
+
+    auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
+        DF, _Constant(0),
+        SizeConst, NegSizeConst);
+        
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
       auto LoopStart = CreateNewCodeBlock();
@@ -3417,14 +3422,6 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
         // Store the counter so we don't have to deal with PHI here
         _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), TailCounter);
-
-        auto SizeConst = _Constant(Size);
-        auto NegSizeConst = _Constant(-Size);
-
-        auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-        auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-            DF, _Constant(0),
-            SizeConst, NegSizeConst);
 
         // Offset the pointer
         TailDest_RDI = _Add(TailDest_RDI, PtrDir);
