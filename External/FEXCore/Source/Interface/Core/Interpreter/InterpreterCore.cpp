@@ -889,7 +889,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_STOREFLAG: {
             auto Op = IROp->C<IR::IROp_StoreFlag>();
-            uint8_t Arg = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]) & 1;
+            uint8_t Arg = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
 
             uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
             ContextPtr += offsetof(FEXCore::Core::CPUState, flags[0]);

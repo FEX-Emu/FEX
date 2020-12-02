@@ -446,14 +446,12 @@ DEF_OP(LoadFlag) {
 
   auto Dst = GetDst<RA_64>(Node);
   movzx(Dst, byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)]);
-  and(Dst, 1);
 }
 
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
 
   mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  and(rax, 1);
   mov(byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)], al);
 }
 
