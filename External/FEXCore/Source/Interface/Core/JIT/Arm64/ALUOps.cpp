@@ -1074,22 +1074,36 @@ DEF_OP(FCmp) {
     fcmp(GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
   }
   auto Dst = GetReg<RA_64>(Node);
-  eor(Dst, Dst, Dst);
+  
+  bool set = false;
+
+  if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
+    assert(IR::FCMP_FLAG_EQ == 0);
+    // EQ or unordered
+    cset(Dst, Condition::eq); // Z = 1
+    csinc(Dst, Dst, xzr, Condition::vc); // IF !V ? Z : 1
+    set = true;
+  }
 
   if (Op->Flags & (1 << IR::FCMP_FLAG_LT)) {
-    cset(TMP2, Condition::mi);
-    lsl(TMP2, TMP2, IR::FCMP_FLAG_LT);
-    orr(Dst, Dst, TMP2);
+    // LT or unordered
+    cset(TMP2, Condition::lt);
+    if (!set) {
+      lsl(Dst, TMP2, IR::FCMP_FLAG_LT);
+      set = true;
+    } else {
+      bfi(Dst, TMP2, IR::FCMP_FLAG_LT, 1);
+    }
   }
-  if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
-    cset(TMP2, Condition::eq);
-    lsl(TMP2, TMP2, IR::FCMP_FLAG_EQ);
-    orr(Dst, Dst, TMP2);
-  }
+
   if (Op->Flags & (1 << IR::FCMP_FLAG_UNORDERED)) {
     cset(TMP2, Condition::vs);
-    lsl(TMP2, TMP2, IR::FCMP_FLAG_UNORDERED);
-    orr(Dst, Dst, TMP2);
+    if (!set) {
+      lsl(Dst, TMP2, IR::FCMP_FLAG_UNORDERED);
+      set = true;
+    } else {
+      bfi(Dst, TMP2, IR::FCMP_FLAG_UNORDERED, 1);
+    }
   }
 }
 

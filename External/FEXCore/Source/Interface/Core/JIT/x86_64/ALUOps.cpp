@@ -805,6 +805,7 @@ DEF_OP(LURem) {
   }
 }
 
+
 DEF_OP(Not) {
   auto Op = IROp->C<IR::IROp_Not>();
   auto Dst = GetDst<RA_64>(Node);
