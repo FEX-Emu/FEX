@@ -835,7 +835,13 @@ namespace FEXCore::Context {
     if (CodePtr != nullptr) {
       // The core managed to compile the code.
 #if ENABLE_JITSYMBOLS
+    if (DebugData->Subblocks.size()) {
+      for (auto& Subblock: DebugData->Subblocks) {
+        Symbols.Register((void*)Subblock.HostCodeStart, GuestRIP, Subblock.HostCodeSize);
+      }
+    } else {
       Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
+    }
 #endif
 
       --Thread->CompileBlockReentrantRefCount;

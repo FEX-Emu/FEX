@@ -32,6 +32,12 @@ namespace FEXCore::Core {
     std::atomic_uint64_t BlocksCompiled;
   };
 
+  struct DebugDataSubblock {
+    uintptr_t HostCodeStart;
+    uint32_t HostCodeSize;
+    uint32_t SSAId;
+  };
+
   /**
    * @brief Contains debug data for a block of code for later debugger analysis
    *
@@ -43,6 +49,7 @@ namespace FEXCore::Core {
     uint64_t GuestInstructionCount; ///< Number of guest instructions
     uint64_t TimeSpentInCode; ///< How long this code has spent time running
     uint64_t RunCount; ///< Number of times this block of code has been run
+    std::vector<DebugDataSubblock> Subblocks;
   };
 
   enum SignalEvent {
