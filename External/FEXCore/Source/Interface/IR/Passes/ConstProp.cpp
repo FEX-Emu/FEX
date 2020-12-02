@@ -137,6 +137,17 @@ OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper sr
   return src;
 }
 
+bool IsBfeAlreadyDone(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t Width) {
+  auto IROp = IREmit->GetOpHeader(src);
+  if (IROp->Op == OP_BFE) {
+    auto Op = IROp->C<IR::IROp_Bfe>();
+    if (Width >= Op->Width) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool ConstProp::Run(IREmitter *IREmit) {
 
   bool Changed = false;
@@ -304,7 +315,30 @@ bool ConstProp::Run(IREmitter *IREmit) {
       case OP_BFE: {
         auto Op = IROp->C<IR::IROp_Bfe>();
 
-        // BFE does implicit masking
+        // Is this value already BFE'd?
+        if (IsBfeAlreadyDone(IREmit, IROp->Args[0], Op->Width)) {
+          IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
+          //printf("Removed BFE once \n");
+          break;
+        }
+
+        // Is this value already ZEXT'd?
+        if (Op->lsb == 0) {
+          //LoadMem, LoadMemTSO & LoadContext ZExt
+          auto source = IROp->Args[0];
+          auto sourceHeader = IREmit->GetOpHeader(source);
+
+          if (Op->Width >= (sourceHeader->Size*8)  &&
+            (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)
+          ) {
+            //printf("Eliminated needless zext bfe\n");
+            // Load mem / load ctx zexts, no need to vmem
+            IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
+            break;
+          }
+        }
+
+        // BFE does implicit masking, remove any masks leading to this, if possible
         uint64_t imm = 1ULL << (Op->Width-1);
         imm = (imm-1) *2 + 1;
         imm <<= Op->lsb;
