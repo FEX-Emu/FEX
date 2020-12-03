@@ -20,23 +20,6 @@ namespace FEXCore::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(shmat, [](FEXCore::Core::InternalThreadState *Thread, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
-      const void* HostPointer{};
-      uint64_t BasePointer = Thread->CTX->MemoryMapper.GetPointer<uint64_t>(0);
-      if (shmaddr) {
-        HostPointer = shmaddr;
-      }
-      else {
-        HostPointer = reinterpret_cast<void*>(BasePointer + Thread->CTX->MemoryMapper.GetSHMSize());
-      }
-
-      uint64_t Result = reinterpret_cast<uint64_t>(shmat(shmid, HostPointer, shmflg));
-      if (Result != -1 && !shmaddr) {
-        Result -= BasePointer;
-      }
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(shmctl, [](FEXCore::Core::InternalThreadState *Thread, int shmid, int cmd, struct shmid_ds *buf) -> uint64_t {
       uint64_t Result = ::shmctl(shmid, cmd, buf);
       SYSCALL_ERRNO();
