@@ -7,11 +7,14 @@
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/HLE/Syscalls.h"
 
+#include <FEXCore/Core/CodeLoader.h>
+
 #include <stdint.h>
 #include <linux/futex.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <filesystem>
 
 namespace FEXCore::HLE::x64 {
   uint64_t SetThreadArea(FEXCore::Core::InternalThreadState *Thread, void *tls) {
@@ -130,6 +133,41 @@ namespace FEXCore::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(get_robust_list, [](FEXCore::Core::InternalThreadState *Thread, int pid, struct robust_list_head **head, size_t *len_ptr) -> uint64_t {
       uint64_t Result = ::syscall(SYS_get_robust_list, pid, head, len_ptr);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::InternalThreadState *Thread, const stack_t *ss, stack_t *old_ss) -> uint64_t {
+      return Thread->CTX->SignalDelegation.RegisterGuestSigAltStack(ss, old_ss);
+    });
+
+    // launch a new process under fex
+    // currently does not propagate argv[0] correctly
+    REGISTER_SYSCALL_IMPL_X64(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
+      std::vector<const char*> Args;
+
+      std::error_code ec;
+      bool exists = std::filesystem::exists(pathname, ec);
+      if (ec || !exists) {
+        return -ENOENT;
+      }
+
+      Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
+
+      Args.push_back("--");
+
+      Args.push_back(pathname);
+
+      for (int i = 0; argv[i]; i++) {
+        if (i == 0)
+          continue;
+
+          Args.push_back(argv[i]);
+      }
+
+      Args.push_back(nullptr);
+
+      uint64_t Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), envp);
+
       SYSCALL_ERRNO();
     });
   }
