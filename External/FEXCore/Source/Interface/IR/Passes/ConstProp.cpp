@@ -197,8 +197,35 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
   }
 
-  for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
+  
+  // LoadMem / StoreMem imm pooling
+  // If imms are close by, use address gen to generate the values instead of using a new imm
+  std::map<OrderedNode*, uint64_t> Consts;
+  for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
+      if (IROp->Op == OP_LOADMEM || IROp->Op == OP_STOREMEM) {
+        uint64_t Addr;
 
+        if (IREmit->IsValueConstant(IROp->Args[0], &Addr) && IROp->Args[1].IsInvalid()) {
+          for (auto& Const: Consts) {
+            if ((Addr - Const.second) < 65536) {
+              IREmit->ReplaceNodeArgument(CodeNode, 0, Const.first);
+              IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_Constant(Addr - Const.second));
+              goto doneOp;
+            }
+          }
+
+          Consts[IREmit->UnwrapNode(IROp->Args[0])] = Addr;
+        }
+        doneOp:
+        ;
+      }
+      IREmit->SetWriteCursor(CodeNode);
+    }
+    Consts.clear();
+  }
+
+  for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
     switch (IROp->Op) {
 /*
     case OP_UMUL:
