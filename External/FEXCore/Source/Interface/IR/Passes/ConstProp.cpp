@@ -118,6 +118,28 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
   auto HeaderOp = CurrentIR.GetHeader();
 
+  // FCMP optimization
+
+  // Make all FCMPs set no flags
+  for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
+    if (IROp->Op == OP_FCMP) {
+      auto fcmp = IROp->CW<IR::IROp_FCmp>();
+      fcmp->Flags = 0;
+    }
+  }
+
+  // Set needed flags
+  for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
+    if (IROp->Op == OP_GETHOSTFLAG) {
+      auto ghf = IROp->CW<IR::IROp_GetHostFlag>();
+
+      auto fcmp = IREmit->GetOpHeader(ghf->GPR)->CW<IR::IROp_FCmp>();
+      assert(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP);
+      if(fcmp->Header.Op == OP_FCMP) {
+        fcmp->Flags |= 1 << ghf->Flag;
+      }
+    }
+  }
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
 
