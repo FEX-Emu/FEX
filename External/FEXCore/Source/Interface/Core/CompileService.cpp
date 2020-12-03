@@ -135,11 +135,15 @@ namespace FEXCore {
         if (Item) {
           // Does the block cache already contain this RIP?
           void *CompiledCode = reinterpret_cast<void*>(CompileThreadData->BlockCache->FindBlock(Item->RIP));
+          FEXCore::Core::DebugData *DebugData = nullptr;
+
           if (!CompiledCode) {
             // Code isn't in cache, compile now
             // Set our thread state's RIP
             CompileThreadData->State.State.rip = Item->RIP;
-            CompiledCode = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
+            auto [Code, Data] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
+            CompiledCode = Code;
+            DebugData = Data;
           }
 
           if (!CompiledCode) {
@@ -155,6 +159,7 @@ namespace FEXCore {
 
           Item->CodePtr = CompiledCode;
           Item->IRList = CompileThreadData->IRLists.find(Item->RIP)->second.get();
+          Item->DebugData = DebugData;
 
           GCArray.emplace_back(Item);
           Item->ServiceWorkDone.NotifyAll();

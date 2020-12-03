@@ -610,7 +610,7 @@ namespace FEXCore::Context {
     }
   }
 
-  void *Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  std::tuple<void *, FEXCore::Core::DebugData *> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
     if (Config.UnifiedMemory) {
       GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
@@ -635,7 +635,7 @@ namespace FEXCore::Context {
           LogMan::Msg::E("Had Frontend decoder error");
           Stop(false /* Ignore Current Thread */);
         }
-        return nullptr;
+        return { nullptr, nullptr };
       }
 
       auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
@@ -718,7 +718,7 @@ namespace FEXCore::Context {
             if (TotalInstructions == 0) {
               // Couldn't handle any instruction in op dispatcher
               Thread->OpDispatcher->ResetWorkingList();
-              return nullptr;
+              return { nullptr, nullptr };
             }
             else {
               uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
@@ -809,10 +809,14 @@ namespace FEXCore::Context {
     }
 
     // Attempt to get the CPU backend to compile this code
-    return Thread->CPUBackend->CompileCode(IRList, DebugData);
+    return { Thread->CPUBackend->CompileCode(IRList, DebugData), DebugData };
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    void *CodePtr;
+    FEXCore::Core::DebugData *DebugData;
+    bool DecrementRefCount = false;
+
     if (Thread->CompileBlockReentrantRefCount != 0) {
       if (!Thread->CompileService) {
         Thread->CompileService = std::make_shared<FEXCore::CompileService>(this, Thread);
@@ -822,33 +826,39 @@ namespace FEXCore::Context {
       WorkItem->ServiceWorkDone.Wait();
       // Return here with the data in place
       Thread->IRLists.try_emplace(GuestRIP, WorkItem->IRList->CreateCopy());
-      uintptr_t Ptr = AddBlockMapping(Thread, GuestRIP, WorkItem->CodePtr);
-      LogMan::Throw::A(Ptr, "Couldn't add mapping from compile service!");
+      CodePtr = WorkItem->CodePtr;
+      DebugData = WorkItem->DebugData;
       WorkItem->SafeToClear = true;
-      return Ptr;
+    } else {
+      ++Thread->CompileBlockReentrantRefCount;
+      DecrementRefCount = true;
+      auto [Code, Data] = CompileCode(Thread, GuestRIP);
+      CodePtr = Code;
+      DebugData = Data;
     }
-
-    ++Thread->CompileBlockReentrantRefCount;
-
-    void *CodePtr = CompileCode(Thread, GuestRIP);
 
     if (CodePtr != nullptr) {
       // The core managed to compile the code.
 #if ENABLE_JITSYMBOLS
-    if (DebugData->Subblocks.size()) {
-      for (auto& Subblock: DebugData->Subblocks) {
-        Symbols.Register((void*)Subblock.HostCodeStart, GuestRIP, Subblock.HostCodeSize);
+      if (DebugData) {
+        if (DebugData->Subblocks.size()) {
+          for (auto& Subblock: DebugData->Subblocks) {
+            Symbols.Register((void*)Subblock.HostCodeStart, GuestRIP, Subblock.HostCodeSize);
+          }
+        } else {
+          Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
+        }
       }
-    } else {
-      Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
-    }
 #endif
 
-      --Thread->CompileBlockReentrantRefCount;
+      if (DecrementRefCount)
+        --Thread->CompileBlockReentrantRefCount;
       return AddBlockMapping(Thread, GuestRIP, CodePtr);
     }
 
-    --Thread->CompileBlockReentrantRefCount;
+    if (DecrementRefCount)
+      --Thread->CompileBlockReentrantRefCount;
+
     return 0;
   }
 

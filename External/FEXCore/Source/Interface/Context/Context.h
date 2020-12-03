@@ -139,7 +139,7 @@ namespace FEXCore::Context {
     FEXCore::Core::ThreadState *GetThreadState();
     void LoadEntryList();
 
-    void *CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    std::tuple<void *, FEXCore::Core::DebugData *> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileFallbackBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
