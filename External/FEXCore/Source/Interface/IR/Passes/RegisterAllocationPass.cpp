@@ -163,6 +163,7 @@ namespace {
         Graph->Nodes[i].Head = DefaultNodeHeader;
       }
     }
+    Graph->VisitedNodePredecessors.clear();
   }
 
   void SetNodeClass(RegisterGraph *Graph, uint32_t Node, FEXCore::IR::RegisterClassType Class) {
