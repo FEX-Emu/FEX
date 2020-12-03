@@ -202,6 +202,7 @@ set (SRCS
   Interface/IR/Passes/RedundantFlagCalculationElimination.cpp
   Interface/IR/Passes/DeadFlagStoreElimination.cpp
   Interface/IR/Passes/DeadGPRStoreElimination.cpp
+  Interface/IR/Passes/DeadFPRStoreElimination.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
   Utils/ELFLoader.cpp
