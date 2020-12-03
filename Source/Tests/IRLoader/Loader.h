@@ -5,7 +5,7 @@
 
 #include "HarnessHelpers.h"
 
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <string>
 #include <vector>

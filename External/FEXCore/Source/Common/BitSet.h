@@ -1,6 +1,6 @@
 #pragma once
 #include "Common/MathUtils.h"
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cstring>
 #include <stdint.h>

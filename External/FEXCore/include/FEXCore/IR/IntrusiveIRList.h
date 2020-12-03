@@ -1,7 +1,7 @@
 #pragma once
 
 #include "FEXCore/IR/IR.h"
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cassert>
 #include <cstddef>

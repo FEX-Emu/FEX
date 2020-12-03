@@ -204,6 +204,9 @@ set (SRCS
   Interface/IR/Passes/DeadGPRStoreElimination.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
+  Utils/ELFLoader.cpp
+  Utils/ELFSymbolDatabase.cpp
+  Utils/LogManager.cpp
   )
 
 if (_M_X86_64)

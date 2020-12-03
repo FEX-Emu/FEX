@@ -1,7 +1,5 @@
 #include "Common/ArgumentLoader.h"
-#include "CommonCore/VMFactory.h"
 #include "HarnessHelpers.h"
-#include "LogManager.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -12,6 +10,7 @@
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Memory/SharedMem.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cassert>
 #include <cstdint>
@@ -65,7 +64,6 @@ int main(int argc, char **argv) {
   auto SHM2 = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
   auto CTX2 = FEXCore::Context::CreateNewContext();
 
-  FEXCore::Context::SetCustomCPUBackendFactory(CTX1, VMFactory::CPUCreationFactory);
   FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_DEFAULTCORE, FEXCore::Config::CONFIG_CUSTOM);
   FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_SINGLESTEP, 1);
   FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_MAXBLOCKINST, 1);

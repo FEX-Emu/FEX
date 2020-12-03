@@ -1,15 +1,14 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
-#include "CommonCore/VMFactory.h"
 #include "Common/Config.h"
 #include "HarnessHelpers.h"
 #include "IRLoader/Loader.h"
-#include "LogManager.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Memory/SharedMem.h>
+#include <FEXCore/Utils/LogManager.h>
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   const char *CharLevel{nullptr};
@@ -127,7 +126,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_GDBSERVER, GdbServerConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ROOTFSPATH, LDPath());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, UnifiedMemory());
-  FEXCore::Context::SetCustomCPUBackendFactory(CTX, VMFactory::CPUCreationFactory);
 
   FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 

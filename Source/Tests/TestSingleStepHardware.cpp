@@ -1,16 +1,15 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
-#include "ELFLoader.h"
 #include "HarnessHelpers.h"
-#include "LogManager.h"
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <cstdint>
 #include <string>
 #include <vector>
 #include <sys/mman.h>
-
+#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEX {
 uint8_t data[] = {

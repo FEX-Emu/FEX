@@ -1,5 +1,5 @@
+#include <FEXCore/Utils/LogManager.h>
 #include "Thunks.h"
-#include <LogManager.h>
 
 #include "stdio.h"
 #include <dlfcn.h>
@@ -10,7 +10,6 @@
 #include <Interface/Context/Context.h>
 #include "Interface/Core/InternalThreadState.h"
 #include "FEXCore/Core/X86Enums.h"
-#include <LogManager.h>
 #include <mutex>
 #include <shared_mutex>
 

@@ -1,4 +1,4 @@
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 #include "Interface/Memory/SharedMem.h"
 #include <cstddef>
 #include <cstdint>

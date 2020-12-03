@@ -2,7 +2,7 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
 
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore::IR {
 class Pass;

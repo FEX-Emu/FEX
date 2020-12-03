@@ -1,6 +1,6 @@
 #include <filesystem>
 #include <unistd.h>
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 #include "FEXCore/Core/CodeLoader.h"
 
 #include "Interface/Context/Context.h"

@@ -24,7 +24,7 @@
 #include <xbyak/xbyak.h>
 using namespace Xbyak;
 
-namespace HostCPUFactory {
+namespace HostFactory {
 #ifdef _M_X86_64
   class HostCore final : public FEXCore::CPU::CPUBackend, public Xbyak::CodeGenerator {
   public:
@@ -182,11 +182,11 @@ namespace HostCPUFactory {
     return nullptr;
   }
 
-  FEXCore::CPU::CPUBackend *HostCPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread) {
+  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread) {
     return new HostCore(CTX, Thread, false);
   }
 #else
-  FEXCore::CPU::CPUBackend *HostCPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread) {
+  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread) {
     LogMan::Msg::A("HostCPU factory doesn't exist for this host");
     return nullptr;
   }

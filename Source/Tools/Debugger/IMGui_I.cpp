@@ -2,7 +2,6 @@
 #include "Disassembler.h"
 #include "FEXImGui.h"
 #include "IMGui_I.h"
-#include "LogManager.h"
 #include "IRLexer.h"
 #include "Common/Config.h"
 #include "Common/StringUtil.h"
@@ -17,6 +16,7 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>

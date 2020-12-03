@@ -1,10 +1,10 @@
 #include <cstring>
 #include <sstream>
 #include "IRLexer.h"
-#include "LogManager.h"
 #include "Common/StringUtil.h"
 
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEX::Debugger::IR {
 bool Lexer::Lex(char const *IR) {

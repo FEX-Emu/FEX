@@ -1,6 +1,6 @@
-#include <SonicUtils/ELFSymbolDatabase.h>
-#include <SonicUtils/LogManager.h>
-#include <SonicUtils/Common/MathUtils.h>
+#include <FEXCore/Utils/ELFSymbolDatabase.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Common/MathUtils.h>
 
 #include <cstring>
 #include <elf.h>

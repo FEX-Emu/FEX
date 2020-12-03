@@ -39,8 +39,6 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-include_directories(${CMAKE_SOURCE_DIR}/External/SonicUtils/include/SonicUtils)
-
 # Find our git hash
 find_package(Git)
 

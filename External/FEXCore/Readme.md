@@ -34,7 +34,6 @@ Multiple architecture support is desired for easier bringup and debugging, perfo
 * SVM
 * "Cycle Accurate" emulation
 ### Dependencies
- * [SonicUtils](https://github.com/Sonicadvance1/SonicUtils)
  * clang-tidy if you want to ensure the code stays tidy
  * cmake
  * A C++17 compliant compiler (There are assumptions made about using Clang and LTO)

@@ -2,7 +2,7 @@
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore::IR {
 

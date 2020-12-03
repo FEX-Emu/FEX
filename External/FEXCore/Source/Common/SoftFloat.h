@@ -1,5 +1,5 @@
 #pragma once
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cmath>
 #include <cstring>

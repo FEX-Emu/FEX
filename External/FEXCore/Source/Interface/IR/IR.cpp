@@ -1,6 +1,6 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 namespace FEXCore::IR {

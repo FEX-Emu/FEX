@@ -1,6 +1,6 @@
+#include <FEXCore/Utils/LogManager.h>
 #include "Interface/HLE/Syscalls.h"
 #include "Interface/HLE/x64/Syscalls.h"
-#include "LogManager.h"
 
 namespace FEXCore::HLE::x64 {
 #define REGISTER_SYSCALL_NOT_IMPL_X64(name) REGISTER_SYSCALL_IMPL_X64(name, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t { \

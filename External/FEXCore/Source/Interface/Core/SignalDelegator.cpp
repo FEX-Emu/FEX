@@ -3,7 +3,7 @@
 #include "Interface/Core/SignalDelegator.h"
 
 #include <FEXCore/Core/X86Enums.h>
-#include <LogManager.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <string.h>
 

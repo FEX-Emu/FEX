@@ -1,7 +1,7 @@
 #pragma once
 #include <FEXCore/Debug/X86Tables.h>
 
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore::X86Tables {
 

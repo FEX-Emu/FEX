@@ -5,7 +5,7 @@
 
 #include "Interface/HLE/Syscalls.h"
 
-#include "LogManager.h"
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore::HLE {
   void RegisterEpoll();
