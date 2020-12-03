@@ -996,20 +996,6 @@
       ]
     },
 
-    "Sext": {
-      "Desc": ["Integer sign extension",
-               "Extends from the source bitsize to the next byte size up from that size"
-              ],
-      "OpClass": "ALU",
-      "HasDest": true,
-      "DestClass": "GPR",
-      "DestSize": "SrcSize / 4",
-      "SSAArgs": "1",
-      "Args": [
-        "uint8_t", "SrcSize"
-      ]
-    },
-
     "Not": {
       "Desc": ["Integer binary not",
                "op:",

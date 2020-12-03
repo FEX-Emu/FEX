@@ -805,28 +805,6 @@ DEF_OP(LURem) {
   }
 }
 
-DEF_OP(Sext) {
-  auto Op = IROp->C<IR::IROp_Sext>();
-  LogMan::Throw::A(Op->SrcSize <= 64, "Can't support Zext of size: %ld", Op->SrcSize);
-  auto Dst = GetDst<RA_64>(Node);
-
-  switch (Op->SrcSize / 8) {
-    case 1:
-      movsx(Dst, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-    break;
-    case 2:
-      movsx(Dst, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-    break;
-    case 4:
-      movsxd(Dst.cvt64(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
-    break;
-    case 8:
-      mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-    break;
-    default: LogMan::Msg::A("Unknown Sext size: %d", Op->SrcSize / 8);
-  }
-}
-
 DEF_OP(Not) {
   auto Op = IROp->C<IR::IROp_Not>();
   auto Dst = GetDst<RA_64>(Node);
@@ -1291,7 +1269,6 @@ void JITCore::RegisterALUHandlers() {
   REGISTER_OP(LUDIV,             LUDiv);
   REGISTER_OP(LREM,              LRem);
   REGISTER_OP(LUREM,             LURem);
-  REGISTER_OP(SEXT,              Sext);
   REGISTER_OP(NOT,               Not);
   REGISTER_OP(POPCOUNT,          Popcount);
   REGISTER_OP(FINDLSB,           FindLSB);
