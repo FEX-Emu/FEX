@@ -282,7 +282,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
       case OP_LSHR:
       case OP_ASHR:
       case OP_LSHL:
-      case OP_ROL:
       case OP_ROR: {
         for (int i = 0; i < IROp->NumArgs; i++) {
           auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], getMask(IROp));
