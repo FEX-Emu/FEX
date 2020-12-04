@@ -146,7 +146,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
 
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
-    _InvalidateFlags();
+    _InvalidateFlags(~0UL); // all flags
   }
 
   auto Constant = _Constant(GPRSize);
@@ -630,7 +630,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
-    _InvalidateFlags();
+    _InvalidateFlags(~0UL); // all flags
   }
 
   auto ConstantPC = _Constant(Op->PC + Op->InstSize);
@@ -4857,6 +4857,8 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
 
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // ZF
@@ -4924,6 +4926,8 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
 
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // ZF
@@ -4990,6 +4994,8 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // ZF
@@ -5045,6 +5051,8 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // ZF
@@ -5155,6 +5163,8 @@ void OpDispatchBuilder::GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, 
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // ZF
@@ -5192,6 +5202,8 @@ void OpDispatchBuilder::GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     COND_FLAG_SET(Src2, RFLAG_PF_LOC, XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // AF
@@ -5238,6 +5250,8 @@ void OpDispatchBuilder::GenerateFlags_ShiftRight(FEXCore::X86Tables::DecodedOp O
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     COND_FLAG_SET(Src2, RFLAG_PF_LOC, XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // AF
@@ -5284,6 +5298,8 @@ void OpDispatchBuilder::GenerateFlags_SignShiftRight(FEXCore::X86Tables::Decoded
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     COND_FLAG_SET(Src2, RFLAG_PF_LOC, XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // AF
@@ -5330,6 +5346,8 @@ void OpDispatchBuilder::GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::Dec
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // AF
@@ -5377,6 +5395,8 @@ void OpDispatchBuilder::GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // AF
@@ -5426,6 +5446,8 @@ void OpDispatchBuilder::GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::De
     auto PopCountOp = _Popcount(_And(Res, EightBitMask));
     auto XorOp = _Xor(PopCountOp, _Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
 
   // AF
