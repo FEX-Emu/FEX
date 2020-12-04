@@ -392,13 +392,11 @@ DEF_OP(LoadFlag) {
   auto Op = IROp->C<IR::IROp_LoadFlag>();
   auto Dst = GetReg<RA_64>(Node);
   ldrb(Dst, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
-  and_(Dst, Dst, 1);
 }
 
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
-  and_(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()), 1);
-  strb(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
+  strb(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
 }
 
 MemOperand JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {

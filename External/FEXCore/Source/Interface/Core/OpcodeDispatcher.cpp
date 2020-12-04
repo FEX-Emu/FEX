@@ -4775,16 +4775,17 @@ void OpDispatchBuilder::ResetWorkingList() {
 template<unsigned BitOffset>
 void OpDispatchBuilder::SetRFLAG(OrderedNode *Value) {
   flagsOp = FLAGS_OP_NONE;
-  _StoreFlag(Value, BitOffset);
+  _StoreFlag(_Bfe(1, 0, Value), BitOffset);
 }
 void OpDispatchBuilder::SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
   flagsOp = FLAGS_OP_NONE;
-  _StoreFlag(Value, BitOffset);
+  _StoreFlag(_Bfe(1, 0, Value), BitOffset);
 }
 
 OrderedNode *OpDispatchBuilder::GetRFLAG(unsigned BitOffset) {
   return _LoadFlag(BitOffset);
 }
+
 constexpr std::array<uint32_t, 17> FlagOffsets = {
   FEXCore::X86State::RFLAG_CF_LOC,
   FEXCore::X86State::RFLAG_PF_LOC,
