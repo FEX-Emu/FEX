@@ -271,7 +271,7 @@ namespace {
 namespace FEXCore::IR {
   class ConstrainedRAPass final : public RegisterAllocationPass {
     public:
-      ConstrainedRAPass();
+      ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass);
       ~ConstrainedRAPass();
       bool Run(IREmitter *IREmit) override;
 
@@ -291,7 +291,7 @@ namespace FEXCore::IR {
       std::vector<uint32_t> TopRAPressure;
 
       RegisterGraph *Graph;
-      std::unique_ptr<FEXCore::IR::Pass> LocalCompaction;
+      FEXCore::IR::Pass* CompactionPass;
 
       void SpillRegisters(FEXCore::IR::IREmitter *IREmit);
 
@@ -319,8 +319,8 @@ namespace FEXCore::IR {
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
   };
 
-  ConstrainedRAPass::ConstrainedRAPass() {
-    LocalCompaction.reset(FEXCore::IR::CreateIRCompaction());
+  ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass)
+    : CompactionPass {_CompactionPass} {
   }
 
   ConstrainedRAPass::~ConstrainedRAPass() {
@@ -1042,7 +1042,7 @@ namespace FEXCore::IR {
     TopRAPressure.assign(TopRAPressure.size(), 0);
 
     // We need to rerun compaction every step
-    Changed |= LocalCompaction->Run(IREmit);
+    Changed |= CompactionPass->Run(IREmit);
     auto IR = IREmit->ViewIR();
 
     uint32_t SSACount = IR.GetSSACount();
@@ -1121,7 +1121,7 @@ namespace FEXCore::IR {
     return Changed;
   }
 
-  FEXCore::IR::RegisterAllocationPass* CreateRegisterAllocationPass() {
-    return new ConstrainedRAPass{};
+  FEXCore::IR::RegisterAllocationPass* CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass) {
+    return new ConstrainedRAPass{CompactionPass};
   }
 }
