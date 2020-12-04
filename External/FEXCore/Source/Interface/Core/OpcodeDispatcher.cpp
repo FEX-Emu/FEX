@@ -850,6 +850,58 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
       case 0x5: SrcCond = _Select(FEXCore::IR::COND_NEQ, flagsOpDest, ZeroConst, TrueValue, FalseValue, flagsOpSize); break;
       //default: printf("Missed Condition %04X OP_AND\n", OP); break;
     }
+  } else if (flagsOp == FLAGS_OP_FCMP) {
+    /*
+      x86:ZCP
+        unordered { 11 1 }
+        greater   { 00 0 }
+        less      { 01 0 }
+        equal     { 10 0 }
+      aarch64: NZCV
+        unordered { 0 01 1 }
+        greater   { 0 01 0 }
+        less      { 1 00 0 }
+        equal     { 0 11 0 }
+    */
+
+   /*
+      eq = 0,   // Z set            Equal.
+      ne = 1,   // Z clear          Not equal.
+      cs = 2,   // C set            Carry set.
+      cc = 3,   // C clear          Carry clear.
+      mi = 4,   // N set            Negative.
+      pl = 5,   // N clear          Positive or zero.
+      vs = 6,   // V set            Overflow.
+      vc = 7,   // V clear          No overflow.
+      hi = 8,   // C set, Z clear   Unsigned higher.
+      ls = 9,   // C clear or Z set Unsigned lower or same.
+      ge = 10,  // N == V           Greater or equal.
+      lt = 11,  // N != V           Less than.
+      gt = 12,  // Z clear, N == V  Greater than.
+      le = 13,  // Z set or N != V  Less then or equal
+   */
+    switch(OP) {
+      case 0x2: // CF == 1 // less or unordered                      // N==1 OR V==1        // lt
+        SrcCond = _Select(FEXCore::IR::COND_FLU, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize);
+        break;
+      case 0x3: // CF == 0 // greater or equal (and not unordered)   // N==V                // ge
+        SrcCond = _Select(FEXCore::IR::COND_FGE, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize);
+        break;
+      case 0x6: // CF == 1 || ZF == 1 // less or equal or unordered  // Z==1 OR N!=V        // le
+        SrcCond = _Select(FEXCore::IR::COND_FLEU, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize);
+        break;
+      case 0x7: // CF == 0 && ZF == 0 // greater (and not unordered) // C==1 AND V=0        // hi
+        SrcCond = _Select(FEXCore::IR::COND_FGT, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize);
+        break;
+      case 0xA: // PF = 1 // unordered                               // V==1                // vs
+        SrcCond = _Select(FEXCore::IR::COND_FU, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize);
+        break;
+      case 0xB: // PF = 0 // not unordered                           // V==0                // vc
+        SrcCond = _Select(FEXCore::IR::COND_FNU, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize);
+        break;
+      default:
+        printf("Missed Condition %04X FLAGS_OP_FCMP\n", OP); break;
+    }
   }
 
   return SrcCond;
@@ -7538,6 +7590,11 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(ZeroConst);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(ZeroConst);
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
+
+  flagsOp = FLAGS_OP_FCMP;
+  flagsOpDest = Src1;
+  flagsOpSrc = Src2;
+  flagsOpSize = GetSrcSize(Op);
 }
 
 void OpDispatchBuilder::LDMXCSR(OpcodeArgs) {

@@ -473,6 +473,18 @@ uint32_t JITCore::GetPhys(uint32_t Node) {
   return ~0U;
 }
 
+bool JITCore::IsFPR(uint32_t Node) {
+  auto Class =  RAPass->GetNodeRegister(Node) >> 32;
+
+  return Class == IR::FPRClass.Val;
+}
+
+bool JITCore::IsGPR(uint32_t Node) {
+  auto Class =  RAPass->GetNodeRegister(Node) >> 32;
+
+  return Class == IR::GPRClass.Val;
+}
+
 template<uint8_t RAType>
 Xbyak::Reg JITCore::GetSrc(uint32_t Node) {
   // rax, rcx, rdx, rsi, r8, r9,
@@ -567,6 +579,36 @@ bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Va
     return true;
   } else {
     return false;
+  }
+}
+
+std::tuple<JITCore::SetCC, JITCore::CMovCC, JITCore::JCC> JITCore::GetCC(IR::CondClassType cond) {
+    switch (cond.Val) {
+    case FEXCore::IR::COND_EQ:  return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
+    case FEXCore::IR::COND_NEQ: return { &CodeGenerator::setne, &CodeGenerator::cmovne, &CodeGenerator::jne };
+    case FEXCore::IR::COND_SGE: return { &CodeGenerator::setge, &CodeGenerator::cmovge, &CodeGenerator::jge };
+    case FEXCore::IR::COND_SLT: return { &CodeGenerator::setl , &CodeGenerator::cmovl , &CodeGenerator::jl  };
+    case FEXCore::IR::COND_SGT: return { &CodeGenerator::setg , &CodeGenerator::cmovg , &CodeGenerator::jg  };
+    case FEXCore::IR::COND_SLE: return { &CodeGenerator::setle, &CodeGenerator::cmovle, &CodeGenerator::jle }; 
+    case FEXCore::IR::COND_UGE: return { &CodeGenerator::setae, &CodeGenerator::cmovae, &CodeGenerator::jae };
+    case FEXCore::IR::COND_ULT: return { &CodeGenerator::setb , &CodeGenerator::cmovb , &CodeGenerator::jb  };
+    case FEXCore::IR::COND_UGT: return { &CodeGenerator::seta , &CodeGenerator::cmova , &CodeGenerator::ja  };
+    case FEXCore::IR::COND_ULE: return { &CodeGenerator::setna, &CodeGenerator::cmovna, &CodeGenerator::jna };
+
+	  case FEXCore::IR::COND_FLU:  return { &CodeGenerator::setb , &CodeGenerator::cmovb , &CodeGenerator::jb  };
+	  case FEXCore::IR::COND_FGE:  return { &CodeGenerator::setae, &CodeGenerator::cmovae, &CodeGenerator::jae };
+	  case FEXCore::IR::COND_FLEU: return { &CodeGenerator::setna, &CodeGenerator::cmovna, &CodeGenerator::jna };
+	  case FEXCore::IR::COND_FGT:  return { &CodeGenerator::seta , &CodeGenerator::cmova , &CodeGenerator::ja  };
+	  case FEXCore::IR::COND_FU:   return { &CodeGenerator::setp , &CodeGenerator::cmovp , &CodeGenerator::jp  };
+	  case FEXCore::IR::COND_FNU:  return { &CodeGenerator::setnp, &CodeGenerator::cmovnp, &CodeGenerator::jnp };
+
+    case FEXCore::IR::COND_MI:
+    case FEXCore::IR::COND_PL:
+    case FEXCore::IR::COND_VS:
+    case FEXCore::IR::COND_VC:
+    default:
+      LogMan::Msg::A("Unsupported compare type");
+      break;
   }
 }
 

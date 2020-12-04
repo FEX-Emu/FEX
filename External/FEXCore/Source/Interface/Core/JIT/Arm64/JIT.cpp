@@ -680,6 +680,24 @@ bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Va
   }
 }
 
+FEXCore::IR::RegisterClassType JITCore::GetRegClass(uint32_t Node) {
+  auto Class = static_cast<uint32_t>(RAPass->GetNodeRegister(Node) >> 32);
+  return FEXCore::IR::RegisterClassType {Class};
+}
+
+
+bool JITCore::IsFPR(uint32_t Node) {
+  auto Class = GetRegClass(Node);
+
+  return Class == IR::FPRClass;
+}
+
+bool JITCore::IsGPR(uint32_t Node) {
+  auto Class = GetRegClass(Node);
+
+  return Class == IR::GPRClass;
+}
+
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
   using namespace aarch64;
   JumpTargets.clear();

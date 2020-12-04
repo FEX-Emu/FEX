@@ -353,7 +353,7 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 }
 
-template<typename unsigned_type, typename signed_type>
+template<typename unsigned_type, typename signed_type, typename float_type>
 bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
   bool CompResult = false;
   switch (Cond) {
@@ -386,6 +386,25 @@ bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
       break;
     case FEXCore::IR::COND_ULE:
       CompResult = static_cast<unsigned_type>(Src1) <= static_cast<unsigned_type>(Src2);
+      break;
+    
+    case FEXCore::IR::COND_FLU:
+      CompResult = reinterpret_cast<float_type&>(Src1) < reinterpret_cast<float_type&>(Src2) || (std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
+      break;
+    case FEXCore::IR::COND_FGE:
+      CompResult = reinterpret_cast<float_type&>(Src1) >= reinterpret_cast<float_type&>(Src2) && !(std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
+      break;
+    case FEXCore::IR::COND_FLEU:
+      CompResult = reinterpret_cast<float_type&>(Src1) <= reinterpret_cast<float_type&>(Src2) || (std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
+      break;
+    case FEXCore::IR::COND_FGT:
+      CompResult = reinterpret_cast<float_type&>(Src1) > reinterpret_cast<float_type&>(Src2) && !(std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
+      break;
+    case FEXCore::IR::COND_FU:
+      CompResult = (std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
+      break;
+    case FEXCore::IR::COND_FNU:
+      CompResult = !(std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
       break;
     case FEXCore::IR::COND_MI:
     case FEXCore::IR::COND_PL:
@@ -519,9 +538,9 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Cmp2);
 
             if (Op->CompareSize == 4)
-              CompResult = IsConditionTrue<uint32_t, int32_t>(Op->Cond.Val, Src1, Src2);
+              CompResult = IsConditionTrue<uint32_t, int32_t, float>(Op->Cond.Val, Src1, Src2);
             else
-              CompResult = IsConditionTrue<uint64_t, int64_t>(Op->Cond.Val, Src1, Src2);
+              CompResult = IsConditionTrue<uint64_t, int64_t, double>(Op->Cond.Val, Src1, Src2);
 
             if (CompResult) {
               BlockIterator = NodeIterator(ListBegin, DataBegin, Op->TrueBlock);
@@ -1605,9 +1624,9 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             bool CompResult;
 
             if (Op->CompareSize == 4)
-              CompResult = IsConditionTrue<uint32_t, int32_t>(Op->Cond.Val, Src1, Src2);
+              CompResult = IsConditionTrue<uint32_t, int32_t, float>(Op->Cond.Val, Src1, Src2);
             else
-              CompResult = IsConditionTrue<uint64_t, int64_t>(Op->Cond.Val, Src1, Src2);
+              CompResult = IsConditionTrue<uint64_t, int64_t, double>(Op->Cond.Val, Src1, Src2);
 
             GD = CompResult ? ArgTrue : ArgFalse;
             break;

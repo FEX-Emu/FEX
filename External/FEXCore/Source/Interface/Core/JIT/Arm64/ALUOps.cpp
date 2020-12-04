@@ -967,6 +967,8 @@ DEF_OP(Sbfe) {
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 
+#define GRFCMP(Node) (Op->CompareSize == 4 ? GetDst(Node).S() : GetDst(Node).D())
+
 Condition MapSelectCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
   case FEXCore::IR::COND_EQ: return Condition::eq;
@@ -979,10 +981,16 @@ Condition MapSelectCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_ULT: return Condition::cc;
   case FEXCore::IR::COND_UGT: return Condition::hi;
   case FEXCore::IR::COND_ULE: return Condition::ls;
+  case FEXCore::IR::COND_FLU: return Condition::lt;
+  case FEXCore::IR::COND_FGE: return Condition::ge;
+  case FEXCore::IR::COND_FLEU:return Condition::le;
+  case FEXCore::IR::COND_FGT: return Condition::hi;
+  case FEXCore::IR::COND_FU:  return Condition::vs;
+  case FEXCore::IR::COND_FNU: return Condition::vc;
+  case FEXCore::IR::COND_VS:;
+  case FEXCore::IR::COND_VC:;
   case FEXCore::IR::COND_MI:
   case FEXCore::IR::COND_PL:
-  case FEXCore::IR::COND_VS:
-  case FEXCore::IR::COND_VC:
   default:
   LogMan::Msg::A("Unsupported compare type");
   return Condition::nv;
@@ -993,16 +1001,23 @@ DEF_OP(Select) {
   auto Op = IROp->C<IR::IROp_Select>();
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const))
-    cmp(GRCMP(Op->Header.Args[0].ID()), Const);
-  else
-    cmp(GRCMP(Op->Header.Args[0].ID()), GRCMP(Op->Header.Args[1].ID()));
 
+  if (IsGPR(Op->Cmp1.ID())) {
+    if (IsInlineConstant(Op->Cmp2, &Const))
+      cmp(GRCMP(Op->Cmp1.ID()), Const);
+    else
+      cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+  } else if (IsFPR(Op->Cmp1.ID())) {
+    fcmp(GRFCMP(Op->Cmp1.ID()), GRFCMP(Op->Cmp2.ID()));
+  } else {
+    LogMan::Msg::A("Select: Expected GPR or FPR");
+  }
+  
   auto cc = MapSelectCC(Op->Cond);
 
   uint64_t const_true, const_false;
-  bool is_const_true = IsInlineConstant(Op->Header.Args[2], &const_true);
-  bool is_const_false = IsInlineConstant(Op->Header.Args[3], &const_false);
+  bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
+  bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
 
   if (is_const_true || is_const_false) {
     if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
@@ -1010,7 +1025,7 @@ DEF_OP(Select) {
     }
     cset(GRS(Node), cc);
   } else {
-    csel(GRS(Node), GRS(Op->Header.Args[2].ID()), GRS(Op->Header.Args[3].ID()), cc);
+    csel(GRS(Node), GRS(Op->TrueVal.ID()), GRS(Op->FalseVal.ID()), cc);
   }
 }
 

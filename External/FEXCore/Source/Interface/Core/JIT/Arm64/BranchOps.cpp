@@ -73,6 +73,7 @@ DEF_OP(Jump) {
 }
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
+#define GRFCMP(Node) (Op->CompareSize == 4 ? GetDst(Node).S() : GetDst(Node).D())
 
 Condition MapBranchCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
@@ -86,10 +87,16 @@ Condition MapBranchCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_ULT: return Condition::cc;
   case FEXCore::IR::COND_UGT: return Condition::hi;
   case FEXCore::IR::COND_ULE: return Condition::ls;
+  case FEXCore::IR::COND_FLU: return Condition::lt;
+  case FEXCore::IR::COND_FGE: return Condition::ge;
+  case FEXCore::IR::COND_FLEU:return Condition::le;
+  case FEXCore::IR::COND_FGT: return Condition::hi;
+  case FEXCore::IR::COND_FU:  return Condition::vs;
+  case FEXCore::IR::COND_FNU: return Condition::vc;
+  case FEXCore::IR::COND_VS:;
+  case FEXCore::IR::COND_VC:;
   case FEXCore::IR::COND_MI:
   case FEXCore::IR::COND_PL:
-  case FEXCore::IR::COND_VS:
-  case FEXCore::IR::COND_VC:
   default:
   LogMan::Msg::A("Unsupported compare type");
   return Condition::nv;
@@ -118,14 +125,22 @@ DEF_OP(CondJump) {
   bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
   if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_EQ) {
+    LogMan::Throw::A(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
   } else if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_NEQ) {
+    LogMan::Throw::A(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbnz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
   } else {
-    if (isConst)
-      cmp(GRCMP(Op->Cmp1.ID()), Const);
-    else
-      cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+    if (IsGPR(Op->Cmp1.ID())) {
+      if (isConst)
+        cmp(GRCMP(Op->Cmp1.ID()), Const);
+      else
+        cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+    } else if (IsFPR(Op->Cmp1.ID())) {
+      fcmp(GRFCMP(Op->Cmp1.ID()), GRFCMP(Op->Cmp2.ID()));
+    } else {
+      LogMan::Msg::A("CondJump: Expected GPR or FPR");
+    }
 
     b(TrueTargetLabel, MapBranchCC(Op->Cond));
   }

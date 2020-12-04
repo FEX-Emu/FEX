@@ -15,6 +15,8 @@ using namespace Xbyak;
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 
+#include <tuple>
+
 namespace FEXCore::CPU {
 struct CodeBuffer {
   uint8_t *Ptr;
@@ -106,6 +108,9 @@ private:
 
   uint32_t GetPhys(uint32_t Node);
 
+  bool IsFPR(uint32_t Node);
+  bool IsGPR(uint32_t Node);
+
   template<uint8_t RAType>
   Xbyak::Reg GetSrc(uint32_t Node);
   template<uint8_t RAType>
@@ -170,6 +175,11 @@ private:
   void RestoreThreadState(void *ucontext);
   std::stack<uint64_t> SignalFrames;
   uint32_t SpillSlots{};
+  using SetCC = void (JITCore::*)(const Operand& op);
+  using CMovCC = void (JITCore::*)(const Reg& reg, const Operand& op);
+  using JCC = void (JITCore::*)(const Label& label, LabelType type);
+
+  std::tuple<SetCC, CMovCC, JCC> GetCC(IR::CondClassType cond);
 
   using OpHandler = void (JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
   std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};
