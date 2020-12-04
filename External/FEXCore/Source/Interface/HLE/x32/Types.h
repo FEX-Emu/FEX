@@ -149,20 +149,21 @@ struct cmsghdr32 {
   uint32_t cmsg_len;
   int32_t cmsg_level;
   int32_t cmsg_type;
+  char    cmsg_data[0];
 };
 
 static_assert(std::is_trivial<cmsghdr32>::value, "Needs to be trivial");
 static_assert(sizeof(cmsghdr32) == 12, "Incorrect size");
 
 struct msghdr32 {
-  uint32_t msg_name_ptr;
+  compat_ptr<void> msg_name;
   socklen_t msg_namelen;
 
   compat_ptr<iovec32> msg_iov;
-  uint32_t msg_iovlen;
+  compat_size_t msg_iovlen;
 
-  uint32_t msg_control;
-  uint32_t msg_controllen;
+  compat_ptr<void> msg_control;
+  compat_size_t msg_controllen;
   int32_t msg_flags;
 };
 

@@ -133,13 +133,13 @@ namespace FEXCore::HLE::x32 {
             Host_iovec[i] = guest_msg->msg_iov[i];
           }
 
-          HostHeader.msg_name = reinterpret_cast<void*>(guest_msg->msg_name_ptr);
+          HostHeader.msg_name = guest_msg->msg_name;
           HostHeader.msg_namelen = guest_msg->msg_namelen;
 
           HostHeader.msg_iov = &Host_iovec.at(0);
           HostHeader.msg_iovlen = guest_msg->msg_iovlen;
 
-          HostHeader.msg_control = reinterpret_cast<void*>(guest_msg->msg_control);
+          HostHeader.msg_control = guest_msg->msg_control;
           HostHeader.msg_controllen = guest_msg->msg_controllen;
 
           HostHeader.msg_flags = guest_msg->msg_flags;
@@ -156,7 +156,7 @@ namespace FEXCore::HLE::x32 {
             Host_iovec[i] = guest_msg->msg_iov[i];
           }
 
-          HostHeader.msg_name = reinterpret_cast<void*>(guest_msg->msg_name_ptr);
+          HostHeader.msg_name = guest_msg->msg_name;
           HostHeader.msg_namelen = guest_msg->msg_namelen;
 
           HostHeader.msg_iov = &Host_iovec.at(0);
@@ -174,34 +174,28 @@ namespace FEXCore::HLE::x32 {
             }
 
             guest_msg->msg_namelen = HostHeader.msg_namelen;
-
             guest_msg->msg_controllen = HostHeader.msg_controllen;
-
             guest_msg->msg_flags = HostHeader.msg_flags;
             if (HostHeader.msg_controllen) {
               // Host and guest cmsg data structures aren't compatible.
               // Copy them over now
-              uint32_t CurrentGuestPtr = guest_msg->msg_control;
+              void *CurrentGuestPtr = guest_msg->msg_control;
               for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&HostHeader);
                   cmsg != nullptr;
                   cmsg = CMSG_NXTHDR(&HostHeader, cmsg)) {
                 cmsghdr32 *CurrentGuest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr);
 
                 // Copy over the header first
-                CurrentGuest->cmsg_len = cmsg->cmsg_len;
+                // cmsg_len needs to be adjusted by the size of the header between host and guest
+                // Host is 16 bytes, guest is 12 bytes
+                CurrentGuest->cmsg_len = cmsg->cmsg_len - (CMSG_LEN(0) - sizeof(cmsghdr32));
                 CurrentGuest->cmsg_level = cmsg->cmsg_level;
                 CurrentGuest->cmsg_type = cmsg->cmsg_type;
 
-                CurrentGuestPtr += sizeof(cmsghdr32);
-
-                // Offset the result by the size of the structure change
-                Result -= sizeof(cmsghdr) - sizeof(cmsghdr32);
-
                 // Now copy over the data
                 if (cmsg->cmsg_len) {
-                  uint8_t *GuestData = reinterpret_cast<uint8_t*>(CurrentGuestPtr);
-                  memcpy(GuestData, CMSG_DATA(cmsg), cmsg->cmsg_len);
-                  CurrentGuestPtr += cmsg->cmsg_len;
+                  memcpy(CurrentGuest->cmsg_data, CMSG_DATA(cmsg), cmsg->cmsg_len);
+                  CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + cmsg->cmsg_len);
                 }
               }
             }

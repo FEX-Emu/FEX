@@ -31,36 +31,52 @@ namespace FEXCore::HLE::x32 {
     REGISTER_SYSCALL_IMPL_X32(nanosleep, [](FEXCore::Core::InternalThreadState *Thread, const timespec32 *req, timespec32 *rem) -> uint64_t {
       struct timespec req64{};
       struct timespec rem64{};
+
+      struct timespec *rem64_ptr{};
       req64 = *req;
-      rem64 = *rem;
+      if (rem) {
+        rem64 = *rem;
+        rem64_ptr = &rem64;
+      }
       uint64_t Result = ::nanosleep(&req64, &rem64);
-      *rem = rem64;
+      if (rem) {
+        *rem = rem64;
+      }
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(clock_gettime, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clk_id, timespec32 *tp) -> uint64_t {
       struct timespec tp64{};
-      tp64 = *tp;
       uint64_t Result = ::clock_gettime(clk_id, &tp64);
-      *tp = tp64;
+      if (tp) {
+        *tp = tp64;
+      }
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(clock_getres, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clk_id, timespec32 *tp) -> uint64_t {
       struct timespec tp64{};
-      tp64 = *tp;
       uint64_t Result = ::clock_getres(clk_id, &tp64);
-      *tp = tp64;
+      if (tp) {
+        *tp = tp64;
+      }
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(clock_nanosleep, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clockid, int flags, const timespec32 *request, timespec32 *remain) -> uint64_t {
       struct timespec req64{};
       struct timespec rem64{};
+      struct timespec *rem64_ptr{};
+
       req64 = *request;
-      rem64 = *remain;
-      uint64_t Result = ::clock_nanosleep(clockid, flags, &req64, &rem64);
-      *remain = rem64;
+      if (remain) {
+        rem64 = *remain;
+        rem64_ptr = &rem64;
+      }
+      uint64_t Result = ::clock_nanosleep(clockid, flags, &req64, rem64_ptr);
+      if (remain) {
+        *remain = rem64;
+      }
       SYSCALL_ERRNO();
     });
 

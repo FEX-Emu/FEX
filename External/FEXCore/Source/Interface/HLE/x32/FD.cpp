@@ -169,7 +169,9 @@ namespace FEXCore::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(fstatfs64, [](FEXCore::Core::InternalThreadState *Thread, int fd, struct statfs64_32 *buf) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(fstatfs64, [](FEXCore::Core::InternalThreadState *Thread, int fd, size_t sz, struct statfs64_32 *buf) -> uint64_t {
+      LogMan::Throw::A(sz == sizeof(struct statfs64_32), "This needs to match");
+
       struct statfs64 host_stat;
       uint64_t Result = ::fstatfs64(fd, &host_stat);
       if (Result != -1) {
@@ -178,7 +180,9 @@ namespace FEXCore::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(statfs64, [](FEXCore::Core::InternalThreadState *Thread, const char *path, struct statfs64_32 *buf) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(statfs64, [](FEXCore::Core::InternalThreadState *Thread, const char *path, size_t sz, struct statfs64_32 *buf) -> uint64_t {
+      LogMan::Throw::A(sz == sizeof(struct statfs64_32), "This needs to match");
+
       struct statfs host_stat;
       uint64_t Result = Thread->CTX->SyscallHandler->FM.Statfs(path, &host_stat);
       if (Result != -1) {

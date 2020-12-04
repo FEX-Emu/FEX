@@ -239,14 +239,22 @@ namespace FEXCore::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(sigaltstack, [](FEXCore::Core::InternalThreadState *Thread, const compat_ptr<stack_t32> ss, compat_ptr<stack_t32> old_ss) -> uint64_t {
-      stack_t ss64 = *ss;
+      stack_t ss64{};
       stack_t old64{};
+
+      stack_t *ss64_ptr{};
       stack_t *old64_ptr{};
+
+      if (ss64_ptr) {
+        ss64 = *ss;
+        ss64_ptr = &ss64;
+      }
+
       if (old_ss) {
         old64 = *old_ss;
         old64_ptr = &old64;
       }
-      uint64_t Result = Thread->CTX->SignalDelegation.RegisterGuestSigAltStack(&ss64, old64_ptr);
+      uint64_t Result = Thread->CTX->SignalDelegation.RegisterGuestSigAltStack(ss64_ptr, old64_ptr);
 
       if (Result == 0 && old_ss) {
         *old_ss = old64;
