@@ -7529,8 +7529,6 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
   OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
   OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
-  HostFlag_CF = _Or(HostFlag_CF, HostFlag_Unordered);
-  HostFlag_ZF = _Or(HostFlag_ZF, HostFlag_Unordered);
 
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(HostFlag_CF);
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(HostFlag_ZF);
