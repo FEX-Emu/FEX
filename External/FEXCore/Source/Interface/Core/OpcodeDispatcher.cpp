@@ -3882,8 +3882,12 @@ void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
 
-  // Insert the lower bits
-  auto Result = _VInsScalarElement(Size, ElementSize, 0, Dest, ALUOp);
+  OrderedNode* Result = ALUOp;
+
+  if (Size != ElementSize) {
+    // Insert the lower bits
+    Result = _VInsScalarElement(Size, ElementSize, 0, Dest, Result);
+  }
 
   StoreResult(FPRClass, Op, Result, -1);
 }
