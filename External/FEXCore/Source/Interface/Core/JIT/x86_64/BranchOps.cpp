@@ -116,26 +116,9 @@ DEF_OP(CondJump) {
   else
     cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
 
-  switch (Op->Cond.Val) {
-    case FEXCore::IR::COND_EQ:  je(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_NEQ: jne(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_SGE: jge(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_SLT: jl(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_SGT: jg(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_SLE: jle(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_UGE: jae(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_ULT: jb(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_UGT: ja(*TrueTargetLabel, T_NEAR); break;
-    case FEXCore::IR::COND_ULE: jna(*TrueTargetLabel, T_NEAR); break;
+  auto [_, __, JCC] = GetCC(Op->Cond);
 
-    case FEXCore::IR::COND_MI:
-    case FEXCore::IR::COND_PL:
-    case FEXCore::IR::COND_VS:
-    case FEXCore::IR::COND_VC:
-    default:
-      LogMan::Msg::A("Unsupported compare type");
-      break;
-  }
+  (this->*JCC)(*TrueTargetLabel, T_NEAR);
 
   if (FalseIter == JumpTargets.end()) {
     FalseTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;

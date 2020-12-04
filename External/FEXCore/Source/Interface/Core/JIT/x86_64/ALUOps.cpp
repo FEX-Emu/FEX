@@ -1099,54 +1099,17 @@ DEF_OP(Select) {
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
   bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
 
+  auto [SetCC, CMovCC, _] = GetCC(Op->Cond);
+
   if (is_const_true || is_const_false) {
     if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
       LogMan::Msg::A("Select: Unsupported compare inline parameters");
     }
-
-    switch (Op->Cond.Val) {
-      case FEXCore::IR::COND_EQ:  sete(al); break;
-      case FEXCore::IR::COND_NEQ: setne(al); break;
-      case FEXCore::IR::COND_SGE: setge(al); break;
-      case FEXCore::IR::COND_SLT: setl(al); break;
-      case FEXCore::IR::COND_SGT: setg(al); break;
-      case FEXCore::IR::COND_SLE: setle(al); break;
-      case FEXCore::IR::COND_UGE: setae(al); break;
-      case FEXCore::IR::COND_ULT: setb(al); break;
-      case FEXCore::IR::COND_UGT: seta(al); break;
-      case FEXCore::IR::COND_ULE: setna(al); break;
-
-      case FEXCore::IR::COND_MI:
-      case FEXCore::IR::COND_PL:
-      case FEXCore::IR::COND_VS:
-      case FEXCore::IR::COND_VC:
-      default:
-        LogMan::Msg::A("Unsupported compare type");
-        break;
-    }
+    (this->*SetCC)(al);
     movzx(Dst, al);
   } else {
     mov(rax, GetSrc<RA_64>(Op->FalseVal.ID()));
-    switch (Op->Cond.Val) {
-      case FEXCore::IR::COND_EQ:  cmove(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_NEQ: cmovne(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_SGE: cmovge(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_SLT: cmovl(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_SGT: cmovg(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_SLE: cmovle(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_UGE: cmovae(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_ULT: cmovb(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_UGT: cmova(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-      case FEXCore::IR::COND_ULE: cmovna(rax, GetSrc<RA_64>(Op->TrueVal.ID())); break;
-
-      case FEXCore::IR::COND_MI:
-      case FEXCore::IR::COND_PL:
-      case FEXCore::IR::COND_VS:
-      case FEXCore::IR::COND_VC:
-      default:
-        LogMan::Msg::A("Unsupported compare type");
-        break;
-    }
+    (this->*CMovCC)(rax, GetSrc<RA_64>(Op->TrueVal.ID()));
     mov (Dst, rax.changeBit(IROp->Size * 8));
   }
 }
