@@ -140,18 +140,6 @@ DEF_OP(Mul) {
   auto Dst = GetReg<RA_64>(Node);
 
   switch (OpSize) {
-    case 1:
-      sxtb(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      sxtb(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(Dst, TMP1, TMP2);
-      sxtb(Dst, Dst);
-    break;
-    case 2:
-      sxth(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      sxth(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(Dst, TMP1, TMP2);
-      sxth(Dst, Dst);
-    break;
     case 4:
       mul(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
       sxtw(Dst, Dst);
@@ -169,18 +157,6 @@ DEF_OP(UMul) {
   auto Dst = GetReg<RA_64>(Node);
 
   switch (OpSize) {
-    case 1:
-      uxtb(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      uxtb(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(Dst, TMP1, TMP2);
-      uxtb(Dst, Dst);
-    break;
-    case 2:
-      uxth(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      uxth(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(Dst, TMP1, TMP2);
-      uxth(Dst, Dst);
-    break;
     case 4:
       mul(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
@@ -348,18 +324,6 @@ DEF_OP(MulH) {
   auto Op = IROp->C<IR::IROp_MulH>();
   uint8_t OpSize = IROp->Size;
   switch (OpSize) {
-    case 1:
-      sxtb(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      sxtb(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(TMP1, TMP1, TMP2);
-      sbfx(GetReg<RA_64>(Node), TMP1, 8, 8);
-    break;
-    case 2:
-      sxth(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      sxth(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(TMP1, TMP1, TMP2);
-      sbfx(GetReg<RA_64>(Node), TMP1, 16, 16);
-    break;
     case 4:
       sxtw(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       sxtw(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
@@ -377,18 +341,6 @@ DEF_OP(UMulH) {
   auto Op = IROp->C<IR::IROp_UMulH>();
   uint8_t OpSize = IROp->Size;
   switch (OpSize) {
-    case 1:
-      uxtb(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      uxtb(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(TMP1, TMP1, TMP2);
-      ubfx(GetReg<RA_64>(Node), TMP1, 8, 8);
-    break;
-    case 2:
-      uxth(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      uxth(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mul(TMP1, TMP1, TMP2);
-      ubfx(GetReg<RA_64>(Node), TMP1, 16, 16);
-    break;
     case 4:
       uxtw(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       uxtw(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));

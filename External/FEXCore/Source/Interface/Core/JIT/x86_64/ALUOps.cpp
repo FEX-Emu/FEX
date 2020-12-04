@@ -133,22 +133,10 @@ DEF_OP(Mul) {
   auto Dst = GetDst<RA_64>(Node);
 
   switch (OpSize) {
-  case 1:
-    movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-    movsx(rcx, GetSrc<RA_8>(Op->Header.Args[1].ID()));
-    imul(cl);
-    movsx(Dst, al);
-  break;
-  case 2:
-    movsx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-    movsx(rcx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-    imul(cx);
-    movsx(Dst, ax);
-  break;
   case 4:
     movsxd(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
     imul(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-    movsxd(Dst.cvt64(), eax);
+    mov(Dst.cvt32(), eax);
   break;
   case 8:
     mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
@@ -164,20 +152,6 @@ DEF_OP(UMul) {
   uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
-  case 1:
-    movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-    movzx(rcx, GetSrc<RA_8>(Op->Header.Args[1].ID()));
-    mul(cl);
-    movzx(rax, al);
-    mov(GetDst<RA_64>(Node), rax);
-  break;
-  case 2:
-    movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-    movzx(rcx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-    mul(cx);
-    movzx(rax, ax);
-    mov(GetDst<RA_64>(Node), rax);
-  break;
   case 4:
     mov(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
     mul(GetSrc<RA_32>(Op->Header.Args[1].ID()));
@@ -359,20 +333,6 @@ DEF_OP(MulH) {
   uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
-  case 1:
-    movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-    movsx(rcx, GetSrc<RA_8>(Op->Header.Args[1].ID()));
-    imul(cl);
-    movsx(rax, ax);
-    mov(GetDst<RA_64>(Node), rax);
-  break;
-  case 2:
-    movsx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-    movsx(rcx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-    imul(cx);
-    movsx(rax, dx);
-    mov(GetDst<RA_64>(Node), rax);
-  break;
   case 4:
     movsxd(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
     imul(GetSrc<RA_32>(Op->Header.Args[1].ID()));
@@ -392,20 +352,6 @@ DEF_OP(UMulH) {
   uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
-  case 1:
-    movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-    movzx(rcx, GetSrc<RA_8>(Op->Header.Args[1].ID()));
-    mul(cl);
-    movzx(rax, ax);
-    mov(GetDst<RA_64>(Node), rax);
-  break;
-  case 2:
-    movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-    movzx(rcx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-    mul(cx);
-    movzx(rax, dx);
-    mov(GetDst<RA_64>(Node), rax);
-  break;
   case 4:
     mov(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
     mul(GetSrc<RA_32>(Op->Header.Args[1].ID()));
