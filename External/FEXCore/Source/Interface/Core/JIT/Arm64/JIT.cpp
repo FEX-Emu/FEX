@@ -492,8 +492,11 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   RAPass->AllocateRegisterSet(UsedRegisterCount, RegisterClasses);
 
   RAPass->AddRegisters(FEXCore::IR::GPRClass, NumUsedGPRs);
+  RAPass->AddRegisters(FEXCore::IR::GPRFixedClass, SRA64.size());
   RAPass->AddRegisters(FEXCore::IR::FPRClass, NumFPRs);
+  RAPass->AddRegisters(FEXCore::IR::FPRFixedClass, SRAFPR.size()  );
   RAPass->AddRegisters(FEXCore::IR::GPRPairClass, NumUsedGPRPairs);
+  RAPass->AddRegisters(FEXCore::IR::ComplexClass, 1);
 
   RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRClass, NumUsedGPRs);
   RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRPairClass, NumUsedGPRs);
@@ -621,49 +624,80 @@ void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
   }
 }
 
-static uint32_t GetPhys(IR::RegisterAllocationPass *RAPass, uint32_t Node) {
-  uint64_t Reg = RAPass->GetNodeRegister(Node);
+struct PhysReg { uint32_t Class; uint32_t VId; };
 
-  if ((uint32_t)Reg != ~0U)
-    return Reg;
+static PhysReg GetPhys(IR::RegisterAllocationPass *RAPass, uint32_t Node) {
+  uint64_t Reg = RAPass->GetNodeRegister(Node);
+  auto rv = PhysReg {uint32_t(Reg>>32), (uint32_t)Reg};
+
+  if (rv.VId != ~0U)
+    return rv;
   else
     LogMan::Msg::A("Couldn't Allocate register for node: ssa%d. Class: %d", Node, Reg >> 32);
 
-  return ~0U;
+  return PhysReg { ~0U, ~0U};
 }
 
 template<>
 aarch64::Register JITCore::GetReg<JITCore::RA_32>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAPass, Node);
-  return RA64[Reg].W();
+auto Reg = GetPhys(RAPass, Node);
+  if (Reg.Class == IR::GPRFixedClass.Val) {
+    return SRA64[Reg.VId].W();
+  } else if (Reg.Class == IR::GPRClass.Val) {
+    return RA64[Reg.VId].W();
+  } else {
+    printf("Unexpected Class: %d\n", Reg.Class);
+    assert(false);
+  }
 }
 
 template<>
 aarch64::Register JITCore::GetReg<JITCore::RA_64>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAPass, Node);
-  return RA64[Reg];
+  auto Reg = GetPhys(RAPass, Node);
+  if (Reg.Class == IR::GPRFixedClass.Val) {
+    return SRA64[Reg.VId];
+  } else if (Reg.Class == IR::GPRClass.Val) {
+    return RA64[Reg.VId];
+  } else {
+    printf("Unexpected Class: %d\n", Reg.Class);
+    assert(false);
+  }
 }
 
 template<>
 std::pair<aarch64::Register, aarch64::Register> JITCore::GetSrcPair<JITCore::RA_32>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAPass, Node);
+  uint32_t Reg = GetPhys(RAPass, Node).VId;
   return RA32Pair[Reg];
 }
 
 template<>
 std::pair<aarch64::Register, aarch64::Register> JITCore::GetSrcPair<JITCore::RA_64>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAPass, Node);
+  uint32_t Reg = GetPhys(RAPass, Node).VId;
   return RA64Pair[Reg];
 }
 
 aarch64::VRegister JITCore::GetSrc(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAPass, Node);
-  return RAFPR[Reg];
+  auto Reg = GetPhys(RAPass, Node);
+  if (Reg.Class == IR::FPRFixedClass.Val) {
+    return SRAFPR[Reg.VId];
+  } else if (Reg.Class == IR::FPRClass.Val) {
+    return RAFPR[Reg.VId];
+  } else {
+    printf("Unexpected Class: %d\n", Reg.Class);
+    assert(false);
+  }
 }
 
 aarch64::VRegister JITCore::GetDst(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAPass, Node);
-  return RAFPR[Reg];
+  auto Reg = GetPhys(RAPass, Node);
+  if (Reg.Class == IR::FPRFixedClass.Val) {
+    return SRAFPR[Reg.VId];
+  } else if (Reg.Class == IR::FPRClass.Val) {
+    return RAFPR[Reg.VId];
+  } else {
+    printf("Unexpected Class: %d\n", Reg.Class);
+    assert(false);
+  }
 }
 
 bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
@@ -704,6 +738,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   uint32_t SSACount = IR->GetSSACount();
 
   auto HeaderOp = IR->GetHeader();
+
+  LoadConstant(x0, HeaderOp->Entry);
+  
   if (HeaderOp->ShouldInterpret) {
     return reinterpret_cast<void*>(ThreadSharedData.InterpreterFallbackHelperAddress);
   }
@@ -742,6 +779,8 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   auto Buffer = GetBuffer();
   auto Entry = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+
+  //brk(0);
 
   if (SpillSlots) {
     add(TMP1, sp, 0); // Move that supports SP
@@ -969,6 +1008,8 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // This is passed in to parameter 0 (x0)
   mov(STATE, x0);
 
+  FillStaticRegs();
+
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
   add(x0, sp, 0);
@@ -1059,6 +1100,8 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     bind(&Exit);
     ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    SpillStaticRegs();
+    
     PopCalleeSavedRegisters();
 
     // Return from the function
@@ -1076,7 +1119,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ldr(x3, &l_CompileBlock);
 
     // X2 contains our guest RIP
+    SpillStaticRegs(true);
     blr(x3); // { CTX, ThreadState, RIP}
+    FillStaticRegs(true);
 
     // X0 now contains either nullptr or block pointer
     cbz(x0, &FallbackCore);
@@ -1094,7 +1139,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ldr(x3, &l_CompileFallback);
 
     // X2 contains our guest RIP
+    SpillStaticRegs(true);
     blr(x3); // {ThreadState, RIP}
+    FillStaticRegs(true);
 
     // X0 now contains either nullptr or block pointer
     cbz(x0, &Exit);
@@ -1117,10 +1164,12 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     Label InterpreterFallback{};
     bind(&InterpreterFallback);
     ThreadSharedData.InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    SpillStaticRegs();
     mov(x0, STATE);
     ldr(x1, &l_Interpreter);
 
     blr(x1);
+    FillStaticRegs();
     b(&LoopTop);
   }
 
@@ -1129,6 +1178,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ThreadPauseHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     // We are pausing, this means the frontend should be waiting for this thread to idle
     // We will have faulted and jumped to this location at this point
+    SpillStaticRegs();
 
     // Call our sleep handler
     ldr(x0, &l_CTX);
@@ -1187,6 +1237,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     // Store RIP to the context state
     str(x1, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.rip)));
 
+    // load static regs
+    FillStaticRegs();
+
     // Now go back to the regular dispatcher loop
     b(&LoopTop);
   }
@@ -1204,6 +1257,28 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), CodeEnd - reinterpret_cast<uint64_t>(DispatchPtr));
 
   *GetBuffer() = OriginalBuffer;
+}
+
+void JITCore::SpillStaticRegs(bool OnlyCallerSaved) {
+  for (size_t i = 0; i < SRA64.size(); i++) {
+    if (!OnlyCallerSaved || SRA64[i].GetCode() <= 18)
+      str(SRA64[i], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
+  }
+
+  for (size_t i = 0; i < SRAFPR.size(); i++) {
+    str(SRAFPR[i].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
+  }
+}
+
+void JITCore::FillStaticRegs(bool OnlyCallerSaved) {
+  for (size_t i = 0; i < SRA64.size(); i++) {
+    if (!OnlyCallerSaved || SRA64[i].GetCode() <= 18)
+      ldr(SRA64[i], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
+  }
+
+  for (size_t i = 0; i < SRAFPR.size(); i++) {
+    ldr(SRAFPR[i].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
+  }
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {

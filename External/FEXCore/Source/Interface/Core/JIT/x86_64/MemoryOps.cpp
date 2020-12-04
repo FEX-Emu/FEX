@@ -610,6 +610,8 @@ void JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STORECONTEXTPAIR,    StoreContextPair);
   REGISTER_OP(LOADCONTEXT,         LoadContext);
   REGISTER_OP(STORECONTEXT,        StoreContext);
+  REGISTER_OP(LOADREGISTER,        Unhandled); // SRA specific, not supported on this backend
+  REGISTER_OP(STOREREGISTER,       Unhandled);
   REGISTER_OP(LOADCONTEXTINDEXED,  LoadContextIndexed);
   REGISTER_OP(STORECONTEXTINDEXED, StoreContextIndexed);
   REGISTER_OP(SPILLREGISTER,       SpillRegister);

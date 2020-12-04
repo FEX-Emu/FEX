@@ -496,8 +496,14 @@ namespace FEXCore::Context {
     State->PassManager->RegisterExitHandler([this]() {
         Stop(false /* Ignore current thread */);
     });
+    
+    #if _M_ARM_64
+    bool DoSRA = true;
+    #else
+    bool DoSRA = false;
+    #endif
 
-    State->PassManager->AddDefaultPasses(Config.Core == FEXCore::Config::CONFIG_IRJIT);
+    State->PassManager->AddDefaultPasses(Config.Core == FEXCore::Config::CONFIG_IRJIT, DoSRA);
     State->PassManager->AddDefaultValidationPasses();
 
     State->PassManager->RegisterSyscallHandler(SyscallHandler);
@@ -511,7 +517,7 @@ namespace FEXCore::Context {
       State->IntBackend = State->CPUBackend;
       break;
     case FEXCore::Config::CONFIG_IRJIT:
-      State->PassManager->InsertRegisterAllocationPass();
+      State->PassManager->InsertRegisterAllocationPass(DoSRA);
       // Initialization order matters here, the IR JIT may want to have the interpreter created first to get a pointer to its execution function
       // This is useful for JIT to interpreter fallback support
       State->IntBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread));

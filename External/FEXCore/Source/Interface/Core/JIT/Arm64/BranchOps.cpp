@@ -32,6 +32,10 @@ DEF_OP(SignalReturn) {
 }
 
 DEF_OP(CallbackReturn) {
+
+  // spill back to CTX
+  SpillStaticRegs();
+  
   // First we must reset the stack
   ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
   add(sp, TMP1, 0); // Move that supports SP
@@ -208,6 +212,8 @@ DEF_OP(Thunk) {
 
   uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
 
+  SpillStaticRegs(); // spill to ctx before ra64 spill
+
   sub(sp, sp, SPOffset);
 
   int i = 0;
@@ -234,6 +240,8 @@ DEF_OP(Thunk) {
   }
 
   ldr(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
+
+  FillStaticRegs(); // loat from ctx after ra64 refill
 
   add(sp, sp, SPOffset);
 }

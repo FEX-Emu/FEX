@@ -156,6 +156,7 @@ set (SRCS
   Interface/IR/Passes/PhiValidation.cpp
   Interface/IR/Passes/RedundantFlagCalculationElimination.cpp
   Interface/IR/Passes/DeadFlagStoreElimination.cpp
+  Interface/IR/Passes/StaticRegisterAllocationPass.cpp
   Interface/IR/Passes/DeadGPRStoreElimination.cpp
   Interface/IR/Passes/DeadFPRStoreElimination.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp

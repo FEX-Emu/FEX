@@ -68,9 +68,9 @@ bool DeadFlagStoreElimination::Run(IREmitter *IREmit) {
           OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
 
           // stores to remove are written by the next block but not read
-          FlagMap[BlockNode].kill = FlagMap[TargetNode].writes & ~(FlagMap[TargetNode].reads);
+          FlagMap[BlockNode].kill = FlagMap[TargetNode].writes & ~(FlagMap[TargetNode].reads) & ~FlagMap[BlockNode].reads;
 
-          // Flags that are written by the next block can be considered as written by this block, if not read
+          // GPRs that are written by the next block can be considered as written by this block, if not read
           FlagMap[BlockNode].writes |= FlagMap[BlockNode].kill & ~FlagMap[BlockNode].reads;
         }
         else if (IROp->Op == OP_CONDJUMP) {
@@ -80,8 +80,8 @@ bool DeadFlagStoreElimination::Run(IREmitter *IREmit) {
           OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
 
           // stores to remove are written by the next blocks but not read
-          FlagMap[BlockNode].kill = FlagMap[TrueTargetNode].writes & ~(FlagMap[TrueTargetNode].reads);
-          FlagMap[BlockNode].kill &= FlagMap[FalseTargetNode].writes & ~(FlagMap[FalseTargetNode].reads);
+          FlagMap[BlockNode].kill = FlagMap[TrueTargetNode].writes & ~(FlagMap[TrueTargetNode].reads) & ~FlagMap[BlockNode].reads;
+          FlagMap[BlockNode].kill &= FlagMap[FalseTargetNode].writes & ~(FlagMap[FalseTargetNode].reads) & ~FlagMap[BlockNode].reads;
 
           // Flags that are written by the next blocks can be considered as written by this block, if not read
           FlagMap[BlockNode].writes |= FlagMap[BlockNode].kill & ~FlagMap[BlockNode].reads;

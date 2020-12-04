@@ -29,18 +29,28 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-const std::array<aarch64::Register, 24> RA64 = {
-  x4, x5, x6, x7, x8, x9,
-  x10, x11, x12, x13, x14, x15,
-  x16, x17,
-  x18, x19, x20, x21, x22, x23,
-  x24, x25, x26, x27};
+//
+const std::array<aarch64::Register, 16> SRA64 = {
+  x19, x20, x21, x22, x23, x24, x25, x26,
+  x27, x29, x18, x17, x16, x15, x14, x13
+};
 
-const std::array<std::pair<aarch64::Register, aarch64::Register>, 12> RA64Pair = {{
+// RA64 array has more entries for spilling
+#define RA64_COUNT 9
+
+const std::array<aarch64::Register, 15> RA64 = {
+  x4, x5, x6, x7, x8, x9, x10, x11,
+  x12,
+  
+  x13, x14, x15, x16, x17, x18,
+};
+
+const std::array<std::pair<aarch64::Register, aarch64::Register>, 4>  RA64Pair = {{
   {x4, x5},
   {x6, x7},
   {x8, x9},
   {x10, x11},
+/*
   {x12, x13},
   {x14, x15},
   {x16, x17},
@@ -49,13 +59,15 @@ const std::array<std::pair<aarch64::Register, aarch64::Register>, 12> RA64Pair =
   {x22, x23},
   {x24, x25},
   {x26, x27},
+  */
 }};
 
-const std::array<std::pair<aarch64::Register, aarch64::Register>, 12> RA32Pair = {{
+const std::array<std::pair<aarch64::Register, aarch64::Register>, 4> RA32Pair = {{
   {w4, w5},
   {w6, w7},
   {w8, w9},
   {w10, w11},
+  /*
   {w12, w13},
   {w14, w15},
   {w16, w17},
@@ -64,14 +76,19 @@ const std::array<std::pair<aarch64::Register, aarch64::Register>, 12> RA32Pair =
   {w22, w23},
   {w24, w25},
   {w26, w27},
+  */
 }};
 
+const std::array<aarch64::VRegister, 16> SRAFPR = {
+  v16, v17, v18, v19, v20, v21, v22, v23,
+  v24, v25, v26, v27, v28, v29, v30, v31
+};
+
 //  v8..v15 = (lower 64bits) Callee saved
-const std::array<aarch64::VRegister, 22> RAFPR = {
-  v3, v4, v5, v6, v7, v8, v16,
-  v17, v18, v19, v20, v21, v22,
-  v23, v24, v25, v26, v27, v28,
-  v29, v30, v31};
+const std::array<aarch64::VRegister, 12> RAFPR = {
+/*v0,  v1,  v2,  v3,*/v4,  v5,  v6,  v7,  // v0 ~ v3 are used as temps
+  v8,  v9,  v10, v11, v12, v13, v14, v15
+};
 
 class JITCore final : public CPUBackend, public vixl::aarch64::Assembler  {
 public:
@@ -113,13 +130,13 @@ private:
   /**
    * @name Register Allocation
    * @{ */
-  constexpr static uint32_t NumGPRs = RA64.size();
+  constexpr static uint32_t NumGPRs = RA64_COUNT;//RA64.size();
   constexpr static uint32_t NumFPRs = RAFPR.size();
   constexpr static uint32_t NumGPRPairs = RA64Pair.size();
   constexpr static uint32_t NumCalleeGPRs = 10;
   constexpr static uint32_t NumCalleeGPRPairs = 5;
   constexpr static uint32_t RegisterCount = NumGPRs + NumFPRs + NumGPRPairs;
-  constexpr static uint32_t RegisterClasses = 3;
+  constexpr static uint32_t RegisterClasses = 6;
 
   constexpr static uint64_t GPRBase = (0ULL << 32);
   constexpr static uint64_t FPRBase = (1ULL << 32);
@@ -237,6 +254,9 @@ private:
   IR::RegisterAllocationPass *RAPass;
 
   uint32_t SpillSlots{};
+
+  void SpillStaticRegs(bool OnlyCallerSaved = false);
+  void FillStaticRegs(bool OnlyCallerSaved = false);
 
   using OpHandler = void (JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
   std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};
@@ -357,8 +377,11 @@ private:
   ///< Memory ops
   DEF_OP(LoadContextPair);
   DEF_OP(StoreContextPair);
+
   DEF_OP(LoadContext);
   DEF_OP(StoreContext);
+  DEF_OP(LoadRegister);
+  DEF_OP(StoreRegister);
   DEF_OP(LoadContextIndexed);
   DEF_OP(StoreContextIndexed);
   DEF_OP(SpillRegister);

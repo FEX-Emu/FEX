@@ -13,6 +13,7 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
 
     virtual void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) = 0;
     virtual void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) = 0;
+    virtual void AddStaticRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterBase, uint32_t RegisterCount) = 0;
 
     /**
      * @brief Adds a conflict between the two registers (and their respective classes) so if one is allocated then the other can not be allocated in
