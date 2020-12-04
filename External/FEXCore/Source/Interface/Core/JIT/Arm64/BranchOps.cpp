@@ -124,24 +124,22 @@ DEF_OP(CondJump) {
   uint64_t Const;
   bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
-  auto RegClass = GetRegClass(Op->Cmp1.ID());
-
   if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_EQ) {
-    assert(RegClass == IR::GPRClass || RegClass == IR::GPRFixedClass);
+    LogMan::Throw::A(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
   } else if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_NEQ) {
-    assert(RegClass == IR::GPRClass || RegClass == IR::GPRFixedClass);
+    LogMan::Throw::A(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbnz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
   } else {
-    if (RegClass == IR::GPRClass || RegClass == IR::GPRFixedClass) {
+    if (IsGPR(Op->Cmp1.ID())) {
       if (isConst)
         cmp(GRCMP(Op->Cmp1.ID()), Const);
       else
         cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
-    } else if (RegClass == IR::FPRClass || RegClass == IR::FPRFixedClass) {
+    } else if (IsFPR(Op->Cmp1.ID())) {
       fcmp(GRFCMP(Op->Cmp1.ID()), GRFCMP(Op->Cmp2.ID()));
     } else {
-      assert(false);
+      LogMan::Msg::A("CondJump: Expected GPR or FPR");
     }
 
     b(TrueTargetLabel, MapBranchCC(Op->Cond));

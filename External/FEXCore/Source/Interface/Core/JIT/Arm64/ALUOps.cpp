@@ -1002,25 +1002,22 @@ DEF_OP(Select) {
 
   uint64_t Const;
 
-  auto RegClass = GetRegClass(Op->Header.Args[0].ID());
-  
-  if (RegClass == IR::GPRClass || RegClass == IR::GPRFixedClass) {
-    if (IsInlineConstant(Op->Header.Args[1], &Const))
-      cmp(GRCMP(Op->Header.Args[0].ID()), Const);
+  if (IsGPR(Op->Cmp1.ID())) {
+    if (IsInlineConstant(Op->Cmp2, &Const))
+      cmp(GRCMP(Op->Cmp1.ID()), Const);
     else
-      cmp(GRCMP(Op->Header.Args[0].ID()), GRCMP(Op->Header.Args[1].ID()));
-  } else if (RegClass == IR::FPRClass || RegClass == IR::FPRFixedClass) {
-    fcmp(GRFCMP(Op->Header.Args[0].ID()), GRFCMP(Op->Header.Args[1].ID()));
+      cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+  } else if (IsFPR(Op->Cmp1.ID())) {
+    fcmp(GRFCMP(Op->Cmp1.ID()), GRFCMP(Op->Cmp2.ID()));
   } else {
-    assert(false);
+    LogMan::Msg::A("Select: Expected GPR or FPR");
   }
   
-
   auto cc = MapSelectCC(Op->Cond);
 
   uint64_t const_true, const_false;
-  bool is_const_true = IsInlineConstant(Op->Header.Args[2], &const_true);
-  bool is_const_false = IsInlineConstant(Op->Header.Args[3], &const_false);
+  bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
+  bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
 
   if (is_const_true || is_const_false) {
     if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
@@ -1028,7 +1025,7 @@ DEF_OP(Select) {
     }
     cset(GRS(Node), cc);
   } else {
-    csel(GRS(Node), GRS(Op->Header.Args[2].ID()), GRS(Op->Header.Args[3].ID()), cc);
+    csel(GRS(Node), GRS(Op->TrueVal.ID()), GRS(Op->FalseVal.ID()), cc);
   }
 }
 
