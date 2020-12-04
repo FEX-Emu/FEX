@@ -108,6 +108,9 @@ private:
 
   uint32_t GetPhys(uint32_t Node);
 
+  bool IsFPR(uint32_t Node);
+  bool IsGPR(uint32_t Node);
+
   template<uint8_t RAType>
   Xbyak::Reg GetSrc(uint32_t Node);
   template<uint8_t RAType>

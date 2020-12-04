@@ -473,6 +473,18 @@ uint32_t JITCore::GetPhys(uint32_t Node) {
   return ~0U;
 }
 
+bool JITCore::IsFPR(uint32_t Node) {
+  auto Class =  RAPass->GetNodeRegister(Node) >> 32;
+
+  return Class == IR::FPRClass.Val;
+}
+
+bool JITCore::IsGPR(uint32_t Node) {
+  auto Class =  RAPass->GetNodeRegister(Node) >> 32;
+
+  return Class == IR::GPRClass.Val;
+}
+
 template<uint8_t RAType>
 Xbyak::Reg JITCore::GetSrc(uint32_t Node) {
   // rax, rcx, rdx, rsi, r8, r9,

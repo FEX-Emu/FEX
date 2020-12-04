@@ -1088,11 +1088,18 @@ DEF_OP(Select) {
   auto Op = IROp->C<IR::IROp_Select>();
   auto Dst = GRD(Node);
 
-  uint64_t Const;
-  if (IsInlineConstant(Op->Cmp2, &Const)) {
-    cmp(GRCMP(Op->Cmp1.ID()), Const);
-  } else {
-    cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+  if (IsGPR(Op->Cmp1.ID())) {
+    uint64_t Const;
+    if (IsInlineConstant(Op->Cmp2, &Const)) {
+      cmp(GRCMP(Op->Cmp1.ID()), Const);
+    } else {
+      cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+    }
+  } else if (IsFPR(Op->Cmp1.ID())) {
+    if (Op->CompareSize  == 4)
+      ucomiss(GetSrc(Op->Cmp1.ID()), GetSrc(Op->Cmp2.ID()));
+    else
+      ucomisd(GetSrc(Op->Cmp1.ID()), GetSrc(Op->Cmp2.ID()));
   }
 
   uint64_t const_true, const_false;
