@@ -759,12 +759,20 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
       bind(&IsTarget->second);
     }
 
+    if (DebugData) {
+      DebugData->Subblocks.push_back({Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()), 0, IR->GetID(BlockNode)});
+    }
+
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
       uint32_t ID = IR->GetID(CodeNode);
 
       // Execute handler
       OpHandler Handler = OpHandlers[IROp->Op];
       (this->*Handler)(IROp, ID);
+    }
+
+    if (DebugData) {
+      DebugData->Subblocks.back().HostCodeSize = Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()) - DebugData->Subblocks.back().HostCodeStart;
     }
   }
 
