@@ -53,14 +53,6 @@ target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
 target_link_libraries(${NAME} ${LIBS})
 
-set(NAME LockstepRunner)
-set(SRCS LockstepRunner.cpp)
-
-add_executable(${NAME} ${SRCS})
-target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-
-target_link_libraries(${NAME} ${LIBS})
-
 set(NAME UnitTestGenerator)
 set(SRCS UnitTestGenerator.cpp)
 
