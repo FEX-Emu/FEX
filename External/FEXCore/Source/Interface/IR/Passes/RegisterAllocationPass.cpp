@@ -510,11 +510,11 @@ namespace FEXCore::IR {
       }
     };
 
-    auto IsAliasable = [](uint8_t Size, RegisterClassType StaticClass) {
+    auto IsAliasable = [](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
       if (StaticClass == GPRFixedClass) {
-        return Size == 8 || Size == 4; // lower values depend on z-ext semantics
+        return (Size == 8 || Size == 4) && ((Offset & 7) == 0); // lower values depend on z-ext semantics
       } else if (StaticClass == FPRFixedClass) {
-        return Size == 16 || Size == 8 || Size == 4; // maybe 2 and 1 are safe too
+        return (Size == 16 || Size == 8 || Size == 4) && ((Offset & 15) == 0); // maybe 2 and 1 are safe too
       } else {
         assert(false);
       }
@@ -654,7 +654,7 @@ namespace FEXCore::IR {
             // if not sra-allocated and full size, sra-allocate
             if (!LiveRanges[Node].Global && LiveRanges[Node].PrefferedRegister  == -1) {
               // only full size reads can be aliased
-              if (IsAliasable(IROp->Size, Op->StaticClass)) {
+              if (IsAliasable(IROp->Size, Op->StaticClass, Op->Offset)) {
 
                 // We can only track a single active span.
                 // Marking here as written is overly agressive, but 

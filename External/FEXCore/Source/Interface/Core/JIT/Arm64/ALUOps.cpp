@@ -524,7 +524,9 @@ DEF_OP(LDiv) {
       CallRuntime(LDIV);
 #else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LDIV));
+      SpillStaticRegs(true);
       blr(x3);
+      FillStaticRegs(true);
 #endif
 
       // Result is now in x0
@@ -585,7 +587,9 @@ DEF_OP(LUDiv) {
       CallRuntime(LUDIV);
 #else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LUDIV));
+      SpillStaticRegs(true);
       blr(x3);
+      FillStaticRegs(true);
 #endif
 
       // Result is now in x0
@@ -656,7 +660,9 @@ DEF_OP(LRem) {
       CallRuntime(LREM);
 #else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LREM));
+      SpillStaticRegs(true);
       blr(x3);
+      FillStaticRegs(true);
 #endif
 
       // Result is now in x0
@@ -723,7 +729,9 @@ DEF_OP(LURem) {
       CallRuntime(LUREM);
 #else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LUREM));
+      SpillStaticRegs(true);
       blr(x3);
+      FillStaticRegs(true);
 #endif
 
       // Result is now in x0

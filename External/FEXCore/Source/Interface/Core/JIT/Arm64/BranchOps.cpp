@@ -308,7 +308,9 @@ DEF_OP(RemoveCodeEntry) {
   LoadConstant(x1, Op->RIP);
  
   LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
+  SpillStaticRegs(true);
   blr(x2);
+  FillStaticRegs(true);
 
   // Fix the stack and any values that were stepped on
   i = 0;
@@ -349,7 +351,9 @@ DEF_OP(CPUID) {
   PtrCast Ptr;
   Ptr.ClassPtr = &FEXCore::CPUIDEmu::RunFunction;
   LoadConstant(x3, Ptr.Data);
+  SpillStaticRegs(true);
   blr(x3);
+  FillStaticRegs(true);
 
   i = 0;
   for (auto RA : RA64) {
