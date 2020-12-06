@@ -800,10 +800,10 @@ namespace History {
 namespace Config {
   bool ShowConfig = true;
   struct Configs {
-    FEX::Config::Value<uint64_t> ConfigMaxInst{"MaxInst", 255};
-    FEX::Config::Value<uint8_t> ConfigCore{"Core", 0};
-    FEX::Config::Value<uint8_t> ConfigRunningMode{"RunningMode", 0};
-    FEX::Config::Value<bool> ConfigMultiblock{"Multiblock", false};
+    FEXCore::Config::Value<uint64_t> ConfigMaxInst{FEXCore::Config::CONFIG_MAXBLOCKINST, 255};
+    FEXCore::Config::Value<uint8_t> ConfigCore{FEXCore::Config::CONFIG_DEFAULTCORE, 0};
+    FEXCore::Config::Value<uint8_t> ConfigRunningMode{FEXCore::Config::CONFIG_SINGLESTEP, 0};
+    FEXCore::Config::Value<bool> ConfigMultiblock{FEXCore::Config::CONFIG_MULTIBLOCK, false};
   };
 
   std::unique_ptr<Configs> Config;
@@ -813,11 +813,9 @@ namespace Config {
   void Window() {
     if (ImGui::Begin("#Config", &ShowConfig)) {
       if (ImGui::SliderInt("Max Inst", &NewInstMax, -1, 255)) {
-        Config->ConfigMaxInst.Set(NewInstMax);
       }
 
       if (ImGui::Checkbox("Multiblock", &Multiblock)) {
-        Config->ConfigMultiblock.Set(Multiblock);
       }
     }
     ImGui::End();
@@ -832,8 +830,6 @@ namespace Config {
   }
 
   void Shutdown() {
-    Config::Config->ConfigCore.Set(FEX::DebuggerState::GetCoreType());
-    Config::Config->ConfigRunningMode.Set(FEX::DebuggerState::GetRunningMode());
   }
 }
 

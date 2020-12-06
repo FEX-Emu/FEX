@@ -2390,9 +2390,11 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
-  FEX::Config::Init();
-  FEX::EnvLoader::Load(envp);
-  FEX::ArgLoader::Load(argc, argv);
+  FEXCore::Config::Initialize();
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::Load();
 
   auto Args = FEX::ArgLoader::Get();
 

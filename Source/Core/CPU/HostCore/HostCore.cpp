@@ -48,7 +48,7 @@ private:
   void InstallSignalHandler();
 
   FEX::ThreadState *ThreadState;
-  FEX::Config::Value<bool> ConfigMultiblock{"Multiblock", false};
+  FEXCore::Config::Value<bool> ConfigMultiblock{"Multiblock", false};
   std::thread ExecutionThread;
   Memmap LocalMemoryMapper{};
   pid_t ChildPid;

@@ -97,17 +97,19 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
-  FEX::Config::Init();
-  FEX::EnvLoader::Load(envp);
-  FEX::ArgLoader::Load(argc, argv);
+  FEXCore::Config::Initialize();
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::Load();
 
-  FEX::Config::Value<uint8_t> CoreConfig{"Core", 0};
-  FEX::Config::Value<uint64_t> BlockSizeConfig{"MaxInst", 1};
-  FEX::Config::Value<bool> SingleStepConfig{"SingleStep", false};
-  FEX::Config::Value<bool> MultiblockConfig{"Multiblock", false};
-  FEX::Config::Value<bool> GdbServerConfig{"GdbServer", false};
-  FEX::Config::Value<bool> UnifiedMemory{"UnifiedMemory", false};
-  FEX::Config::Value<std::string> LDPath{"RootFS", ""};
+  FEXCore::Config::Value<uint8_t> CoreConfig{FEXCore::Config::CONFIG_DEFAULTCORE, 0};
+  FEXCore::Config::Value<uint64_t> BlockSizeConfig{FEXCore::Config::CONFIG_MAXBLOCKINST, 1};
+  FEXCore::Config::Value<bool> SingleStepConfig{FEXCore::Config::CONFIG_SINGLESTEP, false};
+  FEXCore::Config::Value<bool> MultiblockConfig{FEXCore::Config::CONFIG_MULTIBLOCK, false};
+  FEXCore::Config::Value<bool> GdbServerConfig{FEXCore::Config::CONFIG_GDBSERVER, false};
+  FEXCore::Config::Value<std::string> LDPath{FEXCore::Config::CONFIG_ROOTFSPATH, ""};
+  FEXCore::Config::Value<bool> UnifiedMemory{FEXCore::Config::CONFIG_UNIFIED_MEMORY, false};
 
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
@@ -169,7 +171,6 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::DestroyContext(CTX);
   FEXCore::SHM::DestroyRegion(SHM);
-  FEX::Config::Shutdown();
 
   return Return;
 }

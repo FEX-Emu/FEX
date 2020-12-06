@@ -143,26 +143,45 @@ int main(int argc, char **argv, char **const envp) {
     return -1;
   }
 
-  FEX::Config::Init();
-  FEX::EnvLoader::Load(envp);
-  FEX::ArgLoader::Load(argc, argv);
+  FEXCore::Config::Initialize();
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::Load();
 
-  FEX::Config::Value<uint8_t> CoreConfig{"Core", 0};
-  FEX::Config::Value<uint64_t> BlockSizeConfig{"MaxInst", 1};
-  FEX::Config::Value<bool> SingleStepConfig{"SingleStep", false};
-  FEX::Config::Value<bool> MultiblockConfig{"Multiblock", false};
-  FEX::Config::Value<bool> GdbServerConfig{"GdbServer", false};
-  FEX::Config::Value<uint64_t> ThreadsConfig{"Threads", 1};
-  FEX::Config::Value<std::string> LDPath{"RootFS", ""};
-  FEX::Config::Value<std::string> ThunkLibsPath{"ThunkLibs", ""};
-  FEX::Config::Value<bool> SilentLog{"SilentLog", false};
-  FEX::Config::Value<std::string> Environment{"Env", ""};
-  FEX::Config::Value<std::string> OutputLog{"OutputLog", "stderr"};
-  FEX::Config::Value<std::string> DumpIR{"DumpIR", "no"};
-  FEX::Config::Value<bool> TSOEnabledConfig{"TSOEnabled", true};
-  FEX::Config::Value<bool> SMCChecksConfig{"SMCChecks", false};
-  FEX::Config::Value<bool> ABILocalFlags{"ABILocalFlags", false};
-  FEX::Config::Value<bool> AbiNoPF{"AbiNoPF", false};
+  auto Args = FEX::ArgLoader::Get();
+  auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
+
+  if (Args.empty()) {
+    // Early exit if we weren't passed an argument
+    return 0;
+  }
+
+  std::string Program = Args[0];
+
+  // These layers load on initialization
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(std::filesystem::path(Program).filename(), true));
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(std::filesystem::path(Program).filename(), false));
+
+  // Reload the meta layer
+  FEXCore::Config::ReloadMetaLayer();
+
+  FEXCore::Config::Value<uint8_t> CoreConfig{FEXCore::Config::CONFIG_DEFAULTCORE, 0};
+  FEXCore::Config::Value<uint64_t> BlockSizeConfig{FEXCore::Config::CONFIG_MAXBLOCKINST, 1};
+  FEXCore::Config::Value<bool> SingleStepConfig{FEXCore::Config::CONFIG_SINGLESTEP, false};
+  FEXCore::Config::Value<bool> MultiblockConfig{FEXCore::Config::CONFIG_MULTIBLOCK, false};
+  FEXCore::Config::Value<bool> GdbServerConfig{FEXCore::Config::CONFIG_GDBSERVER, false};
+  FEXCore::Config::Value<uint64_t> ThreadsConfig{FEXCore::Config::CONFIG_EMULATED_CPU_CORES, 1};
+  FEXCore::Config::Value<std::string> LDPath{FEXCore::Config::CONFIG_ROOTFSPATH, ""};
+  FEXCore::Config::Value<std::string> ThunkLibsPath{FEXCore::Config::CONFIG_THUNKLIBSPATH, ""};
+  FEXCore::Config::Value<bool> SilentLog{FEXCore::Config::CONFIG_SILENTLOGS, false};
+  FEXCore::Config::Value<std::string> Environment{FEXCore::Config::CONFIG_ENVIRONMENT, ""};
+  FEXCore::Config::Value<std::string> OutputLog{FEXCore::Config::CONFIG_OUTPUTLOG, "stderr"};
+  FEXCore::Config::Value<std::string> DumpIR{FEXCore::Config::CONFIG_DUMPIR, "no"};
+  FEXCore::Config::Value<bool> TSOEnabledConfig{FEXCore::Config::CONFIG_TSO_ENABLED, true};
+  FEXCore::Config::Value<bool> SMCChecksConfig{FEXCore::Config::CONFIG_SMC_CHECKS, false};
+  FEXCore::Config::Value<bool> ABILocalFlags{FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, false};
+  FEXCore::Config::Value<bool> AbiNoPF{FEXCore::Config::CONFIG_ABI_NO_PF, false};
 
   ::SilentLog = SilentLog();
 
@@ -178,16 +197,6 @@ int main(int argc, char **argv, char **const envp) {
       OutputFD = fopen(LogFile.c_str(), "wb");
     }
   }
-
-  auto Args = FEX::ArgLoader::Get();
-  auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
-
-  if (Args.empty()) {
-    // Early exit if we weren't passed an argument
-    return 0;
-  }
-
-  std::string Program = Args[0];
 
   InterpreterHandler(&Program, LDPath(), &Args);
 
@@ -249,7 +258,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::DestroyContext(CTX);
   FEXCore::SHM::DestroyRegion(SHM);
 
-  FEX::Config::Shutdown();
+  FEXCore::Config::Shutdown();
 
   if (OutputFD != stderr &&
       OutputFD != stdout &&

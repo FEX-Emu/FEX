@@ -1,12 +1,15 @@
 #include "Common/Config.h"
+
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cassert>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <list>
+#include <string_view>
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
@@ -14,56 +17,60 @@
 #include <json-maker.h>
 
 namespace FEX::Config {
-  std::unordered_map<std::string, FEX::Config::Value<std::string>> ConfigMap;
+  std::string GetConfigFolder(bool Global) {
+    std::string ConfigDir;
+    if (Global) {
+      ConfigDir = GLOBAL_DATA_DIRECTORY;
+    }
+    else {
+      char const *HomeDir = getenv("HOME");
 
-  struct JsonAllocator {
-    jsonPool_t PoolObject;
-    std::unique_ptr<std::list<json_t>> json_objects;
-  };
+      if (!HomeDir) {
+        HomeDir = getenv("PWD");
+      }
+
+      if (!HomeDir) {
+        HomeDir = ".";
+      }
+
+      char const *ConfigXDG = getenv("XDG_CONFIG_HOME");
+      ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
+      ConfigDir += "/.fex-emu/";
+
+      // Ensure the folder structure is created for our configuration
+      if (!std::filesystem::exists(ConfigDir) &&
+          !std::filesystem::create_directories(ConfigDir)) {
+        LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigDir.c_str());
+        // Let's go local in this case
+        return "./";
+      }
+    }
+
+    return ConfigDir;
+  }
 
   std::string GetConfigFileLocation() {
-    char const *HomeDir = getenv("HOME");
-
-    if (!HomeDir) {
-      HomeDir = getenv("PWD");
-    }
-
-    if (!HomeDir) {
-      HomeDir = "";
-    }
-
-    char const *ConfigXDG = getenv("XDG_CONFIG_HOME");
-    std::string ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
-    ConfigDir += "/.fex-emu/";
-
-    // Ensure the folder structure is created for our configuration
-    if (!std::filesystem::exists(ConfigDir) &&
-        !std::filesystem::create_directories(ConfigDir)) {
-      LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigDir.c_str());
-      // Let's go local in this case
-      return "Config.json";
-    }
-
-    std::string ConfigFile = ConfigDir;
-    ConfigFile += "Config.json";
-
+    std::string ConfigFile = GetConfigFolder(false) + "Config.json";
     return ConfigFile;
   }
 
-  json_t* PoolInit(jsonPool_t* Pool) {
-    JsonAllocator* alloc = json_containerOf(Pool, JsonAllocator, PoolObject);
-    alloc->json_objects = std::make_unique<std::list<json_t>>();
-    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  std::string GetApplicationConfig(std::string &Filename, bool Global) {
+    std::string ConfigFile = GetConfigFolder(Global);
+    if (!Global &&
+        !std::filesystem::exists(ConfigFile) &&
+        !std::filesystem::create_directories(ConfigFile)) {
+      LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigFile.c_str());
+      // Let's go local in this case
+      return "./";
+    }
+
+    ConfigFile += "AppConfig/" + Filename + ".json";
+    return ConfigFile;
   }
 
-  json_t* PoolAlloc(jsonPool_t* Pool) {
-    JsonAllocator* alloc = json_containerOf(Pool, JsonAllocator, PoolObject);
-    return &*alloc->json_objects->emplace(alloc->json_objects->end());
-  }
-
-  bool LoadConfigFile(std::vector<char> &Data) {
+  bool LoadConfigFile(std::vector<char> &Data, std::string Config) {
     std::fstream ConfigFile;
-    ConfigFile.open(GetConfigFileLocation(), std::fstream::in);
+    ConfigFile.open(Config, std::ios::in);
 
     if (!ConfigFile.is_open()) {
       return false;
@@ -73,7 +80,8 @@ namespace FEX::Config {
       LogMan::Msg::D("Couldn't load configuration file: Seek end");
       return false;
     }
-    size_t FileSize = ConfigFile.tellg();
+
+    auto FileSize = ConfigFile.tellg();
     if (ConfigFile.fail()) {
       LogMan::Msg::D("Couldn't load configuration file: tellg");
       return false;
@@ -86,7 +94,7 @@ namespace FEX::Config {
 
     if (FileSize > 0) {
       Data.resize(FileSize);
-      if (ConfigFile.read(&Data.at(0), FileSize)) {
+      if (!ConfigFile.read(&Data.at(0), FileSize)) {
         // Probably means permissions aren't set. Just early exit
         return false;
       }
@@ -99,9 +107,25 @@ namespace FEX::Config {
     return true;
   }
 
-  void Init() {
+  struct JsonAllocator {
+    jsonPool_t PoolObject;
+    std::unique_ptr<std::list<json_t>> json_objects;
+  };
+
+  json_t* PoolInit(jsonPool_t* Pool) {
+    JsonAllocator* alloc = json_containerOf(Pool, JsonAllocator, PoolObject);
+    alloc->json_objects = std::make_unique<std::list<json_t>>();
+    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  }
+
+  json_t* PoolAlloc(jsonPool_t* Pool) {
+    JsonAllocator* alloc = json_containerOf(Pool, JsonAllocator, PoolObject);
+    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  }
+
+  void LoadJSonConfig(std::string &Config, std::function<void(const char *Name, const char *ConfigSring)> Func) {
     std::vector<char> Data;
-    if (!LoadConfigFile(Data)) {
+    if (!LoadConfigFile(Data, Config)) {
       return;
     }
 
@@ -141,118 +165,172 @@ namespace FEX::Config {
         return;
       }
 
-      FEX::Config::Add(ConfigName, ConfigString);
+      Func(ConfigName, ConfigString);
     }
   }
 
-  void Shutdown() {
+  static const std::map<FEXCore::Config::ConfigOption, std::string> ConfigToNameLookup = {{
+    {FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE,        "Core"},
+    {FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST,       "MaxInst"},
+    {FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP,         "SingleStep"},
+    {FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK,         "Multiblock"},
+    {FEXCore::Config::ConfigOption::CONFIG_GDBSERVER,          "GdbServer"},
+    {FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, "Threads"},
+    {FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH,         "RootFS"},
+    {FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH,      "ThunkLibs"},
+    {FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS,         "SilentLog"},
+    {FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "Env"},
+    {FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG,          "OutputLog"},
+    {FEXCore::Config::ConfigOption::CONFIG_DUMPIR,             "DumpIR"},
+    {FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED,        "TSOEnabled"},
+    {FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS,         "SMCChecks"},
+    {FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS,    "ABILocalFlags"},
+    {FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF,          "ABINoPF"},
+  }};
+
+
+  void SaveLayerToJSON(std::string Filename, FEXCore::Config::Layer *const Layer) {
     char Buffer[4096];
-    char *Dest;
+    char *Dest{};
     Dest = json_objOpen(Buffer, nullptr);
     Dest = json_objOpen(Dest, "Config");
-    for (auto &it : ConfigMap) {
-      if (!it.second().empty()) {
-        Dest = json_str(Dest, it.first.data(), it.second().c_str());
-      }
+    for (auto &it : Layer->GetOptionMap()) {
+			auto &Name = ConfigToNameLookup.find(it.first)->second;
+			for (auto &var : it.second) {
+				Dest = json_str(Dest, Name.c_str(), var.c_str());
+			}
     }
     Dest = json_objClose(Dest);
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-    // Write the config to a temporary file first then move it to the correct location
-    // This is to solve threading issues when multiple applications are loading and storing the configuration
-    std::string Config = GetConfigFileLocation();
-    std::string ConfigTmp{Config};
-    ConfigTmp.resize(Config.size() + 6);
-
-    auto it = ConfigTmp.rbegin();
-    for (int i = 6; i > 0; --i) {
-      *it = 'X';
-      ++it;
-    }
-
-    int tmp = mkstemp(&ConfigTmp.at(0));
-    write(tmp, Buffer, strlen(Buffer));
-    close(tmp);
-    // Rename only works if ther files are in the same filesystem
-    rename(ConfigTmp.c_str(), GetConfigFileLocation().c_str());
-
-    ConfigMap.clear();
+		std::ofstream Output (Filename, std::ios::out | std::ios::binary);
+		if (Output.is_open()) {
+			Output.write(Buffer, strlen(Buffer));
+			Output.close();
+		}
   }
 
-  void Add(std::string const &Key, std::string_view const Value) {
-    FEX::Config::Value<std::string> Val{Key, Value, true};
-    ConfigMap.try_emplace(Key, Val);
+  OptionMapper::OptionMapper(FEXCore::Config::LayerType Layer)
+    : FEXCore::Config::Layer(Layer) {
   }
 
-  void Append(std::string const &Key, std::string_view const Value) {
-    auto Iter = ConfigMap.find(Key);
-    if (Iter == ConfigMap.end()) {
-      FEX::Config::Value<std::string> Val{Key, "", true};
-      Iter = ConfigMap.try_emplace(Key, Val).first;
-    }
-    Iter->second.Append(std::string(Value));
-  }
+  static const std::map<std::string, FEXCore::Config::ConfigOption> ConfigLookup = {{
+    {"Core",          FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE},
+    {"MaxInst",       FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST},
+    {"SingleStep",    FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP},
+    {"Multiblock",    FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK},
+    {"GdbServer",     FEXCore::Config::ConfigOption::CONFIG_GDBSERVER},
+    {"Threads",       FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES},
+    {"RootFS",        FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH},
+    {"ThunkLibs",     FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH},
+    {"SilentLog",     FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS},
+    {"Env",           FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT},
+    {"OutputLog",     FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG},
+    {"DumpIR",        FEXCore::Config::ConfigOption::CONFIG_DUMPIR},
+    {"TSOEnabled",    FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED},
+    {"SMCChecks",     FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS},
+    {"ABILocalFlags", FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS},
+    {"AbiNoPF",       FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF},
+  }};
 
-  bool Exists(std::string const &Key) {
-    return ConfigMap.find(Key) != ConfigMap.end();
-  }
-
-  Value<std::string> &Get(std::string const &Key) {
-    auto Value = ConfigMap.find(Key);
-    if (Value == ConfigMap.end())
-      assert(0 && "Not a real config value");
-    return Value->second;
-  }
-
-  Value<std::string> *GetIfExists(std::string const &Key) {
-    auto Value = ConfigMap.find(Key);
-    if (Value == ConfigMap.end())
-      return nullptr;
-
-    return &Value->second;
-  }
-
-  template<typename T>
-  T Get(std::string const &Key) {
-    T Value;
-    if (!FEX::StrConv::Conv(Get(Key)(), &Value)) {
-      assert(0 && "Attempted to convert invalid value");
-    }
-    return Value;
-  }
-
-  template<typename T>
-  T GetIfExists(std::string const &Key, T Default) {
-    T Value;
-    if (Exists(Key) && FEX::StrConv::Conv(FEX::Config::Get(Key)(), &Value)) {
-      return Value;
-    }
-    else {
-      return Default;
+  void OptionMapper::MapNameToOption(const char *ConfigName, const char *ConfigString) {
+    auto it = ConfigLookup.find(ConfigName);
+    if (it != ConfigLookup.end()) {
+      Set(it->second, ConfigString);
     }
   }
 
-  template<>
-  std::string GetIfExists(std::string const &Key, std::string Default) {
-    auto Res = GetIfExists(Key);
-    if (Res) {
-      return (*Res)();
-    }
-    else {
-      return Default;
-    }
+  MainLoader::MainLoader()
+    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN) {
+    Config = GetConfigFileLocation();
   }
 
-  template bool GetIfExists(std::string const &Key, bool Default);
-  template uint8_t GetIfExists(std::string const &Key, uint8_t Default);
-  template uint64_t GetIfExists(std::string const &Key, uint64_t Default);
+  MainLoader::MainLoader(std::string ConfigFile)
+    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN) {
+    Config = ConfigFile;
+  }
 
-  void GetListIfExists(std::string const &Key, std::list<std::string> *List) {
-    List->clear();
-    auto Res = GetIfExists(Key);
-    if (Res) {
-      *List = Res->All();
+  void MainLoader::Load() {
+    LoadJSonConfig(Config, [this](const char *Name, const char *ConfigString) {
+      MapNameToOption(Name, ConfigString);
+    });
+  }
+
+  AppLoader::AppLoader(std::string Filename, bool Global)
+    : FEX::Config::OptionMapper(Global ? FEXCore::Config::LayerType::LAYER_GLOBAL_APP : FEXCore::Config::LayerType::LAYER_LOCAL_APP) {
+    Config = GetApplicationConfig(Filename, Global);
+
+    // Immediately load so we can reload the meta layer
+    Load();
+  }
+
+  void AppLoader::Load() {
+    LoadJSonConfig(Config, [this](const char *Name, const char *ConfigString) {
+      MapNameToOption(Name, ConfigString);
+    });
+  }
+
+  EnvLoader::EnvLoader(char *const _envp[])
+    : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_ENVIRONMENT)
+    , envp {_envp} {
+  }
+
+  void EnvLoader::Load() {
+    std::unordered_map<std::string_view, std::string_view> EnvMap;
+
+    for(const char *const *pvar=envp; pvar && *pvar; pvar++) {
+      std::string_view Var(*pvar);
+      size_t pos = Var.rfind('=');
+      if (std::string::npos == pos)
+        continue;
+
+      std::string_view Ident = Var.substr(0,pos);
+      std::string_view Value = Var.substr(pos+1);
+      EnvMap[Ident]=Value;
+    }
+
+    std::function GetVar = [=](const std::string_view id)  -> std::optional<std::string_view> {
+      if (EnvMap.find(id) != EnvMap.end())
+        return EnvMap.at(id);
+
+      // If envp[] was empty, search using std::getenv()
+      const char* vs = std::getenv(id.data());
+      if (vs) {
+        return vs;
+      }
+      else {
+        return std::nullopt;
+      }
+    };
+
+    static const std::array<std::pair<std::string, FEXCore::Config::ConfigOption>, 18> ConfigLookup = {{
+      {"FEX_CORE",          FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE},
+      {"FEX_MAXINST",       FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST},
+      {"FEX_SINGLESTEP",    FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP},
+      {"FEX_MULTIBLOCK",    FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK},
+      {"FEX_GDBSERVER",     FEXCore::Config::ConfigOption::CONFIG_GDBSERVER},
+      {"FEX_THREADS",       FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES},
+      {"FEX_ROOTFS",        FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH},
+      {"FEX_THUNKLIBS",     FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH},
+      {"FEX_SILENTLOG",     FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS},
+      {"FEX_ENV",           FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT},
+      {"FEX_OUTPUTLOG",     FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG},
+      {"FEX_DUMPIR",        FEXCore::Config::ConfigOption::CONFIG_DUMPIR},
+      {"FEX_TSOENABLED",    FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED},
+      {"FEX_SMCCHECKS",     FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS},
+      {"FEX_ABILOCALFLAGS", FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS},
+      {"FEX_ABINOPF",       FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF},
+      {"FEX_BREAK",         FEXCore::Config::ConfigOption::CONFIG_BREAK_ON_FRONTEND},
+      {"FEX_DUMP_GPRS",     FEXCore::Config::ConfigOption::CONFIG_DUMP_GPRS},
+    }};
+
+    std::optional<std::string_view> Value;
+
+    for (auto &it : ConfigLookup) {
+      if ((Value = GetVar(it.first)).has_value()) {
+        Set(it.second, std::string(*Value));
+      }
     }
   }
 }
