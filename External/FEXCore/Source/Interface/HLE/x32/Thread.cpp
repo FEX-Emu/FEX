@@ -7,6 +7,7 @@
 #include "Interface/Core/InternalThreadState.h"
 
 #include <FEXCore/Core/CodeLoader.h>
+#include <FEXCore/Utils/ELFLoader.h>
 
 #include <stdint.h>
 #include <linux/futex.h>
@@ -274,26 +275,38 @@ namespace FEXCore::HLE::x32 {
         return -ENOENT;
       }
 
-      Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
+      auto PushBackDefaultArgs = [&](uint32_t *argv, uint32_t *envp) {
+        for (int i = 0; argv[i]; i++) {
+          if (i == 0)
+            continue;
 
-      Args.push_back("--");
+          Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
+        }
+
+        Args.push_back(nullptr);
+
+        for (int i = 0; envp[i]; i++) {
+          Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
+        }
+      };
+
+      uint64_t Result{};
+      if (Thread->CTX->SyscallHandler->IsInterpreter()) {
+        if (ELFLoader::ELFContainer::IsSupportedELF(pathname)) {
+          PushBackDefaultArgs(argv, envp);
+          Result = execve(pathname, const_cast<char *const *>(&Args[0]), const_cast<char *const *>(&Envp[0]));
+          SYSCALL_ERRNO();
+        }
+      }
+      else {
+        Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
+        Args.push_back("--");
+      }
 
       Args.push_back(pathname);
+      PushBackDefaultArgs(argv, envp);
 
-      for (int i = 0; argv[i]; i++) {
-        if (i == 0)
-          continue;
-
-        Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
-      }
-
-      Args.push_back(nullptr);
-
-      for (int i = 0; envp[i]; i++) {
-        Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
-      }
-
-      uint64_t Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), const_cast<char *const *>(&Envp[0]));
+      Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), const_cast<char *const *>(&Envp[0]));
 
       SYSCALL_ERRNO();
     });
