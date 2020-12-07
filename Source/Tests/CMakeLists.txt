@@ -22,6 +22,12 @@ install(TARGETS ${NAME}
     COMPONENT runtime)
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  set(FEX_INTERP FEXInterpreter)
+  install(CODE "
+    EXECUTE_PROCESS(COMMAND ln -sf ${NAME} ${FEX_INTERP}
+    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
+    )
+  ")
   add_custom_target(binfmt_misc
     COMMAND ${CMAKE_COMMAND} -E
     echo "Attempting to remove FEX-x86_64 misc prior to install. Ignore permission denied"
@@ -31,7 +37,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     echo "Attempting to install FEX-x86_64 misc now."
     COMMAND ${CMAKE_COMMAND} -E
       echo
-      ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/${NAME}:CF' > /proc/sys/fs/binfmt_misc/register
+      ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/${FEX_INTERP}:CF' > /proc/sys/fs/binfmt_misc/register
     COMMAND ${CMAKE_COMMAND} -E
     echo "binfmt_misc FEX installed"
       )
