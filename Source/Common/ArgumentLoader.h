@@ -20,6 +20,7 @@ namespace FEX::ArgLoader {
     char **argv;
   };
 
+  void LoadWithoutArguments(int _argc, char **_argv);
   std::vector<std::string> Get();
   std::vector<std::string> GetParsedArgs();
 
