@@ -2,6 +2,7 @@
 
 #include "Interface/HLE/FileManagement.h"
 
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 
@@ -66,6 +67,8 @@ public:
 #ifdef DEBUG_STRACE
   virtual void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) = 0;
 #endif
+
+  FEXCore::Config::Value<bool> IsInterpreter{FEXCore::Config::CONFIG_IS_INTERPRETER, 0};
 
 protected:
   std::vector<SyscallFunctionDefinition> Definitions;
