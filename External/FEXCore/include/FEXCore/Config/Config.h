@@ -28,6 +28,7 @@ namespace FEXCore::Config {
     CONFIG_OUTPUTLOG,
     CONFIG_BREAK_ON_FRONTEND,
     CONFIG_DUMP_GPRS,
+    CONFIG_IS_INTERPRETER,
   };
 
   enum ConfigCore {
