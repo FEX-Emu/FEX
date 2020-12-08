@@ -7,6 +7,63 @@
 #include <vector>
 
 namespace ELFLoader {
+bool ELFContainer::IsSupportedELF(std::string const &Filename) {
+  std::fstream ELFFile;
+  size_t FileSize{0};
+  ELFFile.open(Filename, std::fstream::in | std::fstream::binary);
+
+  if (!ELFFile.is_open())
+    return false;
+
+  ELFFile.seekg(0, ELFFile.end);
+  FileSize = ELFFile.tellg();
+  ELFFile.seekg(0, ELFFile.beg);
+
+  size_t ELFHeaderSize = std::max(sizeof(Elf32_Ehdr), sizeof(Elf64_Ehdr));
+  if (FileSize < ELFHeaderSize) {
+    return false;
+  }
+
+  FileSize = ELFHeaderSize;
+
+  std::vector<char> RawFile;
+  RawFile.resize(FileSize);
+
+  ELFFile.read(&RawFile.at(0), FileSize);
+
+  ELFFile.close();
+
+  uint8_t *Ident = reinterpret_cast<uint8_t*>(&RawFile.at(0));
+
+  if (Ident[EI_MAG0] != ELFMAG0 ||
+      Ident[EI_MAG1] != ELFMAG1 ||
+      Ident[EI_MAG2] != ELFMAG2 ||
+      Ident[EI_MAG3] != ELFMAG3) {
+    return false;
+  }
+
+  union {
+    Elf32_Ehdr _32;
+    Elf64_Ehdr _64;
+  } Header;
+
+  if (Ident[EI_CLASS] == ELFCLASS32) {
+    memcpy(&Header, reinterpret_cast<Elf32_Ehdr *>(&RawFile.at(0)),
+      sizeof(Elf32_Ehdr));
+    if (Header._32.e_machine == EM_386) {
+      return true;
+    }
+  }
+  else if (Ident[EI_CLASS] == ELFCLASS64) {
+    memcpy(&Header, reinterpret_cast<Elf64_Ehdr *>(&RawFile.at(0)),
+      sizeof(Elf64_Ehdr));
+    if (Header._64.e_machine == EM_X86_64) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter) {
   if (!LoadELF(Filename)) {

@@ -8,6 +8,7 @@
 #include "Interface/HLE/Syscalls.h"
 
 #include <FEXCore/Core/CodeLoader.h>
+#include <FEXCore/Utils/ELFLoader.h>
 
 #include <stdint.h>
 #include <linux/futex.h>
@@ -151,9 +152,19 @@ namespace FEXCore::HLE::x64 {
         return -ENOENT;
       }
 
-      Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
+      uint64_t Result{};
+      if (Thread->CTX->SyscallHandler->IsInterpreter()) {
+        if (ELFLoader::ELFContainer::IsSupportedELF(pathname)) {
+          Result = execve(pathname, argv, envp);
+          SYSCALL_ERRNO();
+        }
 
-      Args.push_back("--");
+        // Otherwise we need to fall down the interpreter unsupported code path
+      }
+      else {
+        Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
+        Args.push_back("--");
+      }
 
       Args.push_back(pathname);
 
@@ -161,12 +172,11 @@ namespace FEXCore::HLE::x64 {
         if (i == 0)
           continue;
 
-          Args.push_back(argv[i]);
+        Args.push_back(argv[i]);
       }
 
       Args.push_back(nullptr);
-
-      uint64_t Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), envp);
+      Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), envp);
 
       SYSCALL_ERRNO();
     });

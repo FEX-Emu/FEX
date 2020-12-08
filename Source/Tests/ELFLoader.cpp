@@ -134,7 +134,12 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
   }
 }
 
+bool RanAsInterpreter(char *Program) {
+  return strstr(Program, "FEXInterpreter") != nullptr;
+}
+
 int main(int argc, char **argv, char **const envp) {
+  bool IsInterpreter = RanAsInterpreter(argv[0]);
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
@@ -145,7 +150,14 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
-  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+
+  if (IsInterpreter) {
+    FEX::ArgLoader::LoadWithoutArguments(argc, argv);
+  }
+  else {
+    FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  }
+
   FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
   FEXCore::Config::Load();
 
@@ -165,6 +177,7 @@ int main(int argc, char **argv, char **const envp) {
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
 
   FEXCore::Config::Value<uint8_t> CoreConfig{FEXCore::Config::CONFIG_DEFAULTCORE, 0};
   FEXCore::Config::Value<uint64_t> BlockSizeConfig{FEXCore::Config::CONFIG_MAXBLOCKINST, 1};

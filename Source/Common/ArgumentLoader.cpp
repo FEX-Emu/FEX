@@ -281,6 +281,14 @@ namespace FEX::ArgLoader {
     ProgramArguments = Parser.parsed_args();
   }
 
+  void LoadWithoutArguments(int _argc, char **_argv) {
+    optparse::OptionParser Parser{};
+    optparse::Values Options = Parser.parse_args(_argc, _argv);
+
+    RemainingArgs = Parser.args();
+    ProgramArguments = Parser.parsed_args();
+  }
+
   std::vector<std::string> Get() {
     return RemainingArgs;
   }

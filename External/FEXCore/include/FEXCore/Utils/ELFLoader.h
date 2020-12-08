@@ -76,6 +76,8 @@ public:
   ELFMode GetMode() const { return Mode; }
   size_t GetProgramHeaderCount() const { return ProgramHeaders.size(); }
 
+  static bool IsSupportedELF(std::string const &Filename);
+
 private:
   bool LoadELF(std::string const &Filename);
   bool LoadELF_32();
