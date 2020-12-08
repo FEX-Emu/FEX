@@ -4,7 +4,7 @@
 #include <string_view>
 #include <optional>
 
-namespace FEX::StrConv {
+namespace FEXCore::StrConv {
   [[maybe_unused]] static bool Conv(std::string_view Value, bool *Result) {
     *Result = std::stoi(std::string(Value), nullptr, 0);
     return true;
@@ -38,5 +38,4 @@ namespace FEX::StrConv {
     *Result = Value;
     return true;
   }
-
 }

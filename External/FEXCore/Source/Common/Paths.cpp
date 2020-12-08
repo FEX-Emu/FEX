@@ -17,7 +17,7 @@ namespace FEXCore::Paths {
     }
 
     if (!HomeDir) {
-      HomeDir = "";
+      HomeDir = ".";
     }
 
     char *XDGDataDir = getenv("XDG_DATA_DIR");

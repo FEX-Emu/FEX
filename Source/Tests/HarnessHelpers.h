@@ -290,7 +290,7 @@ namespace FEX::HarnessHelper {
     bool Is64BitMode() const { return BaseConfig.OptionMode == 1; }
 
   private:
-    FEX::Config::Value<bool> ConfigDumpGPRs{"DumpGPRs", false};
+    FEXCore::Config::Value<bool> ConfigDumpGPRs{FEXCore::Config::CONFIG_DUMP_GPRS, false};
 
     struct ConfigStructBase {
       uint64_t OptionMatch;
@@ -434,7 +434,7 @@ private:
   };
 
 public:
-  ELFCodeLoader(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEX::Config::Value<std::string> *AdditionalEnvp = nullptr)
+  ELFCodeLoader(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr)
     : File {Filename, RootFS, false}
     , DB {&File}
     , Args {args} {

@@ -5,9 +5,10 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 
 int main(int argc, char **argv, char **const envp) {
-  FEX::Config::Init();
-  FEX::EnvLoader::Load(envp);
-  FEX::ArgLoader::Load(argc, argv);
+  FEXCore::Config::Initialize();
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::Load();
 
-  FEX::Config::Shutdown();
 }

@@ -13,6 +13,7 @@ option(ENABLE_ASSERTIONS "Enables assertions in build" FALSE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
+set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (CMAKE_BUILD_TYPE MATCHES "DEBUG")
@@ -97,6 +98,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 add_definitions(-Wno-trigraphs)
+add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
 
 add_subdirectory(External/cpp-optparse/)
 include_directories(External/cpp-optparse/)

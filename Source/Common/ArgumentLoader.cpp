@@ -1,3 +1,4 @@
+#include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 
 #include "OptionParser.h"
@@ -6,8 +7,7 @@ namespace FEX::ArgLoader {
   std::vector<std::string> RemainingArgs;
   std::vector<std::string> ProgramArguments;
 
-  void Load(int argc, char **argv) {
-
+  void FEX::ArgLoader::ArgLoader::Load() {
     optparse::OptionParser Parser{};
     optparse::OptionGroup CPUGroup(Parser, "CPU Core options");
     optparse::OptionGroup EmulationGroup(Parser, "Emulation options");
@@ -168,87 +168,87 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("Core")) {
         auto Core = Options["Core"];
         if (Core == "irint")
-          Config::Add("Core", "0");
+          Set(FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE, "0");
         else if (Core == "irjit")
-          Config::Add("Core", "1");
+          Set(FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE, "1");
 #ifdef _M_X86_64
         else if (Core == "host")
-          Config::Add("Core", "2");
+          Set(FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE, "2");
 #endif
       }
 
       if (Options.is_set_by_user("Break")) {
         bool Break = Options.get("Break");
-        Config::Add("Break", std::to_string(Break));
+        Set(FEXCore::Config::ConfigOption::CONFIG_BREAK_ON_FRONTEND, std::to_string(Break));
       }
 
       if (Options.is_set_by_user("SingleStep")) {
         bool SingleStep = Options.get("SingleStep");
-        Config::Add("SingleStep", std::to_string(SingleStep));
+        Set(FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP, std::to_string(SingleStep));
 
         // Single stepping also enforces single instruction size blocks
-        Config::Add("MaxInst", std::to_string(1u));
+        Set(FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST, std::to_string(1u));
       }
       else {
         if (Options.is_set_by_user("MaxInst")) {
           uint32_t MaxInst = Options.get("MaxInst");
-          Config::Add("MaxInst", std::to_string(MaxInst));
+          Set(FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST, std::to_string(MaxInst));
         }
       }
 
       if (Options.is_set_by_user("Multiblock")) {
         bool Multiblock = Options.get("Multiblock");
-        Config::Add("Multiblock", std::to_string(Multiblock));
+        Set(FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK, std::to_string(Multiblock));
       }
 
       if (Options.is_set_by_user("GdbServer")) {
         bool GdbServer = Options.get("GdbServer");
-        Config::Add("GdbServer", std::to_string(GdbServer));
+        Set(FEXCore::Config::ConfigOption::CONFIG_GDBSERVER, std::to_string(GdbServer));
       }
 
       if (Options.is_set_by_user("Threads")) {
         uint64_t Config = Options.get("Threads");
-        Config::Add("Threads", std::to_string(Config));
+        Set(FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, std::to_string(Config));
       }
 
       if (Options.is_set_by_user("TSOEnabled")) {
         bool TSOEnabled = Options.get("TSOEnabled");
-        Config::Add("TSOEnabled", std::to_string(TSOEnabled));
+        Set(FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED, std::to_string(TSOEnabled));
       }
-      
+
       if (Options.is_set_by_user("SMCChecks")) {
         bool SMCChecks = Options.get("SMCChecks");
-        Config::Add("SMCChecks", std::to_string(SMCChecks));
+        Set(FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS, std::to_string(SMCChecks));
       }
       if (Options.is_set_by_user("AbiLocalFlags")) {
         bool AbiLocalFlags = Options.get("AbiLocalFlags");
-        Config::Add("AbiLocalFlags", std::to_string(AbiLocalFlags));
+        Set(FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS, std::to_string(AbiLocalFlags));
       }
       if (Options.is_set_by_user("AbiNoPF")) {
         bool AbiNoPF = Options.get("AbiNoPF");
-        Config::Add("AbiNoPF", std::to_string(AbiNoPF));
+        Set(FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF, std::to_string(AbiNoPF));
       }
     }
 
     {
       if (Options.is_set_by_user("RootFS")) {
         std::string Option = Options["RootFS"];
-        Config::Add("RootFS", Option);
+        Set(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH, Option);
       }
 
       if (Options.is_set_by_user("ThunkLibs")) {
         std::string Option = Options["ThunkLibs"];
-        Config::Add("ThunkLibs", Option);
+        Set(FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH, Option);
       }
 
       if (Options.is_set_by_user("UnifiedMemory")) {
         bool Option = Options.get("UnifiedMemory");
-        Config::Add("UnifiedMemory", std::to_string(Option));
+        Set(FEXCore::Config::ConfigOption::CONFIG_UNIFIED_MEMORY, std::to_string(Option));
       }
 
       if (Options.is_set_by_user("Env")) {
         for (auto iter = Options.all("Env").begin(); iter != Options.all("Env").end(); ++iter) {
-          Config::Append("Env", *iter);
+          Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT, *iter);
         }
       }
     }
@@ -256,38 +256,24 @@ namespace FEX::ArgLoader {
     {
       if (Options.is_set_by_user("DumpGPRs")) {
         bool DumpGPRs = Options.get("DumpGPRs");
-        Config::Add("DumpGPRs", std::to_string(DumpGPRs));
-      }
-
-      if (Options.is_set_by_user("IPCClient")) {
-        bool IPCClient = Options.get("IPCClient");
-        Config::Add("IPCClient", std::to_string(IPCClient));
-      }
-
-      if (Options.is_set_by_user("ELFType")) {
-        bool ELFType = Options.get("ELFType");
-        Config::Add("ELFType", std::to_string(ELFType));
-      }
-      if (Options.is_set_by_user("IPCID")) {
-        const char* Value = Options.get("IPCID");
-        Config::Add("IPCID", Value);
+        Set(FEXCore::Config::ConfigOption::CONFIG_DUMP_GPRS, std::to_string(DumpGPRs));
       }
     }
 
     {
       if (Options.is_set_by_user("SilentLog")) {
         bool SilentLog = Options.get("SilentLog");
-        Config::Add("SilentLog", std::to_string(SilentLog));
+        Set(FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS, std::to_string(SilentLog));
       }
 
       if (Options.is_set_by_user("OutputLog")) {
         std::string OutputLog = Options["OutputLog"];
-        Config::Add("OutputLog", OutputLog);
+        Set(FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG, OutputLog);
       }
 
       if (Options.is_set_by_user("DumpIR")) {
         std::string DumpIR = Options["DumpIR"];
-        Config::Add("DumpIR", DumpIR);
+        Set(FEXCore::Config::ConfigOption::CONFIG_DUMPIR, DumpIR);
       }
     }
 

@@ -88,11 +88,13 @@ void AssertHandler(char const *Message) {
 int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
-  FEX::Config::Init();
-  FEX::EnvLoader::Load(envp);
-  FEX::ArgLoader::Load(argc, argv);
+  FEXCore::Config::Initialize();
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::Load();
 
-  FEX::Config::Value<uint8_t> CoreConfig{"Core", 0};
+  FEXCore::Config::Value<uint8_t> CoreConfig{FEXCore::Config::CONFIG_DEFAULTCORE, 0};
   auto Args = FEX::ArgLoader::Get();
 
 //  FEX::Core localCore {static_cast<FEX::CPUCore::CPUCoreType>(CoreConfig())};
@@ -103,6 +105,5 @@ int main(int argc, char **argv, char **const envp) {
 //  localCore.RunLoop(true);
 //  printf("Managed to load? %s\n", Result ? "Yes" : "No");
 
-  FEX::Config::Shutdown();
   return 0;
 }

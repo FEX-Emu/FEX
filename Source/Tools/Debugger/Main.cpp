@@ -128,9 +128,12 @@ void GetIRCallback(std::stringstream *out, uint64_t PC) {
 }
 
 int main(int argc, char **argv, char **const envp) {
-  FEX::Config::Init();
   FEX::EnvLoader::Load(envp);
-  FEX::ArgLoader::Load(argc, argv);
+  FEXCore::Config::Initialize();
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::Load();
 
   FEXCore::Context::InitializeStaticTables();
 
@@ -190,7 +193,6 @@ int main(int argc, char **argv, char **const envp) {
   ImGui::DestroyContext();
   Context->Shutdown();
 
-  FEX::Config::Shutdown();
 
   return 0;
 }
