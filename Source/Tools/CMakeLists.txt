@@ -2,6 +2,8 @@ if(LLVM_FOUND AND TARGET LLVM)
   add_subdirectory(Debugger/)
 endif()
 
+add_subdirectory(FEXConfig/)
+
 set(NAME Opt)
 set(SRCS Opt.cpp)
 
