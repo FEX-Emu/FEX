@@ -758,11 +758,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 
   auto HeaderOp = IR->GetHeader();
 
-  LoadConstant(x0, HeaderOp->Entry);
   
   if (HeaderOp->ShouldInterpret) {
     return reinterpret_cast<void*>(ThreadSharedData.InterpreterFallbackHelperAddress);
   }
+  
+  // Debug Helper
+  //LoadConstant(x0, HeaderOp->Entry);
 
   this->IR = IR;
 
