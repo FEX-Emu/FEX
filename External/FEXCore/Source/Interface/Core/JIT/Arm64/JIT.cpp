@@ -446,6 +446,10 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
 
     // Set the new PC
     _mcontext->pc = ThreadStopHandlerAddress;
+
+    // Set x28 (which is our state register) to point to our guest thread data
+    _mcontext->regs[28 /* STATE */] = reinterpret_cast<uint64_t>(State);
+    
     State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
   }
