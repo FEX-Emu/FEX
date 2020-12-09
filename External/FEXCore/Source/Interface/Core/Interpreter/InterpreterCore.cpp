@@ -801,9 +801,10 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             void *Src_Lower = GetSrc<void*>(SSAData, Op->Header.Args[0]);
             void *Src_Upper = GetSrc<void*>(SSAData, Op->Header.Args[1]);
 
-            memcpy(GDP, Src_Lower, Op->Header.Size);
-            memcpy(reinterpret_cast<void*>(reinterpret_cast<uint64_t>(GDP) + Op->Header.Size),
-              Src_Upper, Op->Header.Size);
+            uint8_t *Dst = GetDest<uint8_t*>(SSAData, WrapperOp);
+  
+            memcpy(Dst, Src_Lower, Op->Header.Size);
+            memcpy(Dst + Op->Header.Size, Src_Upper, Op->Header.Size);
             break;
           }
           case IR::OP_EXTRACTELEMENTPAIR: {

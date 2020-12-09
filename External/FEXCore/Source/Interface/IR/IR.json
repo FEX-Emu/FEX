@@ -211,36 +211,6 @@
       ]
     },
 
-    "LoadContextPair": {
-      "OpClass": "Memory",
-      "Desc": ["Loads a pair of values from the context"
-              ],
-      "HasDest": true,
-      "DestClass": "GPRPair",
-      "DestSize": "Size",
-      "NumElements": "2",
-      "Args": [
-        "uint8_t", "Size",
-        "uint32_t", "Offset",
-        "RegisterClassType", "Class"
-      ]
-    },
-
-    "StoreContextPair": {
-      "HasSideEffects": true,
-      "OpClass": "Memory",
-      "Desc": ["Stores a pair of values back in to the context"],
-      "SSAArgs": "1",
-      "SSANames": [
-        "Value"
-      ],
-      "Args": [
-        "uint8_t", "Size",
-        "uint32_t", "Offset",
-        "RegisterClassType", "Class"
-      ]
-    },
-
     "ExtractElementPair": {
       "OpClass": "Moves",
       "Desc": ["Extracts a register for the register pair"],

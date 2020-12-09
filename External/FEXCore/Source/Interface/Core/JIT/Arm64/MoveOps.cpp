@@ -26,20 +26,34 @@ DEF_OP(ExtractElementPair) {
 
 DEF_OP(CreateElementPair) {
   auto Op = IROp->C<IR::IROp_CreateElementPair>();
+  std::pair<aarch64::Register, aarch64::Register> Dst;
+  aarch64::Register RegFirst;
+  aarch64::Register RegSecond;
+
   switch (Op->Header.Size) {
     case 4: {
-      auto Dst = GetSrcPair<RA_32>(Node);
-      mov(Dst.first, GetReg<RA_32>(Op->Header.Args[0].ID()));
-      mov(Dst.second, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      Dst = GetSrcPair<RA_32>(Node);
+      RegFirst = GetSrc<RA_32>(Op->Header.Args[0].ID());
+      RegSecond = GetSrc<RA_32>(Op->Header.Args[1].ID());
       break;
     }
     case 8: {
-      auto Dst = GetSrcPair<RA_64>(Node);
-      mov(Dst.first, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      mov(Dst.second, GetReg<RA_64>(Op->Header.Args[1].ID()));
+      Dst = GetSrcPair<RA_64>(Node);
+      RegFirst = GetSrc<RA_64>(Op->Header.Args[0].ID());
+      RegSecond = GetSrc<RA_64>(Op->Header.Args[1].ID());
       break;
     }
     default: LogMan::Msg::A("Unknown Size"); break;
+  }
+
+  if (Dst.first != RegSecond) {
+    mov(Dst.first, RegFirst);
+    mov(Dst.second, RegSecond);
+  } else if (Dst.second != RegFirst) {
+    mov(Dst.second, RegSecond);
+    mov(Dst.first, RegFirst);
+  } else {
+    LogMan::Msg::A("Unhandled CreateElementPair");
   }
 }
 
