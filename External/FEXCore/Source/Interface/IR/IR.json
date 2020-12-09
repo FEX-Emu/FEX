@@ -930,6 +930,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -939,6 +940,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
