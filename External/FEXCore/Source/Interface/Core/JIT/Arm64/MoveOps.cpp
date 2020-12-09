@@ -33,23 +33,23 @@ DEF_OP(CreateElementPair) {
   switch (Op->Header.Size) {
     case 4: {
       Dst = GetSrcPair<RA_32>(Node);
-      RegFirst = GetSrc<RA_32>(Op->Header.Args[0].ID());
-      RegSecond = GetSrc<RA_32>(Op->Header.Args[1].ID());
+      RegFirst = GetReg<RA_32>(Op->Header.Args[0].ID());
+      RegSecond = GetReg<RA_32>(Op->Header.Args[1].ID());
       break;
     }
     case 8: {
       Dst = GetSrcPair<RA_64>(Node);
-      RegFirst = GetSrc<RA_64>(Op->Header.Args[0].ID());
-      RegSecond = GetSrc<RA_64>(Op->Header.Args[1].ID());
+      RegFirst = GetReg<RA_64>(Op->Header.Args[0].ID());
+      RegSecond = GetReg<RA_64>(Op->Header.Args[1].ID());
       break;
     }
     default: LogMan::Msg::A("Unknown Size"); break;
   }
 
-  if (Dst.first != RegSecond) {
+  if (Dst.first.GetCode() != RegSecond.GetCode()) {
     mov(Dst.first, RegFirst);
     mov(Dst.second, RegSecond);
-  } else if (Dst.second != RegFirst) {
+  } else if (Dst.second.GetCode() != RegFirst.GetCode()) {
     mov(Dst.second, RegSecond);
     mov(Dst.first, RegFirst);
   } else {
