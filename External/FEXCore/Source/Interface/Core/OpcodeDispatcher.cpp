@@ -1006,7 +1006,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
 
   OrderedNode *CondReg = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
   SrcCond = _Select(FEXCore::IR::COND_EQ,
-          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch);
+          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch, Size);
 
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
