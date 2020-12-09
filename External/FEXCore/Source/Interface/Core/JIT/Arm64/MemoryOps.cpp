@@ -5,38 +5,6 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
-DEF_OP(LoadContextPair) {
-  auto Op = IROp->C<IR::IROp_LoadContextPair>();
-  switch (Op->Size) {
-    case 4: {
-      auto Dst = GetSrcPair<RA_32>(Node);
-      ldp(Dst.first, Dst.second, MemOperand(STATE, Op->Offset));
-      break;
-    }
-    case 8: {
-      auto Dst = GetSrcPair<RA_64>(Node);
-      ldp(Dst.first, Dst.second, MemOperand(STATE, Op->Offset));
-      break;
-    }
-    default: LogMan::Msg::A("Unknown Size"); break;
-  }
-}
-
-DEF_OP(StoreContextPair) {
-  auto Op = IROp->C<IR::IROp_StoreContextPair>();
-  switch (Op->Size) {
-    case 4: {
-      auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
-      stp(Src.first, Src.second, MemOperand(STATE, Op->Offset));
-      break;
-    }
-    case 8: {
-      auto Src = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
-      stp(Src.first, Src.second, MemOperand(STATE, Op->Offset));
-      break;
-    }
-  }
-}
 
 DEF_OP(LoadContext) {
   auto Op = IROp->C<IR::IROp_LoadContext>();
@@ -828,8 +796,6 @@ DEF_OP(VStoreMemElement) {
 #undef DEF_OP
 void JITCore::RegisterMemoryHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
-  REGISTER_OP(LOADCONTEXTPAIR,     LoadContextPair);
-  REGISTER_OP(STORECONTEXTPAIR,    StoreContextPair);
   REGISTER_OP(LOADCONTEXT,         LoadContext);
   REGISTER_OP(STORECONTEXT,        StoreContext);
   REGISTER_OP(LOADREGISTER,        LoadRegister);

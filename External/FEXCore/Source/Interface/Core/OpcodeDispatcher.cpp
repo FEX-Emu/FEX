@@ -4370,16 +4370,6 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   OrderedNode *Expected_Upper = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), GPRClass);
   OrderedNode *Expected = _CreateElementPair(Expected_Lower, Expected_Upper);
 
-  // Always load 128bits from the context
-  // Since we want the full RBX and RCX loaded
- 
-  /*
-  OrderedNode *Desired = _LoadContextPair(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), GPRPairClass);
-  if (Size == 4) {
-    Desired = _TruncElementPair(Desired, 4);
-  }
-  */
-
   OrderedNode *Desired_Lower = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), GPRClass);
   OrderedNode *Desired_Upper = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
   OrderedNode *Desired = _CreateElementPair(Desired_Lower, Desired_Upper);

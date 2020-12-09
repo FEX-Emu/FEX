@@ -93,9 +93,7 @@ bool DeadFPRStoreElimination::Run(IREmitter *IREmit) {
             FPRMap[BlockNode].reads |= FPRBit(Op->Offset, IROp->Size);
         }
         else if (IROp->Op == OP_STORECONTEXTINDEXED ||
-               IROp->Op == OP_LOADCONTEXTINDEXED ||
-               IROp->Op == OP_LOADCONTEXTPAIR ||
-               IROp->Op == OP_STORECONTEXTPAIR) {
+               IROp->Op == OP_LOADCONTEXTINDEXED) {
           // We can't track through these
           FPRMap[BlockNode].reads = -1;
         }

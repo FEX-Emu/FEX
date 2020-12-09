@@ -796,27 +796,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             memcpy(Data, Src, Op->Size);
             break;
           }
-          case IR::OP_LOADCONTEXTPAIR: {
-            auto Op = IROp->C<IR::IROp_LoadContextPair>();
-
-            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
-            ContextPtr += Op->Offset;
-
-            void *Data = reinterpret_cast<void*>(ContextPtr);
-            memcpy(GDP, Data, Op->Size * 2);
-            break;
-          }
-          case IR::OP_STORECONTEXTPAIR: {
-            auto Op = IROp->C<IR::IROp_StoreContextPair>();
-
-            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
-            ContextPtr += Op->Offset;
-
-            void *Data = reinterpret_cast<void*>(ContextPtr);
-            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
-            memcpy(Data, Src, Op->Size * 2);
-            break;
-          }
           case IR::OP_CREATEELEMENTPAIR: {
             auto Op = IROp->C<IR::IROp_CreateElementPair>();
             void *Src_Lower = GetSrc<void*>(SSAData, Op->Header.Args[0]);
