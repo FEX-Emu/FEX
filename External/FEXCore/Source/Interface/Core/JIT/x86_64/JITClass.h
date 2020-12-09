@@ -92,7 +92,7 @@ private:
   constexpr static uint32_t NumXMMs = RAXMM.size();
   constexpr static uint32_t NumGPRPairs = RA64Pair.size();
   constexpr static uint32_t RegisterCount = NumGPRs + NumXMMs + NumGPRPairs;
-  constexpr static uint32_t RegisterClasses = 5;
+  constexpr static uint32_t RegisterClasses = 6;
 
   constexpr static uint64_t GPRBase = (0ULL << 32);
   constexpr static uint64_t XMMBase = (1ULL << 32);
