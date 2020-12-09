@@ -742,13 +742,13 @@ FEXCore::IR::RegisterClassType JITCore::GetRegClass(uint32_t Node) {
 bool JITCore::IsFPR(uint32_t Node) {
   auto Class = GetRegClass(Node);
 
-  return Class == IR::FPRClass;
+  return Class == IR::FPRClass || Class == IR::FPRFixedClass;
 }
 
 bool JITCore::IsGPR(uint32_t Node) {
   auto Class = GetRegClass(Node);
 
-  return Class == IR::GPRClass;
+  return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
