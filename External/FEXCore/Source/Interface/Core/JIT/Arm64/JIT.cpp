@@ -45,7 +45,7 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 void JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 }
 
-bool JITCore::IsAddressInJITCode(uint64_t Address) {
+bool JITCore::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) {
   // Check the initial code buffer first
   // It's the most likely place to end up
 
@@ -67,12 +67,14 @@ bool JITCore::IsAddressInJITCode(uint64_t Address) {
     }
   }
 
-  // Check the dispatcher. Unlikely to crash here but not impossible
-  CodeBase = reinterpret_cast<uint64_t>(DispatcherCodeBuffer.Ptr);
-  CodeEnd = CodeBase + DispatcherCodeBuffer.Size;
-  if (Address >= CodeBase &&
-      Address < CodeEnd) {
-    return true;
+  if (IncludeDispatcher) {
+    // Check the dispatcher. Unlikely to crash here but not impossible
+    CodeBase = reinterpret_cast<uint64_t>(DispatcherCodeBuffer.Ptr);
+    CodeEnd = CodeBase + DispatcherCodeBuffer.Size;
+    if (Address >= CodeBase &&
+        Address < CodeEnd) {
+      return true;
+    }
   }
   return false;
 }
@@ -407,8 +409,14 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
     // Store our thread state so we can come back to this
     StoreThreadState(Signal, ucontext);
 
-    // Set the new PC
-    _mcontext->pc = ThreadPauseHandlerAddress;
+    if (!IsAddressInJITCode(_mcontext->pc, false)) {
+      // We are in non-jit, SRA is already spilled
+      assert(!IsAddressInJITCode(_mcontext->pc, true));
+      _mcontext->pc = ThreadPauseHandlerAddress;
+    } else {
+      // We are in jit, SRA must be spilled
+      _mcontext->pc = ThreadPauseHandlerAddressSpillSRA;
+    }
 
     // Set x28 (which is our state register) to point to our guest thread data
     _mcontext->regs[28 /* STATE */] = reinterpret_cast<uint64_t>(State);
@@ -445,11 +453,18 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
     SignalHandlerRefCounter = 0;
 
     // Set the new PC
-    _mcontext->pc = ThreadStopHandlerAddress;
+    if (!IsAddressInJITCode(_mcontext->pc, false)) {
+      // We are in non-jit, SRA is already spilled
+      assert(!IsAddressInJITCode(_mcontext->pc, true));
+      _mcontext->pc = ThreadStopHandlerAddress;
+    } else {
+      // We are in jit, SRA must be spilled
+      _mcontext->pc = ThreadStopHandlerAddressSpillSRA;
+    }
 
     // Set x28 (which is our state register) to point to our guest thread data
     _mcontext->regs[28 /* STATE */] = reinterpret_cast<uint64_t>(State);
-    
+
     State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
   }
@@ -1029,6 +1044,10 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
 
+  aarch64::Label LoopTop{};
+  aarch64::Label ExitSpillSRA{};
+  aarch64::Label ThreadPauseHandlerSpillSRA{};
+
   bind(&LoopTop);
   AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
 
@@ -1091,8 +1110,11 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
       ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
       // If the value == 0 then branch to the top
       cbz(x0, &LoopTop);
+
+      // Spill context to mem
+      SpillStaticRegs();
       // Else we need to pause now
-      b(&ThreadPauseHandler);
+      b(&ThreadPauseHandlerSpillSRA);
     }
     else {
       // Unconditionally loop to the top
@@ -1102,9 +1124,10 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
-    bind(&Exit);
-    ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    b(&ExitSpillSRA);
+    ThreadStopHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     SpillStaticRegs();
+    ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     
     PopCalleeSavedRegisters();
 
@@ -1148,7 +1171,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     FillStaticRegs(true);
 
     // X0 now contains either nullptr or block pointer
-    cbz(x0, &Exit);
+    cbz(x0, &ExitSpillSRA);
     blr(x0);
 
     b(&LoopTop);
@@ -1178,11 +1201,12 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
-    bind(&ThreadPauseHandler);
+    bind(&ThreadPauseHandlerSpillSRA);
+    ThreadPauseHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    SpillStaticRegs();
     ThreadPauseHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     // We are pausing, this means the frontend should be waiting for this thread to idle
     // We will have faulted and jumped to this location at this point
-    SpillStaticRegs();
 
     // Call our sleep handler
     ldr(x0, &l_CTX);
