@@ -23,7 +23,6 @@ namespace {
   struct RegisterClass {
     uint32_t Count;
     uint32_t PhysicalCount;
-    std::vector<uint64_t> Conflicts;
   };
 
   struct RegisterNode {
@@ -52,6 +51,7 @@ namespace {
   struct RegisterSet {
     std::vector<RegisterClass> Classes;
     uint32_t ClassCount;
+    std::set<std::tuple<uint64_t, uint64_t>> Conflicts;
   };
 
   struct LiveRange {
@@ -105,16 +105,17 @@ namespace {
   }
 
   void VirtualAddRegisterConflict(RegisterGraph *Graph, FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) {
-    LogMan::Throw::A(Reg < Graph->Set.Classes[Class].Conflicts.size(), "Tried adding reg %d to conflict list only %d in size", RegConflict, Graph->Set.Classes[Class].Conflicts.size());
-    LogMan::Throw::A(RegConflict < Graph->Set.Classes[ClassConflict].Conflicts.size(), "Tried adding reg %d to conflict list only %d in size", Reg, Graph->Set.Classes[ClassConflict].Conflicts.size());
+
+    auto RegAndClass = ((uint64_t)Class << 32) | Reg;
+    auto RegAndClassConflict = ((uint64_t)ClassConflict << 32) | RegConflict;
 
     // Conflict must go both ways
-    Graph->Set.Classes[Class].Conflicts[Reg] = {((uint64_t)ClassConflict << 32) | RegConflict};
-    Graph->Set.Classes[ClassConflict].Conflicts[RegConflict] = {((uint64_t)Class << 32) | Reg};
+    Graph->Set.Conflicts.insert({RegAndClass, RegAndClassConflict});
+    Graph->Set.Conflicts.insert({RegAndClassConflict, RegAndClass});
   }
 
   void VirtualAllocateRegisterConflicts(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) {
-    Graph->Set.Classes[Class].Conflicts.resize(NumConflicts);
+    //Graph->Set.Classes[Class].Conflicts.resize(NumConflicts);
   }
 
   // Returns the new register ID that was the previous top
@@ -187,11 +188,7 @@ namespace {
       return true;
     }
 
-    FEXCore::IR::RegisterClassType InterferenceClass = FEXCore::IR::RegisterClassType{(uint32_t)(InterferenceNode->Head.RegAndClass >> 32)};
-    uint32_t InterferenceReg = InterferenceNode->Head.RegAndClass;
-    if (InterferenceReg != INVALID_REG &&
-        InterferenceReg < Graph->Set.Classes[InterferenceClass].Conflicts.size() &&
-        Graph->Set.Classes[InterferenceClass].Conflicts[InterferenceReg] == RegAndClass) {
+    if (Graph->Set.Conflicts.contains({InterferenceNode->Head.RegAndClass, RegAndClass})) {
       return true;
     }
 
