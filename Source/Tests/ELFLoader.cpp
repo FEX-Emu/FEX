@@ -138,6 +138,12 @@ bool RanAsInterpreter(char *Program) {
   return strstr(Program, "FEXInterpreter") != nullptr;
 }
 
+bool IsInterpreterInstalled() {
+  // The interpreter is installed if both the binfmt_misc handlers are available
+  return std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86") &&
+         std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64");
+}
+
 int main(int argc, char **argv, char **const envp) {
   bool IsInterpreter = RanAsInterpreter(argv[0]);
   LogMan::Throw::InstallHandler(AssertHandler);
@@ -178,6 +184,7 @@ int main(int argc, char **argv, char **const envp) {
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, IsInterpreterInstalled() ? "1" : "0");
 
   FEXCore::Config::Value<uint8_t> CoreConfig{FEXCore::Config::CONFIG_DEFAULTCORE, 0};
   FEXCore::Config::Value<uint64_t> BlockSizeConfig{FEXCore::Config::CONFIG_MAXBLOCKINST, 1};
