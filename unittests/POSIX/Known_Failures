@@ -2,7 +2,6 @@ conformance-interfaces-clock-1-1.test
 conformance-interfaces-clock_getcpuclockid-2-1.test
 conformance-interfaces-clock_nanosleep-11-1.test
 conformance-interfaces-clock_nanosleep-13-1.test
-conformance-interfaces-mlockall-8-1.test
 conformance-interfaces-munmap-2-1.test
 conformance-interfaces-nanosleep-10000-1.test
 conformance-interfaces-nanosleep-5-1.test

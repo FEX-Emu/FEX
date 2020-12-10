@@ -2,7 +2,7 @@
 # Careful. Globbing can't see changes to the contents of files
 # Need to do a fresh clean to see changes
 file(GLOB_RECURSE POSIX_TESTS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/External/fex-posixtest-bins/conformance/*.test)
- 
+
 foreach(POSIX_TEST ${POSIX_TESTS})
 
   string(REPLACE "/fex-posixtest-bins/" ";" TEST_NAME_LIST ${POSIX_TEST})
@@ -16,9 +16,9 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
     "${TEST_NAME}"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-U" "-c" "irint" "-n" "500" "-R" $ENV{ROOTFS} "--"
+    "-c" "irint" "-n" "500" "-R" $ENV{ROOTFS} "--"
     "${POSIX_TEST}")
-  
+
   add_test(NAME "${TEST_NAME}.jit.posix"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/posix_test_runner.py"
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Known_Failures"
@@ -26,7 +26,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
     "${TEST_NAME}"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-U" "-c" "irjit" "-n" "500" "-R" $ENV{ROOTFS} "--"
+    "-c" "irjit" "-n" "500" "-R" $ENV{ROOTFS} "--"
     "${POSIX_TEST}")
 
 
