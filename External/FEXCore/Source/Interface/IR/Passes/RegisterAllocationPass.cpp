@@ -509,9 +509,9 @@ namespace FEXCore::IR {
 
     auto IsAliasable = [](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
       if (StaticClass == GPRFixedClass) {
-        return (Size == 8 || Size == 4) && ((Offset & 7) == 0); // lower values depend on z-ext semantics
+        return (Size == 8 /*|| Size == 4*/) && ((Offset & 7) == 0); // We need more meta info to support not-size-of-reg
       } else if (StaticClass == FPRFixedClass) {
-        return (Size == 16 || Size == 8 || Size == 4) && ((Offset & 15) == 0); // maybe 2 and 1 are safe too
+        return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0); // We need more meta info to support not-size-of-reg
       } else {
         assert(false);
       }
