@@ -123,8 +123,6 @@ private:
   size_t AllocateOffset {};
 
   FEXCore::Context::Context *ctx;
-  uintptr_t MemoryBase{};
   uint64_t VirtualMemSize{};
-
 };
 }

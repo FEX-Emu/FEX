@@ -7,7 +7,6 @@
 #include "Interface/Core/SignalDelegator.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/HLE/Syscalls.h"
-#include "Interface/Memory/MemMapper.h"
 #include "Interface/IR/PassManager.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUBackend.h>
@@ -54,7 +53,6 @@ namespace FEXCore::Context {
       CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};
       FEXCore::Config::ConfigCore Core {FEXCore::Config::CONFIG_INTERPRETER};
       bool GdbServer {false};
-      bool UnifiedMemory {true};
       std::string RootFSPath;
       std::string ThunkLibsPath;
 
@@ -69,7 +67,6 @@ namespace FEXCore::Context {
       
     } Config;
 
-    FEXCore::Memory::MemMapper MemoryMapper;
     FEXCore::HostFeatures HostFeatures;
 
     std::mutex ThreadCreationMutex;
@@ -129,7 +126,6 @@ namespace FEXCore::Context {
     uint64_t GetThreadCount() const;
     FEXCore::Core::RuntimeStats *GetRuntimeStatsForThread(uint64_t Thread);
     FEXCore::Core::CPUState GetCPUState();
-    void GetMemoryRegions(std::vector<FEXCore::Memory::MemRegion> *Regions);
     bool GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data);
     bool FindHostCodeForRIP(uint64_t RIP, uint8_t **Code);
 
@@ -161,9 +157,6 @@ namespace FEXCore::Context {
   private:
     void WaitForIdleWithTimeout();
 
-    void *MapRegion(FEXCore::Core::InternalThreadState *Thread, uint64_t Offset, uint64_t Size, bool Fixed = false, bool RelativeToBase = true);
-    void *ShmBase();
-    void MirrorRegion(FEXCore::Core::InternalThreadState *Thread, void *HostPtr, uint64_t Offset, uint64_t Size);
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
     void NotifyPause();
 

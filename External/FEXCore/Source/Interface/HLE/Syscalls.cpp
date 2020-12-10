@@ -24,7 +24,6 @@
 
 constexpr uint64_t PAGE_SIZE = 4096;
 
-#define BRK_BASE 0xd000'0000
 #define BRK_SIZE 0x1000'0000
 
 namespace FEXCore {
@@ -33,8 +32,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, v
   uint64_t Result;
 
   if (DataSpace == 0) {
-    // XXX: We need to setup our default BRK space first
-    DefaultProgramBreak(Thread, BRK_BASE);
+    DefaultProgramBreak(Thread);
   }
 
   if (Addr == nullptr) { // Just wants to get the location of the program break atm
@@ -50,7 +48,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, v
     }
     else {
       uint64_t NewSize = NewEnd - DataSpace;
-      
+
       // make sure we don't overflow to TLS storage
       if (NewSize >= BRK_SIZE)
         return -ENOMEM;
@@ -62,90 +60,9 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, v
   return Result;
 }
 
-uint64_t SyscallHandler::HandleMMAP(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-  std::lock_guard<std::mutex> lk(MMapMutex);
-
-  uint64_t Base = AlignDown(LastMMAP, PAGE_SIZE);
-  uint64_t Size = AlignUp(length, PAGE_SIZE);
-  if (length == 0) {
-    return -EINVAL;
-  }
-  if ((LastMMAP + length) >= ENDMMAP) {
-    LogMan::Msg::D("uhoh, mmap failed\n");
-    return -ENOMEM;
-  }
-
-  if (flags & MAP_FIXED) {
-    Base = reinterpret_cast<uint64_t>(addr);
-    if (fd != -1) {
-      auto Name = FM.FindFDName(fd);
-      if (Name) {
-        LogMan::Msg::D("Mapping File to [0x%lx, 0x%lx) -> '%s' -> %p", Base, Base + Size, Name->c_str(), Base);
-      }
-    }
-
-    void *Res{};
-    if (fd != -1) {
-      Res = mmap(addr, length, prot, flags, fd, offset);
-      if (Res == MAP_FAILED) {
-        LogMan::Msg::A("Couldn't map file to %p\n", addr);
-      }
-    }
-    else {
-      Res = mmap(addr, length, prot, flags, fd, offset);
-    }
-
-    if (Res == MAP_FAILED) {
-      return -errno;
-    }
-
-    return Base;
-  }
-  else {
-    // If we are running unified memory then we want to be after our base
-    // This makes code page loading less of a burden
-    Base = CTX->MemoryMapper.GetBaseOffset<uint64_t>(LastMMAP);
-
-    void *HostPtr = reinterpret_cast<void*>(Base);
-    if (fd != -1) {
-      auto Name = FM.FindFDName(fd);
-      if (Name) {
-        LogMan::Msg::D("Mapping File to [0x%lx, 0x%lx) -> '%s' -> %p", Base, Base + Size, Name->c_str(), HostPtr);
-      }
-    }
-
-    void *Res{};
-    if (fd != -1) {
-      Res = mmap(HostPtr, length, prot, flags | MAP_FIXED, fd, offset);
-      if (Res == MAP_FAILED) {
-        perror(nullptr);
-        LogMan::Msg::A("Couldn't map file to %p. error %d(%s)\n", HostPtr, errno, strerror(errno));
-      }
-      else {
-      }
-    }
-    else {
-      Res = mmap(HostPtr, length, prot, flags | MAP_FIXED, fd, offset);
-    }
-
-    if (Res == MAP_FAILED) {
-      return -errno;
-    }
-
-    LastMMAP += Size;
-    return Base;
-  }
-}
-
-void SyscallHandler::DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread, uint64_t Addr) {
+void SyscallHandler::DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread) {
   DataSpaceSize = 0;
-  // Just allocate 16MB of data memory past the default program break location at this point
-  CTX->MapRegion(Thread, Addr, BRK_SIZE, true);
-
-  Addr += CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
-
-  DataSpace = Addr;
-  DefaultProgramBreakAddress = Addr;
+  DataSpace = (uint64_t)mmap(nullptr, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 
 SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx)

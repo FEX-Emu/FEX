@@ -45,8 +45,6 @@ namespace FEXCore::HLE {
     bool Is64Bit = Thread->CTX->Config.Is64BitMode;
 
     auto NewThread = Thread->CTX->CreateThread(&NewThreadState, reinterpret_cast<uint64_t>(parent_tid));
-    Thread->CTX->CopyMemoryMapping(Thread, NewThread);
-
     Thread->CTX->InitializeThread(NewThread);
 
     if (Is64Bit) {

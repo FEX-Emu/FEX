@@ -32,7 +32,7 @@ public:
    *
    * Probably will be GuestPtr + StackSize() - <Some amount>
    */
-  virtual uint64_t SetupStack(void *HostPtr, uint64_t GuestPtr) const = 0;
+  virtual uint64_t SetupStack() const = 0;
 
   /**
    * @brief Function to return the guest RIP that the code should start out at
@@ -42,19 +42,13 @@ public:
   virtual void GetInitLocations(std::vector<uint64_t> *Locations) {}
 
   /**
-   * @brief Lets the core tell the CodeLoader where the virtual memory region starts and if we are running in an environment
-   * where host and guest code is unified in a single address space
-   */
-  virtual void SetMemoryBase(uint64_t Base, bool Unified) {}
-
-  /**
    * @brief Allows the loader to map memory regions that it needs
    *
    * Code loader is expected to call the Mapper function with a memory offset and size for mapping
    *
    * @param Mapper Returns the host facing pointer for memory setup if the codfe loader needs to do things to it
    */
-  virtual void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) {}
+  virtual void MapMemoryRegion() {}
 
   /**
    * @brief Memory writer function for loading code in to guest memory
@@ -63,8 +57,7 @@ public:
    * Second argument = Guest memory data location
    * Third argument = Guest memory size
    */
-  using MemoryWriter = std::function<void(void const*, uint64_t, uint64_t)>;
-  virtual void LoadMemory(MemoryWriter Writer) = 0;
+  virtual void LoadMemory() = 0;
 
   /**
    * @brief Get the final RIP we are supposed to end up on in a debugger

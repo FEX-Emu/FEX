@@ -227,10 +227,6 @@ namespace CPUStats {
   }
 }
 
-namespace MemoryViewer {
-  std::vector<FEXCore::Memory::MemRegion> MappedRegions;
-}
-
 // Logging Windows
 namespace Logging {
   bool ShowLogOutput = true;
@@ -393,13 +389,6 @@ namespace Disasm {
   }
 
   uint8_t *GetPointerFromRegions(uint64_t PC) {
-    for (auto &Region : MemoryViewer::MappedRegions) {
-      if (Region.contains(PC)) {
-        uint64_t Offset = PC - Region.Offset;
-        return reinterpret_cast<uint8_t*>(reinterpret_cast<uintptr_t>(Region.Ptr) + Offset);
-      }
-    }
-
     return nullptr;
   }
 
@@ -842,132 +831,133 @@ namespace MemoryViewer {
   uint64_t CurrentAddress {};
   char CurrentAddressString[32]{};
   bool MappedRegionGetter(void *data, int idx, const char** out_text) {
-    auto &Region = MappedRegions[idx];
-    static char Buf[512];
-    snprintf(Buf, 512, "[0x%lx, 0x%lx) - 0x%lx", Region.Offset, Region.Offset + Region.Size, Region.Size);
-    *out_text = Buf;
-    return true;
+    return false;
+    //auto &Region = MappedRegions[idx];
+    //static char Buf[512];
+    //snprintf(Buf, 512, "[0x%lx, 0x%lx) - 0x%lx", Region.Offset, Region.Offset + Region.Size, Region.Size);
+    //*out_text = Buf;
+    //return true;
   }
 
   bool MappedRegionMemoryGetter(void *data, int idx, const char** out_text) {
-    if (MappedRegions.empty())
-      return false;
+    return false;
+    //if (MappedRegions.empty())
+    //  return false;
 
-    auto &Region = MappedRegions[MappedRegionsCurrentItem];
-    static char Buf[512]{};
-    char BufChars[17]{};
-    uint8_t *Ptr = static_cast<uint8_t*>(Region.Ptr);
-    Ptr += idx * 16;
+    //auto &Region = MappedRegions[MappedRegionsCurrentItem];
+    //static char Buf[512]{};
+    //char BufChars[17]{};
+    //uint8_t *Ptr = static_cast<uint8_t*>(Region.Ptr);
+    //Ptr += idx * 16;
 
-    for (int i = 0; i < 16; i++) {
-      if (isprint(Ptr[i]))
-        BufChars[i] = Ptr[i];
-      else
-        BufChars[i] = '.';
-    }
+    //for (int i = 0; i < 16; i++) {
+    //  if (isprint(Ptr[i]))
+    //    BufChars[i] = Ptr[i];
+    //  else
+    //    BufChars[i] = '.';
+    //}
 
-    snprintf(Buf, 512,
-        "%4lX > %02x %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\t%s",
-      Region.Offset + idx * 16,
-      Ptr[0], Ptr[1], Ptr[2], Ptr[3], Ptr[4], Ptr[5], Ptr[6], Ptr[7],
-      Ptr[8], Ptr[9], Ptr[10], Ptr[11], Ptr[12], Ptr[13], Ptr[14], Ptr[15],
-      BufChars
-      );
-    *out_text = Buf;
-    return true;
+    //snprintf(Buf, 512,
+    //    "%4lX > %02x %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\t%s",
+    //  Region.Offset + idx * 16,
+    //  Ptr[0], Ptr[1], Ptr[2], Ptr[3], Ptr[4], Ptr[5], Ptr[6], Ptr[7],
+    //  Ptr[8], Ptr[9], Ptr[10], Ptr[11], Ptr[12], Ptr[13], Ptr[14], Ptr[15],
+    //  BufChars
+    //  );
+    //*out_text = Buf;
+    //return true;
   }
 
   void Window() {
-    auto DisplayAddress = [&](uint64_t RIP) {
-      MappedRegionsCurrentItem = 0;
-      // First we need to find the RIP in the mapped regions
-      // Skip first entry because it is the full 64GB of vmem
-      for (size_t i = 1; i < MappedRegions.size(); ++i) {
-        if (MappedRegions[i].contains(RIP)) {
-          MappedRegionsCurrentItem = i;
-          break;
-        }
-      }
-      // Now we need to set our hex view listbox to the correct line
-      MappedRegionsMemoryCurrentItem = static_cast<int>(RIP - MappedRegions[MappedRegionsCurrentItem].Offset) / 16;
+    //auto DisplayAddress = [&](uint64_t RIP) {
+    //  MappedRegionsCurrentItem = 0;
+    //  // First we need to find the RIP in the mapped regions
+    //  // Skip first entry because it is the full 64GB of vmem
+    //  for (size_t i = 1; i < MappedRegions.size(); ++i) {
+    //    if (MappedRegions[i].contains(RIP)) {
+    //      MappedRegionsCurrentItem = i;
+    //      break;
+    //    }
+    //  }
+    //  // Now we need to set our hex view listbox to the correct line
+    //  MappedRegionsMemoryCurrentItem = static_cast<int>(RIP - MappedRegions[MappedRegionsCurrentItem].Offset) / 16;
 
-      // Now set the Current Address textbox and string to the correct address
-      LogMan::Msg::D("RIP is 0x%lx", RIP);
-      CurrentAddress = RIP;
-      std::ostringstream out{};
-      out << "0x" << std::hex << CurrentAddress;
-      strncpy(CurrentAddressString, out.str().c_str(), 32);
-    };
+    //  // Now set the Current Address textbox and string to the correct address
+    //  LogMan::Msg::D("RIP is 0x%lx", RIP);
+    //  CurrentAddress = RIP;
+    //  std::ostringstream out{};
+    //  out << "0x" << std::hex << CurrentAddress;
+    //  strncpy(CurrentAddressString, out.str().c_str(), 32);
+    //};
 
-    if (ImGui::Begin("#Memory Viewer", &ShowMemoryWindow)) {
-      if (FEX::DebuggerState::ActiveCore() && !FEX::DebuggerState::IsCoreRunning()) {
-        FEXCore::Context::Debug::GetMemoryRegions(FEX::DebuggerState::GetContext(), &MappedRegions);
-      }
+    //if (ImGui::Begin("#Memory Viewer", &ShowMemoryWindow)) {
+    //  if (FEX::DebuggerState::ActiveCore() && !FEX::DebuggerState::IsCoreRunning()) {
+    //    FEXCore::Context::Debug::GetMemoryRegions(FEX::DebuggerState::GetContext(), &MappedRegions);
+    //  }
 
-      if (!MappedRegions.empty()) {
-        ImGui::PushItemWidth(-1.0);
-        if (ImGui::ListBox("Mapped Regions", &MappedRegionsCurrentItem, MappedRegionGetter, nullptr, MappedRegions.size())) {
-        }
-        ImGui::PopItemWidth();
+    //  if (!MappedRegions.empty()) {
+    //    ImGui::PushItemWidth(-1.0);
+    //    if (ImGui::ListBox("Mapped Regions", &MappedRegionsCurrentItem, MappedRegionGetter, nullptr, MappedRegions.size())) {
+    //    }
+    //    ImGui::PopItemWidth();
 
-        if (ImGui::InputText("RIP:", CurrentAddressString, 32, ImGuiInputTextFlags_EnterReturnsTrue)) {
-          DisplayAddress(std::stoull(CurrentAddressString, nullptr, 0));
-        }
+    //    if (ImGui::InputText("RIP:", CurrentAddressString, 32, ImGuiInputTextFlags_EnterReturnsTrue)) {
+    //      DisplayAddress(std::stoull(CurrentAddressString, nullptr, 0));
+    //    }
 
-        ImGui::DragInt("Size", &CodeSize, 1.0f, 1, 255);
-        if (ImGui::Button("Disasm")) {
-          CurrentAddress = std::stoull(CurrentAddressString, nullptr, 0);
-          Disasm::DisasmGuest(CurrentAddress, CodeSize);
-        }
-        if (FEX::DebuggerState::IsCoreRunning()) {
-          ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-          ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-        }
-        if (ImGui::Button("Compile RIP")) {
-          FEXCore::Context::Debug::CompileRIP(FEX::DebuggerState::GetContext(), CurrentAddress);
+    //    ImGui::DragInt("Size", &CodeSize, 1.0f, 1, 255);
+    //    if (ImGui::Button("Disasm")) {
+    //      CurrentAddress = std::stoull(CurrentAddressString, nullptr, 0);
+    //      Disasm::DisasmGuest(CurrentAddress, CodeSize);
+    //    }
+    //    if (FEX::DebuggerState::IsCoreRunning()) {
+    //      ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    //      ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    //    }
+    //    if (ImGui::Button("Compile RIP")) {
+    //      FEXCore::Context::Debug::CompileRIP(FEX::DebuggerState::GetContext(), CurrentAddress);
 
-          std::stringstream out;
-          FEX::DebuggerState::GetIR(&out, CurrentAddress);
-          Disasm::Disasm(CurrentAddress);
-          Logging::IRData = out.str();
+    //      std::stringstream out;
+    //      FEX::DebuggerState::GetIR(&out, CurrentAddress);
+    //      Disasm::Disasm(CurrentAddress);
+    //      Logging::IRData = out.str();
 
-          // FEXCore::IR::IntrusiveIRList *ir;
-          // bool HadIR = FEXCore::Context::Debug::FindIRForRIP(FEX::DebuggerState::GetContext(), CurrentAddress, &ir);
-          // if (HadIR) {
-          //   IR::CalculateCFGLines(ir);
-          // }
-        }
-        if (FEX::DebuggerState::IsCoreRunning()) {
-          ImGui::PopStyleVar();
-          ImGui::PopItemFlag();
-        }
+    //      // FEXCore::IR::IntrusiveIRList *ir;
+    //      // bool HadIR = FEXCore::Context::Debug::FindIRForRIP(FEX::DebuggerState::GetContext(), CurrentAddress, &ir);
+    //      // if (HadIR) {
+    //      //   IR::CalculateCFGLines(ir);
+    //      // }
+    //    }
+    //    if (FEX::DebuggerState::IsCoreRunning()) {
+    //      ImGui::PopStyleVar();
+    //      ImGui::PopItemFlag();
+    //    }
 
-        if (ImGui::Button("Go to current RIP")) {
-          if (FEX::DebuggerState::ActiveCore()) {
-            DisplayAddress(CPUState::CurrentState.rip);
-          }
-        }
+    //    if (ImGui::Button("Go to current RIP")) {
+    //      if (FEX::DebuggerState::ActiveCore()) {
+    //        DisplayAddress(CPUState::CurrentState.rip);
+    //      }
+    //    }
 
-        if (ImGui::BeginChildFrame(ImGui::GetID("Hex"), ImVec2(-1, -1))) {
-          ImGui::PushItemWidth(-1.0);
+    //    if (ImGui::BeginChildFrame(ImGui::GetID("Hex"), ImVec2(-1, -1))) {
+    //      ImGui::PushItemWidth(-1.0);
 
-          if (FEXImGui::ListBox("##Memory Hex",
-              &MappedRegionsMemoryCurrentItem,
-              MappedRegionMemoryGetter,
-              nullptr,
-              static_cast<int>(MappedRegions[MappedRegionsCurrentItem].Size) / 16)) {
-            CurrentAddress = MappedRegions[MappedRegionsCurrentItem].Offset + MappedRegionsMemoryCurrentItem * 16;
-            std::ostringstream out{};
-            out << "0x" << std::hex << CurrentAddress;
-            strncpy(CurrentAddressString, out.str().c_str(), 32);
-          }
-          ImGui::PopItemWidth();
-        }
-        ImGui::EndChildFrame();
-      }
-
-    }
-    ImGui::End();
+    //      if (FEXImGui::ListBox("##Memory Hex",
+    //          &MappedRegionsMemoryCurrentItem,
+    //          MappedRegionMemoryGetter,
+    //          nullptr,
+    //          static_cast<int>(MappedRegions[MappedRegionsCurrentItem].Size) / 16)) {
+    //        CurrentAddress = MappedRegions[MappedRegionsCurrentItem].Offset + MappedRegionsMemoryCurrentItem * 16;
+    //        std::ostringstream out{};
+    //        out << "0x" << std::hex << CurrentAddress;
+    //        strncpy(CurrentAddressString, out.str().c_str(), 32);
+    //      }
+    //      ImGui::PopItemWidth();
+    //    }
+    //    ImGui::EndChildFrame();
+    //  }
+    //}
+    //ImGui::End();
   }
 
   void Menu() {

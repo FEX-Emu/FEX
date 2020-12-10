@@ -26,11 +26,6 @@ namespace FEXCore::Context {
     delete CTX;
   }
 
-  bool AddGuestMemoryRegion(FEXCore::Context::Context *CTX, FEXCore::SHM::SHMObject *SHM) {
-    CTX->MemoryMapper.SetBaseRegion(SHM);
-    return true;
-  }
-
   void SetApplicationFile(FEXCore::Context::Context *CTX, std::string const &File) {
     CTX->SyscallHandler->SetFilename(File);
     // XXX: This isn't good for debugging
@@ -132,10 +127,6 @@ namespace Debug {
 
   FEXCore::Core::CPUState GetCPUState(FEXCore::Context::Context *CTX) {
     return CTX->GetCPUState();
-  }
-
-  void GetMemoryRegions(FEXCore::Context::Context *CTX, std::vector<FEXCore::Memory::MemRegion> *Regions) {
-    return CTX->GetMemoryRegions(Regions);
   }
 
   bool GetDebugDataForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::Core::DebugData *Data) {

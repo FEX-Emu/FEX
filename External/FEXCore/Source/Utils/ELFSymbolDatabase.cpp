@@ -229,12 +229,12 @@ void ELFSymbolDatabase::FillSymbols() {
 
 }
 
-void ELFSymbolDatabase::MapMemoryRegions(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) {
+void ELFSymbolDatabase::MapMemoryRegions(std::function<void*(uint64_t, uint64_t)> Mapper) {
   auto Map = [&](ELFInfo& ELF) {
     uint64_t ELFBase = std::get<0>(ELF.CustomLayout);
     uint64_t ELFSize = std::get<2>(ELF.CustomLayout);
     uint64_t OffsetFromBase = ELFBase - ELF.GuestBase;
-    ELF.ELFBase = static_cast<uint8_t*>(Mapper(ELFBase, ELFSize, true, false)) - OffsetFromBase;
+    ELF.ELFBase = static_cast<uint8_t*>(Mapper(ELFBase, ELFSize)) - OffsetFromBase;
   };
 
   Map(LocalInfo);

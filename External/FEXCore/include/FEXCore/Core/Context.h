@@ -22,9 +22,6 @@ namespace FEXCore::HLE {
   struct SyscallArguments;
   class SyscallVisitor;
 }
-namespace FEXCore::SHM {
-  struct SHMObject;
-}
 
 namespace FEXCore::Context {
   struct Context;
@@ -73,15 +70,6 @@ namespace FEXCore::Context {
    * @param CTX
    */
   void DestroyContext(FEXCore::Context::Context *CTX);
-
-  /**
-   * @brief Adds a base pointer that the VM can use for "physical" memory backing
-   *
-   * Will be the guests physical memory location of zero
-   *
-   * @return true on added. false when we had already added a guest memory region
-   */
-  bool AddGuestMemoryRegion(FEXCore::Context::Context *CTX, FEXCore::SHM::SHMObject *SHM);
 
   /**
    * @brief Allows setting up in memory code and other things prior to launchign code execution

@@ -49,17 +49,8 @@ namespace FEXCore {
 
             auto CTX = Thread->CTX;
 
-            if (!CTX->Config.UnifiedMemory) {
-                Args = CTX->MemoryMapper.GetPointer<LoadlibArgs*>((uintptr_t)Args);
-            }
-
             auto Name = Args->Name;
             auto CallbackThunks = Args->CallbackThunks;
-
-            if (!CTX->Config.UnifiedMemory) {
-                Name = CTX->MemoryMapper.GetPointer<const char*>((uintptr_t)Name);
-                CallbackThunks = CTX->MemoryMapper.GetPointer<uintptr_t>(CallbackThunks);
-            }
 
             auto SOName = CTX->Config.ThunkLibsPath + "/" + (const char*)Name + "-host.so";
 

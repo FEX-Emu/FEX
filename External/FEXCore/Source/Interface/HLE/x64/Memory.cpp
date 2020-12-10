@@ -5,7 +5,6 @@
 #include <sys/mman.h>
 #include <sys/shm.h>
 
-#define MEM_PASSTHROUGH
 namespace FEXCore::HLE::x64 {
   void RegisterMemory() {
     REGISTER_SYSCALL_IMPL_X64(munmap, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length) -> uint64_t {
@@ -14,12 +13,8 @@ namespace FEXCore::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(mmap, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
-  #ifdef MEM_PASSTHROUGH
       uint64_t Result = reinterpret_cast<uint64_t>(::mmap(addr, length, prot, flags, fd, offset));
       SYSCALL_ERRNO();
-  #else
-      return Thread->CTX->SyscallHandler->HandleMMAP(Thread, addr, length, prot, flags, fd, offset);
-  #endif
     });
 
     REGISTER_SYSCALL_IMPL_X64(mremap, [](FEXCore::Core::InternalThreadState *Thread, void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) -> uint64_t {

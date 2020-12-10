@@ -25,7 +25,7 @@ public:
 
   virtual uint64_t HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) = 0;
 
-  void DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread, uint64_t Addr);
+  void DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread);
 
   void SetFilename(std::string const &File) { FM.SetFilename(File); }
   std::string const & GetFilename() const { return FM.GetFilename(); }
@@ -60,7 +60,6 @@ public:
   }
 
   uint64_t HandleBRK(FEXCore::Core::InternalThreadState *Thread, void *Addr);
-  uint64_t HandleMMAP(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset);
 
   FileManager FM;
 
@@ -78,11 +77,6 @@ protected:
   // BRK management
   uint64_t DataSpace {};
   uint64_t DataSpaceSize {};
-  uint64_t DefaultProgramBreakAddress {};
-
-  // MMap management
-  uint64_t LastMMAP = 0x1'0000'0000;
-  uint64_t ENDMMAP  = 0x2'0000'0000;
 
 private:
 

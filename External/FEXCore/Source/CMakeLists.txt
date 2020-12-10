@@ -190,8 +190,6 @@ set (SRCS
   Interface/HLE/Syscalls/NotImplemented.cpp
   Interface/HLE/Syscalls/Stubs.cpp
   Interface/HLE/Thunks/Thunks.cpp
-  Interface/Memory/MemMapper.cpp
-  Interface/Memory/SharedMem.cpp
   Interface/IR/IR.cpp
   Interface/IR/IREmitter.cpp
   Interface/IR/PassManager.cpp

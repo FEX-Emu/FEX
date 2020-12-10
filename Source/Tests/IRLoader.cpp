@@ -7,7 +7,6 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
-#include <FEXCore/Memory/SharedMem.h>
 #include <FEXCore/Utils/LogManager.h>
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
@@ -60,25 +59,21 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
       return STACK_SIZE;
     }
 
-    void SetMemoryBase(uint64_t Base, bool Unified) override {
-      MemoryBase = Base;
-    }
-
-    uint64_t SetupStack([[maybe_unused]] void *HostPtr, uint64_t GuestPtr) const override {
-      return GuestPtr + STACK_SIZE - 16;
+    uint64_t SetupStack() const override {
+      return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
     }
 
     uint64_t DefaultRIP() const override {
       return IR->GetEntryRIP();
     }
 
-    void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
+    void MapMemoryRegion() override {
       // Map the memory regions the test file asks for
-      IR->MapRegions(Mapper);
+      IR->MapRegions();
     }
 
-    void LoadMemory(MemoryWriter Writer) override {
-      IR->LoadMemory(MemoryBase, Writer);
+    void LoadMemory() override {
+      IR->LoadMemory();
     }
 
     uint64_t GetFinalRIP() override { return 0; }
@@ -90,7 +85,6 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
   private:
     FEX::IRLoader::Loader *IR;
     constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
-    uint64_t MemoryBase = 0;
 };
 
 int main(int argc, char **argv, char **const envp) {
@@ -108,7 +102,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Value<bool> MultiblockConfig{FEXCore::Config::CONFIG_MULTIBLOCK, false};
   FEXCore::Config::Value<bool> GdbServerConfig{FEXCore::Config::CONFIG_GDBSERVER, false};
   FEXCore::Config::Value<std::string> LDPath{FEXCore::Config::CONFIG_ROOTFSPATH, ""};
-  FEXCore::Config::Value<bool> UnifiedMemory{FEXCore::Config::CONFIG_UNIFIED_MEMORY, false};
 
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
@@ -116,7 +109,6 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::A(Args.size() > 1, "Not enough arguments");
 
   FEXCore::Context::InitializeStaticTables();
-  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
 
@@ -126,9 +118,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MAXBLOCKINST, BlockSizeConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_GDBSERVER, GdbServerConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ROOTFSPATH, LDPath());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, UnifiedMemory());
-
-  FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 
   FEX::IRLoader::InitializeStaticTables();
 	FEX::IRLoader::Loader Loader(Args[0], Args[1]);
@@ -169,7 +158,6 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEXCore::Context::DestroyContext(CTX);
-  FEXCore::SHM::DestroyRegion(SHM);
 
   return Return;
 }

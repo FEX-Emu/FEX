@@ -841,14 +841,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             // Size is the size of each pair element
             switch (Size) {
               case 4: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[2]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[2]);
 
                 uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
                 uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
@@ -859,14 +852,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 break;
               }
               case 8: {
-                std::atomic<__uint128_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<__uint128_t> **>(SSAData, Op->Header.Args[2]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<__uint128_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                }
+                std::atomic<__uint128_t> *Data = *GetSrc<std::atomic<__uint128_t> **>(SSAData, Op->Header.Args[2]);
 
                 __uint128_t Src1 = *GetSrc<__uint128_t*>(SSAData, Op->Header.Args[0]);
                 __uint128_t Src2 = *GetSrc<__uint128_t*>(SSAData, Op->Header.Args[1]);
@@ -920,14 +906,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_LOADMEM:
           case IR::OP_LOADMEMTSO: {
             auto Op = IROp->C<IR::IROp_LoadMem>();
-            uint8_t const *Data{};
-            if (Thread->CTX->Config.UnifiedMemory) {
-              Data = *GetSrc<uint8_t const**>(SSAData, Op->Addr);
-            }
-            else {
-              Data = Thread->CTX->MemoryMapper.GetPointer<uint8_t const*>(*GetSrc<uint64_t*>(SSAData, Op->Addr));
-              LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Addr));
-            }
+            uint8_t const *Data = *GetSrc<uint8_t const**>(SSAData, Op->Addr);
 
             if (!Op->Offset.IsInvalid()) {
               auto Offset = *GetSrc<uintptr_t const*>(SSAData, Op->Offset) * Op->OffsetScale;
@@ -938,20 +917,12 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 case MEM_OFFSET_SXTW.Val: Data += (int32_t)Offset; break;
               }
             }
-
             memcpy(GDP, Data, OpSize);
             break;
           }
           case IR::OP_VLOADMEMELEMENT: {
             auto Op = IROp->C<IR::IROp_VLoadMemElement>();
-            void const *Data{};
-            if (Thread->CTX->Config.UnifiedMemory) {
-              Data = *GetSrc<void const**>(SSAData, Op->Header.Args[0]);
-            }
-            else {
-              Data = Thread->CTX->MemoryMapper.GetPointer<void const*>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-              LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-            }
+            void const *Data = *GetSrc<void const**>(SSAData, Op->Header.Args[0]);
 
             memcpy(GDP, GetSrc<void*>(SSAData, Op->Header.Args[1]), 16);
             memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GDP) + (Op->Header.ElementSize * Op->Index)),
@@ -962,14 +933,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_STOREMEMTSO: {
             #define STORE_DATA(x, y) \
               case x: { \
-                uint8_t *Data{}; \
-                if (Thread->CTX->Config.UnifiedMemory) { \
-                  Data = *GetSrc<uint8_t**>(SSAData, Op->Addr); \
-                } \
-                else { \
-                  Data = Thread->CTX->MemoryMapper.GetPointer<uint8_t*>(*GetSrc<uint64_t*>(SSAData, Op->Addr)); \
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Addr)); \
-                } \
+                uint8_t *Data = *GetSrc<uint8_t**>(SSAData, Op->Addr); \
                 if (!Op->Offset.IsInvalid()) {\
                   auto Offset = *GetSrc<uintptr_t const*>(SSAData, Op->Offset) * Op->OffsetScale;\
                   \
@@ -991,14 +955,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               STORE_DATA(4, uint32_t)
               STORE_DATA(8, uint64_t)
               case 16: {
-                void *Data{};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<void**>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<void*>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                void *Data = *GetSrc<void**>(SSAData, Op->Header.Args[0]);
 
                 void *Src = GetSrc<void*>(SSAData, Op->Header.Args[1]);
                 memcpy(Data, Src, 16);
@@ -1012,14 +969,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           case IR::OP_VSTOREMEMELEMENT: {
             #define STORE_DATA(x, y) \
               case x: { \
-                y *Data{}; \
-                if (Thread->CTX->Config.UnifiedMemory) { \
-                  Data = *GetSrc<y**>(SSAData, Op->Header.Args[0]); \
-                } \
-                else { \
-                  Data = Thread->CTX->MemoryMapper.GetPointer<y*>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0])); \
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0])); \
-                } \
+                y *Data = *GetSrc<y**>(SSAData, Op->Header.Args[0]); \
                 memcpy(Data, &GetSrc<y*>(SSAData, Op->Header.Args[1])[Op->Index], sizeof(y)); \
                 break; \
               }
@@ -1606,14 +1556,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Size = OpSize;
             switch (Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[2]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[2]);
 
                 uint8_t Src1 = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
                 uint8_t Src2 = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
@@ -1624,15 +1567,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[2]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                }
-
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[2]);
                 uint16_t Src1 = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]);
                 uint16_t Src2 = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
 
@@ -1642,14 +1577,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[2]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[2]);
 
                 uint32_t Src1 = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
                 uint32_t Src2 = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
@@ -1660,14 +1588,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[2]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[2]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[2]);
 
                 uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
                 uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
@@ -1685,55 +1606,25 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicAdd>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
-
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 *Data += Src;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
-                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]));
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 *Data += Src;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 *Data += Src;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 *Data += Src;
                 break;
@@ -1746,53 +1637,25 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicSub>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 *Data -= Src;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 *Data -= Src;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 *Data -= Src;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 *Data -= Src;
                 break;
@@ -1805,53 +1668,25 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicAnd>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 *Data &= Src;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 *Data &= Src;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 *Data &= Src;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 *Data &= Src;
                 break;
@@ -1864,55 +1699,25 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicOr>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
-                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]));
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 *Data |= Src;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
-                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]));
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 *Data |= Src;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 *Data |= Src;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 *Data |= Src;
                 break;
@@ -1925,54 +1730,25 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicXor>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 *Data ^= Src;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
-                LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]));
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 *Data ^= Src;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 *Data ^= Src;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 *Data ^= Src;
                 break;
@@ -1985,56 +1761,28 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicSwap>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 uint8_t Previous = Data->exchange(Src);
                 GD = Previous;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 uint16_t Previous = Data->exchange(Src);
                 GD = Previous;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 uint32_t Previous = Data->exchange(Src);
                 GD = Previous;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 uint64_t Previous = Data->exchange(Src);
                 GD = Previous;
@@ -2048,56 +1796,28 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 uint8_t Previous = Data->fetch_add(Src);
                 GD = Previous;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 uint16_t Previous = Data->fetch_add(Src);
                 GD = Previous;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 uint32_t Previous = Data->fetch_add(Src);
                 GD = Previous;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 uint64_t Previous = Data->fetch_add(Src);
                 GD = Previous;
@@ -2111,56 +1831,28 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 uint8_t Previous = Data->fetch_sub(Src);
                 GD = Previous;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 uint16_t Previous = Data->fetch_sub(Src);
                 GD = Previous;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 uint32_t Previous = Data->fetch_sub(Src);
                 GD = Previous;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 uint64_t Previous = Data->fetch_sub(Src);
                 GD = Previous;
@@ -2174,56 +1866,28 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 uint8_t Previous = Data->fetch_and(Src);
                 GD = Previous;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 uint16_t Previous = Data->fetch_and(Src);
                 GD = Previous;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 uint32_t Previous = Data->fetch_and(Src);
                 GD = Previous;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 uint64_t Previous = Data->fetch_and(Src);
                 GD = Previous;
@@ -2237,56 +1901,28 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 uint8_t Previous = Data->fetch_or(Src);
                 GD = Previous;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 uint16_t Previous = Data->fetch_or(Src);
                 GD = Previous;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 uint32_t Previous = Data->fetch_or(Src);
                 GD = Previous;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 uint64_t Previous = Data->fetch_or(Src);
                 GD = Previous;
@@ -2300,56 +1936,28 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
             switch (Op->Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint8_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[0]);
                 uint8_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
                 uint8_t Previous = Data->fetch_xor(Src);
                 GD = Previous;
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint16_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[0]);
                 uint16_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
                 uint16_t Previous = Data->fetch_xor(Src);
                 GD = Previous;
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint32_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[0]);
                 uint32_t Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
                 uint32_t Previous = Data->fetch_xor(Src);
                 GD = Previous;
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = {};
-                if (Thread->CTX->Config.UnifiedMemory) {
-                  Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
-                }
-                else {
-                  Data = Thread->CTX->MemoryMapper.GetPointer<std::atomic<uint64_t> *>(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                  LogMan::Throw::A(Data != nullptr, "Couldn't Map pointer to 0x%lx\n", *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]));
-                }
+                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[0]);
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 uint64_t Previous = Data->fetch_xor(Src);
                 GD = Previous;

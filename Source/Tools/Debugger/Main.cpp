@@ -12,7 +12,6 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Debug/ContextDebug.h>
-#include <FEXCore/Memory/SharedMem.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
 
@@ -26,7 +25,6 @@
 
 Event SteppingEvent;
 FEXCore::Context::Context *CTX{};
-FEXCore::SHM::SHMObject *SHM{};
 std::atomic_bool ShouldClose = false;
 std::thread CoreThread;
 
@@ -42,10 +40,7 @@ void StepCallback() {
 }
 
 void CreateCoreCallback(char const *Filename, bool ELF) {
-  SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 32);
   CTX = FEXCore::Context::CreateNewContext();
-
-  FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, FEX::DebuggerState::GetCoreType());
 
@@ -84,15 +79,10 @@ void CompileRIPCallback(uint64_t RIP) {
 void CloseCallback() {
   FEXCore::Context::Stop(CTX);
 
-  if (SHM) {
-    FEXCore::SHM::DestroyRegion(SHM);
-  }
-
   if (CTX) {
     FEXCore::Context::DestroyContext(CTX);
   }
 
-  SHM = nullptr;
   CTX = nullptr;
 
   ShouldClose = false;

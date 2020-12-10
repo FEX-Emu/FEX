@@ -13,12 +13,6 @@ DEF_OP(CASPair) {
   auto Desired = GetSrcPair<RA_64>(Op->Header.Args[1].ID());
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[2].ID());
 
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
-
   if (SupportsAtomics) {
     mov(TMP3, Expected.first);
     mov(TMP4, Expected.second);
@@ -107,12 +101,6 @@ DEF_OP(CAS) {
   auto Expected = GetReg<RA_64>(Op->Header.Args[0].ID());
   auto Desired = GetReg<RA_64>(Op->Header.Args[1].ID());
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[2].ID());
-
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     mov(TMP2, Expected);
@@ -221,11 +209,6 @@ DEF_OP(AtomicAdd) {
   auto Op = IROp->C<IR::IROp_AtomicAdd>();
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     switch (Op->Size) {
@@ -284,11 +267,6 @@ DEF_OP(AtomicSub) {
   auto Op = IROp->C<IR::IROp_AtomicSub>();
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     neg(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
@@ -348,11 +326,6 @@ DEF_OP(AtomicAnd) {
   auto Op = IROp->C<IR::IROp_AtomicAnd>();
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     mvn(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
@@ -412,11 +385,6 @@ DEF_OP(AtomicOr) {
   auto Op = IROp->C<IR::IROp_AtomicOr>();
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     switch (Op->Size) {
@@ -475,11 +443,6 @@ DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     switch (Op->Size) {
@@ -538,11 +501,6 @@ DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     mov(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
@@ -602,11 +560,6 @@ DEF_OP(AtomicSwap) {
 DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     switch (Op->Size) {
@@ -668,11 +621,6 @@ DEF_OP(AtomicFetchAdd) {
 DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     neg(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
@@ -735,11 +683,6 @@ DEF_OP(AtomicFetchSub) {
 DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     mvn(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
@@ -802,11 +745,6 @@ DEF_OP(AtomicFetchAnd) {
 DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     switch (Op->Size) {
@@ -868,11 +806,6 @@ DEF_OP(AtomicFetchOr) {
 DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, MemSrc);
-    MemSrc = TMP1;
-  }
 
   if (SupportsAtomics) {
     switch (Op->Size) {

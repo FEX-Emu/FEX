@@ -26,9 +26,6 @@ namespace FEXCore::Config {
     case FEXCore::Config::CONFIG_GDBSERVER:
       Config != 0 ? CTX->StartGdbServer() : CTX->StopGdbServer();
     break;
-    case FEXCore::Config::CONFIG_UNIFIED_MEMORY:
-      CTX->Config.UnifiedMemory = Config != 0;
-    break;
     case FEXCore::Config::CONFIG_IS64BIT_MODE:
       CTX->Config.Is64BitMode = Config != 0;
     break;
@@ -84,9 +81,6 @@ namespace FEXCore::Config {
       return CTX->Config.RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP ? 1 : 0;
     case FEXCore::Config::CONFIG_GDBSERVER:
       return CTX->GetGdbServerStatus();
-    break;
-    case FEXCore::Config::CONFIG_UNIFIED_MEMORY:
-      return CTX->Config.UnifiedMemory;
     break;
     case FEXCore::Config::CONFIG_IS64BIT_MODE:
       return CTX->Config.Is64BitMode;
