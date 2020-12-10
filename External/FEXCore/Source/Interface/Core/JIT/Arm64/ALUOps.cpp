@@ -773,22 +773,26 @@ DEF_OP(Popcount) {
   uint8_t OpSize = IROp->Size;
   switch (OpSize) {
     case 0x1:
-      fmov(VTMP1.B(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      // only use lowest byte
       cnt(VTMP1.V8B(), VTMP1.V8B());
       break;
     case 0x2:
-      fmov(VTMP1.H(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
       cnt(VTMP1.V8B(), VTMP1.V8B());
-      addv(VTMP1.B(), VTMP1.V8B());
+      // only count two lowest bytes
+      addp(VTMP1.V8B(), VTMP1.V8B(), VTMP1.V8B());
       break;
     case 0x4:
       fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
       cnt(VTMP1.V8B(), VTMP1.V8B());
+      // fmov has zero extended, unused bytes are zero
       addv(VTMP1.B(), VTMP1.V8B());
       break;
     case 0x8:
       fmov(VTMP1.D(), GetReg<RA_64>(Op->Header.Args[0].ID()));
       cnt(VTMP1.V8B(), VTMP1.V8B());
+      // fmov has zero extended, unused bytes are zero
       addv(VTMP1.B(), VTMP1.V8B());
       break;
     default: LogMan::Msg::A("Unsupported Popcount size: %d", OpSize);
