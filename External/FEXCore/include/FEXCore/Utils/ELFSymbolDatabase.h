@@ -11,7 +11,7 @@ public:
 
   uint64_t GetElfBase() const;
 
-  void MapMemoryRegions(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper);
+  void MapMemoryRegions(std::function<void*(uint64_t, uint64_t)> Mapper);
   void WriteLoadableSections(::ELFLoader::ELFContainer::MemoryWriter Writer);
 
   uint64_t DefaultRIP() const;

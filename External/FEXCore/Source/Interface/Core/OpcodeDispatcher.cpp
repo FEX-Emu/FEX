@@ -91,11 +91,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   const char *name;
 
-  if (CTX->Config.UnifiedMemory) {
-    name = (const char*)(Op->PC + 2);
-  } else {
-    name = CTX->MemoryMapper.GetPointer<const char*>(Op->PC + 2);
-  }
+  name = (const char*)(Op->PC + 2);
 
   _Thunk(
     _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass),

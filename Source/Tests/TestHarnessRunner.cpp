@@ -11,7 +11,6 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/Memory/SharedMem.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cassert>
@@ -81,10 +80,8 @@ int main(int argc, char **argv, char **const envp) {
   FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-  auto SHM = FEXCore::SHM::AllocateSHMRegion(1ULL << 34);
   auto CTX = FEXCore::Context::CreateNewContext();
 
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, true);
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, CoreConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MULTIBLOCK, MultiblockConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SINGLESTEP, SingleStepConfig());
@@ -95,8 +92,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, ABILocalFlags());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_NO_PF, AbiNoPF());
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostFactory::CPUCreationFactory);
-
-  FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
 
   FEXCore::Context::InitializeContext(CTX);
 
@@ -114,7 +109,6 @@ int main(int argc, char **argv, char **const envp) {
 
   LogMan::Msg::I("Passed? %s\n", Passed ? "Yes" : "No");
 
-  FEXCore::SHM::DestroyRegion(SHM);
   FEXCore::Context::DestroyContext(CTX);
 
   return Passed ? 0 : -1;

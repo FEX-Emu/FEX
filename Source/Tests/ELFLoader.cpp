@@ -6,7 +6,6 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
-#include <FEXCore/Memory/SharedMem.h>
 #include <FEXCore/Utils/ELFLoader.h>
 #include <FEXCore/Utils/LogManager.h>
 
@@ -230,12 +229,6 @@ int main(int argc, char **argv, char **const envp) {
   FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-  uint64_t VMemSize = 1ULL << 36;
-  if (!Loader.Is64BitMode()) {
-    VMemSize = 1ULL << 32;
-  }
-
-  auto SHM = FEXCore::SHM::AllocateSHMRegion(VMemSize);
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
 
@@ -246,7 +239,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_GDBSERVER, GdbServerConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ROOTFSPATH, LDPath());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_THUNKLIBSPATH, ThunkLibsPath());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_UNIFIED_MEMORY, true);
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_EMULATED_CPU_CORES, ThreadsConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_TSO_ENABLED, TSOEnabledConfig());
@@ -255,7 +247,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_NO_PF, AbiNoPF());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DUMPIR, DumpIR());
 
-  FEXCore::Context::AddGuestMemoryRegion(CTX, SHM);
   FEXCore::Context::InitCore(CTX, &Loader);
   FEXCore::Context::SetApplicationFile(CTX, std::filesystem::canonical(Program));
 
@@ -276,7 +267,6 @@ int main(int argc, char **argv, char **const envp) {
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
 
   FEXCore::Context::DestroyContext(CTX);
-  FEXCore::SHM::DestroyRegion(SHM);
 
   FEXCore::Config::Shutdown();
 

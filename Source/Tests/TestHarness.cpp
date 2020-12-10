@@ -9,7 +9,6 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/Memory/SharedMem.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cassert>
@@ -60,23 +59,17 @@ int main(int argc, char **argv) {
   LogMan::Throw::A(Args.size() > 1, "Not enough arguments");
 
   FEXCore::Context::InitializeStaticTables();
-  auto SHM1 = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
   auto CTX1 = FEXCore::Context::CreateNewContext();
 
-  auto SHM2 = FEXCore::SHM::AllocateSHMRegion(1ULL << 36);
   auto CTX2 = FEXCore::Context::CreateNewContext();
 
   FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_DEFAULTCORE, FEXCore::Config::CONFIG_CUSTOM);
   FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_SINGLESTEP, 1);
   FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_MAXBLOCKINST, 1);
 
-  FEXCore::Context::AddGuestMemoryRegion(CTX1, SHM1);
-
   FEXCore::Config::SetConfig(CTX2, FEXCore::Config::CONFIG_DEFAULTCORE, FEXCore::Config::CONFIG_INTERPRETER);
   FEXCore::Config::SetConfig(CTX2, FEXCore::Config::CONFIG_SINGLESTEP, 1);
   FEXCore::Config::SetConfig(CTX2, FEXCore::Config::CONFIG_MAXBLOCKINST, 1);
-
-  FEXCore::Context::AddGuestMemoryRegion(CTX2, SHM2);
 
   FEXCore::Context::InitializeContext(CTX1);
   FEXCore::Context::InitializeContext(CTX2);
@@ -102,9 +95,7 @@ int main(int argc, char **argv) {
   bool Passed = Loader.CompareStates(&State1, &State2);
   LogMan::Msg::I("Passed? %s\n", Passed ? "Yes" : "No");
 
-  FEXCore::SHM::DestroyRegion(SHM1);
   FEXCore::Context::DestroyContext(CTX1);
-  FEXCore::SHM::DestroyRegion(SHM2);
   FEXCore::Context::DestroyContext(CTX2);
 
   return Passed ? 0 : 1;

@@ -104,11 +104,6 @@ namespace FEX::ArgLoader {
         .dest("ThunkLibs")
         .help("Folder to find the host-side thunking libs");
 
-      EmulationGroup.add_option("-U", "--unified-memory")
-        .dest("UnifiedMemory")
-        .action("store_true")
-        .help("Enable unified memory for the emulator");
-
       EmulationGroup.add_option("-E", "--env")
         .dest("Env")
         .help("Adds an environment variable")
@@ -239,11 +234,6 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("ThunkLibs")) {
         std::string Option = Options["ThunkLibs"];
         Set(FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH, Option);
-      }
-
-      if (Options.is_set_by_user("UnifiedMemory")) {
-        bool Option = Options.get("UnifiedMemory");
-        Set(FEXCore::Config::ConfigOption::CONFIG_UNIFIED_MEMORY, std::to_string(Option));
       }
 
       if (Options.is_set_by_user("Env")) {

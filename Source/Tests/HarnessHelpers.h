@@ -276,13 +276,11 @@ namespace FEX::HarnessHelper {
       return regions;
     }
 
-    void LoadMemory(uint64_t MemoryBase, FEXCore::CodeLoader::MemoryWriter Writer) {
+    void LoadMemory() {
       uintptr_t DataOffset = BaseConfig.OptionMemDataOffset;
       for (unsigned i = 0; i < BaseConfig.OptionMemDataCount; ++i) {
         MemDataStructBase *MemData = reinterpret_cast<MemDataStructBase*>(RawConfigFile.data() + DataOffset);
-
-        Writer(&MemData->data, MemoryBase + MemData->address, MemData->length);
-
+        memcpy(reinterpret_cast<void*>(MemData->address), &MemData->data, MemData->length);
         DataOffset += sizeof(MemDataStructBase) + MemData->length;
       }
     }
@@ -345,66 +343,74 @@ namespace FEX::HarnessHelper {
       return STACK_SIZE;
     }
 
-    void SetMemoryBase(uint64_t Base, bool Unified) override {
-      MemoryBase = Base;
-    }
-
-    uint64_t SetupStack([[maybe_unused]] void *HostPtr, uint64_t GuestPtr) const override {
-      return GuestPtr + STACK_SIZE - 16;
+    uint64_t SetupStack() const override {
+      if (Config.Is64BitMode()) {
+        return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) + STACK_SIZE;
+      }
+      else {
+        uint64_t Result = reinterpret_cast<uint64_t>(mmap(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+        LogMan::Throw::A(Result != ~0ULL, "mmap failed");
+        return Result + STACK_SIZE;
+      }
     }
 
     uint64_t DefaultRIP() const override {
       return RIP;
     }
 
-    void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
+    void MapMemoryRegion() override {
       bool LimitedSize = true;
+      auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
+        void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        LogMan::Throw::A(Result != (void*)~0ULL, "mmap failed");
+        return Result;
+      };
+
       if (LimitedSize) {
-        Mapper(0xe000'0000, PAGE_SIZE * 10, true, false);
+        DoMMap(0xe000'0000, PAGE_SIZE * 10);
 
         // SIB8
         // We test [-128, -126] (Bottom)
         // We test [-8, 8] (Middle)
         // We test [120, 127] (Top)
         // Can fit in two pages
-        Mapper(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, false);
+        DoMMap(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2);
 
         // SIB32 Bottom
         // We test INT_MIN, INT_MIN + 8
-        Mapper(0x2'0000'0000, PAGE_SIZE, true, false);
+        DoMMap(0x2'0000'0000, PAGE_SIZE);
         // SIB32 Middle
         // We test -8 + 8
-        Mapper(0x2'8000'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, false);
+        DoMMap(0x2'8000'0000 - PAGE_SIZE, PAGE_SIZE * 2);
 
         // SIB32 Top
         // We Test INT_MAX - 8, INT_MAX
-        Mapper(0x3'0000'0000 - PAGE_SIZE, PAGE_SIZE * 2, true, false);
+        DoMMap(0x3'0000'0000 - PAGE_SIZE, PAGE_SIZE * 2);
       }
       else {
         // This is scratch memory location and SIB8 location
-        Mapper(0xe000'0000, 0x1000'0000, true, false);
+        DoMMap(0xe000'0000, 0x1000'0000);
         // This is for large SIB 32bit displacement testing
-        Mapper(0x2'0000'0000, 0x1'0000'1000, true, false);
+        DoMMap(0x2'0000'0000, 0x1'0000'1000);
       }
 
       // Map in the memory region for the test file
       size_t Length = AlignUp(RawFile.size(), PAGE_SIZE);
-      Code_start_page = reinterpret_cast<uint64_t>(Mapper(Code_start_page, Length, true, false));
+      Code_start_page = reinterpret_cast<uint64_t>(DoMMap(Code_start_page, Length));
       mprotect(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC);
       RIP = Code_start_page;
 
       // Map the memory regions the test file asks for
       for (auto& [region, size] : Config.GetMemoryRegions()) {
-        Mapper(region, size, true, false);
+        DoMMap(region, size);
       }
     }
 
-    void LoadMemory(MemoryWriter Writer) override {
+    void LoadMemory() override {
       // Memory base here starts at the start location we passed back with GetLayout()
       // This will write at [CODE_START_RANGE + 0, RawFile.size() )
-      Writer(&RawFile.at(0), RIP, RawFile.size());
-
-      Config.LoadMemory(0, Writer);
+      memcpy(reinterpret_cast<void*>(RIP), &RawFile.at(0), RawFile.size());
+      Config.LoadMemory();
     }
 
     uint64_t GetFinalRIP() override { return RIP + RawFile.size(); }
@@ -417,10 +423,10 @@ namespace FEX::HarnessHelper {
 
   private:
     constexpr static uint64_t STACK_SIZE = PAGE_SIZE;
+    constexpr static uint64_t STACK_OFFSET = 0xc000'0000;
     // Zero is special case to know when we are done
     uint64_t Code_start_page = 0x1'0000;
     uint64_t RIP {};
-    uint64_t MemoryBase{};
 
     std::vector<char> RawFile;
     ConfigLoader Config;
@@ -498,6 +504,11 @@ public:
       AuxVariables.emplace_back(auxv_t{33, 0ULL}); // sysinfo (vDSO)
     }
 
+    AuxVariables.emplace_back(auxv_t{3, DB.GetElfBase()}); // Program header
+    AuxVariables.emplace_back(auxv_t{7, DB.GetElfBase()}); // Interpreter address
+    AuxVariables.emplace_back(auxv_t{9, DB.DefaultRIP()}); // AT_ENTRY
+    AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
+
     for (auto &Arg : ParsedArgs) {
       LoaderArgs.emplace_back(Arg.c_str());
     }
@@ -507,24 +518,9 @@ public:
     return STACK_SIZE;
   }
 
-  virtual void SetMemoryBase(uint64_t Base, bool Unified) override {
-    if (File.WasDynamic() && Unified) {
-      MemoryBase = Base;
-    }
-    else {
-      MemoryBase = 0;
-    }
-    // Set up our aux values here
-    AuxVariables.emplace_back(auxv_t{3, DB.GetElfBase()}); // Program header
-    AuxVariables.emplace_back(auxv_t{7, DB.GetElfBase()}); // Interpreter address
-    AuxVariables.emplace_back(auxv_t{9, DB.DefaultRIP()}); // AT_ENTRY
-    AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
-  }
-
   template <typename PointerType, typename AuxType, size_t PointerSize>
   static void SetupPointers(
     uintptr_t StackPointer,
-    uint64_t rsp,
     uint64_t AuxVOffset,
     uint64_t ArgumentOffset,
     uint64_t EnvpOffset,
@@ -544,8 +540,8 @@ public:
     // Arguments memory lives after everything else
     uint8_t *ArgumentBackingBase = reinterpret_cast<uint8_t*>(StackPointer + ArgumentOffset);
     uint8_t *EnvpBackingBase = reinterpret_cast<uint8_t*>(StackPointer + EnvpOffset);
-    PointerType ArgumentBackingBaseGuest = rsp + ArgumentOffset;
-    PointerType EnvpBackingBaseGuest = rsp + EnvpOffset;
+    PointerType ArgumentBackingBaseGuest = StackPointer + ArgumentOffset;
+    PointerType EnvpBackingBaseGuest = StackPointer + EnvpOffset;
 
     *reinterpret_cast<PointerType *>(StackPointer + 0) = Args.size();
     PadPointers[0] = 0;
@@ -588,7 +584,7 @@ public:
     for (size_t i = 0; i < AuxVariables.size(); ++i) {
       if (AuxVariables[i].key == 25) {
         // Random value is always 128bits
-        AuxType Random{25, static_cast<PointerType>(rsp + RandomNumberOffset)};
+        AuxType Random{25, static_cast<PointerType>(StackPointer + RandomNumberOffset)};
         uint64_t *RandomLoc = reinterpret_cast<uint64_t*>(StackPointer + RandomNumberOffset);
         RandomLoc[0] = 0xDEAD;
         RandomLoc[1] = 0xDEAD2;
@@ -605,10 +601,18 @@ public:
     *(PointerType*)(&AuxTabSize) = sizeof(AuxType) * AuxVariables.size();
   }
 
-  uint64_t SetupStack(void *HostPtr, uint64_t GuestPtr) const override {
-    uintptr_t StackPointer = reinterpret_cast<uintptr_t>(HostPtr) + StackSize();
+  uint64_t SetupStack() const override {
+    uintptr_t StackPointer{};
+    if (File.GetMode() == ::ELFLoader::ELFContainer::MODE_64BIT) {
+      StackPointer = reinterpret_cast<uintptr_t>(mmap(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+    }
+    else {
+      StackPointer = reinterpret_cast<uintptr_t>(mmap(reinterpret_cast<void*>(STACK_OFFSET), StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+      LogMan::Throw::A(StackPointer != ~0ULL, "mmap failed");
+    }
+
+    StackPointer += StackSize();
     // Set up our initial CPU state
-    uint64_t rsp = GuestPtr + StackSize();
     uint64_t SizeOfPointer = File.GetMode() == ELFLoader::ELFContainer::MODE_64BIT ? 8 : 4;
 
     uint64_t TotalArgumentMemSize{};
@@ -638,7 +642,6 @@ public:
     TotalArgumentMemSize += 16;
 
     // Offset the stack by how much memory we need
-    rsp -= TotalArgumentMemSize;
     StackPointer -= TotalArgumentMemSize;
 
     // Stack setup
@@ -658,7 +661,6 @@ public:
     if (SizeOfPointer == 8) {
       SetupPointers<uint64_t, auxv_t, 8>(
         StackPointer,
-        rsp,
         AuxVOffset,
         ArgumentOffset,
         EnvpOffset,
@@ -673,7 +675,6 @@ public:
     else {
       SetupPointers<uint32_t, auxv32_t, 4>(
         StackPointer,
-        rsp,
         AuxVOffset,
         ArgumentOffset,
         EnvpOffset,
@@ -686,20 +687,26 @@ public:
         );
     }
 
-    return rsp;
+    return StackPointer;
   }
 
   uint64_t DefaultRIP() const override {
     return DB.DefaultRIP();
   }
 
-  void MapMemoryRegion(std::function<void*(uint64_t, uint64_t, bool, bool)> Mapper) override {
-    DB.MapMemoryRegions(Mapper);
+  void MapMemoryRegion() override {
+    auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
+      void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      LogMan::Throw::A(Result != (void*)~0ULL, "Couldn't mmap");
+      return Result;
+    };
+
+    DB.MapMemoryRegions(DoMMap);
   }
 
-  void LoadMemory(MemoryWriter Writer) override {
+  void LoadMemory() override {
     auto ELFLoaderWrapper = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
-      Writer(Data, Addr, Size);
+      memcpy(reinterpret_cast<void*>(Addr), Data, Size);
     };
     DB.WriteLoadableSections(ELFLoaderWrapper);
   }
@@ -740,9 +747,9 @@ private:
   uint64_t AuxTabBase, AuxTabSize;
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
-  uint64_t MemoryBase{};
 
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
+  constexpr static uint64_t STACK_OFFSET = 0xc000'0000;
 };
 
 }

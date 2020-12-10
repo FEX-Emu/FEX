@@ -6,7 +6,6 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/Memory/SharedMem.h>
 
 #include <ucontext.h>
 #include <cassert>

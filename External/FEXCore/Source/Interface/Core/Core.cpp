@@ -26,8 +26,6 @@
 
 #include "Interface/Core/GdbServer.h"
 
-constexpr uint64_t STACK_OFFSET = 0xc000'0000;
-
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
     // This should be used for generating things that are shared between threads
@@ -259,31 +257,11 @@ namespace FEXCore::Context {
     // We are the parent thread
     ParentThread = Thread;
 
-    uintptr_t MemoryBase = MemoryMapper.GetBaseOffset<uintptr_t>(0);
-    Loader->SetMemoryBase(MemoryBase, Config.UnifiedMemory);
+    Loader->MapMemoryRegion();
 
-    auto MemoryMapperFunction = [&](uint64_t Base, uint64_t Size, bool Fixed, bool RelativeToBase) -> void* {
-      Thread->BlockCache->HintUsedRange(Base, Base);
-      return MapRegion(Thread, Base, Size, Fixed, RelativeToBase);
-    };
+    Thread->State.State.gregs[X86State::REG_RSP] = Loader->SetupStack();
 
-    Loader->MapMemoryRegion(MemoryMapperFunction);
-
-    void *StackPointer = MapRegion(Thread, STACK_OFFSET, Loader->StackSize(), true, false);
-
-    uint64_t GuestStack = STACK_OFFSET;
-    if (Config.UnifiedMemory) {
-      GuestStack = reinterpret_cast<uint64_t>(StackPointer);
-    }
-    Thread->State.State.gregs[X86State::REG_RSP] = Loader->SetupStack(StackPointer, GuestStack);
-
-    // Now let the code loader setup memory
-    auto MemoryWriterFunction = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
-      // Writes the machine code to be emulated in to memory
-      memcpy(reinterpret_cast<void*>(Addr), Data, Size);
-    };
-
-    Loader->LoadMemory(MemoryWriterFunction);
+    Loader->LoadMemory();
     Loader->GetInitLocations(&InitLocations);
 
     Thread->State.State.rip = StartingRIP = Loader->DefaultRIP();
@@ -612,12 +590,7 @@ namespace FEXCore::Context {
 
   std::tuple<void *, FEXCore::Core::DebugData *> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
-    if (Config.UnifiedMemory) {
       GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
-    }
-    else {
-      GuestCode = MemoryMapper.GetPointer<uint8_t const*>(GuestRIP);
-    }
 
     // Do we already have this in the IR cache?
     auto IR = Thread->IRLists.find(GuestRIP);
@@ -666,12 +639,7 @@ namespace FEXCore::Context {
 
             uintptr_t ExistingCodePtr{};
 
-            if (Thread->CTX->Config.UnifiedMemory) {
               ExistingCodePtr = reinterpret_cast<uintptr_t>(Block.Entry + BlockInstructionsLength);
-            }
-            else {
-              ExistingCodePtr = MemoryMapper.GetPointer<uintptr_t>(Block.Entry + BlockInstructionsLength);
-            }
 
             memcpy(&existing, (void*)(ExistingCodePtr), DecodedInfo->InstSize);
             auto CodeChanged = Thread->OpDispatcher->_ValidateCode(existing, ExistingCodePtr, DecodedInfo->InstSize);
@@ -951,30 +919,6 @@ namespace FEXCore::Context {
     Thread->State.State.rip = RIPBackup;
   }
 
-  void *Context::MapRegion(FEXCore::Core::InternalThreadState *Thread, uint64_t Offset, uint64_t Size, bool Fixed, bool RelativeToBase) {
-    void *Ptr = MemoryMapper.MapRegion(Offset, Size, Fixed, RelativeToBase);
-    Thread->CPUBackend->MapRegion(Ptr, Offset, Size);
-    Thread->FallbackBackend->MapRegion(Ptr, Offset, Size);
-    return Ptr;
-  }
-
-  void Context::MirrorRegion(FEXCore::Core::InternalThreadState *Thread, void *HostPtr, uint64_t Offset, uint64_t Size) {
-    Thread->CPUBackend->MapRegion(HostPtr, Offset, Size);
-    Thread->FallbackBackend->MapRegion(HostPtr, Offset, Size);
-  }
-
-  void *Context::ShmBase() {
-    return MemoryMapper.GetMemoryBase();
-  }
-
-  void Context::CopyMemoryMapping([[maybe_unused]] FEXCore::Core::InternalThreadState*, FEXCore::Core::InternalThreadState *ChildThread) {
-    auto Regions = MemoryMapper.MappedRegions;
-    for (auto const& Region : Regions) {
-      ChildThread->CPUBackend->MapRegion(Region.Ptr, Region.Offset, Region.Size);
-      ChildThread->FallbackBackend->MapRegion(Region.Ptr, Region.Offset, Region.Size);
-    }
-  }
-
   uint64_t Context::GetThreadCount() const {
     return Threads.size();
   }
@@ -985,12 +929,6 @@ namespace FEXCore::Context {
 
   FEXCore::Core::CPUState Context::GetCPUState() {
     return ParentThread->State.State;
-  }
-
-  void Context::GetMemoryRegions(std::vector<FEXCore::Memory::MemRegion> *Regions) {
-    Regions->clear();
-    Regions->resize(MemoryMapper.MappedRegions.size());
-    memcpy(&Regions->at(0), &MemoryMapper.MappedRegions.at(0), sizeof(FEXCore::Memory::MemRegion) * MemoryMapper.MappedRegions.size());
   }
 
   bool Context::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {

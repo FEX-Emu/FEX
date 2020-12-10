@@ -615,9 +615,6 @@ GdbServer::HandledPacketType GdbServer::handleMemory(std::string &packet) {
     // TODO: check we are in a valid memory range
     //       Also, clamp length
     void* ptr = reinterpret_cast<void*>(addr);
-    if (!CTX->Config.UnifiedMemory) {
-      ptr = CTX->MemoryMapper.GetPointer(addr);
-    }
 
     if (write) {
         std::memcpy(ptr, data.data(), data.length());
