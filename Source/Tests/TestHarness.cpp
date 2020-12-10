@@ -52,7 +52,6 @@ int main(int argc, char **argv) {
   LogMan::Msg::InstallHandler(MsgHandler);
 
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
   FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
   FEXCore::Config::Load();
 
