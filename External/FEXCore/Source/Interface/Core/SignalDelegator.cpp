@@ -184,10 +184,16 @@ namespace FEXCore {
     if (Handler.OldAction.sa_flags & SA_SIGINFO) {
       Handler.OldAction.sa_sigaction(Signal, static_cast<siginfo_t*>(Info), UContext);
     }
-    else if (Handler.OldAction.sa_handler == SIG_DFL) {
-      signal(Signal, SIG_DFL);
+    else if (Handler.OldAction.sa_handler == SIG_IGN ||
+      (Handler.OldAction.sa_handler == SIG_DFL &&
+       Handler.DefaultBehaviour == DEFAULT_IGNORE)) {
+      // Do nothing
     }
-    else if (Handler.OldAction.sa_handler == SIG_IGN) {
+    else if (Handler.OldAction.sa_handler == SIG_DFL &&
+      (Handler.DefaultBehaviour == DEFAULT_COREDUMP ||
+       Handler.DefaultBehaviour == DEFAULT_TERM)) {
+      // Reassign back to DFL and crash
+      signal(Signal, SIG_DFL);
     }
     else {
       Handler.OldAction.sa_handler(Signal);
