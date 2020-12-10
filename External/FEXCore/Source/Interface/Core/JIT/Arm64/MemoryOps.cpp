@@ -426,13 +426,6 @@ DEF_OP(LoadMem) {
   auto Op = IROp->C<IR::IROp_LoadMem>();
 
   auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
-
-  if (!CTX->Config.UnifiedMemory) {
-    MemReg = TMP1;
-    LoadConstant(MemReg, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(MemReg, MemReg, GetReg<RA_64>(Op->Header.Args[0].ID()));
-  }
-
   auto MemSrc = GenerateMemOperand(Op->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -480,11 +473,6 @@ DEF_OP(LoadMemTSO) {
   auto Op = IROp->C<IR::IROp_LoadMemTSO>();
 
   auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-    MemSrc = MemOperand(TMP1);
-  }
 
   if (!Op->Offset.IsInvalid()) {
     LogMan::Msg::A("LoadMemTSO: No offset allowed");
@@ -564,14 +552,8 @@ DEF_OP(LoadMemTSO) {
 
 DEF_OP(StoreMem) {
   auto Op = IROp->C<IR::IROp_StoreMem>();
-  
-  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (!CTX->Config.UnifiedMemory) {
-    MemReg = TMP1;
-    LoadConstant(MemReg, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(MemReg, MemReg, GetReg<RA_64>(Op->Header.Args[0].ID()));
-  }
+  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   auto MemSrc = GenerateMemOperand(Op->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
@@ -618,11 +600,6 @@ DEF_OP(StoreMem) {
 DEF_OP(StoreMemTSO) {
   auto Op = IROp->C<IR::IROp_StoreMemTSO>();
   auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
-  if (!CTX->Config.UnifiedMemory) {
-    LoadConstant(TMP1, (uint64_t)CTX->MemoryMapper.GetMemoryBase());
-    add(TMP1, TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-    MemSrc = MemOperand(TMP1);
-  }
 
   if (!Op->Offset.IsInvalid()) {
     LogMan::Msg::A("StoreMemTSO: No offset allowed");
