@@ -154,12 +154,14 @@ namespace FEXCore::HLE::x64 {
 
       uint64_t Result{};
       if (Thread->CTX->SyscallHandler->IsInterpreter()) {
-        if (ELFLoader::ELFContainer::IsSupportedELF(pathname)) {
+        if (Thread->CTX->SyscallHandler->IsInterpreterInstalled() && ELFLoader::ELFContainer::IsSupportedELF(pathname)) {
           Result = execve(pathname, argv, envp);
           SYSCALL_ERRNO();
         }
-
-        // Otherwise we need to fall down the interpreter unsupported code path
+        else {
+          // Otherwise we need to fall down the interpreter unsupported code path
+          Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);
+        }
       }
       else {
         Thread->CTX->GetCodeLoader()->GetExecveArguments(&Args);

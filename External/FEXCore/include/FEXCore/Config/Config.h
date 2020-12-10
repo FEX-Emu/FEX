@@ -29,6 +29,7 @@ namespace FEXCore::Config {
     CONFIG_BREAK_ON_FRONTEND,
     CONFIG_DUMP_GPRS,
     CONFIG_IS_INTERPRETER,
+    CONFIG_INTERPRETER_INSTALLED,
   };
 
   enum ConfigCore {

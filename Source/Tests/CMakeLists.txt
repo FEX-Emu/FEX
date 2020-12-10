@@ -21,14 +21,14 @@ install(TARGETS ${NAME}
     DESTINATION bin
     COMPONENT runtime)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  set(FEX_INTERP FEXInterpreter)
-  install(CODE "
-    EXECUTE_PROCESS(COMMAND ln -sf ${NAME} ${FEX_INTERP}
-    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
-    )
-  ")
+set(FEX_INTERP FEXInterpreter)
+install(CODE "
+  EXECUTE_PROCESS(COMMAND ln -f ${NAME} ${FEX_INTERP}
+  WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
+  )
+")
 
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   add_custom_target(binfmt_misc_32
     COMMAND ${CMAKE_COMMAND} -E
     echo "Attempting to remove FEX-x86 misc prior to install. Ignore permission denied"

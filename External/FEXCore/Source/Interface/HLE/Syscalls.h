@@ -69,6 +69,7 @@ public:
 #endif
 
   FEXCore::Config::Value<bool> IsInterpreter{FEXCore::Config::CONFIG_IS_INTERPRETER, 0};
+  FEXCore::Config::Value<bool> IsInterpreterInstalled{FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, 0};
 
 protected:
   std::vector<SyscallFunctionDefinition> Definitions;
