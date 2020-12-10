@@ -282,11 +282,13 @@ namespace FEX::ArgLoader {
   }
 
   void LoadWithoutArguments(int _argc, char **_argv) {
-    optparse::OptionParser Parser{};
-    optparse::Values Options = Parser.parse_args(_argc, _argv);
+    // Skip argument 0, which will be the interpreter
+    for (int i = 1; i < _argc; ++i) {
+      RemainingArgs.emplace_back(_argv[i]);
+    }
 
-    RemainingArgs = Parser.args();
-    ProgramArguments = Parser.parsed_args();
+    // Put the interpreter in ProgramArguments
+    ProgramArguments.emplace_back(_argv[0]);
   }
 
   std::vector<std::string> Get() {
