@@ -15,20 +15,12 @@ DEF_OP(CASPair) {
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
   //OrderedNode *CASResult = _CAS(Src3, Src2, Src1);
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
   auto Dst = GetSrcPair<RA_64>(Node);
   auto Expected = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
   auto Desired = GetSrcPair<RA_64>(Op->Header.Args[1].ID());
   auto MemSrc = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
-  Xbyak::Reg MemReg = rdi;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = MemSrc;
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, MemSrc);
-  }
+  Xbyak::Reg MemReg = MemSrc;
 
   mov(rax, Expected.first);
   mov(rdx, Expected.second);
@@ -73,16 +65,8 @@ DEF_OP(CAS) {
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
   //OrderedNode *CASResult = _CAS(Src3, Src2, Src1);
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rcx;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[2].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[2].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[2].ID());
 
   mov(rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
   mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
@@ -121,16 +105,8 @@ DEF_OP(CAS) {
 
 DEF_OP(AtomicAdd) {
   auto Op = IROp->C<IR::IROp_AtomicAdd>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
 
   lock();
   switch (Op->Size) {
@@ -152,16 +128,8 @@ DEF_OP(AtomicAdd) {
 
 DEF_OP(AtomicSub) {
   auto Op = IROp->C<IR::IROp_AtomicSub>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   lock();
   switch (Op->Size) {
     case 1:
@@ -182,16 +150,8 @@ DEF_OP(AtomicSub) {
 
 DEF_OP(AtomicAnd) {
   auto Op = IROp->C<IR::IROp_AtomicAnd>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   lock();
   switch (Op->Size) {
     case 1:
@@ -212,16 +172,8 @@ DEF_OP(AtomicAnd) {
 
 DEF_OP(AtomicOr) {
   auto Op = IROp->C<IR::IROp_AtomicOr>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   lock();
   switch (Op->Size) {
     case 1:
@@ -242,16 +194,8 @@ DEF_OP(AtomicOr) {
 
 DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   lock();
   switch (Op->Size) {
     case 1:
@@ -272,16 +216,10 @@ DEF_OP(AtomicXor) {
 
 DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
   Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    mov(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  mov(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+
   switch (Op->Size) {
     case 1:
       mov(GetDst<RA_8>(Node), GetSrc<RA_8>(Op->Header.Args[1].ID()));
@@ -309,16 +247,8 @@ DEF_OP(AtomicSwap) {
 
 DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   switch (Op->Size) {
     case 1:
       mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
@@ -350,16 +280,8 @@ DEF_OP(AtomicFetchAdd) {
 
 DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   switch (Op->Size) {
     case 1:
       mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
@@ -395,17 +317,9 @@ DEF_OP(AtomicFetchSub) {
 
 DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
   // TMP1 = rax
-  Xbyak::Reg MemReg = TMP4;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
 
   switch (Op->Size) {
     case 1: {
@@ -481,17 +395,9 @@ DEF_OP(AtomicFetchAnd) {
 
 DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
   // TMP1 = rax
-  Xbyak::Reg MemReg = TMP4;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   switch (Op->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);
@@ -566,17 +472,9 @@ DEF_OP(AtomicFetchOr) {
 
 DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
   // TMP1 = rax
-  Xbyak::Reg MemReg = TMP4;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   switch (Op->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);

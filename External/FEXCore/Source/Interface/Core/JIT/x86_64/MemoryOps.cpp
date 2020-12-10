@@ -480,16 +480,8 @@ Xbyak::RegExp JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Off
 
 DEF_OP(LoadMem) {
   auto Op = IROp->C<IR::IROp_LoadMem>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Addr.ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Addr.ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
 
   auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
@@ -556,16 +548,8 @@ DEF_OP(LoadMem) {
 
 DEF_OP(StoreMem) {
   auto Op = IROp->C<IR::IROp_StoreMem>();
-  uint64_t Memory = CTX->MemoryMapper.GetBaseOffset<uint64_t>(0);
 
-  Xbyak::Reg MemReg = rax;
-  if (CTX->Config.UnifiedMemory) {
-    MemReg = GetSrc<RA_64>(Op->Addr.ID());
-  }
-  else {
-    mov(MemReg, Memory);
-    add(MemReg, GetSrc<RA_64>(Op->Addr.ID()));
-  }
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
 
   auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
