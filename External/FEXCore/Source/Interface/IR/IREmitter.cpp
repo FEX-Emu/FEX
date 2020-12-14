@@ -8,6 +8,7 @@ void IREmitter::ResetWorkingList() {
   CurrentWriteCursor = nullptr;
   // This is necessary since we do "null" pointer checks
   InvalidNode = reinterpret_cast<OrderedNode*>(ListData.Allocate(sizeof(OrderedNode)));
+  memset(InvalidNode, 0, sizeof(OrderedNode));
   CurrentCodeBlock = nullptr;
 }
 

@@ -68,7 +68,7 @@ struct NodeWrapperBase final {
   Type const *GetNode(uintptr_t Base) const { return reinterpret_cast<Type*>(Base + NodeOffset); }
 
   void SetOffset(uintptr_t Base, uintptr_t Value) { NodeOffset = Value - Base; }
-  bool operator==(NodeWrapperBase const &rhs) { return NodeOffset == rhs.NodeOffset; }
+  bool operator==(NodeWrapperBase const &rhs) const { return NodeOffset == rhs.NodeOffset; }
 };
 
 static_assert(std::is_trivial<NodeWrapperBase<OrderedNode>>::value);

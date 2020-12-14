@@ -19,14 +19,14 @@ public:
 };
 
 template<typename T>
-static uint64_t getMask(T Op) {
+uint64_t getMask(T Op) {
   uint64_t NumBits = Op->Header.Size * 8;
   return (~0ULL) >> (64 - NumBits);
 }
 
 
 template<>
-static uint64_t getMask(IROp_Header* Op) {
+uint64_t getMask(IROp_Header* Op) {
   uint64_t NumBits = Op->Size * 8;
   return (~0ULL) >> (64 - NumBits);
 }
@@ -129,7 +129,7 @@ OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper sr
       imm = (imm-1) *2 + 1;
 
       if ((imm & mask) == mask) {
-        return RemoveUselessMasking(IREmit, IROp->Args[0], mask); 
+        return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
       }
     }
   }
@@ -158,7 +158,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
 
   auto HeaderOp = CurrentIR.GetHeader();
-  
+
   // Code motion around selects
   // Moves unary ops that depend on a select before the select, if both inputs are constants
   // assumes that unary ops without side effects on constants will be constprop'd
@@ -185,7 +185,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
           // Copy over the op
           memcpy(NewUnaryOp1.first, UnaryOpHdr, OpSize);
-          
+
           for (int i = 0; i < NewUnaryOp1.first->NumArgs; i++) {
             NewUnaryOp1.first->Args[i] = IREmit->WrapNode(IREmit->Invalid());
           }
@@ -199,7 +199,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
           // Copy over the op
           memcpy(NewUnaryOp2.first, UnaryOpHdr, OpSize);
-          
+
           for (int i = 0; i < NewUnaryOp2.first->NumArgs; i++) {
             NewUnaryOp2.first->Args[i] = IREmit->WrapNode(IREmit->Invalid());
           }
@@ -238,7 +238,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
   }
 
-  
+
   // LoadMem / StoreMem imm pooling
   // If imms are close by, use address gen to generate the values instead of using a new imm
   std::map<OrderedNode*, uint64_t> Consts;
@@ -302,7 +302,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
             mask = imm;
 
           auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], imm);
-          
+
           if (newArg != IROp->Args[i]) {
             IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
             Changed = true;
@@ -341,9 +341,9 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t imm = 1ULL << (Op->Width-1);
         imm = (imm-1) *2 + 1;
         imm <<= Op->lsb;
-        
+
         auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
-        
+
         if (newArg != IROp->Args[0]) {
           IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
           Changed = true;
@@ -358,9 +358,9 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t imm = 1ULL << (Op->Width-1);
         imm = (imm-1) *2 + 1;
         imm <<= Op->lsb;
-        
+
         auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
-        
+
         if (newArg != IROp->Args[0]) {
           IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
           Changed = true;
@@ -407,6 +407,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         }
         break;
       }
+      default: break;
     }
 
     // constprop + some more per instruction logic
@@ -493,8 +494,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
     case OP_ADD: {
       auto Op = IROp->C<IR::IROp_Add>();
-      uint64_t Constant1;
-      uint64_t Constant2;
+      uint64_t Constant1{};
+      uint64_t Constant2{};
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -507,8 +508,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     case OP_SUB: {
       auto Op = IROp->C<IR::IROp_Sub>();
-      uint64_t Constant1;
-      uint64_t Constant2;
+      uint64_t Constant1{};
+      uint64_t Constant2{};
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -520,8 +521,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     case OP_AND: {
       auto Op = IROp->CW<IR::IROp_And>();
-      uint64_t Constant1 = 0;
-      uint64_t Constant2 = 0;
+      uint64_t Constant1{};
+      uint64_t Constant2{};
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -551,8 +552,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     case OP_OR: {
       auto Op = IROp->CW<IR::IROp_Or>();
-      uint64_t Constant1;
-      uint64_t Constant2;
+      uint64_t Constant1{};
+      uint64_t Constant2{};
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -568,8 +569,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     case OP_XOR: {
       auto Op = IROp->C<IR::IROp_Xor>();
-      uint64_t Constant1;
-      uint64_t Constant2;
+      uint64_t Constant1{};
+      uint64_t Constant2{};
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -586,8 +587,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     case OP_LSHL: {
       auto Op = IROp->CW<IR::IROp_Lshl>();
-      uint64_t Constant1;
-      uint64_t Constant2;
+      uint64_t Constant1{};
+      uint64_t Constant2{};
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -612,8 +613,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     case OP_LSHR: {
       auto Op = IROp->CW<IR::IROp_Lshr>();
-      uint64_t Constant1;
-      uint64_t Constant2;
+      uint64_t Constant1{};
+      uint64_t Constant2{};
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -657,8 +658,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
         // common from flag codegen
         auto val = IREmit->GetOpHeader(Op->Header.Args[0]);
 
-        uint64_t Constant2;
-        uint64_t Constant3;
+        uint64_t Constant2{};
+        uint64_t Constant3{};
         if (val->Op == OP_SELECT &&
             IREmit->IsValueConstant(val->Args[2], &Constant2) &&
             IREmit->IsValueConstant(val->Args[3], &Constant3) &&
@@ -674,8 +675,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
     case OP_MUL: {
       auto Op = IROp->C<IR::IROp_Mul>();
-      uint64_t Constant1;
-      uint64_t Constant2;
+      uint64_t Constant1{};
+      uint64_t Constant2{};
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
@@ -702,8 +703,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
       // Fold the select into the CondJump if possible. Could handle more complex cases, too.
       if (Op->Cond.Val == COND_NEQ && IREmit->IsValueConstant(Op->Cmp2, &Constant) && Constant == 0 &&  Select->Op == OP_SELECT) {
 
-        uint64_t Constant1;
-        uint64_t Constant2;
+        uint64_t Constant1{};
+        uint64_t Constant2{};
 
         if (IREmit->IsValueConstant(Select->Args[2], &Constant1) && IREmit->IsValueConstant(Select->Args[3], &Constant2)) {
           if (Constant1 == 1 && Constant2 == 0) {
@@ -732,7 +733,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           auto Op = IROp->C<IR::IROp_Lshr>();
 
-          uint64_t Constant2;
+          uint64_t Constant2{};
           if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
@@ -754,7 +755,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           auto Op = IROp->C<IR::IROp_Add>();
 
-          uint64_t Constant2;
+          uint64_t Constant2{};
           if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
             if (IsImmAddSub(Constant2)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
@@ -771,7 +772,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           auto Op = IROp->C<IR::IROp_Select>();
 
-          uint64_t Constant1;
+          uint64_t Constant1{};
           if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
             if (IsImmAddSub(Constant1)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
@@ -782,8 +783,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
             }
           }
 
-          uint64_t Constant2;
-          uint64_t Constant3;
+          uint64_t Constant2{};
+          uint64_t Constant3{};
           if (IREmit->IsValueConstant(Op->Header.Args[2], &Constant2) &&
               IREmit->IsValueConstant(Op->Header.Args[3], &Constant3) &&
               Constant2 == 1 &&
@@ -802,7 +803,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           auto Op = IROp->C<IR::IROp_CondJump>();
 
-          uint64_t Constant2;
+          uint64_t Constant2{};
           if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
             if (IsImmAddSub(Constant2)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
@@ -821,7 +822,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           auto Op = IROp->CW<IR::IROp_Or>();
 
-          uint64_t Constant2;
+          uint64_t Constant2{};
           if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
             if (IsImmLogical(Constant2, IROp->Size * 8)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
@@ -838,7 +839,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           auto Op = IROp->CW<IR::IROp_LoadMem>();
 
-          uint64_t Constant2;
+          uint64_t Constant2{};
           if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
             if (IsImmMemory(Constant2, Op->Size)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
@@ -855,7 +856,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           auto Op = IROp->CW<IR::IROp_StoreMem>();
 
-          uint64_t Constant2;
+          uint64_t Constant2{};
           if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[2], &Constant2)) {
             if (IsImmMemory(Constant2, Op->Size)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));

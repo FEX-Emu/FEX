@@ -64,6 +64,7 @@ if (ENABLE_LLD)
 endif()
 
 if (ENABLE_ASAN)
+  add_definitions(-DENABLE_ASAN=1)
   add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
   link_libraries(-fno-omit-frame-pointer -fsanitize=address)
 endif()

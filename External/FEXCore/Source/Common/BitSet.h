@@ -15,10 +15,14 @@ struct BitSet final {
 
   ElementType *Memory;
   void Allocate(size_t Elements) {
-    Memory = static_cast<ElementType*>(malloc(AlignUp(Elements / MinimumSizeBits, MinimumSizeBits) * MinimumSize));
+    size_t AllocateSize = AlignUp(Elements, MinimumSizeBits) / MinimumSize;
+    LogMan::Throw::A((AllocateSize * MinimumSize) >= Elements, "Fail");
+    Memory = static_cast<ElementType*>(malloc(AllocateSize));
   }
   void Realloc(size_t Elements) {
-    Memory = static_cast<ElementType*>(realloc(Memory, AlignUp(Elements / MinimumSizeBits, MinimumSizeBits) * MinimumSize));
+    size_t AllocateSize = AlignUp(Elements, MinimumSizeBits) / MinimumSize;
+    LogMan::Throw::A((AllocateSize * MinimumSize) >= Elements, "Fail");
+    Memory = static_cast<ElementType*>(realloc(Memory, AllocateSize));
   }
   void Free() {
     free(Memory);
