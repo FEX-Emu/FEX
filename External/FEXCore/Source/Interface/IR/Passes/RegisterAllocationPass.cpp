@@ -188,7 +188,7 @@ namespace {
       FEXCore::IR::RegisterClassType InterferenceClass = FEXCore::IR::RegisterClassType{(uint32_t)(InterferenceNode->Head.RegAndClass >> 32)};
       uint32_t InterferenceReg = InterferenceNode->Head.RegAndClass;
       if (InterferenceReg != INVALID_REG &&
-          !Graph->Set.Classes[InterferenceClass].Conflicts.empty() &&
+          InterferenceReg < Graph->Set.Classes[InterferenceClass].Conflicts.size() &&
           Graph->Set.Classes[InterferenceClass].Conflicts[InterferenceReg] == RegAndClass) {
         return true;
       }
