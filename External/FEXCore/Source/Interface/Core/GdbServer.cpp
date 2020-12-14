@@ -44,7 +44,7 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
 
     // This is a total hack as there is currently no way to resume once hitting a segfault
     // But it's semi-useful for debugging.
-    ctx->SignalDelegation.RegisterHostSignalHandler(SIGSEGV, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+    ctx->SignalDelegation->RegisterHostSignalHandler(SIGSEGV, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
         this->Break(SIGSEGV);
 
         this->CTX->Config.RunningMode = FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP;
@@ -501,8 +501,9 @@ GdbServer::HandledPacketType GdbServer::handleXfer(std::string &packet) {
     };
 
     if (object == "exec-file") {
-      if (annex_pid == getpid())
-        return {encode(CTX->SyscallHandler->GetFilename()), HandledPacketType::TYPE_ACK};
+      if (annex_pid == getpid()) {
+        return {encode(Filename()), HandledPacketType::TYPE_ACK};
+      }
 
       return {"E00", HandledPacketType::TYPE_ACK};
     }
@@ -568,7 +569,7 @@ GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
   std::fstream fs;
   fs.open("/proc/self/maps", std::fstream::in | std::fstream::binary);
   std::string Line;
-  std::string const &RuntimeExecutable = CTX->SyscallHandler->GetFilename();
+  std::string const &RuntimeExecutable = Filename();
   while (std::getline(fs, Line)) {
     uint64_t Begin, End;
     char Filename[255];

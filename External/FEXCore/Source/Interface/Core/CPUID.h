@@ -2,6 +2,8 @@
 #include <functional>
 #include <unordered_map>
 
+#include <FEXCore/Core/CPUID.h>
+
 namespace FEXCore {
 namespace Context {
   struct Context;
@@ -20,11 +22,7 @@ private:
 public:
   void Init(FEXCore::Context::Context *ctx);
 
-  struct FunctionResults {
-    uint32_t eax, ebx, ecx, edx;
-  };
-
-  FunctionResults RunFunction(uint32_t Function) {
+  FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function) {
     auto Handler = FunctionHandlers.find(Function);
 
     if (Handler == FunctionHandlers.end())
@@ -35,7 +33,7 @@ public:
 private:
   FEXCore::Context::Context *CTX;
 
-  using FunctionHandler = std::function<FunctionResults()>;
+  using FunctionHandler = std::function<FEXCore::CPUID::FunctionResults()>;
   void RegisterFunction(uint32_t Function, FunctionHandler Handler) {
     FunctionHandlers[Function] = Handler;
   }
@@ -43,17 +41,17 @@ private:
   std::unordered_map<uint32_t, FunctionHandler> FunctionHandlers;
 
   // Functions
-  FunctionResults Function_0h();
-  FunctionResults Function_01h();
-  FunctionResults Function_06h();
-  FunctionResults Function_07h();
-  FunctionResults Function_8000_0000h();
-  FunctionResults Function_8000_0001h();
-  FunctionResults Function_8000_0002h();
-  FunctionResults Function_8000_0003h();
-  FunctionResults Function_8000_0004h();
-  FunctionResults Function_8000_0007h();
+  FEXCore::CPUID::FunctionResults Function_0h();
+  FEXCore::CPUID::FunctionResults Function_01h();
+  FEXCore::CPUID::FunctionResults Function_06h();
+  FEXCore::CPUID::FunctionResults Function_07h();
+  FEXCore::CPUID::FunctionResults Function_8000_0000h();
+  FEXCore::CPUID::FunctionResults Function_8000_0001h();
+  FEXCore::CPUID::FunctionResults Function_8000_0002h();
+  FEXCore::CPUID::FunctionResults Function_8000_0003h();
+  FEXCore::CPUID::FunctionResults Function_8000_0004h();
+  FEXCore::CPUID::FunctionResults Function_8000_0007h();
 
-  FunctionResults Function_Reserved();
+  FEXCore::CPUID::FunctionResults Function_Reserved();
 };
 }

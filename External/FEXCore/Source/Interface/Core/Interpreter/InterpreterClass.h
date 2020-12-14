@@ -42,7 +42,7 @@ private:
 
   uint32_t AllocateTmpSpace(size_t Size);
   bool HandleSignalPause(int Signal, void *info, void *ucontext);
-  bool HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack);
+  bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
 
   template<typename Res>
   Res GetDest(void* SSAData, IR::OrderedNodeWrapper Op);

@@ -2,6 +2,7 @@
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
@@ -159,10 +160,10 @@ DEF_OP(Syscall) {
   }
 
   mov(rsi, STATE); // Move thread in to rsi
-  mov(rdi, reinterpret_cast<uint64_t>(CTX->SyscallHandler.get()));
+  mov(rdi, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
   mov(rdx, rsp);
 
-  mov(rax, reinterpret_cast<uint64_t>(FEXCore::HandleSyscall));
+  mov(rax, reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall));
 
   if (NumPush & 1)
     sub(rsp, 8); // Align
@@ -209,7 +210,6 @@ DEF_OP(Thunk) {
 
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
-  uint8_t* NewCode = (uint8_t*)Op->CodePtr;
   uint8_t* OldCode = (uint8_t*)&Op->CodeOriginal;
   int len = Op->CodeLength;
   int idx = 0;
@@ -267,7 +267,7 @@ DEF_OP(RemoveCodeEntry) {
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
-  using ClassPtrType = FEXCore::CPUIDEmu::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t Function);
+  using ClassPtrType = FEXCore::CPUID::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t Function);
   union {
     ClassPtrType ClassPtr;
     uint64_t Raw;

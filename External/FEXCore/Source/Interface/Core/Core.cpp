@@ -18,6 +18,7 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 
 #include "Interface/HLE/Thunks/Thunks.h"
 
@@ -160,7 +161,7 @@ namespace FEXCore::Context {
   }
 
   void Context::SaveEntryList() {
-    std::string const &Filename = SyscallHandler->GetFilename();
+    std::string const &Filename = AppFilename();
     std::string hash_string;
 
     if (GetFilenameHash(Filename, hash_string)) {
@@ -178,7 +179,7 @@ namespace FEXCore::Context {
   }
 
   void Context::LoadEntryList() {
-    std::string const &Filename = SyscallHandler->GetFilename();
+    std::string const &Filename = AppFilename();
     std::string hash_string;
 
     if (GetFilenameHash(Filename, hash_string)) {
@@ -230,8 +231,6 @@ namespace FEXCore::Context {
   }
 
   bool Context::InitCore(FEXCore::CodeLoader *Loader) {
-    bool Is64Bit = Config.Is64BitMode;
-    SyscallHandler.reset(FEXCore::CreateHandler(Is64Bit ? OperatingMode::MODE_64BIT : OperatingMode::MODE_32BIT, this));
     ThunkHandler.reset(FEXCore::ThunkHandler::Create());
 
     LocalLoader = Loader;
@@ -288,7 +287,7 @@ namespace FEXCore::Context {
   }
 
   void Context::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
-    SignalDelegation.RegisterFrontendHostSignalHandler(Signal, Func);
+    SignalDelegation->RegisterFrontendHostSignalHandler(Signal, Func);
   }
 
   void Context::WaitForIdle() {
@@ -500,7 +499,8 @@ namespace FEXCore::Context {
 
     State->PassManager->AddDefaultPasses(Config.Core == FEXCore::Config::CONFIG_IRJIT);
     State->PassManager->AddDefaultValidationPasses();
-    State->PassManager->RegisterSyscallHandler(SyscallHandler.get());
+
+    State->PassManager->RegisterSyscallHandler(SyscallHandler);
 
     State->CTX = this;
 
@@ -850,7 +850,7 @@ namespace FEXCore::Context {
     // Let's do some initial bookkeeping here
     Thread->State.ThreadManager.TID = ::gettid();
     Thread->State.ThreadManager.PID = ::getpid();
-    SignalDelegation.RegisterTLSState(Thread);
+    SignalDelegation->RegisterTLSState(Thread);
     ThunkHandler->RegisterTLSState(Thread);
 
     ++IdleWaitRefCount;
@@ -890,7 +890,7 @@ namespace FEXCore::Context {
     --IdleWaitRefCount;
     IdleWaitCV.notify_all();
 
-    SignalDelegation.UninstallTLSState(Thread);
+    SignalDelegation->UninstallTLSState(Thread);
   }
 
   void Context::RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -968,6 +968,12 @@ namespace FEXCore::Context {
 
   FEXCore::Core::ThreadState *Context::GetThreadState() {
     return &ParentThread->State;
+  }
+
+  uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
+    uint64_t Result{};
+    Result = Handler->HandleSyscall(Thread, Args);
+    return Result;
   }
 
 }

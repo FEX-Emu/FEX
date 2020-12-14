@@ -2,6 +2,7 @@
 #include "Interface/Core/InternalThreadState.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 
 namespace FEXCore::CPU {
 using namespace vixl;
@@ -176,11 +177,11 @@ DEF_OP(Syscall) {
   }
   str(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
 
-  LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler.get()));
+  LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
   mov(x1, STATE);
   mov(x2, sp);
 
-  LoadConstant(x3, reinterpret_cast<uint64_t>(FEXCore::HandleSyscall));
+  LoadConstant(x3, reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall));
   blr(x3);
 
   // Result is now in x0
@@ -331,7 +332,7 @@ DEF_OP(CPUID) {
   LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->CPUID));
   mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
 
-  using ClassPtrType = FEXCore::CPUIDEmu::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t);
+  using ClassPtrType = FEXCore::CPUID::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t);
   union PtrCast {
     ClassPtrType ClassPtr;
     uintptr_t Data;

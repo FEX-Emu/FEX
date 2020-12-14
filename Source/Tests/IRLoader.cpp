@@ -3,6 +3,8 @@
 #include "Common/Config.h"
 #include "HarnessHelpers.h"
 #include "IRLoader/Loader.h"
+#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -118,6 +120,9 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MAXBLOCKINST, BlockSizeConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_GDBSERVER, GdbServerConfig());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ROOTFSPATH, LDPath());
+  std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+
+  FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
 
   FEX::IRLoader::InitializeStaticTables();
 	FEX::IRLoader::Loader Loader(Args[0], Args[1]);

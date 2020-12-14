@@ -5,10 +5,10 @@
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
-#include "Interface/HLE/Syscalls.h"
 #include <FEXCore/Utils/LogManager.h>
 
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 
@@ -337,18 +337,18 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
 
   if (!CompileThread) {
     CreateAsmDispatch(ctx, Thread);
-    CTX->SignalDelegation.RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
       return Core->HandleSignalPause(Signal, info, ucontext);
     });
 
-    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
       InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
       return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
     };
 
     for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
-      CTX->SignalDelegation.RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+      CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
     }
   }
 }
@@ -485,7 +485,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
       for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
         OrderedNodeWrapper WrapperOp = CodeNode->Wrapped(ListBegin);
         uint8_t OpSize = IROp->Size;
-        uint32_t Node = CurrentIR->GetID(CodeNode);
 
         switch (IROp->Op) {
           case IR::OP_VALIDATECODE: {
@@ -586,7 +585,7 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
               Args.Argument[j] = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[j]);
             }
 
-            uint64_t Res = FEXCore::HandleSyscall(CTX->SyscallHandler.get(), Thread, &Args);
+            uint64_t Res = FEXCore::Context::HandleSyscall(CTX->SyscallHandler, Thread, &Args);
             GD = Res;
             break;
           }

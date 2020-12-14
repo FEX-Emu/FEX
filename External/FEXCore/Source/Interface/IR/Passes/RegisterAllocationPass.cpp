@@ -4,6 +4,7 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 
 #include <iterator>
+#include <unordered_set>
 
 namespace {
   constexpr uint32_t INVALID_REG = ~0U;

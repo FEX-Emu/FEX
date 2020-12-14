@@ -29,6 +29,7 @@ namespace FEXCore::Config {
     CONFIG_DUMP_GPRS,
     CONFIG_IS_INTERPRETER,
     CONFIG_INTERPRETER_INSTALLED,
+    CONFIG_APP_FILENAME,
   };
 
   enum ConfigCore {

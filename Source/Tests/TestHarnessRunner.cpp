@@ -2,6 +2,8 @@
 #include "Common/EnvironmentLoader.h"
 #include "CommonCore/HostFactory.h"
 #include "HarnessHelpers.h"
+#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -94,7 +96,13 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostFactory::CPUCreationFactory);
 
   FEXCore::Context::InitializeContext(CTX);
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
+  std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  std::unique_ptr<FEXCore::HLE::SyscallHandler> SyscallHandler{FEX::HLE::CreateHandler(Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT, CTX, SignalDelegation.get())};
+
+  FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
+  FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
   bool Result1 = FEXCore::Context::InitCore(CTX, &Loader);
 
   if (!Result1)

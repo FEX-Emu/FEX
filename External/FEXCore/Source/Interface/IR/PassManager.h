@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-namespace FEXCore {
+namespace FEXCore::HLE {
 class SyscallHandler;
 }
 
@@ -56,13 +56,13 @@ public:
     return reinterpret_cast<IR::RegisterAllocationPass*>(RAPass);
   }
 
-  void RegisterSyscallHandler(SyscallHandler *Handler) {
+  void RegisterSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) {
     SyscallHandler = Handler;
   }
 
 protected:
   ShouldExitHandler ExitHandler;
-  SyscallHandler *SyscallHandler;
+  FEXCore::HLE::SyscallHandler *SyscallHandler;
 
 private:
   Pass *RAPass{};
