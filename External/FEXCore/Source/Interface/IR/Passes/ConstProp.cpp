@@ -24,6 +24,13 @@ static uint64_t getMask(T Op) {
   return (~0ULL) >> (64 - NumBits);
 }
 
+
+template<>
+static uint64_t getMask(IROp_Header* Op) {
+  uint64_t NumBits = Op->Size * 8;
+  return (~0ULL) >> (64 - NumBits);
+}
+
 #ifdef _M_X86_64
 // very lazy heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) { return imm < 0x8000'0000; }
@@ -105,6 +112,40 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
 
   // no match anywhere, just add
   return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[0]), IREmit->UnwrapNode(AddressHeader->Args[1]) };
+}
+
+OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t mask) {
+  auto IROp = IREmit->GetOpHeader(src);
+  if (IROp->Op == OP_AND) {
+    auto Op = IROp->C<IR::IROp_And>();
+    uint64_t imm;
+    if (IREmit->IsValueConstant(IROp->Args[1], &imm) && ((imm & mask) == mask)) {
+      return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
+    }
+  } else if (IROp->Op == OP_BFE) {
+    auto Op = IROp->C<IR::IROp_Bfe>();
+    if (Op->lsb == 0) {
+      uint64_t imm = 1ULL << (Op->Width-1);
+      imm = (imm-1) *2 + 1;
+
+      if ((imm & mask) == mask) {
+        return RemoveUselessMasking(IREmit, IROp->Args[0], mask); 
+      }
+    }
+  }
+
+  return src;
+}
+
+bool IsBfeAlreadyDone(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t Width) {
+  auto IROp = IREmit->GetOpHeader(src);
+  if (IROp->Op == OP_BFE) {
+    auto Op = IROp->C<IR::IROp_Bfe>();
+    if (Width >= Op->Width) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool ConstProp::Run(IREmitter *IREmit) {
@@ -226,6 +267,149 @@ bool ConstProp::Run(IREmitter *IREmit) {
   }
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
+    // zext / masking elimination
+    switch (IROp->Op) {
+      // Generic handling
+      case OP_OR:
+      case OP_XOR:
+      case OP_NOT:
+      case OP_ADD:
+      case OP_SUB:
+      case OP_MUL:
+      case OP_UMUL:
+      case OP_DIV:
+      case OP_UDIV:
+      case OP_LSHR:
+      case OP_ASHR:
+      case OP_LSHL:
+      case OP_ROR: {
+        for (int i = 0; i < IROp->NumArgs; i++) {
+          auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], getMask(IROp));
+          if (newArg != IROp->Args[i]) {
+            IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
+            Changed = true;
+          }
+        }
+        break;
+      }
+
+      case OP_AND: {
+        // if AND's arguments are imms, they are masking
+        for (int i = 0; i < IROp->NumArgs; i++) {
+          auto mask = getMask(IROp);
+          uint64_t imm = 0;
+          if (IREmit->IsValueConstant(IROp->Args[i^1], &imm))
+            mask = imm;
+
+          auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], imm);
+          
+          if (newArg != IROp->Args[i]) {
+            IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
+            Changed = true;
+          }
+        }
+        break;
+      }
+
+      case OP_BFE: {
+        auto Op = IROp->C<IR::IROp_Bfe>();
+
+        // Is this value already BFE'd?
+        if (IsBfeAlreadyDone(IREmit, IROp->Args[0], Op->Width)) {
+          IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
+          //printf("Removed BFE once \n");
+          break;
+        }
+
+        // Is this value already ZEXT'd?
+        if (Op->lsb == 0) {
+          //LoadMem, LoadMemTSO & LoadContext ZExt
+          auto source = IROp->Args[0];
+          auto sourceHeader = IREmit->GetOpHeader(source);
+
+          if (Op->Width >= (sourceHeader->Size*8)  &&
+            (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)
+          ) {
+            //printf("Eliminated needless zext bfe\n");
+            // Load mem / load ctx zexts, no need to vmem
+            IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
+            break;
+          }
+        }
+
+        // BFE does implicit masking, remove any masks leading to this, if possible
+        uint64_t imm = 1ULL << (Op->Width-1);
+        imm = (imm-1) *2 + 1;
+        imm <<= Op->lsb;
+        
+        auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
+        
+        if (newArg != IROp->Args[0]) {
+          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
+          Changed = true;
+        }
+        break;
+      }
+
+      case OP_SBFE: {
+        auto Op = IROp->C<IR::IROp_Sbfe>();
+
+        // BFE does implicit masking
+        uint64_t imm = 1ULL << (Op->Width-1);
+        imm = (imm-1) *2 + 1;
+        imm <<= Op->lsb;
+        
+        auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
+        
+        if (newArg != IROp->Args[0]) {
+          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
+          Changed = true;
+        }
+        break;
+      }
+
+      case OP_VFADD:
+      case OP_VFSUB:
+      case OP_VFMUL:
+      case OP_VFDIV:
+      case OP_FCMP: {
+        auto flopSize = IROp->Size;
+        for (int i = 0; i < IROp->NumArgs; i++) {
+          auto argHeader = IREmit->GetOpHeader(IROp->Args[i]);
+
+          if (argHeader->Op == OP_VMOV) {
+            auto source = argHeader->Args[0];
+            auto sourceHeader = IREmit->GetOpHeader(source);
+            if (sourceHeader->Size >= flopSize) {
+              IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(source));
+              //printf("VMOV bypassed\n");
+            }
+          }
+        }
+        break;
+      }
+
+      case OP_VMOV: {
+        // elim from load mem
+        auto source = IROp->Args[0];
+        auto sourceHeader = IREmit->GetOpHeader(source);
+
+        if (IROp->Size >= sourceHeader->Size  &&
+          (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)
+         ) {
+          //printf("Eliminated needless zext VMOV\n");
+          // Load mem / load ctx zexts, no need to vmem
+          IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
+        } else if (IROp->Size == sourceHeader->Size) {
+          // VMOV of same size
+          //printf("printf vmov of same size?!\n");
+          IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
+        }
+        break;
+      }
+    }
+
+    // constprop + some more per instruction logic
     switch (IROp->Op) {
 /*
     case OP_UMUL:
@@ -331,7 +515,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 - Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       }
     break;
     }
@@ -345,7 +528,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 & Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (Constant2 == 1) {
         // happens from flag calcs
         auto val = IREmit->GetOpHeader(Op->Header.Args[0]);
@@ -359,13 +541,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
           Changed = true;
-          continue;
         }
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // AND with same value results in original value
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         Changed = true;
-        continue;
       }
     break;
     }
@@ -379,12 +559,10 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = Constant1 | Constant2;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // OR with same value results in original value
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         Changed = true;
-        continue;
       }
     break;
     }
@@ -398,13 +576,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = Constant1 ^ Constant2;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // XOR with same value results to zero
         IREmit->SetWriteCursor(CodeNode);
         IREmit->ReplaceAllUsesWith(CodeNode, IREmit->_Constant(0));
         Changed = true;
-        continue;
       }
     break;
     }
@@ -418,7 +594,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 << Constant2) & getMask(Op);
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       }
       else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
                 Constant2 == 0) {
@@ -426,7 +601,38 @@ bool ConstProp::Run(IREmitter *IREmit) {
         OrderedNode *Arg = CurrentIR.GetNode(Op->Header.Args[0]);
         IREmit->ReplaceAllUsesWith(CodeNode, Arg);
         Changed = true;
-        continue;
+      } else {
+        auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
+        if (newArg != Op->Header.Args[1]) {
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
+          Changed = true;
+        }
+      }
+    break;
+    }
+    case OP_LSHR: {
+      auto Op = IROp->CW<IR::IROp_Lshr>();
+      uint64_t Constant1;
+      uint64_t Constant2;
+
+      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        uint64_t NewConstant = (Constant1 >> Constant2) & getMask(Op);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      }
+      else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) &&
+                Constant2 == 0) {
+        IREmit->SetWriteCursor(CodeNode);
+        OrderedNode *Arg = CurrentIR.GetNode(Op->Header.Args[0]);
+        IREmit->ReplaceAllUsesWith(CodeNode, Arg);
+        Changed = true;
+      } else {
+        auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
+        if (newArg != Op->Header.Args[1]) {
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
+          Changed = true;
+        }
       }
     break;
     }
@@ -442,7 +648,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (IROp->Size == CurrentIR.GetOp<IROp_Header>(Op->Header.Args[0])->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0 ) {
         // A BFE that extracts all bits results in original value
   // XXX - This is broken for now - see https://github.com/FEX-Emu/FEX/issues/351
@@ -462,7 +667,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
           Changed = true;
-          continue;
         }
       }
 
@@ -478,7 +682,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
         uint64_t NewConstant = (Constant1 * Constant2) & getMask(Op);
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-        continue;
       } else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && __builtin_popcountl(Constant2) == 1) {
         if (IROp->Size == 4 || IROp->Size == 8) {
           uint64_t amt = __builtin_ctzl(Constant2);
@@ -510,7 +713,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
             Op->Cond = slc->Cond;
             Op->CompareSize = slc->CompareSize;
             Changed = true;
-            continue;
           }
         }
       }
@@ -519,6 +721,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
     }
   }
 
+  // constant inlining
   if (!HeaderOp->ShouldInterpret && InlineConstants) {
     for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
       switch(IROp->Op) {
