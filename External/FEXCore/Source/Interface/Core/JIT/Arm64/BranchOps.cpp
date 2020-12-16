@@ -167,6 +167,7 @@ DEF_OP(Syscall) {
   // X2: Pointer to SyscallArguments
 
   PushDynamicRegsAndLR();
+  SpillStaticRegs();
 
   LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
   mov(x1, STATE);
@@ -177,6 +178,7 @@ DEF_OP(Syscall) {
 
   // Result is now in x0
   // Fix the stack and any values that were stepped on
+  FillStaticRegs();
   PopDynamicRegsAndLR();
 
   // Move result to its destination register
