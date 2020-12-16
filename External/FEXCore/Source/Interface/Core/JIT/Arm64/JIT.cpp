@@ -1148,9 +1148,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ldr(x3, &l_CompileBlock);
 
     // X2 contains our guest RIP
-    SpillStaticRegs(true);
+    SpillStaticRegs();
     blr(x3); // { CTX, ThreadState, RIP}
-    FillStaticRegs(true);
+    FillStaticRegs();
 
     // X0 now contains either nullptr or block pointer
     cbz(x0, &FallbackCore);
@@ -1168,9 +1168,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ldr(x3, &l_CompileFallback);
 
     // X2 contains our guest RIP
-    SpillStaticRegs(true);
+    SpillStaticRegs();
     blr(x3); // {ThreadState, RIP}
-    FillStaticRegs(true);
+    FillStaticRegs();
 
     // X0 now contains either nullptr or block pointer
     cbz(x0, &ExitSpillSRA);
@@ -1289,26 +1289,65 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   *GetBuffer() = OriginalBuffer;
 }
 
-void JITCore::SpillStaticRegs(bool OnlyCallerSaved) {
-  for (size_t i = 0; i < SRA64.size(); i++) {
-    if (!OnlyCallerSaved || SRA64[i].GetCode() <= 18)
-      str(SRA64[i], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
+void JITCore::SpillStaticRegs() {
+  for (size_t i = 0; i < SRA64.size(); i+=2) {
+      stp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
   }
 
   for (size_t i = 0; i < SRAFPR.size(); i++) {
-    str(SRAFPR[i].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
+    stp(SRAFPR[i].Q(), SRAFPR[i].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
   }
 }
 
-void JITCore::FillStaticRegs(bool OnlyCallerSaved) {
-  for (size_t i = 0; i < SRA64.size(); i++) {
-    if (!OnlyCallerSaved || SRA64[i].GetCode() <= 18)
-      ldr(SRA64[i], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
+void JITCore::FillStaticRegs() {
+  for (size_t i = 0; i < SRA64.size(); i+=2) {
+    ldp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
   }
 
-  for (size_t i = 0; i < SRAFPR.size(); i++) {
-    ldr(SRAFPR[i].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
+  for (size_t i = 0; i < SRAFPR.size(); i+=2) {
+    ldp(SRAFPR[i].Q(), SRAFPR[i].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
   }
+}
+
+void JITCore::PushDynamicRegsAndLR() {
+  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8 + RAFPR.size() * 16, 16);
+
+  sub(sp, sp, SPOffset);
+  int i = 0;
+
+  for (auto RA : RAFPR)
+  {
+    str(RA.Q(), MemOperand(sp, i * 8));
+    i+=2;
+  }
+
+  for (auto RA : RA64)
+  {
+    str(RA, MemOperand(sp, i * 8));
+    i++;
+  }
+  str(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
+}
+
+void JITCore::PopDynamicRegsAndLR() {
+  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8 + RAFPR.size() * 16, 16);
+  int i = 0;
+
+  for (auto RA : RAFPR)
+  {
+    ldr(RA.Q(), MemOperand(sp, i * 8));
+    i+=2;
+  }
+
+  for (auto RA : RA64)
+  {
+    ldr(RA, MemOperand(sp, i * 8));
+    i++;
+  }
+
+  ldr(lr, MemOperand(sp, i * 8 + 0 * 8));
+
+  add(sp, sp, SPOffset);
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
