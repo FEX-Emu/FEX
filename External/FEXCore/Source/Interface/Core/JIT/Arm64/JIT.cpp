@@ -411,7 +411,7 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
 
     if (!IsAddressInJITCode(_mcontext->pc, false)) {
       // We are in non-jit, SRA is already spilled
-      assert(!IsAddressInJITCode(_mcontext->pc, true));
+      LogMan::Throw::A(!IsAddressInJITCode(_mcontext->pc, true), "Signals in dispatcher have unsynchronized context");
       _mcontext->pc = ThreadPauseHandlerAddress;
     } else {
       // We are in jit, SRA must be spilled
@@ -455,7 +455,7 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
     // Set the new PC
     if (!IsAddressInJITCode(_mcontext->pc, false)) {
       // We are in non-jit, SRA is already spilled
-      assert(!IsAddressInJITCode(_mcontext->pc, true));
+      LogMan::Throw::A(!IsAddressInJITCode(_mcontext->pc, true), "Signals in dispatcher have unsynchronized context");
       _mcontext->pc = ThreadStopHandlerAddress;
     } else {
       // We are in jit, SRA must be spilled
@@ -665,8 +665,7 @@ auto Reg = GetPhys(RAPass, Node);
   } else if (Reg.Class == IR::GPRClass.Val) {
     return RA64[Reg.VId].W();
   } else {
-    printf("Unexpected Class: %d\n", Reg.Class);
-    assert(false);
+    LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
 }
 
@@ -678,8 +677,7 @@ aarch64::Register JITCore::GetReg<JITCore::RA_64>(uint32_t Node) {
   } else if (Reg.Class == IR::GPRClass.Val) {
     return RA64[Reg.VId];
   } else {
-    printf("Unexpected Class: %d\n", Reg.Class);
-    assert(false);
+    LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
 }
 
@@ -702,8 +700,7 @@ aarch64::VRegister JITCore::GetSrc(uint32_t Node) {
   } else if (Reg.Class == IR::FPRClass.Val) {
     return RAFPR[Reg.VId];
   } else {
-    printf("Unexpected Class: %d\n", Reg.Class);
-    assert(false);
+    LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
 }
 
@@ -714,8 +711,7 @@ aarch64::VRegister JITCore::GetDst(uint32_t Node) {
   } else if (Reg.Class == IR::FPRClass.Val) {
     return RAFPR[Reg.VId];
   } else {
-    printf("Unexpected Class: %d\n", Reg.Class);
-    assert(false);
+    LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
 }
 
@@ -1321,11 +1317,14 @@ void JITCore::PushDynamicRegsAndLR() {
     i+=2;
   }
 
+#if 0 // All GPRs should be caller saved
   for (auto RA : RA64)
   {
     str(RA, MemOperand(sp, i * 8));
     i++;
   }
+#endif
+
   str(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
 }
 
@@ -1339,11 +1338,13 @@ void JITCore::PopDynamicRegsAndLR() {
     i+=2;
   }
 
+#if 0 // All GPRs should be caller saved
   for (auto RA : RA64)
   {
     ldr(RA, MemOperand(sp, i * 8));
     i++;
   }
+#endif
 
   ldr(lr, MemOperand(sp, i * 8 + 0 * 8));
 

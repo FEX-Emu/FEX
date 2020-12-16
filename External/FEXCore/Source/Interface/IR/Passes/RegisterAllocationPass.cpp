@@ -503,7 +503,7 @@ namespace FEXCore::IR {
       } else if (StaticClass == FPRFixedClass) {
         return Size == 16;
       } else {
-        assert(false);
+        LogMan::Throw::A(false, "Unexpected static class %d", StaticClass);
       }
     };
 
@@ -513,7 +513,7 @@ namespace FEXCore::IR {
       } else if (StaticClass == FPRFixedClass) {
         return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0); // We need more meta info to support not-size-of-reg
       } else {
-        assert(false);
+        LogMan::Throw::A(false, "Unexpected static class %d", StaticClass);
       }
     };
 
@@ -525,15 +525,13 @@ namespace FEXCore::IR {
         auto endFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[17][0]);
 
         if (Offset >= beginGpr && Offset < endGpr) {
-          //assert(Class == GPRClass);
           auto reg = (Offset - beginGpr) / 8;
           return (uint64_t(GPRFixedClass.Val)<<32) | reg;
         } else if (Offset >= beginFpr && Offset < endFpr) {
-          //assert(Class == FPRClass);
           auto reg = (Offset - beginFpr) / 16;
           return (uint64_t(FPRFixedClass.Val)<<32) | reg;
         } else {
-          assert(false);
+          LogMan::Throw::A(false, "Unexpected Offset %d", Offset);
           return ~0UL;
         }
     };
@@ -550,15 +548,13 @@ namespace FEXCore::IR {
         auto endFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[17][0]);
 
         if (Offset >= beginGpr && Offset < endGpr) {
-          //assert(Class == GPRClass);
           auto reg = (Offset - beginGpr) / 8;
           return &StaticMaps[reg];
         } else if (Offset >= beginFpr && Offset < endFpr) {
-          //assert(Class == FPRClass);
           auto reg = (Offset - beginFpr) / 16;
           return &StaticMaps[GprSize + reg];
         } else {
-          assert(false);
+          LogMan::Throw::A(false, "Unexpected offset %d", Offset);
           return (LiveRange**)nullptr;
         }
     };
@@ -572,8 +568,7 @@ namespace FEXCore::IR {
       } else if (Class == FPRFixedClass.Val) {
         return &StaticMaps[GprSize + Reg];
       } else {
-        printf("Class: %d\n", Class);
-        assert(false);
+        LogMan::Throw::A(false, "Unexpected Class %d", Class);
         return (LiveRange**)nullptr;
       }
     };

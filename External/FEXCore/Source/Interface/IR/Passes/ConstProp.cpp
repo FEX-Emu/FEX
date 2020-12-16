@@ -235,7 +235,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       auto ghf = IROp->CW<IR::IROp_GetHostFlag>();
 
       auto fcmp = IREmit->GetOpHeader(ghf->GPR)->CW<IR::IROp_FCmp>();
-      assert(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP);
+      LogMan::Throw::A(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP, "Unexpected OP_GETHOSTFLAG source");
       if(fcmp->Header.Op == OP_FCMP) {
         fcmp->Flags |= 1 << ghf->Flag;
       }

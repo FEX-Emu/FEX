@@ -17,7 +17,7 @@ bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) {
 
   if (Offset >= begin && Offset < end) {
     auto reg = (Offset - begin) / 8;
-    assert(Class == IR::GPRClass);
+    LogMan::Throw::A(Class == IR::GPRClass, "unexpected Class %d", Class);
 
     rv = reg < 16; // 0..15 -> 16 in total
   }
@@ -32,7 +32,7 @@ bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) {
 
   if (Offset >= begin && Offset < end) {
     auto reg = (Offset - begin)/16;
-    assert(Class == IR::FPRClass || (AllowGpr && Class == IR::GPRClass));
+    LogMan::Throw::A(Class == IR::FPRClass || (AllowGpr && Class == IR::GPRClass), "unexpected Class %d, AllowGpr %d", Class, AllowGpr);
 
     rv = reg < 16; // 0..15 -> 16 in total
   }

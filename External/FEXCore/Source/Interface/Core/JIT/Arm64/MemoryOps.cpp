@@ -101,29 +101,29 @@ DEF_OP(LoadRegister) {
     auto regId = (Op->Offset - offsetof(FEXCore::Core::ThreadState, State.gregs[0])) / 8;
     auto regOffs = Op->Offset & 7;
 
-    assert(regId < SRA64.size());
+    LogMan::Throw::A(regId < SRA64.size(), "out of range regId");
 
     auto reg = SRA64[regId];
     
     switch(Op->Header.Size) {
       case 1:
-        assert(regOffs == 0 || regOffs == 1);
+        LogMan::Throw::A(regOffs == 0 || regOffs == 1, "unexpected regOffs");
         ubfx(GetReg<RA_64>(Node), reg, regOffs * 8, 8);
         break;
 
       case 2:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         ubfx(GetReg<RA_64>(Node), reg, 0, 16);
         break;
 
       case 4:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Node).GetCode() != reg.GetCode())
           mov(GetReg<RA_32>(Node), reg.W());
         break;
 
       case 8:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Node).GetCode() != reg.GetCode())
           mov(GetReg<RA_64>(Node), reg);
         break;
@@ -132,25 +132,24 @@ DEF_OP(LoadRegister) {
     auto regId = (Op->Offset - offsetof(FEXCore::Core::ThreadState, State.xmm[0][0])) / 16;
     auto regOffs = Op->Offset & 15;
 
-    assert(regId < SRAFPR.size());
+    LogMan::Throw::A(regId < SRAFPR.size(), "out of range regId");
 
     auto guest = SRAFPR[regId];
     auto host = GetSrc(Node);
 
     switch(Op->Header.Size) {
       case 1:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         mov(host.B(), guest.B());
         break;
 
       case 2:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         fmov(host.H(), guest.H());
         break;
 
       case 4:
-        //assert(regOffs == 0);
-        assert((regOffs & 3) == 0);
+        LogMan::Throw::A((regOffs & 3) == 0, "unexpected regOffs");
         if (regOffs == 0) {
           if (host.GetCode() != guest.GetCode())
             fmov(host.S(), guest.S());
@@ -160,8 +159,7 @@ DEF_OP(LoadRegister) {
         break;
 
       case 8:
-        //assert(regOffs == 0);
-        assert((regOffs & 7) == 0);
+        LogMan::Throw::A((regOffs & 7) == 0, "unexpected regOffs");
         if (regOffs == 0) {
           if (host.GetCode() != guest.GetCode())
             mov(host.D(), guest.D());
@@ -171,13 +169,13 @@ DEF_OP(LoadRegister) {
         break;
 
       case 16:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         if (host.GetCode() != guest.GetCode())
           mov(host.Q(), guest.Q());
         break;
     }
   } else {
-    assert(false);
+    LogMan::Throw::A(false, "Unhandled Op->Class %d", Op->Class);
   }
 }
 
@@ -190,28 +188,28 @@ DEF_OP(StoreRegister) {
     auto regId = Op->Offset / 8 - 1;
     auto regOffs = Op->Offset & 7;
 
-    assert(regId < SRA64.size());
+    LogMan::Throw::A(regId < SRA64.size(), "out of range regId");
 
     auto reg = SRA64[regId];
     
     switch(Op->Header.Size) {
       case 1:
-        assert(regOffs == 0 || regOffs == 1);
+        LogMan::Throw::A(regOffs == 0 || regOffs == 1, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), regOffs * 8, 8);
         break;
 
       case 2:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), 0, 16);
         break;
         
       case 4:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), 0, 32);
         break;
 
       case 8:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Op->Value.ID()).GetCode() != reg.GetCode())
           mov(reg, GetReg<RA_64>(Op->Value.ID()));
         break;
@@ -220,7 +218,7 @@ DEF_OP(StoreRegister) {
     auto regId = (Op->Offset - offsetof(FEXCore::Core::ThreadState, State.xmm[0][0])) / 16;
     auto regOffs = Op->Offset & 15;
 
-    assert(regId < SRAFPR.size());
+    LogMan::Throw::A(regId < SRAFPR.size());
 
     auto guest = SRAFPR[regId];
     auto host = GetSrc(Op->Value.ID());
@@ -231,28 +229,28 @@ DEF_OP(StoreRegister) {
         break;
 
       case 2:
-        assert((regOffs & 1) == 0);
+        LogMan::Throw::A((regOffs & 1) == 0, "unexpected regOffs");
         ins(guest.V8H(), regOffs/2, host.V8H(), 0);
         break;
 
       case 4:
-        assert((regOffs & 3) == 0);
+        LogMan::Throw::A((regOffs & 3) == 0, "unexpected regOffs");
         ins(guest.V4S(), regOffs/4, host.V4S(), 0);
         break;
 
       case 8:
-        assert((regOffs & 7) == 0);
+        LogMan::Throw::A((regOffs & 7) == 0, "unexpected regOffs");
         ins(guest.V2D(), regOffs / 8, host.V2D(), 0);
         break;
 
       case 16:
-        assert(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0);
         if (guest.GetCode() != host.GetCode())
           mov(guest.Q(), host.Q());
         break;
     }
   } else {
-    assert(false);
+    LogMan::Throw::A(false, "Unhandled Op->Class %d", Op->Class);
   }
 }
 

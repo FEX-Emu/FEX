@@ -1014,7 +1014,7 @@ DEF_OP(FCmp) {
   bool set = false;
 
   if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
-    assert(IR::FCMP_FLAG_EQ == 0);
+    LogMan::Throw::A(IR::FCMP_FLAG_EQ == 0, "IR::FCMP_FLAG_EQ must equal 0");
     // EQ or unordered
     cset(Dst, Condition::eq); // Z = 1
     csinc(Dst, Dst, xzr, Condition::vc); // IF !V ? Z : 1
