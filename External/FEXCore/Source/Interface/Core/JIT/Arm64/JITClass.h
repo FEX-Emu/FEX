@@ -95,7 +95,7 @@ public:
   bool HandleSIGILL(int Signal, void *info, void *ucontext);
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
   bool HandleSignalPause(int Signal, void *info, void *ucontext);
-  bool HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack);
+  bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
 
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   static CodeBuffer AllocateNewCodeBuffer(size_t Size);

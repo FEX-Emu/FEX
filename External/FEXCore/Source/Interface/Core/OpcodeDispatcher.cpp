@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 
 namespace FEXCore::IR {
 
@@ -46,30 +47,35 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
 
   constexpr size_t SyscallArgs = 7;
   std::array<uint64_t, SyscallArgs> *GPRIndexes {};
+  static std::array<uint64_t, SyscallArgs> GPRIndexes_64 = {
+    FEXCore::X86State::REG_RAX,
+    FEXCore::X86State::REG_RDI,
+    FEXCore::X86State::REG_RSI,
+    FEXCore::X86State::REG_RDX,
+    FEXCore::X86State::REG_R10,
+    FEXCore::X86State::REG_R8,
+    FEXCore::X86State::REG_R9,
+  };
 
-  if (CTX->Config.Is64BitMode) {
-    static std::array<uint64_t, SyscallArgs> GPRIndexes_64 = {
-      FEXCore::X86State::REG_RAX,
-      FEXCore::X86State::REG_RDI,
-      FEXCore::X86State::REG_RSI,
-      FEXCore::X86State::REG_RDX,
-      FEXCore::X86State::REG_R10,
-      FEXCore::X86State::REG_R8,
-      FEXCore::X86State::REG_R9,
-    };
+  static std::array<uint64_t, SyscallArgs> GPRIndexes_32 = {
+    FEXCore::X86State::REG_RAX,
+    FEXCore::X86State::REG_RBX,
+    FEXCore::X86State::REG_RCX,
+    FEXCore::X86State::REG_RDX,
+    FEXCore::X86State::REG_RSI,
+    FEXCore::X86State::REG_RDI,
+    FEXCore::X86State::REG_RBP,
+  };
+
+  auto OSABI = CTX->SyscallHandler->GetOSABI();
+  if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX64) {
     GPRIndexes = &GPRIndexes_64;
   }
-  else {
-    static std::array<uint64_t, SyscallArgs> GPRIndexes_32 = {
-      FEXCore::X86State::REG_RAX,
-      FEXCore::X86State::REG_RBX,
-      FEXCore::X86State::REG_RCX,
-      FEXCore::X86State::REG_RDX,
-      FEXCore::X86State::REG_RSI,
-      FEXCore::X86State::REG_RDI,
-      FEXCore::X86State::REG_RBP,
-    };
+  else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX32) {
     GPRIndexes = &GPRIndexes_32;
+  }
+  else {
+    LogMan::Msg::D("Unhandled OSABI syscall");
   }
 
   auto NewRIP = _Constant(GPRSize * 8, Op->PC);

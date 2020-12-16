@@ -127,7 +127,6 @@ set (SRCS
   Interface/Core/GdbServer.cpp
   Interface/Core/HostFeatures.cpp
   Interface/Core/OpcodeDispatcher.cpp
-  Interface/Core/SignalDelegator.cpp
   Interface/Core/X86Tables.cpp
   Interface/Core/X86DebugInfo.cpp
   Interface/Core/X86HelperGen.cpp
@@ -144,51 +143,6 @@ set (SRCS
   Interface/Core/X86Tables/VEXTables.cpp
   Interface/Core/X86Tables/X87Tables.cpp
   Interface/Core/X86Tables/XOPTables.cpp
-  Interface/HLE/FileManagement.cpp
-  Interface/HLE/EmulatedFiles/EmulatedFiles.cpp
-  Interface/HLE/Syscalls.cpp
-  Interface/HLE/x32/Syscalls.cpp
-  Interface/HLE/x32/FD.cpp
-  Interface/HLE/x32/FS.cpp
-  Interface/HLE/x32/Info.cpp
-  Interface/HLE/x32/Memory.cpp
-  Interface/HLE/x32/NotImplemented.cpp
-  Interface/HLE/x32/Semaphore.cpp
-  Interface/HLE/x32/Sched.cpp
-  Interface/HLE/x32/Socket.cpp
-  Interface/HLE/x32/Thread.cpp
-  Interface/HLE/x32/Time.cpp
-  Interface/HLE/x64/FD.cpp
-  Interface/HLE/x64/IO.cpp
-  Interface/HLE/x64/Ioctl.cpp
-  Interface/HLE/x64/Info.cpp
-  Interface/HLE/x64/Memory.cpp
-  Interface/HLE/x64/Msg.cpp
-  Interface/HLE/x64/NotImplemented.cpp
-  Interface/HLE/x64/Semaphore.cpp
-  Interface/HLE/x64/Sched.cpp
-  Interface/HLE/x64/Socket.cpp
-  Interface/HLE/x64/Thread.cpp
-  Interface/HLE/x64/Syscalls.cpp
-  Interface/HLE/x64/Time.cpp
-  Interface/HLE/Syscalls/EPoll.cpp
-  Interface/HLE/Syscalls/FD.cpp
-  Interface/HLE/Syscalls/FS.cpp
-  Interface/HLE/Syscalls/Info.cpp
-  Interface/HLE/Syscalls/IO.cpp
-  Interface/HLE/Syscalls/Key.cpp
-  Interface/HLE/Syscalls/Memory.cpp
-  Interface/HLE/Syscalls/Msg.cpp
-  Interface/HLE/Syscalls/Sched.cpp
-  Interface/HLE/Syscalls/Semaphore.cpp
-  Interface/HLE/Syscalls/SHM.cpp
-  Interface/HLE/Syscalls/Signals.cpp
-  Interface/HLE/Syscalls/Socket.cpp
-  Interface/HLE/Syscalls/Thread.cpp
-  Interface/HLE/Syscalls/Time.cpp
-  Interface/HLE/Syscalls/Timer.cpp
-  Interface/HLE/Syscalls/NotImplemented.cpp
-  Interface/HLE/Syscalls/Stubs.cpp
   Interface/HLE/Thunks/Thunks.cpp
   Interface/IR/IR.cpp
   Interface/IR/IREmitter.cpp

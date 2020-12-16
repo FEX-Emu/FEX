@@ -57,6 +57,7 @@ private:
     bool NoAckMode{false};
     std::string ThreadString{};
     uint32_t CurrentDebuggingThread{};
+    FEXCore::Config::Value<std::string> Filename{FEXCore::Config::CONFIG_APP_FILENAME, ""};
 };
 
 }

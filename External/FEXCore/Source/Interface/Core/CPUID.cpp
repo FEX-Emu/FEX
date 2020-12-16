@@ -7,8 +7,8 @@
 namespace FEXCore {
 //#define CPUID_AMD
 
-CPUIDEmu::FunctionResults CPUIDEmu::Function_0h() {
-  CPUIDEmu::FunctionResults Res{};
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h() {
+  FEXCore::CPUID::FunctionResults Res{};
 
   // EBX, EDX, ECX become the manufacturer id string
 #ifdef CPUID_AMD
@@ -26,8 +26,8 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_0h() {
 }
 
 // Processor Info and Features bits
-CPUIDEmu::FunctionResults CPUIDEmu::Function_01h() {
-  CPUIDEmu::FunctionResults Res{};
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h() {
+  FEXCore::CPUID::FunctionResults Res{};
 
   Res.eax = 0 | // Stepping
     (0 << 4) | // Model
@@ -109,15 +109,15 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_01h() {
   return Res;
 }
 
-CPUIDEmu::FunctionResults CPUIDEmu::Function_06h() {
-  CPUIDEmu::FunctionResults Res{};
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_06h() {
+  FEXCore::CPUID::FunctionResults Res{};
   Res.eax = (1 << 2); // Always running APIC
   Res.ecx = (0 << 3); // Intel performance energy bias preference (EPB)
   return Res;
 }
 
-CPUIDEmu::FunctionResults CPUIDEmu::Function_07h() {
-  CPUIDEmu::FunctionResults Res{};
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h() {
+  FEXCore::CPUID::FunctionResults Res{};
 
   // Number of subfunctions
   Res.eax = 0x0;
@@ -227,8 +227,8 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_07h() {
 }
 
 // Highest extended function implemented
-CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0000h() {
-  CPUIDEmu::FunctionResults Res{};
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h() {
+  FEXCore::CPUID::FunctionResults Res{};
   Res.eax = 0x8000001F;
 
   // EBX, EDX, ECX become the manufacturer id string
@@ -246,8 +246,8 @@ CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0000h() {
 }
 
 // Extended processor and feature bits
-CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0001h() {
-  CPUIDEmu::FunctionResults Res{};
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h() {
+  FEXCore::CPUID::FunctionResults Res{};
 
   Res.eax = 0 | // Stepping
     (0 << 4) | // Model
@@ -333,33 +333,33 @@ constexpr char ProcessorBrand[48] = {
 };
 
 //Processor brand string
-CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0002h() {
-  CPUIDEmu::FunctionResults Res{};
-  memcpy(&Res, &ProcessorBrand[0], sizeof(CPUIDEmu::FunctionResults));
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h() {
+  FEXCore::CPUID::FunctionResults Res{};
+  memcpy(&Res, &ProcessorBrand[0], sizeof(FEXCore::CPUID::FunctionResults));
   return Res;
 }
 
-CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0003h() {
-  CPUIDEmu::FunctionResults Res{};
-  memcpy(&Res, &ProcessorBrand[16], sizeof(CPUIDEmu::FunctionResults));
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h() {
+  FEXCore::CPUID::FunctionResults Res{};
+  memcpy(&Res, &ProcessorBrand[16], sizeof(FEXCore::CPUID::FunctionResults));
   return Res;
 }
 
-CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0004h() {
-  CPUIDEmu::FunctionResults Res{};
-  memcpy(&Res, &ProcessorBrand[32], sizeof(CPUIDEmu::FunctionResults));
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h() {
+  FEXCore::CPUID::FunctionResults Res{};
+  memcpy(&Res, &ProcessorBrand[32], sizeof(FEXCore::CPUID::FunctionResults));
   return Res;
 }
 
 // Advanced power management
-CPUIDEmu::FunctionResults CPUIDEmu::Function_8000_0007h() {
-  CPUIDEmu::FunctionResults Res{};
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h() {
+  FEXCore::CPUID::FunctionResults Res{};
   Res.eax = (1 << 2); // APIC timer not affected by p-state
   return Res;
 }
 
-CPUIDEmu::FunctionResults CPUIDEmu::Function_Reserved() {
-  CPUIDEmu::FunctionResults Res{};
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved() {
+  FEXCore::CPUID::FunctionResults Res{};
   return Res;
 }
 

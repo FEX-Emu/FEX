@@ -71,7 +71,7 @@ public:
 
   bool HandleSIGILL(int Signal, void *info, void *ucontext);
   bool HandleSignalPause(int Signal, void *info, void *ucontext);
-  bool HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack);
+  bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
 private:

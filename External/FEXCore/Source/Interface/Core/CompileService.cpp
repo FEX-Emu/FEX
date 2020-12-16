@@ -3,7 +3,6 @@
 #include "Interface/Core/CompileService.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/OpcodeDispatcher.h"
-#include "Interface/Core/SignalDelegator.h"
 
 namespace FEXCore {
   CompileService::CompileService(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
@@ -102,7 +101,7 @@ namespace FEXCore {
 
   void CompileService::ExecutionThread() {
     // Ignore signals coming from the guest
-    CTX->SignalDelegation.MaskThreadSignals();
+    CTX->SignalDelegation->MaskThreadSignals();
 
     // Set our thread name so we can see its relation
     char ThreadName[16]{};

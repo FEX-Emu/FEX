@@ -26,12 +26,6 @@ namespace FEXCore::Context {
     delete CTX;
   }
 
-  void SetApplicationFile(FEXCore::Context::Context *CTX, std::string const &File) {
-    CTX->SyscallHandler->SetFilename(File);
-    // XXX: This isn't good for debugging
-    // CTX->LoadEntryList();
-  }
-
   bool InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader) {
     return CTX->InitCore(Loader);
   }
@@ -94,10 +88,6 @@ namespace FEXCore::Context {
     CTX->FallbackCPUFactory = std::move(Factory);
   }
 
-  uint64_t HandleSyscall(FEXCore::Context::Context *CTX, FEXCore::Core::ThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
-    return FEXCore::HandleSyscall(CTX->SyscallHandler.get(), reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread), Args);
-  }
-
   bool AddVirtualMemoryMapping([[maybe_unused]] FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t VirtualAddress, [[maybe_unused]] uint64_t PhysicalAddress, [[maybe_unused]] uint64_t Size) {
     return false;
   }
@@ -111,6 +101,47 @@ namespace FEXCore::Context {
 
   void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func) {
     CTX->RegisterFrontendHostSignalHandler(Signal, Func);
+  }
+
+  FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
+    return CTX->CreateThread(NewThreadState, ParentTID);
+  }
+
+  void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    return CTX->InitializeThread(Thread);
+  }
+
+  void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    CTX->RunThread(Thread);
+  }
+
+  void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    CTX->StopThread(Thread);
+  }
+
+  void DeleteForkedThreads(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    // This function is called after fork
+    // We need to cleanup some of the thread data that is dead
+    for (auto &DeadThread : CTX->Threads) {
+      if (DeadThread == Thread) {
+        continue;
+      }
+
+      // Setting running to false ensures that when they are shutdown we won't send signals to kill them
+      DeadThread->State.RunningEvents.Running = false;
+    }
+  }
+
+  void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation) {
+    CTX->SignalDelegation = SignalDelegation;
+  }
+
+  void SetSyscallHandler(FEXCore::Context::Context *CTX, FEXCore::HLE::SyscallHandler *Handler) {
+    CTX->SyscallHandler = Handler;
+  }
+
+  FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, [[maybe_unused]] uint32_t Leaf) {
+    return CTX->CPUID.RunFunction(Function);
   }
 
 namespace Debug {
@@ -149,8 +180,6 @@ namespace Debug {
   FEXCore::Core::ThreadState *GetThreadState(FEXCore::Context::Context *CTX) {
     return CTX->GetThreadState();
   }
-
-
 }
 
 }

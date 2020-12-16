@@ -4,6 +4,7 @@
 #include <string>
 
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Core/CPUID.h>
 
 namespace FEXCore {
   class CodeLoader;
@@ -21,6 +22,7 @@ namespace FEXCore::CPU {
 namespace FEXCore::HLE {
   struct SyscallArguments;
   class SyscallVisitor;
+  class SyscallHandler;
 }
 
 namespace FEXCore::Context {
@@ -80,8 +82,6 @@ namespace FEXCore::Context {
    * @return true if we loaded code
    */
   bool InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
-
-  void SetApplicationFile(FEXCore::Context::Context *CTX, std::string const &File);
 
   void SetExitHandler(FEXCore::Context::Context *CTX, std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> handler);
   std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> GetExitHandler(FEXCore::Context::Context *CTX);
@@ -196,17 +196,6 @@ namespace FEXCore::Context {
   void SetFallbackCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory);
 
   /**
-   * @brief This allows a frontend core to call Syscall routines directly. Useful for debugging
-   *
-   * @param CTX The context that we created
-   * @param Thread The thread to run the syscall on
-   * @param Args The arguments to the syscall
-   *
-   * @return The value that a syscall returns
-   */
-  uint64_t HandleSyscall(FEXCore::Context::Context *CTX, FEXCore::Core::ThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);
-
-  /**
    * @brief Sets up memory regions on the guest for mirroring within the guest's VM space
    *
    * @param VirtualAddress The address we want to set to mirror a physical memory region
@@ -231,4 +220,12 @@ namespace FEXCore::Context {
 
   void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func);
 
+  FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
+  void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  void DeleteForkedThreads(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation);
+  void SetSyscallHandler(FEXCore::Context::Context *CTX, FEXCore::HLE::SyscallHandler *Handler);
+  FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf);
 }

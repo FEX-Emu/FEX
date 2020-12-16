@@ -12,7 +12,7 @@ static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 class DispatchGenerator : public Xbyak::CodeGenerator {
   public:
     DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
-    bool HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack);
+    bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
     bool HandleSignalPause(int Signal, void *info, void *ucontext);
 
   CPUBackend::AsmDispatch DispatchPtr;
@@ -342,10 +342,10 @@ void DispatchGenerator::RestoreThreadState(void *ucontext) {
 
   // Restore the previous signal state
   // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
-  CTX->SignalDelegation.SetCurrentSignal(Context->Signal);
+  CTX->SignalDelegation->SetCurrentSignal(Context->Signal);
 }
 
-bool DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {
+bool DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
@@ -450,7 +450,7 @@ void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore:
   ReturnPtr = Generator->ReturnPtr;
 }
 
-bool InterpreterCore::HandleGuestSignal(int Signal, void *info, void *ucontext, SignalDelegator::GuestSigAction *GuestAction, stack_t *GuestStack) {
+bool InterpreterCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
   DispatchGenerator *Gen = Generator;
   return Gen->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
 }

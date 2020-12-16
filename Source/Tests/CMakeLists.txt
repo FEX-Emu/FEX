@@ -6,10 +6,57 @@ if(NOT CMAKE_ASM_NASM_COMPILER_LOADED)
   error("Failed to find NASM compatible assembler!")
 endif()
 
-
+set(SYSCALL_SRCS
+  LinuxSyscalls/FileManagement.cpp
+  LinuxSyscalls/EmulatedFiles/EmulatedFiles.cpp
+  LinuxSyscalls/SignalDelegator.cpp
+  LinuxSyscalls/Syscalls.cpp
+  LinuxSyscalls/x32/Syscalls.cpp
+  LinuxSyscalls/x32/FD.cpp
+  LinuxSyscalls/x32/FS.cpp
+  LinuxSyscalls/x32/Info.cpp
+  LinuxSyscalls/x32/Memory.cpp
+  LinuxSyscalls/x32/NotImplemented.cpp
+  LinuxSyscalls/x32/Semaphore.cpp
+  LinuxSyscalls/x32/Sched.cpp
+  LinuxSyscalls/x32/Socket.cpp
+  LinuxSyscalls/x32/Thread.cpp
+  LinuxSyscalls/x32/Time.cpp
+  LinuxSyscalls/x64/FD.cpp
+  LinuxSyscalls/x64/IO.cpp
+  LinuxSyscalls/x64/Ioctl.cpp
+  LinuxSyscalls/x64/Info.cpp
+  LinuxSyscalls/x64/Memory.cpp
+  LinuxSyscalls/x64/Msg.cpp
+  LinuxSyscalls/x64/NotImplemented.cpp
+  LinuxSyscalls/x64/Semaphore.cpp
+  LinuxSyscalls/x64/Sched.cpp
+  LinuxSyscalls/x64/Socket.cpp
+  LinuxSyscalls/x64/Thread.cpp
+  LinuxSyscalls/x64/Syscalls.cpp
+  LinuxSyscalls/x64/Time.cpp
+  LinuxSyscalls/Syscalls/EPoll.cpp
+  LinuxSyscalls/Syscalls/FD.cpp
+  LinuxSyscalls/Syscalls/FS.cpp
+  LinuxSyscalls/Syscalls/Info.cpp
+  LinuxSyscalls/Syscalls/IO.cpp
+  LinuxSyscalls/Syscalls/Key.cpp
+  LinuxSyscalls/Syscalls/Memory.cpp
+  LinuxSyscalls/Syscalls/Msg.cpp
+  LinuxSyscalls/Syscalls/Sched.cpp
+  LinuxSyscalls/Syscalls/Semaphore.cpp
+  LinuxSyscalls/Syscalls/SHM.cpp
+  LinuxSyscalls/Syscalls/Signals.cpp
+  LinuxSyscalls/Syscalls/Socket.cpp
+  LinuxSyscalls/Syscalls/Thread.cpp
+  LinuxSyscalls/Syscalls/Time.cpp
+  LinuxSyscalls/Syscalls/Timer.cpp
+  LinuxSyscalls/Syscalls/NotImplemented.cpp
+  LinuxSyscalls/Syscalls/Stubs.cpp
+  )
 set(LIBS FEXCore Common CommonCore pthread)
 set(NAME FEXLoader)
-set(SRCS ELFLoader.cpp)
+set(SRCS ELFLoader.cpp ${SYSCALL_SRCS})
 
 add_executable(${NAME} ${SRCS})
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
@@ -72,7 +119,8 @@ target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_link_libraries(${NAME} ${LIBS})
 
 set(NAME TestHarnessRunner)
-set(SRCS TestHarnessRunner.cpp)
+set(SRCS TestHarnessRunner.cpp
+  ${SYSCALL_SRCS})
 
 add_executable(${NAME} ${SRCS})
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
@@ -90,7 +138,8 @@ target_link_libraries(${NAME} ${LIBS})
 set(NAME IRLoader)
 set(SRCS
   IRLoader.cpp
-  IRLoader/Loader.cpp)
+  IRLoader/Loader.cpp
+  ${SYSCALL_SRCS})
 
 add_executable(${NAME} ${SRCS})
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)

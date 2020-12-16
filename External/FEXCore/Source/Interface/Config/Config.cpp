@@ -29,9 +29,6 @@ namespace FEXCore::Config {
     case FEXCore::Config::CONFIG_IS64BIT_MODE:
       CTX->Config.Is64BitMode = Config != 0;
     break;
-    case FEXCore::Config::CONFIG_EMULATED_CPU_CORES:
-      CTX->Config.EmulatedCPUCores = std::max(1UL, Config);
-    break;
     case FEXCore::Config::CONFIG_TSO_ENABLED:
       CTX->Config.TSOEnabled = Config != 0;
     break;
@@ -84,9 +81,6 @@ namespace FEXCore::Config {
     break;
     case FEXCore::Config::CONFIG_IS64BIT_MODE:
       return CTX->Config.Is64BitMode;
-    break;
-    case FEXCore::Config::CONFIG_EMULATED_CPU_CORES:
-      return CTX->Config.EmulatedCPUCores;
     break;
     case FEXCore::Config::CONFIG_TSO_ENABLED:
       return CTX->Config.TSOEnabled;

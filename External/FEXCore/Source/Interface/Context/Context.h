@@ -4,9 +4,7 @@
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/InternalThreadState.h"
-#include "Interface/Core/SignalDelegator.h"
 #include "Interface/Core/X86HelperGen.h"
-#include "Interface/HLE/Syscalls.h"
 #include "Interface/IR/PassManager.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUBackend.h>
@@ -17,13 +15,16 @@
 #include <mutex>
 
 namespace FEXCore {
-class SyscallHandler;
 class ThunkHandler;
 class BlockSamplingData;
 class GdbServer;
+class SiganlDelegator;
 
 namespace CPU {
   class JITCore;
+}
+namespace HLE {
+class SyscallHandler;
 }
 }
 
@@ -41,7 +42,7 @@ namespace FEXCore::Context {
   };
 
   struct Context {
-    friend class FEXCore::SyscallHandler;
+    friend class FEXCore::HLE::SyscallHandler;
     friend class FEXCore::CPU::JITCore;
     friend class FEXCore::IR::Validation::IRValidation;
 
@@ -57,14 +58,13 @@ namespace FEXCore::Context {
       std::string ThunkLibsPath;
 
       bool Is64BitMode {true};
-      uint64_t EmulatedCPUCores{1};
       bool TSOEnabled {true};
       bool SMCChecks {false};
       bool ABILocalFlags {false};
       bool ABINoPF {false};
 
       std::string DumpIR;
-      
+
     } Config;
 
     FEXCore::HostFeatures HostFeatures;
@@ -83,7 +83,7 @@ namespace FEXCore::Context {
     bool Running{};
 
     FEXCore::CPUIDEmu CPUID;
-    std::unique_ptr<FEXCore::SyscallHandler> SyscallHandler;
+    FEXCore::HLE::SyscallHandler *SyscallHandler{};
     std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
 
     CustomCPUFactoryType CustomCPUFactory;
@@ -94,7 +94,7 @@ namespace FEXCore::Context {
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif
 
-    SignalDelegator SignalDelegation;
+    SignalDelegator *SignalDelegation{};
     X86GeneratedCode X86CodeGen;
 
     Context();
@@ -139,8 +139,6 @@ namespace FEXCore::Context {
     uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileFallbackBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
-    FEXCore::CodeLoader *GetCodeLoader() const { return LocalLoader; }
-
     // Used for thread creation from syscalls
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
@@ -178,5 +176,8 @@ namespace FEXCore::Context {
 #if ENABLE_JITSYMBOLS
     FEXCore::JITSymbols Symbols;
 #endif
+    FEXCore::Config::Value<std::string> AppFilename{FEXCore::Config::CONFIG_APP_FILENAME, ""};
   };
+
+  uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);
 }

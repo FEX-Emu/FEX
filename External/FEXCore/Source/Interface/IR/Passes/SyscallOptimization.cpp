@@ -2,6 +2,7 @@
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
+#include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore::IR {
@@ -22,12 +23,12 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
       // Is the first argument a constant?
       uint64_t Constant;
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant)) {
-        auto SyscallDef = Manager->SyscallHandler->GetDefinition(Constant);
+        auto SyscallDef = Manager->SyscallHandler->GetSyscallABI(Constant);
         // XXX: Once we have the ability to do real function calls then we can call directly in to the syscall handler
-        if (SyscallDef->NumArgs < FEXCore::HLE::SyscallArguments::MAX_ARGS) {
+        if (SyscallDef.NumArgs < FEXCore::HLE::SyscallArguments::MAX_ARGS) {
           // If the number of args are less than what the IR op supports then we can remove arg usage
           // We need +1 since we are still passing in syscall number here
-          for (uint8_t Arg = (SyscallDef->NumArgs + 1); Arg < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++Arg) {
+          for (uint8_t Arg = (SyscallDef.NumArgs + 1); Arg < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++Arg) {
             IREmit->ReplaceNodeArgument(CodeNode, Arg, IREmit->Invalid());
           }
           Changed = true;
