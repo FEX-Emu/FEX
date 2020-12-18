@@ -1322,7 +1322,7 @@ void JITCore::PushDynamicRegsAndLR() {
   }
 #endif
 
-  str(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
+  str(lr, MemOperand(sp, i * 8 + 0 * 8));
 }
 
 void JITCore::PopDynamicRegsAndLR() {
