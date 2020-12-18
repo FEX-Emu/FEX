@@ -218,7 +218,7 @@ DEF_OP(StoreRegister) {
     auto regId = (Op->Offset - offsetof(FEXCore::Core::ThreadState, State.xmm[0][0])) / 16;
     auto regOffs = Op->Offset & 15;
 
-    LogMan::Throw::A(regId < SRAFPR.size());
+    LogMan::Throw::A(regId < SRAFPR.size(), "regId out of range");
 
     auto guest = SRAFPR[regId];
     auto host = GetSrc(Op->Value.ID());
@@ -244,7 +244,7 @@ DEF_OP(StoreRegister) {
         break;
 
       case 16:
-        LogMan::Throw::A(regOffs == 0);
+        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         if (guest.GetCode() != host.GetCode())
           mov(guest.Q(), host.Q());
         break;
