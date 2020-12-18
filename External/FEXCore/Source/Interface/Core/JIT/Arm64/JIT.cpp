@@ -759,8 +759,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     return reinterpret_cast<void*>(ThreadSharedData.InterpreterFallbackHelperAddress);
   }
   
-  // Debug Helper
-  //LoadConstant(x0, HeaderOp->Entry);
+  #ifndef NDEBUG
+  LoadConstant(x0, HeaderOp->Entry);
+  #endif
 
   this->IR = IR;
 
@@ -797,7 +798,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   auto Buffer = GetBuffer();
   auto Entry = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
-  //brk(0);
 
   if (SpillSlots) {
     add(TMP1, sp, 0); // Move that supports SP
@@ -1291,7 +1291,7 @@ void JITCore::SpillStaticRegs() {
   }
 
   for (size_t i = 0; i < SRAFPR.size(); i++) {
-    stp(SRAFPR[i].Q(), SRAFPR[i].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
+    stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
   }
 }
 
@@ -1301,7 +1301,7 @@ void JITCore::FillStaticRegs() {
   }
 
   for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-    ldp(SRAFPR[i].Q(), SRAFPR[i].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
+    ldp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
   }
 }
 
