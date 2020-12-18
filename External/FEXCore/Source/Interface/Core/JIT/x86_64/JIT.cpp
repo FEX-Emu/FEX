@@ -361,9 +361,6 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   RAPass->AddRegisters(FEXCore::IR::GPRClass, NumGPRs);
   RAPass->AddRegisters(FEXCore::IR::FPRClass, NumXMMs);
   RAPass->AddRegisters(FEXCore::IR::GPRPairClass, NumGPRPairs);
-  
-  RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRClass, NumGPRs);
-  RAPass->AllocateRegisterConflicts(FEXCore::IR::GPRPairClass, NumGPRs);
 
   for (uint32_t i = 0; i < NumGPRPairs; ++i) {
     RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2,     FEXCore::IR::GPRPairClass, i);

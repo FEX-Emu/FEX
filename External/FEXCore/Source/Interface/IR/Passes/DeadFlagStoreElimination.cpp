@@ -70,7 +70,7 @@ bool DeadFlagStoreElimination::Run(IREmitter *IREmit) {
           // stores to remove are written by the next block but not read
           FlagMap[BlockNode].kill = FlagMap[TargetNode].writes & ~(FlagMap[TargetNode].reads) & ~FlagMap[BlockNode].reads;
 
-          // GPRs that are written by the next block can be considered as written by this block, if not read
+          // Flags that are written by the next block can be considered as written by this block, if not read
           FlagMap[BlockNode].writes |= FlagMap[BlockNode].kill & ~FlagMap[BlockNode].reads;
         }
         else if (IROp->Op == OP_CONDJUMP) {

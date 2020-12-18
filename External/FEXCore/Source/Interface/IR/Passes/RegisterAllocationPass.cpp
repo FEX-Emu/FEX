@@ -114,10 +114,6 @@ namespace {
     Graph->Set.Conflicts.insert({RegAndClassConflict, RegAndClass});
   }
 
-  void VirtualAllocateRegisterConflicts(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) {
-    //Graph->Set.Classes[Class].Conflicts.resize(NumConflicts);
-  }
-
   // Returns the new register ID that was the previous top
   uint32_t AllocateMoreRegisters(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class) {
     RegisterClass &LocalClass = Graph->Set.Classes[Class];
@@ -296,9 +292,7 @@ namespace FEXCore::IR {
 
       void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) override;
       void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) override;
-      void AddStaticRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterBase, uint32_t RegisterCount) override;
       void AddRegisterConflict(FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) override;
-      void AllocateRegisterConflicts(FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) override;
 
       /**
        * @brief Returns the register and class encoded together
@@ -337,7 +331,6 @@ namespace FEXCore::IR {
 
       uint32_t FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost = -1);
       uint32_t FindSpillSlot(uint32_t Node, FEXCore::IR::RegisterClassType RegisterClass);
-      uint32_t StaticRegisterBase;
 
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
   };
@@ -364,17 +357,8 @@ namespace FEXCore::IR {
     PhysicalRegisterCount[Class] = RegisterCount;
   }
 
-
-  void ConstrainedRAPass::AddStaticRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterBase, uint32_t RegisterCount) {
-    StaticRegisterBase = RegisterBase;
-  }
-
   void ConstrainedRAPass::AddRegisterConflict(FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) {
     VirtualAddRegisterConflict(Graph, ClassConflict, RegConflict, Class, Reg);
-  }
-
-  void ConstrainedRAPass::AllocateRegisterConflicts(FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) {
-    VirtualAllocateRegisterConflicts(Graph, Class, NumConflicts);
   }
 
   uint64_t ConstrainedRAPass::GetNodeRegister(uint32_t Node) {
@@ -497,6 +481,9 @@ namespace FEXCore::IR {
 
   void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView<false> *IR) {
 
+    // Helpers
+
+    // Is an OP_STOREREGISTER eligible to write directly to the SRA reg?
     auto IsPreWritable = [](uint8_t Size, RegisterClassType StaticClass) {
       if (StaticClass == GPRFixedClass) {
         return Size == 8;
@@ -507,6 +494,7 @@ namespace FEXCore::IR {
       }
     };
 
+    // Is an OP_LOADREGISTER eligible to read directly from the SRA reg?
     auto IsAliasable = [](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
       if (StaticClass == GPRFixedClass) {
         return (Size == 8 /*|| Size == 4*/) && ((Offset & 7) == 0); // We need more meta info to support not-size-of-reg
@@ -517,6 +505,7 @@ namespace FEXCore::IR {
       }
     };
 
+    // Get SRA Reg and Class from a Context offset
     auto GetRegAndClassFromOffset = [](uint32_t Offset) {
         auto beginGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[0]);
         auto endGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[17]);
@@ -540,6 +529,7 @@ namespace FEXCore::IR {
     auto MapsSize = PhysicalRegisterCount[GPRFixedClass.Val] + PhysicalRegisterCount[FPRFixedClass.Val];
     LiveRange* StaticMaps[MapsSize];
     
+    // Get a StaticMap entry from context offset
     auto GetStaticMapFromOffset = [&](uint32_t Offset) {
         auto beginGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[0]);
         auto endGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[17]);
@@ -559,6 +549,7 @@ namespace FEXCore::IR {
         }
     };
 
+    // Get a StaticMap entry from reg and class
     auto GetStaticMapFromReg = [&](int64_t RegAndClass) {
       uint32_t Class = RegAndClass >> 32;
       uint32_t Reg = RegAndClass;
@@ -573,7 +564,7 @@ namespace FEXCore::IR {
       }
     };
 
-    // do a pass to set writen IDs
+    //First pass: Mark pre-writes
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         uint32_t Node = IR->GetID(CodeNode);
@@ -595,12 +586,16 @@ namespace FEXCore::IR {
       }
     }
 
-    ////
+    // Second pass:
+    // - Demote pre-writes if read after pre-write
+    // - Mark read-aliases
+    // - Demote read-aliases if SRA reg is written before the alias's last read
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       memset(StaticMaps, 0, MapsSize * sizeof(LiveRange*));
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         uint32_t Node = IR->GetID(CodeNode);
 
+        // Check for read-after-write and demote if it happens
         uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
@@ -616,8 +611,10 @@ namespace FEXCore::IR {
           }
         }
 
-
+        // This op defines a span
         if (IROp->HasDest) {
+
+          // If this is a pre-write, update the StaticMap so we track writes
           if (LiveRanges[Node].PrefferedRegister  != -1) {
             SRA_DEBUG("ssa%d is a pre-write\n", Node);
             auto StaticMap = GetStaticMapFromReg(LiveRanges[Node].PrefferedRegister);
@@ -628,6 +625,10 @@ namespace FEXCore::IR {
             (*StaticMap) = &LiveRanges[Node];
           }
 
+          // Opcode is an SRA read
+          // Check if
+          // - There is not a pre-write before this read. If there is one, demote to no pre-write
+          // - Try to read-alias if possible
           if (IROp->Op == OP_LOADREGISTER) {
             auto Op = IROp->C<IR::IROp_LoadRegister>();
 
@@ -665,17 +666,15 @@ namespace FEXCore::IR {
           }
         }
 
+        // OP is an OP_STOREREGISTER
+        // - If there was a matching pre-write, clear the pre-write flag as the register is no longer pre-written
+        // - Mark the SRA span as written, so that any further reads demote it from read-aliases if they happen
         if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
 
-          //int -1 /*vreg*/ = (int)(Op->Offset / 8) - 1;
           auto StaticMap = GetStaticMapFromOffset(Op->Offset);
           // if a read pending, it has been writting
           if ((*StaticMap)) {
-            // old way of calculating this
-            //uint32_t ID  = (*StaticMap) - &LiveRanges[0];
-            // ID != Op->Value.ID() || IROp->Size != 8
-
             // writes to self don't invalidate the span
             if ((*StaticMap)->PreWritten != Node) {
               SRA_DEBUG("Markng ssa%d as written because ssa%d writes to sra%d with value ssa%d. Write size is %d\n", ID, Node, -1 /*vreg*/, Op->Value.ID(), IROp->Size);
@@ -1196,7 +1195,6 @@ namespace FEXCore::IR {
           bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass >= PhysicalRegisterCount.at(RegClass);
       
           if (NeedsToSpill) {
-            //printf("SPILL Class: %d %lX, %x\n", RegClass, CurrentNode->Head.RegAndClass, PhysicalRegisterCount.at(RegClass));
             bool Spilled = false;
 
             // First let's just check for constants that we can just rematerialize instead of spilling
@@ -1367,7 +1365,7 @@ namespace FEXCore::IR {
         // Remap virtual 1:1 to physical
         HadFullRA &= TopRAPressure[i] <= PhysicalRegisterCount[i];
       }
-      
+
       if (HadFullRA) {
         break;
       }

@@ -1,8 +1,6 @@
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
-// Higher values might result in more stores getting eliminated but will make the optimization take more time
-
 namespace FEXCore::IR {
 
 class StaticRegisterAllocationPass final : public FEXCore::IR::Pass {
@@ -40,14 +38,7 @@ bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) {
   return rv;
 }
 /**
- * @brief This is a temporary pass to detect simple multiblock dead GPR stores
- *
- * First pass computes which GPRs are read and written per block
- *
- * Second pass computes which GPRs are stored, but overwritten by the next block(s).
- * It also propagates this information a few times to catch dead GPRs across multiple blocks.
- *
- * Third pass removes the dead stores.
+ * @brief This pass replaces Load/Store Context with Load/Store Register for Statically Mapped registers. It also does some validation.
  *
  */
 bool StaticRegisterAllocationPass::Run(IREmitter *IREmit) {
