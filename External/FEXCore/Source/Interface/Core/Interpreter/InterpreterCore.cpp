@@ -1081,7 +1081,15 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
             uint8_t Mask = OpSize * 8 - 1;
-            GD = Src1 >> (Src2 & Mask);
+            switch (OpSize) {
+              case 4:
+                GD = static_cast<uint32_t>(Src1) >> (Src2 & Mask);
+                break;
+              case 8:
+                GD = static_cast<uint64_t>(Src1) >> (Src2 & Mask);
+                break;
+              default: LogMan::Msg::A("Unknown LSHR Size: %d\n", OpSize); break;
+            };
             break;
           }
           case IR::OP_ASHR: {
@@ -1090,12 +1098,6 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
             uint8_t Mask = OpSize * 8 - 1;
             switch (OpSize) {
-              case 1:
-                GD = (uint8_t)(static_cast<int8_t>(Src1) >> (Src2 & Mask));
-                break;
-              case 2:
-                GD = (uint16_t)(static_cast<int16_t>(Src1) >> (Src2 & Mask));
-                break;
               case 4:
                 GD = (uint32_t)(static_cast<int32_t>(Src1) >> (Src2 & Mask));
                 break;
