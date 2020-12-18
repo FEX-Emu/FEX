@@ -169,6 +169,13 @@ DEF_OP(Syscall) {
   PushDynamicRegsAndLR();
   SpillStaticRegs();
 
+  uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
+  sub(sp, sp, SPOffset);
+  for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++i) {
+    if (Op->Header.Args[i].IsInvalid()) continue;
+    str(GetReg<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, i * 8));
+  }
+
   LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
   mov(x1, STATE);
   mov(x2, sp);
@@ -176,6 +183,8 @@ DEF_OP(Syscall) {
   LoadConstant(x3, reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall));
   blr(x3);
 
+  add(sp, sp, SPOffset);
+  
   // Result is now in x0
   // Fix the stack and any values that were stepped on
   FillStaticRegs();

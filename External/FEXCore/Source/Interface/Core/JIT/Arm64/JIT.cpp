@@ -1287,7 +1287,7 @@ void JITCore::SpillStaticRegs() {
       stp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
   }
 
-  for (size_t i = 0; i < SRAFPR.size(); i++) {
+  for (size_t i = 0; i < SRAFPR.size(); i+=2) {
     stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
   }
 }
@@ -1322,7 +1322,7 @@ void JITCore::PushDynamicRegsAndLR() {
   }
 #endif
 
-  str(lr, MemOperand(sp, i * 8 + 0 * 8));
+  str(lr, MemOperand(sp, i * 8));
 }
 
 void JITCore::PopDynamicRegsAndLR() {
@@ -1343,7 +1343,7 @@ void JITCore::PopDynamicRegsAndLR() {
   }
 #endif
 
-  ldr(lr, MemOperand(sp, i * 8 + 0 * 8));
+  ldr(lr, MemOperand(sp, i * 8));
 
   add(sp, sp, SPOffset);
 }
