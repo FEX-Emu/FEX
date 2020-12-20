@@ -37,7 +37,7 @@ void InitializeSecondaryModRMTables();
 void InitializeX87Tables();
 void InitializeDDDTables();
 void InitializeH0F38Tables();
-void InitializeH0F3ATables();
+void InitializeH0F3ATables(Context::OperatingMode Mode);
 void InitializeVEXTables();
 void InitializeXOPTables();
 void InitializeEVEXTables();
@@ -94,7 +94,7 @@ void InitializeInfoTables(Context::OperatingMode Mode) {
   InitializeX87Tables();
   InitializeDDDTables();
   InitializeH0F38Tables();
-  InitializeH0F3ATables();
+  InitializeH0F3ATables(Mode);
   InitializeVEXTables();
   InitializeXOPTables();
   InitializeEVEXTables();
