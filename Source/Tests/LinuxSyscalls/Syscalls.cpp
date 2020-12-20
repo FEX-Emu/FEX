@@ -69,6 +69,46 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalD
   FEX::HLE::_SyscallHandler = this;
 }
 
+uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
+  auto &Def = Definitions[Args->Argument[0]];
+  uint64_t Result{};
+  switch (Def.NumArgs) {
+  case 0: Result = std::invoke(Def.Ptr0, Thread); break;
+  case 1: Result = std::invoke(Def.Ptr1, Thread, Args->Argument[1]); break;
+  case 2: Result = std::invoke(Def.Ptr2, Thread, Args->Argument[1], Args->Argument[2]); break;
+  case 3: Result = std::invoke(Def.Ptr3, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3]); break;
+  case 4: Result = std::invoke(Def.Ptr4, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4]); break;
+  case 5: Result = std::invoke(Def.Ptr5, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5]); break;
+  case 6: Result = std::invoke(Def.Ptr6, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6]); break;
+  // for missing syscalls
+  case 255: return std::invoke(Def.Ptr1, Thread, Args->Argument[0]);
+  default:
+    LogMan::Msg::A("Unhandled syscall: %d", Args->Argument[0]);
+    return -1;
+  break;
+  }
+#ifdef DEBUG_STRACE
+  Strace(Args, Result);
+#endif
+  return Result;
+}
+
+#ifdef DEBUG_STRACE
+void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) {
+  auto &Def = Definitions[Args->Argument[0]];
+  switch (Def.NumArgs) {
+    case 0: LogMan::Msg::D(Def.StraceFmt.c_str(), Ret); break;
+    case 1: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Ret); break;
+    case 2: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Ret); break;
+    case 3: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret); break;
+    case 4: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret); break;
+    case 5: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Ret); break;
+    case 6: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6], Ret); break;
+    default: break;
+  }
+}
+#endif
+
 FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode, FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation) {
   if (Mode == FEXCore::Context::MODE_64BIT) {
     return FEX::HLE::x64::CreateHandler(ctx, _SignalDelegation);
@@ -76,15 +116,6 @@ FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode, FE
   else {
     return FEX::HLE::x32::CreateHandler(ctx, _SignalDelegation);
   }
-}
-
-uint64_t HandleSyscall(SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
-  uint64_t Result{};
-  Result = Handler->HandleSyscall(Thread, Args);
-#ifdef DEBUG_STRACE
-  Handler->Strace(Args, Result);
-#endif
-  return Result;
 }
 
 }

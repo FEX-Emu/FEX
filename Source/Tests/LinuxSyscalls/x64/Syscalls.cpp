@@ -62,32 +62,9 @@ namespace FEX::HLE::x64 {
   public:
     x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
 
-    // In the case that the syscall doesn't hit the optimized path then we still need to go here
-    uint64_t HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) override;
-
-  #ifdef DEBUG_STRACE
-    void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) override;
-  #endif
-
   private:
     void RegisterSyscallHandlers();
   };
-
-  #ifdef DEBUG_STRACE
-  void x64SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) {
-    auto &Def = Definitions[Args->Argument[0]];
-    switch (Def.NumArgs) {
-      case 0: LogMan::Msg::D(Def.StraceFmt.c_str(), Ret); break;
-      case 1: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Ret); break;
-      case 2: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Ret); break;
-      case 3: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret); break;
-      case 4: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret); break;
-      case 5: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Ret); break;
-      case 6: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6], Ret); break;
-      default: break;
-    }
-  }
-  #endif
 
   uint64_t Unimplemented(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber) {
 
@@ -175,25 +152,6 @@ namespace FEX::HLE::x64 {
       }
     }
 #endif
-  }
-
-  uint64_t x64SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
-    auto &Def = Definitions[Args->Argument[0]];
-    switch (Def.NumArgs) {
-    case 0: return std::invoke(Def.Ptr0, Thread);
-    case 1: return std::invoke(Def.Ptr1, Thread, Args->Argument[1]);
-    case 2: return std::invoke(Def.Ptr2, Thread, Args->Argument[1], Args->Argument[2]);
-    case 3: return std::invoke(Def.Ptr3, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3]);
-    case 4: return std::invoke(Def.Ptr4, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4]);
-    case 5: return std::invoke(Def.Ptr5, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5]);
-    case 6: return std::invoke(Def.Ptr6, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6]);
-    // for missing syscalls
-    case 255: return std::invoke(Def.Ptr1, Thread, Args->Argument[0]);
-    default: break;
-    }
-
-    LogMan::Msg::A("Unhandled syscall");
-    return -1;
   }
 
   FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation) {
