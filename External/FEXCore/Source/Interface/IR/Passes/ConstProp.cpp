@@ -115,26 +115,30 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
 }
 
 OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t mask) {
-  auto IROp = IREmit->GetOpHeader(src);
-  if (IROp->Op == OP_AND) {
-    auto Op = IROp->C<IR::IROp_And>();
-    uint64_t imm;
-    if (IREmit->IsValueConstant(IROp->Args[1], &imm) && ((imm & mask) == mask)) {
-      return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
-    }
-  } else if (IROp->Op == OP_BFE) {
-    auto Op = IROp->C<IR::IROp_Bfe>();
-    if (Op->lsb == 0) {
-      uint64_t imm = 1ULL << (Op->Width-1);
-      imm = (imm-1) *2 + 1;
-
-      if ((imm & mask) == mask) {
+  #if 1 // HOTFIX: We need to clear up the meaning of opsize and dest size. See #594
+    return src;
+  #else
+    auto IROp = IREmit->GetOpHeader(src);
+    if (IROp->Op == OP_AND) {
+      auto Op = IROp->C<IR::IROp_And>();
+      uint64_t imm;
+      if (IREmit->IsValueConstant(IROp->Args[1], &imm) && ((imm & mask) == mask)) {
         return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
       }
-    }
-  }
+    } else if (IROp->Op == OP_BFE) {
+      auto Op = IROp->C<IR::IROp_Bfe>();
+      if (Op->lsb == 0) {
+        uint64_t imm = 1ULL << (Op->Width-1);
+        imm = (imm-1) *2 + 1;
 
-  return src;
+        if ((imm & mask) == mask) {
+          return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
+        }
+      }
+    }
+
+    return src;
+  #endif
 }
 
 bool IsBfeAlreadyDone(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t Width) {
