@@ -15,6 +15,8 @@
 #define FEXCORE_VERSION "1"
 #endif
 
+// #define DEBUG_STRACE
+
 namespace FEXCore::Core {
 struct InternalThreadState;
 }
@@ -40,11 +42,13 @@ namespace FEX::HLE {
   void RegisterNotImplemented();
   void RegisterStubs();
 
-// #define DEBUG_STRACE
 class SyscallHandler : public FEXCore::HLE::SyscallHandler {
 public:
   SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
   virtual ~SyscallHandler() = default;
+
+  // In the case that the syscall doesn't hit the optimized path then we still need to go here
+  uint64_t HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) final override;
 
   void DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread);
 
@@ -88,10 +92,6 @@ public:
   FEXCore::CodeLoader *GetCodeLoader() const { return LocalLoader; }
   FEX::HLE::SignalDelegator *GetSignalDelegator() { return SignalDelegation; }
 
-#ifdef DEBUG_STRACE
-  virtual void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) = 0;
-#endif
-
   FEXCore::Config::Value<bool> IsInterpreter{FEXCore::Config::CONFIG_IS_INTERPRETER, 0};
   FEXCore::Config::Value<bool> IsInterpreterInstalled{FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, 0};
   FEXCore::Config::Value<std::string> Filename{FEXCore::Config::CONFIG_APP_FILENAME, ""};
@@ -113,6 +113,10 @@ private:
   std::mutex FutexMutex;
   std::mutex SyscallMutex;
   FEXCore::CodeLoader *LocalLoader{};
+
+  #ifdef DEBUG_STRACE
+    void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret);
+  #endif
 };
 
 FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode, FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
