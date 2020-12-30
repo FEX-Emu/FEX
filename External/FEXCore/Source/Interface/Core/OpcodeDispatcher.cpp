@@ -5995,23 +5995,10 @@ void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
 
   size_t GPRSize = GetSrcSize(Op);
 
-  if (GPRSize == 8) {
-    // Source is 64bit
-    if (DstElementSize == 4) {
-      Src = _Bfe(32, 0, Src);
-    }
-  }
-  else {
-    // Source is 32bit and Signed
-    if (DstElementSize == 8 && Signed) {
-      Src = _Sext(32, Src);
-    }
-  }
-
   if (Signed)
-    Src = _Float_FromGPR_S(Src, DstElementSize);
+    Src = _Float_FromGPR_S(DstElementSize, GPRSize, Src);
   else
-    Src = _Float_FromGPR_U(Src, DstElementSize);
+    Src = _Float_FromGPR_U(DstElementSize, GPRSize, Src);
 
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
 
