@@ -3,10 +3,10 @@ name: Build + Test
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
