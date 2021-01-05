@@ -3726,25 +3726,56 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
           }
           case IR::OP_FLOAT_FROMGPR_S: {
             auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
-            if (Op->Header.ElementSize == 8) {
-              double Dst = (double)*GetSrc<int64_t*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
-            }
-            else {
-              float Dst = (float)*GetSrc<int32_t*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
+
+            uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+            switch (Conv) {
+              case 0x0404: { // Float <- int32_t
+                float Dst = (float)*GetSrc<int32_t*>(SSAData, Op->Header.Args[0]);
+                memcpy(GDP, &Dst, Op->Header.ElementSize);
+                break;
+              }
+              case 0x0408: { // Float <- int64_t
+                float Dst = (float)*GetSrc<int64_t*>(SSAData, Op->Header.Args[0]);
+                memcpy(GDP, &Dst, Op->Header.ElementSize);
+                break;
+              }
+              case 0x0804: { // Double <- int32_t
+                double Dst = (double)*GetSrc<int32_t*>(SSAData, Op->Header.Args[0]);
+                memcpy(GDP, &Dst, Op->Header.ElementSize);
+                break;
+              }
+              case 0x0808: { // Double <- int64_t
+                double Dst = (double)*GetSrc<int64_t*>(SSAData, Op->Header.Args[0]);
+                memcpy(GDP, &Dst, Op->Header.ElementSize);
+                break;
+              }
             }
             break;
           }
           case IR::OP_FLOAT_FROMGPR_U: {
             auto Op = IROp->C<IR::IROp_Float_FromGPR_U>();
-            if (Op->Header.ElementSize == 8) {
-              double Dst = (double)*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
-            }
-            else {
-              float Dst = (float)*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
+            uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+            switch (Conv) {
+              case 0x0404: { // Float <- int32_t
+                float Dst = (float)*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
+                memcpy(GDP, &Dst, Op->Header.ElementSize);
+                break;
+              }
+              case 0x0408: { // Float <- int64_t
+                float Dst = (float)*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
+                memcpy(GDP, &Dst, Op->Header.ElementSize);
+                break;
+              }
+              case 0x0804: { // Double <- int32_t
+                double Dst = (double)*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
+                memcpy(GDP, &Dst, Op->Header.ElementSize);
+                break;
+              }
+              case 0x0808: { // Double <- int64_t
+                double Dst = (double)*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
+                memcpy(GDP, &Dst, Op->Header.ElementSize);
+                break;
+              }
             }
             break;
           }

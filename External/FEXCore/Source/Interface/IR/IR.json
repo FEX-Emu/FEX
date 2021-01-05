@@ -2882,14 +2882,17 @@
               ],
       "HasDest": true,
       "DestClass": "FPR",
-      "DestSize": "16",
-      "NumElements": "16 / ElementSize",
+      "DestSize": "DstElementSize",
+      "NumElements": "1",
       "SSAArgs": "1",
       "SSANames": [
         "GPR"
       ],
       "HelperArgs": [
-        "uint8_t", "ElementSize"
+        "uint8_t", "DstElementSize"
+      ],
+      "Args": [
+        "uint8_t", "SrcElementSize"
       ]
     },
 
@@ -2900,14 +2903,17 @@
               ],
       "HasDest": true,
       "DestClass": "FPR",
-      "DestSize": "16",
-      "NumElements": "16 / ElementSize",
+      "DestSize": "DstElementSize",
+      "NumElements": "1",
       "SSAArgs": "1",
       "SSANames": [
         "GPR"
       ],
       "HelperArgs": [
-        "uint8_t", "ElementSize"
+        "uint8_t", "DstElementSize"
+      ],
+      "Args": [
+        "uint8_t", "SrcElementSize"
       ]
     },
 

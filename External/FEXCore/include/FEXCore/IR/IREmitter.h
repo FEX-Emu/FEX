@@ -292,6 +292,12 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Vector_FToF> _Vector_FToF(uint8_t RegisterSize, uint8_t DstElementSize, uint8_t SrcElementSize, OrderedNode *ssa0) {
     return _Vector_FToF(ssa0, SrcElementSize, RegisterSize, DstElementSize);
   }
+  IRPair<IROp_Float_FromGPR_U> _Float_FromGPR_U(uint8_t DstElementSize, uint8_t SrcElementSize, OrderedNode *ssa0) {
+    return _Float_FromGPR_U(ssa0, SrcElementSize, DstElementSize);
+  }
+  IRPair<IROp_Float_FromGPR_S> _Float_FromGPR_S(uint8_t DstElementSize, uint8_t SrcElementSize, OrderedNode *ssa0) {
+    return _Float_FromGPR_S(ssa0, SrcElementSize, DstElementSize);
+  }
   IRPair<IROp_Float_FToF> _Float_FToF(uint8_t DstElementSize, uint8_t SrcElementSize, OrderedNode *ssa0) {
     return _Float_FToF(ssa0, SrcElementSize, DstElementSize);
   }

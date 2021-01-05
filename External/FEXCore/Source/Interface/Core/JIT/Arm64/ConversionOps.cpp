@@ -56,11 +56,24 @@ DEF_OP(Float_FromGPR_U) {
 
 DEF_OP(Float_FromGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
-  if (Op->Header.ElementSize == 8) {
-    scvtf(GetDst(Node).D(), GetReg<RA_64>(Op->Header.Args[0].ID()));
-  }
-  else {
-    scvtf(GetDst(Node).S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+  uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  switch (Conv) {
+    case 0x0404: { // Float <- int32_t
+      scvtf(GetDst(Node).S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      break;
+    }
+    case 0x0408: { // Float <- int64_t
+      scvtf(GetDst(Node).S(), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      break;
+    }
+    case 0x0804: { // Double <- int32_t
+      scvtf(GetDst(Node).D(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      break;
+    }
+    case 0x0808: { // Double <- int64_t
+      scvtf(GetDst(Node).D(), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      break;
+    }
   }
 }
 
