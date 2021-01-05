@@ -207,7 +207,7 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSig
   StoreThreadState(Signal, ucontext);
 
   // Set the new PC
-  _mcontext->pc = AbsoluteLoopTopAddress;
+  _mcontext->pc = AbsoluteLoopTopAddressFillSRA;
   // Set x28 (which is our state register) to point to our guest thread data
   _mcontext->regs[28 /* STATE */] = reinterpret_cast<uint64_t>(State);
 
@@ -238,6 +238,24 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSig
   NewGuestSP -= 128;
 
   if (GuestAction->sa_flags & SA_SIGINFO) {
+     if (!IsAddressInJITCode(_mcontext->pc, false)) {
+      // We are in non-jit, SRA is already spilled
+      LogMan::Throw::A(!IsAddressInJITCode(_mcontext->pc, true), "Signals in dispatcher have unsynchronized context");
+    } else {
+      // We are in jit, SRA must be spilled
+      for(int i = 0; i < SRA64.size(); i++) {
+        State->State.State.gregs[i] = _mcontext->regs[SRA64[i].GetCode()];
+      }
+      // TODO: Also recover FPRs, not sure where the neon context is
+      // This is usually not needed
+      /*
+      for(int i = 0; i < SRAFPR.size(); i++) {
+        State->State.State.xmm[i][0] = _mcontext.neon[SRAFPR[i].GetCode()];
+        State->State.State.xmm[i][0] = _mcontext.neon[SRAFPR[i].GetCode()];
+      }
+      */
+    }
+
     // Setup ucontext a bit
     if (CTX->Config.Is64BitMode) {
       NewGuestSP -= sizeof(FEXCore::x86_64::ucontext_t);
@@ -1022,8 +1040,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // This is passed in to parameter 0 (x0)
   mov(STATE, x0);
 
-  FillStaticRegs();
-
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
   add(x0, sp, 0);
@@ -1035,6 +1051,13 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
       nop();
     }
   };
+
+  // used from signals
+  aarch64::Label LoopTopFillSRA{};
+  bind(&LoopTopFillSRA);
+  AbsoluteLoopTopAddressFillSRA = GetLabelAddress<uint64_t>(&LoopTopFillSRA);
+
+  FillStaticRegs();
 
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
