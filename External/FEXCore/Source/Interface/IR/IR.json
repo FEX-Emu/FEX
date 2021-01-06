@@ -23,9 +23,11 @@
     "constexpr static uint8_t COND_FNU  = 21 /* float not unordred */",
 
     "static constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
-    "static constexpr FEXCore::IR::RegisterClassType FPRClass {1}",
-    "static constexpr FEXCore::IR::RegisterClassType GPRPairClass {2}",
-    "static constexpr FEXCore::IR::RegisterClassType ComplexClass {3}",
+    "static constexpr FEXCore::IR::RegisterClassType GPRFixedClass {1}",
+    "static constexpr FEXCore::IR::RegisterClassType FPRClass {2}",
+    "static constexpr FEXCore::IR::RegisterClassType FPRFixedClass {3}",
+    "static constexpr FEXCore::IR::RegisterClassType GPRPairClass {4}",
+    "static constexpr FEXCore::IR::RegisterClassType ComplexClass {5}",
     "static constexpr FEXCore::IR::RegisterClassType InvalidClass {~0U}",
     "",
     "static const FEXCore::IR::TypeDefinition i8    {TypeDefinition::Create(1, 0)}",
@@ -206,36 +208,6 @@
         "Expected",
         "Desired",
         "Addr"
-      ]
-    },
-
-    "LoadContextPair": {
-      "OpClass": "Memory",
-      "Desc": ["Loads a pair of values from the context"
-              ],
-      "HasDest": true,
-      "DestClass": "GPRPair",
-      "DestSize": "Size",
-      "NumElements": "2",
-      "Args": [
-        "uint8_t", "Size",
-        "uint32_t", "Offset",
-        "RegisterClassType", "Class"
-      ]
-    },
-
-    "StoreContextPair": {
-      "HasSideEffects": true,
-      "OpClass": "Memory",
-      "Desc": ["Stores a pair of values back in to the context"],
-      "SSAArgs": "1",
-      "SSANames": [
-        "Value"
-      ],
-      "Args": [
-        "uint8_t", "Size",
-        "uint32_t", "Offset",
-        "RegisterClassType", "Class"
       ]
     },
 
@@ -455,6 +427,49 @@
       "HasDest": true,
       "DestClass": "GPR",
       "FixedDestSize": "8"
+    },
+
+    "LoadRegister": {
+      "Desc": ["Loads a value from the static-ra context with offset",
+               "Dest = Ctx[Offset]"
+              ],
+      "OpClass": "StaticRA",
+      "HasDest": true,
+      "DestClass": "Complex",
+      "DestSize": "Size",
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ],
+      "Args": [
+        "bool", "IsAlias",
+        "uint32_t", "Offset",
+        "RegisterClassType", "Class",
+        "RegisterClassType", "StaticClass"
+      ]
+    },
+
+    "StoreRegister": {
+      "HasSideEffects": true,
+      "Desc": ["Stores a value to the static-ra context with offset",
+               "Ctx[Offset] = Value",
+               "Zero Extends if value's type is too small",
+               "Truncates if value's type is too large"
+              ],
+      "OpClass": "StaticRA",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Value"
+      ],
+      "DestSize": "Size",
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ],
+      "Args": [
+        "bool", "IsPrewrite",
+        "uint32_t", "Offset",
+        "RegisterClassType", "Class",
+        "RegisterClassType", "StaticClass"
+      ]
     },
 
     "LoadContext": {
@@ -905,6 +920,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -914,6 +930,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },
@@ -923,6 +940,7 @@
               ],
       "OpClass": "ALU",
       "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
       "DestClass": "GPR",
       "SSAArgs": "2"
     },

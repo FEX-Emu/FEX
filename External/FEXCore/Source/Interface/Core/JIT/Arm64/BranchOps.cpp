@@ -32,6 +32,10 @@ DEF_OP(SignalReturn) {
 }
 
 DEF_OP(CallbackReturn) {
+
+  // spill back to CTX
+  SpillStaticRegs();
+  
   // First we must reset the stack
   ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
   add(sp, TMP1, 0); // Move that supports SP
@@ -162,20 +166,15 @@ DEF_OP(Syscall) {
   // X1: ThreadState
   // X2: Pointer to SyscallArguments
 
-  uint64_t SPOffset = AlignUp((RA64.size() + 7 + 1) * 8, 16);
+  PushDynamicRegsAndLR();
+  SpillStaticRegs();
 
+  uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
   sub(sp, sp, SPOffset);
   for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++i) {
     if (Op->Header.Args[i].IsInvalid()) continue;
-    str(GetReg<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, 0 + i * 8));
+    str(GetReg<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, i * 8));
   }
-
-  int i = 0;
-  for (auto RA : RA64) {
-    str(RA, MemOperand(sp, 7 * 8 + i * 8));
-    i++;
-  }
-  str(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
 
   LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
   mov(x1, STATE);
@@ -184,20 +183,15 @@ DEF_OP(Syscall) {
   LoadConstant(x3, reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall));
   blr(x3);
 
+  add(sp, sp, SPOffset);
+  
   // Result is now in x0
   // Fix the stack and any values that were stepped on
-  i = 0;
-  for (auto RA : RA64) {
-    ldr(RA, MemOperand(sp, 7 * 8 + i * 8));
-    i++;
-  }
+  FillStaticRegs();
+  PopDynamicRegsAndLR();
 
   // Move result to its destination register
   mov(GetReg<RA_64>(Node), x0);
-
-  ldr(lr,       MemOperand(sp, 7 * 8 + RA64.size() * 8 + 0 * 8));
-
-  add(sp, sp, SPOffset);
 }
 
 DEF_OP(Thunk) {
@@ -206,16 +200,9 @@ DEF_OP(Thunk) {
   // X0: CTX
   // X1: Args (from guest stack)
 
-  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
+  SpillStaticRegs(); // spill to ctx before ra64 spill
 
-  sub(sp, sp, SPOffset);
-
-  int i = 0;
-  for (auto RA : RA64) {
-    str(RA, MemOperand(sp, i * 8));
-    i++;
-  }
-  str(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
+  PushDynamicRegsAndLR();
 
   mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
 
@@ -226,16 +213,9 @@ DEF_OP(Thunk) {
   blr(x2);
 #endif
 
-  // Fix the stack and any values that were stepped on
-  i = 0;
-  for (auto RA : RA64) {
-    ldr(RA, MemOperand(sp, i * 8));
-    i++;
-  }
-
-  ldr(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-  add(sp, sp, SPOffset);
+  PopDynamicRegsAndLR();
+  
+  FillStaticRegs(); // load from ctx after ra64 refill
 }
 
 
@@ -285,47 +265,24 @@ DEF_OP(RemoveCodeEntry) {
   // X0: Thread
   // X1: RIP
 
-  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
-
-  sub(sp, sp, SPOffset);
-
-  int i = 0;
-  for (auto RA : RA64) {
-    str(RA, MemOperand(sp, i * 8));
-    i++;
-  }
-  str(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
+  PushDynamicRegsAndLR();
+  
   mov(x0, STATE);
   LoadConstant(x1, Op->RIP);
  
   LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
+  SpillStaticRegs();
   blr(x2);
+  FillStaticRegs();
 
   // Fix the stack and any values that were stepped on
-  i = 0;
-  for (auto RA : RA64) {
-    ldr(RA, MemOperand(sp, i * 8));
-    i++;
-  }
-
-  ldr(lr, MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-  add(sp, sp, SPOffset);
+  PopDynamicRegsAndLR();
 }
 
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
-  uint64_t SPOffset = AlignUp((RA64.size() + 2 + 2) * 8, 16);
-  sub(sp, sp, SPOffset);
-
-  int i = 0;
-  for (auto RA : RA64) {
-    str(RA, MemOperand(sp, 0 + i * 8));
-    i++;
-  }
-
-  str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+  
+  PushDynamicRegsAndLR();
 
   // x0 = CPUID Handler
   // x1 = CPUID Function
@@ -341,23 +298,17 @@ DEF_OP(CPUID) {
   PtrCast Ptr;
   Ptr.ClassPtr = &FEXCore::CPUIDEmu::RunFunction;
   LoadConstant(x3, Ptr.Data);
+  SpillStaticRegs();
   blr(x3);
+  FillStaticRegs();
 
-  i = 0;
-  for (auto RA : RA64) {
-    ldr(RA, MemOperand(sp, 0 + i * 8));
-    i++;
-  }
+  PopDynamicRegsAndLR();
 
   // Results are in x0, x1
   // Results want to be in a i64v2 vector
   auto Dst = GetSrcPair<RA_64>(Node);
   mov(Dst.first,  x0);
   mov(Dst.second, x1);
-
-  ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-  add(sp, sp, SPOffset);
 }
 
 #undef DEF_OP

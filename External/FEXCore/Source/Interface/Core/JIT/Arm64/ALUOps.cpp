@@ -506,15 +506,7 @@ DEF_OP(LDiv) {
     break;
     }
     case 8: {
-      uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
-
-      sub(sp, sp, SPOffset);
-      int i = 0;
-      for (auto RA : RA64) {
-        str(RA, MemOperand(sp, i * 8));
-        i++;
-      }
-      str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+      PushDynamicRegsAndLR();
 
       mov(x0, GetReg<RA_64>(Op->Header.Args[1].ID()));
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
@@ -524,23 +516,17 @@ DEF_OP(LDiv) {
       CallRuntime(LDIV);
 #else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LDIV));
+      SpillStaticRegs();
       blr(x3);
+      FillStaticRegs();
 #endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
-      i = 0;
-      for (auto RA : RA64) {
-        ldr(RA, MemOperand(sp, i * 8));
-        i++;
-      }
+      PopDynamicRegsAndLR();
 
       // Move result to its destination register
       mov(GetReg<RA_64>(Node), x0);
-
-      ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-      add(sp, sp, SPOffset);
     break;
     }
     default: LogMan::Msg::A("Unknown LDIV Size: %d", Size); break;
@@ -567,15 +553,7 @@ DEF_OP(LUDiv) {
     break;
     }
     case 8: {
-      uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
-
-      sub(sp, sp, SPOffset);
-      int i = 0;
-      for (auto RA : RA64) {
-        str(RA, MemOperand(sp, i * 8));
-        i++;
-      }
-      str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+      PushDynamicRegsAndLR();
 
       mov(x0, GetReg<RA_64>(Op->Header.Args[1].ID()));
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
@@ -585,23 +563,17 @@ DEF_OP(LUDiv) {
       CallRuntime(LUDIV);
 #else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LUDIV));
+      SpillStaticRegs();
       blr(x3);
+      FillStaticRegs();
 #endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
-      i = 0;
-      for (auto RA : RA64) {
-        ldr(RA, MemOperand(sp, i * 8));
-        i++;
-      }
+      PopDynamicRegsAndLR();
 
       // Move result to its destination register
       mov(GetReg<RA_64>(Node), x0);
-
-      ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-      add(sp, sp, SPOffset);
     break;
     }
     default: LogMan::Msg::A("Unknown LUDIV Size: %d", Size); break;
@@ -638,15 +610,7 @@ DEF_OP(LRem) {
     break;
     }
     case 8: {
-              uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
-
-      sub(sp, sp, SPOffset);
-      int i = 0;
-      for (auto RA : RA64) {
-        str(RA, MemOperand(sp, i * 8));
-        i++;
-      }
-      str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+      PushDynamicRegsAndLR();
 
       mov(x0, GetReg<RA_64>(Op->Header.Args[1].ID()));
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
@@ -656,23 +620,17 @@ DEF_OP(LRem) {
       CallRuntime(LREM);
 #else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LREM));
+      SpillStaticRegs();
       blr(x3);
+      FillStaticRegs();
 #endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
-      i = 0;
-      for (auto RA : RA64) {
-        ldr(RA, MemOperand(sp, i * 8));
-        i++;
-      }
+      PopDynamicRegsAndLR();
 
       // Move result to its destination register
       mov(GetReg<RA_64>(Node), x0);
-
-      ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-      add(sp, sp, SPOffset);
     break;
     }
     default: LogMan::Msg::A("Unknown LREM Size: %d", Size); break;
@@ -705,15 +663,8 @@ DEF_OP(LURem) {
     break;
     }
     case 8: {
-      uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8, 16);
 
-      sub(sp, sp, SPOffset);
-      int i = 0;
-      for (auto RA : RA64) {
-        str(RA, MemOperand(sp, i * 8));
-        i++;
-      }
-      str(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
+      PushDynamicRegsAndLR();
 
       mov(x0, GetReg<RA_64>(Op->Header.Args[1].ID()));
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
@@ -723,23 +674,16 @@ DEF_OP(LURem) {
       CallRuntime(LUREM);
 #else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LUREM));
+      SpillStaticRegs();
       blr(x3);
+      FillStaticRegs();
 #endif
+      // Fix the stack and any values that were stepped on
+      PopDynamicRegsAndLR();
 
       // Result is now in x0
-      // Fix the stack and any values that were stepped on
-      i = 0;
-      for (auto RA : RA64) {
-        ldr(RA, MemOperand(sp, i * 8));
-        i++;
-      }
-
       // Move result to its destination register
       mov(GetReg<RA_64>(Node), x0);
-
-      ldr(lr,       MemOperand(sp, RA64.size() * 8 + 0 * 8));
-
-      add(sp, sp, SPOffset);
     break;
     }
     default: LogMan::Msg::A("Unknown LUREM Size: %d", OpSize); break;
@@ -762,10 +706,35 @@ DEF_OP(Not) {
 
 DEF_OP(Popcount) {
   auto Op = IROp->C<IR::IROp_Popcount>();
-  auto Dst = GetReg<RA_64>(Node);
-  fmov(VTMP1.D(), GetReg<RA_64>(Op->Header.Args[0].ID()));
-  cnt(VTMP1.V8B(), VTMP1.V8B());
-  addv(VTMP1.B(), VTMP1.V8B());
+  uint8_t OpSize = IROp->Size;
+  switch (OpSize) {
+    case 0x1:
+      fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      // only use lowest byte
+      cnt(VTMP1.V8B(), VTMP1.V8B());
+      break;
+    case 0x2:
+      fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      cnt(VTMP1.V8B(), VTMP1.V8B());
+      // only count two lowest bytes
+      addp(VTMP1.V8B(), VTMP1.V8B(), VTMP1.V8B());
+      break;
+    case 0x4:
+      fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      cnt(VTMP1.V8B(), VTMP1.V8B());
+      // fmov has zero extended, unused bytes are zero
+      addv(VTMP1.B(), VTMP1.V8B());
+      break;
+    case 0x8:
+      fmov(VTMP1.D(), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      cnt(VTMP1.V8B(), VTMP1.V8B());
+      // fmov has zero extended, unused bytes are zero
+      addv(VTMP1.B(), VTMP1.V8B());
+      break;
+    default: LogMan::Msg::A("Unsupported Popcount size: %d", OpSize);
+  }
+
+  auto Dst = GetReg<RA_32>(Node);
   umov(Dst.W(), VTMP1.B(), 0);
 }
 
@@ -1045,7 +1014,7 @@ DEF_OP(FCmp) {
   bool set = false;
 
   if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
-    assert(IR::FCMP_FLAG_EQ == 0);
+    LogMan::Throw::A(IR::FCMP_FLAG_EQ == 0, "IR::FCMP_FLAG_EQ must equal 0");
     // EQ or unordered
     cset(Dst, Condition::eq); // Z = 1
     csinc(Dst, Dst, xzr, Condition::vc); // IF !V ? Z : 1

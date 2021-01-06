@@ -6,42 +6,6 @@
 namespace FEXCore::CPU {
 
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
-DEF_OP(LoadContextPair) {
-  auto Op = IROp->C<IR::IROp_LoadContextPair>();
-  switch (Op->Size) {
-    case 4: {
-      auto Dst = GetSrcPair<RA_32>(Node);
-      mov(Dst.first,  dword [STATE + Op->Offset]);
-      mov(Dst.second, dword [STATE + Op->Offset + Op->Size]);
-      break;
-    }
-    case 8: {
-      auto Dst = GetSrcPair<RA_64>(Node);
-      mov(Dst.first,  qword [STATE + Op->Offset]);
-      mov(Dst.second, qword [STATE + Op->Offset + Op->Size]);
-      break;
-    }
-    default: LogMan::Msg::A("Unknown Size"); break;
-  }
-}
-
-DEF_OP(StoreContextPair) {
-  auto Op = IROp->C<IR::IROp_StoreContextPair>();
-  switch (Op->Size) {
-    case 4: {
-      auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
-      mov(dword [STATE + Op->Offset], Src.first);
-      mov(dword [STATE + Op->Offset + Op->Size], Src.first);
-      break;
-    }
-    case 8: {
-      auto Src = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
-      mov(qword [STATE + Op->Offset], Src.first);
-      mov(qword [STATE + Op->Offset + Op->Size], Src.first);
-      break;
-    }
-  }
-}
 
 DEF_OP(LoadContext) {
   auto Op = IROp->C<IR::IROp_LoadContext>();
@@ -606,10 +570,10 @@ DEF_OP(VStoreMemElement) {
 #undef DEF_OP
 void JITCore::RegisterMemoryHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
-  REGISTER_OP(LOADCONTEXTPAIR,     LoadContextPair);
-  REGISTER_OP(STORECONTEXTPAIR,    StoreContextPair);
   REGISTER_OP(LOADCONTEXT,         LoadContext);
   REGISTER_OP(STORECONTEXT,        StoreContext);
+  REGISTER_OP(LOADREGISTER,        Unhandled); // SRA specific, not supported on this backend
+  REGISTER_OP(STOREREGISTER,       Unhandled);
   REGISTER_OP(LOADCONTEXTINDEXED,  LoadContextIndexed);
   REGISTER_OP(STORECONTEXTINDEXED, StoreContextIndexed);
   REGISTER_OP(SPILLREGISTER,       SpillRegister);

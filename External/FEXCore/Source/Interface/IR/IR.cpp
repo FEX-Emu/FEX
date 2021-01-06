@@ -52,11 +52,15 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
 }
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, RegisterClassType Arg) {
-  if (Arg == 0)
+  if (Arg == GPRClass.Val)
     *out << "GPR";
-  else if (Arg == 1)
+  else if (Arg == GPRFixedClass.Val)
+    *out << "GPRFixed";
+  else if (Arg == FPRClass.Val)
     *out << "FPR";
-  else if (Arg == 2)
+  else if (Arg == FPRFixedClass.Val)
+    *out << "FPRFixed";
+  else if (Arg == GPRPairClass.Val)
     *out << "GPRPair";
   else
     *out << "Unknown Registerclass " << Arg;
@@ -72,7 +76,9 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
     uint32_t Reg = RegClass;
     switch (Class) {
       case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
+      case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
       case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
+      case FEXCore::IR::FPRFixedClass.Val: *out << "(FPRFixed"; break;
       case FEXCore::IR::GPRPairClass.Val: *out << "(GPRPair"; break;
       case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
       case FEXCore::IR::InvalidClass.Val: *out << "(Invalid"; break;
@@ -188,7 +194,9 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
             uint32_t Reg = RegClass;
             switch (Class) {
               case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
+              case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
               case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
+              case FEXCore::IR::FPRFixedClass.Val: *out << "(FPRFixed"; break;
               case FEXCore::IR::GPRPairClass.Val: *out << "(GPRPair"; break;
               case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
               case FEXCore::IR::InvalidClass.Val: *out << "(Invalid"; break;

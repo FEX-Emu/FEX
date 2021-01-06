@@ -6,6 +6,8 @@
 #include <iterator>
 #include <unordered_set>
 
+#define SRA_DEBUG(...) // printf(__VA_ARGS__)
+
 namespace {
   constexpr uint32_t INVALID_REG = ~0U;
   constexpr uint64_t INVALID_REGCLASS = ~0ULL;
@@ -21,7 +23,6 @@ namespace {
   struct RegisterClass {
     uint32_t Count;
     uint32_t PhysicalCount;
-    std::vector<uint64_t> Conflicts;
   };
 
   struct RegisterNode {
@@ -50,12 +51,17 @@ namespace {
   struct RegisterSet {
     std::vector<RegisterClass> Classes;
     uint32_t ClassCount;
+    std::set<std::tuple<uint64_t, uint64_t>> Conflicts;
   };
 
   struct LiveRange {
     uint32_t Begin;
     uint32_t End;
     uint32_t RematCost;
+    int64_t PrefferedRegister;
+    uint32_t PreWritten;
+    bool Written;
+    bool Global;
   };
 
   struct SpillStackUnit {
@@ -99,16 +105,13 @@ namespace {
   }
 
   void VirtualAddRegisterConflict(RegisterGraph *Graph, FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) {
-    LogMan::Throw::A(Reg < Graph->Set.Classes[Class].Conflicts.size(), "Tried adding reg %d to conflict list only %d in size", RegConflict, Graph->Set.Classes[Class].Conflicts.size());
-    LogMan::Throw::A(RegConflict < Graph->Set.Classes[ClassConflict].Conflicts.size(), "Tried adding reg %d to conflict list only %d in size", Reg, Graph->Set.Classes[ClassConflict].Conflicts.size());
+
+    auto RegAndClass = ((uint64_t)Class << 32) | Reg;
+    auto RegAndClassConflict = ((uint64_t)ClassConflict << 32) | RegConflict;
 
     // Conflict must go both ways
-    Graph->Set.Classes[Class].Conflicts[Reg] = {((uint64_t)ClassConflict << 32) | RegConflict};
-    Graph->Set.Classes[ClassConflict].Conflicts[RegConflict] = {((uint64_t)Class << 32) | Reg};
-  }
-
-  void VirtualAllocateRegisterConflicts(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) {
-    Graph->Set.Classes[Class].Conflicts.resize(NumConflicts);
+    Graph->Set.Conflicts.insert({RegAndClass, RegAndClassConflict});
+    Graph->Set.Conflicts.insert({RegAndClassConflict, RegAndClass});
   }
 
   // Returns the new register ID that was the previous top
@@ -175,6 +178,19 @@ namespace {
     Graph->Nodes[Node].Head.PhiPartner = &Graph->Nodes[Partner];
   }
 
+
+  bool DoesNodeConflictWithRegAndClass(RegisterGraph *Graph, RegisterNode const *InterferenceNode, uint64_t RegAndClass) {
+    if (InterferenceNode->Head.RegAndClass == RegAndClass) {
+      return true;
+    }
+
+    if (Graph->Set.Conflicts.contains({InterferenceNode->Head.RegAndClass, RegAndClass})) {
+      return true;
+    }
+
+    return false;
+  }
+
   /**
    * @brief Individual node interference check
    */
@@ -182,15 +198,8 @@ namespace {
     // Walk the node's interference list and see if it interferes with this register
     for (uint32_t i = 0; i < Node->Head.InterferenceCount; ++i) {
       RegisterNode *InterferenceNode = &Graph->Nodes[Node->InterferenceList[i]];
-      if (InterferenceNode->Head.RegAndClass == RegAndClass) {
-        return true;
-      }
-
-      FEXCore::IR::RegisterClassType InterferenceClass = FEXCore::IR::RegisterClassType{(uint32_t)(InterferenceNode->Head.RegAndClass >> 32)};
-      uint32_t InterferenceReg = InterferenceNode->Head.RegAndClass;
-      if (InterferenceReg != INVALID_REG &&
-          InterferenceReg < Graph->Set.Classes[InterferenceClass].Conflicts.size() &&
-          Graph->Set.Classes[InterferenceClass].Conflicts[InterferenceReg] == RegAndClass) {
+      
+      if (DoesNodeConflictWithRegAndClass(Graph, InterferenceNode, RegAndClass)) {
         return true;
       }
     }
@@ -221,6 +230,11 @@ namespace {
     switch (IROp->Op) {
       case IR::OP_LOADCONTEXT: {
         auto Op = IROp->C<IR::IROp_LoadContext>();
+        return Op->Class;
+        break;
+      }
+      case IR::OP_LOADREGISTER: {
+        auto Op = IROp->C<IR::IROp_LoadRegister>();
         return Op->Class;
         break;
       }
@@ -272,14 +286,13 @@ namespace {
 namespace FEXCore::IR {
   class ConstrainedRAPass final : public RegisterAllocationPass {
     public:
-      ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass);
+      ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool OptimizeSRA);
       ~ConstrainedRAPass();
       bool Run(IREmitter *IREmit) override;
 
       void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) override;
       void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) override;
       void AddRegisterConflict(FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) override;
-      void AllocateRegisterConflicts(FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) override;
 
       /**
        * @brief Returns the register and class encoded together
@@ -287,6 +300,7 @@ namespace FEXCore::IR {
        */
       uint64_t GetNodeRegister(uint32_t Node) override;
     private:
+    bool OptimizeSRA;
 
       std::vector<uint32_t> PhysicalRegisterCount;
       std::vector<uint32_t> TopRAPressure;
@@ -304,6 +318,7 @@ namespace FEXCore::IR {
       BlockInterferences GlobalBlockInterferences;
 
       void CalculateLiveRange(FEXCore::IR::IRListView<false> *IR);
+      void OptimizeStaticRegisters(FEXCore::IR::IRListView<false> *IR);
       void CalculateBlockInterferences(FEXCore::IR::IRListView<false> *IR);
       void CalculateBlockNodeInterference(FEXCore::IR::IRListView<false> *IR);
       void CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR);
@@ -320,8 +335,8 @@ namespace FEXCore::IR {
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
   };
 
-  ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass)
-    : CompactionPass {_CompactionPass} {
+  ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _OptimizeSRA)
+    : CompactionPass {_CompactionPass}, OptimizeSRA(_OptimizeSRA) {
   }
 
   ConstrainedRAPass::~ConstrainedRAPass() {
@@ -344,10 +359,6 @@ namespace FEXCore::IR {
 
   void ConstrainedRAPass::AddRegisterConflict(FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) {
     VirtualAddRegisterConflict(Graph, ClassConflict, RegConflict, Class, Reg);
-  }
-
-  void ConstrainedRAPass::AllocateRegisterConflicts(FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) {
-    VirtualAllocateRegisterConflicts(Graph, Class, NumConflicts);
   }
 
   uint64_t ConstrainedRAPass::GetNodeRegister(uint32_t Node) {
@@ -383,9 +394,10 @@ namespace FEXCore::IR {
     if (Nodes > LiveRanges.size()) {
       LiveRanges.resize(Nodes);
     }
-    LiveRanges.assign(Nodes * sizeof(LiveRange), {~0U, ~0U});
+    LiveRanges.assign(Nodes * sizeof(LiveRange), {~0U, ~0U, 0, -1, false, 0});
 
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
+
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       uint32_t BlockNodeID = IR->GetID(BlockNode);
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
@@ -399,11 +411,13 @@ namespace FEXCore::IR {
           LiveRanges[Node].End = Node;
         }
 
+
         // Calculate remat cost
         switch (IROp->Op) {
           case IR::OP_CONSTANT: LiveRanges[Node].RematCost = 1; break;
           case IR::OP_LOADFLAG:
           case IR::OP_LOADCONTEXT: LiveRanges[Node].RematCost = 10; break;
+          case IR::OP_LOADREGISTER: LiveRanges[Node].RematCost = 10; break;
           case IR::OP_LOADMEM:
           case IR::OP_LOADMEMTSO:
             LiveRanges[Node].RematCost = 100;
@@ -425,10 +439,12 @@ namespace FEXCore::IR {
           LogMan::Throw::A(LiveRanges[ArgNode].Begin != ~0U, "%%ssa%d used by %%ssa%d before defined?", ArgNode, Node);
 
           auto ArgNodeBlockID = Graph->Nodes[ArgNode].Head.BlockID;
-          if ( ArgNodeBlockID== BlockNodeID) {
+          if (ArgNodeBlockID == BlockNodeID) {
             // Set the node end to be at least here
             LiveRanges[ArgNode].End = Node;
           } else {
+            LiveRanges[ArgNode].Global = true;
+
             // Grow the live range to include this use
             LiveRanges[ArgNode].Begin = std::min(LiveRanges[ArgNode].Begin, Node);
             LiveRanges[ArgNode].End = std::max(LiveRanges[ArgNode].End, Node);
@@ -457,6 +473,218 @@ namespace FEXCore::IR {
             SetNodePartner(Graph, CurrentSourcePartner, ValueOp->Value.ID());
             CurrentSourcePartner = ValueOp->Value.ID();
             NodeBegin = IR->at(ValueOp->Next);
+          }
+        }
+      }
+    }
+  }
+
+  void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView<false> *IR) {
+
+    // Helpers
+
+    // Is an OP_STOREREGISTER eligible to write directly to the SRA reg?
+    auto IsPreWritable = [](uint8_t Size, RegisterClassType StaticClass) {
+      if (StaticClass == GPRFixedClass) {
+        return Size == 8;
+      } else if (StaticClass == FPRFixedClass) {
+        return Size == 16;
+      } else {
+        LogMan::Throw::A(false, "Unexpected static class %d", StaticClass);
+      }
+    };
+
+    // Is an OP_LOADREGISTER eligible to read directly from the SRA reg?
+    auto IsAliasable = [](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
+      if (StaticClass == GPRFixedClass) {
+        return (Size == 8 /*|| Size == 4*/) && ((Offset & 7) == 0); // We need more meta info to support not-size-of-reg
+      } else if (StaticClass == FPRFixedClass) {
+        return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0); // We need more meta info to support not-size-of-reg
+      } else {
+        LogMan::Throw::A(false, "Unexpected static class %d", StaticClass);
+      }
+    };
+
+    // Get SRA Reg and Class from a Context offset
+    auto GetRegAndClassFromOffset = [](uint32_t Offset) {
+        auto beginGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[0]);
+        auto endGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[17]);
+
+        auto beginFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[0][0]);
+        auto endFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[17][0]);
+
+        if (Offset >= beginGpr && Offset < endGpr) {
+          auto reg = (Offset - beginGpr) / 8;
+          return (uint64_t(GPRFixedClass.Val)<<32) | reg;
+        } else if (Offset >= beginFpr && Offset < endFpr) {
+          auto reg = (Offset - beginFpr) / 16;
+          return (uint64_t(FPRFixedClass.Val)<<32) | reg;
+        } else {
+          LogMan::Throw::A(false, "Unexpected Offset %d", Offset);
+          return ~0UL;
+        }
+    };
+
+    auto GprSize = PhysicalRegisterCount[GPRFixedClass.Val];
+    auto MapsSize = PhysicalRegisterCount[GPRFixedClass.Val] + PhysicalRegisterCount[FPRFixedClass.Val];
+    LiveRange* StaticMaps[MapsSize];
+    
+    // Get a StaticMap entry from context offset
+    auto GetStaticMapFromOffset = [&](uint32_t Offset) {
+        auto beginGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[0]);
+        auto endGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[17]);
+
+        auto beginFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[0][0]);
+        auto endFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[17][0]);
+
+        if (Offset >= beginGpr && Offset < endGpr) {
+          auto reg = (Offset - beginGpr) / 8;
+          return &StaticMaps[reg];
+        } else if (Offset >= beginFpr && Offset < endFpr) {
+          auto reg = (Offset - beginFpr) / 16;
+          return &StaticMaps[GprSize + reg];
+        } else {
+          LogMan::Throw::A(false, "Unexpected offset %d", Offset);
+          return (LiveRange**)nullptr;
+        }
+    };
+
+    // Get a StaticMap entry from reg and class
+    auto GetStaticMapFromReg = [&](int64_t RegAndClass) {
+      uint32_t Class = RegAndClass >> 32;
+      uint32_t Reg = RegAndClass;
+
+      if (Class == GPRFixedClass.Val) {
+        return &StaticMaps[Reg];
+      } else if (Class == FPRFixedClass.Val) {
+        return &StaticMaps[GprSize + Reg];
+      } else {
+        LogMan::Throw::A(false, "Unexpected Class %d", Class);
+        return (LiveRange**)nullptr;
+      }
+    };
+
+    //First pass: Mark pre-writes
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        uint32_t Node = IR->GetID(CodeNode);
+        if (IROp->Op == OP_STOREREGISTER) {
+          auto Op = IROp->C<IR::IROp_StoreRegister>();
+          //int -1 /*vreg*/ = (int)(Op->Offset / 8) - 1;
+
+          if (IsPreWritable(IROp->Size, Op->StaticClass) 
+            && LiveRanges[Op->Value.ID()].PrefferedRegister == -1
+            && !LiveRanges[Op->Value.ID()].Global) {
+            
+            //pre-write and sra-allocate in the defining node - this might be undone if a read before the actual store happens
+            SRA_DEBUG("Prewritting ssa%d (Store in ssa%d)\n", Op->Value.ID(), Node);
+            LiveRanges[Op->Value.ID()].PrefferedRegister = GetRegAndClassFromOffset(Op->Offset);
+            LiveRanges[Op->Value.ID()].PreWritten = Node;
+            SetNodeClass(Graph, Op->Value.ID(), Op->StaticClass);
+          }
+        }
+      }
+    }
+
+    // Second pass:
+    // - Demote pre-writes if read after pre-write
+    // - Mark read-aliases
+    // - Demote read-aliases if SRA reg is written before the alias's last read
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+      memset(StaticMaps, 0, MapsSize * sizeof(LiveRange*));
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        uint32_t Node = IR->GetID(CodeNode);
+
+        // Check for read-after-write and demote if it happens
+        uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        for (uint8_t i = 0; i < NumArgs; ++i) {
+          if (IROp->Args[i].IsInvalid()) continue;
+          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
+          uint32_t ArgNode = IROp->Args[i].ID();
+          
+          // ACCESSED after write, let's not SRA this one
+          if (LiveRanges[ArgNode].Written) {
+            SRA_DEBUG("Demoting ssa%d because accessed after write in ssa%d\n", ArgNode, Node);
+            LiveRanges[ArgNode].PrefferedRegister = -1;
+            auto ArgNodeNode = IR->GetNode(IROp->Args[i]);
+            SetNodeClass(Graph, ArgNode, GetRegClassFromNode(IR, ArgNodeNode->Op(IR->GetData())));
+          }
+        }
+
+        // This op defines a span
+        if (IROp->HasDest) {
+
+          // If this is a pre-write, update the StaticMap so we track writes
+          if (LiveRanges[Node].PrefferedRegister  != -1) {
+            SRA_DEBUG("ssa%d is a pre-write\n", Node);
+            auto StaticMap = GetStaticMapFromReg(LiveRanges[Node].PrefferedRegister);
+            if ((*StaticMap)) {
+              SRA_DEBUG("Markng ssa%ld as written because ssa%d writes to sra%d\n", (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+              (*StaticMap)->Written = true;
+            }
+            (*StaticMap) = &LiveRanges[Node];
+          }
+
+          // Opcode is an SRA read
+          // Check if
+          // - There is not a pre-write before this read. If there is one, demote to no pre-write
+          // - Try to read-alias if possible
+          if (IROp->Op == OP_LOADREGISTER) {
+            auto Op = IROp->C<IR::IROp_LoadRegister>();
+
+            auto StaticMap = GetStaticMapFromOffset(Op->Offset);
+
+            // Make sure there wasn't a store pre-written before this read
+            if ((*StaticMap) && (*StaticMap)->PreWritten) {
+              uint32_t ID = (*StaticMap) - &LiveRanges[0];
+
+              SRA_DEBUG("ssa%d cannot be a pre-write because ssa%d reads from sra%d before storereg", ID, Node, -1 /*vreg*/);
+              (*StaticMap)->PrefferedRegister = -1;
+              (*StaticMap)->PreWritten = 0;
+              SetNodeClass(Graph, ID, Op->Class);
+            }
+
+            // if not sra-allocated and full size, sra-allocate
+            if (!LiveRanges[Node].Global && LiveRanges[Node].PrefferedRegister  == -1) {
+              // only full size reads can be aliased
+              if (IsAliasable(IROp->Size, Op->StaticClass, Op->Offset)) {
+
+                // We can only track a single active span.
+                // Marking here as written is overly agressive, but 
+                // there might be write(s) later on the instruction stream
+                if ((*StaticMap)) {
+                  SRA_DEBUG("Markng ssa%ld as written because ssa%d re-loads sra%d, and we can't track possible future writes\n", (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+                  (*StaticMap)->Written = true; 
+                }
+
+                LiveRanges[Node].PrefferedRegister = GetRegAndClassFromOffset(Op->Offset); //0, 1, and so on
+                (*StaticMap) = &LiveRanges[Node];
+                SetNodeClass(Graph, Node, Op->StaticClass);
+                SRA_DEBUG("Marking ssa%d as allocated to sra%d\n", Node, -1 /*vreg*/);
+              }
+            }
+          }
+        }
+
+        // OP is an OP_STOREREGISTER
+        // - If there was a matching pre-write, clear the pre-write flag as the register is no longer pre-written
+        // - Mark the SRA span as written, so that any further reads demote it from read-aliases if they happen
+        if (IROp->Op == OP_STOREREGISTER) {
+          auto Op = IROp->C<IR::IROp_StoreRegister>();
+
+          auto StaticMap = GetStaticMapFromOffset(Op->Offset);
+          // if a read pending, it has been writting
+          if ((*StaticMap)) {
+            // writes to self don't invalidate the span
+            if ((*StaticMap)->PreWritten != Node) {
+              SRA_DEBUG("Markng ssa%d as written because ssa%d writes to sra%d with value ssa%d. Write size is %d\n", ID, Node, -1 /*vreg*/, Op->Value.ID(), IROp->Size);
+              (*StaticMap)->Written = true;
+            }
+          }
+          if (LiveRanges[Op->Value.ID()].PreWritten == Node) {
+            // no longer pre-written
+            LiveRanges[Op->Value.ID()].PreWritten = 0;
+            SRA_DEBUG("Markng ssa%d as no longer pre-written as ssa%d is a storereg for sra%d\n", Op->Value.ID(), Node, -1 /*vreg*/);
           }
         }
       }
@@ -566,8 +794,21 @@ namespace FEXCore::IR {
       for (uint32_t j = i + 1; j < NodeCount; ++j) {
         if (!(LiveRanges[i].Begin >= LiveRanges[j].End ||
               LiveRanges[j].Begin >= LiveRanges[i].End)) {
-          AddInterference(i, j);
-          AddInterference(j, i);
+          
+          auto GetClass = [](uint64_t RegAndClass) {
+            uint32_t Class = RegAndClass >> 32;
+
+            if (Class == IR::GPRPairClass.Val)
+              return IR::GPRClass.Val;
+            else
+              return Class;
+          };
+
+          if (GetClass(Graph->Nodes[i].Head.RegAndClass) == GetClass(Graph->Nodes[j].Head.RegAndClass))
+          {
+            AddInterference(i, j);
+            AddInterference(j, i);
+          }
         }
       }
     }
@@ -579,9 +820,12 @@ namespace FEXCore::IR {
       if (CurrentNode->Head.RegAndClass == INVALID_REGCLASS)
         continue;
 
+      auto LiveRange = &LiveRanges[i];
+
       FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
       uint64_t RegAndClass = ~0ULL;
       RegisterClass *RAClass = &Graph->Set.Classes[RegClass];
+
       if (CurrentNode->Head.PhiPartner) {
         // In the case that we have a list of nodes that need the same register allocated we need to do something special
         // We need to gather the data from the forward linked list and make sure they all match the virtual register
@@ -606,7 +850,7 @@ namespace FEXCore::IR {
           RegAndClass |= AllocateMoreRegisters(Graph, RegClass);
         }
 
-        TopRAPressure[RegClass] = std::max((uint32_t)RegAndClass, TopRAPressure[RegClass]);
+        TopRAPressure[RegClass] = std::max((uint32_t)RegAndClass + 1, TopRAPressure[RegClass]);
 
         // Walk the partners and ensure they are all set to the same register now
         for (auto Partner : Nodes) {
@@ -614,11 +858,16 @@ namespace FEXCore::IR {
         }
       }
       else {
-        for (uint32_t ri = 0; ri < RAClass->Count; ++ri) {
-          uint64_t RegisterToCheck = (static_cast<uint64_t>(RegClass) << 32) + ri;
-          if (!DoesNodeInterfereWithRegister(Graph, CurrentNode, RegisterToCheck)) {
-            RegAndClass = RegisterToCheck;
-            break;
+
+        if (LiveRange->PrefferedRegister != -1) {
+          RegAndClass = LiveRange->PrefferedRegister;
+        } else {
+          for (uint32_t ri = 0; ri < RAClass->Count; ++ri) {
+            uint64_t RegisterToCheck = (static_cast<uint64_t>(RegClass) << 32) + ri;
+            if (!DoesNodeInterfereWithRegister(Graph, CurrentNode, RegisterToCheck)) {
+              RegAndClass = RegisterToCheck;
+              break;
+            }
           }
         }
 
@@ -628,7 +877,7 @@ namespace FEXCore::IR {
           RegAndClass |= AllocateMoreRegisters(Graph, RegClass);
         }
 
-        TopRAPressure[RegClass] = std::max((uint32_t)RegAndClass, TopRAPressure[RegClass]);
+        TopRAPressure[RegClass] = std::max((uint32_t)RegAndClass + 1, TopRAPressure[RegClass]);
         CurrentNode->Head.RegAndClass = RegAndClass;
       }
     }
@@ -713,6 +962,9 @@ namespace FEXCore::IR {
             (RematCost != -1 && InterferenceLiveRange->RematCost != RematCost)) {
           continue;
         }
+
+        //if ((RegisterNode->Head.RegAndClass>>32) != (InterferenceNode->Head.RegAndClass>>32))
+        //  continue;
 
         // If this node's live range fully encompasses the live range of the interference node
         // then spilling that interference node will not lower RA
@@ -941,7 +1193,7 @@ namespace FEXCore::IR {
           // that is cheapest
           FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
           bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass >= PhysicalRegisterCount.at(RegClass);
-
+      
           if (NeedsToSpill) {
             bool Spilled = false;
 
@@ -977,6 +1229,7 @@ namespace FEXCore::IR {
                 LogMan::Throw::A((InterferenceRegisterNode->Head.RegAndClass & ~0U) != ~0U, "Interference node never assigned a register?");
                 LogMan::Throw::A(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
                 LogMan::Throw::A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
+                LogMan::Throw::A(InterferenceRegClass == RegClass, "Class doesn't match");
 
                 // This is the op that we need to dump
                 auto [InterferenceOrderedNode, InterferenceIROp] = IR.at(InterferenceNode)();
@@ -1051,14 +1304,16 @@ namespace FEXCore::IR {
     ResetRegisterGraph(Graph, SSACount);
     FindNodeClasses(Graph, &IR);
     CalculateLiveRange(&IR);
+    if (OptimizeSRA)
+      OptimizeStaticRegisters(&IR);
 
     // Linear foward scan based interference calculation is faster for smaller blocks
     // Smarter block based interference calculation is faster for larger blocks
-    if (SSACount >= 2048) {
+    /*if (SSACount >= 2048) {
       CalculateBlockInterferences(&IR);
       CalculateBlockNodeInterference(&IR);
     }
-    else {
+    else*/ {
       CalculateNodeInterference(&IR);
     }
     AllocateVirtualRegisters();
@@ -1108,7 +1363,7 @@ namespace FEXCore::IR {
       for (size_t i = 0; i < PhysicalRegisterCount.size(); ++i) {
         // Virtual registers fit completely within physical registers
         // Remap virtual 1:1 to physical
-        HadFullRA &= TopRAPressure[i] < PhysicalRegisterCount[i];
+        HadFullRA &= TopRAPressure[i] <= PhysicalRegisterCount[i];
       }
 
       if (HadFullRA) {
@@ -1122,7 +1377,7 @@ namespace FEXCore::IR {
     return Changed;
   }
 
-  FEXCore::IR::RegisterAllocationPass* CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass) {
-    return new ConstrainedRAPass{CompactionPass};
+  FEXCore::IR::RegisterAllocationPass* CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA) {
+    return new ConstrainedRAPass{CompactionPass, OptimizeSRA};
   }
 }

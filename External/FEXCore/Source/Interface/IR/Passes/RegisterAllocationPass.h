@@ -27,7 +27,6 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
      * AddRegisterConflict(GPRClass, 1, PairClass, 1); -> Make sure the pair interferes with x1
      */
     virtual void AddRegisterConflict(FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) = 0;
-    virtual void AllocateRegisterConflicts(FEXCore::IR::RegisterClassType Class, uint32_t NumConflicts) = 0;
 
     /**
      * @name Inference graph handling
