@@ -850,7 +850,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     mov(r13, Thread->BlockCache->GetL1Pointer());
     mov(rax, rdx);
 
-    and_(rax, 1 * 1024 * 1024 - 1);
+    and_(rax, BlockCache::L1_ENTRIES_MASK);
     shl(rax, 4);
     cmp(qword[r13 + rax + 8], rdx);
     jne(FullLookup);
@@ -891,7 +891,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     // Update L1
     mov(r13, Thread->BlockCache->GetL1Pointer());
     mov(rcx, rdx);
-    and_(rcx, 1 * 1024 * 1024 - 1);
+    and_(rcx, BlockCache::L1_ENTRIES_MASK);
     shl(rcx, 1);
     mov(qword[r13 + rcx*8 + 8], rdx);
     mov(qword[r13 + rcx*8 + 0], rax);

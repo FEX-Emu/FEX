@@ -997,7 +997,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // L1 Cache
   LoadConstant(x0, Thread->BlockCache->GetL1Pointer());
 
-  and_(x3, RipReg, 1 * 1024 * 1024 - 1);
+  and_(x3, RipReg, BlockCache::L1_ENTRIES_MASK);
   add(x0, x0, Operand(x3, Shift::LSL, 4));
   ldp(x1, x0, MemOperand(x0));
   cmp(x0, RipReg);
@@ -1053,7 +1053,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
       // update L1 cache
       LoadConstant(x0, Thread->BlockCache->GetL1Pointer());
 
-      and_(x1, RipReg, 1 * 1024 * 1024 - 1);
+      and_(x1, RipReg, BlockCache::L1_ENTRIES_MASK);
       add(x0, x0, Operand(x1, Shift::LSL, 4));
       stp(x3, x2, MemOperand(x0));
       blr(x3);

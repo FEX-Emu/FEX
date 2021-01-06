@@ -23,7 +23,7 @@ public:
 
   void Erase(uint64_t Address) {
     // Do L1
-    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & (L1_ENTRIES -1)];
+    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       L1Entry.GuestCode = L1Entry.HostCode = 0;
     }
@@ -48,7 +48,7 @@ public:
 
   uintptr_t AddBlockMapping(uint64_t Address, void *Ptr) { 
     // Do L1
-    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & (L1_ENTRIES -1)];
+    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       L1Entry.GuestCode = L1Entry.HostCode = 0;
     }
@@ -92,6 +92,9 @@ public:
   uintptr_t GetPagePointer() { return PagePointer; }
   uintptr_t GetVirtualMemorySize() const { return VirtualMemSize; }
 
+  constexpr static size_t L1_ENTRIES = 1 * 1024 * 1024; // Must be a power of 2
+  constexpr static size_t L1_ENTRIES_MASK = L1_ENTRIES - 1;
+
 private:
   uintptr_t AllocateBackingForPage() {
     uintptr_t NewBase = AllocateOffset;
@@ -110,7 +113,7 @@ private:
   uintptr_t FindCodePointerForAddress(uint64_t Address) {
     
     // Do L1
-    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & (L1_ENTRIES -1)];
+    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       return L1Entry.HostCode;
     }
@@ -145,7 +148,6 @@ private:
 
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
   constexpr static size_t SIZE_PER_PAGE = 4096 * sizeof(BlockCacheEntry);
-  constexpr static size_t L1_ENTRIES = 1 * 1024 * 1024;
   constexpr static size_t L1_SIZE = L1_ENTRIES * sizeof(BlockCacheEntry);
 
   size_t AllocateOffset {};
