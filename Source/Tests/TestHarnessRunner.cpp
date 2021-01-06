@@ -101,9 +101,9 @@ int main(int argc, char **argv, char **const envp) {
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
   std::unique_ptr<FEXCore::HLE::SyscallHandler> SyscallHandler{FEX::HLE::CreateHandler(Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT, CTX, SignalDelegation.get())};
 
-  bool DidFail = false;
+  bool DidFault = false;
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFail](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-    DidFail = true;
+      DidFault = true;
     return false;
   });
 
@@ -119,9 +119,9 @@ int main(int argc, char **argv, char **const envp) {
   // Just re-use compare state. It also checks against the expected values in config.
   FEXCore::Core::CPUState State;
   FEXCore::Context::GetCPUState(CTX, &State);
-  bool Passed = !DidFail && Loader.CompareStates(&State, nullptr);
+  bool Passed = !DidFault && Loader.CompareStates(&State, nullptr);
 
-  LogMan::Msg::I("Faulted? %s", DidFail ? "Yes" : "No");
+  LogMan::Msg::I("Faulted? %s", DidFault ? "Yes" : "No");
   LogMan::Msg::I("Passed? %s", Passed ? "Yes" : "No");
 
   FEXCore::Context::DestroyContext(CTX);
