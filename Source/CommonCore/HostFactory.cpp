@@ -58,7 +58,7 @@ namespace HostFactory {
     , CTX {CTX}
     , ThreadState {Thread}
     , IsFallback {Fallback} {
-    FEXCore::Context::RegisterFrontendHostSignalHandler(CTX, SIGSEGV,
+    FEXCore::Context::RegisterHostSignalHandler(CTX, SIGSEGV,
       [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
         auto InternalThread = reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread);
         HostCore *Core = reinterpret_cast<HostCore*>(InternalThread->CPUBackend.get());
@@ -66,7 +66,7 @@ namespace HostFactory {
       }
     );
 
-    FEXCore::Context::RegisterFrontendHostSignalHandler(CTX, 63, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    FEXCore::Context::RegisterHostSignalHandler(CTX, 63, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       return true;
     });
   }

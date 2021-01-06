@@ -286,6 +286,10 @@ namespace FEXCore::Context {
     Thread->CPUBackend->CallbackPtr(Thread, RIP);
   }
 
+  void Context::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
+      SignalDelegation->RegisterHostSignalHandler(Signal, Func);
+  }
+
   void Context::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
     SignalDelegation->RegisterFrontendHostSignalHandler(Signal, Func);
   }

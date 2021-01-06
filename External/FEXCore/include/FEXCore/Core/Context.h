@@ -218,6 +218,7 @@ namespace FEXCore::Context {
 
   void HandleCallback(FEXCore::Context::Context *CTX, uint64_t RIP);
 
+  void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func);
   void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func);
 
   FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
