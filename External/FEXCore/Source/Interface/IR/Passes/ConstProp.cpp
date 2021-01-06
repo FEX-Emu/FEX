@@ -289,7 +289,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       case OP_ROR: {
         for (int i = 0; i < IROp->NumArgs; i++) {
           auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], getMask(IROp));
-          if (newArg != IROp->Args[i]) {
+          if (newArg.ID() != IROp->Args[i].ID()) {
             IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
             Changed = true;
           }
@@ -307,7 +307,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
           auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], imm);
 
-          if (newArg != IROp->Args[i]) {
+          if (newArg.ID() != IROp->Args[i].ID()) {
             IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
             Changed = true;
           }
@@ -348,7 +348,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
         auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
 
-        if (newArg != IROp->Args[0]) {
+        if (newArg.ID() != IROp->Args[0].ID()) {
           IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
           Changed = true;
         }
@@ -365,7 +365,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
         auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
 
-        if (newArg != IROp->Args[0]) {
+        if (newArg.ID() != IROp->Args[0].ID()) {
           IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
           Changed = true;
         }
@@ -608,7 +608,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         Changed = true;
       } else {
         auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
-        if (newArg != Op->Header.Args[1]) {
+        if (newArg.ID() != Op->Header.Args[1].ID()) {
           IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
           Changed = true;
         }
@@ -634,7 +634,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
         Changed = true;
       } else {
         auto newArg = RemoveUselessMasking(IREmit, Op->Header.Args[1], IROp->Size * 8 - 1);
-        if (newArg != Op->Header.Args[1]) {
+        if (newArg.ID() != Op->Header.Args[1].ID()) {
           IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->UnwrapNode(newArg));
           Changed = true;
         }

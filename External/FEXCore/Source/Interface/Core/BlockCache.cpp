@@ -29,12 +29,17 @@ BlockCache::BlockCache(FEXCore::Context::Context *CTX)
   PageMemory = reinterpret_cast<uintptr_t>(mmap(nullptr, CODE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   LogMan::Throw::A(PageMemory != -1ULL, "Failed to allocate page memory");
 
+  // L1 Cache
+  L1Pointer = reinterpret_cast<uintptr_t>(mmap(nullptr, L1_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+  LogMan::Throw::A(L1Pointer != -1ULL, "Failed to allocate L1Pointer");
+
   VirtualMemSize = ctx->Config.VirtualMemSize;
 }
 
 BlockCache::~BlockCache() {
   munmap(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8);
   munmap(reinterpret_cast<void*>(PageMemory), CODE_SIZE);
+  munmap(reinterpret_cast<void*>(L1Pointer), L1_SIZE);
 }
 
 void BlockCache::HintUsedRange(uint64_t Address, uint64_t Size) {
@@ -49,6 +54,7 @@ void BlockCache::ClearCache() {
   // Clear out the page memory
   madvise(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8, MADV_DONTNEED);
   madvise(reinterpret_cast<void*>(PageMemory), CODE_SIZE, MADV_DONTNEED);
+  madvise(reinterpret_cast<void*>(L1Pointer), L1_SIZE, MADV_DONTNEED);
   AllocateOffset = 0;
 }
 

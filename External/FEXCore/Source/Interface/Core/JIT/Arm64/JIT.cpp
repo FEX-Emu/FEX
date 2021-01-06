@@ -1061,7 +1061,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
-
+  aarch64::Label FullLookup{};
   aarch64::Label LoopTop{};
   aarch64::Label ExitSpillSRA{};
   aarch64::Label ThreadPauseHandlerSpillSRA{};
@@ -1069,14 +1069,28 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   bind(&LoopTop);
   AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
 
-  // This is the block cache lookup routine
-  // It matches what is going on it BlockCache.h::FindBlock
-  ldr(x0, &l_PagePtr);
-
   // Load in our RIP
   // Don't modify x2 since it contains our RIP once the block doesn't exist
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
   auto RipReg = x2;
+
+  // L1 Cache
+  LoadConstant(x0, Thread->BlockCache->GetL1Pointer());
+
+  and_(x3, RipReg, BlockCache::L1_ENTRIES_MASK);
+  add(x0, x0, Operand(x3, Shift::LSL, 4));
+  ldp(x1, x0, MemOperand(x0));
+  cmp(x0, RipReg);
+  b(&FullLookup, Condition::ne);
+  blr(x1);
+  b(&LoopTop);
+  
+  // L1C check failed, do a full lookup
+  bind(&FullLookup);
+
+  // This is the block cache lookup routine
+  // It matches what is going on it BlockCache.h::FindBlock
+  ldr(x0, &l_PagePtr);
 
   // Mask the address by the virtual address size so we can check for aliases
   if (__builtin_popcountl(VirtualMemorySize) == 1) {
@@ -1111,12 +1125,18 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     b(&NoBlock, Condition::ne);
 
     // Now load the actual host block to execute if we can
-    ldr(x0, MemOperand(x0, offsetof(FEXCore::BlockCache::BlockCacheEntry, HostCode)));
-    cbz(x0, &NoBlock);
+    ldr(x3, MemOperand(x0, offsetof(FEXCore::BlockCache::BlockCacheEntry, HostCode)));
+    cbz(x3, &NoBlock);
 
     // If we've made it here then we have a real compiled block
     {
-      blr(x0);
+      // update L1 cache
+      LoadConstant(x0, Thread->BlockCache->GetL1Pointer());
+
+      and_(x1, RipReg, BlockCache::L1_ENTRIES_MASK);
+      add(x0, x0, Operand(x1, Shift::LSL, 4));
+      stp(x3, x2, MemOperand(x0));
+      blr(x3);
     }
 
     if (CTX->GetGdbServerStatus()) {
