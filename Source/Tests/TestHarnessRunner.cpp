@@ -102,7 +102,7 @@ int main(int argc, char **argv, char **const envp) {
   std::unique_ptr<FEXCore::HLE::SyscallHandler> SyscallHandler{FEX::HLE::CreateHandler(Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT, CTX, SignalDelegation.get())};
 
   bool DidFault = false;
-  SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFail](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+  SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
       DidFault = true;
     return false;
   });
