@@ -99,6 +99,10 @@ namespace FEXCore::Context {
     CTX->HandleCallback(RIP);
   }
 
+  void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func) {
+      CTX->RegisterHostSignalHandler(Signal, Func);
+  }
+
   void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func) {
     CTX->RegisterFrontendHostSignalHandler(Signal, Func);
   }
