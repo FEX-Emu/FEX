@@ -22,8 +22,14 @@ public:
   }
 
   void Erase(uint64_t Address) {
-    Address = Address & (VirtualMemSize -1);
+    // Do L1
+    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & (L1_ENTRIES -1)];
+    if (L1Entry.GuestCode == Address) {
+      L1Entry.GuestCode = L1Entry.HostCode = 0;
+    }
 
+    // Do full map
+    Address = Address & (VirtualMemSize -1);
     uint64_t PageOffset = Address & (0x0FFF);
     Address >>= 12;
 
@@ -41,6 +47,13 @@ public:
   }
 
   uintptr_t AddBlockMapping(uint64_t Address, void *Ptr) { 
+    // Do L1
+    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & (L1_ENTRIES -1)];
+    if (L1Entry.GuestCode == Address) {
+      L1Entry.GuestCode = L1Entry.HostCode = 0;
+    }
+
+    // Do ful map
     auto FullAddress = Address;
     Address = Address & (VirtualMemSize -1);
 
@@ -75,6 +88,7 @@ public:
 
   void HintUsedRange(uint64_t Address, uint64_t Size);
 
+  uintptr_t GetL1Pointer() { return L1Pointer; }
   uintptr_t GetPagePointer() { return PagePointer; }
   uintptr_t GetVirtualMemorySize() const { return VirtualMemSize; }
 
@@ -94,6 +108,13 @@ private:
   }
 
   uintptr_t FindCodePointerForAddress(uint64_t Address) {
+    
+    // Do L1
+    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & (L1_ENTRIES -1)];
+    if (L1Entry.GuestCode == Address) {
+      return L1Entry.HostCode;
+    }
+
     auto FullAddress = Address;
     Address = Address & (VirtualMemSize -1);
 
@@ -110,16 +131,23 @@ private:
     auto BlockPointers = reinterpret_cast<BlockCacheEntry*>(LocalPagePointer);
 
     if (BlockPointers[PageOffset].GuestCode == FullAddress)
-      return BlockPointers[PageOffset].HostCode;
+    {
+      L1Entry.GuestCode = FullAddress;
+      return L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
+    }
     else
       return 0;
   }
 
   uintptr_t PagePointer;
   uintptr_t PageMemory;
+  uintptr_t L1Pointer;
 
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
   constexpr static size_t SIZE_PER_PAGE = 4096 * sizeof(BlockCacheEntry);
+  constexpr static size_t L1_ENTRIES = 1 * 1024 * 1024;
+  constexpr static size_t L1_SIZE = L1_ENTRIES * sizeof(BlockCacheEntry);
+
   size_t AllocateOffset {};
 
   FEXCore::Context::Context *ctx;
