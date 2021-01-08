@@ -134,6 +134,9 @@ namespace FEXCore::Context {
       // Setting running to false ensures that when they are shutdown we won't send signals to kill them
       DeadThread->State.RunningEvents.Running = false;
     }
+
+    // We now only have one thread
+    CTX->IdleWaitRefCount = 1;
   }
 
   void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation) {
