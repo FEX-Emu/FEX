@@ -263,18 +263,29 @@ namespace FEX::HLE::x32 {
     REGISTER_SYSCALL_IMPL_X32(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, uint32_t *argv, uint32_t *envp) -> uint64_t {
       std::vector<const char*> Args;
       std::vector<const char*> Envp;
+      std::string Filename{};
 
       std::error_code ec;
-      bool exists = std::filesystem::exists(pathname, ec);
+      // Check the rootfs if it is available first
+      if (pathname[0] == '/') {
+        Filename = FEX::HLE::_SyscallHandler->RootFSPath() + pathname;
+
+        bool exists = std::filesystem::exists(Filename, ec);
+        if (ec || !exists) {
+          Filename = pathname;
+        }
+      }
+      else {
+        Filename = pathname;
+      }
+
+      bool exists = std::filesystem::exists(Filename, ec);
       if (ec || !exists) {
         return -ENOENT;
       }
 
       auto PushBackDefaultArgs = [&](uint32_t *argv, uint32_t *envp) {
-        for (int i = 0; argv[i]; i++) {
-          if (i == 0)
-            continue;
-
+        for (int i = 1; argv[i]; i++) {
           Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
         }
 
@@ -283,13 +294,14 @@ namespace FEX::HLE::x32 {
         for (int i = 0; envp[i]; i++) {
           Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
         }
+        Envp.push_back(nullptr);
       };
 
       uint64_t Result{};
       if (FEX::HLE::_SyscallHandler->IsInterpreter()) {
-        if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() && ELFLoader::ELFContainer::IsSupportedELF(pathname)) {
+        if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() && ELFLoader::ELFContainer::IsSupportedELF(Filename.c_str())) {
           PushBackDefaultArgs(argv, envp);
-          Result = execve(pathname, const_cast<char *const *>(&Args[0]), const_cast<char *const *>(&Envp[0]));
+          Result = execve(Filename.c_str(), const_cast<char *const *>(&Args[0]), const_cast<char *const *>(&Envp[0]));
           SYSCALL_ERRNO();
         }
         else {
@@ -302,7 +314,7 @@ namespace FEX::HLE::x32 {
         Args.push_back("--");
       }
 
-      Args.push_back(pathname);
+      Args.emplace_back(Filename.c_str());
       PushBackDefaultArgs(argv, envp);
 
       Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), const_cast<char *const *>(&Envp[0]));

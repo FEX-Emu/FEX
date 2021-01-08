@@ -139,17 +139,31 @@ namespace FEX::HLE::x64 {
     // currently does not propagate argv[0] correctly
     REGISTER_SYSCALL_IMPL_X64(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
       std::vector<const char*> Args;
+      std::string Filename{};
 
       std::error_code ec;
-      bool exists = std::filesystem::exists(pathname, ec);
+      // Check the rootfs if it is available first
+      if (pathname[0] == '/') {
+        Filename = FEX::HLE::_SyscallHandler->RootFSPath() + pathname;
+
+        bool exists = std::filesystem::exists(Filename, ec);
+        if (ec || !exists) {
+          Filename = pathname;
+        }
+      }
+      else {
+        Filename = pathname;
+      }
+
+      bool exists = std::filesystem::exists(Filename, ec);
       if (ec || !exists) {
         return -ENOENT;
       }
 
       uint64_t Result{};
       if (FEX::HLE::_SyscallHandler->IsInterpreter()) {
-        if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() && ELFLoader::ELFContainer::IsSupportedELF(pathname)) {
-          Result = execve(pathname, argv, envp);
+        if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() && ELFLoader::ELFContainer::IsSupportedELF(Filename.c_str())) {
+          Result = execve(Filename.c_str(), argv, envp);
           SYSCALL_ERRNO();
         }
         else {
@@ -162,7 +176,7 @@ namespace FEX::HLE::x64 {
         Args.push_back("--");
       }
 
-      Args.push_back(pathname);
+      Args.push_back(Filename.c_str());
 
       for (int i = 0; argv[i]; i++) {
         if (i == 0)
