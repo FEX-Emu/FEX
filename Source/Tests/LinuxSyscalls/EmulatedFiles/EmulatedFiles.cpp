@@ -1,3 +1,4 @@
+#include <cstring>
 #include <filesystem>
 #include <unistd.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -575,9 +576,6 @@ namespace FEX::EmulatedFile {
 
   EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context *ctx)
     : CTX {ctx} {
-    EmulatedMap.emplace("/proc/cpuinfo");
-    EmulatedMap.emplace("/sys/devices/system/cpu/online");
-
     FDReadCreators["/proc/cpuinfo"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
       FILE *fp = tmpfile();
       fwrite((void*)&cpu_info.at(0), sizeof(uint8_t), cpu_info.size(), fp);
@@ -585,6 +583,16 @@ namespace FEX::EmulatedFile {
       int32_t f = fileno(fp);
       return f;
     };
+
+    FDReadCreators["/proc/sys/kernel/osrelease"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+      FILE *fp = tmpfile();
+      const char kernel_version[] = "5.0.0\0";
+      fwrite(kernel_version, sizeof(uint8_t), strlen(kernel_version) + 1, fp);
+      fseek(fp, 0, SEEK_SET);
+      int32_t f = fileno(fp);
+      return f;
+    };
+
     auto NumCPUCores = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
       FILE *fp = tmpfile();
       fwrite((void*)&cpus_online.at(0), sizeof(uint8_t), cpus_online.size(), fp);
@@ -597,8 +605,6 @@ namespace FEX::EmulatedFile {
     FDReadCreators["/sys/devices/system/cpu/present"] = NumCPUCores;
 
     string procAuxv = string("/proc/") + std::to_string(getpid()) + string("/auxv");
-    EmulatedMap.emplace(procAuxv);
-    EmulatedMap.emplace("/proc/self/auxv");
 
     FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
     FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
@@ -624,11 +630,12 @@ namespace FEX::EmulatedFile {
     string cpath = exists ? std::filesystem::canonical(pathname)
       : std::filesystem::path(pathname).lexically_normal(); // *Note: this doesn't transform to absolute
 
-    if (EmulatedMap.find(cpath) == EmulatedMap.end()) {
+    auto Creator = FDReadCreators.find(cpath);
+    if (Creator == FDReadCreators.end()) {
       return -1;
     }
 
-    return FDReadCreators[cpath](CTX, dirfs, pathname, flags, mode);
+    return Creator->second(CTX, dirfs, pathname, flags, mode);
   }
 
   int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode)
