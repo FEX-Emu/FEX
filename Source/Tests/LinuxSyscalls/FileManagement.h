@@ -34,6 +34,8 @@ public:
   uint64_t Openat(int dirfs, const char *pathname, int flags, uint32_t mode);
   uint64_t Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf);
   uint64_t Mknod(const char *pathname, mode_t mode, dev_t dev);
+  uint64_t NewFSStatAt(int dirfd, const char *pathname, struct stat *buf, int flag);
+  uint64_t NewFSStatAt64(int dirfd, const char *pathname, struct stat64 *buf, int flag);
 
   // vfs
   uint64_t Statfs(const char *path, void *buf);
