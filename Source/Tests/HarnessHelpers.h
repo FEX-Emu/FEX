@@ -343,7 +343,7 @@ namespace FEX::HarnessHelper {
       return STACK_SIZE;
     }
 
-    uint64_t SetupStack() const override {
+    uint64_t SetupStack() override {
       if (Config.Is64BitMode()) {
         return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) + STACK_SIZE;
       }
@@ -527,8 +527,8 @@ public:
     const std::vector<std::string> &Args,
     const std::vector<std::string> &EnvironmentVariables,
     const std::vector<auxv_t> &AuxVariables,
-    uint64_t AuxTabBase,
-    uint64_t AuxTabSize,
+    uint64_t *AuxTabBase,
+    uint64_t *AuxTabSize,
     PointerType RandomNumberOffset
     ) {
     // Pointer list offsets
@@ -597,11 +597,11 @@ public:
       }
     }
 
-    *(PointerType*)(&AuxTabBase) = static_cast<PointerType>(reinterpret_cast<uintptr_t>(AuxVPointers));
-    *(PointerType*)(&AuxTabSize) = sizeof(AuxType) * AuxVariables.size();
+    *AuxTabBase = reinterpret_cast<uint64_t>(AuxVPointers);
+    *AuxTabSize = sizeof(AuxType) * AuxVariables.size();
   }
 
-  uint64_t SetupStack() const override {
+  uint64_t SetupStack() override {
     uintptr_t StackPointer{};
     if (File.GetMode() == ::ELFLoader::ELFContainer::MODE_64BIT) {
       StackPointer = reinterpret_cast<uintptr_t>(mmap(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
@@ -667,8 +667,8 @@ public:
         Args,
         EnvironmentVariables,
         AuxVariables,
-        AuxTabBase,
-        AuxTabSize,
+        &AuxTabBase,
+        &AuxTabSize,
         RandomNumberLocation
         );
     }
@@ -681,8 +681,8 @@ public:
         Args,
         EnvironmentVariables,
         AuxVariables,
-        AuxTabBase,
-        AuxTabSize,
+        &AuxTabBase,
+        &AuxTabSize,
         RandomNumberLocation
         );
     }

@@ -61,7 +61,7 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
       return STACK_SIZE;
     }
 
-    uint64_t SetupStack() const override {
+    uint64_t SetupStack() override {
       return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
     }
 

@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/uio.h>
+#include <sys/sendfile.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -80,7 +81,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(utimensat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
-      uint64_t Result = ::utimensat(dirfd, pathname, times, flags);
+      uint64_t Result = ::syscall(SYS_utimensat, dirfd, pathname, times, flags);
       SYSCALL_ERRNO();
     });
 
@@ -194,6 +195,11 @@ namespace FEX::HLE::x64 {
         static_cast<uint64_t>(fd),
         reinterpret_cast<uint64_t>(dirp),
         static_cast<uint64_t>(count));
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(sendfile, [](FEXCore::Core::InternalThreadState *Thread, int out_fd, int in_fd, off_t *offset, size_t count) -> uint64_t {
+      uint64_t Result = ::sendfile(out_fd, in_fd, offset, count);
       SYSCALL_ERRNO();
     });
   }

@@ -255,7 +255,12 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-  std::unique_ptr<FEXCore::HLE::SyscallHandler> SyscallHandler{FEX::HLE::CreateHandler(Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT, CTX, SignalDelegation.get())};
+  std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
+    FEX::HLE::CreateHandler(
+      Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT,
+      CTX,
+      SignalDelegation.get(),
+      &Loader)};
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
   FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());

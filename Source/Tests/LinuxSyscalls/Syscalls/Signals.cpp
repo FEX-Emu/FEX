@@ -16,10 +16,6 @@ namespace SignalDelegator {
 
 namespace FEX::HLE {
   void RegisterSignals() {
-    REGISTER_SYSCALL_IMPL(rt_sigaction, [](FEXCore::Core::InternalThreadState *Thread, int signum, const FEXCore::GuestSigAction *act, FEXCore::GuestSigAction *oldact) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act, oldact);
-    });
-
     REGISTER_SYSCALL_IMPL(rt_sigprocmask, [](FEXCore::Core::InternalThreadState *Thread, int how, const uint64_t *set, uint64_t *oldset) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(how, set, oldset);
     });

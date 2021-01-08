@@ -11,6 +11,8 @@
 #include <mutex>
 #include <unordered_map>
 
+#include <sys/epoll.h>
+
 #ifndef FEXCORE_VERSION
 #define FEXCORE_VERSION "1"
 #endif
@@ -90,6 +92,7 @@ public:
 
   FEX::HLE::FileManager FM;
   FEXCore::CodeLoader *GetCodeLoader() const { return LocalLoader; }
+  void SetCodeLoader(FEXCore::CodeLoader *Loader) { LocalLoader = Loader; }
   FEX::HLE::SignalDelegator *GetSignalDelegator() { return SignalDelegation; }
 
   FEXCore::Config::Value<bool> IsInterpreter{FEXCore::Config::CONFIG_IS_INTERPRETER, 0};
@@ -100,7 +103,7 @@ public:
   FEXCore::Config::Value<bool> Is64BitMode{FEXCore::Config::CONFIG_IS64BIT_MODE, 0};
 
 protected:
-  std::vector<SyscallFunctionDefinition> Definitions;
+  std::vector<SyscallFunctionDefinition> Definitions{};
   std::mutex MMapMutex;
 
   // BRK management
@@ -120,7 +123,11 @@ private:
   #endif
 };
 
-FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode, FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode,
+  FEXCore::Context::Context *ctx,
+  FEX::HLE::SignalDelegator *_SignalDelegation,
+  FEXCore::CodeLoader *Loader
+  );
 uint64_t HandleSyscall(SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);
 
 #define SYSCALL_ERRNO() do { if (Result == -1) return -errno; return Result; } while(0)
@@ -161,7 +168,7 @@ template<typename ...Args>
 std::string CollectArgsFmtString() {
   std::string array[] = { ArgToFmtString<Args>::Format... };
 
-  std::string rv;
+  std::string rv{};
   bool first = true;
 
   for (auto &str: array) {
@@ -205,6 +212,27 @@ struct FunctionToLambda<R(*)(Args...) noexcept> {
 		return fn;
 	}
 };
+
+struct __attribute__((packed)) epoll_event_x86 {
+  uint32_t events;
+  epoll_data_t data;
+
+  epoll_event_x86() = delete;
+
+  operator struct epoll_event() const {
+    epoll_event event{};
+    event.events = events;
+    event.data = data;
+    return event;
+  }
+
+  epoll_event_x86(struct epoll_event event) {
+    events = event.events;
+    data = event.data;
+  }
+};
+static_assert(std::is_trivial<epoll_event_x86>::value, "Needs to be trivial");
+static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
 }
 
 // Creates a variadic template lambda from a global function (via FunctionToLambda), then forwards the arguments to the specified function

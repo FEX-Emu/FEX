@@ -1,9 +1,12 @@
 #pragma once
 
+#include <FEXCore/Core/SignalDelegator.h>
+
 #include <bits/types/stack_t.h>
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
+#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
@@ -15,8 +18,10 @@ namespace FEX::HLE::x32 {
 
 // Basic types to make tracking easier
 using compat_ulong_t = uint32_t;
+using compat_long_t = int32_t;
 using compat_uptr_t = uint32_t;
 using compat_size_t = uint32_t;
+using compat_off_t = uint32_t;
 
 template<typename T>
 class compat_ptr {
@@ -25,12 +30,26 @@ public:
   compat_ptr(uint32_t In) : Ptr {In} {}
   compat_ptr(T *In) : Ptr {static_cast<uint32_t>(reinterpret_cast<uintptr_t>(In))} {}
 
-  T operator*() {
+  T operator*() const {
     return *Interpret();
   }
 
   T *operator->() {
     return Interpret();
+  }
+
+  // In the case of non-void type, we can index the pointer
+  template<typename T2 = T,
+    typename = std::enable_if<!std::is_same<T2, void>::value, T2>>
+  T2 &operator[](size_t idx) const {
+    return *reinterpret_cast<T2*>(Ptr + sizeof(T2) * idx);
+  }
+
+  // In the case of void type, we need to trivially convert
+  template<typename T2 = T,
+    typename = std::enable_if<std::is_same<T2, void>::value, T2>>
+  operator T2*() const {
+    return reinterpret_cast<T2*>(Ptr);
   }
 
   operator T*() const {
@@ -169,6 +188,14 @@ struct msghdr32 {
 
 static_assert(std::is_trivial<msghdr32>::value, "Needs to be trivial");
 static_assert(sizeof(msghdr32) == 28, "Incorrect size");
+
+struct mmsghdr_32 {
+  msghdr32 msg_hdr;
+  uint32_t msg_len;
+};
+
+static_assert(std::is_trivial<mmsghdr_32>::value, "Needs to be trivial");
+static_assert(sizeof(mmsghdr_32) == 32, "Incorrect size");
 
 struct stack_t32 {
   compat_ptr<void> ss_sp;
@@ -479,5 +506,107 @@ struct linux_dirent_64 {
 };
 static_assert(std::is_trivial<linux_dirent_64>::value, "Needs to be trivial");
 static_assert(sizeof(linux_dirent_64) == 24, "Incorrect size");
+
+struct sigset_argpack32 {
+  compat_ptr<uint64_t> sigset;
+  size_t size;
+};
+
+static_assert(std::is_trivial<sigset_argpack32>::value, "Needs to be trivial");
+static_assert(sizeof(sigset_argpack32) == 16, "Incorrect size");
+
+struct rusage_32 {
+  timeval32 ru_utime;
+  timeval32 ru_stime;
+  compat_long_t ru_maxrss;
+  compat_long_t ru_ixrss;
+  compat_long_t ru_idrss;
+  compat_long_t ru_isrss;
+  compat_long_t ru_minflt;
+  compat_long_t ru_majflt;
+  compat_long_t ru_nswap;
+  compat_long_t ru_inblock;
+  compat_long_t ru_oublock;
+  compat_long_t ru_msgsnd;
+  compat_long_t ru_msgrcv;
+  compat_long_t ru_nsignals;
+  compat_long_t ru_nvcsw;
+  compat_long_t ru_nivcsw;
+
+  rusage_32() = delete;
+  rusage_32(struct rusage usage)
+    : ru_utime { usage.ru_utime }
+    , ru_stime { usage.ru_stime } {
+    // These only truncate
+    ru_maxrss   = usage.ru_maxrss;
+    ru_ixrss    = usage.ru_ixrss;
+    ru_idrss    = usage.ru_idrss;
+    ru_isrss    = usage.ru_isrss;
+    ru_minflt   = usage.ru_minflt;
+    ru_majflt   = usage.ru_majflt;
+    ru_nswap    = usage.ru_nswap;
+    ru_inblock  = usage.ru_inblock;
+    ru_oublock  = usage.ru_oublock;
+    ru_msgsnd   = usage.ru_msgsnd;
+    ru_msgrcv   = usage.ru_msgrcv;
+    ru_nsignals = usage.ru_nsignals;
+    ru_nvcsw    = usage.ru_nvcsw;
+    ru_nivcsw   = usage.ru_nivcsw;
+  }
+
+  operator struct rusage() const {
+    struct rusage usage{};
+    usage.ru_utime = ru_utime;
+    usage.ru_stime = ru_stime;
+    usage.ru_maxrss = ru_maxrss;
+    usage.ru_ixrss = ru_ixrss;
+    usage.ru_idrss = ru_idrss;
+    usage.ru_isrss = ru_isrss;
+    usage.ru_minflt = ru_minflt;
+    usage.ru_majflt = ru_majflt;
+    usage.ru_nswap = ru_nswap;
+    usage.ru_inblock = ru_inblock;
+    usage.ru_oublock = ru_oublock;
+    usage.ru_msgsnd = ru_msgsnd;
+    usage.ru_msgrcv = ru_msgrcv;
+    usage.ru_nsignals = ru_nsignals;
+    usage.ru_nvcsw = ru_nvcsw;
+    usage.ru_nivcsw = ru_nivcsw;
+
+    return usage;
+  }
+};
+static_assert(std::is_trivial<rusage_32>::value, "Needs to be trivial");
+static_assert(sizeof(rusage_32) == 72, "Incorrect size");
+
+struct __attribute__((packed)) GuestSigAction_32 {
+  FEX::HLE::x32::compat_ptr<void> handler_32;
+
+  uint64_t sa_flags;
+  FEX::HLE::x32::compat_ptr<void> restorer_32;
+  FEXCore::GuestSAMask sa_mask;
+
+  GuestSigAction_32() = delete;
+
+  operator FEXCore::GuestSigAction() const {
+    FEXCore::GuestSigAction action{};
+
+    action.sigaction_handler.handler = reinterpret_cast<decltype(action.sigaction_handler.handler)>(handler_32.Ptr);
+    action.sa_flags = sa_flags;
+    action.restorer = reinterpret_cast<decltype(action.restorer)>(restorer_32.Ptr);
+    action.sa_mask = sa_mask;
+    return action;
+  }
+
+  GuestSigAction_32(FEXCore::GuestSigAction action)
+    : handler_32 {reinterpret_cast<void*>(action.sigaction_handler.handler)}
+    , restorer_32 {reinterpret_cast<void*>(action.restorer)} {
+    sa_flags = action.sa_flags;
+    sa_mask = action.sa_mask;
+  }
+};
+
+static_assert(std::is_trivial<GuestSigAction_32>::value, "Needs to be trivial");
+static_assert(sizeof(GuestSigAction_32) == 24, "Incorrect size");
 
 }

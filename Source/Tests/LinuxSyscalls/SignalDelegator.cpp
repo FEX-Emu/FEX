@@ -422,6 +422,11 @@ namespace FEX::HLE {
   uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const FEXCore::GuestSigAction *Action, FEXCore::GuestSigAction *OldAction) {
     std::lock_guard<std::mutex> lk(GuestDelegatorMutex);
 
+    // Invalid signal specified
+    if (Signal > MAX_SIGNALS) {
+      return -EINVAL;
+    }
+
     // If we have an old signal set then give it back
     if (OldAction) {
       *OldAction = HostHandlers[Signal].GuestAction;
@@ -430,7 +435,7 @@ namespace FEX::HLE {
     // Now assign the new action
     if (Action) {
       // These signal dispositions can't be changed on Linux
-      if (Signal == SIGKILL || Signal == SIGSTOP || Signal > MAX_SIGNALS) {
+      if (Signal == SIGKILL || Signal == SIGSTOP) {
         return -EINVAL;
       }
 

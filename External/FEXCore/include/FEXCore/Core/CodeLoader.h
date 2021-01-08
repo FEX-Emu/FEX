@@ -32,7 +32,7 @@ public:
    *
    * Probably will be GuestPtr + StackSize() - <Some amount>
    */
-  virtual uint64_t SetupStack() const = 0;
+  virtual uint64_t SetupStack() = 0;
 
   /**
    * @brief Function to return the guest RIP that the code should start out at

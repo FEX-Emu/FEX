@@ -175,11 +175,6 @@ namespace FEX::HLE {
       return 0;
     });
 
-    REGISTER_SYSCALL_IMPL(wait4, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
-      uint64_t Result = ::wait4(pid, wstatus, options, rusage);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(kill, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, int sig) -> uint64_t {
       uint64_t Result = ::kill(pid, sig);
       SYSCALL_ERRNO();
