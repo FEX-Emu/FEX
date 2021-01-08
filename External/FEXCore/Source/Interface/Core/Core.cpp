@@ -661,9 +661,8 @@ namespace FEXCore::Context {
 
             Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
             Thread->OpDispatcher->_RemoveCodeEntry(GuestRIP);
-            Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
-            Thread->OpDispatcher->_ExitFunction();
-
+            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
+            
             auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlock();
 
             Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
@@ -702,8 +701,7 @@ namespace FEXCore::Context {
               uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
 
               // We had some instructions. Early exit
-              Thread->OpDispatcher->_StoreContext(IR::GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry + BlockInstructionsLength));
-              Thread->OpDispatcher->_ExitFunction();
+              Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry + BlockInstructionsLength));
               break;
             }
           }

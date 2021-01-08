@@ -60,15 +60,17 @@ DEF_OP(CallbackReturn) {
 }
 
 DEF_OP(ExitFunction) {
+  auto Op = IROp->C<IR::IROp_ExitFunction>();
+
   Label FullLookup;
 
   if (SpillSlots) {
     add(sp, sp, SpillSlots * 16);
   }
 
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
-  auto RipReg = x2;
-
+  auto RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+  str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+  
   // L1 Cache
   LoadConstant(x0, State->BlockCache->GetL1Pointer());
 

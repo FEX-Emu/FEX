@@ -62,6 +62,11 @@ DEF_OP(CallbackReturn) {
 }
 
 DEF_OP(ExitFunction) {
+  auto Op = IROp->C<IR::IROp_ExitFunction>();
+
+  auto RipReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], RipReg);
+
   if (SpillSlots) {
     add(rsp, SpillSlots * 16 + 8);
   }

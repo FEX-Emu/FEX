@@ -88,8 +88,7 @@ public:
         uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), _Constant(GPRSize * 8, NextRIP));
-        _ExitFunction();
+        _ExitFunction(_Constant(GPRSize * 8, NextRIP));
       }
       else if (it != JumpTargets.end()) {
         _Jump(it->second.BlockEntry);
@@ -107,7 +106,6 @@ public:
   bool HadDecodeFailure() { return DecodeFailure; }
 
   void BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
-  void ExitFunction();
   void Finalize();
 
   // Dispatch builder functions

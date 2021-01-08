@@ -119,8 +119,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
 
   // Store the new RIP
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-  _ExitFunction();
+  _ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -170,8 +169,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
 
   // Store the new RIP
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-  _ExitFunction();
+  _ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -193,7 +191,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   OrderedNode* SP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
 
   // RIP (64 bits)
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+  auto NewRIP = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
   SP = _Add(SP, Constant);
   //CS (lower 16 used)
   _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, cs), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
@@ -208,24 +206,28 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   //ss
   _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
   SP = _Add(SP, Constant);
-
-  _ExitFunction();
+  
+  _ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
 void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   // Store the new RIP
   _SignalReturn();
+  auto NewRIP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, rip), GPRClass);
   // This ExitFunction won't actually get hit but needs to exist
-  _ExitFunction();
+  _ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
 void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   // Store the new RIP
   _CallbackReturn();
+  auto NewRIP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, rip), GPRClass);
   // This ExitFunction won't actually get hit but needs to exist
-  _ExitFunction();
+  _ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
 
@@ -653,8 +655,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   _StoreMem(GPRClass, GPRSize, NewSP, ConstantPCReturn, GPRSize);
 
   // Store the RIP
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-  _ExitFunction(); // If we get here then leave the function now
+  _ExitFunction(NewRIP); // If we get here then leave the function now
 }
 
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
@@ -677,8 +678,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   _StoreMem(GPRClass, Size, NewSP, ConstantPCReturn, Size);
 
   // Store the RIP
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), JMPPCOffset);
-  _ExitFunction(); // If we get here then leave the function now
+  _ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
 OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue) {
@@ -964,8 +964,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       auto NewRIP = _Add(RIPOffset, RIPTargetConst);
 
       // Store the new RIP
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-      _ExitFunction();
+      _ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -982,8 +981,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
 
       // Store the new RIP
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), RIPTargetConst);
-      _ExitFunction();
+      _ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -1028,8 +1026,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       auto NewRIP = _Constant(Target);
 
       // Store the new RIP
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-      _ExitFunction();
+      _ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -1046,8 +1043,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
 
       // Store the new RIP
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), RIPTargetConst);
-      _ExitFunction();
+      _ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -1106,8 +1102,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       auto NewRIP = _Constant(Target);
 
       // Store the new RIP
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-      _ExitFunction();
+      _ExitFunction(NewRIP);
     }
 
     // Failure to take branch
@@ -1124,8 +1119,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
 
       // Store the new RIP
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), RIPTargetConst);
-      _ExitFunction();
+      _ExitFunction(RIPTargetConst);
     }
   }
 }
@@ -1149,8 +1143,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlock();
       SetJumpTarget(Jump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
-      _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), _Constant(Target));
-      _ExitFunction();
+      _ExitFunction(_Constant(Target));
     }
     return;
   }
@@ -1165,8 +1158,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
 		auto NewRIP = _Add(RIPOffset, RIPTargetConst);
 
     // Store the new RIP
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
-    _ExitFunction();
+    _ExitFunction(NewRIP);
   }
 }
 
@@ -1180,8 +1172,7 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // Store the new RIP
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), RIPOffset);
-  _ExitFunction();
+  _ExitFunction(RIPOffset);
 }
 
 template<uint32_t SrcIndex>
@@ -4459,13 +4450,8 @@ void OpDispatchBuilder::Finalize() {
 
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
-    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), _Constant(Handler.first));
-    _ExitFunction();
+    _ExitFunction(_Constant(Handler.first));
   }
-}
-
-void OpDispatchBuilder::ExitFunction() {
-  _ExitFunction();
 }
 
 uint8_t OpDispatchBuilder::GetDstSize(FEXCore::X86Tables::DecodedOp Op) {
