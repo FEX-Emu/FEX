@@ -768,11 +768,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   uint32_t SSACount = IR->GetSSACount();
 
   auto HeaderOp = IR->GetHeader();
-
-  
-  if (HeaderOp->ShouldInterpret) {
-    return reinterpret_cast<void*>(ThreadSharedData.InterpreterFallbackHelperAddress);
-  }
   
   #ifndef NDEBUG
   LoadConstant(x0, HeaderOp->Entry);
@@ -813,64 +808,86 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   auto Buffer = GetBuffer();
   auto Entry = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
+ if (CTX->GetGdbServerStatus()) {
+    aarch64::Label RunBlock;
 
-  if (SpillSlots) {
-    add(TMP1, sp, 0); // Move that supports SP
-    sub(sp, sp, SpillSlots * 16);
-    stp(TMP1, lr, MemOperand(sp, -16, PreIndex));
-  }
-  else {
-    add(TMP1, sp, 0); // Move that supports SP
-    stp(TMP1, lr, MemOperand(sp, -16, PreIndex));
-  }
+    // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
+    // This happens when single stepping
 
-  PendingTargetLabel = nullptr;
-
-  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-    using namespace FEXCore::IR;
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
+    static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
+    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, CTX)));
+    ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
+    
+    // If the value == 0 then we don't need to stop
+    cbz(w0, &RunBlock);
     {
-      uint32_t Node = IR->GetID(BlockNode);
-      auto IsTarget = JumpTargets.find(Node);
-      if (IsTarget == JumpTargets.end()) {
-        IsTarget = JumpTargets.try_emplace(Node).first;
-      }
+      // Make sure RIP is syncronized to the context
+      LoadConstant(x0, HeaderOp->Entry);
+      str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
 
-      // if there's a pending branch, and it is not fall-through
-      if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
+      // Stop the thread
+      LoadConstant(x0, ThreadPauseHandlerAddressSpillSRA);
+      br(x0);
+    }
+    bind(&RunBlock);
+  }
+
+  if (HeaderOp->ShouldInterpret) {
+    LoadConstant(x0, ThreadSharedData.InterpreterFallbackHelperAddress);
+    br(x0);
+  } else {
+    if (SpillSlots) {
+      sub(sp, sp, SpillSlots * 16);
+    }
+
+    PendingTargetLabel = nullptr;
+
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+      using namespace FEXCore::IR;
+      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+
       {
-        b(PendingTargetLabel);
+        uint32_t Node = IR->GetID(BlockNode);
+        auto IsTarget = JumpTargets.find(Node);
+        if (IsTarget == JumpTargets.end()) {
+          IsTarget = JumpTargets.try_emplace(Node).first;
+        }
+
+        // if there's a pending branch, and it is not fall-through
+        if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
+        {
+          b(PendingTargetLabel);
+        }
+        PendingTargetLabel = nullptr;
+        
+        bind(&IsTarget->second);
       }
-      PendingTargetLabel = nullptr;
-      
-      bind(&IsTarget->second);
+
+      if (DebugData) {
+        DebugData->Subblocks.push_back({Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()), 0, IR->GetID(BlockNode)});
+      }
+
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        uint32_t ID = IR->GetID(CodeNode);
+
+        // Execute handler
+        OpHandler Handler = OpHandlers[IROp->Op];
+        (this->*Handler)(IROp, ID);
+      }
+
+      if (DebugData) {
+        DebugData->Subblocks.back().HostCodeSize = Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()) - DebugData->Subblocks.back().HostCodeStart;
+      }
     }
 
-    if (DebugData) {
-      DebugData->Subblocks.push_back({Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()), 0, IR->GetID(BlockNode)});
+    // Make sure last branch is generated. It certainly can't be eliminated here.
+    if (PendingTargetLabel)
+    {
+      b(PendingTargetLabel);
     }
-
-    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      uint32_t ID = IR->GetID(CodeNode);
-
-      // Execute handler
-      OpHandler Handler = OpHandlers[IROp->Op];
-      (this->*Handler)(IROp, ID);
-    }
-
-    if (DebugData) {
-      DebugData->Subblocks.back().HostCodeSize = Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()) - DebugData->Subblocks.back().HostCodeStart;
-    }
+    PendingTargetLabel = nullptr;
   }
-
-  // Make sure last branch is generated. It certainly can't be eliminated here.
-  if (PendingTargetLabel)
-  {
-    b(PendingTargetLabel);
-  }
-  PendingTargetLabel = nullptr;
 
   FinalizeCode();
 
@@ -1082,8 +1099,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   ldp(x1, x0, MemOperand(x0));
   cmp(x0, RipReg);
   b(&FullLookup, Condition::ne);
-  blr(x1);
-  b(&LoopTop);
+  br(x1);
   
   // L1C check failed, do a full lookup
   bind(&FullLookup);
@@ -1136,28 +1152,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
       and_(x1, RipReg, BlockCache::L1_ENTRIES_MASK);
       add(x0, x0, Operand(x1, Shift::LSL, 4));
       stp(x3, x2, MemOperand(x0));
-      blr(x3);
-    }
-
-    if (CTX->GetGdbServerStatus()) {
-      // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
-      // This happens when single stepping
-
-      static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, CTX)));
-      ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
-      // If the value == 0 then branch to the top
-      cbz(x0, &LoopTop);
-
-      // Spill context to mem
-      SpillStaticRegs();
-      // Else we need to pause now
-      b(&ThreadPauseHandlerSpillSRA);
-    }
-    else {
-      // Unconditionally loop to the top
-      // We will only stop on error when compiling a block or signal
-      b(&LoopTop);
+      br(x3);
     }
   }
 
@@ -1210,9 +1205,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
     // X0 now contains either nullptr or block pointer
     cbz(x0, &ExitSpillSRA);
-    blr(x0);
-
-    b(&LoopTop);
+    br(x0);
   }
 
   {
