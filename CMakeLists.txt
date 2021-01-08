@@ -10,6 +10,7 @@ option(ENABLE_LLD "Enable linking with LLD" FALSE)
 option(ENABLE_ASAN "Enables Clang ASAN" FALSE)
 option(ENABLE_TSAN "Enables Clang TSAN" FALSE)
 option(ENABLE_ASSERTIONS "Enables assertions in build" FALSE)
+option(ENABLE_VISUAL_DEBUGGER "Enables the visual debugger for compiling" FALSE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
@@ -146,11 +147,6 @@ add_compile_options(-Wall)
 
 add_subdirectory(External/FEXCore)
 
-find_package(LLVM CONFIG QUIET)
-if(LLVM_FOUND AND TARGET LLVM)
-  message(STATUS "LLVM found!")
-  include_directories(${LLVM_INCLUDE_DIRS})
-endif()
 add_subdirectory(Source/)
 
 if (BUILD_TESTS)

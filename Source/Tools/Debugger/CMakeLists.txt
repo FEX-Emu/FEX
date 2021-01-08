@@ -15,6 +15,10 @@ set(SRCS Main.cpp
 find_library(EPOXY_LIBRARY epoxy)
 find_library(GLFW_LIBRARY glfw3)
 find_package(LLVM CONFIG QUIET)
+if(LLVM_FOUND AND TARGET LLVM)
+  message(STATUS "LLVM found!")
+  include_directories(${LLVM_INCLUDE_DIRS})
+endif()
 
 add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<epoxy/gl.h>)
 add_executable(${NAME} ${SRCS})
