@@ -67,5 +67,15 @@ private:
   std::vector<DecodedBlocks> Blocks;
   std::set<uint64_t> BlocksToDecode;
   std::set<uint64_t> HasBlocks;
+
+  // ModRM rm decoding
+  using DecodeModRMPtr = size_t (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement);
+  size_t DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement);
+  size_t DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement);
+
+  const std::array<DecodeModRMPtr, 2> DecodeModRMs_Disp {
+    &FEXCore::Frontend::Decoder::DecodeModRM_64,
+    &FEXCore::Frontend::Decoder::DecodeModRM_16,
+  };
 };
 }

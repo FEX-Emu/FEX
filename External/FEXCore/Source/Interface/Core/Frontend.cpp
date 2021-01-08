@@ -176,8 +176,12 @@ void Decoder::DecodeModRM(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecode
 }
 
 bool Decoder::DecodeSIB(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecoded ModRM) {
+  const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
+    DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
+
   bool HasSIB = ((ModRM.mod != 0b11) &&
-                (ModRM.rm == 0b100));
+                (ModRM.rm == 0b100)) &&
+                !Has16BitAddressing;
 
   if (HasSIB) {
     FEXCore::X86Tables::SIBDecoded SIB;
@@ -210,6 +214,146 @@ bool Decoder::DecodeSIB(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecoded 
   }
 
   return HasSIB;
+}
+
+size_t Decoder::DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement) {
+  // 16bit modrm behaves similar to SIB but encoded directly in modrm
+  // mod != 0b11 case
+  // RM    | Result
+  // ===============
+  // 0b000 | [BX + SI]
+  // 0b001 | [BX + DI]
+  // 0b010 | [BP + SI]
+  // 0b011 | [BP + DI]
+  // 0b100 | [SI]
+  // 0b101 | [DI]
+  // 0b110 | {[BP], disp16}
+  // 0b111 | [BX]
+  // if mod = 0b00
+  //    0b110 = disp16
+  // if mod = 0b01
+  //    All encodings gain 8bit displacement
+  //    0b110 = [BP] + disp8
+  // if mod = 0b10
+  //    All encodings gain 16bit displacement
+  //    0b110 = [BP] + disp16
+  uint32_t Literal{};
+  uint8_t DisplacementSize{};
+  if ((ModRM.mod == 0 && ModRM.rm == 0b110) ||
+      ModRM.mod == 0b10) {
+    DisplacementSize = 2;
+  }
+  else if (ModRM.mod == 0b01) {
+    DisplacementSize = 1;
+  }
+  if (DisplacementSize) {
+    Literal = ReadData(DisplacementSize);
+    if (DisplacementSize == 1) {
+      Literal = static_cast<int8_t>(Literal);
+    }
+  }
+
+  Operand->TypeSIB.Type = DecodedOperand::TYPE_SIB;
+  Operand->TypeSIB.Scale = 1;
+  Operand->TypeSIB.Offset = Literal;
+
+  // Only called when ModRM.mod != 0b11
+  struct Encodings {
+    uint8_t Base;
+    uint8_t Index;
+  };
+  constexpr static std::array<Encodings, 24> Lookup = {{
+    // Mod = 0b00
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RSI},
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RDI},
+    {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RSI},
+    {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RDI},
+    {FEXCore::X86State::REG_RSI, 255},
+    {FEXCore::X86State::REG_RDI, 255},
+    {255, 255},
+    {FEXCore::X86State::REG_RBX, 255},
+    // Mod = 0b01
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RSI},
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RDI},
+    {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RSI},
+    {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RDI},
+    {FEXCore::X86State::REG_RSI, 255},
+    {FEXCore::X86State::REG_RDI, 255},
+    {FEXCore::X86State::REG_RBP, 255},
+    {FEXCore::X86State::REG_RBX, 255},
+    // Mod = 0b10
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RSI},
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RDI},
+    {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RSI},
+    {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RDI},
+    {FEXCore::X86State::REG_RSI, 255},
+    {FEXCore::X86State::REG_RDI, 255},
+    {FEXCore::X86State::REG_RBP, 255},
+    {FEXCore::X86State::REG_RBX, 255},
+  }};
+
+  uint8_t LookupIndex = ModRM.mod << 3 | ModRM.rm;
+  auto it = Lookup[LookupIndex];
+  Operand->TypeSIB.Base = it.Base;
+  Operand->TypeSIB.Index = it.Index;
+
+  return DisplacementSize;
+}
+
+size_t Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement) {
+  if (DecodeInst->DecodedSIB) {
+    // SIB
+    FEXCore::X86Tables::SIBDecoded SIB;
+    SIB.Hex = DecodeInst->SIB;
+    Operand->TypeSIB.Type = DecodedOperand::TYPE_SIB;
+    Operand->TypeSIB.Scale = 1 << SIB.scale;
+
+    // The invalid encoding types are described at Table 1-12. "promoted nsigned is always non-zero"
+    Operand->TypeSIB.Index = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X ? 1 : 0, SIB.index, false, false, false, false, 0b100);
+    Operand->TypeSIB.Base  = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, SIB.base, false, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
+
+    uint64_t Literal {0};
+    LogMan::Throw::A(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
+
+    Literal = ReadData(Displacement);
+    if (Displacement == 1) {
+      Literal = static_cast<int8_t>(Literal);
+    }
+    Operand->TypeSIB.Offset = Literal;
+  }
+  else if (ModRM.mod == 0) {
+    // Explained in Table 1-14. "Operand Addressing Using ModRM and SIB Bytes"
+    if (ModRM.rm == 0b101) {
+      // 32bit Displacement
+      uint32_t Literal;
+      Literal = ReadData(4);
+      Displacement = 4;
+
+      Operand->TypeRIPLiteral.Type = DecodedOperand::TYPE_RIP_RELATIVE;
+      Operand->TypeRIPLiteral.Literal.u = Literal;
+    }
+    else {
+      // Register-direct addressing
+      Operand->TypeGPR.Type = DecodedOperand::TYPE_GPR_DIRECT;
+      Operand->TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
+    }
+  }
+  else {
+    uint8_t DisplacementSize = ModRM.mod == 1 ? 1 : 4;
+    uint32_t Literal{};
+    Literal = ReadData(DisplacementSize);
+    if (DisplacementSize == 1) {
+      Literal = static_cast<int8_t>(Literal);
+    }
+
+    Displacement = DisplacementSize;
+
+    Operand->TypeGPRIndirect.Type = DecodedOperand::TYPE_GPR_INDIRECT;
+    Operand->TypeGPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
+    Operand->TypeGPRIndirect.Displacement = Literal;
+  }
+
+  return Displacement;
 }
 
 bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op) {
@@ -323,6 +467,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   bool Is8BitDest = (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
   bool HasREX = !!(DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX);
   bool HasHighXMM = HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_HIGH_XMM_REG);
+  const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
+    DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
   uint8_t Displacement = 0;
 
   auto *CurrentDest = &DecodeInst->Dest;
@@ -395,59 +541,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
       NonGPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, NonGPR8Bit, HasREX, HasXMMNonGPR, HasMMNonGPR);
     }
     else {
-      if (HasSIB) {
-        // SIB
-        FEXCore::X86Tables::SIBDecoded SIB;
-        SIB.Hex = DecodeInst->SIB;
-        NonGPR.TypeSIB.Type = DecodedOperand::TYPE_SIB;
-        NonGPR.TypeSIB.Scale = 1 << SIB.scale;
-
-        // The invalid encoding types are described at Table 1-12. "promoted nsigned is always non-zero"
-        NonGPR.TypeSIB.Index = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X ? 1 : 0, SIB.index, false, false, false, false, 0b100);
-        NonGPR.TypeSIB.Base  = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, SIB.base, false, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
-
-        uint64_t Literal {0};
-        LogMan::Throw::A(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
-
-        Literal = ReadData(Displacement);
-        if (Displacement == 1) {
-          Literal = static_cast<int8_t>(Literal);
-        }
-        Bytes -= Displacement;
-        NonGPR.TypeSIB.Offset = Literal;
-      }
-      else if (ModRM.mod == 0) {
-        // Explained in Table 1-14. "Operand Addressing Using ModRM and SIB Bytes"
-        LogMan::Throw::A(ModRM.rm != 0b100, "Shouldn't have hit this here");
-        if (ModRM.rm == 0b101) {
-          // 32bit Displacement
-          uint32_t Literal;
-          Literal = ReadData(4);
-          Bytes -= 4;
-
-          NonGPR.TypeRIPLiteral.Type = DecodedOperand::TYPE_RIP_RELATIVE;
-          NonGPR.TypeRIPLiteral.Literal.u = Literal;
-        }
-        else {
-          // Register-direct addressing
-          NonGPR.TypeGPR.Type = DecodedOperand::TYPE_GPR_DIRECT;
-          NonGPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
-        }
-      }
-      else {
-        uint8_t DisplacementSize = ModRM.mod == 1 ? 1 : 4;
-        uint32_t Literal{};
-        Literal = ReadData(DisplacementSize);
-        if (DisplacementSize == 1) {
-          Literal = static_cast<int8_t>(Literal);
-        }
-
-        Bytes -= DisplacementSize;
-
-        NonGPR.TypeGPRIndirect.Type = DecodedOperand::TYPE_GPR_INDIRECT;
-        NonGPR.TypeGPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
-        NonGPR.TypeGPRIndirect.Displacement = Literal;
-      }
+      auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
+      Bytes -= (this->*Disp)(&NonGPR, ModRM, Displacement);
     }
   };
 
