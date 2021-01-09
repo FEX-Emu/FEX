@@ -40,7 +40,7 @@ with open(disabled_tests_file) as dtf:
             disabled_tests[test] = 1
 
 # run with timeout to avoid locking up
-RunnerArgs = ["timeout", "--signal=9", "300s"]
+RunnerArgs = []
 
 # Add the rest of the arguments
 for i in range(len(sys.argv) - 5):

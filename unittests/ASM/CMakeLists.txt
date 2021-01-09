@@ -101,4 +101,4 @@ add_custom_target(
   asm_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "-j${CORES}" "-R" "\.*.asm$$")
+  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "\.*.asm$$")

@@ -154,6 +154,7 @@ endif()
 add_subdirectory(Source/)
 
 if (BUILD_TESTS)
+  include(CTest)
   enable_testing()
   message(STATUS "Unit tests are enabled")
   add_subdirectory(unittests/)
