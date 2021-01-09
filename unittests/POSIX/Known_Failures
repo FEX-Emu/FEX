@@ -610,4 +610,4 @@ conformance-interfaces-clock_nanosleep-2-2.test
 # these are inconsistent or fail on CI
 nanosleep-2-1.test
 conformance-interfaces-clock_nanosleep-2-1.test
-conformance-interfaces-difftime-1-1
+conformance-interfaces-difftime-1-1.test
