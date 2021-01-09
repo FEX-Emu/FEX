@@ -781,10 +781,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     State->CTX->ClearCodeCache(State, HeaderOp->Entry);
   }
 
-  LogMan::Throw::A(RAPass->HasFullRA(), "Arm64 JIT only works with RA");
-
-  SpillSlots = RAPass->SpillSlots();
-
   // AAPCS64
   // r30      = LR
   // r29      = FP
@@ -836,6 +832,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     LoadConstant(x0, ThreadSharedData.InterpreterFallbackHelperAddress);
     br(x0);
   } else {
+    LogMan::Throw::A(RAPass->HasFullRA(), "Arm64 JIT only works with RA");
+
+    SpillSlots = RAPass->SpillSlots();
+
     if (SpillSlots) {
       sub(sp, sp, SpillSlots * 16);
     }
