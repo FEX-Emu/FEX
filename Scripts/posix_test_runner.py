@@ -48,17 +48,22 @@ for i in range(len(sys.argv) - 5):
 
 #print(RunnerArgs)
 
+ResultCode = 0
+
 if (disabled_tests.get(test_name)):
-    print("Skipping", test_name)
-    sys.exit(0)
+    ResultCode = -73
+else:
+    # Run the test and wait for it to end to get the result
+    Process = subprocess.Popen(RunnerArgs)
+    Process.wait()
+    ResultCode = Process.returncode
 
-# Run the test and wait for it to end to get the result
-Process = subprocess.Popen(RunnerArgs)
-Process.wait()
-ResultCode = Process.returncode
+if (not test_name in expected_output or expected_output[test_name] != ResultCode):
+    if expected_output.get(test_name):
+        print("test failed, expected is", expected_output[test_name], "but got", ResultCode)
+    else:
+        print("Test doesn't have expected output,", test_name)
 
-if (expected_output[test_name] != ResultCode):
-    print("test failed, expected is", expected_output[test_name], "but got", ResultCode)
     if (known_failures.get(test_name)):
         print("Passing because it was expected to fail")
         # failed and expected to fail -- pass the test

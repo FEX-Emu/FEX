@@ -9,15 +9,16 @@ foreach(POSIX_TEST ${POSIX_TESTS})
   list(GET TEST_NAME_LIST 1 TEST_NAME)
   string(REPLACE "/" "-" TEST_NAME ${TEST_NAME})
 
-  add_test(NAME "${TEST_NAME}.int.gvisor"
-    COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/posix_test_runner.py"
-    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Known_Failures"
-    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Expected_Output"
-    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Disabled_Tests"
-    "${TEST_NAME}"
-    "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-c" "irint" "-n" "500" "-R" $ENV{ROOTFS} "--"
-    "${POSIX_TEST}")
+# Interpreter is too slow to run these tests
+#  add_test(NAME "${TEST_NAME}.int.gvisor"
+#    COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/posix_test_runner.py"
+#    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Known_Failures"
+#    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Expected_Output"
+#    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Disabled_Tests"
+#    "${TEST_NAME}"
+#    "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
+#    "-c" "irint" "-n" "500" "-R" $ENV{ROOTFS} "--"
+#    "${POSIX_TEST}")
 
   add_test(NAME "${TEST_NAME}.jit.gvisor"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/posix_test_runner.py"
