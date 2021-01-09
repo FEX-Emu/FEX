@@ -50,4 +50,4 @@ add_custom_target(
   gvisor_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "-j${CORES}" "-VV" "-R" "\.*.gvisor")
+  COMMAND "ctest" "-j${CORES}" "-VV" "-R" "\.*.gvisor$$")
