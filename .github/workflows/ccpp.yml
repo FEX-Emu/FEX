@@ -70,3 +70,9 @@ jobs:
       shell: bash
       # Execute the posixtest
       run: cmake --build . --config $BUILD_TYPE --target posix_tests
+
+    - name: gvisor tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the gvisor tests
+      run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
