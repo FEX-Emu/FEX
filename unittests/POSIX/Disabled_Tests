@@ -571,3 +571,4 @@ conformance-interfaces-mlockall-8-1.test
 conformance-interfaces-nanosleep-1-3.test
 conformance-interfaces-clock_nanosleep-1-3.test
 conformance-interfaces-clock_nanosleep-2-2.test
+conformance-interfaces-clock_nanosleep-2-3.test
