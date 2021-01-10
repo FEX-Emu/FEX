@@ -988,7 +988,8 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
 void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   BlockSetRIP = true;
-  uint32_t Size = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
+  uint8_t Size = CTX->Config.Is64BitMode ? 8 : 4;
+  Size = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (Size >> 1) : Size;
 
   auto ZeroConst = _Constant(0);
   IRPair<IROp_Header> SrcCond;
