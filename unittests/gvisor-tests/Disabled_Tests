@@ -3,6 +3,7 @@ kill_test
 
 # erratic test results
 xattr_test
+mlock_test
 
 # fail on arm64-8,2
 uname_test
