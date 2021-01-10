@@ -341,7 +341,12 @@
 
     "ExitFunction": {
       "HasSideEffects": true,
-      "OpClass": "Branch"
+      "OpClass": "Branch",
+      "DestSize": "GetOpSize(ssa0)",
+      "SSAArgs": "1",
+      "SSANames": [
+        "NewRIP"
+      ]
     },
 
     "Jump": {

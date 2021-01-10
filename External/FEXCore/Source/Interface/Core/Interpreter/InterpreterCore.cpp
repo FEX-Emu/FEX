@@ -525,10 +525,19 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
             }
             break;
           }
-          case IR::OP_EXITFUNCTION:
+          case IR::OP_EXITFUNCTION: {
+            auto Op = IROp->C<IR::IROp_ExitFunction>();
+            uintptr_t* ContextPtr = reinterpret_cast<uintptr_t*>(&Thread->State.State.rip);
+
+            void *Data = reinterpret_cast<void*>(ContextPtr);
+            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            
+            memcpy(Data, Src, OpSize);
+
             BlockResults.Quit = true;
             return;
             break;
+          }
           case IR::OP_CONDJUMP: {
             auto Op = IROp->C<IR::IROp_CondJump>();
             bool CompResult;

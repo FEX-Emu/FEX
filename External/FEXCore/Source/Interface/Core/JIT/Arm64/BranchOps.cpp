@@ -22,8 +22,9 @@ DEF_OP(GuestReturn) {
 
 DEF_OP(SignalReturn) {
   // First we must reset the stack
-  ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
-  add(sp, TMP1, 0); // Move that supports SP
+  if (SpillSlots) {
+    add(sp, sp, SpillSlots * 16);
+  }
 
   // Now branch to our signal return helper
   // This can't be a direct branch since the code needs to live at a constant location
@@ -37,8 +38,9 @@ DEF_OP(CallbackReturn) {
   SpillStaticRegs();
   
   // First we must reset the stack
-  ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
-  add(sp, TMP1, 0); // Move that supports SP
+  if (SpillSlots) {
+    add(sp, sp, SpillSlots * 16);
+  }
 
   // We can now lower the ref counter again
   LoadConstant(x0, reinterpret_cast<uint64_t>(ThreadSharedData.SignalHandlerRefCounterPtr));
@@ -58,9 +60,30 @@ DEF_OP(CallbackReturn) {
 }
 
 DEF_OP(ExitFunction) {
-  ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
-  add(sp, TMP1, 0); // Move that supports SP
-  ret();
+  auto Op = IROp->C<IR::IROp_ExitFunction>();
+
+  Label FullLookup;
+
+  if (SpillSlots) {
+    add(sp, sp, SpillSlots * 16);
+  }
+
+  auto RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+  str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+  
+  // L1 Cache
+  LoadConstant(x0, State->BlockCache->GetL1Pointer());
+
+  and_(x3, RipReg, BlockCache::L1_ENTRIES_MASK);
+  add(x0, x0, Operand(x3, Shift::LSL, 4));
+  ldp(x1, x0, MemOperand(x0));
+  cmp(x0, RipReg);
+  b(&FullLookup, Condition::ne);
+  br(x1);
+
+  bind(&FullLookup);
+  LoadConstant(TMP1, AbsoluteLoopTopAddress);
+  br(TMP1);
 }
 
 DEF_OP(Jump) {

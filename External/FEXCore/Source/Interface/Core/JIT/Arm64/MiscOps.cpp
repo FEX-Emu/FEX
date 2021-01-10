@@ -41,8 +41,9 @@ DEF_OP(Break) {
       break;
     }
     case 6: { // INT3
-      ldp(TMP1, lr, MemOperand(sp, 16, PostIndex));
-      add(sp, TMP1, 0); // Move that supports SP
+      if (SpillSlots) {
+        add(sp, sp, SpillSlots * 16);
+      }
 
       LoadConstant(TMP1, ThreadPauseHandlerAddressSpillSRA);
       br(TMP1);

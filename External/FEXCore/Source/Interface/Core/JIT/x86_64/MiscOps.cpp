@@ -46,12 +46,9 @@ DEF_OP(Break) {
       if (CTX->GetGdbServerStatus()) {
         // Adjust the stack first for a regular return
         if (SpillSlots) {
-          add(rsp, SpillSlots * 16 + 8);
+          add(rsp, SpillSlots * 16);
         }
-        else {
-          add(rsp, 8);
-        }
-
+        
         // This jump target needs to be a constant offset here
         mov(TMP1, ThreadPauseHandlerAddress);
         jmp(TMP1);

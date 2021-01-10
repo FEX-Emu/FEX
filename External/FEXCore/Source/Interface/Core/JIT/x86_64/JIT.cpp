@@ -615,9 +615,6 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   uint32_t SSACount = IR->GetSSACount();
 
   auto HeaderOp = IR->GetHeader();
-  if (HeaderOp->ShouldInterpret) {
-    return ThreadSharedData.InterpreterFallbackHelperAddress;
-  }
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
@@ -628,137 +625,160 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
 	void *Entry = getCurr<void*>();
   this->IR = IR;
 
-  LogMan::Throw::A(RAPass->HasFullRA(), "Needs RA");
+  if (CTX->GetGdbServerStatus()) {
+    Label RunBlock;
 
-  SpillSlots = RAPass->SpillSlots();
+    // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
+    // This happens when single stepping
+    static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
+    mov(rax, qword [STATE + (offsetof(FEXCore::Core::InternalThreadState, CTX))]);
 
-  if (SpillSlots) {
-    sub(rsp, SpillSlots * 16 + 8);
-  }
-  else {
-    sub(rsp, 8);
-  }
+    // If the value == 0 then branch to the top
+    cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
+    je(RunBlock);
+    // Else we need to pause now
+    mov(rax, ThreadPauseHandlerAddress);
+    jmp(rax);
+    ud2();
 
-#ifdef BLOCKSTATS
-  BlockSamplingData::BlockData *SamplingData = CTX->BlockData->GetBlockData(HeaderOp->Entry);
-  if (GetSamplingData) {
-    mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
-    rdtsc();
-    shl(rdx, 32);
-    or(rax, rdx);
-    mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Start)], rax);
+    L(RunBlock);
   }
 
-  auto ExitBlock = [&]() {
+  if (HeaderOp->ShouldInterpret) {
+    mov(rax, HeaderOp->Entry);
+    mov(qword [STATE + offsetof(FEXCore::Core::CPUState, rip)], rax);
+    mov(rax, (uintptr_t)ThreadSharedData.InterpreterFallbackHelperAddress);
+    jmp(rax);
+  } else {
+    LogMan::Throw::A(RAPass->HasFullRA(), "Needs RA");
+
+    SpillSlots = RAPass->SpillSlots();
+
+    if (SpillSlots) {
+      sub(rsp, SpillSlots * 16);
+    }
+
+  #ifdef BLOCKSTATS
+    BlockSamplingData::BlockData *SamplingData = CTX->BlockData->GetBlockData(HeaderOp->Entry);
     if (GetSamplingData) {
       mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
-      // Get time
       rdtsc();
       shl(rdx, 32);
       or(rax, rdx);
-
-      // Calculate time spent in block
-      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Start)]);
-      sub(rax, rdx);
-
-      // Add time to total time
-      add(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalTime)], rax);
-
-      // Increment call count
-      inc(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalCalls)]);
-
-      // Calculate min
-      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Min)]);
-      cmp(rdx, rax);
-      cmova(rdx, rax);
-      mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Min)], rdx);
-
-      // Calculate max
-      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Max)]);
-      cmp(rdx, rax);
-      cmovb(rdx, rax);
-      mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Max)], rdx);
+      mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Start)], rax);
     }
-  };
-#endif
 
-  PendingTargetLabel = nullptr;
+    auto ExitBlock = [&]() {
+      if (GetSamplingData) {
+        mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
+        // Get time
+        rdtsc();
+        shl(rdx, 32);
+        or(rax, rdx);
 
-  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-    using namespace FEXCore::IR;
-    {
-      auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+        // Calculate time spent in block
+        mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Start)]);
+        sub(rax, rdx);
 
-      uint32_t Node = IR->GetID(BlockNode);
-      auto IsTarget = JumpTargets.find(Node);
-      if (IsTarget == JumpTargets.end()) {
-        IsTarget = JumpTargets.try_emplace(Node).first;
+        // Add time to total time
+        add(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalTime)], rax);
+
+        // Increment call count
+        inc(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalCalls)]);
+
+        // Calculate min
+        mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Min)]);
+        cmp(rdx, rax);
+        cmova(rdx, rax);
+        mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Min)], rdx);
+
+        // Calculate max
+        mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Max)]);
+        cmp(rdx, rax);
+        cmovb(rdx, rax);
+        mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Max)], rdx);
       }
+    };
+  #endif
 
-      // if there is a pending branch, and it is not fall-through
-      if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
+    PendingTargetLabel = nullptr;
+
+    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+      using namespace FEXCore::IR;
       {
-        jmp(*PendingTargetLabel, T_NEAR);
-      }
-      PendingTargetLabel = nullptr;
+        auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
+        LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
-      L(IsTarget->second);
+        uint32_t Node = IR->GetID(BlockNode);
+        auto IsTarget = JumpTargets.find(Node);
+        if (IsTarget == JumpTargets.end()) {
+          IsTarget = JumpTargets.try_emplace(Node).first;
+        }
+
+        // if there is a pending branch, and it is not fall-through
+        if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
+        {
+          jmp(*PendingTargetLabel, T_NEAR);
+        }
+        PendingTargetLabel = nullptr;
+
+        L(IsTarget->second);
+      }
+
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        #ifdef DEBUG_RA
+        if (IROp->Op != IR::OP_BEGINBLOCK &&
+            IROp->Op != IR::OP_CONDJUMP &&
+            IROp->Op != IR::OP_JUMP) {
+          std::stringstream Inst;
+          auto Name = FEXCore::IR::GetName(IROp->Op);
+
+          if (IROp->HasDest) {
+            uint64_t PhysReg = RAPass->GetNodeRegister(Node);
+            if (PhysReg >= GPRPairBase)
+              Inst << "\tPair" << GetPhys(Node) << " = " << Name << " ";
+            else if (PhysReg >= XMMBase)
+              Inst << "\tXMM" << GetPhys(Node) << " = " << Name << " ";
+            else
+              Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
+          }
+          else {
+            Inst << "\t" << Name << " ";
+          }
+
+          uint8_t NumArgs = IR::GetArgs(IROp->Op);
+          for (uint8_t i = 0; i < NumArgs; ++i) {
+            uint32_t ArgNode = IROp->Args[i].ID();
+            uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
+            if (PhysReg >= GPRPairBase)
+              Inst << "Pair" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+            else if (PhysReg >= XMMBase)
+              Inst << "XMM" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+            else
+              Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+          }
+
+          LogMan::Msg::D("%s", Inst.str().c_str());
+        }
+        #endif
+        uint32_t ID = IR->GetID(CodeNode);
+
+        // Execute handler
+        OpHandler Handler = OpHandlers[IROp->Op];
+        (this->*Handler)(IROp, ID);
+      }
     }
 
-    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      #ifdef DEBUG_RA
-      if (IROp->Op != IR::OP_BEGINBLOCK &&
-          IROp->Op != IR::OP_CONDJUMP &&
-          IROp->Op != IR::OP_JUMP) {
-        std::stringstream Inst;
-        auto Name = FEXCore::IR::GetName(IROp->Op);
-
-        if (IROp->HasDest) {
-          uint64_t PhysReg = RAPass->GetNodeRegister(Node);
-          if (PhysReg >= GPRPairBase)
-            Inst << "\tPair" << GetPhys(Node) << " = " << Name << " ";
-          else if (PhysReg >= XMMBase)
-            Inst << "\tXMM" << GetPhys(Node) << " = " << Name << " ";
-          else
-            Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
-        }
-        else {
-          Inst << "\t" << Name << " ";
-        }
-
-        uint8_t NumArgs = IR::GetArgs(IROp->Op);
-        for (uint8_t i = 0; i < NumArgs; ++i) {
-          uint32_t ArgNode = IROp->Args[i].ID();
-          uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
-          if (PhysReg >= GPRPairBase)
-            Inst << "Pair" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
-          else if (PhysReg >= XMMBase)
-            Inst << "XMM" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
-          else
-            Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
-        }
-
-        LogMan::Msg::D("%s", Inst.str().c_str());
-      }
-      #endif
-      uint32_t ID = IR->GetID(CodeNode);
-
-      // Execute handler
-      OpHandler Handler = OpHandlers[IROp->Op];
-      (this->*Handler)(IROp, ID);
+    // Make sure last branch is generated. It certainly can't be eliminated here.
+    if (PendingTargetLabel)
+    {
+      jmp(*PendingTargetLabel, T_NEAR);
     }
-  }
+    PendingTargetLabel = nullptr;
 
-  // Make sure last branch is generated. It certainly can't be eliminated here.
-  if (PendingTargetLabel)
-  {
-    jmp(*PendingTargetLabel, T_NEAR);
   }
-  PendingTargetLabel = nullptr;
-
+  
   void *Exit = getCurr<void*>();
-
   this->IR = nullptr;
 
   ready();
@@ -851,8 +871,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     shl(rax, 4);
     cmp(qword[r13 + rax + 8], rdx);
     jne(FullLookup);
-    call(qword[r13 + rax + 0]);
-    jmp(LoopTop);
+    jmp(qword[r13 + rax + 0]);
     
     L(FullLookup);   
     mov(r13, Thread->BlockCache->GetPagePointer());
@@ -894,24 +913,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     mov(qword[r13 + rcx*8 + 0], rax);
     
     // Real block if we made it here
-    call(rax);
-
-    if (CTX->GetGdbServerStatus()) {
-      // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
-      // This happens when single stepping
-      static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-      mov(rax, qword [STATE + (offsetof(FEXCore::Core::InternalThreadState, CTX))]);
-
-      // If the value == 0 then branch to the top
-      cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
-      je(LoopTop);
-      // Else we need to pause now
-      jmp(ThreadPauseHandler);
-      ud2();
-    }
-    else {
-      jmp(LoopTop);
-    }
+    jmp(rax);
   }
 
   {
@@ -966,15 +968,11 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     // Interpreter fallback helper code
     ThreadSharedData.InterpreterFallbackHelperAddress = getCurr<void*>();
     // This will get called so our stack is now misaligned
-    sub(rsp, 8);
     mov(rdi, STATE);
     mov(rax, reinterpret_cast<uint64_t>(ThreadState->IntBackend->CompileCode(nullptr, nullptr)));
 
     call(rax);
 
-    // Adjust the stack to remove the alignment and also the return address
-    // We will have been called from the ASM dispatcher, so we know where we came from
-    add(rsp, 16);
     jmp(LoopTop);
   }
 
