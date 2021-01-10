@@ -1,6 +1,9 @@
 %ifdef CONFIG
 {
-    "Mode": "32BIT"
+  "RegData": {
+    "RCX": "0x10000"
+  },
+  "Mode": "32BIT"
 }
 %endif
 
