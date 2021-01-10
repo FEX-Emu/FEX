@@ -4,6 +4,11 @@ kill_test
 # erratic test results
 xattr_test
 
+# fail on arm64-8,2
+uname_test
+mempolicy_test
+
+
 # these take a long time
 tcp_socket_test
 ppoll_test

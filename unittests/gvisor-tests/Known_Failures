@@ -52,6 +52,10 @@ socket_ip_udp_loopback_test
 socket_ipv4_udp_unbound_loopback_nogotsan_test
 socket_ipv6_udp_unbound_external_networking_test
 
+# fail on arm64-8,2
+uname_test
+mempolicy_test
+
 # These fail in ARM64 CI
 dev_test
 dup_test
