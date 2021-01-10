@@ -988,8 +988,8 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
 void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   BlockSetRIP = true;
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  GPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (GPRSize >> 1) : GPRSize;
+  uint8_t JcxGPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  JcxGPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (JcxGPRSize >> 1) : JcxGPRSize;
 
   auto ZeroConst = _Constant(0);
   IRPair<IROp_Header> SrcCond;
@@ -1003,9 +1003,9 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].TypeLiteral.Literal;
 
-  OrderedNode *CondReg = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+  OrderedNode *CondReg = _LoadContext(JcxGPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
   SrcCond = _Select(FEXCore::IR::COND_EQ,
-          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch, Size);
+          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch, JcxGPRSize);
 
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
