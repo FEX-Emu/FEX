@@ -69,4 +69,4 @@ add_custom_target(
   ir_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "-j${CORES}" "-R" "\.*.ir")
+  COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "\.*.ir$$")
