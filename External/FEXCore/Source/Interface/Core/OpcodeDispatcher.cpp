@@ -959,7 +959,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+      auto RIPTargetConst = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
 
       auto NewRIP = _Add(RIPOffset, RIPTargetConst);
 
@@ -978,7 +978,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       // Leave block
-      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+      auto RIPTargetConst = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
 
       // Store the new RIP
       _ExitFunction(RIPTargetConst);
@@ -988,7 +988,8 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
 void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   BlockSetRIP = true;
-  uint32_t Size = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
+  uint8_t JcxGPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  JcxGPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (JcxGPRSize >> 1) : JcxGPRSize;
 
   auto ZeroConst = _Constant(0);
   IRPair<IROp_Header> SrcCond;
@@ -1002,9 +1003,9 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].TypeLiteral.Literal;
 
-  OrderedNode *CondReg = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+  OrderedNode *CondReg = _LoadContext(JcxGPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
   SrcCond = _Select(FEXCore::IR::COND_EQ,
-          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch, Size);
+          CondReg, ZeroConst, TakeBranch, DoNotTakeBranch, JcxGPRSize);
 
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
@@ -1023,7 +1024,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = _Constant(Target);
+      auto NewRIP = _Constant(GPRSize * 8, Target);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1040,7 +1041,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       // Leave block
-      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+      auto RIPTargetConst = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
 
       // Store the new RIP
       _ExitFunction(RIPTargetConst);
@@ -1153,9 +1154,8 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
     // This source is a literal
     auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-    auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
-
-		auto NewRIP = _Add(RIPOffset, RIPTargetConst);
+    auto RIPTargetConst = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
+    auto NewRIP = _Add(RIPOffset, RIPTargetConst);
 
     // Store the new RIP
     _ExitFunction(NewRIP);
