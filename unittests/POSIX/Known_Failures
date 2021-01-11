@@ -608,6 +608,21 @@ conformance-interfaces-clock_nanosleep-1-3.test
 conformance-interfaces-clock_nanosleep-2-2.test
 
 # these are inconsistent or fail on CI
-nanosleep-2-1.test
 conformance-interfaces-clock_nanosleep-2-1.test
 conformance-interfaces-difftime-1-1.test
+conformance-interfaces-nanosleep-2-1.test
+conformance-interfaces-mmap-13-1.test
+conformance-interfaces-clock_getres-3-1.test
+conformance-interfaces-clock_nanosleep-1-1.test
+conformance-interfaces-clock_nanosleep-1-1.test
+
+# Sending signals to the process group causes every test to become flakey
+# Need to run these single threaded or change the program group prior to launch
+# !!! DO NOT REENABLE THESE UNTIL WE HAVE THIS IN PLACE IN CI !!!
+conformance-interfaces-killpg-1-1.test
+conformance-interfaces-killpg-1-2.test
+conformance-interfaces-killpg-2-1.test
+conformance-interfaces-killpg-4-1.test
+conformance-interfaces-killpg-5-1.test
+conformance-interfaces-killpg-6-1.test
+conformance-interfaces-killpg-8-1.test
