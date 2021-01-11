@@ -283,6 +283,9 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Config::Shutdown();
 
+  LogMan::Throw::UnInstallHandlers();
+  LogMan::Msg::UnInstallHandlers();
+
   if (OutputFD != stderr &&
       OutputFD != stdout &&
       OutputFD != nullptr) {

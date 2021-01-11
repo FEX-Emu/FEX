@@ -7,6 +7,7 @@ namespace LogMan {
 namespace Throw {
 std::vector<ThrowHandler> Handlers;
 void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
+void UnInstallHandlers() { Handlers.clear(); }
 
 [[noreturn]] void M(const char *fmt, va_list args) {
   size_t MsgSize = 1024;
@@ -30,6 +31,7 @@ void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
 namespace Msg {
 std::vector<MsgHandler> Handlers;
 void InstallHandler(MsgHandler Handler) { Handlers.emplace_back(Handler); }
+void UnInstallHandlers() { Handlers.clear(); }
 
 void M(DebugLevels Level, const char *fmt, va_list args) {
   size_t MsgSize = 1024;
