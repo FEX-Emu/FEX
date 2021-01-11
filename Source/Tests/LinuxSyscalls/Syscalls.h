@@ -95,6 +95,7 @@ public:
   FEXCore::Config::Value<bool> IsInterpreter{FEXCore::Config::CONFIG_IS_INTERPRETER, 0};
   FEXCore::Config::Value<bool> IsInterpreterInstalled{FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, 0};
   FEXCore::Config::Value<std::string> Filename{FEXCore::Config::CONFIG_APP_FILENAME, ""};
+  FEXCore::Config::Value<std::string> RootFSPath{FEXCore::Config::CONFIG_ROOTFSPATH, ""};
   FEXCore::Config::Value<uint64_t> ThreadsConfig{FEXCore::Config::CONFIG_EMULATED_CPU_CORES, 1};
   FEXCore::Config::Value<bool> Is64BitMode{FEXCore::Config::CONFIG_IS64BIT_MODE, 0};
 
