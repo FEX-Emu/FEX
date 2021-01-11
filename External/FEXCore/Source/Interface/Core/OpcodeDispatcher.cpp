@@ -959,7 +959,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+      auto RIPTargetConst = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
 
       auto NewRIP = _Add(RIPOffset, RIPTargetConst);
 
@@ -978,7 +978,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       // Leave block
-      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+      auto RIPTargetConst = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
 
       // Store the new RIP
       _ExitFunction(RIPTargetConst);
