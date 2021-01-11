@@ -11,7 +11,7 @@ public:
 
   uint64_t GetElfBase() const;
 
-  void MapMemoryRegions(std::function<void*(uint64_t, uint64_t)> Mapper);
+  void MapMemoryRegions(std::function<void*(uint64_t, uint64_t, bool)> Mapper);
   void WriteLoadableSections(::ELFLoader::ELFContainer::MemoryWriter Writer);
 
   uint64_t DefaultRIP() const;
@@ -37,6 +37,9 @@ private:
   ELFInfo LocalInfo;
   std::vector<ELFInfo*> DynamicELFInfo;
   std::vector<ELFInfo*> InitializationOrder;
+  uint64_t ELFMemorySize{};
+  bool FixedNoReplace {true};
+  void *ELFBase{};
 
   std::unordered_map<std::string, ELFInfo*> NameToELF;
   std::vector<std::string> LibrarySearchPaths;
@@ -53,7 +56,7 @@ private:
 
   bool FindLibraryFile(std::string *Result, const char *Library);
   void FillLibrarySearchPaths();
-  void FillMemoryLayouts();
+  void FillMemoryLayouts(uint64_t DefinedBase);
   void FillInitializationOrder();
   void FillSymbols();
 
