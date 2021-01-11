@@ -19,8 +19,17 @@ namespace FEXCore::IR::Validation {
 
 class IRValidation final : public FEXCore::IR::Pass {
 public:
+  ~IRValidation();
   bool Run(IREmitter *IREmit) override;
+
+private:
+  BitSet<uint64_t> NodeIsLive;
+  size_t MaxNodes{};
 };
+
+IRValidation::~IRValidation() {
+  NodeIsLive.Free();
+}
 
 bool IRValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
@@ -32,8 +41,9 @@ bool IRValidation::Run(IREmitter *IREmit) {
   std::ostringstream Errors;
   std::ostringstream Warnings;
 
-  BitSet<uint64_t> NodeIsLive;
-  NodeIsLive.Allocate(CurrentIR.GetSSACount());
+  if (CurrentIR.GetSSACount() > MaxNodes) {
+    NodeIsLive.Realloc(CurrentIR.GetSSACount());
+  }
 
   std::vector<uint32_t> Uses(CurrentIR.GetSSACount(), 0);
 
