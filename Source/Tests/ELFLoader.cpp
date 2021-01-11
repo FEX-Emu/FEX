@@ -106,29 +106,30 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
       File.get() == '!') {
     std::string InterpreterLine;
     std::getline(File, InterpreterLine);
+    std::vector<std::string> ShebangArguments{};
 
     // Shebang line can have a single argument
     std::istringstream InterpreterSS(InterpreterLine);
     std::string Argument;
-    if (std::getline(InterpreterSS, Argument, ' ')) {
-      // If the filename is absolute then prepend the rootfs
-      // If it is relative then don't append the rootfs
-      if (Argument[0] == '/') {
-        *Filename = RootFS + Argument;
+    while (std::getline(InterpreterSS, Argument, ' ')) {
+      if (Argument.empty()) {
+        continue;
       }
-      else {
-        *Filename = Argument;
-      }
-
-      // Push the filename in to the argument
-      args->emplace(args->begin(), *Filename);
+      ShebangArguments.emplace_back(Argument);
     }
 
-    // Now check for argument
-    if (std::getline(InterpreterSS, Argument, ' ')) {
-      // Insert after the interpreter filename
-      args->emplace(args->begin() + 1, Argument);
+    // Executable argument
+    std::string &ShebangProgram = ShebangArguments[0];
+
+    // If the filename is absolute then prepend the rootfs
+    // If it is relative then don't append the rootfs
+    if (ShebangProgram[0] == '/') {
+      ShebangProgram = RootFS + ShebangProgram;
     }
+    *Filename = ShebangProgram;
+
+    // Insert all the arguments at the start
+    args->insert(args->begin(), ShebangArguments.begin(), ShebangArguments.end());
 
     // Done here
     return;
