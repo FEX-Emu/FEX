@@ -829,6 +829,10 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   }
 
   if (HeaderOp->ShouldInterpret) {
+    // Make sure RIP is syncronized to the context
+    LoadConstant(x0, HeaderOp->Entry);
+    str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+    
     LoadConstant(x0, ThreadSharedData.InterpreterFallbackHelperAddress);
     br(x0);
   } else {

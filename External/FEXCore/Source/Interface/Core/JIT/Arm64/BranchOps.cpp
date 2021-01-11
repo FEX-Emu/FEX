@@ -68,14 +68,25 @@ DEF_OP(ExitFunction) {
     add(sp, sp, SpillSlots * 16);
   }
 
-  auto RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
-  str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
-  
-  // L1 Cache
-  LoadConstant(x0, State->BlockCache->GetL1Pointer());
+  aarch64::Register RipReg;
+  uint64_t NewRIP;
 
-  and_(x3, RipReg, BlockCache::L1_ENTRIES_MASK);
-  add(x0, x0, Operand(x3, Shift::LSL, 4));
+  if (IsInlineConstant(Op->NewRIP, &NewRIP)) {
+    uintptr_t CacheEntry = State->BlockCache->GetL1Pointer() + (NewRIP & BlockCache::L1_ENTRIES_MASK) * 16;
+    LoadConstant(x0, CacheEntry);
+
+    RipReg = x2;
+    LoadConstant(RipReg, NewRIP);
+  } else {
+    RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+    
+    // L1 Cache
+    LoadConstant(x0, State->BlockCache->GetL1Pointer());
+
+    and_(x3, RipReg, BlockCache::L1_ENTRIES_MASK);
+    add(x0, x0, Operand(x3, Shift::LSL, 4));
+  }
+
   ldp(x1, x0, MemOperand(x0));
   cmp(x0, RipReg);
   b(&FullLookup, Condition::ne);
@@ -83,6 +94,7 @@ DEF_OP(ExitFunction) {
 
   bind(&FullLookup);
   LoadConstant(TMP1, AbsoluteLoopTopAddress);
+  str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
   br(TMP1);
 }
 
