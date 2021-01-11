@@ -1,4 +1,4 @@
-if(LLVM_FOUND AND TARGET LLVM)
+if (ENABLE_VISUAL_DEBUGGER)
   add_subdirectory(Debugger/)
 endif()
 
