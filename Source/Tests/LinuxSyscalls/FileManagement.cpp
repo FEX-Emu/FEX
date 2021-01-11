@@ -33,7 +33,8 @@ FileManager::~FileManager() {
 
 std::string FileManager::GetEmulatedPath(const char *pathname) {
   auto RootFSPath = LDPath();
-  if (pathname[0] != '/' ||
+  if (!pathname ||
+      pathname[0] != '/' ||
       RootFSPath.empty()) {
     return {};
   }
@@ -186,6 +187,28 @@ uint64_t FileManager::Statfs(const char *path, void *buf) {
       return Result;
   }
   return ::statfs(path, reinterpret_cast<struct statfs*>(buf));
+}
+
+uint64_t FileManager::NewFSStatAt(int dirfd, const char *pathname, struct stat *buf, int flag) {
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::fstatat(dirfd, Path.c_str(), buf, flag);
+    if (Result != -1) {
+      return Result;
+    }
+  }
+  return ::fstatat(dirfd, pathname, buf, flag);
+}
+
+uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat64 *buf, int flag) {
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::fstatat64(dirfd, Path.c_str(), buf, flag);
+    if (Result != -1) {
+      return Result;
+    }
+  }
+  return ::fstatat64(dirfd, pathname, buf, flag);
 }
 
 std::string *FileManager::FindFDName(int fd) {

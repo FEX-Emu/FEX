@@ -128,7 +128,7 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(newfstatat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, guest_stat *buf, int flag) -> uint64_t {
       struct stat host_stat;
-      uint64_t Result = ::fstatat(dirfd, pathname, &host_stat, flag);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.NewFSStatAt(dirfd, pathname, &host_stat, flag);
       if (Result != -1) {
         CopyStat(buf, &host_stat);
       }

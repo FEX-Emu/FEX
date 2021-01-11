@@ -348,7 +348,7 @@ namespace FEX::HLE::x32 {
 
     REGISTER_SYSCALL_IMPL_X32(fstatat64, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, stat64_32 *buf, int flag) -> uint64_t {
       struct stat64 host_stat;
-      uint64_t Result = ::fstatat64(dirfd, pathname, &host_stat, flag);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.NewFSStatAt64(dirfd, pathname, &host_stat, flag);
       if (Result != -1) {
         *buf = host_stat;
       }
