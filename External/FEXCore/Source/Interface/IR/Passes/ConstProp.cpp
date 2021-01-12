@@ -590,6 +590,12 @@ bool ConstProp::Run(IREmitter *IREmit) {
       } /* OR with ~0 is ~0 */ else if ((Is1CST && Constant1 == ~0ULL) || (Is2CST && Constant2 == ~0ULL)) {
         IREmit->ReplaceWithConstant(CodeNode, ~0ULL);
         Changed = true;
+      } /* OR with 0 results in the same value */ else if (Is1CST && Constant1 == 0) {
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[1]));
+        Changed = true;
+      } /* OR with 0 results in the same value */ else if (Is2CST && Constant2 == 0) {
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+        Changed = true;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // OR with same value results in original value
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
@@ -602,10 +608,18 @@ bool ConstProp::Run(IREmitter *IREmit) {
       uint64_t Constant1{};
       uint64_t Constant2{};
 
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      auto Is1CST = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
+      auto Is2CST = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
+
+      if (Is1CST && Is2CST) {
         uint64_t NewConstant = Constant1 ^ Constant2;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      } /* XOR with 0 results in the same value */ else if (Is1CST && Constant1 == 0) {
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[1]));
+        Changed = true;
+      } /* XOR with 0 results in the same value */ else if (Is2CST && Constant2 == 0) {
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
         Changed = true;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // XOR with same value results to zero
