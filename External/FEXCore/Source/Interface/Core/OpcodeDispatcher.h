@@ -265,6 +265,7 @@ public:
   void PMAXSWOp(OpcodeArgs);
   template<size_t ElementSize>
   void MOVMSKOp(OpcodeArgs);
+  void MOVMSKOpOne(OpcodeArgs);
   template<size_t ElementSize>
   void PUNPCKLOp(OpcodeArgs);
   template<size_t ElementSize>
