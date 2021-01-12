@@ -538,6 +538,29 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           Changed = true;
         }
       }
+      else if (IROp->Op == OP_INVALIDATEFLAGS) {
+        auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
+
+        // Loop through non-reserved flag stores and eliminate unused ones.
+        for (unsigned F = 0; F < 32; F++) {
+          if (!(Op->Flags & (1ULL << F))) {
+            continue;
+          }
+
+          auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + F, 1);
+          auto LastStoreNode = Info->StoreNode;
+
+          // Flags don't alias, so we can take the simple route here. Kill any flags that have been invalidated without a read.
+          if (LastStoreNode != nullptr)
+          {
+            IREmit->SetWriteCursor(CodeNode);
+            RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + F, 1, ACCESS_WRITE, IREmit->_InlineConstant(0), CodeNode);
+
+            IREmit->Remove(LastStoreNode);
+            Changed = true;
+          }
+        }
+      }
       else if (IROp->Op == OP_LOADFLAG) {
         auto Op = IROp->CW<IR::IROp_LoadFlag>();
         auto Info = FindMemberInfo(&LocalInfo, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1);
