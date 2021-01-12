@@ -4005,6 +4005,24 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, CurrentVal, -1);
 }
 
+void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
+  OrderedNode *CurrentVal = _Constant(0);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto M = _Constant(0x80'40'20'10'08'04'02'01ULL);
+  OrderedNode *VMask = _VCastFromGPR(16, 8, M);
+  VMask = _VInsGPR(16, 8, VMask, M, 1);
+
+  auto VCMP = _VCMPLTZ(Src, 16, 1);
+  auto VAnd = _VAnd(VCMP, VMask, 16, 1);
+
+  auto VAdd1 = _VAddP(VAnd, VAnd, 16, 1);
+  auto VAdd2 = _VAddP(VAdd1, VAdd1, 8, 1);
+  auto VAdd3 = _VAddP(VAdd2, VAdd2, 8, 1);
+
+  StoreResult(GPRClass, Op, _VExtractToGPR(16, 2, VAdd3, 0), -1);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -8373,7 +8391,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8, true, 0>},
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
     {0xD5, 1, &OpDispatchBuilder::PMULOp<2, true>},
-    {0xD7, 1, &OpDispatchBuilder::MOVMSKOp<1>}, // PMOVMSKB
+    {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::PSUBSOp<1, false>},
     {0xD9, 1, &OpDispatchBuilder::PSUBSOp<2, false>},
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
@@ -8674,7 +8692,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
     {0xD5, 1, &OpDispatchBuilder::PMULOp<2, true>},
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
-    {0xD7, 1, &OpDispatchBuilder::MOVMSKOp<1>}, // PMOVMSKB
+    {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>},
     {0xD9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>},
     {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
