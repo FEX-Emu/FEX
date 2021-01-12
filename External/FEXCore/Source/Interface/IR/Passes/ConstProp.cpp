@@ -501,13 +501,22 @@ bool ConstProp::Run(IREmitter *IREmit) {
       uint64_t Constant1{};
       uint64_t Constant2{};
 
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      auto Is1CST = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
+      auto Is2CST = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
+
+      if (Is1CST && Is2CST) {
         uint64_t NewConstant = (Constant1 + Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
         continue;
+      } else if (Is2CST && (Constant2 & (1ULL << 63))) {
+        IREmit->SetWriteCursor(CodeNode);
+        auto Sub = IREmit->_Sub(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(~Constant2 + 1));
+        IREmit->ReplaceAllUsesWith(CodeNode, Sub);
+        Changed = true;
+        continue;
       }
+
     break;
     }
     case OP_SUB: {
@@ -515,11 +524,23 @@ bool ConstProp::Run(IREmitter *IREmit) {
       uint64_t Constant1{};
       uint64_t Constant2{};
 
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      auto Is1CST = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
+      auto Is2CST = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
+
+      if (Is1CST && Is2CST) {
         uint64_t NewConstant = (Constant1 - Constant2) & getMask(Op) ;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
+      } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
+        // SUB with the same value returns zero
+        IREmit->ReplaceWithConstant(CodeNode, 0);
+        Changed = true;
+      } else if (Is2CST && (Constant2 & (1ULL << 63))) {
+        IREmit->SetWriteCursor(CodeNode);
+        auto Add = IREmit->_Add(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(~Constant2 + 1));
+        IREmit->ReplaceAllUsesWith(CodeNode, Add);
+        Changed = true;
+        continue;
       }
     break;
     }
@@ -559,10 +580,15 @@ bool ConstProp::Run(IREmitter *IREmit) {
       uint64_t Constant1{};
       uint64_t Constant2{};
 
-      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
-          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+      auto Is1CST = IREmit->IsValueConstant(Op->Header.Args[0], &Constant1);
+      auto Is2CST = IREmit->IsValueConstant(Op->Header.Args[1], &Constant2);
+
+      if (Is1CST && Is2CST) {
         uint64_t NewConstant = Constant1 | Constant2;
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      } /* OR with ~0 is ~0 */ else if ((Is1CST && Constant1 == ~0ULL) || (Is2CST && Constant2 == ~0ULL)) {
+        IREmit->ReplaceWithConstant(CodeNode, ~0ULL);
         Changed = true;
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // OR with same value results in original value
@@ -763,9 +789,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
           if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
             if (IsImmAddSub(Constant2)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
-
               IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
-
               Changed = true;
             }
           }
@@ -776,8 +800,13 @@ bool ConstProp::Run(IREmitter *IREmit) {
         {
           auto Op = IROp->C<IR::IROp_Select>();
 
+          uint64_t Constant0{};
           uint64_t Constant1{};
-          if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant1)) {
+
+          bool Is0Cst = IREmit->IsValueConstant(Op->Header.Args[0], &Constant0);
+          bool Is1Cst = IREmit->IsValueConstant(Op->Header.Args[1], &Constant1);
+
+          if (Is1Cst) {
             if (IsImmAddSub(Constant1)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
@@ -787,19 +816,50 @@ bool ConstProp::Run(IREmitter *IREmit) {
             }
           }
 
-          uint64_t Constant2{};
-          uint64_t Constant3{};
-          if (IREmit->IsValueConstant(Op->Header.Args[2], &Constant2) &&
-              IREmit->IsValueConstant(Op->Header.Args[3], &Constant3) &&
-              Constant2 == 1 &&
-              Constant3 == 0)
-          {
-            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
+          bool ChangedCond = false;
+          if (Is0Cst && Is1Cst) {
+            switch (Op->Cond.Val) {
+              case IR::COND_EQ: {
+                if (Constant0 == Constant1) {
+                  IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[2]));
+                } else {
+                  IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[3]));
+                }
 
-            IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
-            IREmit->ReplaceNodeArgument(CodeNode, 3, IREmit->_InlineConstant(Constant3));
+                ChangedCond = true;
+                Changed = true;
+                break;
+              }
+              case IR::COND_NEQ: {
+                if (Constant0 != Constant1) {
+                  IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[2]));
+                } else {
+                  IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[3]));
+                }
+
+                ChangedCond = true;
+                Changed = true;
+                break;
+              }
+              default:
+                break;
+              // XXX: handle more of these!
+            }
           }
 
+          if (!ChangedCond) {
+            uint64_t Constant2{};
+            uint64_t Constant3{};
+            if (IREmit->IsValueConstant(Op->Header.Args[2], &Constant2) &&
+                IREmit->IsValueConstant(Op->Header.Args[3], &Constant3) &&
+                Constant2 == 1 &&
+                Constant3 == 0) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
+
+              IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
+              IREmit->ReplaceNodeArgument(CodeNode, 3, IREmit->_InlineConstant(Constant3));
+            }
+          }
           break;
         }
 
