@@ -39,6 +39,7 @@ proc_net_test
 socket_inet_loopback_nogotsan_test
 socket_ipv4_udp_unbound_loopback_nogotsan_test
 socket_ipv6_udp_unbound_external_networking_test
+inotify_test
 
 # these fail on arm CI
 fault_test
