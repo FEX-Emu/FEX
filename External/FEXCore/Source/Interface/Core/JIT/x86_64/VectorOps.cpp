@@ -261,6 +261,21 @@ DEF_OP(VAddP) {
     vshufpd(xmm15, xmm15, GetSrc(Op->Header.Args[1].ID()), 0b00);
     vpaddw(GetDst(Node), xmm15, xmm14);
     switch (Op->Header.ElementSize) {
+      case 1:
+        vpunpcklbw(xmm11, xmm15, xmm14);
+        vpunpckhbw(xmm12, xmm15, xmm14);
+
+        vpunpcklbw(xmm15, xmm11, xmm12);
+        vpunpckhbw(xmm14, xmm11, xmm12);
+
+        vpunpcklbw(xmm11, xmm15, xmm14);
+        vpunpckhbw(xmm12, xmm15, xmm14);
+
+        vpunpcklbw(xmm15, xmm11, xmm12);
+        vpunpckhbw(xmm14, xmm11, xmm12);
+
+        vpaddb(GetDst(Node), xmm15, xmm14);
+        break;
       case 2:
         vphaddw(GetDst(Node), xmm15, xmm14);
         break;
@@ -272,6 +287,24 @@ DEF_OP(VAddP) {
   }
   else {
     switch (Op->Header.ElementSize) {
+      case 1:
+        movdqu(xmm15, GetSrc(Op->Header.Args[0].ID()));
+        movdqu(xmm14, GetSrc(Op->Header.Args[1].ID()));
+
+        vpunpcklbw(xmm11, xmm15, xmm14);
+        vpunpckhbw(xmm12, xmm15, xmm14);
+
+        vpunpcklbw(xmm15, xmm11, xmm12);
+        vpunpckhbw(xmm14, xmm11, xmm12);
+
+        vpunpcklbw(xmm11, xmm15, xmm14);
+        vpunpckhbw(xmm12, xmm15, xmm14);
+
+        vpunpcklbw(xmm15, xmm11, xmm12);
+        vpunpckhbw(xmm14, xmm11, xmm12);
+
+        vpaddb(GetDst(Node), xmm15, xmm14);
+        break;
       case 2:
         vphaddw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
         break;
