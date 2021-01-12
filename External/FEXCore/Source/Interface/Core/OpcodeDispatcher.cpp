@@ -4009,6 +4009,7 @@ void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
   OrderedNode *CurrentVal = _Constant(0);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
+  //XXX: We could remove this VCastFromGOR + VInsGPR pair if we had a VDUPFromGPR instruction that maps directly to AArch64.
   auto M = _Constant(0x80'40'20'10'08'04'02'01ULL);
   OrderedNode *VMask = _VCastFromGPR(16, 8, M);
   VMask = _VInsGPR(16, 8, VMask, M, 1);
