@@ -431,6 +431,10 @@ friend class FEXCore::IR::PassManager;
        auto Op = IROp->C<IR::IROp_Constant>();
        if (Constant) *Constant = Op->Constant;
        return true;
+     } else if (IROp->Op == IR::IROps::OP_INLINECONSTANT) {
+       auto Op = IROp->C<IR::IROp_InlineConstant>();
+       if (Constant) *Constant = Op->Constant;
+       return true;
      }
      return false;
   }
