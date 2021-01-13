@@ -198,28 +198,28 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0x0F, 1, X86InstInfo{"",   TYPE_SECONDARY_TABLE_PREFIX, FLAGS_NONE,  0, nullptr}},
 
     // x87 table
-    {0xD8, 8, X86InstInfo{"",   TYPE_X87_TABLE_PREFIX, FLAGS_NONE,        0, nullptr}},
+    {0xD8, 8, X86InstInfo{"",   TYPE_X87_TABLE_PREFIX, FLAGS_MODRM,        0, nullptr}},
 
     // ModRM table
     // MoreBytes field repurposed for valid bits mask
-    {0x80, 1, X86InstInfo{"",   TYPE_GROUP_1, FLAGS_NONE, 0, nullptr}},
-    {0x81, 1, X86InstInfo{"",   TYPE_GROUP_1, FLAGS_NONE, 1, nullptr}},
-    {0x82, 1, X86InstInfo{"",   TYPE_GROUP_1, FLAGS_NONE, 2, nullptr}},
-    {0x83, 1, X86InstInfo{"",   TYPE_GROUP_1, FLAGS_NONE, 3, nullptr}},
-    {0xC0, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_NONE, 0, nullptr}},
-    {0xC1, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_NONE, 1, nullptr}},
-    {0xD0, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_NONE, 2, nullptr}},
-    {0xD1, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_NONE, 3, nullptr}},
-    {0xD2, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_NONE, 4, nullptr}},
-    {0xD3, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_NONE, 5, nullptr}},
-    {0xF6, 1, X86InstInfo{"",   TYPE_GROUP_3, FLAGS_NONE, 0, nullptr}},
-    {0xF7, 1, X86InstInfo{"",   TYPE_GROUP_3, FLAGS_NONE, 1, nullptr}},
-    {0xFE, 1, X86InstInfo{"",   TYPE_GROUP_4, FLAGS_NONE, 0, nullptr}},
-    {0xFF, 1, X86InstInfo{"",   TYPE_GROUP_5, FLAGS_NONE, 0, nullptr}},
+    {0x80, 1, X86InstInfo{"",   TYPE_GROUP_1, FLAGS_MODRM, 0, nullptr}},
+    {0x81, 1, X86InstInfo{"",   TYPE_GROUP_1, FLAGS_MODRM, 1, nullptr}},
+    {0x82, 1, X86InstInfo{"",   TYPE_GROUP_1, FLAGS_MODRM, 2, nullptr}},
+    {0x83, 1, X86InstInfo{"",   TYPE_GROUP_1, FLAGS_MODRM, 3, nullptr}},
+    {0xC0, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_MODRM, 0, nullptr}},
+    {0xC1, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_MODRM, 1, nullptr}},
+    {0xD0, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_MODRM, 2, nullptr}},
+    {0xD1, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_MODRM, 3, nullptr}},
+    {0xD2, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_MODRM, 4, nullptr}},
+    {0xD3, 1, X86InstInfo{"",   TYPE_GROUP_2, FLAGS_MODRM, 5, nullptr}},
+    {0xF6, 1, X86InstInfo{"",   TYPE_GROUP_3, FLAGS_MODRM, 0, nullptr}},
+    {0xF7, 1, X86InstInfo{"",   TYPE_GROUP_3, FLAGS_MODRM, 1, nullptr}},
+    {0xFE, 1, X86InstInfo{"",   TYPE_GROUP_4, FLAGS_MODRM, 0, nullptr}},
+    {0xFF, 1, X86InstInfo{"",   TYPE_GROUP_5, FLAGS_MODRM, 0, nullptr}},
 
     // Group 11
-    {0xC6, 1, X86InstInfo{"",   TYPE_GROUP_11, FLAGS_NONE, 0, nullptr}},
-    {0xC7, 1, X86InstInfo{"",   TYPE_GROUP_11, FLAGS_NONE, 1, nullptr}},
+    {0xC6, 1, X86InstInfo{"",   TYPE_GROUP_11, FLAGS_MODRM, 0, nullptr}},
+    {0xC7, 1, X86InstInfo{"",   TYPE_GROUP_11, FLAGS_MODRM, 1, nullptr}},
 
     // VEX table
     {0xC4, 2, X86InstInfo{"",   TYPE_VEX_TABLE_PREFIX, FLAGS_NONE, 0, nullptr}},

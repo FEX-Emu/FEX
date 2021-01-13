@@ -22,8 +22,8 @@ constexpr uint32_t FLAG_ADDRESS_SIZE  = (1 << 1);
 constexpr uint32_t FLAG_LOCK          = (1 << 2);
 constexpr uint32_t FLAG_LEGACY_PREFIX = (1 << 3);
 constexpr uint32_t FLAG_REX_PREFIX    = (1 << 4);
-constexpr uint32_t FLAG_MODRM_PRESENT = (1 << 5);
-constexpr uint32_t FLAG_SIB_PRESENT   = (1 << 6);
+// Hole where 1 << 5 is
+// Hole where 1 << 6 is
 constexpr uint32_t FLAG_REX_WIDENING  = (1 << 7);
 constexpr uint32_t FLAG_REX_XGPR_B    = (1 << 8);
 constexpr uint32_t FLAG_REX_XGPR_X    = (1 << 9);

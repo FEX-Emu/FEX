@@ -478,25 +478,25 @@ void InitializeVEXTables() {
 
 #define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
   const U8U8InfoStruct VEXGroupTable[] = {
-    {OPD(TYPE_VEX_GROUP_12, 1, 0b010), 1, X86InstInfo{"VPSRLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_12, 1, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_12, 1, 0b110), 1, X86InstInfo{"VPSLLW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_12, 1, 0b010), 1, X86InstInfo{"VPSRLW",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_12, 1, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_12, 1, 0b110), 1, X86InstInfo{"VPSLLW",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
 
-    {OPD(TYPE_VEX_GROUP_13, 1, 0b010), 1, X86InstInfo{"VPSRLD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_13, 1, 0b100), 1, X86InstInfo{"VPSRAD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_13, 1, 0b110), 1, X86InstInfo{"VPSLLD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_13, 1, 0b010), 1, X86InstInfo{"VPSRLD",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_13, 1, 0b100), 1, X86InstInfo{"VPSRAD",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_13, 1, 0b110), 1, X86InstInfo{"VPSLLD",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
 
     {OPD(TYPE_VEX_GROUP_14, 1, 0b010), 1, X86InstInfo{"VPSRLQ",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(TYPE_VEX_GROUP_14, 1, 0b011), 1, X86InstInfo{"VPSRLDQ",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(TYPE_VEX_GROUP_14, 1, 0b110), 1, X86InstInfo{"VPSLLQ",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(TYPE_VEX_GROUP_14, 1, 0b111), 1, X86InstInfo{"VPSLLDQ",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
-    {OPD(TYPE_VEX_GROUP_15, 1, 0b010), 1, X86InstInfo{"VLDMXCSR", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_15, 1, 0b011), 1, X86InstInfo{"VSTMXCSR", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_15, 1, 0b010), 1, X86InstInfo{"VLDMXCSR", TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_15, 1, 0b011), 1, X86InstInfo{"VSTMXCSR", TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
 
-    {OPD(TYPE_VEX_GROUP_17, 0, 0b001), 1, X86InstInfo{"BLSR",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_17, 0, 0b010), 1, X86InstInfo{"BLSMSK",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_17, 0, 0b011), 1, X86InstInfo{"BLSI",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_17, 0, 0b001), 1, X86InstInfo{"BLSR",     TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_17, 0, 0b010), 1, X86InstInfo{"BLSMSK",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_17, 0, 0b011), 1, X86InstInfo{"BLSI",     TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
   };
 #undef OPD
 

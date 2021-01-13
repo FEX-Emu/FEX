@@ -6,7 +6,7 @@ using namespace InstFlags;
 void InitializeSecondaryTables(Context::OperatingMode Mode) {
   const U8U8InfoStruct TwoByteOpTable[] = {
     // Instructions
-    {0x00, 1, X86InstInfo{"",           TYPE_GROUP_6, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
+    {0x00, 1, X86InstInfo{"",           TYPE_GROUP_6, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     {0x01, 1, X86InstInfo{"",           TYPE_GROUP_7, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     // These two load segment register data
     {0x02, 1, X86InstInfo{"LAR",        TYPE_UNDEC, FLAGS_NO_OVERLAY,                                                                                   0, nullptr}},
@@ -20,7 +20,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x0A, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     {0x0B, 1, X86InstInfo{"UD2",        TYPE_INST, FLAGS_DEBUG | FLAGS_BLOCK_END | FLAGS_NO_OVERLAY,                                                    0, nullptr}},
     {0x0C, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
-    {0x0D, 1, X86InstInfo{"",           TYPE_GROUP_P, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
+    {0x0D, 1, X86InstInfo{"",           TYPE_GROUP_P, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     {0x0E, 1, X86InstInfo{"FEMMS",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY,                                                            0, nullptr}},
     {0x0F, 1, X86InstInfo{"",           TYPE_3DNOW_TABLE, FLAGS_NO_OVERLAY,                                                                             0, nullptr}},
 
