@@ -13,12 +13,15 @@
 #include <sys/eventfd.h>
 #include <sys/inotify.h>
 #include <sys/mman.h>
+#include <sys/sendfile.h>
 #include <sys/statfs.h>
 #include <sys/syscall.h>
 #include <sys/timerfd.h>
 #include <sys/uio.h>
 #include <sys/vfs.h>
 #include <unistd.h>
+
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigset_argpack32>, "%lx")
 
 namespace FEX::HLE::x32 {
   using fd_set32 = uint32_t;
@@ -516,6 +519,84 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(pselect6, [](FEXCore::Core::InternalThreadState *Thread, int nfds, fd_set32 *readfds, fd_set32 *writefds, fd_set32 *exceptfds, timespec32 *timeout, compat_ptr<sigset_argpack32> sigmaskpack) -> uint64_t {
+      struct timespec tp64{};
+      if (timeout) {
+        tp64 = *timeout;
+      }
+
+      fd_set Host_readfds;
+      fd_set Host_writefds;
+      fd_set Host_exceptfds;
+      sigset_t HostSet{};
+
+      FD_ZERO(&Host_readfds);
+      FD_ZERO(&Host_writefds);
+      FD_ZERO(&Host_exceptfds);
+      sigemptyset(&HostSet);
+
+      // Round up to the full 32bit word
+      uint32_t NumWords = AlignUp(nfds, 32) / 4;
+
+      if (readfds) {
+        for (int i = 0; i < NumWords; ++i) {
+          uint32_t FD = readfds[i];
+          int32_t Rem = nfds - (i * 32);
+          for (int j = 0; j < 32 && j < Rem; ++j) {
+            if ((FD >> j) & 1) {
+              FD_SET(i * 32 + j, &Host_readfds);
+            }
+          }
+        }
+      }
+
+      if (writefds) {
+        for (int i = 0; i < NumWords; ++i) {
+          uint32_t FD = writefds[i];
+          int32_t Rem = nfds - (i * 32);
+          for (int j = 0; j < 32 && j < Rem; ++j) {
+            if ((FD >> j) & 1) {
+              FD_SET(i * 32 + j, &Host_writefds);
+            }
+          }
+        }
+      }
+
+      if (exceptfds) {
+        for (int i = 0; i < NumWords; ++i) {
+          uint32_t FD = exceptfds[i];
+          int32_t Rem = nfds - (i * 32);
+          for (int j = 0; j < 32 && j < Rem; ++j) {
+            if ((FD >> j) & 1) {
+              FD_SET(i * 32 + j, &Host_exceptfds);
+            }
+          }
+        }
+      }
+
+      if (sigmaskpack) {
+        uint64_t *sigmask = sigmaskpack->sigset;
+        size_t sigsetsize = sigmaskpack->size;
+        for (int32_t i = 0; i < (sigsetsize * 8); ++i) {
+          if (*sigmask & (1ULL << i)) {
+            sigaddset(&HostSet, i + 1);
+          }
+        }
+      }
+
+      uint64_t Result = ::pselect(nfds,
+        readfds ? &Host_readfds : nullptr,
+        writefds ? &Host_writefds : nullptr,
+        exceptfds ? &Host_exceptfds : nullptr,
+        timeout ? &tp64 : nullptr,
+        &HostSet);
+
+      if (timeout) {
+        *timeout = tp64;
+      }
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X32(fadvise64_64, [](FEXCore::Core::InternalThreadState *Thread, int32_t fd, uint32_t offset_low, uint32_t offset_high, uint32_t len_low, uint32_t len_high, int advice) -> uint64_t {
       uint64_t Offset = offset_high;
       Offset <<= 32;
@@ -526,5 +607,105 @@ namespace FEX::HLE::x32 {
       uint64_t Result = ::posix_fadvise64(fd, Offset, Len, advice);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(timerfd_settime64, [](FEXCore::Core::InternalThreadState *Thread, int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
+      uint64_t Result = ::timerfd_settime(fd, flags, new_value, old_value);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(timerfd_gettime64, [](FEXCore::Core::InternalThreadState *Thread, int fd, struct itimerspec *curr_value) -> uint64_t {
+      uint64_t Result = ::timerfd_gettime(fd, curr_value);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(pselect6_time64, [](FEXCore::Core::InternalThreadState *Thread, int nfds, fd_set32 *readfds, fd_set32 *writefds, fd_set32 *exceptfds, struct timespec *timeout, compat_ptr<sigset_argpack32> sigmaskpack) -> uint64_t {
+      fd_set Host_readfds;
+      fd_set Host_writefds;
+      fd_set Host_exceptfds;
+      sigset_t HostSet{};
+
+      FD_ZERO(&Host_readfds);
+      FD_ZERO(&Host_writefds);
+      FD_ZERO(&Host_exceptfds);
+      sigemptyset(&HostSet);
+
+      // Round up to the full 32bit word
+      uint32_t NumWords = AlignUp(nfds, 32) / 4;
+
+      if (readfds) {
+        for (int i = 0; i < NumWords; ++i) {
+          uint32_t FD = readfds[i];
+          int32_t Rem = nfds - (i * 32);
+          for (int j = 0; j < 32 && j < Rem; ++j) {
+            if ((FD >> j) & 1) {
+              FD_SET(i * 32 + j, &Host_readfds);
+            }
+          }
+        }
+      }
+
+      if (writefds) {
+        for (int i = 0; i < NumWords; ++i) {
+          uint32_t FD = writefds[i];
+          int32_t Rem = nfds - (i * 32);
+          for (int j = 0; j < 32 && j < Rem; ++j) {
+            if ((FD >> j) & 1) {
+              FD_SET(i * 32 + j, &Host_writefds);
+            }
+          }
+        }
+      }
+
+      if (exceptfds) {
+        for (int i = 0; i < NumWords; ++i) {
+          uint32_t FD = exceptfds[i];
+          int32_t Rem = nfds - (i * 32);
+          for (int j = 0; j < 32 && j < Rem; ++j) {
+            if ((FD >> j) & 1) {
+              FD_SET(i * 32 + j, &Host_exceptfds);
+            }
+          }
+        }
+      }
+
+      if (sigmaskpack) {
+        uint64_t *sigmask = sigmaskpack->sigset;
+        size_t sigsetsize = sigmaskpack->size;
+        for (int32_t i = 0; i < (sigsetsize * 8); ++i) {
+          if (*sigmask & (1ULL << i)) {
+            sigaddset(&HostSet, i + 1);
+          }
+        }
+      }
+
+      uint64_t Result = ::pselect(nfds,
+        readfds ? &Host_readfds : nullptr,
+        writefds ? &Host_writefds : nullptr,
+        exceptfds ? &Host_exceptfds : nullptr,
+        timeout,
+        &HostSet);
+
+      SYSCALL_ERRNO();
+    });
   }
+
+  REGISTER_SYSCALL_IMPL_X32(sendfile, [](FEXCore::Core::InternalThreadState *Thread, int out_fd, int in_fd, compat_off_t *offset, size_t count) -> uint64_t {
+    off_t Local{};
+    off_t *Local_p{};
+    if (offset) {
+      Local_p = &Local;
+      Local = *offset;
+    }
+    uint64_t Result = ::sendfile(out_fd, in_fd, Local_p, count);
+    SYSCALL_ERRNO();
+  });
+
+
+  REGISTER_SYSCALL_IMPL_X32(sendfile64, [](FEXCore::Core::InternalThreadState *Thread, int out_fd, int in_fd, off_t *offset, compat_size_t count) -> uint64_t {
+    // Linux definition for this is a bit confusing
+    // Defines offset as compat_loff_t* but loads loff_t worth of data
+    // count is defined as compat_size_t still
+    uint64_t Result = ::sendfile(out_fd, in_fd, offset, count);
+    SYSCALL_ERRNO();
+  });
 }

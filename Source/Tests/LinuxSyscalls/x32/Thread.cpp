@@ -321,5 +321,20 @@ namespace FEX::HLE::x32 {
 
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(wait4, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, int *wstatus, int options, struct rusage_32 *rusage) -> uint64_t {
+      struct rusage usage64{};
+      struct rusage *usage64_p{};
+
+      if (rusage) {
+        usage64 = *rusage;
+        usage64_p = &usage64;
+      }
+      uint64_t Result = ::wait4(pid, wstatus, options, usage64_p);
+      if (rusage) {
+        *rusage = usage64;
+      }
+      SYSCALL_ERRNO();
+    });
   }
 }

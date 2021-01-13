@@ -29,11 +29,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(getrusage, [](FEXCore::Core::InternalThreadState *Thread, int who, struct rusage *usage) -> uint64_t {
-      uint64_t Result = ::getrusage(who, usage);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(syslog, [](FEXCore::Core::InternalThreadState *Thread, int type, char *bufp, int len) -> uint64_t {
       uint64_t Result = ::klogctl(type, bufp, len);
       SYSCALL_ERRNO();

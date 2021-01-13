@@ -190,5 +190,10 @@ namespace FEX::HLE::x64 {
 
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X64(wait4, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
+      uint64_t Result = ::wait4(pid, wstatus, options, rusage);
+      SYSCALL_ERRNO();
+    });
   }
 }

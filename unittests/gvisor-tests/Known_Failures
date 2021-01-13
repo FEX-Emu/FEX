@@ -27,6 +27,7 @@ statfs_test
 symlink_test
 sync_file_range_test
 unlink_test
+inotify_test
 
 # these fail on x86 CI
 eventfd_test

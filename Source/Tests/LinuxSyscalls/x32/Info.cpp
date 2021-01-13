@@ -68,5 +68,11 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(getrusage, [](FEXCore::Core::InternalThreadState *Thread, int who, rusage_32 *usage) -> uint64_t {
+      struct rusage usage64 = *usage;
+      uint64_t Result = ::getrusage(who, &usage64);
+      *usage = usage64;
+      SYSCALL_ERRNO();
+    });
   }
 }

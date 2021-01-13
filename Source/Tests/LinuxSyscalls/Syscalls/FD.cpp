@@ -15,7 +15,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/eventfd.h>
-#include <sys/sendfile.h>
 
 namespace FEX::HLE {
   static int RemapFlags(int flags) {
@@ -108,11 +107,6 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL(dup2, [](FEXCore::Core::InternalThreadState *Thread, int oldfd, int newfd) -> uint64_t {
       uint64_t Result = ::dup2(oldfd, newfd);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(sendfile, [](FEXCore::Core::InternalThreadState *Thread, int out_fd, int in_fd, off_t *offset, size_t count) -> uint64_t {
-      uint64_t Result = ::sendfile(out_fd, in_fd, offset, count);
       SYSCALL_ERRNO();
     });
 

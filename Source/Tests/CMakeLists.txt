@@ -12,6 +12,7 @@ set(SYSCALL_SRCS
   LinuxSyscalls/SignalDelegator.cpp
   LinuxSyscalls/Syscalls.cpp
   LinuxSyscalls/x32/Syscalls.cpp
+  LinuxSyscalls/x32/EPoll.cpp
   LinuxSyscalls/x32/FD.cpp
   LinuxSyscalls/x32/FS.cpp
   LinuxSyscalls/x32/Info.cpp
@@ -19,9 +20,12 @@ set(SYSCALL_SRCS
   LinuxSyscalls/x32/NotImplemented.cpp
   LinuxSyscalls/x32/Semaphore.cpp
   LinuxSyscalls/x32/Sched.cpp
+  LinuxSyscalls/x32/Signals.cpp
   LinuxSyscalls/x32/Socket.cpp
   LinuxSyscalls/x32/Thread.cpp
   LinuxSyscalls/x32/Time.cpp
+  LinuxSyscalls/x32/Timer.cpp
+  LinuxSyscalls/x64/EPoll.cpp
   LinuxSyscalls/x64/FD.cpp
   LinuxSyscalls/x64/IO.cpp
   LinuxSyscalls/x64/Ioctl.cpp
@@ -31,6 +35,7 @@ set(SYSCALL_SRCS
   LinuxSyscalls/x64/NotImplemented.cpp
   LinuxSyscalls/x64/Semaphore.cpp
   LinuxSyscalls/x64/Sched.cpp
+  LinuxSyscalls/x64/Signals.cpp
   LinuxSyscalls/x64/Socket.cpp
   LinuxSyscalls/x64/Thread.cpp
   LinuxSyscalls/x64/Syscalls.cpp

@@ -4,11 +4,14 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/times.h>
 #include <sys/timex.h>
 #include <unistd.h>
 #include <utime.h>
+
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::timespec32>, "%lx")
 
 namespace FEX::HLE::x32 {
   void RegisterTime() {
@@ -86,8 +89,22 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(utimensat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const compat_ptr<timespec32> times, int flags) -> uint64_t {
+      timespec times64[2]{};
+      times64[0] = times[0];
+      times64[1] = times[1];
+
+      uint64_t Result = ::syscall(SYS_utimensat, dirfd, pathname, times64, flags);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X32(clock_gettime64, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clk_id, timespec *tp) -> uint64_t {
       uint64_t Result = ::clock_gettime(clk_id, tp);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(clock_adjtime64, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clk_id, struct timex *buf) -> uint64_t {
+      uint64_t Result = ::clock_adjtime(clk_id, buf);
       SYSCALL_ERRNO();
     });
 
@@ -103,6 +120,11 @@ namespace FEX::HLE::x32 {
 
     REGISTER_SYSCALL_IMPL_X32(clock_nanosleep_time64, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clockid, int flags, const struct timespec *request, struct timespec *remain) -> uint64_t {
       uint64_t Result = ::clock_nanosleep(clockid, flags, request, remain);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(utimensat_time64, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
+      uint64_t Result = ::utimensat(dirfd, pathname, times, flags);
       SYSCALL_ERRNO();
     });
   }
