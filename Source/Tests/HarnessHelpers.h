@@ -695,8 +695,8 @@ public:
   }
 
   void MapMemoryRegion() override {
-    auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
-      void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    auto DoMMap = [](uint64_t Address, size_t Size, bool FixedNoReplace) -> void* {
+      void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, (FixedNoReplace ? MAP_FIXED_NOREPLACE : MAP_FIXED) | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
       LogMan::Throw::A(Result != (void*)~0ULL, "Couldn't mmap");
       return Result;
     };
