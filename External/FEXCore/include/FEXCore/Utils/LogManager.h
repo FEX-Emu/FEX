@@ -19,6 +19,7 @@ constexpr DebugLevels MSG_LEVEL = INFO;
 namespace Throw {
 using ThrowHandler = void(*)(char const *Message);
 void InstallHandler(ThrowHandler Handler);
+void UnInstallHandlers();
 
 [[noreturn]] void M(const char *fmt, va_list args);
 
@@ -40,6 +41,7 @@ static inline void A(bool, const char*, ...) {}
 namespace Msg {
 using MsgHandler = void(*)(DebugLevels Level, char const *Message);
 void InstallHandler(MsgHandler Handler);
+void UnInstallHandlers();
 
 void M(DebugLevels Level, const char *fmt, va_list args);
 

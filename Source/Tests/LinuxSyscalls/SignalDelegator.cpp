@@ -317,6 +317,21 @@ namespace FEX::HLE {
     }
   }
 
+  SignalDelegator::~SignalDelegator() {
+    for (int i = 0; i < MAX_SIGNALS; ++i) {
+      if (i == 0 ||
+          i == SIGKILL ||
+          i == SIGSTOP ||
+          !HostHandlers[i].Installed
+          ) {
+        continue;
+      }
+      sigaction(i, &HostHandlers[i].OldAction, nullptr);
+      HostHandlers[i].Installed = false;
+    }
+    GlobalDelegator = nullptr;
+  }
+
   void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
     ThreadData.Thread = Thread;
 

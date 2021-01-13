@@ -277,9 +277,14 @@ int main(int argc, char **argv, char **const envp) {
 
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
 
+  SyscallHandler.reset();
+  SignalDelegation.reset();
   FEXCore::Context::DestroyContext(CTX);
 
   FEXCore::Config::Shutdown();
+
+  LogMan::Throw::UnInstallHandlers();
+  LogMan::Msg::UnInstallHandlers();
 
   if (OutputFD != stderr &&
       OutputFD != stdout &&
