@@ -509,13 +509,13 @@ bool ConstProp::Run(IREmitter *IREmit) {
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
         continue;
-      } else if (Is2CST && (Constant2 & (1ULL << 63))) {
+      } /* else if (Is2CST && (Constant2 & (1ULL << 63))) {
         IREmit->SetWriteCursor(CodeNode);
         auto Sub = IREmit->_Sub(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(~Constant2 + 1));
         IREmit->ReplaceAllUsesWith(CodeNode, Sub);
         Changed = true;
         continue;
-      }
+      }*/
 
     break;
     }
@@ -535,13 +535,13 @@ bool ConstProp::Run(IREmitter *IREmit) {
         // SUB with the same value returns zero
         IREmit->ReplaceWithConstant(CodeNode, 0);
         Changed = true;
-      } else if (Is2CST && (Constant2 & (1ULL << 63))) {
+      } /*  else if (Is2CST && (Constant2 & (1ULL << 63))) {
         IREmit->SetWriteCursor(CodeNode);
         auto Add = IREmit->_Add(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(~Constant2 + 1));
         IREmit->ReplaceAllUsesWith(CodeNode, Add);
         Changed = true;
         continue;
-      }
+      } */
     break;
     }
     case OP_AND: {
