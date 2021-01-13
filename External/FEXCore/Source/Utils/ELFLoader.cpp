@@ -111,6 +111,7 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
 }
 
 ELFContainer::~ELFContainer() {
+  NecessaryLibs.clear();
   SymbolMapByAddress.clear();
   SymbolMap.clear();
   Symbols.clear();
@@ -302,8 +303,10 @@ void ELFContainer::CalculateMemoryLayouts() {
   if (Mode == MODE_32BIT) {
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
       Elf32_Phdr *hdr = ProgramHeaders.at(i)._32;
-      MinPhysAddr = std::min(MinPhysAddr, static_cast<uint64_t>(hdr->p_paddr));
-      MaxPhysAddr = std::max(MaxPhysAddr, static_cast<uint64_t>(hdr->p_paddr) + hdr->p_memsz);
+      if (hdr->p_memsz > 0) {
+        MinPhysAddr = std::min(MinPhysAddr, static_cast<uint64_t>(hdr->p_paddr));
+        MaxPhysAddr = std::max(MaxPhysAddr, static_cast<uint64_t>(hdr->p_paddr) + hdr->p_memsz);
+      }
       if (hdr->p_type == PT_TLS) {
         TLSHeader._32 = hdr;
       }
