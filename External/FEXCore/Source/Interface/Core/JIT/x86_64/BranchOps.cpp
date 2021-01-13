@@ -59,25 +59,43 @@ DEF_OP(ExitFunction) {
   Label FullLookup;
   auto Op = IROp->C<IR::IROp_ExitFunction>();
 
-  auto RipReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], RipReg);
 
   if (SpillSlots) {
     add(rsp, SpillSlots * 16);
   }
-  
-  // L1 Cache
-  mov(r13, ThreadState->BlockCache->GetL1Pointer());
-  mov(rax, RipReg);
 
-  and_(rax, BlockCache::L1_ENTRIES_MASK);
-  shl(rax, 4);
-  cmp(qword[r13 + rax + 8], RipReg);
+  uint64_t NewRIP;
+
+  Xbyak::RegExp LookupBase;
+  Xbyak::Reg RipReg;
+
+  if (IsInlineConstant(Op->NewRIP, &NewRIP)) {
+    uintptr_t CacheEntry = ThreadState->BlockCache->GetL1Pointer() + (NewRIP & BlockCache::L1_ENTRIES_MASK) * 16;
+    mov(rax, CacheEntry);
+    LookupBase = rax;
+
+    RipReg = rcx;
+    mov(RipReg, NewRIP);
+  } else {
+    RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
+    
+    // L1 Cache
+    mov(rcx, ThreadState->BlockCache->GetL1Pointer());
+    mov(rax, RipReg);
+
+    and_(rax, BlockCache::L1_ENTRIES_MASK);
+    shl(rax, 4);
+
+    LookupBase = rcx + rax;
+  }
+  
+  cmp(qword[LookupBase + 8], RipReg);
   jne(FullLookup);
-  jmp(qword[r13 + rax + 0]);
+  jmp(qword[LookupBase + 0]);
 
   L(FullLookup);
   mov(rax, AbsoluteLoopTopAddress);
+  mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], RipReg);
   jmp(rax);
 
 #ifdef BLOCKSTATS

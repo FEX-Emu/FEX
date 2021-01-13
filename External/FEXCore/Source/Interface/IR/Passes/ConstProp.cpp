@@ -820,6 +820,22 @@ bool ConstProp::Run(IREmitter *IREmit) {
           break;
         }
 
+        case OP_EXITFUNCTION:
+        {
+          auto Op = IROp->C<IR::IROp_ExitFunction>();
+
+          uint64_t Constant{};
+          if (IREmit->IsValueConstant(Op->NewRIP, &Constant)) {
+            
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->NewRIP));
+
+            IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(Constant));
+
+            Changed = true;
+          }
+          break;
+        }
+
         case OP_OR:
         case OP_XOR:
         case OP_AND:
