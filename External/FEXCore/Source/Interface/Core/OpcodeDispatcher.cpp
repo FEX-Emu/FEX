@@ -4663,6 +4663,12 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
       }
     }
 
+    if (AddrSize < GPRSize) {
+      // If AddrSize == 16 then we need to clear the upper bits
+      // GPRSize will be 32 in this case
+      Src = _Bfe(AddrSize, AddrSize * 8, 0, Src);
+    }
+
     LoadableType = true;
   }
   else {
@@ -4790,6 +4796,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       else {
         MemStoreDst = _Constant(GPRSize * 8, 0);
       }
+    }
+
+    if (AddrSize < GPRSize) {
+      // If AddrSize == 16 then we need to clear the upper bits
+      // GPRSize will be 32 in this case
+      MemStoreDst = _Bfe(AddrSize, AddrSize * 8, 0, MemStoreDst);
     }
 
     MemStore = true;
