@@ -465,16 +465,38 @@ bool ConstProp::Run(IREmitter *IREmit) {
       auto Op = IROp->CW<IR::IROp_LoadMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
-      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
+      if (AddressHeader->Size == 8 && !Header->ShouldInterpret) {
+        if (AddressHeader->Op == OP_ADD) {
+          auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
 
-        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
+          Op->OffsetType = OffsetType;
+          Op->OffsetScale = OffsetScale;
+          IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
+          IREmit->ReplaceNodeArgument(CodeNode, 1, Arg1);
 
-        Op->OffsetType = OffsetType;
-        Op->OffsetScale = OffsetScale;
-        IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
-        IREmit->ReplaceNodeArgument(CodeNode, 1, Arg1);
+          Changed = true;
+        } else if (AddressHeader->Op == OP_SUB && Op->OffsetType == MEM_OFFSET_SXTX) {
+          uint64_t ConstantOff;
+          uint64_t ConstantDisp;
 
-        Changed = true;
+          if (!IREmit->IsValueConstant(Op->Header.Args[1], &ConstantDisp)) {
+            if (Op->Header.Args[1].IsInvalid())
+              ConstantDisp = 0;
+            else
+              break;
+          }
+
+          if (IREmit->IsValueConstant(AddressHeader->Args[1], &ConstantOff)) {
+            auto Node = CurrentIR.GetNode(AddressHeader->Args[0]);
+
+            IREmit->SetWriteCursor(Node);
+
+            IREmit->ReplaceNodeArgument(CodeNode, 0, Node);
+            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_Constant(ConstantDisp - ConstantOff));
+
+            Changed = true;
+          }
+        }
       }
       break;
     }
@@ -483,15 +505,38 @@ bool ConstProp::Run(IREmitter *IREmit) {
       auto Op = IROp->CW<IR::IROp_StoreMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
-      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
-        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
+      if (AddressHeader->Size == 8 && !Header->ShouldInterpret) {
+        if (AddressHeader->Op == OP_ADD) {
+          auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
 
-        Op->OffsetType = OffsetType;
-        Op->OffsetScale = OffsetScale;
-        IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
-        IREmit->ReplaceNodeArgument(CodeNode, 2, Arg1);
+          Op->OffsetType = OffsetType;
+          Op->OffsetScale = OffsetScale;
+          IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
+          IREmit->ReplaceNodeArgument(CodeNode, 2, Arg1);
 
-        Changed = true;
+          Changed = true;
+        } else if (AddressHeader->Op == OP_SUB && Op->OffsetType == MEM_OFFSET_SXTX) {
+          uint64_t ConstantOff;
+          uint64_t ConstantDisp;
+
+          if (!IREmit->IsValueConstant(Op->Header.Args[2], &ConstantDisp)) {
+            if (Op->Header.Args[2].IsInvalid())
+              ConstantDisp = 0;
+            else
+              break;
+          }
+
+          if (IREmit->IsValueConstant(AddressHeader->Args[1], &ConstantOff)) {
+            auto Node = CurrentIR.GetNode(AddressHeader->Args[0]);
+
+            IREmit->SetWriteCursor(Node);
+
+            IREmit->ReplaceNodeArgument(CodeNode, 0, Node);
+            IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_Constant(ConstantDisp - ConstantOff));
+
+            Changed = true;
+          }
+        }
       }
       break;
     }
