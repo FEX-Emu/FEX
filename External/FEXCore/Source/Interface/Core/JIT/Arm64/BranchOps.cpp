@@ -72,11 +72,14 @@ DEF_OP(ExitFunction) {
   uint64_t NewRIP;
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP)) {
-    uintptr_t CacheEntry = State->BlockCache->GetL1Pointer() + (NewRIP & BlockCache::L1_ENTRIES_MASK) * 16;
-    LoadConstant(x0, CacheEntry);
+    Literal l_BranchHost{ExitFunctionLinkerAddress};
+    Literal l_BranchGuest{NewRIP};
 
-    RipReg = x2;
-    LoadConstant(RipReg, NewRIP);
+    ldr(x0, &l_BranchHost);
+    blr(x0);
+
+    place(&l_BranchHost);
+    place(&l_BranchGuest);
   } else {
     RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
     
@@ -85,17 +88,17 @@ DEF_OP(ExitFunction) {
 
     and_(x3, RipReg, BlockCache::L1_ENTRIES_MASK);
     add(x0, x0, Operand(x3, Shift::LSL, 4));
+
+    ldp(x1, x0, MemOperand(x0));
+    cmp(x0, RipReg);
+    b(&FullLookup, Condition::ne);
+    br(x1);
+
+    bind(&FullLookup);
+    LoadConstant(TMP1, AbsoluteLoopTopAddress);
+    str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+    br(TMP1);
   }
-
-  ldp(x1, x0, MemOperand(x0));
-  cmp(x0, RipReg);
-  b(&FullLookup, Condition::ne);
-  br(x1);
-
-  bind(&FullLookup);
-  LoadConstant(TMP1, AbsoluteLoopTopAddress);
-  str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
-  br(TMP1);
 }
 
 DEF_OP(Jump) {

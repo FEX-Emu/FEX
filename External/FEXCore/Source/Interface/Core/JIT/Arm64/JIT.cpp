@@ -832,7 +832,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     // Make sure RIP is syncronized to the context
     LoadConstant(x0, HeaderOp->Entry);
     str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
-    
+
     LoadConstant(x0, ThreadSharedData.InterpreterFallbackHelperAddress);
     br(x0);
   } else {
@@ -988,6 +988,35 @@ void JITCore::PopCalleeSavedRegisters() {
   }
 }
 
+uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record) {
+  auto GuestRip = record[1];
+
+  auto HostCode = Thread->BlockCache->FindBlock(GuestRip);
+
+  if (!HostCode) {
+    //printf("ExitFunctionLink: Aborting, %lX not in cache\n", GuestRip);
+    Thread->State.State.rip = GuestRip;
+    return core->AbsoluteLoopTopAddress;
+  }
+
+  uintptr_t branch = (uintptr_t)(record) - 8;
+
+  auto offset = HostCode/4 - branch/4;
+  if (IsInt26(offset)) {
+    // optimal case - can branch directly
+    // patch the code
+    vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
+    emit.b(offset);
+    emit.FinalizeCode();
+    vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&record[-2], 16);
+  } else {
+    // fallback case - do a soft-er link by patching the pointer
+    record[0] = HostCode;
+  }
+  
+  return HostCode;
+}
+
 void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   auto OriginalBuffer = *GetBuffer();
 
@@ -1052,6 +1081,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
 
   Literal l_CompileBlock {CompileBlockPtr};
   Literal l_CompileFallback {CompileFallbackPtr};
+  Literal l_ExitFunctionLink {(uintptr_t)&ExitFunctionLink};
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -1086,6 +1116,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   aarch64::Label LoopTop{};
   aarch64::Label ExitSpillSRA{};
   aarch64::Label ThreadPauseHandlerSpillSRA{};
+  aarch64::Label ExitFunctionLinker{};
 
   bind(&LoopTop);
   AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
@@ -1171,6 +1202,23 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     // Return from the function
     // LR is set to the correct return location now
     ret();
+  }
+
+  {
+    bind(&ExitFunctionLinker);
+    ExitFunctionLinkerAddress = GetLabelAddress<uint64_t>(&ExitFunctionLinker);
+
+    SpillStaticRegs();
+    
+    LoadConstant(x0, (uintptr_t)this);
+    mov(x1, STATE);
+    mov(x2, lr);
+    
+    ldr(x3, &l_ExitFunctionLink);
+    blr(x3);
+
+    FillStaticRegs();
+    br(x0);
   }
 
   aarch64::Label FallbackCore;
@@ -1314,6 +1362,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   place(&l_Sleep);
   place(&l_CompileBlock);
   place(&l_CompileFallback);
+  place(&l_ExitFunctionLink);
 
   FinalizeCode();
   uint64_t CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
