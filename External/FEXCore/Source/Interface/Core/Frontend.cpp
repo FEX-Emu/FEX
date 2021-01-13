@@ -160,63 +160,7 @@ uint64_t Decoder::ReadData(uint8_t Size) {
   return Res;
 }
 
-void Decoder::DecodeModRM(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecoded ModRM) {
-  // Do we have an offset?
-  if (ModRM.mod == 0b01) {
-    *Displacement = 1;
-  }
-  else if (ModRM.mod == 0b10) {
-    *Displacement = 4;
-  }
-  else if (ModRM.mod == 0 && ModRM.rm == 0b101)
-    *Displacement = 4;
-
-  // Ensure this flag is set
-  DecodeInst->Flags |= DecodeFlags::FLAG_MODRM_PRESENT;
-}
-
-bool Decoder::DecodeSIB(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecoded ModRM) {
-  const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
-    DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
-
-  bool HasSIB = ((ModRM.mod != 0b11) &&
-                (ModRM.rm == 0b100)) &&
-                !Has16BitAddressing;
-
-  if (HasSIB) {
-    FEXCore::X86Tables::SIBDecoded SIB;
-    if (DecodeInst->DecodedSIB) {
-      SIB.Hex = DecodeInst->SIB;
-    }
-    else {
-      // Haven't yet grabbed SIB, pull it now
-      DecodeInst->SIB = ReadByte();
-      SIB.Hex = DecodeInst->SIB;
-      DecodeInst->DecodedSIB = true;
-    }
-
-    // Ensure this flag is set
-    DecodeInst->Flags |= DecodeFlags::FLAG_SIB_PRESENT;
-
-    // If the SIB base is 0b101, aka BP or R13 then we have a 32bit displacement
-    if (ModRM.mod == 0b01) {
-      *Displacement = 1;
-    }
-    else if (ModRM.mod == 0b10) {
-      *Displacement = 4;
-    }
-    else if (ModRM.mod == 0b00 && ModRM.rm == 0b101) {
-      *Displacement = 4;
-    }
-    else if (ModRM.mod == 0b00 && ModRM.rm == 0b100 && SIB.base == 0b101) {
-      *Displacement = 4;
-    }
-  }
-
-  return HasSIB;
-}
-
-size_t Decoder::DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement) {
+void Decoder::DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM) {
   // 16bit modrm behaves similar to SIB but encoded directly in modrm
   // mod != 0b11 case
   // RM    | Result
@@ -296,15 +240,43 @@ size_t Decoder::DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::Mo
   auto it = Lookup[LookupIndex];
   Operand->TypeSIB.Base = it.Base;
   Operand->TypeSIB.Index = it.Index;
-
-  return DisplacementSize;
 }
 
-size_t Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement) {
-  if (DecodeInst->DecodedSIB) {
-    // SIB
+void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM) {
+  uint8_t Displacement{};
+  // Do we have an offset?
+  if (ModRM.mod == 0b01) {
+    Displacement = 1;
+  }
+  else if (ModRM.mod == 0b10) {
+    Displacement = 4;
+  }
+  else if (ModRM.mod == 0 && ModRM.rm == 0b101) {
+    Displacement = 4;
+  }
+
+  // Calculate SIB
+  bool HasSIB = ((ModRM.mod != 0b11) &&
+                (ModRM.rm == 0b100));
+
+  if (HasSIB) {
     FEXCore::X86Tables::SIBDecoded SIB;
-    SIB.Hex = DecodeInst->SIB;
+    if (DecodeInst->DecodedSIB) {
+      SIB.Hex = DecodeInst->SIB;
+    }
+    else {
+      // Haven't yet grabbed SIB, pull it now
+      DecodeInst->SIB = ReadByte();
+      SIB.Hex = DecodeInst->SIB;
+      DecodeInst->DecodedSIB = true;
+    }
+
+    // If the SIB base is 0b101, aka BP or R13 then we have a 32bit displacement
+    if (ModRM.mod == 0b00 && ModRM.rm == 0b100 && SIB.base == 0b101) {
+      Displacement = 4;
+    }
+
+    // SIB
     Operand->TypeSIB.Type = DecodedOperand::TYPE_SIB;
     Operand->TypeSIB.Scale = 1 << SIB.scale;
 
@@ -327,7 +299,6 @@ size_t Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::Mo
       // 32bit Displacement
       uint32_t Literal;
       Literal = ReadData(4);
-      Displacement = 4;
 
       Operand->TypeRIPLiteral.Type = DecodedOperand::TYPE_RIP_RELATIVE;
       Operand->TypeRIPLiteral.Literal.u = Literal;
@@ -345,15 +316,12 @@ size_t Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::Mo
     if (DisplacementSize == 1) {
       Literal = static_cast<int8_t>(Literal);
     }
-
     Displacement = DisplacementSize;
 
     Operand->TypeGPRIndirect.Type = DecodedOperand::TYPE_GPR_INDIRECT;
     Operand->TypeGPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
     Operand->TypeGPRIndirect.Displacement = Literal;
   }
-
-  return Displacement;
 }
 
 bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op) {
@@ -383,6 +351,21 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   bool HasMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
     !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
     HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
+
+  // Is ModRM present via explicit instruction encoded or REX?
+  const bool HasMODRM = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM);
+
+  const bool HasREX = !!(DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX);
+  const bool HasHighXMM = HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_HIGH_XMM_REG);
+  const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
+    DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
+
+  // If we require ModRM and haven't decoded it yet, do it now
+  // Some instructions have to read modrm upfront, others do it later
+  if (HasMODRM && !DecodeInst->DecodedModRM) {
+    DecodeInst->ModRM = ReadByte();
+    DecodeInst->DecodedModRM = true;
+  }
 
   // New instruction size decoding
   {
@@ -452,24 +435,13 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     }
   }
 
-  // Is ModRM present via explicit instruction encoded or REX?
-  bool HasMODRM = !!(DecodeInst->Flags & DecodeFlags::FLAG_MODRM_PRESENT);
-  HasMODRM |= !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM);
-
-  bool HasSIB = false;
-
   // This is used for ModRM register modification
   // For both modrm.reg and modrm.rm(when mod == 0b11) when value is >= 0b100
   // then it changes from expected registers to the high 8bits of the lower registers
   // Bit annoying to support
   // In the case of no modrm (REX in byte situation) then it is unaffected
-  bool Is8BitSrc = (DecodeFlags::GetSizeSrcFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
-  bool Is8BitDest = (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
-  bool HasREX = !!(DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX);
-  bool HasHighXMM = HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_HIGH_XMM_REG);
-  const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
-    DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
-  uint8_t Displacement = 0;
+  const bool Is8BitSrc = (DecodeFlags::GetSizeSrcFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
+  const bool Is8BitDest = (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
 
   auto *CurrentDest = &DecodeInst->Dest;
 
@@ -494,19 +466,6 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     CurrentDest->TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, Op & 0b111, Is8BitDest, HasREX, false, false);
   }
 
-  if (HasMODRM) {
-    if (!DecodeInst->DecodedModRM) {
-      DecodeInst->ModRM = ReadByte();
-      DecodeInst->DecodedModRM = true;
-    }
-
-    FEXCore::X86Tables::ModRMDecoded ModRM;
-    ModRM.Hex = DecodeInst->ModRM;
-
-    DecodeModRM(&Displacement, ModRM);
-    HasSIB = DecodeSIB(&Displacement, ModRM);
-  }
-
   uint8_t Bytes = Info->MoreBytes;
 
   if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_DISPLACE_SIZE_MUL_2) && HasWideningDisplacement) {
@@ -521,8 +480,6 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     // If we have a memory offset and have the address size override then divide it just like narrowing displacement
     Bytes >>= 1;
   }
-
-  Bytes += Displacement;
 
   auto ModRMOperand = [&](FEXCore::X86Tables::DecodedOperand &GPR, FEXCore::X86Tables::DecodedOperand &NonGPR, bool HasXMMGPR, bool HasXMMNonGPR, bool HasMMGPR, bool HasMMNonGPR, bool GPR8Bit, bool NonGPR8Bit) {
     FEXCore::X86Tables::ModRMDecoded ModRM;
@@ -542,7 +499,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     }
     else {
       auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
-      Bytes -= (this->*Disp)(&NonGPR, ModRM, Displacement);
+      (this->*Disp)(&NonGPR, ModRM);
     }
   };
 
@@ -617,7 +574,6 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
     DecodeInst->DecodedModRM = true;
-    DecodeInst->Flags |= DecodeFlags::FLAG_MODRM_PRESENT;
 
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
@@ -647,7 +603,6 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
     DecodeInst->DecodedModRM = true;
-    DecodeInst->Flags |= DecodeFlags::FLAG_MODRM_PRESENT;
 
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
@@ -682,7 +637,6 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
     DecodeInst->DecodedModRM = true;
-    DecodeInst->Flags |= DecodeFlags::FLAG_MODRM_PRESENT;
 
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
@@ -719,7 +673,6 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
     DecodeInst->DecodedModRM = true;
-    DecodeInst->Flags |= DecodeFlags::FLAG_MODRM_PRESENT;
 
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
@@ -788,23 +741,21 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
         uint8_t ModRMByte = ReadByte();
         DecodeInst->ModRM = ModRMByte;
         DecodeInst->DecodedModRM = true;
-        DecodeInst->Flags |= DecodeFlags::FLAG_MODRM_PRESENT;
 
         FEXCore::X86Tables::ModRMDecoded ModRM;
         ModRM.Hex = DecodeInst->ModRM;
 
-        uint8_t Displacement = 0;
-        DecodeModRM(&Displacement, ModRM);
-        DecodeSIB(&Displacement, ModRM);
+        const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
+          DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
+
+        auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
+        (this->*Disp)(&DecodeInst->Src[0], ModRM);
 
         // Take a peek at the op just past the displacement
-        uint8_t LocalOp = PeekByte(Displacement);
+        uint8_t LocalOp = ReadByte();
         if (NormalOpHeader(&FEXCore::X86Tables::DDDNowOps[LocalOp], LocalOp)) {
           InstructionDecoded = true;
         }
-
-        // Make sure to read the opcode in to our internal structure
-        ReadByte();
       break;
       }
       case 0x38: { // F38 Table!

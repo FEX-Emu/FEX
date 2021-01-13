@@ -36,8 +36,6 @@ private:
 
   void BranchTargetInMultiblockRange();
 
-  void DecodeModRM(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecoded ModRM);
-  bool DecodeSIB(uint8_t *Displacement, FEXCore::X86Tables::ModRMDecoded ModRM);
   uint8_t ReadByte();
   uint8_t PeekByte(uint8_t Offset);
   uint64_t ReadData(uint8_t Size);
@@ -69,9 +67,9 @@ private:
   std::set<uint64_t> HasBlocks;
 
   // ModRM rm decoding
-  using DecodeModRMPtr = size_t (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement);
-  size_t DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement);
-  size_t DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM, uint8_t Displacement);
+  using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
+  void DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
+  void DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
 
   const std::array<DecodeModRMPtr, 2> DecodeModRMs_Disp {
     &FEXCore::Frontend::Decoder::DecodeModRM_64,
