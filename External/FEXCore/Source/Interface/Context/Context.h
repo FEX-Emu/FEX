@@ -150,6 +150,10 @@ namespace FEXCore::Context {
 
     std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
 
+#if ENABLE_JITSYMBOLS
+    FEXCore::JITSymbols Symbols;
+#endif
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
@@ -174,9 +178,6 @@ namespace FEXCore::Context {
     std::unique_ptr<GdbServer> DebugServer;
 
     bool StartPaused = false;
-#if ENABLE_JITSYMBOLS
-    FEXCore::JITSymbols Symbols;
-#endif
     FEXCore::Config::Value<std::string> AppFilename{FEXCore::Config::CONFIG_APP_FILENAME, ""};
   };
 

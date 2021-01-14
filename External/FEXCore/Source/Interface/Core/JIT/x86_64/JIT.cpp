@@ -1034,6 +1034,11 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     jmp(LoopTop);
   }
 
+#if ENABLE_JITSYMBOLS
+  std::string Name = "Dispatch_" + std::to_string(::gettid());
+  CTX->Symbols.Register(DispatcherCodeBuffer.Ptr, DispatcherCodeBuffer.Size, Name);
+#endif
+
   ready();
 
   setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
