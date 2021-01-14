@@ -109,6 +109,11 @@ namespace FEX::ArgLoader {
         .help("Adds an environment variable")
         .action("append");
 
+      EmulationGroup.add_option("-O")
+        .dest("O0")
+        .help("Disables optimization passes for debugging")
+        .choices({"0"});
+
       Parser.add_option_group(EmulationGroup);
     }
     {
@@ -240,6 +245,9 @@ namespace FEX::ArgLoader {
         for (auto iter = Options.all("Env").begin(); iter != Options.all("Env").end(); ++iter) {
           Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT, *iter);
         }
+      }
+      if (Options.is_set_by_user("O0")) {
+        Set(FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, std::to_string(true));
       }
     }
 

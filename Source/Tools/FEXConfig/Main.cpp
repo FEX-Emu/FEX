@@ -74,6 +74,7 @@ namespace {
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS,         "0");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS,    "0");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF,          "0");
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, "0");
   }
 
   void SaveFile(std::string Filename) {
@@ -243,6 +244,14 @@ namespace {
           DeleteEnvironmentVariable(EnvironmentVariableSelected);
           EnvironmentVariableSelected = std::max(0, EnvironmentVariableSelected - 1);
         }
+      }
+
+      ImGui::Text("Debugging:");
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES);
+      bool DisablePasses = Value.has_value() && **Value == "1";
+      if (ImGui::Checkbox("Disable Optimization Passes", &DisablePasses)) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, DisablePasses ? "1" : "0");
+        ConfigChanged = true;
       }
 
       ImGui::EndTabItem();
