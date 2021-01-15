@@ -340,12 +340,12 @@ friend class FEXCore::IR::PassManager;
     return _Jump(InvalidNode);
   }
 
-  IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0) {
-    return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, {COND_NEQ}, GetOpSize(ssa0));
+  IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, CondClassType cond = {COND_NEQ}) {
+    return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
   }
 
-  IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2) {
-    return _CondJump(ssa0, _Constant(0), ssa1, ssa2, {COND_NEQ}, GetOpSize(ssa0));
+  IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, CondClassType cond = {COND_NEQ}) {
+    return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
   }
 
   IRPair<IROp_Phi> _Phi() {
@@ -517,6 +517,10 @@ friend class FEXCore::IR::PassManager;
     return CurrentWriteCursor;
   }
 
+  OrderedNode *GetCurrentBlock() {
+    return CurrentCodeBlock;
+  }
+
   /**
    * @brief This creates an orphaned code node
    * The IROp backing is in the correct list but the OrderedNode lives outside of the list
@@ -532,7 +536,8 @@ friend class FEXCore::IR::PassManager;
     auto CodeNode = _CodeBlock(InvalidNode, InvalidNode);
 
     if (insertAfter) {
-      CodeBlocks.insert(std::find(CodeBlocks.begin(), CodeBlocks.end(), insertAfter)++, CodeNode);
+      auto iter = std::find(CodeBlocks.begin(), CodeBlocks.end(), insertAfter);
+      CodeBlocks.insert(++iter, CodeNode);
     } else {
       CodeBlocks.emplace_back(CodeNode);
     }
@@ -566,7 +571,8 @@ friend class FEXCore::IR::PassManager;
     CodeNode->append(ListData.Begin(), Next);
   }
 
-  IRPair<IROp_CodeBlock> CreateNewCodeBlock(bool AfterCurrent);
+  IRPair<IROp_CodeBlock> CreateNewCodeBlockAtEnd() { return CreateNewCodeBlockAfter(nullptr); }
+  IRPair<IROp_CodeBlock> CreateNewCodeBlockAfter(OrderedNode* insertAfter);
   void SetCurrentCodeBlock(OrderedNode *Node);
 
   protected:

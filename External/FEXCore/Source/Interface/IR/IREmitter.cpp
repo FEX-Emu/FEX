@@ -68,12 +68,14 @@ void IREmitter::Remove(OrderedNode *Node) {
   Node->Unlink(ListData.Begin());
 }
 
-IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlock(bool AfterCurrent) {
+IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode* insertAfter) {
   auto OldCursor = GetWriteCursor();
 
-  auto CodeNode = CreateCodeNode(AfterCurrent ? CurrentCodeBlock : nullptr);
+  auto CodeNode = CreateCodeNode(insertAfter);
 
-  if (CurrentCodeBlock) {
+  if (insertAfter) {
+    LinkCodeBlocks(insertAfter, CodeNode);
+  } else if (CurrentCodeBlock) {
     LinkCodeBlocks(CurrentCodeBlock, CodeNode);
   }
 
