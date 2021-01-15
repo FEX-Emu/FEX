@@ -954,7 +954,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     }
     else {
       // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewCodeBlock();
+      auto JumpTarget = CreateNewCodeBlock(false);
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
@@ -973,7 +973,8 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     }
     else {
       // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewCodeBlock();
+      // Place it after this block for fallthrough optimization
+      auto JumpTarget = CreateNewCodeBlock(true);
       SetFalseJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
@@ -1020,7 +1021,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
     }
     else {
       // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewCodeBlock();
+      auto JumpTarget = CreateNewCodeBlock(false);
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
@@ -1036,7 +1037,8 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
     }
     else {
       // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewCodeBlock();
+      // Place it after the current block for fallthrough behavior
+      auto JumpTarget = CreateNewCodeBlock(true);
       SetFalseJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
@@ -1096,7 +1098,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
     }
     else {
       // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewCodeBlock();
+      auto JumpTarget = CreateNewCodeBlock(false);
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
@@ -1112,7 +1114,8 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
     }
     else {
       // Make sure to start a new block after ending this one
-      auto JumpTarget = CreateNewCodeBlock();
+      // Place after this block for fallthrough behavior
+      auto JumpTarget = CreateNewCodeBlock(true);
       SetFalseJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
@@ -1141,7 +1144,8 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       // If the block isn't a jump target then we need to create an exit block
       auto Jump = _Jump();
 
-      auto JumpTarget = CreateNewCodeBlock();
+      // Place after this block for fallthrough behavior
+      auto JumpTarget = CreateNewCodeBlock(true);
       SetJumpTarget(Jump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
       _ExitFunction(_Constant(Target));
@@ -1676,7 +1680,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   auto CondJump = _CondJump(Shift);
 
   // Do nothing if shift count is zero
-  auto JumpTarget = CreateNewCodeBlock();
+  auto JumpTarget = CreateNewCodeBlock(true);
   SetTrueJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
 
@@ -1685,7 +1689,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   GenerateFlags_ShiftLeft(Op, Res, Dest, Shift);
 
   auto Jump = _Jump();
-  auto NextJumpTarget = CreateNewCodeBlock();
+  auto NextJumpTarget = CreateNewCodeBlock(true);
   SetJumpTarget(Jump, NextJumpTarget);
   SetFalseJumpTarget(CondJump, NextJumpTarget);
   SetCurrentCodeBlock(NextJumpTarget);
@@ -1765,7 +1769,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   auto CondJump = _CondJump(Shift);
 
   // Do not change flags if shift count is zero
-  auto JumpTarget = CreateNewCodeBlock();
+  auto JumpTarget = CreateNewCodeBlock(true);
   SetTrueJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
 
@@ -1775,7 +1779,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   GenerateFlags_ShiftRight(Op, Res, Dest, Shift);
 
   auto Jump = _Jump();
-  auto NextJumpTarget = CreateNewCodeBlock();
+  auto NextJumpTarget = CreateNewCodeBlock(true);
   SetJumpTarget(Jump, NextJumpTarget);
   SetFalseJumpTarget(CondJump, NextJumpTarget);
   SetCurrentCodeBlock(NextJumpTarget);
@@ -2993,9 +2997,10 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   }
   else {
     // Create all our blocks
-    auto LoopHead = CreateNewCodeBlock();
-    auto LoopTail = CreateNewCodeBlock();
-    auto LoopEnd = CreateNewCodeBlock();
+    auto LoopEnd = CreateNewCodeBlock(true);
+    auto LoopTail = CreateNewCodeBlock(true);
+    auto LoopHead = CreateNewCodeBlock(true);
+    
 
     // At the time this was written, our RA can't handle accessing nodes across blocks.
     // So we need to re-load and re-calculate essential values each iteration of the loop.
@@ -3078,9 +3083,10 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
     // Create all our blocks
-    auto LoopHead = CreateNewCodeBlock();
-    auto LoopTail = CreateNewCodeBlock();
-    auto LoopEnd = CreateNewCodeBlock();
+    auto LoopEnd = CreateNewCodeBlock(true);
+    auto LoopTail = CreateNewCodeBlock(true);
+    auto LoopHead = CreateNewCodeBlock(true);
+    
 
     // At the time this was written, our RA can't handle accessing nodes across blocks.
     // So we need to re-load and re-calculate essential values each iteration of the loop.
@@ -3206,7 +3212,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
-      auto LoopStart = CreateNewCodeBlock();
+      auto LoopStart = CreateNewCodeBlock(true);
       SetJumpTarget(JumpStart, LoopStart);
       SetCurrentCodeBlock(LoopStart);
 
@@ -3220,7 +3226,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       auto CondJump = _CondJump(CanLeaveCond);
       IRPair<IROp_CondJump> InternalCondJump;
 
-      auto LoopTail = CreateNewCodeBlock();
+      auto LoopTail = CreateNewCodeBlock(true);
       SetFalseJumpTarget(CondJump, LoopTail);
       SetCurrentCodeBlock(LoopTail);
 
@@ -3273,7 +3279,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       }
 
     // Make sure to start a new block after ending this one
-    auto LoopEnd = CreateNewCodeBlock();
+    auto LoopEnd = CreateNewCodeBlock(true);
     SetTrueJumpTarget(CondJump, LoopEnd);
     if (REPE) {
       SetFalseJumpTarget(InternalCondJump, LoopEnd);
@@ -3333,7 +3339,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
-      auto LoopStart = CreateNewCodeBlock();
+      auto LoopStart = CreateNewCodeBlock(true);
       SetJumpTarget(JumpStart, LoopStart);
       SetCurrentCodeBlock(LoopStart);
 
@@ -3350,7 +3356,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
       // We leave if RCX = 0
       auto CondJump = _CondJump(CanLeaveCond);
 
-      auto LoopTail = CreateNewCodeBlock();
+      auto LoopTail = CreateNewCodeBlock(true);
       SetFalseJumpTarget(CondJump, LoopTail);
       SetCurrentCodeBlock(LoopTail);
 
@@ -3380,7 +3386,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
         _Jump(LoopStart);
     }
     // Make sure to start a new block after ending this one
-    auto LoopEnd = CreateNewCodeBlock();
+    auto LoopEnd = CreateNewCodeBlock(true);
     SetTrueJumpTarget(CondJump, LoopEnd);
     SetCurrentCodeBlock(LoopEnd);
   }
@@ -3435,7 +3441,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
-      auto LoopStart = CreateNewCodeBlock();
+      auto LoopStart = CreateNewCodeBlock(true);
       SetJumpTarget(JumpStart, LoopStart);
       SetCurrentCodeBlock(LoopStart);
 
@@ -3453,7 +3459,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       auto CondJump = _CondJump(CanLeaveCond);
       IRPair<IROp_CondJump> InternalCondJump;
 
-      auto LoopTail = CreateNewCodeBlock();
+      auto LoopTail = CreateNewCodeBlock(true);
       SetFalseJumpTarget(CondJump, LoopTail);
       SetCurrentCodeBlock(LoopTail);
 
@@ -3497,7 +3503,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         }
     }
     // Make sure to start a new block after ending this one
-    auto LoopEnd = CreateNewCodeBlock();
+    auto LoopEnd = CreateNewCodeBlock(true);
     SetTrueJumpTarget(CondJump, LoopEnd);
     if (REPE) {
       SetFalseJumpTarget(InternalCondJump, LoopEnd);
@@ -4415,7 +4421,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   auto CondJump = _CondJump(ZFResult);
 
   // Make sure to start a new block after ending this one
-  auto JumpTarget = CreateNewCodeBlock();
+  auto JumpTarget = CreateNewCodeBlock(true);
   SetFalseJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
 
@@ -4423,7 +4429,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), Result_Upper);
 
   auto Jump = _Jump();
-  auto NextJumpTarget = CreateNewCodeBlock();
+  auto NextJumpTarget = CreateNewCodeBlock(true);
   SetJumpTarget(Jump, NextJumpTarget);
   SetTrueJumpTarget(CondJump, NextJumpTarget);
   SetCurrentCodeBlock(NextJumpTarget);
@@ -5850,14 +5856,14 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
     // If condition doesn't hold then keep going
     auto CondJump = _CondJump(_Xor(Flag, _Constant(1)));
-    auto FalseBlock = CreateNewCodeBlock();
+    auto FalseBlock = CreateNewCodeBlock(true);
     SetFalseJumpTarget(CondJump, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);
 
     _Break(Reason, Literal);
 
     // Make sure to start a new block after ending this one
-    auto JumpTarget = CreateNewCodeBlock();
+    auto JumpTarget = CreateNewCodeBlock(true);
     SetTrueJumpTarget(CondJump, JumpTarget);
     SetCurrentCodeBlock(JumpTarget);
 
@@ -6205,7 +6211,7 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
     for (size_t Select = 0; Select < NumSelectBits; ++Select) {
       auto SelectMask = _Bfe(1, 8 * Select + 7, SrcElement);
       auto CondJump = _CondJump(SelectMask);
-      auto StoreBlock = CreateNewCodeBlock();
+      auto StoreBlock = CreateNewCodeBlock(true);
       SetTrueJumpTarget(CondJump, StoreBlock);
       SetCurrentCodeBlock(StoreBlock);
       {
@@ -6214,7 +6220,7 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
         _StoreMemAutoTSO(GPRClass, 1, MemLocation, DestByte, 1);
       }
       auto Jump = _Jump();
-      auto NextJumpTarget = CreateNewCodeBlock();
+      auto NextJumpTarget = CreateNewCodeBlock(true);
       SetJumpTarget(Jump, NextJumpTarget);
       SetFalseJumpTarget(CondJump, NextJumpTarget);
       SetCurrentCodeBlock(NextJumpTarget);
@@ -8210,7 +8216,7 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   _Break(0, 0);
   BlockSetRIP = true;
 
-  auto NextBlock = CreateNewCodeBlock();
+  auto NextBlock = CreateNewCodeBlock(true);
   SetCurrentCodeBlock(NextBlock);
 }
 

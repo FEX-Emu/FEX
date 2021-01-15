@@ -4,6 +4,8 @@
 
 #include <FEXCore/Utils/LogManager.h>
 
+#include <algorithm>
+
 namespace FEXCore::IR {
 class Pass;
 class PassManager;
@@ -524,11 +526,16 @@ friend class FEXCore::IR::PassManager;
    *
    * @return OrderedNode
    */
-  IRPair<IROp_CodeBlock> CreateCodeNode() {
+  IRPair<IROp_CodeBlock> CreateCodeNode(OrderedNode* insertAfter = nullptr) {
     SetWriteCursor(nullptr); // Orphan from any previous nodes
 
     auto CodeNode = _CodeBlock(InvalidNode, InvalidNode);
-    CodeBlocks.emplace_back(CodeNode);
+
+    if (insertAfter) {
+      CodeBlocks.insert(std::find(CodeBlocks.begin(), CodeBlocks.end(), insertAfter)++, CodeNode);
+    } else {
+      CodeBlocks.emplace_back(CodeNode);
+    }
 
     SetWriteCursor(nullptr);// Orphan from any future nodes
 
@@ -559,7 +566,7 @@ friend class FEXCore::IR::PassManager;
     CodeNode->append(ListData.Begin(), Next);
   }
 
-  IRPair<IROp_CodeBlock> CreateNewCodeBlock();
+  IRPair<IROp_CodeBlock> CreateNewCodeBlock(bool AfterCurrent);
   void SetCurrentCodeBlock(OrderedNode *Node);
 
   protected:
