@@ -67,6 +67,26 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalD
   : FM {ctx}
   , SignalDelegation {_SignalDelegation} {
   FEX::HLE::_SyscallHandler = this;
+  HostKernelVersion = CalculateHostKernelVersion();
+}
+
+uint32_t SyscallHandler::CalculateHostKernelVersion() {
+  struct utsname buf{};
+  if (uname(&buf) == -1) {
+    return 0;
+  }
+
+  int32_t Major{};
+  int32_t Minor{};
+  int32_t Patch{};
+  char Tmp{};
+  std::istringstream ss{buf.release};
+  ss >> Major;
+  ss.read(&Tmp, 1);
+  ss >> Minor;
+  ss.read(&Tmp, 1);
+  ss >> Patch;
+  return (Major << 24) | (Minor << 16) | Patch;
 }
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
