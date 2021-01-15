@@ -1319,6 +1319,11 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   uint64_t CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), CodeEnd - reinterpret_cast<uint64_t>(DispatchPtr));
 
+#if ENABLE_JITSYMBOLS
+  std::string Name = "Dispatch_" + std::to_string(::gettid());
+  CTX->Symbols.Register(reinterpret_cast<void*>(DispatchPtr), CodeEnd - reinterpret_cast<uint64_t>(DispatchPtr), Name);
+#endif
+
   *GetBuffer() = OriginalBuffer;
 }
 
