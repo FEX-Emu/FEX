@@ -361,8 +361,8 @@ namespace FEX::HarnessHelper {
     void MapMemoryRegion() override {
       bool LimitedSize = true;
       auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
-        void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        LogMan::Throw::A(Result != (void*)~0ULL, "mmap failed");
+        void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        LogMan::Throw::A(Result == reinterpret_cast<void*>(Address), "mmap failed");
         return Result;
       };
 
