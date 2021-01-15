@@ -530,17 +530,12 @@ friend class FEXCore::IR::PassManager;
    *
    * @return OrderedNode
    */
-  IRPair<IROp_CodeBlock> CreateCodeNode(OrderedNode* insertAfter = nullptr) {
+  IRPair<IROp_CodeBlock> CreateCodeNode() {
     SetWriteCursor(nullptr); // Orphan from any previous nodes
 
     auto CodeNode = _CodeBlock(InvalidNode, InvalidNode);
 
-    if (insertAfter) {
-      auto iter = std::find(CodeBlocks.begin(), CodeBlocks.end(), insertAfter);
-      CodeBlocks.insert(++iter, CodeNode);
-    } else {
-      CodeBlocks.emplace_back(CodeNode);
-    }
+    CodeBlocks.emplace_back(CodeNode);
 
     SetWriteCursor(nullptr);// Orphan from any future nodes
 
