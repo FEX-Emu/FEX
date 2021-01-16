@@ -1136,6 +1136,39 @@ namespace FEXCore::IR {
       return ~0U;
     }
 
+    // Heuristics failed to spill ?
+    if (InterferenceToSpill == ~0U) {
+      // Panic spill: Spill any value not used by the current op
+      std::set<uint32_t> CurrentNodes;
+
+      // Get all used nodes for current IR op
+      {
+          auto CurrentNode = IR.GetNode(NodeOpBegin);
+          auto IROp = CurrentNode->Op(IR.GetData());
+
+          CurrentNodes.insert(NodeOpBegin.ID());
+
+          for (int i = 0; i < IROp->NumArgs; i++) {
+            CurrentNodes.insert(IROp->Args[i].ID());
+          }
+      }
+
+      for (uint32_t j = 0; j < RegisterNode->Head.InterferenceCount; ++j) {
+          uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
+          auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
+          if (InterferenceLiveRange->RematCost == -1 ||
+              (RematCost != -1 && InterferenceLiveRange->RematCost != RematCost)) {
+            continue;
+          }
+
+        if (!CurrentNodes.contains(InterferenceNode)) {
+          InterferenceToSpill = j;
+          LogMan::Msg::D("Panic spilling %%ssa%d, Live Range[%d, %d)", InterferenceToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
+          break;
+        }
+      }
+    }
+
     if (InterferenceToSpill == ~0U) {
       LogMan::Msg::D("node %%ssa%d has %ld interferences, was dumped in to virtual reg %d. Live Range[%d, %d)",
         CurrentLocation, RegisterNode->Head.InterferenceCount, RegisterNode->Head.RegAndClass,
@@ -1239,10 +1272,15 @@ namespace FEXCore::IR {
                 // Walks from CodeBegin -> BlockBegin to find the last Use
                 // Which this is walking backwards to find the first use
                 auto LastUseIterator = FindLastUseBefore(IREmit, InterferenceOrderedNode, NodeIterator::Invalid(), IR.at(CodeNode));
-                auto [LastUseNode, LastUseIROp] = LastUseIterator();
+                if (LastUseIterator != AllNodesIterator::Invalid()) {
+                  auto [LastUseNode, LastUseIROp] = LastUseIterator();
 
-                // Set the write cursor to point of last usage
-                IREmit->SetWriteCursor(LastUseNode);
+                  // Set the write cursor to point of last usage
+                  IREmit->SetWriteCursor(LastUseNode);
+                } else {
+                  // There is no last use -- use the definition as last use
+                  IREmit->SetWriteCursor(InterferenceOrderedNode);
+                }
 
                 // Actually spill the node now
                 auto SpillOp = IREmit->_SpillRegister(InterferenceOrderedNode, SpillSlot, InterferenceRegClass);
