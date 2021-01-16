@@ -811,6 +811,12 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
     return core->AbsoluteLoopTopAddress;
   }
 
+  auto LinkerAddress = core->ExitFunctionLinkerAddress;
+  Thread->BlockCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+    // undo the link
+    record[0] = LinkerAddress;
+  });
+
   record[0] = HostCode;
   return HostCode;
 }

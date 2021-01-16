@@ -1000,6 +1000,7 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
   }
 
   uintptr_t branch = (uintptr_t)(record) - 8;
+  auto LinkerAddress = core->ExitFunctionLinkerAddress;
 
   auto offset = HostCode/4 - branch/4;
   if (IsInt26(offset)) {
@@ -1008,11 +1009,29 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
     vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
     emit.b(offset);
     emit.FinalizeCode();
-    vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&record[-2], 16);
+    vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
+    
+    // Add de-linking handler
+    Thread->BlockCache->AddBlockLink(GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
+      vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
+      Literal l_BranchHost{LinkerAddress};
+      emit.ldr(x0, &l_BranchHost);
+      emit.blr(x0);
+      emit.place(&l_BranchHost);
+      emit.FinalizeCode();
+      vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
+    });
   } else {
     // fallback case - do a soft-er link by patching the pointer
     record[0] = HostCode;
+
+    // Add de-linking handler
+    Thread->BlockCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+      record[0] = LinkerAddress;
+    });
   }
+
+  
   
   return HostCode;
 }

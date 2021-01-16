@@ -56,6 +56,8 @@ void BlockCache::ClearCache() {
   madvise(reinterpret_cast<void*>(PageMemory), CODE_SIZE, MADV_DONTNEED);
   madvise(reinterpret_cast<void*>(L1Pointer), L1_SIZE, MADV_DONTNEED);
   AllocateOffset = 0;
+  // All code is gone, remove links
+  BlockLinks.clear();
 }
 
 }
