@@ -66,18 +66,19 @@ DEF_OP(ExitFunction) {
 
   uint64_t NewRIP;
 
-  Xbyak::RegExp LookupBase;
-  Xbyak::Reg RipReg;
-
   if (IsInlineConstant(Op->NewRIP, &NewRIP)) {
-    uintptr_t CacheEntry = ThreadState->BlockCache->GetL1Pointer() + (NewRIP & BlockCache::L1_ENTRIES_MASK) * 16;
-    mov(rax, CacheEntry);
-    LookupBase = rax;
+    Label l_BranchHost;
+    Label l_BranchGuest;
 
-    RipReg = rcx;
-    mov(RipReg, NewRIP);
+    lea(rax, ptr[rip + l_BranchHost]);
+    jmp(qword[rax]);
+
+    L(l_BranchHost);
+    dq(ExitFunctionLinkerAddress);
+    L(l_BranchGuest);
+    dq(NewRIP);
   } else {
-    RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
+    Xbyak::Reg RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
     
     // L1 Cache
     mov(rcx, ThreadState->BlockCache->GetL1Pointer());
@@ -86,22 +87,21 @@ DEF_OP(ExitFunction) {
     and_(rax, BlockCache::L1_ENTRIES_MASK);
     shl(rax, 4);
 
-    LookupBase = rcx + rax;
-  }
+    Xbyak::RegExp LookupBase = rcx + rax;
   
-  cmp(qword[LookupBase + 8], RipReg);
-  jne(FullLookup);
-  jmp(qword[LookupBase + 0]);
+    cmp(qword[LookupBase + 8], RipReg);
+    jne(FullLookup);
+    jmp(qword[LookupBase + 0]);
 
-  L(FullLookup);
-  mov(rax, AbsoluteLoopTopAddress);
-  mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], RipReg);
-  jmp(rax);
+    L(FullLookup);
+    mov(rax, AbsoluteLoopTopAddress);
+    mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], RipReg);
+    jmp(rax);
+  }
 
 #ifdef BLOCKSTATS
   ExitBlock();
 #endif
-  ret();
 }
 
 DEF_OP(Jump) {

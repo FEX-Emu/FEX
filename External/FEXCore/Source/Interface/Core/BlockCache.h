@@ -22,6 +22,14 @@ public:
   }
 
   void Erase(uint64_t Address) {
+
+    // Sever any links to this block
+    auto lower = BlockLinks.lower_bound({Address, 0});
+    auto upper = BlockLinks.upper_bound({Address, UINTPTR_MAX});
+    for (auto it = lower; it != upper; it = BlockLinks.erase(it)) {
+      it->second();
+    }
+
     // Do L1
     auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
@@ -82,6 +90,10 @@ public:
     BlockPointers[PageOffset].HostCode = CastPtr;
 
     return CastPtr;
+  }
+
+  void AddBlockLink(uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
+    BlockLinks.insert({{GuestDestination, HostLink}, delinker});
   }
 
   void ClearCache();
@@ -145,6 +157,22 @@ private:
   uintptr_t PagePointer;
   uintptr_t PageMemory;
   uintptr_t L1Pointer;
+
+  struct BlockLinkTag {
+    uint64_t GuestDestination;
+    uintptr_t HostLink;
+
+    bool operator <(const BlockLinkTag& other) const {
+      if (GuestDestination < other.GuestDestination)
+        return true;
+      else if (GuestDestination == other.GuestDestination)
+        return HostLink < other.HostLink;
+      else
+        return false;
+    }
+  };
+
+  std::map<BlockLinkTag, std::function<void()>> BlockLinks;
 
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
   constexpr static size_t SIZE_PER_PAGE = 4096 * sizeof(BlockCacheEntry);

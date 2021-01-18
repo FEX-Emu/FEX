@@ -801,6 +801,26 @@ static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalT
   ctx->IdleWaitCV.notify_all();
 }
 
+uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record) {
+  auto GuestRip = record[1];
+
+  auto HostCode = Thread->BlockCache->FindBlock(GuestRip);
+
+  if (!HostCode) {
+    Thread->State.State.rip = GuestRip;
+    return core->AbsoluteLoopTopAddress;
+  }
+
+  auto LinkerAddress = core->ExitFunctionLinkerAddress;
+  Thread->BlockCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+    // undo the link
+    record[0] = LinkerAddress;
+  });
+
+  record[0] = HostCode;
+  return HostCode;
+}
+
 void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   DispatcherCodeBuffer = AllocateNewCodeBuffer(MAX_DISPATCHER_CODE_SIZE);
   setNewBuffer(DispatcherCodeBuffer.Ptr, DispatcherCodeBuffer.Size);
@@ -931,6 +951,18 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ret();
   }
 
+  {
+    ExitFunctionLinkerAddress = getCurr<uint64_t>();
+    // {rdi, rsi, rdx}
+    mov(rdi, (uintptr_t)this);
+    mov(rsi, STATE);
+    mov(rdx, rax); // rax is set at the block end
+
+    mov(rax, (uintptr_t)&ExitFunctionLink);
+    call(rax);
+    jmp(rax);
+  }
+  
   Label FallbackCore;
   // Block creation
   {
