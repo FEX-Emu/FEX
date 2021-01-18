@@ -68,13 +68,24 @@ void IREmitter::Remove(OrderedNode *Node) {
   Node->Unlink(ListData.Begin());
 }
 
-IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlock() {
+IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode* insertAfter) {
   auto OldCursor = GetWriteCursor();
 
   auto CodeNode = CreateCodeNode();
 
-  if (CurrentCodeBlock) {
-    LinkCodeBlocks(CurrentCodeBlock, CodeNode);
+  if (insertAfter) {
+    LinkCodeBlocks(insertAfter, CodeNode);
+  } else {
+    LogMan::Throw::A(CurrentCodeBlock != nullptr, "CurrentCodeBlock must not be null here");
+    
+    // Find last block
+    auto LastBlock = CurrentCodeBlock;
+
+    while (LastBlock->Header.Next.GetNode(ListData.Begin()) != InvalidNode)
+      LastBlock = LastBlock->Header.Next.GetNode(ListData.Begin());
+    
+    // Append it after the last block
+    LinkCodeBlocks(LastBlock, CodeNode);
   }
 
   SetWriteCursor(OldCursor);
