@@ -20,6 +20,7 @@ public:
     uint64_t Entry{};
     uint64_t NumInstructions{};
     FEXCore::X86Tables::DecodedInst *DecodedInstructions;
+    bool HasInvalidInstruction{};
   };
 
   Decoder(FEXCore::Context::Context *ctx);

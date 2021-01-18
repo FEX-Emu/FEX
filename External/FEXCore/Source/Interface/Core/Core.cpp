@@ -637,6 +637,13 @@ namespace FEXCore::Context {
         Thread->OpDispatcher->StartNewBlock();
 
         uint64_t InstsInBlock = Block.NumInstructions;
+
+        if (Block.HasInvalidInstruction) {
+          uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
+          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry));
+          break;
+        }
+
         for (size_t i = 0; i < InstsInBlock; ++i) {
           FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
           FEXCore::X86Tables::DecodedInst const* DecodedInfo {nullptr};
