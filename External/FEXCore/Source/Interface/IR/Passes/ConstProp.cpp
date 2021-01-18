@@ -163,6 +163,26 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
   auto HeaderOp = CurrentIR.GetHeader();
 
+  {
+    std::map<uint64_t, OrderedNode*> Consts;
+
+    // constants are pooled per block
+    for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
+      for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
+        if (IROp->Op == OP_CONSTANT) {
+          auto Op = IROp->C<IR::IROp_Constant>();
+          if (Consts.count(Op->Constant)) {
+            IREmit->ReplaceAllUsesWith(CodeNode, Consts[Op->Constant]);
+            Changed = true;
+          } else {
+            Consts[Op->Constant] = CodeNode;
+          }
+        }
+      }
+      Consts.clear();
+    }
+  }
+
   // Code motion around selects
   // Moves unary ops that depend on a select before the select, if both inputs are constants
   // assumes that unary ops without side effects on constants will be constprop'd
