@@ -902,7 +902,8 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
         SrcCond = _Select(FEXCore::IR::COND_FNU, flagsOpDest, flagsOpSrc, TrueValue, FalseValue, flagsOpSize);
         break;
       default:
-        printf("Missed Condition %04X FLAGS_OP_FCMP\n", OP); break;
+        // TODO: Add more optimized cases
+        break;
     }
   }
 
