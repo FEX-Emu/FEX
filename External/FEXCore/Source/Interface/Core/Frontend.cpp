@@ -329,9 +329,21 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   DecodeInst->TableInfo = Info;
 
   // XXX: Once we support 32bit x86 then this will be necessary to support
-  LogMan::Throw::A(Info->Type != FEXCore::X86Tables::TYPE_LEGACY_PREFIX, "Legacy Prefix");
-  LogMan::Throw::A(Info->Type != FEXCore::X86Tables::TYPE_UNKNOWN, "Invalid or Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
-  LogMan::Throw::A(Info->Type != FEXCore::X86Tables::TYPE_INVALID, "Invalid or Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+  if (Info->Type == FEXCore::X86Tables::TYPE_LEGACY_PREFIX) {
+    LogMan::Msg::D("Legacy Prefix");
+    return false;
+  }
+
+  if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
+    LogMan::Msg::D("Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+    return false;
+  }
+
+  if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
+    LogMan::Msg::D("Invalid or Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+    return false;
+  }
+
   LogMan::Throw::A(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P),
     "Group Ops should have been decoded before this!");
 
@@ -565,9 +577,22 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
   DecodeInst->TableInfo = Info;
 
   // XXX: Once we support 32bit x86 then this will be necessary to support
-  LogMan::Throw::A(Info->Type != FEXCore::X86Tables::TYPE_LEGACY_PREFIX, "Legacy Prefix");
-  LogMan::Throw::A(Info->Type != FEXCore::X86Tables::TYPE_UNKNOWN, "Invalid or Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
-  LogMan::Throw::A(Info->Type != FEXCore::X86Tables::TYPE_INVALID, "Invalid or Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+  if (Info->Type == FEXCore::X86Tables::TYPE_LEGACY_PREFIX) {
+    LogMan::Msg::D("Legacy Prefix");
+    return false;
+  }
+
+  if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
+    LogMan::Msg::D("Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+    return false;
+  }
+
+  if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
+    LogMan::Msg::D("Invalid or Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+    return false;
+  }
+
+  LogMan::Throw::A(Info->Type != FEXCore::X86Tables::TYPE_REX_PREFIX, "REX PREFIX should have been decoded before this!");
 
   if (Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 &&
       Info->Type <= FEXCore::X86Tables::TYPE_GROUP_11) {
@@ -692,30 +717,6 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     uint8_t EVEXOp = ReadByte();
     return NormalOp(&EVEXTableOps[EVEXOp], EVEXOp);
   }
-  else if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
-    LogMan::Throw::A(CTX->Config.Is64BitMode, "Got REX prefix in 32bit mode");
-    DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
-
-    // Widening displacement
-    if (Op & 0b1000) {
-      DecodeInst->Flags |= DecodeFlags::FLAG_REX_WIDENING;
-      DecodeFlags::PushOpAddr(&DecodeInst->Flags, DecodeFlags::FLAG_WIDENING_SIZE_LAST);
-    }
-
-    // XGPR_B bit set
-    if (Op & 0b0001)
-      DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_B;
-
-    // XGPR_X bit set
-    if (Op & 0b0010)
-      DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
-
-    // XGPR_R bit set
-    if (Op & 0b0100)
-      DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_R;
-
-    return false;
-  }
 
   return NormalOp(Info, Op);
 }
@@ -723,13 +724,12 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
 bool Decoder::DecodeInstruction(uint64_t PC) {
   InstructionSize = 0;
   Instruction.fill(0);
-  bool InstructionDecoded = false;
 
   DecodeInst = &DecodedBuffer[DecodedSize];
   memset(DecodeInst, 0, sizeof(DecodedInst));
   DecodeInst->PC = PC;
 
-  while (!InstructionDecoded) {
+  for(;;) {
     uint8_t Op = ReadByte();
     switch (Op) {
     case 0x0F: {// Escape Op
@@ -753,9 +753,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
 
         // Take a peek at the op just past the displacement
         uint8_t LocalOp = ReadByte();
-        if (NormalOpHeader(&FEXCore::X86Tables::DDDNowOps[LocalOp], LocalOp)) {
-          InstructionDecoded = true;
-        }
+        return NormalOpHeader(&FEXCore::X86Tables::DDDNowOps[LocalOp], LocalOp);
       break;
       }
       case 0x38: { // F38 Table!
@@ -770,9 +768,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
           Prefix = PF_38_66;
 
         uint16_t LocalOp = (Prefix << 8) | ReadByte();
-        if (NormalOpHeader(&FEXCore::X86Tables::H0F38TableOps[LocalOp], LocalOp)) {
-          InstructionDecoded = true;
-        }
+        return NormalOpHeader(&FEXCore::X86Tables::H0F38TableOps[LocalOp], LocalOp);
       break;
       }
       case 0x3A: { // F3A Table!
@@ -788,9 +784,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
           Prefix |= PF_3A_REX;
 
         uint16_t LocalOp = (Prefix << 8) | ReadByte();
-        if (NormalOpHeader(&FEXCore::X86Tables::H0F3ATableOps[LocalOp], LocalOp)) {
-          InstructionDecoded = true;
-        }
+        return NormalOpHeader(&FEXCore::X86Tables::H0F3ATableOps[LocalOp], LocalOp);
       break;
       }
       default: // Two byte table!
@@ -805,37 +799,29 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
         bool NoOverlay66 = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
 
         if (NoOverlay) { // This section of the table ignores prefix extention
-          if (NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp)) {
-            InstructionDecoded = true;
-          }
+          return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
         }
         else if (DecodeInst->LastEscapePrefix == 0xF3) { // REP
           // Remove prefix so it doesn't effect calculations.
           // This is only an escape prefix rather tan modifier now
           DecodeInst->Flags &= ~DecodeFlags::FLAG_REP_PREFIX;
-          if (NormalOpHeader(&FEXCore::X86Tables::RepModOps[EscapeOp], EscapeOp)) {
-            InstructionDecoded = true;
-          }
+          return NormalOpHeader(&FEXCore::X86Tables::RepModOps[EscapeOp], EscapeOp);
         }
         else if (DecodeInst->LastEscapePrefix == 0xF2) { // REPNE
           // Remove prefix so it doesn't effect calculations.
           // This is only an escape prefix rather tan modifier now
           DecodeInst->Flags &= ~DecodeFlags::FLAG_REPNE_PREFIX;
-          if (NormalOpHeader(&FEXCore::X86Tables::RepNEModOps[EscapeOp], EscapeOp)) {
-            InstructionDecoded = true;
-          }
+          return NormalOpHeader(&FEXCore::X86Tables::RepNEModOps[EscapeOp], EscapeOp);
         }
         else if (DecodeInst->LastEscapePrefix == 0x66 && !NoOverlay66) { // Operand Size
           // Remove prefix so it doesn't effect calculations.
           // This is only an escape prefix rather tan modifier now
           DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
           DecodeFlags::PopOpAddrIf(&DecodeInst->Flags, DecodeFlags::FLAG_OPERAND_SIZE_LAST);
-          if (NormalOpHeader(&FEXCore::X86Tables::OpSizeModOps[EscapeOp], EscapeOp)) {
-            InstructionDecoded = true;
-          }
+          return NormalOpHeader(&FEXCore::X86Tables::OpSizeModOps[EscapeOp], EscapeOp);
         }
-        else if (NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp)) {
-          InstructionDecoded = true;
+        else {
+          return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
         }
       break;
       }
@@ -891,9 +877,33 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
       DecodeInst->Flags |= DecodeFlags::FLAG_GS_PREFIX;
     break;
     default: { // Default base table
-      if (NormalOpHeader(&FEXCore::X86Tables::BaseOps[Op], Op)) {
-        InstructionDecoded = true;
+      auto Info = &FEXCore::X86Tables::BaseOps[Op];
+
+      if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
+        LogMan::Throw::A(CTX->Config.Is64BitMode, "Got REX prefix in 32bit mode");
+        DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
+
+        // Widening displacement
+        if (Op & 0b1000) {
+          DecodeInst->Flags |= DecodeFlags::FLAG_REX_WIDENING;
+          DecodeFlags::PushOpAddr(&DecodeInst->Flags, DecodeFlags::FLAG_WIDENING_SIZE_LAST);
+        }
+
+        // XGPR_B bit set
+        if (Op & 0b0001)
+          DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_B;
+
+        // XGPR_X bit set
+        if (Op & 0b0010)
+          DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
+
+        // XGPR_R bit set
+        if (Op & 0b0100)
+          DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_R;
+      } else {
+        return NormalOpHeader(Info, Op);
       }
+
       break;
     }
     }
@@ -1002,8 +1012,11 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
 
     while (1) {
       ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
+
       if (ErrorDuringDecoding) {
         LogMan::Msg::D("Couldn't Decode something at 0x%lx, Started at 0x%lx", PC + PCOffset, PC);
+        LogMan::Throw::A(EntryPoint != (RIPToDecode + PCOffset), "Trying to execute invalid code");
+        CurrentBlockDecoding.HasInvalidInstruction = true;
         break;
       }
 
