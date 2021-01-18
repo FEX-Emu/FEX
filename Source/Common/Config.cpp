@@ -186,6 +186,7 @@ namespace FEX::Config {
     {FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS,         "SMCChecks"},
     {FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS,    "ABILocalFlags"},
     {FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF,          "ABINoPF"},
+    {FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, "O0"},
   }};
 
 
@@ -232,6 +233,7 @@ namespace FEX::Config {
     {"SMCChecks",     FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS},
     {"ABILocalFlags", FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS},
     {"AbiNoPF",       FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF},
+    {"O0",            FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES},
   }};
 
   void OptionMapper::MapNameToOption(const char *ConfigName, const char *ConfigString) {

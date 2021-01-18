@@ -2,28 +2,39 @@
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/PassManager.h"
 
+#include <FEXCore/Config/Config.h>
+
 namespace FEXCore::IR {
 
 void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllocation) {
-  InsertPass(CreateContextLoadStoreElimination());
-  InsertPass(CreateDeadFlagStoreElimination());
-  InsertPass(CreateDeadGPRStoreElimination());
-  InsertPass(CreateDeadFPRStoreElimination());
-  InsertPass(CreatePassDeadCodeElimination());
-  InsertPass(CreateConstProp(InlineConstants));
+  FEXCore::Config::Value<bool> DisablePasses{FEXCore::Config::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, false};
 
-  ////// InsertPass(CreateDeadFlagCalculationEliminination());
+  if (!DisablePasses()) {
+    InsertPass(CreateContextLoadStoreElimination());
+    InsertPass(CreateDeadFlagStoreElimination());
+    InsertPass(CreateDeadGPRStoreElimination());
+    InsertPass(CreateDeadFPRStoreElimination());
+    InsertPass(CreatePassDeadCodeElimination());
+    InsertPass(CreateConstProp(InlineConstants));
 
-  InsertPass(CreateSyscallOptimization());
-  InsertPass(CreatePassDeadCodeElimination());
+    ////// InsertPass(CreateDeadFlagCalculationEliminination());
 
-  // only do SRA if enabled and JIT
-  if (InlineConstants && StaticRegisterAllocation)
-    InsertPass(CreateStaticRegisterAllocationPass());
+    InsertPass(CreateSyscallOptimization());
+    InsertPass(CreatePassDeadCodeElimination());
 
+    // only do SRA if enabled and JIT
+    if (InlineConstants && StaticRegisterAllocation)
+      InsertPass(CreateStaticRegisterAllocationPass());
+  }
+  else {
+    // only do SRA if enabled and JIT
+    if (InlineConstants && StaticRegisterAllocation)
+      InsertPass(CreateStaticRegisterAllocationPass());
+  }
+
+  CompactionPass = CreateIRCompaction();
   // If the IR is compacted post-RA then the node indexing gets messed up and the backend isn't able to find the register assigned to a node
   // Compact before IR, don't worry about RA generating spills/fills
-  CompactionPass = CreateIRCompaction();
   InsertPass(CompactionPass);
 }
 
