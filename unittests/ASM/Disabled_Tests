@@ -23,3 +23,14 @@ Test_Primary/Primary_E9.asm
 Test_X87/D9_F9.asm
 
 Test_X87/D9_F2.asm
+
+# Doesn't support unaligned on armv8.0
+Test_TwoByte/0F_B0_2.asm
+Test_TwoByte/0F_B0_3.asm
+Test_TwoByte/0F_B0_4.asm
+Test_TwoByte/0F_B0_5.asm
+Test_TwoByte/0F_B0_6.asm
+Test_TwoByte/0F_B0_7.asm
+Test_Secondary/09_XX_01_7.asm
+Test_Secondary/09_XX_01_8.asm
+Test_Secondary/09_XX_01_9.asm
