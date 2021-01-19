@@ -16,6 +16,128 @@ namespace {
   constexpr uint32_t DEFAULT_NODE_COUNT = 8192;
   constexpr uint32_t DEFAULT_VIRTUAL_REG_COUNT = 1024;
 
+  template<unsigned _Size = 6, typename T = uint32_t>
+  struct BucketList {
+    static constexpr const unsigned Size = _Size;
+
+    T Items[Size];
+    std::unique_ptr<BucketList<Size>> Next;
+
+    void Clear() {
+      Items[0] = 0;
+      #ifndef NDEBUG
+      for (int i = 1; i < Size; i++)
+        Items[i] = 0xDEADBEEF;
+      #endif
+      Next.release();
+    }
+
+    BucketList() { 
+      Clear();
+    }
+
+    template<typename EnumeratorFn>
+    inline void Iterate(EnumeratorFn Enumerator) const {
+      int i = 0;
+      auto Bucket = this;
+
+      for(;;) {
+        auto Item = Bucket->Items[i];
+        if (Item == 0)
+          break;
+        
+        Enumerator(Item);
+
+        if (++i == Bucket->Size) {
+          LogMan::Throw::A(Bucket->Next != nullptr, "Interference bug");
+          Bucket = Bucket->Next.get();
+          i = 0;
+        }
+      }
+    }
+
+    template<typename EnumeratorFn>
+    inline bool Find(EnumeratorFn Enumerator) const {
+      int i = 0;
+      auto Bucket = this;
+
+      for(;;) {
+        auto Item = Bucket->Items[i];
+        if (Item == 0)
+          break;
+        
+        if (Enumerator(Item))
+          return true;
+
+        if (++i == Bucket->Size) {
+          LogMan::Throw::A(Bucket->Next != nullptr, "Interference bug");
+          Bucket = Bucket->Next.get();
+          i = 0;
+        }
+      }
+
+      return false;
+    }
+
+    void Append(uint32_t Val) {
+      auto that = this;
+
+      while (that->Next) {
+        that = that->Next.get();
+      }
+      
+      int i;
+      for (i = 0; i < Size; i++) {
+        if (that->Items[i] == 0) {
+          that->Items[i] = Val;
+          break;
+        }
+      }
+
+      if (i < (Size-1)) {
+        that->Items[i+1] = 0;
+      } else {
+        that->Next = std::make_unique<BucketList<Size, T>>();
+      }
+    }
+    void Erase(uint32_t Val) {
+      int i = 0;
+      auto that = this;
+      auto foundThat = this;
+      auto foundI = 0;
+
+      for (;;) {
+        if (that->Items[i] == Val) {
+          foundThat = that;
+          foundI = i;
+          break;
+        }
+        else if (++i == Size) {
+          i = 0;
+          that = that->Next.get();
+        }
+      }
+
+      for (;;) {
+        if (that->Items[i] == 0) {
+          foundThat->Items[foundI] = that->Items[i-1];
+          that->Items[i-1] = 0;
+          break;
+        }
+        else if (++i == Size) {
+          if (that->Next->Items[0] == 0) {
+            that->Next.release();
+            foundThat->Items[foundI] = that->Items[Size-1];
+            that->Items[Size-1] = 0;
+            break;
+          }
+          i = 0;
+          that = that->Next.get();
+        }
+      }
+    }
+  };
+
   struct Register {
     bool Virtual;
     uint64_t Index;
@@ -29,25 +151,15 @@ namespace {
   struct RegisterNode {
     struct VolatileHeader {
       uint64_t RegAndClass;
-      uint32_t InterferenceCount;
       uint32_t BlockID;
       uint32_t SpillSlot;
       RegisterNode *PhiPartner;
-    } Head;
+    } Head { INVALID_REGCLASS, ~0U, ~0U, nullptr };
 
-    uint32_t InterferenceListSize;
-    uint32_t *InterferenceList;
-    BitSetView<uint64_t> Interference;
+    BucketList<120, uint32_t> Interferences;
   };
-  static_assert(std::is_trivial<RegisterNode>::value, "We want this to be trivial");
 
-  constexpr RegisterNode::VolatileHeader DefaultNodeHeader = {
-    .RegAndClass = INVALID_REGCLASS,
-    .InterferenceCount = 0,
-    .BlockID = ~0U,
-    .SpillSlot = ~0U,
-    .PhiPartner = nullptr,
-  };
+  static_assert(sizeof(RegisterNode) == 128 * 4);
 
   struct RegisterSet {
     std::vector<RegisterClass> Classes;
@@ -56,13 +168,13 @@ namespace {
   };
 
   struct LiveRange {
-    uint32_t Begin;
-    uint32_t End;
-    uint32_t RematCost;
-    int64_t PrefferedRegister;
-    uint32_t PreWritten;
-    bool Written;
-    bool Global;
+    uint32_t Begin{~0U};
+    uint32_t End{~0U};
+    uint32_t RematCost{0};
+    int64_t PrefferedRegister{-1};
+    uint32_t PreWritten{0};
+    bool Written{false};
+    bool Global{false};
   };
 
   struct SpillStackUnit {
@@ -74,10 +186,8 @@ namespace {
 
   struct RegisterGraph {
     RegisterSet Set;
-    RegisterNode *Nodes;
-    BitSet<uint64_t> InterferenceSet;
+    std::vector<RegisterNode> Nodes;
     uint32_t NodeCount;
-    uint32_t MaxNodeCount;
     std::vector<SpillStackUnit> SpillStack;
     std::unordered_map<uint32_t, std::unordered_set<uint32_t>> BlockPredecessors;
     std::unordered_map<uint32_t, std::unordered_set<uint32_t>> VisitedNodePredecessors;
@@ -146,50 +256,14 @@ namespace {
   }
 
   void FreeRegisterGraph(RegisterGraph *Graph) {
-    for (size_t i = 0; i <Graph->MaxNodeCount; ++i) {
-      free(Graph->Nodes[i].InterferenceList);
-    }
-    free(Graph->Nodes);
-    Graph->InterferenceSet.Free();
-
-    Graph->Set.Classes.clear();
     delete Graph;
   }
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount) {
     NodeCount = AlignUp(NodeCount, sizeof(uint64_t));
-    if (NodeCount > Graph->MaxNodeCount) {
-      uint32_t OldNodeCount = Graph->MaxNodeCount;
-      Graph->NodeCount = NodeCount;
-      Graph->MaxNodeCount = NodeCount;
-      Graph->Nodes = static_cast<RegisterNode*>(realloc(Graph->Nodes, NodeCount * sizeof(RegisterNode)));
-
-      Graph->InterferenceSet.Realloc(NodeCount * NodeCount);
-      Graph->InterferenceSet.MemClear(NodeCount * NodeCount);
-
-      // Initialize nodes
-      for (uint32_t i = 0; i < OldNodeCount; ++i) {
-        Graph->Nodes[i].Head = DefaultNodeHeader;
-        Graph->Nodes[i].Interference.GetView(Graph->InterferenceSet, NodeCount * i);
-      }
-
-      for (uint32_t i = OldNodeCount; i < NodeCount; ++i) {
-        Graph->Nodes[i].Head = DefaultNodeHeader;
-        Graph->Nodes[i].InterferenceListSize = DEFAULT_INTERFERENCE_LIST_COUNT;
-        Graph->Nodes[i].InterferenceList = reinterpret_cast<uint32_t*>(calloc(Graph->Nodes[i].InterferenceListSize, sizeof(uint32_t)));
-        Graph->Nodes[i].Interference.GetView(Graph->InterferenceSet, NodeCount * i);
-      }
-    }
-    else {
-      // We are only handling a node count of this size right now
-      Graph->NodeCount = NodeCount;
-      Graph->InterferenceSet.MemClear(NodeCount * NodeCount);
-
-      // Initialize nodes
-      for (uint32_t i = 0; i < NodeCount; ++i) {
-        Graph->Nodes[i].Head = DefaultNodeHeader;
-      }
-    }
+    Graph->Nodes.clear();
+    Graph->Nodes.resize(NodeCount);
+    Graph->NodeCount = NodeCount;
     Graph->VisitedNodePredecessors.clear();
   }
 
@@ -211,14 +285,10 @@ namespace {
    */
   bool DoesNodeInterfereWithRegister(RegisterGraph *Graph, RegisterNode const *Node, uint64_t RegAndClass) {
     // Walk the node's interference list and see if it interferes with this register
-    for (uint32_t i = 0; i < Node->Head.InterferenceCount; ++i) {
-      RegisterNode *InterferenceNode = &Graph->Nodes[Node->InterferenceList[i]];
-      
-      if (DoesNodeConflictWithRegAndClass(Graph, InterferenceNode, RegAndClass)) {
-        return true;
-      }
-    }
-    return false;
+    return Node->Interferences.Find([Graph, RegAndClass](uint32_t InterferenceNodeId) {
+      RegisterNode *InterferenceNode = &Graph->Nodes[InterferenceNodeId];
+      return DoesNodeConflictWithRegAndClass(Graph, InterferenceNode, RegAndClass);
+    });
   }
 
   /**
@@ -327,79 +397,7 @@ namespace FEXCore::IR {
       #define INFO_CLASS(info) (info & 0x7f00'0000)
       #define INFO_IS_END(info) (info & 0x8000'0000)
 
-      struct BucketList {
-        static constexpr const unsigned Size = 6;
-
-        uint32_t Items[Size];
-        std::unique_ptr<BucketList> Next;
-
-        BucketList() { 
-          Items[0] = 0;
-          #ifndef NDEBUG
-          for (int i = 1; i < Size; i++)
-            Items[i] = 0xDEADBEEF;
-          #endif
-        }
-
-        void Append(uint32_t Val) {
-          auto that = this;
-
-          while (that->Next) {
-            that = that->Next.get();
-          }
-          
-          int i;
-          for (i = 0; i < Size; i++) {
-            if (that->Items[i] == 0) {
-              that->Items[i] = Val;
-              break;
-            }
-          }
-
-          if (i < (Size-1)) {
-            that->Items[i+1] = 0;
-          } else {
-            that->Next = std::make_unique<BucketList>();
-          }
-        }
-        void Erase(uint32_t Val) {
-          int i = 0;
-          auto that = this;
-          auto foundThat = this;
-          auto foundI = 0;
-
-          for (;;) {
-            if (that->Items[i] == Val) {
-              foundThat = that;
-              foundI = i;
-              break;
-            }
-            else if (++i == Size) {
-              i = 0;
-              that = that->Next.get();
-            }
-          }
-
-          for (;;) {
-            if (that->Items[i] == 0) {
-              foundThat->Items[foundI] = that->Items[i-1];
-              that->Items[i-1] = 0;
-              break;
-            }
-            else if (++i == Size) {
-              if (that->Next->Items[0] == 0) {
-                that->Next.release();
-                foundThat->Items[foundI] = that->Items[Size-1];
-                that->Items[Size-1] = 0;
-                break;
-              }
-              i = 0;
-              that = that->Next.get();
-            }
-          }
-        }
-      };
-      std::vector<BucketList> SpanStartEnd;
+      std::vector<BucketList<6, uint32_t>> SpanStartEnd;
 
       RegisterGraph *Graph;
       FEXCore::IR::Pass* CompactionPass;
@@ -499,10 +497,8 @@ namespace FEXCore::IR {
   void ConstrainedRAPass::CalculateLiveRange(FEXCore::IR::IRListView<false> *IR) {
     using namespace FEXCore;
     size_t Nodes = IR->GetSSACount();
-    if (Nodes > LiveRanges.size()) {
-      LiveRanges.resize(Nodes);
-    }
-    LiveRanges.assign(Nodes * sizeof(LiveRange), {~0U, ~0U, 0, -1, false, 0});
+    LiveRanges.clear();
+    LiveRanges.resize(Nodes);
 
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
 
@@ -827,6 +823,7 @@ namespace FEXCore::IR {
   }
 
   void ConstrainedRAPass::CalculateBlockNodeInterference(FEXCore::IR::IRListView<false> *IR) {
+    #if 0
     auto AddInterference = [&](uint32_t Node1, uint32_t Node2) {
       RegisterNode *Node = &Graph->Nodes[Node1];
       Node->Interference.Set(Node2);
@@ -881,17 +878,13 @@ namespace FEXCore::IR {
         Interferences.clear();
       }
     }
+    #endif
   }
 
   void ConstrainedRAPass::CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR) {
-    auto AddInterference = [&](uint32_t Node1, uint32_t Node2) {
+    auto AddInterference = [this](uint32_t Node1, uint32_t Node2) {
       RegisterNode *Node = &Graph->Nodes[Node1];
-      Node->Interference.Set(Node2);
-      Node->InterferenceList[Node->Head.InterferenceCount++] = Node2;
-      if (Node->InterferenceListSize <= Node->Head.InterferenceCount) {
-        Node->InterferenceListSize *= 2;
-        Node->InterferenceList = reinterpret_cast<uint32_t*>(realloc(Node->InterferenceList, Node->InterferenceListSize * sizeof(uint32_t)));
-      }
+      Node->Interferences.Append(Node2);
     };
 
     uint32_t NodeCount = IR->GetSSACount();
@@ -916,7 +909,7 @@ namespace FEXCore::IR {
       }
     }
 
-    BucketList Active;
+    BucketList<32, uint32_t> Active;
     for (int OpNodeId = 0; OpNodeId < IR->GetSSACount(); OpNodeId++) {
       auto OpHeader = IR->GetNode(OrderedNodeWrapper::WrapOffset(OpNodeId * sizeof(IR::OrderedNode)))->Op(IR->GetData());
 
@@ -1095,7 +1088,7 @@ namespace FEXCore::IR {
   uint32_t ConstrainedRAPass::FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost) {
     auto IR = IREmit->ViewIR();
 
-    uint32_t InterferenceToSpill = ~0U;
+    uint32_t InterferenceIdToSpill = 0;
     uint32_t InterferenceFarthestNextUse = 0;
 
     IR::OrderedNodeWrapper NodeOpBegin = IR::OrderedNodeWrapper::WrapOffset(CurrentLocation * sizeof(IR::OrderedNode));
@@ -1105,17 +1098,16 @@ namespace FEXCore::IR {
 
     // Couldn't find register to spill
     // Be more aggressive
-    if (InterferenceToSpill == ~0U) {
-      for (uint32_t j = 0; j < RegisterNode->Head.InterferenceCount; ++j) {
-        uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
+    if (InterferenceIdToSpill == 0) {
+      RegisterNode->Interferences.Iterate([&](uint32_t InterferenceNode) {
         auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
         if (InterferenceLiveRange->RematCost == -1 ||
             (RematCost != -1 && InterferenceLiveRange->RematCost != RematCost)) {
-          continue;
+          return;
         }
 
         //if ((RegisterNode->Head.RegAndClass>>32) != (InterferenceNode->Head.RegAndClass>>32))
-        //  continue;
+        //  return;
 
         // If this node's live range fully encompasses the live range of the interference node
         // then spilling that interference node will not lower RA
@@ -1130,7 +1122,7 @@ namespace FEXCore::IR {
         // | Range - (0, 5]       |              (1, 3] |
         if (OpLiveRange->Begin <= InterferenceLiveRange->Begin &&
             OpLiveRange->End >= InterferenceLiveRange->End) {
-          continue;
+          return;
         }
 
         auto [InterferenceOrderedNode, _] = IR.at(InterferenceNode)();
@@ -1174,21 +1166,21 @@ namespace FEXCore::IR {
             uint32_t NextUseDistance = InterferenceNodeNextUse.ID() - CurrentLocation;
             if (NextUseDistance >= InterferenceFarthestNextUse) {
               Found = true;
-              InterferenceToSpill = j;
+              InterferenceIdToSpill = InterferenceNode;
               InterferenceFarthestNextUse = NextUseDistance;
             }
           }
         }
-      }
+      });
     }
-
-    if (InterferenceToSpill == ~0U) {
-      for (uint32_t j = 0; j < RegisterNode->Head.InterferenceCount; ++j) {
-        uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
+      
+    
+    if (InterferenceIdToSpill == 0) {
+      RegisterNode->Interferences.Iterate([&](uint32_t InterferenceNode) {
         auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
         if (InterferenceLiveRange->RematCost == -1 ||
             (RematCost != -1 && InterferenceLiveRange->RematCost != RematCost)) {
-          continue;
+          return;
         }
 
         // If this node's live range fully encompasses the live range of the interference node
@@ -1204,7 +1196,7 @@ namespace FEXCore::IR {
         // | Range - (0, 5]       |              (1, 3] |
         if (OpLiveRange->Begin <= InterferenceLiveRange->Begin &&
             OpLiveRange->End >= InterferenceLiveRange->End) {
-          continue;
+          return;
         }
 
         auto [InterferenceOrderedNode, _] = IR.at(InterferenceNode)();
@@ -1239,7 +1231,7 @@ namespace FEXCore::IR {
             if (NextUseDistance >= InterferenceFarthestNextUse) {
               Found = true;
 
-              InterferenceToSpill = j;
+              InterferenceIdToSpill = InterferenceNode;
               InterferenceFarthestNextUse = NextUseDistance;
             }
           }
@@ -1274,21 +1266,21 @@ namespace FEXCore::IR {
             if (NextUseDistance >= InterferenceFarthestNextUse) {
               Found = true;
 
-              InterferenceToSpill = j;
+              InterferenceIdToSpill = InterferenceNode;
               InterferenceFarthestNextUse = NextUseDistance;
             }
           }
         }
-      }
+      });
     }
 
     // If we are looking for a specific node then we can safely return not found
-    if (RematCost != -1 && InterferenceToSpill == ~0U) {
+    if (RematCost != -1 && InterferenceIdToSpill == 0) {
       return ~0U;
     }
 
     // Heuristics failed to spill ?
-    if (InterferenceToSpill == ~0U) {
+    if (InterferenceIdToSpill == 0) {
       // Panic spill: Spill any value not used by the current op
       std::set<uint32_t> CurrentNodes;
 
@@ -1304,36 +1296,38 @@ namespace FEXCore::IR {
           }
       }
 
-      for (uint32_t j = 0; j < RegisterNode->Head.InterferenceCount; ++j) {
-          uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
+
+      RegisterNode->Interferences.Find([&](uint32_t InterferenceNode) {
           auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
           if (InterferenceLiveRange->RematCost == -1 ||
               (RematCost != -1 && InterferenceLiveRange->RematCost != RematCost)) {
-            continue;
+            return false;
           }
 
         if (!CurrentNodes.contains(InterferenceNode)) {
-          InterferenceToSpill = j;
-          LogMan::Msg::D("Panic spilling %%ssa%d, Live Range[%d, %d)", InterferenceToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
-          break;
+          InterferenceIdToSpill = InterferenceNode;
+          LogMan::Msg::D("Panic spilling %%ssa%d, Live Range[%d, %d)", InterferenceIdToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
+          return true;
         }
-      }
+        return false;
+      });
     }
 
-    if (InterferenceToSpill == ~0U) {
-      LogMan::Msg::D("node %%ssa%d has %ld interferences, was dumped in to virtual reg %d. Live Range[%d, %d)",
-        CurrentLocation, RegisterNode->Head.InterferenceCount, RegisterNode->Head.RegAndClass,
+    if (InterferenceIdToSpill == 0) {
+      int j = 0;
+      LogMan::Msg::D("node %%ssa%d, was dumped in to virtual reg %d. Live Range[%d, %d)",
+        CurrentLocation, RegisterNode->Head.RegAndClass,
         OpLiveRange->Begin, OpLiveRange->End);
-      for (uint32_t j = 0; j < RegisterNode->Head.InterferenceCount; ++j) {
-        uint32_t InterferenceNode = RegisterNode->InterferenceList[j];
+
+      RegisterNode->Interferences.Iterate([&](uint32_t InterferenceNode) {
         auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
 
-        LogMan::Msg::D("\tInt%d: %%ssa%d Remat: %d [%d, %d)", j, InterferenceNode, InterferenceLiveRange->RematCost, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
-      }
+        LogMan::Msg::D("\tInt%d: %%ssa%d Remat: %d [%d, %d)", j++, InterferenceNode, InterferenceLiveRange->RematCost, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
+      });
     }
-    LogMan::Throw::A(InterferenceToSpill != ~0U, "Couldn't find Node to spill");
+    LogMan::Throw::A(InterferenceIdToSpill != 0, "Couldn't find Node to spill");
 
-    return RegisterNode->InterferenceList[InterferenceToSpill];
+    return InterferenceIdToSpill;
   }
 
   uint32_t ConstrainedRAPass::FindSpillSlot(uint32_t Node, FEXCore::IR::RegisterClassType RegisterClass) {
