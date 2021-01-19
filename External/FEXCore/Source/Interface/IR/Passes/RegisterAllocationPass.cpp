@@ -904,6 +904,12 @@ namespace FEXCore::IR {
     for (int OpNodeId = 0; OpNodeId < IR->GetSSACount(); OpNodeId++) {
       auto OpHeader = IR->GetNode(OrderedNodeWrapper::WrapOffset(OpNodeId * sizeof(IR::OrderedNode)))->Op(IR->GetData());
 
+      // Expire end intervals first
+      SpanEnd[OpNodeId].Iterate([&](uint32_t EdgeInfo) {
+        Active.Erase(INFO_IDCLASS(EdgeInfo));
+      });
+
+      // Add starting invervals
       SpanStart[OpNodeId].Iterate([&](uint32_t EdgeInfo) {
         // Starts here
         Active.Iterate([&](uint32_t ActiveInfo) {
@@ -913,10 +919,6 @@ namespace FEXCore::IR {
           }
         });
         Active.Append(EdgeInfo);
-      });
-
-      SpanEnd[OpNodeId].Iterate([&](uint32_t EdgeInfo) {
-        Active.Erase(INFO_IDCLASS(EdgeInfo));
       });
     }
 
