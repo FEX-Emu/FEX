@@ -347,6 +347,42 @@ namespace FEXCore::IR {
             that->Next = std::make_unique<BucketList>();
           }
         }
+        void Erase(uint32_t Val) {
+          int i = 0;
+          auto that = this;
+          auto foundThat = this;
+          auto foundI = 0;
+
+          for (;;) {
+            if (that->Items[i] == Val) {
+              foundThat = that;
+              foundI = i;
+              break;
+            }
+            else if (++i == Size) {
+              i = 0;
+              that = that->Next.get();
+            }
+          }
+
+          for (;;) {
+            if (that->Items[i] == 0) {
+              foundThat->Items[foundI] = that->Items[i-1];
+              that->Items[i-1] = 0;
+              break;
+            }
+            else if (++i == Size) {
+              if (that->Next->Items[0] == 0) {
+                that->Next.release();
+                foundThat->Items[foundI] = that->Items[Size-1];
+                that->Items[Size-1] = 0;
+                break;
+              }
+              i = 0;
+              that = that->Next.get();
+            }
+          }
+        }
       };
       std::vector<BucketList> SpanStartEnd;
 
@@ -854,7 +890,7 @@ namespace FEXCore::IR {
       }
     }
 
-    std::set<uint32_t> Active;
+    BucketList Active;
     for (int OpNodeId = 0; OpNodeId < IR->GetSSACount(); OpNodeId++) {
       auto OpHeader = IR->GetNode(OrderedNodeWrapper::WrapOffset(OpNodeId * sizeof(IR::OrderedNode)))->Op(IR->GetData());
 
@@ -867,16 +903,28 @@ namespace FEXCore::IR {
         
         if (INFO_IS_END(EdgeInfo)) {
           // Ends here
-          Active.erase(INFO_IDCLASS(EdgeInfo));
+          Active.Erase(INFO_IDCLASS(EdgeInfo));
         } else {
           // Starts here
-          for (auto ActiveInfo: Active) {
+          auto Bucket = &Active;
+          int j = 0;
+          for(;;) {
+            auto ActiveInfo = Bucket->Items[j];
+            if (ActiveInfo == 0)
+              break;
+
             if (INFO_CLASS(ActiveInfo) == INFO_CLASS(EdgeInfo)) {
               AddInterference(INFO_ID(ActiveInfo), INFO_ID(EdgeInfo));
               AddInterference(INFO_ID(EdgeInfo), INFO_ID(ActiveInfo));
             }
+
+            if (++j == Bucket->Size) {
+              LogMan::Throw::A(Bucket->Next != nullptr, "Interference bug");
+              Bucket = Bucket->Next.get();
+              j = 0;
+            }
           }
-          Active.insert(EdgeInfo);
+          Active.Append(EdgeInfo);
         }
 
         if (++i == Bucket->Size) {
@@ -887,7 +935,7 @@ namespace FEXCore::IR {
       }
     }
 
-    LogMan::Throw::A(Active.size() == 0, "Interference bug");
+    LogMan::Throw::A(Active.Items[0] == 0, "Interference bug");
     SpanStartEnd.clear();
   }
 
