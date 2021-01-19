@@ -144,7 +144,7 @@ namespace {
   };
 
   struct RegisterClass {
-    uint32_t Count;
+    uint32_t CountMask;
     uint32_t PhysicalCount;
   };
 
@@ -207,15 +207,13 @@ namespace {
     return Graph;
   }
 
-  void AllocateRegisters(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class, uint32_t Count) {
-    Graph->Set.Classes[Class].Count = Count;
-  }
 
   void AllocatePhysicalRegisters(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class, uint32_t Count) {
+    Graph->Set.Classes[Class].CountMask = (1 << Count) - 1;
     Graph->Set.Classes[Class].PhysicalCount = Count;
   }
 
-  void SetConfict(RegisterGraph *Graph, uint64_t RegAndClass, uint64_t RegAndClassConflict) {
+  void SetConflict(RegisterGraph *Graph, uint64_t RegAndClass, uint64_t RegAndClassConflict) {
     uint32_t Reg = (uint32_t)RegAndClass;
     uint32_t Class = RegAndClass >> 32;
     uint32_t RegConflict = (uint32_t)RegAndClassConflict;
@@ -226,15 +224,24 @@ namespace {
     Graph->Set.Conflicts[Index] |= 1 << RegConflict;
   }
 
-  bool IsConfict(RegisterGraph *Graph, uint64_t RegAndClass, uint64_t RegAndClassConflict) {
+  bool IsConflict(RegisterGraph *Graph, uint64_t RegAndClass, uint64_t ConflictRegAndClass) {
     uint32_t Reg = (uint32_t)RegAndClass;
     uint32_t Class = RegAndClass >> 32;
-    uint32_t RegConflict = (uint32_t)RegAndClassConflict;
-    uint32_t ClassConflict = RegAndClassConflict >> 32;
+    uint32_t RegConflict = (uint32_t)ConflictRegAndClass;
+    uint32_t ClassConflict = ConflictRegAndClass >> 32;
     
     uint32_t Index = ((Class << 3) | ClassConflict << 5) | Reg;
 
     return (Graph->Set.Conflicts[Index] >> RegConflict) & 1;
+  }
+
+  uint32_t GetConflicts(RegisterGraph *Graph, uint64_t RegAndClass, uint32_t ConflictClass) {
+    uint32_t Reg = (uint32_t)RegAndClass;
+    uint32_t Class = RegAndClass >> 32;
+    
+    uint32_t Index = ((Class << 3) | ConflictClass << 5) | Reg;
+
+    return Graph->Set.Conflicts[Index];
   }
 
   void VirtualAddRegisterConflict(RegisterGraph *Graph, FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) {
@@ -243,16 +250,8 @@ namespace {
     auto RegAndClassConflict = ((uint64_t)ClassConflict << 32) | RegConflict;
 
     // Conflict must go both ways
-    SetConfict(Graph, RegAndClass, RegAndClassConflict);
-    SetConfict(Graph, RegAndClassConflict, RegAndClass);
-  }
-
-  // Returns the new register ID that was the previous top
-  uint32_t AllocateMoreRegisters(RegisterGraph *Graph, FEXCore::IR::RegisterClassType Class) {
-    RegisterClass &LocalClass = Graph->Set.Classes[Class];
-    uint32_t OldNumber = LocalClass.Count;
-    LocalClass.Count *= 2;
-    return OldNumber;
+    SetConflict(Graph, RegAndClass, RegAndClassConflict);
+    SetConflict(Graph, RegAndClassConflict, RegAndClass);
   }
 
   void FreeRegisterGraph(RegisterGraph *Graph) {
@@ -277,7 +276,7 @@ namespace {
 
 
   bool DoesNodeConflictWithRegAndClass(RegisterGraph *Graph, RegisterNode const *InterferenceNode, uint64_t RegAndClass) {
-    return IsConfict(Graph, InterferenceNode->Head.RegAndClass, RegAndClass);
+    return IsConflict(Graph, InterferenceNode->Head.RegAndClass, RegAndClass);
   }
 
   /**
@@ -386,18 +385,15 @@ namespace FEXCore::IR {
       uint64_t GetNodeRegister(uint32_t Node) override;
     private:
     bool OptimizeSRA;
-
-      std::vector<uint32_t> PhysicalRegisterCount;
-      std::vector<uint32_t> TopRAPressure;
       
-      #define INFO_MAKE(id, Class, StartEnd) ((id) | (Class << 24) | (StartEnd << 31))
+      #define INFO_MAKE(id, Class) ((id) | (Class << 24))
 
-      #define INFO_IDCLASS(info) (info & 0x7fff'ffff)
+      #define INFO_IDCLASS(info) (info & 0xffff'ffff)
       #define INFO_ID(info) (info & 0xff'ffff)
-      #define INFO_CLASS(info) (info & 0x7f00'0000)
-      #define INFO_IS_END(info) (info & 0x8000'0000)
+      #define INFO_CLASS(info) (info & 0xff00'0000)
 
-      std::vector<BucketList<6, uint32_t>> SpanStartEnd;
+      std::vector<BucketList<6, uint32_t>> SpanStart;
+      std::vector<BucketList<6, uint32_t>> SpanEnd;
 
       RegisterGraph *Graph;
       FEXCore::IR::Pass* CompactionPass;
@@ -441,10 +437,6 @@ namespace FEXCore::IR {
     LogMan::Throw::A(RegisterCount <= INVALID_REG, "Up to %d regs supported", INVALID_REG);
     LogMan::Throw::A(ClassCount <= INVALID_CLASS, "Up to %d classes supported", INVALID_CLASS);
     
-    // We don't care about Max register count
-    PhysicalRegisterCount.resize(ClassCount);
-    TopRAPressure.resize(ClassCount);
-
     Graph = AllocateRegisterGraph(ClassCount);
 
     // Add identity conflicts
@@ -458,9 +450,7 @@ namespace FEXCore::IR {
   void ConstrainedRAPass::AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) {
     LogMan::Throw::A(RegisterCount <= INVALID_REG, "Up to %d regs supported", INVALID_REG);
 
-    AllocateRegisters(Graph, Class, DEFAULT_VIRTUAL_REG_COUNT);
     AllocatePhysicalRegisters(Graph, Class, RegisterCount);
-    PhysicalRegisterCount[Class] = RegisterCount;
   }
 
   void ConstrainedRAPass::AddRegisterConflict(FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) {
@@ -628,8 +618,8 @@ namespace FEXCore::IR {
         }
     };
 
-    auto GprSize = PhysicalRegisterCount[GPRFixedClass.Val];
-    auto MapsSize = PhysicalRegisterCount[GPRFixedClass.Val] + PhysicalRegisterCount[FPRFixedClass.Val];
+    auto GprSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount;
+    auto MapsSize =  Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount + Graph->Set.Classes[FPRFixedClass.Val].PhysicalCount;
     LiveRange* StaticMaps[MapsSize];
     
     // Get a StaticMap entry from context offset
@@ -900,12 +890,13 @@ namespace FEXCore::IR {
         return Class;
     };
     
-    SpanStartEnd.resize(NodeCount);
+    SpanStart.resize(NodeCount);
+    SpanEnd.resize(NodeCount);
     for (uint32_t i = 0; i < NodeCount; ++i) {
       if (LiveRanges[i].Begin != 4294967295) {
         auto Class = GetClass(Graph->Nodes[i].Head.RegAndClass);
-        SpanStartEnd[LiveRanges[i].Begin].Append(INFO_MAKE(i, Class, false));
-        SpanStartEnd[LiveRanges[i].End  ].Append(INFO_MAKE(i, Class, true));
+        SpanStart[LiveRanges[i].Begin].Append(INFO_MAKE(i, Class));
+        SpanEnd[LiveRanges[i].End]    .Append(INFO_MAKE(i, Class));
       }
     }
 
@@ -913,49 +904,25 @@ namespace FEXCore::IR {
     for (int OpNodeId = 0; OpNodeId < IR->GetSSACount(); OpNodeId++) {
       auto OpHeader = IR->GetNode(OrderedNodeWrapper::WrapOffset(OpNodeId * sizeof(IR::OrderedNode)))->Op(IR->GetData());
 
-      auto Bucket = &SpanStartEnd[OpNodeId];
-      int i = 0;
-      for(;;) {
-        auto EdgeInfo = Bucket->Items[i];
-        if (EdgeInfo == 0)
-          break;
-        
-        if (INFO_IS_END(EdgeInfo)) {
-          // Ends here
-          Active.Erase(INFO_IDCLASS(EdgeInfo));
-        } else {
-          // Starts here
-          auto Bucket = &Active;
-          int j = 0;
-          for(;;) {
-            auto ActiveInfo = Bucket->Items[j];
-            if (ActiveInfo == 0)
-              break;
-
-            if (INFO_CLASS(ActiveInfo) == INFO_CLASS(EdgeInfo)) {
-              AddInterference(INFO_ID(ActiveInfo), INFO_ID(EdgeInfo));
-              AddInterference(INFO_ID(EdgeInfo), INFO_ID(ActiveInfo));
-            }
-
-            if (++j == Bucket->Size) {
-              LogMan::Throw::A(Bucket->Next != nullptr, "Interference bug");
-              Bucket = Bucket->Next.get();
-              j = 0;
-            }
+      SpanStart[OpNodeId].Iterate([&](uint32_t EdgeInfo) {
+        // Starts here
+        Active.Iterate([&](uint32_t ActiveInfo) {
+          if (INFO_CLASS(ActiveInfo) == INFO_CLASS(EdgeInfo)) {
+            AddInterference(INFO_ID(ActiveInfo), INFO_ID(EdgeInfo));
+            AddInterference(INFO_ID(EdgeInfo), INFO_ID(ActiveInfo));
           }
-          Active.Append(EdgeInfo);
-        }
+        });
+        Active.Append(EdgeInfo);
+      });
 
-        if (++i == Bucket->Size) {
-          LogMan::Throw::A(Bucket->Next != nullptr, "Interference bug");
-          Bucket = Bucket->Next.get();
-          i = 0;
-        }
-      }
+      SpanEnd[OpNodeId].Iterate([&](uint32_t EdgeInfo) {
+        Active.Erase(INFO_IDCLASS(EdgeInfo));
+      });
     }
 
     LogMan::Throw::A(Active.Items[0] == 0, "Interference bug");
-    SpanStartEnd.clear();
+    SpanStart.clear();
+    SpanEnd.clear();
   }
 
   void ConstrainedRAPass::AllocateVirtualRegisters() {
@@ -967,10 +934,12 @@ namespace FEXCore::IR {
       auto LiveRange = &LiveRanges[i];
 
       FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
-      uint64_t RegAndClass = ~0ULL;
+      uint64_t RegAndClass = INVALID_REGCLASS;
       RegisterClass *RAClass = &Graph->Set.Classes[RegClass];
 
       if (CurrentNode->Head.PhiPartner) {
+        LogMan::Msg::A("Phi nodes not supported");
+        #if 0
         // In the case that we have a list of nodes that need the same register allocated we need to do something special
         // We need to gather the data from the forward linked list and make sure they all match the virtual register
         std::vector<RegisterNode *> Nodes;
@@ -991,7 +960,7 @@ namespace FEXCore::IR {
         // If we failed to find a virtual register then allocate more space for them
         if (RegAndClass == ~0ULL) {
           RegAndClass = (static_cast<uint64_t>(RegClass.Val) << 32);
-          RegAndClass |= AllocateMoreRegisters(Graph, RegClass);
+          RegAndClass |= INVALID_REG;
         }
 
         TopRAPressure[RegClass] = std::max((uint32_t)RegAndClass + 1, TopRAPressure[RegClass]);
@@ -1000,28 +969,33 @@ namespace FEXCore::IR {
         for (auto Partner : Nodes) {
           Partner->Head.RegAndClass = RegAndClass;
         }
+        #endif
       }
       else {
 
         if (LiveRange->PrefferedRegister != -1) {
           RegAndClass = LiveRange->PrefferedRegister;
         } else {
-          for (uint32_t ri = 0; ri < RAClass->Count; ++ri) {
-            uint64_t RegisterToCheck = (static_cast<uint64_t>(RegClass) << 32) + ri;
-            if (!DoesNodeInterfereWithRegister(Graph, CurrentNode, RegisterToCheck)) {
-              RegAndClass = RegisterToCheck;
-              break;
-            }
+          uint32_t RegisterConflicts = 0;
+          CurrentNode->Interferences.Iterate([&](const uint32_t InterferenceNode) {
+            RegisterConflicts |= GetConflicts(Graph, Graph->Nodes[InterferenceNode].Head.RegAndClass, RegClass);
+          });
+
+          RegisterConflicts = (~RegisterConflicts) & RAClass->CountMask;
+
+          int Reg = ffs(RegisterConflicts);
+          if (Reg != 0) {
+            RegAndClass = (static_cast<uint64_t>(RegClass) << 32) + Reg -1;
           }
         }
 
-        // If we failed to find a virtual register then allocate more space for them
-        if (RegAndClass == ~0ULL) {
+        // If we failed to find a virtual register then use INVALID_REG and mark allocation as failed
+        if (RegAndClass == INVALID_REGCLASS) {
           RegAndClass = (static_cast<uint64_t>(RegClass.Val) << 32);
-          RegAndClass |= AllocateMoreRegisters(Graph, RegClass);
+          RegAndClass |= INVALID_REG;
+          HadFullRA = false;
         }
 
-        TopRAPressure[RegClass] = std::max((uint32_t)RegAndClass + 1, TopRAPressure[RegClass]);
         CurrentNode->Head.RegAndClass = RegAndClass;
       }
     }
@@ -1370,7 +1344,7 @@ namespace FEXCore::IR {
           // If this node is allocated above the number of physical registers we have then we need to search the interference list and spill the one
           // that is cheapest
           FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
-          bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass >= PhysicalRegisterCount.at(RegClass);
+          bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass >= Graph->Set.Classes[RegClass].PhysicalCount;
       
           if (NeedsToSpill) {
             bool Spilled = false;
@@ -1476,8 +1450,6 @@ namespace FEXCore::IR {
     GlobalBlockInterferences.clear();
     LocalBlockInterferences.clear();
 
-    TopRAPressure.assign(TopRAPressure.size(), 0);
-
     // We need to rerun compaction every step
     Changed |= CompactionPass->Run(IREmit);
     auto IR = IREmit->ViewIR();
@@ -1543,12 +1515,6 @@ namespace FEXCore::IR {
 
       // Virtual allocation pass runs the compaction pass per run
       Changed |= RunAllocateVirtualRegisters(IREmit);
-
-      for (size_t i = 0; i < PhysicalRegisterCount.size(); ++i) {
-        // Virtual registers fit completely within physical registers
-        // Remap virtual 1:1 to physical
-        HadFullRA &= TopRAPressure[i] <= PhysicalRegisterCount[i];
-      }
 
       if (HadFullRA) {
         break;
