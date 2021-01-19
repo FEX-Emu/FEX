@@ -417,7 +417,7 @@ namespace FEXCore::IR {
       void CalculateBlockNodeInterference(FEXCore::IR::IRListView<false> *IR);
       void CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR);
       void AllocateVirtualRegisters();
-      void CalculatePrecessors(FEXCore::IR::IRListView<false> *IR);
+      void CalculatePredecessors(FEXCore::IR::IRListView<false> *IR);
       void RecursiveLiveRangeExpansion(FEXCore::IR::IRListView<false> *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors);
 
       FEXCore::IR::AllNodesIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
@@ -1505,7 +1505,7 @@ namespace FEXCore::IR {
   }
 
 
-  void ConstrainedRAPass::CalculatePrecessors(FEXCore::IR::IRListView<false> *IR) {
+  void ConstrainedRAPass::CalculatePredecessors(FEXCore::IR::IRListView<false> *IR) {
     Graph->BlockPredecessors.clear();
 
     for (auto [BlockNode, BlockIROp] : IR->GetBlocks()) {
@@ -1536,7 +1536,7 @@ namespace FEXCore::IR {
     SpillSlotCount = 0;
     Graph->SpillStack.clear();
 
-    CalculatePrecessors(&IR);
+    CalculatePredecessors(&IR);
 
     while (1) {
       HadFullRA = true;
