@@ -9,8 +9,9 @@
 #define SRA_DEBUG(...) // printf(__VA_ARGS__)
 
 namespace {
-  constexpr uint32_t INVALID_REG = ~0U;
-  constexpr uint64_t INVALID_REGCLASS = ~0ULL;
+  constexpr uint32_t INVALID_REG = 31;
+  constexpr uint32_t INVALID_CLASS = 7;
+  constexpr uint64_t INVALID_REGCLASS = 0x7'0000'001F;
   constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 128;
   constexpr uint32_t DEFAULT_NODE_COUNT = 8192;
   constexpr uint32_t DEFAULT_VIRTUAL_REG_COUNT = 1024;
@@ -51,7 +52,7 @@ namespace {
   struct RegisterSet {
     std::vector<RegisterClass> Classes;
     uint32_t ClassCount;
-    std::set<std::tuple<uint64_t, uint64_t>> Conflicts;
+    uint32_t Conflicts[ 8 * 8 * 32 * 32];
   };
 
   struct LiveRange {
@@ -104,14 +105,36 @@ namespace {
     Graph->Set.Classes[Class].PhysicalCount = Count;
   }
 
+  void SetConfict(RegisterGraph *Graph, uint64_t RegAndClass, uint64_t RegAndClassConflict) {
+    uint32_t Reg = (uint32_t)RegAndClass;
+    uint32_t Class = RegAndClass >> 32;
+    uint32_t RegConflict = (uint32_t)RegAndClassConflict;
+    uint32_t ClassConflict = RegAndClassConflict >> 32;
+    
+    uint32_t Index = ((Class << 3) | ClassConflict << 5) | Reg;
+
+    Graph->Set.Conflicts[Index] |= 1 << RegConflict;
+  }
+
+  bool IsConfict(RegisterGraph *Graph, uint64_t RegAndClass, uint64_t RegAndClassConflict) {
+    uint32_t Reg = (uint32_t)RegAndClass;
+    uint32_t Class = RegAndClass >> 32;
+    uint32_t RegConflict = (uint32_t)RegAndClassConflict;
+    uint32_t ClassConflict = RegAndClassConflict >> 32;
+    
+    uint32_t Index = ((Class << 3) | ClassConflict << 5) | Reg;
+
+    return (Graph->Set.Conflicts[Index] >> RegConflict) & 1;
+  }
+
   void VirtualAddRegisterConflict(RegisterGraph *Graph, FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) {
 
     auto RegAndClass = ((uint64_t)Class << 32) | Reg;
     auto RegAndClassConflict = ((uint64_t)ClassConflict << 32) | RegConflict;
 
     // Conflict must go both ways
-    Graph->Set.Conflicts.insert({RegAndClass, RegAndClassConflict});
-    Graph->Set.Conflicts.insert({RegAndClassConflict, RegAndClass});
+    SetConfict(Graph, RegAndClass, RegAndClassConflict);
+    SetConfict(Graph, RegAndClassConflict, RegAndClass);
   }
 
   // Returns the new register ID that was the previous top
@@ -180,15 +203,7 @@ namespace {
 
 
   bool DoesNodeConflictWithRegAndClass(RegisterGraph *Graph, RegisterNode const *InterferenceNode, uint64_t RegAndClass) {
-    if (InterferenceNode->Head.RegAndClass == RegAndClass) {
-      return true;
-    }
-
-    if (Graph->Set.Conflicts.contains({InterferenceNode->Head.RegAndClass, RegAndClass})) {
-      return true;
-    }
-
-    return false;
+    return IsConfict(Graph, InterferenceNode->Head.RegAndClass, RegAndClass);
   }
 
   /**
@@ -425,14 +440,26 @@ namespace FEXCore::IR {
   }
 
   void ConstrainedRAPass::AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) {
+    LogMan::Throw::A(RegisterCount <= INVALID_REG, "Up to %d regs supported", INVALID_REG);
+    LogMan::Throw::A(ClassCount <= INVALID_CLASS, "Up to %d classes supported", INVALID_CLASS);
+    
     // We don't care about Max register count
     PhysicalRegisterCount.resize(ClassCount);
     TopRAPressure.resize(ClassCount);
 
     Graph = AllocateRegisterGraph(ClassCount);
+
+    // Add identity conflicts
+    for (uint32_t Class = 0; Class < INVALID_CLASS; Class++) {
+      for (uint32_t Reg = 0; Reg < INVALID_REG; Reg++) {
+        AddRegisterConflict(RegisterClassType{Class}, Reg, RegisterClassType{Class}, Reg);
+      }
+    }
   }
 
   void ConstrainedRAPass::AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) {
+    LogMan::Throw::A(RegisterCount <= INVALID_REG, "Up to %d regs supported", INVALID_REG);
+
     AllocateRegisters(Graph, Class, DEFAULT_VIRTUAL_REG_COUNT);
     AllocatePhysicalRegisters(Graph, Class, RegisterCount);
     PhysicalRegisterCount[Class] = RegisterCount;
@@ -491,7 +518,6 @@ namespace FEXCore::IR {
           // Default to ending right where it starts
           LiveRanges[Node].End = Node;
         }
-
 
         // Calculate remat cost
         switch (IROp->Op) {
