@@ -135,29 +135,25 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
 
         //// Flags ////
         if (IROp->Op == OP_STOREFLAG) {
-          auto Op = IROp->CW<IR::IROp_StoreFlag>();
+          auto Op = IROp->C<IR::IROp_StoreFlag>();
           
           auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.flag.writes |= 1UL << Op->Flag;
-        }
-        else if  (IROp->Op == OP_INVALIDATEFLAGS) {
-          auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
+        } else if  (IROp->Op == OP_INVALIDATEFLAGS) {
+          auto Op = IROp->C<IR::IROp_InvalidateFlags>();
 
           auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.flag.writes |= Op->Flags;
-        }
-        else if (IROp->Op == OP_LOADFLAG) {
-          auto Op = IROp->CW<IR::IROp_LoadFlag>();
+        } else if (IROp->Op == OP_LOADFLAG) {
+          auto Op = IROp->C<IR::IROp_LoadFlag>();
 
           auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.flag.reads |= 1UL << Op->Flag;
-        }
-
-        if (IROp->Op == OP_STORECONTEXT) {
-          auto Op = IROp->CW<IR::IROp_StoreContext>();
+        } else if (IROp->Op == OP_STORECONTEXT) {
+          auto Op = IROp->C<IR::IROp_StoreContext>();
 
           auto& BlockInfo = InfoMap[BlockNode];
 
@@ -172,8 +168,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
             BlockInfo.fpr.writes |= FPRBit(Op->Offset, IROp->Size);
           else
             BlockInfo.fpr.reads |= FPRBit(Op->Offset, IROp->Size);
-        }
-        else if (IROp->Op == OP_STORECONTEXTINDEXED ||
+        } else if (IROp->Op == OP_STORECONTEXTINDEXED ||
                IROp->Op == OP_LOADCONTEXTINDEXED) {
           auto& BlockInfo = InfoMap[BlockNode];
 
@@ -184,9 +179,8 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
           //// FPR ////
           // We can't track through these
           BlockInfo.fpr.reads = -1;
-        }
-        else if (IROp->Op == OP_LOADCONTEXT) {
-          auto Op = IROp->CW<IR::IROp_LoadContext>();
+        } else if (IROp->Op == OP_LOADCONTEXT) {
+          auto Op = IROp->C<IR::IROp_LoadContext>();
 
           auto& BlockInfo = InfoMap[BlockNode];
 
@@ -206,80 +200,81 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
   for (int i = 0; i < PropagationRounds; i++)
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
-      for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
+      auto CodeBlock = BlockIROp->C<IROp_CodeBlock>();
+      
+      auto IROp = CurrentIR.GetNode(CurrentIR.GetNode(CodeBlock->Last)->Header.Previous)->Op(CurrentIR.GetData());
 
-        if (IROp->Op == OP_JUMP) {
-          auto Op = IROp->CW<IR::IROp_Jump>();
-          OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
+      if (IROp->Op == OP_JUMP) {
+        auto Op = IROp->C<IR::IROp_Jump>();
+        OrderedNode *TargetNode = CurrentIR.GetNode(Op->Header.Args[0]);
 
-          auto& BlockInfo = InfoMap[BlockNode];
-          auto& TargetInfo = InfoMap[TargetNode];
+        auto& BlockInfo = InfoMap[BlockNode];
+        auto& TargetInfo = InfoMap[TargetNode];
 
-          //// Flags ////
+        //// Flags ////
 
-          // stores to remove are written by the next block but not read
-          BlockInfo.flag.kill = TargetInfo.flag.writes & ~(TargetInfo.flag.reads) & ~BlockInfo.flag.reads;
+        // stores to remove are written by the next block but not read
+        BlockInfo.flag.kill = TargetInfo.flag.writes & ~(TargetInfo.flag.reads) & ~BlockInfo.flag.reads;
 
-          // Flags that are written by the next block can be considered as written by this block, if not read
-          BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
-          
-          
-          //// GPRs ////
+        // Flags that are written by the next block can be considered as written by this block, if not read
+        BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
+        
+        
+        //// GPRs ////
 
-          // stores to remove are written by the next block but not read
-          BlockInfo.gpr.kill = TargetInfo.gpr.writes & ~(TargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
+        // stores to remove are written by the next block but not read
+        BlockInfo.gpr.kill = TargetInfo.gpr.writes & ~(TargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
 
-          // GPRs that are written by the next block can be considered as written by this block, if not read
-          BlockInfo.gpr.writes |= BlockInfo.gpr.kill & ~BlockInfo.gpr.reads;
-
-
-          //// FPRs ////
-
-          // stores to remove are written by the next block but not read
-          BlockInfo.fpr.kill = TargetInfo.fpr.writes & ~(TargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
-
-          // FPRs that are written by the next block can be considered as written by this block, if not read
-          BlockInfo.fpr.writes |= BlockInfo.fpr.kill & ~BlockInfo.fpr.reads;
-
-        } else if (IROp->Op == OP_CONDJUMP) {
-          auto Op = IROp->CW<IR::IROp_CondJump>();
-
-          OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
-          OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
-
-          auto& BlockInfo = InfoMap[BlockNode];
-          auto& TrueTargetInfo = InfoMap[TrueTargetNode];
-          auto& FalseTargetInfo = InfoMap[FalseTargetNode];
-
-          //// Flags ////
-
-          // stores to remove are written by the next blocks but not read
-          BlockInfo.flag.kill = TrueTargetInfo.flag.writes & ~(TrueTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
-          BlockInfo.flag.kill &= FalseTargetInfo.flag.writes & ~(FalseTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
-
-          // Flags that are written by the next blocks can be considered as written by this block, if not read
-          BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
-
-          
-          //// GPRs ////
-
-          // stores to remove are written by the next blocks but not read
-          BlockInfo.gpr.kill = TrueTargetInfo.gpr.writes & ~(TrueTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
-          BlockInfo.gpr.kill &= FalseTargetInfo.gpr.writes & ~(FalseTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
-
-          // GPRs that are written by the next blocks can be considered as written by this block, if not read
-          BlockInfo.gpr.writes |= BlockInfo.gpr.kill & ~BlockInfo.gpr.reads;
+        // GPRs that are written by the next block can be considered as written by this block, if not read
+        BlockInfo.gpr.writes |= BlockInfo.gpr.kill & ~BlockInfo.gpr.reads;
 
 
-          //// FPRs ////
+        //// FPRs ////
 
-          // stores to remove are written by the next blocks but not read
-          BlockInfo.fpr.kill = TrueTargetInfo.fpr.writes & ~(TrueTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
-          BlockInfo.fpr.kill &= FalseTargetInfo.fpr.writes & ~(FalseTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
+        // stores to remove are written by the next block but not read
+        BlockInfo.fpr.kill = TargetInfo.fpr.writes & ~(TargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
 
-          // FPRs that are written by the next blocks can be considered as written by this block, if not read
-          BlockInfo.fpr.writes |= BlockInfo.fpr.kill & ~BlockInfo.fpr.reads;
-        }
+        // FPRs that are written by the next block can be considered as written by this block, if not read
+        BlockInfo.fpr.writes |= BlockInfo.fpr.kill & ~BlockInfo.fpr.reads;
+
+      } else if (IROp->Op == OP_CONDJUMP) {
+        auto Op = IROp->C<IR::IROp_CondJump>();
+
+        OrderedNode *TrueTargetNode = CurrentIR.GetNode(Op->TrueBlock);
+        OrderedNode *FalseTargetNode = CurrentIR.GetNode(Op->FalseBlock);
+
+        auto& BlockInfo = InfoMap[BlockNode];
+        auto& TrueTargetInfo = InfoMap[TrueTargetNode];
+        auto& FalseTargetInfo = InfoMap[FalseTargetNode];
+
+        //// Flags ////
+
+        // stores to remove are written by the next blocks but not read
+        BlockInfo.flag.kill = TrueTargetInfo.flag.writes & ~(TrueTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
+        BlockInfo.flag.kill &= FalseTargetInfo.flag.writes & ~(FalseTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
+
+        // Flags that are written by the next blocks can be considered as written by this block, if not read
+        BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
+
+        
+        //// GPRs ////
+
+        // stores to remove are written by the next blocks but not read
+        BlockInfo.gpr.kill = TrueTargetInfo.gpr.writes & ~(TrueTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
+        BlockInfo.gpr.kill &= FalseTargetInfo.gpr.writes & ~(FalseTargetInfo.gpr.reads) & ~BlockInfo.gpr.reads;
+
+        // GPRs that are written by the next blocks can be considered as written by this block, if not read
+        BlockInfo.gpr.writes |= BlockInfo.gpr.kill & ~BlockInfo.gpr.reads;
+
+
+        //// FPRs ////
+
+        // stores to remove are written by the next blocks but not read
+        BlockInfo.fpr.kill = TrueTargetInfo.fpr.writes & ~(TrueTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
+        BlockInfo.fpr.kill &= FalseTargetInfo.fpr.writes & ~(FalseTargetInfo.fpr.reads) & ~BlockInfo.fpr.reads;
+
+        // FPRs that are written by the next blocks can be considered as written by this block, if not read
+        BlockInfo.fpr.writes |= BlockInfo.fpr.kill & ~BlockInfo.fpr.reads;
       }
     }
   }
@@ -292,7 +287,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
 
         //// Flags ////
         if (IROp->Op == OP_STOREFLAG) {
-          auto Op = IROp->CW<IR::IROp_StoreFlag>();
+          auto Op = IROp->C<IR::IROp_StoreFlag>();
 
           auto& BlockInfo = InfoMap[BlockNode];
 
@@ -301,10 +296,8 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
             IREmit->Remove(CodeNode);
             Changed = true;
           }
-        }
-
-        if (IROp->Op == OP_STORECONTEXT) {
-          auto Op = IROp->CW<IR::IROp_StoreContext>();
+        } else if (IROp->Op == OP_STORECONTEXT) {
+          auto Op = IROp->C<IR::IROp_StoreContext>();
           
           auto& BlockInfo = InfoMap[BlockNode];
 
