@@ -1508,16 +1508,17 @@ namespace FEXCore::IR {
   void ConstrainedRAPass::CalculatePrecessors(FEXCore::IR::IRListView<false> *IR) {
     Graph->BlockPredecessors.clear();
 
-    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        if (IROp->Op == OP_JUMP) {
-          auto Op = IROp->C<IROp_Jump>();
-          Graph->BlockPredecessors[Op->Target.ID()].insert(IR->GetID(BlockNode));
-        } else if (IROp->Op == OP_CONDJUMP) {
-          auto Op = IROp->C<IROp_CondJump>();
-          Graph->BlockPredecessors[Op->TrueBlock.ID()].insert(IR->GetID(BlockNode));
-          Graph->BlockPredecessors[Op->FalseBlock.ID()].insert(IR->GetID(BlockNode));
-        }
+    for (auto [BlockNode, BlockIROp] : IR->GetBlocks()) {
+      auto CodeBlock = BlockIROp->C<IROp_CodeBlock>();
+
+      auto IROp = IR->GetNode(IR->GetNode(CodeBlock->Last)->Header.Previous)->Op(IR->GetData());
+      if (IROp->Op == OP_JUMP) {
+        auto Op = IROp->C<IROp_Jump>();
+        Graph->BlockPredecessors[Op->Target.ID()].insert(IR->GetID(BlockNode));
+      } else if (IROp->Op == OP_CONDJUMP) {
+        auto Op = IROp->C<IROp_CondJump>();
+        Graph->BlockPredecessors[Op->TrueBlock.ID()].insert(IR->GetID(BlockNode));
+        Graph->BlockPredecessors[Op->FalseBlock.ID()].insert(IR->GetID(BlockNode));
       }
     }
   }
