@@ -164,7 +164,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
   auto HeaderOp = CurrentIR.GetHeader();
 
   {
-    std::map<uint64_t, OrderedNode*> Consts;
+    std::unordered_map<uint64_t, OrderedNode*> Consts;
 
     // constants are pooled per block
     for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -265,7 +265,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
   // LoadMem / StoreMem imm pooling
   // If imms are close by, use address gen to generate the values instead of using a new imm
-  std::map<OrderedNode*, uint64_t> Consts;
+  std::unordered_map<OrderedNode*, uint64_t> Consts;
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_LOADMEM || IROp->Op == OP_STOREMEM) {
