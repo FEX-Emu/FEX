@@ -11,10 +11,10 @@
 namespace {
   constexpr uint32_t INVALID_REG = 31;
   constexpr uint32_t INVALID_CLASS = 7;
-  constexpr uint64_t INVALID_REGCLASS = 0x7'0000'001F;
-  constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 128;
+  constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 120;
   constexpr uint32_t DEFAULT_NODE_COUNT = 8192;
-  constexpr uint32_t DEFAULT_VIRTUAL_REG_COUNT = 1024;
+
+  constexpr uint64_t INVALID_REGCLASS = (((uint64_t)INVALID_CLASS) << 32) | (INVALID_REG);
 
   template<unsigned _Size = 6, typename T = uint32_t>
   struct BucketList {
@@ -70,7 +70,7 @@ namespace {
           return true;
 
         if (++i == Bucket->Size) {
-          LogMan::Throw::A(Bucket->Next != nullptr, "Interference bug");
+          LogMan::Throw::A(Bucket->Next != nullptr, "Bucket in bad state");
           Bucket = Bucket->Next.get();
           i = 0;
         }
@@ -156,7 +156,7 @@ namespace {
       RegisterNode *PhiPartner;
     } Head { INVALID_REGCLASS, ~0U, ~0U, nullptr };
 
-    BucketList<120, uint32_t> Interferences;
+    BucketList<DEFAULT_INTERFERENCE_LIST_COUNT, uint32_t> Interferences;
   };
 
   static_assert(sizeof(RegisterNode) == 128 * 4);
@@ -1344,7 +1344,7 @@ namespace FEXCore::IR {
           // If this node is allocated above the number of physical registers we have then we need to search the interference list and spill the one
           // that is cheapest
           FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
-          bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass >= Graph->Set.Classes[RegClass].PhysicalCount;
+          bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass == INVALID_REG;
       
           if (NeedsToSpill) {
             bool Spilled = false;
