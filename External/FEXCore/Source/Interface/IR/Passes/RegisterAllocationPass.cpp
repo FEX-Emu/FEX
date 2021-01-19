@@ -304,6 +304,51 @@ namespace FEXCore::IR {
 
       std::vector<uint32_t> PhysicalRegisterCount;
       std::vector<uint32_t> TopRAPressure;
+      
+      #define INFO_MAKE(id, Class, StartEnd) ((id) | (Class << 24) | (StartEnd << 31))
+
+      #define INFO_IDCLASS(info) (info & 0x7fff'ffff)
+      #define INFO_ID(info) (info & 0xff'ffff)
+      #define INFO_CLASS(info) (info & 0x7f00'0000)
+      #define INFO_IS_END(info) (info & 0x8000'0000)
+
+      struct BucketList {
+        static constexpr const unsigned Size = 6;
+
+        uint32_t Items[Size];
+        std::unique_ptr<BucketList> Next;
+
+        BucketList() { 
+          Items[0] = 0;
+          #ifndef NDEBUG
+          for (int i = 1; i < Size; i++)
+            Items[i] = 0xDEADBEEF;
+          #endif
+        }
+
+        void Append(uint32_t Val) {
+          auto that = this;
+
+          while (that->Next) {
+            that = that->Next.get();
+          }
+          
+          int i;
+          for (i = 0; i < Size; i++) {
+            if (that->Items[i] == 0) {
+              that->Items[i] = Val;
+              break;
+            }
+          }
+
+          if (i < (Size-1)) {
+            that->Items[i+1] = 0;
+          } else {
+            that->Next = std::make_unique<BucketList>();
+          }
+        }
+      };
+      std::vector<BucketList> SpanStartEnd;
 
       RegisterGraph *Graph;
       FEXCore::IR::Pass* CompactionPass;
@@ -790,28 +835,60 @@ namespace FEXCore::IR {
     uint32_t NodeCount = IR->GetSSACount();
 
     // Now that we have all the live ranges calculated we need to add them to our interference graph
+
+    auto GetClass = [](uint64_t RegAndClass) {
+      uint32_t Class = RegAndClass >> 32;
+
+      if (Class == IR::GPRPairClass.Val)
+        return IR::GPRClass.Val;
+      else
+        return Class;
+    };
+    
+    SpanStartEnd.resize(NodeCount);
     for (uint32_t i = 0; i < NodeCount; ++i) {
-      for (uint32_t j = i + 1; j < NodeCount; ++j) {
-        if (!(LiveRanges[i].Begin >= LiveRanges[j].End ||
-              LiveRanges[j].Begin >= LiveRanges[i].End)) {
-          
-          auto GetClass = [](uint64_t RegAndClass) {
-            uint32_t Class = RegAndClass >> 32;
+      if (LiveRanges[i].Begin != 4294967295) {
+        auto Class = GetClass(Graph->Nodes[i].Head.RegAndClass);
+        SpanStartEnd[LiveRanges[i].Begin].Append(INFO_MAKE(i, Class, false));
+        SpanStartEnd[LiveRanges[i].End  ].Append(INFO_MAKE(i, Class, true));
+      }
+    }
 
-            if (Class == IR::GPRPairClass.Val)
-              return IR::GPRClass.Val;
-            else
-              return Class;
-          };
+    std::set<uint32_t> Active;
+    for (int OpNodeId = 0; OpNodeId < IR->GetSSACount(); OpNodeId++) {
+      auto OpHeader = IR->GetNode(OrderedNodeWrapper::WrapOffset(OpNodeId * sizeof(IR::OrderedNode)))->Op(IR->GetData());
 
-          if (GetClass(Graph->Nodes[i].Head.RegAndClass) == GetClass(Graph->Nodes[j].Head.RegAndClass))
-          {
-            AddInterference(i, j);
-            AddInterference(j, i);
+      auto Bucket = &SpanStartEnd[OpNodeId];
+      int i = 0;
+      for(;;) {
+        auto EdgeInfo = Bucket->Items[i];
+        if (EdgeInfo == 0)
+          break;
+        
+        if (INFO_IS_END(EdgeInfo)) {
+          // Ends here
+          Active.erase(INFO_IDCLASS(EdgeInfo));
+        } else {
+          // Starts here
+          for (auto ActiveInfo: Active) {
+            if (INFO_CLASS(ActiveInfo) == INFO_CLASS(EdgeInfo)) {
+              AddInterference(INFO_ID(ActiveInfo), INFO_ID(EdgeInfo));
+              AddInterference(INFO_ID(EdgeInfo), INFO_ID(ActiveInfo));
+            }
           }
+          Active.insert(EdgeInfo);
+        }
+
+        if (++i == Bucket->Size) {
+          LogMan::Throw::A(Bucket->Next != nullptr, "Interference bug");
+          Bucket = Bucket->Next.get();
+          i = 0;
         }
       }
     }
+
+    LogMan::Throw::A(Active.size() == 0, "Interference bug");
+    SpanStartEnd.clear();
   }
 
   void ConstrainedRAPass::AllocateVirtualRegisters() {
