@@ -28,7 +28,10 @@ namespace {
     FEXCore::IR::OrderedNode *StoreNode;
   };
 
-  using ContextInfo = std::vector<ContextMemberInfo>;
+  struct ContextInfo {
+    std::vector<ContextMemberInfo*> Lookup;
+    std::vector<ContextMemberInfo> ClassificationInfo;
+  };
 
   constexpr static std::array<LastAccessType, 14> DefaultAccess = {
     ACCESS_NONE,
@@ -47,7 +50,9 @@ namespace {
     ACCESS_NONE,
   };
 
-  static void ClassifyContextStruct(ContextInfo *ContextClassification) {
+  static void ClassifyContextStruct(ContextInfo *ContextClassificationInfo) {
+    auto ContextClassification = &ContextClassificationInfo->ClassificationInfo;
+
     ContextClassification->emplace_back(ContextMemberInfo{
       ContextMemberClassification {
         offsetof(FEXCore::Core::CPUState, rip),
@@ -90,15 +95,6 @@ namespace {
 
     ContextClassification->emplace_back(ContextMemberInfo{
       ContextMemberClassification {
-        offsetof(FEXCore::Core::CPUState, gs),
-        sizeof(FEXCore::Core::CPUState::gs),
-      },
-      DefaultAccess[4],
-      FEXCore::IR::InvalidClass,
-    });
-
-    ContextClassification->emplace_back(ContextMemberInfo{
-      ContextMemberClassification {
         offsetof(FEXCore::Core::CPUState, es),
         sizeof(FEXCore::Core::CPUState::es),
       },
@@ -133,6 +129,15 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
+    ContextClassification->emplace_back(ContextMemberInfo{
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, gs),
+        sizeof(FEXCore::Core::CPUState::gs),
+      },
+      DefaultAccess[4],
+      FEXCore::IR::InvalidClass,
+    });
+    
     ContextClassification->emplace_back(ContextMemberInfo{
       ContextMemberClassification {
         offsetof(FEXCore::Core::CPUState, fs),
@@ -186,16 +191,27 @@ namespace {
     }
 
     size_t ClassifiedStructSize{};
+    ContextClassificationInfo->Lookup.reserve(sizeof(FEXCore::Core::CPUState));
     for (auto &it : *ContextClassification) {
+      LogMan::Throw::A(it.Class.Offset == ContextClassificationInfo->Lookup.size(), "Offset missmatch %d %d", it.Class.Offset == ContextClassificationInfo->Lookup.size());
+      for (int i = 0; i < it.Class.Size; i++) {
+        ContextClassificationInfo->Lookup.push_back(&it);
+      }
       ClassifiedStructSize += it.Class.Size;
     }
 
     LogMan::Throw::A(ClassifiedStructSize == sizeof(FEXCore::Core::CPUState),
       "Classified CPUStruct size doesn't match real CPUState struct size! %ld != %ld",
       ClassifiedStructSize, sizeof(FEXCore::Core::CPUState));
+
+    LogMan::Throw::A(ContextClassificationInfo->Lookup.size() == sizeof(FEXCore::Core::CPUState),
+      "Classified CPUStruct size doesn't match real CPUState struct size! %ld != %ld",
+      ContextClassificationInfo->Lookup.size(), sizeof(FEXCore::Core::CPUState));
   }
 
-  static void ResetClassificationAccesses(ContextInfo *ContextClassification) {
+  static void ResetClassificationAccesses(ContextInfo *ContextClassificationInfo) {
+    auto ContextClassification = &ContextClassificationInfo->ClassificationInfo;
+
     auto SetAccess = [&](size_t Offset, auto Access) {
       ContextClassification->at(Offset).Accessed = Access;
       ContextClassification->at(Offset).AccessRegClass = FEXCore::IR::InvalidClass;
@@ -265,20 +281,8 @@ private:
   bool RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit);
 };
 
-ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size) {
-  ContextMemberInfo *Info{};
-  // Just linearly scan to find the info
-  for (size_t i = 0; i < ClassifiedInfo->size(); ++i) {
-    ContextMemberInfo *LocalInfo = &ClassifiedInfo->at(i);
-    if (LocalInfo->Class.Offset <= Offset &&
-        (LocalInfo->Class.Offset + LocalInfo->Class.Size) > Offset) {
-      Info = LocalInfo;
-      break;
-    }
-  }
-  LogMan::Throw::A(Info != nullptr, "Couldn't find Context Member to record to");
-
-  return Info;
+ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ContextClassificationInfo, uint32_t Offset, uint8_t Size) {
+  return ContextClassificationInfo->Lookup.at(Offset);
 }
 
 ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode) {
@@ -404,7 +408,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
 
   // XXX: Walk the list and calculate the control flow
 
-  ContextInfo LocalInfo = ClassifiedStruct;
+  ContextInfo &LocalInfo = ClassifiedStruct;
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
