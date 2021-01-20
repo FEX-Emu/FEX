@@ -21,7 +21,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
 }
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, CondClassType Arg) {
-  std::array<std::string, 14> CondNames = {
+  std::array<std::string, 22> CondNames = {
     "EQ",
     "NEQ",
     "UGE",
@@ -36,6 +36,14 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
     "SLT",
     "SGT",
     "SLE",
+    "Invalid Cond",
+    "Invalid Cond",
+    "FLU",
+    "FGE",
+    "FLEU",
+    "FGT",
+    "FU",
+    "FNU"
   };
 
   *out << CondNames[Arg];
