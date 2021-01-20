@@ -13,7 +13,7 @@ namespace FEXCore::IR {
 
 class ConstProp final : public FEXCore::IR::Pass {
   std::unordered_map<uint64_t, OrderedNode*> ConstPool;
-  std::unordered_map<OrderedNode*, uint64_t> AddressgenConsts;
+  std::map<OrderedNode*, uint64_t> AddressgenConsts;
 public:
   bool Run(IREmitter *IREmit) override;
   bool InlineConstants;
