@@ -114,6 +114,7 @@ namespace {
         }
         else if (++i == Size) {
           i = 0;
+          LogMan::Throw::A(that->Next != nullptr, "Bucket::Erase but element not contained");
           that = that->Next.get();
         }
       }
@@ -501,8 +502,8 @@ namespace FEXCore::IR {
         if (IROp->HasDest) {
           LogMan::Throw::A(LiveRanges[Node].Begin == ~0U, "Node begin already defined?");
           LiveRanges[Node].Begin = Node;
-          // Default to ending right where it starts
-          LiveRanges[Node].End = Node;
+          // Default to ending right where after it starts
+          LiveRanges[Node].End = Node + 1;
         }
 
         // Calculate remat cost
@@ -893,7 +894,9 @@ namespace FEXCore::IR {
     SpanStart.resize(NodeCount);
     SpanEnd.resize(NodeCount);
     for (uint32_t i = 0; i < NodeCount; ++i) {
-      if (LiveRanges[i].Begin != 4294967295) {
+      if (LiveRanges[i].Begin != ~0U) {
+        LogMan::Throw::A(LiveRanges[i].Begin < LiveRanges[i].End , "Span must Begin before Ending");
+
         auto Class = GetClass(Graph->Nodes[i].Head.RegAndClass);
         SpanStart[LiveRanges[i].Begin].Append(INFO_MAKE(i, Class));
         SpanEnd[LiveRanges[i].End]    .Append(INFO_MAKE(i, Class));
