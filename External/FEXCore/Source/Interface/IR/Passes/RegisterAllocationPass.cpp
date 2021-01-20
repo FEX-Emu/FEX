@@ -385,7 +385,8 @@ namespace FEXCore::IR {
        */
       uint64_t GetNodeRegister(uint32_t Node) override;
     private:
-    bool OptimizeSRA;
+      bool OptimizeSRA;
+      uint32_t SpillPointId;
       
       #define INFO_MAKE(id, Class) ((id) | (Class << 24))
 
@@ -399,7 +400,7 @@ namespace FEXCore::IR {
       RegisterGraph *Graph;
       FEXCore::IR::Pass* CompactionPass;
 
-      void SpillRegisters(FEXCore::IR::IREmitter *IREmit);
+      void SpillOne(FEXCore::IR::IREmitter *IREmit);
 
       std::vector<LiveRange> LiveRanges;
 
@@ -999,6 +1000,11 @@ namespace FEXCore::IR {
           RegAndClass = (static_cast<uint64_t>(RegClass.Val) << 32);
           RegAndClass |= INVALID_REG;
           HadFullRA = false;
+          SpillPointId = i;
+
+          CurrentNode->Head.RegAndClass = RegAndClass;
+          // Must spill and restart
+          return;
         }
 
         CurrentNode->Head.RegAndClass = RegAndClass;
@@ -1332,118 +1338,109 @@ namespace FEXCore::IR {
     return CurrentNode->Head.SpillSlot;
   }
 
-  void ConstrainedRAPass::SpillRegisters(FEXCore::IR::IREmitter *IREmit) {
+  void ConstrainedRAPass::SpillOne(FEXCore::IR::IREmitter *IREmit) {
     using namespace FEXCore;
 
     auto IR = IREmit->ViewIR();
     auto LastCursor = IREmit->GetWriteCursor();
+    auto [CodeNode, IROp] = IR.at(SpillPointId)();
 
-    for (auto [BlockNode, BlockIRHeader] : IR.GetBlocks()) {
-      for (auto [CodeNode, IROp] : IR.GetCode(BlockNode)) {
+    LogMan::Throw::A(IROp->HasDest, "Can't spill with no dest");
 
-        if (IROp->HasDest) {
-          uint32_t Node = IR.GetID(CodeNode);
-          RegisterNode *CurrentNode = &Graph->Nodes[Node];
-          LiveRange *OpLiveRange = &LiveRanges[Node];
+    uint32_t Node = IR.GetID(CodeNode);
+    RegisterNode *CurrentNode = &Graph->Nodes[Node];
+    LiveRange *OpLiveRange = &LiveRanges[Node];
 
-          // If this node is allocated above the number of physical registers we have then we need to search the interference list and spill the one
-          // that is cheapest
-          FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
-          bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass == INVALID_REG;
-      
-          if (NeedsToSpill) {
-            bool Spilled = false;
+    // If this node is allocated above the number of physical registers we have then we need to search the interference list and spill the one
+    // that is cheapest
+    FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
+    bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass == INVALID_REG;
 
-            // First let's just check for constants that we can just rematerialize instead of spilling
-            uint32_t InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange, 1);
-            if (InterferenceNode != ~0U) {
-              // We want to end the live range of this value here and continue it on first use
-              auto [ConstantNode, _] = IR.at(InterferenceNode)();
-              auto ConstantIROp = IR.GetOp<IR::IROp_Constant>(ConstantNode);
+    if (NeedsToSpill) {
+      bool Spilled = false;
 
-              // First op post Spill
-              auto NextIter = IR.at(CodeNode);
-              auto FirstUseLocation = FindFirstUse(IREmit, ConstantNode, NextIter, NodeIterator::Invalid());
-              LogMan::Throw::A(FirstUseLocation != IR::NodeIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", Node, InterferenceNode);
-              if (FirstUseLocation != IR::NodeIterator::Invalid()) {
-                --FirstUseLocation;
-                auto [FirstUseOrderedNode, _] = FirstUseLocation();
-                IREmit->SetWriteCursor(FirstUseOrderedNode);
-                auto FilledConstant = IREmit->_Constant(ConstantIROp->Constant);
-                IREmit->ReplaceUsesWithAfter(ConstantNode, FilledConstant, FirstUseLocation);
-                Spilled = true;
-              }
-            }
+      // First let's just check for constants that we can just rematerialize instead of spilling
+      uint32_t InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange, 1);
+      if (InterferenceNode != ~0U) {
+        // We want to end the live range of this value here and continue it on first use
+        auto [ConstantNode, _] = IR.at(InterferenceNode)();
+        auto ConstantIROp = IR.GetOp<IR::IROp_Constant>(ConstantNode);
 
-            // If we didn't remat a constant then we need to do some real spilling
-            if (!Spilled) {
-              uint32_t InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange);
-              if (InterferenceNode != ~0U) {
-                FEXCore::IR::RegisterClassType InterferenceRegClass = FEXCore::IR::RegisterClassType{uint32_t(Graph->Nodes[InterferenceNode].Head.RegAndClass >> 32)};
-                uint32_t SpillSlot = FindSpillSlot(InterferenceNode, InterferenceRegClass);
-                RegisterNode *InterferenceRegisterNode = &Graph->Nodes[InterferenceNode];
-                LogMan::Throw::A(SpillSlot != ~0U, "Interference Node doesn't have a spill slot!");
-                LogMan::Throw::A((InterferenceRegisterNode->Head.RegAndClass & ~0U) != ~0U, "Interference node never assigned a register?");
-                LogMan::Throw::A(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
-                LogMan::Throw::A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
-                LogMan::Throw::A(InterferenceRegClass == RegClass, "Class doesn't match");
+        // First op post Spill
+        auto NextIter = IR.at(CodeNode);
+        auto FirstUseLocation = FindFirstUse(IREmit, ConstantNode, NextIter, NodeIterator::Invalid());
+        LogMan::Throw::A(FirstUseLocation != IR::NodeIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", Node, InterferenceNode);
+        if (FirstUseLocation != IR::NodeIterator::Invalid()) {
+          --FirstUseLocation;
+          auto [FirstUseOrderedNode, _] = FirstUseLocation();
+          IREmit->SetWriteCursor(FirstUseOrderedNode);
+          auto FilledConstant = IREmit->_Constant(ConstantIROp->Constant);
+          IREmit->ReplaceUsesWithAfter(ConstantNode, FilledConstant, FirstUseLocation);
+          Spilled = true;
+        }
+      }
 
-                // This is the op that we need to dump
-                auto [InterferenceOrderedNode, InterferenceIROp] = IR.at(InterferenceNode)();
+      // If we didn't remat a constant then we need to do some real spilling
+      if (!Spilled) {
+        uint32_t InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange);
+        if (InterferenceNode != ~0U) {
+          FEXCore::IR::RegisterClassType InterferenceRegClass = FEXCore::IR::RegisterClassType{uint32_t(Graph->Nodes[InterferenceNode].Head.RegAndClass >> 32)};
+          uint32_t SpillSlot = FindSpillSlot(InterferenceNode, InterferenceRegClass);
+          RegisterNode *InterferenceRegisterNode = &Graph->Nodes[InterferenceNode];
+          LogMan::Throw::A(SpillSlot != ~0U, "Interference Node doesn't have a spill slot!");
+          LogMan::Throw::A((InterferenceRegisterNode->Head.RegAndClass & ~0U) != ~0U, "Interference node never assigned a register?");
+          LogMan::Throw::A(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
+          LogMan::Throw::A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
+          LogMan::Throw::A(InterferenceRegClass == RegClass, "Class doesn't match");
+
+          // This is the op that we need to dump
+          auto [InterferenceOrderedNode, InterferenceIROp] = IR.at(InterferenceNode)();
 
 
-                // This will find the last use of this definition
-                // Walks from CodeBegin -> BlockBegin to find the last Use
-                // Which this is walking backwards to find the first use
-                auto LastUseIterator = FindLastUseBefore(IREmit, InterferenceOrderedNode, NodeIterator::Invalid(), IR.at(CodeNode));
-                if (LastUseIterator != AllNodesIterator::Invalid()) {
-                  auto [LastUseNode, LastUseIROp] = LastUseIterator();
+          // This will find the last use of this definition
+          // Walks from CodeBegin -> BlockBegin to find the last Use
+          // Which this is walking backwards to find the first use
+          auto LastUseIterator = FindLastUseBefore(IREmit, InterferenceOrderedNode, NodeIterator::Invalid(), IR.at(CodeNode));
+          if (LastUseIterator != AllNodesIterator::Invalid()) {
+            auto [LastUseNode, LastUseIROp] = LastUseIterator();
 
-                  // Set the write cursor to point of last usage
-                  IREmit->SetWriteCursor(LastUseNode);
-                } else {
-                  // There is no last use -- use the definition as last use
-                  IREmit->SetWriteCursor(InterferenceOrderedNode);
-                }
+            // Set the write cursor to point of last usage
+            IREmit->SetWriteCursor(LastUseNode);
+          } else {
+            // There is no last use -- use the definition as last use
+            IREmit->SetWriteCursor(InterferenceOrderedNode);
+          }
 
-                // Actually spill the node now
-                auto SpillOp = IREmit->_SpillRegister(InterferenceOrderedNode, SpillSlot, InterferenceRegClass);
-                SpillOp.first->Header.Size = InterferenceIROp->Size;
-                SpillOp.first->Header.ElementSize = InterferenceIROp->ElementSize;
+          // Actually spill the node now
+          auto SpillOp = IREmit->_SpillRegister(InterferenceOrderedNode, SpillSlot, InterferenceRegClass);
+          SpillOp.first->Header.Size = InterferenceIROp->Size;
+          SpillOp.first->Header.ElementSize = InterferenceIROp->ElementSize;
 
-                {
-                  // Search from the point of spilling to find the first use
-                  // Set the write cursor to the first location found and fill at that point
-                  auto FirstIter = IR.at(SpillOp.Node);
-                  // Just past the spill
-                  ++FirstIter;
-                  auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, FirstIter, NodeIterator::Invalid());
+          {
+            // Search from the point of spilling to find the first use
+            // Set the write cursor to the first location found and fill at that point
+            auto FirstIter = IR.at(SpillOp.Node);
+            // Just past the spill
+            ++FirstIter;
+            auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, FirstIter, NodeIterator::Invalid());
 
-                  LogMan::Throw::A(FirstUseLocation != NodeIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", Node, InterferenceNode);
-                  if (FirstUseLocation != IR::NodeIterator::Invalid()) {
-                    // We want to fill just before the first use
-                    --FirstUseLocation;
-                    auto [FirstUseOrderedNode, _] = FirstUseLocation();
+            LogMan::Throw::A(FirstUseLocation != NodeIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", Node, InterferenceNode);
+            if (FirstUseLocation != IR::NodeIterator::Invalid()) {
+              // We want to fill just before the first use
+              --FirstUseLocation;
+              auto [FirstUseOrderedNode, _] = FirstUseLocation();
 
-                    IREmit->SetWriteCursor(FirstUseOrderedNode);
+              IREmit->SetWriteCursor(FirstUseOrderedNode);
 
-                    auto FilledInterference = IREmit->_FillRegister(SpillSlot, InterferenceRegClass);
-                    FilledInterference.first->Header.Size = InterferenceIROp->Size;
-                    FilledInterference.first->Header.ElementSize = InterferenceIROp->ElementSize;
-                    IREmit->ReplaceUsesWithAfter(InterferenceOrderedNode, FilledInterference, FirstUseLocation);
-                    Spilled = true;
-                  }
-                }
-              }
-            }
-
-            IREmit->SetWriteCursor(LastCursor);
-            // We can't spill multiple times in a row. Need to restart
-            if (Spilled) {
-              return;
+              auto FilledInterference = IREmit->_FillRegister(SpillSlot, InterferenceRegClass);
+              FilledInterference.first->Header.Size = InterferenceIROp->Size;
+              FilledInterference.first->Header.ElementSize = InterferenceIROp->ElementSize;
+              IREmit->ReplaceUsesWithAfter(InterferenceOrderedNode, FilledInterference, FirstUseLocation);
+              Spilled = true;
             }
           }
         }
+        IREmit->SetWriteCursor(LastCursor);
       }
     }
   }
@@ -1525,7 +1522,7 @@ namespace FEXCore::IR {
         break;
       }
 
-      SpillRegisters(IREmit);
+      SpillOne(IREmit);
       Changed = true;
     }
 
