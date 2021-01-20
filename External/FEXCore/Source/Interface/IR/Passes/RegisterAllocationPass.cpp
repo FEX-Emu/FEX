@@ -1452,8 +1452,6 @@ namespace FEXCore::IR {
     GlobalBlockInterferences.clear();
     LocalBlockInterferences.clear();
 
-    // We need to rerun compaction every step
-    Changed |= CompactionPass->Run(IREmit);
     auto IR = IREmit->ViewIR();
 
     uint32_t SSACount = IR.GetSSACount();
@@ -1524,6 +1522,8 @@ namespace FEXCore::IR {
 
       SpillOne(IREmit);
       Changed = true;
+      // We need to rerun compaction after spilling
+      CompactionPass->Run(IREmit);
     }
 
     return Changed;
