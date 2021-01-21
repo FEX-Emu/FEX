@@ -6,6 +6,13 @@
 
 namespace FEXCore::IR {
 
+// struct to avoid zero-initialization
+struct RemapNode {
+  IR::OrderedNodeWrapper::NodeOffsetType NodeID;
+};
+
+static_assert(sizeof(RemapNode) == 4);
+
 class IRCompaction final : public FEXCore::IR::Pass {
 public:
   IRCompaction();
@@ -14,7 +21,7 @@ public:
 private:
   static constexpr size_t AlignSize = 0x2000;
   OpDispatchBuilder LocalBuilder;
-  std::vector<IR::OrderedNodeWrapper::NodeOffsetType> OldToNewRemap;
+  std::vector<RemapNode> OldToNewRemap;
   struct CodeBlockData {
     OrderedNode *OldNode;
     OrderedNode *NewNode;
@@ -35,7 +42,10 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   if (OldToNewRemap.size() < NodeCount) {
     OldToNewRemap.resize(std::max(OldToNewRemap.size() * 2U, AlignUp(NodeCount, AlignSize)));
   }
-  memset(&OldToNewRemap.at(0), 0xFF, NodeCount * sizeof(IR::OrderedNodeWrapper::NodeOffsetType));
+  #ifndef NDEBUG
+    memset(&OldToNewRemap.at(0), 0xFF, NodeCount * sizeof(RemapNode));
+  #endif
+
   GeneratedCodeBlocks.clear();
 
   // Reset our local working list
@@ -67,9 +77,9 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   // Then create all the ops inside the code blocks
 
   // Zero is always zero(invalid)
-  OldToNewRemap[0] = 0;
+  OldToNewRemap[0].NodeID = 0;
   auto LocalHeaderOp = LocalBuilder._IRHeader(OrderedNodeWrapper::WrapOffset(0).GetNode(ListBegin), HeaderOp->Entry, HeaderOp->BlockCount, HeaderOp->ShouldInterpret);
-  OldToNewRemap[CurrentIR.GetID(HeaderNode)] = LocalIR.GetID(LocalHeaderOp.Node);
+  OldToNewRemap[CurrentIR.GetID(HeaderNode)].NodeID = LocalIR.GetID(LocalHeaderOp.Node);
 
   {
     // Generate our codeblocks and link them together
@@ -77,7 +87,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
       LogMan::Throw::A(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
       auto LocalBlockIRNode = LocalBuilder._CodeBlock(LocalHeaderOp, LocalHeaderOp); // Use LocalHeaderOp as a dummy arg for now
-      OldToNewRemap[CurrentIR.GetID(BlockNode)] = LocalIR.GetID(LocalBlockIRNode.Node);
+      OldToNewRemap[CurrentIR.GetID(BlockNode)].NodeID = LocalIR.GetID(LocalBlockIRNode.Node);
       GeneratedCodeBlocks.emplace_back(CodeBlockData{BlockNode, LocalBlockIRNode});
     }
 
@@ -112,7 +122,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
         // Set our map remapper to map the new location
         // Even nodes that don't have a destination need to be in this map
         // Need to be able to remap branch targets any other bits
-        OldToNewRemap[CurrentIR.GetID(CodeNode)] = LocalIR.GetID(LocalPair.Node);
+        OldToNewRemap[CurrentIR.GetID(CodeNode)].NodeID = LocalIR.GetID(LocalPair.Node);
 
         if (i == 0) {
           FirstNode.OldNode = CodeNode;
@@ -137,20 +147,21 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   {
     // Fixup the arguments of all the IROps
     for (auto &Block : GeneratedCodeBlocks) {
-      auto BlockIROp = CurrentIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Block.OldNode);
+      auto BlockIROp = LocalIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Block.NewNode);
       LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
-      for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block.OldNode)) {
-        auto [LocalNode, LocalIROp] = LocalIR.at(OldToNewRemap[CurrentIR.GetID(CodeNode)])();
+      for (auto [LocalNode, LocalIROp] : LocalIR.GetCode(Block.NewNode)) {
 
         // Now that we have the op copied over, we need to modify SSA values to point to the new correct locations
         // This doesn't use IR::GetArgs(Op) because we need to remap all SSA nodes
         // Including ones that we don't RA
-        uint8_t NumArgs = IROp->NumArgs;
+        uint8_t NumArgs = LocalIROp->NumArgs;
         for (uint8_t i = 0; i < NumArgs; ++i) {
-          uint32_t OldArg = IROp->Args[i].ID();
-          LogMan::Throw::A(OldToNewRemap[OldArg] != ~0U, "Tried remapping unfound node %%ssa%d", OldArg);
-          LocalIROp->Args[i].NodeOffset = OldToNewRemap[OldArg] * sizeof(OrderedNode);
+          uint32_t OldArg = LocalIROp->Args[i].ID();
+          #ifndef NDEBUG
+            LogMan::Throw::A(OldToNewRemap[OldArg].NodeID != ~0U, "Tried remapping unfound node %%ssa%d", OldArg);
+          #endif
+          LocalIROp->Args[i].NodeOffset = OldToNewRemap[OldArg].NodeID * sizeof(OrderedNode);
         }
       }
     }
