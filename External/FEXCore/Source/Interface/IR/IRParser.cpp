@@ -21,6 +21,7 @@ enum class DecodeFailure {
   DECODE_UNKNOWN_SSA,
   DECODE_INVALID_CONDFLAG,
   DECODE_INVALID_MEMOFFSETTYPE,
+  DECODE_INVALID_FENCETYPE,
 };
 
 std::string ltrim(std::string String) {
@@ -56,6 +57,7 @@ std::string DecodeErrorToString(DecodeFailure Failure) {
     case DecodeFailure::DECODE_UNKNOWN_SSA: return "Unknown SSA value";
     case DecodeFailure::DECODE_INVALID_CONDFLAG: return "Invalid Conditional name";
     case DecodeFailure::DECODE_INVALID_MEMOFFSETTYPE: return "Invalid Memory Offset Type";
+    case DecodeFailure::DECODE_INVALID_FENCETYPE: return "Invalid Fence Type";
   };
 }
 
@@ -184,6 +186,22 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
     }
     return {DecodeFailure::DECODE_INVALID_MEMOFFSETTYPE, {}};
+  }
+
+  template<>
+  std::pair<DecodeFailure, FEXCore::IR::FenceType> DecodeValue(std::string &Arg) {
+    std::array<std::string, 3> Names = {
+      "Loads",
+      "Stores",
+      "LoadStores",
+    };
+
+    for (size_t i = 0; i < Names.size(); ++i) {
+      if (Names[i] == Arg) {
+        return {DecodeFailure::DECODE_OKAY, FenceType{static_cast<uint8_t>(i)}};
+      }
+    }
+    return {DecodeFailure::DECODE_INVALID_FENCETYPE, {}};
   }
 
   template<>
@@ -449,6 +467,7 @@ class IRParser: public FEXCore::IR::IREmitter {
           // Link the header to the first block
           IRHeader.first->Blocks = CodeBlock.Node->Wrapped(ListData.Begin());
         }
+        CodeBlocks.emplace_back(CodeBlock.Node);
       }
     }
     SetWriteCursor(nullptr); // isolate the block headers too
@@ -460,59 +479,83 @@ class IRParser: public FEXCore::IR::IREmitter {
       auto &Def = Defs[i];
 			CurrentDef = &Def;
 
-      if (Def.OpEnum == FEXCore::IR::IROps::OP_CODEBLOCK) {
-        auto DefTarget = SSANameMapper.find(Def.Definition);
-        if (CurrentBlock != nullptr) {
-          LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-          LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-          LogMan::Msg::E("CodeBlock being used inside of already existing codeblock!");
-          return false;
-        }
-
-        CurrentBlock = DefTarget->second;
-        CurrentBlockOp = CurrentBlock->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
-      }
-
-      if (Def.OpEnum == FEXCore::IR::IROps::OP_ENDBLOCK) {
-        if (CurrentBlock == nullptr) {
-          LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-          LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-          LogMan::Msg::E("EndBlock being used outside of a block!");
-          return false;
-        }
-
-        auto Adjust = DecodeValue<uint64_t>(Def.Args[0]);
-
-        if (!CheckPrintError(Def, Adjust.first)) return false;
-
-        Def.Node = _EndBlock(CurrentBlock);
-        CurrentBlockOp->Last = Def.Node->Wrapped(ListData.Begin());
-
-        CurrentBlock = nullptr;
-        CurrentBlockOp = nullptr;
-      }
-
-      if (Def.OpEnum == FEXCore::IR::IROps::OP_DUMMY) {
-        auto &PrevDef = Defs[i - 1];
-        if (PrevDef.OpEnum != FEXCore::IR::IROps::OP_CODEBLOCK) {
-          LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-          LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-          LogMan::Msg::E("Dummy op must be first op in block");
-          return false;
-        }
-
-        Def.Node = _Dummy();
-        CurrentBlockOp->Begin = Def.Node->Wrapped(ListData.Begin());
-        SSANameMapper[Def.Definition] = Def.Node;
-      }
 
       switch (Def.OpEnum) {
         // Special handled
         case FEXCore::IR::IROps::OP_IRHEADER:
-        case FEXCore::IR::IROps::OP_CODEBLOCK:
-        case FEXCore::IR::IROps::OP_ENDBLOCK:
-        case FEXCore::IR::IROps::OP_DUMMY:
+          LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
+          LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
+          LogMan::Msg::E("IRHEADER used in the middle of the block!");
+          return false; // only one OP_IRHEADER allowed per block
+
+        case FEXCore::IR::IROps::OP_CODEBLOCK: {
+          SetWriteCursor(nullptr); // isolate from previous block
+          if (CurrentBlock != nullptr) {
+            LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
+            LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
+            LogMan::Msg::E("CodeBlock being used inside of already existing codeblock!");
+            return false;
+          }
+
+          CurrentBlock = Def.Node;
+          CurrentBlockOp = CurrentBlock->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
           break;
+        }
+
+
+        case FEXCore::IR::IROps::OP_BEGINBLOCK: {
+          if (CurrentBlock == nullptr) {
+            LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
+            LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
+            LogMan::Msg::E("EndBlock being used outside of a block!");
+            return false;
+          }
+
+          auto Adjust = DecodeValue<OrderedNode*>(Def.Args[0]);
+
+          if (!CheckPrintError(Def, Adjust.first)) return false;
+
+          Def.Node = _BeginBlock(Adjust.second);
+          CurrentBlockOp->Begin = Def.Node->Wrapped(ListData.Begin());
+          break;
+        }
+
+        case FEXCore::IR::IROps::OP_ENDBLOCK: {
+          if (CurrentBlock == nullptr) {
+            LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
+            LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
+            LogMan::Msg::E("EndBlock being used outside of a block!");
+            return false;
+          }
+
+          auto Adjust = DecodeValue<OrderedNode*>(Def.Args[0]);
+
+          if (!CheckPrintError(Def, Adjust.first)) return false;
+
+          Def.Node = _EndBlock(Adjust.second);
+          CurrentBlockOp->Last = Def.Node->Wrapped(ListData.Begin());
+
+          CurrentBlock = nullptr;
+          CurrentBlockOp = nullptr;
+
+          break;
+        }
+
+        case FEXCore::IR::IROps::OP_DUMMY: {
+          auto &PrevDef = Defs[i - 1];
+          if (PrevDef.OpEnum != FEXCore::IR::IROps::OP_CODEBLOCK) {
+            LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
+            LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
+            LogMan::Msg::E("Dummy op must be first op in block");
+            return false;
+          }
+
+          Def.Node = _Dummy();
+          CurrentBlockOp->Begin = Def.Node->Wrapped(ListData.Begin());
+          SSANameMapper[Def.Definition] = Def.Node;
+
+          break;
+        }
 #define IROP_PARSER_SWITCH_HELPERS
 #include <FEXCore/IR/IRDefines.inc>
         default: {
@@ -537,11 +580,6 @@ class IRParser: public FEXCore::IR::IREmitter {
         SSANameMapper[Def.Definition] = Def.Node;
       }
     }
-
-    std::stringstream out;
-    auto NewIR = ViewIR();
-    FEXCore::IR::Dump(&out, &NewIR, nullptr);
-    printf("IR:\n%s\n@@@@@\n", out.str().c_str());
 
 		return true;
 	}

@@ -17,5 +17,12 @@ namespace FEX::IRLoader {
     }
 
     ParsedCode.reset(FEXCore::IR::Parse(&fp));
+
+    if (ParsedCode) {
+      std::stringstream out;
+      auto NewIR = ViewIR();
+      FEXCore::IR::Dump(&out, &NewIR, nullptr);
+      printf("IR:\n%s\n@@@@@\n", out.str().c_str());
+    }
   }
 }

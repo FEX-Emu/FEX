@@ -758,6 +758,28 @@ namespace FEXCore::Context {
         IRDumper(nullptr);
       }
 
+      if (true) {
+        std::stringstream out;
+        static auto compaction = IR::CreateIRCompaction();
+        compaction->Run(Thread->OpDispatcher.get());
+        auto NewIR = Thread->OpDispatcher->ViewIR();
+        Dump(&out, &NewIR, nullptr);
+        out.seekg(0);
+        auto reparsed = IR::Parse(&out);
+        if (reparsed == nullptr) {
+          LogMan::Msg::A("Failed to parse ir\n");
+        } else {
+          std::stringstream out2;
+          auto NewIR2 = reparsed->ViewIR();
+          Dump(&out2, &NewIR2, nullptr);
+          if (out.str() != out2.str()) {
+            printf("one:\n %s\n", out.str().c_str());
+            printf("two:\n %s\n", out2.str().c_str());
+            LogMan::Msg::A("Parsed ir doesn't match\n");
+          }
+          delete reparsed;
+        }
+      }
       // Run the passmanager over the IR from the dispatcher
       Thread->PassManager->Run(Thread->OpDispatcher.get());
 
