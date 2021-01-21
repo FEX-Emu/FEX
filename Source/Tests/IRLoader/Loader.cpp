@@ -113,7 +113,7 @@ namespace FEX::IRLoader {
 
   template<>
   std::pair<DecodeFailure, FEXCore::IR::CondClassType> Loader::DecodeValue(std::string &Arg) {
-    std::array<std::string, 14> CondNames = {
+    std::array<std::string, 22> CondNames = {
       "EQ",
       "NEQ",
       "UGE",
@@ -128,6 +128,14 @@ namespace FEX::IRLoader {
       "SLT",
       "SGT",
       "SLE",
+      "Invalid Cond",
+      "Invalid Cond",
+      "FLU",
+      "FGE",
+      "FLEU",
+      "FGT",
+      "FU",
+      "FNU"
     };
 
     for (size_t i = 0; i < CondNames.size(); ++i) {
