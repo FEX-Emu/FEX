@@ -753,7 +753,8 @@ namespace FEXCore::Context {
         IRDumper(nullptr);
       }
 
-      if (true) {
+      if (Thread->CTX->Config.ValidateIRarser) {
+        // Convert to text, Parse, Convert to text again and make sure the texts match
         std::stringstream out;
         static auto compaction = IR::CreateIRCompaction();
         compaction->Run(Thread->OpDispatcher.get());
