@@ -260,7 +260,7 @@ DEF_OP(Thunk) {
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
   uint8_t *NewCode = (uint8_t *)Op->CodePtr;
-  uint8_t *OldCode = (uint8_t *)&Op->CodeOriginal;
+  uint8_t *OldCode = (uint8_t *)&Op->CodeOriginalLow;
   int len = Op->CodeLength;
   int idx = 0;
 

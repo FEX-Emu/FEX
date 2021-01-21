@@ -531,8 +531,8 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
         switch (IROp->Op) {
           case IR::OP_VALIDATECODE: {
             auto Op = IROp->C<IR::IROp_ValidateCode>();
-
-            if (memcmp((void*)Op->CodePtr, &Op->CodeOriginal, Op->CodeLength) != 0) {
+            
+            if (memcmp((void*)Op->CodePtr, &Op->CodeOriginalLow, Op->CodeLength) != 0) {
               GD = 1;
             } else {
               GD = 0;

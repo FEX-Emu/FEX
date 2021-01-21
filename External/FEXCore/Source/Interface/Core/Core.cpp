@@ -652,14 +652,9 @@ namespace FEXCore::Context {
           DecodedInfo = &Block.DecodedInstructions[i];
 
           if (Config.SMCChecks) {
-            __uint128_t existing;
+            auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
 
-            uintptr_t ExistingCodePtr{};
-
-              ExistingCodePtr = reinterpret_cast<uintptr_t>(Block.Entry + BlockInstructionsLength);
-
-            memcpy(&existing, (void*)(ExistingCodePtr), DecodedInfo->InstSize);
-            auto CodeChanged = Thread->OpDispatcher->_ValidateCode(existing, ExistingCodePtr, DecodedInfo->InstSize);
+            auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr, DecodedInfo->InstSize);
 
             auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
 
