@@ -1,6 +1,10 @@
 #include "Common/MathUtils.h"
 #include "Common/SoftFloat.h"
 #include "Interface/Context/Context.h"
+
+#ifdef _M_ARM_64
+#include "Interface/Core/ArchHelpers/Arm64.h"
+#endif
 #include "Interface/Core/BlockCache.h"
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/InternalThreadState.h"
@@ -329,21 +333,59 @@ namespace AES {
     return Res;
   }
 }
+bool InterpreterCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
+#ifdef _M_ARM_64
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  mcontext_t* _mcontext = &_context->uc_mcontext;
+  uint32_t *PC = (uint32_t*)_mcontext->pc;
+  uint32_t Instr = PC[0];
+  if ((Instr & FEXCore::ArchHelpers::Arm64::CASPAL_MASK) == FEXCore::ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
+    if (FEXCore::ArchHelpers::Arm64::HandleCASPAL(_mcontext, info, Instr)) {
+      // Skip this instruction now
+      _mcontext->pc += 4;
+      return true;
+    }
+    else {
+      LogMan::Msg::E("Unhandled JIT SIGBUS CASPAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+      return false;
+    }
+  }
+  else if ((Instr & FEXCore::ArchHelpers::Arm64::CASAL_MASK) == FEXCore::ArchHelpers::Arm64::CASAL_INST) { // CASAL
+    if (FEXCore::ArchHelpers::Arm64::HandleCASAL(_mcontext, info, Instr)) {
+      // Skip this instruction now
+      _mcontext->pc += 4;
+      return true;
+    }
+    else {
+      LogMan::Msg::E("Unhandled JIT SIGBUS CASAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+      return false;
+    }
+  }
+#endif
+  return false;
+}
+
 
 InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
   : CTX {ctx}
   , State {Thread} {
   // Grab our space for temporary data
 
-  if (!CompileThread) {
+  if (!CompileThread &&
+      CTX->Config.Core == FEXCore::Config::CONFIG_INTERPRETER) {
     CreateAsmDispatch(ctx, Thread);
     CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
       return Core->HandleSignalPause(Signal, info, ucontext);
     });
 
+    CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+      InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
+      return Core->HandleSIGBUS(Signal, info, ucontext);
+    });
+
     auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-      InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
+      InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->IntBackend.get());
       return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
     };
 

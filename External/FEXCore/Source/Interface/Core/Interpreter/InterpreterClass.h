@@ -36,6 +36,8 @@ public:
   using CallbackReturn =  __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
   CallbackReturn ReturnPtr;
 
+  bool HandleSIGBUS(int Signal, void *info, void *ucontext);
+
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;

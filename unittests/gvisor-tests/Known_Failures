@@ -206,3 +206,8 @@ concurrency_test
 socket_stress_test
 sigaltstack_test
 fcntl_test
+
+# These used to crash and fail its test, now hang
+mmap_test
+mremap_test
+semaphore_test

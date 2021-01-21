@@ -1,5 +1,6 @@
 #include "Interface/Context/Context.h"
 
+#include "Interface/Core/ArchHelpers/Arm64.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/Core/InternalThreadState.h"
 
@@ -395,6 +396,8 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
     PC[-1] = DMB;
     PC[0] = LDR;
     PC[1] = DMB;
+    // Back up one instruction and have another go
+    _mcontext->pc -= 4;
   }
   else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
     uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
@@ -404,15 +407,37 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
     PC[-1] = DMB;
     PC[0] = STR;
     PC[1] = DMB;
-
+    // Back up one instruction and have another go
+    _mcontext->pc -= 4;
   }
+  else if ((Instr & FEXCore::ArchHelpers::Arm64::CASPAL_MASK) == FEXCore::ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
+    if (FEXCore::ArchHelpers::Arm64::HandleCASPAL(_mcontext, info, Instr)) {
+      // Skip this instruction now
+      _mcontext->pc += 4;
+      return true;
+    }
+    else {
+      LogMan::Msg::E("Unhandled JIT SIGBUS CASPAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+      return false;
+    }
+  }
+  else if ((Instr & FEXCore::ArchHelpers::Arm64::CASAL_MASK) == FEXCore::ArchHelpers::Arm64::CASAL_INST) { // CASAL
+    if (FEXCore::ArchHelpers::Arm64::HandleCASAL(_mcontext, info, Instr)) {
+      // Skip this instruction now
+      _mcontext->pc += 4;
+      return true;
+    }
+    else {
+      LogMan::Msg::E("Unhandled JIT SIGBUS CASAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+      return false;
+    }
+  }
+
   else {
     LogMan::Msg::E("Unhandled JIT SIGBUS: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
     return false;
   }
 
-  // Back up one instruction and have another go
-  _mcontext->pc -= 4;
   vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&PC[-1], 16);
   return true;
 }
