@@ -542,17 +542,9 @@ class IRParser: public FEXCore::IR::IREmitter {
         }
 
         case FEXCore::IR::IROps::OP_DUMMY: {
-          auto &PrevDef = Defs[i - 1];
-          if (PrevDef.OpEnum != FEXCore::IR::IROps::OP_CODEBLOCK) {
-            LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-            LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-            LogMan::Msg::E("Dummy op must be first op in block");
-            return false;
-          }
-
-          Def.Node = _Dummy();
-          CurrentBlockOp->Begin = Def.Node->Wrapped(ListData.Begin());
-          SSANameMapper[Def.Definition] = Def.Node;
+          LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
+          LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
+          LogMan::Msg::E("Dummy op must not be used");
 
           break;
         }

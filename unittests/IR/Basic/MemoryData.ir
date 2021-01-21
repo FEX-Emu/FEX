@@ -14,10 +14,10 @@
 
 (%ssa1) IRHeader #0x1000, %ssa2, #0
   (%ssa2) CodeBlock %start, %end, %ssa1
-    (%start i0) Dummy
+    (%start i0) BeginBlock %ssa2
     %Addr i64 = Constant #0x100000
     %Val i32 = LoadMem %Addr i64, %Invalid, #0x8, #0x8, GPR, SXTX, #0x1
     (%Store i64) StoreContext %Val i64, #0x08, GPR
     (%brk i0) Break #4, #4
-    (%end i0) EndBlock #0x0
+    (%end i0) EndBlock %ssa2
 
