@@ -287,29 +287,29 @@ struct MemOffsetType final {
 };
 
 struct TypeDefinition final {
-  uint8_t Val;
-  operator uint8_t() const {
+  uint16_t Val;
+  operator uint16_t() const {
     return Val;
   }
 
   static TypeDefinition Create(uint8_t Bytes) {
     TypeDefinition Type{};
-    Type.Val = Bytes << 2;
+    Type.Val = Bytes << 8;
     return Type;
   }
 
   static TypeDefinition Create(uint8_t Bytes, uint8_t Elements) {
     TypeDefinition Type{};
-    Type.Val = (Bytes << 2) | (Elements & 0b11);
+    Type.Val = (Bytes << 8) | (Elements & 255);
     return Type;
   }
 
   uint8_t Bytes() const {
-    return Val >> 2;
+    return Val >> 8;
   }
 
   uint8_t Elements() const {
-    return Val & 0b11;
+    return Val & 255;
   }
 };
 
