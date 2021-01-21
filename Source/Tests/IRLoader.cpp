@@ -81,7 +81,7 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
     uint64_t GetFinalRIP() override { return 0; }
 
     virtual void AddIR(IRHandler Handler) override {
-      Handler(IR->GetEntryRIP(), IR);
+      Handler(IR->GetEntryRIP(), IR->GetIREmitter());
     }
 
   private:
@@ -124,7 +124,6 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
 
-  FEX::IRLoader::InitializeStaticTables();
 	FEX::IRLoader::Loader Loader(Args[0], Args[1]);
 
   int Return{};

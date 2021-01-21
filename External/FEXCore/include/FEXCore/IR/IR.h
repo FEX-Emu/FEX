@@ -457,8 +457,10 @@ public:
 
 template<bool>
 class IRListView;
+class IREmitter;
 
 void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationPass *RAPass);
+IREmitter* Parse(std::istream *in);
 
 template<typename Type>
 inline uint32_t NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }
