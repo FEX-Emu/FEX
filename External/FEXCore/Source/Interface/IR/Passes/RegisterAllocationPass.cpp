@@ -12,11 +12,18 @@ namespace {
   constexpr uint32_t INVALID_REG = 31;
   constexpr uint32_t INVALID_CLASS = 7;
   constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 120;
+  constexpr uint32_t DEFAULT_INTERFERENCE_SPAN_COUNT = 30;
   constexpr uint32_t DEFAULT_NODE_COUNT = 8192;
 
   constexpr uint64_t INVALID_REGCLASS = (((uint64_t)INVALID_CLASS) << 32) | (INVALID_REG);
 
-  template<unsigned _Size = 6, typename T = uint32_t>
+  // BucketList is an optimized container, it includes an inline array of Size
+  // and can overflow to a linked list of further buckets
+  //
+  // To optimize for best performance, Size should be big enough to allocate one or two
+  // buckets for the typical case
+  // Picking a Size so sizeof(Bucket<...>) is a power of two is also a small win
+  template<unsigned _Size, typename T = uint32_t>
   struct BucketList {
     static constexpr const unsigned Size = _Size;
 
@@ -394,8 +401,8 @@ namespace FEXCore::IR {
       #define INFO_ID(info) (info & 0xff'ffff)
       #define INFO_CLASS(info) (info & 0xff00'0000)
 
-      std::vector<BucketList<6, uint32_t>> SpanStart;
-      std::vector<BucketList<6, uint32_t>> SpanEnd;
+      std::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanStart;
+      std::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanEnd;
 
       RegisterGraph *Graph;
       FEXCore::IR::Pass* CompactionPass;
