@@ -19,7 +19,7 @@
 
 (%ssa1) IRHeader #0x1000, %ssa2, #0
   (%ssa2) CodeBlock %start, %end, %ssa1
-    (%start i0) Dummy
+    (%start i0) BeginBlock %ssa2
     %Addr1 i64 = Constant #0x1000000
     %Val i64 = LoadMem %Addr1 i64, %Invalid, #0x8, #0x8, GPR, SXTX, #0x1
 ; Test aligned special cases
@@ -38,4 +38,4 @@
     %Res5 i64 = Sbfe %Val2, #0x4, #0x2
     (%Store5 i64) StoreContext %Res5 i64, #0x28, GPR
     (%brk i0) Break #4, #4
-    (%end i0) EndBlock #0x0
+    (%end i0) EndBlock %ssa2

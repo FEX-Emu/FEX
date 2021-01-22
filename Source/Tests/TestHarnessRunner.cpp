@@ -94,6 +94,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, ABILocalFlags());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_NO_PF, AbiNoPF());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DUMPIR, DumpIR());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_VALIDATE_IR_PARSER, true);
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostFactory::CPUCreationFactory);
 
   FEXCore::Context::InitializeContext(CTX);

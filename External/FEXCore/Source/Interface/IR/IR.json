@@ -129,7 +129,8 @@
       "DestClass": "GPR",
       "DestSize": "8",
       "Args": [
-        "__uint128_t", "CodeOriginal",
+        "uint64_t", "CodeOriginalLow",
+        "uint64_t", "CodeOriginalHigh",
         "uint64_t", "CodePtr",
         "uint8_t", "CodeLength"
       ]

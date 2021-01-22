@@ -504,9 +504,12 @@ friend class FEXCore::IR::PassManager;
     LogMan::Throw::A(rhs.ListData.BackingSize() <= ListData.BackingSize(), "Trying to take ownership of data that is too large");
     Data.CopyData(rhs.Data);
     ListData.CopyData(rhs.ListData);
-    InvalidNode = rhs.InvalidNode;
+    InvalidNode = rhs.InvalidNode->Wrapped(rhs.ListData.Begin()).GetNode(ListData.Begin());
     CurrentWriteCursor = rhs.CurrentWriteCursor;
     CodeBlocks = rhs.CodeBlocks;
+    for (auto& CodeBlock: CodeBlocks) {
+      CodeBlock = CodeBlock->Wrapped(rhs.ListData.Begin()).GetNode(ListData.Begin());
+    }
   }
 
   void SetWriteCursor(OrderedNode *Node) {

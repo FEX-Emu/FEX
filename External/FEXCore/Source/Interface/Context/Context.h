@@ -65,6 +65,9 @@ namespace FEXCore::Context {
 
       std::string DumpIR;
 
+      // this is for internal use
+      bool ValidateIRarser { false };
+
     } Config;
 
     FEXCore::HostFeatures HostFeatures;

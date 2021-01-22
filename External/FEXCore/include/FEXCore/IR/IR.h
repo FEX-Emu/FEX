@@ -287,29 +287,29 @@ struct MemOffsetType final {
 };
 
 struct TypeDefinition final {
-  uint8_t Val;
-  operator uint8_t() const {
+  uint16_t Val;
+  operator uint16_t() const {
     return Val;
   }
 
   static TypeDefinition Create(uint8_t Bytes) {
     TypeDefinition Type{};
-    Type.Val = Bytes << 2;
+    Type.Val = Bytes << 8;
     return Type;
   }
 
   static TypeDefinition Create(uint8_t Bytes, uint8_t Elements) {
     TypeDefinition Type{};
-    Type.Val = (Bytes << 2) | (Elements & 0b11);
+    Type.Val = (Bytes << 8) | (Elements & 255);
     return Type;
   }
 
   uint8_t Bytes() const {
-    return Val >> 2;
+    return Val >> 8;
   }
 
   uint8_t Elements() const {
-    return Val & 0b11;
+    return Val & 255;
   }
 };
 
@@ -457,8 +457,10 @@ public:
 
 template<bool>
 class IRListView;
+class IREmitter;
 
 void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationPass *RAPass);
+IREmitter* Parse(std::istream *in);
 
 template<typename Type>
 inline uint32_t NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }

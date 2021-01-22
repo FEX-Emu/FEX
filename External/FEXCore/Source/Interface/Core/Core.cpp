@@ -652,14 +652,9 @@ namespace FEXCore::Context {
           DecodedInfo = &Block.DecodedInstructions[i];
 
           if (Config.SMCChecks) {
-            __uint128_t existing;
+            auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
 
-            uintptr_t ExistingCodePtr{};
-
-              ExistingCodePtr = reinterpret_cast<uintptr_t>(Block.Entry + BlockInstructionsLength);
-
-            memcpy(&existing, (void*)(ExistingCodePtr), DecodedInfo->InstSize);
-            auto CodeChanged = Thread->OpDispatcher->_ValidateCode(existing, ExistingCodePtr, DecodedInfo->InstSize);
+            auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr, DecodedInfo->InstSize);
 
             auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
 
@@ -758,6 +753,29 @@ namespace FEXCore::Context {
         IRDumper(nullptr);
       }
 
+      if (Thread->CTX->Config.ValidateIRarser) {
+        // Convert to text, Parse, Convert to text again and make sure the texts match
+        std::stringstream out;
+        static auto compaction = IR::CreateIRCompaction();
+        compaction->Run(Thread->OpDispatcher.get());
+        auto NewIR = Thread->OpDispatcher->ViewIR();
+        Dump(&out, &NewIR, nullptr);
+        out.seekg(0);
+        auto reparsed = IR::Parse(&out);
+        if (reparsed == nullptr) {
+          LogMan::Msg::A("Failed to parse ir\n");
+        } else {
+          std::stringstream out2;
+          auto NewIR2 = reparsed->ViewIR();
+          Dump(&out2, &NewIR2, nullptr);
+          if (out.str() != out2.str()) {
+            printf("one:\n %s\n", out.str().c_str());
+            printf("two:\n %s\n", out2.str().c_str());
+            LogMan::Msg::A("Parsed ir doesn't match\n");
+          }
+          delete reparsed;
+        }
+      }
       // Run the passmanager over the IR from the dispatcher
       Thread->PassManager->Run(Thread->OpDispatcher.get());
 

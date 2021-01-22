@@ -144,7 +144,8 @@ set (SRCS
   Interface/Core/X86Tables/X87Tables.cpp
   Interface/Core/X86Tables/XOPTables.cpp
   Interface/HLE/Thunks/Thunks.cpp
-  Interface/IR/IR.cpp
+  Interface/IR/IRDumper.cpp
+  Interface/IR/IRParser.cpp
   Interface/IR/IREmitter.cpp
   Interface/IR/PassManager.cpp
   Interface/IR/Passes/ConstProp.cpp
