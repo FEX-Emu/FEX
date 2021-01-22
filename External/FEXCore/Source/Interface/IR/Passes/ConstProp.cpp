@@ -12,6 +12,8 @@
 namespace FEXCore::IR {
 
 class ConstProp final : public FEXCore::IR::Pass {
+  std::unordered_map<uint64_t, OrderedNode*> ConstPool;
+  std::map<OrderedNode*, uint64_t> AddressgenConsts;
 public:
   bool Run(IREmitter *IREmit) override;
   bool InlineConstants;
@@ -164,22 +166,21 @@ bool ConstProp::Run(IREmitter *IREmit) {
   auto HeaderOp = CurrentIR.GetHeader();
 
   {
-    std::map<uint64_t, OrderedNode*> Consts;
 
     // constants are pooled per block
     for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         if (IROp->Op == OP_CONSTANT) {
           auto Op = IROp->C<IR::IROp_Constant>();
-          if (Consts.count(Op->Constant)) {
-            IREmit->ReplaceAllUsesWith(CodeNode, Consts[Op->Constant]);
+          if (ConstPool.count(Op->Constant)) {
+            IREmit->ReplaceAllUsesWith(CodeNode, ConstPool[Op->Constant]);
             Changed = true;
           } else {
-            Consts[Op->Constant] = CodeNode;
+            ConstPool[Op->Constant] = CodeNode;
           }
         }
       }
-      Consts.clear();
+      ConstPool.clear();
     }
   }
 
@@ -265,14 +266,13 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
   // LoadMem / StoreMem imm pooling
   // If imms are close by, use address gen to generate the values instead of using a new imm
-  std::map<OrderedNode*, uint64_t> Consts;
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_LOADMEM || IROp->Op == OP_STOREMEM) {
         uint64_t Addr;
 
         if (IREmit->IsValueConstant(IROp->Args[0], &Addr) && IROp->Args[1].IsInvalid()) {
-          for (auto& Const: Consts) {
+          for (auto& Const: AddressgenConsts) {
             if ((Addr - Const.second) < 65536) {
               IREmit->ReplaceNodeArgument(CodeNode, 0, Const.first);
               IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_Constant(Addr - Const.second));
@@ -280,14 +280,14 @@ bool ConstProp::Run(IREmitter *IREmit) {
             }
           }
 
-          Consts[IREmit->UnwrapNode(IROp->Args[0])] = Addr;
+          AddressgenConsts[IREmit->UnwrapNode(IROp->Args[0])] = Addr;
         }
         doneOp:
         ;
       }
       IREmit->SetWriteCursor(CodeNode);
     }
-    Consts.clear();
+    AddressgenConsts.clear();
   }
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {

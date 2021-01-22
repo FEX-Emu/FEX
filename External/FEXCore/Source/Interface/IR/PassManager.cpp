@@ -11,9 +11,7 @@ void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllo
 
   if (!DisablePasses()) {
     InsertPass(CreateContextLoadStoreElimination());
-    InsertPass(CreateDeadFlagStoreElimination());
-    InsertPass(CreateDeadGPRStoreElimination());
-    InsertPass(CreateDeadFPRStoreElimination());
+    InsertPass(CreateDeadStoreElimination());
     InsertPass(CreatePassDeadCodeElimination());
     InsertPass(CreateConstProp(InlineConstants));
 

@@ -327,7 +327,7 @@ DEF_OP(VAddV) {
   switch (Op->Header.ElementSize) {
     case 2: {
       for (int i = Elements; i > 1; i >>= 1) {
-        phaddw(Dest, Src);
+        vphaddw(Dest, Src, Dest);
         Src = Dest;
       }
       pextrw(eax, Dest, 0);
@@ -336,7 +336,7 @@ DEF_OP(VAddV) {
     }
     case 4: {
       for (int i = Elements; i > 1; i >>= 1) {
-        phaddd(Dest, Src);
+        vphaddd(Dest, Src, Dest);
         Src = Dest;
       }
       pextrd(eax, Dest, 0);
