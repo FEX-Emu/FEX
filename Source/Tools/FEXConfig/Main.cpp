@@ -57,9 +57,9 @@ namespace {
     ConfigFilename = {};
     LoadedConfig = std::make_unique<FEX::Config::EmptyMapper>();
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE,        "1");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST,       "1");
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST,       "5000");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP,         "0");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK,         "0");
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK,         "1");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_GDBSERVER,          "0");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, "1");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH,         "");

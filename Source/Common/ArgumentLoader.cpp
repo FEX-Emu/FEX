@@ -23,7 +23,7 @@ namespace FEX::ArgLoader {
 #else
         .choices({"irint", "irjit"})
 #endif
-        .set_default("irint");
+        .set_default("irjit");
 
       std::string BreakString = "Break";
       std::string MultiBlockString = "Multiblock";
