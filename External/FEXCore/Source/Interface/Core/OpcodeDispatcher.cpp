@@ -637,7 +637,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
     _InvalidateFlags(~0UL); // all flags
   }
 
-  auto ConstantPC = _Constant(Op->PC + Op->InstSize);
+  auto ConstantPC = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
 
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
@@ -665,7 +665,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  auto ConstantPCReturn = _Constant(Op->PC + Op->InstSize);
+  auto ConstantPCReturn = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
 
   auto ConstantSize = _Constant(Size);
   auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
@@ -1105,7 +1105,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = _Constant(Target);
+      auto NewRIP = _Constant(GPRSize * 8, Target);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1123,7 +1123,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       // Leave block
-      auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+      auto RIPTargetConst = _Constant(GPRSize * 8, Op->PC + Op->InstSize);
 
       // Store the new RIP
       _ExitFunction(RIPTargetConst);
@@ -1151,7 +1151,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
       SetJumpTarget(Jump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
-      _ExitFunction(_Constant(Target));
+      _ExitFunction(_Constant(GPRSize * 8, Target));
     }
     return;
   }
@@ -4443,7 +4443,7 @@ void OpDispatchBuilder::Finalize() {
 
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
-    _ExitFunction(_Constant(Handler.first));
+    _ExitFunction(_Constant(GPRSize * 8, Handler.first));
   }
 }
 
