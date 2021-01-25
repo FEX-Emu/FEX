@@ -58,8 +58,12 @@ else:
     Process.wait()
     ResultCode = Process.returncode
 
-if (not test_name in expected_output or expected_output[test_name] != ResultCode):
-    if expected_output.get(test_name):
+# expect zero by default
+if (not test_name in expected_output):
+    expected_output[test_name] = 0
+
+if (expected_output[test_name] != ResultCode):
+    if (test_name in expected_output):
         print("test failed, expected is", expected_output[test_name], "but got", ResultCode)
     else:
         print("Test doesn't have expected output,", test_name)
