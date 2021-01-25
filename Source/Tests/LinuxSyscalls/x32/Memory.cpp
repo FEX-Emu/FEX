@@ -24,10 +24,13 @@ namespace FEX::HLE::x32 {
       auto Result = (uint64_t)static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
         mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, offset);
 
-      if (Result != -1 && !(flags & MAP_ANONYMOUS)) {
-        auto filename = get_fdpath(fd);
+      if (Result != -1) {
+        if (!(flags & MAP_ANONYMOUS)) {
+          auto filename = get_fdpath(fd);
 
-        FEXCore::Context::AddNamedRegion(Thread->CTX, Result, length, offset, filename);
+          FEXCore::Context::AddNamedRegion(Thread->CTX, Result, length, offset, filename);
+        }
+        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)Result, length);
       }
 
       return Result;
@@ -37,10 +40,13 @@ namespace FEX::HLE::x32 {
       auto Result = (uint64_t)static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
         mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, (uint64_t)pgoffset * 0x1000);
       
-      if (Result != -1 && !(flags & MAP_ANONYMOUS)) {
-        auto filename = get_fdpath(fd);
+      if (Result != -1) {
+        if (!(flags & MAP_ANONYMOUS)) {
+          auto filename = get_fdpath(fd);
 
-        FEXCore::Context::AddNamedRegion(Thread->CTX, Result, length, pgoffset * 0x1000, filename);
+          FEXCore::Context::AddNamedRegion(Thread->CTX, Result, length, pgoffset * 0x1000, filename);
+        }
+        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)Result, length);
       }
 
       return Result;
@@ -51,12 +57,16 @@ namespace FEX::HLE::x32 {
         munmap(addr, length);
       if (Result != -1) {
         FEXCore::Context::RemoveNamedRegion(Thread->CTX, (uintptr_t)addr, length);
+        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)addr, length);
       }
       return Result;
     });
 
     REGISTER_SYSCALL_IMPL_X32(mprotect, [](FEXCore::Core::InternalThreadState *Thread, void *addr, uint32_t len, int prot) -> uint64_t {
       uint64_t Result = ::mprotect(addr, len, prot);
+      if (Result != -1 && prot & PROT_EXEC) {
+        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)addr, len);
+      }
       SYSCALL_ERRNO();
     });
 
