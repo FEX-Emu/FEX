@@ -20,18 +20,13 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#define BRK_SIZE 0x1000'0000
-
 namespace FEX::HLE {
 SyscallHandler *_SyscallHandler{};
 
 uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, void *Addr) {
   std::lock_guard<std::mutex> lk(MMapMutex);
-  uint64_t Result;
 
-  if (DataSpace == 0) {
-    DefaultProgramBreak(Thread);
-  }
+  uint64_t Result;
 
   if (Addr == nullptr) { // Just wants to get the location of the program break atm
     Result = DataSpace + DataSpaceSize;
@@ -46,10 +41,45 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, v
     }
     else {
       uint64_t NewSize = NewEnd - DataSpace;
+      uint64_t NewSizeAligned = AlignUp(NewSize, 4096);
 
-      // make sure we don't overflow to TLS storage
-      if (NewSize >= BRK_SIZE)
-        return -ENOMEM;
+      if (NewSizeAligned < DataSpaceMaxSize) {
+        // If we are shrinking the brk then munmap the ranges
+        // That way we gain the memory back and also give the application zero pages if it allocates again
+        // DataspaceMaxSize is always page aligned
+
+        uint64_t RemainingSize = DataSpaceMaxSize - NewSizeAligned;
+        // We have pages we can unmap
+        munmap(reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
+        DataSpaceMaxSize = NewSizeAligned;
+      }
+      else if (NewSize > DataSpaceMaxSize) {
+        constexpr static uint64_t SizeAlignment = 8 * 1024 * 1024;
+        uint64_t AllocateNewSize = AlignUp(NewSize, SizeAlignment) - DataSpaceMaxSize;
+        if (!Is64BitMode() &&
+          (DataSpace + DataSpaceMaxSize + AllocateNewSize > 0x1'0000'0000ULL)) {
+          // If we are 32bit and we tried going about the 32bit limit then out of memory
+          return DataSpace + DataSpaceSize;
+        }
+
+        uint64_t NewBRK = (uint64_t)mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+        if (NewBRK != (DataSpace + DataSpaceMaxSize)) {
+          // Couldn't allocate that the region we wanted
+          // Can happen if MAP_FIXED_NOREPLACE isn't understood by the kernel
+          munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
+          NewBRK = ~0ULL;
+        }
+
+        if (NewBRK == ~0ULL) {
+          // If we couldn't allocate a new region then out of memory
+          return DataSpace + DataSpaceSize;
+        }
+        else {
+          // Increase our BRK size
+          DataSpaceMaxSize += AllocateNewSize;
+        }
+      }
 
       DataSpaceSize = NewSize;
     }
@@ -58,9 +88,10 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, v
   return Result;
 }
 
-void SyscallHandler::DefaultProgramBreak(FEXCore::Core::InternalThreadState *Thread) {
-  DataSpaceSize = 0;
-  DataSpace = (uint64_t)mmap(nullptr, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
+  DataSpace = Base;
+  DataSpaceMaxSize = Size;
+  DataSpaceStartingSize = Size;
 }
 
 SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation)
@@ -68,6 +99,10 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalD
   , SignalDelegation {_SignalDelegation} {
   FEX::HLE::_SyscallHandler = this;
   HostKernelVersion = CalculateHostKernelVersion();
+}
+
+SyscallHandler::~SyscallHandler() {
+  munmap(reinterpret_cast<void*>(DataSpace + DataSpaceStartingSize), DataSpaceMaxSize - DataSpaceStartingSize);
 }
 
 uint32_t SyscallHandler::CalculateHostKernelVersion() {
