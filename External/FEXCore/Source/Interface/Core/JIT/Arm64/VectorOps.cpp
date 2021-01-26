@@ -909,7 +909,17 @@ DEF_OP(VZip2) {
 }
 
 DEF_OP(VBSL) {
-  LogMan::Msg::A("Unimplemented");
+  auto Op = IROp->C<IR::IROp_VBSL>();
+  if (IROp->Size == 16) {
+    mov(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+    bsl(VTMP1.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), GetSrc(Op->Header.Args[2].ID()).V16B());
+    mov(GetDst(Node).V16B(), VTMP1.V16B());
+  }
+  else {
+    mov(VTMP1.V8B(), GetSrc(Op->Header.Args[0].ID()).V8B());
+    bsl(VTMP1.V8B(), GetSrc(Op->Header.Args[1].ID()).V8B(), GetSrc(Op->Header.Args[2].ID()).V8B());
+    mov(GetDst(Node).V8B(), VTMP1.V8B());
+  }
 }
 
 DEF_OP(VCMPEQ) {
