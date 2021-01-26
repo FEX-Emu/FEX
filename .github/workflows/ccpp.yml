@@ -77,12 +77,6 @@ jobs:
       # Execute the gvisor tests
       run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
 
-    - name: gcc target tests 32
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_32
-
     - name: gcc target tests 64
       working-directory: ${{runner.workspace}}/build
       shell: bash
