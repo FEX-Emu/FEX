@@ -125,9 +125,12 @@ void InitializePrimaryGroupTables(Context::OperatingMode Mode) {
 
     // GROUP 11
     {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 0), 1, X86InstInfo{"MOV",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST  | FLAGS_SRC_SEXT,                   1, nullptr}},
-    {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 1), 6, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
+    {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 1), 5, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
+    {OPD(TYPE_GROUP_11, OpToIndex(0xC6), 7), 1, X86InstInfo{"XABORT", TYPE_INST, FLAGS_MODRM,                                                       1, nullptr}},
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, X86InstInfo{"MOV",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,                                   4, nullptr}},
-    {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 1), 6, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
+    {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 1), 5, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
+    {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 7), 1, X86InstInfo{"XBEGIN", TYPE_INST, FLAGS_MODRM | FLAGS_SRC_SEXT | FLAGS_SETS_RIP | FLAGS_DISPLACE_SIZE_DIV_2,                                                       4, nullptr}},
+
   };
 
   const U16U8InfoStruct PrimaryGroupOpTable_64[] = {

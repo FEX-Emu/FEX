@@ -21,8 +21,8 @@ void InitializeSecondaryModRMTables() {
     {((1 << 3) | 2), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     {((1 << 3) | 3), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
     {((1 << 3) | 4), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
-    {((1 << 3) | 5), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
-    {((1 << 3) | 6), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
+    {((1 << 3) | 5), 1, X86InstInfo{"XEND",     TYPE_INST, FLAGS_NONE, 0, nullptr}},
+    {((1 << 3) | 6), 1, X86InstInfo{"XTEST",    TYPE_INST, FLAGS_NONE, 0, nullptr}},
     {((1 << 3) | 7), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
 
     // REG /3
