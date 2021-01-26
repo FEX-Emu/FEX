@@ -8,7 +8,8 @@ mlock_test
 # fail on arm64-8,2
 uname_test
 mempolicy_test
-
+syslog_test
+unlink_test
 
 # these take a long time
 tcp_socket_test
@@ -53,6 +54,8 @@ socket_inet_loopback_nogotsan_test
 socket_ip_udp_loopback_test
 socket_ipv4_udp_unbound_loopback_nogotsan_test
 socket_ipv6_udp_unbound_external_networking_test
+syslog_test
+unlink_test
 
 # These used to crash and fail its test, now hang
 mmap_test
