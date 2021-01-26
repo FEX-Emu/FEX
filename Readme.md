@@ -7,7 +7,6 @@ This is the frontend application and tooling used for development and debugging 
 * imgui
 * json-maker
 * tiny-json
-* boost interprocess (sadly)
 * A C++17 compliant compiler (There are assumptions made about using Clang and LTO)
 * clang-tidy if you want the code cleaned up
 * cmake
