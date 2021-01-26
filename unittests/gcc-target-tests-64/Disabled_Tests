@@ -1,0 +1,9 @@
+# these fail on arm
+pr72867.c.gcc-target-test-64
+sse2-mmx-pslld.c.gcc-target-test-64
+sse2-mmx-psllq.c.gcc-target-test-64
+sse2-mmx-psllw.c.gcc-target-test-64
+sse2-mmx-psrad.c.gcc-target-test-64
+sse2-mmx-psrld.c.gcc-target-test-64
+sse2-mmx-psrlq.c.gcc-target-test-64
+sse2-mmx-psrlw.c.gcc-target-test-64
