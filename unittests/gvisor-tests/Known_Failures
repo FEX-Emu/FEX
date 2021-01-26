@@ -1,33 +1,18 @@
 # these fail on x86 CI
-chdir_test
-dev_test
-dup_test
-fchdir_test
-fsync_test
 getdents_test
-link_test
-lseek_test
-madvise_test
 mlock_test
 mount_test
-preadv_test
 proc_net_test
 proc_pid_oomscore_test
-proc_pid_smaps_test
 read_test
-readahead_test
 readv_test
-rename_test
-sendfile_socket_test
 socket_inet_loopback_nogotsan_test
 socket_ipv4_udp_unbound_loopback_nogotsan_test
 socket_ipv6_udp_unbound_external_networking_test
-stat_times_test
-statfs_test
-symlink_test
-sync_file_range_test
 unlink_test
 inotify_test
+pread64_test
+syslog_test
 
 # these fail on x86 CI
 eventfd_test
@@ -58,37 +43,22 @@ uname_test
 mempolicy_test
 
 # These fail in ARM64 CI
-dev_test
-dup_test
 eventfd_test
 fault_test
-fchdir_test
 fpsig_fork_test
-fsync_test
 getdents_test
-link_test
-lseek_test
-madvise_test
 mlock_test
 mount_test
 partial_bad_buffer_test
-preadv_test
 proc_net_test
 proc_pid_oomscore_test
-proc_pid_smaps_test
 read_test
-readahead_test
 readv_test
-rename_test
-sendfile_socket_test
 socket_inet_loopback_nogotsan_test
 socket_ipv4_udp_unbound_loopback_nogotsan_test
 socket_ipv6_udp_unbound_external_networking_test
-stat_times_test
-statfs_test
-symlink_test
-sync_file_range_test
-unlink_test
+pread64_test
+syslog_test
 
 # these fail
 32bit_test
@@ -175,7 +145,6 @@ time_test
 timers_test
 tkill_test
 truncate_test
-utimes_test
 vfork_test
 wait_test
 write_test
