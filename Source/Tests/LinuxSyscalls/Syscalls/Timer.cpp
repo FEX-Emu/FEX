@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 namespace FEX::HLE {
@@ -18,27 +19,27 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(timer_create, [](FEXCore::Core::InternalThreadState *Thread, clockid_t clockid, struct sigevent *sevp, timer_t *timerid) -> uint64_t {
-      uint64_t Result = ::timer_create(clockid, sevp, timerid);
+      uint64_t Result = ::syscall(SYS_timer_create, clockid, sevp, timerid);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(timer_settime, [](FEXCore::Core::InternalThreadState *Thread, timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
-      uint64_t Result = ::timer_settime(timerid, flags, new_value, old_value);
+      uint64_t Result = ::syscall(SYS_timer_settime, timerid, flags, new_value, old_value);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(timer_gettime, [](FEXCore::Core::InternalThreadState *Thread, timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
-      uint64_t Result = ::timer_gettime(timerid, curr_value);
+      uint64_t Result = ::syscall(SYS_timer_gettime, timerid, curr_value);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(timer_getoverrun, [](FEXCore::Core::InternalThreadState *Thread, timer_t timerid) -> uint64_t {
-      uint64_t Result = ::timer_getoverrun(timerid);
+      uint64_t Result = ::syscall(SYS_timer_getoverrun, timerid);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(timer_delete, [](FEXCore::Core::InternalThreadState *Thread, timer_t timerid) -> uint64_t {
-      uint64_t Result = ::timer_delete(timerid);
+      uint64_t Result = ::syscall(SYS_timer_delete, timerid);
       SYSCALL_ERRNO();
     });
 

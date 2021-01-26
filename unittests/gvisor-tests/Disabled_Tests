@@ -61,3 +61,6 @@ unlink_test
 mmap_test
 mremap_test
 semaphore_test
+splice_test
+sendfile_test
+timers_test
