@@ -26,3 +26,7 @@
         shallow = true
 	path = External/fex-gvisor-tests-bins
 	url = https://github.com/FEX-Emu/fex-gvisor-tests-bins.git
+[submodule "External/fex-gcc-target-tests-bins"]
+        shallow = true
+	path = External/fex-gcc-target-tests-bins
+	url = https://github.com/FEX-Emu/fex-gcc-target-tests-bins.git
