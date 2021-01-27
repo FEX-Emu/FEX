@@ -1032,6 +1032,7 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
     // optimal case - can branch directly
     // patch the code
     vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
+    vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
     emit.b(offset);
     emit.FinalizeCode();
     vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
@@ -1039,6 +1040,7 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
     // Add de-linking handler
     Thread->BlockCache->AddBlockLink(GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
       vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
+      vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
       Literal l_BranchHost{LinkerAddress};
       emit.ldr(x0, &l_BranchHost);
       emit.blr(x0);
@@ -1148,9 +1150,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   };
 
   // used from signals
-  aarch64::Label LoopTopFillSRA{};
-  bind(&LoopTopFillSRA);
-  AbsoluteLoopTopAddressFillSRA = GetLabelAddress<uint64_t>(&LoopTopFillSRA);
+  AbsoluteLoopTopAddressFillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
   FillStaticRegs();
 
@@ -1159,8 +1159,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   aarch64::Label FullLookup{};
   aarch64::Label LoopTop{};
   aarch64::Label ExitSpillSRA{};
-  aarch64::Label ThreadPauseHandlerSpillSRA{};
-  aarch64::Label ExitFunctionLinker{};
 
   bind(&LoopTop);
   AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
@@ -1236,7 +1234,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
-    b(&ExitSpillSRA);
+    bind(&ExitSpillSRA);
     ThreadStopHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     SpillStaticRegs();
     ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
@@ -1249,8 +1247,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
-    bind(&ExitFunctionLinker);
-    ExitFunctionLinkerAddress = GetLabelAddress<uint64_t>(&ExitFunctionLinker);
+    ExitFunctionLinkerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
     SpillStaticRegs();
     
@@ -1328,7 +1325,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
-    bind(&ThreadPauseHandlerSpillSRA);
     ThreadPauseHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     SpillStaticRegs();
     ThreadPauseHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
