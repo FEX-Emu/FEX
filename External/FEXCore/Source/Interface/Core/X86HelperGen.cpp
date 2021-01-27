@@ -3,11 +3,14 @@
 #include <cstring>
 #include <stdlib.h>
 #include <vector>
+#include <sys/mman.h>
 
 namespace FEXCore {
+constexpr size_t CODE_SIZE = 0x1000;
+
 X86GeneratedCode::X86GeneratedCode() {
   // Allocate a page for our emulated guest
-  CodePtr = malloc(0x1000);
+  CodePtr = AllocateGuestCodeSpace(CODE_SIZE);
 
   SignalReturn = reinterpret_cast<uint64_t>(CodePtr);
   CallbackReturn = reinterpret_cast<uint64_t>(CodePtr) + 2;
@@ -21,7 +24,43 @@ X86GeneratedCode::X86GeneratedCode() {
 }
 
 X86GeneratedCode::~X86GeneratedCode() {
-  free(CodePtr);
+  munmap(CodePtr, CODE_SIZE);
+}
+
+void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
+  FEXCore::Config::Value<bool> Is64BitMode{FEXCore::Config::CONFIG_IS64BIT_MODE, 0};
+
+  if (Is64BitMode()) {
+    // 64bit mode can have its sigret handler anywhere
+    return mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  }
+
+  // First 64bit page
+  constexpr uintptr_t LOCATION_MAX = 0x1'0000'0000;
+
+  // 32bit mode
+  // We need to have the sigret handler in the lower 32bits of memory space
+  // Scan top down and try to allocate a location
+  for (size_t Location = 0xFFFF'E000; Location != 0x0; Location -= 0x1000) {
+    void *Ptr = mmap(reinterpret_cast<void*>(Location), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    if (Ptr != MAP_FAILED &&
+        reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
+      // Failed to map in the lower 32bits
+      // Try again
+      // Can happen in the case that host kernel ignores MAP_FIXED_NOREPLACE
+      munmap(Ptr, Size);
+      continue;
+    }
+
+    if (Ptr != MAP_FAILED) {
+      return Ptr;
+    }
+  }
+
+  // Can't do anything about this
+  // Here's hoping the application doesn't use signals
+  return MAP_FAILED;
 }
 
 }
