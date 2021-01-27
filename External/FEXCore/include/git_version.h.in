@@ -1,3 +1,4 @@
 #pragma once
 
 #define GIT_SHORT_HASH "@GIT_SHORT_HASH@"
+#define GIT_DESCRIBE_STRING "@GIT_DESCRIBE_STRING@"
