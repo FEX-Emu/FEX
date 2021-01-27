@@ -688,23 +688,13 @@ namespace FEX::HLE::x32 {
         break;
       }
       case OP_SHMAT: {
-        Result = reinterpret_cast<uint64_t>(shmat(first, reinterpret_cast<const void*>(ptr), second));
-        if (Result != -1) {
-          uint32_t SmallRet = Result >> 32;
-          if (!(SmallRet == 0 ||
-                SmallRet == ~0U)) {
-            LogMan::Msg::A("Syscall returning something with data in the upper 32bits! BUG!");
-            return -ENOMEM;
-          }
-
-          *reinterpret_cast<uint32_t*>(third) = static_cast<uint32_t>(Result);
-          // Zero return on success
-          Result = 0;
-        }
+        Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
+          shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
         break;
       }
       case OP_SHMDT: {
-        Result = ::shmdt(reinterpret_cast<void*>(ptr));
+        Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
+          shmdt(reinterpret_cast<void*>(ptr));
         break;
       }
       case OP_SHMGET: {
