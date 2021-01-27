@@ -327,8 +327,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h() {
 }
 
 constexpr char ProcessorBrand[48] = {
-  "FEX-"
-  GIT_SHORT_HASH
+  GIT_DESCRIBE_STRING
   "\0"
 };
 
