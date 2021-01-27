@@ -1,4 +1,6 @@
 #pragma once
+#include <FEXCore/Config/Config.h>
+
 #include <stdint.h>
 
 namespace FEXCore {
@@ -12,5 +14,6 @@ public:
 
 private:
   void *CodePtr{};
+  void* AllocateGuestCodeSpace(size_t Size);
 };
 }
