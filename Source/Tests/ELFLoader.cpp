@@ -207,7 +207,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Value<bool> ABILocalFlags{FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, false};
   FEXCore::Config::Value<bool> AbiNoPF{FEXCore::Config::CONFIG_ABI_NO_PF, false};
 
-
   ::SilentLog = SilentLog();
 
   if (!::SilentLog) {
@@ -269,6 +268,8 @@ int main(int argc, char **argv, char **const envp) {
       CTX,
       SignalDelegation.get(),
       &Loader)};
+  auto BRKInfo = Loader.GetBRKInfo();
+  SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
   FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());

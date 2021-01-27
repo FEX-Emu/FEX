@@ -40,6 +40,15 @@ public:
                            PhysicalMemorySize);
   }
 
+  struct BRKInfo {
+    uint64_t Base;
+    uint64_t Size;
+  };
+
+  BRKInfo GetBRKInfo() const {
+    return {BRKBase, BRKSize};
+  }
+
   // Data, Physical, Size
   using MemoryWriter = std::function<void(void *, uint64_t, uint64_t)>;
   void WriteLoadableSections(MemoryWriter Writer, uint64_t Offset = 0);
@@ -67,6 +76,14 @@ public:
   void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
 
   bool HasTLS() const { return TLSHeader._64 != nullptr; }
+  uint64_t GetTLSBase() const {
+    if (GetMode() == ELFMode::MODE_64BIT) {
+      return TLSHeader._64->p_vaddr;
+    }
+    else {
+      return TLSHeader._32->p_vaddr;
+    }
+  }
 
   enum ELFMode {
     MODE_32BIT,
@@ -122,6 +139,9 @@ private:
   uint64_t MinPhysicalMemoryLocation{0};
   uint64_t MaxPhysicalMemoryLocation{0};
   uint64_t PhysicalMemorySize{0};
+
+  uint64_t BRKBase{};
+  uint64_t BRKSize{};
   ProgramHeader InterpreterHeader{};
   bool DynamicProgram{false};
   std::string DynamicLinker;

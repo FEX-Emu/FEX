@@ -495,13 +495,13 @@ public:
       //AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
       // On x86 only allows userspace to check for monitor and fs/gs base writing in CPL3
       //AuxVariables.emplace_back(auxv_t{26, 0}); // AT_HWCAP2
-      AuxVariables.emplace_back(auxv_t{32, 0ULL}); // sysinfo (vDSO)
-      AuxVariables.emplace_back(auxv_t{33, 0ULL}); // sysinfo (vDSO)
+      AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
+      AuxVariables.emplace_back(auxv_t{33, 0}); // AT_SYSINFO_EHDR - Address of the start of VDSO
     }
     else {
       AuxVariables.emplace_back(auxv_t{4, 0x20}); // AT_PHENT
-      AuxVariables.emplace_back(auxv_t{32, 0ULL}); // sysinfo (vDSO)
-      AuxVariables.emplace_back(auxv_t{33, 0ULL}); // sysinfo (vDSO)
+      AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
+      AuxVariables.emplace_back(auxv_t{33, 0}); // AT_SYSINFO_EHDR - Address of the start of VDSO
     }
 
     AuxVariables.emplace_back(auxv_t{3, DB.GetElfBase()}); // Program header
@@ -733,9 +733,16 @@ public:
 
   bool Is64BitMode() const { return File.GetMode() == ::ELFLoader::ELFContainer::MODE_64BIT; }
 
+  ::ELFLoader::ELFContainer::BRKInfo GetBRKInfo() const {
+    auto Info = File.GetBRKInfo();
+    Info.Base += DB.GetElfBase();
+    return Info;
+  }
+
 private:
   ::ELFLoader::ELFContainer File;
   ::ELFLoader::ELFSymbolDatabase DB;
+
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;
   std::vector<char const*> LoaderArgs;

@@ -1,3 +1,4 @@
+#include <FEXCore/Utils/Common/MathUtils.h>
 #include <FEXCore/Utils/ELFLoader.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <cstring>
@@ -201,6 +202,9 @@ bool ELFContainer::LoadELF_32() {
 
   DynamicProgram = Header._32.e_type != ET_EXEC;
 
+  // Default BRK size
+  BRKSize = 4096;
+
   return true;
 }
 
@@ -238,6 +242,9 @@ bool ELFContainer::LoadELF_64() {
   }
 
   DynamicProgram = Header._64.e_type != ET_EXEC;
+
+  // Default BRK size
+  BRKSize = 0x1000'0000;
 
   return true;
 }
@@ -329,6 +336,11 @@ void ELFContainer::CalculateMemoryLayouts() {
       }
     }
   }
+
+  // Calculate BRK
+  MaxPhysAddr = AlignUp(MaxPhysAddr, 4096);
+  BRKBase = MaxPhysAddr;
+  MaxPhysAddr += BRKSize;
 
   PhysMemSize = MaxPhysAddr - MinPhysAddr;
 
