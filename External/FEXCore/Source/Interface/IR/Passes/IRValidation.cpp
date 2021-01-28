@@ -52,7 +52,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
   IR::RegisterAllocationData * RAData{};
   if (Manager->HasRAPass() && !HeaderOp->ShouldInterpret) {
-    RAData = Manager->GetRAPass()->GetAllocationData();
+    RAData = Manager->GetRAPass() ? Manager->GetRAPass()->GetAllocationData() : nullptr;
   }
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {

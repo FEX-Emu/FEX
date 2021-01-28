@@ -765,17 +765,17 @@ namespace FEXCore::Context {
       Thread->PassManager->Run(Thread->OpDispatcher.get());
 
       if (Thread->CTX->Config.DumpIR != "no") {
-        IRDumper(Thread->PassManager->GetRAPass()->GetAllocationData());
+        IRDumper(Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
       }
 
       if (Thread->OpDispatcher->ShouldDump) {
         std::stringstream out;
         auto NewIR = Thread->OpDispatcher->ViewIR();
-        FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass()->GetAllocationData());
+        FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
         printf("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
       }
 
-      RAData = Thread->PassManager->GetRAPass()->GetAllocationData();
+      RAData = Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr;
 
       // Create a copy of the IR and place it in this thread's IR cache
       auto AddedIR = Thread->IRLists.try_emplace(GuestRIP, Thread->OpDispatcher->CreateIRCopy());
