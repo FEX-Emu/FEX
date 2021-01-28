@@ -1,10 +1,10 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Core.h"
-#include "Interface/Core/BlockCache.h"
+#include "Interface/Core/LookupCache.h"
 #include <sys/mman.h>
 
 namespace FEXCore {
-BlockCache::BlockCache(FEXCore::Context::Context *CTX)
+LookupCache::LookupCache(FEXCore::Context::Context *CTX)
   : ctx {CTX} {
 
   // Block cache ends up looking like this
@@ -36,13 +36,13 @@ BlockCache::BlockCache(FEXCore::Context::Context *CTX)
   VirtualMemSize = ctx->Config.VirtualMemSize;
 }
 
-BlockCache::~BlockCache() {
+LookupCache::~LookupCache() {
   munmap(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8);
   munmap(reinterpret_cast<void*>(PageMemory), CODE_SIZE);
   munmap(reinterpret_cast<void*>(L1Pointer), L1_SIZE);
 }
 
-void BlockCache::HintUsedRange(uint64_t Address, uint64_t Size) {
+void LookupCache::HintUsedRange(uint64_t Address, uint64_t Size) {
   // Tell the kernel we will definitely need [Address, Address+Size) mapped for the page pointer
   // Page Pointer is allocated per page, so shift by page size
   Address >>= 12;
@@ -50,7 +50,7 @@ void BlockCache::HintUsedRange(uint64_t Address, uint64_t Size) {
   madvise(reinterpret_cast<void*>(PagePointer + Address), Size, MADV_WILLNEED);
 }
 
-void BlockCache::ClearCache() {
+void LookupCache::ClearCache() {
   // Clear out the page memory
   madvise(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8, MADV_DONTNEED);
   madvise(reinterpret_cast<void*>(PageMemory), CODE_SIZE, MADV_DONTNEED);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Interface/Core/BlockCache.h"
+#include "Interface/Core/LookupCache.h"
 #include "Interface/Core/InternalThreadState.h"
 
 #include <FEXCore/Core/CPUBackend.h>

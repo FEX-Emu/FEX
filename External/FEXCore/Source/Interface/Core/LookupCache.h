@@ -3,18 +3,18 @@
 #include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore {
-class BlockCache {
+class LookupCache {
 public:
 
-  struct BlockCacheEntry { 
+  struct LookupCacheEntry { 
     uintptr_t HostCode;
     uintptr_t GuestCode;
   };
 
-  BlockCache(FEXCore::Context::Context *CTX);
-  ~BlockCache();
+  LookupCache(FEXCore::Context::Context *CTX);
+  ~LookupCache();
 
-  using BlockCacheIter = uintptr_t;
+  using LookupCacheIter = uintptr_t;
   uintptr_t End() { return 0; }
 
   uintptr_t FindBlock(uint64_t Address) {
@@ -31,7 +31,7 @@ public:
     }
 
     // Do L1
-    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       L1Entry.GuestCode = L1Entry.HostCode = 0;
     }
@@ -49,14 +49,14 @@ public:
     }
 
     // Page exists, just set the offset to zero
-    auto BlockPointers = reinterpret_cast<BlockCacheEntry*>(LocalPagePointer);
+    auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
     BlockPointers[PageOffset].GuestCode = 0;
     BlockPointers[PageOffset].HostCode = 0;
   }
 
   uintptr_t AddBlockMapping(uint64_t Address, void *Ptr) { 
     // Do L1
-    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       L1Entry.GuestCode = L1Entry.HostCode = 0;
     }
@@ -82,7 +82,7 @@ public:
     }
 
     // Add the new pointer to the page block
-    auto BlockPointers = reinterpret_cast<BlockCacheEntry*>(LocalPagePointer);
+    auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
     uintptr_t CastPtr = reinterpret_cast<uintptr_t>(Ptr);
 
     // This silently replaces existing mappings
@@ -125,7 +125,7 @@ private:
   uintptr_t FindCodePointerForAddress(uint64_t Address) {
     
     // Do L1
-    auto &L1Entry = reinterpret_cast<BlockCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       return L1Entry.HostCode;
     }
@@ -143,7 +143,7 @@ private:
     }
 
     // Find there pointer for the address in the blocks
-    auto BlockPointers = reinterpret_cast<BlockCacheEntry*>(LocalPagePointer);
+    auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
 
     if (BlockPointers[PageOffset].GuestCode == FullAddress)
     {
@@ -175,8 +175,8 @@ private:
   std::map<BlockLinkTag, std::function<void()>> BlockLinks;
 
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
-  constexpr static size_t SIZE_PER_PAGE = 4096 * sizeof(BlockCacheEntry);
-  constexpr static size_t L1_SIZE = L1_ENTRIES * sizeof(BlockCacheEntry);
+  constexpr static size_t SIZE_PER_PAGE = 4096 * sizeof(LookupCacheEntry);
+  constexpr static size_t L1_SIZE = L1_ENTRIES * sizeof(LookupCacheEntry);
 
   size_t AllocateOffset {};
 

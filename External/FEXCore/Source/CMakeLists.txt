@@ -118,7 +118,7 @@ set (SRCS
   Common/SoftFloat-3e/s_f32UIToCommonNaN.c
   Interface/Config/Config.cpp
   Interface/Context/Context.cpp
-  Interface/Core/BlockCache.cpp
+  Interface/Core/LookupCache.cpp
   Interface/Core/BlockSamplingData.cpp
   Interface/Core/CompileService.cpp
   Interface/Core/Core.cpp

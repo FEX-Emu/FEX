@@ -1,5 +1,5 @@
 #include "Interface/Context/Context.h"
-#include "Interface/Core/BlockCache.h"
+#include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CompileService.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -71,7 +71,7 @@ namespace FEXCore {
 
     // Clear the inverse cache of what is calling us from the Context ClearCache routine
     auto SelectedThread = Thread->IsCompileService ? ParentThread : Thread;
-    SelectedThread->BlockCache->ClearCache();
+    SelectedThread->LookupCache->ClearCache();
     SelectedThread->CPUBackend->ClearCache();
     SelectedThread->IntBackend->ClearCache();
   }
@@ -79,7 +79,7 @@ namespace FEXCore {
   void CompileService::RemoveCodeEntry(uint64_t GuestRIP) {
     CompileThreadData->IRLists.erase(GuestRIP);
     CompileThreadData->DebugData.erase(GuestRIP);
-    CompileThreadData->BlockCache->Erase(GuestRIP);
+    CompileThreadData->LookupCache->Erase(GuestRIP);
   }
 
   CompileService::WorkItem *CompileService::CompileCode(uint64_t RIP) {
@@ -133,7 +133,7 @@ namespace FEXCore {
         // If we had a work item then work on it
         if (Item) {
           // Does the block cache already contain this RIP?
-          void *CompiledCode = reinterpret_cast<void*>(CompileThreadData->BlockCache->FindBlock(Item->RIP));
+          void *CompiledCode = reinterpret_cast<void*>(CompileThreadData->LookupCache->FindBlock(Item->RIP));
           FEXCore::Core::DebugData *DebugData = nullptr;
 
           if (!CompiledCode) {
@@ -150,7 +150,7 @@ namespace FEXCore {
             ERROR_AND_DIE("Couldn't compile code for thread at RIP: 0x%lx", Item->RIP);
           }
 
-          auto BlockMapPtr = CompileThreadData->BlockCache->AddBlockMapping(Item->RIP, CompiledCode);
+          auto BlockMapPtr = CompileThreadData->LookupCache->AddBlockMapping(Item->RIP, CompiledCode);
           if (BlockMapPtr == 0) {
             // XXX: We currently have the expectation that compiler service block cache will be significantly underutilized compared to regular thread
             ERROR_AND_DIE("Couldn't add code to block cache for thread at RIP: 0x%lx", Item->RIP);

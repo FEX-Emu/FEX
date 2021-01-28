@@ -804,7 +804,7 @@ static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalT
 uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record) {
   auto GuestRip = record[1];
 
-  auto HostCode = Thread->BlockCache->FindBlock(GuestRip);
+  auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
 
   if (!HostCode) {
     Thread->State.State.rip = GuestRip;
@@ -812,7 +812,7 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
   }
 
   auto LinkerAddress = core->ExitFunctionLinkerAddress;
-  Thread->BlockCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+  Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
     // undo the link
     record[0] = LinkerAddress;
   });
@@ -884,21 +884,21 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
 
     // L1 Cache
-    mov(r13, Thread->BlockCache->GetL1Pointer());
+    mov(r13, Thread->LookupCache->GetL1Pointer());
     mov(rax, rdx);
 
-    and_(rax, BlockCache::L1_ENTRIES_MASK);
+    and_(rax, LookupCache::L1_ENTRIES_MASK);
     shl(rax, 4);
     cmp(qword[r13 + rax + 8], rdx);
     jne(FullLookup);
     jmp(qword[r13 + rax + 0]);
     
     L(FullLookup);   
-    mov(r13, Thread->BlockCache->GetPagePointer());
+    mov(r13, Thread->LookupCache->GetPagePointer());
 
     // Full lookup
     mov(rax, rdx);
-    mov(rbx, Thread->BlockCache->GetVirtualMemorySize() - 1);
+    mov(rbx, Thread->LookupCache->GetVirtualMemorySize() - 1);
     and_(rax, rbx);
     shr(rax, 12);
 
@@ -911,7 +911,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     mov (rax, rdx);
     and(rax, 0x0FFF);
 
-    shl(rax, (int)log2(sizeof(FEXCore::BlockCache::BlockCacheEntry)));
+    shl(rax, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
 
     // check for aliasing
     mov(rcx, qword [rdi + rax + 8]);
@@ -925,9 +925,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     je(NoBlock);
 
     // Update L1
-    mov(r13, Thread->BlockCache->GetL1Pointer());
+    mov(r13, Thread->LookupCache->GetL1Pointer());
     mov(rcx, rdx);
-    and_(rcx, BlockCache::L1_ENTRIES_MASK);
+    and_(rcx, LookupCache::L1_ENTRIES_MASK);
     shl(rcx, 1);
     mov(qword[r13 + rcx*8 + 8], rdx);
     mov(qword[r13 + rcx*8 + 0], rax);
