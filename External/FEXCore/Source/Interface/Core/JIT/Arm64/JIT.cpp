@@ -683,18 +683,12 @@ void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
   }
 }
 
-struct PhysReg { uint32_t Class; uint32_t VId; };
+static IR::PhysicalRegister GetPhys(IR::RegisterAllocationData *RAData, uint32_t Node) {
+  auto PhyReg = RAData->GetNodeRegister(Node);
 
-static PhysReg GetPhys(IR::RegisterAllocationData *RAData, uint32_t Node) {
-  uint64_t Reg = RAData->GetNodeRegister(Node);
-  auto rv = PhysReg {uint32_t(Reg>>32), (uint32_t)Reg};
+  LogMan::Throw::A(PhyReg.Raw =! 255, "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
 
-  if (rv.VId != ~0U)
-    return rv;
-  else
-    LogMan::Msg::A("Couldn't Allocate register for node: ssa%d. Class: %d", Node, Reg >> 32);
-
-  return PhysReg { ~0U, ~0U};
+  return PhyReg;
 }
 
 template<>

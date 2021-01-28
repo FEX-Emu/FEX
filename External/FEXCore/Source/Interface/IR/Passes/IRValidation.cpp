@@ -83,10 +83,10 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
         if (RAData) {
           // If we have a register allocator then the destination needs to be assigned a register and class
-          uint64_t Reg = RAData->GetNodeRegister(ID);
+          auto PhyReg = RAData->GetNodeRegister(ID);
 
           FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
-          FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType{uint32_t(Reg >> 32)};
+          FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType{PhyReg.Class};
 
           // If no register class was assigned
           if (AssignedClass == IR::InvalidClass) {
@@ -95,7 +95,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
           }
 
           // If no physical register was assigned
-          if ((uint32_t)Reg == ~0U) {
+          if (PhyReg.Reg == IR::InvalidReg) {
             HadError |= true;
             Errors << "%ssa" << ID << ": Had destination but with no register assigned" << std::endl;
           }
