@@ -74,15 +74,15 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
     *out << "Unknown Registerclass " << Arg;
 }
 
-static void PrintArg(std::stringstream *out, IRListView<false> const* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationPass *RAPass) {
+static void PrintArg(std::stringstream *out, IRListView<false> const* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationData *RAData) {
   auto [CodeNode, IROp] = IR->at(Arg)();
 
   if (Arg.ID() == 0) {
     *out << "%Invalid";
   } else {
     *out << "%ssa" << std::to_string(Arg.ID());
-    if (RAPass) {
-      uint64_t RegClass = RAPass->GetNodeRegister(Arg.ID());
+    if (RAData) {
+      uint64_t RegClass = RAData->GetNodeRegister(Arg.ID());
       FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
       uint32_t Reg = RegClass;
       switch (Class) {
@@ -147,7 +147,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> 
   }
 }
 
-void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationPass *RAPass) {
+void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationData *RAData) {
   auto HeaderOp = IR->GetHeader();
 
   int8_t CurrentIndent = 0;
@@ -204,8 +204,8 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
 
           *out << "%ssa" << std::to_string(ID);
 
-          if (RAPass) {
-            uint64_t RegClass = RAPass->GetNodeRegister(ID);
+          if (RAData) {
+            uint64_t RegClass = RAData->GetNodeRegister(ID);
             FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
             uint32_t Reg = RegClass;
             switch (Class) {
@@ -264,9 +264,9 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
             auto [NodeNode, IROp] = NodeBegin();
             auto PhiOp  = IROp->C<IR::IROp_PhiValue>();
             *out << "[ ";
-            PrintArg(out, IR, PhiOp->Value, RAPass);
+            PrintArg(out, IR, PhiOp->Value, RAData);
             *out << ", ";
-            PrintArg(out, IR, PhiOp->Block, RAPass);
+            PrintArg(out, IR, PhiOp->Block, RAData);
             *out << " ]";
 
             if (PhiOp->Next.ID())

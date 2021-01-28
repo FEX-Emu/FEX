@@ -685,8 +685,8 @@ void JITCore::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
 
 struct PhysReg { uint32_t Class; uint32_t VId; };
 
-static PhysReg GetPhys(IR::RegisterAllocationPass *RAPass, uint32_t Node) {
-  uint64_t Reg = RAPass->GetNodeRegister(Node);
+static PhysReg GetPhys(IR::RegisterAllocationData *RAData, uint32_t Node) {
+  uint64_t Reg = RAData->GetNodeRegister(Node);
   auto rv = PhysReg {uint32_t(Reg>>32), (uint32_t)Reg};
 
   if (rv.VId != ~0U)
@@ -699,7 +699,7 @@ static PhysReg GetPhys(IR::RegisterAllocationPass *RAPass, uint32_t Node) {
 
 template<>
 aarch64::Register JITCore::GetReg<JITCore::RA_32>(uint32_t Node) {
-auto Reg = GetPhys(RAPass, Node);
+auto Reg = GetPhys(RAData, Node);
   if (Reg.Class == IR::GPRFixedClass.Val) {
     return SRA64[Reg.VId].W();
   } else if (Reg.Class == IR::GPRClass.Val) {
@@ -711,7 +711,7 @@ auto Reg = GetPhys(RAPass, Node);
 
 template<>
 aarch64::Register JITCore::GetReg<JITCore::RA_64>(uint32_t Node) {
-  auto Reg = GetPhys(RAPass, Node);
+  auto Reg = GetPhys(RAData, Node);
   if (Reg.Class == IR::GPRFixedClass.Val) {
     return SRA64[Reg.VId];
   } else if (Reg.Class == IR::GPRClass.Val) {
@@ -723,18 +723,18 @@ aarch64::Register JITCore::GetReg<JITCore::RA_64>(uint32_t Node) {
 
 template<>
 std::pair<aarch64::Register, aarch64::Register> JITCore::GetSrcPair<JITCore::RA_32>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAPass, Node).VId;
+  uint32_t Reg = GetPhys(RAData, Node).VId;
   return RA32Pair[Reg];
 }
 
 template<>
 std::pair<aarch64::Register, aarch64::Register> JITCore::GetSrcPair<JITCore::RA_64>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAPass, Node).VId;
+  uint32_t Reg = GetPhys(RAData, Node).VId;
   return RA64Pair[Reg];
 }
 
 aarch64::VRegister JITCore::GetSrc(uint32_t Node) {
-  auto Reg = GetPhys(RAPass, Node);
+  auto Reg = GetPhys(RAData, Node);
   if (Reg.Class == IR::FPRFixedClass.Val) {
     return SRAFPR[Reg.VId];
   } else if (Reg.Class == IR::FPRClass.Val) {
@@ -745,7 +745,7 @@ aarch64::VRegister JITCore::GetSrc(uint32_t Node) {
 }
 
 aarch64::VRegister JITCore::GetDst(uint32_t Node) {
-  auto Reg = GetPhys(RAPass, Node);
+  auto Reg = GetPhys(RAData, Node);
   if (Reg.Class == IR::FPRFixedClass.Val) {
     return SRAFPR[Reg.VId];
   } else if (Reg.Class == IR::FPRClass.Val) {
@@ -770,7 +770,7 @@ bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Va
 }
 
 FEXCore::IR::RegisterClassType JITCore::GetRegClass(uint32_t Node) {
-  auto Class = static_cast<uint32_t>(RAPass->GetNodeRegister(Node) >> 32);
+  auto Class = static_cast<uint32_t>(RAData->GetNodeRegister(Node) >> 32);
   return FEXCore::IR::RegisterClassType {Class};
 }
 
@@ -787,10 +787,12 @@ bool JITCore::IsGPR(uint32_t Node) {
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
-void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
+void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   using namespace aarch64;
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
+
+  this->RAData = RAData;
 
   auto HeaderOp = IR->GetHeader();
   
@@ -861,9 +863,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     LoadConstant(x0, ThreadSharedData.InterpreterFallbackHelperAddress);
     br(x0);
   } else {
-    LogMan::Throw::A(RAPass->HasFullRA(), "Arm64 JIT only works with RA");
+    //LogMan::Throw::A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
 
-    SpillSlots = RAPass->SpillSlots();
+    SpillSlots = RAData->SpillSlots();
 
     if (SpillSlots) {
       sub(sp, sp, SpillSlots * 16);
@@ -1097,7 +1099,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   Literal l_VirtualMemory {VirtualMemorySize};
   Literal l_PagePtr {Thread->LookupCache->GetPagePointer()};
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
-  Literal l_Interpreter {reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr))};
+  Literal l_Interpreter {reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr, nullptr))};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
 
   uintptr_t CompileBlockPtr{};

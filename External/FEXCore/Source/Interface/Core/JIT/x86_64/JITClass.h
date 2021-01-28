@@ -58,7 +58,7 @@ public:
   explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
-  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
+  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
   void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -128,6 +128,7 @@ private:
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   IR::RegisterAllocationPass *RAPass;
+  FEXCore::IR::RegisterAllocationData *RAData;
 
 #ifdef BLOCKSTATS
   bool GetSamplingData {true};

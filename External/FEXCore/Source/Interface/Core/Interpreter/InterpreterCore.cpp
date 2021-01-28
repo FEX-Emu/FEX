@@ -476,7 +476,7 @@ Res InterpreterCore::GetSrc(void* SSAData, IR::OrderedNodeWrapper Src) {
   return reinterpret_cast<Res>(DstPtr);
 }
 
-void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
+void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   return reinterpret_cast<void*>(InterpreterExecution);
 }
 

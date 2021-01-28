@@ -6,10 +6,19 @@ namespace FEXCore::IR {
 template<bool>
 class IRListView;
 
+class RegisterAllocationData {
+  public:
+    std::vector<uint64_t> RegAndClass;
+    uint32_t SpillSlotCount {};
+    uint64_t GetNodeRegister(uint32_t Node) {
+      return RegAndClass[Node];
+    }
+    uint32_t SpillSlots() const { return SpillSlotCount; }
+};
+
 class RegisterAllocationPass : public FEXCore::IR::Pass {
   public:
     bool HasFullRA() const { return HadFullRA; }
-    uint32_t SpillSlots() const { return SpillSlotCount; }
 
     virtual void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) = 0;
     virtual void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) = 0;
@@ -36,7 +45,7 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
      * @brief Returns the register and class encoded together
      * Top 32bits is the class, lower 32bits is the register
      */
-    virtual uint64_t GetNodeRegister(uint32_t Node) = 0;
+    virtual RegisterAllocationData* GetAllocationData() = 0;
     /**  @} */
 
   protected:

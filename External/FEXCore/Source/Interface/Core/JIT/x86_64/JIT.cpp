@@ -461,7 +461,7 @@ void JITCore::ClearCache() {
 }
 
 uint32_t JITCore::GetPhys(uint32_t Node) {
-  uint64_t Reg = RAPass->GetNodeRegister(Node);
+  uint64_t Reg = RAData->GetNodeRegister(Node);
 
   if ((uint32_t)Reg != ~0U)
     return Reg;
@@ -472,13 +472,13 @@ uint32_t JITCore::GetPhys(uint32_t Node) {
 }
 
 bool JITCore::IsFPR(uint32_t Node) {
-  auto Class =  RAPass->GetNodeRegister(Node) >> 32;
+  auto Class =  RAData->GetNodeRegister(Node) >> 32;
 
   return Class == IR::FPRClass.Val;
 }
 
 bool JITCore::IsGPR(uint32_t Node) {
-  auto Class =  RAPass->GetNodeRegister(Node) >> 32;
+  auto Class =  RAData->GetNodeRegister(Node) >> 32;
 
   return Class == IR::GPRClass.Val;
 }
@@ -610,10 +610,11 @@ std::tuple<JITCore::SetCC, JITCore::CMovCC, JITCore::JCC> JITCore::GetCC(IR::Con
   }
 }
 
-void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
+void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
+  this->RAData = RAData;
   auto HeaderOp = IR->GetHeader();
 
   // Fairly excessive buffer range to make sure we don't overflow
@@ -650,9 +651,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     mov(rax, (uintptr_t)ThreadSharedData.InterpreterFallbackHelperAddress);
     jmp(rax);
   } else {
-    LogMan::Throw::A(RAPass->HasFullRA(), "Needs RA");
+    LogMan::Throw::A(RAData != nullptr, "Needs RA");
 
-    SpillSlots = RAPass->SpillSlots();
+    SpillSlots = RAData->SpillSlots();
 
     if (SpillSlots) {
       sub(rsp, SpillSlots * 16);
@@ -1001,7 +1002,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ThreadSharedData.InterpreterFallbackHelperAddress = getCurr<void*>();
     // This will get called so our stack is now misaligned
     mov(rdi, STATE);
-    mov(rax, reinterpret_cast<uint64_t>(ThreadState->IntBackend->CompileCode(nullptr, nullptr)));
+    mov(rax, reinterpret_cast<uint64_t>(ThreadState->IntBackend->CompileCode(nullptr, nullptr, nullptr)));
 
     call(rax);
 
