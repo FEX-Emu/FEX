@@ -7,6 +7,7 @@
 
 namespace FEXCore::IR {
 class RegisterAllocationPass;
+class RegisterAllocationData;
 
 /**
  * @brief The IROp_Header is an dynamically sized array
@@ -459,7 +460,7 @@ template<bool>
 class IRListView;
 class IREmitter;
 
-void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationPass *RAPass);
+void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationData *RAData);
 IREmitter* Parse(std::istream *in);
 
 template<typename Type>

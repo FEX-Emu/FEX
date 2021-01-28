@@ -236,7 +236,7 @@ def print_ir_arg_printer(ops, defines):
                 if (SSAArgs != 0):
                     for i in range(0, SSAArgs):
                         LastArg = (SSAArgs - i - 1) == 0 and not HasArgs
-                        output_file.write("\tPrintArg(out, IR, Op->Header.Args[%d], RAPass);\n" % i)
+                        output_file.write("\tPrintArg(out, IR, Op->Header.Args[%d], RAData);\n" % i)
                         if not (LastArg):
                             output_file.write("\t*out << \", \";\n")
 

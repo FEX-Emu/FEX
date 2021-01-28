@@ -3,6 +3,7 @@
 namespace FEXCore::IR {
 class Pass;
 class RegisterAllocationPass;
+class RegisterAllocationData;
 
 FEXCore::IR::Pass* CreateConstProp(bool InlineConstants);
 FEXCore::IR::Pass* CreateContextLoadStoreElimination();

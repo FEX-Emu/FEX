@@ -78,7 +78,7 @@ public:
 
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
-  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
+  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
   void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -232,6 +232,7 @@ private:
 
   CompilerSharedData ThreadSharedData;
   IR::RegisterAllocationPass *RAPass;
+  IR::RegisterAllocationData *RAData;
 
   uint32_t SpillSlots{};
 

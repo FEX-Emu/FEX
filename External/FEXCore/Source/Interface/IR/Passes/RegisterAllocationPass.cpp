@@ -193,6 +193,7 @@ namespace {
   };
 
   struct RegisterGraph {
+    FEXCore::IR::RegisterAllocationData RegAllocMap;
     RegisterSet Set;
     std::vector<RegisterNode> Nodes;
     uint32_t NodeCount;
@@ -390,7 +391,7 @@ namespace FEXCore::IR {
        * @brief Returns the register and class encoded together
        * Top 32bits is the class, lower 32bits is the register
        */
-      uint64_t GetNodeRegister(uint32_t Node) override;
+      RegisterAllocationData* GetAllocationData() override;
     private:
       bool OptimizeSRA;
       uint32_t SpillPointId;
@@ -466,8 +467,12 @@ namespace FEXCore::IR {
     VirtualAddRegisterConflict(Graph, ClassConflict, RegConflict, Class, Reg);
   }
 
-  uint64_t ConstrainedRAPass::GetNodeRegister(uint32_t Node) {
-    return Graph->Nodes[Node].Head.RegAndClass;
+  RegisterAllocationData* ConstrainedRAPass::GetAllocationData() {
+    Graph->RegAllocMap.RegAndClass.resize(Graph->Nodes.size());
+    for (size_t i = 0; i < Graph->Nodes.size(); i++) {
+      Graph->RegAllocMap.RegAndClass[i] = Graph->Nodes[i].Head.RegAndClass;
+  }
+    return &Graph->RegAllocMap;
   }
 
   void ConstrainedRAPass::RecursiveLiveRangeExpansion(FEXCore::IR::IRListView<false> *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors) {

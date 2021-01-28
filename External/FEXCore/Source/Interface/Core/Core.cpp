@@ -111,7 +111,7 @@ namespace DefaultFallbackCore {
     void Initialize() override {}
     bool NeedsOpDispatch() override { return false; }
 
-    void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override {
+    void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override {
       LogMan::Msg::E("Fell back to default code handler at RIP: 0x%lx", ThreadState->State.State.rip);
       return nullptr;
     }
@@ -590,6 +590,7 @@ namespace FEXCore::Context {
     auto IR = Thread->IRLists.find(GuestRIP);
     FEXCore::IR::IRListView<true> *IRList {};
     FEXCore::Core::DebugData *DebugData {};
+    FEXCore::IR::RegisterAllocationData *RAData {};
 
     if (IR == Thread->IRLists.end()) {
       bool HadDispatchError {false};
@@ -703,7 +704,7 @@ namespace FEXCore::Context {
 
 
 
-      auto IRDumper = [Thread, GuestRIP](IR::RegisterAllocationPass* RA) {
+      auto IRDumper = [Thread, GuestRIP](IR::RegisterAllocationData* RA) {
         FILE* f = nullptr;
         bool CloseAfter = false;
 
@@ -764,15 +765,17 @@ namespace FEXCore::Context {
       Thread->PassManager->Run(Thread->OpDispatcher.get());
 
       if (Thread->CTX->Config.DumpIR != "no") {
-        IRDumper(Thread->PassManager->GetRAPass());
+        IRDumper(Thread->PassManager->GetRAPass()->GetAllocationData());
       }
 
       if (Thread->OpDispatcher->ShouldDump) {
         std::stringstream out;
         auto NewIR = Thread->OpDispatcher->ViewIR();
-        FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass());
+        FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass()->GetAllocationData());
         printf("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
       }
+
+      RAData = Thread->PassManager->GetRAPass()->GetAllocationData();
 
       // Create a copy of the IR and place it in this thread's IR cache
       auto AddedIR = Thread->IRLists.try_emplace(GuestRIP, Thread->OpDispatcher->CreateIRCopy());
@@ -795,7 +798,7 @@ namespace FEXCore::Context {
     }
 
     // Attempt to get the CPU backend to compile this code
-    return { Thread->CPUBackend->CompileCode(IRList, DebugData), DebugData };
+    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), DebugData };
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -861,7 +864,7 @@ namespace FEXCore::Context {
     // We have ONE more chance to try and fallback to the fallback CPU backend
     // This will most likely fail since regular code use won't be using a fallback core.
     // It's mainly for testing new instruction encodings
-    void *CodePtr = Thread->FallbackBackend->CompileCode(nullptr, nullptr);
+    void *CodePtr = Thread->FallbackBackend->CompileCode(nullptr, nullptr, nullptr);
     AddBlockMapping(Thread, GuestRIP, CodePtr);
     return (uintptr_t)CodePtr;
   }
