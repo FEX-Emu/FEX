@@ -11,7 +11,7 @@
 namespace {
   constexpr uint32_t INVALID_REG = 31;
   constexpr uint32_t INVALID_CLASS = 7;
-  constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 120;
+  constexpr uint32_t DEFAULT_INTERFERENCE_LIST_COUNT = 122;
   constexpr uint32_t DEFAULT_INTERFERENCE_SPAN_COUNT = 30;
   constexpr uint32_t DEFAULT_NODE_COUNT = 8192;
 
@@ -158,11 +158,10 @@ namespace {
 
   struct RegisterNode {
     struct VolatileHeader {
-      uint64_t RegAndClass;
       uint32_t BlockID;
       uint32_t SpillSlot;
       RegisterNode *PhiPartner;
-    } Head { INVALID_REGCLASS, ~0U, ~0U, nullptr };
+    } Head { ~0U, ~0U, nullptr };
 
     BucketList<DEFAULT_INTERFERENCE_LIST_COUNT, uint32_t> Interferences;
   };
@@ -273,10 +272,11 @@ namespace {
     Graph->Nodes.resize(NodeCount);
     Graph->NodeCount = NodeCount;
     Graph->VisitedNodePredecessors.clear();
+    Graph->RegAllocMap.RegAndClass.resize(NodeCount);
   }
 
   void SetNodeClass(RegisterGraph *Graph, uint32_t Node, FEXCore::IR::RegisterClassType Class) {
-    Graph->Nodes[Node].Head.RegAndClass = ((uint64_t)Class << 32) | (Graph->Nodes[Node].Head.RegAndClass & ~0U);
+    Graph->RegAllocMap.RegAndClass[Node] = ((uint64_t)Class << 32) | (Graph->RegAllocMap.RegAndClass[Node] & ~0U);
   }
 
   void SetNodePartner(RegisterGraph *Graph, uint32_t Node, uint32_t Partner) {
@@ -284,8 +284,8 @@ namespace {
   }
 
 
-  bool DoesNodeConflictWithRegAndClass(RegisterGraph *Graph, RegisterNode const *InterferenceNode, uint64_t RegAndClass) {
-    return IsConflict(Graph, InterferenceNode->Head.RegAndClass, RegAndClass);
+  bool DoesNodeConflictWithRegAndClass(RegisterGraph *Graph, const uint64_t InterferenceRegAndClass, uint64_t RegAndClass) {
+    return IsConflict(Graph, InterferenceRegAndClass, RegAndClass);
   }
 
   /**
@@ -294,8 +294,8 @@ namespace {
   bool DoesNodeInterfereWithRegister(RegisterGraph *Graph, RegisterNode const *Node, uint64_t RegAndClass) {
     // Walk the node's interference list and see if it interferes with this register
     return Node->Interferences.Find([Graph, RegAndClass](uint32_t InterferenceNodeId) {
-      RegisterNode *InterferenceNode = &Graph->Nodes[InterferenceNodeId];
-      return DoesNodeConflictWithRegAndClass(Graph, InterferenceNode, RegAndClass);
+      auto InterferenceRegAndClass = Graph->RegAllocMap.RegAndClass[InterferenceNodeId];
+      return DoesNodeConflictWithRegAndClass(Graph, InterferenceRegAndClass, RegAndClass);
     });
   }
 
@@ -468,10 +468,10 @@ namespace FEXCore::IR {
   }
 
   RegisterAllocationData* ConstrainedRAPass::GetAllocationData() {
-    Graph->RegAllocMap.RegAndClass.resize(Graph->Nodes.size());
-    for (size_t i = 0; i < Graph->Nodes.size(); i++) {
-      Graph->RegAllocMap.RegAndClass[i] = Graph->Nodes[i].Head.RegAndClass;
-  }
+  //   Graph->RegAllocMap.RegAndClass.resize(Graph->Nodes.size());
+  //   for (size_t i = 0; i < Graph->Nodes.size(); i++) {
+  //     Graph->RegAllocMap.RegAndClass[i] = Graph->Nodes[i].Head.RegAndClass;
+  // }
     return &Graph->RegAllocMap;
   }
 
@@ -910,7 +910,7 @@ namespace FEXCore::IR {
       if (LiveRanges[i].Begin != ~0U) {
         LogMan::Throw::A(LiveRanges[i].Begin < LiveRanges[i].End , "Span must Begin before Ending");
 
-        auto Class = GetClass(Graph->Nodes[i].Head.RegAndClass);
+        auto Class = GetClass(Graph->RegAllocMap.RegAndClass[i]);
         SpanStart[LiveRanges[i].Begin].Append(INFO_MAKE(i, Class));
         SpanEnd[LiveRanges[i].End]    .Append(INFO_MAKE(i, Class));
       }
@@ -946,12 +946,13 @@ namespace FEXCore::IR {
   void ConstrainedRAPass::AllocateVirtualRegisters() {
     for (uint32_t i = 0; i < Graph->NodeCount; ++i) {
       RegisterNode *CurrentNode = &Graph->Nodes[i];
-      if (CurrentNode->Head.RegAndClass == INVALID_REGCLASS)
+      auto &CurrentRegAndClass = Graph->RegAllocMap.RegAndClass[i];
+      if (CurrentRegAndClass == INVALID_REGCLASS)
         continue;
 
       auto LiveRange = &LiveRanges[i];
 
-      FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
+      FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentRegAndClass >> 32)};
       uint64_t RegAndClass = INVALID_REGCLASS;
       RegisterClass *RAClass = &Graph->Set.Classes[RegClass];
 
@@ -996,7 +997,7 @@ namespace FEXCore::IR {
         } else {
           uint32_t RegisterConflicts = 0;
           CurrentNode->Interferences.Iterate([&](const uint32_t InterferenceNode) {
-            RegisterConflicts |= GetConflicts(Graph, Graph->Nodes[InterferenceNode].Head.RegAndClass, RegClass);
+            RegisterConflicts |= GetConflicts(Graph, Graph->RegAllocMap.RegAndClass[InterferenceNode], RegClass);
           });
 
           RegisterConflicts = (~RegisterConflicts) & RAClass->CountMask;
@@ -1014,12 +1015,12 @@ namespace FEXCore::IR {
           HadFullRA = false;
           SpillPointId = i;
 
-          CurrentNode->Head.RegAndClass = RegAndClass;
+          CurrentRegAndClass = RegAndClass;
           // Must spill and restart
           return;
         }
 
-        CurrentNode->Head.RegAndClass = RegAndClass;
+        CurrentRegAndClass = RegAndClass;
       }
     }
   }
@@ -1313,7 +1314,7 @@ namespace FEXCore::IR {
     if (InterferenceIdToSpill == 0) {
       int j = 0;
       LogMan::Msg::D("node %%ssa%d, was dumped in to virtual reg %d. Live Range[%d, %d)",
-        CurrentLocation, RegisterNode->Head.RegAndClass,
+        CurrentLocation, -1,
         OpLiveRange->Begin, OpLiveRange->End);
 
       RegisterNode->Interferences.Iterate([&](uint32_t InterferenceNode) {
@@ -1361,12 +1362,13 @@ namespace FEXCore::IR {
 
     uint32_t Node = IR.GetID(CodeNode);
     RegisterNode *CurrentNode = &Graph->Nodes[Node];
+    auto &CurrentRegAndClass = Graph->RegAllocMap.RegAndClass[Node];
     LiveRange *OpLiveRange = &LiveRanges[Node];
 
     // If this node is allocated above the number of physical registers we have then we need to search the interference list and spill the one
     // that is cheapest
-    FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentNode->Head.RegAndClass >> 32)};
-    bool NeedsToSpill = (uint32_t)CurrentNode->Head.RegAndClass == INVALID_REG;
+    FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{uint32_t(CurrentRegAndClass >> 32)};
+    bool NeedsToSpill = (uint32_t)CurrentRegAndClass == INVALID_REG;
 
     if (NeedsToSpill) {
       bool Spilled = false;
@@ -1396,11 +1398,11 @@ namespace FEXCore::IR {
       if (!Spilled) {
         uint32_t InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange);
         if (InterferenceNode != ~0U) {
-          FEXCore::IR::RegisterClassType InterferenceRegClass = FEXCore::IR::RegisterClassType{uint32_t(Graph->Nodes[InterferenceNode].Head.RegAndClass >> 32)};
+          FEXCore::IR::RegisterClassType InterferenceRegClass = FEXCore::IR::RegisterClassType{uint32_t(Graph->RegAllocMap.RegAndClass[InterferenceNode] >> 32)};
           uint32_t SpillSlot = FindSpillSlot(InterferenceNode, InterferenceRegClass);
           RegisterNode *InterferenceRegisterNode = &Graph->Nodes[InterferenceNode];
           LogMan::Throw::A(SpillSlot != ~0U, "Interference Node doesn't have a spill slot!");
-          LogMan::Throw::A((InterferenceRegisterNode->Head.RegAndClass & ~0U) != ~0U, "Interference node never assigned a register?");
+          //LogMan::Throw::A((InterferenceRegisterNode->Head.RegAndClass & ~0U) != ~0U, "Interference node never assigned a register?");
           LogMan::Throw::A(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
           LogMan::Throw::A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
           LogMan::Throw::A(InterferenceRegClass == RegClass, "Class doesn't match");
