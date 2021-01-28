@@ -6,14 +6,50 @@ namespace FEXCore::IR {
 template<bool>
 class IRListView;
 
+union PhysicalRegister {
+  uint8_t Raw;
+  struct {
+    uint8_t Reg: 5;
+    uint8_t Class: 3;
+  };
+
+  bool operator==(const PhysicalRegister &Other) const {
+    return Raw == Other.Raw;
+  }
+
+  PhysicalRegister(RegisterClassType Class, uint8_t Reg) : Class(Class.Val), Reg(Reg) { }
+
+  static const PhysicalRegister Invalid() {
+    return PhysicalRegister(InvalidClass, InvalidReg);
+  }
+
+  bool IsInvalid() {
+    return *this == Invalid();
+  }
+};
+
+static_assert(sizeof(PhysicalRegister) == 1);
+
+class RegisterAllocationData;
+struct RegisterAllocationDataDeleter {
+  void operator()(RegisterAllocationData* r) {
+    free(r);
+  }
+};
+
 class RegisterAllocationData {
   public:
-    std::vector<uint64_t> RegAndClass;
     uint32_t SpillSlotCount {};
-    uint64_t GetNodeRegister(uint32_t Node) {
-      return RegAndClass[Node];
+    PhysicalRegister Map[0];
+
+    PhysicalRegister GetNodeRegister(uint32_t Node) const {
+      return Map[Node];
     }
     uint32_t SpillSlots() const { return SpillSlotCount; }
+
+    static size_t Size(uint32_t NodeCount) {
+      return sizeof(RegisterAllocationData) + NodeCount * sizeof(Map[0]);
+    }
 };
 
 class RegisterAllocationPass : public FEXCore::IR::Pass {
@@ -42,10 +78,14 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
      * @{ */
 
     /**
-     * @brief Returns the register and class encoded together
-     * Top 32bits is the class, lower 32bits is the register
+     * @brief Returns the register and class map array
      */
-    virtual RegisterAllocationData* GetAllocationData() = 0;
+    virtual RegisterAllocationData *GetAllocationData() = 0;
+
+    /**
+     * @brief Returns and transfers ownership of the register and class map array
+     */
+    virtual std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> &PullAllocationData() = 0;
     /**  @} */
 
   protected:

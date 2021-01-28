@@ -14,6 +14,7 @@ using namespace Xbyak;
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <tuple>
 
@@ -106,7 +107,7 @@ private:
   constexpr static uint8_t RA_64 = 3;
   constexpr static uint8_t RA_XMM = 4;
 
-  uint32_t GetPhys(uint32_t Node);
+  IR::PhysicalRegister GetPhys(uint32_t Node);
 
   bool IsFPR(uint32_t Node);
   bool IsGPR(uint32_t Node);

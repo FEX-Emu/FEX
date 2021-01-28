@@ -82,10 +82,9 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
   } else {
     *out << "%ssa" << std::to_string(Arg.ID());
     if (RAData) {
-      uint64_t RegClass = RAData->GetNodeRegister(Arg.ID());
-      FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
-      uint32_t Reg = RegClass;
-      switch (Class) {
+      auto PhyReg = RAData->GetNodeRegister(Arg.ID());
+      
+      switch (PhyReg.Class) {
         case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
         case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
         case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
@@ -96,8 +95,8 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
         default: *out << "(Unknown"; break;
       }
 
-      if (Class != FEXCore::IR::InvalidClass.Val) {
-        *out << std::dec << Reg << ")";
+      if (PhyReg.Class != FEXCore::IR::InvalidClass.Val) {
+        *out << std::dec << (uint32_t)PhyReg.Reg << ")";
       } else {
         *out << ")";
       }
@@ -205,10 +204,8 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
           *out << "%ssa" << std::to_string(ID);
 
           if (RAData) {
-            uint64_t RegClass = RAData->GetNodeRegister(ID);
-            FEXCore::IR::RegisterClassType Class {uint32_t(RegClass >> 32)};
-            uint32_t Reg = RegClass;
-            switch (Class) {
+            auto PhyReg = RAData->GetNodeRegister(ID);
+            switch (PhyReg.Class) {
               case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
               case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
               case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
@@ -218,8 +215,8 @@ void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAlloc
               case FEXCore::IR::InvalidClass.Val: *out << "(Invalid"; break;
               default: *out << "(Unknown"; break;
             }
-            if (Class != FEXCore::IR::InvalidClass.Val) {
-              *out << std::dec << Reg << ")";
+            if (PhyReg.Class != FEXCore::IR::InvalidClass.Val) {
+              *out << std::dec << (uint32_t)PhyReg.Reg << ")";
             } else {
               *out << ")";
             }
