@@ -559,24 +559,8 @@ namespace FEXCore::Context {
     return Thread;
   }
 
-  uintptr_t Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
-    auto BlockMapPtr = Thread->LookupCache->AddBlockMapping(Address, Ptr);
-    if (BlockMapPtr == 0) {
-      Thread->LookupCache->ClearCache();
-
-      // Pull out the current IR we added and store it back after we cleared the rest of the list
-      // Needed in the case the the block mapping has aliased
-      auto iter = Thread->IRLists.find(Address);
-      if (iter != Thread->IRLists.end()) {
-        auto IR = iter->second.release();
-        Thread->IRLists.clear();
-        Thread->IRLists.try_emplace(Address, IR);
-      }
-      BlockMapPtr = Thread->LookupCache->AddBlockMapping(Address, Ptr);
-      LogMan::Throw::A(BlockMapPtr, "Couldn't add mapping after clearing mapping cache");
-    }
-
-    return BlockMapPtr;
+  void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
+    Thread->LookupCache->AddBlockMapping(Address, Ptr);
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -815,6 +799,13 @@ namespace FEXCore::Context {
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    
+    // Is the code in the cache?
+    // The backends only check L1 and L2, not L3
+    if (auto HostCode = Thread->LookupCache->FindBlock(GuestRIP)) {
+      return HostCode;
+    }
+
     void *CodePtr;
     FEXCore::Core::DebugData *DebugData;
     bool DecrementRefCount = false;
@@ -855,7 +846,9 @@ namespace FEXCore::Context {
 
       if (DecrementRefCount)
         --Thread->CompileBlockReentrantRefCount;
-      return AddBlockMapping(Thread, GuestRIP, CodePtr);
+      AddBlockMapping(Thread, GuestRIP, CodePtr);
+
+      return (uintptr_t)CodePtr;
     }
 
     if (DecrementRefCount)
@@ -869,12 +862,8 @@ namespace FEXCore::Context {
     // This will most likely fail since regular code use won't be using a fallback core.
     // It's mainly for testing new instruction encodings
     void *CodePtr = Thread->FallbackBackend->CompileCode(nullptr, nullptr);
-    if (CodePtr) {
-     uintptr_t Ptr = reinterpret_cast<uintptr_t >(AddBlockMapping(Thread, GuestRIP, CodePtr));
-     return Ptr;
-    }
-
-    return 0;
+    AddBlockMapping(Thread, GuestRIP, CodePtr);
+    return (uintptr_t)CodePtr;
   }
 
   void Context::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {

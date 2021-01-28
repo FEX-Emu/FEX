@@ -150,11 +150,7 @@ namespace FEXCore {
             ERROR_AND_DIE("Couldn't compile code for thread at RIP: 0x%lx", Item->RIP);
           }
 
-          auto BlockMapPtr = CompileThreadData->LookupCache->AddBlockMapping(Item->RIP, CompiledCode);
-          if (BlockMapPtr == 0) {
-            // XXX: We currently have the expectation that compiler service block cache will be significantly underutilized compared to regular thread
-            ERROR_AND_DIE("Couldn't add code to block cache for thread at RIP: 0x%lx", Item->RIP);
-          }
+          CompileThreadData->LookupCache->AddBlockMapping(Item->RIP, CompiledCode);
 
           Item->CodePtr = CompiledCode;
           Item->IRList = CompileThreadData->IRLists.find(Item->RIP)->second.get();

@@ -50,14 +50,22 @@ void LookupCache::HintUsedRange(uint64_t Address, uint64_t Size) {
   madvise(reinterpret_cast<void*>(PagePointer + Address), Size, MADV_WILLNEED);
 }
 
-void LookupCache::ClearCache() {
+void LookupCache::ClearL2Cache() {
   // Clear out the page memory
   madvise(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8, MADV_DONTNEED);
   madvise(reinterpret_cast<void*>(PageMemory), CODE_SIZE, MADV_DONTNEED);
-  madvise(reinterpret_cast<void*>(L1Pointer), L1_SIZE, MADV_DONTNEED);
   AllocateOffset = 0;
+}
+
+void LookupCache::ClearCache() {
+  // Clear L1
+  madvise(reinterpret_cast<void*>(L1Pointer), L1_SIZE, MADV_DONTNEED);
+  // Clear L2
+  ClearL2Cache();
   // All code is gone, remove links
   BlockLinks.clear();
+  // All code is gone, clear the block list
+  BlockList.clear();
 }
 
 }
