@@ -695,9 +695,9 @@ template<>
 aarch64::Register JITCore::GetReg<JITCore::RA_32>(uint32_t Node) {
 auto Reg = GetPhys(RAData, Node);
   if (Reg.Class == IR::GPRFixedClass.Val) {
-    return SRA64[Reg.VId].W();
+    return SRA64[Reg.Reg].W();
   } else if (Reg.Class == IR::GPRClass.Val) {
-    return RA64[Reg.VId].W();
+    return RA64[Reg.Reg].W();
   } else {
     LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
@@ -707,9 +707,9 @@ template<>
 aarch64::Register JITCore::GetReg<JITCore::RA_64>(uint32_t Node) {
   auto Reg = GetPhys(RAData, Node);
   if (Reg.Class == IR::GPRFixedClass.Val) {
-    return SRA64[Reg.VId];
+    return SRA64[Reg.Reg];
   } else if (Reg.Class == IR::GPRClass.Val) {
-    return RA64[Reg.VId];
+    return RA64[Reg.Reg];
   } else {
     LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
@@ -717,22 +717,22 @@ aarch64::Register JITCore::GetReg<JITCore::RA_64>(uint32_t Node) {
 
 template<>
 std::pair<aarch64::Register, aarch64::Register> JITCore::GetSrcPair<JITCore::RA_32>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAData, Node).VId;
+  uint32_t Reg = GetPhys(RAData, Node).Reg;
   return RA32Pair[Reg];
 }
 
 template<>
 std::pair<aarch64::Register, aarch64::Register> JITCore::GetSrcPair<JITCore::RA_64>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAData, Node).VId;
+  uint32_t Reg = GetPhys(RAData, Node).Reg;
   return RA64Pair[Reg];
 }
 
 aarch64::VRegister JITCore::GetSrc(uint32_t Node) {
   auto Reg = GetPhys(RAData, Node);
   if (Reg.Class == IR::FPRFixedClass.Val) {
-    return SRAFPR[Reg.VId];
+    return SRAFPR[Reg.Reg];
   } else if (Reg.Class == IR::FPRClass.Val) {
-    return RAFPR[Reg.VId];
+    return RAFPR[Reg.Reg];
   } else {
     LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
@@ -741,9 +741,9 @@ aarch64::VRegister JITCore::GetSrc(uint32_t Node) {
 aarch64::VRegister JITCore::GetDst(uint32_t Node) {
   auto Reg = GetPhys(RAData, Node);
   if (Reg.Class == IR::FPRFixedClass.Val) {
-    return SRAFPR[Reg.VId];
+    return SRAFPR[Reg.Reg];
   } else if (Reg.Class == IR::FPRClass.Val) {
-    return RAFPR[Reg.VId];
+    return RAFPR[Reg.Reg];
   } else {
     LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
