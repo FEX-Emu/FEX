@@ -958,9 +958,11 @@ namespace FEXCore::Context {
       Thread->DebugData.emplace(GuestRIP, DebugData);
       Thread->RALists.emplace(GuestRIP, RAData);
 
-      {
+      if (true && RAData) {
         std::lock_guard<std::mutex> lk(AOTCacheLock);
-        AOTCache.insert({GuestRIP, {0, 0, 0, IRList, RAData}});
+        auto RADataCopy = (typeof(RAData))malloc(RAData->Size(RAData->MapCount));
+        memcpy(RADataCopy, RAData, RAData->Size(RAData->MapCount));
+        AOTCache.insert({GuestRIP, {0, 0, 0, IRList->CreateCopy(), RADataCopy}});
       }
     }
 

@@ -303,7 +303,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::RunUntilExit(CTX);
 
-  {
+  if (true) {
     std::ofstream AOTWrite(base_filename, std::ios::out | std::ios::binary );
 
     if (AOTWrite) {
