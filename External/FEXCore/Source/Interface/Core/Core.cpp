@@ -378,7 +378,7 @@ namespace FEXCore::Context {
       // Walk the threads and tell them to clear their caches
       // Useful when our block size is set to a large number and we need to step a single instruction
       for (auto &Thread : Threads) {
-        ClearCodeCache(Thread, 0);
+        ClearCodeCache(Thread, true);
       }
     }
     CoreRunningMode PreviousRunningMode = this->Config.RunningMode;
@@ -464,6 +464,8 @@ namespace FEXCore::Context {
       // Run the passmanager over the IR from the dispatcher
       Thread->PassManager->Run(IR);
       Thread->IRLists.try_emplace(Addr, IR->CreateIRCopy());
+      Thread->DebugData.try_emplace(Addr, new Core::DebugData());
+      Thread->RALists.try_emplace(Addr, Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr);
     };
 
     LocalLoader->AddIR(IRHandler);
@@ -563,242 +565,250 @@ namespace FEXCore::Context {
     Thread->LookupCache->AddBlockMapping(Address, Ptr);
   }
 
-  void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
     Thread->LookupCache->ClearCache();
     Thread->CPUBackend->ClearCache();
     Thread->IntBackend->ClearCache();
 
-    if (Thread->CompileService) {
-      Thread->CompileService->ClearCache(Thread, GuestRIP);
-    }
-
-    if (GuestRIP == 0) {
+    if (AlsoClearIRCache) {
       Thread->IRLists.clear();
-    }
-    else {
-      auto IR = Thread->IRLists.find(GuestRIP)->second.release();
-      Thread->IRLists.clear();
-      Thread->IRLists.try_emplace(GuestRIP, IR);
+      Thread->RALists.clear();
+      Thread->DebugData.clear();
     }
   }
 
-  std::tuple<void *, FEXCore::Core::DebugData *> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  std::tuple<FEXCore::IR::IRListView<true> *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t> Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
-      GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
+    GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
 
-    // Do we already have this in the IR cache?
-    auto IR = Thread->IRLists.find(GuestRIP);
-    FEXCore::IR::IRListView<true> *IRList {};
-    FEXCore::Core::DebugData *DebugData {};
-    FEXCore::IR::RegisterAllocationData *RAData {};
+    bool HadDispatchError {false};
 
-    if (IR == Thread->IRLists.end()) {
-      bool HadDispatchError {false};
+    uint64_t TotalInstructions {0};
+    uint64_t TotalInstructionsLength {0};
 
-      uint64_t TotalInstructions {0};
-      uint64_t TotalInstructionsLength {0};
+    if (!Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP)) {
+      if (Config.BreakOnFrontendFailure) {
+        LogMan::Msg::E("Had Frontend decoder error");
+        Stop(false /* Ignore Current Thread */);
+      }
+      return { nullptr, nullptr, 0, 0 };
+    }
 
-      if (!Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP)) {
-        if (Config.BreakOnFrontendFailure) {
-          LogMan::Msg::E("Had Frontend decoder error");
-          Stop(false /* Ignore Current Thread */);
-        }
-        return { nullptr, nullptr };
+    auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
+
+    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
+
+    for (size_t j = 0; j < CodeBlocks->size(); ++j) {
+      FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
+      // Set the block entry point
+      Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
+
+
+      uint64_t BlockInstructionsLength {};
+
+      // Reset any block-specific state
+      Thread->OpDispatcher->StartNewBlock();
+
+      uint64_t InstsInBlock = Block.NumInstructions;
+
+      if (Block.HasInvalidInstruction) {
+        uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
+        Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry));
+        break;
       }
 
-      auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
+      for (size_t i = 0; i < InstsInBlock; ++i) {
+        FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
+        FEXCore::X86Tables::DecodedInst const* DecodedInfo {nullptr};
 
-      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
+        TableInfo = Block.DecodedInstructions[i].TableInfo;
+        DecodedInfo = &Block.DecodedInstructions[i];
 
-      for (size_t j = 0; j < CodeBlocks->size(); ++j) {
-        FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
-        // Set the block entry point
-        Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
+        if (Config.SMCChecks) {
+          auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
 
+          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr, DecodedInfo->InstSize);
 
-        uint64_t BlockInstructionsLength {};
+          auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
 
-        // Reset any block-specific state
-        Thread->OpDispatcher->StartNewBlock();
+          auto CurrentBlock = Thread->OpDispatcher->GetCurrentBlock();
+          auto CodeWasChangedBlock = Thread->OpDispatcher->CreateNewCodeBlockAtEnd();
+          Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
 
-        uint64_t InstsInBlock = Block.NumInstructions;
+          Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
+          Thread->OpDispatcher->_RemoveCodeEntry(GuestRIP);
+          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
+          
+          auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
 
-        if (Block.HasInvalidInstruction) {
-          uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
-          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry));
-          break;
+          Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
+          Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
         }
 
-        for (size_t i = 0; i < InstsInBlock; ++i) {
-          FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
-          FEXCore::X86Tables::DecodedInst const* DecodedInfo {nullptr};
-
-          TableInfo = Block.DecodedInstructions[i].TableInfo;
-          DecodedInfo = &Block.DecodedInstructions[i];
-
-          if (Config.SMCChecks) {
-            auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
-
-            auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr, DecodedInfo->InstSize);
-
-            auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
-
-            auto CurrentBlock = Thread->OpDispatcher->GetCurrentBlock();
-            auto CodeWasChangedBlock = Thread->OpDispatcher->CreateNewCodeBlockAtEnd();
-            Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
-
-            Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
-            Thread->OpDispatcher->_RemoveCodeEntry(GuestRIP);
-            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
-            
-            auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
-
-            Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
-            Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
-          }
-
-          if (TableInfo->OpcodeDispatcher) {
-            auto Fn = TableInfo->OpcodeDispatcher;
-            std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
-            if (Thread->OpDispatcher->HadDecodeFailure()) {
-              if (Config.BreakOnFrontendFailure) {
-                LogMan::Msg::E("Had OpDispatcher error at 0x%lx", GuestRIP);
-                Stop(false /* Ignore Current Thread */);
-              }
-              HadDispatchError = true;
+        if (TableInfo->OpcodeDispatcher) {
+          auto Fn = TableInfo->OpcodeDispatcher;
+          std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
+          if (Thread->OpDispatcher->HadDecodeFailure()) {
+            if (Config.BreakOnFrontendFailure) {
+              LogMan::Msg::E("Had OpDispatcher error at 0x%lx", GuestRIP);
+              Stop(false /* Ignore Current Thread */);
             }
-            else {
-              BlockInstructionsLength += DecodedInfo->InstSize;
-              TotalInstructionsLength += DecodedInfo->InstSize;
-              ++TotalInstructions;
-            }
-          }
-          else {
-            LogMan::Msg::E("Missing OpDispatcher at 0x%lx{'%s'}", Block.Entry + BlockInstructionsLength, TableInfo->Name);
             HadDispatchError = true;
           }
-
-          // If we had a dispatch error then leave early
-          if (HadDispatchError) {
-            if (TotalInstructions == 0) {
-              // Couldn't handle any instruction in op dispatcher
-              Thread->OpDispatcher->ResetWorkingList();
-              return { nullptr, nullptr };
-            }
-            else {
-              uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
-
-              // We had some instructions. Early exit
-              Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry + BlockInstructionsLength));
-              break;
-            }
+          else {
+            BlockInstructionsLength += DecodedInfo->InstSize;
+            TotalInstructionsLength += DecodedInfo->InstSize;
+            ++TotalInstructions;
           }
+        }
+        else {
+          LogMan::Msg::E("Missing OpDispatcher at 0x%lx{'%s'}", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+          HadDispatchError = true;
+        }
 
-          if (Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == InstsInBlock)) {
+        // If we had a dispatch error then leave early
+        if (HadDispatchError) {
+          if (TotalInstructions == 0) {
+            // Couldn't handle any instruction in op dispatcher
+            Thread->OpDispatcher->ResetWorkingList();
+            return { nullptr, nullptr, 0, 0 };
+          }
+          else {
+            uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
+
+            // We had some instructions. Early exit
+            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry + BlockInstructionsLength));
             break;
           }
         }
-      }
 
-      Thread->OpDispatcher->Finalize();
-
-
-
-      auto IRDumper = [Thread, GuestRIP](IR::RegisterAllocationData* RA) {
-        FILE* f = nullptr;
-        bool CloseAfter = false;
-
-        if (Thread->CTX->Config.DumpIR=="stderr") {
-          f = stderr;
-        }
-        else if (Thread->CTX->Config.DumpIR=="stdout") {
-          f = stdout;
-        }
-        else {
-          std::stringstream fileName;
-          fileName << Thread->CTX->Config.DumpIR  << "/" << std::hex << GuestRIP << (RA ? "-post.ir" : "-pre.ir");
-
-          f = fopen(fileName.str().c_str(), "w");
-          CloseAfter = true;
-        }
-
-        if (f) {
-          std::stringstream out;
-          auto NewIR = Thread->OpDispatcher->ViewIR();
-          FEXCore::IR::Dump(&out, &NewIR, RA);
-          fprintf(f,"IR-%s 0x%lx:\n%s\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str().c_str());
-
-          if (CloseAfter) {
-            fclose(f);
-          }
-        }
-      };
-
-      if (Thread->CTX->Config.DumpIR != "no") {
-        IRDumper(nullptr);
-      }
-
-      if (Thread->CTX->Config.ValidateIRarser) {
-        // Convert to text, Parse, Convert to text again and make sure the texts match
-        std::stringstream out;
-        static auto compaction = IR::CreateIRCompaction();
-        compaction->Run(Thread->OpDispatcher.get());
-        auto NewIR = Thread->OpDispatcher->ViewIR();
-        Dump(&out, &NewIR, nullptr);
-        out.seekg(0);
-        auto reparsed = IR::Parse(&out);
-        if (reparsed == nullptr) {
-          LogMan::Msg::A("Failed to parse ir\n");
-        } else {
-          std::stringstream out2;
-          auto NewIR2 = reparsed->ViewIR();
-          Dump(&out2, &NewIR2, nullptr);
-          if (out.str() != out2.str()) {
-            printf("one:\n %s\n", out.str().c_str());
-            printf("two:\n %s\n", out2.str().c_str());
-            LogMan::Msg::A("Parsed ir doesn't match\n");
-          }
-          delete reparsed;
+        if (Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == InstsInBlock)) {
+          break;
         }
       }
-      // Run the passmanager over the IR from the dispatcher
-      Thread->PassManager->Run(Thread->OpDispatcher.get());
-
-      if (Thread->CTX->Config.DumpIR != "no") {
-        IRDumper(Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
-      }
-
-      if (Thread->OpDispatcher->ShouldDump) {
-        std::stringstream out;
-        auto NewIR = Thread->OpDispatcher->ViewIR();
-        FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
-        printf("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
-      }
-
-      RAData = Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr;
-
-      // Create a copy of the IR and place it in this thread's IR cache
-      auto AddedIR = Thread->IRLists.try_emplace(GuestRIP, Thread->OpDispatcher->CreateIRCopy());
-      Thread->OpDispatcher->ResetWorkingList();
-
-      auto Debugit = &Thread->DebugData.try_emplace(GuestRIP).first->second;
-      Debugit->GuestCodeSize = TotalInstructionsLength;
-      Debugit->GuestInstructionCount = TotalInstructions;
-
-      IRList = AddedIR.first->second.get();
-      DebugData = Debugit;
-      Thread->Stats.BlocksCompiled.fetch_add(1);
     }
-    else {
-      IRList = IR->second.get();
-      auto Debugit = Thread->DebugData.find(GuestRIP);
-      if (Debugit != Thread->DebugData.end()) {
-        DebugData = &Debugit->second;
+
+    Thread->OpDispatcher->Finalize();
+
+    auto IRDumper = [Thread, GuestRIP](IR::RegisterAllocationData* RA) {
+      FILE* f = nullptr;
+      bool CloseAfter = false;
+
+      if (Thread->CTX->Config.DumpIR=="stderr") {
+        f = stderr;
       }
+      else if (Thread->CTX->Config.DumpIR=="stdout") {
+        f = stdout;
+      }
+      else {
+        std::stringstream fileName;
+        fileName << Thread->CTX->Config.DumpIR  << "/" << std::hex << GuestRIP << (RA ? "-post.ir" : "-pre.ir");
+
+        f = fopen(fileName.str().c_str(), "w");
+        CloseAfter = true;
+      }
+
+      if (f) {
+        std::stringstream out;
+        auto NewIR = Thread->OpDispatcher->ViewIR();
+        FEXCore::IR::Dump(&out, &NewIR, RA);
+        fprintf(f,"IR-%s 0x%lx:\n%s\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str().c_str());
+
+        if (CloseAfter) {
+          fclose(f);
+        }
+      }
+    };
+
+    if (Thread->CTX->Config.DumpIR != "no") {
+      IRDumper(nullptr);
+    }
+
+    if (Thread->CTX->Config.ValidateIRarser) {
+      // Convert to text, Parse, Convert to text again and make sure the texts match
+      std::stringstream out;
+      static auto compaction = IR::CreateIRCompaction();
+      compaction->Run(Thread->OpDispatcher.get());
+      auto NewIR = Thread->OpDispatcher->ViewIR();
+      Dump(&out, &NewIR, nullptr);
+      out.seekg(0);
+      auto reparsed = IR::Parse(&out);
+      if (reparsed == nullptr) {
+        LogMan::Msg::A("Failed to parse ir\n");
+      } else {
+        std::stringstream out2;
+        auto NewIR2 = reparsed->ViewIR();
+        Dump(&out2, &NewIR2, nullptr);
+        if (out.str() != out2.str()) {
+          printf("one:\n %s\n", out.str().c_str());
+          printf("two:\n %s\n", out2.str().c_str());
+          LogMan::Msg::A("Parsed ir doesn't match\n");
+        }
+        delete reparsed;
+      }
+    }
+    // Run the passmanager over the IR from the dispatcher
+    Thread->PassManager->Run(Thread->OpDispatcher.get());
+
+    if (Thread->CTX->Config.DumpIR != "no") {
+      IRDumper(Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
+    }
+
+    if (Thread->OpDispatcher->ShouldDump) {
+      std::stringstream out;
+      auto NewIR = Thread->OpDispatcher->ViewIR();
+      FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
+      printf("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
+    }
+
+    auto RAData = Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr;
+    auto IRList = Thread->OpDispatcher->CreateIRCopy();
+
+    Thread->OpDispatcher->ResetWorkingList();
+
+    return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength};
+  }
+
+  std::tuple<void *, FEXCore::IR::IRListView<true> *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    FEXCore::IR::IRListView<true> *IRList {};
+    FEXCore::Core::DebugData *DebugData {};
+    FEXCore::IR::RegisterAllocationData *RAData {};
+    bool GeneratedIR {};
+
+    // Do we already have this in the IR cache?
+    auto IR = Thread->IRLists.find(GuestRIP);
+
+    if (IR != Thread->IRLists.end()) {
+      // Entry already exists
+      // pull in the data
+      IRList = IR->second.get();
+      DebugData = Thread->DebugData.find(GuestRIP)->second.get();
+      RAData = Thread->RALists.find(GuestRIP)->second.get();
+
+      GeneratedIR = false;
+    } else {
+
+      // Generate IR + Meta Info
+      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength] = GenerateIR(Thread, GuestRIP);
+
+      // Setup pointers to internal structures
+      IRList = IRCopy;
+      RAData = RACopy;
+      DebugData = new FEXCore::Core::DebugData();
+
+      // Initialize metadata
+      DebugData->GuestCodeSize = TotalInstructionsLength;
+      DebugData->GuestInstructionCount = TotalInstructions;
+
+      // Increment stats
+      Thread->Stats.BlocksCompiled.fetch_add(1);
+
+      // These blocks aren't already in the cache
+      GeneratedIR = true;
     }
 
     // Attempt to get the CPU backend to compile this code
-    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), DebugData };
+    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR};
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -809,28 +819,42 @@ namespace FEXCore::Context {
       return HostCode;
     }
 
-    void *CodePtr;
-    FEXCore::Core::DebugData *DebugData;
+    void *CodePtr {};
+    FEXCore::IR::IRListView<true> *IRList {};
+    FEXCore::Core::DebugData *DebugData {};
+    FEXCore::IR::RegisterAllocationData *RAData {};
+
     bool DecrementRefCount = false;
+    bool GeneratedIR {};
 
     if (Thread->CompileBlockReentrantRefCount != 0) {
       if (!Thread->CompileService) {
         Thread->CompileService = std::make_shared<FEXCore::CompileService>(this, Thread);
         Thread->CompileService->Initialize();
       }
+
       auto WorkItem = Thread->CompileService->CompileCode(GuestRIP);
       WorkItem->ServiceWorkDone.Wait();
       // Return here with the data in place
-      Thread->IRLists.try_emplace(GuestRIP, WorkItem->IRList->CreateCopy());
       CodePtr = WorkItem->CodePtr;
+      IRList = WorkItem->IRList;
       DebugData = WorkItem->DebugData;
+      RAData = WorkItem->RAData;
       WorkItem->SafeToClear = true;
+
+      // The compile service will always generate IR + DebugData + RAData
+      // Remove the entries here to make sure we don't fail to insert later on
+      RemoveCodeEntry(Thread, GuestRIP);
+      GeneratedIR = true;
     } else {
       ++Thread->CompileBlockReentrantRefCount;
       DecrementRefCount = true;
-      auto [Code, Data] = CompileCode(Thread, GuestRIP);
+      auto [Code, IR, Data, RA, Generated] = CompileCode(Thread, GuestRIP);
       CodePtr = Code;
+      IRList = IR;
       DebugData = Data;
+      RAData = RA;
+      GeneratedIR = Generated;
     }
 
     if (CodePtr != nullptr) {
@@ -847,8 +871,17 @@ namespace FEXCore::Context {
       }
 #endif
 
+      // Insert to caches if we generated IR
+      if (GeneratedIR) {
+        Thread->IRLists.emplace(GuestRIP, IRList);
+        Thread->DebugData.emplace(GuestRIP, DebugData);
+        Thread->RALists.emplace(GuestRIP, RAData);
+      }
+
       if (DecrementRefCount)
         --Thread->CompileBlockReentrantRefCount;
+
+      // Insert to lookup cache
       AddBlockMapping(Thread, GuestRIP, CodePtr);
 
       return (uintptr_t)CodePtr;
@@ -921,12 +954,9 @@ namespace FEXCore::Context {
 
   void Context::RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     Thread->IRLists.erase(GuestRIP);
+    Thread->RALists.erase(GuestRIP);
     Thread->DebugData.erase(GuestRIP);
     Thread->LookupCache->Erase(GuestRIP);
-
-    if (Thread->CompileService) {
-      Thread->CompileService->RemoveCodeEntry(GuestRIP);
-    }
   }
 
   // Debug interface

@@ -1,6 +1,6 @@
+#include "Interface/IR/PassManager.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
-#include "Interface/IR/PassManager.h"
 
 #include <FEXCore/Config/Config.h>
 

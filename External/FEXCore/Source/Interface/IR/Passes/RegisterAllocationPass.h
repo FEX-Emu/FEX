@@ -1,56 +1,11 @@
 #pragma once
 #include "Interface/IR/PassManager.h"
+#include <FEXCore/IR/RegisterAllocationData.h>
 #include <vector>
 
 namespace FEXCore::IR {
 template<bool>
 class IRListView;
-
-union PhysicalRegister {
-  uint8_t Raw;
-  struct {
-    uint8_t Reg: 5;
-    uint8_t Class: 3;
-  };
-
-  bool operator==(const PhysicalRegister &Other) const {
-    return Raw == Other.Raw;
-  }
-
-  PhysicalRegister(RegisterClassType Class, uint8_t Reg) : Class(Class.Val), Reg(Reg) { }
-
-  static const PhysicalRegister Invalid() {
-    return PhysicalRegister(InvalidClass, InvalidReg);
-  }
-
-  bool IsInvalid() {
-    return *this == Invalid();
-  }
-};
-
-static_assert(sizeof(PhysicalRegister) == 1);
-
-class RegisterAllocationData;
-struct RegisterAllocationDataDeleter {
-  void operator()(RegisterAllocationData* r) {
-    free(r);
-  }
-};
-
-class RegisterAllocationData {
-  public:
-    uint32_t SpillSlotCount {};
-    PhysicalRegister Map[0];
-
-    PhysicalRegister GetNodeRegister(uint32_t Node) const {
-      return Map[Node];
-    }
-    uint32_t SpillSlots() const { return SpillSlotCount; }
-
-    static size_t Size(uint32_t NodeCount) {
-      return sizeof(RegisterAllocationData) + NodeCount * sizeof(Map[0]);
-    }
-};
 
 class RegisterAllocationPass : public FEXCore::IR::Pass {
   public:
@@ -85,7 +40,7 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
     /**
      * @brief Returns and transfers ownership of the register and class map array
      */
-    virtual std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> &PullAllocationData() = 0;
+    virtual std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> PullAllocationData() = 0;
     /**  @} */
 
   protected:

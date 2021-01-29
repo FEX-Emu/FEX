@@ -381,7 +381,7 @@ namespace FEXCore::IR {
        * Top 32bits is the class, lower 32bits is the register
        */
       RegisterAllocationData* GetAllocationData() override;
-      std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> &PullAllocationData() override;
+      std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> PullAllocationData() override;
     private:
       bool OptimizeSRA;
       uint32_t SpillPointId;
@@ -461,8 +461,8 @@ namespace FEXCore::IR {
     return Graph->AllocData.get();
   }
 
-  std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter>& ConstrainedRAPass::PullAllocationData() {
-    return Graph->AllocData;
+  std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> ConstrainedRAPass::PullAllocationData() {
+    return std::move(Graph->AllocData);
   }
 
   void ConstrainedRAPass::RecursiveLiveRangeExpansion(FEXCore::IR::IRListView<false> *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors) {

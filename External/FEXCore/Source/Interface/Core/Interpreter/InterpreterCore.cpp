@@ -4719,10 +4719,12 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
     }
   }
 
+  #ifndef NDEBUG
   auto DebugData = Thread->DebugData.find(Thread->State.State.rip);
   if (DebugData != Thread->DebugData.end()) {
-    Thread->Stats.InstructionsExecuted.fetch_add(DebugData->second.GuestInstructionCount);
+    Thread->Stats.InstructionsExecuted.fetch_add(DebugData->second->GuestInstructionCount);
   }
+  #endif
 }
 
 FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
