@@ -456,11 +456,10 @@ public:
   }
 };
 
-template<bool>
 class IRListView;
 class IREmitter;
 
-void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationData *RAData);
+void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData);
 IREmitter* Parse(std::istream *in);
 
 template<typename Type>

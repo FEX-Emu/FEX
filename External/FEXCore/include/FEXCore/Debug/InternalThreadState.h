@@ -76,7 +76,7 @@ namespace FEXCore::Core {
     std::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
     std::unique_ptr<FEXCore::LookupCache> LookupCache;
 
-    std::unordered_map<uint64_t, std::unique_ptr<FEXCore::IR::IRListView<true>>> IRLists;
+    std::unordered_map<uint64_t, std::unique_ptr<FEXCore::IR::IRListView>> IRLists;
     std::unordered_map<uint64_t, std::unique_ptr<FEXCore::IR::RegisterAllocationData, FEXCore::IR::RegisterAllocationDataDeleter>> RALists;
     std::unordered_map<uint64_t, std::unique_ptr<FEXCore::Core::DebugData>> DebugData;
 

@@ -59,7 +59,7 @@ public:
   explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
-  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
+  void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
   void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -79,7 +79,7 @@ private:
   Label* PendingTargetLabel{};
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
-  FEXCore::IR::IRListView<true> const *IR;
+  FEXCore::IR::IRListView const *IR;
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
   Xbyak::util::Cpu Features{};

@@ -111,7 +111,7 @@ InterpreterCore::~InterpreterCore() {
 }
 
 
-void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   return reinterpret_cast<void*>(InterpreterExecution);
 }
 

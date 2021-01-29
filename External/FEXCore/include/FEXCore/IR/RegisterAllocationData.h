@@ -37,6 +37,7 @@ struct RegisterAllocationDataDeleter {
 class RegisterAllocationData {
   public:
     uint32_t SpillSlotCount {};
+    uint32_t MapCount {};
     PhysicalRegister Map[0];
 
     PhysicalRegister GetNodeRegister(uint32_t Node) const {

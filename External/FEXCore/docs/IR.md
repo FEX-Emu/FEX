@@ -79,10 +79,10 @@ This is an intrusive allocator that is used by the `OpDispatchBuilder` for stori
 
 ### OpDispatchBuilder
 OpDispatchBuilder provides two routines for handling the IR outside of the class
-* `IRListView<false> ViewIR();`
+* `IRListView ViewIR();`
 	* Returns a wrapper container class the allows you to view the IR. This doesn't take ownership of the IR data.
 	* If the OpDispatcherBuilder changes its IR then changes are also visible to this class
-* `IRListView<true> *CreateIRCopy()`
+* `IRListView *CreateIRCopy()`
 	* As the name says, it creates a new copy of the IR that is in the OpDispatchBuilder
 	* Copying the IR only copies the memory used and doesn't have any free space for optimizations after this copy operation
 	* Useful for tiered recompilers, AOT, and offline analysis

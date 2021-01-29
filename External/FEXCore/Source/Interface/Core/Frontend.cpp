@@ -992,6 +992,9 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
     SymbolMinAddress = EntryPoint;
   }
 
+  DecodedMinAddress = EntryPoint;
+  DecodedMaxAddress = EntryPoint;
+
   // Entry is a jump target
   BlocksToDecode.emplace(PC);
 
@@ -1023,6 +1026,9 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
         }
         break;
       }
+
+      DecodedMinAddress = std::min(DecodedMinAddress, PCOffset);
+      DecodedMaxAddress = std::max(DecodedMaxAddress, PCOffset + DecodeInst->InstSize);
 
       ++TotalInstructions;
       ++BlockNumberOfInstructions;

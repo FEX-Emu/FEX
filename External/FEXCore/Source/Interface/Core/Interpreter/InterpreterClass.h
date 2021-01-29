@@ -22,7 +22,7 @@ public:
   explicit InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
   ~InterpreterCore() override;
   std::string GetName() override { return "Interpreter"; }
-  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
+  void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
   void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 

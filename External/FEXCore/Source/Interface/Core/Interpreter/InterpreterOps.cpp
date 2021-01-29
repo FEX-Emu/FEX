@@ -922,7 +922,7 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
   return false;
 }
 
-void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView<true> *CurrentIR, FEXCore::Core::DebugData *DebugData) {
+void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData) {
   volatile void* stack = alloca(0);
 
   // Debug data is only passed in debug builds

@@ -35,6 +35,8 @@ namespace FEXCore::CPU {
   }
 }
 
+static std::mutex AOTCacheLock;
+
 namespace FEXCore::Core {
 struct ThreadLocalData {
   FEXCore::Core::InternalThreadState* Thread;
@@ -111,7 +113,7 @@ namespace DefaultFallbackCore {
     void Initialize() override {}
     bool NeedsOpDispatch() override { return false; }
 
-    void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override {
+    void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override {
       LogMan::Msg::E("Fell back to default code handler at RIP: 0x%lx", ThreadState->State.State.rip);
       return nullptr;
     }
@@ -572,7 +574,7 @@ namespace FEXCore::Context {
     }
   }
 
-  std::tuple<FEXCore::IR::IRListView<true> *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t> Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t> Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
     GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
 
@@ -764,8 +766,8 @@ namespace FEXCore::Context {
     return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength};
   }
 
-  std::tuple<void *, FEXCore::IR::IRListView<true> *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    FEXCore::IR::IRListView<true> *IRList {};
+  std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData *RAData {};
     bool GeneratedIR {};
@@ -781,8 +783,21 @@ namespace FEXCore::Context {
       RAData = Thread->RALists.find(GuestRIP)->second.get();
 
       GeneratedIR = false;
-    } else {
+    }
 
+    if (IRList == nullptr) {
+      std::lock_guard<std::mutex> lk(AOTCacheLock);
+      auto AOTEntry = AOTCache.find(GuestRIP);
+      if (AOTEntry != AOTCache.end()) {
+        IRList = AOTEntry->second.IR;
+        RAData = AOTEntry->second.RAData;
+        DebugData = new FEXCore::Core::DebugData();
+
+        GeneratedIR = true;
+      }
+    }
+
+    if (IRList == nullptr) {
       // Generate IR + Meta Info
       auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength] = GenerateIR(Thread, GuestRIP);
 
@@ -806,6 +821,76 @@ namespace FEXCore::Context {
     return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR};
   }
 
+  bool Context::LoadAOTCache(std::istream &stream) {
+    std::lock_guard<std::mutex> lk(AOTCacheLock);
+    AOTCache.clear();
+    uint64_t tag;
+    stream.read((char*)&tag, sizeof(tag));
+    if (!stream || tag != 0xDEADBEEFC0D30000)
+      return false;
+    do {
+      uint64_t addr, start, crc, len;
+      stream.read((char*)&addr, sizeof(addr));
+      if (!stream)
+        return true;
+      
+      stream.read((char*)&start, sizeof(start));
+      if (!stream)
+        return false;
+      stream.read((char*)&len, sizeof(len));
+      if (!stream)
+        return false;
+      stream.read((char*)&crc, sizeof(crc));
+      if (!stream)
+        return false;
+      auto IR = new IR::IRListView(stream);
+      if (!stream) {
+        delete IR;
+        return false;
+      }
+      uint64_t RASize;
+      stream.read((char*)&RASize, sizeof(RASize));
+      if (!stream) {
+        delete IR;
+        return false;
+      }
+      IR::RegisterAllocationData *RAData = (IR::RegisterAllocationData *)malloc(IR::RegisterAllocationData::Size(RASize));
+      RAData->MapCount = RASize;
+      
+      stream.read((char*)&RAData->Map[0], sizeof(RAData->Map[0]) * RASize);
+      
+      if (!stream) {
+        delete IR;
+        return false;
+      }
+      stream.read((char*)&RAData->SpillSlotCount, sizeof(RAData->SpillSlotCount));
+      if (!stream) {
+        delete IR;
+        return false;
+      }
+      AOTCache.insert({addr, {start, len, crc, IR, RAData}});
+    } while(!stream.eof());
+    return true;
+  }
+
+  void Context::WriteAOTCache(std::ostream &stream) {
+    std::lock_guard<std::mutex> lk(AOTCacheLock);
+    uint64_t tag = 0xDEADBEEFC0D30000;
+    stream.write((char*)&tag, sizeof(tag));
+    for (auto entry: AOTCache) {
+      stream.write((char*)&entry.first, sizeof(entry.first));
+      stream.write((char*)&entry.second.start, sizeof(entry.second.start));
+      stream.write((char*)&entry.second.len, sizeof(entry.second.len));
+      stream.write((char*)&entry.second.crc, sizeof(entry.second.crc));
+      entry.second.IR->Serialize(stream);
+      uint64_t RASize = entry.second.RAData->MapCount;
+      stream.write((char*)&RASize, sizeof(RASize));
+      stream.write((char*)&entry.second.RAData->Map[0], sizeof(entry.second.RAData->Map[0]) * RASize);
+      stream.write((char*)&entry.second.RAData->SpillSlotCount, sizeof(entry.second.RAData->SpillSlotCount));
+    }
+  }
+
+
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     
     // Is the code in the cache?
@@ -815,7 +900,7 @@ namespace FEXCore::Context {
     }
 
     void *CodePtr {};
-    FEXCore::IR::IRListView<true> *IRList {};
+    FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData *RAData {};
 
@@ -872,6 +957,11 @@ namespace FEXCore::Context {
       Thread->IRLists.emplace(GuestRIP, IRList);
       Thread->DebugData.emplace(GuestRIP, DebugData);
       Thread->RALists.emplace(GuestRIP, RAData);
+
+      {
+        std::lock_guard<std::mutex> lk(AOTCacheLock);
+        AOTCache.insert({GuestRIP, {0, 0, 0, IRList, RAData}});
+      }
     }
 
     if (DecrementRefCount)

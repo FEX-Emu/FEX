@@ -16,6 +16,8 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fstream>
+#include <filesystem>
 
 namespace {
 static bool SilentLog;
@@ -287,7 +289,30 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
+  std::string base_filename = Program.substr(Program.find_last_of("/\\") + 1) + ".fex-emu.aot";
+
+  {
+    std::ifstream AOTRead(base_filename, std::ios::in | std::ios::binary);
+
+    if (AOTRead) {
+      if (FEXCore::Context::ReadAOT(CTX, AOTRead)) {
+        LogMan::Msg::I("AOT Cache Loaded\n");
+      }
+    }
+  }
+
   FEXCore::Context::RunUntilExit(CTX);
+
+  {
+    std::ofstream AOTWrite(base_filename, std::ios::out | std::ios::binary );
+
+    if (AOTWrite) {
+      std::filesystem::resize_file(base_filename, 0);
+      AOTWrite.seekp(0);
+      FEXCore::Context::WriteAOT(CTX, AOTWrite);
+      LogMan::Msg::I("AOT Cache Stored\n");
+    }
+  }
 
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
 

@@ -30,6 +30,9 @@ public:
     return &Blocks;
   }
 
+  uint64_t DecodedMinAddress {};
+  uint64_t DecodedMaxAddress {~0ULL};
+  
 private:
   FEXCore::Context::Context *CTX;
 

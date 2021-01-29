@@ -151,6 +151,13 @@ namespace FEXCore::Context {
     return CTX->CPUID.RunFunction(Function);
   }
 
+  bool ReadAOT(FEXCore::Context::Context *CTX, std::istream& stream) {
+    return CTX->LoadAOTCache(stream);
+  }
+  void WriteAOT(FEXCore::Context::Context *CTX, std::ostream& stream) {
+    CTX->WriteAOTCache(stream);
+  }
+
 namespace Debug {
   void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
     CTX->CompileRIP(CTX->ParentThread, RIP);

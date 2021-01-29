@@ -21,8 +21,8 @@ friend class FEXCore::IR::PassManager;
       ResetWorkingList();
     }
 
-    IRListView<false> ViewIR() { return IRListView<false>(&Data, &ListData); }
-    IRListView<true> *CreateIRCopy() { return new IRListView<true>(&Data, &ListData); }
+    IRListView ViewIR() { return IRListView(&Data, &ListData, false); }
+    IRListView *CreateIRCopy() { return new IRListView(&Data, &ListData, true); }
     void ResetWorkingList();
 
   /**

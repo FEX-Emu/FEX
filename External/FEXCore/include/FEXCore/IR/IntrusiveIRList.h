@@ -8,6 +8,8 @@
 #include <cstring>
 #include <tuple>
 #include <vector>
+#include <istream>
+#include <ostream>
 
 namespace FEXCore::IR {
 /**
@@ -62,17 +64,16 @@ class IntrusiveAllocator final {
     uintptr_t Data;
 };
 
-template<bool Copy>
 class IRListView final {
 public:
   IRListView() = delete;
-  IRListView(IRListView<Copy> &&) = delete;
+  IRListView(IRListView &&) = delete;
 
-  IRListView(IntrusiveAllocator *Data, IntrusiveAllocator *List) {
+  IRListView(IntrusiveAllocator *Data, IntrusiveAllocator *List, bool _IsCopy) : IsCopy(_IsCopy) {
     DataSize = Data->Size();
     ListSize = List->Size();
 
-    if (Copy) {
+    if (IsCopy) {
       IRData = malloc(DataSize + ListSize);
       ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
       memcpy(IRData, reinterpret_cast<void*>(Data->Begin()), DataSize);
@@ -85,24 +86,46 @@ public:
     }
   }
 
-  IRListView<true>(IRListView<true> *Old) {
+  IRListView(IRListView *Old, bool _IsCopy) : IsCopy(_IsCopy) {
     DataSize = Old->DataSize;
     ListSize = Old->ListSize;
+    if (IsCopy) {
+      IRData = malloc(DataSize + ListSize);
+      ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
+      memcpy(IRData, Old->IRData, DataSize);
+      memcpy(ListData, Old->ListData, ListSize);
+    } else {
+      IRData = Old->IRData;
+      ListData = Old->ListData;
+    }
+  }
+
+  IRListView(std::istream& stream) : IsCopy(true) {
+    stream.read((char*)&DataSize, sizeof(DataSize));
+    stream.read((char*)&ListSize, sizeof(ListSize));
+    
     IRData = malloc(DataSize + ListSize);
     ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
-    memcpy(IRData, Old->IRData, DataSize);
-    memcpy(ListData, Old->ListData, ListSize);
+    stream.read((char*)IRData, DataSize);
+    stream.read((char*)ListData, ListSize);
   }
 
   ~IRListView() {
-    if (Copy) {
+    if (IsCopy) {
       free (IRData);
       // ListData is just offset from IRData
     }
   }
 
-  IRListView<true> *CreateCopy() {
-    return new IRListView<true>(this);
+  void Serialize(std::ostream& stream) {
+    stream.write((char*)&DataSize, sizeof(DataSize));
+    stream.write((char*)&ListSize, sizeof(ListSize));
+    stream.write((char*)IRData, DataSize);
+    stream.write((char*)ListData, ListSize);
+  }
+
+  IRListView *CreateCopy() {
+    return new IRListView(this, true);
   }
 
   uintptr_t const GetData() const { return reinterpret_cast<uintptr_t>(IRData); }
@@ -259,6 +282,7 @@ private:
   void *ListData;
   size_t DataSize;
   size_t ListSize;
+  bool IsCopy;
 };
 }
 
