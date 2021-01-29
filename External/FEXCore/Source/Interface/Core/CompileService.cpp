@@ -33,7 +33,7 @@ namespace FEXCore {
     WorkerThread.join();
   }
 
-  void CompileService::ClearCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  void CompileService::ClearCache(FEXCore::Core::InternalThreadState *Thread) {
     // On cache clear we need to spin down the execution thread to ensure it isn't trying to give us more work items
     if (CompileMutex.try_lock()) {
       // We can only clear these things if we pulled the compile mutex
@@ -57,14 +57,9 @@ namespace FEXCore {
         }
       }
 
-      if (GuestRIP == 0) {
-        CompileThreadData->IRLists.clear();
-      }
-      else {
-        auto IR = CompileThreadData->IRLists.find(GuestRIP)->second.release();
-        CompileThreadData->IRLists.clear();
-        CompileThreadData->IRLists.try_emplace(GuestRIP, IR);
-      }
+      LogMan::Throw::A(CompileThreadData->IRLists.size() == 0, "Compile service must never have IRLists");
+      LogMan::Throw::A(CompileThreadData->RALists.size() == 0, "Compile service must never have RALists");
+      LogMan::Throw::A(CompileThreadData->DebugData.size() == 0, "Compile service must never have DebugData");
 
       CompileMutex.unlock();
     }
@@ -76,11 +71,6 @@ namespace FEXCore {
     SelectedThread->IntBackend->ClearCache();
   }
 
-  void CompileService::RemoveCodeEntry(uint64_t GuestRIP) {
-    CompileThreadData->IRLists.erase(GuestRIP);
-    CompileThreadData->DebugData.erase(GuestRIP);
-    CompileThreadData->LookupCache->Erase(GuestRIP);
-  }
 
   CompileService::WorkItem *CompileService::CompileCode(uint64_t RIP) {
     // Tell the worker thread to compile code for us
@@ -132,29 +122,26 @@ namespace FEXCore {
 
         // If we had a work item then work on it
         if (Item) {
-          // Does the block cache already contain this RIP?
-          void *CompiledCode = reinterpret_cast<void*>(CompileThreadData->LookupCache->FindBlock(Item->RIP));
-          FEXCore::Core::DebugData *DebugData = nullptr;
+          // Make sure it's not in lookup cache by accident
+          LogMan::Throw::A(CompileThreadData->LookupCache->FindBlock(Item->RIP) == 0, "Compile Service must never have entries in the LookupCache");
+          
+          // Code isn't in cache, compile now
+          // Set our thread state's RIP
+          CompileThreadData->State.State.rip = Item->RIP;
 
-          if (!CompiledCode) {
-            // Code isn't in cache, compile now
-            // Set our thread state's RIP
-            CompileThreadData->State.State.rip = Item->RIP;
-            auto [Code, Data] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
-            CompiledCode = Code;
-            DebugData = Data;
-          }
+          auto [CodePtr, IRList, DebugData, RAData, Generated] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
 
-          if (!CompiledCode) {
+          LogMan::Throw::A(Generated == true, "Compile Service doesn't have IR Cache");
+
+          if (!CodePtr) {
             // XXX: We currently have the expectation that compile service code will be significantly smaller than regular thread's code
             ERROR_AND_DIE("Couldn't compile code for thread at RIP: 0x%lx", Item->RIP);
           }
 
-          CompileThreadData->LookupCache->AddBlockMapping(Item->RIP, CompiledCode);
-
-          Item->CodePtr = CompiledCode;
-          Item->IRList = CompileThreadData->IRLists.find(Item->RIP)->second.get();
+          Item->CodePtr = CodePtr;
+          Item->IRList = IRList;
           Item->DebugData = DebugData;
+          Item->RAData = RAData;
 
           GCArray.emplace_back(Item);
           Item->ServiceWorkDone.NotifyAll();

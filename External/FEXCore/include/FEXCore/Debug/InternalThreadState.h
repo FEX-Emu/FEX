@@ -3,7 +3,9 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Event.h>
+
 #include <map>
 #include <thread>
 
@@ -78,7 +80,8 @@ namespace FEXCore::Core {
     std::unique_ptr<FEXCore::LookupCache> LookupCache;
 
     std::unordered_map<uint64_t, std::unique_ptr<FEXCore::IR::IRListView<true>>> IRLists;
-    std::unordered_map<uint64_t, FEXCore::Core::DebugData> DebugData;
+    std::unordered_map<uint64_t, std::unique_ptr<FEXCore::IR::RegisterAllocationData, FEXCore::IR::RegisterAllocationDataDeleter>> RALists;
+    std::unordered_map<uint64_t, std::unique_ptr<FEXCore::Core::DebugData>> DebugData;
 
     std::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     std::unique_ptr<FEXCore::IR::PassManager> PassManager;

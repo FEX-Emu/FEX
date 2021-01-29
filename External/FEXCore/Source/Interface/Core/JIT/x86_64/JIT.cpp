@@ -613,7 +613,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
   if ((getSize() + BufferRange) > CurrentCodeBuffer->Size) {
-    ThreadState->CTX->ClearCodeCache(ThreadState, HeaderOp->Entry);
+    ThreadState->CTX->ClearCodeCache(ThreadState, false);
   }
 
 	void *Entry = getCurr<void*>();
