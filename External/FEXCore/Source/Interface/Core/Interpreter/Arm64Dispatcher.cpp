@@ -540,6 +540,10 @@ void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore:
   Generator = new DispatchGenerator(ctx, Thread);
   DispatchPtr = Generator->DispatchPtr;
   CallbackPtr = Generator->CallbackPtr;
+
+  // TODO: Implement this. It is missing from the dispatcher
+  // TODO: It feels wrong to initialize this way
+  ctx->InterpreterCallbackReturn = nullptr;
 }
 
 bool InterpreterCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {

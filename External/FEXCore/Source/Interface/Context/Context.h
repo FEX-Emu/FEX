@@ -70,6 +70,9 @@ namespace FEXCore::Context {
 
     } Config;
 
+    using IntCallbackReturn =  __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
+    IntCallbackReturn InterpreterCallbackReturn;
+
     FEXCore::HostFeatures HostFeatures;
 
     std::mutex ThreadCreationMutex;
@@ -143,7 +146,6 @@ namespace FEXCore::Context {
 
     std::tuple<void *, FEXCore::IR::IRListView<true> *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
-    uintptr_t CompileFallbackBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
     // Used for thread creation from syscalls
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);

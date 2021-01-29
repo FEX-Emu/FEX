@@ -131,6 +131,7 @@ set (SRCS
   Interface/Core/X86DebugInfo.cpp
   Interface/Core/X86HelperGen.cpp
   Interface/Core/Interpreter/InterpreterCore.cpp
+  Interface/Core/Interpreter/InterpreterOps.cpp
   Interface/Core/X86Tables/BaseTables.cpp
   Interface/Core/X86Tables/DDDTables.cpp
   Interface/Core/X86Tables/EVEXTables.cpp
