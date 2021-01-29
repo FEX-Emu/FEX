@@ -50,9 +50,9 @@ bool IRValidation::Run(IREmitter *IREmit) {
   auto HeaderOp = CurrentIR.GetHeader();
   LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
-  IR::RegisterAllocationPass * RAPass{};
+  IR::RegisterAllocationData * RAData{};
   if (Manager->HasRAPass() && !HeaderOp->ShouldInterpret) {
-    RAPass = Manager->GetRAPass();
+    RAData = Manager->GetRAPass() ? Manager->GetRAPass()->GetAllocationData() : nullptr;
   }
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -81,12 +81,12 @@ bool IRValidation::Run(IREmitter *IREmit) {
           Warnings << "%ssa" << ID << ": Destination created but had no uses" << std::endl;
         }
 
-        if (RAPass) {
+        if (RAData) {
           // If we have a register allocator then the destination needs to be assigned a register and class
-          uint64_t Reg = RAPass->GetNodeRegister(ID);
+          auto PhyReg = RAData->GetNodeRegister(ID);
 
           FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
-          FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType{uint32_t(Reg >> 32)};
+          FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType{PhyReg.Class};
 
           // If no register class was assigned
           if (AssignedClass == IR::InvalidClass) {
@@ -95,7 +95,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
           }
 
           // If no physical register was assigned
-          if ((uint32_t)Reg == ~0U) {
+          if (PhyReg.Reg == IR::InvalidReg) {
             HadError |= true;
             Errors << "%ssa" << ID << ": Had destination but with no register assigned" << std::endl;
           }
@@ -260,7 +260,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
   HadWarning = false;
   if (HadError || HadWarning) {
-    FEXCore::IR::Dump(&Out, &CurrentIR, RAPass);
+    FEXCore::IR::Dump(&Out, &CurrentIR, RAData);
 
     if (HadError) {
       Out << "Errors:" << std::endl << Errors.str() << std::endl;

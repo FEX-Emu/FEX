@@ -14,6 +14,7 @@ using namespace Xbyak;
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <tuple>
 
@@ -58,7 +59,7 @@ public:
   explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
-  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData) override;
+  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
   void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -106,7 +107,7 @@ private:
   constexpr static uint8_t RA_64 = 3;
   constexpr static uint8_t RA_XMM = 4;
 
-  uint32_t GetPhys(uint32_t Node);
+  IR::PhysicalRegister GetPhys(uint32_t Node);
 
   bool IsFPR(uint32_t Node);
   bool IsGPR(uint32_t Node);
@@ -128,6 +129,7 @@ private:
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   IR::RegisterAllocationPass *RAPass;
+  FEXCore::IR::RegisterAllocationData *RAData;
 
 #ifdef BLOCKSTATS
   bool GetSamplingData {true};

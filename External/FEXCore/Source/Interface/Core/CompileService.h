@@ -16,6 +16,9 @@ namespace Core {
   struct InternalThreadState;
 }
 
+namespace IR {
+  class RegisterAllocationData;
+};
 class CompileService final {
   public:
     CompileService(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
@@ -29,6 +32,7 @@ class CompileService final {
       // Outgoing
       void *CodePtr{};
       FEXCore::IR::IRListView<true> *IRList{};
+      FEXCore::IR::RegisterAllocationData *RAData{};
       FEXCore::Core::DebugData *DebugData{};
 
       // Communication
@@ -37,8 +41,7 @@ class CompileService final {
     };
 
     WorkItem *CompileCode(uint64_t RIP);
-    void ClearCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
-    void RemoveCodeEntry(uint64_t GuestRIP);
+    void ClearCache(FEXCore::Core::InternalThreadState *Thread);
 
   private:
     FEXCore::Context::Context *CTX;

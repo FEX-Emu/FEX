@@ -460,27 +460,20 @@ void JITCore::ClearCache() {
   }
 }
 
-uint32_t JITCore::GetPhys(uint32_t Node) {
-  uint64_t Reg = RAPass->GetNodeRegister(Node);
+IR::PhysicalRegister JITCore::GetPhys(uint32_t Node) {
+  auto PhyReg = RAData->GetNodeRegister(Node);
 
-  if ((uint32_t)Reg != ~0U)
-    return Reg;
-  else
-    LogMan::Msg::A("Couldn't Allocate register for node: ssa%d. Class: %d", Node, Reg >> 32);
+  LogMan::Throw::A(PhyReg.Raw != 255, "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
 
-  return ~0U;
+  return PhyReg;
 }
 
 bool JITCore::IsFPR(uint32_t Node) {
-  auto Class =  RAPass->GetNodeRegister(Node) >> 32;
-
-  return Class == IR::FPRClass.Val;
+  return RAData->GetNodeRegister(Node).Class == IR::FPRClass.Val;
 }
 
 bool JITCore::IsGPR(uint32_t Node) {
-  auto Class =  RAPass->GetNodeRegister(Node) >> 32;
-
-  return Class == IR::GPRClass.Val;
+  return RAData->GetNodeRegister(Node).Class == IR::GPRClass.Val;
 }
 
 template<uint8_t RAType>
@@ -489,17 +482,17 @@ Xbyak::Reg JITCore::GetSrc(uint32_t Node) {
   // r10
   // Callee Saved
   // rbx, rbp, r12, r13, r14, r15
-  uint32_t Reg = GetPhys(Node);
+  auto PhyReg = GetPhys(Node);
   if (RAType == RA_64)
-    return RA64[Reg].cvt64();
+    return RA64[PhyReg.Reg].cvt64();
   else if (RAType == RA_XMM)
-    return RAXMM[Reg];
+    return RAXMM[PhyReg.Reg];
   else if (RAType == RA_32)
-    return RA64[Reg].cvt32();
+    return RA64[PhyReg.Reg].cvt32();
   else if (RAType == RA_16)
-    return RA64[Reg].cvt16();
+    return RA64[PhyReg.Reg].cvt16();
   else if (RAType == RA_8)
-    return RA64[Reg].cvt8();
+    return RA64[PhyReg.Reg].cvt8();
 }
 
 template
@@ -515,23 +508,23 @@ template
 Xbyak::Reg JITCore::GetSrc<JITCore::RA_8>(uint32_t Node);
 
 Xbyak::Xmm JITCore::GetSrc(uint32_t Node) {
-  uint32_t Reg = GetPhys(Node);
-  return RAXMM_x[Reg];
+  auto PhyReg = GetPhys(Node);
+  return RAXMM_x[PhyReg.Reg];
 }
 
 template<uint8_t RAType>
 Xbyak::Reg JITCore::GetDst(uint32_t Node) {
-  uint32_t Reg = GetPhys(Node);
+  auto PhyReg = GetPhys(Node);
   if (RAType == RA_64)
-    return RA64[Reg].cvt64();
+    return RA64[PhyReg.Reg].cvt64();
   else if (RAType == RA_XMM)
-    return RAXMM[Reg];
+    return RAXMM[PhyReg.Reg];
   else if (RAType == RA_32)
-    return RA64[Reg].cvt32();
+    return RA64[PhyReg.Reg].cvt32();
   else if (RAType == RA_16)
-    return RA64[Reg].cvt16();
+    return RA64[PhyReg.Reg].cvt16();
   else if (RAType == RA_8)
-    return RA64[Reg].cvt8();
+    return RA64[PhyReg.Reg].cvt8();
 }
 
 template
@@ -548,11 +541,11 @@ Xbyak::Reg JITCore::GetDst<JITCore::RA_8>(uint32_t Node);
 
 template<uint8_t RAType>
 std::pair<Xbyak::Reg, Xbyak::Reg> JITCore::GetSrcPair(uint32_t Node) {
-  uint32_t Reg = GetPhys(Node);
+  auto PhyReg = GetPhys(Node);
   if (RAType == RA_64)
-    return RA64Pair[Reg];
+    return RA64Pair[PhyReg.Reg];
   else if (RAType == RA_32)
-    return {RA64Pair[Reg].first.cvt32(), RA64Pair[Reg].second.cvt32()};
+    return {RA64Pair[PhyReg.Reg].first.cvt32(), RA64Pair[PhyReg.Reg].second.cvt32()};
 }
 
 template
@@ -562,8 +555,8 @@ template
 std::pair<Xbyak::Reg, Xbyak::Reg> JITCore::GetSrcPair<JITCore::RA_32>(uint32_t Node);
 
 Xbyak::Xmm JITCore::GetDst(uint32_t Node) {
-  uint32_t Reg = GetPhys(Node);
-  return RAXMM_x[Reg];
+  auto PhyReg = GetPhys(Node);
+  return RAXMM_x[PhyReg.Reg];
 }
 
 bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
@@ -610,16 +603,17 @@ std::tuple<JITCore::SetCC, JITCore::CMovCC, JITCore::JCC> JITCore::GetCC(IR::Con
   }
 }
 
-void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
+void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
+  this->RAData = RAData;
   auto HeaderOp = IR->GetHeader();
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
   if ((getSize() + BufferRange) > CurrentCodeBuffer->Size) {
-    ThreadState->CTX->ClearCodeCache(ThreadState, HeaderOp->Entry);
+    ThreadState->CTX->ClearCodeCache(ThreadState, false);
   }
 
 	void *Entry = getCurr<void*>();
@@ -650,9 +644,9 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     mov(rax, (uintptr_t)ThreadSharedData.InterpreterFallbackHelperAddress);
     jmp(rax);
   } else {
-    LogMan::Throw::A(RAPass->HasFullRA(), "Needs RA");
+    LogMan::Throw::A(RAData != nullptr, "Needs RA");
 
-    SpillSlots = RAPass->SpillSlots();
+    SpillSlots = RAData->SpillSlots();
 
     if (SpillSlots) {
       sub(rsp, SpillSlots * 16);
@@ -1001,7 +995,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ThreadSharedData.InterpreterFallbackHelperAddress = getCurr<void*>();
     // This will get called so our stack is now misaligned
     mov(rdi, STATE);
-    mov(rax, reinterpret_cast<uint64_t>(ThreadState->IntBackend->CompileCode(nullptr, nullptr)));
+    mov(rax, reinterpret_cast<uint64_t>(ThreadState->IntBackend->CompileCode(nullptr, nullptr, nullptr)));
 
     call(rax);
 

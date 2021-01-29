@@ -476,7 +476,7 @@ Res InterpreterCore::GetSrc(void* SSAData, IR::OrderedNodeWrapper Src) {
   return reinterpret_cast<Res>(DstPtr);
 }
 
-void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData) {
+void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   return reinterpret_cast<void*>(InterpreterExecution);
 }
 
@@ -4719,10 +4719,12 @@ void InterpreterCore::ExecuteCode(FEXCore::Core::InternalThreadState *Thread) {
     }
   }
 
+  #ifndef NDEBUG
   auto DebugData = Thread->DebugData.find(Thread->State.State.rip);
   if (DebugData != Thread->DebugData.end()) {
-    Thread->Stats.InstructionsExecuted.fetch_add(DebugData->second.GuestInstructionCount);
+    Thread->Stats.InstructionsExecuted.fetch_add(DebugData->second->GuestInstructionCount);
   }
+  #endif
 }
 
 FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {

@@ -1,5 +1,6 @@
 #pragma once
 #include "Interface/IR/PassManager.h"
+#include <FEXCore/IR/RegisterAllocationData.h>
 #include <vector>
 
 namespace FEXCore::IR {
@@ -9,7 +10,6 @@ class IRListView;
 class RegisterAllocationPass : public FEXCore::IR::Pass {
   public:
     bool HasFullRA() const { return HadFullRA; }
-    uint32_t SpillSlots() const { return SpillSlotCount; }
 
     virtual void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) = 0;
     virtual void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) = 0;
@@ -33,10 +33,14 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
      * @{ */
 
     /**
-     * @brief Returns the register and class encoded together
-     * Top 32bits is the class, lower 32bits is the register
+     * @brief Returns the register and class map array
      */
-    virtual uint64_t GetNodeRegister(uint32_t Node) = 0;
+    virtual RegisterAllocationData *GetAllocationData() = 0;
+
+    /**
+     * @brief Returns and transfers ownership of the register and class map array
+     */
+    virtual std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> PullAllocationData() = 0;
     /**  @} */
 
   protected:

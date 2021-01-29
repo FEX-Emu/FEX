@@ -139,7 +139,9 @@ namespace FEXCore::Context {
     FEXCore::Core::ThreadState *GetThreadState();
     void LoadEntryList();
 
-    std::tuple<void *, FEXCore::Core::DebugData *> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    std::tuple<FEXCore::IR::IRListView<true> *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t> GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+
+    std::tuple<void *, FEXCore::IR::IRListView<true> *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileFallbackBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
@@ -158,7 +160,7 @@ namespace FEXCore::Context {
 #endif
 
   protected:
-    void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
 
   private:
     void WaitForIdleWithTimeout();
