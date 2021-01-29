@@ -11,6 +11,10 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 
+#ifndef MREMAP_DONTUNMAP
+#define MREMAP_DONTUNMAP 4
+#endif
+
 namespace FEX::HLE::x32 {
 uint64_t MemAllocator::FindPageRange(uint64_t Start, size_t Pages) {
   // Linear range scan
