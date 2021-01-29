@@ -94,13 +94,13 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
   AbsoluteLoopTopAddress = getCurr<uint64_t>();
 
   {
-    mov(r13, Thread->BlockCache->GetPagePointer());
+    mov(r13, Thread->LookupCache->GetPagePointer());
 
     // Load our RIP
     mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
 
     mov(rax, rdx);
-    mov(rbx, Thread->BlockCache->GetVirtualMemorySize() - 1);
+    mov(rbx, Thread->LookupCache->GetVirtualMemorySize() - 1);
     and_(rax, rbx);
     shr(rax, 12);
 
@@ -113,7 +113,7 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
     mov (rax, rdx);
     and_(rax, 0x0FFF);
 
-    shl(rax, (int)log2(sizeof(FEXCore::BlockCache::BlockCacheEntry)));
+    shl(rax, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
 
     // check for aliasing
     mov(rcx, qword [rdi + rax + 8]);

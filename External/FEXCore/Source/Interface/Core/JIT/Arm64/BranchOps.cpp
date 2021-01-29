@@ -84,9 +84,9 @@ DEF_OP(ExitFunction) {
     RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
     
     // L1 Cache
-    LoadConstant(x0, State->BlockCache->GetL1Pointer());
+    LoadConstant(x0, State->LookupCache->GetL1Pointer());
 
-    and_(x3, RipReg, BlockCache::L1_ENTRIES_MASK);
+    and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
     add(x0, x0, Operand(x3, Shift::LSL, 4));
 
     ldp(x1, x0, MemOperand(x0));

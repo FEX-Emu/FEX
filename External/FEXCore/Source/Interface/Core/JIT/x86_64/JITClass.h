@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Interface/Core/BlockCache.h"
+#include "Interface/Core/LookupCache.h"
 #include "Interface/Core/BlockSamplingData.h"
 
 #include "Interface/Core/JIT/x86_64/JIT.h"

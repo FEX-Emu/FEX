@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Interface/Core/BlockCache.h"
+#include "Interface/Core/LookupCache.h"
 
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"

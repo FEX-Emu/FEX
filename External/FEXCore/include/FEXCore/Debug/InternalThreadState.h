@@ -8,7 +8,7 @@
 #include <thread>
 
 namespace FEXCore {
-  class BlockCache;
+  class LookupCache;
   class CompileService;
 }
 
@@ -75,7 +75,7 @@ namespace FEXCore::Core {
     std::shared_ptr<FEXCore::CPU::CPUBackend> IntBackend;
     std::unique_ptr<FEXCore::CPU::CPUBackend> FallbackBackend;
 
-    std::unique_ptr<FEXCore::BlockCache> BlockCache;
+    std::unique_ptr<FEXCore::LookupCache> LookupCache;
 
     std::unordered_map<uint64_t, std::unique_ptr<FEXCore::IR::IRListView<true>>> IRLists;
     std::unordered_map<uint64_t, FEXCore::Core::DebugData> DebugData;

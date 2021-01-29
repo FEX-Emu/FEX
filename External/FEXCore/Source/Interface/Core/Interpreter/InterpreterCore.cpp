@@ -5,7 +5,7 @@
 #ifdef _M_ARM_64
 #include "Interface/Core/ArchHelpers/Arm64.h"
 #endif
-#include "Interface/Core/BlockCache.h"
+#include "Interface/Core/LookupCache.h"
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"

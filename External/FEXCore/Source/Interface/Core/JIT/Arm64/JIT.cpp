@@ -1016,7 +1016,7 @@ void JITCore::PopCalleeSavedRegisters() {
 uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record) {
   auto GuestRip = record[1];
 
-  auto HostCode = Thread->BlockCache->FindBlock(GuestRip);
+  auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
 
   if (!HostCode) {
     //printf("ExitFunctionLink: Aborting, %lX not in cache\n", GuestRip);
@@ -1038,7 +1038,7 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
     vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
     
     // Add de-linking handler
-    Thread->BlockCache->AddBlockLink(GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
+    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
       vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
       vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
       Literal l_BranchHost{LinkerAddress};
@@ -1053,7 +1053,7 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
     record[0] = HostCode;
 
     // Add de-linking handler
-    Thread->BlockCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
       record[0] = LinkerAddress;
     });
   }
@@ -1093,9 +1093,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   // }
 
 
-  uint64_t VirtualMemorySize = Thread->BlockCache->GetVirtualMemorySize();
+  uint64_t VirtualMemorySize = Thread->LookupCache->GetVirtualMemorySize();
   Literal l_VirtualMemory {VirtualMemorySize};
-  Literal l_PagePtr {Thread->BlockCache->GetPagePointer()};
+  Literal l_PagePtr {Thread->LookupCache->GetPagePointer()};
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
   Literal l_Interpreter {reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr))};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
@@ -1169,9 +1169,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   auto RipReg = x2;
 
   // L1 Cache
-  LoadConstant(x0, Thread->BlockCache->GetL1Pointer());
+  LoadConstant(x0, Thread->LookupCache->GetL1Pointer());
 
-  and_(x3, RipReg, BlockCache::L1_ENTRIES_MASK);
+  and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
   add(x0, x0, Operand(x3, Shift::LSL, 4));
   ldp(x1, x0, MemOperand(x0));
   cmp(x0, RipReg);
@@ -1182,12 +1182,12 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   bind(&FullLookup);
 
   // This is the block cache lookup routine
-  // It matches what is going on it BlockCache.h::FindBlock
+  // It matches what is going on it LookupCache.h::FindBlock
   ldr(x0, &l_PagePtr);
 
   // Mask the address by the virtual address size so we can check for aliases
   if (__builtin_popcountl(VirtualMemorySize) == 1) {
-    and_(x3, RipReg, Thread->BlockCache->GetVirtualMemorySize() - 1);
+    and_(x3, RipReg, Thread->LookupCache->GetVirtualMemorySize() - 1);
   }
   else {
     ldr(x3, &l_VirtualMemory);
@@ -1209,24 +1209,24 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     and_(x1, x3, 0x0FFF);
 
     // Shift the offset by the size of the block cache entry
-    add(x0, x0, Operand(x1, Shift::LSL, (int)log2(sizeof(FEXCore::BlockCache::BlockCacheEntry))));
+    add(x0, x0, Operand(x1, Shift::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry))));
 
     // Load the guest address first to ensure it maps to the address we are currently at
     // This fixes aliasing problems
-    ldr(x1, MemOperand(x0, offsetof(FEXCore::BlockCache::BlockCacheEntry, GuestCode)));
+    ldr(x1, MemOperand(x0, offsetof(FEXCore::LookupCache::LookupCacheEntry, GuestCode)));
     cmp(x1, RipReg);
     b(&NoBlock, Condition::ne);
 
     // Now load the actual host block to execute if we can
-    ldr(x3, MemOperand(x0, offsetof(FEXCore::BlockCache::BlockCacheEntry, HostCode)));
+    ldr(x3, MemOperand(x0, offsetof(FEXCore::LookupCache::LookupCacheEntry, HostCode)));
     cbz(x3, &NoBlock);
 
     // If we've made it here then we have a real compiled block
     {
       // update L1 cache
-      LoadConstant(x0, Thread->BlockCache->GetL1Pointer());
+      LoadConstant(x0, Thread->LookupCache->GetL1Pointer());
 
-      and_(x1, RipReg, BlockCache::L1_ENTRIES_MASK);
+      and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
       add(x0, x0, Operand(x1, Shift::LSL, 4));
       stp(x3, x2, MemOperand(x0));
       br(x3);

@@ -199,13 +199,13 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
   auto RipReg = x2;
 
   // Mask the address by the virtual address size so we can check for aliases
-  LoadConstant(x3, Thread->BlockCache->GetVirtualMemorySize() - 1);
+  LoadConstant(x3, Thread->LookupCache->GetVirtualMemorySize() - 1);
   and_(x3, RipReg, x3);
 
   {
     // This is the block cache lookup routine
-    // It matches what is going on it BlockCache.h::FindBlock
-    LoadConstant(x0, Thread->BlockCache->GetPagePointer());
+    // It matches what is going on it LookupCache.h::FindBlock
+    LoadConstant(x0, Thread->LookupCache->GetPagePointer());
 
     // Offset the address and add to our page pointer
     lsr(x1, x3, 12);
@@ -220,16 +220,16 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
     and_(x1, x3, 0x0FFF);
 
     // Shift the offset by the size of the block cache entry
-    add(x0, x0, Operand(x1, Shift::LSL, (int)log2(sizeof(FEXCore::BlockCache::BlockCacheEntry))));
+    add(x0, x0, Operand(x1, Shift::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry))));
 
     // Load the guest address first to ensure it maps to the address we are currently at
     // This fixes aliasing problems
-    ldr(x1, MemOperand(x0, offsetof(FEXCore::BlockCache::BlockCacheEntry, GuestCode)));
+    ldr(x1, MemOperand(x0, offsetof(FEXCore::LookupCache::LookupCacheEntry, GuestCode)));
     cmp(x1, RipReg);
     b(&NoBlock, Condition::ne);
 
     // Now load the actual host block to execute if we can
-    ldr(x1, MemOperand(x0, offsetof(FEXCore::BlockCache::BlockCacheEntry, HostCode)));
+    ldr(x1, MemOperand(x0, offsetof(FEXCore::LookupCache::LookupCacheEntry, HostCode)));
     cbz(x1, &NoBlock);
 
     // If we've made it here then we have a real compiled block

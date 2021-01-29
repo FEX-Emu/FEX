@@ -2,7 +2,7 @@
 #include "Common/Paths.h"
 
 #include "Interface/Context/Context.h"
-#include "Interface/Core/BlockCache.h"
+#include "Interface/Core/LookupCache.h"
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/CompileService.h"
 #include "Interface/Core/Core.h"
@@ -494,7 +494,7 @@ namespace FEXCore::Context {
   void Context::InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread) {
     State->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
     State->OpDispatcher->SetMultiblock(Config.Multiblock);
-    State->BlockCache = std::make_unique<FEXCore::BlockCache>(this);
+    State->LookupCache = std::make_unique<FEXCore::LookupCache>(this);
     State->FrontendDecoder = std::make_unique<FEXCore::Frontend::Decoder>(this);
     State->PassManager = std::make_unique<FEXCore::IR::PassManager>();
     State->PassManager->RegisterExitHandler([this]() {
@@ -559,28 +559,12 @@ namespace FEXCore::Context {
     return Thread;
   }
 
-  uintptr_t Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
-    auto BlockMapPtr = Thread->BlockCache->AddBlockMapping(Address, Ptr);
-    if (BlockMapPtr == 0) {
-      Thread->BlockCache->ClearCache();
-
-      // Pull out the current IR we added and store it back after we cleared the rest of the list
-      // Needed in the case the the block mapping has aliased
-      auto iter = Thread->IRLists.find(Address);
-      if (iter != Thread->IRLists.end()) {
-        auto IR = iter->second.release();
-        Thread->IRLists.clear();
-        Thread->IRLists.try_emplace(Address, IR);
-      }
-      BlockMapPtr = Thread->BlockCache->AddBlockMapping(Address, Ptr);
-      LogMan::Throw::A(BlockMapPtr, "Couldn't add mapping after clearing mapping cache");
-    }
-
-    return BlockMapPtr;
+  void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
+    Thread->LookupCache->AddBlockMapping(Address, Ptr);
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    Thread->BlockCache->ClearCache();
+    Thread->LookupCache->ClearCache();
     Thread->CPUBackend->ClearCache();
     Thread->IntBackend->ClearCache();
 
@@ -815,6 +799,13 @@ namespace FEXCore::Context {
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    
+    // Is the code in the cache?
+    // The backends only check L1 and L2, not L3
+    if (auto HostCode = Thread->LookupCache->FindBlock(GuestRIP)) {
+      return HostCode;
+    }
+
     void *CodePtr;
     FEXCore::Core::DebugData *DebugData;
     bool DecrementRefCount = false;
@@ -855,7 +846,9 @@ namespace FEXCore::Context {
 
       if (DecrementRefCount)
         --Thread->CompileBlockReentrantRefCount;
-      return AddBlockMapping(Thread, GuestRIP, CodePtr);
+      AddBlockMapping(Thread, GuestRIP, CodePtr);
+
+      return (uintptr_t)CodePtr;
     }
 
     if (DecrementRefCount)
@@ -869,12 +862,8 @@ namespace FEXCore::Context {
     // This will most likely fail since regular code use won't be using a fallback core.
     // It's mainly for testing new instruction encodings
     void *CodePtr = Thread->FallbackBackend->CompileCode(nullptr, nullptr);
-    if (CodePtr) {
-     uintptr_t Ptr = reinterpret_cast<uintptr_t >(AddBlockMapping(Thread, GuestRIP, CodePtr));
-     return Ptr;
-    }
-
-    return 0;
+    AddBlockMapping(Thread, GuestRIP, CodePtr);
+    return (uintptr_t)CodePtr;
   }
 
   void Context::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {
@@ -930,7 +919,7 @@ namespace FEXCore::Context {
   void Context::RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     Thread->IRLists.erase(GuestRIP);
     Thread->DebugData.erase(GuestRIP);
-    Thread->BlockCache->Erase(GuestRIP);
+    Thread->LookupCache->Erase(GuestRIP);
 
     if (Thread->CompileService) {
       Thread->CompileService->RemoveCodeEntry(GuestRIP);
@@ -945,7 +934,7 @@ namespace FEXCore::Context {
     // Erase the RIP from all the storage backings if it exists
     Thread->IRLists.erase(RIP);
     Thread->DebugData.erase(RIP);
-    Thread->BlockCache->Erase(RIP);
+    Thread->LookupCache->Erase(RIP);
 
     // We don't care if compilation passes or not
     CompileBlock(Thread, RIP);
@@ -976,7 +965,7 @@ namespace FEXCore::Context {
   }
 
   bool Context::FindHostCodeForRIP(uint64_t RIP, uint8_t **Code) {
-    uintptr_t HostCode = ParentThread->BlockCache->FindBlock(RIP);
+    uintptr_t HostCode = ParentThread->LookupCache->FindBlock(RIP);
     if (!HostCode) {
       return false;
     }

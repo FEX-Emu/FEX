@@ -81,10 +81,10 @@ DEF_OP(ExitFunction) {
     Xbyak::Reg RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
     
     // L1 Cache
-    mov(rcx, ThreadState->BlockCache->GetL1Pointer());
+    mov(rcx, ThreadState->LookupCache->GetL1Pointer());
     mov(rax, RipReg);
 
-    and_(rax, BlockCache::L1_ENTRIES_MASK);
+    and_(rax, LookupCache::L1_ENTRIES_MASK);
     shl(rax, 4);
 
     Xbyak::RegExp LookupBase = rcx + rax;
