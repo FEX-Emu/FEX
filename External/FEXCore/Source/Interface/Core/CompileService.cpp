@@ -68,7 +68,6 @@ namespace FEXCore {
     auto SelectedThread = Thread->IsCompileService ? ParentThread : Thread;
     SelectedThread->LookupCache->ClearCache();
     SelectedThread->CPUBackend->ClearCache();
-    SelectedThread->IntBackend->ClearCache();
   }
 
 

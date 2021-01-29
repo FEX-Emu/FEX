@@ -1,5 +1,6 @@
 #include "Common/MathUtils.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
+#include "Interface/Context/Context.h"
 #include <FEXCore/Core/X86Enums.h>
 
 #include <cmath>
@@ -17,7 +18,7 @@ class DispatchGenerator : public Xbyak::CodeGenerator {
 
   CPUBackend::AsmDispatch DispatchPtr;
   CPUBackend::JITCallback CallbackPtr;
-  InterpreterCore::CallbackReturn ReturnPtr;
+  FEXCore::Context::Context::IntCallbackReturn ReturnPtr;
 
   uint64_t ThreadStopHandlerAddress;
   uint64_t AbsoluteLoopTopAddress;
@@ -238,7 +239,7 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
 
 
   {
-    ReturnPtr = getCurr<InterpreterCore::CallbackReturn>();
+    ReturnPtr = getCurr<FEXCore::Context::Context::IntCallbackReturn>();
 //  using CallbackReturn =  __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
 
     // rdi = thread
@@ -447,7 +448,9 @@ void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore:
   Generator = new DispatchGenerator(ctx, Thread);
   DispatchPtr = Generator->DispatchPtr;
   CallbackPtr = Generator->CallbackPtr;
-  ReturnPtr = Generator->ReturnPtr;
+
+  // TODO: It feels wrong to initialize this way
+  ctx->InterpreterCallbackReturn = Generator->ReturnPtr;
 }
 
 bool InterpreterCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {

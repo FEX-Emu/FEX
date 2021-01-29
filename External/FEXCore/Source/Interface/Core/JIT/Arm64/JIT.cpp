@@ -8,6 +8,7 @@
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/UContext.h>
+#include "Interface/Core/Interpreter/InterpreterOps.h"
 
 #include <sys/mman.h>
 #include <stdio.h>
@@ -854,6 +855,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
 
     LoadConstant(x0, ThreadSharedData.InterpreterFallbackHelperAddress);
+    LoadConstant(x1, (uintptr_t)IR);
+    
+    // Debug data is only used in debug builds
+    #ifndef NDEBUG
+    LoadConstant(x2, (uintptr_t)DebugData);
+    #endif
     br(x0);
   } else {
     //LogMan::Throw::A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
@@ -1092,11 +1099,10 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   Literal l_VirtualMemory {VirtualMemorySize};
   Literal l_PagePtr {Thread->LookupCache->GetPagePointer()};
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
-  Literal l_Interpreter {reinterpret_cast<uint64_t>(State->IntBackend->CompileCode(nullptr, nullptr, nullptr))};
+  Literal l_Interpreter {reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR)};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
 
   uintptr_t CompileBlockPtr{};
-  uintptr_t CompileFallbackPtr{};
   {
     using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
     union PtrCast {
@@ -1108,20 +1114,8 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
     CompileBlockPtr = Ptr.Data;
   }
-  {
-    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
-    union PtrCast {
-      ClassPtrType ClassPtr;
-      uintptr_t Data;
-    };
-
-    PtrCast Ptr;
-    Ptr.ClassPtr = &FEXCore::Context::Context::CompileFallbackBlock;
-    CompileFallbackPtr = Ptr.Data;
-  }
 
   Literal l_CompileBlock {CompileBlockPtr};
-  Literal l_CompileFallback {CompileFallbackPtr};
   Literal l_ExitFunctionLink {(uintptr_t)&ExitFunctionLink};
 
   // Push all the register we need to save
@@ -1257,7 +1251,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     br(x0);
   }
 
-  aarch64::Label FallbackCore;
   // Need to create the block
   {
     bind(&NoBlock);
@@ -1271,29 +1264,10 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     blr(x3); // { CTX, ThreadState, RIP}
     FillStaticRegs();
 
-    // X0 now contains either nullptr or block pointer
-    cbz(x0, &FallbackCore);
+    // X0 now contains the block pointer
     blr(x0);
 
     b(&LoopTop);
-  }
-
-  // We need to fallback to our fallback core
-  {
-    bind(&FallbackCore);
-
-    ldr(x0, &l_CTX);
-    mov(x1, STATE);
-    ldr(x3, &l_CompileFallback);
-
-    // X2 contains our guest RIP
-    SpillStaticRegs();
-    blr(x3); // {ThreadState, RIP}
-    FillStaticRegs();
-
-    // X0 now contains either nullptr or block pointer
-    cbz(x0, &ExitSpillSRA);
-    br(x0);
   }
 
   {
@@ -1312,9 +1286,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     ThreadSharedData.InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     SpillStaticRegs();
     mov(x0, STATE);
-    ldr(x1, &l_Interpreter);
+    ldr(x3, &l_Interpreter);
 
-    blr(x1);
+    blr(x3);
     FillStaticRegs();
     b(&LoopTop);
   }
@@ -1396,7 +1370,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   place(&l_Interpreter);
   place(&l_Sleep);
   place(&l_CompileBlock);
-  place(&l_CompileFallback);
   place(&l_ExitFunctionLink);
 
   FinalizeCode();

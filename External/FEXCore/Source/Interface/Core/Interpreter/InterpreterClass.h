@@ -28,13 +28,8 @@ public:
 
   bool NeedsOpDispatch() override { return true; }
 
-  void ExecuteCode(FEXCore::Core::InternalThreadState *Thread);
-
   void CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
   void DeleteAsmDispatch();
-
-  using CallbackReturn =  __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
-  CallbackReturn ReturnPtr;
 
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
 

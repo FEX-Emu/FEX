@@ -11,6 +11,8 @@
 #include <cmath>
 #include <signal.h>
 
+#include "Interface/Core/Interpreter/InterpreterOps.h"
+
 // #define DEBUG_RA 1
 // #define DEBUG_CYCLES
 
@@ -641,6 +643,13 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
   if (HeaderOp->ShouldInterpret) {
     mov(rax, HeaderOp->Entry);
     mov(qword [STATE + offsetof(FEXCore::Core::CPUState, rip)], rax);
+    mov(rsi, (uint64_t)IR);
+
+    // Debug data is only used in debug builds
+    #ifndef NDEBUG
+    mov(rdx, (uint64_t)DebugData);
+    #endif
+
     mov(rax, (uintptr_t)ThreadSharedData.InterpreterFallbackHelperAddress);
     jmp(rax);
   } else {
@@ -994,9 +1003,8 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     // Interpreter fallback helper code
     ThreadSharedData.InterpreterFallbackHelperAddress = getCurr<void*>();
     // This will get called so our stack is now misaligned
+    mov(rax, reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR));
     mov(rdi, STATE);
-    mov(rax, reinterpret_cast<uint64_t>(ThreadState->IntBackend->CompileCode(nullptr, nullptr, nullptr)));
-
     call(rax);
 
     jmp(LoopTop);
