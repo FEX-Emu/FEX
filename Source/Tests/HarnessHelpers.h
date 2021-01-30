@@ -3,6 +3,7 @@
 #include "Common/MathUtils.h"
 
 #include <FEXCore/Core/CodeLoader.h>
+#include <array>
 #include <bitset>
 #include <cassert>
 #include <cstring>

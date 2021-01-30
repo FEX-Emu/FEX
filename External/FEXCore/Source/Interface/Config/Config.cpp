@@ -4,6 +4,7 @@
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Config/Config.h>
+#include <map>
 
 namespace FEXCore::Config {
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config) {

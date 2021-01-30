@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <istream>
+#include <unordered_map>
 
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>

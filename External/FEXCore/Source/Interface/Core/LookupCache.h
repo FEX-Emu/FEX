@@ -2,6 +2,8 @@
 #include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
 
+#include <map>
+
 namespace FEXCore {
 class LookupCache {
 public:
