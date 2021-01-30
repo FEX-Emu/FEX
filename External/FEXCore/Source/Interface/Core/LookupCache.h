@@ -117,6 +117,7 @@ private:
         // Couldn't allocate, clear L2 and retry
         ClearL2Cache();
         CacheBlockMapping(Address, HostCode);
+        return;
       }
       Pointers[Address] = NewPageBacking;
       LocalPagePointer = NewPageBacking;
