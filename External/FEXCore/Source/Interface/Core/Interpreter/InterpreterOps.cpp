@@ -26,6 +26,7 @@
 #ifdef _M_X86_64
 #include <xmmintrin.h>
 #endif
+#include <unistd.h>
 
 namespace FEXCore::CPU {
 
@@ -397,13 +398,19 @@ Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src) {
 [[noreturn]]
 static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->StopThread(Thread);
-  std::unexpected();
+
+  // If the StopThread signal is delayed for any reason, spin forever
+  for (;;)
+    sleep(1);
 }
 
 [[noreturn]]
 static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->SignalThread(Thread, FEXCore::Core::SIGNALEVENT_RETURN);
-  std::unexpected();
+
+  // If the return signal is delayed for any reason, spin forever
+  for (;;)
+    sleep(1);
 }
 
 void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView<true> *CurrentIR, FEXCore::Core::DebugData *DebugData) {
