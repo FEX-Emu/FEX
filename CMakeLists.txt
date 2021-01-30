@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(FEX)
 
 option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
+option(BUILD_THUNKS "Build thunks" FALSE)
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 option(ENABLE_IWYU "Enables include what you use program" FALSE)
 option(ENABLE_LTO "Enable LTO with compilation" TRUE)
@@ -175,21 +176,23 @@ if (BUILD_TESTS)
   add_subdirectory(unittests/)
 endif()
 
-include(ExternalProject)
+if (BUILD_THUNKS)
+  include(ExternalProject)
 
-ExternalProject_Add(host-libs
-	PREFIX host-libs
-	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/HostLibs"
-  BINARY_DIR "Host"
-	INSTALL_COMMAND ""
-  BUILD_ALWAYS ON
-)
+  ExternalProject_Add(host-libs
+    PREFIX host-libs
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/HostLibs"
+    BINARY_DIR "Host"
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS ON
+  )
 
-ExternalProject_Add(guest-libs
-	PREFIX guest-libs
-	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
-  BINARY_DIR "Guest"
-  CMAKE_ARGS "-DX86_C_COMPILER:STRING=${X86_C_COMPILER}" "-DX86_CXX_COMPILER:STRING=${X86_CXX_COMPILER}"
-	INSTALL_COMMAND ""
-  BUILD_ALWAYS ON
-)
+  ExternalProject_Add(guest-libs
+    PREFIX guest-libs
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
+    BINARY_DIR "Guest"
+    CMAKE_ARGS "-DX86_C_COMPILER:STRING=${X86_C_COMPILER}" "-DX86_CXX_COMPILER:STRING=${X86_CXX_COMPILER}"
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS ON
+  )
+endif()
