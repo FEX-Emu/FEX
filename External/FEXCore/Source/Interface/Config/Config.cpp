@@ -45,6 +45,12 @@ namespace FEXCore::Config {
     case FEXCore::Config::CONFIG_VALIDATE_IR_PARSER:
       CTX->Config.ValidateIRarser = Config != 0;
     break;
+    case FEXCore::Config::CONFIG_AOTIR_GENERATE:
+      CTX->Config.AOTIRGenerate = Config != 0;
+    break;
+    case FEXCore::Config::CONFIG_AOTIR_LOAD:
+      CTX->Config.AOTIRLoad = Config != 0;
+    break;
     default: LogMan::Msg::A("Unknown configuration option");
     }
   }
@@ -100,6 +106,12 @@ namespace FEXCore::Config {
     break;
     case FEXCore::Config::CONFIG_VALIDATE_IR_PARSER:
       return CTX->Config.ValidateIRarser;
+    break;
+    case FEXCore::Config::CONFIG_AOTIR_GENERATE:
+      return CTX->Config.AOTIRGenerate;
+    break;
+    case FEXCore::Config::CONFIG_AOTIR_LOAD:
+      return CTX->Config.AOTIRLoad;
     break;
     default: LogMan::Msg::A("Unknown configuration option");
     }

@@ -821,7 +821,7 @@ namespace FEXCore::Context {
     return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR};
   }
 
-  bool Context::LoadAOTCache(std::istream &stream) {
+  bool Context::LoadAOTIRCache(std::istream &stream) {
     std::lock_guard<std::mutex> lk(AOTCacheLock);
     AOTCache.clear();
     uint64_t tag;
@@ -873,7 +873,7 @@ namespace FEXCore::Context {
     return true;
   }
 
-  void Context::WriteAOTCache(std::ostream &stream) {
+  void Context::WriteAOTIRCache(std::ostream &stream) {
     std::lock_guard<std::mutex> lk(AOTCacheLock);
     uint64_t tag = 0xDEADBEEFC0D30000;
     stream.write((char*)&tag, sizeof(tag));
@@ -958,7 +958,8 @@ namespace FEXCore::Context {
       Thread->DebugData.emplace(GuestRIP, DebugData);
       Thread->RALists.emplace(GuestRIP, RAData);
 
-      if (true && RAData) {
+      // Add to AOT cache if aot generation is enabled
+      if (Config.AOTIRGenerate && RAData) {
         std::lock_guard<std::mutex> lk(AOTCacheLock);
         auto RADataCopy = (typeof(RAData))malloc(RAData->Size(RAData->MapCount));
         memcpy(RADataCopy, RAData, RAData->Size(RAData->MapCount));

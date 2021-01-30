@@ -151,11 +151,11 @@ namespace FEXCore::Context {
     return CTX->CPUID.RunFunction(Function);
   }
 
-  bool ReadAOT(FEXCore::Context::Context *CTX, std::istream& stream) {
-    return CTX->LoadAOTCache(stream);
+  bool ReadAOTIR(FEXCore::Context::Context *CTX, std::istream& stream) {
+    return CTX->LoadAOTIRCache(stream);
   }
-  void WriteAOT(FEXCore::Context::Context *CTX, std::ostream& stream) {
-    CTX->WriteAOTCache(stream);
+  void WriteAOTIR(FEXCore::Context::Context *CTX, std::ostream& stream) {
+    CTX->WriteAOTIRCache(stream);
   }
 
 namespace Debug {

@@ -70,6 +70,9 @@ namespace FEXCore::Context {
       bool ABILocalFlags {false};
       bool ABINoPF {false};
 
+      bool AOTIRGenerate {false};
+      bool AOTIRLoad {false};
+
       std::string DumpIR;
 
       // this is for internal use
@@ -162,8 +165,8 @@ namespace FEXCore::Context {
     std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
-    bool LoadAOTCache(std::istream &stream);
-    void WriteAOTCache(std::ostream &stream);
+    bool LoadAOTIRCache(std::istream &stream);
+    void WriteAOTIRCache(std::ostream &stream);
     // Used for thread creation from syscalls
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);

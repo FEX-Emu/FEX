@@ -188,6 +188,8 @@ namespace FEX::Config {
     {FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS,    "ABILocalFlags"},
     {FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF,          "ABINoPF"},
     {FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, "O0"},
+    {FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE,       "AOTIRGenerate"},
+    {FEXCore::Config::ConfigOption::CONFIG_AOTIR_LOAD,           "AOTIRLoad"},
   }};
 
 
@@ -235,6 +237,8 @@ namespace FEX::Config {
     {"ABILocalFlags", FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS},
     {"AbiNoPF",       FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF},
     {"O0",            FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES},
+    {"AOTIRGenerate",   FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE},
+    {"AOTIRLoad",       FEXCore::Config::ConfigOption::CONFIG_AOTIR_LOAD},
   }};
 
   void OptionMapper::MapNameToOption(const char *ConfigName, const char *ConfigString) {
@@ -307,7 +311,7 @@ namespace FEX::Config {
       }
     };
 
-    static const std::array<std::pair<std::string, FEXCore::Config::ConfigOption>, 18> ConfigLookup = {{
+    static const std::array<std::pair<std::string, FEXCore::Config::ConfigOption>, 20> ConfigLookup = {{
       {"FEX_CORE",          FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE},
       {"FEX_MAXINST",       FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST},
       {"FEX_SINGLESTEP",    FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP},
@@ -326,6 +330,8 @@ namespace FEX::Config {
       {"FEX_ABINOPF",       FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF},
       {"FEX_BREAK",         FEXCore::Config::ConfigOption::CONFIG_BREAK_ON_FRONTEND},
       {"FEX_DUMP_GPRS",     FEXCore::Config::ConfigOption::CONFIG_DUMP_GPRS},
+      {"FEX_AOT_GENERATE",  FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE},
+      {"FEX_AOT_LOAD",      FEXCore::Config::ConfigOption::CONFIG_AOTIR_LOAD},
     }};
 
     std::optional<std::string_view> Value;
