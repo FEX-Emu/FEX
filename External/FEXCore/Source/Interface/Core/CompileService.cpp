@@ -128,7 +128,7 @@ namespace FEXCore {
           // Set our thread state's RIP
           CompileThreadData->State.State.rip = Item->RIP;
 
-          auto [CodePtr, IRList, DebugData, RAData, Generated] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
+          auto [CodePtr, IRList, DebugData, RAData, Generated, Min, Max] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
 
           LogMan::Throw::A(Generated == true, "Compile Service doesn't have IR Cache");
 

@@ -27,6 +27,49 @@
 
 #include "Interface/Core/GdbServer.h"
 
+namespace {
+  // Compression function for Merkle-Damgard construction.
+  // This function is generated using the framework provided.
+  #define mix(h) ({					\
+        (h) ^= (h) >> 23;		\
+        (h) *= 0x2127599bf4325c37ULL;	\
+        (h) ^= (h) >> 47; })
+
+  static uint64_t fasthash64(const void *buf, size_t len, uint64_t seed)
+  {
+    const uint64_t    m = 0x880355f21e6d1965ULL;
+    const uint64_t *pos = (const uint64_t *)buf;
+    const uint64_t *end = pos + (len / 8);
+    const unsigned char *pos2;
+    uint64_t h = seed ^ (len * m);
+    uint64_t v;
+
+    while (pos != end) {
+      v  = *pos++;
+      h ^= mix(v);
+      h *= m;
+    }
+
+    pos2 = (const unsigned char*)pos;
+    v = 0;
+
+    switch (len & 7) {
+    case 7: v ^= (uint64_t)pos2[6] << 48;
+    case 6: v ^= (uint64_t)pos2[5] << 40;
+    case 5: v ^= (uint64_t)pos2[4] << 32;
+    case 4: v ^= (uint64_t)pos2[3] << 24;
+    case 3: v ^= (uint64_t)pos2[2] << 16;
+    case 2: v ^= (uint64_t)pos2[1] << 8;
+    case 1: v ^= (uint64_t)pos2[0];
+      h ^= mix(v);
+      h *= m;
+    }
+
+    return mix(h);
+  }
+  #undef mix
+}
+
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
     // This should be used for generating things that are shared between threads
@@ -574,7 +617,7 @@ namespace FEXCore::Context {
     }
   }
 
-  std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t> Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t, uint64_t, uint64_t> Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
     GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
 
@@ -588,7 +631,7 @@ namespace FEXCore::Context {
         LogMan::Msg::E("Had Frontend decoder error");
         Stop(false /* Ignore Current Thread */);
       }
-      return { nullptr, nullptr, 0, 0 };
+      return { nullptr, nullptr, 0, 0, 0, 0 };
     }
 
     auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
@@ -668,7 +711,7 @@ namespace FEXCore::Context {
           if (TotalInstructions == 0) {
             // Couldn't handle any instruction in op dispatcher
             Thread->OpDispatcher->ResetWorkingList();
-            return { nullptr, nullptr, 0, 0 };
+            return { nullptr, nullptr, 0, 0, 0, 0};
           }
           else {
             uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
@@ -763,14 +806,16 @@ namespace FEXCore::Context {
 
     Thread->OpDispatcher->ResetWorkingList();
 
-    return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength};
+    return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength, Thread->FrontendDecoder->DecodedMinAddress, Thread->FrontendDecoder->DecodedMaxAddress };
   }
 
-  std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData *RAData {};
     bool GeneratedIR {};
+    uint64_t MinAddr {};
+    uint64_t MaxAddr {};
 
     // Do we already have this in the IR cache?
     auto IR = Thread->IRLists.find(GuestRIP);
@@ -789,22 +834,28 @@ namespace FEXCore::Context {
       std::lock_guard<std::mutex> lk(AOTCacheLock);
       auto AOTEntry = AOTCache.find(GuestRIP);
       if (AOTEntry != AOTCache.end()) {
-        IRList = AOTEntry->second.IR;
-        RAData = AOTEntry->second.RAData;
-        DebugData = new FEXCore::Core::DebugData();
+        // verify hash
+        auto hash = fasthash64((void*)AOTEntry->second.start, AOTEntry->second.len, 0);
+        if (hash == AOTEntry->second.crc) {
+          IRList = AOTEntry->second.IR;
+          RAData = AOTEntry->second.RAData;
+          DebugData = new FEXCore::Core::DebugData();
 
-        GeneratedIR = true;
+          GeneratedIR = true;
+        }
       }
     }
 
     if (IRList == nullptr) {
       // Generate IR + Meta Info
-      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength] = GenerateIR(Thread, GuestRIP);
+      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, Min, Max] = GenerateIR(Thread, GuestRIP);
 
       // Setup pointers to internal structures
       IRList = IRCopy;
       RAData = RACopy;
       DebugData = new FEXCore::Core::DebugData();
+      MinAddr = Min;
+      MaxAddr = Max;
 
       // Initialize metadata
       DebugData->GuestCodeSize = TotalInstructionsLength;
@@ -818,7 +869,7 @@ namespace FEXCore::Context {
     }
 
     // Attempt to get the CPU backend to compile this code
-    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR};
+    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR, MinAddr, MaxAddr};
   }
 
   bool Context::LoadAOTIRCache(std::istream &stream) {
@@ -906,6 +957,7 @@ namespace FEXCore::Context {
 
     bool DecrementRefCount = false;
     bool GeneratedIR {};
+    uint64_t MinAddress {}, MaxAddress {};
 
     if (Thread->CompileBlockReentrantRefCount != 0) {
       if (!Thread->CompileService) {
@@ -929,12 +981,14 @@ namespace FEXCore::Context {
     } else {
       ++Thread->CompileBlockReentrantRefCount;
       DecrementRefCount = true;
-      auto [Code, IR, Data, RA, Generated] = CompileCode(Thread, GuestRIP);
+      auto [Code, IR, Data, RA, Generated, Min, Max] = CompileCode(Thread, GuestRIP);
       CodePtr = Code;
       IRList = IR;
       DebugData = Data;
       RAData = RA;
       GeneratedIR = Generated;
+      MinAddress = Min;
+      MaxAddress = Max;
     }
 
     LogMan::Throw::A(CodePtr != nullptr, "Failed to compile code %lX", GuestRIP);
@@ -959,11 +1013,13 @@ namespace FEXCore::Context {
       Thread->RALists.emplace(GuestRIP, RAData);
 
       // Add to AOT cache if aot generation is enabled
-      if (Config.AOTIRGenerate && RAData) {
+      if (Config.AOTIRGenerate && RAData && MinAddress) {
         std::lock_guard<std::mutex> lk(AOTCacheLock);
         auto RADataCopy = (typeof(RAData))malloc(RAData->Size(RAData->MapCount));
         memcpy(RADataCopy, RAData, RAData->Size(RAData->MapCount));
-        AOTCache.insert({GuestRIP, {0, 0, 0, IRList->CreateCopy(), RADataCopy}});
+        auto len = MaxAddress - MinAddress;
+        auto hash = fasthash64((void*)MinAddress, len, 0);
+        AOTCache.insert({GuestRIP, {MinAddress, len, hash, IRList->CreateCopy(), RADataCopy}});
       }
     }
 

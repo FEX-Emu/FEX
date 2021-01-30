@@ -160,9 +160,9 @@ namespace FEXCore::Context {
     FEXCore::Core::ThreadState *GetThreadState();
     void LoadEntryList();
 
-    std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t> GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t, uint64_t, uint64_t> GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
-    std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
     bool LoadAOTIRCache(std::istream &stream);

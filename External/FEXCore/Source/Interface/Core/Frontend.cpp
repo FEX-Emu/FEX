@@ -1027,9 +1027,8 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
         break;
       }
 
-      DecodedMinAddress = std::min(DecodedMinAddress, PCOffset);
-      DecodedMaxAddress = std::max(DecodedMaxAddress, PCOffset + DecodeInst->InstSize);
-
+      DecodedMinAddress = std::min(DecodedMinAddress, RIPToDecode + PCOffset);
+      DecodedMaxAddress = std::max(DecodedMaxAddress, RIPToDecode + PCOffset + DecodeInst->InstSize);
       ++TotalInstructions;
       ++BlockNumberOfInstructions;
       ++DecodedSize;
