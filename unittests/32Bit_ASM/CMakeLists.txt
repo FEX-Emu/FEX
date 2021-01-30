@@ -1,3 +1,7 @@
+enable_language(ASM_NASM)
+if(NOT CMAKE_ASM_NASM_COMPILER_LOADED)
+  error("Failed to find NASM compatible assembler!")
+endif()
 
 # Careful. Globbing can't see changes to the contents of files
 # Need to do a fresh clean to see changes

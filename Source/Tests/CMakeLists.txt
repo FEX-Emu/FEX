@@ -1,7 +1,3 @@
-enable_language(ASM_NASM)
-if(NOT CMAKE_ASM_NASM_COMPILER_LOADED)
-  error("Failed to find NASM compatible assembler!")
-endif()
 
 set(SYSCALL_SRCS
   LinuxSyscalls/FileManagement.cpp
