@@ -123,14 +123,6 @@ static void PrintArg(std::stringstream *out, IRListView<false> const* IR, Ordere
   }
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, IR::TypeDefinition Arg) {
-  *out << "i" << std::dec << static_cast<uint32_t>(Arg.Bytes() * 8);
-
-  if (Arg.Elements()) {
-    *out << "v" << std::dec << static_cast<uint32_t>(Arg.Elements());
-  }
-}
-
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView<false> const* IR, FEXCore::IR::FenceType Arg) {
   if (Arg == IR::Fence_Load) {
     *out << "Loads";
