@@ -296,7 +296,7 @@ int main(int argc, char **argv, char **const envp) {
   std::string base_filename = Program.substr(Program.find_last_of("/\\") + 1) + ".fex-emu.iraot";
 
   if (AOTIRLoad() || AOTIRGenerate()) {
-    LogMan::Msg::I("Warning: AOTIR is experimental, and needs ASLR to be disabled via 'echo 0 | sudo tee /proc/sys/kernel/randomize_va_space', which is insecure.");
+    LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Doesn't work with programs that fork.");
   }
 
   if (AOTIRLoad()) {

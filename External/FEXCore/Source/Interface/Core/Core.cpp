@@ -844,7 +844,7 @@ namespace FEXCore::Context {
       GeneratedIR = false;
     }
 
-    if (IRList == nullptr) {
+    if (IRList == nullptr && Config.AOTIRLoad) {
       std::lock_guard<std::mutex> lk(AOTCacheLock);
       auto file = AddrToFile.lower_bound(GuestRIP);
       if (file != AddrToFile.begin()) {
@@ -899,73 +899,96 @@ namespace FEXCore::Context {
     AOTCache.clear();
     uint64_t tag;
     stream.read((char*)&tag, sizeof(tag));
-    if (!stream || tag != 0xDEADBEEFC0D30001)
+    if (!stream || tag != 0xDEADBEEFC0D30002)
       return false;
-    do {
+
+    uint64_t ModCount;
+    stream.read((char*)&ModCount, sizeof(ModCount));
+    if (!stream)
+      return false;
+
+    for (int ModIndex = 0; ModIndex < ModCount; ModIndex++) {
       std::string Module;
       uint64_t ModSize;
       stream.read((char*)&ModSize, sizeof(ModSize));
       if (!stream)
-        return true;
+        return false;
 
       Module.resize(ModSize);
       stream.read((char*)&Module[0], Module.size());
       if (!stream)
         return false;
 
-      uint64_t addr, start, crc, len;
-      stream.read((char*)&addr, sizeof(addr));
+      uint64_t FnCount;
+      stream.read((char*)&FnCount, sizeof(FnCount));
       if (!stream)
         return false;
-      
-      stream.read((char*)&start, sizeof(start));
-      if (!stream)
-        return false;
-      stream.read((char*)&len, sizeof(len));
-      if (!stream)
-        return false;
-      stream.read((char*)&crc, sizeof(crc));
-      if (!stream)
-        return false;
-      auto IR = new IR::IRListView(stream);
-      if (!stream) {
-        delete IR;
-        return false;
+
+      LogMan::Msg::I("Mod[%ld] %s has %ld functions", ModIndex, Module.c_str(), FnCount);
+      for (int FnIndex = 0; FnIndex < FnCount; FnIndex++) {
+        uint64_t addr, start, crc, len;
+        stream.read((char*)&addr, sizeof(addr));
+        if (!stream)
+          return false;
+        
+        stream.read((char*)&start, sizeof(start));
+        if (!stream)
+          return false;
+        stream.read((char*)&len, sizeof(len));
+        if (!stream)
+          return false;
+        stream.read((char*)&crc, sizeof(crc));
+        if (!stream)
+          return false;
+        auto IR = new IR::IRListView(stream);
+        if (!stream) {
+          delete IR;
+          return false;
+        }
+        uint64_t RASize;
+        stream.read((char*)&RASize, sizeof(RASize));
+        if (!stream) {
+          delete IR;
+          return false;
+        }
+        IR::RegisterAllocationData *RAData = (IR::RegisterAllocationData *)malloc(IR::RegisterAllocationData::Size(RASize));
+        RAData->MapCount = RASize;
+        
+        stream.read((char*)&RAData->Map[0], sizeof(RAData->Map[0]) * RASize);
+        
+        if (!stream) {
+          delete IR;
+          return false;
+        }
+        stream.read((char*)&RAData->SpillSlotCount, sizeof(RAData->SpillSlotCount));
+        if (!stream) {
+          delete IR;
+          return false;
+        }
+        AOTCache[Module].insert({addr, {start, len, crc, IR, RAData}});
       }
-      uint64_t RASize;
-      stream.read((char*)&RASize, sizeof(RASize));
-      if (!stream) {
-        delete IR;
-        return false;
-      }
-      IR::RegisterAllocationData *RAData = (IR::RegisterAllocationData *)malloc(IR::RegisterAllocationData::Size(RASize));
-      RAData->MapCount = RASize;
-      
-      stream.read((char*)&RAData->Map[0], sizeof(RAData->Map[0]) * RASize);
-      
-      if (!stream) {
-        delete IR;
-        return false;
-      }
-      stream.read((char*)&RAData->SpillSlotCount, sizeof(RAData->SpillSlotCount));
-      if (!stream) {
-        delete IR;
-        return false;
-      }
-      AOTCache[Module].insert({addr, {start, len, crc, IR, RAData}});
-    } while(!stream.eof());
+    }
+
     return true;
   }
 
   void Context::WriteAOTIRCache(std::ostream &stream) {
     std::lock_guard<std::mutex> lk(AOTCacheLock);
-    uint64_t tag = 0xDEADBEEFC0D30001;
+    uint64_t tag = 0xDEADBEEFC0D30002;
     stream.write((char*)&tag, sizeof(tag));
+
+    auto ModCount = AOTCache.size();
+    stream.write((char*)&ModCount, sizeof(ModCount));
+
     for (auto AOTModule: AOTCache) {
+      auto ModSize = AOTModule.first.size();
+      stream.write((char*)&ModSize, sizeof(ModSize));
+      stream.write((char*)&AOTModule.first[0], ModSize);
+
+      auto FnCount = AOTModule.second.size();
+      stream.write((char*)&FnCount, sizeof(FnCount));
+
       for (auto entry: AOTModule.second) {
-        auto ModSize = AOTModule.first.size();
-        stream.write((char*)&ModSize, sizeof(ModSize));
-        stream.write((char*)&AOTModule.first[0], ModSize);
         stream.write((char*)&entry.first, sizeof(entry.first));
         stream.write((char*)&entry.second.start, sizeof(entry.second.start));
         stream.write((char*)&entry.second.len, sizeof(entry.second.len));
