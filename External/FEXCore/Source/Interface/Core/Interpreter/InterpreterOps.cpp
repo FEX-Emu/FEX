@@ -1205,6 +1205,13 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
             }
             break;
           }
+
+          case IR::OP_ENTRYPOINTOFFSET: {
+            auto Op = IROp->C<IR::IROp_EntrypointOffset>();
+            auto IRHeader = CurrentIR->GetOp<FEXCore::IR::IROp_Header>(Op->HeaderOp)->C<IR::IROp_IRHeader>();
+            GD = IRHeader->Entry + Op->Offset;
+            break;
+          }
           case IR::OP_CONSTANT: {
             auto Op = IROp->C<IR::IROp_Constant>();
             GD = Op->Constant;

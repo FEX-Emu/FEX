@@ -209,7 +209,8 @@ private:
 
   ///< ALU Ops
   DEF_OP(TruncElementPair);
-  DEF_OP(Constant);
+  DEF_OP(EntrypointOffset);
+  DEF_OP(Constant); 
   DEF_OP(InlineConstant);
   DEF_OP(CycleCounter);
   DEF_OP(Add);

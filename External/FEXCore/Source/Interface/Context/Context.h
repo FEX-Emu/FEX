@@ -113,7 +113,8 @@ namespace FEXCore::Context {
       IR::IRListView *IR;
       IR::RegisterAllocationData *RAData;
     };
-    std::map<uint64_t, AOTCacheEntry> AOTCache;
+    std::unordered_map<std::string, std::map<uint64_t, AOTCacheEntry>> AOTCache;
+    
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif

@@ -55,6 +55,8 @@ bool IRValidation::Run(IREmitter *IREmit) {
     RAData = Manager->GetRAPass() ? Manager->GetRAPass()->GetAllocationData() : nullptr;
   }
 
+  NodeIsLive.Set(1); // IRHEADER
+  
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");

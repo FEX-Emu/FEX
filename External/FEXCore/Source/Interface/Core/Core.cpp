@@ -27,6 +27,15 @@
 
 #include "Interface/Core/GdbServer.h"
 
+struct AddrToFileEntry {
+  uint64_t Start;
+  uint64_t Len;
+  uint64_t Offset;
+  std::string fileid;
+};
+
+std::map<uint64_t, AddrToFileEntry> AddrToFile;
+
 namespace {
   // Compression function for Merkle-Damgard construction.
   // This function is generated using the framework provided.
@@ -687,6 +696,11 @@ namespace FEXCore::Context {
 
         if (TableInfo->OpcodeDispatcher) {
           auto Fn = TableInfo->OpcodeDispatcher;
+          // auto OldPC = Thread->OpDispatcher->_LoadContext(8, offsetof(FEXCore::Core::CPUState, rip), IR::GPRClass);
+          // auto NewPC = Thread->OpDispatcher->_Add(OldPC, Thread->OpDispatcher->_Constant(8, DecodedInfo->InstSize));
+          // Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), NewPC);
+          //auto NewPC = Thread->OpDispatcher->_Constant(8, DecodedInfo->PC + DecodedInfo->InstSize);
+          //Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), NewPC);
           std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
           if (Thread->OpDispatcher->HadDecodeFailure()) {
             if (Config.BreakOnFrontendFailure) {
@@ -832,16 +846,24 @@ namespace FEXCore::Context {
 
     if (IRList == nullptr) {
       std::lock_guard<std::mutex> lk(AOTCacheLock);
-      auto AOTEntry = AOTCache.find(GuestRIP);
-      if (AOTEntry != AOTCache.end()) {
-        // verify hash
-        auto hash = fasthash64((void*)AOTEntry->second.start, AOTEntry->second.len, 0);
-        if (hash == AOTEntry->second.crc) {
-          IRList = AOTEntry->second.IR;
-          RAData = AOTEntry->second.RAData;
-          DebugData = new FEXCore::Core::DebugData();
+      auto file = AddrToFile.lower_bound(GuestRIP);
+      if (file != AddrToFile.begin()) {
+        --file;
+        auto AOTEntry = AOTCache[file->second.fileid].find(GuestRIP - file->second.Start + file->second.Offset);
+        if (AOTEntry != AOTCache[file->second.fileid].end()) {
+          // verify hash
+          auto hash = fasthash64((void*)(AOTEntry->second.start + file->second.Start  - file->second.Offset), AOTEntry->second.len, 0);
+          if (hash == AOTEntry->second.crc) {
+            IRList = AOTEntry->second.IR;
+            //LogMan::Msg::D("using %s + %lx -> %lx\n", file->second.fileid.c_str(), AOTEntry->first, GuestRIP);
+            // relocate
+            IRList->GetHeader()->Entry = GuestRIP;
 
-          GeneratedIR = true;
+            RAData = AOTEntry->second.RAData;
+            DebugData = new FEXCore::Core::DebugData();
+
+            GeneratedIR = true;
+          }
         }
       }
     }
@@ -877,13 +899,24 @@ namespace FEXCore::Context {
     AOTCache.clear();
     uint64_t tag;
     stream.read((char*)&tag, sizeof(tag));
-    if (!stream || tag != 0xDEADBEEFC0D30000)
+    if (!stream || tag != 0xDEADBEEFC0D30001)
       return false;
     do {
+      std::string Module;
+      uint64_t ModSize;
+      stream.read((char*)&ModSize, sizeof(ModSize));
+      if (!stream)
+        return true;
+
+      Module.resize(ModSize);
+      stream.read((char*)&Module[0], Module.size());
+      if (!stream)
+        return false;
+
       uint64_t addr, start, crc, len;
       stream.read((char*)&addr, sizeof(addr));
       if (!stream)
-        return true;
+        return false;
       
       stream.read((char*)&start, sizeof(start));
       if (!stream)
@@ -919,25 +952,30 @@ namespace FEXCore::Context {
         delete IR;
         return false;
       }
-      AOTCache.insert({addr, {start, len, crc, IR, RAData}});
+      AOTCache[Module].insert({addr, {start, len, crc, IR, RAData}});
     } while(!stream.eof());
     return true;
   }
 
   void Context::WriteAOTIRCache(std::ostream &stream) {
     std::lock_guard<std::mutex> lk(AOTCacheLock);
-    uint64_t tag = 0xDEADBEEFC0D30000;
+    uint64_t tag = 0xDEADBEEFC0D30001;
     stream.write((char*)&tag, sizeof(tag));
-    for (auto entry: AOTCache) {
-      stream.write((char*)&entry.first, sizeof(entry.first));
-      stream.write((char*)&entry.second.start, sizeof(entry.second.start));
-      stream.write((char*)&entry.second.len, sizeof(entry.second.len));
-      stream.write((char*)&entry.second.crc, sizeof(entry.second.crc));
-      entry.second.IR->Serialize(stream);
-      uint64_t RASize = entry.second.RAData->MapCount;
-      stream.write((char*)&RASize, sizeof(RASize));
-      stream.write((char*)&entry.second.RAData->Map[0], sizeof(entry.second.RAData->Map[0]) * RASize);
-      stream.write((char*)&entry.second.RAData->SpillSlotCount, sizeof(entry.second.RAData->SpillSlotCount));
+    for (auto AOTModule: AOTCache) {
+      for (auto entry: AOTModule.second) {
+        auto ModSize = AOTModule.first.size();
+        stream.write((char*)&ModSize, sizeof(ModSize));
+        stream.write((char*)&AOTModule.first[0], ModSize);
+        stream.write((char*)&entry.first, sizeof(entry.first));
+        stream.write((char*)&entry.second.start, sizeof(entry.second.start));
+        stream.write((char*)&entry.second.len, sizeof(entry.second.len));
+        stream.write((char*)&entry.second.crc, sizeof(entry.second.crc));
+        entry.second.IR->Serialize(stream);
+        uint64_t RASize = entry.second.RAData->MapCount;
+        stream.write((char*)&RASize, sizeof(RASize));
+        stream.write((char*)&entry.second.RAData->Map[0], sizeof(entry.second.RAData->Map[0]) * RASize);
+        stream.write((char*)&entry.second.RAData->SpillSlotCount, sizeof(entry.second.RAData->SpillSlotCount));
+      }
     }
   }
 
@@ -1019,7 +1057,14 @@ namespace FEXCore::Context {
         memcpy(RADataCopy, RAData, RAData->Size(RAData->MapCount));
         auto len = MaxAddress - MinAddress;
         auto hash = fasthash64((void*)MinAddress, len, 0);
-        AOTCache.insert({GuestRIP, {MinAddress, len, hash, IRList->CreateCopy(), RADataCopy}});
+        
+        auto file = AddrToFile.lower_bound(MinAddress);
+        if (file != AddrToFile.begin()) {
+          --file;
+          if (file->second.Start <= MinAddress && (file->second.Start + file->second.Len) > MaxAddress) {
+            AOTCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {MinAddress - file->second.Start + file->second.Offset, len, hash, IRList->CreateCopy(), RADataCopy}});
+          }
+        }
       }
     }
 

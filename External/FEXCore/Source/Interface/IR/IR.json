@@ -283,6 +283,24 @@
       ]
     },
 
+    "EntrypointOffset": {
+      "Desc": ["Returns the <entrypoint> + val address"],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "RegisterSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "HeaderOp"
+      ],
+      "Args": [
+        "int64_t", "Offset"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize"
+      ]
+    },
+
     "Constant": {
       "Desc": ["Generates a 64bit constant inside of a GPR",
                "Unsupported to create a constant in FPR"

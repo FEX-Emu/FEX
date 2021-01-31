@@ -81,6 +81,8 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
       uint8_t NumArgs = IR::GetArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
         if (IROp->Args[i].IsInvalid()) continue;
+        if (CurrentIR.GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
+        
         OrderedNodeWrapper Arg = IROp->Args[i];
 
         // We must ensure domininance of all SSA arguments
