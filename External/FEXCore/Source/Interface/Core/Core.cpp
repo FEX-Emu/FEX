@@ -412,7 +412,11 @@ namespace FEXCore::Context {
           CurrentThread = Thread;
           continue;
         }
-        StopThread(Thread);
+        if (Thread->State.RunningEvents.Running.load()) {
+          StopThread(Thread);
+        } else {
+          LogMan::Msg::D("Skipping thread %p: Already stopped", Thread);
+        }
       }
     }
 
@@ -423,7 +427,7 @@ namespace FEXCore::Context {
   }
 
   void Context::StopThread(FEXCore::Core::InternalThreadState *Thread) {
-    if (Thread->State.RunningEvents.Running.load()) {
+    if (Thread->State.RunningEvents.Running.exchange(false)) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_STOP);
       tgkill(Thread->State.ThreadManager.PID, Thread->State.ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
     }
