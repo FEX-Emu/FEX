@@ -42,10 +42,6 @@ namespace HostFactory {
     bool HandleSIGSEGV(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
 
   private:
-    FEXCore::Context::Context* CTX;
-    FEXCore::Core::ThreadState *ThreadState;
-    bool IsFallback{};
-
     uint64_t ReturningStackLocation;
     uint64_t ThreadStopHandlerAddress;
   };
@@ -54,10 +50,7 @@ namespace HostFactory {
   }
 
   HostCore::HostCore(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread, bool Fallback)
-    : CodeGenerator(4096)
-    , CTX {CTX}
-    , ThreadState {Thread}
-    , IsFallback {Fallback} {
+    : CodeGenerator(4096) {
     FEXCore::Context::RegisterHostSignalHandler(CTX, SIGSEGV,
       [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
         auto InternalThread = reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread);
