@@ -100,24 +100,6 @@ void InitializeInfoTables(Context::OperatingMode Mode) {
   InitializeEVEXTables();
 
 #ifndef NDEBUG
-  auto CheckTable = [&UnknownOp](auto& FinalTable) {
-    for (size_t i = 0; i < FinalTable.size(); ++i) {
-      auto const &Op = FinalTable.at(i);
-
-      if (Op == UnknownOp) {
-        LogMan::Msg::A("Unknown Op: 0x%lx", i);
-      }
-    }
-  };
-
-  // CheckTable(BaseOps);
-  // CheckTable(SecondBaseOps);
-
-  // CheckTable(RepModOps);
-  // CheckTable(RepNEModOps);
-  // CheckTable(OpSizeModOps);
-  // CheckTable(X87Ops);
-
   X86InstDebugInfo::InstallDebugInfo();
   LogMan::Msg::D("X86Tables had %ld total insts, and %ld labeled as understood", Total, NumInsts);
 #endif
