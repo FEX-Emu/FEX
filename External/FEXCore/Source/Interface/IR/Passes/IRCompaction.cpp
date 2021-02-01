@@ -56,7 +56,6 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   uintptr_t LocalDataBegin = LocalIR.GetData();
 
   uintptr_t ListBegin = CurrentIR.GetListData();
-  uintptr_t DataBegin = CurrentIR.GetData();
 
   auto HeaderNode = CurrentIR.GetHeaderNode();
   auto HeaderOp = CurrentIR.GetHeader();
