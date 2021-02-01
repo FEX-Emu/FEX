@@ -88,7 +88,8 @@ public:
         uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        _ExitFunction(_Constant(GPRSize * 8, NextRIP));
+        auto RelocatedNextRIP = _EntrypointOffset(Current_HeaderNode, NextRIP - Current_Header->Entry, GPRSize);
+        _ExitFunction(RelocatedNextRIP);
       }
       else if (it != JumpTargets.end()) {
         _Jump(it->second.BlockEntry);

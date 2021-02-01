@@ -696,11 +696,6 @@ namespace FEXCore::Context {
 
         if (TableInfo->OpcodeDispatcher) {
           auto Fn = TableInfo->OpcodeDispatcher;
-          // auto OldPC = Thread->OpDispatcher->_LoadContext(8, offsetof(FEXCore::Core::CPUState, rip), IR::GPRClass);
-          // auto NewPC = Thread->OpDispatcher->_Add(OldPC, Thread->OpDispatcher->_Constant(8, DecodedInfo->InstSize));
-          // Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), NewPC);
-          //auto NewPC = Thread->OpDispatcher->_Constant(8, DecodedInfo->PC + DecodedInfo->InstSize);
-          //Thread->OpDispatcher->_StoreContext(IR::GPRClass, 8, offsetof(FEXCore::Core::CPUState, rip), NewPC);
           std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
           if (Thread->OpDispatcher->HadDecodeFailure()) {
             if (Config.BreakOnFrontendFailure) {
