@@ -582,7 +582,7 @@ std::tuple<JITCore::SetCC, JITCore::CMovCC, JITCore::JCC> JITCore::GetCC(IR::Con
     case FEXCore::IR::COND_SGE: return { &CodeGenerator::setge, &CodeGenerator::cmovge, &CodeGenerator::jge };
     case FEXCore::IR::COND_SLT: return { &CodeGenerator::setl , &CodeGenerator::cmovl , &CodeGenerator::jl  };
     case FEXCore::IR::COND_SGT: return { &CodeGenerator::setg , &CodeGenerator::cmovg , &CodeGenerator::jg  };
-    case FEXCore::IR::COND_SLE: return { &CodeGenerator::setle, &CodeGenerator::cmovle, &CodeGenerator::jle }; 
+    case FEXCore::IR::COND_SLE: return { &CodeGenerator::setle, &CodeGenerator::cmovle, &CodeGenerator::jle };
     case FEXCore::IR::COND_UGE: return { &CodeGenerator::setae, &CodeGenerator::cmovae, &CodeGenerator::jae };
     case FEXCore::IR::COND_ULT: return { &CodeGenerator::setb , &CodeGenerator::cmovb , &CodeGenerator::jb  };
     case FEXCore::IR::COND_UGT: return { &CodeGenerator::seta , &CodeGenerator::cmova , &CodeGenerator::ja  };
@@ -603,6 +603,9 @@ std::tuple<JITCore::SetCC, JITCore::CMovCC, JITCore::JCC> JITCore::GetCC(IR::Con
       LogMan::Msg::A("Unsupported compare type");
       break;
   }
+
+  // Hope for the best
+  return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
 }
 
 void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
@@ -780,7 +783,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     PendingTargetLabel = nullptr;
 
   }
-  
+
   void *Exit = getCurr<void*>();
   this->IR = nullptr;
 
@@ -895,8 +898,8 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     cmp(qword[r13 + rax + 8], rdx);
     jne(FullLookup);
     jmp(qword[r13 + rax + 0]);
-    
-    L(FullLookup);   
+
+    L(FullLookup);
     mov(r13, Thread->LookupCache->GetPagePointer());
 
     // Full lookup
@@ -934,7 +937,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     shl(rcx, 1);
     mov(qword[r13 + rcx*8 + 8], rdx);
     mov(qword[r13 + rcx*8 + 0], rax);
-    
+
     // Real block if we made it here
     jmp(rax);
   }
@@ -965,7 +968,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     call(rax);
     jmp(rax);
   }
-  
+
   Label FallbackCore;
   // Block creation
   {
