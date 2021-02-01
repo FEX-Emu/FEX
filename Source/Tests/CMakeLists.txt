@@ -1,74 +1,21 @@
 
-set(SYSCALL_SRCS
-  LinuxSyscalls/FileManagement.cpp
-  LinuxSyscalls/EmulatedFiles/EmulatedFiles.cpp
-  LinuxSyscalls/SignalDelegator.cpp
-  LinuxSyscalls/Syscalls.cpp
-  LinuxSyscalls/x32/Syscalls.cpp
-  LinuxSyscalls/x32/EPoll.cpp
-  LinuxSyscalls/x32/FD.cpp
-  LinuxSyscalls/x32/FS.cpp
-  LinuxSyscalls/x32/Info.cpp
-  LinuxSyscalls/x32/Memory.cpp
-  LinuxSyscalls/x32/NotImplemented.cpp
-  LinuxSyscalls/x32/Semaphore.cpp
-  LinuxSyscalls/x32/Sched.cpp
-  LinuxSyscalls/x32/Signals.cpp
-  LinuxSyscalls/x32/Socket.cpp
-  LinuxSyscalls/x32/Thread.cpp
-  LinuxSyscalls/x32/Time.cpp
-  LinuxSyscalls/x32/Timer.cpp
-  LinuxSyscalls/x64/EPoll.cpp
-  LinuxSyscalls/x64/FD.cpp
-  LinuxSyscalls/x64/IO.cpp
-  LinuxSyscalls/x64/Ioctl.cpp
-  LinuxSyscalls/x64/Info.cpp
-  LinuxSyscalls/x64/Memory.cpp
-  LinuxSyscalls/x64/Msg.cpp
-  LinuxSyscalls/x64/NotImplemented.cpp
-  LinuxSyscalls/x64/Semaphore.cpp
-  LinuxSyscalls/x64/Sched.cpp
-  LinuxSyscalls/x64/Signals.cpp
-  LinuxSyscalls/x64/Socket.cpp
-  LinuxSyscalls/x64/Thread.cpp
-  LinuxSyscalls/x64/Syscalls.cpp
-  LinuxSyscalls/x64/Time.cpp
-  LinuxSyscalls/Syscalls/EPoll.cpp
-  LinuxSyscalls/Syscalls/FD.cpp
-  LinuxSyscalls/Syscalls/FS.cpp
-  LinuxSyscalls/Syscalls/Info.cpp
-  LinuxSyscalls/Syscalls/IO.cpp
-  LinuxSyscalls/Syscalls/Key.cpp
-  LinuxSyscalls/Syscalls/Memory.cpp
-  LinuxSyscalls/Syscalls/Msg.cpp
-  LinuxSyscalls/Syscalls/Sched.cpp
-  LinuxSyscalls/Syscalls/Semaphore.cpp
-  LinuxSyscalls/Syscalls/SHM.cpp
-  LinuxSyscalls/Syscalls/Signals.cpp
-  LinuxSyscalls/Syscalls/Socket.cpp
-  LinuxSyscalls/Syscalls/Thread.cpp
-  LinuxSyscalls/Syscalls/Time.cpp
-  LinuxSyscalls/Syscalls/Timer.cpp
-  LinuxSyscalls/Syscalls/NotImplemented.cpp
-  LinuxSyscalls/Syscalls/Stubs.cpp
-  )
-set(LIBS FEXCore Common CommonCore pthread)
-set(NAME FEXLoader)
-set(SRCS ELFLoader.cpp ${SYSCALL_SRCS})
+add_subdirectory(LinuxSyscalls)
 
-add_executable(${NAME} ${SRCS})
-target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
+set(LIBS FEXCore Common CommonCore)
 
-target_link_libraries(${NAME} ${LIBS})
+add_executable(FEXLoader ELFLoader.cpp)
+target_include_directories(FEXLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
-install(TARGETS ${NAME}
+target_link_libraries(FEXLoader ${LIBS} LinuxEmulation)
+
+install(TARGETS FEXLoader
   RUNTIME
     DESTINATION bin
     COMPONENT runtime)
 
 set(FEX_INTERP FEXInterpreter)
 install(CODE "
-  EXECUTE_PROCESS(COMMAND ln -f ${NAME} ${FEX_INTERP}
+  EXECUTE_PROCESS(COMMAND ln -f FEXLoader ${FEX_INTERP}
   WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
   )
 ")
@@ -108,39 +55,26 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
 
 endif()
 
-set(NAME TestHarness)
-set(SRCS TestHarness.cpp)
+add_executable(TestHarness TestHarness.cpp)
+target_include_directories(TestHarness PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
-add_executable(${NAME} ${SRCS})
-target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
+target_link_libraries(TestHarness ${LIBS})
 
-target_link_libraries(${NAME} ${LIBS})
+add_executable(TestHarnessRunner TestHarnessRunner.cpp)
+target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
-set(NAME TestHarnessRunner)
-set(SRCS TestHarnessRunner.cpp
-  ${SYSCALL_SRCS})
+target_link_libraries(TestHarnessRunner ${LIBS} LinuxEmulation)
 
-add_executable(${NAME} ${SRCS})
-target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
+add_executable(UnitTestGenerator UnitTestGenerator.cpp)
+target_include_directories(UnitTestGenerator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
-target_link_libraries(${NAME} ${LIBS})
+target_link_libraries(UnitTestGenerator ${LIBS})
 
-set(NAME UnitTestGenerator)
-set(SRCS UnitTestGenerator.cpp)
-
-add_executable(${NAME} ${SRCS})
-target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-
-target_link_libraries(${NAME} ${LIBS})
-
-set(NAME IRLoader)
-set(SRCS
+add_executable(IRLoader
   IRLoader.cpp
   IRLoader/Loader.cpp
-  ${SYSCALL_SRCS})
+)
+target_include_directories(IRLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
-add_executable(${NAME} ${SRCS})
-target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-
-target_link_libraries(${NAME} ${LIBS})
+target_link_libraries(IRLoader ${LIBS} LinuxEmulation)
 
