@@ -64,3 +64,7 @@ semaphore_test
 splice_test
 sendfile_test
 timers_test
+
+# these are flaky on x86
+itimer_test
+stat_times_test

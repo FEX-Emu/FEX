@@ -179,3 +179,7 @@ fcntl_test
 mmap_test
 mremap_test
 semaphore_test
+
+# these are flaky on x86
+itimer_test
+stat_times_test
