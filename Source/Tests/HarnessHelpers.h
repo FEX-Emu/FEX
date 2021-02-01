@@ -328,6 +328,11 @@ namespace FEX::HarnessHelper {
     ConfigStructBase BaseConfig;
   };
 
+#ifdef PAGE_SIZE
+  static_assert(PAGE_SIZE == 4096, "FEX only supports 4k pages");
+#undef PAGE_SIZE
+#endif
+
   class HarnessCodeLoader final : public FEXCore::CodeLoader {
 
     static constexpr uint32_t PAGE_SIZE = 4096;

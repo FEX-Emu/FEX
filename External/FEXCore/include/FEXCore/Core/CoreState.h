@@ -47,6 +47,11 @@ namespace FEXCore::Core {
 
   static_assert(std::is_standard_layout<ThreadState>::value, "This needs to be standard layout");
 
+#ifdef PAGE_SIZE
+  static_assert(PAGE_SIZE == 4096, "FEX only supports 4k pages");
+#undef PAGE_SIZE
+#endif
+
   constexpr uint64_t PAGE_SIZE = 4096;
 
   std::string_view const& GetFlagName(unsigned Flag);
