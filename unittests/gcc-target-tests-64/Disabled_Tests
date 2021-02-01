@@ -7,3 +7,6 @@ sse2-mmx-psrad.c.gcc-target-test-64
 sse2-mmx-psrld.c.gcc-target-test-64
 sse2-mmx-psrlq.c.gcc-target-test-64
 sse2-mmx-psrlw.c.gcc-target-test-64
+
+# this is flaky on the ARMv8.0 runner
+mcount_pic.c.gcc-target-test-64
