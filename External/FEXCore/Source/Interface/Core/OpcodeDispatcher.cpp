@@ -206,7 +206,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   //ss
   _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
   SP = _Add(SP, Constant);
-  
+
   _ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
@@ -995,9 +995,6 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   uint8_t JcxGPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   JcxGPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (JcxGPRSize >> 1) : JcxGPRSize;
 
-  auto ZeroConst = _Constant(0);
-  IRPair<IROp_Header> SrcCond;
-
   IRPair<IROp_Constant> TakeBranch;
   IRPair<IROp_Constant> DoNotTakeBranch;
   TakeBranch = _Constant(1);
@@ -1170,8 +1167,6 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
   BlockSetRIP = true;
   // This is just an unconditional jump
   // This uses ModRM to determine its location
@@ -3005,8 +3000,8 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     auto LoopHead = CreateNewCodeBlockAfter(GetCurrentBlock());
     auto LoopTail = CreateNewCodeBlockAfter(LoopHead);
     auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
-    
-    
+
+
 
     // At the time this was written, our RA can't handle accessing nodes across blocks.
     // So we need to re-load and re-calculate essential values each iteration of the loop.
@@ -3023,14 +3018,12 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     auto PtrDir = _Select(FEXCore::IR::COND_EQ,
         DF,  _Constant(0),
         SizeConst, NegSizeConst);
-        
+
     _Jump(LoopHead);
 
     SetCurrentCodeBlock(LoopHead);
     {
       OrderedNode *Counter = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
-      auto ZeroConst = _Constant(0);
-
       // Can we end the block?
       _CondJump(Counter, LoopEnd, LoopTail, {COND_EQ});
     }
@@ -3088,8 +3081,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     auto LoopHead = CreateNewCodeBlockAfter(GetCurrentBlock());
     auto LoopTail = CreateNewCodeBlockAfter(LoopHead);
     auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
-    
-    
+
+
     // At the time this was written, our RA can't handle accessing nodes across blocks.
     // So we need to re-load and re-calculate essential values each iteration of the loop.
 
@@ -3100,8 +3093,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     SetCurrentCodeBlock(LoopHead);
     {
       OrderedNode *Counter = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
-      auto ZeroConst = _Constant(0);
-
       _CondJump(Counter, LoopEnd, LoopTail, {COND_EQ});
     }
 
@@ -3206,7 +3197,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto PtrDir = _Select(FEXCore::IR::COND_EQ,
         DF, _Constant(0),
         _Constant(Size), _Constant(-Size));
-        
+
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
     auto LoopStart = CreateNewCodeBlockAfter(GetCurrentBlock());
@@ -3327,9 +3318,6 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
 
-    auto ZeroConst = _Constant(0);
-    auto OneConst = _Constant(1);
-
     OrderedNode *Counter = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
 
     // Can we end the block?
@@ -3419,15 +3407,12 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     auto PtrDir = _Select(FEXCore::IR::COND_EQ,
         DF, _Constant(0),
         SizeConst, NegSizeConst);
-        
+
     auto JumpStart = _Jump();
     // Make sure to start a new block after ending this one
     auto LoopStart = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
-
-    auto ZeroConst = _Constant(0);
-    auto OneConst = _Constant(1);
 
     OrderedNode *Counter = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
 
@@ -3476,9 +3461,9 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     // Make sure to start a new block after ending this one
     auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
     SetTrueJumpTarget(CondJump, LoopEnd);
-    
+
     SetFalseJumpTarget(InternalCondJump, LoopEnd);
-    
+
     SetCurrentCodeBlock(LoopEnd);
   }
 }
@@ -3980,7 +3965,6 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
-  OrderedNode *CurrentVal = _Constant(0);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   //TODO: We could remove this VCastFromGOR + VInsGPR pair if we had a VDUPFromGPR instruction that maps directly to AArch64.
@@ -9050,7 +9034,6 @@ constexpr uint16_t PF_F2 = 3;
 #define OPD(prefix, opcode) ((prefix << 8) | opcode)
   constexpr uint16_t PF_38_NONE = 0;
   constexpr uint16_t PF_38_66   = 1;
-  constexpr uint16_t PF_38_F2   = 2;
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F38Table = {
     {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
     {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::PSHUFBOp},
