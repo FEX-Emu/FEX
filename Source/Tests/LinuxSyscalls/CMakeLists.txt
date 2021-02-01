@@ -53,4 +53,4 @@ add_library(LinuxEmulation STATIC
     Syscalls/Stubs.cpp
 )
 
-target_link_libraries(LinuxEmulation FEXCore pthread)
+target_link_libraries(LinuxEmulation FEXCore pthread numa)
