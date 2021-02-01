@@ -686,8 +686,6 @@ void ELFContainer::PrintProgramHeaders() const {
   if (Mode == MODE_32BIT) {
     LogMan::Throw::A(Header._32.e_shstrndx < SectionHeaders.size(),
                      "String index section is wrong index!");
-    Elf32_Shdr const *StrHeader = SectionHeaders.at(Header._32.e_shstrndx)._32;
-    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
       Elf32_Phdr const *hdr = ProgramHeaders.at(i)._32;
       LogMan::Msg::I("Type:    %d", hdr->p_type);
@@ -703,8 +701,6 @@ void ELFContainer::PrintProgramHeaders() const {
   else {
     LogMan::Throw::A(Header._64.e_shstrndx < SectionHeaders.size(),
                      "String index section is wrong index!");
-    Elf64_Shdr const *StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
-    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
       Elf64_Phdr const *hdr = ProgramHeaders.at(i)._64;
       LogMan::Msg::I("Type:    %d", hdr->p_type);
@@ -895,9 +891,6 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
     Elf64_Shdr const *RelaHeader{nullptr};
     Elf64_Shdr const *GOTHeader {nullptr};
     Elf64_Shdr const *DynSymHeader {nullptr};
-
-    Elf64_Shdr const *StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
-    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
 
     Elf64_Shdr const *StringTableHeader{nullptr};
     char const *StrTab{nullptr};
@@ -1218,9 +1211,6 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t>
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
       Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
       if (hdr->sh_type == SHT_DYNAMIC) {
-        Elf32_Shdr const *StrHeader = SectionHeaders.at(hdr->sh_link)._32;
-        char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
-
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; i < Entries; ++j) {
           Elf32_Dyn const *Dynamic = reinterpret_cast<Elf32_Dyn const*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
@@ -1248,9 +1238,6 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t>
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
       Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
       if (hdr->sh_type == SHT_DYNAMIC) {
-        Elf64_Shdr const *StrHeader = SectionHeaders.at(hdr->sh_link)._64;
-        char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
-
         size_t Entries = hdr->sh_size / hdr->sh_entsize;
         for (size_t j = 0; i < Entries; ++j) {
           Elf64_Dyn const *Dynamic = reinterpret_cast<Elf64_Dyn const*>(&RawFile.at(hdr->sh_offset + j * hdr->sh_entsize));
