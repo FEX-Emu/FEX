@@ -50,7 +50,7 @@ bool StaticRegisterAllocationPass::Run(IREmitter *IREmit) {
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         IREmit->SetWriteCursor(CodeNode);
-        
+
         if (IROp->Op == OP_LOADCONTEXT) {
             auto Op = IROp->CW<IR::IROp_LoadContext>();
 
@@ -79,7 +79,7 @@ bool StaticRegisterAllocationPass::Run(IREmitter *IREmit) {
               }
 
               auto StaticClass = GeneralClass == GPRClass ? GPRFixedClass : FPRFixedClass;
-              OrderedNode *sraReg = IREmit->_StoreRegister(val, false, Op->Offset, GeneralClass, StaticClass, Op->Header.Size);
+              IREmit->_StoreRegister(val, false, Op->Offset, GeneralClass, StaticClass, Op->Header.Size);
 
               IREmit->Remove(CodeNode);
             }
