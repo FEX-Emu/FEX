@@ -6,7 +6,7 @@
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Event.h>
 
-#include <map>
+#include <unordered_map>
 #include <thread>
 
 namespace FEXCore {

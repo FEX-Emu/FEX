@@ -2,6 +2,7 @@
 
 #include <FEXCore/Utils/LogManager.h>
 
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <filesystem>

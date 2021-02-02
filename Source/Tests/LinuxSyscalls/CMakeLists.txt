@@ -1,0 +1,56 @@
+
+add_library(LinuxEmulation STATIC
+    FileManagement.cpp
+    EmulatedFiles/EmulatedFiles.cpp
+    SignalDelegator.cpp
+    Syscalls.cpp
+    x32/Syscalls.cpp
+    x32/EPoll.cpp
+    x32/FD.cpp
+    x32/FS.cpp
+    x32/Info.cpp
+    x32/Memory.cpp
+    x32/NotImplemented.cpp
+    x32/Semaphore.cpp
+    x32/Sched.cpp
+    x32/Signals.cpp
+    x32/Socket.cpp
+    x32/Thread.cpp
+    x32/Time.cpp
+    x32/Timer.cpp
+    x64/EPoll.cpp
+    x64/FD.cpp
+    x64/IO.cpp
+    x64/Ioctl.cpp
+    x64/Info.cpp
+    x64/Memory.cpp
+    x64/Msg.cpp
+    x64/NotImplemented.cpp
+    x64/Semaphore.cpp
+    x64/Sched.cpp
+    x64/Signals.cpp
+    x64/Socket.cpp
+    x64/Thread.cpp
+    x64/Syscalls.cpp
+    x64/Time.cpp
+    Syscalls/EPoll.cpp
+    Syscalls/FD.cpp
+    Syscalls/FS.cpp
+    Syscalls/Info.cpp
+    Syscalls/IO.cpp
+    Syscalls/Key.cpp
+    Syscalls/Memory.cpp
+    Syscalls/Msg.cpp
+    Syscalls/Sched.cpp
+    Syscalls/Semaphore.cpp
+    Syscalls/SHM.cpp
+    Syscalls/Signals.cpp
+    Syscalls/Socket.cpp
+    Syscalls/Thread.cpp
+    Syscalls/Time.cpp
+    Syscalls/Timer.cpp
+    Syscalls/NotImplemented.cpp
+    Syscalls/Stubs.cpp
+)
+
+target_link_libraries(LinuxEmulation FEXCore pthread numa)

@@ -328,8 +328,8 @@ void ELFContainer::CalculateMemoryLayouts() {
       //
       // We need to ignore such empty sections, or we will mistakenly assume the elf starts at zero.
       if (hdr->p_memsz > 0) {
-        MinPhysAddr = std::min(MinPhysAddr, hdr->p_paddr);
-        MaxPhysAddr = std::max(MaxPhysAddr, hdr->p_paddr + hdr->p_memsz);
+        MinPhysAddr = std::min(MinPhysAddr, static_cast<uint64_t>(hdr->p_paddr));
+        MaxPhysAddr = std::max(MaxPhysAddr, static_cast<uint64_t>(hdr->p_paddr + hdr->p_memsz));
       }
       if (hdr->p_type == PT_TLS) {
         TLSHeader._64 = hdr;

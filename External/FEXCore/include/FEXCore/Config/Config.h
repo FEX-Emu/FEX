@@ -3,7 +3,9 @@
 
 #include <list>
 #include <memory>
+#include <optional>
 #include <stdint.h>
+#include <unordered_map>
 
 namespace FEXCore::Config {
   enum ConfigOption {

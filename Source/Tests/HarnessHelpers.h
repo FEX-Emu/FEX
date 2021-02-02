@@ -3,6 +3,7 @@
 #include "Common/MathUtils.h"
 
 #include <FEXCore/Core/CodeLoader.h>
+#include <array>
 #include <bitset>
 #include <cassert>
 #include <cstring>
@@ -326,6 +327,11 @@ namespace FEX::HarnessHelper {
     std::vector<char> RawConfigFile;
     ConfigStructBase BaseConfig;
   };
+
+#ifdef PAGE_SIZE
+  static_assert(PAGE_SIZE == 4096, "FEX only supports 4k pages");
+#undef PAGE_SIZE
+#endif
 
   class HarnessCodeLoader final : public FEXCore::CodeLoader {
 

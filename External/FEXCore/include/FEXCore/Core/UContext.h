@@ -2,8 +2,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <bits/types/sigset_t.h>
-
 namespace FEXCore {
   namespace x86_64 {
     // uc_flags flags
@@ -74,18 +72,22 @@ namespace FEXCore {
     };
     static_assert(sizeof(FEXCore::x86_64::mcontext_t) == 256, "This needs to be the right size");
 
+    struct __attribute__((packed)) sigset_t {
+      uint64_t val[16];
+    };
+    static_assert(sizeof(FEXCore::x86_64::sigset_t) == 128, "This needs to be the right size");
+
     struct __attribute__((packed)) ucontext_t {
       uint64_t uc_flags;
       FEXCore::x86_64::ucontext_t *uc_link;
       FEXCore::x86_64::stack_t uc_stack;
       FEXCore::x86_64::mcontext_t uc_mcontext;
-      sigset_t uc_sigmask;
+      FEXCore::x86_64::sigset_t uc_sigmask;
       FEXCore::x86_64::_libc_fpstate __fpregs_mem;
       uint64_t __ssp[4];
     };
     static_assert(offsetof(FEXCore::x86_64::ucontext_t, uc_mcontext) == 40, "Needs to be correct");
 
-    static_assert(sizeof(sigset_t) == 128, "This needs to be the right size");
     static_assert(sizeof(FEXCore::x86_64::ucontext_t) == 968, "This needs to be the right size");
   }
 
