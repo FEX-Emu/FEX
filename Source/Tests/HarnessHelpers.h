@@ -554,8 +554,10 @@ public:
       size_t ArgSize = Args[i].size();
       // Set the pointer to this argument
       ArgumentPointers[i] = ArgumentBackingBaseGuest + CurrentOffset;
-      // Copy the string in to the final location
-      memcpy(reinterpret_cast<void*>(ArgumentBackingBase + CurrentOffset), &Args[i].at(0), ArgSize);
+      if (ArgSize > 0) {
+        // Copy the string in to the final location
+        memcpy(reinterpret_cast<void*>(ArgumentBackingBase + CurrentOffset), &Args[i].at(0), ArgSize);
+      }
 
       // Set the null terminator for the string
       *reinterpret_cast<uint8_t*>(ArgumentBackingBase + CurrentOffset + ArgSize + 1) = 0;
