@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/eventfd.h>
+#include <sys/syscall.h>
 
 namespace FEX::HLE {
   static int RemapFlags(int flags) {
@@ -217,13 +218,13 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(fchmodat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, mode_t mode, int flags) -> uint64_t {
-      uint64_t Result = fchmodat(dirfd, pathname, mode, flags);
+    REGISTER_SYSCALL_IMPL(fchmodat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, mode_t mode) -> uint64_t {
+      uint64_t Result = syscall(SYS_fchmodat, dirfd, pathname, mode);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(faccessat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int mode, int flags) -> uint64_t {
-      uint64_t Result = FEX::HLE::_SyscallHandler->FM.FAccessat(dirfd, pathname, mode, flags);
+    REGISTER_SYSCALL_IMPL(faccessat, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int mode) -> uint64_t {
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.FAccessat(dirfd, pathname, mode);
       SYSCALL_ERRNO();
     });
 

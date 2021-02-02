@@ -13,6 +13,7 @@
 #include <sys/uio.h>
 #include <sys/vfs.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 
 namespace FEX::HLE {
 
@@ -83,15 +84,15 @@ uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
   return ::access(pathname, mode);
 }
 
-uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode, int flags) {
+uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode) {
   auto Path = GetEmulatedPath(pathname);
   if (!Path.empty()) {
-    uint64_t Result = ::faccessat(dirfd, Path.c_str(), mode, flags);
+    uint64_t Result = ::syscall(SYS_faccessat, dirfd, Path.c_str(), mode);
     if (Result != -1)
       return Result;
   }
 
-  return ::faccessat(dirfd, pathname, mode, flags);
+  return ::syscall(SYS_faccessat, dirfd, pathname, mode);
 }
 
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
