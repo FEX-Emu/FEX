@@ -943,6 +943,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
+    ThreadStopHandlerPivotStackAddress = getCurr<uint64_t>();
+    mov(rsp, rdi);
+
     ThreadStopHandlerAddress = getCurr<uint64_t>();
 
     add(rsp, 8);
@@ -1075,6 +1078,16 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   std::string Name = "Dispatch_" + std::to_string(::gettid());
   CTX->Symbols.Register(DispatcherCodeBuffer.Ptr, DispatcherCodeBuffer.Size, Name);
 #endif
+
+  // Provide a way for c++ code to long jump to ThreadStopHandler
+  using PivotFnType = __attribute__((naked)) void(*)(uint64_t);
+  auto PivotFn = reinterpret_cast<PivotFnType>(ThreadStopHandlerPivotStackAddress);
+
+  // This needs to be on the thread object, because we (currently) create one dispatcher per thread
+  Thread->LongJumpExit = std::make_unique<std::function<void(FEXCore::Core::InternalThreadState *)>>([PivotFn](FEXCore::Core::InternalThreadState *Thread) {
+    PivotFn(Thread->State.ReturningStackLocation);
+    // Does not return
+  });
 
   ready();
 

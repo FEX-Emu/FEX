@@ -71,6 +71,8 @@ namespace FEXCore::Core {
     Event StartRunning;
     Event ThreadWaiting;
 
+    std::unique_ptr<std::function<void(FEXCore::Core::InternalThreadState *)>> LongJumpExit;
+
     std::unique_ptr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
 
     std::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;

@@ -159,6 +159,7 @@ private:
 
   uint64_t AbsoluteLoopTopAddress{};
   uint64_t ExitFunctionLinkerAddress{};
+  uint64_t ThreadStopHandlerPivotStackAddress{};
   uint64_t ThreadStopHandlerAddress{};
   uint64_t ThreadPauseHandlerAddress{};
 

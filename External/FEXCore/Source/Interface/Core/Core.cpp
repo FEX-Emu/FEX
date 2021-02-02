@@ -424,7 +424,15 @@ namespace FEXCore::Context {
   void Context::StopThread(FEXCore::Core::InternalThreadState *Thread) {
     if (Thread->State.RunningEvents.Running.load()) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_STOP);
-      tgkill(Thread->State.ThreadManager.PID, Thread->State.ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+
+      if (Core::ThreadData.Thread == Thread) {
+        // If a thread is trying to stop itself, we can just jump straight to the the dispatcher
+        (*Thread->LongJumpExit)(Thread);
+      }
+      else {
+        // Otherwise, send a signal
+        tgkill(Thread->State.ThreadManager.PID, Thread->State.ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+      }
     }
   }
 
