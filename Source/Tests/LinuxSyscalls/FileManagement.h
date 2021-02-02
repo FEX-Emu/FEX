@@ -27,7 +27,7 @@ public:
   uint64_t Stat(const char *pathname, void *buf);
   uint64_t Lstat(const char *path, void *buf);
   uint64_t Access(const char *pathname, int mode);
-  uint64_t FAccessat(int dirfd, const char *pathname, int mode, int flags);
+  uint64_t FAccessat(int dirfd, const char *pathname, int mode);
   uint64_t Readlink(const char *pathname, char *buf, size_t bufsiz);
   uint64_t Chmod(const char *pathname, mode_t mode);
   uint64_t Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz);
