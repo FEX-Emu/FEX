@@ -68,7 +68,6 @@ aio_test
 alarm_test
 arch_prctl_test
 bad_test
-chmod_test
 chown_test
 clock_nanosleep_test
 concurrency_test
