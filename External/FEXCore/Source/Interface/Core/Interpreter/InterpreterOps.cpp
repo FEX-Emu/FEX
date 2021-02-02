@@ -352,7 +352,7 @@ bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
     case FEXCore::IR::COND_ULE:
       CompResult = static_cast<unsigned_type>(Src1) <= static_cast<unsigned_type>(Src2);
       break;
-    
+
     case FEXCore::IR::COND_FLU:
       CompResult = reinterpret_cast<float_type&>(Src1) < reinterpret_cast<float_type&>(Src2) || (std::isnan(reinterpret_cast<float_type&>(Src1)) || std::isnan(reinterpret_cast<float_type&>(Src2)));
       break;
@@ -399,18 +399,14 @@ Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src) {
 static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->StopThread(Thread);
 
-  // If the StopThread signal is delayed for any reason, spin forever
-  for (;;)
-    sleep(1);
+  LogMan::Msg::A("unreachable");
 }
 
 [[noreturn]]
 static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->SignalThread(Thread, FEXCore::Core::SIGNALEVENT_RETURN);
 
-  // If the return signal is delayed for any reason, spin forever
-  for (;;)
-    sleep(1);
+  LogMan::Msg::A("unreachable");
 }
 
 void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView<true> *CurrentIR, FEXCore::Core::DebugData *DebugData) {
@@ -468,7 +464,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
         switch (IROp->Op) {
           case IR::OP_VALIDATECODE: {
             auto Op = IROp->C<IR::IROp_ValidateCode>();
-            
+
             if (memcmp((void*)Op->CodePtr, &Op->CodeOriginalLow, Op->CodeLength) != 0) {
               GD = 1;
             } else {
@@ -510,7 +506,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
 
             void *Data = reinterpret_cast<void*>(ContextPtr);
             void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
-            
+
             memcpy(Data, Src, OpSize);
 
             BlockResults.Quit = true;
@@ -790,7 +786,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
             void *Src_Upper = GetSrc<void*>(SSAData, Op->Header.Args[1]);
 
             uint8_t *Dst = GetDest<uint8_t*>(SSAData, WrapperOp);
-  
+
             memcpy(Dst, Src_Lower, Op->Header.Size);
             memcpy(Dst + Op->Header.Size, Src_Upper, Op->Header.Size);
             break;
