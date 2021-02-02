@@ -212,8 +212,9 @@ private:
   uint64_t ExitFunctionLinkerAddress{};
   uint64_t ThreadPauseHandlerAddress{};
 
-  uint64_t ThreadStopHandlerAddressSpillSRA{};
-  uint64_t ThreadStopHandlerAddress{};
+  uint64_t ThreadStopPivotAddress{};
+  uint64_t ThreadStopSpillAddress{};
+  uint64_t ThreadStopNoSpillAddress{};
   uint64_t PauseReturnInstruction{};
 
   uint32_t SignalHandlerRefCounter{};

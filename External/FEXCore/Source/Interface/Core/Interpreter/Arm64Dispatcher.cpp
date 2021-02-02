@@ -37,6 +37,7 @@ class DispatchGenerator : public vixl::aarch64::Assembler {
   CPUBackend::AsmDispatch DispatchPtr;
   CPUBackend::JITCallback CallbackPtr;
 
+  uint64_t ThreadStopHandlerPivotStackAddress;
   uint64_t ThreadStopHandlerAddress;
   uint64_t AbsoluteLoopTopAddress;
   uint64_t ThreadPauseHandlerAddress;
@@ -258,6 +259,10 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
   }
 
   {
+    // Alternative entry point to ExitBlock that takes sp in the first argument
+    ThreadStopHandlerPivotStackAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    add (sp, x0, 0);
+
     bind(&Exit);
     ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     PopCalleeSavedRegisters();
@@ -540,6 +545,15 @@ void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore:
   Generator = new DispatchGenerator(ctx, Thread);
   DispatchPtr = Generator->DispatchPtr;
   CallbackPtr = Generator->CallbackPtr;
+
+  using PivotFnType = __attribute__((naked)) void(*)(uint64_t);
+  auto PivotFn = reinterpret_cast<PivotFnType>(Generator->ThreadStopHandlerPivotStackAddress);
+
+  // This needs to be on the thread object, because we (currently) create one dispatcher per thread
+  Thread->LongJumpExit = std::make_unique<std::function<void(FEXCore::Core::InternalThreadState *)>>([PivotFn](FEXCore::Core::InternalThreadState *Thread) {
+    PivotFn(Thread->State.ReturningStackLocation);
+    // Does not return
+  });
 
   // TODO: Implement this. It is missing from the dispatcher
   // TODO: It feels wrong to initialize this way
