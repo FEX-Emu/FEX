@@ -116,6 +116,10 @@ namespace DefaultFallbackCore {
       return nullptr;
     }
 
+    bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) override {
+      return false;
+    }
+
   private:
     FEXCore::Core::InternalThreadState *ThreadState;
   };

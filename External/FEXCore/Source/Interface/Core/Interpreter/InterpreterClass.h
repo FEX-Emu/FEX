@@ -33,6 +33,8 @@ public:
 
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
 
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) override;
+
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;

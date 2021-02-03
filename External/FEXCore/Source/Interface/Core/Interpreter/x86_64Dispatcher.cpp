@@ -482,4 +482,13 @@ void InterpreterCore::DeleteAsmDispatch() {
   delete Generator;
 }
 
+bool InterpreterCore::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) {
+  if (!IncludeDispatcher)
+    return false;
+
+  size_t Start = reinterpret_cast<size_t>(Generator->getCode());
+  size_t End = Start + Generator->getSize();
+
+  return Address >= Start && Address < End;
+}
 }

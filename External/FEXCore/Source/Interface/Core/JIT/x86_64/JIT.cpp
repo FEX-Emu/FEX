@@ -1094,6 +1094,40 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
 }
 
+bool JITCore::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) {
+  // Check the initial code buffer first
+  // It's the most likely place to end up
+
+  uint64_t CodeBase = reinterpret_cast<uint64_t>(InitialCodeBuffer.Ptr);
+  uint64_t CodeEnd = CodeBase + InitialCodeBuffer.Size;
+  if (Address >= CodeBase &&
+      Address < CodeEnd) {
+    return true;
+  }
+
+  // Check the generated code buffers
+  // Not likely to have any but can happen with recursive signals
+  for (auto &CodeBuffer : CodeBuffers) {
+    CodeBase = reinterpret_cast<uint64_t>(CodeBuffer.Ptr);
+    CodeEnd = CodeBase + CodeBuffer.Size;
+    if (Address >= CodeBase &&
+        Address < CodeEnd) {
+      return true;
+    }
+  }
+
+  if (IncludeDispatcher) {
+    // Check the dispatcher. Unlikely to crash here but not impossible
+    CodeBase = reinterpret_cast<uint64_t>(DispatcherCodeBuffer.Ptr);
+    CodeEnd = CodeBase + DispatcherCodeBuffer.Size;
+    if (Address >= CodeBase &&
+        Address < CodeEnd) {
+      return true;
+    }
+  }
+  return false;
+}
+
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
   return new JITCore(ctx, Thread, AllocateNewCodeBuffer(CompileThread ? JITCore::MAX_CODE_SIZE : JITCore::INITIAL_CODE_SIZE), CompileThread);
 }
