@@ -59,11 +59,21 @@ jobs:
       # Execute the unit tests
       run: cmake --build . --config $BUILD_TYPE --target asm_tests
 
+    - name: ASM Test Results move
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log
+
     - name: IR Tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the unit tests
       run: cmake --build . --config $BUILD_TYPE --target ir_tests
+
+    - name: IR Test Results move
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log
 
     - name: Posix Tests
       working-directory: ${{runner.workspace}}/build
@@ -71,15 +81,47 @@ jobs:
       # Execute the posixtest
       run: cmake --build . --config $BUILD_TYPE --target posix_tests
 
+    - name: Posix Test Results move
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log
+
     - name: gvisor tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the gvisor tests
       run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
 
+    - name: GVisor Test Results move
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log
+
     - name: gcc target tests 64
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the gvisor tests
       run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_64
+
+    - name: GCC64 Test Results move
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log
+
+    - name: Truncate test results
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      # Cap out the log files at 20M in case something crash spins and dumps fault text
+      # ASM tests get quite close to 10MB
+      run: truncate --size=20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+
+    - name: Set runner name
+      run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
+
+    - name: Upload results
+      uses: 'actions/upload-artifact@v2'
+      with:
+        name: Results-${{ env.runner_name }}
+        path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+        retention-days: 3
 
