@@ -397,7 +397,9 @@ Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src) {
 
 [[noreturn]]
 static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
-  (*Thread->LongJumpExit)(Thread);
+  Thread->CTX->StopThread(Thread);
+
+  LogMan::Msg::A("unreachable");
 }
 
 [[noreturn]]

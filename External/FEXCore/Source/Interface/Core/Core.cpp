@@ -9,6 +9,7 @@
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterCore.h"
+#include "Interface/Core/Unwinding.h"
 #include "Interface/Core/JIT/JITCore.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
@@ -430,8 +431,10 @@ namespace FEXCore::Context {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_STOP);
 
       if (Core::ThreadData.Thread == Thread) {
-        // If a thread is trying to stop itself, we can just jump straight to the the dispatcher
-        (*Thread->LongJumpExit)(Thread);
+        // If a thread is trying to stop itself, we can clean up and jump straight to the the dispatcher
+        CancelToDispatcher(Thread);
+
+        // Does not return
       }
       else {
         // Otherwise, send a signal
