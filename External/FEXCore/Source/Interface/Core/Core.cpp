@@ -891,7 +891,6 @@ namespace FEXCore::Context {
 
   bool Context::LoadAOTIRCache(std::istream &stream) {
     std::lock_guard<std::mutex> lk(AOTCacheLock);
-    AOTCache.clear();
     uint64_t tag;
     stream.read((char*)&tag, sizeof(tag));
     if (!stream || tag != 0xDEADBEEFC0D30002)
@@ -919,7 +918,7 @@ namespace FEXCore::Context {
       if (!stream)
         return false;
 
-      LogMan::Msg::I("Mod[%ld] %s has %ld functions", ModIndex, Module.c_str(), FnCount);
+      LogMan::Msg::D("Mod[%ld] %s has %ld functions", ModIndex, Module.c_str(), FnCount);
       for (int FnIndex = 0; FnIndex < FnCount; FnIndex++) {
         uint64_t addr, start, crc, len;
         stream.read((char*)&addr, sizeof(addr));
@@ -967,34 +966,46 @@ namespace FEXCore::Context {
     return true;
   }
 
-  void Context::WriteAOTIRCache(std::ostream &stream) {
+  bool Context::WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
     std::lock_guard<std::mutex> lk(AOTCacheLock);
-    uint64_t tag = 0xDEADBEEFC0D30002;
-    stream.write((char*)&tag, sizeof(tag));
 
-    auto ModCount = AOTCache.size();
-    stream.write((char*)&ModCount, sizeof(ModCount));
+    bool rv = true;
 
     for (auto AOTModule: AOTCache) {
+      if (AOTModule.second.size() == 0) {
+        continue;
+      }
+      
+      auto stream = CacheWriter(AOTModule.first);
+      if (!*stream) {
+        rv = false;
+      }
+      uint64_t tag = 0xDEADBEEFC0D30002;
+      stream->write((char*)&tag, sizeof(tag));
+
+      uint64_t ModCount = 1;
+      stream->write((char*)&ModCount, sizeof(ModCount));
       auto ModSize = AOTModule.first.size();
-      stream.write((char*)&ModSize, sizeof(ModSize));
-      stream.write((char*)&AOTModule.first[0], ModSize);
+      stream->write((char*)&ModSize, sizeof(ModSize));
+      stream->write((char*)&AOTModule.first[0], ModSize);
 
       auto FnCount = AOTModule.second.size();
-      stream.write((char*)&FnCount, sizeof(FnCount));
+      stream->write((char*)&FnCount, sizeof(FnCount));
 
       for (auto entry: AOTModule.second) {
-        stream.write((char*)&entry.first, sizeof(entry.first));
-        stream.write((char*)&entry.second.start, sizeof(entry.second.start));
-        stream.write((char*)&entry.second.len, sizeof(entry.second.len));
-        stream.write((char*)&entry.second.crc, sizeof(entry.second.crc));
-        entry.second.IR->Serialize(stream);
+        stream->write((char*)&entry.first, sizeof(entry.first));
+        stream->write((char*)&entry.second.start, sizeof(entry.second.start));
+        stream->write((char*)&entry.second.len, sizeof(entry.second.len));
+        stream->write((char*)&entry.second.crc, sizeof(entry.second.crc));
+        entry.second.IR->Serialize(*stream);
         uint64_t RASize = entry.second.RAData->MapCount;
-        stream.write((char*)&RASize, sizeof(RASize));
-        stream.write((char*)&entry.second.RAData->Map[0], sizeof(entry.second.RAData->Map[0]) * RASize);
-        stream.write((char*)&entry.second.RAData->SpillSlotCount, sizeof(entry.second.RAData->SpillSlotCount));
+        stream->write((char*)&RASize, sizeof(RASize));
+        stream->write((char*)&entry.second.RAData->Map[0], sizeof(entry.second.RAData->Map[0]) * RASize);
+        stream->write((char*)&entry.second.RAData->SpillSlotCount, sizeof(entry.second.RAData->SpillSlotCount));
       }
     }
+
+    return false;
   }
 
 

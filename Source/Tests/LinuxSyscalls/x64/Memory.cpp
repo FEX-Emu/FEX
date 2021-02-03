@@ -1,11 +1,16 @@
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 
 #include <sys/mman.h>
 #include <sys/shm.h>
 #include <map>
 #include <unistd.h>
+
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Config/Config.h>
+#include <fstream>
 
 struct AddrToFileEntry {
   uint64_t Start;
@@ -81,6 +86,8 @@ namespace {
   #undef mix
 }
 
+std::unordered_set<std::string> LoadedModules;
+
 namespace FEX::HLE::x64 {
   void RegisterMemory() {
     REGISTER_SYSCALL_IMPL_X64(munmap, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length) -> uint64_t {
@@ -89,6 +96,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(mmap, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
+      static FEXCore::Config::Value<bool> AOTIRLoad(FEXCore::Config::CONFIG_AOTIR_LOAD, false);
       uint64_t Result = reinterpret_cast<uint64_t>(::mmap(addr, length, prot, flags, fd, offset));
       if (Result != -1 && !(flags & MAP_ANONYMOUS)) {
         auto filename = get_fdpath(fd);
@@ -102,6 +110,17 @@ namespace FEX::HLE::x64 {
 
           //fprintf(stderrr, "mmap: %lX - %ld -> %s -> %s\n", Result, length, fileid.c_str(), filename.c_str());
           AddrToFile.insert({ Result, { Result, length, (uint64_t)offset, fileid } });
+
+          if (AOTIRLoad() && !LoadedModules.contains(fileid)) {
+            std::ifstream AOTRead(std::string(getenv("HOME")) + "/.fex-emu/aotir/" + fileid, std::ios::in | std::ios::binary);
+
+            if (AOTRead) {
+              LoadedModules.insert(fileid);
+              if (FEXCore::Context::ReadAOTIR(Thread->CTX, AOTRead)) {
+                LogMan::Msg::I("AOTIR Cache Dynamic Load: %s", fileid.c_str());
+              }
+            }
+          }
         }
       }
       SYSCALL_ERRNO();

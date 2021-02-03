@@ -18,6 +18,7 @@
 #include <mutex>
 #include <istream>
 #include <ostream>
+#include <functional>
 
 namespace FEXCore {
 class ThunkHandler;
@@ -167,7 +168,7 @@ namespace FEXCore::Context {
     uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
     bool LoadAOTIRCache(std::istream &stream);
-    void WriteAOTIRCache(std::ostream &stream);
+    bool WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
     // Used for thread creation from syscalls
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);

@@ -154,8 +154,9 @@ namespace FEXCore::Context {
   bool ReadAOTIR(FEXCore::Context::Context *CTX, std::istream& stream) {
     return CTX->LoadAOTIRCache(stream);
   }
-  void WriteAOTIR(FEXCore::Context::Context *CTX, std::ostream& stream) {
-    CTX->WriteAOTIRCache(stream);
+
+  bool WriteAOTIR(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
+    return CTX->WriteAOTIRCache(CacheWriter);
   }
 
 namespace Debug {
