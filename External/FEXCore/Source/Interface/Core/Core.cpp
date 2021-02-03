@@ -32,6 +32,7 @@ struct AddrToFileEntry {
   uint64_t Len;
   uint64_t Offset;
   std::string fileid;
+  void *CachedFileEntry;
 };
 
 std::map<uint64_t, AddrToFileEntry> AddrToFile;
@@ -844,8 +845,15 @@ namespace FEXCore::Context {
       auto file = AddrToFile.lower_bound(GuestRIP);
       if (file != AddrToFile.begin()) {
         --file;
-        auto AOTEntry = AOTCache[file->second.fileid].find(GuestRIP - file->second.Start + file->second.Offset);
-        if (AOTEntry != AOTCache[file->second.fileid].end()) {
+        auto Mod = (decltype(AOTCache)::value_type::second_type*) file->second.CachedFileEntry;
+
+        if (Mod == nullptr) {
+          file->second.CachedFileEntry = Mod = &AOTCache[file->second.fileid];
+        }
+
+        auto AOTEntry = Mod->find(GuestRIP - file->second.Start + file->second.Offset);
+        
+        if (AOTEntry != Mod->end()) {
           // verify hash
           auto hash = fasthash64((void*)(AOTEntry->second.start + file->second.Start  - file->second.Offset), AOTEntry->second.len, 0);
           if (hash == AOTEntry->second.crc) {
@@ -913,6 +921,8 @@ namespace FEXCore::Context {
       if (!stream)
         return false;
 
+      auto &Mod = AOTCache[Module];
+
       uint64_t FnCount;
       stream.read((char*)&FnCount, sizeof(FnCount));
       if (!stream)
@@ -959,7 +969,7 @@ namespace FEXCore::Context {
           delete IR;
           return false;
         }
-        AOTCache[Module].insert({addr, {start, len, crc, IR, RAData}});
+        Mod.insert({addr, {start, len, crc, IR, RAData}});
       }
     }
 
@@ -975,7 +985,7 @@ namespace FEXCore::Context {
       if (AOTModule.second.size() == 0) {
         continue;
       }
-      
+
       auto stream = CacheWriter(AOTModule.first);
       if (!*stream) {
         rv = false;
@@ -1082,7 +1092,7 @@ namespace FEXCore::Context {
       // Add to AOT cache if aot generation is enabled
       if (Config.AOTIRGenerate && RAData && MinAddress) {
         std::lock_guard<std::mutex> lk(AOTCacheLock);
-        auto RADataCopy = (typeof(RAData))malloc(RAData->Size(RAData->MapCount));
+        auto RADataCopy = (decltype(RAData))malloc(RAData->Size(RAData->MapCount));
         memcpy(RADataCopy, RAData, RAData->Size(RAData->MapCount));
         auto len = MaxAddress - MinAddress;
         auto hash = fasthash64((void*)MinAddress, len, 0);

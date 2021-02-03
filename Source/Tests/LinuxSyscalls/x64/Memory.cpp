@@ -17,6 +17,7 @@ struct AddrToFileEntry {
   uint64_t Len;
   uint64_t Offset;
   std::string fileid;
+  void *CachedFileEntry;
 };
 
 extern std::map<uint64_t, AddrToFileEntry> AddrToFile;
@@ -109,7 +110,7 @@ namespace FEX::HLE::x64 {
           auto fileid = base_filename + "-" + std::to_string(filename_hash);
 
           //fprintf(stderrr, "mmap: %lX - %ld -> %s -> %s\n", Result, length, fileid.c_str(), filename.c_str());
-          AddrToFile.insert({ Result, { Result, length, (uint64_t)offset, fileid } });
+          AddrToFile.insert({ Result, { Result, length, (uint64_t)offset, fileid, nullptr } });
 
           if (AOTIRLoad() && !LoadedModules.contains(fileid)) {
             std::ifstream AOTRead(std::string(getenv("HOME")) + "/.fex-emu/aotir/" + fileid, std::ios::in | std::ios::binary);

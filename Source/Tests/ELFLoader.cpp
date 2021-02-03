@@ -191,16 +191,6 @@ namespace {
   #undef mix
 }
 
-struct AddrToFileEntry {
-  uint64_t Start;
-  uint64_t Len;
-  uint64_t Offset;
-  std::string fileid;
-};
-
-extern std::map<uint64_t, AddrToFileEntry> AddrToFile;
-
-
 int main(int argc, char **argv, char **const envp) {
   bool IsInterpreter = RanAsInterpreter(argv[0]);
   LogMan::Throw::InstallHandler(AssertHandler);
