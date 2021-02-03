@@ -51,6 +51,17 @@ DEF_OP(Constant) {
   LoadConstant(Dst, Op->Constant);
 }
 
+DEF_OP(EntrypointOffset) {
+  auto Op = IROp->C<IR::IROp_EntrypointOffset>();
+  auto BlockHeader = IR->GetOp<IR::IROp_Header>(Op->HeaderOp)->C<IR::IROp_IRHeader>();
+
+  LogMan::Throw::A(BlockHeader->Header.Op == IR::OP_IRHEADER, "Expected IR Header");
+
+  auto Constant = BlockHeader->Entry + Op->Offset;
+  auto Dst = GetReg<RA_64>(Node);
+  LoadConstant(Dst, Constant);
+}
+
 DEF_OP(InlineConstant) {
   //nop
 }
@@ -1049,6 +1060,7 @@ void JITCore::RegisterALUHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
   REGISTER_OP(TRUNCELEMENTPAIR,  TruncElementPair);
   REGISTER_OP(CONSTANT,          Constant);
+  REGISTER_OP(ENTRYPOINTOFFSET,  EntrypointOffset);
   REGISTER_OP(INLINECONSTANT,    InlineConstant);
   REGISTER_OP(CYCLECOUNTER,      CycleCounter);
   REGISTER_OP(ADD,               Add);
