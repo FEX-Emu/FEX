@@ -27,16 +27,6 @@
 
 #include "Interface/Core/GdbServer.h"
 
-struct AddrToFileEntry {
-  uint64_t Start;
-  uint64_t Len;
-  uint64_t Offset;
-  std::string fileid;
-  void *CachedFileEntry;
-};
-
-std::map<uint64_t, AddrToFileEntry> AddrToFile;
-
 namespace {
   // Compression function for Merkle-Damgard construction.
   // This function is generated using the framework provided.
@@ -928,7 +918,7 @@ namespace FEXCore::Context {
       if (!stream)
         return false;
 
-      LogMan::Msg::D("Mod[%ld] %s has %ld functions", ModIndex, Module.c_str(), FnCount);
+      LogMan::Msg::D("AOTIR: Module %s has %ld functions", Module.c_str(), FnCount);
       for (int FnIndex = 0; FnIndex < FnCount; FnIndex++) {
         uint64_t addr, start, crc, len;
         stream.read((char*)&addr, sizeof(addr));
@@ -1015,7 +1005,7 @@ namespace FEXCore::Context {
       }
     }
 
-    return false;
+    return rv;
   }
 
 
@@ -1251,4 +1241,27 @@ namespace FEXCore::Context {
     return Result;
   }
 
+  void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
+    // TODO: Support overlapping maps and region splitting
+    auto base_filename = filename.substr(filename.find_last_of("/\\") + 1);
+    if (base_filename.size()) {
+      auto filename_hash = fasthash64(filename.c_str(), filename.size(), 0xBAADF00D);
+
+      auto fileid = base_filename + "-" + std::to_string(filename_hash);
+
+      AddrToFile.insert({ Base, { Base, Size, Offset, fileid, nullptr } });
+
+      if (Config.AOTIRLoad && !AOTCache.contains(fileid) && AOTIRLoader) {
+        auto stream = AOTIRLoader(fileid);
+        if (*stream) {
+          LoadAOTIRCache(*stream);
+        }
+      }
+    }
+  }
+
+  void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
+    // TODO: Support partial removing
+    AddrToFile.erase(Base);
+  }
 }

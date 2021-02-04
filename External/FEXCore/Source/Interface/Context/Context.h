@@ -115,8 +115,20 @@ namespace FEXCore::Context {
       IR::RegisterAllocationData *RAData;
     };
     
+    std::function<std::unique_ptr<std::istream>(const std::string&)> AOTIRLoader;
     std::unordered_map<std::string, std::map<uint64_t, AOTCacheEntry>> AOTCache;
     
+    struct AddrToFileEntry {
+      uint64_t Start;
+      uint64_t Len;
+      uint64_t Offset;
+      std::string fileid;
+      void *CachedFileEntry;
+    };
+
+    std::map<uint64_t, AddrToFileEntry> AddrToFile;
+
+
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif
@@ -179,6 +191,9 @@ namespace FEXCore::Context {
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
     std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
+
+    void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);
+    void RemoveNamedRegion(uintptr_t Base, uintptr_t Size);
 
 #if ENABLE_JITSYMBOLS
     FEXCore::JITSymbols Symbols;

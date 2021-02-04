@@ -148,49 +148,6 @@ bool IsInterpreterInstalled() {
          std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64");
 }
 
-namespace {
-  // Compression function for Merkle-Damgard construction.
-  // This function is generated using the framework provided.
-  #define mix(h) ({					\
-        (h) ^= (h) >> 23;		\
-        (h) *= 0x2127599bf4325c37ULL;	\
-        (h) ^= (h) >> 47; })
-
-  static uint64_t fasthash64(const void *buf, size_t len, uint64_t seed)
-  {
-    const uint64_t    m = 0x880355f21e6d1965ULL;
-    const uint64_t *pos = (const uint64_t *)buf;
-    const uint64_t *end = pos + (len / 8);
-    const unsigned char *pos2;
-    uint64_t h = seed ^ (len * m);
-    uint64_t v;
-
-    while (pos != end) {
-      v  = *pos++;
-      h ^= mix(v);
-      h *= m;
-    }
-
-    pos2 = (const unsigned char*)pos;
-    v = 0;
-
-    switch (len & 7) {
-    case 7: v ^= (uint64_t)pos2[6] << 48;
-    case 6: v ^= (uint64_t)pos2[5] << 40;
-    case 5: v ^= (uint64_t)pos2[4] << 32;
-    case 4: v ^= (uint64_t)pos2[3] << 24;
-    case 3: v ^= (uint64_t)pos2[2] << 16;
-    case 2: v ^= (uint64_t)pos2[1] << 8;
-    case 1: v ^= (uint64_t)pos2[0];
-      h ^= mix(v);
-      h *= m;
-    }
-
-    return mix(h);
-  }
-  #undef mix
-}
-
 int main(int argc, char **argv, char **const envp) {
   bool IsInterpreter = RanAsInterpreter(argv[0]);
   LogMan::Throw::InstallHandler(AssertHandler);
@@ -339,58 +296,38 @@ int main(int argc, char **argv, char **const envp) {
   std::string base_filename = Program.substr(Program.find_last_of("/\\") + 1) + ".fex-emu.iraot";
 
   if (AOTIRLoad() || AOTIRCapture()) {
-    LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Doesn't work with programs that fork.");
+    LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
   }
 
-#if 0
-  if (AOTIRLoad()) {
-    if (Program.size()) {
-      auto filename_hash = fasthash64(Program.c_str(), Program.size(), 0xBAADF00D);
+  FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> std::unique_ptr<std::istream> {
+    auto filepath = std::string(getenv("HOME")) + "/.fex-emu/aotir/" + fileid;
 
-      auto fileid = base_filename + "-" + std::to_string(filename_hash);
-
-      mkdir("~/.fex-emu/", 600);
-      mkdir("~/.fex-emu/aotir", 600);
-    
-      std::ifstream AOTRead("~/.fex-emu/aotir/" + fileid, std::ios::in | std::ios::binary);
-
-      if (AOTRead) {
-        if (FEXCore::Context::ReadAOTIR(CTX, AOTRead)) {
-          LogMan::Msg::I("AOTIR Cache Loaded");
-        }
-      }
-    }
-  }
-  #endif
+    return std::make_unique<std::ifstream>(filepath, std::ios::in | std::ios::binary);
+  });
 
   FEXCore::Context::RunUntilExit(CTX);
 
   if (AOTIRCapture()) {
-    std::ofstream AOTWrite(base_filename, std::ios::out | std::ios::binary );
+    mkdir((std::string(getenv("HOME")) + "/.fex-emu/").c_str(), 0700);
+    mkdir((std::string(getenv("HOME")) + "/.fex-emu/aotir").c_str(), 0700);
 
-    if (AOTWrite) {
-
-      mkdir((std::string(getenv("HOME")) + "/.fex-emu/").c_str(), 0700);
-      mkdir((std::string(getenv("HOME")) + "/.fex-emu/aotir").c_str(), 0700);
-
-      auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
-        auto filepath = std::string(getenv("HOME")) + "/.fex-emu/aotir/" + fileid;
-        auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
-        if (*AOTWrite) {
-          std::filesystem::resize_file(filepath, 0);
-          AOTWrite->seekp(0);
-          LogMan::Msg::I("AOTIR: Storing %s", fileid.c_str());
-        } else {
-          LogMan::Msg::I("AOTIR: Failed to store %s", fileid.c_str());
-        }
-        return AOTWrite;
-      });
-
-      if (WroteCache) {
-        LogMan::Msg::I("AOTIR Cache Stored");
+    auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
+      auto filepath = std::string(getenv("HOME")) + "/.fex-emu/aotir/" + fileid;
+      auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
+      if (*AOTWrite) {
+        std::filesystem::resize_file(filepath, 0);
+        AOTWrite->seekp(0);
+        LogMan::Msg::I("AOTIR: Storing %s", fileid.c_str());
       } else {
-        LogMan::Msg::E("AOTIR Cache Store Failed");
+        LogMan::Msg::I("AOTIR: Failed to store %s", fileid.c_str());
       }
+      return AOTWrite;
+    });
+
+    if (WroteCache) {
+      LogMan::Msg::I("AOTIR Cache Stored");
+    } else {
+      LogMan::Msg::E("AOTIR Cache Store Failed");
     }
   }
 

@@ -12,16 +12,6 @@
 #include <FEXCore/Config/Config.h>
 #include <fstream>
 
-struct AddrToFileEntry {
-  uint64_t Start;
-  uint64_t Len;
-  uint64_t Offset;
-  std::string fileid;
-  void *CachedFileEntry;
-};
-
-extern std::map<uint64_t, AddrToFileEntry> AddrToFile;
-
 std::string get_fdpath(int fd)
 {
     std::vector<char> buf(400);
@@ -44,55 +34,13 @@ std::string get_fdpath(int fd)
     return "";
 }
 
-namespace {
-  // Compression function for Merkle-Damgard construction.
-  // This function is generated using the framework provided.
-  #define mix(h) ({					\
-        (h) ^= (h) >> 23;		\
-        (h) *= 0x2127599bf4325c37ULL;	\
-        (h) ^= (h) >> 47; })
-
-  static uint64_t fasthash64(const void *buf, size_t len, uint64_t seed)
-  {
-    const uint64_t    m = 0x880355f21e6d1965ULL;
-    const uint64_t *pos = (const uint64_t *)buf;
-    const uint64_t *end = pos + (len / 8);
-    const unsigned char *pos2;
-    uint64_t h = seed ^ (len * m);
-    uint64_t v;
-
-    while (pos != end) {
-      v  = *pos++;
-      h ^= mix(v);
-      h *= m;
-    }
-
-    pos2 = (const unsigned char*)pos;
-    v = 0;
-
-    switch (len & 7) {
-    case 7: v ^= (uint64_t)pos2[6] << 48;
-    case 6: v ^= (uint64_t)pos2[5] << 40;
-    case 5: v ^= (uint64_t)pos2[4] << 32;
-    case 4: v ^= (uint64_t)pos2[3] << 24;
-    case 3: v ^= (uint64_t)pos2[2] << 16;
-    case 2: v ^= (uint64_t)pos2[1] << 8;
-    case 1: v ^= (uint64_t)pos2[0];
-      h ^= mix(v);
-      h *= m;
-    }
-
-    return mix(h);
-  }
-  #undef mix
-}
-
-std::unordered_set<std::string> LoadedModules;
-
 namespace FEX::HLE::x64 {
   void RegisterMemory() {
     REGISTER_SYSCALL_IMPL_X64(munmap, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length) -> uint64_t {
       uint64_t Result = ::munmap(addr, length);
+      if (Result != -1) {
+        FEXCore::Context::RemoveNamedRegion(Thread->CTX, (uintptr_t)addr, length);
+      }
       SYSCALL_ERRNO();
     });
 
@@ -102,27 +50,7 @@ namespace FEX::HLE::x64 {
       if (Result != -1 && !(flags & MAP_ANONYMOUS)) {
         auto filename = get_fdpath(fd);
 
-        auto base_filename = filename.substr(filename.find_last_of("/\\") + 1);
-
-        if (base_filename.size()) {
-          auto filename_hash = fasthash64(filename.c_str(), filename.size(), 0xBAADF00D);
-
-          auto fileid = base_filename + "-" + std::to_string(filename_hash);
-
-          //fprintf(stderrr, "mmap: %lX - %ld -> %s -> %s\n", Result, length, fileid.c_str(), filename.c_str());
-          AddrToFile.insert({ Result, { Result, length, (uint64_t)offset, fileid, nullptr } });
-
-          if (AOTIRLoad() && !LoadedModules.contains(fileid)) {
-            std::ifstream AOTRead(std::string(getenv("HOME")) + "/.fex-emu/aotir/" + fileid, std::ios::in | std::ios::binary);
-
-            if (AOTRead) {
-              LoadedModules.insert(fileid);
-              if (FEXCore::Context::ReadAOTIR(Thread->CTX, AOTRead)) {
-                LogMan::Msg::I("AOTIR Cache Dynamic Load: %s", fileid.c_str());
-              }
-            }
-          }
-        }
+        FEXCore::Context::AddNamedRegion(Thread->CTX, Result, length, offset, filename);
       }
       SYSCALL_ERRNO();
     });

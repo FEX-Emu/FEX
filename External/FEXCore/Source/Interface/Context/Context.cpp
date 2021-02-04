@@ -151,12 +151,19 @@ namespace FEXCore::Context {
     return CTX->CPUID.RunFunction(Function);
   }
 
-  bool ReadAOTIR(FEXCore::Context::Context *CTX, std::istream& stream) {
-    return CTX->LoadAOTIRCache(stream);
+  void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::istream>(const std::string&)> CacheReader) {
+    CTX->AOTIRLoader = CacheReader;
   }
 
   bool WriteAOTIR(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
     return CTX->WriteAOTIRCache(CacheWriter);
+  }
+
+  void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name) {
+    return CTX->AddNamedRegion(Base, Length, Offset, Name);
+  }
+  void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length) {
+    return CTX->RemoveNamedRegion(Base, Length);
   }
 
 namespace Debug {
