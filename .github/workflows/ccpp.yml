@@ -60,6 +60,7 @@ jobs:
       run: cmake --build . --config $BUILD_TYPE --target asm_tests
 
     - name: ASM Test Results move
+      if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log
@@ -71,6 +72,7 @@ jobs:
       run: cmake --build . --config $BUILD_TYPE --target ir_tests
 
     - name: IR Test Results move
+      if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log
@@ -82,6 +84,7 @@ jobs:
       run: cmake --build . --config $BUILD_TYPE --target posix_tests
 
     - name: Posix Test Results move
+      if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log
@@ -93,6 +96,7 @@ jobs:
       run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
 
     - name: GVisor Test Results move
+      if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log
@@ -104,11 +108,13 @@ jobs:
       run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_64
 
     - name: GCC64 Test Results move
+      if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log
 
     - name: Truncate test results
+      if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
       # Cap out the log files at 20M in case something crash spins and dumps fault text
@@ -116,9 +122,11 @@ jobs:
       run: truncate --size=20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
 
     - name: Set runner name
+      if: ${{ always() }}
       run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
 
     - name: Upload results
+      if: ${{ always() }}
       uses: 'actions/upload-artifact@v2'
       with:
         name: Results-${{ env.runner_name }}
