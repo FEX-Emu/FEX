@@ -71,7 +71,7 @@ namespace FEXCore::Context {
       bool ABILocalFlags {false};
       bool ABINoPF {false};
 
-      bool AOTIRGenerate {false};
+      bool AOTIRCapture {false};
       bool AOTIRLoad {false};
 
       std::string DumpIR;

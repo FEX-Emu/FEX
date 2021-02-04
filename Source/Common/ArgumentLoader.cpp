@@ -114,9 +114,9 @@ namespace FEX::ArgLoader {
         .help("Disables optimization passes for debugging")
         .choices({"0"});
 
-      EmulationGroup.add_option("--aotir-generate")
-        .dest("AOTIRGenerate")
-        .help("Generates an AOTIR cache for the loaded executable")
+      EmulationGroup.add_option("--aotir-capture")
+        .dest("AOTIRCapture")
+        .help("Captures IR and generates an AOTIR cache for the loaded executable and libs")
         .action("store_true")
         .set_default(false);
 
@@ -262,9 +262,9 @@ namespace FEX::ArgLoader {
         Set(FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, std::to_string(true));
       }
 
-      if (Options.is_set_by_user("AOTIRGenerate")) {
-        bool AOTIRGenerate = Options.get("AOTIRGenerate");
-        Set(FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE, std::to_string(AOTIRGenerate));
+      if (Options.is_set_by_user("AOTIRCapture")) {
+        bool AOTIRCapture = Options.get("AOTIRCapture");
+        Set(FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE, std::to_string(AOTIRCapture));
       }
 
       if (Options.is_set_by_user("AOTIRLoad")) {

@@ -1090,7 +1090,7 @@ namespace FEXCore::Context {
       Thread->RALists.emplace(GuestRIP, RAData);
 
       // Add to AOT cache if aot generation is enabled
-      if (Config.AOTIRGenerate && RAData && MinAddress) {
+      if (Config.AOTIRCapture && RAData && MinAddress) {
         std::lock_guard<std::mutex> lk(AOTCacheLock);
         auto RADataCopy = (decltype(RAData))malloc(RAData->Size(RAData->MapCount));
         memcpy(RADataCopy, RAData, RAData->Size(RAData->MapCount));

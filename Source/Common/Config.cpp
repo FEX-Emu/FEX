@@ -188,7 +188,7 @@ namespace FEX::Config {
     {FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS,    "ABILocalFlags"},
     {FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF,          "ABINoPF"},
     {FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, "O0"},
-    {FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE,       "AOTIRGenerate"},
+    {FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE,       "AOTIRCapture"},
     {FEXCore::Config::ConfigOption::CONFIG_AOTIR_LOAD,           "AOTIRLoad"},
   }};
 
@@ -237,7 +237,7 @@ namespace FEX::Config {
     {"ABILocalFlags", FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS},
     {"AbiNoPF",       FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF},
     {"O0",            FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES},
-    {"AOTIRGenerate",   FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE},
+    {"AOTIRCapture",   FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE},
     {"AOTIRLoad",       FEXCore::Config::ConfigOption::CONFIG_AOTIR_LOAD},
   }};
 

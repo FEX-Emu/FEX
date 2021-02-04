@@ -251,7 +251,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Value<bool> SMCChecksConfig{FEXCore::Config::CONFIG_SMC_CHECKS, false};
   FEXCore::Config::Value<bool> ABILocalFlags{FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, false};
   FEXCore::Config::Value<bool> AbiNoPF{FEXCore::Config::CONFIG_ABI_NO_PF, false};
-  FEXCore::Config::Value<bool> AOTIRGenerate{FEXCore::Config::CONFIG_AOTIR_GENERATE, false};
+  FEXCore::Config::Value<bool> AOTIRCapture{FEXCore::Config::CONFIG_AOTIR_GENERATE, false};
   FEXCore::Config::Value<bool> AOTIRLoad{FEXCore::Config::CONFIG_AOTIR_LOAD, false};
 
   ::SilentLog = SilentLog();
@@ -307,7 +307,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DUMPIR, DumpIR());
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_AOTIR_GENERATE, AOTIRGenerate());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_AOTIR_GENERATE, AOTIRCapture());
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_AOTIR_LOAD, AOTIRLoad());
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
@@ -338,7 +338,7 @@ int main(int argc, char **argv, char **const envp) {
 
   std::string base_filename = Program.substr(Program.find_last_of("/\\") + 1) + ".fex-emu.iraot";
 
-  if (AOTIRLoad() || AOTIRGenerate()) {
+  if (AOTIRLoad() || AOTIRCapture()) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Doesn't work with programs that fork.");
   }
 
@@ -365,7 +365,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::RunUntilExit(CTX);
 
-  if (AOTIRGenerate()) {
+  if (AOTIRCapture()) {
     std::ofstream AOTWrite(base_filename, std::ios::out | std::ios::binary );
 
     if (AOTWrite) {
