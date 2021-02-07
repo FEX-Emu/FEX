@@ -536,6 +536,7 @@ namespace FEXCore::IR {
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
+          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
           uint32_t ArgNode = IROp->Args[i].ID();
           LogMan::Throw::A(LiveRanges[ArgNode].Begin != ~0U, "%%ssa%d used by %%ssa%d before defined?", ArgNode, Node);
@@ -701,6 +702,7 @@ namespace FEXCore::IR {
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
+          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
           uint32_t ArgNode = IROp->Args[i].ID();
 

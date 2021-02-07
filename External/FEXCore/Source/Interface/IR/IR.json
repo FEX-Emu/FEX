@@ -132,7 +132,7 @@
       "Args": [
         "uint64_t", "CodeOriginalLow",
         "uint64_t", "CodeOriginalHigh",
-        "uint64_t", "CodePtr",
+        "uint64_t", "Offset",
         "uint8_t", "CodeLength"
       ]
     },
@@ -284,15 +284,23 @@
     },
 
     "EntrypointOffset": {
-      "Desc": ["Returns the <entrypoint> + val address"],
+      "Desc": ["Returns the <entrypoint> + Offset address"],
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
       "DestSize": "RegisterSize",
-      "SSAArgs": "1",
-      "SSANames": [
-        "HeaderOp"
+      "Args": [
+        "int64_t", "Offset"
       ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize"
+      ]
+    },
+
+    "InlineEntrypointOffset": {
+      "Desc": ["Returns the <entrypoint> + Offset address"],
+      "OpClass": "ALU",
+      "DestSize": "RegisterSize",
       "Args": [
         "int64_t", "Offset"
       ],

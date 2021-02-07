@@ -854,6 +854,15 @@ bool ConstProp::Run(IREmitter *IREmit) {
             IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(Constant));
 
             Changed = true;
+          } else {
+            auto NewRIP = IREmit->GetOpHeader(Op->NewRIP);
+            if (NewRIP->Op == OP_ENTRYPOINTOFFSET) {
+              auto EO = NewRIP->C<IR::IROp_EntrypointOffset>();
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->NewRIP));
+
+              IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineEntrypointOffset(EO->Offset, EO->Header.Size));
+              Changed = true;
+            }
           }
           break;
         }

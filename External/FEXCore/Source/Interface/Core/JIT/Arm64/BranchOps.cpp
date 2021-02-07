@@ -65,7 +65,7 @@ DEF_OP(ExitFunction) {
   aarch64::Register RipReg;
   uint64_t NewRIP;
 
-  if (IsInlineConstant(Op->NewRIP, &NewRIP)) {
+  if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
     Literal l_BranchHost{ExitFunctionLinkerAddress};
     Literal l_BranchGuest{NewRIP};
 
@@ -259,7 +259,7 @@ DEF_OP(ValidateCode) {
   int idx = 0;
 
   LoadConstant(GetReg<RA_64>(Node), 0);
-  LoadConstant(x0, Op->CodePtr);
+  LoadConstant(x0, IR->GetHeader()->Entry + Op->Offset);
   LoadConstant(x1, 1);
 
   while (len >= 4)

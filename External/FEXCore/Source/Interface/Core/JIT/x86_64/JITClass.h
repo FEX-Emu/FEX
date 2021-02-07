@@ -126,6 +126,7 @@ private:
   Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
 
   bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
+  bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value);
 
   void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   IR::RegisterAllocationPass *RAPass;
@@ -209,9 +210,10 @@ private:
 
   ///< ALU Ops
   DEF_OP(TruncElementPair);
-  DEF_OP(EntrypointOffset);
   DEF_OP(Constant); 
+  DEF_OP(EntrypointOffset);
   DEF_OP(InlineConstant);
+  DEF_OP(InlineEntrypointOffset);
   DEF_OP(CycleCounter);
   DEF_OP(Add);
   DEF_OP(Sub);

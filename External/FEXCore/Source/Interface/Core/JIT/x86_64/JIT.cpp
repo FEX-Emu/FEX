@@ -805,6 +805,20 @@ bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Va
   }
 }
 
+bool JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
+  auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
+
+  if (OpHeader->Op == IR::IROps::OP_INLINEENTRYPOINTOFFSET) {
+    auto Op = OpHeader->C<IR::IROp_InlineEntrypointOffset>();
+    if (Value) {
+      *Value = IR->GetHeader()->Entry + Op->Offset;
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
 std::tuple<JITCore::SetCC, JITCore::CMovCC, JITCore::JCC> JITCore::GetCC(IR::CondClassType cond) {
     switch (cond.Val) {
     case FEXCore::IR::COND_EQ:  return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };

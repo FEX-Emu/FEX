@@ -978,7 +978,8 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           case IR::OP_VALIDATECODE: {
             auto Op = IROp->C<IR::IROp_ValidateCode>();
 
-            if (memcmp((void*)Op->CodePtr, &Op->CodeOriginalLow, Op->CodeLength) != 0) {
+            auto CodePtr = CurrentIR->GetHeader()->Entry + Op->Offset;
+            if (memcmp((void*)CodePtr, &Op->CodeOriginalLow, Op->CodeLength) != 0) {
               GD = 1;
             } else {
               GD = 0;
@@ -1208,8 +1209,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
 
           case IR::OP_ENTRYPOINTOFFSET: {
             auto Op = IROp->C<IR::IROp_EntrypointOffset>();
-            auto IRHeader = CurrentIR->GetOp<FEXCore::IR::IROp_Header>(Op->HeaderOp)->C<IR::IROp_IRHeader>();
-            GD = IRHeader->Entry + Op->Offset;
+            GD = CurrentIR->GetHeader()->Entry + Op->Offset;
             break;
           }
           case IR::OP_CONSTANT: {

@@ -66,7 +66,7 @@ DEF_OP(ExitFunction) {
 
   uint64_t NewRIP;
 
-  if (IsInlineConstant(Op->NewRIP, &NewRIP)) {
+  if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
     Label l_BranchHost;
     Label l_BranchGuest;
 
@@ -244,7 +244,7 @@ DEF_OP(ValidateCode) {
   int idx = 0;
 
   xor_(GetDst<RA_64>(Node), GetDst<RA_64>(Node));
-  mov(rax, Op->CodePtr);
+  mov(rax, IR->GetHeader()->Entry + Op->Offset);
   mov(rbx, 1);
   while (len >= 4) {
     cmp(dword[rax + idx], *(uint32_t*)(OldCode + idx));
