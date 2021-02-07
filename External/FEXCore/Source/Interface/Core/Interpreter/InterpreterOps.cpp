@@ -1090,10 +1090,8 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           case IR::OP_THUNK: {
             auto Op = IROp->C<IR::IROp_Thunk>();
 
-            //LogMan::Msg::D("Thunk function: %s, %p, %p\n", Op->ThunkName, Op->ThunkFnPtr, *GetSrc<void**>(Op->Header.Args[0]));
-
-            reinterpret_cast<ThunkedFunction*>(Op->ThunkFnPtr)(*GetSrc<void**>(SSAData, Op->Header.Args[0]));
-
+            auto thunkFn = Thread->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
+            thunkFn(*GetSrc<void**>(SSAData, Op->Header.Args[0]));
             break;
           }
           case IR::OP_CPUID: {

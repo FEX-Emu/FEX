@@ -127,6 +127,37 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
+  std::pair<DecodeFailure, IR::SHA256Sum> DecodeValue(std::string &Arg) {
+    IR::SHA256Sum Result;
+
+    if (Arg.at(0) != 's' || Arg.at(1) != 'h' || Arg.at(2) != 'a' || Arg.at(3) != '2' || Arg.at(4) != '5' || Arg.at(5) != '6' || Arg.at(6) != ':')
+      return {DecodeFailure::DECODE_INVALIDCHAR, Result};
+
+    auto GetDigit = [](const std::string &Arg, int pos, uint8_t *val) {
+      auto chr = Arg.at(pos);
+      if (chr >= '0' && chr <= '9') {
+        *val = chr - '0';
+        return true;
+      } else if (chr >= 'a' && chr <= 'f') {
+        *val = 10 + chr - 'a';
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    for (size_t i = 0; i < sizeof(Result.data); i++) {
+      uint8_t high, low;
+      if (!GetDigit(Arg, 7 + 2 * i + 0, &high) || !GetDigit(Arg, 7 + 2 * i + 1, &low)) {
+        return {DecodeFailure::DECODE_INVALIDRANGE, Result};
+      }
+      Result.data[i] = high * 16 + low;
+    }
+    
+    return {DecodeFailure::DECODE_OKAY, Result};
+  }
+
+  template<>
   std::pair<DecodeFailure, FEXCore::IR::RegisterClassType> DecodeValue(std::string &Arg) {
     if (Arg == "GPR") {
       return {DecodeFailure::DECODE_OKAY, FEXCore::IR::GPRClass};

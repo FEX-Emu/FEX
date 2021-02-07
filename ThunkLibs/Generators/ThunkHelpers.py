@@ -1,10 +1,17 @@
 #!/usr/bin/python3
 import sys
 import re
+from hashlib import sha256
 
 Libs = { }
 CurrentLib = None
 CurrentFunction = None
+
+def hash_lib_fn_asm(lib, fn):
+    return "0x" + ", 0x".join(re.findall('..', sha256((lib + ":" + fn).encode('utf-8')).hexdigest()))
+
+def hash_lib_fn_c(lib, fn):
+    return "\\x" + "\\x".join(re.findall('..', sha256((lib + ":" + fn).encode('utf-8')).hexdigest()))
 
 def lib(name):
     global Libs
@@ -127,8 +134,7 @@ def GenerateThunk_args_assignment(args):
     return "".join(rv)
 
 def GenerateFunctionThunk(lib, function):
-    print("MAKE_THUNK(" + lib["name"] + ", " + function["name"] + ")")
-    print("")
+    print("MAKE_THUNK(" + lib["name"] + ", " + function["name"] + ", \"" + hash_lib_fn_asm(lib["name"], function["name"]) + "\")")
 
 
 ###
@@ -232,7 +238,7 @@ def GenerateLdr(libs):
 
 # Used to initialize host thunk list
 def GenerateTabFunctionUnpack(lib, function):
-    print("{\"" + lib["name"]  + ":" + function["name"] + "\", &fexfn_unpack_" + lib["name"]  + "_" + function["name"] + "},")
+    print("{(uint8_t*)\"" + hash_lib_fn_c(lib["name"], function["name"]) + "\", &fexfn_unpack_" + lib["name"]  + "_" + function["name"] + "}, //", lib["name"]  + ":" + function["name"])
 
 # Symtab, used for glxGetProc
 def GenerateTabFunctionPack(lib, function):

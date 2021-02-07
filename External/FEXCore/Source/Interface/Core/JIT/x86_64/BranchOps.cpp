@@ -3,6 +3,7 @@
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
@@ -226,8 +227,10 @@ DEF_OP(Thunk) {
     sub(rsp, 8); // Align
 
   mov(rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  
+  auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
 
-  mov(rax, reinterpret_cast<uintptr_t>(Op->ThunkFnPtr));
+  mov(rax, reinterpret_cast<uintptr_t>(thunkFn));
   call(rax);
 
   if (NumPush & 1)

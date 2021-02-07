@@ -3,6 +3,8 @@
 #include <FEXCore/Utils/LogManager.h>
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
+#include  <iomanip>
+
 namespace FEXCore::IR {
 #define IROP_GETNAME_IMPL
 #define IROP_GETRAARGS_IMPL
@@ -11,6 +13,12 @@ namespace FEXCore::IR {
 #define IROP_SIZES_IMPL
 
 #include <FEXCore/IR/IRDefines.inc>
+
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, const SHA256Sum &Arg) {
+  *out << "sha256:";
+  for(auto byte: Arg.data)
+    *out << std::hex << std::setfill('0') << std::setw(2) << (unsigned int)byte;
+}
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, uint64_t Arg) {
   *out << "#0x" << std::hex << Arg;

@@ -2,6 +2,7 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <string.h>
 #include <sstream>
 #include <tuple>
 
@@ -323,6 +324,11 @@ struct FenceType final {
   }
   constexpr bool operator==(FenceType const &rhs) const { return Val == rhs.Val; }
   constexpr bool operator!=(FenceType const &rhs) const { return !operator==(rhs); }
+};
+
+struct SHA256Sum final {
+  uint8_t data[32];
+  bool operator<(SHA256Sum const &rhs) const { return memcmp(data, rhs.data, sizeof(data)) < 0; }
 };
 
 class NodeIterator;

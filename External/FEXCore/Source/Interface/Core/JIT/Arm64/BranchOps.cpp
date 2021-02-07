@@ -3,6 +3,7 @@
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
 using namespace vixl;
@@ -241,7 +242,8 @@ DEF_OP(Thunk) {
 #if _M_X86_64
   ERROR_AND_DIE("JIT: OP_THUNK not supported with arm simulator")
 #else
-  LoadConstant(x2, Op->ThunkFnPtr);
+  auto thunkFn = State->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
+  LoadConstant(x2, (uintptr_t)thunkFn);
   blr(x2);
 #endif
 

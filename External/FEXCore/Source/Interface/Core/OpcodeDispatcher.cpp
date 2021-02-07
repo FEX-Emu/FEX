@@ -95,14 +95,13 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  const char *name;
+  uint8_t *sha256;
 
-  name = (const char*)(Op->PC + 2);
+  sha256 = (uint8_t *)(Op->PC + 2);
 
   _Thunk(
     _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass),
-    name,
-    (uintptr_t)CTX->ThunkHandler->LookupThunk(name)
+    *reinterpret_cast<SHA256Sum*>(sha256)
   );
 
   auto Constant = _Constant(GPRSize);

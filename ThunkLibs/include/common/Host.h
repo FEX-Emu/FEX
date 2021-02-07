@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-struct ExportEntry { const char* name; void(*fn)(void *); };
+struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };
 
 typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
 

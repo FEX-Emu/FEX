@@ -669,8 +669,7 @@
         "ArgPtr"
       ],
       "Args":[
-        "const char*", "ThunkName",
-        "uintptr_t", "ThunkFnPtr"
+        "SHA256Sum", "ThunkNameHash"
       ]
     },
 
