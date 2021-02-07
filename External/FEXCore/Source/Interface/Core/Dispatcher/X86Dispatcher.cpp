@@ -1,10 +1,12 @@
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
+#include "Interface/Core/Dispatcher/Dispatcher_asm.h"
 
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Core/X86Enums.h>
 #include <cmath>
+
 
 namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
@@ -60,9 +62,15 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
   mov(STATE, rdi);
 
+  // Create a fake stack frame so we can exit by returning
+  push(reinterpret_cast<uint64_t>(&DispatcherExit));
+
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
   mov(qword [rdi + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)], rsp);
+
+  // Fixup alignment again
+  sub(rsp, 8);
 
   Label LoopTop;
   Label FullLookup;
@@ -162,14 +170,6 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     ThreadStopHandlerAddress = getCurr<uint64_t>();
 
     add(rsp, 8);
-
-    pop(r15);
-    pop(r14);
-    pop(r13);
-    pop(r12);
-    pop(rbp);
-    pop(rbx);
-
     ret();
   }
 

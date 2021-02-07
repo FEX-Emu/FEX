@@ -1,3 +1,5 @@
+enable_language(ASM)
+
 set (SRCS
   Common/Paths.cpp
   Common/JitSymbols.cpp
@@ -124,6 +126,11 @@ set (SRCS
   Utils/LogManager.cpp
   )
 
+if (_M_X86_64)
+  list(APPEND SRCS
+    Interface/Core/Dispatcher/X86_64Dispatcher.S
+  )
+endif()
 if(_M_ARM_64)
   list(APPEND SRCS
     Interface/Core/ArchHelpers/Arm64.cpp)
