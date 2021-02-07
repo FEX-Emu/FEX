@@ -1247,7 +1247,13 @@ namespace FEXCore::Context {
     if (base_filename.size()) {
       auto filename_hash = fasthash64(filename.c_str(), filename.size(), 0xBAADF00D);
 
-      auto fileid = base_filename + "-" + std::to_string(filename_hash);
+      auto fileid = base_filename + "-" + std::to_string(filename_hash) + "-";
+
+      // append optimization flags to the fileid
+      fileid += Config.SMCChecks ? "S" : "s";
+      fileid += Config.TSOEnabled ? "T" : "t";
+      fileid += Config.ABILocalFlags ? "L" : "l";
+      fileid += Config.ABINoPF ? "p" : "P";
 
       AddrToFile.insert({ Base, { Base, Size, Offset, fileid, nullptr } });
 
