@@ -712,7 +712,9 @@ bool ConstProp::Run(IREmitter *IREmit) {
           uint64_t amt = __builtin_ctzl(Constant2);
           IREmit->SetWriteCursor(CodeNode);
           auto shift = IREmit->_Lshl(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(amt));
+          shift.first->Header.Size = IROp->Size; // force Lshl to be the same size as the original Mul
           IREmit->ReplaceAllUsesWith(CodeNode, shift);
+          Changed = true;
         }
       }
       break;
