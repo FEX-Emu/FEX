@@ -1,5 +1,6 @@
 #include "Common/MathUtils.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
+#include "Interface/Core/Interpreter/Dispatcher_asm.h"
 #include "Interface/Context/Context.h"
 #include <FEXCore/Core/X86Enums.h>
 
@@ -84,9 +85,15 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
 
   mov(STATE, rdi);
 
+  // Create a fake stack frame so we can exit by returning
+  push(reinterpret_cast<uint64_t>(&DispatcherExit));
+
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
   mov(qword [rdi + offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)], rsp);
+
+  // Fixup alignment again
+  sub(rsp, 8);
 
   Label LoopTop;
   Label NoBlock;
@@ -158,6 +165,8 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
 
     L(ExitBlock);
     ThreadStopHandlerAddress = getCurr<uint64_t>();
+
+    ret();
 
     add(rsp, 8);
 

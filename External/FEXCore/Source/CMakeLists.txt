@@ -45,6 +45,8 @@ if (ENABLE_CLANG_FORMAT)
   set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE} "${CLANG_TIDY_FLAGS}")
 endif()
 
+enable_language(ASM)
+
 set (SRCS
   Common/Paths.cpp
   Common/JitSymbols.cpp
@@ -168,7 +170,10 @@ set (SRCS
   )
 
 if (_M_X86_64)
-  list(APPEND SRCS Interface/Core/Interpreter/x86_64Dispatcher.cpp)
+  list(APPEND SRCS
+    Interface/Core/Interpreter/x86_64Dispatcher.cpp
+    Interface/Core/Interpreter/X86_64Dispatcher.S
+  )
 endif()
 if(_M_ARM_64)
   list(APPEND SRCS
