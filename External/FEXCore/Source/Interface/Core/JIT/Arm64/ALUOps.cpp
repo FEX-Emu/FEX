@@ -63,6 +63,10 @@ DEF_OP(InlineConstant) {
   //nop
 }
 
+DEF_OP(InlineEntrypointOffset) {
+  //nop
+}
+
 DEF_OP(CycleCounter) {
 #ifdef DEBUG_CYCLES
   movz(GetReg<RA_64>(Node), 0);
