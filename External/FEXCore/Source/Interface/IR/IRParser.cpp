@@ -118,6 +118,15 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
+  std::pair<DecodeFailure, int64_t> DecodeValue(std::string &Arg) {
+    if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
+
+    int64_t Result = (int64_t)strtoull(&Arg.at(1), nullptr, 0);
+    if (errno == ERANGE) return {DecodeFailure::DECODE_INVALIDRANGE, 0};
+    return {DecodeFailure::DECODE_OKAY, Result};
+  }
+
+  template<>
   std::pair<DecodeFailure, FEXCore::IR::RegisterClassType> DecodeValue(std::string &Arg) {
     if (Arg == "GPR") {
       return {DecodeFailure::DECODE_OKAY, FEXCore::IR::GPRClass};

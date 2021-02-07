@@ -132,7 +132,7 @@
       "Args": [
         "uint64_t", "CodeOriginalLow",
         "uint64_t", "CodeOriginalHigh",
-        "uint64_t", "Offset",
+        "int64_t", "Offset",
         "uint8_t", "CodeLength"
       ]
     },
