@@ -88,7 +88,7 @@ namespace FEX::EmulatedFile {
       cpu_stream << "microcode       : 0x0" << std::endl;
       cpu_stream << "cpu MHz         : 3000" << std::endl;
       cpu_stream << "cache size      : 512 KB" << std::endl;
-      cpu_stream << "physical id     : " << i << std::endl;
+      cpu_stream << "physical id     : 0" << std::endl;
       cpu_stream << "siblings        : " << CPUCores << std::endl;
       cpu_stream << "core id         : " << i << std::endl;
       cpu_stream << "cpu cores       : " << CPUCores << std::endl;
