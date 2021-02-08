@@ -9,6 +9,7 @@
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterCore.h"
+#include "Interface/Core/Unwinding.h"
 #include "Interface/Core/JIT/JITCore.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
@@ -114,6 +115,10 @@ namespace DefaultFallbackCore {
     void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override {
       LogMan::Msg::E("Fell back to default code handler at RIP: 0x%lx", ThreadState->State.State.rip);
       return nullptr;
+    }
+
+    bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) override {
+      return false;
     }
 
   private:
@@ -424,7 +429,17 @@ namespace FEXCore::Context {
   void Context::StopThread(FEXCore::Core::InternalThreadState *Thread) {
     if (Thread->State.RunningEvents.Running.load()) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_STOP);
-      tgkill(Thread->State.ThreadManager.PID, Thread->State.ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+
+      if (Core::ThreadData.Thread == Thread) {
+        // If a thread is trying to stop itself, we can clean up and jump straight to the the dispatcher
+        CancelToDispatcher(Thread);
+
+        // Does not return
+      }
+      else {
+        // Otherwise, send a signal
+        tgkill(Thread->State.ThreadManager.PID, Thread->State.ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+      }
     }
   }
 

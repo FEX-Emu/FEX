@@ -76,5 +76,5 @@ add_executable(IRLoader
 )
 target_include_directories(IRLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
-target_link_libraries(IRLoader ${LIBS} LinuxEmulation)
+target_link_libraries(IRLoader ${LIBS})
 

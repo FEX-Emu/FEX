@@ -65,4 +65,21 @@ namespace Core {
     // 64 is used internally by Valgrind
     constexpr static size_t SIGNAL_FOR_PAUSE {63};
   };
+
+  /**
+   * @brief A dummy implementation of SignalDelegator that doesn't handle any signals
+   */
+  class NullSignalDelegator : public SignalDelegator {
+  public:
+    virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) override {}
+    virtual void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) override {}
+
+    virtual void MaskThreadSignals() override {}
+
+    virtual void SetCurrentSignal(uint32_t Signal) override {}
+    virtual void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) override {}
+    virtual void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) override {}
+    virtual void RegisterHostSignalHandlerForGuest(int Signal, HostSignalDelegatorFunctionForGuest Func) override {}
+
+  };
 }

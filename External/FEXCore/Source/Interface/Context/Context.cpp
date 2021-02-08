@@ -189,4 +189,6 @@ namespace Debug {
   }
 }
 
+NullSignalDelegator Context::DefaultSignalDelegator{};
+
 }

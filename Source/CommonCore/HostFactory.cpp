@@ -41,6 +41,10 @@ namespace HostFactory {
 
     bool HandleSIGSEGV(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
 
+    bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) override {
+      return false;
+    }
+
   private:
     uint64_t ReturningStackLocation;
     uint64_t ThreadStopHandlerAddress;

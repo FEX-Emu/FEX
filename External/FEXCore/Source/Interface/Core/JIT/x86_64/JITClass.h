@@ -75,6 +75,8 @@ public:
   bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) override;
+
 private:
   Label* PendingTargetLabel{};
   FEXCore::Context::Context *CTX;
@@ -159,6 +161,7 @@ private:
 
   uint64_t AbsoluteLoopTopAddress{};
   uint64_t ExitFunctionLinkerAddress{};
+  uint64_t ThreadStopHandlerPivotStackAddress{};
   uint64_t ThreadStopHandlerAddress{};
   uint64_t ThreadPauseHandlerAddress{};
 

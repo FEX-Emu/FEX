@@ -498,12 +498,12 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
 
     // Set the new PC
     if (!IsAddressInJITCode(_mcontext->pc, false)) {
-      // We are in non-jit, SRA is already spilled
+      // We are in non-jit, SRA should already be spilled
       LogMan::Throw::A(!IsAddressInJITCode(_mcontext->pc, true), "Signals in dispatcher have unsynchronized context");
-      _mcontext->pc = ThreadStopHandlerAddress;
+      _mcontext->pc = ThreadStopNoSpillAddress;
     } else {
       // We are in jit, SRA must be spilled
-      _mcontext->pc = ThreadStopHandlerAddressSpillSRA;
+      _mcontext->pc = ThreadStopSpillAddress;
     }
 
     // Set x28 (which is our state register) to point to our guest thread data
@@ -1223,11 +1223,22 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
+    aarch64::Label NoSpill;
+
+    // Thread Stop from c++ code
+    ThreadStopPivotAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    add (sp, x0, 0); // Pivot stack from arg0
+    b(&NoSpill); // We don't have the static regs to spill
+
+    // Thread Stop from jit code. Spill Static regs
     bind(&ExitSpillSRA);
-    ThreadStopHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    ThreadStopSpillAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     SpillStaticRegs();
-    ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-    
+
+    // Thread Stop from signal handler
+    bind(&NoSpill);
+    ThreadStopNoSpillAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+
     PopCalleeSavedRegisters();
 
     // Return from the function
@@ -1380,6 +1391,16 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   std::string Name = "Dispatch_" + std::to_string(::gettid());
   CTX->Symbols.Register(reinterpret_cast<void*>(DispatchPtr), CodeEnd - reinterpret_cast<uint64_t>(DispatchPtr), Name);
 #endif
+
+  // Provide a way for c++ code to long jump to ThreadStopHandler
+  using PivotFnType = __attribute__((naked)) void(*)(uint64_t);
+  auto PivotFn = reinterpret_cast<PivotFnType>(ThreadStopPivotAddress);
+
+  // This needs to be on the thread object, because we (currently) create one dispatcher per thread
+  Thread->LongJumpExit = std::make_unique<std::function<void(FEXCore::Core::InternalThreadState *)>>([PivotFn](FEXCore::Core::InternalThreadState *Thread) {
+    PivotFn(Thread->State.ReturningStackLocation);
+    // Does not return
+  });
 
   *GetBuffer() = OriginalBuffer;
 }

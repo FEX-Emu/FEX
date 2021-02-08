@@ -100,7 +100,10 @@ namespace FEXCore::Context {
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif
 
-    SignalDelegator *SignalDelegation{};
+    static NullSignalDelegator DefaultSignalDelegator;
+
+    // We have a default signal delegator which does nothing
+    SignalDelegator *SignalDelegation = &DefaultSignalDelegator;
     X86GeneratedCode X86CodeGen;
 
     Context();

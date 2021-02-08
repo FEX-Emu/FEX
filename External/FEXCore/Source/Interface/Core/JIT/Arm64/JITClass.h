@@ -189,7 +189,7 @@ private:
   static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
   static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
 
-  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true);
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) override;
 
 #if DEBUG
   vixl::aarch64::Disassembler Disasm;
@@ -212,8 +212,9 @@ private:
   uint64_t ExitFunctionLinkerAddress{};
   uint64_t ThreadPauseHandlerAddress{};
 
-  uint64_t ThreadStopHandlerAddressSpillSRA{};
-  uint64_t ThreadStopHandlerAddress{};
+  uint64_t ThreadStopPivotAddress{};
+  uint64_t ThreadStopSpillAddress{};
+  uint64_t ThreadStopNoSpillAddress{};
   uint64_t PauseReturnInstruction{};
 
   uint32_t SignalHandlerRefCounter{};

@@ -36,7 +36,7 @@ DEF_OP(Break) {
       add(sp, TMP1, 0);
 
       // Now we need to jump to the thread stop handler
-      LoadConstant(TMP1, ThreadStopHandlerAddressSpillSRA);
+      LoadConstant(TMP1, ThreadStopSpillAddress);
       br(TMP1);
       break;
     }

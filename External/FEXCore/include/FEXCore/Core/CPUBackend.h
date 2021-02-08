@@ -72,6 +72,8 @@ class LLVMCore;
      */
     virtual bool NeedsOpDispatch() = 0;
 
+    virtual bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) = 0;
+
     void ExecuteDispatch(FEXCore::Core::InternalThreadState *Thread) {
       DispatchPtr(Thread);
     }

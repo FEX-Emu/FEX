@@ -1,9 +1,11 @@
 #include "Common/MathUtils.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
+#include "Interface/Core/Interpreter/Dispatcher_asm.h"
 #include "Interface/Context/Context.h"
 #include <FEXCore/Core/X86Enums.h>
 
 #include <cmath>
+#include <memory>
 #include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
@@ -20,6 +22,7 @@ class DispatchGenerator : public Xbyak::CodeGenerator {
   CPUBackend::JITCallback CallbackPtr;
   FEXCore::Context::Context::IntCallbackReturn ReturnPtr;
 
+  uint64_t ThreadStopHandlerPivotStackAddress;
   uint64_t ThreadStopHandlerAddress;
   uint64_t AbsoluteLoopTopAddress;
   uint64_t ThreadPauseHandlerAddress;
@@ -82,9 +85,15 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
 
   mov(STATE, rdi);
 
+  // Create a fake stack frame so we can exit by returning
+  push(reinterpret_cast<uint64_t>(&DispatcherExit));
+
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
   mov(qword [rdi + offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)], rsp);
+
+  // Fixup alignment again
+  sub(rsp, 8);
 
   Label LoopTop;
   Label NoBlock;
@@ -120,7 +129,7 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
     mov(rcx, qword [rdi + rax + 8]);
     cmp(rcx, rdx);
     jne(NoBlock);
-    
+
     // Load the block pointer
     mov(rax, qword [rdi + rax]);
 
@@ -150,8 +159,14 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
   }
 
   {
+    ThreadStopHandlerPivotStackAddress = getCurr<uint64_t>();
+    // Alternative entry point to ExitBlock that takes rsp in the first argument
+    mov(rsp, rdi);
+
     L(ExitBlock);
     ThreadStopHandlerAddress = getCurr<uint64_t>();
+
+    ret();
 
     add(rsp, 8);
 
@@ -449,6 +464,15 @@ void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore:
   DispatchPtr = Generator->DispatchPtr;
   CallbackPtr = Generator->CallbackPtr;
 
+  using PivotFnType = __attribute__((naked)) void(*)(uint64_t);
+  auto PivotFn = reinterpret_cast<PivotFnType>(Generator->ThreadStopHandlerPivotStackAddress);
+
+// This needs to be on the thread object, because we (currently) create one dispatcher per thread
+  Thread->LongJumpExit = std::make_unique<std::function<void(FEXCore::Core::InternalThreadState *)>>([PivotFn](FEXCore::Core::InternalThreadState *Thread) {
+    PivotFn(Thread->State.ReturningStackLocation);
+    // Does not return
+  });
+
   // TODO: It feels wrong to initialize this way
   ctx->InterpreterCallbackReturn = Generator->ReturnPtr;
 }
@@ -467,4 +491,13 @@ void InterpreterCore::DeleteAsmDispatch() {
   delete Generator;
 }
 
+bool InterpreterCore::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) {
+  if (!IncludeDispatcher)
+    return false;
+
+  size_t Start = reinterpret_cast<size_t>(Generator->getCode());
+  size_t End = Start + Generator->getSize();
+
+  return Address >= Start && Address < End;
+}
 }

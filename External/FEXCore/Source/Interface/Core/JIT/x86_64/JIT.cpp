@@ -943,6 +943,9 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
+    ThreadStopHandlerPivotStackAddress = getCurr<uint64_t>();
+    mov(rsp, rdi);
+
     ThreadStopHandlerAddress = getCurr<uint64_t>();
 
     add(rsp, 8);
@@ -1076,9 +1079,53 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   CTX->Symbols.Register(DispatcherCodeBuffer.Ptr, DispatcherCodeBuffer.Size, Name);
 #endif
 
+  // Provide a way for c++ code to long jump to ThreadStopHandler
+  using PivotFnType = __attribute__((naked)) void(*)(uint64_t);
+  auto PivotFn = reinterpret_cast<PivotFnType>(ThreadStopHandlerPivotStackAddress);
+
+  // This needs to be on the thread object, because we (currently) create one dispatcher per thread
+  Thread->LongJumpExit = std::make_unique<std::function<void(FEXCore::Core::InternalThreadState *)>>([PivotFn](FEXCore::Core::InternalThreadState *Thread) {
+    PivotFn(Thread->State.ReturningStackLocation);
+    // Does not return
+  });
+
   ready();
 
   setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+}
+
+bool JITCore::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) {
+  // Check the initial code buffer first
+  // It's the most likely place to end up
+
+  uint64_t CodeBase = reinterpret_cast<uint64_t>(InitialCodeBuffer.Ptr);
+  uint64_t CodeEnd = CodeBase + InitialCodeBuffer.Size;
+  if (Address >= CodeBase &&
+      Address < CodeEnd) {
+    return true;
+  }
+
+  // Check the generated code buffers
+  // Not likely to have any but can happen with recursive signals
+  for (auto &CodeBuffer : CodeBuffers) {
+    CodeBase = reinterpret_cast<uint64_t>(CodeBuffer.Ptr);
+    CodeEnd = CodeBase + CodeBuffer.Size;
+    if (Address >= CodeBase &&
+        Address < CodeEnd) {
+      return true;
+    }
+  }
+
+  if (IncludeDispatcher) {
+    // Check the dispatcher. Unlikely to crash here but not impossible
+    CodeBase = reinterpret_cast<uint64_t>(DispatcherCodeBuffer.Ptr);
+    CodeEnd = CodeBase + DispatcherCodeBuffer.Size;
+    if (Address >= CodeBase &&
+        Address < CodeEnd) {
+      return true;
+    }
+  }
+  return false;
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
