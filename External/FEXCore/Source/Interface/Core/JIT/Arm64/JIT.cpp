@@ -868,7 +868,12 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     SpillSlots = RAData->SpillSlots();
 
     if (SpillSlots) {
-      sub(sp, sp, SpillSlots * 16);
+      if (IsImmAddSub(SpillSlots * 16)) {
+        sub(sp, sp, SpillSlots * 16);
+      } else {
+        LoadConstant(x0, SpillSlots * 16);
+        sub(sp, sp, x0);
+      }
     }
 
     PendingTargetLabel = nullptr;
@@ -1448,6 +1453,19 @@ void JITCore::PopDynamicRegsAndLR() {
   ldr(lr, MemOperand(sp, i * 8));
 
   add(sp, sp, SPOffset);
+}
+
+void JITCore::ResetStack() {
+  if (SpillSlots == 0)
+    return;
+
+  if (IsImmAddSub(SpillSlots * 16)) {
+    add(sp, sp, SpillSlots * 16);
+  } else {
+   // Too big to fit in a 12bit immediate
+   LoadConstant(x0, SpillSlots * 16);
+   add(sp, sp, x0);
+  }
 }
 
 FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {

@@ -22,9 +22,7 @@ DEF_OP(GuestReturn) {
 
 DEF_OP(SignalReturn) {
   // First we must reset the stack
-  if (SpillSlots) {
-    add(sp, sp, SpillSlots * 16);
-  }
+  ResetStack();
 
   // Now branch to our signal return helper
   // This can't be a direct branch since the code needs to live at a constant location
@@ -38,9 +36,7 @@ DEF_OP(CallbackReturn) {
   SpillStaticRegs();
   
   // First we must reset the stack
-  if (SpillSlots) {
-    add(sp, sp, SpillSlots * 16);
-  }
+  ResetStack();
 
   // We can now lower the ref counter again
   LoadConstant(x0, reinterpret_cast<uint64_t>(ThreadSharedData.SignalHandlerRefCounterPtr));
@@ -64,9 +60,7 @@ DEF_OP(ExitFunction) {
 
   Label FullLookup;
 
-  if (SpillSlots) {
-    add(sp, sp, SpillSlots * 16);
-  }
+  ResetStack();
 
   aarch64::Register RipReg;
   uint64_t NewRIP;

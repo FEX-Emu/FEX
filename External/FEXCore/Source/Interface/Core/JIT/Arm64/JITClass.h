@@ -242,6 +242,8 @@ private:
   void PushDynamicRegsAndLR();
   void PopDynamicRegsAndLR();
 
+  void ResetStack();
+
   using OpHandler = void (JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
   std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};
   void RegisterALUHandlers();
