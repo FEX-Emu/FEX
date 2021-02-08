@@ -41,9 +41,7 @@ DEF_OP(Break) {
       break;
     }
     case 6: { // INT3
-      if (SpillSlots) {
-        add(sp, sp, SpillSlots * 16);
-      }
+      ResetStack();
 
       LoadConstant(TMP1, ThreadPauseHandlerAddressSpillSRA);
       br(TMP1);
