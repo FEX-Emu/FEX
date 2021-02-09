@@ -79,7 +79,7 @@ namespace FEX::EmulatedFile {
 
     uint32_t Family = info.FamilyID + (info.FamilyID == 0xF ? info.ExFamilyID : 0);
     for (int i = 0; i < CPUCores; ++i) {
-      cpu_stream << "processor       : " << i << std::endl;
+      cpu_stream << "processor       : " << i << std::endl; // Logical id
       cpu_stream << "vendor_id       : " << vendorid.Str << std::endl;
       cpu_stream << "cpu family      : " << Family  << std::endl;
       cpu_stream << "model           : " << (info.Model + (info.FamilyID >= 6 ? (info.ExModelID << 4) : 0)) << std::endl;
@@ -88,10 +88,10 @@ namespace FEX::EmulatedFile {
       cpu_stream << "microcode       : 0x0" << std::endl;
       cpu_stream << "cpu MHz         : 3000" << std::endl;
       cpu_stream << "cache size      : 512 KB" << std::endl;
-      cpu_stream << "physical id     : 0" << std::endl;
-      cpu_stream << "siblings        : " << CPUCores << std::endl;
-      cpu_stream << "core id         : " << i << std::endl;
-      cpu_stream << "cpu cores       : " << CPUCores << std::endl;
+      cpu_stream << "physical id     : 0" << std::endl; // Socket id (always 0 for a single socket system)
+      cpu_stream << "siblings        : " << CPUCores << std::endl; // Number of logical cores
+      cpu_stream << "core id         : " << i << std::endl; // Physical id
+      cpu_stream << "cpu cores       : " << CPUCores << std::endl; // Number of physical cores
       cpu_stream << "apicid          : " << i << std::endl;
       cpu_stream << "initial apicid  : " << i << std::endl;
       cpu_stream << "fpu             : " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
