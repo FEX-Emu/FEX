@@ -64,7 +64,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, v
 
         uint64_t NewBRK = (uint64_t)mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-        if (NewBRK != (DataSpace + DataSpaceMaxSize)) {
+        if (NewBRK != ~0ULL && NewBRK != (DataSpace + DataSpaceMaxSize)) {
           // Couldn't allocate that the region we wanted
           // Can happen if MAP_FIXED_NOREPLACE isn't understood by the kernel
           munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
