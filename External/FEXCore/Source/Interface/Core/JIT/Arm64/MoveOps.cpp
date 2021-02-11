@@ -29,18 +29,21 @@ DEF_OP(CreateElementPair) {
   std::pair<aarch64::Register, aarch64::Register> Dst;
   aarch64::Register RegFirst;
   aarch64::Register RegSecond;
+  aarch64::Register RegTmp;
 
   switch (Op->Header.Size) {
     case 4: {
       Dst = GetSrcPair<RA_32>(Node);
       RegFirst = GetReg<RA_32>(Op->Header.Args[0].ID());
       RegSecond = GetReg<RA_32>(Op->Header.Args[1].ID());
+      RegTmp = w0;
       break;
     }
     case 8: {
       Dst = GetSrcPair<RA_64>(Node);
       RegFirst = GetReg<RA_64>(Op->Header.Args[0].ID());
       RegSecond = GetReg<RA_64>(Op->Header.Args[1].ID());
+      RegTmp = x0;
       break;
     }
     default: LogMan::Msg::A("Unknown Size"); break;
@@ -53,7 +56,9 @@ DEF_OP(CreateElementPair) {
     mov(Dst.second, RegSecond);
     mov(Dst.first, RegFirst);
   } else {
-    LogMan::Msg::A("Unhandled CreateElementPair");
+    mov(RegTmp, RegFirst);
+    mov(Dst.second, RegSecond);
+    mov(Dst.first, RegTmp);
   }
 }
 
