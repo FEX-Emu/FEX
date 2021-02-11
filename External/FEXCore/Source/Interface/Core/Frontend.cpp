@@ -1015,8 +1015,12 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
 
       if (ErrorDuringDecoding) {
         LogMan::Msg::D("Couldn't Decode something at 0x%lx, Started at 0x%lx", PC + PCOffset, PC);
-        LogMan::Throw::A(EntryPoint != (RIPToDecode + PCOffset), "Trying to execute invalid code");
+        LogMan::Throw::A(Blocks.size() != 1, "Decode Error in entry block");
+
         CurrentBlockDecoding.HasInvalidInstruction = true;
+        if (ErrorDuringDecoding && Blocks.size() != 1) {
+          ErrorDuringDecoding = false;
+        }
         break;
       }
 
