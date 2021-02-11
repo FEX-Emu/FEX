@@ -912,7 +912,10 @@ DEF_OP(VZip2) {
 }
 
 DEF_OP(VBSL) {
-  LogMan::Msg::A("Unimplemented");
+  auto Op = IROp->C<IR::IROp_VBSL>();
+  vpand(xmm11, GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vpandn(xmm12, GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[2].ID()));
+  vpor(GetDst(Node), xmm11, xmm12);
 }
 
 DEF_OP(VCMPEQ) {
