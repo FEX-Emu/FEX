@@ -461,6 +461,88 @@ struct OpHandlers<IR::OP_F80CVT> {
 };
 
 template<>
+struct OpHandlers<IR::OP_F80CVTINT> {
+  static  int16_t handle2(X80SoftFloat src) {
+    return src;
+  }
+
+  static int32_t handle4(X80SoftFloat src) {
+    return src;
+  }
+
+  static int64_t handle8(X80SoftFloat src) {
+    return src;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CVTTOINT> {
+  static X80SoftFloat handle2(int16_t src) {
+    return src;
+  }
+
+  static X80SoftFloat handle4(int32_t src) {
+    return src;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80ROUND> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FRNDINT(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80F2XM1> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::F2XM1(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80TAN> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FTAN(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80SQRT> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FSQRT(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80SIN> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FSIN(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80COS> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FCOS(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80XTRACT_EXP> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FXTRACT_EXP(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80XTRACT_SIG> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FXTRACT_SIG(Src1);
+  }
+};
+
+template<>
 struct OpHandlers<IR::OP_F80ADD> {
   static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
     return X80SoftFloat::FADD(Src1, Src2);
@@ -489,6 +571,42 @@ struct OpHandlers<IR::OP_F80DIV> {
 };
 
 
+template<>
+struct OpHandlers<IR::OP_F80FYL2X> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FYL2X(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80ATAN> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FATAN(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80FPREM1> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FREM1(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80FPREM> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FREM(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80SCALE> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FSCALE(Src1, Src2);
+  }
+};
+
+
 template<typename R, typename... Args>
 FallbackInfo GetFallbackInfo(R(*fn)(Args...)) {
   return {FABI_UNKNOWN, (void*)fn};
@@ -505,6 +623,16 @@ FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(double)) {
 }
 
 template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(int16_t)) {
+  return {FABI_F80_I16, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(int32_t)) {
+  return {FABI_F80_I32, (void*)fn};
+}
+
+template<>
 FallbackInfo GetFallbackInfo(float(*fn)(X80SoftFloat)) {
   return {FABI_F32_F80, (void*)fn};
 }
@@ -515,8 +643,28 @@ FallbackInfo GetFallbackInfo(double(*fn)(X80SoftFloat)) {
 }
 
 template<>
+FallbackInfo GetFallbackInfo(int16_t(*fn)(X80SoftFloat)) {
+  return {FABI_I16_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(int32_t(*fn)(X80SoftFloat)) {
+  return {FABI_I32_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(int64_t(*fn)(X80SoftFloat)) {
+  return {FABI_I64_F80, (void*)fn};
+}
+
+template<>
 FallbackInfo GetFallbackInfo(uint64_t(*fn)(X80SoftFloat, X80SoftFloat)) {
   return {FABI_I64_F80_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(X80SoftFloat)) {
+  return {FABI_F80_F80, (void*)fn};
 }
 
 template<>
@@ -559,6 +707,26 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
       }
       break;
     }
+    case IR::OP_F80CVTINT: {
+      auto Op = IROp->C<IR::IROp_F80CVTInt>();
+
+      switch (OpSize) {
+        case 2: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle2);
+          return true;
+        }
+        case 4: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle4);
+          return true;
+        }
+        case 8: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle8);
+          return true;
+        }
+        default: LogMan::Msg::D("Unhandled size: %d", OpSize);
+      }
+      break;
+    }
     case IR::OP_F80CMP: {
       auto Op = IROp->C<IR::IROp_F80Cmp>();
       
@@ -568,16 +736,50 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
       return true;
     }
 
-#define COMMON_BIN_OP(OP) \
+    case IR::OP_F80CVTTOINT: {
+      auto Op = IROp->C<IR::IROp_F80CVTToInt>();
+
+      switch (Op->Size) {
+        case 2: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTTOINT>::handle2);
+          return true;
+        }
+        case 4: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTTOINT>::handle4);
+          return true;
+        }
+        default: LogMan::Msg::D("Unhandled size: %d", OpSize);
+      }
+      break;
+    }
+
+#define COMMON_X87_OP(OP) \
     case IR::OP_F80##OP: { \
       *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80##OP>::handle); \
       return true; \
     }
 
-    COMMON_BIN_OP(ADD)
-    COMMON_BIN_OP(SUB)
-    COMMON_BIN_OP(MUL)
-    COMMON_BIN_OP(DIV)
+    // Unary
+    COMMON_X87_OP(ROUND)
+    COMMON_X87_OP(F2XM1)
+    COMMON_X87_OP(TAN)
+    COMMON_X87_OP(SQRT)
+    COMMON_X87_OP(SIN)
+    COMMON_X87_OP(COS)
+    COMMON_X87_OP(XTRACT_EXP)
+    COMMON_X87_OP(XTRACT_SIG)
+
+    // Binary
+    COMMON_X87_OP(ADD)
+    COMMON_X87_OP(SUB)
+    COMMON_X87_OP(MUL)
+    COMMON_X87_OP(DIV)
+    COMMON_X87_OP(FYL2X)
+    COMMON_X87_OP(ATAN)
+    COMMON_X87_OP(FPREM1)
+    COMMON_X87_OP(FPREM)
+    COMMON_X87_OP(SCALE)
+
     default:
       break;
   }

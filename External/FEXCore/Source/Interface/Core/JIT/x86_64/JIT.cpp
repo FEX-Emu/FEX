@@ -361,8 +361,8 @@ void JITCore::PopRegs() {
   for (uint32_t i = RA64.size(); i > 0; --i)
     pop(RA64[i - 1]);
   
-  for (auto &Xmm : RAXMM_x) {
-    movaps(ptr[rsp], Xmm);
+  for (uint32_t i = RAXMM_x.size(); i > 0; --i) {
+    movaps(RAXMM_x[i - 1], ptr[rsp]);
     add(rsp, 16);
   }
 }
@@ -394,6 +394,23 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushRegs();
 
         movsd(xmm0, GetSrc(IROp->Args[0].ID()));
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+
+      case FABI_F80_I16:
+      case FABI_F80_I32: {
+        PushRegs();
+
+        mov(edi, GetSrc<RA_32>(IROp->Args[0].ID()));
         mov(rax, (uintptr_t)Info.fn);
 
         call(rax);
@@ -438,6 +455,51 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
       }
       break;
 
+      case FABI_I16_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        movzx(GetDst<RA_64>(Node), ax);
+      }
+      break;
+      case FABI_I32_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        mov(GetDst<RA_32>(Node), eax);
+      }
+      break;
+      case FABI_I64_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        mov(GetDst<RA_64>(Node), rax);
+      }
+      break;
       case FABI_I64_F80_F80:{
         PushRegs();
 
@@ -456,7 +518,23 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         mov(GetDst<RA_64>(Node), rax);
       }
       break;
+      case FABI_F80_F80:{
+        PushRegs();
 
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+        
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
       case FABI_F80_F80_F80:{
         PushRegs();
 

@@ -6333,7 +6333,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FBLD(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
+  Current_Header->ShouldInterpret = true;
 
   // Update TOP
   auto orig_top = GetX87Top();
@@ -6348,7 +6348,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
+  Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
   auto data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
