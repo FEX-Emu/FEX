@@ -1043,10 +1043,6 @@ DEF_OP(FCmp) {
   }
 }
 
-DEF_OP(F80Cmp) {
-  LogMan::Msg::D("Unimplemented");
-}
-
 #undef DEF_OP
 
 void JITCore::RegisterALUHandlers() {
@@ -1095,7 +1091,6 @@ void JITCore::RegisterALUHandlers() {
   REGISTER_OP(FLOAT_TOGPR_U,     Float_ToGPR_U);
   REGISTER_OP(FLOAT_TOGPR_S,     Float_ToGPR_S);
   REGISTER_OP(FCMP,              FCmp);
-  REGISTER_OP(F80CMP,            F80Cmp);
 
 #undef REGISTER_OP
 }

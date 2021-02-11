@@ -40,8 +40,244 @@ using namespace vixl;
 using namespace vixl::aarch64;
 
 void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
-  auto Name = FEXCore::IR::GetName(IROp->Op);
-  LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+  FallbackInfo Info;
+  if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
+    auto Name = FEXCore::IR::GetName(IROp->Op);
+    LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+  } else {
+    switch(Info.ABI) {
+      case FABI_F80_F32:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        fmov(v0.S(), GetSrc(IROp->Args[0].ID()).S()) ;
+        LoadConstant(x0, (uintptr_t)Info.fn);
+
+        blr(x0);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+
+      case FABI_F80_F64:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
+        LoadConstant(x0, (uintptr_t)Info.fn);
+
+        blr(x0);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+
+      case FABI_F80_I16:
+      case FABI_F80_I32: {
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
+        LoadConstant(x1, (uintptr_t)Info.fn);
+
+        blr(x1);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+
+      case FABI_F32_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        fmov(GetDst(Node).S(), v0.S());
+      }
+      break;
+
+      case FABI_F64_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        mov(GetDst(Node).D(), v0.D());
+      }
+      break;
+
+      case FABI_I16_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        uxth(GetReg<RA_64>(Node), x0);
+      }
+      break;
+      case FABI_I32_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        mov(GetReg<RA_32>(Node), w0);
+      }
+      break;
+      case FABI_I64_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        mov(GetReg<RA_64>(Node), x0);
+      }
+      break;
+      case FABI_I64_F80_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
+        umov(x3, GetSrc(IROp->Args[1].ID()).V2D(), 1);
+        
+        LoadConstant(x4, (uintptr_t)Info.fn);
+
+        blr(x4);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        mov(GetReg<RA_64>(Node), x0);
+      }
+      break;
+      case FABI_F80_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+      case FABI_F80_F80_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
+        umov(x3, GetSrc(IROp->Args[1].ID()).V2D(), 1);
+        
+        LoadConstant(x4, (uintptr_t)Info.fn);
+
+        blr(x4);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+
+      case FABI_UNKNOWN:
+      default:
+      auto Name = FEXCore::IR::GetName(IROp->Op);
+        LogMan::Msg::A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
+    }
+  }
 }
 
 void JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {

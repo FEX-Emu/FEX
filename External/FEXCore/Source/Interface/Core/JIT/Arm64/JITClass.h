@@ -311,7 +311,6 @@ private:
   DEF_OP(Float_ToGPR_U);
   DEF_OP(Float_ToGPR_S);
   DEF_OP(FCmp);
-  DEF_OP(F80Cmp);
 
   ///< Atomic ops
   DEF_OP(CASPair);
