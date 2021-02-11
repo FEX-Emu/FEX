@@ -339,9 +339,151 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
   return false;
 }
 
+void JITCore::PushRegs() {
+  for (auto &Xmm : RAXMM_x) {
+    sub(rsp, 16);
+    movaps(ptr[rsp], Xmm);
+  }
+
+  for (auto &Reg : RA64)
+    push(Reg);
+
+  auto NumPush = RA64.size();
+  if (NumPush & 1)
+    sub(rsp, 8); // Align
+}
+
+void JITCore::PopRegs() {
+  auto NumPush = RA64.size();
+  
+  if (NumPush & 1)
+    add(rsp, 8); // Align
+  for (uint32_t i = RA64.size(); i > 0; --i)
+    pop(RA64[i - 1]);
+  
+  for (auto &Xmm : RAXMM_x) {
+    movaps(ptr[rsp], Xmm);
+    add(rsp, 16);
+  }
+}
+
 void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
-  auto Name = FEXCore::IR::GetName(IROp->Op);
-  LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+  FallbackInfo Info;
+  if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
+    auto Name = FEXCore::IR::GetName(IROp->Op);
+    LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+  } else {
+    switch(Info.ABI) {
+      case FABI_F80_F32:{
+        PushRegs();
+
+        movss(xmm0, GetSrc(IROp->Args[0].ID()));
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+
+      case FABI_F80_F64:{
+        PushRegs();
+
+        movsd(xmm0, GetSrc(IROp->Args[0].ID()));
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+
+      case FABI_F32_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        movss(GetDst(Node), xmm0);
+      }
+      break;
+
+      case FABI_F64_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        movsd(GetDst(Node), xmm0);
+      }
+      break;
+
+      case FABI_I64_F80_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        movq(rdx, GetSrc(IROp->Args[1].ID()));
+        pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
+        
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        mov(GetDst<RA_64>(Node), rax);
+      }
+      break;
+
+      case FABI_F80_F80_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        movq(rdx, GetSrc(IROp->Args[1].ID()));
+        pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
+        
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+
+      case FABI_UNKNOWN:
+      default:
+      auto Name = FEXCore::IR::GetName(IROp->Op);
+        LogMan::Msg::A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
+    }
+  }
 }
 
 void JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {

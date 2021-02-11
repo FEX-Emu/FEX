@@ -409,6 +409,182 @@ static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
   LogMan::Msg::A("unreachable");
 }
 
+template<IR::IROps Op>
+struct OpHandlers {
+
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CVTTO> {
+  static X80SoftFloat handle4(float src) {
+    return src;
+  }
+
+  static X80SoftFloat handle8(double src) {
+    return src;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CMP> {
+  template<uint32_t Flags>
+  static uint64_t handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    bool eq, lt, nan;
+    uint64_t ResultFlags = 0;
+
+    X80SoftFloat::FCMP(Src1, Src2, &eq, &lt, &nan);
+    if (Flags & (1 << IR::FCMP_FLAG_LT) &&
+        lt) {
+      ResultFlags |= (1 << IR::FCMP_FLAG_LT);
+    }
+    if (Flags & (1 << IR::FCMP_FLAG_UNORDERED) &&
+        nan) {
+      ResultFlags |= (1 << IR::FCMP_FLAG_UNORDERED);
+    }
+    if (Flags & (1 << IR::FCMP_FLAG_EQ) &&
+        eq) {
+      ResultFlags |= (1 << IR::FCMP_FLAG_EQ);
+    }
+    return ResultFlags;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CVT> {
+  static float handle4(X80SoftFloat src) {
+    return src;
+  }
+
+  static double handle8(X80SoftFloat src) {
+    return src;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80ADD> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FADD(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80SUB> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FSUB(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80MUL> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FMUL(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80DIV> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FDIV(Src1, Src2);
+  }
+};
+
+
+template<typename R, typename... Args>
+FallbackInfo GetFallbackInfo(R(*fn)(Args...)) {
+  return {FABI_UNKNOWN, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(float)) {
+  return {FABI_F80_F32, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(double)) {
+  return {FABI_F80_F64, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(float(*fn)(X80SoftFloat)) {
+  return {FABI_F32_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(double(*fn)(X80SoftFloat)) {
+  return {FABI_F64_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(uint64_t(*fn)(X80SoftFloat, X80SoftFloat)) {
+  return {FABI_I64_F80_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(X80SoftFloat, X80SoftFloat)) {
+  return {FABI_F80_F80_F80, (void*)fn};
+}
+
+bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info) {
+  uint8_t OpSize = IROp->Size;
+  switch(IROp->Op) {
+    case IR::OP_F80CVTTO: {
+      auto Op = IROp->C<IR::IROp_F80CVTTo>();
+
+      switch (Op->Size) {
+        case 4: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTTO>::handle4);
+          return true;
+        }
+        case 8: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTTO>::handle8);
+          return true;
+        }
+      default: LogMan::Msg::D("Unhandled size: %d", OpSize);
+      }
+      break;
+    }
+    case IR::OP_F80CVT: {
+      auto Op = IROp->C<IR::IROp_F80CVT>();
+
+      switch (OpSize) {
+        case 4: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVT>::handle4);
+          return true;
+        }
+        case 8: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVT>::handle8);
+          return true;
+        }
+        default: LogMan::Msg::D("Unhandled size: %d", OpSize);
+      }
+      break;
+    }
+    case IR::OP_F80CMP: {
+      auto Op = IROp->C<IR::IROp_F80Cmp>();
+      
+      decltype(&OpHandlers<IR::OP_F80CMP>::handle<0>) handlers[] = { &OpHandlers<IR::OP_F80CMP>::handle<0>, &OpHandlers<IR::OP_F80CMP>::handle<1>, &OpHandlers<IR::OP_F80CMP>::handle<2>, &OpHandlers<IR::OP_F80CMP>::handle<3>, &OpHandlers<IR::OP_F80CMP>::handle<4>, &OpHandlers<IR::OP_F80CMP>::handle<5>, &OpHandlers<IR::OP_F80CMP>::handle<6>, &OpHandlers<IR::OP_F80CMP>::handle<7> };
+
+      *Info = GetFallbackInfo(handlers[Op->Flags]);
+      return true;
+    }
+
+#define COMMON_BIN_OP(OP) \
+    case IR::OP_F80##OP: { \
+      *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80##OP>::handle); \
+      return true; \
+    }
+
+    COMMON_BIN_OP(ADD)
+    COMMON_BIN_OP(SUB)
+    COMMON_BIN_OP(MUL)
+    COMMON_BIN_OP(DIV)
+    default:
+      break;
+  }
+
+  return false;
+}
+
 void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView<true> *CurrentIR, FEXCore::Core::DebugData *DebugData) {
   volatile void* stack = alloca(0);
 

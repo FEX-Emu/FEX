@@ -198,6 +198,9 @@ private:
   void RegisterMoveHandlers();
   void RegisterVectorHandlers();
   void RegisterEncryptionHandlers();
+
+  void PushRegs();
+  void PopRegs();
 #define DEF_OP(x) void Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 
   ///< Unhandled handler
