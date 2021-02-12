@@ -1085,81 +1085,66 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     bind(&RunBlock);
   }
 
-  if (HeaderOp->ShouldInterpret) {
-    // Make sure RIP is syncronized to the context
-    LoadConstant(x0, HeaderOp->Entry);
-    str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+  //LogMan::Throw::A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
 
-    LoadConstant(x0, ThreadSharedData.InterpreterFallbackHelperAddress);
-    LoadConstant(x1, (uintptr_t)IR);
-    
-    // Debug data is only used in debug builds
-    #ifndef NDEBUG
-    LoadConstant(x2, (uintptr_t)DebugData);
-    #endif
-    br(x0);
-  } else {
-    //LogMan::Throw::A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
+  SpillSlots = RAData->SpillSlots();
 
-    SpillSlots = RAData->SpillSlots();
-
-    if (SpillSlots) {
-      if (IsImmAddSub(SpillSlots * 16)) {
-        sub(sp, sp, SpillSlots * 16);
-      } else {
-        LoadConstant(x0, SpillSlots * 16);
-        sub(sp, sp, x0);
-      }
+  if (SpillSlots) {
+    if (IsImmAddSub(SpillSlots * 16)) {
+      sub(sp, sp, SpillSlots * 16);
+    } else {
+      LoadConstant(x0, SpillSlots * 16);
+      sub(sp, sp, x0);
     }
-
-    PendingTargetLabel = nullptr;
-
-    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      using namespace FEXCore::IR;
-      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      {
-        uint32_t Node = IR->GetID(BlockNode);
-        auto IsTarget = JumpTargets.find(Node);
-        if (IsTarget == JumpTargets.end()) {
-          IsTarget = JumpTargets.try_emplace(Node).first;
-        }
-
-        // if there's a pending branch, and it is not fall-through
-        if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
-        {
-          b(PendingTargetLabel);
-        }
-        PendingTargetLabel = nullptr;
-        
-        bind(&IsTarget->second);
-      }
-
-      if (DebugData) {
-        DebugData->Subblocks.push_back({Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()), 0, IR->GetID(BlockNode)});
-      }
-
-      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        uint32_t ID = IR->GetID(CodeNode);
-
-        // Execute handler
-        OpHandler Handler = OpHandlers[IROp->Op];
-        (this->*Handler)(IROp, ID);
-      }
-
-      if (DebugData) {
-        DebugData->Subblocks.back().HostCodeSize = Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()) - DebugData->Subblocks.back().HostCodeStart;
-      }
-    }
-
-    // Make sure last branch is generated. It certainly can't be eliminated here.
-    if (PendingTargetLabel)
-    {
-      b(PendingTargetLabel);
-    }
-    PendingTargetLabel = nullptr;
   }
+
+  PendingTargetLabel = nullptr;
+
+  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+    using namespace FEXCore::IR;
+    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+
+    {
+      uint32_t Node = IR->GetID(BlockNode);
+      auto IsTarget = JumpTargets.find(Node);
+      if (IsTarget == JumpTargets.end()) {
+        IsTarget = JumpTargets.try_emplace(Node).first;
+      }
+
+      // if there's a pending branch, and it is not fall-through
+      if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
+      {
+        b(PendingTargetLabel);
+      }
+      PendingTargetLabel = nullptr;
+      
+      bind(&IsTarget->second);
+    }
+
+    if (DebugData) {
+      DebugData->Subblocks.push_back({Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()), 0, IR->GetID(BlockNode)});
+    }
+
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      uint32_t ID = IR->GetID(CodeNode);
+
+      // Execute handler
+      OpHandler Handler = OpHandlers[IROp->Op];
+      (this->*Handler)(IROp, ID);
+    }
+
+    if (DebugData) {
+      DebugData->Subblocks.back().HostCodeSize = Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()) - DebugData->Subblocks.back().HostCodeStart;
+    }
+  }
+
+  // Make sure last branch is generated. It certainly can't be eliminated here.
+  if (PendingTargetLabel)
+  {
+    b(PendingTargetLabel);
+  }
+  PendingTargetLabel = nullptr;
 
   FinalizeCode();
 
@@ -1340,7 +1325,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   Literal l_VirtualMemory {VirtualMemorySize};
   Literal l_PagePtr {Thread->LookupCache->GetPagePointer()};
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
-  Literal l_Interpreter {reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR)};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
 
   uintptr_t CompileBlockPtr{};
@@ -1522,19 +1506,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
-    Label InterpreterFallback{};
-    bind(&InterpreterFallback);
-    ThreadSharedData.InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-    SpillStaticRegs();
-    mov(x0, STATE);
-    ldr(x3, &l_Interpreter);
-
-    blr(x3);
-    FillStaticRegs();
-    b(&LoopTop);
-  }
-
-  {
     ThreadPauseHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     SpillStaticRegs();
     ThreadPauseHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
@@ -1608,7 +1579,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   place(&l_VirtualMemory);
   place(&l_PagePtr);
   place(&l_CTX);
-  place(&l_Interpreter);
   place(&l_Sleep);
   place(&l_CompileBlock);
   place(&l_ExitFunctionLink);

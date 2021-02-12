@@ -167,8 +167,6 @@ private:
   uint32_t SignalHandlerRefCounter{};
 
   struct CompilerSharedData {
-    void *InterpreterFallbackHelperAddress;
-
     uint64_t SignalHandlerReturnAddress{};
 
     uint32_t *SignalHandlerRefCounterPtr{};

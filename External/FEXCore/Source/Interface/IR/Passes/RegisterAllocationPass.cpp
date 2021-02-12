@@ -1502,9 +1502,6 @@ namespace FEXCore::IR {
     auto IR = IREmit->ViewIR();
 
     auto HeaderOp = IR.GetHeader();
-    if (HeaderOp->ShouldInterpret) {
-      return false;
-    }
 
     SpillSlotCount = 0;
     Graph->SpillStack.clear();

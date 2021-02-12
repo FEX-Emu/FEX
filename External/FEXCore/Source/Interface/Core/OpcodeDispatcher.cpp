@@ -4404,7 +4404,7 @@ void OpDispatchBuilder::CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder:
 
 void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
   Entry = RIP;
-  auto IRHeader = _IRHeader(InvalidNode, RIP, 0, false);
+  auto IRHeader = _IRHeader(InvalidNode, RIP, 0);
   Current_Header = IRHeader.first;
   CreateJumpBlocks(Blocks);
 
@@ -6298,7 +6298,6 @@ void OpDispatchBuilder::SetX87Top(OrderedNode *Value) {
 
 template<size_t width>
 void OpDispatchBuilder::FLD(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   // Update TOP
   auto orig_top = GetX87Top();
@@ -6333,7 +6332,6 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FBLD(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   // Update TOP
   auto orig_top = GetX87Top();
@@ -6348,7 +6346,6 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
   auto data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -6363,7 +6360,6 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
 
 template<uint64_t Lower, uint32_t Upper>
 void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
   // Update TOP
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
@@ -6378,7 +6374,6 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FILD(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   // Update TOP
   auto orig_top = GetX87Top();
@@ -6418,7 +6413,6 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
 
 template<size_t width>
 void OpDispatchBuilder::FST(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
   auto data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -6437,7 +6431,6 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FIST(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto Size = GetSrcSize(Op);
 
@@ -6455,7 +6448,6 @@ void OpDispatchBuilder::FIST(OpcodeArgs) {
 
 template <size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FADD(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   OrderedNode *StackLocation = top;
@@ -6501,7 +6493,6 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
 
 template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FMUL(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   OrderedNode *StackLocation = top;
@@ -6549,7 +6540,6 @@ void OpDispatchBuilder::FMUL(OpcodeArgs) {
 
 template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FDIV(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   OrderedNode *StackLocation = top;
@@ -6603,7 +6593,6 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
 
 template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
 void OpDispatchBuilder::FSUB(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   OrderedNode *StackLocation = top;
@@ -6655,7 +6644,6 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FCHS(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -6672,7 +6660,6 @@ void OpDispatchBuilder::FCHS(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FABS(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -6689,7 +6676,6 @@ void OpDispatchBuilder::FABS(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FTST(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -6715,7 +6701,6 @@ void OpDispatchBuilder::FTST(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FRNDINT(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -6727,7 +6712,6 @@ void OpDispatchBuilder::FRNDINT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
@@ -6744,14 +6728,12 @@ void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   SetX87Top(_Constant(0));
 }
 
 template<size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice>
 void OpDispatchBuilder::FCOMI(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   auto mask = _Constant(7);
@@ -6815,7 +6797,6 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FXCH(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   OrderedNode* arg;
@@ -6835,7 +6816,6 @@ void OpDispatchBuilder::FXCH(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FST(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   OrderedNode* arg;
@@ -6859,7 +6839,6 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
 
 template<FEXCore::IR::IROps IROp>
 void OpDispatchBuilder::X87UnaryOp(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -6874,7 +6853,6 @@ void OpDispatchBuilder::X87UnaryOp(OpcodeArgs) {
 
 template<FEXCore::IR::IROps IROp>
 void OpDispatchBuilder::X87BinaryOp(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
   auto top = GetX87Top();
 
   auto mask = _Constant(7);
@@ -6905,7 +6883,6 @@ void OpDispatchBuilder::X87ModifySTP(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87SinCos(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
@@ -6923,7 +6900,6 @@ void OpDispatchBuilder::X87SinCos(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
   bool Plus1 = Op->OP == 0x01F9; // FYL2XP
-  //Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
@@ -6947,7 +6923,6 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87TAN(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
@@ -6968,7 +6943,6 @@ void OpDispatchBuilder::X87TAN(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87ATAN(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 
   auto orig_top = GetX87Top();
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
@@ -6984,7 +6958,6 @@ void OpDispatchBuilder::X87ATAN(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
   auto Size = GetSrcSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
 
@@ -7007,7 +6980,6 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 	// 14 bytes for 16bit
 	// 2 Bytes : FCW
 	// 2 Bytes : FSW
@@ -7092,7 +7064,6 @@ void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87LDSW(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
   OrderedNode *NewFSW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   // Strip out the FSW information
   auto Top = _Bfe(3, 11, NewFSW);
@@ -7110,7 +7081,6 @@ void OpDispatchBuilder::X87LDSW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
   // We must construct the FSW from our various bits
   OrderedNode *FSW = _Constant(0);
   auto Top = GetX87Top();
@@ -7130,7 +7100,6 @@ void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
 	// 14 bytes for 16bit
 	// 2 Bytes : FCW
 	// 2 Bytes : FSW
@@ -7233,7 +7202,6 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
   auto Size = GetSrcSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
 
@@ -7307,7 +7275,6 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
-  //Current_Header->ShouldInterpret = true;
   enum CompareType {
     COMPARE_ZERO,
     COMPARE_NOTZERO,

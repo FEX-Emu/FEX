@@ -223,8 +223,6 @@ private:
   /**  @} */
 
   struct CompilerSharedData {
-    uint64_t InterpreterFallbackHelperAddress{};
-
     uint64_t SignalReturnInstruction{};
 
     uint32_t *SignalHandlerRefCounterPtr{};
