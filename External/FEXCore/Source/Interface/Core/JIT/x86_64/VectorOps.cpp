@@ -262,17 +262,17 @@ DEF_OP(VAddP) {
     vpaddw(GetDst(Node), xmm15, xmm14);
     switch (Op->Header.ElementSize) {
       case 1:
-        vpunpcklbw(xmm11, xmm15, xmm14);
+        vpunpcklbw(xmm0, xmm15, xmm14);
         vpunpckhbw(xmm12, xmm15, xmm14);
 
-        vpunpcklbw(xmm15, xmm11, xmm12);
-        vpunpckhbw(xmm14, xmm11, xmm12);
+        vpunpcklbw(xmm15, xmm0, xmm12);
+        vpunpckhbw(xmm14, xmm0, xmm12);
 
-        vpunpcklbw(xmm11, xmm15, xmm14);
+        vpunpcklbw(xmm0, xmm15, xmm14);
         vpunpckhbw(xmm12, xmm15, xmm14);
 
-        vpunpcklbw(xmm15, xmm11, xmm12);
-        vpunpckhbw(xmm14, xmm11, xmm12);
+        vpunpcklbw(xmm15, xmm0, xmm12);
+        vpunpckhbw(xmm14, xmm0, xmm12);
 
         vpaddb(GetDst(Node), xmm15, xmm14);
         break;
@@ -291,17 +291,17 @@ DEF_OP(VAddP) {
         movdqu(xmm15, GetSrc(Op->Header.Args[0].ID()));
         movdqu(xmm14, GetSrc(Op->Header.Args[1].ID()));
 
-        vpunpcklbw(xmm11, xmm15, xmm14);
+        vpunpcklbw(xmm0, xmm15, xmm14);
         vpunpckhbw(xmm12, xmm15, xmm14);
 
-        vpunpcklbw(xmm15, xmm11, xmm12);
-        vpunpckhbw(xmm14, xmm11, xmm12);
+        vpunpcklbw(xmm15, xmm0, xmm12);
+        vpunpckhbw(xmm14, xmm0, xmm12);
 
-        vpunpcklbw(xmm11, xmm15, xmm14);
+        vpunpcklbw(xmm0, xmm15, xmm14);
         vpunpckhbw(xmm12, xmm15, xmm14);
 
-        vpunpcklbw(xmm15, xmm11, xmm12);
-        vpunpckhbw(xmm14, xmm11, xmm12);
+        vpunpcklbw(xmm15, xmm0, xmm12);
+        vpunpckhbw(xmm14, xmm0, xmm12);
 
         vpaddb(GetDst(Node), xmm15, xmm14);
         break;
@@ -913,9 +913,9 @@ DEF_OP(VZip2) {
 
 DEF_OP(VBSL) {
   auto Op = IROp->C<IR::IROp_VBSL>();
-  vpand(xmm11, GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vpand(xmm0, GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
   vpandn(xmm12, GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[2].ID()));
-  vpor(GetDst(Node), xmm11, xmm12);
+  vpor(GetDst(Node), xmm0, xmm12);
 }
 
 DEF_OP(VCMPEQ) {
