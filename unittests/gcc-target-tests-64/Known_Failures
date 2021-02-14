@@ -21,3 +21,6 @@ sse2-mmx-psrlw.c.gcc-target-test-64
 
 # this is flaky on the ARMv8.0 runner
 mcount_pic.c.gcc-target-test-64
+
+# this uses AVX ops (VMOVAPS)
+pr57275.c.gcc-target-test-64
