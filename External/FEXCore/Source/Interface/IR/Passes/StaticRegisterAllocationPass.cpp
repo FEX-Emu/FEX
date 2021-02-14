@@ -44,9 +44,6 @@ bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) {
 bool StaticRegisterAllocationPass::Run(IREmitter *IREmit) {
   auto CurrentIR = IREmit->ViewIR();
 
-  if (CurrentIR.GetHeader()->ShouldInterpret)
-    return false;
-
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
         IREmit->SetWriteCursor(CodeNode);

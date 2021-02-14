@@ -339,9 +339,229 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
   return false;
 }
 
+void JITCore::PushRegs() {
+  for (auto &Xmm : RAXMM_x) {
+    sub(rsp, 16);
+    movaps(ptr[rsp], Xmm);
+  }
+
+  for (auto &Reg : RA64)
+    push(Reg);
+
+  auto NumPush = RA64.size();
+  if (NumPush & 1)
+    sub(rsp, 8); // Align
+}
+
+void JITCore::PopRegs() {
+  auto NumPush = RA64.size();
+  
+  if (NumPush & 1)
+    add(rsp, 8); // Align
+  for (uint32_t i = RA64.size(); i > 0; --i)
+    pop(RA64[i - 1]);
+  
+  for (uint32_t i = RAXMM_x.size(); i > 0; --i) {
+    movaps(RAXMM_x[i - 1], ptr[rsp]);
+    add(rsp, 16);
+  }
+}
+
 void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
-  auto Name = FEXCore::IR::GetName(IROp->Op);
-  LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+  FallbackInfo Info;
+  if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
+    auto Name = FEXCore::IR::GetName(IROp->Op);
+    LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+  } else {
+    switch(Info.ABI) {
+      case FABI_F80_F32:{
+        PushRegs();
+
+        movss(xmm0, GetSrc(IROp->Args[0].ID()));
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+
+      case FABI_F80_F64:{
+        PushRegs();
+
+        movsd(xmm0, GetSrc(IROp->Args[0].ID()));
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+
+      case FABI_F80_I16:
+      case FABI_F80_I32: {
+        PushRegs();
+
+        mov(edi, GetSrc<RA_32>(IROp->Args[0].ID()));
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+
+      case FABI_F32_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        movss(GetDst(Node), xmm0);
+      }
+      break;
+
+      case FABI_F64_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        movsd(GetDst(Node), xmm0);
+      }
+      break;
+
+      case FABI_I16_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        movzx(GetDst<RA_64>(Node), ax);
+      }
+      break;
+      case FABI_I32_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        mov(GetDst<RA_32>(Node), eax);
+      }
+      break;
+      case FABI_I64_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        mov(GetDst<RA_64>(Node), rax);
+      }
+      break;
+      case FABI_I64_F80_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        movq(rdx, GetSrc(IROp->Args[1].ID()));
+        pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
+        
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        mov(GetDst<RA_64>(Node), rax);
+      }
+      break;
+      case FABI_F80_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+        
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+      case FABI_F80_F80_F80:{
+        PushRegs();
+
+        movq(rdi, GetSrc(IROp->Args[0].ID()));
+        pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
+
+        movq(rdx, GetSrc(IROp->Args[1].ID()));
+        pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
+        
+        mov(rax, (uintptr_t)Info.fn);
+
+        call(rax);
+
+        PopRegs();
+
+        pxor(GetDst(Node), GetDst(Node));
+        movq(GetDst(Node), rax);
+        pinsrw(GetDst(Node), edx, 4);
+      }
+      break;
+
+      case FABI_UNKNOWN:
+      default:
+      auto Name = FEXCore::IR::GetName(IROp->Op);
+        LogMan::Msg::A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
+    }
+  }
 }
 
 void JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
@@ -643,146 +863,131 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     L(RunBlock);
   }
 
-  if (HeaderOp->ShouldInterpret) {
-    mov(rax, HeaderOp->Entry);
-    mov(qword [STATE + offsetof(FEXCore::Core::CPUState, rip)], rax);
-    mov(rsi, (uint64_t)IR);
+  LogMan::Throw::A(RAData != nullptr, "Needs RA");
 
-    // Debug data is only used in debug builds
-    #ifndef NDEBUG
-    mov(rdx, (uint64_t)DebugData);
-    #endif
+  SpillSlots = RAData->SpillSlots();
 
-    mov(rax, (uintptr_t)ThreadSharedData.InterpreterFallbackHelperAddress);
-    jmp(rax);
-  } else {
-    LogMan::Throw::A(RAData != nullptr, "Needs RA");
+  if (SpillSlots) {
+    sub(rsp, SpillSlots * 16);
+  }
 
-    SpillSlots = RAData->SpillSlots();
+#ifdef BLOCKSTATS
+  BlockSamplingData::BlockData *SamplingData = CTX->BlockData->GetBlockData(HeaderOp->Entry);
+  if (GetSamplingData) {
+    mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
+    rdtsc();
+    shl(rdx, 32);
+    or(rax, rdx);
+    mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Start)], rax);
+  }
 
-    if (SpillSlots) {
-      sub(rsp, SpillSlots * 16);
-    }
-
-  #ifdef BLOCKSTATS
-    BlockSamplingData::BlockData *SamplingData = CTX->BlockData->GetBlockData(HeaderOp->Entry);
+  auto ExitBlock = [&]() {
     if (GetSamplingData) {
       mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
+      // Get time
       rdtsc();
       shl(rdx, 32);
       or(rax, rdx);
-      mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Start)], rax);
+
+      // Calculate time spent in block
+      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Start)]);
+      sub(rax, rdx);
+
+      // Add time to total time
+      add(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalTime)], rax);
+
+      // Increment call count
+      inc(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalCalls)]);
+
+      // Calculate min
+      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Min)]);
+      cmp(rdx, rax);
+      cmova(rdx, rax);
+      mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Min)], rdx);
+
+      // Calculate max
+      mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Max)]);
+      cmp(rdx, rax);
+      cmovb(rdx, rax);
+      mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Max)], rdx);
     }
+  };
+#endif
 
-    auto ExitBlock = [&]() {
-      if (GetSamplingData) {
-        mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
-        // Get time
-        rdtsc();
-        shl(rdx, 32);
-        or(rax, rdx);
+  PendingTargetLabel = nullptr;
 
-        // Calculate time spent in block
-        mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Start)]);
-        sub(rax, rdx);
-
-        // Add time to total time
-        add(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalTime)], rax);
-
-        // Increment call count
-        inc(qword [rcx + offsetof(BlockSamplingData::BlockData, TotalCalls)]);
-
-        // Calculate min
-        mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Min)]);
-        cmp(rdx, rax);
-        cmova(rdx, rax);
-        mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Min)], rdx);
-
-        // Calculate max
-        mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Max)]);
-        cmp(rdx, rax);
-        cmovb(rdx, rax);
-        mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Max)], rdx);
-      }
-    };
-  #endif
-
-    PendingTargetLabel = nullptr;
-
-    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      using namespace FEXCore::IR;
-      {
-        auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
-        LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-        uint32_t Node = IR->GetID(BlockNode);
-        auto IsTarget = JumpTargets.find(Node);
-        if (IsTarget == JumpTargets.end()) {
-          IsTarget = JumpTargets.try_emplace(Node).first;
-        }
-
-        // if there is a pending branch, and it is not fall-through
-        if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
-        {
-          jmp(*PendingTargetLabel, T_NEAR);
-        }
-        PendingTargetLabel = nullptr;
-
-        L(IsTarget->second);
-      }
-
-      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        #ifdef DEBUG_RA
-        if (IROp->Op != IR::OP_BEGINBLOCK &&
-            IROp->Op != IR::OP_CONDJUMP &&
-            IROp->Op != IR::OP_JUMP) {
-          std::stringstream Inst;
-          auto Name = FEXCore::IR::GetName(IROp->Op);
-
-          if (IROp->HasDest) {
-            uint64_t PhysReg = RAPass->GetNodeRegister(Node);
-            if (PhysReg >= GPRPairBase)
-              Inst << "\tPair" << GetPhys(Node) << " = " << Name << " ";
-            else if (PhysReg >= XMMBase)
-              Inst << "\tXMM" << GetPhys(Node) << " = " << Name << " ";
-            else
-              Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
-          }
-          else {
-            Inst << "\t" << Name << " ";
-          }
-
-          uint8_t NumArgs = IR::GetArgs(IROp->Op);
-          for (uint8_t i = 0; i < NumArgs; ++i) {
-            uint32_t ArgNode = IROp->Args[i].ID();
-            uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
-            if (PhysReg >= GPRPairBase)
-              Inst << "Pair" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
-            else if (PhysReg >= XMMBase)
-              Inst << "XMM" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
-            else
-              Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
-          }
-
-          LogMan::Msg::D("%s", Inst.str().c_str());
-        }
-        #endif
-        uint32_t ID = IR->GetID(CodeNode);
-
-        // Execute handler
-        OpHandler Handler = OpHandlers[IROp->Op];
-        (this->*Handler)(IROp, ID);
-      }
-    }
-
-    // Make sure last branch is generated. It certainly can't be eliminated here.
-    if (PendingTargetLabel)
+  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+    using namespace FEXCore::IR;
     {
-      jmp(*PendingTargetLabel, T_NEAR);
-    }
-    PendingTargetLabel = nullptr;
+      auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
+      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
+      uint32_t Node = IR->GetID(BlockNode);
+      auto IsTarget = JumpTargets.find(Node);
+      if (IsTarget == JumpTargets.end()) {
+        IsTarget = JumpTargets.try_emplace(Node).first;
+      }
+
+      // if there is a pending branch, and it is not fall-through
+      if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
+      {
+        jmp(*PendingTargetLabel, T_NEAR);
+      }
+      PendingTargetLabel = nullptr;
+
+      L(IsTarget->second);
+    }
+
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      #ifdef DEBUG_RA
+      if (IROp->Op != IR::OP_BEGINBLOCK &&
+          IROp->Op != IR::OP_CONDJUMP &&
+          IROp->Op != IR::OP_JUMP) {
+        std::stringstream Inst;
+        auto Name = FEXCore::IR::GetName(IROp->Op);
+
+        if (IROp->HasDest) {
+          uint64_t PhysReg = RAPass->GetNodeRegister(Node);
+          if (PhysReg >= GPRPairBase)
+            Inst << "\tPair" << GetPhys(Node) << " = " << Name << " ";
+          else if (PhysReg >= XMMBase)
+            Inst << "\tXMM" << GetPhys(Node) << " = " << Name << " ";
+          else
+            Inst << "\tReg" << GetPhys(Node) << " = " << Name << " ";
+        }
+        else {
+          Inst << "\t" << Name << " ";
+        }
+
+        uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        for (uint8_t i = 0; i < NumArgs; ++i) {
+          uint32_t ArgNode = IROp->Args[i].ID();
+          uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
+          if (PhysReg >= GPRPairBase)
+            Inst << "Pair" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+          else if (PhysReg >= XMMBase)
+            Inst << "XMM" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+          else
+            Inst << "Reg" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
+        }
+
+        LogMan::Msg::D("%s", Inst.str().c_str());
+      }
+      #endif
+      uint32_t ID = IR->GetID(CodeNode);
+
+      // Execute handler
+      OpHandler Handler = OpHandlers[IROp->Op];
+      (this->*Handler)(IROp, ID);
+    }
   }
+
+  // Make sure last branch is generated. It certainly can't be eliminated here.
+  if (PendingTargetLabel)
+  {
+    jmp(*PendingTargetLabel, T_NEAR);
+  }
+  PendingTargetLabel = nullptr;
 
   void *Exit = getCurr<void*>();
   this->IR = nullptr;
@@ -1000,17 +1205,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   {
     L(FallbackCore);
     ud2();
-  }
-
-  {
-    // Interpreter fallback helper code
-    ThreadSharedData.InterpreterFallbackHelperAddress = getCurr<void*>();
-    // This will get called so our stack is now misaligned
-    mov(rax, reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR));
-    mov(rdi, STATE);
-    call(rax);
-
-    jmp(LoopTop);
   }
 
   {

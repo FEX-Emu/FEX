@@ -447,7 +447,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       if (!CheckPrintError(Def, Entry.first)) return false;
       if (!CheckPrintError(Def, CodeBlockCount.first)) return false;
 
-      IRHeader = _IRHeader(InvalidNode, Entry.second, CodeBlockCount.second, false);
+      IRHeader = _IRHeader(InvalidNode, Entry.second, CodeBlockCount.second);
     }
 
     SetWriteCursor(nullptr); // isolate the header from everything following

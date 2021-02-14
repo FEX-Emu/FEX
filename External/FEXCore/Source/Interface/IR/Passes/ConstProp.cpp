@@ -485,7 +485,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       auto Op = IROp->CW<IR::IROp_LoadMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
-      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
+      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
 
         auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
 
@@ -503,7 +503,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       auto Op = IROp->CW<IR::IROp_StoreMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
-      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8 && !Header->ShouldInterpret) {
+      if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
         auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
 
         Op->OffsetType = OffsetType;
@@ -749,7 +749,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
   }
 
   // constant inlining
-  if (!HeaderOp->ShouldInterpret && InlineConstants) {
+  if (InlineConstants) {
     for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
       switch(IROp->Op) {
         case OP_LSHR:

@@ -51,7 +51,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
   LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   IR::RegisterAllocationData * RAData{};
-  if (Manager->HasRAPass() && !HeaderOp->ShouldInterpret) {
+  if (Manager->HasRAPass()) {
     RAData = Manager->GetRAPass() ? Manager->GetRAPass()->GetAllocationData() : nullptr;
   }
 

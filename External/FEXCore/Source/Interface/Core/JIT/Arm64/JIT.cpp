@@ -40,8 +40,244 @@ using namespace vixl;
 using namespace vixl::aarch64;
 
 void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
-  auto Name = FEXCore::IR::GetName(IROp->Op);
-  LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+  FallbackInfo Info;
+  if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
+    auto Name = FEXCore::IR::GetName(IROp->Op);
+    LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+  } else {
+    switch(Info.ABI) {
+      case FABI_F80_F32:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        fmov(v0.S(), GetSrc(IROp->Args[0].ID()).S()) ;
+        LoadConstant(x0, (uintptr_t)Info.fn);
+
+        blr(x0);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+
+      case FABI_F80_F64:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
+        LoadConstant(x0, (uintptr_t)Info.fn);
+
+        blr(x0);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+
+      case FABI_F80_I16:
+      case FABI_F80_I32: {
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
+        LoadConstant(x1, (uintptr_t)Info.fn);
+
+        blr(x1);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+
+      case FABI_F32_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        fmov(GetDst(Node).S(), v0.S());
+      }
+      break;
+
+      case FABI_F64_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        mov(GetDst(Node).D(), v0.D());
+      }
+      break;
+
+      case FABI_I16_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        uxth(GetReg<RA_64>(Node), x0);
+      }
+      break;
+      case FABI_I32_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        mov(GetReg<RA_32>(Node), w0);
+      }
+      break;
+      case FABI_I64_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        mov(GetReg<RA_64>(Node), x0);
+      }
+      break;
+      case FABI_I64_F80_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
+        umov(x3, GetSrc(IROp->Args[1].ID()).V2D(), 1);
+        
+        LoadConstant(x4, (uintptr_t)Info.fn);
+
+        blr(x4);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        mov(GetReg<RA_64>(Node), x0);
+      }
+      break;
+      case FABI_F80_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        
+        LoadConstant(x2, (uintptr_t)Info.fn);
+
+        blr(x2);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+      case FABI_F80_F80_F80:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+
+        umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
+        umov(x3, GetSrc(IROp->Args[1].ID()).V2D(), 1);
+        
+        LoadConstant(x4, (uintptr_t)Info.fn);
+
+        blr(x4);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+
+        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
+        ins(GetDst(Node).V2D(), 0, x0);
+        ins(GetDst(Node).V8H(), 4, w1);
+      }
+      break;
+
+      case FABI_UNKNOWN:
+      default:
+      auto Name = FEXCore::IR::GetName(IROp->Op);
+        LogMan::Msg::A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
+    }
+  }
 }
 
 void JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
@@ -849,81 +1085,66 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const 
     bind(&RunBlock);
   }
 
-  if (HeaderOp->ShouldInterpret) {
-    // Make sure RIP is syncronized to the context
-    LoadConstant(x0, HeaderOp->Entry);
-    str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+  //LogMan::Throw::A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
 
-    LoadConstant(x0, ThreadSharedData.InterpreterFallbackHelperAddress);
-    LoadConstant(x1, (uintptr_t)IR);
-    
-    // Debug data is only used in debug builds
-    #ifndef NDEBUG
-    LoadConstant(x2, (uintptr_t)DebugData);
-    #endif
-    br(x0);
-  } else {
-    //LogMan::Throw::A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
+  SpillSlots = RAData->SpillSlots();
 
-    SpillSlots = RAData->SpillSlots();
-
-    if (SpillSlots) {
-      if (IsImmAddSub(SpillSlots * 16)) {
-        sub(sp, sp, SpillSlots * 16);
-      } else {
-        LoadConstant(x0, SpillSlots * 16);
-        sub(sp, sp, x0);
-      }
+  if (SpillSlots) {
+    if (IsImmAddSub(SpillSlots * 16)) {
+      sub(sp, sp, SpillSlots * 16);
+    } else {
+      LoadConstant(x0, SpillSlots * 16);
+      sub(sp, sp, x0);
     }
-
-    PendingTargetLabel = nullptr;
-
-    for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      using namespace FEXCore::IR;
-      auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
-
-      {
-        uint32_t Node = IR->GetID(BlockNode);
-        auto IsTarget = JumpTargets.find(Node);
-        if (IsTarget == JumpTargets.end()) {
-          IsTarget = JumpTargets.try_emplace(Node).first;
-        }
-
-        // if there's a pending branch, and it is not fall-through
-        if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
-        {
-          b(PendingTargetLabel);
-        }
-        PendingTargetLabel = nullptr;
-        
-        bind(&IsTarget->second);
-      }
-
-      if (DebugData) {
-        DebugData->Subblocks.push_back({Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()), 0, IR->GetID(BlockNode)});
-      }
-
-      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        uint32_t ID = IR->GetID(CodeNode);
-
-        // Execute handler
-        OpHandler Handler = OpHandlers[IROp->Op];
-        (this->*Handler)(IROp, ID);
-      }
-
-      if (DebugData) {
-        DebugData->Subblocks.back().HostCodeSize = Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()) - DebugData->Subblocks.back().HostCodeStart;
-      }
-    }
-
-    // Make sure last branch is generated. It certainly can't be eliminated here.
-    if (PendingTargetLabel)
-    {
-      b(PendingTargetLabel);
-    }
-    PendingTargetLabel = nullptr;
   }
+
+  PendingTargetLabel = nullptr;
+
+  for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+    using namespace FEXCore::IR;
+    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+
+    {
+      uint32_t Node = IR->GetID(BlockNode);
+      auto IsTarget = JumpTargets.find(Node);
+      if (IsTarget == JumpTargets.end()) {
+        IsTarget = JumpTargets.try_emplace(Node).first;
+      }
+
+      // if there's a pending branch, and it is not fall-through
+      if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
+      {
+        b(PendingTargetLabel);
+      }
+      PendingTargetLabel = nullptr;
+      
+      bind(&IsTarget->second);
+    }
+
+    if (DebugData) {
+      DebugData->Subblocks.push_back({Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()), 0, IR->GetID(BlockNode)});
+    }
+
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      uint32_t ID = IR->GetID(CodeNode);
+
+      // Execute handler
+      OpHandler Handler = OpHandlers[IROp->Op];
+      (this->*Handler)(IROp, ID);
+    }
+
+    if (DebugData) {
+      DebugData->Subblocks.back().HostCodeSize = Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()) - DebugData->Subblocks.back().HostCodeStart;
+    }
+  }
+
+  // Make sure last branch is generated. It certainly can't be eliminated here.
+  if (PendingTargetLabel)
+  {
+    b(PendingTargetLabel);
+  }
+  PendingTargetLabel = nullptr;
 
   FinalizeCode();
 
@@ -1104,7 +1325,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   Literal l_VirtualMemory {VirtualMemorySize};
   Literal l_PagePtr {Thread->LookupCache->GetPagePointer()};
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
-  Literal l_Interpreter {reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR)};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
 
   uintptr_t CompileBlockPtr{};
@@ -1286,19 +1506,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   }
 
   {
-    Label InterpreterFallback{};
-    bind(&InterpreterFallback);
-    ThreadSharedData.InterpreterFallbackHelperAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-    SpillStaticRegs();
-    mov(x0, STATE);
-    ldr(x3, &l_Interpreter);
-
-    blr(x3);
-    FillStaticRegs();
-    b(&LoopTop);
-  }
-
-  {
     ThreadPauseHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     SpillStaticRegs();
     ThreadPauseHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
@@ -1372,7 +1579,6 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   place(&l_VirtualMemory);
   place(&l_PagePtr);
   place(&l_CTX);
-  place(&l_Interpreter);
   place(&l_Sleep);
   place(&l_CompileBlock);
   place(&l_ExitFunctionLink);

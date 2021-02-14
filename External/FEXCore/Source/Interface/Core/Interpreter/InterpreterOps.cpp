@@ -409,6 +409,459 @@ static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
   LogMan::Msg::A("unreachable");
 }
 
+template<IR::IROps Op>
+struct OpHandlers {
+
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CVTTO> {
+  static X80SoftFloat handle4(float src) {
+    return src;
+  }
+
+  static X80SoftFloat handle8(double src) {
+    return src;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CMP> {
+  template<uint32_t Flags>
+  static uint64_t handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    bool eq, lt, nan;
+    uint64_t ResultFlags = 0;
+
+    X80SoftFloat::FCMP(Src1, Src2, &eq, &lt, &nan);
+    if (Flags & (1 << IR::FCMP_FLAG_LT) &&
+        lt) {
+      ResultFlags |= (1 << IR::FCMP_FLAG_LT);
+    }
+    if (Flags & (1 << IR::FCMP_FLAG_UNORDERED) &&
+        nan) {
+      ResultFlags |= (1 << IR::FCMP_FLAG_UNORDERED);
+    }
+    if (Flags & (1 << IR::FCMP_FLAG_EQ) &&
+        eq) {
+      ResultFlags |= (1 << IR::FCMP_FLAG_EQ);
+    }
+    return ResultFlags;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CVT> {
+  static float handle4(X80SoftFloat src) {
+    return src;
+  }
+
+  static double handle8(X80SoftFloat src) {
+    return src;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CVTINT> {
+  static  int16_t handle2(X80SoftFloat src) {
+    return src;
+  }
+
+  static int32_t handle4(X80SoftFloat src) {
+    return src;
+  }
+
+  static int64_t handle8(X80SoftFloat src) {
+    return src;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80CVTTOINT> {
+  static X80SoftFloat handle2(int16_t src) {
+    return src;
+  }
+
+  static X80SoftFloat handle4(int32_t src) {
+    return src;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80ROUND> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FRNDINT(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80F2XM1> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::F2XM1(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80TAN> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FTAN(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80SQRT> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FSQRT(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80SIN> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FSIN(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80COS> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FCOS(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80XTRACT_EXP> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FXTRACT_EXP(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80XTRACT_SIG> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    return X80SoftFloat::FXTRACT_SIG(Src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80ADD> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FADD(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80SUB> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FSUB(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80MUL> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FMUL(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80DIV> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FDIV(Src1, Src2);
+  }
+};
+
+
+template<>
+struct OpHandlers<IR::OP_F80FYL2X> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FYL2X(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80ATAN> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FATAN(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80FPREM1> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FREM1(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80FPREM> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FREM(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80SCALE> {
+  static X80SoftFloat handle(X80SoftFloat Src1, X80SoftFloat Src2) {
+    return X80SoftFloat::FSCALE(Src1, Src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80BCDSTORE> {
+  static X80SoftFloat handle(X80SoftFloat Src1) {
+    bool Negative = Src1.Sign;
+
+    // Clear the Sign bit
+    Src1.Sign = 0;
+
+    uint64_t Tmp = Src1;
+    X80SoftFloat Rv;
+    uint8_t *BCD = reinterpret_cast<uint8_t*>(&Rv);
+    memset(BCD, 0, 10);
+
+    for (size_t i = 0; i < 9; ++i) {
+      if (Tmp == 0) {
+        // Nothing left? Just leave
+        break;
+      }
+      // Extract the lower 100 values
+      uint8_t Digit = Tmp % 100;
+
+      // Now divide it for the next iteration
+      Tmp /= 100;
+
+      uint8_t UpperNibble = Digit / 10;
+      uint8_t LowerNibble = Digit % 10;
+
+      // Now store the BCD
+      BCD[i] = (UpperNibble << 4) | LowerNibble;
+    }
+
+    // Set negative flag once converted to x87
+    BCD[9] = Negative ? 0x80 : 0;
+
+    return Rv;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F80BCDLOAD> {
+  static X80SoftFloat handle(X80SoftFloat Src) {
+    uint8_t *Src1 = reinterpret_cast<uint8_t *>(&Src);
+    uint64_t BCD{};
+    // We walk through each uint8_t and pull out the BCD encoding
+    // Each 4bit split is a digit
+    // Only 0-9 is supported, A-F results in undefined data
+    // | 4 bit     | 4 bit    |
+    // | 10s place | 1s place |
+    // EG 0x48 = 48
+    // EG 0x4847 = 4847
+    // This gives us an 18digit value encoded in BCD
+    // The last byte lets us know if it negative or not
+    for (size_t i = 0; i < 9; ++i) {
+      uint8_t Digit = Src1[8 - i];
+      // First shift our last value over
+      BCD *= 100;
+
+      // Add the tens place digit
+      BCD += (Digit >> 4) * 10;
+
+      // Add the ones place digit
+      BCD += Digit & 0xF;
+    }
+
+    // Set negative flag once converted to x87
+    bool Negative = Src1[9] & 0x80;
+    X80SoftFloat Tmp;
+
+    Tmp = BCD;
+    Tmp.Sign = Negative;
+    return Tmp;
+  }
+};
+
+template<typename R, typename... Args>
+FallbackInfo GetFallbackInfo(R(*fn)(Args...)) {
+  return {FABI_UNKNOWN, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(float)) {
+  return {FABI_F80_F32, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(double)) {
+  return {FABI_F80_F64, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(int16_t)) {
+  return {FABI_F80_I16, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(int32_t)) {
+  return {FABI_F80_I32, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(float(*fn)(X80SoftFloat)) {
+  return {FABI_F32_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(double(*fn)(X80SoftFloat)) {
+  return {FABI_F64_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(int16_t(*fn)(X80SoftFloat)) {
+  return {FABI_I16_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(int32_t(*fn)(X80SoftFloat)) {
+  return {FABI_I32_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(int64_t(*fn)(X80SoftFloat)) {
+  return {FABI_I64_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(uint64_t(*fn)(X80SoftFloat, X80SoftFloat)) {
+  return {FABI_I64_F80_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(X80SoftFloat)) {
+  return {FABI_F80_F80, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(X80SoftFloat, X80SoftFloat)) {
+  return {FABI_F80_F80_F80, (void*)fn};
+}
+
+bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info) {
+  uint8_t OpSize = IROp->Size;
+  switch(IROp->Op) {
+    case IR::OP_F80CVTTO: {
+      auto Op = IROp->C<IR::IROp_F80CVTTo>();
+
+      switch (Op->Size) {
+        case 4: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTTO>::handle4);
+          return true;
+        }
+        case 8: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTTO>::handle8);
+          return true;
+        }
+      default: LogMan::Msg::D("Unhandled size: %d", OpSize);
+      }
+      break;
+    }
+    case IR::OP_F80CVT: {
+      auto Op = IROp->C<IR::IROp_F80CVT>();
+
+      switch (OpSize) {
+        case 4: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVT>::handle4);
+          return true;
+        }
+        case 8: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVT>::handle8);
+          return true;
+        }
+        default: LogMan::Msg::D("Unhandled size: %d", OpSize);
+      }
+      break;
+    }
+    case IR::OP_F80CVTINT: {
+      auto Op = IROp->C<IR::IROp_F80CVTInt>();
+
+      switch (OpSize) {
+        case 2: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle2);
+          return true;
+        }
+        case 4: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle4);
+          return true;
+        }
+        case 8: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle8);
+          return true;
+        }
+        default: LogMan::Msg::D("Unhandled size: %d", OpSize);
+      }
+      break;
+    }
+    case IR::OP_F80CMP: {
+      auto Op = IROp->C<IR::IROp_F80Cmp>();
+      
+      decltype(&OpHandlers<IR::OP_F80CMP>::handle<0>) handlers[] = { &OpHandlers<IR::OP_F80CMP>::handle<0>, &OpHandlers<IR::OP_F80CMP>::handle<1>, &OpHandlers<IR::OP_F80CMP>::handle<2>, &OpHandlers<IR::OP_F80CMP>::handle<3>, &OpHandlers<IR::OP_F80CMP>::handle<4>, &OpHandlers<IR::OP_F80CMP>::handle<5>, &OpHandlers<IR::OP_F80CMP>::handle<6>, &OpHandlers<IR::OP_F80CMP>::handle<7> };
+
+      *Info = GetFallbackInfo(handlers[Op->Flags]);
+      return true;
+    }
+
+    case IR::OP_F80CVTTOINT: {
+      auto Op = IROp->C<IR::IROp_F80CVTToInt>();
+
+      switch (Op->Size) {
+        case 2: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTTOINT>::handle2);
+          return true;
+        }
+        case 4: {
+          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTTOINT>::handle4);
+          return true;
+        }
+        default: LogMan::Msg::D("Unhandled size: %d", OpSize);
+      }
+      break;
+    }
+
+#define COMMON_X87_OP(OP) \
+    case IR::OP_F80##OP: { \
+      *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80##OP>::handle); \
+      return true; \
+    }
+
+    // Unary
+    COMMON_X87_OP(ROUND)
+    COMMON_X87_OP(F2XM1)
+    COMMON_X87_OP(TAN)
+    COMMON_X87_OP(SQRT)
+    COMMON_X87_OP(SIN)
+    COMMON_X87_OP(COS)
+    COMMON_X87_OP(XTRACT_EXP)
+    COMMON_X87_OP(XTRACT_SIG)
+    COMMON_X87_OP(BCDSTORE)
+    COMMON_X87_OP(BCDLOAD)
+
+    // Binary
+    COMMON_X87_OP(ADD)
+    COMMON_X87_OP(SUB)
+    COMMON_X87_OP(MUL)
+    COMMON_X87_OP(DIV)
+    COMMON_X87_OP(FYL2X)
+    COMMON_X87_OP(ATAN)
+    COMMON_X87_OP(FPREM1)
+    COMMON_X87_OP(FPREM)
+    COMMON_X87_OP(SCALE)
+
+    default:
+      break;
+  }
+
+  return false;
+}
+
 void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView<true> *CurrentIR, FEXCore::Core::DebugData *DebugData) {
   volatile void* stack = alloca(0);
 
