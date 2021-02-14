@@ -6430,13 +6430,14 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
   }
 }
 
+template<bool Truncate>
 void OpDispatchBuilder::FIST(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op);
 
   auto orig_top = GetX87Top();
   OrderedNode *data = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
-  data = _F80CVTInt(data, Size);
+  data = _F80CVTInt(data, Truncate, Size);
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, 1);
 
@@ -6729,6 +6730,10 @@ void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
 
+  auto NewFCW = _Constant(16, 0x037);
+  _F80LoadFCW(NewFCW);
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FCW), NewFCW);
+
   SetX87Top(_Constant(0));
 }
 
@@ -6961,6 +6966,10 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
 
+  auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
+  _F80LoadFCW(NewFCW);
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FCW), NewFCW);
+
   OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
   auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
 
@@ -7003,8 +7012,8 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
 	{
-		// FCW store default
-		_StoreMem(GPRClass, Size, Mem, _Constant(0x37F), Size);
+    auto FCW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FCW), GPRClass);
+		_StoreMem(GPRClass, Size, Mem, FCW, Size);
 	}
 
 	{
@@ -7059,8 +7068,16 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
 	}
 }
 
+void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
+  OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  _F80LoadFCW(NewFCW);
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FCW), NewFCW);
+}
+
 void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
-  StoreResult(GPRClass, Op, _Constant(0x37F), -1);
+  auto FCW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FCW), GPRClass);
+
+  StoreResult(GPRClass, Op, FCW, -1);
 }
 
 void OpDispatchBuilder::X87LDSW(OpcodeArgs) {
@@ -7124,8 +7141,8 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
   OrderedNode *Top = GetX87Top();
 	{
-		// FCW store default
-		_StoreMem(GPRClass, Size, Mem, _Constant(0x37F), Size);
+    auto FCW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FCW), GPRClass);
+		_StoreMem(GPRClass, Size, Mem, FCW, Size);
 	}
 
 	{
@@ -7204,6 +7221,10 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+
+  auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
+  _F80LoadFCW(NewFCW);
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FCW), NewFCW);
 
   OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
   auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
@@ -7384,8 +7405,8 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   }
 
   {
-    // FCW store default
-    _StoreMem(GPRClass, 2, Mem, _Constant(0x37F), 2);
+    auto FCW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FCW), GPRClass);
+    _StoreMem(GPRClass, 2, Mem, FCW, 2);
   }
 
   {
@@ -7467,6 +7488,11 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  
+  auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
+  _F80LoadFCW(NewFCW);
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FCW), NewFCW);
+
   {
     OrderedNode *MemLocation = _Add(Mem, _Constant(2));
     auto NewFSW = _LoadMem(GPRClass, 2, MemLocation, 2);
@@ -8809,7 +8835,7 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENV},
 
-    {OPDReg(0xD9, 5) | 0x00, 8, &OpDispatchBuilder::NOPOp}, // XXX: stubbed FLDCW
+    {OPDReg(0xD9, 5) | 0x00, 8, &OpDispatchBuilder::X87FLDCW}, // XXX: stubbed FLDCW
 
     {OPDReg(0xD9, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSTENV},
 
@@ -8881,11 +8907,11 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILD},
 
-    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::FIST},
+    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::FIST<true>},
 
-    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::FIST},
+    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
 
-    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::FIST},
+    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
 
     // 4 = Invalid
 
@@ -8934,7 +8960,7 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::FLD<64>},
 
-    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::FIST},
+    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::FIST<true>},
 
     {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::FST<64>},
 
@@ -8980,11 +9006,11 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILD},
 
-    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::FIST},
+    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::FIST<true>},
 
-    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::FIST},
+    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
 
-    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::FIST},
+    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
 
     {OPDReg(0xDF, 4) | 0x00, 8, &OpDispatchBuilder::FBLD},
 
@@ -8992,7 +9018,7 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPDReg(0xDF, 6) | 0x00, 8, &OpDispatchBuilder::FBSTP},
 
-    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::FIST},
+    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
 
       // XXX: This should also set the x87 tag bits to empty
       // We don't support this currently, so just pop the stack

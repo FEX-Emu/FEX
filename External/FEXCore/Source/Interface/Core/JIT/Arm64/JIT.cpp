@@ -46,6 +46,22 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
     LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
   } else {
     switch(Info.ABI) {
+      case FABI_VOID_U16:{
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
+        LoadConstant(x1, (uintptr_t)Info.fn);
+
+        blr(x1);
+
+        PopDynamicRegsAndLR();
+  
+        FillStaticRegs();
+      }
+      break;
+
       case FABI_F80_F32:{
         SpillStaticRegs();
 
@@ -532,7 +548,7 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSig
       memcpy(guest_uctx->__fpregs_mem._xmm, State->State.State.xmm, sizeof(State->State.State.xmm));
 
       // FCW store default
-      guest_uctx->__fpregs_mem.fcw = 0x37F;
+      guest_uctx->__fpregs_mem.fcw = State->State.State.FCW;
 
       // Reconstruct FSW
       guest_uctx->__fpregs_mem.fsw =

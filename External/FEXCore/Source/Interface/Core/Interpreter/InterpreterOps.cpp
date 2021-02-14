@@ -473,6 +473,26 @@ struct OpHandlers<IR::OP_F80CVTINT> {
   static int64_t handle8(X80SoftFloat src) {
     return src;
   }
+
+  static  int16_t handle2t(X80SoftFloat src) {
+    auto rv = extF80_to_i32(src, softfloat_round_minMag, false);
+
+    if (rv > INT16_MAX) {
+      return INT16_MAX;
+    } else if (rv < INT16_MIN) {
+      return INT16_MIN;
+    } else {
+      return rv;
+    }
+  }
+
+  static int32_t handle4t(X80SoftFloat src) {
+    return extF80_to_i32(src, softfloat_round_minMag, false);
+  }
+
+  static int64_t handle8t(X80SoftFloat src) {
+    return extF80_to_i64(src, softfloat_round_minMag, false);
+  }
 };
 
 template<>
@@ -680,6 +700,36 @@ struct OpHandlers<IR::OP_F80BCDLOAD> {
   }
 };
 
+template<>
+struct OpHandlers<IR::OP_F80LOADFCW> {
+  static void handle(uint16_t NewFCW) {
+    
+    auto PC = (NewFCW >> 8) & 3;
+    switch(PC) {
+      case 0: extF80_roundingPrecision = 32; break;
+      case 2: extF80_roundingPrecision = 64; break;
+      case 3: extF80_roundingPrecision = 80; break;
+      case 1: LogMan::Msg::A("Invalid x87 precision mode, %d", PC);
+    }
+    
+    auto RC = (NewFCW >> 10) & 3;
+    switch(RC) {
+      case 0:
+        softfloat_roundingMode = softfloat_round_near_even;
+        break;
+      case 1:
+        softfloat_roundingMode = softfloat_round_min;
+        break;
+      case 2:
+        softfloat_roundingMode = softfloat_round_max;
+        break;
+      case 3:
+        softfloat_roundingMode = softfloat_round_minMag;
+      break;
+    }
+  }
+};
+
 template<typename R, typename... Args>
 FallbackInfo GetFallbackInfo(R(*fn)(Args...)) {
   return {FABI_UNKNOWN, (void*)fn};
@@ -698,6 +748,11 @@ FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(double)) {
 template<>
 FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(int16_t)) {
   return {FABI_F80_I16, (void*)fn};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(void(*fn)(uint16_t)) {
+  return {FABI_VOID_U16, (void*)fn};
 }
 
 template<>
@@ -748,6 +803,11 @@ FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(X80SoftFloat, X80SoftFloat)) {
 bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info) {
   uint8_t OpSize = IROp->Size;
   switch(IROp->Op) {
+    case IR::OP_F80LOADFCW: {
+      *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80LOADFCW>::handle);
+      return true;
+    }
+
     case IR::OP_F80CVTTO: {
       auto Op = IROp->C<IR::IROp_F80CVTTo>();
 
@@ -785,15 +845,15 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
 
       switch (OpSize) {
         case 2: {
-          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle2);
+          *Info = GetFallbackInfo(Op->Truncate ? &OpHandlers<IR::OP_F80CVTINT>::handle2t : &OpHandlers<IR::OP_F80CVTINT>::handle2);
           return true;
         }
         case 4: {
-          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle4);
+          *Info = GetFallbackInfo(Op->Truncate ? &OpHandlers<IR::OP_F80CVTINT>::handle4t : &OpHandlers<IR::OP_F80CVTINT>::handle4);
           return true;
         }
         case 8: {
-          *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVTINT>::handle8);
+          *Info = GetFallbackInfo(Op->Truncate ? &OpHandlers<IR::OP_F80CVTINT>::handle8t : &OpHandlers<IR::OP_F80CVTINT>::handle8);
           return true;
         }
         default: LogMan::Msg::D("Unhandled size: %d", OpSize);
@@ -4659,6 +4719,10 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
             memcpy(GDP, &Tmp, sizeof(Tmp));
             break;
           }
+          case IR::OP_F80LOADFCW: {
+            OpHandlers<IR::OP_F80LOADFCW>::handle(*GetSrc<uint16_t*>(SSAData, IROp->Args[0]));
+            break;
+          }
           case IR::OP_F80ADD: {
             auto Op = IROp->C<IR::IROp_F80Add>();
             X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(SSAData, Op->Header.Args[0]);
@@ -4774,18 +4838,18 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
 
             switch (OpSize) {
               case 2: {
-                int16_t Tmp = Src;
-                memcpy(GDP, &Tmp, OpSize);
+                int16_t Tmp = (Op->Truncate? OpHandlers<IR::OP_F80CVTINT>::handle2t : OpHandlers<IR::OP_F80CVTINT>::handle2)(Src);
+                memcpy(GDP, &Tmp, sizeof(Tmp));
                 break;
               }
               case 4: {
-                int32_t Tmp = Src;
-                memcpy(GDP, &Tmp, OpSize);
+                int32_t Tmp = (Op->Truncate? OpHandlers<IR::OP_F80CVTINT>::handle4t : OpHandlers<IR::OP_F80CVTINT>::handle4)(Src);
+                memcpy(GDP, &Tmp, sizeof(Tmp));
                 break;
               }
               case 8: {
-                int64_t Tmp = Src;
-                memcpy(GDP, &Tmp, OpSize);
+                int64_t Tmp = (Op->Truncate? OpHandlers<IR::OP_F80CVTINT>::handle8t : OpHandlers<IR::OP_F80CVTINT>::handle8)(Src);
+                memcpy(GDP, &Tmp, sizeof(Tmp));
                 break;
               }
             default: LogMan::Msg::D("Unhandled size: %d", OpSize);
