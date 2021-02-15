@@ -530,6 +530,35 @@ namespace FEX::HLE::x32 {
         writefds ? &Host_writefds : nullptr,
         exceptfds ? &Host_exceptfds : nullptr,
         timeout ? &tp64 : nullptr);
+      if (readfds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_readfds)) {
+            readfds[i/32] |= 1 << (i & 31);
+          } else {
+            readfds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
+
+      if (writefds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_writefds)) {
+            writefds[i/32] |= 1 << (i & 31);
+          } else {
+            writefds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
+
+      if (exceptfds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_exceptfds)) {
+            exceptfds[i/32] |= 1 << (i & 31);
+          } else {
+            exceptfds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
 
       if (timeout) {
         *timeout = tp64;
@@ -608,6 +637,36 @@ namespace FEX::HLE::x32 {
         exceptfds ? &Host_exceptfds : nullptr,
         timeout ? &tp64 : nullptr,
         &HostSet);
+
+      if (readfds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_readfds)) {
+            readfds[i/32] |= 1 << (i & 31);
+          } else {
+            readfds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
+
+      if (writefds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_writefds)) {
+            writefds[i/32] |= 1 << (i & 31);
+          } else {
+            writefds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
+
+      if (exceptfds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_exceptfds)) {
+            exceptfds[i/32] |= 1 << (i & 31);
+          } else {
+            exceptfds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
 
       if (timeout) {
         *timeout = tp64;
@@ -703,6 +762,36 @@ namespace FEX::HLE::x32 {
         timeout,
         &HostSet);
 
+      if (readfds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_readfds)) {
+            readfds[i/32] |= 1 << (i & 31);
+          } else {
+            readfds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
+
+      if (writefds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_writefds)) {
+            writefds[i/32] |= 1 << (i & 31);
+          } else {
+            writefds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
+
+      if (exceptfds) {
+        for (int i = 0; i < nfds; ++i) {
+          if (FD_ISSET(i, &Host_exceptfds)) {
+            exceptfds[i/32] |= 1 << (i & 31);
+          } else {
+            exceptfds[i/32] &= ~(1 << (i & 31));
+          }
+        }
+      }
+      
       SYSCALL_ERRNO();
     });
   }
