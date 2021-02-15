@@ -28,18 +28,21 @@ DEF_OP(CreateElementPair) {
   std::pair<Xbyak::Reg, Xbyak::Reg> Dst;
   Xbyak::Reg RegFirst;
   Xbyak::Reg RegSecond;
+  Xbyak::Reg RegTmp;
 
   switch (Op->Header.Size) {
     case 4: {
       Dst = GetSrcPair<RA_32>(Node);
       RegFirst = GetSrc<RA_32>(Op->Header.Args[0].ID());
       RegSecond = GetSrc<RA_32>(Op->Header.Args[1].ID());
+      RegTmp = eax;
       break;
     }
     case 8: {
       Dst = GetSrcPair<RA_64>(Node);
       RegFirst = GetSrc<RA_64>(Op->Header.Args[0].ID());
       RegSecond = GetSrc<RA_64>(Op->Header.Args[1].ID());
+      RegTmp = rax;
       break;
     }
     default: LogMan::Msg::A("Unknown Size"); break;
@@ -52,7 +55,9 @@ DEF_OP(CreateElementPair) {
     mov(Dst.second, RegSecond);
     mov(Dst.first, RegFirst);
   } else {
-    LogMan::Msg::A("Unhandled CreateElementPair");
+    mov(RegTmp, RegFirst);
+    mov(Dst.second, RegSecond);
+    mov(Dst.first, RegTmp);
   }
 }
 

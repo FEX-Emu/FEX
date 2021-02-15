@@ -1392,7 +1392,6 @@ namespace FEXCore::IR {
           //LogMan::Throw::A(InterferenceRegisterNode->Head.RegAndClass.Reg != INVALID_REG, "Interference node never assigned a register?");
           LogMan::Throw::A(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
           LogMan::Throw::A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
-          LogMan::Throw::A(InterferenceRegClass == RegClass, "Class doesn't match");
 
           // This is the op that we need to dump
           auto [InterferenceOrderedNode, InterferenceIROp] = IR.at(InterferenceNode)();
