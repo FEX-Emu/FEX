@@ -6865,6 +6865,11 @@ void OpDispatchBuilder::X87BinaryOp(OpcodeArgs) {
   // Overwrite the op
   result.first->Header.Op = IROp;
 
+  if (IROp == IR::OP_F80FPREM) {
+    //TODO: Set C0 to Q2, C3 to Q1, C1 to Q0
+    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
+  }
+
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 }
