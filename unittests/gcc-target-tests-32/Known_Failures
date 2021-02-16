@@ -1,7 +1,5 @@
 pr72867.c.gcc-target-test-32
 pr88240.c.gcc-target-test-32
-sse2-mmx-cvtps2pi.c.gcc-target-test-32
-sse2-mmx-cvttps2pi.c.gcc-target-test-32
 sse2-mmx-pextrw.c.gcc-target-test-32
 sse2-mmx-psraw.c.gcc-target-test-32
 sse2-mmx-psrawi.c.gcc-target-test-32

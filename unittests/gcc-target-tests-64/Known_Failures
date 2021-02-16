@@ -1,8 +1,6 @@
 # these fail on x86 and arm
 asm-5.c.gcc-target-test-64
 pr88240.c.gcc-target-test-64
-sse2-mmx-cvtps2pi.c.gcc-target-test-64
-sse2-mmx-cvttps2pi.c.gcc-target-test-64
 sse2-mmx-pextrw.c.gcc-target-test-64
 sse2-mmx-psraw.c.gcc-target-test-64
 sse2-mmx-psrawi.c.gcc-target-test-64
