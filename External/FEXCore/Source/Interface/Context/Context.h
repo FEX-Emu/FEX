@@ -107,7 +107,7 @@ namespace FEXCore::Context {
     CustomCPUFactoryType FallbackCPUFactory;
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
 
-    struct AOTCacheEntry {
+    struct AOTIRCacheEntry {
       uint64_t start;
       uint64_t len;
       uint64_t crc;
@@ -116,7 +116,7 @@ namespace FEXCore::Context {
     };
     
     std::function<std::unique_ptr<std::istream>(const std::string&)> AOTIRLoader;
-    std::unordered_map<std::string, std::map<uint64_t, AOTCacheEntry>> AOTCache;
+    std::unordered_map<std::string, std::map<uint64_t, AOTIRCacheEntry>> AOTIRCache;
     
     struct AddrToFileEntry {
       uint64_t Start;
