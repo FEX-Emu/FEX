@@ -349,6 +349,8 @@ public:
   void FST(OpcodeArgs);
 
   void FST(OpcodeArgs);
+
+  template<bool Truncate>
   void FIST(OpcodeArgs);
 
   enum class OpResult {
@@ -381,6 +383,7 @@ public:
   void X87TAN(OpcodeArgs);
   void X87ATAN(OpcodeArgs);
   void X87LDENV(OpcodeArgs);
+  void X87FLDCW(OpcodeArgs);
   void X87FNSTENV(OpcodeArgs);
   void X87FSTCW(OpcodeArgs);
   void X87LDSW(OpcodeArgs);

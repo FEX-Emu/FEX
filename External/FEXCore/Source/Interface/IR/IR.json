@@ -3309,6 +3309,15 @@
       ]
     },
 
+    "F80LoadFCW": {
+      "OpClass": "Vector",
+      "HasSideEffects": true,
+      "SSAArgs": "1",
+      "SSANames": [
+        "X80FCW"
+      ]
+    },
+
     "F80Add": {
       "OpClass": "Vector",
       "HasDest": true,
@@ -3437,6 +3446,9 @@
       "SSAArgs": "1",
       "SSANames": [
         "X80Src"
+      ],
+      "Args": [
+        "bool", "Truncate"
       ],
       "HelperArgs": [
         "uint8_t", "Size"

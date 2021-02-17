@@ -77,7 +77,7 @@ struct X80SoftFloat {
   }
 
   static X80SoftFloat FRNDINT(X80SoftFloat const &lhs) {
-    return extF80_roundToInt(lhs, softfloat_round_near_even, false);
+    return extF80_roundToInt(lhs, softfloat_roundingMode, false);
   }
 
   static X80SoftFloat FXTRACT_SIG(X80SoftFloat const &lhs) {
@@ -173,19 +173,26 @@ struct X80SoftFloat {
   }
 
   operator int16_t() const {
-    return extF80_to_i32(*this, softfloat_round_near_even, false);
+    auto rv = extF80_to_i32(*this, softfloat_roundingMode, false);
+    if (rv > INT16_MAX) {
+      return INT16_MAX;
+    } else if (rv < INT16_MIN) {
+      return INT16_MIN;
+    } else {
+      return rv;
+    }
   }
 
   operator int32_t() const {
-    return extF80_to_i32(*this, softfloat_round_near_even, false);
+    return extF80_to_i32(*this, softfloat_roundingMode, false);
   }
 
   operator int64_t() const {
-    return extF80_to_i64(*this, softfloat_round_near_even, false);
+    return extF80_to_i64(*this, softfloat_roundingMode, false);
   }
 
   operator uint64_t() const {
-    return extF80_to_ui64(*this, softfloat_round_near_even, false);
+    return extF80_to_ui64(*this, softfloat_roundingMode, false);
   }
 
   void operator=(const float rhs) {

@@ -14,6 +14,7 @@ namespace FEXCore::Core{
 namespace FEXCore::CPU {
   enum FallbackABI {
     FABI_UNKNOWN,
+    FABI_VOID_U16,
     FABI_F80_F32,
     FABI_F80_F64,
     FABI_F80_I16,
