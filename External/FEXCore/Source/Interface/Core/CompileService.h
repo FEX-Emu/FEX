@@ -34,6 +34,8 @@ class CompileService final {
       FEXCore::IR::IRListView *IRList{};
       FEXCore::IR::RegisterAllocationData *RAData{};
       FEXCore::Core::DebugData *DebugData{};
+      uint64_t StartAddr;
+      uint64_t Length;
 
       // Communication
       Event ServiceWorkDone{};

@@ -57,9 +57,7 @@ namespace FEXCore {
         }
       }
 
-      LogMan::Throw::A(CompileThreadData->IRLists.size() == 0, "Compile service must never have IRLists");
-      LogMan::Throw::A(CompileThreadData->RALists.size() == 0, "Compile service must never have RALists");
-      LogMan::Throw::A(CompileThreadData->DebugData.size() == 0, "Compile service must never have DebugData");
+      LogMan::Throw::A(CompileThreadData->LocalIRCache.size() == 0, "Compile service must never have LocalIRCache");
 
       CompileMutex.unlock();
     }
@@ -128,7 +126,7 @@ namespace FEXCore {
           // Set our thread state's RIP
           CompileThreadData->State.State.rip = Item->RIP;
 
-          auto [CodePtr, IRList, DebugData, RAData, Generated, Min, Max] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
+          auto [CodePtr, IRList, DebugData, RAData, Generated, StartAddr, Length] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
 
           LogMan::Throw::A(Generated == true, "Compile Service doesn't have IR Cache");
 
@@ -141,6 +139,8 @@ namespace FEXCore {
           Item->IRList = IRList;
           Item->DebugData = DebugData;
           Item->RAData = RAData;
+          Item->StartAddr = StartAddr;
+          Item->Length = Length;
 
           GCArray.emplace_back(Item);
           Item->ServiceWorkDone.NotifyAll();

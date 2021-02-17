@@ -663,19 +663,18 @@ namespace IR {
     FEXCore::Core::ThreadState *State = FEXCore::Context::Debug::GetThreadState(FEX::DebuggerState::GetContext());
     FEXCore::Core::InternalThreadState *TS = reinterpret_cast<FEXCore::Core::InternalThreadState*>(State);
 
-    auto &IRList = TS->IRLists;
+    auto Local = TS->LocalIRCache;
     auto &DebugData = TS->DebugData;
 
-    for (auto &IR : IRList) {
+    for (auto &LocalEntry : TS->LocalIRCache) {
        std::ostringstream out;
-       out << "0x" << std::hex << IR.first;
-       auto Data = DebugData.find(IR.first);
+       out << "0x" << std::hex << LocalEntry.first;
        IRDebugData DebugData;
-       DebugData.Debug = &Data->second;
+       DebugData.Debug = LocalEntry.second.DebugData.get();
        DebugData.RIP = IR.first;
        DebugData.RIPString = out.str();
-       DebugData.GuestCodeSize = std::to_string(Data->second.GuestCodeSize);
-       DebugData.GuestInstructionCount = std::to_string(Data->second.GuestInstructionCount);
+       DebugData.GuestCodeSize = std::to_string(DebugData.Debug->GuestCodeSize);
+       DebugData.GuestInstructionCount = std::to_string(DebugData.Debug->GuestInstructionCount);
        IRListTexts.emplace_back(DebugData);
     }
   }

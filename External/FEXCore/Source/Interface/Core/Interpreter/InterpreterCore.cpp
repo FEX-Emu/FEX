@@ -31,16 +31,9 @@
 namespace FEXCore::CPU {
 
 static void InterpreterExecution(FEXCore::Core::InternalThreadState *Thread) {
-  auto IR = Thread->IRLists.find(Thread->State.State.rip)->second.get();
+  auto LocalEntry = Thread->LocalIRCache.find(Thread->State.State.rip);
   
-  FEXCore::Core::DebugData *DebugData = nullptr;
-  
-  // DebugData is only used in debug builds
-  #ifndef NDEBUG
-  DebugData = Thread->DebugData.find(Thread->State.State.rip)->second.get();
-  #endif
-
-  InterpreterOps::InterpretIR(Thread, IR, DebugData);
+  InterpreterOps::InterpretIR(Thread, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
 }
 
 

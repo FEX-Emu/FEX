@@ -200,7 +200,7 @@ namespace FEXCore::Context {
   }
 
   void Context::AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread) {
-    for (auto &IR : Thread->IRLists) {
+    for (auto &IR : Thread->LocalIRCache) {
       EntryList.insert(IR.first);
     }
   }
@@ -519,9 +519,8 @@ namespace FEXCore::Context {
     auto IRHandler = [Thread](uint64_t Addr, IR::IREmitter *IR) -> void {
       // Run the passmanager over the IR from the dispatcher
       Thread->PassManager->Run(IR);
-      Thread->IRLists.try_emplace(Addr, IR->CreateIRCopy());
-      Thread->DebugData.try_emplace(Addr, new Core::DebugData());
-      Thread->RALists.try_emplace(Addr, Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr);
+      Core::LocalIREntry Entry = {Addr, 0ULL, decltype(Entry.IR)(IR->CreateIRCopy()), decltype(Entry.RAData)(Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr), decltype(Entry.DebugData)(new Core::DebugData())};
+      Thread->LocalIRCache.insert({Addr, std::move(Entry)});
     };
 
     LocalLoader->AddIR(IRHandler);
@@ -619,9 +618,7 @@ namespace FEXCore::Context {
     }
 
     if (AlsoClearIRCache) {
-      Thread->IRLists.clear();
-      Thread->RALists.clear();
-      Thread->DebugData.clear();
+      Thread->LocalIRCache.clear();
     }
   }
 
@@ -814,7 +811,7 @@ namespace FEXCore::Context {
 
     Thread->OpDispatcher->ResetWorkingList();
 
-    return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength, Thread->FrontendDecoder->DecodedMinAddress, Thread->FrontendDecoder->DecodedMaxAddress };
+    return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength, Thread->FrontendDecoder->DecodedMinAddress, Thread->FrontendDecoder->DecodedMaxAddress - Thread->FrontendDecoder->DecodedMinAddress };
   }
 
   std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -822,18 +819,20 @@ namespace FEXCore::Context {
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData *RAData {};
     bool GeneratedIR {};
-    uint64_t MinAddr {};
-    uint64_t MaxAddr {};
+    uint64_t StartAddr {};
+    uint64_t Length {};
 
     // Do we already have this in the IR cache?
-    auto IR = Thread->IRLists.find(GuestRIP);
+    auto LocalEntry = Thread->LocalIRCache.find(GuestRIP);
 
-    if (IR != Thread->IRLists.end()) {
+    if (LocalEntry != Thread->LocalIRCache.end()) {
       // Entry already exists
       // pull in the data
-      IRList = IR->second.get();
-      DebugData = Thread->DebugData.find(GuestRIP)->second.get();
-      RAData = Thread->RALists.find(GuestRIP)->second.get();
+      IRList = LocalEntry->second.IR.get();
+      DebugData = LocalEntry->second.DebugData.get();
+      RAData = LocalEntry->second.RAData.get();
+      StartAddr = LocalEntry->second.StartAddr;
+      Length = LocalEntry->second.Length;
 
       GeneratedIR = false;
     }
@@ -862,6 +861,8 @@ namespace FEXCore::Context {
 
             RAData = AOTEntry->second.RAData;
             DebugData = new FEXCore::Core::DebugData();
+            StartAddr = AOTEntry->second.start;
+            Length = AOTEntry->second.len;
 
             GeneratedIR = true;
           }
@@ -871,14 +872,14 @@ namespace FEXCore::Context {
 
     if (IRList == nullptr) {
       // Generate IR + Meta Info
-      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, Min, Max] = GenerateIR(Thread, GuestRIP);
+      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP);
 
       // Setup pointers to internal structures
       IRList = IRCopy;
       RAData = RACopy;
       DebugData = new FEXCore::Core::DebugData();
-      MinAddr = Min;
-      MaxAddr = Max;
+      StartAddr = _StartAddr;
+      Length = _Length;
 
       // Initialize metadata
       DebugData->GuestCodeSize = TotalInstructionsLength;
@@ -892,7 +893,7 @@ namespace FEXCore::Context {
     }
 
     // Attempt to get the CPU backend to compile this code
-    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR, MinAddr, MaxAddr};
+    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR, StartAddr, Length};
   }
 
   bool Context::LoadAOTIRCache(std::istream &stream) {
@@ -1036,7 +1037,7 @@ namespace FEXCore::Context {
 
     bool DecrementRefCount = false;
     bool GeneratedIR {};
-    uint64_t MinAddress {}, MaxAddress {};
+    uint64_t StartAddr {}, Length {};
 
     if (Thread->CompileBlockReentrantRefCount != 0) {
       if (!Thread->CompileService) {
@@ -1051,6 +1052,8 @@ namespace FEXCore::Context {
       IRList = WorkItem->IRList;
       DebugData = WorkItem->DebugData;
       RAData = WorkItem->RAData;
+      StartAddr = WorkItem->StartAddr;
+      Length = WorkItem->Length;
       WorkItem->SafeToClear = true;
 
       // The compile service will always generate IR + DebugData + RAData
@@ -1060,14 +1063,14 @@ namespace FEXCore::Context {
     } else {
       ++Thread->CompileBlockReentrantRefCount;
       DecrementRefCount = true;
-      auto [Code, IR, Data, RA, Generated, Min, Max] = CompileCode(Thread, GuestRIP);
+      auto [Code, IR, Data, RA, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
       CodePtr = Code;
       IRList = IR;
       DebugData = Data;
       RAData = RA;
       GeneratedIR = Generated;
-      MinAddress = Min;
-      MaxAddress = Max;
+      StartAddr = _StartAddr;
+      Length = _Length;
     }
 
     LogMan::Throw::A(CodePtr != nullptr, "Failed to compile code %lX", GuestRIP);
@@ -1087,25 +1090,23 @@ namespace FEXCore::Context {
 
     // Insert to caches if we generated IR
     if (GeneratedIR) {
-      Thread->IRLists.emplace(GuestRIP, IRList);
-      Thread->DebugData.emplace(GuestRIP, DebugData);
-      Thread->RALists.emplace(GuestRIP, RAData);
+      Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
+      Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
 
       // Add to AOT cache if aot generation is enabled
-      if (Config.AOTIRCapture && RAData && MinAddress) {
+      if (Config.AOTIRCapture && RAData) {
         std::lock_guard<std::mutex> lk(AOTIRCacheLock);
         
         RAData->IsShared = true;
         IRList->IsShared = true;
 
-        auto len = MaxAddress - MinAddress;
-        auto hash = fasthash64((void*)MinAddress, len, 0);
+        auto hash = fasthash64((void*)StartAddr, Length, 0);
         
-        auto file = AddrToFile.lower_bound(MinAddress);
+        auto file = AddrToFile.lower_bound(StartAddr);
         if (file != AddrToFile.begin()) {
           --file;
-          if (file->second.Start <= MinAddress && (file->second.Start + file->second.Len) > MaxAddress) {
-            AOTIRCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {MinAddress - file->second.Start + file->second.Offset, len, hash, IRList, RAData}});
+          if (file->second.Start <= StartAddr && (file->second.Start + file->second.Len) >= (StartAddr + Length)) {
+            AOTIRCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {StartAddr - file->second.Start + file->second.Offset, Length, hash, IRList, RAData}});
           }
         }
       }
@@ -1176,9 +1177,7 @@ namespace FEXCore::Context {
   }
 
   void Context::RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    Thread->IRLists.erase(GuestRIP);
-    Thread->RALists.erase(GuestRIP);
-    Thread->DebugData.erase(GuestRIP);
+    Thread->LocalIRCache.erase(GuestRIP);
     Thread->LookupCache->Erase(GuestRIP);
   }
 
@@ -1188,9 +1187,7 @@ namespace FEXCore::Context {
     Thread->State.State.rip = RIP;
 
     // Erase the RIP from all the storage backings if it exists
-    Thread->IRLists.erase(RIP);
-    Thread->DebugData.erase(RIP);
-    Thread->LookupCache->Erase(RIP);
+    RemoveCodeEntry(Thread, RIP);
 
     // We don't care if compilation passes or not
     CompileBlock(Thread, RIP);
@@ -1211,12 +1208,12 @@ namespace FEXCore::Context {
   }
 
   bool Context::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {
-    auto it = ParentThread->DebugData.find(RIP);
-    if (it == ParentThread->DebugData.end()) {
+    auto it = ParentThread->LocalIRCache.find(RIP);
+    if (it == ParentThread->LocalIRCache.end()) {
       return false;
     }
 
-    memcpy(Data, &it->second, sizeof(FEXCore::Core::DebugData));
+    memcpy(Data, it->second.DebugData.get(), sizeof(FEXCore::Core::DebugData));
     return true;
   }
 
@@ -1229,21 +1226,6 @@ namespace FEXCore::Context {
     *Code = reinterpret_cast<uint8_t*>(HostCode);
     return true;
   }
-
-	// XXX:
-  // bool Context::FindIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList **ir) {
-  //   auto IR = ParentThread->IRLists.find(RIP);
-  //   if (IR == ParentThread->IRLists.end()) {
-  //     return false;
-  //   }
-
-  //   //*ir = &IR->second;
-  //   return true;
-  // }
-
-  // void Context::SetIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList *const ir) {
-  //   //ParentThread->IRLists.try_emplace(RIP, *ir);
-  // }
 
   FEXCore::Core::ThreadState *Context::GetThreadState() {
     return &ParentThread->State;
