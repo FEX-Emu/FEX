@@ -989,7 +989,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
 
           case IR::OP_REMOVECODEENTRY: {
             auto Op = IROp->C<IR::IROp_RemoveCodeEntry>();
-            Thread->CTX->RemoveCodeEntry(Thread, Op->RIP);
+            Thread->CTX->RemoveCodeEntry(Thread, CurrentIR->GetHeader()->Entry);
             break;
           }
 

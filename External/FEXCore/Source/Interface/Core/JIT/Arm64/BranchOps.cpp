@@ -310,7 +310,7 @@ DEF_OP(RemoveCodeEntry) {
   PushDynamicRegsAndLR();
   
   mov(x0, STATE);
-  LoadConstant(x1, Op->RIP);
+  LoadConstant(x1, IR->GetHeader()->Entry);
  
   LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
   SpillStaticRegs();

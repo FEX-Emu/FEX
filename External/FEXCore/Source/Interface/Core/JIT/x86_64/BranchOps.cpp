@@ -282,7 +282,7 @@ DEF_OP(RemoveCodeEntry) {
     sub(rsp, 8); // Align
 
   mov(rdi, STATE);
-  mov(rax, Op->RIP); // imm64 move
+  mov(rax, IR->GetHeader()->Entry); // imm64 move
   mov(rsi, rax);
 
 

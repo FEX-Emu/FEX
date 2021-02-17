@@ -139,10 +139,7 @@
 
     "RemoveCodeEntry": {
       "HasSideEffects": true,
-      "OpClass": "Misc",
-      "Args": [
-        "uint64_t", "RIP"
-      ]
+      "OpClass": "Misc"
     },
 
     "GuestCallDirect": {

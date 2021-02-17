@@ -681,7 +681,7 @@ namespace FEXCore::Context {
           Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
-          Thread->OpDispatcher->_RemoveCodeEntry(GuestRIP);
+          Thread->OpDispatcher->_RemoveCodeEntry();
           Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
           
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
