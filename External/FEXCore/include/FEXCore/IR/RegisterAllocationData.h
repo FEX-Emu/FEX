@@ -27,17 +27,11 @@ union PhysicalRegister {
 
 static_assert(sizeof(PhysicalRegister) == 1);
 
-class RegisterAllocationData;
-struct RegisterAllocationDataDeleter {
-  void operator()(RegisterAllocationData* r) {
-    free(r);
-  }
-};
-
 class RegisterAllocationData {
   public:
     uint32_t SpillSlotCount {};
     uint32_t MapCount {};
+    bool IsShared {false};
     PhysicalRegister Map[0];
 
     PhysicalRegister GetNodeRegister(uint32_t Node) const {
@@ -48,6 +42,14 @@ class RegisterAllocationData {
     static size_t Size(uint32_t NodeCount) {
       return sizeof(RegisterAllocationData) + NodeCount * sizeof(Map[0]);
     }
+};
+
+struct RegisterAllocationDataDeleter {
+  void operator()(RegisterAllocationData* r) {
+    if (!r->IsShared) {
+      free(r);
+    }
+  }
 };
 
 } 

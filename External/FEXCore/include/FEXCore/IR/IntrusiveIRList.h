@@ -172,6 +172,7 @@ public:
     return Wrapper.GetNode(GetListData());
   }
 
+  bool IsShared {false};
 private:
   struct BlockRange {
     using iterator = NodeIterator;
@@ -283,6 +284,14 @@ private:
   size_t DataSize;
   size_t ListSize;
   bool IsCopy;
+};
+
+struct IRListViewDeleter {
+  void operator()(IRListView* r) {
+    if (!r->IsShared) {
+      delete r;
+    }
+  }
 };
 }
 

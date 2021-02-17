@@ -273,6 +273,14 @@ namespace FEXCore::Context {
     }
 
     SaveEntryList();
+
+    // AOTCache needs manual clear
+    for (auto &Mod: AOTCache) {
+      for (auto &Entry: Mod.second) {
+        delete Entry.second.IR;
+        free(Entry.second.RAData);
+      }
+    }
   }
 
   bool Context::InitCore(FEXCore::CodeLoader *Loader) {
@@ -959,6 +967,10 @@ namespace FEXCore::Context {
           delete IR;
           return false;
         }
+
+        IR->IsShared = true;
+        RAData->IsShared = true;
+
         Mod.insert({addr, {start, len, crc, IR, RAData}});
       }
     }
@@ -1082,8 +1094,10 @@ namespace FEXCore::Context {
       // Add to AOT cache if aot generation is enabled
       if (Config.AOTIRCapture && RAData && MinAddress) {
         std::lock_guard<std::mutex> lk(AOTCacheLock);
-        auto RADataCopy = (decltype(RAData))malloc(RAData->Size(RAData->MapCount));
-        memcpy(RADataCopy, RAData, RAData->Size(RAData->MapCount));
+        
+        RAData->IsShared = true;
+        IRList->IsShared = true;
+        
         auto len = MaxAddress - MinAddress;
         auto hash = fasthash64((void*)MinAddress, len, 0);
         
@@ -1091,7 +1105,7 @@ namespace FEXCore::Context {
         if (file != AddrToFile.begin()) {
           --file;
           if (file->second.Start <= MinAddress && (file->second.Start + file->second.Len) > MaxAddress) {
-            AOTCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {MinAddress - file->second.Start + file->second.Offset, len, hash, IRList->CreateCopy(), RADataCopy}});
+            AOTCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {MinAddress - file->second.Start + file->second.Offset, len, hash, IRList, RAData}});
           }
         }
       }
