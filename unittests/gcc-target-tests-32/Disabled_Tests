@@ -1,0 +1,2 @@
+# Uses AVX
+pr57275.c.gcc-target-test-64
