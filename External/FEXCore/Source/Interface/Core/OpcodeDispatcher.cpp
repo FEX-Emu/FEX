@@ -1871,6 +1871,10 @@ void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   else
     Shift &= 0x1F;
 
+  if (Size < 32) {
+    Dest = _Sbfe(Size, 0, Dest);
+  }
+  
   OrderedNode *Src = _Constant(Size, Shift);
   OrderedNode *Result = _Ashr(Dest, Src);
 
