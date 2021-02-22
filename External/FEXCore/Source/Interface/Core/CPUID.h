@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore {
 namespace Context {
@@ -25,8 +26,12 @@ public:
   FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function) {
     auto Handler = FunctionHandlers.find(Function);
 
-    if (Handler == FunctionHandlers.end())
+    if (Handler == FunctionHandlers.end()) {
+      #ifndef NDEBUG
+        LogMan::Msg::E("Unhandled CPU ID function, 0x%x", Function);
+      #endif
       return Function_Reserved();
+    }
 
     return Handler->second();
   }
@@ -43,6 +48,7 @@ private:
   // Functions
   FEXCore::CPUID::FunctionResults Function_0h();
   FEXCore::CPUID::FunctionResults Function_01h();
+  FEXCore::CPUID::FunctionResults Function_02h();
   FEXCore::CPUID::FunctionResults Function_06h();
   FEXCore::CPUID::FunctionResults Function_07h();
   FEXCore::CPUID::FunctionResults Function_8000_0000h();
