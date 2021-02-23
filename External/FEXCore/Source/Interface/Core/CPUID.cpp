@@ -109,6 +109,31 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h() {
   return Res;
 }
 
+// 2: Cache and TLB information
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h() {
+  FEXCore::CPUID::FunctionResults Res{};
+
+  // returns default values from i7 model 1Ah
+  Res.eax = 0x1 | // Number of iterations needed for all descriptors
+    (0x5A << 8) |
+    (0x03 << 16) |
+    (0x55 << 24);
+
+  Res.ebx = 0xE4 |
+    (0xB2 << 8)  |
+    (0xF0 << 16) |
+    (0 << 24);
+
+  Res.ecx = 0; // null descriptors
+
+  Res.edx = 0x2C |
+    (0x21 << 8)  |
+    (0xCA << 16) |
+    (0x09 << 24);
+
+  return Res;
+}
+
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_06h() {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax = (1 << 2); // Always running APIC
@@ -366,7 +391,7 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   CTX = ctx;
   RegisterFunction(0, std::bind(&CPUIDEmu::Function_0h, this));
   RegisterFunction(1, std::bind(&CPUIDEmu::Function_01h, this));
-  // 2: Cache and TLB information
+  RegisterFunction(2, std::bind(&CPUIDEmu::Function_02h, this));
   // 3: Serial Number(previously), now reserved
   // 4: Deterministic cache parameters for each level
   // 5: Monitor/mwait
