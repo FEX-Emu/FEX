@@ -16,6 +16,8 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fstream>
+#include <filesystem>
 
 namespace {
 static bool SilentLog;
@@ -206,6 +208,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Value<bool> SMCChecksConfig{FEXCore::Config::CONFIG_SMC_CHECKS, false};
   FEXCore::Config::Value<bool> ABILocalFlags{FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, false};
   FEXCore::Config::Value<bool> AbiNoPF{FEXCore::Config::CONFIG_ABI_NO_PF, false};
+  FEXCore::Config::Value<bool> AOTIRCapture{FEXCore::Config::CONFIG_AOTIR_GENERATE, false};
+  FEXCore::Config::Value<bool> AOTIRLoad{FEXCore::Config::CONFIG_AOTIR_LOAD, false};
 
   ::SilentLog = SilentLog();
 
@@ -260,6 +264,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DUMPIR, DumpIR());
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_AOTIR_GENERATE, AOTIRCapture());
+  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_AOTIR_LOAD, AOTIRLoad());
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
   std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
@@ -287,7 +293,40 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
+  if (AOTIRLoad() || AOTIRCapture()) {
+    LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
+  }
+
+  FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> std::unique_ptr<std::istream> {
+    auto filepath = std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir" / fileid;
+
+    return std::make_unique<std::ifstream>(filepath, std::ios::in | std::ios::binary);
+  });
+
   FEXCore::Context::RunUntilExit(CTX);
+
+  if (AOTIRCapture()) {
+    std::filesystem::create_directories(std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir");
+
+    auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
+      auto filepath = std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir" / fileid;
+      auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
+      if (*AOTWrite) {
+        std::filesystem::resize_file(filepath, 0);
+        AOTWrite->seekp(0);
+        LogMan::Msg::I("AOTIR: Storing %s", fileid.c_str());
+      } else {
+        LogMan::Msg::I("AOTIR: Failed to store %s", fileid.c_str());
+      }
+      return AOTWrite;
+    });
+
+    if (WroteCache) {
+      LogMan::Msg::I("AOTIR Cache Stored");
+    } else {
+      LogMan::Msg::E("AOTIR Cache Store Failed");
+    }
+  }
 
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
 

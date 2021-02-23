@@ -23,7 +23,18 @@ DEF_OP(Constant) {
   mov(GetDst<RA_64>(Node), Op->Constant);
 }
 
+DEF_OP(EntrypointOffset) {
+  auto Op = IROp->C<IR::IROp_EntrypointOffset>();
+
+  auto Constant = IR->GetHeader()->Entry + Op->Offset;
+  mov(GetDst<RA_64>(Node), Constant);
+}
+
 DEF_OP(InlineConstant) {
+  //nop
+}
+
+DEF_OP(InlineEntrypointOffset) {
   //nop
 }
 
@@ -1161,7 +1172,9 @@ void JITCore::RegisterALUHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
   REGISTER_OP(TRUNCELEMENTPAIR,  TruncElementPair);
   REGISTER_OP(CONSTANT,          Constant);
+  REGISTER_OP(ENTRYPOINTOFFSET,  EntrypointOffset);
   REGISTER_OP(INLINECONSTANT,    InlineConstant);
+  REGISTER_OP(INLINEENTRYPOINTOFFSET,  InlineEntrypointOffset);
   REGISTER_OP(CYCLECOUNTER,      CycleCounter);
   REGISTER_OP(ADD,               Add);
   REGISTER_OP(SUB,               Sub);

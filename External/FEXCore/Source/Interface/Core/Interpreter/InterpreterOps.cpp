@@ -922,7 +922,7 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
   return false;
 }
 
-void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView<true> *CurrentIR, FEXCore::Core::DebugData *DebugData) {
+void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData) {
   volatile void* stack = alloca(0);
 
   // Debug data is only passed in debug builds
@@ -978,7 +978,8 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           case IR::OP_VALIDATECODE: {
             auto Op = IROp->C<IR::IROp_ValidateCode>();
 
-            if (memcmp((void*)Op->CodePtr, &Op->CodeOriginalLow, Op->CodeLength) != 0) {
+            auto CodePtr = CurrentIR->GetHeader()->Entry + Op->Offset;
+            if (memcmp((void*)CodePtr, &Op->CodeOriginalLow, Op->CodeLength) != 0) {
               GD = 1;
             } else {
               GD = 0;
@@ -988,7 +989,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
 
           case IR::OP_REMOVECODEENTRY: {
             auto Op = IROp->C<IR::IROp_RemoveCodeEntry>();
-            Thread->CTX->RemoveCodeEntry(Thread, Op->RIP);
+            Thread->CTX->RemoveCodeEntry(Thread, CurrentIR->GetHeader()->Entry);
             break;
           }
 
@@ -1089,10 +1090,8 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           case IR::OP_THUNK: {
             auto Op = IROp->C<IR::IROp_Thunk>();
 
-            //LogMan::Msg::D("Thunk function: %s, %p, %p\n", Op->ThunkName, Op->ThunkFnPtr, *GetSrc<void**>(Op->Header.Args[0]));
-
-            reinterpret_cast<ThunkedFunction*>(Op->ThunkFnPtr)(*GetSrc<void**>(SSAData, Op->Header.Args[0]));
-
+            auto thunkFn = Thread->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
+            thunkFn(*GetSrc<void**>(SSAData, Op->Header.Args[0]));
             break;
           }
           case IR::OP_CPUID: {
@@ -1203,6 +1202,12 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
               Src &= SourceMask;
               GD = Src;
             }
+            break;
+          }
+
+          case IR::OP_ENTRYPOINTOFFSET: {
+            auto Op = IROp->C<IR::IROp_EntrypointOffset>();
+            GD = CurrentIR->GetHeader()->Entry + Op->Offset;
             break;
           }
           case IR::OP_CONSTANT: {

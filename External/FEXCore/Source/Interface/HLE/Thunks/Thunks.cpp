@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include <array>
 #include <Interface/Context/Context.h>
 #include "Interface/Core/InternalThreadState.h"
 #include "FEXCore/Core/X86Enums.h"
@@ -23,13 +24,17 @@ static thread_local FEXCore::Core::InternalThreadState *Thread;
 
 namespace FEXCore {
     
-    struct ExportEntry { const char* Name; ThunkedFunction* Fn; };
+    struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
 
     class ThunkHandler_impl final: public ThunkHandler {
         std::shared_mutex ThunksMutex;
 
-        std::map<std::string, ThunkedFunction*> Thunks = {
-            { "fex:loadlib", &LoadLib}
+        std::map<IR::SHA256Sum, ThunkedFunction*> Thunks = {
+            {
+                // sha256(fex:loadlib)
+                { 0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44, 0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80},
+                &LoadLib
+            }
         };
 
         /*
@@ -82,8 +87,8 @@ namespace FEXCore {
                 std::unique_lock lk(That->ThunksMutex);
 
                 int i;
-                for (i = 0; Exports[i].Name; i++) {
-                    That->Thunks[Exports[i].Name] = Exports[i].Fn;
+                for (i = 0; Exports[i].sha256; i++) {
+                    That->Thunks[*reinterpret_cast<IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
                 }
 
                 LogMan::Msg::D("Loaded %d syms", i);
@@ -92,11 +97,11 @@ namespace FEXCore {
 
         public:
 
-        ThunkedFunction* LookupThunk(const char *Name) {
+        ThunkedFunction* LookupThunk(const IR::SHA256Sum &sha256) {
 
             std::shared_lock lk(ThunksMutex);
 
-            auto it = Thunks.find(Name);
+            auto it = Thunks.find(sha256);
 
             if (it != Thunks.end()) {
                 return it->second;

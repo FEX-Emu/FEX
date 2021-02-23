@@ -258,6 +258,8 @@ namespace {
     Graph->AllocData.reset();
     Graph->AllocData.reset((FEXCore::IR::RegisterAllocationData*)malloc(FEXCore::IR::RegisterAllocationData::Size(NodeCount)));
     memset(&Graph->AllocData->Map[0], INVALID_REGCLASS.Raw, NodeCount);
+    Graph->AllocData->MapCount = NodeCount;
+    Graph->AllocData->IsShared = false; // not shared by default
     Graph->NodeCount = NodeCount;
   }
 
@@ -302,7 +304,7 @@ namespace {
   }
   #endif
 
-  FEXCore::IR::RegisterClassType GetRegClassFromNode(FEXCore::IR::IRListView<false> *IR, FEXCore::IR::IROp_Header *IROp) {
+  FEXCore::IR::RegisterClassType GetRegClassFromNode(FEXCore::IR::IRListView *IR, FEXCore::IR::IROp_Header *IROp) {
     using namespace FEXCore;
 
     FEXCore::IR::RegisterClassType Class = IR::GetRegClass(IROp->Op);
@@ -356,7 +358,7 @@ namespace {
   };
 
   // Walk the IR and set the node classes
-  void FindNodeClasses(RegisterGraph *Graph, FEXCore::IR::IRListView<false> *IR) {
+  void FindNodeClasses(RegisterGraph *Graph, FEXCore::IR::IRListView *IR) {
     for (auto [CodeNode, IROp] : IR->GetAllCode()) {
       // If the destination hasn't yet been set then set it now
       if (IROp->HasDest) {
@@ -410,14 +412,14 @@ namespace FEXCore::IR {
       std::unordered_map<uint32_t, BlockInterferences> LocalBlockInterferences;
       BlockInterferences GlobalBlockInterferences;
 
-      void CalculateLiveRange(FEXCore::IR::IRListView<false> *IR);
-      void OptimizeStaticRegisters(FEXCore::IR::IRListView<false> *IR);
-      void CalculateBlockInterferences(FEXCore::IR::IRListView<false> *IR);
-      void CalculateBlockNodeInterference(FEXCore::IR::IRListView<false> *IR);
-      void CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR);
+      void CalculateLiveRange(FEXCore::IR::IRListView *IR);
+      void OptimizeStaticRegisters(FEXCore::IR::IRListView *IR);
+      void CalculateBlockInterferences(FEXCore::IR::IRListView *IR);
+      void CalculateBlockNodeInterference(FEXCore::IR::IRListView *IR);
+      void CalculateNodeInterference(FEXCore::IR::IRListView *IR);
       void AllocateVirtualRegisters();
-      void CalculatePredecessors(FEXCore::IR::IRListView<false> *IR);
-      void RecursiveLiveRangeExpansion(FEXCore::IR::IRListView<false> *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors);
+      void CalculatePredecessors(FEXCore::IR::IRListView *IR);
+      void RecursiveLiveRangeExpansion(FEXCore::IR::IRListView *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors);
 
       FEXCore::IR::AllNodesIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
       FEXCore::IR::AllNodesIterator FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
@@ -468,7 +470,7 @@ namespace FEXCore::IR {
     return std::move(Graph->AllocData);
   }
 
-  void ConstrainedRAPass::RecursiveLiveRangeExpansion(FEXCore::IR::IRListView<false> *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors) {
+  void ConstrainedRAPass::RecursiveLiveRangeExpansion(FEXCore::IR::IRListView *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors) {
     for (auto PredecessorId: Predecessors) {
       if (DefiningBlockID != PredecessorId && !VisitedPredecessors.contains(PredecessorId)) {
         // do the magic
@@ -491,7 +493,7 @@ namespace FEXCore::IR {
     }
   }
 
-  void ConstrainedRAPass::CalculateLiveRange(FEXCore::IR::IRListView<false> *IR) {
+  void ConstrainedRAPass::CalculateLiveRange(FEXCore::IR::IRListView *IR) {
     using namespace FEXCore;
     size_t Nodes = IR->GetSSACount();
     LiveRanges.clear();
@@ -535,6 +537,8 @@ namespace FEXCore::IR {
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
+          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
+          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
           uint32_t ArgNode = IROp->Args[i].ID();
           LogMan::Throw::A(LiveRanges[ArgNode].Begin != ~0U, "%%ssa%d used by %%ssa%d before defined?", ArgNode, Node);
 
@@ -579,7 +583,7 @@ namespace FEXCore::IR {
     }
   }
 
-  void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView<false> *IR) {
+  void ConstrainedRAPass::OptimizeStaticRegisters(FEXCore::IR::IRListView *IR) {
 
     // Helpers
 
@@ -699,6 +703,8 @@ namespace FEXCore::IR {
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
+          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
+          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
           uint32_t ArgNode = IROp->Args[i].ID();
 
           // ACCESSED after write, let's not SRA this one
@@ -790,7 +796,7 @@ namespace FEXCore::IR {
     }
   }
 
-  void ConstrainedRAPass::CalculateBlockInterferences(FEXCore::IR::IRListView<false> *IR) {
+  void ConstrainedRAPass::CalculateBlockInterferences(FEXCore::IR::IRListView *IR) {
     using namespace FEXCore;
 
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
@@ -818,7 +824,7 @@ namespace FEXCore::IR {
     }
   }
 
-  void ConstrainedRAPass::CalculateBlockNodeInterference(FEXCore::IR::IRListView<false> *IR) {
+  void ConstrainedRAPass::CalculateBlockNodeInterference(FEXCore::IR::IRListView *IR) {
     #if 0
     auto AddInterference = [&](uint32_t Node1, uint32_t Node2) {
       RegisterNode *Node = &Graph->Nodes[Node1];
@@ -877,7 +883,7 @@ namespace FEXCore::IR {
     #endif
   }
 
-  void ConstrainedRAPass::CalculateNodeInterference(FEXCore::IR::IRListView<false> *IR) {
+  void ConstrainedRAPass::CalculateNodeInterference(FEXCore::IR::IRListView *IR) {
     auto AddInterference = [this](uint32_t Node1, uint32_t Node2) {
       RegisterNode *Node = &Graph->Nodes[Node1];
       Node->Interferences.Append(Node2);
@@ -1477,7 +1483,7 @@ namespace FEXCore::IR {
   }
 
 
-  void ConstrainedRAPass::CalculatePredecessors(FEXCore::IR::IRListView<false> *IR) {
+  void ConstrainedRAPass::CalculatePredecessors(FEXCore::IR::IRListView *IR) {
     Graph->BlockPredecessors.clear();
 
     for (auto [BlockNode, BlockIROp] : IR->GetBlocks()) {

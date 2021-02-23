@@ -4,7 +4,6 @@
 #include <vector>
 
 namespace FEXCore::IR {
-template<bool>
 class IRListView;
 
 class RegisterAllocationPass : public FEXCore::IR::Pass {

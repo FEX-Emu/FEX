@@ -88,7 +88,8 @@ public:
         uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        _ExitFunction(_Constant(GPRSize * 8, NextRIP));
+        auto RelocatedNextRIP = _EntrypointOffset(NextRIP - Current_Header->Entry, GPRSize);
+        _ExitFunction(RelocatedNextRIP);
       }
       else if (it != JumpTargets.end()) {
         _Jump(it->second.BlockEntry);
@@ -479,9 +480,11 @@ public:
 private:
   bool DecodeFailure{false};
   FEXCore::IR::IROp_IRHeader *Current_Header{};
+  OrderedNode *Current_HeaderNode{};
 
   OrderedNode *AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
 
+  OrderedNode *GetDynamicPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset = 0);
   OrderedNode *LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
   OrderedNode *LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
   void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align);

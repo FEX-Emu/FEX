@@ -2,6 +2,7 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <string.h>
 #include <sstream>
 #include <tuple>
 
@@ -325,6 +326,11 @@ struct FenceType final {
   constexpr bool operator!=(FenceType const &rhs) const { return !operator==(rhs); }
 };
 
+struct SHA256Sum final {
+  uint8_t data[32];
+  bool operator<(SHA256Sum const &rhs) const { return memcmp(data, rhs.data, sizeof(data)) < 0; }
+};
+
 class NodeIterator;
 
 /* This iterator can be used to step though nodes.
@@ -456,11 +462,10 @@ public:
   }
 };
 
-template<bool>
 class IRListView;
 class IREmitter;
 
-void Dump(std::stringstream *out, IRListView<false> const* IR, IR::RegisterAllocationData *RAData);
+void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData);
 IREmitter* Parse(std::istream *in);
 
 template<typename Type>

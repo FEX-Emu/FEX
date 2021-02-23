@@ -31,9 +31,11 @@ class CompileService final {
 
       // Outgoing
       void *CodePtr{};
-      FEXCore::IR::IRListView<true> *IRList{};
+      FEXCore::IR::IRListView *IRList{};
       FEXCore::IR::RegisterAllocationData *RAData{};
       FEXCore::Core::DebugData *DebugData{};
+      uint64_t StartAddr;
+      uint64_t Length;
 
       // Communication
       Event ServiceWorkDone{};

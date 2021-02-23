@@ -1016,6 +1016,20 @@ bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Va
   }
 }
 
+bool JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
+  auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
+
+  if (OpHeader->Op == IR::IROps::OP_INLINEENTRYPOINTOFFSET) {
+    auto Op = OpHeader->C<IR::IROp_InlineEntrypointOffset>();
+    if (Value) {
+      *Value = IR->GetHeader()->Entry + Op->Offset;
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
 FEXCore::IR::RegisterClassType JITCore::GetRegClass(uint32_t Node) {
   return FEXCore::IR::RegisterClassType {GetPhys(RAData, Node).Class};
 }
@@ -1033,7 +1047,7 @@ bool JITCore::IsGPR(uint32_t Node) {
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
-void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView<true> const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   using namespace aarch64;
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();

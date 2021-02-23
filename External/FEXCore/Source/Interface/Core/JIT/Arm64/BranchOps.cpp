@@ -3,6 +3,7 @@
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
 using namespace vixl;
@@ -65,7 +66,7 @@ DEF_OP(ExitFunction) {
   aarch64::Register RipReg;
   uint64_t NewRIP;
 
-  if (IsInlineConstant(Op->NewRIP, &NewRIP)) {
+  if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
     Literal l_BranchHost{ExitFunctionLinkerAddress};
     Literal l_BranchGuest{NewRIP};
 
@@ -241,7 +242,8 @@ DEF_OP(Thunk) {
 #if _M_X86_64
   ERROR_AND_DIE("JIT: OP_THUNK not supported with arm simulator")
 #else
-  LoadConstant(x2, Op->ThunkFnPtr);
+  auto thunkFn = State->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
+  LoadConstant(x2, (uintptr_t)thunkFn);
   blr(x2);
 #endif
 
@@ -253,15 +255,23 @@ DEF_OP(Thunk) {
 
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
-  uint8_t *NewCode = (uint8_t *)Op->CodePtr;
   uint8_t *OldCode = (uint8_t *)&Op->CodeOriginalLow;
   int len = Op->CodeLength;
   int idx = 0;
 
   LoadConstant(GetReg<RA_64>(Node), 0);
-  LoadConstant(x0, Op->CodePtr);
+  LoadConstant(x0, IR->GetHeader()->Entry + Op->Offset);
   LoadConstant(x1, 1);
-
+  
+  while (len >= 8)
+  {
+    ldr(x2, MemOperand(x0, idx));
+    LoadConstant(x3, *(uint32_t *)(OldCode + idx));
+    cmp(x2, x3);
+    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
+    len -= 8;
+    idx += 8;
+  }
   while (len >= 4)
   {
     ldr(w2, MemOperand(x0, idx));
@@ -300,7 +310,7 @@ DEF_OP(RemoveCodeEntry) {
   PushDynamicRegsAndLR();
   
   mov(x0, STATE);
-  LoadConstant(x1, Op->RIP);
+  LoadConstant(x1, IR->GetHeader()->Entry);
  
   LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
   SpillStaticRegs();

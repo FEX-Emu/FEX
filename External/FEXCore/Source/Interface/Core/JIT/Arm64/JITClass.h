@@ -78,7 +78,7 @@ public:
 
   ~JITCore() override;
   std::string GetName() override { return "JIT"; }
-  void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
+  void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
   void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -100,7 +100,7 @@ private:
   Label *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
-  FEXCore::IR::IRListView<true> const *IR;
+  FEXCore::IR::IRListView const *IR;
 
   std::map<IR::OrderedNodeWrapper::NodeOffsetType, aarch64::Label> JumpTargets;
 
@@ -152,6 +152,7 @@ private:
   MemOperand GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
 
   bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
+  bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value);
 
   struct LiveRange {
     uint32_t Begin;
@@ -265,7 +266,9 @@ private:
   ///< ALU Ops
   DEF_OP(TruncElementPair);
   DEF_OP(Constant);
+  DEF_OP(EntrypointOffset);
   DEF_OP(InlineConstant);
+  DEF_OP(InlineEntrypointOffset);
   DEF_OP(CycleCounter);
   DEF_OP(Add);
   DEF_OP(Sub);

@@ -132,17 +132,14 @@
       "Args": [
         "uint64_t", "CodeOriginalLow",
         "uint64_t", "CodeOriginalHigh",
-        "uint64_t", "CodePtr",
+        "int64_t", "Offset",
         "uint8_t", "CodeLength"
       ]
     },
 
     "RemoveCodeEntry": {
       "HasSideEffects": true,
-      "OpClass": "Misc",
-      "Args": [
-        "uint64_t", "RIP"
-      ]
+      "OpClass": "Misc"
     },
 
     "GuestCallDirect": {
@@ -280,6 +277,32 @@
       "SSAArgs": "1",
       "SSANames": [
         "RoundMode"
+      ]
+    },
+
+    "EntrypointOffset": {
+      "Desc": ["Returns the <entrypoint> + Offset address"],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "RegisterSize",
+      "Args": [
+        "int64_t", "Offset"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize"
+      ]
+    },
+
+    "InlineEntrypointOffset": {
+      "Desc": ["Returns the <entrypoint> + Offset address"],
+      "OpClass": "ALU",
+      "DestSize": "RegisterSize",
+      "Args": [
+        "int64_t", "Offset"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize"
       ]
     },
 
@@ -643,8 +666,7 @@
         "ArgPtr"
       ],
       "Args":[
-        "const char*", "ThunkName",
-        "uintptr_t", "ThunkFnPtr"
+        "SHA256Sum", "ThunkNameHash"
       ]
     },
 

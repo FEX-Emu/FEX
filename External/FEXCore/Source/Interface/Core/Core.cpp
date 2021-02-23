@@ -24,8 +24,52 @@
 
 #include <fstream>
 #include <unistd.h>
+#include <filesystem>
 
 #include "Interface/Core/GdbServer.h"
+
+namespace {
+  // Compression function for Merkle-Damgard construction.
+  // This function is generated using the framework provided.
+  #define mix(h) ({					\
+        (h) ^= (h) >> 23;		\
+        (h) *= 0x2127599bf4325c37ULL;	\
+        (h) ^= (h) >> 47; })
+
+  static uint64_t fasthash64(const void *buf, size_t len, uint64_t seed)
+  {
+    const uint64_t    m = 0x880355f21e6d1965ULL;
+    const uint64_t *pos = (const uint64_t *)buf;
+    const uint64_t *end = pos + (len / 8);
+    const unsigned char *pos2;
+    uint64_t h = seed ^ (len * m);
+    uint64_t v;
+
+    while (pos != end) {
+      v  = *pos++;
+      h ^= mix(v);
+      h *= m;
+    }
+
+    pos2 = (const unsigned char*)pos;
+    v = 0;
+
+    switch (len & 7) {
+    case 7: v ^= (uint64_t)pos2[6] << 48;
+    case 6: v ^= (uint64_t)pos2[5] << 40;
+    case 5: v ^= (uint64_t)pos2[4] << 32;
+    case 4: v ^= (uint64_t)pos2[3] << 24;
+    case 3: v ^= (uint64_t)pos2[2] << 16;
+    case 2: v ^= (uint64_t)pos2[1] << 8;
+    case 1: v ^= (uint64_t)pos2[0];
+      h ^= mix(v);
+      h *= m;
+    }
+
+    return mix(h);
+  }
+  #undef mix
+}
 
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
@@ -34,6 +78,8 @@ namespace FEXCore::CPU {
     return true;
   }
 }
+
+static std::mutex AOTIRCacheLock;
 
 namespace FEXCore::Core {
 struct ThreadLocalData {
@@ -111,7 +157,7 @@ namespace DefaultFallbackCore {
     void Initialize() override {}
     bool NeedsOpDispatch() override { return false; }
 
-    void *CompileCode(FEXCore::IR::IRListView<true> const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override {
+    void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override {
       LogMan::Msg::E("Fell back to default code handler at RIP: 0x%lx", ThreadState->State.State.rip);
       return nullptr;
     }
@@ -155,7 +201,7 @@ namespace FEXCore::Context {
   }
 
   void Context::AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread) {
-    for (auto &IR : Thread->IRLists) {
+    for (auto &IR : Thread->LocalIRCache) {
       EntryList.insert(IR.first);
     }
   }
@@ -228,6 +274,14 @@ namespace FEXCore::Context {
     }
 
     SaveEntryList();
+
+    // AOTIRCache needs manual clear
+    for (auto &Mod: AOTIRCache) {
+      for (auto &Entry: Mod.second) {
+        delete Entry.second.IR;
+        free(Entry.second.RAData);
+      }
+    }
   }
 
   bool Context::InitCore(FEXCore::CodeLoader *Loader) {
@@ -466,9 +520,8 @@ namespace FEXCore::Context {
     auto IRHandler = [Thread](uint64_t Addr, IR::IREmitter *IR) -> void {
       // Run the passmanager over the IR from the dispatcher
       Thread->PassManager->Run(IR);
-      Thread->IRLists.try_emplace(Addr, IR->CreateIRCopy());
-      Thread->DebugData.try_emplace(Addr, new Core::DebugData());
-      Thread->RALists.try_emplace(Addr, Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr);
+      Core::LocalIREntry Entry = {Addr, 0ULL, decltype(Entry.IR)(IR->CreateIRCopy()), decltype(Entry.RAData)(Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr), decltype(Entry.DebugData)(new Core::DebugData())};
+      Thread->LocalIRCache.insert({Addr, std::move(Entry)});
     };
 
     LocalLoader->AddIR(IRHandler);
@@ -566,13 +619,11 @@ namespace FEXCore::Context {
     }
 
     if (AlsoClearIRCache) {
-      Thread->IRLists.clear();
-      Thread->RALists.clear();
-      Thread->DebugData.clear();
+      Thread->LocalIRCache.clear();
     }
   }
 
-  std::tuple<FEXCore::IR::IRListView<true> *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t> Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t, uint64_t, uint64_t> Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
     GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
 
@@ -586,7 +637,7 @@ namespace FEXCore::Context {
         LogMan::Msg::E("Had Frontend decoder error");
         Stop(false /* Ignore Current Thread */);
       }
-      return { nullptr, nullptr, 0, 0 };
+      return { nullptr, nullptr, 0, 0, 0, 0 };
     }
 
     auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
@@ -622,7 +673,7 @@ namespace FEXCore::Context {
         if (Config.SMCChecks) {
           auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
 
-          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr, DecodedInfo->InstSize);
+          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr - GuestRIP, DecodedInfo->InstSize);
 
           auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
 
@@ -631,7 +682,7 @@ namespace FEXCore::Context {
           Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
-          Thread->OpDispatcher->_RemoveCodeEntry(GuestRIP);
+          Thread->OpDispatcher->_RemoveCodeEntry();
           Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
           
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
@@ -666,7 +717,7 @@ namespace FEXCore::Context {
           if (TotalInstructions == 0) {
             // Couldn't handle any instruction in op dispatcher
             Thread->OpDispatcher->ResetWorkingList();
-            return { nullptr, nullptr, 0, 0 };
+            return { nullptr, nullptr, 0, 0, 0, 0};
           }
           else {
             uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
@@ -761,35 +812,75 @@ namespace FEXCore::Context {
 
     Thread->OpDispatcher->ResetWorkingList();
 
-    return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength};
+    return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength, Thread->FrontendDecoder->DecodedMinAddress, Thread->FrontendDecoder->DecodedMaxAddress - Thread->FrontendDecoder->DecodedMinAddress };
   }
 
-  std::tuple<void *, FEXCore::IR::IRListView<true> *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    FEXCore::IR::IRListView<true> *IRList {};
+  std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData *RAData {};
     bool GeneratedIR {};
+    uint64_t StartAddr {};
+    uint64_t Length {};
 
     // Do we already have this in the IR cache?
-    auto IR = Thread->IRLists.find(GuestRIP);
+    auto LocalEntry = Thread->LocalIRCache.find(GuestRIP);
 
-    if (IR != Thread->IRLists.end()) {
+    if (LocalEntry != Thread->LocalIRCache.end()) {
       // Entry already exists
       // pull in the data
-      IRList = IR->second.get();
-      DebugData = Thread->DebugData.find(GuestRIP)->second.get();
-      RAData = Thread->RALists.find(GuestRIP)->second.get();
+      IRList = LocalEntry->second.IR.get();
+      DebugData = LocalEntry->second.DebugData.get();
+      RAData = LocalEntry->second.RAData.get();
+      StartAddr = LocalEntry->second.StartAddr;
+      Length = LocalEntry->second.Length;
 
       GeneratedIR = false;
-    } else {
+    }
 
+    if (IRList == nullptr && Config.AOTIRLoad) {
+      std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+      auto file = AddrToFile.lower_bound(GuestRIP);
+      if (file != AddrToFile.begin()) {
+        --file;
+        auto Mod = (decltype(AOTIRCache)::value_type::second_type*) file->second.CachedFileEntry;
+
+        if (Mod == nullptr) {
+          file->second.CachedFileEntry = Mod = &AOTIRCache[file->second.fileid];
+        }
+
+        auto AOTEntry = Mod->find(GuestRIP - file->second.Start + file->second.Offset);
+        
+        if (AOTEntry != Mod->end()) {
+          // verify hash
+          auto hash = fasthash64((void*)(AOTEntry->second.start + file->second.Start  - file->second.Offset), AOTEntry->second.len, 0);
+          if (hash == AOTEntry->second.crc) {
+            IRList = AOTEntry->second.IR;
+            //LogMan::Msg::D("using %s + %lx -> %lx\n", file->second.fileid.c_str(), AOTEntry->first, GuestRIP);
+            // relocate
+            IRList->GetHeader()->Entry = GuestRIP;
+
+            RAData = AOTEntry->second.RAData;
+            DebugData = new FEXCore::Core::DebugData();
+            StartAddr = AOTEntry->second.start;
+            Length = AOTEntry->second.len;
+
+            GeneratedIR = true;
+          }
+        }
+      }
+    }
+
+    if (IRList == nullptr) {
       // Generate IR + Meta Info
-      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength] = GenerateIR(Thread, GuestRIP);
+      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP);
 
       // Setup pointers to internal structures
       IRList = IRCopy;
       RAData = RACopy;
       DebugData = new FEXCore::Core::DebugData();
+      StartAddr = _StartAddr;
+      Length = _Length;
 
       // Initialize metadata
       DebugData->GuestCodeSize = TotalInstructionsLength;
@@ -803,8 +894,134 @@ namespace FEXCore::Context {
     }
 
     // Attempt to get the CPU backend to compile this code
-    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR};
+    return { Thread->CPUBackend->CompileCode(IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR, StartAddr, Length};
   }
+
+  bool Context::LoadAOTIRCache(std::istream &stream) {
+    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+    uint64_t tag;
+    stream.read((char*)&tag, sizeof(tag));
+    if (!stream || tag != 0xDEADBEEFC0D30002)
+      return false;
+
+    uint64_t ModCount;
+    stream.read((char*)&ModCount, sizeof(ModCount));
+    if (!stream)
+      return false;
+
+    for (int ModIndex = 0; ModIndex < ModCount; ModIndex++) {
+      std::string Module;
+      uint64_t ModSize;
+      stream.read((char*)&ModSize, sizeof(ModSize));
+      if (!stream)
+        return false;
+
+      Module.resize(ModSize);
+      stream.read((char*)&Module[0], Module.size());
+      if (!stream)
+        return false;
+
+      auto &Mod = AOTIRCache[Module];
+
+      uint64_t FnCount;
+      stream.read((char*)&FnCount, sizeof(FnCount));
+      if (!stream)
+        return false;
+
+      LogMan::Msg::D("AOTIR: Module %s has %ld functions", Module.c_str(), FnCount);
+      for (int FnIndex = 0; FnIndex < FnCount; FnIndex++) {
+        uint64_t addr, start, crc, len;
+        stream.read((char*)&addr, sizeof(addr));
+        if (!stream)
+          return false;
+        
+        stream.read((char*)&start, sizeof(start));
+        if (!stream)
+          return false;
+        stream.read((char*)&len, sizeof(len));
+        if (!stream)
+          return false;
+        stream.read((char*)&crc, sizeof(crc));
+        if (!stream)
+          return false;
+        auto IR = new IR::IRListView(stream);
+        if (!stream) {
+          delete IR;
+          return false;
+        }
+        uint64_t RASize;
+        stream.read((char*)&RASize, sizeof(RASize));
+        if (!stream) {
+          delete IR;
+          return false;
+        }
+        IR::RegisterAllocationData *RAData = (IR::RegisterAllocationData *)malloc(IR::RegisterAllocationData::Size(RASize));
+        RAData->MapCount = RASize;
+        
+        stream.read((char*)&RAData->Map[0], sizeof(RAData->Map[0]) * RASize);
+        
+        if (!stream) {
+          delete IR;
+          return false;
+        }
+        stream.read((char*)&RAData->SpillSlotCount, sizeof(RAData->SpillSlotCount));
+        if (!stream) {
+          delete IR;
+          return false;
+        }
+
+        IR->IsShared = true;
+        RAData->IsShared = true;
+
+        Mod.insert({addr, {start, len, crc, IR, RAData}});
+      }
+    }
+
+    return true;
+  }
+
+  bool Context::WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
+    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+
+    bool rv = true;
+
+    for (auto AOTModule: AOTIRCache) {
+      if (AOTModule.second.size() == 0) {
+        continue;
+      }
+
+      auto stream = CacheWriter(AOTModule.first);
+      if (!*stream) {
+        rv = false;
+      }
+      uint64_t tag = 0xDEADBEEFC0D30002;
+      stream->write((char*)&tag, sizeof(tag));
+
+      uint64_t ModCount = 1;
+      stream->write((char*)&ModCount, sizeof(ModCount));
+      auto ModSize = AOTModule.first.size();
+      stream->write((char*)&ModSize, sizeof(ModSize));
+      stream->write((char*)&AOTModule.first[0], ModSize);
+
+      auto FnCount = AOTModule.second.size();
+      stream->write((char*)&FnCount, sizeof(FnCount));
+
+      for (auto entry: AOTModule.second) {
+        stream->write((char*)&entry.first, sizeof(entry.first));
+        stream->write((char*)&entry.second.start, sizeof(entry.second.start));
+        stream->write((char*)&entry.second.len, sizeof(entry.second.len));
+        stream->write((char*)&entry.second.crc, sizeof(entry.second.crc));
+        entry.second.IR->Serialize(*stream);
+        uint64_t RASize = entry.second.RAData->MapCount;
+        stream->write((char*)&RASize, sizeof(RASize));
+        stream->write((char*)&entry.second.RAData->Map[0], sizeof(entry.second.RAData->Map[0]) * RASize);
+        stream->write((char*)&entry.second.RAData->SpillSlotCount, sizeof(entry.second.RAData->SpillSlotCount));
+      }
+    }
+
+    return rv;
+  }
+
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     
@@ -815,12 +1032,13 @@ namespace FEXCore::Context {
     }
 
     void *CodePtr {};
-    FEXCore::IR::IRListView<true> *IRList {};
+    FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData *RAData {};
 
     bool DecrementRefCount = false;
     bool GeneratedIR {};
+    uint64_t StartAddr {}, Length {};
 
     if (Thread->CompileBlockReentrantRefCount != 0) {
       if (!Thread->CompileService) {
@@ -835,6 +1053,8 @@ namespace FEXCore::Context {
       IRList = WorkItem->IRList;
       DebugData = WorkItem->DebugData;
       RAData = WorkItem->RAData;
+      StartAddr = WorkItem->StartAddr;
+      Length = WorkItem->Length;
       WorkItem->SafeToClear = true;
 
       // The compile service will always generate IR + DebugData + RAData
@@ -844,12 +1064,14 @@ namespace FEXCore::Context {
     } else {
       ++Thread->CompileBlockReentrantRefCount;
       DecrementRefCount = true;
-      auto [Code, IR, Data, RA, Generated] = CompileCode(Thread, GuestRIP);
+      auto [Code, IR, Data, RA, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
       CodePtr = Code;
       IRList = IR;
       DebugData = Data;
       RAData = RA;
       GeneratedIR = Generated;
+      StartAddr = _StartAddr;
+      Length = _Length;
     }
 
     LogMan::Throw::A(CodePtr != nullptr, "Failed to compile code %lX", GuestRIP);
@@ -869,9 +1091,26 @@ namespace FEXCore::Context {
 
     // Insert to caches if we generated IR
     if (GeneratedIR) {
-      Thread->IRLists.emplace(GuestRIP, IRList);
-      Thread->DebugData.emplace(GuestRIP, DebugData);
-      Thread->RALists.emplace(GuestRIP, RAData);
+      Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
+      Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
+
+      // Add to AOT cache if aot generation is enabled
+      if (Config.AOTIRCapture && RAData) {
+        std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+        
+        RAData->IsShared = true;
+        IRList->IsShared = true;
+
+        auto hash = fasthash64((void*)StartAddr, Length, 0);
+        
+        auto file = AddrToFile.lower_bound(StartAddr);
+        if (file != AddrToFile.begin()) {
+          --file;
+          if (file->second.Start <= StartAddr && (file->second.Start + file->second.Len) >= (StartAddr + Length)) {
+            AOTIRCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {StartAddr - file->second.Start + file->second.Offset, Length, hash, IRList, RAData}});
+          }
+        }
+      }
     }
 
     if (DecrementRefCount)
@@ -939,9 +1178,7 @@ namespace FEXCore::Context {
   }
 
   void Context::RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    Thread->IRLists.erase(GuestRIP);
-    Thread->RALists.erase(GuestRIP);
-    Thread->DebugData.erase(GuestRIP);
+    Thread->LocalIRCache.erase(GuestRIP);
     Thread->LookupCache->Erase(GuestRIP);
   }
 
@@ -951,9 +1188,7 @@ namespace FEXCore::Context {
     Thread->State.State.rip = RIP;
 
     // Erase the RIP from all the storage backings if it exists
-    Thread->IRLists.erase(RIP);
-    Thread->DebugData.erase(RIP);
-    Thread->LookupCache->Erase(RIP);
+    RemoveCodeEntry(Thread, RIP);
 
     // We don't care if compilation passes or not
     CompileBlock(Thread, RIP);
@@ -974,12 +1209,12 @@ namespace FEXCore::Context {
   }
 
   bool Context::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {
-    auto it = ParentThread->DebugData.find(RIP);
-    if (it == ParentThread->DebugData.end()) {
+    auto it = ParentThread->LocalIRCache.find(RIP);
+    if (it == ParentThread->LocalIRCache.end()) {
       return false;
     }
 
-    memcpy(Data, &it->second, sizeof(FEXCore::Core::DebugData));
+    memcpy(Data, it->second.DebugData.get(), sizeof(FEXCore::Core::DebugData));
     return true;
   }
 
@@ -993,21 +1228,6 @@ namespace FEXCore::Context {
     return true;
   }
 
-	// XXX:
-  // bool Context::FindIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList **ir) {
-  //   auto IR = ParentThread->IRLists.find(RIP);
-  //   if (IR == ParentThread->IRLists.end()) {
-  //     return false;
-  //   }
-
-  //   //*ir = &IR->second;
-  //   return true;
-  // }
-
-  // void Context::SetIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList *const ir) {
-  //   //ParentThread->IRLists.try_emplace(RIP, *ir);
-  // }
-
   FEXCore::Core::ThreadState *Context::GetThreadState() {
     return &ParentThread->State;
   }
@@ -1018,4 +1238,34 @@ namespace FEXCore::Context {
     return Result;
   }
 
+  void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
+    // TODO: Support overlapping maps and region splitting
+    auto base_filename = std::filesystem::path(filename).filename().string();
+    
+    if (base_filename.size()) {
+      auto filename_hash = fasthash64(filename.c_str(), filename.size(), 0xBAADF00D);
+
+      auto fileid = base_filename + "-" + std::to_string(filename_hash) + "-";
+
+      // append optimization flags to the fileid
+      fileid += Config.SMCChecks ? "S" : "s";
+      fileid += Config.TSOEnabled ? "T" : "t";
+      fileid += Config.ABILocalFlags ? "L" : "l";
+      fileid += Config.ABINoPF ? "p" : "P";
+
+      AddrToFile.insert({ Base, { Base, Size, Offset, fileid, nullptr } });
+
+      if (Config.AOTIRLoad && !AOTIRCache.contains(fileid) && AOTIRLoader) {
+        auto stream = AOTIRLoader(fileid);
+        if (*stream) {
+          LoadAOTIRCache(*stream);
+        }
+      }
+    }
+  }
+
+  void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
+    // TODO: Support partial removing
+    AddrToFile.erase(Base);
+  }
 }

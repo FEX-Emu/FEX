@@ -3,6 +3,7 @@
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
@@ -66,7 +67,7 @@ DEF_OP(ExitFunction) {
 
   uint64_t NewRIP;
 
-  if (IsInlineConstant(Op->NewRIP, &NewRIP)) {
+  if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
     Label l_BranchHost;
     Label l_BranchGuest;
 
@@ -226,8 +227,10 @@ DEF_OP(Thunk) {
     sub(rsp, 8); // Align
 
   mov(rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  
+  auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
 
-  mov(rax, reinterpret_cast<uintptr_t>(Op->ThunkFnPtr));
+  mov(rax, reinterpret_cast<uintptr_t>(thunkFn));
   call(rax);
 
   if (NumPush & 1)
@@ -244,7 +247,7 @@ DEF_OP(ValidateCode) {
   int idx = 0;
 
   xor_(GetDst<RA_64>(Node), GetDst<RA_64>(Node));
-  mov(rax, Op->CodePtr);
+  mov(rax, IR->GetHeader()->Entry + Op->Offset);
   mov(rbx, 1);
   while (len >= 4) {
     cmp(dword[rax + idx], *(uint32_t*)(OldCode + idx));
@@ -279,7 +282,7 @@ DEF_OP(RemoveCodeEntry) {
     sub(rsp, 8); // Align
 
   mov(rdi, STATE);
-  mov(rax, Op->RIP); // imm64 move
+  mov(rax, IR->GetHeader()->Entry); // imm64 move
   mov(rsi, rax);
 
 
