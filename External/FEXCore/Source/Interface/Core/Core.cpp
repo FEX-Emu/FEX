@@ -24,6 +24,7 @@
 
 #include <fstream>
 #include <unistd.h>
+#include <filesystem>
 
 #include "Interface/Core/GdbServer.h"
 
@@ -1239,7 +1240,8 @@ namespace FEXCore::Context {
 
   void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
     // TODO: Support overlapping maps and region splitting
-    auto base_filename = filename.substr(filename.find_last_of("/\\") + 1);
+    auto base_filename = std::filesystem::path(filename).filename().string();
+    
     if (base_filename.size()) {
       auto filename_hash = fasthash64(filename.c_str(), filename.size(), 0xBAADF00D);
 

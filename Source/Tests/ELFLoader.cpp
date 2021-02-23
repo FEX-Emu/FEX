@@ -293,14 +293,12 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
-  std::string base_filename = Program.substr(Program.find_last_of("/\\") + 1) + ".fex-emu.iraot";
-
   if (AOTIRLoad() || AOTIRCapture()) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
   }
 
   FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> std::unique_ptr<std::istream> {
-    auto filepath = std::string(getenv("HOME")) + "/.fex-emu/aotir/" + fileid;
+    auto filepath = std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir" / fileid;
 
     return std::make_unique<std::ifstream>(filepath, std::ios::in | std::ios::binary);
   });
@@ -308,11 +306,10 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::RunUntilExit(CTX);
 
   if (AOTIRCapture()) {
-    mkdir((std::string(getenv("HOME")) + "/.fex-emu/").c_str(), 0700);
-    mkdir((std::string(getenv("HOME")) + "/.fex-emu/aotir").c_str(), 0700);
+    std::filesystem::create_directories(std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir");
 
     auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
-      auto filepath = std::string(getenv("HOME")) + "/.fex-emu/aotir/" + fileid;
+      auto filepath = std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir" / fileid;
       auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
       if (*AOTWrite) {
         std::filesystem::resize_file(filepath, 0);

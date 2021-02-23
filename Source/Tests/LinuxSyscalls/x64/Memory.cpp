@@ -11,27 +11,12 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Config/Config.h>
 #include <fstream>
+#include <filesystem>
 
-std::string get_fdpath(int fd)
+static std::string get_fdpath(int fd)
 {
-    std::vector<char> buf(400);
-    ssize_t len;
-
-    std::string fdToName = "/proc/self/fd/" + std::to_string(fd);
-
-    do
-    {
-        buf.resize(buf.size() + 100);
-        len = ::readlink(fdToName.c_str(), &(buf[0]), buf.size());
-    } while (buf.size() == len);
-
-    if (len > 0)
-    {
-        buf[len] = '\0';
-        return (std::string(&(buf[0])));
-    }
-    /* handle error */
-    return "";
+  std::error_code ec;
+  return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
 }
 
 namespace FEX::HLE::x64 {
