@@ -2,6 +2,8 @@
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
+#include <FEXCore/Utils/LogManager.h>
+
 #include <cstring>
 #include <linux/kcmp.h>
 #include <linux/seccomp.h>
@@ -19,6 +21,25 @@
 
 namespace FEX::HLE {
   void RegisterInfo() {
+    REGISTER_SYSCALL_IMPL(uname, [](FEXCore::Core::InternalThreadState *Thread, struct utsname *buf) -> uint64_t {
+      struct utsname Local{};
+      if (::uname(&Local) == 0) {
+        memcpy(buf->nodename, Local.nodename, sizeof(Local.nodename));
+        static_assert(sizeof(Local.nodename) <= sizeof(buf->nodename));
+      }
+      else {
+        strcpy(buf->nodename, "FEXCore");
+        LogMan::Msg::E("Couldn't determine host nodename. Defaulting to '%s'", buf->nodename);
+      }
+      strcpy(buf->sysname, "Linux");
+      strcpy(buf->release, "5.0.0");
+      strcpy(buf->version, "#" FEXCORE_VERSION);
+      static_assert(sizeof("#" FEXCORE_VERSION) <= sizeof(buf->version), "FEXCORE_VERSION define became too large!");
+      // Tell the guest that we are a 64bit kernel
+      strcpy(buf->machine, "x86_64");
+      return 0;
+    });
+
     REGISTER_SYSCALL_IMPL(getrlimit, [](FEXCore::Core::InternalThreadState *Thread, int resource, struct rlimit *rlim) -> uint64_t {
       uint64_t Result = ::getrlimit(resource, rlim);
       SYSCALL_ERRNO();
