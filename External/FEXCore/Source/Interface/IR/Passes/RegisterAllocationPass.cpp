@@ -259,6 +259,7 @@ namespace {
     Graph->AllocData.reset((FEXCore::IR::RegisterAllocationData*)malloc(FEXCore::IR::RegisterAllocationData::Size(NodeCount)));
     memset(&Graph->AllocData->Map[0], INVALID_REGCLASS.Raw, NodeCount);
     Graph->AllocData->MapCount = NodeCount;
+    Graph->AllocData->IsShared = false; // not shared by default
     Graph->NodeCount = NodeCount;
   }
 
