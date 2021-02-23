@@ -318,6 +318,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::ADCOp(OpcodeArgs) {
+  LogMan::Throw::A(!DestIsLockedMem(Op), "Can't handle LOCK on ADC\n");
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -337,6 +338,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::SBBOp(OpcodeArgs) {
+  LogMan::Throw::A(!DestIsLockedMem(Op), "Can't handle LOCK on SBB\n");
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -2779,6 +2781,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::NOTOp(OpcodeArgs) {
+  LogMan::Throw::A(!DestIsLockedMem(Op), "Can't handle LOCK on NOT\n");
   uint8_t Size = GetSrcSize(Op);
   OrderedNode *MaskConst{};
   if (Size == 8) {
@@ -3558,6 +3561,7 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::NEGOp(OpcodeArgs) {
+  LogMan::Throw::A(!DestIsLockedMem(Op), "Can't handle LOCK on NEG\n");
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto ZeroConst = _Constant(0);
   OrderedNode *Result = _Sub(ZeroConst, Dest);
