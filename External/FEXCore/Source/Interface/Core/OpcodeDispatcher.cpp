@@ -2487,14 +2487,24 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
-
-    // Now shift in to the correct bit location
-    Result = _Lshr(Value, BitSelect);
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     BitMask = _Not(BitMask);
-    Value = _And(Value, BitMask);
-    _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
+
+    if (DestIsLockedMem(Op)) {
+      // XXX: Technically this can optimize to an AArch64 ldclralb
+      // We don't current support this IR op though
+      Result = _AtomicFetchAnd(MemoryLocation, BitMask, 1);
+      // Now shift in to the correct bit location
+      Result = _Lshr(Result, BitSelect);
+    }
+    else {
+      OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+
+      // Now shift in to the correct bit location
+      Result = _Lshr(Value, BitSelect);
+      Value = _And(Value, BitMask);
+      _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
+    }
   }
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
 }
@@ -2554,13 +2564,21 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
-
-    // Now shift in to the correct bit location
-    Result = _Lshr(Value, BitSelect);
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
-    Value = _Or(Value, BitMask);
-    _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
+
+    if (DestIsLockedMem(Op)) {
+      Result = _AtomicFetchOr(MemoryLocation, BitMask, 1);
+      // Now shift in to the correct bit location
+      Result = _Lshr(Result, BitSelect);
+    }
+    else {
+      OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+
+      // Now shift in to the correct bit location
+      Result = _Lshr(Value, BitSelect);
+      Value = _Or(Value, BitMask);
+      _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
+    }
   }
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
 }
@@ -2619,13 +2637,21 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
-    OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
-
-    // Now shift in to the correct bit location
-    Result = _Lshr(Value, BitSelect);
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
-    Value = _Xor(Value, BitMask);
-    _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
+
+    if (DestIsLockedMem(Op)) {
+      Result = _AtomicFetchXor(MemoryLocation, BitMask, 1);
+      // Now shift in to the correct bit location
+      Result = _Lshr(Result, BitSelect);
+    }
+    else {
+      OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
+
+      // Now shift in to the correct bit location
+      Result = _Lshr(Value, BitSelect);
+      Value = _Xor(Value, BitMask);
+      _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
+    }
   }
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
 }
