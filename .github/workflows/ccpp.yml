@@ -63,7 +63,7 @@ jobs:
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
 
     - name: IR Tests
       working-directory: ${{runner.workspace}}/build
@@ -75,7 +75,7 @@ jobs:
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log || true
 
     - name: Posix Tests
       working-directory: ${{runner.workspace}}/build
@@ -87,7 +87,7 @@ jobs:
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
 
     - name: gvisor tests
       working-directory: ${{runner.workspace}}/build
@@ -99,7 +99,7 @@ jobs:
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log || true
 
     - name: gcc target tests 64
       working-directory: ${{runner.workspace}}/build
@@ -111,7 +111,7 @@ jobs:
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log || true
 
     - name: Truncate test results
       if: ${{ always() }}
@@ -119,7 +119,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       # Cap out the log files at 20M in case something crash spins and dumps fault text
       # ASM tests get quite close to 10MB
-      run: truncate --size=20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+      run: truncate --size=20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
 
     - name: Set runner name
       if: ${{ always() }}
