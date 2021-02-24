@@ -4342,11 +4342,11 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), CASResult);
 
     auto Size = GetDstSize(Op) * 8;
-    OrderedNode *Result = _Sub(CASResult, Src3);
+    OrderedNode *Result = _Sub(Src3, CASResult);
     if (Size < 32)
       Result = _Bfe(Size, 0, Result);
 
-    GenerateFlags_SUB(Op, Result, CASResult, Src3);
+    GenerateFlags_SUB(Op, Result, Src3, CASResult);
 
     // Set ZF
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
