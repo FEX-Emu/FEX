@@ -95,6 +95,18 @@ uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode) {
   return ::syscall(SYS_faccessat, dirfd, pathname, mode);
 }
 
+uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int flags) {
+  const uint32_t SYS_faccessat2 = 439;
+  auto Path = GetEmulatedPath(pathname);
+  if (!Path.empty()) {
+    uint64_t Result = ::syscall(SYS_faccessat2, dirfd, Path.c_str(), mode, flags);
+    if (Result != -1)
+      return Result;
+  }
+
+  return ::syscall(SYS_faccessat2, dirfd, pathname, mode, flags);
+}
+
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, PidSelfPath.c_str()) == 0) {
     auto App = Filename();
