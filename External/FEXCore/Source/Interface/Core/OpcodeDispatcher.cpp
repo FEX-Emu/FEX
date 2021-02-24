@@ -4321,6 +4321,16 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     }
   }
   else {
+    OrderedNode *Src3{};
+    OrderedNode *Src3Lower{};
+    if (GPRSize == 8 && Size == 4) {
+      Src3 = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+      Src3Lower = _Bfe(4, 32, 0, Src3);
+    }
+    else {
+      Src3 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+      Src3Lower = Src3;
+    }
     // If this is a memory location then we want the pointer to it
     OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
@@ -4330,26 +4340,27 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
     // This will write to memory! Careful!
     // Third operand must be a calculated guest memory address
-    OrderedNode *CASResult = _CAS(Src3, Src2, Src1);
+    OrderedNode *CASResult = _CAS(Src3Lower, Src2, Src1);
+		OrderedNode *RAXResult = CASResult;
 
-    // If our CASResult(OldMem value) is equal to our comparison
-    // Then we managed to set the memory
-    OrderedNode *ZFResult = _Select(FEXCore::IR::COND_EQ,
-      CASResult, Src3,
-      OneConst, ZeroConst);
+    if (GPRSize == 8 && Size == 4) {
+      // This allows us to only hit the ZEXT case on failure
+      RAXResult = _Select(FEXCore::IR::COND_EQ,
+        CASResult, Src3Lower,
+        Src3, CASResult);
+      Size = 8;
+    }
 
     // RAX gets the result of the CAS op
-    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), CASResult);
+    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
 
     auto Size = GetDstSize(Op) * 8;
-    OrderedNode *Result = _Sub(Src3, CASResult);
+
+    OrderedNode *Result = _Sub(Src3Lower, CASResult);
     if (Size < 32)
       Result = _Bfe(Size, 0, Result);
 
-    GenerateFlags_SUB(Op, Result, Src3, CASResult);
-
-    // Set ZF
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
+    GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
 }
 
