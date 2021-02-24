@@ -4265,7 +4265,6 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 
   // This is our source register
   OrderedNode *Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Src3 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
   // 0x80014000
   // 0x80064000
   // 0x80064000
@@ -4275,22 +4274,29 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Src1{};
     OrderedNode *Src1Lower{};
+
+    OrderedNode *Src3{};
+    OrderedNode *Src3Lower{};
     if (GPRSize == 8 && Size == 4) {
-      Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
+      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
       Src1Lower = _Bfe(4, 32, 0, Src1);
+      Src3 = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+      Src3Lower = _Bfe(4, 32, 0, Src3);
     }
     else {
-      Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, Size, Op->Flags, -1);
+      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags, -1);
       Src1Lower = Src1;
+			Src3 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+      Src3Lower = Src3;
     }
 
     // If our destination is a GPR then this behaves differently
     // RAX = RAX == Op1 ? RAX : Op1
     // AKA if they match then don't touch RAX value
     // Otherwise set it to the rm operand
-    OrderedNode *RAXResult = _Select(FEXCore::IR::COND_EQ,
+    OrderedNode *CASResult = _Select(FEXCore::IR::COND_EQ,
       Src1Lower, Src3,
-      Src3, Src1Lower);
+      Src3Lower, Src1Lower);
 
     // Op1 = RAX == Op1 ? Op2 : Op1
     // If they match then set the rm operand to the input
@@ -4299,28 +4305,42 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
         Src1Lower, Src3,
         Src2, Src1);
 
-    // ZF = RAX == Op1 ? 1 : 0
-    // Result of compare
-    OrderedNode *ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src1, Src3,
-      OneConst, ZeroConst);
-
-    // Set ZF
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
-
     // Store in to GPR Dest
     // Have to make sure this is after the result store in RAX for when Dest == RAX
     if (GPRSize == 8 && Size == 4) {
+      // This allows us to only hit the ZEXT case on failure
+      OrderedNode *RAXResult = _Select(FEXCore::IR::COND_EQ,
+        CASResult, Src3Lower,
+        Src3, Src3Lower);
+
       // When the size is 4 we need to make sure not zext the GPR when the comparison fails
       _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
       StoreResult_WithOpSize(GPRClass, Op, Op->Dest, DestResult, GPRSize, -1);
     }
     else {
-      _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
+      _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), CASResult);
       StoreResult(GPRClass, Op, DestResult, -1);
     }
+
+    auto Size = GetDstSize(Op) * 8;
+
+    OrderedNode *Result = _Sub(Src3Lower, CASResult);
+    if (Size < 32)
+      Result = _Bfe(Size, 0, Result);
+
+    GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
   else {
+    OrderedNode *Src3{};
+    OrderedNode *Src3Lower{};
+    if (GPRSize == 8 && Size == 4) {
+      Src3 = _LoadContext(8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+      Src3Lower = _Bfe(4, 32, 0, Src3);
+    }
+    else {
+      Src3 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
+      Src3Lower = Src3;
+    }
     // If this is a memory location then we want the pointer to it
     OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
@@ -4330,26 +4350,27 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
     // This will write to memory! Careful!
     // Third operand must be a calculated guest memory address
-    OrderedNode *CASResult = _CAS(Src3, Src2, Src1);
+    OrderedNode *CASResult = _CAS(Src3Lower, Src2, Src1);
+		OrderedNode *RAXResult = CASResult;
 
-    // If our CASResult(OldMem value) is equal to our comparison
-    // Then we managed to set the memory
-    OrderedNode *ZFResult = _Select(FEXCore::IR::COND_EQ,
-      CASResult, Src3,
-      OneConst, ZeroConst);
+    if (GPRSize == 8 && Size == 4) {
+      // This allows us to only hit the ZEXT case on failure
+      RAXResult = _Select(FEXCore::IR::COND_EQ,
+        CASResult, Src3Lower,
+        Src3, CASResult);
+      Size = 8;
+    }
 
     // RAX gets the result of the CAS op
-    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), CASResult);
+    _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
 
     auto Size = GetDstSize(Op) * 8;
-    OrderedNode *Result = _Sub(CASResult, Src3);
+
+    OrderedNode *Result = _Sub(Src3Lower, CASResult);
     if (Size < 32)
       Result = _Bfe(Size, 0, Result);
 
-    GenerateFlags_SUB(Op, Result, CASResult, Src3);
-
-    // Set ZF
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
+    GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
 }
 
