@@ -36,7 +36,7 @@ namespace FEX::HLE {
     return flags;
   }
 
-  void RegisterFD() {
+  void RegisterFD(FEX::HLE::SyscallHandler *const Handler) {
     REGISTER_SYSCALL_IMPL(read, [](FEXCore::Core::InternalThreadState *Thread, int fd, void *buf, size_t count) -> uint64_t {
       uint64_t Result = ::read(fd, buf, count);
       SYSCALL_ERRNO();
@@ -227,6 +227,14 @@ namespace FEX::HLE {
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.FAccessat(dirfd, pathname, mode);
       SYSCALL_ERRNO();
     });
+
+    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 8, 0)) {
+      // Only exists on kernel 5.8+
+      REGISTER_SYSCALL_IMPL(faccessat2, [](FEXCore::Core::InternalThreadState *Thread, int dirfd, const char *pathname, int mode, int flags) -> uint64_t {
+        uint64_t Result = FEX::HLE::_SyscallHandler->FM.FAccessat2(dirfd, pathname, mode, flags);
+        SYSCALL_ERRNO();
+      });
+    }
 
     REGISTER_SYSCALL_IMPL(splice, [](FEXCore::Core::InternalThreadState *Thread, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
       uint64_t Result = ::splice(fd_in, off_in, fd_out, off_out, len, flags);

@@ -552,7 +552,7 @@ uint64_t MemAllocator::shmdt(const void* shmaddr) {
     }
 
     FEX::HLE::RegisterEpoll();
-    FEX::HLE::RegisterFD();
+    FEX::HLE::RegisterFD(this);
     FEX::HLE::RegisterFS();
     FEX::HLE::RegisterInfo();
     FEX::HLE::RegisterIO();

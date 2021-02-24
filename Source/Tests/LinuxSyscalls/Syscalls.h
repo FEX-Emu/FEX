@@ -24,8 +24,9 @@ struct InternalThreadState;
 }
 
 namespace FEX::HLE {
+class SyscallHandler;
   void RegisterEpoll();
-  void RegisterFD();
+  void RegisterFD(FEX::HLE::SyscallHandler *const Handler);
   void RegisterFS();
   void RegisterInfo();
   void RegisterIO();
