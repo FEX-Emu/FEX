@@ -425,6 +425,12 @@ enum Syscalls {
   SYSCALL_x86_fspick = 433,
   SYSCALL_x86_pidfd_open = 434,
   SYSCALL_x86_clone3 = 435,
-
+  SYSCALL_x86_close_range = 436,
+  SYSCALL_x86_openat2 = 437,
+  SYSCALL_x86_pidfd_getfd = 438,
+  SYSCALL_x86_faccessat2 = 439,
+  SYSCALL_x86_process_madvise = 440,
+  SYSCALL_x86_epoll_pwait2 = 441,
+  SYSCALL_x86_mount_setattr = 442,
   SYSCALL_MAX             = 512,
 };
