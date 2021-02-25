@@ -164,6 +164,15 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
 }
 #endif
 
+uint64_t UnimplementedSyscall(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber) {
+  ERROR_AND_DIE("Unhandled system call: %d", SyscallNumber);
+  return -ENOSYS;
+}
+
+uint64_t UnimplementedSyscallSafe(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber) {
+  return -ENOSYS;
+}
+
 FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode,
   FEXCore::Context::Context *ctx,
   FEX::HLE::SignalDelegator *_SignalDelegation,
