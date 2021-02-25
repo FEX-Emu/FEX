@@ -96,7 +96,9 @@ uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode) {
 }
 
 uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int flags) {
+#ifndef SYS_faccessat2
   const uint32_t SYS_faccessat2 = 439;
+#endif
   auto Path = GetEmulatedPath(pathname);
   if (!Path.empty()) {
     uint64_t Result = ::syscall(SYS_faccessat2, dirfd, Path.c_str(), mode, flags);
