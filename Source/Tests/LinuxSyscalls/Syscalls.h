@@ -45,6 +45,9 @@ class SyscallHandler;
   void RegisterNotImplemented();
   void RegisterStubs();
 
+uint64_t UnimplementedSyscall(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber);
+uint64_t UnimplementedSyscallSafe(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber);
+
 class SyscallHandler : public FEXCore::HLE::SyscallHandler {
 public:
   SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);

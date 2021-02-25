@@ -68,15 +68,6 @@ namespace FEX::HLE::x64 {
     void RegisterSyscallHandlers();
   };
 
-  uint64_t Unimplemented(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber) {
-
-    auto name = GetSyscallName(SyscallNumber);
-
-    ERROR_AND_DIE("Unhandled system call: %d, %s", SyscallNumber, name);
-
-    return -1;
-  }
-
   x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation)
     : SyscallHandler {ctx, _SignalDelegation} {
     OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX64;
@@ -98,7 +89,7 @@ namespace FEX::HLE::x64 {
     // Clear all definitions
     for (auto &Def : Definitions) {
       Def.NumArgs = 255;
-      Def.Ptr = cvt(&Unimplemented);
+      Def.Ptr = cvt(&UnimplementedSyscall);
     }
 
     FEX::HLE::RegisterEpoll();
@@ -141,7 +132,7 @@ namespace FEX::HLE::x64 {
       auto SyscallNumber = Syscall.SyscallNumber;
       auto Name = GetSyscallName(SyscallNumber);
       auto &Def = Definitions.at(SyscallNumber);
-      LogMan::Throw::A(Def.Ptr == cvt(&Unimplemented), "Oops overwriting sysall problem, %d, %s", SyscallNumber, Name);
+      LogMan::Throw::A(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, %d, %s", SyscallNumber, Name);
       Def.Ptr = Syscall.SyscallHandler;
       Def.NumArgs = Syscall.ArgumentCount;
 #ifdef DEBUG_STRACE
@@ -151,7 +142,7 @@ namespace FEX::HLE::x64 {
 
 #if PRINT_MISSING_SYSCALLS
     for (auto &Syscall: SyscallNames) {
-      if (Definitions[Syscall.first].Ptr == cvt(&Unimplemented)) {
+      if (Definitions[Syscall.first].Ptr == cvt(&UnimplementedSyscall)) {
         LogMan::Msg::D("Unimplemented syscall: %s", Syscall.second);
       }
     }

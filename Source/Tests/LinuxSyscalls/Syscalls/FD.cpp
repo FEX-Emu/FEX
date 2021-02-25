@@ -235,6 +235,9 @@ namespace FEX::HLE {
         SYSCALL_ERRNO();
       });
     }
+    else {
+      REGISTER_SYSCALL_IMPL(faccessat2, UnimplementedSyscallSafe);
+    }
 
     REGISTER_SYSCALL_IMPL(splice, [](FEXCore::Core::InternalThreadState *Thread, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
       uint64_t Result = ::splice(fd_in, off_in, fd_out, off_out, len, flags);
