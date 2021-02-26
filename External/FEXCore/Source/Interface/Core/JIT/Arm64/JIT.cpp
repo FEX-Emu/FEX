@@ -685,7 +685,18 @@ bool JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
       return false;
     }
   }
-
+  else if ((Instr & FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_MASK) == FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
+    if (FEXCore::ArchHelpers::Arm64::HandleAtomicMemOp(_mcontext, info, Instr)) {
+      // Skip this instruction now
+      _mcontext->pc += 4;
+      return true;
+    }
+    else {
+      uint8_t Op = (PC[0] >> 12) & 0xF;
+      LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x: PC: %p Instruction: 0x%08x\n", Op, PC, PC[0]);
+      return false;
+    }
+  }
   else {
     LogMan::Msg::E("Unhandled JIT SIGBUS: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
     return false;
