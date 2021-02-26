@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-#define MAKE_THUNK(lib, name, hash) static __attribute__((naked)) int fexthunks_##lib##_##name(void *args) { asm(".byte 0xF, 0x3F"); asm(".byte " hash ); }
+#define MAKE_THUNK(lib, name, hash) extern "C" { int fexthunks_##lib##_##name(void *args); } asm("fexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
 
 struct LoadlibArgs {
     const char *Name;
