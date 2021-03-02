@@ -59,10 +59,11 @@ void SetRunningMode(int RunningMode) {
 }
 
 FEXCore::Core::CPUState GetCPUState() {
-  if (!ActiveCore()) {
-    return FEXCore::Core::CPUState{};
+  auto ret = FEXCore::Core::CPUState{};
+  if (ActiveCore()) {
+    FEXCore::Context::GetCPUState(s_CTX, &ret);
   }
-  return FEXCore::Context::Debug::GetCPUState(s_CTX);
+  return ret;
 }
 
 bool IsCoreRunning() {

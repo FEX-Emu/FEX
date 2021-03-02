@@ -19,12 +19,12 @@
 
 namespace FEX::HLE::x64 {
   uint64_t SetThreadArea(FEXCore::Core::InternalThreadState *Thread, void *tls) {
-    Thread->State.State.fs = reinterpret_cast<uint64_t>(tls);
+    Thread->CurrentFrame->State.fs = reinterpret_cast<uint64_t>(tls);
     return 0;
   }
 
-  void AdjustRipForNewThread(FEXCore::Core::CPUState *Thread) {
-    Thread->rip += 2;
+  void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame *Frame) {
+    Frame->State.rip += 2;
   }
 
   static bool AnyFlagsSet(uint64_t Flags, uint64_t Mask) {
@@ -106,8 +106,8 @@ namespace FEX::HLE::x64 {
         auto NewThread = FEX::HLE::CreateNewThread(Thread, flags, stack, parent_tid, child_tid, tls);
 
         // Return the new threads TID
-        uint64_t Result = NewThread->State.ThreadManager.GetTID();
-        LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->State.State.rip, Thread->State.State.rip);
+        uint64_t Result = NewThread->ThreadManager.GetTID();
+        LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->CurrentFrame->State.rip, Thread->CurrentFrame->State.rip);
 
         // Actually start the thread
         FEXCore::Context::RunThread(Thread->CTX, NewThread);
@@ -121,7 +121,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(set_robust_list, [](FEXCore::Core::InternalThreadState *Thread, struct robust_list_head *head, size_t len) -> uint64_t {
-      Thread->State.ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
+      Thread->ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
       uint64_t Result = ::syscall(SYS_set_robust_list, head, len);
       SYSCALL_ERRNO();
     });

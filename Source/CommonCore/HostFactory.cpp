@@ -27,7 +27,7 @@ namespace HostFactory {
 #ifdef _M_X86_64
   class HostCore final : public FEXCore::CPU::CPUBackend, public Xbyak::CodeGenerator {
   public:
-    explicit HostCore(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread, bool Fallback);
+    explicit HostCore(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, bool Fallback);
     ~HostCore() override;
     std::string GetName() override { return "Host Core"; }
     void* CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
@@ -49,11 +49,11 @@ namespace HostFactory {
   HostCore::~HostCore() {
   }
 
-  HostCore::HostCore(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread, bool Fallback)
+  HostCore::HostCore(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, bool Fallback)
     : CodeGenerator(4096) {
     FEXCore::Context::RegisterHostSignalHandler(CTX, SIGSEGV,
       [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-        auto InternalThread = reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread);
+        auto InternalThread = Thread;
         HostCore *Core = reinterpret_cast<HostCore*>(InternalThread->CPUBackend.get());
         return Core->HandleSIGSEGV(Thread, Signal, info, ucontext);
       }
@@ -76,32 +76,32 @@ namespace HostFactory {
     }
 
     // Store our host state in to the guest for testing against
-    Thread->State.State.gregs[FEXCore::X86State::REG_RAX] = _mcontext->gregs[REG_RAX];
-    Thread->State.State.gregs[FEXCore::X86State::REG_RBX] = _mcontext->gregs[REG_RBX];
-    Thread->State.State.gregs[FEXCore::X86State::REG_RCX] = _mcontext->gregs[REG_RCX];
-    Thread->State.State.gregs[FEXCore::X86State::REG_RDX] = _mcontext->gregs[REG_RDX];
-    Thread->State.State.gregs[FEXCore::X86State::REG_RBP] = _mcontext->gregs[REG_RBP];
-    Thread->State.State.gregs[FEXCore::X86State::REG_RSI] = _mcontext->gregs[REG_RSI];
-    Thread->State.State.gregs[FEXCore::X86State::REG_RDI] = _mcontext->gregs[REG_RDI];
-    Thread->State.State.gregs[FEXCore::X86State::REG_RSP] = _mcontext->gregs[REG_RSP];
-    Thread->State.State.gregs[FEXCore::X86State::REG_R8]  = _mcontext->gregs[REG_R8];
-    Thread->State.State.gregs[FEXCore::X86State::REG_R9]  = _mcontext->gregs[REG_R9];
-    Thread->State.State.gregs[FEXCore::X86State::REG_R10] = _mcontext->gregs[REG_R10];
-    Thread->State.State.gregs[FEXCore::X86State::REG_R11] = _mcontext->gregs[REG_R11];
-    Thread->State.State.gregs[FEXCore::X86State::REG_R12] = _mcontext->gregs[REG_R12];
-    Thread->State.State.gregs[FEXCore::X86State::REG_R13] = _mcontext->gregs[REG_R13];
-    Thread->State.State.gregs[FEXCore::X86State::REG_R14] = _mcontext->gregs[REG_R14];
-    Thread->State.State.gregs[FEXCore::X86State::REG_R15] = _mcontext->gregs[REG_R15];
-    Thread->State.State.rip                               = _mcontext->gregs[REG_RIP];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = _mcontext->gregs[REG_RAX];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBX] = _mcontext->gregs[REG_RBX];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RCX] = _mcontext->gregs[REG_RCX];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDX] = _mcontext->gregs[REG_RDX];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBP] = _mcontext->gregs[REG_RBP];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = _mcontext->gregs[REG_RSI];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = _mcontext->gregs[REG_RDI];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = _mcontext->gregs[REG_RSP];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_R8]  = _mcontext->gregs[REG_R8];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_R9]  = _mcontext->gregs[REG_R9];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_R10] = _mcontext->gregs[REG_R10];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_R11] = _mcontext->gregs[REG_R11];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_R12] = _mcontext->gregs[REG_R12];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_R13] = _mcontext->gregs[REG_R13];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_R14] = _mcontext->gregs[REG_R14];
+    Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_R15] = _mcontext->gregs[REG_R15];
+    Thread->CurrentFrame->State.rip                               = _mcontext->gregs[REG_RIP];
 
     for (size_t i = 0; i < 16; ++i) {
-      memcpy(&Thread->State.State.xmm[i], &_mcontext->fpregs->_xmm[i], sizeof(_mcontext->fpregs->_xmm[0]));
+      memcpy(&Thread->CurrentFrame->State.xmm[i], &_mcontext->fpregs->_xmm[i], sizeof(_mcontext->fpregs->_xmm[0]));
     }
 
     uint16_t CurrentOffset = (_mcontext->fpregs->swd >> 11) & 7;
 
     for (size_t i = 0; i < 8; ++i) {
-      memcpy(&Thread->State.State.mm[(i + CurrentOffset) % 8], &_mcontext->fpregs->_st[i], sizeof(_mcontext->fpregs->_st[0]));
+      memcpy(&Thread->CurrentFrame->State.mm[(i + CurrentOffset) % 8], &_mcontext->fpregs->_st[i], sizeof(_mcontext->fpregs->_st[0]));
     }
 
     // Our thread is stopping
@@ -174,11 +174,11 @@ namespace HostFactory {
     return nullptr;
   }
 
-  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread) {
+  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread) {
     return new HostCore(CTX, Thread, false);
   }
 #else
-  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread) {
+  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread) {
     LogMan::Msg::A("HostCPU factory doesn't exist for this host");
     return nullptr;
   }

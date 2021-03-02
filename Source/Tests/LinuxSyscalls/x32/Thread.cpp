@@ -31,13 +31,13 @@ namespace FEX::HLE::x32 {
       Initialized = true;
     }
     // Now we need to update the thread's GDT to handle this change
-    auto GDT = &Thread->State.State.gdt[u_info->entry_number];
+    auto GDT = &Thread->CurrentFrame->State.gdt[u_info->entry_number];
     GDT->base = u_info->base_addr;
     return 0;
   }
 
-  void AdjustRipForNewThread(FEXCore::Core::CPUState *Thread) {
-    Thread->rip += 2;
+  void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame *Frame) {
+    Frame->State.rip += 2;
   }
 
   static bool AnyFlagsSet(uint64_t Flags, uint64_t Mask) {
@@ -107,7 +107,7 @@ namespace FEX::HLE::x32 {
         auto NewThread = FEX::HLE::CreateNewThread(Thread, flags, stack, parent_tid, child_tid, tls);
 
         // Return the new threads TID
-        uint64_t Result = NewThread->State.ThreadManager.GetTID();
+        uint64_t Result = NewThread->ThreadManager.GetTID();
 
         // Actually start the thread
         FEXCore::Context::RunThread(Thread->CTX, NewThread);
@@ -137,14 +137,14 @@ namespace FEX::HLE::x32 {
     REGISTER_SYSCALL_IMPL_X32(set_robust_list, [](FEXCore::Core::InternalThreadState *Thread, struct robust_list_head *head, size_t len) -> uint64_t {
       // Retain the robust list head but don't give it to the kernel
       // The kernel would break if it tried parsing a 32bit robust list from a 64bit process
-      Thread->State.ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
+      Thread->ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
       return 0;
     });
 
     REGISTER_SYSCALL_IMPL_X32(get_robust_list, [](FEXCore::Core::InternalThreadState *Thread, int pid, struct robust_list_head **head, uint32_t *len_ptr) -> uint64_t {
       // Give the robust list back to the application
       // Steam specifically checks to make sure the robust list is set
-      *(uint32_t**)head = (uint32_t*)Thread->State.ThreadManager.robust_list_head;
+      *(uint32_t**)head = (uint32_t*)Thread->ThreadManager.robust_list_head;
       *len_ptr = 12;
       return 0;
     });

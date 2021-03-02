@@ -30,7 +30,7 @@ namespace FEX::HLE {
   FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
     FEXCore::Core::CPUState NewThreadState{};
     // Clone copies the parent thread's state
-    memcpy(&NewThreadState, &Thread->State.State, sizeof(FEXCore::Core::CPUState));
+    memcpy(&NewThreadState, Thread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
 
     NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
     NewThreadState.gregs[FEXCore::X86State::REG_RBX] = 0;
@@ -45,17 +45,17 @@ namespace FEX::HLE {
         x64::SetThreadArea(NewThread, tls);
       }
       // Set us to start just after the syscall instruction
-      x64::AdjustRipForNewThread(&NewThread->State.State);
+      x64::AdjustRipForNewThread(NewThread->CurrentFrame);
     }
     else {
       if (flags & CLONE_SETTLS) {
         x32::SetThreadArea(NewThread, tls);
       }
-      x32::AdjustRipForNewThread(&NewThread->State.State);
+      x32::AdjustRipForNewThread(NewThread->CurrentFrame);
     }
 
     // Return the new threads TID
-    uint64_t Result = NewThread->State.ThreadManager.GetTID();
+    uint64_t Result = NewThread->ThreadManager.GetTID();
 
     // Sets the child TID to pointer in ParentTID
     if (flags & CLONE_PARENT_SETTID) {
@@ -64,7 +64,7 @@ namespace FEX::HLE {
 
     // Sets the child TID to the pointer in ChildTID
     if (flags & CLONE_CHILD_SETTID) {
-      NewThread->State.ThreadManager.set_child_tid = child_tid;
+      NewThread->ThreadManager.set_child_tid = child_tid;
       *child_tid = Result;
     }
 
@@ -72,7 +72,7 @@ namespace FEX::HLE {
     // Additionally wakeup a futex at that address
     // Address /may/ be changed with SET_TID_ADDRESS syscall
     if (flags & CLONE_CHILD_CLEARTID) {
-      NewThread->State.ThreadManager.clear_child_tid = child_tid;
+      NewThread->ThreadManager.clear_child_tid = child_tid;
     }
 
     return NewThread;
@@ -84,9 +84,9 @@ namespace FEX::HLE {
     if (Result == 0) {
       // Child
       // update the internal TID
-      Thread->State.ThreadManager.TID = ::gettid();
-      Thread->State.ThreadManager.PID = ::getpid();
-      Thread->State.ThreadManager.clear_child_tid = nullptr;
+      Thread->ThreadManager.TID = ::gettid();
+      Thread->ThreadManager.PID = ::getpid();
+      Thread->ThreadManager.clear_child_tid = nullptr;
 
       // Clear all the other threads that are being tracked
       FEXCore::Context::DeleteForkedThreads(Thread->CTX, Thread);
@@ -97,7 +97,7 @@ namespace FEX::HLE {
       if (stack != nullptr) {
         // use specified stack
         LogMan::Msg::D("@@@@@@@ Fork uses custom stack");
-        Thread->State.State.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack);
+        Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack);
       } else {
         // In the case of fork and nullptr stack then the child uses the same stack space as the parent
         // Same virtual address, different addressspace
@@ -118,15 +118,15 @@ namespace FEX::HLE {
 
       // Sets the child TID to the pointer in ChildTID
       if (flags & CLONE_CHILD_SETTID) {
-        Thread->State.ThreadManager.set_child_tid = child_tid;
-        *child_tid = Thread->State.ThreadManager.TID;
+        Thread->ThreadManager.set_child_tid = child_tid;
+        *child_tid = Thread->ThreadManager.TID;
       }
 
       // When the thread exits, clear the child thread ID at ChildTID
       // Additionally wakeup a futex at that address
       // Address /may/ be changed with SET_TID_ADDRESS syscall
       if (flags & CLONE_CHILD_CLEARTID) {
-        Thread->State.ThreadManager.clear_child_tid = child_tid;
+        Thread->ThreadManager.clear_child_tid = child_tid;
       }
 
       // the rest of the context remains as is, this thread will keep executing
@@ -157,11 +157,11 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(exit, [](FEXCore::Core::InternalThreadState *Thread, int status) -> uint64_t {
-      if (Thread->State.ThreadManager.clear_child_tid) {
-        std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->State.ThreadManager.clear_child_tid);
+      if (Thread->ThreadManager.clear_child_tid) {
+        std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
         Addr->store(0);
         syscall(SYS_futex,
-          Thread->State.ThreadManager.clear_child_tid,
+          Thread->ThreadManager.clear_child_tid,
           FUTEX_WAKE,
           ~0ULL,
           0,
@@ -289,19 +289,19 @@ namespace FEX::HLE {
       uint64_t Result{};
       switch (code) {
         case 0x1001: // ARCH_SET_GS
-          Thread->State.State.gs = addr;
+          Thread->CurrentFrame->State.gs = addr;
           Result = 0;
         break;
         case 0x1002: // ARCH_SET_FS
-          Thread->State.State.fs = addr;
+          Thread->CurrentFrame->State.fs = addr;
           Result = 0;
         break;
         case 0x1003: // ARCH_GET_FS
-          *reinterpret_cast<uint64_t*>(addr) = Thread->State.State.fs;
+          *reinterpret_cast<uint64_t*>(addr) = Thread->CurrentFrame->State.fs;
           Result = 0;
         break;
         case 0x1004: // ARCH_GET_GS
-          *reinterpret_cast<uint64_t*>(addr) = Thread->State.State.gs;
+          *reinterpret_cast<uint64_t*>(addr) = Thread->CurrentFrame->State.gs;
           Result = 0;
         break;
         case 0x3001: // ARCH_CET_STATUS
@@ -321,8 +321,8 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(set_tid_address, [](FEXCore::Core::InternalThreadState *Thread, int *tidptr) -> uint64_t {
-      Thread->State.ThreadManager.clear_child_tid = tidptr;
-      return Thread->State.ThreadManager.GetTID();
+      Thread->ThreadManager.clear_child_tid = tidptr;
+      return Thread->ThreadManager.GetTID();
     });
 
     REGISTER_SYSCALL_IMPL(exit_group, [](FEXCore::Core::InternalThreadState *Thread, int status) -> uint64_t {

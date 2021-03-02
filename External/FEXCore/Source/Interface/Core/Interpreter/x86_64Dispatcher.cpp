@@ -32,14 +32,16 @@ class X86DispatchGenerator : public Xbyak::CodeGenerator {
     std::stack<uint64_t> SignalFrames;
 };
 
-static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuStateFrame *Frame) {
+  auto Thread = Frame->Thread;
+
   --ctx->IdleWaitRefCount;
   ctx->IdleWaitCV.notify_all();
 
   // Go to sleep
   Thread->StartRunning.Wait();
 
-  Thread->State.RunningEvents.Running = true;
+  Thread->RunningEvents.Running = true;
   ++ctx->IdleWaitRefCount;
   ctx->IdleWaitCV.notify_all();
 }
@@ -85,7 +87,7 @@ X86DispatchGenerator::X86DispatchGenerator(FEXCore::Context::Context *ctx, FEXCo
 
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
-  mov(qword [rdi + offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)], rsp);
+  mov(qword [rdi + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)], rsp);
 
   Label LoopTop;
   Label NoBlock;
@@ -170,7 +172,7 @@ X86DispatchGenerator::X86DispatchGenerator(FEXCore::Context::Context *ctx, FEXCo
   {
     L(NoBlock);
 
-    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
+    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
     union PtrCast {
       ClassPtrType ClassPtr;
       uintptr_t Data;
@@ -227,12 +229,12 @@ X86DispatchGenerator::X86DispatchGenerator(FEXCore::Context::Context *ctx, FEXCo
 
     // Store the trampoline to the guest stack
     // Guest stack is now correctly misaligned after a regular call instruction
-    sub(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])], 16);
-    mov(rbx, qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])]);
+    sub(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])], 16);
+    mov(rbx, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])]);
     mov(qword [rbx], rax);
 
     // Store RIP to the context state
-    mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], rsi);
+    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], rsi);
 
     // Back to the loop top now
     jmp(LoopTop);
@@ -287,7 +289,7 @@ void X86DispatchGenerator::StoreThreadState(int Signal, void *ucontext) {
   // Save guest state
   // We can't guarantee if registers are in context or host GPRs
   // So we need to save everything
-  memcpy(&Context->GuestState, &State->State, sizeof(FEXCore::Core::CPUState));
+  memcpy(&Context->GuestState, State->CurrentFrame, sizeof(FEXCore::Core::CPUState));
 
   // Set the new SP
   ArchHelpers::Context::SetSp(ucontext, NewSP);
@@ -302,7 +304,7 @@ void X86DispatchGenerator::RestoreThreadState(void *ucontext) {
   X86ContextBackup *Context = reinterpret_cast<X86ContextBackup*>(NewSP);
 
   // First thing, reset the guest state
-  memcpy(&State->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
+  memcpy(State->CurrentFrame, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
 
   // Now restore host state
   ArchHelpers::Context::RestoreContext(ucontext, Context);
@@ -318,10 +320,10 @@ bool X86DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucont
   // Set the new PC
   ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddress);
   // Set our state register to point to our guest thread data
-  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State));
+  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State->CurrentFrame));
 
 
-  uint64_t OldGuestSP = State->State.State.gregs[X86State::REG_RSP];
+  uint64_t OldGuestSP = State->CurrentFrame->State.gregs[X86State::REG_RSP];
   uint64_t NewGuestSP = OldGuestSP;
 
   if (!(GuestStack->ss_flags & SS_DISABLE)) {
@@ -342,22 +344,22 @@ bool X86DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucont
   // Don't need this offset if we aren't going to be putting siginfo in to it
   NewGuestSP -= 128;
 
-  State->State.State.gregs[X86State::REG_RDI] = Signal;
+  State->CurrentFrame->State.gregs[X86State::REG_RDI] = Signal;
 
   if (GuestAction->sa_flags & SA_SIGINFO) {
     // XXX: siginfo_t(RSI), ucontext (RDX)
-    State->State.State.gregs[X86State::REG_RSI] = 0;
-    State->State.State.gregs[X86State::REG_RDX] = 0;
-    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
+    State->CurrentFrame->State.gregs[X86State::REG_RSI] = 0;
+    State->CurrentFrame->State.gregs[X86State::REG_RDX] = 0;
+    State->CurrentFrame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   }
   else {
-    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
+    State->CurrentFrame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
   }
 
   // Set up the new SP for stack handling
   NewGuestSP -= 8;
   *(uint64_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
-  State->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
+  State->CurrentFrame->State.gregs[X86State::REG_RSP] = NewGuestSP;
 
   return true;
 }
@@ -375,7 +377,7 @@ bool X86DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucont
     ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
 
     // Set our state register to point to our guest thread data
-    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State));
+    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State->CurrentFrame));
 
 
     State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
@@ -386,7 +388,7 @@ bool X86DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucont
     // Our thread is stopping
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the core and get out safely
-    ArchHelpers::Context::SetSp(ucontext, State->State.ReturningStackLocation);
+    ArchHelpers::Context::SetSp(ucontext, State->CurrentFrame->ReturningStackLocation);
 
     // Set the new PC
     ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);

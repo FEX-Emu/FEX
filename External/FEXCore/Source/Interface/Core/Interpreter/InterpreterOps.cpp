@@ -703,7 +703,7 @@ struct OpHandlers<IR::OP_F80BCDLOAD> {
 template<>
 struct OpHandlers<IR::OP_F80LOADFCW> {
   static void handle(uint16_t NewFCW) {
-    
+
     auto PC = (NewFCW >> 8) & 3;
     switch(PC) {
       case 0: extF80_roundingPrecision = 32; break;
@@ -711,7 +711,7 @@ struct OpHandlers<IR::OP_F80LOADFCW> {
       case 3: extF80_roundingPrecision = 80; break;
       case 1: LogMan::Msg::A("Invalid x87 precision mode, %d", PC);
     }
-    
+
     auto RC = (NewFCW >> 10) & 3;
     switch(RC) {
       case 0:
@@ -862,7 +862,7 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
     }
     case IR::OP_F80CMP: {
       auto Op = IROp->C<IR::IROp_F80Cmp>();
-      
+
       decltype(&OpHandlers<IR::OP_F80CMP>::handle<0>) handlers[] = { &OpHandlers<IR::OP_F80CMP>::handle<0>, &OpHandlers<IR::OP_F80CMP>::handle<1>, &OpHandlers<IR::OP_F80CMP>::handle<2>, &OpHandlers<IR::OP_F80CMP>::handle<3>, &OpHandlers<IR::OP_F80CMP>::handle<4>, &OpHandlers<IR::OP_F80CMP>::handle<5>, &OpHandlers<IR::OP_F80CMP>::handle<6>, &OpHandlers<IR::OP_F80CMP>::handle<7> };
 
       *Info = GetFallbackInfo(handlers[Op->Flags]);
@@ -1016,7 +1016,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           }
           case IR::OP_EXITFUNCTION: {
             auto Op = IROp->C<IR::IROp_ExitFunction>();
-            uintptr_t* ContextPtr = reinterpret_cast<uintptr_t*>(&Thread->State.State.rip);
+            uintptr_t* ContextPtr = reinterpret_cast<uintptr_t*>(Thread->CurrentFrame);
 
             void *Data = reinterpret_cast<void*>(ContextPtr);
             void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -1083,7 +1083,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
               Args.Argument[j] = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[j]);
             }
 
-            uint64_t Res = FEXCore::Context::HandleSyscall(Thread->CTX->SyscallHandler, Thread, &Args);
+            uint64_t Res = FEXCore::Context::HandleSyscall(Thread->CTX->SyscallHandler, Thread->CurrentFrame, &Args);
             GD = Res;
             break;
           }
@@ -1222,7 +1222,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           case IR::OP_LOADCONTEXT: {
             auto Op = IROp->C<IR::IROp_LoadContext>();
 
-            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Thread->CurrentFrame);
             ContextPtr += Op->Offset;
             #define LOAD_CTX(x, y) \
               case x: { \
@@ -1249,7 +1249,8 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
             auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
             uint64_t Index = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
 
-            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Thread->CurrentFrame);
+
             ContextPtr += Op->BaseOffset;
             ContextPtr += Index * Op->Stride;
 
@@ -1277,7 +1278,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           case IR::OP_STORECONTEXT: {
             auto Op = IROp->C<IR::IROp_StoreContext>();
 
-            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Thread->CurrentFrame);
             ContextPtr += Op->Offset;
 
             void *Data = reinterpret_cast<void*>(ContextPtr);
@@ -1289,7 +1290,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
             auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
             uint64_t Index = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
 
-            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Thread->CurrentFrame);
             ContextPtr += Op->BaseOffset;
             ContextPtr += Index * Op->Stride;
 
@@ -1366,7 +1367,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           case IR::OP_LOADFLAG: {
             auto Op = IROp->C<IR::IROp_LoadFlag>();
 
-            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Thread->CurrentFrame);
             ContextPtr += offsetof(FEXCore::Core::CPUState, flags[0]);
             ContextPtr += Op->Flag;
             uint8_t const *Data = reinterpret_cast<uint8_t const*>(ContextPtr);
@@ -1377,7 +1378,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
             auto Op = IROp->C<IR::IROp_StoreFlag>();
             uint8_t Arg = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
 
-            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(&Thread->State.State);
+            uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Thread->CurrentFrame);
             ContextPtr += offsetof(FEXCore::Core::CPUState, flags[0]);
             ContextPtr += Op->Flag;
             uint8_t *Data = reinterpret_cast<uint8_t*>(ContextPtr);

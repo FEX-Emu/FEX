@@ -109,7 +109,6 @@ namespace FEXCore::Context {
     std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
 
     CustomCPUFactoryType CustomCPUFactory;
-    CustomCPUFactoryType FallbackCPUFactory;
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
 
     struct AOTIRCacheEntry {
@@ -166,24 +165,27 @@ namespace FEXCore::Context {
 
     static void RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
+    // Wrapper which takes CpuStateFrame instead of InternalThreadState
+    static void RemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+      RemoveCodeEntry(Frame->Thread, GuestRIP);
+    }
+
     // Debugger interface
     void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
     uint64_t GetThreadCount() const;
     FEXCore::Core::RuntimeStats *GetRuntimeStatsForThread(uint64_t Thread);
-    FEXCore::Core::CPUState GetCPUState();
     bool GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data);
     bool FindHostCodeForRIP(uint64_t RIP, uint8_t **Code);
 
     // XXX:
     // bool FindIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList **ir);
     // void SetIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList *const ir);
-    FEXCore::Core::ThreadState *GetThreadState();
     void LoadEntryList();
 
     std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t, uint64_t, uint64_t> GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
     std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
-    uintptr_t CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
     bool LoadAOTIRCache(std::istream &stream);
     bool WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
@@ -231,5 +233,5 @@ namespace FEXCore::Context {
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
   };
 
-  uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);
+  uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);
 }

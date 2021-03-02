@@ -41,9 +41,8 @@ namespace FEXCore {
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
         */
         static void CallCallback(void *callback, void *arg0, void* arg1) {
-
-            Thread->State.State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
-            Thread->State.State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
+            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
+            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
 
             Thread->CTX->HandleCallback((uintptr_t)callback);
         }

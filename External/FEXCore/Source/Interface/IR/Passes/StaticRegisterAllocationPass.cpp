@@ -10,8 +10,8 @@ public:
 
 bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) {
   bool rv = false;
-  auto begin = offsetof(FEXCore::Core::ThreadState, State.gregs[0]);
-  auto end = offsetof(FEXCore::Core::ThreadState, State.gregs[17]);
+  auto begin = offsetof(FEXCore::Core::CPUState, gregs[0]);
+  auto end = offsetof(FEXCore::Core::CPUState, gregs[17]);
 
   if (Offset >= begin && Offset < end) {
     auto reg = (Offset - begin) / 8;
@@ -25,8 +25,8 @@ bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) {
 
 bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) {
   bool rv = false;
-  auto begin = offsetof(FEXCore::Core::ThreadState, State.xmm[0][0]);
-  auto end = offsetof(FEXCore::Core::ThreadState, State.xmm[17][0]);
+  auto begin = offsetof(FEXCore::Core::CPUState, xmm[0][0]);
+  auto end = offsetof(FEXCore::Core::CPUState, xmm[17][0]);
 
   if (Offset >= begin && Offset < end) {
     auto reg = (Offset - begin)/16;

@@ -46,9 +46,9 @@ DEF_OP(CallbackReturn) {
   str(w2, MemOperand(x0));
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
   add(x2, x2, 8);
-  str(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+  str(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
 
   PopCalleeSavedRegisters();
 
@@ -79,7 +79,7 @@ DEF_OP(ExitFunction) {
     RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
 
     // L1 Cache
-    LoadConstant(x0, State->LookupCache->GetL1Pointer());
+    LoadConstant(x0, ThreadState->LookupCache->GetL1Pointer());
 
     and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
     add(x0, x0, Operand(x3, Shift::LSL, 4));
@@ -91,7 +91,7 @@ DEF_OP(ExitFunction) {
 
     bind(&FullLookup);
     LoadConstant(TMP1, AbsoluteLoopTopAddress);
-    str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+    str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
     br(TMP1);
   }
 }
@@ -239,7 +239,7 @@ DEF_OP(Thunk) {
 
   mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
 
-  auto thunkFn = State->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
+  auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   LoadConstant(x2, (uintptr_t)thunkFn);
   blr(x2);
 
@@ -308,7 +308,7 @@ DEF_OP(RemoveCodeEntry) {
   mov(x0, STATE);
   LoadConstant(x1, IR->GetHeader()->Entry);
 
-  LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
+  LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit));
   SpillStaticRegs();
   blr(x2);
   FillStaticRegs();

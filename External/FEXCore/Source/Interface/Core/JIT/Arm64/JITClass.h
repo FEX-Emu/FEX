@@ -99,7 +99,7 @@ public:
 private:
   Label *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
-  FEXCore::Core::InternalThreadState *State;
+  FEXCore::Core::InternalThreadState *ThreadState;
   FEXCore::IR::IRListView const *IR;
 
   std::map<IR::OrderedNodeWrapper::NodeOffsetType, aarch64::Label> JumpTargets;
@@ -202,7 +202,7 @@ private:
   void PushCalleeSavedRegisters();
   void PopCalleeSavedRegisters();
 
-  static uint64_t ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record);
+  static uint64_t ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
 
   /**
    * @name Dispatch Helper functions
