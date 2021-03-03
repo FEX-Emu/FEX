@@ -34,7 +34,7 @@ namespace FEXCore::Config {
       CTX->Config.TSOEnabled = Config != 0;
     break;
     case FEXCore::Config::CONFIG_SMC_CHECKS:
-      CTX->Config.SMCChecks = Config != 0;
+      CTX->Config.SMCChecks = static_cast<FEXCore::Config::ConfigSMCChecks>(Config);
     break;
     case FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS:
       CTX->Config.ABILocalFlags = Config != 0;

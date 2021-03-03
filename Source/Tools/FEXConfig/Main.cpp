@@ -301,11 +301,27 @@ namespace {
         ConfigChanged = true;
       }
 
+      ImGui::Text("SMC Checks: ");
+      int SMCChecks = FEXCore::Config::CONFIG_SMC_MMAN;
+      
       Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS);
-      bool SMCChecks = Value.has_value() && **Value == "1";
-      if (ImGui::Checkbox("SMC Checks", &SMCChecks)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS, SMCChecks ? "1" : "0");
-        ConfigChanged = true;
+      if (Value.has_value()) {
+        if (**Value == "0") {
+          SMCChecks = FEXCore::Config::CONFIG_SMC_NONE;
+        } else if (**Value == "1") {
+          SMCChecks = FEXCore::Config::CONFIG_SMC_MMAN;
+        } else if (**Value == "2") {
+          SMCChecks = FEXCore::Config::CONFIG_SMC_FULL;
+        }
+      }
+
+      bool SMCChanged = false;
+      SMCChanged |= ImGui::RadioButton("None", &SMCChecks, FEXCore::Config::CONFIG_SMC_NONE); ImGui::SameLine();
+      SMCChanged |= ImGui::RadioButton("MMan", &SMCChecks, FEXCore::Config::CONFIG_SMC_MMAN); ImGui::SameLine();
+      SMCChanged |= ImGui::RadioButton("Full", &SMCChecks, FEXCore::Config::CONFIG_SMC_FULL);
+
+      if (SMCChanged) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS, std::to_string(SMCChecks));
       }
 
       Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS);

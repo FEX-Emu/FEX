@@ -68,7 +68,7 @@ namespace FEXCore::Context {
 
       bool Is64BitMode {true};
       bool TSOEnabled {true};
-      bool SMCChecks {false};
+      FEXCore::Config::ConfigSMCChecks SMCChecks {FEXCore::Config::CONFIG_SMC_MMAN};
       bool ABILocalFlags {false};
       bool ABINoPF {false};
 
@@ -209,7 +209,7 @@ namespace FEXCore::Context {
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
     void NotifyPause();
 
-    void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr);
+    void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length);
 
     FEXCore::CodeLoader *LocalLoader{};
 

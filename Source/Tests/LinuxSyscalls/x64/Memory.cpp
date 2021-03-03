@@ -25,6 +25,7 @@ namespace FEX::HLE::x64 {
       uint64_t Result = ::munmap(addr, length);
       if (Result != -1) {
         FEXCore::Context::RemoveNamedRegion(Thread->CTX, (uintptr_t)addr, length);
+        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)addr, length);
       }
       SYSCALL_ERRNO();
     });
@@ -32,10 +33,13 @@ namespace FEX::HLE::x64 {
     REGISTER_SYSCALL_IMPL_X64(mmap, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
       static FEXCore::Config::Value<bool> AOTIRLoad(FEXCore::Config::CONFIG_AOTIR_LOAD, false);
       uint64_t Result = reinterpret_cast<uint64_t>(::mmap(addr, length, prot, flags, fd, offset));
-      if (Result != -1 && !(flags & MAP_ANONYMOUS)) {
-        auto filename = get_fdpath(fd);
+      if (Result != -1) {
+        if (!(flags & MAP_ANONYMOUS)) {
+          auto filename = get_fdpath(fd);
 
-        FEXCore::Context::AddNamedRegion(Thread->CTX, Result, length, offset, filename);
+          FEXCore::Context::AddNamedRegion(Thread->CTX, Result, length, offset, filename);
+        }
+        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)Result, length);
       }
       SYSCALL_ERRNO();
     });
@@ -47,6 +51,9 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(mprotect, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t len, int prot) -> uint64_t {
       uint64_t Result = ::mprotect(addr, len, prot);
+      if (Result != -1 && prot & PROT_EXEC) {
+        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)addr, len);
+      }
       SYSCALL_ERRNO();
     });
 

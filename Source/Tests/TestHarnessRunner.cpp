@@ -71,7 +71,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Value<std::string> OutputLog{FEXCore::Config::CONFIG_OUTPUTLOG, "stderr"};
   FEXCore::Config::Value<std::string> DumpIR{FEXCore::Config::CONFIG_DUMPIR, "no"};
   FEXCore::Config::Value<bool> TSOEnabledConfig{FEXCore::Config::CONFIG_TSO_ENABLED, true};
-  FEXCore::Config::Value<bool> SMCChecksConfig{FEXCore::Config::CONFIG_SMC_CHECKS, false};
+  FEXCore::Config::Value<uint8_t> SMCChecksConfig{FEXCore::Config::CONFIG_SMC_CHECKS, FEXCore::Config::CONFIG_SMC_MMAN};
   FEXCore::Config::Value<bool> ABILocalFlags{FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, false};
   FEXCore::Config::Value<bool> AbiNoPF{FEXCore::Config::CONFIG_ABI_NO_PF, false};
 

@@ -607,8 +607,8 @@ namespace FEXCore::Context {
     return Thread;
   }
 
-  void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
-    Thread->LookupCache->AddBlockMapping(Address, Ptr);
+  void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length) {
+    Thread->LookupCache->AddBlockMapping(Address, Ptr, Start, Length);
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
@@ -670,7 +670,7 @@ namespace FEXCore::Context {
         TableInfo = Block.DecodedInstructions[i].TableInfo;
         DecodedInfo = &Block.DecodedInstructions[i];
 
-        if (Config.SMCChecks) {
+        if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
           auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
 
           auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr - GuestRIP, DecodedInfo->InstSize);
@@ -853,7 +853,8 @@ namespace FEXCore::Context {
         
         if (AOTEntry != Mod->end()) {
           // verify hash
-          auto hash = fasthash64((void*)(AOTEntry->second.start + file->second.Start  - file->second.Offset), AOTEntry->second.len, 0);
+          auto MappedStart = AOTEntry->second.start + file->second.Start  - file->second.Offset;
+          auto hash = fasthash64((void*)MappedStart, AOTEntry->second.len, 0);
           if (hash == AOTEntry->second.crc) {
             IRList = AOTEntry->second.IR;
             //LogMan::Msg::D("using %s + %lx -> %lx\n", file->second.fileid.c_str(), AOTEntry->first, GuestRIP);
@@ -862,7 +863,7 @@ namespace FEXCore::Context {
 
             RAData = AOTEntry->second.RAData;
             DebugData = new FEXCore::Core::DebugData();
-            StartAddr = AOTEntry->second.start;
+            StartAddr = MappedStart;
             Length = AOTEntry->second.len;
 
             GeneratedIR = true;
@@ -1117,7 +1118,7 @@ namespace FEXCore::Context {
       --Thread->CompileBlockReentrantRefCount;
 
     // Insert to lookup cache
-    AddBlockMapping(Thread, GuestRIP, CodePtr);
+    AddBlockMapping(Thread, GuestRIP, CodePtr, StartAddr, Length);
 
     return (uintptr_t)CodePtr;
 
@@ -1175,6 +1176,20 @@ namespace FEXCore::Context {
     IdleWaitCV.notify_all();
 
     SignalDelegation->UninstallTLSState(Thread);
+  }
+
+  void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
+
+    if (Thread->CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_MMAN) {
+      auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
+      auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length) >> 12);
+      
+      for (auto it = lower; it != upper; it++) {
+        for (auto Address: it->second) 
+          Context::RemoveCodeEntry(Thread, Address);
+        it->second.clear();
+      }
+    }
   }
 
   void Context::RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -1248,7 +1263,7 @@ namespace FEXCore::Context {
       auto fileid = base_filename + "-" + std::to_string(filename_hash) + "-";
 
       // append optimization flags to the fileid
-      fileid += Config.SMCChecks ? "S" : "s";
+      fileid += (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? "S" : "s";
       fileid += Config.TSOEnabled ? "T" : "t";
       fileid += Config.ABILocalFlags ? "L" : "l";
       fileid += Config.ABINoPF ? "p" : "P";
