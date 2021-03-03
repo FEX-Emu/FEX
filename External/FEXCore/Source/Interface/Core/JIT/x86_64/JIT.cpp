@@ -355,12 +355,12 @@ void JITCore::PushRegs() {
 
 void JITCore::PopRegs() {
   auto NumPush = RA64.size();
-  
+
   if (NumPush & 1)
     add(rsp, 8); // Align
   for (uint32_t i = RA64.size(); i > 0; --i)
     pop(RA64[i - 1]);
-  
+
   for (uint32_t i = RAXMM_x.size(); i > 0; --i) {
     movaps(RAXMM_x[i - 1], ptr[rsp]);
     add(rsp, 16);
@@ -518,7 +518,7 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 
         movq(rdx, GetSrc(IROp->Args[1].ID()));
         pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
-        
+
         mov(rax, (uintptr_t)Info.fn);
 
         call(rax);
@@ -533,7 +533,7 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
-        
+
         mov(rax, (uintptr_t)Info.fn);
 
         call(rax);
@@ -553,7 +553,7 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 
         movq(rdx, GetSrc(IROp->Args[1].ID()));
         pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
-        
+
         mov(rax, (uintptr_t)Info.fn);
 
         call(rax);
@@ -901,7 +901,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [
     mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
     rdtsc();
     shl(rdx, 32);
-    or(rax, rdx);
+    or_(rax, rdx);
     mov(qword [rcx + offsetof(BlockSamplingData::BlockData, Start)], rax);
   }
 
@@ -911,7 +911,7 @@ void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [
       // Get time
       rdtsc();
       shl(rdx, 32);
-      or(rax, rdx);
+      or_(rax, rdx);
 
       // Calculate time spent in block
       mov(rdx, qword [rcx + offsetof(BlockSamplingData::BlockData, Start)]);
@@ -1144,7 +1144,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
     je(NoBlock);
 
     mov (rax, rdx);
-    and(rax, 0x0FFF);
+    and_(rax, 0x0FFF);
 
     shl(rax, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
 

@@ -9,7 +9,7 @@ DEF_OP(GetHostFlag) {
 
   mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
   shr(rax, Op->Flag);
-  and(rax, 1);
+  and_(rax, 1);
   mov(GetDst<RA_64>(Node), rax);
 }
 
