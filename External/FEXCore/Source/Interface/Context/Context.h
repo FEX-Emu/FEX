@@ -14,6 +14,7 @@
 
 #include <memory>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <mutex>
 #include <istream>
@@ -114,10 +115,10 @@ namespace FEXCore::Context {
       IR::IRListView *IR;
       IR::RegisterAllocationData *RAData;
     };
-    
+
     std::function<std::unique_ptr<std::istream>(const std::string&)> AOTIRLoader;
     std::unordered_map<std::string, std::map<uint64_t, AOTIRCacheEntry>> AOTIRCache;
-    
+
     struct AddrToFileEntry {
       uint64_t Start;
       uint64_t Len;
