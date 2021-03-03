@@ -67,7 +67,7 @@ namespace FEXCore::Context {
 
       bool Is64BitMode {true};
       bool TSOEnabled {true};
-      bool SMCChecks {false};
+      FEXCore::Config::ConfigSMCChecks SMCChecks {FEXCore::Config::CONFIG_SMC_MMAN};
       bool ABILocalFlags {false};
       bool ABINoPF {false};
 

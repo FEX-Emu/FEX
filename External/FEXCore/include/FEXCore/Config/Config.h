@@ -44,6 +44,12 @@ namespace FEXCore::Config {
     CONFIG_CUSTOM,
   };
 
+  enum ConfigSMCChecks {
+    CONFIG_SMC_NONE,
+    CONFIG_SMC_MMAN,
+    CONFIG_SMC_FULL,
+  };
+  
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config);
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, std::string const &Config);
   uint64_t GetConfig(FEXCore::Context::Context *CTX, ConfigOption Option);
