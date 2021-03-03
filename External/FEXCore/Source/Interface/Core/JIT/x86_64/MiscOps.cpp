@@ -48,7 +48,7 @@ DEF_OP(Break) {
         if (SpillSlots) {
           add(rsp, SpillSlots * 16);
         }
-        
+
         // This jump target needs to be a constant offset here
         mov(TMP1, ThreadPauseHandlerAddress);
         jmp(TMP1);
@@ -89,10 +89,10 @@ DEF_OP(SetRoundingMode) {
   mov(TMP1.cvt32(), dword [rsp]);
 
   // Insert the new rounding mode
-  and(TMP1.cvt32(), ~(0b111 << 13));
+  and_(TMP1.cvt32(), ~(0b111 << 13));
   mov(TMP2.cvt32(), Src);
   shl(TMP2.cvt32(), 13);
-  or(TMP1.cvt32(), TMP2.cvt32());
+  or_(TMP1.cvt32(), TMP2.cvt32());
 
   // Store it to mxcsr
   // Only loads from memory

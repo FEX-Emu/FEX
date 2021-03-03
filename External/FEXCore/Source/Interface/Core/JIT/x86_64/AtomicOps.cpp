@@ -155,16 +155,16 @@ DEF_OP(AtomicAnd) {
   lock();
   switch (Op->Size) {
     case 1:
-      and(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      and_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
       break;
     case 2:
-      and(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      and_(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
       break;
     case 4:
-      and(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      and_(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
       break;
     case 8:
-      and(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      and_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
     default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
   }
@@ -177,16 +177,16 @@ DEF_OP(AtomicOr) {
   lock();
   switch (Op->Size) {
     case 1:
-      or(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      or_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
       break;
     case 2:
-      or(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      or_(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
       break;
     case 4:
-      or(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      or_(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
       break;
     case 8:
-      or(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      or_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
     default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
   }
@@ -199,16 +199,16 @@ DEF_OP(AtomicXor) {
   lock();
   switch (Op->Size) {
     case 1:
-      xor(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      xor_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
       break;
     case 2:
-      xor(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      xor_(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
       break;
     case 4:
-      xor(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      xor_(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
       break;
     case 8:
-      xor(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      xor_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
     default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
   }
@@ -329,7 +329,7 @@ DEF_OP(AtomicFetchAnd) {
       L(Loop);
       mov(TMP2.cvt8(), TMP1.cvt8());
       mov(TMP3.cvt8(), TMP1.cvt8());
-      and(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      and_(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
@@ -345,7 +345,7 @@ DEF_OP(AtomicFetchAnd) {
       L(Loop);
       mov(TMP2.cvt16(), TMP1.cvt16());
       mov(TMP3.cvt16(), TMP1.cvt16());
-      and(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      and_(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(word [MemReg], TMP2.cvt16());
@@ -362,7 +362,7 @@ DEF_OP(AtomicFetchAnd) {
       L(Loop);
       mov(TMP2.cvt32(), TMP1.cvt32());
       mov(TMP3.cvt32(), TMP1.cvt32());
-      and(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      and_(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
@@ -379,7 +379,7 @@ DEF_OP(AtomicFetchAnd) {
       L(Loop);
       mov(TMP2.cvt64(), TMP1.cvt64());
       mov(TMP3.cvt64(), TMP1.cvt64());
-      and(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      and_(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
@@ -406,7 +406,7 @@ DEF_OP(AtomicFetchOr) {
       L(Loop);
       mov(TMP2.cvt8(), TMP1.cvt8());
       mov(TMP3.cvt8(), TMP1.cvt8());
-      or(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      or_(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
@@ -422,7 +422,7 @@ DEF_OP(AtomicFetchOr) {
       L(Loop);
       mov(TMP2.cvt16(), TMP1.cvt16());
       mov(TMP3.cvt16(), TMP1.cvt16());
-      or(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      or_(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(word [MemReg], TMP2.cvt16());
@@ -439,7 +439,7 @@ DEF_OP(AtomicFetchOr) {
       L(Loop);
       mov(TMP2.cvt32(), TMP1.cvt32());
       mov(TMP3.cvt32(), TMP1.cvt32());
-      or(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      or_(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
@@ -456,7 +456,7 @@ DEF_OP(AtomicFetchOr) {
       L(Loop);
       mov(TMP2.cvt64(), TMP1.cvt64());
       mov(TMP3.cvt64(), TMP1.cvt64());
-      or(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      or_(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
@@ -483,7 +483,7 @@ DEF_OP(AtomicFetchXor) {
       L(Loop);
       mov(TMP2.cvt8(), TMP1.cvt8());
       mov(TMP3.cvt8(), TMP1.cvt8());
-      xor(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      xor_(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
@@ -499,7 +499,7 @@ DEF_OP(AtomicFetchXor) {
       L(Loop);
       mov(TMP2.cvt16(), TMP1.cvt16());
       mov(TMP3.cvt16(), TMP1.cvt16());
-      xor(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      xor_(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(word [MemReg], TMP2.cvt16());
@@ -516,7 +516,7 @@ DEF_OP(AtomicFetchXor) {
       L(Loop);
       mov(TMP2.cvt32(), TMP1.cvt32());
       mov(TMP3.cvt32(), TMP1.cvt32());
-      xor(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      xor_(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
@@ -533,7 +533,7 @@ DEF_OP(AtomicFetchXor) {
       L(Loop);
       mov(TMP2.cvt64(), TMP1.cvt64());
       mov(TMP3.cvt64(), TMP1.cvt64());
-      xor(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      xor_(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(qword [MemReg], TMP2.cvt64());

@@ -44,7 +44,7 @@ DEF_OP(CycleCounter) {
 #else
   rdtsc();
   shl(rdx, 32);
-  or(rax, rdx);
+  or_(rax, rdx);
   mov (GetDst<RA_64>(Node), rax);
 #endif
 }
@@ -384,9 +384,9 @@ DEF_OP(Or) {
 
   uint64_t Const;
   if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    or (rax, Const);
+    or_(rax, Const);
   } else {
-    or (rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    or_(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
   }
   mov(Dst, rax);
 }
@@ -397,9 +397,9 @@ DEF_OP(And) {
   mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
   uint64_t Const;
   if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    and (rax, Const);
+    and_(rax, Const);
   } else {
-    and(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    and_(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
   }
   mov(Dst, rax);
 }
@@ -410,9 +410,9 @@ DEF_OP(Xor) {
   mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
   uint64_t Const;
   if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    xor(rax, Const);
+    xor_(rax, Const);
   } else {
-    xor(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    xor_(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
   }
   mov(Dst, rax);
 }
@@ -439,7 +439,7 @@ DEF_OP(Lshl) {
     };
   } else {
     mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-    and(rcx, Mask);
+    and_(rcx, Mask);
 
     switch (OpSize) {
       case 4:
@@ -487,7 +487,7 @@ DEF_OP(Lshr) {
 
   } else {
     mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-    and(rcx, Mask);
+    and_(rcx, Mask);
 
     switch (OpSize) {
       case 1:
@@ -545,7 +545,7 @@ DEF_OP(Ashr) {
 
   } else {
     mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-    and(rcx, Mask);
+    and_(rcx, Mask);
     switch (OpSize) {
     case 1:
       movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
@@ -594,7 +594,7 @@ DEF_OP(Ror) {
     }
   } else {
     mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-    and(rcx, Mask);
+    and_(rcx, Mask);
     switch (OpSize) {
       case 4: {
         mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
@@ -801,10 +801,10 @@ DEF_OP(FindLSB) {
   bsf(rcx, GetSrc<RA_64>(Op->Header.Args[0].ID()));
   mov(rax, 0x40);
   cmovz(rcx, rax);
-  xor(rax, rax);
+  xor_(rax, rax);
   cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), 1);
   sbb(rax, rax);
-  or(rax, rcx);
+  or_(rax, rcx);
   mov (GetDst<RA_64>(Node), rax);
 }
 
@@ -881,7 +881,7 @@ DEF_OP(CountLeadingZeroes) {
         Label Skip;
         je(Skip);
           bsr(ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-          xor(ax, 0xF);
+          xor_(ax, 0xF);
           movzx(eax, ax);
         L(Skip);
         mov(GetDst<RA_32>(Node), eax);
@@ -893,7 +893,7 @@ DEF_OP(CountLeadingZeroes) {
         Label Skip;
         je(Skip);
           bsr(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-          xor(eax, 0x1F);
+          xor_(eax, 0x1F);
         L(Skip);
         mov(GetDst<RA_32>(Node), eax);
         break;
@@ -904,7 +904,7 @@ DEF_OP(CountLeadingZeroes) {
         Label Skip;
         je(Skip);
           bsr(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-          xor(rax, 0x3F);
+          xor_(rax, 0x3F);
         L(Skip);
         mov(GetDst<RA_64>(Node), rax);
         break;
@@ -950,15 +950,15 @@ DEF_OP(Bfi) {
   mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
   mov(TMP2, DestMask);
-  and(Dst, TMP2);
+  and_(Dst, TMP2);
   mov(TMP2, SourceMask);
-  and(TMP1, TMP2);
+  and_(TMP1, TMP2);
   shl(TMP1, Op->lsb);
   or_(Dst, TMP1);
 
   if (OpSize != 8) {
     mov(rcx, uint64_t((1ULL << (OpSize * 8)) - 1));
-    and(Dst, rcx);
+    and_(Dst, rcx);
   }
 }
 
@@ -998,7 +998,7 @@ DEF_OP(Bfe) {
 
   if (Op->Width != 64) {
     mov(rcx, uint64_t((1ULL << Op->Width) - 1));
-    and(Dst, rcx);
+    and_(Dst, rcx);
   }
 }
 
@@ -1147,21 +1147,21 @@ DEF_OP(FCmp) {
     mov(rcx, 0);
     setb(cl);
     shl(rcx, IR::FCMP_FLAG_LT);
-    or(rdx, rcx);
+    or_(rdx, rcx);
   }
   if (Op->Flags & (1 << IR::FCMP_FLAG_UNORDERED)) {
     sahf();
     mov(rcx, 0);
     setp(cl);
     shl(rcx, IR::FCMP_FLAG_UNORDERED);
-    or(rdx, rcx);
+    or_(rdx, rcx);
   }
   if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
     sahf();
     mov(rcx, 0);
     setz(cl);
     shl(rcx, IR::FCMP_FLAG_EQ);
-    or(rdx, rcx);
+    or_(rdx, rcx);
   }
   mov (GetDst<RA_64>(Node), rdx);
 }
