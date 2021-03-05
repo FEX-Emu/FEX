@@ -175,47 +175,54 @@ if(_M_ARM_64)
     Interface/Core/Interpreter/Arm64Dispatcher.cpp)
 endif()
 
+set(DEFINES )
 set (JIT_LIBS )
-if (ENABLE_JIT)
-  if (_M_X86_64)
-    add_definitions(-D_M_X86_64=1)
-    if (NOT FORCE_AARCH64)
-      list(APPEND SRCS
-        Interface/Core/JIT/x86_64/JIT.cpp
-        Interface/Core/JIT/x86_64/ALUOps.cpp
-        Interface/Core/JIT/x86_64/AtomicOps.cpp
-        Interface/Core/JIT/x86_64/BranchOps.cpp
-        Interface/Core/JIT/x86_64/ConversionOps.cpp
-        Interface/Core/JIT/x86_64/EncryptionOps.cpp
-        Interface/Core/JIT/x86_64/FlagOps.cpp
-        Interface/Core/JIT/x86_64/MemoryOps.cpp
-        Interface/Core/JIT/x86_64/MiscOps.cpp
-        Interface/Core/JIT/x86_64/MoveOps.cpp
-        Interface/Core/JIT/x86_64/VectorOps.cpp)
-    endif()
-  endif()
-  if(_M_ARM_64)
-    add_definitions(-D_M_ARM_64=1)
-    add_definitions(-DVIXL_INCLUDE_TARGET_AARCH64=1)
-    add_definitions(-DVIXL_CODE_BUFFER_MMAP=1)
-    list(APPEND SRCS
-      Interface/Core/JIT/Arm64/JIT.cpp
-      Interface/Core/JIT/Arm64/ALUOps.cpp
-      Interface/Core/JIT/Arm64/AtomicOps.cpp
-      Interface/Core/JIT/Arm64/BranchOps.cpp
-      Interface/Core/JIT/Arm64/ConversionOps.cpp
-      Interface/Core/JIT/Arm64/EncryptionOps.cpp
-      Interface/Core/JIT/Arm64/FlagOps.cpp
-      Interface/Core/JIT/Arm64/MemoryOps.cpp
-      Interface/Core/JIT/Arm64/MiscOps.cpp
-      Interface/Core/JIT/Arm64/MoveOps.cpp
-      Interface/Core/JIT/Arm64/VectorOps.cpp)
-    list(APPEND JIT_LIBS vixl)
-  endif()
+
+if (_M_X86_64)
+  list(APPEND DEFINES -D_M_X86_64=1)
+endif()
+
+if (_M_ARM_64)
+  list(APPEND DEFINES -D_M_ARM_64=1)
+endif()
+
+if (ENABLE_JIT_X86_64)
+  list(APPEND SRCS
+    Interface/Core/JIT/x86_64/JIT.cpp
+    Interface/Core/JIT/x86_64/ALUOps.cpp
+    Interface/Core/JIT/x86_64/AtomicOps.cpp
+    Interface/Core/JIT/x86_64/BranchOps.cpp
+    Interface/Core/JIT/x86_64/ConversionOps.cpp
+    Interface/Core/JIT/x86_64/EncryptionOps.cpp
+    Interface/Core/JIT/x86_64/FlagOps.cpp
+    Interface/Core/JIT/x86_64/MemoryOps.cpp
+    Interface/Core/JIT/x86_64/MiscOps.cpp
+    Interface/Core/JIT/x86_64/MoveOps.cpp
+    Interface/Core/JIT/x86_64/VectorOps.cpp)
+  list(APPEND DEFINES -DJIT_X86_64)
+endif()
+
+if (ENABLE_JIT_ARM64)
+  list(APPEND DEFINES
+    -DVIXL_INCLUDE_TARGET_AARCH64=1
+    -DJIT_ARM64)
+  list(APPEND SRCS
+    Interface/Core/JIT/Arm64/JIT.cpp
+    Interface/Core/JIT/Arm64/ALUOps.cpp
+    Interface/Core/JIT/Arm64/AtomicOps.cpp
+    Interface/Core/JIT/Arm64/BranchOps.cpp
+    Interface/Core/JIT/Arm64/ConversionOps.cpp
+    Interface/Core/JIT/Arm64/EncryptionOps.cpp
+    Interface/Core/JIT/Arm64/FlagOps.cpp
+    Interface/Core/JIT/Arm64/MemoryOps.cpp
+    Interface/Core/JIT/Arm64/MiscOps.cpp
+    Interface/Core/JIT/Arm64/MoveOps.cpp
+    Interface/Core/JIT/Arm64/VectorOps.cpp)
+  list(APPEND JIT_LIBS vixl)
 endif()
 
 if (ENABLE_JITSYMBOLS)
-  add_definitions(-DENABLE_JITSYMBOLS=1)
+  list(APPEND DEFINES -DENABLE_JITSYMBOLS=1)
 endif()
 
 # Generate IR include file
@@ -251,7 +258,7 @@ add_custom_command(
 set_source_files_properties(${OUTPUT_IR_NAME} PROPERTIES
   GENERATED TRUE)
 
-# Create teh target
+# Create the target
 add_custom_target(IR_INC
   DEPENDS "${OUTPUT_NAME}"
   DEPENDS "${OUTPUT_IR_DOC}")
@@ -274,6 +281,8 @@ function(AddLibrary Name Type)
 
   target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
   target_include_directories(${Name} PUBLIC "${CMAKE_BINARY_DIR}/include/")
+
+  target_compile_definitions(${Name} PRIVATE ${DEFINES})
 
   target_compile_options(${Name}
     PRIVATE

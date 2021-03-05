@@ -91,12 +91,10 @@ endif()
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   set(_M_ARM_64 1)
   add_definitions(-D_M_ARM_64=1)
-  add_subdirectory(External/vixl/)
-  include_directories(External/vixl/src/)
-  if(CMAKE_BUILD_TYPE MATCHES DEBUG)
-    add_definitions(-DVIXL_DEBUG=1)
-  endif()
 endif()
+
+add_subdirectory(External/vixl/)
+include_directories(External/vixl/src/)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # This means we were attempted to get compiled with GCC

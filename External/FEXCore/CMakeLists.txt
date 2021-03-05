@@ -4,6 +4,17 @@ project(${PROJECT_NAME}
   VERSION 0.01
   LANGUAGES CXX)
 
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+  set(_M_X86_64 1)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
+endif()
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  set(_M_ARM_64 1)
+endif()
+
+set(ENABLE_JIT_X86_64 ${_M_X86_64} CACHE BOOL "Enable the x86_64 JIT")
+set(ENABLE_JIT_ARM64 ${_M_ARM_64} CACHE BOOL "Enable the ARM64 JIT")
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 option(ENABLE_JITSYMBOLS "Enable visibility of JITSymbols in profiling tools" FALSE)
 
@@ -17,22 +28,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(CheckCXXCompilerFlag)
 include(CheckIncludeFileCXX)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-  set(_M_X86_64 1)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
-  message(STATUS "Enabling x86-64 JIT")
-  set(ENABLE_JIT 1)
-endif()
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  message(STATUS "Enabling AArch64 JIT")
-  set(_M_ARM_64 1)
-  set(ENABLE_JIT 1)
-  if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
+if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
     # Useful to have for freestanding libFEXCore
     add_subdirectory(External/vixl/)
     include_directories(External/vixl/src/)
-  endif()
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
