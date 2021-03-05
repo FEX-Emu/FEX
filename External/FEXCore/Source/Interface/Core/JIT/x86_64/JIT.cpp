@@ -1,5 +1,6 @@
 #include "Interface/Context/Context.h"
 
+#include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"
 #include "Interface/Core/InternalThreadState.h"
 
@@ -38,28 +39,14 @@ void FreeCodeBuffer(CodeBuffer Buffer) {
 }
 
 namespace FEXCore::CPU {
-struct ContextBackup {
-  uint64_t StoredCookie;
-  // Host State
-  // RIP and RSP is stored in GPRs here
-  uint64_t GPRs[NGREG];
-  _libc_fpstate FPRState;
-
-  // Guest state
-  int Signal;
-  FEXCore::Core::CPUState GuestState;
-};
 
 void JITCore::StoreThreadState(int Signal, void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
   // We can end up getting a signal at any point in our host state
   // Jump to a handler that saves all state so we can safely return
-  uint64_t OldSP = _mcontext->gregs[REG_RSP];
+  uint64_t OldSP = ArchHelpers::Context::GetSp(ucontext);
   uintptr_t NewSP = OldSP;
 
-  size_t StackOffset = sizeof(ContextBackup);
+  size_t StackOffset = sizeof(X86ContextBackup);
 
   // We need to back up behind the host's red zone
   // We do this on the guest side as well
@@ -67,16 +54,8 @@ void JITCore::StoreThreadState(int Signal, void *ucontext) {
   NewSP -= StackOffset;
   NewSP = AlignDown(NewSP, 16);
 
-  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
-
-  Context->StoredCookie = 0x4142434445464748ULL;
-
-  // Copy the GPRs
-  memcpy(&Context->GPRs[0], &_mcontext->gregs[0], NGREG * sizeof(_mcontext->gregs[0]));
-  // Copy the FPRState
-  memcpy(&Context->FPRState, _mcontext->fpregs, sizeof(_libc_fpstate));
-
-  // XXX: Save 256bit and 512bit AVX register state
+  X86ContextBackup *Context = reinterpret_cast<X86ContextBackup*>(NewSP);
+  ArchHelpers::Context::BackupContext(ucontext, Context);
 
   // Retain the action pointer so we can see it when we return
   Context->Signal = Signal;
@@ -87,34 +66,22 @@ void JITCore::StoreThreadState(int Signal, void *ucontext) {
   memcpy(&Context->GuestState, &ThreadState->State, sizeof(FEXCore::Core::CPUState));
 
   // Set the new SP
-  _mcontext->gregs[REG_RSP] = NewSP;
+  ArchHelpers::Context::SetSp(ucontext, NewSP);
 
   SignalFrames.push(NewSP);
 }
 
 void JITCore::RestoreThreadState(void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
   uint64_t OldSP = SignalFrames.top();
   SignalFrames.pop();
   uintptr_t NewSP = OldSP;
-  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
-
-  if (Context->StoredCookie != 0x4142434445464748ULL) {
-    LogMan::Msg::D("COOKIE WAS NOT CORRECT!\n");
-    exit(-1);
-  }
+  X86ContextBackup *Context = reinterpret_cast<X86ContextBackup*>(NewSP);
 
   // First thing, reset the guest state
   memcpy(&ThreadState->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
 
   // Now restore host state
-
-  // Copy the GPRs
-  memcpy(&_mcontext->gregs[0], &Context->GPRs[0], NGREG * sizeof(_mcontext->gregs[0]));
-  // Copy the FPRState
-  memcpy(_mcontext->fpregs, &Context->FPRState, sizeof(_libc_fpstate));
+  ArchHelpers::Context::RestoreContext(ucontext, Context);
 
   // Restore the previous signal state
   // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
@@ -122,15 +89,12 @@ void JITCore::RestoreThreadState(void *ucontext) {
 }
 
 bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
   StoreThreadState(Signal, ucontext);
 
   // Set the new PC
-  _mcontext->gregs[REG_RIP] = AbsoluteLoopTopAddress;
+  ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddress);
   // Set our state register to point to our guest thread data
-  _mcontext->gregs[REG_R14] = reinterpret_cast<uint64_t>(ThreadState);
+  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(ThreadState));
 
   // Ref count our faults
   // We use this to track if it is safe to clear cache
@@ -258,10 +222,8 @@ void JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
 }
 
 bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
 
-  if (_mcontext->gregs[REG_RIP] == ThreadSharedData.SignalHandlerReturnAddress) {
+  if (ArchHelpers::Context::GetPc(ucontext) == ThreadSharedData.SignalHandlerReturnAddress) {
     RestoreThreadState(ucontext);
 
     // Ref count our faults
@@ -270,7 +232,7 @@ bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
     return true;
   }
 
-  if (_mcontext->gregs[REG_RIP] == PauseReturnInstruction) {
+  if (ArchHelpers::Context::GetPc(ucontext) == PauseReturnInstruction) {
     RestoreThreadState(ucontext);
 
     // Ref count our faults
@@ -286,17 +248,15 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
   FEXCore::Core::SignalEvent SignalReason = ThreadState->SignalReason.load();
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE) {
-    ucontext_t* _context = (ucontext_t*)ucontext;
-    mcontext_t* _mcontext = &_context->uc_mcontext;
 
     // Store our thread state so we can come back to this
     StoreThreadState(Signal, ucontext);
 
     // Set the new PC
-    _mcontext->gregs[REG_RIP] = ThreadPauseHandlerAddress;
+    ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
 
     // Set our state register to point to our guest thread data
-    _mcontext->gregs[REG_R14] = reinterpret_cast<uint64_t>(ThreadState);
+    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(ThreadState));
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
@@ -318,19 +278,16 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
   }
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_STOP) {
-    ucontext_t* _context = (ucontext_t*)ucontext;
-    mcontext_t* _mcontext = &_context->uc_mcontext;
-
     // Our thread is stopping
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the JIT and get out safely
-    _mcontext->gregs[REG_RSP] = ThreadState->State.ReturningStackLocation;
+    ArchHelpers::Context::SetSp(ucontext, ThreadState->State.ReturningStackLocation);
 
     // Our ref counting doesn't matter anymore
     SignalHandlerRefCounter = 0;
 
     // Set the new PC
-    _mcontext->gregs[REG_RIP] = ThreadStopHandlerAddress;
+    ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
 
     ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;

@@ -24,7 +24,7 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t ATOMIC_UMIN_OP = 0b0111;
   constexpr uint32_t ATOMIC_SWAP_OP = 0b1000;
 
-  bool HandleCASPAL(void *_mcontext, void *_info, uint32_t Instr);
-  bool HandleCASAL(void *_mcontext, void *_info, uint32_t Instr);
-  bool HandleAtomicMemOp(void *_mcontext, void *_info, uint32_t Instr);
+  bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr);
+  bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr);
+  bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr);
 }

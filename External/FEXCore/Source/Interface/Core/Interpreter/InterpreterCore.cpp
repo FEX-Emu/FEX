@@ -2,9 +2,8 @@
 #include "Common/SoftFloat.h"
 #include "Interface/Context/Context.h"
 
-#ifdef _M_ARM_64
 #include "Interface/Core/ArchHelpers/Arm64.h"
-#endif
+#include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/InternalThreadState.h"
@@ -22,9 +21,6 @@
 #include <cmath>
 #include <limits>
 #include <vector>
-#ifdef _M_X86_64
-#include <xmmintrin.h>
-#endif
 
 #include "InterpreterOps.h"
 
@@ -32,52 +28,55 @@ namespace FEXCore::CPU {
 
 static void InterpreterExecution(FEXCore::Core::InternalThreadState *Thread) {
   auto LocalEntry = Thread->LocalIRCache.find(Thread->State.State.rip);
-  
+
   InterpreterOps::InterpretIR(Thread, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
 }
 
-
 bool InterpreterCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
 #ifdef _M_ARM_64
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-  uint32_t *PC = (uint32_t*)_mcontext->pc;
-  uint32_t Instr = PC[0];
-  if ((Instr & FEXCore::ArchHelpers::Arm64::CASPAL_MASK) == FEXCore::ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
-    if (FEXCore::ArchHelpers::Arm64::HandleCASPAL(_mcontext, info, Instr)) {
-      // Skip this instruction now
-      _mcontext->pc += 4;
-      return true;
-    }
-    else {
-      LogMan::Msg::E("Unhandled JIT SIGBUS CASPAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
-      return false;
-    }
-  }
-  else if ((Instr & FEXCore::ArchHelpers::Arm64::CASAL_MASK) == FEXCore::ArchHelpers::Arm64::CASAL_INST) { // CASAL
-    if (FEXCore::ArchHelpers::Arm64::HandleCASAL(_mcontext, info, Instr)) {
-      // Skip this instruction now
-      _mcontext->pc += 4;
-      return true;
-    }
-    else {
-      LogMan::Msg::E("Unhandled JIT SIGBUS CASAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
-      return false;
-    }
-  }
-  else if ((Instr & FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_MASK) == FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
-    if (FEXCore::ArchHelpers::Arm64::HandleAtomicMemOp(_mcontext, info, Instr)) {
-      // Skip this instruction now
-      _mcontext->pc += 4;
-      return true;
-    }
-    else {
-      uint8_t Op = (PC[0] >> 12) & 0xF;
-      LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x: PC: %p Instruction: 0x%08x\n", Op, PC, PC[0]);
-      return false;
-    }
-  }
+  constexpr bool is_arm64 = true;
+#else
+  constexpr bool is_arm64 = false;
 #endif
+
+  if constexpr (is_arm64) {
+    uint32_t *PC = reinterpret_cast<uint32_t*>(ArchHelpers::Context::GetPc(ucontext));
+    uint32_t Instr = PC[0];
+    if ((Instr & FEXCore::ArchHelpers::Arm64::CASPAL_MASK) == FEXCore::ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
+      if (FEXCore::ArchHelpers::Arm64::HandleCASPAL(ucontext, info, Instr)) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+        return true;
+      }
+      else {
+        LogMan::Msg::E("Unhandled JIT SIGBUS CASPAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+        return false;
+      }
+    }
+    else if ((Instr & FEXCore::ArchHelpers::Arm64::CASAL_MASK) == FEXCore::ArchHelpers::Arm64::CASAL_INST) { // CASAL
+      if (FEXCore::ArchHelpers::Arm64::HandleCASAL(ucontext, info, Instr)) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+        return true;
+      }
+      else {
+        LogMan::Msg::E("Unhandled JIT SIGBUS CASAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+        return false;
+      }
+    }
+    else if ((Instr & FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_MASK) == FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
+      if (FEXCore::ArchHelpers::Arm64::HandleAtomicMemOp(ucontext, info, Instr)) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+        return true;
+      }
+      else {
+        uint8_t Op = (PC[0] >> 12) & 0xF;
+        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x: PC: %p Instruction: 0x%08x\n", Op, PC, PC[0]);
+        return false;
+      }
+    }
+  }
   return false;
 }
 
