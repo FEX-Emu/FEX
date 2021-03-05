@@ -130,6 +130,7 @@ set (SRCS
   Interface/Core/X86Tables.cpp
   Interface/Core/X86DebugInfo.cpp
   Interface/Core/X86HelperGen.cpp
+  Interface/Core/ArchHelpers/Arm64_stubs.cpp
   Interface/Core/Interpreter/InterpreterCore.cpp
   Interface/Core/Interpreter/InterpreterOps.cpp
   Interface/Core/X86Tables/BaseTables.cpp
