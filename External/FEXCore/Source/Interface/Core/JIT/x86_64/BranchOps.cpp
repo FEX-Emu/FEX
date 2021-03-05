@@ -6,7 +6,7 @@
 #include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(GuestCallDirect) {
   LogMan::Msg::D("Unimplemented");
 }
@@ -80,7 +80,7 @@ DEF_OP(ExitFunction) {
     dq(NewRIP);
   } else {
     Xbyak::Reg RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
-    
+
     // L1 Cache
     mov(rcx, ThreadState->LookupCache->GetL1Pointer());
     mov(rax, RipReg);
@@ -89,7 +89,7 @@ DEF_OP(ExitFunction) {
     shl(rax, 4);
 
     Xbyak::RegExp LookupBase = rcx + rax;
-  
+
     cmp(qword[LookupBase + 8], RipReg);
     jne(FullLookup);
     jmp(qword[LookupBase + 0]);
@@ -227,7 +227,7 @@ DEF_OP(Thunk) {
     sub(rsp, 8); // Align
 
   mov(rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  
+
   auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
 
   mov(rax, reinterpret_cast<uintptr_t>(thunkFn));
@@ -341,8 +341,8 @@ DEF_OP(CPUID) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterBranchHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void X86JITCore::RegisterBranchHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(GUESTCALLDIRECT,   GuestCallDirect);
   REGISTER_OP(GUESTCALLINDIRECT, GuestCallIndirect);
   REGISTER_OP(GUESTRETURN,       GuestReturn);

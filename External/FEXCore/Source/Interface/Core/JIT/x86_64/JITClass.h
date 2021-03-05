@@ -54,10 +54,10 @@ const std::array<std::pair<Xbyak::Reg, Xbyak::Reg>, 4> RA64Pair = {{ {rsi, r8}, 
 const std::array<Xbyak::Reg, 11> RAXMM = { xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10, xmm11};
 const std::array<Xbyak::Xmm, 11> RAXMM_x = {  xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10, xmm11};
 
-class JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
+class X86JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
 public:
-  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
-  ~JITCore() override;
+  explicit X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
+  ~X86JITCore() override;
   std::string GetName() override { return "JIT"; }
   void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
@@ -142,7 +142,7 @@ private:
     CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
   }
 
-  static uint64_t ExitFunctionLink(JITCore* code, FEXCore::Core::InternalThreadState *Thread, uint64_t *record);
+  static uint64_t ExitFunctionLink(X86JITCore* code, FEXCore::Core::InternalThreadState *Thread, uint64_t *record);
 
   // This is the initial code buffer that we will fall back to
   // In a program without signals and code clearing, we will typically
@@ -179,13 +179,13 @@ private:
   void RestoreThreadState(void *ucontext);
   std::stack<uint64_t> SignalFrames;
   uint32_t SpillSlots{};
-  using SetCC = void (JITCore::*)(const Operand& op);
-  using CMovCC = void (JITCore::*)(const Reg& reg, const Operand& op);
-  using JCC = void (JITCore::*)(const Label& label, LabelType type);
+  using SetCC = void (X86JITCore::*)(const Operand& op);
+  using CMovCC = void (X86JITCore::*)(const Reg& reg, const Operand& op);
+  using JCC = void (X86JITCore::*)(const Label& label, LabelType type);
 
   std::tuple<SetCC, CMovCC, JCC> GetCC(IR::CondClassType cond);
 
-  using OpHandler = void (JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
+  using OpHandler = void (X86JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
   std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};
   void RegisterALUHandlers();
   void RegisterAtomicHandlers();
@@ -210,7 +210,7 @@ private:
 
   ///< ALU Ops
   DEF_OP(TruncElementPair);
-  DEF_OP(Constant); 
+  DEF_OP(Constant);
   DEF_OP(EntrypointOffset);
   DEF_OP(InlineConstant);
   DEF_OP(InlineEntrypointOffset);

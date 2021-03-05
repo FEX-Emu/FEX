@@ -5,7 +5,7 @@
 
 namespace FEXCore::CPU {
 
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 
 DEF_OP(LoadContext) {
   auto Op = IROp->C<IR::IROp_LoadContext>();
@@ -419,7 +419,7 @@ DEF_OP(StoreFlag) {
   mov(byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)], al);
 }
 
-Xbyak::RegExp JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
+Xbyak::RegExp X86JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return Base;
   } else {
@@ -568,8 +568,8 @@ DEF_OP(VStoreMemElement) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterMemoryHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void X86JITCore::RegisterMemoryHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(LOADCONTEXT,         LoadContext);
   REGISTER_OP(STORECONTEXT,        StoreContext);
   REGISTER_OP(LOADREGISTER,        Unhandled); // SRA specific, not supported on this backend

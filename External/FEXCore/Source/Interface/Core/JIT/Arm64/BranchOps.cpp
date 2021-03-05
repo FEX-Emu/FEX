@@ -8,7 +8,7 @@
 namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(GuestCallDirect) {
   LogMan::Msg::D("Unimplemented");
 }
@@ -35,7 +35,7 @@ DEF_OP(CallbackReturn) {
 
   // spill back to CTX
   SpillStaticRegs();
-  
+
   // First we must reset the stack
   ResetStack();
 
@@ -77,7 +77,7 @@ DEF_OP(ExitFunction) {
     place(&l_BranchGuest);
   } else {
     RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
-    
+
     // L1 Cache
     LoadConstant(x0, State->LookupCache->GetL1Pointer());
 
@@ -182,7 +182,7 @@ DEF_OP(CondJump) {
 
     b(TrueTargetLabel, MapBranchCC(Op->Cond));
   }
-  
+
   if (FalseIter == JumpTargets.end()) {
     FalseTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
   }
@@ -217,7 +217,7 @@ DEF_OP(Syscall) {
   blr(x3);
 
   add(sp, sp, SPOffset);
-  
+
   // Result is now in x0
   // Fix the stack and any values that were stepped on
   FillStaticRegs();
@@ -239,8 +239,8 @@ DEF_OP(Thunk) {
 
   mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
 
-#if _M_X86_64
-  ERROR_AND_DIE("JIT: OP_THUNK not supported with arm simulator")
+#if VIXL_SIMULATOR
+  ERROR_AND_DIE("JIT: OP_THUNK not supported with arm simulator");
 #else
   auto thunkFn = State->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   LoadConstant(x2, (uintptr_t)thunkFn);
@@ -248,7 +248,7 @@ DEF_OP(Thunk) {
 #endif
 
   PopDynamicRegsAndLR();
-  
+
   FillStaticRegs(); // load from ctx after ra64 refill
 }
 
@@ -262,7 +262,7 @@ DEF_OP(ValidateCode) {
   LoadConstant(GetReg<RA_64>(Node), 0);
   LoadConstant(x0, IR->GetHeader()->Entry + Op->Offset);
   LoadConstant(x1, 1);
-  
+
   while (len >= 8)
   {
     ldr(x2, MemOperand(x0, idx));
@@ -308,10 +308,10 @@ DEF_OP(RemoveCodeEntry) {
   // X1: RIP
 
   PushDynamicRegsAndLR();
-  
+
   mov(x0, STATE);
   LoadConstant(x1, IR->GetHeader()->Entry);
- 
+
   LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
   SpillStaticRegs();
   blr(x2);
@@ -323,7 +323,7 @@ DEF_OP(RemoveCodeEntry) {
 
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
-  
+
   PushDynamicRegsAndLR();
 
   // x0 = CPUID Handler
@@ -354,8 +354,8 @@ DEF_OP(CPUID) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterBranchHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void Arm64JITCore::RegisterBranchHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(GUESTCALLDIRECT,   GuestCallDirect);
   REGISTER_OP(GUESTCALLINDIRECT, GuestCallIndirect);
   REGISTER_OP(GUESTRETURN,       GuestReturn);

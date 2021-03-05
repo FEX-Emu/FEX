@@ -558,7 +558,7 @@ namespace FEXCore::Context {
     State->PassManager->RegisterExitHandler([this]() {
         Stop(false /* Ignore current thread */);
     });
-    
+
     #if _M_ARM_64
     bool DoSRA = true;
     #else
@@ -579,10 +579,18 @@ namespace FEXCore::Context {
       break;
     case FEXCore::Config::CONFIG_IRJIT:
       State->PassManager->InsertRegisterAllocationPass(DoSRA);
-      State->CPUBackend.reset(FEXCore::CPU::CreateJITCore(this, State, CompileThread));
+
+#if (_M_X86_64 && JIT_X86_64)
+      State->CPUBackend.reset(FEXCore::CPU::CreateX86JITCore(this, State, CompileThread));
+#elif (_M_ARM_64 && JIT_ARM64)
+      State->CPUBackend.reset(FEXCore::CPU::CreateArm64JITCore(this, State, CompileThread));
+#else
+      ERROR_AND_DIE("FEXCore has been compiled without a viable JIT core");
+#endif
+
       break;
     case FEXCore::Config::CONFIG_CUSTOM:      State->CPUBackend.reset(CustomCPUFactory(this, &State->State)); break;
-    default: LogMan::Msg::A("Unknown core configuration");
+    default: ERROR_AND_DIE("Unknown core configuration");
     }
   }
 
@@ -684,7 +692,7 @@ namespace FEXCore::Context {
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
           Thread->OpDispatcher->_RemoveCodeEntry();
           Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
-          
+
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
 
           Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
@@ -850,7 +858,7 @@ namespace FEXCore::Context {
         }
 
         auto AOTEntry = Mod->find(GuestRIP - file->second.Start + file->second.Offset);
-        
+
         if (AOTEntry != Mod->end()) {
           // verify hash
           auto MappedStart = AOTEntry->second.start + file->second.Start  - file->second.Offset;
@@ -935,7 +943,7 @@ namespace FEXCore::Context {
         stream.read((char*)&addr, sizeof(addr));
         if (!stream)
           return false;
-        
+
         stream.read((char*)&start, sizeof(start));
         if (!stream)
           return false;
@@ -958,9 +966,9 @@ namespace FEXCore::Context {
         }
         IR::RegisterAllocationData *RAData = (IR::RegisterAllocationData *)malloc(IR::RegisterAllocationData::Size(RASize));
         RAData->MapCount = RASize;
-        
+
         stream.read((char*)&RAData->Map[0], sizeof(RAData->Map[0]) * RASize);
-        
+
         if (!stream) {
           delete IR;
           return false;
@@ -1025,7 +1033,7 @@ namespace FEXCore::Context {
 
 
   uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    
+
     // Is the code in the cache?
     // The backends only check L1 and L2, not L3
     if (auto HostCode = Thread->LookupCache->FindBlock(GuestRIP)) {
@@ -1098,12 +1106,12 @@ namespace FEXCore::Context {
       // Add to AOT cache if aot generation is enabled
       if (Config.AOTIRCapture && RAData) {
         std::lock_guard<std::mutex> lk(AOTIRCacheLock);
-        
+
         RAData->IsShared = true;
         IRList->IsShared = true;
 
         auto hash = fasthash64((void*)StartAddr, Length, 0);
-        
+
         auto file = AddrToFile.lower_bound(StartAddr);
         if (file != AddrToFile.begin()) {
           --file;
@@ -1183,9 +1191,9 @@ namespace FEXCore::Context {
     if (Thread->CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_MMAN) {
       auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
       auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length) >> 12);
-      
+
       for (auto it = lower; it != upper; it++) {
-        for (auto Address: it->second) 
+        for (auto Address: it->second)
           Context::RemoveCodeEntry(Thread, Address);
         it->second.clear();
       }
@@ -1256,7 +1264,7 @@ namespace FEXCore::Context {
   void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
     // TODO: Support overlapping maps and region splitting
     auto base_filename = std::filesystem::path(filename).filename().string();
-    
+
     if (base_filename.size()) {
       auto filename_hash = fasthash64(filename.c_str(), filename.size(), 0xBAADF00D);
 

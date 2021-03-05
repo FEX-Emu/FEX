@@ -4,7 +4,7 @@ namespace FEXCore::CPU {
 
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(ExtractElementPair) {
   auto Op = IROp->C<IR::IROp_ExtractElementPair>();
   switch (Op->Header.Size) {
@@ -68,8 +68,8 @@ DEF_OP(Mov) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterMoveHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void Arm64JITCore::RegisterMoveHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(EXTRACTELEMENTPAIR, ExtractElementPair);
   REGISTER_OP(CREATEELEMENTPAIR,  CreateElementPair);
   REGISTER_OP(MOV,                Mov);

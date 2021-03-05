@@ -2,7 +2,7 @@
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(TruncElementPair) {
   auto Op = IROp->C<IR::IROp_TruncElementPair>();
 
@@ -1168,8 +1168,8 @@ DEF_OP(FCmp) {
 
 #undef DEF_OP
 
-void JITCore::RegisterALUHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void X86JITCore::RegisterALUHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(TRUNCELEMENTPAIR,  TruncElementPair);
   REGISTER_OP(CONSTANT,          Constant);
   REGISTER_OP(ENTRYPOINTOFFSET,  EntrypointOffset);

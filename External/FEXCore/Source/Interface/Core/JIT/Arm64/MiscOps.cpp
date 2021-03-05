@@ -4,7 +4,7 @@ namespace FEXCore::CPU {
 
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
@@ -111,8 +111,8 @@ DEF_OP(SetRoundingMode) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterMiscHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void Arm64JITCore::RegisterMiscHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(DUMMY,      NoOp);
   REGISTER_OP(IRHEADER,   NoOp);
   REGISTER_OP(CODEBLOCK,  NoOp);

@@ -3,7 +3,7 @@
 
 namespace FEXCore::CPU {
 
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(VInsGPR) {
   auto Op = IROp->C<IR::IROp_VInsGPR>();
   movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
@@ -171,8 +171,8 @@ DEF_OP(Vector_FToF) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterConversionHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void X86JITCore::RegisterConversionHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(VINSGPR,         VInsGPR);
   REGISTER_OP(VCASTFROMGPR,    VCastFromGPR);
   REGISTER_OP(FLOAT_FROMGPR_U, Float_FromGPR_U);

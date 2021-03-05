@@ -67,16 +67,16 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
   v8,  v9,  v10, v11, v12, v13, v14, v15
 };
 
-class JITCore final : public CPUBackend, public vixl::aarch64::Assembler  {
+class Arm64JITCore final : public CPUBackend, public vixl::aarch64::Assembler  {
 public:
   struct CodeBuffer {
     uint8_t *Ptr;
     size_t Size;
   };
 
-  explicit JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
+  explicit Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
 
-  ~JITCore() override;
+  ~Arm64JITCore() override;
   std::string GetName() override { return "JIT"; }
   void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
@@ -202,7 +202,7 @@ private:
   void PushCalleeSavedRegisters();
   void PopCalleeSavedRegisters();
 
-  static uint64_t ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record);
+  static uint64_t ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record);
 
   /**
    * @name Dispatch Helper functions
@@ -243,7 +243,7 @@ private:
 
   void ResetStack();
 
-  using OpHandler = void (JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
+  using OpHandler = void (Arm64JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
   std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};
   void RegisterALUHandlers();
   void RegisterAtomicHandlers();
