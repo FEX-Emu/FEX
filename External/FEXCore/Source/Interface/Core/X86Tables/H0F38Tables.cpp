@@ -54,7 +54,7 @@ void InitializeH0F38Tables() {
     {OPD(PF_38_66,   0x25), 1, X86InstInfo{"PMOVSXDQ",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x28), 1, X86InstInfo{"PMULDQ",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(PF_38_66,   0x29), 1, X86InstInfo{"PCMPEQQ",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(PF_38_66,   0x2A), 1, X86InstInfo{"MOVNTDQA",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(PF_38_66,   0x2A), 1, X86InstInfo{"MOVNTDQA",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(PF_38_66,   0x2B), 1, X86InstInfo{"PACKUSDW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(PF_38_66,   0x30), 1, X86InstInfo{"PMOVZXBW",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
