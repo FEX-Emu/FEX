@@ -9127,6 +9127,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x1D), 1, &OpDispatchBuilder::PABS<2>},
     {OPD(PF_38_NONE, 0x1E), 1, &OpDispatchBuilder::PABS<4>},
     {OPD(PF_38_66,   0x1E), 1, &OpDispatchBuilder::PABS<4>},
+    {OPD(PF_38_66,   0x2A), 1, &OpDispatchBuilder::MOVAPSOp},
     {OPD(PF_38_66,   0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
