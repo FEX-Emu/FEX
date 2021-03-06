@@ -103,7 +103,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   message(FATAL_ERROR "FEX doesn't support getting compiled with GCC!")
 endif()
 
-find_package(Python 3.0 REQUIRED COMPONENTS Interpreter Development)
+find_package(Python 3.0 REQUIRED COMPONENTS Interpreter)
 
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
