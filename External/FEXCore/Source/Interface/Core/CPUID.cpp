@@ -375,6 +375,40 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h() {
   return Res;
 }
 
+// L2 Cache identifiers
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h() {
+  FEXCore::CPUID::FunctionResults Res{};
+
+  // L2 TLB Information for 2MB and 4MB pages
+  Res.eax =
+    (1024 << 0)  | // Number of TLB instruction entries
+    (6 << 12)    | // instruction TLB associativity type
+    (1536 << 16) | // Number of TLB data entries
+    (3 << 28);     // data TLB associativity type
+
+  // L2 TLB Information for 4KB pages
+  Res.ebx =
+    (1024 << 0)  | // Number of TLB instruction entries
+    (6 << 12)    | // instruction TLB associativity type
+    (1536 << 16) | // Number of TLB data entries
+    (5 << 28);     // data TLB associativity type
+
+  // L2 cache identifiers
+  Res.ecx =
+    (64 << 0) |  // cacheline size
+    (1 << 8)  |  // cachelines per tag
+    (6 << 12) |  // cache associativity
+    (512 << 16); // L2 cache size in KB
+
+  // L3 cache identifiers
+  Res.edx =
+    (64 << 0) | // cacheline size
+    (1 << 8)  | // cachelines per tag
+    (6 << 12) | // cache associativity
+    (16 << 18); // L2 cache size in KB
+  return Res;
+}
+
 // Advanced power management
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h() {
   FEXCore::CPUID::FunctionResults Res{};
@@ -424,6 +458,7 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   RegisterFunction(0x8000'0004, std::bind(&CPUIDEmu::Function_8000_0004h, this));
   // 0x8000'0005: L1 Cache and TLB identifiers
   // 0x8000'0006: L2 Cache identifiers
+  RegisterFunction(0x8000'0006, std::bind(&CPUIDEmu::Function_8000_0006h, this));
   // Advanced power management information
   RegisterFunction(0x8000'0007, std::bind(&CPUIDEmu::Function_8000_0007h, this));
   // 0x8000'0008: Virtual and physical address sizes
