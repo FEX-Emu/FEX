@@ -95,6 +95,7 @@ namespace FEX::ArgLoader {
     {
       Parser.set_defaults("RootFS", "");
       Parser.set_defaults("ThunkLibs", "");
+      Parser.set_defaults("ThunksConfigPath", "");
 
       EmulationGroup.add_option("-R", "--rootfs")
         .dest("RootFS")
@@ -103,6 +104,10 @@ namespace FEX::ArgLoader {
       EmulationGroup.add_option("-t", "--thunklibs")
         .dest("ThunkLibs")
         .help("Folder to find the host-side thunking libs");
+
+      EmulationGroup.add_option("-T", "--thunk-config")
+        .dest("ThunksConfigPath")
+        .help("Which Thunks config file to use (Default search rootfs)");
 
       EmulationGroup.add_option("-E", "--env")
         .dest("Env")
@@ -251,6 +256,11 @@ namespace FEX::ArgLoader {
       if (Options.is_set_by_user("RootFS")) {
         std::string Option = Options["RootFS"];
         Set(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH, Option);
+      }
+
+      if (Options.is_set_by_user("ThunksConfigPath")) {
+        std::string Option = Options["ThunkConfigPath"];
+        Set(FEXCore::Config::ConfigOption::CONFIG_THUNKSCONFIGPATH, Option);
       }
 
       if (Options.is_set_by_user("ThunkLibs")) {
