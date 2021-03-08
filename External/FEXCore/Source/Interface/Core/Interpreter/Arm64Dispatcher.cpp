@@ -1,4 +1,5 @@
 #include "Common/MathUtils.h"
+#include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include <FEXCore/Core/X86Enums.h>
 
@@ -28,9 +29,9 @@ using namespace vixl::aarch64;
 #define STATE x28
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
-class DispatchGenerator : public vixl::aarch64::Assembler {
+class Arm64DispatchGenerator : public vixl::aarch64::Assembler {
   public:
-    DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
+    Arm64DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
     bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
     bool HandleSignalPause(int Signal, void *info, void *ucontext);
 
@@ -51,7 +52,7 @@ class DispatchGenerator : public vixl::aarch64::Assembler {
     std::stack<uint64_t> SignalFrames;
 };
 
-void DispatchGenerator::PushCalleeSavedRegisters() {
+void Arm64DispatchGenerator::PushCalleeSavedRegisters() {
   // We need to save pairs of registers
   // We save r19-r30
   MemOperand PairOffset(sp, -16, PreIndex);
@@ -97,7 +98,7 @@ void DispatchGenerator::PushCalleeSavedRegisters() {
   }
 }
 
-void DispatchGenerator::PopCalleeSavedRegisters() {
+void Arm64DispatchGenerator::PopCalleeSavedRegisters() {
   const std::array<
     std::tuple<vixl::aarch64::VRegister,
                vixl::aarch64::VRegister,
@@ -132,7 +133,7 @@ void DispatchGenerator::PopCalleeSavedRegisters() {
   }
 }
 
-void DispatchGenerator::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
+void Arm64DispatchGenerator::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
   bool Is64Bit = Reg.IsX();
   int Segments = Is64Bit ? 4 : 2;
 
@@ -145,7 +146,7 @@ void DispatchGenerator::LoadConstant(vixl::aarch64::Register Reg, uint64_t Const
   }
 }
 
-DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
+Arm64DispatchGenerator::Arm64DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
   : vixl::aarch64::Assembler(MAX_DISPATCHER_CODE_SIZE, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
   , State {Thread} {
@@ -342,61 +343,18 @@ DispatchGenerator::DispatchGenerator(FEXCore::Context::Context *ctx, FEXCore::Co
   GetBuffer()->SetExecutable();
 }
 
-
-struct HostCTXHeader {
-  uint32_t Magic;
-  uint32_t Size;
-};
-
-constexpr uint32_t FPR_MAGIC = 0x46508001U;
-
-struct HostFPRState {
-  HostCTXHeader Head;
-  uint32_t FPSR;
-  uint32_t FPCR;
-  __uint128_t FPRs[32];
-};
-
-struct ContextBackup {
-  // Host State
-  uint64_t GPRs[31];
-  uint64_t PrevSP;
-  uint64_t PrevPC;
-  uint64_t PState;
-  uint32_t FPSR;
-  uint32_t FPCR;
-  __uint128_t FPRs[32];
-
-  // Guest state
-  int Signal;
-  FEXCore::Core::CPUState GuestState;
-};
-
-void DispatchGenerator::StoreThreadState(int Signal, void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
-  // We can end up getting a signal at any point in our host state
+void Arm64DispatchGenerator::StoreThreadState(int Signal, void *ucontext) {
+    // We can end up getting a signal at any point in our host state
   // Jump to a handler that saves all state so we can safely return
-  uint64_t OldSP = _mcontext->sp;
+  uint64_t OldSP = ArchHelpers::Context::GetSp(ucontext);
   uintptr_t NewSP = OldSP;
 
-  size_t StackOffset = sizeof(ContextBackup);
+  size_t StackOffset = sizeof(ArmContextBackup);
   NewSP -= StackOffset;
   NewSP = AlignDown(NewSP, 16);
 
-  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
-  memcpy(&Context->GPRs[0], &_mcontext->regs[0], 31 * sizeof(uint64_t));
-  Context->PrevSP = _mcontext->sp;
-  Context->PrevPC = _mcontext->pc;
-  Context->PState = _mcontext->pstate;
-
-  // Host FPR state starts at _mcontext->reserved[0];
-  HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
-  LogMan::Throw::A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
-  Context->FPSR = HostState->FPSR;
-  Context->FPCR = HostState->FPCR;
-  memcpy(&Context->FPRs[0], &HostState->FPRs[0], 32 * sizeof(__uint128_t));
+  ArmContextBackup *Context = reinterpret_cast<ArmContextBackup*>(NewSP);
+  ArchHelpers::Context::BackupContext(ucontext, Context);
 
   // Retain the action pointer so we can see it when we return
   Context->Signal = Signal;
@@ -407,48 +365,34 @@ void DispatchGenerator::StoreThreadState(int Signal, void *ucontext) {
   memcpy(&Context->GuestState, &State->State, sizeof(FEXCore::Core::CPUState));
 
   // Set the new SP
-  _mcontext->sp = NewSP;
+  ArchHelpers::Context::SetSp(ucontext, NewSP);
 }
 
-void DispatchGenerator::RestoreThreadState(void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
-  uint64_t OldSP = _mcontext->sp;
+void Arm64DispatchGenerator::RestoreThreadState(void *ucontext) {
+  uint64_t OldSP = ArchHelpers::Context::GetSp(ucontext);
   uintptr_t NewSP = OldSP;
-  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
+  ArmContextBackup *Context = reinterpret_cast<ArmContextBackup*>(NewSP);
 
   // First thing, reset the guest state
   memcpy(&State->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
 
-  // Now restore host state
-  HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
-  LogMan::Throw::A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
-  memcpy(&HostState->FPRs[0], &Context->FPRs[0], 32 * sizeof(__uint128_t));
-  Context->FPCR = HostState->FPCR;
-  Context->FPSR = HostState->FPSR;
-
-  // Restore GPRs and other state
-  _mcontext->pstate = Context->PState;
-  _mcontext->pc = Context->PrevPC;
-  _mcontext->sp = Context->PrevSP;
-  memcpy(&_mcontext->regs[0], &Context->GPRs[0], 31 * sizeof(uint64_t));
+  ArchHelpers::Context::RestoreContext(ucontext, Context);
 
   // Restore the previous signal state
   // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
   CTX->SignalDelegation->SetCurrentSignal(Context->Signal);
 }
 
-bool DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
+bool Arm64DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
   ucontext_t* _context = (ucontext_t*)ucontext;
   mcontext_t* _mcontext = &_context->uc_mcontext;
 
   StoreThreadState(Signal, ucontext);
 
   // Set the new PC
-  _mcontext->pc = AbsoluteLoopTopAddress;
+  ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddress);
   // Set x28 (which is our state register) to point to our guest thread data
-  _mcontext->regs[28 /* STATE */] = reinterpret_cast<uint64_t>(State);
+  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State));
 
   State->State.State.gregs[X86State::REG_RDI] = Signal;
   uint64_t OldGuestSP = State->State.State.gregs[X86State::REG_RSP];
@@ -490,21 +434,18 @@ bool DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucontext
   return true;
 }
 
-bool DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucontext) {
+bool Arm64DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucontext) {
   FEXCore::Core::SignalEvent SignalReason = State->SignalReason.load();
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE) {
-    ucontext_t* _context = (ucontext_t*)ucontext;
-    mcontext_t* _mcontext = &_context->uc_mcontext;
-
     // Store our thread state so we can come back to this
     StoreThreadState(Signal, ucontext);
 
     // Set the new PC
-    _mcontext->pc = ThreadPauseHandlerAddress;
+    ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
 
     // Set our state register to point to our guest thread data
-    _mcontext->regs[28 /* STATE */] = reinterpret_cast<uint64_t>(State);
+    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State));
 
     State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
@@ -518,16 +459,13 @@ bool DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucontext
   }
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_STOP) {
-    ucontext_t* _context = (ucontext_t*)ucontext;
-    mcontext_t* _mcontext = &_context->uc_mcontext;
-
     // Our thread is stopping
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the JIT and get out safely
-    _mcontext->sp = State->State.ReturningStackLocation;
+    ArchHelpers::Context::SetSp(ucontext, State->State.ReturningStackLocation);
 
     // Set the new PC
-    _mcontext->pc = ThreadStopHandlerAddress;
+    ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
 
     State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
@@ -536,8 +474,10 @@ bool DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucontext
   return false;
 }
 
+#ifdef _M_ARM_64
+
 void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  Generator = new DispatchGenerator(ctx, Thread);
+  Generator = new Arm64DispatchGenerator(ctx, Thread);
   DispatchPtr = Generator->DispatchPtr;
   CallbackPtr = Generator->CallbackPtr;
 
@@ -547,17 +487,19 @@ void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore:
 }
 
 bool InterpreterCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
-  DispatchGenerator *Gen = Generator;
+  Arm64DispatchGenerator *Gen = Generator;
   return Gen->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
 }
 
 bool InterpreterCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
-  DispatchGenerator *Gen = Generator;
+  Arm64DispatchGenerator *Gen = Generator;
   return Gen->HandleSignalPause(Signal, info, ucontext);
 }
 
 void InterpreterCore::DeleteAsmDispatch() {
   delete Generator;
 }
+
+#endif
 
 }

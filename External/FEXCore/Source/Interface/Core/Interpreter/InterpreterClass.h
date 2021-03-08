@@ -8,7 +8,8 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 
 namespace FEXCore::CPU {
-class DispatchGenerator;
+class X86DispatchGenerator;
+class Arm64DispatchGenerator;
 
 #define DESTMAP_AS_MAP 0
 #if DESTMAP_AS_MAP
@@ -47,7 +48,12 @@ private:
   template<typename Res>
   Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src);
 
-  DispatchGenerator *Generator{};
+#ifdef _M_X86_64
+  X86DispatchGenerator *Generator{};
+#endif
+#ifdef _M_ARM_64
+  Arm64DispatchGenerator *Generator{};
+#endif
 };
 
 }
