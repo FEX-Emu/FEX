@@ -64,6 +64,7 @@ namespace {
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, "1");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH,         "");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH,      "");
+
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS,         "0");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "GALLIUM_THREAD=1");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "GALLIUM_HUD=fps");
@@ -199,6 +200,7 @@ namespace {
   void FillEmulationConfig() {
     char RootFS[256]{};
     char ThunkPath[256]{};
+    char ThunksConfigPath[256]{};
 
     int NumEnvironmentVariables{};
 
@@ -221,6 +223,14 @@ namespace {
         ConfigChanged = true;
       }
 
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKSCONFIGPATH);
+      if (Value.has_value() && !(*Value)->empty()) {
+        strncpy(ThunksConfigPath, &(*Value)->at(0), 256);
+      }
+      if (ImGui::InputText("Thunks Config:", ThunksConfigPath, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKSCONFIGPATH, ThunksConfigPath);
+        ConfigChanged = true;
+      }
 
       auto ValueList = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT);
       if (ValueList.has_value()) {
