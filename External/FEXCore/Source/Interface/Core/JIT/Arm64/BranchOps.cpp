@@ -239,13 +239,9 @@ DEF_OP(Thunk) {
 
   mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
 
-#if VIXL_SIMULATOR
-  ERROR_AND_DIE("JIT: OP_THUNK not supported with arm simulator");
-#else
   auto thunkFn = State->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   LoadConstant(x2, (uintptr_t)thunkFn);
   blr(x2);
-#endif
 
   PopDynamicRegsAndLR();
 

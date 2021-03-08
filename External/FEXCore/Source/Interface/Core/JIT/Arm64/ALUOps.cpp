@@ -524,14 +524,10 @@ DEF_OP(LDiv) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-#if VIXL_SIMULATOR
-      CallRuntime(LDIV);
-#else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LDIV));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
-#endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
@@ -571,14 +567,10 @@ DEF_OP(LUDiv) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-#if VIXL_SIMULATOR
-      CallRuntime(LUDIV);
-#else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LUDIV));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
-#endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
@@ -628,14 +620,10 @@ DEF_OP(LRem) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-#if VIXL_SIMULATOR
-      CallRuntime(LREM);
-#else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LREM));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
-#endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
@@ -682,14 +670,11 @@ DEF_OP(LURem) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-#if VIXL_SIMULATOR
-      CallRuntime(LUREM);
-#else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LUREM));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
-#endif
+
       // Fix the stack and any values that were stepped on
       PopDynamicRegsAndLR();
 
