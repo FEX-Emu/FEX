@@ -179,6 +179,7 @@ namespace FEX::Config {
     {FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, "Threads"},
     {FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH,         "RootFS"},
     {FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH,      "ThunkLibs"},
+    {FEXCore::Config::ConfigOption::CONFIG_THUNKSCONFIGPATH,   "ThunksConfigPath"},
     {FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS,         "SilentLog"},
     {FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "Env"},
     {FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG,          "OutputLog"},
@@ -228,6 +229,7 @@ namespace FEX::Config {
     {"Threads",       FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES},
     {"RootFS",        FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH},
     {"ThunkLibs",     FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH},
+    {"ThunksConfigPath", FEXCore::Config::ConfigOption::CONFIG_THUNKSCONFIGPATH},
     {"SilentLog",     FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS},
     {"Env",           FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT},
     {"OutputLog",     FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG},
@@ -311,7 +313,7 @@ namespace FEX::Config {
       }
     };
 
-    static const std::array<std::pair<std::string, FEXCore::Config::ConfigOption>, 20> ConfigLookup = {{
+    static const std::array<std::pair<std::string, FEXCore::Config::ConfigOption>, 21> ConfigLookup = {{
       {"FEX_CORE",          FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE},
       {"FEX_MAXINST",       FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST},
       {"FEX_SINGLESTEP",    FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP},
@@ -320,6 +322,7 @@ namespace FEX::Config {
       {"FEX_THREADS",       FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES},
       {"FEX_ROOTFS",        FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH},
       {"FEX_THUNKLIBS",     FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH},
+      {"FEX_THUNKSCONFIGPATH", FEXCore::Config::ConfigOption::CONFIG_THUNKSCONFIGPATH},
       {"FEX_SILENTLOG",     FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS},
       {"FEX_ENV",           FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT},
       {"FEX_OUTPUTLOG",     FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG},
