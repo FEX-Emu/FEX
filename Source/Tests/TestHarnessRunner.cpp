@@ -58,47 +58,19 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
   FEXCore::Config::Load();
 
-  FEXCore::Config::Value<uint8_t> CoreConfig{FEXCore::Config::CONFIG_DEFAULTCORE, 0};
-  FEXCore::Config::Value<uint64_t> BlockSizeConfig{FEXCore::Config::CONFIG_MAXBLOCKINST, 1};
-  FEXCore::Config::Value<bool> SingleStepConfig{FEXCore::Config::CONFIG_SINGLESTEP, false};
-  FEXCore::Config::Value<bool> MultiblockConfig{FEXCore::Config::CONFIG_MULTIBLOCK, false};
-  FEXCore::Config::Value<bool> GdbServerConfig{FEXCore::Config::CONFIG_GDBSERVER, false};
-  FEXCore::Config::Value<uint64_t> ThreadsConfig{FEXCore::Config::CONFIG_EMULATED_CPU_CORES, 1};
-  FEXCore::Config::Value<std::string> LDPath{FEXCore::Config::CONFIG_ROOTFSPATH, ""};
-  FEXCore::Config::Value<std::string> ThunkLibsPath{FEXCore::Config::CONFIG_THUNKLIBSPATH, ""};
-  FEXCore::Config::Value<bool> SilentLog{FEXCore::Config::CONFIG_SILENTLOGS, false};
-  FEXCore::Config::Value<std::string> Environment{FEXCore::Config::CONFIG_ENVIRONMENT, ""};
-  FEXCore::Config::Value<std::string> OutputLog{FEXCore::Config::CONFIG_OUTPUTLOG, "stderr"};
-  FEXCore::Config::Value<std::string> DumpIR{FEXCore::Config::CONFIG_DUMPIR, "no"};
-  FEXCore::Config::Value<bool> TSOEnabledConfig{FEXCore::Config::CONFIG_TSO_ENABLED, true};
-  FEXCore::Config::Value<uint8_t> SMCChecksConfig{FEXCore::Config::CONFIG_SMC_CHECKS, FEXCore::Config::CONFIG_SMC_MMAN};
-  FEXCore::Config::Value<bool> ABILocalFlags{FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, false};
-  FEXCore::Config::Value<bool> AbiNoPF{FEXCore::Config::CONFIG_ABI_NO_PF, false};
-
   auto Args = FEX::ArgLoader::Get();
 
   LogMan::Throw::A(Args.size() > 1, "Not enough arguments");
 
   FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
   auto CTX = FEXCore::Context::CreateNewContext();
 
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DEFAULTCORE, CoreConfig());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MULTIBLOCK, MultiblockConfig());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SINGLESTEP, SingleStepConfig());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_MAXBLOCKINST, BlockSizeConfig());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_TSO_ENABLED, TSOEnabledConfig());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_SMC_CHECKS, SMCChecksConfig());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS, ABILocalFlags());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_ABI_NO_PF, AbiNoPF());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_DUMPIR, DumpIR());
-  FEXCore::Config::SetConfig(CTX, FEXCore::Config::CONFIG_VALIDATE_IR_PARSER, true);
   FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostFactory::CPUCreationFactory);
 
   FEXCore::Context::InitializeContext(CTX);
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
   std::unique_ptr<FEXCore::HLE::SyscallHandler> SyscallHandler{

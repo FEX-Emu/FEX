@@ -9,33 +9,8 @@
 
 namespace FEXCore::Config {
   enum ConfigOption {
-    CONFIG_MULTIBLOCK,
-    CONFIG_MAXBLOCKINST,
-    CONFIG_DEFAULTCORE,
-    CONFIG_VIRTUALMEMSIZE,
-    CONFIG_SINGLESTEP,
-    CONFIG_GDBSERVER,
-    CONFIG_ROOTFSPATH,
-    CONFIG_THUNKLIBSPATH,
-    CONFIG_IS64BIT_MODE,
-    CONFIG_EMULATED_CPU_CORES,
-    CONFIG_TSO_ENABLED,
-    CONFIG_SMC_CHECKS,
-    CONFIG_ABI_LOCAL_FLAGS,
-    CONFIG_ABI_NO_PF,
-    CONFIG_DUMPIR,
-    CONFIG_VALIDATE_IR_PARSER,
-    CONFIG_SILENTLOGS,
-    CONFIG_ENVIRONMENT,
-    CONFIG_OUTPUTLOG,
-    CONFIG_BREAK_ON_FRONTEND,
-    CONFIG_DUMP_GPRS,
-    CONFIG_IS_INTERPRETER,
-    CONFIG_INTERPRETER_INSTALLED,
-    CONFIG_APP_FILENAME,
-    CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES,
-    CONFIG_AOTIR_GENERATE,
-    CONFIG_AOTIR_LOAD
+#define OPT_BASE(type, group, enum, json, env, default) CONFIG_##enum,
+#include <FEXCore/Config/ConfigValues.inl>
   };
 
   enum ConfigCore {
@@ -49,10 +24,6 @@ namespace FEXCore::Config {
     CONFIG_SMC_MMAN,
     CONFIG_SMC_FULL,
   };
-  
-  void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config);
-  void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, std::string const &Config);
-  uint64_t GetConfig(FEXCore::Context::Context *CTX, ConfigOption Option);
 
   enum class LayerType {
     LAYER_MAIN,
@@ -62,6 +33,23 @@ namespace FEXCore::Config {
     LAYER_ENVIRONMENT,
     LAYER_TOP,
   };
+
+namespace DefaultValues {
+#define P(x) x
+#define OPT_BASE(type, group, enum, json, env, default) constexpr P(type) P(enum) = P(default);
+#define OPT_STR(group, enum, json, env, default) const std::string P(enum) = P(default);
+#include <FEXCore/Config/ConfigValues.inl>
+
+namespace Type {
+#define OPT_BASE(type, group, enum, json, env, default) using P(enum) = P(type);
+#define OPT_STR(group, enum, json, env, default) using P(enum) = std::string;
+#include <FEXCore/Config/ConfigValues.inl>
+}
+#define FEX_CONFIG_OPT(name, enum) \
+  FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::enum> name {FEXCore::Config::CONFIG_##enum, FEXCore::Config::DefaultValues::enum}
+
+#undef P
+}
 
   using LayerValue = std::list<std::string>;
   using LayerOptions = std::unordered_map<ConfigOption, LayerValue>;
@@ -147,7 +135,9 @@ namespace FEXCore::Config {
       GetListIfExists(Option, &AppendList);
     }
 
+    operator T() { return ValueData; }
     T operator()() { return ValueData; }
+    Value<T>(T Value) { ValueData = Value; }
     std::list<T> &All() { return AppendList; }
 
   private:

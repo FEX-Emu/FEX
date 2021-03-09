@@ -28,7 +28,7 @@ X86GeneratedCode::~X86GeneratedCode() {
 }
 
 void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
-  FEXCore::Config::Value<bool> Is64BitMode{FEXCore::Config::CONFIG_IS64BIT_MODE, 0};
+  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
   if (Is64BitMode()) {
     // 64bit mode can have its sigret handler anywhere

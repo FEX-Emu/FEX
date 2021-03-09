@@ -788,10 +788,10 @@ namespace History {
 namespace Config {
   bool ShowConfig = true;
   struct Configs {
-    FEXCore::Config::Value<uint64_t> ConfigMaxInst{FEXCore::Config::CONFIG_MAXBLOCKINST, 255};
-    FEXCore::Config::Value<uint8_t> ConfigCore{FEXCore::Config::CONFIG_DEFAULTCORE, 0};
-    FEXCore::Config::Value<uint8_t> ConfigRunningMode{FEXCore::Config::CONFIG_SINGLESTEP, 0};
-    FEXCore::Config::Value<bool> ConfigMultiblock{FEXCore::Config::CONFIG_MULTIBLOCK, false};
+    FEX_CONFIG_OPT(ConfigMaxInst, MAXBLOCKINST);
+    FEX_CONFIG_OPT(ConfigCore, DEFAULTCORE);
+    FEX_CONFIG_OPT(ConfigRunningMode, SINGLESTEP);
+    FEX_CONFIG_OPT(ConfigMultiblock, MULTIBLOCK);
   };
 
   std::unique_ptr<Configs> Config;

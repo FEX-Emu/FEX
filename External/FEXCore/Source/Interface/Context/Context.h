@@ -63,30 +63,27 @@ namespace FEXCore::Context {
     friend class FEXCore::IR::Validation::IRValidation;
 
     struct {
-      bool Multiblock {false};
-      bool BreakOnFrontendFailure {true};
-      int64_t MaxInstPerBlock {-1LL};
-      uint64_t VirtualMemSize {1ULL << 36};
       CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};
-      FEXCore::Config::ConfigCore Core {FEXCore::Config::CONFIG_INTERPRETER};
-      bool GdbServer {false};
-      std::string RootFSPath;
-      std::string ThunkLibsPath;
-
-      bool Is64BitMode {true};
-      bool TSOEnabled {true};
-      FEXCore::Config::ConfigSMCChecks SMCChecks {FEXCore::Config::CONFIG_SMC_MMAN};
-      bool ABILocalFlags {false};
-      bool ABINoPF {false};
-
-      bool AOTIRCapture {false};
-      bool AOTIRLoad {false};
-
-      std::string DumpIR;
+      uint64_t VirtualMemSize{1ULL << 36};
 
       // this is for internal use
       bool ValidateIRarser { false };
 
+      FEX_CONFIG_OPT(Multiblock, MULTIBLOCK);
+      FEX_CONFIG_OPT(SingleStepConfig, SINGLESTEP);
+      FEX_CONFIG_OPT(GdbServer, GDBSERVER);
+      FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+      FEX_CONFIG_OPT(TSOEnabled, TSO_ENABLED);
+      FEX_CONFIG_OPT(ABILocalFlags, ABI_LOCAL_FLAGS);
+      FEX_CONFIG_OPT(ABINoPF, ABI_NO_PF);
+      FEX_CONFIG_OPT(AOTIRCapture, AOTIR_GENERATE);
+      FEX_CONFIG_OPT(AOTIRLoad, AOTIR_LOAD);
+      FEX_CONFIG_OPT(SMCChecks, SMC_CHECKS);
+      FEX_CONFIG_OPT(Core, DEFAULTCORE);
+      FEX_CONFIG_OPT(MaxInstPerBlock, MAXBLOCKINST);
+      FEX_CONFIG_OPT(RootFSPath, ROOTFSPATH);
+      FEX_CONFIG_OPT(ThunkLibsPath, THUNKLIBSPATH);
+      FEX_CONFIG_OPT(DumpIR, DUMPIR);
     } Config;
 
     using IntCallbackReturn =  __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
@@ -231,7 +228,7 @@ namespace FEXCore::Context {
     std::unique_ptr<GdbServer> DebugServer;
 
     bool StartPaused = false;
-    FEXCore::Config::Value<std::string> AppFilename{FEXCore::Config::CONFIG_APP_FILENAME, ""};
+    FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
   };
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);

@@ -475,7 +475,6 @@ public:
   OrderedNode *GetPackedRFLAG(bool Lower8);
 
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
-  bool GetMultiblock() { return Multiblock; }
 
 private:
   bool DecodeFailure{false};

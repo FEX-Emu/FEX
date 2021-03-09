@@ -171,27 +171,18 @@ namespace FEX::Config {
   }
 
   static const std::map<FEXCore::Config::ConfigOption, std::string> ConfigToNameLookup = {{
-    {FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE,        "Core"},
-    {FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST,       "MaxInst"},
-    {FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP,         "SingleStep"},
-    {FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK,         "Multiblock"},
-    {FEXCore::Config::ConfigOption::CONFIG_GDBSERVER,          "GdbServer"},
-    {FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, "Threads"},
-    {FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH,         "RootFS"},
-    {FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH,      "ThunkLibs"},
-    {FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS,         "SilentLog"},
-    {FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "Env"},
-    {FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG,          "OutputLog"},
-    {FEXCore::Config::ConfigOption::CONFIG_DUMPIR,             "DumpIR"},
-    {FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED,        "TSOEnabled"},
-    {FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS,         "SMCChecks"},
-    {FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS,    "ABILocalFlags"},
-    {FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF,          "ABINoPF"},
-    {FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, "O0"},
-    {FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE,       "AOTIRCapture"},
-    {FEXCore::Config::ConfigOption::CONFIG_AOTIR_LOAD,           "AOTIRLoad"},
+#define OPT_BASE(type, group, enum, json, env, default) {FEXCore::Config::ConfigOption::CONFIG_##enum, #json},
+#include <FEXCore/Config/ConfigValues.inl>
   }};
 
+  static const std::map<std::string, FEXCore::Config::ConfigOption> ConfigLookup = {{
+#define OPT_BASE(type, group, enum, json, env, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
+#include <FEXCore/Config/ConfigValues.inl>
+  }};
+  static const std::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
+#define OPT_BASE(type, group, enum, json, env, default) {"FEX_" #env, FEXCore::Config::ConfigOption::CONFIG_##enum},
+#include <FEXCore/Config/ConfigValues.inl>
+  }};
 
   void SaveLayerToJSON(std::string Filename, FEXCore::Config::Layer *const Layer) {
     char Buffer[4096];
@@ -218,28 +209,6 @@ namespace FEX::Config {
   OptionMapper::OptionMapper(FEXCore::Config::LayerType Layer)
     : FEXCore::Config::Layer(Layer) {
   }
-
-  static const std::map<std::string, FEXCore::Config::ConfigOption> ConfigLookup = {{
-    {"Core",          FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE},
-    {"MaxInst",       FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST},
-    {"SingleStep",    FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP},
-    {"Multiblock",    FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK},
-    {"GdbServer",     FEXCore::Config::ConfigOption::CONFIG_GDBSERVER},
-    {"Threads",       FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES},
-    {"RootFS",        FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH},
-    {"ThunkLibs",     FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH},
-    {"SilentLog",     FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS},
-    {"Env",           FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT},
-    {"OutputLog",     FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG},
-    {"DumpIR",        FEXCore::Config::ConfigOption::CONFIG_DUMPIR},
-    {"TSOEnabled",    FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED},
-    {"SMCChecks",     FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS},
-    {"ABILocalFlags", FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS},
-    {"AbiNoPF",       FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF},
-    {"O0",            FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES},
-    {"AOTIRCapture",   FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE},
-    {"AOTIRLoad",       FEXCore::Config::ConfigOption::CONFIG_AOTIR_LOAD},
-  }};
 
   void OptionMapper::MapNameToOption(const char *ConfigName, const char *ConfigString) {
     auto it = ConfigLookup.find(ConfigName);
@@ -311,32 +280,9 @@ namespace FEX::Config {
       }
     };
 
-    static const std::array<std::pair<std::string, FEXCore::Config::ConfigOption>, 20> ConfigLookup = {{
-      {"FEX_CORE",          FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE},
-      {"FEX_MAXINST",       FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST},
-      {"FEX_SINGLESTEP",    FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP},
-      {"FEX_MULTIBLOCK",    FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK},
-      {"FEX_GDBSERVER",     FEXCore::Config::ConfigOption::CONFIG_GDBSERVER},
-      {"FEX_THREADS",       FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES},
-      {"FEX_ROOTFS",        FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH},
-      {"FEX_THUNKLIBS",     FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH},
-      {"FEX_SILENTLOG",     FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS},
-      {"FEX_ENV",           FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT},
-      {"FEX_OUTPUTLOG",     FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG},
-      {"FEX_DUMPIR",        FEXCore::Config::ConfigOption::CONFIG_DUMPIR},
-      {"FEX_TSOENABLED",    FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED},
-      {"FEX_SMCCHECKS",     FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS},
-      {"FEX_ABILOCALFLAGS", FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS},
-      {"FEX_ABINOPF",       FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF},
-      {"FEX_BREAK",         FEXCore::Config::ConfigOption::CONFIG_BREAK_ON_FRONTEND},
-      {"FEX_DUMP_GPRS",     FEXCore::Config::ConfigOption::CONFIG_DUMP_GPRS},
-      {"FEX_AOT_GENERATE",  FEXCore::Config::ConfigOption::CONFIG_AOTIR_GENERATE},
-      {"FEX_AOT_LOAD",      FEXCore::Config::ConfigOption::CONFIG_AOTIR_LOAD},
-    }};
-
     std::optional<std::string_view> Value;
 
-    for (auto &it : ConfigLookup) {
+    for (auto &it : EnvConfigLookup) {
       if ((Value = GetVar(it.first)).has_value()) {
         Set(it.second, std::string(*Value));
       }

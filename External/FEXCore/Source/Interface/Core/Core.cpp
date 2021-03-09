@@ -179,6 +179,12 @@ namespace FEXCore::Context {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
+    if (Config.GdbServer) {
+      StartGdbServer();
+    }
+    else {
+      StopGdbServer();
+    }
   }
 
   bool Context::GetFilenameHash(std::string const &Filename, std::string &Hash) {
@@ -641,10 +647,6 @@ namespace FEXCore::Context {
     uint64_t TotalInstructionsLength {0};
 
     if (!Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP)) {
-      if (Config.BreakOnFrontendFailure) {
-        LogMan::Msg::E("Had Frontend decoder error");
-        Stop(false /* Ignore Current Thread */);
-      }
       return { nullptr, nullptr, 0, 0, 0, 0 };
     }
 
@@ -703,10 +705,6 @@ namespace FEXCore::Context {
           auto Fn = TableInfo->OpcodeDispatcher;
           std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
           if (Thread->OpDispatcher->HadDecodeFailure()) {
-            if (Config.BreakOnFrontendFailure) {
-              LogMan::Msg::E("Had OpDispatcher error at 0x%lx", GuestRIP);
-              Stop(false /* Ignore Current Thread */);
-            }
             HadDispatchError = true;
           }
           else {
@@ -748,15 +746,15 @@ namespace FEXCore::Context {
       FILE* f = nullptr;
       bool CloseAfter = false;
 
-      if (Thread->CTX->Config.DumpIR=="stderr") {
+      if (Thread->CTX->Config.DumpIR() =="stderr") {
         f = stderr;
       }
-      else if (Thread->CTX->Config.DumpIR=="stdout") {
+      else if (Thread->CTX->Config.DumpIR() =="stdout") {
         f = stdout;
       }
       else {
         std::stringstream fileName;
-        fileName << Thread->CTX->Config.DumpIR  << "/" << std::hex << GuestRIP << (RA ? "-post.ir" : "-pre.ir");
+        fileName << Thread->CTX->Config.DumpIR()  << "/" << std::hex << GuestRIP << (RA ? "-post.ir" : "-pre.ir");
 
         f = fopen(fileName.str().c_str(), "w");
         CloseAfter = true;
@@ -774,7 +772,7 @@ namespace FEXCore::Context {
       }
     };
 
-    if (Thread->CTX->Config.DumpIR != "no") {
+    if (Thread->CTX->Config.DumpIR() != "no") {
       IRDumper(nullptr);
     }
 
@@ -804,7 +802,7 @@ namespace FEXCore::Context {
     // Run the passmanager over the IR from the dispatcher
     Thread->PassManager->Run(Thread->OpDispatcher.get());
 
-    if (Thread->CTX->Config.DumpIR != "no") {
+    if (Thread->CTX->Config.DumpIR() != "no") {
       IRDumper(Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
     }
 

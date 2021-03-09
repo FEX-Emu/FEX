@@ -63,14 +63,6 @@ int main(int argc, char **argv) {
 
   auto CTX2 = FEXCore::Context::CreateNewContext();
 
-  FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_DEFAULTCORE, FEXCore::Config::CONFIG_CUSTOM);
-  FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_SINGLESTEP, 1);
-  FEXCore::Config::SetConfig(CTX1, FEXCore::Config::CONFIG_MAXBLOCKINST, 1);
-
-  FEXCore::Config::SetConfig(CTX2, FEXCore::Config::CONFIG_DEFAULTCORE, FEXCore::Config::CONFIG_INTERPRETER);
-  FEXCore::Config::SetConfig(CTX2, FEXCore::Config::CONFIG_SINGLESTEP, 1);
-  FEXCore::Config::SetConfig(CTX2, FEXCore::Config::CONFIG_MAXBLOCKINST, 1);
-
   FEXCore::Context::InitializeContext(CTX1);
   FEXCore::Context::InitializeContext(CTX2);
 

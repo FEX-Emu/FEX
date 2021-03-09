@@ -8,114 +8,12 @@
 
 namespace FEXCore::Config {
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config) {
-    switch (Option) {
-    case FEXCore::Config::CONFIG_MULTIBLOCK:
-      CTX->Config.Multiblock = Config != 0;
-    break;
-    case FEXCore::Config::CONFIG_MAXBLOCKINST:
-      CTX->Config.MaxInstPerBlock = Config;
-    break;
-    case FEXCore::Config::CONFIG_DEFAULTCORE:
-      CTX->Config.Core = static_cast<FEXCore::Config::ConfigCore>(Config);
-    break;
-    case FEXCore::Config::CONFIG_VIRTUALMEMSIZE:
-      CTX->Config.VirtualMemSize = Config;
-    break;
-    case FEXCore::Config::CONFIG_SINGLESTEP:
-      CTX->Config.RunningMode = Config != 0 ? FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP : FEXCore::Context::CoreRunningMode::MODE_RUN;
-    break;
-    case FEXCore::Config::CONFIG_GDBSERVER:
-      Config != 0 ? CTX->StartGdbServer() : CTX->StopGdbServer();
-    break;
-    case FEXCore::Config::CONFIG_IS64BIT_MODE:
-      CTX->Config.Is64BitMode = Config != 0;
-    break;
-    case FEXCore::Config::CONFIG_TSO_ENABLED:
-      CTX->Config.TSOEnabled = Config != 0;
-    break;
-    case FEXCore::Config::CONFIG_SMC_CHECKS:
-      CTX->Config.SMCChecks = static_cast<FEXCore::Config::ConfigSMCChecks>(Config);
-    break;
-    case FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS:
-      CTX->Config.ABILocalFlags = Config != 0;
-    break;
-    case FEXCore::Config::CONFIG_ABI_NO_PF:
-      CTX->Config.ABINoPF = Config != 0;
-    break;
-    case FEXCore::Config::CONFIG_VALIDATE_IR_PARSER:
-      CTX->Config.ValidateIRarser = Config != 0;
-    break;
-    case FEXCore::Config::CONFIG_AOTIR_GENERATE:
-      CTX->Config.AOTIRCapture = Config != 0;
-    break;
-    case FEXCore::Config::CONFIG_AOTIR_LOAD:
-      CTX->Config.AOTIRLoad = Config != 0;
-    break;
-    default: LogMan::Msg::A("Unknown configuration option");
-    }
   }
 
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, std::string const &Config) {
-    switch (Option) {
-    case CONFIG_ROOTFSPATH:
-      CTX->Config.RootFSPath = Config;
-      break;
-    case CONFIG_THUNKLIBSPATH:
-      CTX->Config.ThunkLibsPath = Config;
-      break;
-    case FEXCore::Config::CONFIG_DUMPIR:
-      CTX->Config.DumpIR = Config;
-      break;
-    default: LogMan::Msg::A("Unknown configuration option");
-    }
   }
 
   uint64_t GetConfig(FEXCore::Context::Context *CTX, ConfigOption Option) {
-    switch (Option) {
-    case FEXCore::Config::CONFIG_MULTIBLOCK:
-      return CTX->Config.Multiblock;
-    break;
-    case FEXCore::Config::CONFIG_MAXBLOCKINST:
-      return CTX->Config.MaxInstPerBlock;
-    break;
-    case FEXCore::Config::CONFIG_DEFAULTCORE:
-      return CTX->Config.Core;
-    break;
-    case FEXCore::Config::CONFIG_VIRTUALMEMSIZE:
-      return CTX->Config.VirtualMemSize;
-    break;
-    case FEXCore::Config::CONFIG_SINGLESTEP:
-      return CTX->Config.RunningMode == FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP ? 1 : 0;
-    case FEXCore::Config::CONFIG_GDBSERVER:
-      return CTX->GetGdbServerStatus();
-    break;
-    case FEXCore::Config::CONFIG_IS64BIT_MODE:
-      return CTX->Config.Is64BitMode;
-    break;
-    case FEXCore::Config::CONFIG_TSO_ENABLED:
-      return CTX->Config.TSOEnabled;
-    break;
-    case FEXCore::Config::CONFIG_SMC_CHECKS:
-      return CTX->Config.SMCChecks;
-    break;
-    case FEXCore::Config::CONFIG_ABI_LOCAL_FLAGS:
-      return CTX->Config.ABILocalFlags;
-    break;
-    case FEXCore::Config::CONFIG_ABI_NO_PF:
-      return CTX->Config.ABINoPF;
-    break;
-    case FEXCore::Config::CONFIG_VALIDATE_IR_PARSER:
-      return CTX->Config.ValidateIRarser;
-    break;
-    case FEXCore::Config::CONFIG_AOTIR_GENERATE:
-      return CTX->Config.AOTIRCapture;
-    break;
-    case FEXCore::Config::CONFIG_AOTIR_LOAD:
-      return CTX->Config.AOTIRLoad;
-    break;
-    default: LogMan::Msg::A("Unknown configuration option");
-    }
-
     return 0;
   }
 
@@ -252,8 +150,14 @@ namespace FEXCore::Config {
     }
   }
 
-  template bool Value<bool>::GetIfExists(FEXCore::Config::ConfigOption Option, bool Default);
-  template uint8_t Value<uint8_t>::GetIfExists(FEXCore::Config::ConfigOption Option, uint8_t Default);
+  template bool     Value<bool>::GetIfExists(FEXCore::Config::ConfigOption Option, bool Default);
+  template int8_t   Value<int8_t>::GetIfExists(FEXCore::Config::ConfigOption Option, int8_t Default);
+  template uint8_t  Value<uint8_t>::GetIfExists(FEXCore::Config::ConfigOption Option, uint8_t Default);
+  template int16_t   Value<int16_t>::GetIfExists(FEXCore::Config::ConfigOption Option, int16_t Default);
+  template uint16_t  Value<uint16_t>::GetIfExists(FEXCore::Config::ConfigOption Option, uint16_t Default);
+  template int32_t  Value<int32_t>::GetIfExists(FEXCore::Config::ConfigOption Option, int32_t Default);
+  template uint32_t Value<uint32_t>::GetIfExists(FEXCore::Config::ConfigOption Option, uint32_t Default);
+  template int64_t  Value<int64_t>::GetIfExists(FEXCore::Config::ConfigOption Option, int64_t Default);
   template uint64_t Value<uint64_t>::GetIfExists(FEXCore::Config::ConfigOption Option, uint64_t Default);
 
   // Constructor
