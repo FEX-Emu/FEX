@@ -26,13 +26,11 @@ namespace FEXCore::Core {
   };
   static_assert(offsetof(CPUState, xmm) % 16 == 0, "xmm needs to be 128bit aligned!");
 
-  struct ThreadState {
-    CPUState State{};
+  struct InternalThreadState;
 
-    struct {
-      std::atomic_bool Running {false};
-      std::atomic_bool WaitingToStart {false};
-    } RunningEvents;
+  // Each guest JIT frame has one of these
+  struct CpuStateFrame {
+    CPUState State;
 
     /**
      * @brief Stack location for the CPU backends to return the stack pointer to
@@ -40,13 +38,11 @@ namespace FEXCore::Core {
      * Allows the CPU cores to do a long jump out of their execution and safely shut down
      */
     uint64_t ReturningStackLocation{};
-
-    FEXCore::HLE::ThreadManagement ThreadManager;
+    InternalThreadState* Thread;
   };
-  static_assert(offsetof(ThreadState, State) == 0, "CPUState must be first member in threadstate");
-  static_assert(offsetof(ThreadState, State.rip) == 0, "rip must be zero offset in threadstate");
-
-  static_assert(std::is_standard_layout<ThreadState>::value, "This needs to be standard layout");
+  static_assert(offsetof(CpuStateFrame, State) == 0, "CPUState must be first member in CpuStateFrame");
+  static_assert(offsetof(CpuStateFrame, State.rip) == 0, "rip must be zero offset in CpuStateFrame");
+  static_assert(std::is_standard_layout<CpuStateFrame>::value, "This needs to be standard layout");
 
 #ifdef PAGE_SIZE
   static_assert(PAGE_SIZE == 4096, "FEX only supports 4k pages");

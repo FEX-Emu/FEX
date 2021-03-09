@@ -26,8 +26,10 @@
 
 namespace FEXCore::CPU {
 
-static void InterpreterExecution(FEXCore::Core::InternalThreadState *Thread) {
-  auto LocalEntry = Thread->LocalIRCache.find(Thread->State.State.rip);
+static void InterpreterExecution(FEXCore::Core::CpuStateFrame *Frame) {
+  auto Thread = Frame->Thread;
+
+  auto LocalEntry = Thread->LocalIRCache.find(Thread->CurrentFrame->State.rip);
 
   InterpreterOps::InterpretIR(Thread, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
 }

@@ -8,6 +8,7 @@ namespace FEXCore::Context {
 
 namespace FEXCore::Core {
   struct InternalThreadState;
+  struct CpuStateFrame;
 }
 
 namespace FEXCore::HLE {
@@ -36,7 +37,7 @@ namespace FEXCore::HLE {
   public:
     virtual ~SyscallHandler() = default;
 
-    virtual uint64_t HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) = 0;
+    virtual uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) = 0;
     virtual SyscallABI GetSyscallABI(uint64_t Syscall) = 0;
 
     SyscallOSABI GetOSABI() const { return OSABI; }

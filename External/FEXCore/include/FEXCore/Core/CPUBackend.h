@@ -71,15 +71,15 @@ class LLVMCore;
      */
     virtual bool NeedsOpDispatch() = 0;
 
-    void ExecuteDispatch(FEXCore::Core::InternalThreadState *Thread) {
-      DispatchPtr(Thread);
+    void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
+      DispatchPtr(Frame);
     }
 
     virtual void ClearCache() {}
     virtual void CopyNecessaryDataForCompileThread(CPUBackend *Original) {}
 
-    using AsmDispatch = __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread);
-    using JITCallback = __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
+    using AsmDispatch = __attribute__((naked)) void(*)(FEXCore::Core::CpuStateFrame *Frame);
+    using JITCallback = __attribute__((naked)) void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
 
     JITCallback CallbackPtr{};
   protected:

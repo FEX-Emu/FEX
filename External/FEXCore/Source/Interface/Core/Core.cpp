@@ -158,7 +158,7 @@ namespace DefaultFallbackCore {
     bool NeedsOpDispatch() override { return false; }
 
     void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override {
-      LogMan::Msg::E("Fell back to default code handler at RIP: 0x%lx", ThreadState->State.State.rip);
+      LogMan::Msg::E("Fell back to default code handler at RIP: 0x%lx", ThreadState->CurrentFrame->State.rip);
       return nullptr;
     }
 
@@ -175,7 +175,6 @@ namespace DefaultFallbackCore {
 
 namespace FEXCore::Context {
   Context::Context() {
-    FallbackCPUFactory = FEXCore::Core::DefaultFallbackCore::CPUCreationFactory;
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
@@ -319,12 +318,12 @@ namespace FEXCore::Context {
 
     Loader->MapMemoryRegion();
 
-    Thread->State.State.gregs[X86State::REG_RSP] = Loader->SetupStack();
+    Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = Loader->SetupStack();
 
     Loader->LoadMemory();
     Loader->GetInitLocations(&InitLocations);
 
-    Thread->State.State.rip = StartingRIP = Loader->DefaultRIP();
+    Thread->CurrentFrame->State.rip = StartingRIP = Loader->DefaultRIP();
 
     InitializeThreadData(Thread);
 
@@ -344,7 +343,7 @@ namespace FEXCore::Context {
 
   void Context::HandleCallback(uint64_t RIP) {
     auto Thread = Core::ThreadData.Thread;
-    Thread->CPUBackend->CallbackPtr(Thread, RIP);
+    Thread->CPUBackend->CallbackPtr(Thread->CurrentFrame, RIP);
   }
 
   void Context::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
@@ -388,9 +387,9 @@ namespace FEXCore::Context {
     std::lock_guard<std::mutex> lk(ThreadCreationMutex);
     for (auto &Thread : Threads) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE);
-      if (Thread->State.RunningEvents.Running.load()) {
+      if (Thread->RunningEvents.Running.load()) {
         // Only attempt to stop this thread if it is running
-        tgkill(Thread->State.ThreadManager.PID, Thread->State.ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+        tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
       }
     }
   }
@@ -409,7 +408,7 @@ namespace FEXCore::Context {
     std::lock_guard<std::mutex> lk(ThreadCreationMutex);
     for (auto &Thread : Threads) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_RETURN);
-      Thread->State.RunningEvents.WaitingToStart.store(true);
+      Thread->RunningEvents.WaitingToStart.store(true);
     }
 
     for (auto &Thread : Threads) {
@@ -462,17 +461,17 @@ namespace FEXCore::Context {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
       for (auto &Thread : Threads) {
         if (IgnoreCurrentThread &&
-            Thread->State.ThreadManager.TID == tid) {
+            Thread->ThreadManager.TID == tid) {
           // If we are callign stop from the current thread then we can ignore sending signals to this thread
           // This means that this thread is already gone
           continue;
         }
-        else if (Thread->State.ThreadManager.TID == tid) {
+        else if (Thread->ThreadManager.TID == tid) {
           // We need to save the current thread for last to ensure all threads receive their stop signals
           CurrentThread = Thread;
           continue;
         }
-        if (Thread->State.RunningEvents.Running.load()) {
+        if (Thread->RunningEvents.Running.load()) {
           StopThread(Thread);
         } else {
           LogMan::Msg::D("Skipping thread %p: Already stopped", Thread);
@@ -487,16 +486,16 @@ namespace FEXCore::Context {
   }
 
   void Context::StopThread(FEXCore::Core::InternalThreadState *Thread) {
-    if (Thread->State.RunningEvents.Running.exchange(false)) {
+    if (Thread->RunningEvents.Running.exchange(false)) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_STOP);
-      tgkill(Thread->State.ThreadManager.PID, Thread->State.ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+      tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
     }
   }
 
   void Context::SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event) {
-    if (Thread->State.RunningEvents.Running.load()) {
+    if (Thread->RunningEvents.Running.load()) {
       Thread->SignalReason.store(Event);
-      tgkill(Thread->State.ThreadManager.PID, Thread->State.ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+      tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
     }
   }
 
@@ -595,7 +594,7 @@ namespace FEXCore::Context {
 #endif
 
       break;
-    case FEXCore::Config::CONFIG_CUSTOM:      State->CPUBackend.reset(CustomCPUFactory(this, &State->State)); break;
+    case FEXCore::Config::CONFIG_CUSTOM:      State->CPUBackend.reset(CustomCPUFactory(this, State)); break;
     default: ERROR_AND_DIE("Unknown core configuration");
     }
   }
@@ -607,14 +606,15 @@ namespace FEXCore::Context {
     {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
       Thread = Threads.emplace_back(new FEXCore::Core::InternalThreadState{});
-      Thread->State.ThreadManager.TID = ++ThreadID;
+      Thread->ThreadManager.TID = ++ThreadID;
     }
 
     // Copy over the new thread state to the new object
-    memcpy(&Thread->State.State, NewThreadState, sizeof(FEXCore::Core::CPUState));
+    memcpy(Thread->CurrentFrame, NewThreadState, sizeof(FEXCore::Core::CPUState));
+    Thread->CurrentFrame->Thread = Thread;
 
     // Set up the thread manager state
-    Thread->State.ThreadManager.parent_tid = ParentTID;
+    Thread->ThreadManager.parent_tid = ParentTID;
 
     InitializeCompiler(Thread, false);
 
@@ -1030,7 +1030,8 @@ namespace FEXCore::Context {
   }
 
 
-  uintptr_t Context::CompileBlock(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+    auto Thread = Frame->Thread;
 
     // Is the code in the cache?
     // The backends only check L1 and L2, not L3
@@ -1139,14 +1140,14 @@ namespace FEXCore::Context {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
     // Let's do some initial bookkeeping here
-    Thread->State.ThreadManager.TID = ::gettid();
-    Thread->State.ThreadManager.PID = ::getpid();
+    Thread->ThreadManager.TID = ::gettid();
+    Thread->ThreadManager.PID = ::getpid();
     SignalDelegation->RegisterTLSState(Thread);
     ThunkHandler->RegisterTLSState(Thread);
 
     ++IdleWaitRefCount;
 
-    LogMan::Msg::D("[%d] Waiting to run", Thread->State.ThreadManager.TID.load());
+    LogMan::Msg::D("[%d] Waiting to run", Thread->ThreadManager.TID.load());
 
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
@@ -1156,25 +1157,25 @@ namespace FEXCore::Context {
       Thread->StartRunning.Wait();
     }
 
-    LogMan::Msg::D("[%d] Running", Thread->State.ThreadManager.TID.load());
+    LogMan::Msg::D("[%d] Running", Thread->ThreadManager.TID.load());
 
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
 
-    Thread->State.RunningEvents.Running = true;
+    Thread->RunningEvents.Running = true;
 
-    Thread->CPUBackend->ExecuteDispatch(Thread);
+    Thread->CPUBackend->ExecuteDispatch(Thread->CurrentFrame);
 
-    Thread->State.RunningEvents.WaitingToStart = false;
-    Thread->State.RunningEvents.Running = false;
+    Thread->RunningEvents.WaitingToStart = false;
+    Thread->RunningEvents.Running = false;
 
     // If it is the parent thread that died then just leave
     // XXX: This doesn't make sense when the parent thread doesn't outlive its children
-    if (Thread->State.ThreadManager.parent_tid == 0) {
+    if (Thread->ThreadManager.parent_tid == 0) {
       CoreShuttingDown.store(true);
       Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
       if (CustomExitHandler) {
-        CustomExitHandler(Thread->State.ThreadManager.TID, Thread->ExitReason);
+        CustomExitHandler(Thread->ThreadManager.TID, Thread->ExitReason);
       }
     }
 
@@ -1205,16 +1206,16 @@ namespace FEXCore::Context {
 
   // Debug interface
   void Context::CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-    uint64_t RIPBackup = Thread->State.State.rip;
-    Thread->State.State.rip = RIP;
+    uint64_t RIPBackup = Thread->CurrentFrame->State.rip;
+    Thread->CurrentFrame->State.rip = RIP;
 
     // Erase the RIP from all the storage backings if it exists
     RemoveCodeEntry(Thread, RIP);
 
     // We don't care if compilation passes or not
-    CompileBlock(Thread, RIP);
+    CompileBlock(Thread->CurrentFrame, RIP);
 
-    Thread->State.State.rip = RIPBackup;
+    Thread->CurrentFrame->State.rip = RIPBackup;
   }
 
   uint64_t Context::GetThreadCount() const {
@@ -1223,10 +1224,6 @@ namespace FEXCore::Context {
 
   FEXCore::Core::RuntimeStats *Context::GetRuntimeStatsForThread(uint64_t Thread) {
     return &Threads[Thread]->Stats;
-  }
-
-  FEXCore::Core::CPUState Context::GetCPUState() {
-    return ParentThread->State.State;
   }
 
   bool Context::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {
@@ -1249,13 +1246,9 @@ namespace FEXCore::Context {
     return true;
   }
 
-  FEXCore::Core::ThreadState *Context::GetThreadState() {
-    return &ParentThread->State;
-  }
-
-  uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
+  uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
     uint64_t Result{};
-    Result = Handler->HandleSyscall(Thread, Args);
+    Result = Handler->HandleSyscall(Frame, Args);
     return Result;
   }
 

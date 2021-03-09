@@ -32,7 +32,7 @@ DEF_OP(Break) {
     case 4: { // HLT
       // Time to quit
       // Set our stack to the starting stack location
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)));
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)));
       add(sp, TMP1, 0);
 
       // Now we need to jump to the thread stop handler

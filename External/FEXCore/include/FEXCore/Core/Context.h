@@ -16,7 +16,7 @@ namespace FEXCore {
 
 namespace FEXCore::Core {
   struct CPUState;
-  struct ThreadState;
+  struct InternalThreadState;
 }
 
 namespace FEXCore::CPU {
@@ -44,7 +44,7 @@ namespace FEXCore::Context {
     MODE_32BIT,
     MODE_64BIT,
   };
-  using CustomCPUFactoryType = std::function<FEXCore::CPU::CPUBackend* (FEXCore::Context::Context*, FEXCore::Core::ThreadState *Thread)>;
+  using CustomCPUFactoryType = std::function<FEXCore::CPU::CPUBackend* (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
 
   /**
    * @brief This initializes internal FEXCore state that is shared between contexts and requires overhead to setup
@@ -187,17 +187,6 @@ namespace FEXCore::Context {
    * @param Factory The factory that the context will call if the DefaultCore config ise set to CUSTOM
    */
   void SetCustomCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory);
-
-  /**
-   * @brief Allows a custom CPUBackend creation factory for fallback routines when the main CPUBackend core can't handle an instruction
-   *
-   * This is only useful for debugging new instruction decodings that FEXCore doesn't understand
-   * The CPUBackend that is created from this factory must have its NeedsOpDispatch function to return false
-   *
-   * @param CTX The context that we created
-   * @param Factory The factory that the context will call on core creation
-   */
-  void SetFallbackCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory);
 
   /**
    * @brief Sets up memory regions on the guest for mirroring within the guest's VM space

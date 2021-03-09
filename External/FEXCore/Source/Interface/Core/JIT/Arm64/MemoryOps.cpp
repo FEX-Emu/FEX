@@ -98,7 +98,7 @@ DEF_OP(LoadRegister) {
   uint8_t OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
-    auto regId = (Op->Offset - offsetof(FEXCore::Core::ThreadState, State.gregs[0])) / 8;
+    auto regId = (Op->Offset - offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0])) / 8;
     auto regOffs = Op->Offset & 7;
 
     LogMan::Throw::A(regId < SRA64.size(), "out of range regId");
@@ -129,7 +129,7 @@ DEF_OP(LoadRegister) {
         break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    auto regId = (Op->Offset - offsetof(FEXCore::Core::ThreadState, State.xmm[0][0])) / 16;
+    auto regId = (Op->Offset - offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0])) / 16;
     auto regOffs = Op->Offset & 15;
 
     LogMan::Throw::A(regId < SRAFPR.size(), "out of range regId");
@@ -215,7 +215,7 @@ DEF_OP(StoreRegister) {
         break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    auto regId = (Op->Offset - offsetof(FEXCore::Core::ThreadState, State.xmm[0][0])) / 16;
+    auto regId = (Op->Offset - offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0])) / 16;
     auto regOffs = Op->Offset & 15;
 
     LogMan::Throw::A(regId < SRAFPR.size(), "regId out of range");

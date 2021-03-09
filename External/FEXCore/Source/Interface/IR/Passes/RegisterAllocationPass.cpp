@@ -613,11 +613,11 @@ namespace FEXCore::IR {
 
     // Get SRA Reg and Class from a Context offset
     auto GetRegAndClassFromOffset = [](uint32_t Offset) {
-        auto beginGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[0]);
-        auto endGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[17]);
+        auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
+        auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[17]);
 
-        auto beginFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[0][0]);
-        auto endFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[17][0]);
+        auto beginFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
+        auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[17][0]);
 
         if (Offset >= beginGpr && Offset < endGpr) {
           auto reg = (Offset - beginGpr) / 8;
@@ -637,11 +637,11 @@ namespace FEXCore::IR {
 
     // Get a StaticMap entry from context offset
     auto GetStaticMapFromOffset = [&](uint32_t Offset) {
-        auto beginGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[0]);
-        auto endGpr = offsetof(FEXCore::Core::ThreadState, State.gregs[17]);
+        auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
+        auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[17]);
 
-        auto beginFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[0][0]);
-        auto endFpr = offsetof(FEXCore::Core::ThreadState, State.xmm[17][0]);
+        auto beginFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
+        auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[17][0]);
 
         if (Offset >= beginGpr && Offset < endGpr) {
           auto reg = (Offset - beginGpr) / 8;

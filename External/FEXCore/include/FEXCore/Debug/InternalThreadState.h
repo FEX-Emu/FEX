@@ -70,7 +70,12 @@ namespace FEXCore::Core {
   };
 
   struct InternalThreadState {
-    FEXCore::Core::ThreadState State;
+    FEXCore::Core::CpuStateFrame* CurrentFrame = &BaseFrameState;
+
+    struct {
+      std::atomic_bool Running {false};
+      std::atomic_bool WaitingToStart {false};
+    } RunningEvents;
 
     FEXCore::Context::Context *CTX;
     std::atomic<SignalEvent> SignalReason {SignalEvent::SIGNALEVENT_NONE};
@@ -88,6 +93,7 @@ namespace FEXCore::Core {
 
     std::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     std::unique_ptr<FEXCore::IR::PassManager> PassManager;
+    FEXCore::HLE::ThreadManagement ThreadManager;
 
     RuntimeStats Stats{};
 
@@ -96,8 +102,10 @@ namespace FEXCore::Core {
     uint32_t CompileBlockReentrantRefCount{};
     std::shared_ptr<FEXCore::CompileService> CompileService;
     bool IsCompileService{false};
+
+    FEXCore::Core::CpuStateFrame BaseFrameState{};
+
   };
-  static_assert(offsetof(InternalThreadState, State) == 0, "InternalThreadState must have State be the first object");
   static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
 }
 

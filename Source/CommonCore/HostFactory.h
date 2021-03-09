@@ -9,6 +9,6 @@ namespace FEXCore::Core {
 }
 
 namespace HostFactory {
-  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread);
-  FEXCore::CPU::CPUBackend *CPUCreationFactoryFallback(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread);
+  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEXCore::CPU::CPUBackend *CPUCreationFactoryFallback(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread);
 }

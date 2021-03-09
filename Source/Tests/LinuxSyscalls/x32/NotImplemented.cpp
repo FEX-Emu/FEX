@@ -3,11 +3,11 @@
 #include <FEXCore/Utils/LogManager.h>
 
 namespace FEX::HLE::x32 {
-#define REGISTER_SYSCALL_NOT_IMPL_X32(name) REGISTER_SYSCALL_IMPL_X32(name, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t { \
+#define REGISTER_SYSCALL_NOT_IMPL_X32(name) REGISTER_SYSCALL_IMPL_X32(name, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t { \
   LogMan::Msg::D("Using deprecated/removed syscall: " #name); \
   return -ENOSYS; \
 });
-#define REGISTER_SYSCALL_NO_PERM_X32(name) REGISTER_SYSCALL_IMPL_X32(name, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t { \
+#define REGISTER_SYSCALL_NO_PERM_X32(name) REGISTER_SYSCALL_IMPL_X32(name, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t { \
   return -EPERM; \
 });
 

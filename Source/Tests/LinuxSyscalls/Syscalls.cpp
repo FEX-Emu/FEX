@@ -23,7 +23,7 @@
 namespace FEX::HLE {
 SyscallHandler *_SyscallHandler{};
 
-uint64_t SyscallHandler::HandleBRK(FEXCore::Core::InternalThreadState *Thread, void *Addr) {
+uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr) {
   std::lock_guard<std::mutex> lk(MMapMutex);
 
   uint64_t Result;
@@ -124,19 +124,19 @@ uint32_t SyscallHandler::CalculateHostKernelVersion() {
   return (Major << 24) | (Minor << 16) | Patch;
 }
 
-uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) {
+uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
   auto &Def = Definitions[Args->Argument[0]];
   uint64_t Result{};
   switch (Def.NumArgs) {
-  case 0: Result = std::invoke(Def.Ptr0, Thread); break;
-  case 1: Result = std::invoke(Def.Ptr1, Thread, Args->Argument[1]); break;
-  case 2: Result = std::invoke(Def.Ptr2, Thread, Args->Argument[1], Args->Argument[2]); break;
-  case 3: Result = std::invoke(Def.Ptr3, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3]); break;
-  case 4: Result = std::invoke(Def.Ptr4, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4]); break;
-  case 5: Result = std::invoke(Def.Ptr5, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5]); break;
-  case 6: Result = std::invoke(Def.Ptr6, Thread, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6]); break;
+  case 0: Result = std::invoke(Def.Ptr0, Frame); break;
+  case 1: Result = std::invoke(Def.Ptr1, Frame, Args->Argument[1]); break;
+  case 2: Result = std::invoke(Def.Ptr2, Frame, Args->Argument[1], Args->Argument[2]); break;
+  case 3: Result = std::invoke(Def.Ptr3, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3]); break;
+  case 4: Result = std::invoke(Def.Ptr4, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4]); break;
+  case 5: Result = std::invoke(Def.Ptr5, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5]); break;
+  case 6: Result = std::invoke(Def.Ptr6, Frame, Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Args->Argument[6]); break;
   // for missing syscalls
-  case 255: return std::invoke(Def.Ptr1, Thread, Args->Argument[0]);
+  case 255: return std::invoke(Def.Ptr1, Frame, Args->Argument[0]);
   default:
     LogMan::Msg::A("Unhandled syscall: %d", Args->Argument[0]);
     return -1;
@@ -164,12 +164,12 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
 }
 #endif
 
-uint64_t UnimplementedSyscall(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber) {
+uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber) {
   ERROR_AND_DIE("Unhandled system call: %d", SyscallNumber);
   return -ENOSYS;
 }
 
-uint64_t UnimplementedSyscallSafe(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber) {
+uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber) {
   return -ENOSYS;
 }
 

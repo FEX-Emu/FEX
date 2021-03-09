@@ -520,7 +520,7 @@ namespace FEX::HLE::x32 {
     void *__pad;
   };
 
-  uint64_t _ipc(FEXCore::Core::InternalThreadState *Thread, uint32_t call, uint32_t first, uint32_t second, uint32_t third, uint32_t ptr, uint32_t fifth) {
+  uint64_t _ipc(FEXCore::Core::CpuStateFrame *Frame, uint32_t call, uint32_t first, uint32_t second, uint32_t third, uint32_t ptr, uint32_t fifth) {
     uint64_t Result{};
 
     switch (static_cast<IPCOp>(call)) {

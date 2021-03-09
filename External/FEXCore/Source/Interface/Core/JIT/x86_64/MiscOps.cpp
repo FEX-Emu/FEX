@@ -34,7 +34,7 @@ DEF_OP(Break) {
     case 4: { // HLT
       // Time to quit
       // Set our stack to the starting stack location
-      mov(rsp, qword [STATE + offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)]);
+      mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
 
       // Now we need to jump to the thread stop handler
       mov(TMP1, ThreadStopHandlerAddress);
@@ -56,7 +56,7 @@ DEF_OP(Break) {
       else {
         // If we don't have a gdb server attached then....crash?
         // Treat this case like HLT
-        mov(rsp, qword [STATE + offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)]);
+        mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
 
         // Now we need to jump to the thread stop handler
         mov(TMP1, ThreadStopHandlerAddress);

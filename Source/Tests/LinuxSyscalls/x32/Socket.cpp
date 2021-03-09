@@ -35,7 +35,7 @@ namespace FEX::HLE::x32 {
   };
 
   void RegisterSocket() {
-    REGISTER_SYSCALL_IMPL_X32(socketcall, [](FEXCore::Core::InternalThreadState *Thread, uint32_t call, uint32_t *Arguments) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(socketcall, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t call, uint32_t *Arguments) -> uint64_t {
       uint64_t Result{};
 
       switch (call) {
@@ -246,7 +246,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(sendmmsg, [](FEXCore::Core::InternalThreadState *Thread, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(sendmmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) -> uint64_t {
       std::vector<iovec> Host_iovec;
       std::vector<uint8_t> Controllen;
       std::vector<struct msghdr> Messages{vlen};

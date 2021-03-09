@@ -92,7 +92,7 @@ namespace FEXCore {
 
     // Set our thread name so we can see its relation
     char ThreadName[16]{};
-    snprintf(ThreadName, 16, "%ld-CS", ParentThread->State.ThreadManager.TID.load());
+    snprintf(ThreadName, 16, "%ld-CS", ParentThread->ThreadManager.TID.load());
     pthread_setname_np(pthread_self(), ThreadName);
 
     while (true) {
@@ -121,10 +121,10 @@ namespace FEXCore {
         if (Item) {
           // Make sure it's not in lookup cache by accident
           LogMan::Throw::A(CompileThreadData->LookupCache->FindBlock(Item->RIP) == 0, "Compile Service must never have entries in the LookupCache");
-          
+
           // Code isn't in cache, compile now
           // Set our thread state's RIP
-          CompileThreadData->State.State.rip = Item->RIP;
+          CompileThreadData->CurrentFrame->State.rip = Item->RIP;
 
           auto [CodePtr, IRList, DebugData, RAData, Generated, StartAddr, Length] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
 

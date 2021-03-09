@@ -232,17 +232,17 @@ std::string GdbServer::readRegs() {
   bool Found = false;
 
   for (auto &Thread : *Threads) {
-    if (Thread->State.ThreadManager.GetTID() != CurrentDebuggingThread) {
+    if (Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
       continue;
     }
-    state = Thread->State.State;
+    memcpy(&state, Thread->CurrentFrame, sizeof(state));
     Found = true;
     break;
   }
 
   if (!Found) {
     // If set to an invalid thread then just get the parent thread ID
-    state = CTX->GetCPUState();
+    memcpy(&state, CTX->ParentThread->CurrentFrame, sizeof(state));
   }
 
   // Encode the GDB context definition
@@ -284,17 +284,17 @@ GdbServer::HandledPacketType GdbServer::readReg(std::string& packet) {
   bool Found = false;
 
   for (auto &Thread : *Threads) {
-    if (Thread->State.ThreadManager.GetTID() != CurrentDebuggingThread) {
+    if (Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
       continue;
     }
-    state = Thread->State.State;
+    memcpy(&state, Thread->CurrentFrame, sizeof(state));
     Found = true;
     break;
   }
 
   if (!Found) {
     // If set to an invalid thread then just get the parent thread ID
-    state = CTX->GetCPUState();
+    memcpy(&state, CTX->ParentThread->CurrentFrame, sizeof(state));
   }
 
 
@@ -525,7 +525,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(std::string &packet) {
         ss << "<threads>\n";
         for (size_t i = 0; i < Threads->size(); ++i) {
           auto Thread = Threads->at(i);
-          ss << "\t<thread id=\"" << std::hex << Thread->State.ThreadManager.GetTID() << "\" core=\"" << i << "\" name=\"" <<  getThreadName(Thread->State.ThreadManager.GetTID()) << "\">\n";
+          ss << "\t<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\" core=\"" << i << "\" name=\"" <<  getThreadName(Thread->ThreadManager.GetTID()) << "\">\n";
           ss << "\t</thread>\n";
         }
 
@@ -653,7 +653,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(std::string &packet) {
     ss << "m";
     for (size_t i = 0; i < Threads->size(); ++i) {
       auto Thread = Threads->at(i);
-      ss << std::hex << Thread->State.ThreadManager.TID << ",";
+      ss << std::hex << Thread->ThreadManager.TID << ",";
     }
     return {ss.str(), HandledPacketType::TYPE_ACK};
   }
@@ -672,7 +672,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(std::string &packet) {
   if (match("qC")) {
     // Returns the current Thread ID
     std::ostringstream ss;
-    ss << "m" <<  std::hex << CTX->ParentThread->State.ThreadManager.TID;
+    ss << "m" <<  std::hex << CTX->ParentThread->ThreadManager.TID;
     return {ss.str(), HandledPacketType::TYPE_ACK};
   }
   if (match("QStartNoAckMode")) {

@@ -23,14 +23,16 @@ void Arm64JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
   ThreadSharedData = Core->ThreadSharedData;
 }
 
-static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuStateFrame *Frame) {
+  auto Thread = Frame->Thread;
+
   --ctx->IdleWaitRefCount;
   ctx->IdleWaitCV.notify_all();
 
   // Go to sleep
   Thread->StartRunning.Wait();
 
-  Thread->State.RunningEvents.Running = true;
+  Thread->RunningEvents.Running = true;
   ++ctx->IdleWaitRefCount;
   ctx->IdleWaitCV.notify_all();
 }
@@ -352,7 +354,7 @@ void Arm64JITCore::StoreThreadState(int Signal, void *ucontext) {
   // Save guest state
   // We can't guarantee if registers are in context or host GPRs
   // So we need to save everything
-  memcpy(&Context->GuestState, &State->State, sizeof(FEXCore::Core::CPUState));
+  memcpy(&Context->GuestState, ThreadState->CurrentFrame, sizeof(FEXCore::Core::CPUState));
 
   // Set the new SP
   ArchHelpers::Context::SetSp(ucontext, NewSP);
@@ -364,7 +366,7 @@ void Arm64JITCore::RestoreThreadState(void *ucontext) {
   ArmContextBackup *Context = reinterpret_cast<ArmContextBackup*>(NewSP);
 
   // First thing, reset the guest state
-  memcpy(&State->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
+  memcpy(ThreadState->CurrentFrame, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
 
   ArchHelpers::Context::RestoreContext(ucontext, Context);
 
@@ -399,17 +401,19 @@ bool Arm64JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
 bool Arm64JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
   StoreThreadState(Signal, ucontext);
 
+  auto Frame = ThreadState->CurrentFrame;
+
   // Set the new PC
   ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddressFillSRA);
   // Set x28 (which is our state register) to point to our guest thread data
-  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State));
+  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
   // Ref count our faults
   // We use this to track if it is safe to clear cache
   ++SignalHandlerRefCounter;
 
-  State->State.State.gregs[X86State::REG_RDI] = Signal;
-  uint64_t OldGuestSP = State->State.State.gregs[X86State::REG_RSP];
+  ThreadState->CurrentFrame->State.gregs[X86State::REG_RDI] = Signal;
+  uint64_t OldGuestSP = ThreadState->CurrentFrame->State.gregs[X86State::REG_RSP];
   uint64_t NewGuestSP = OldGuestSP;
 
   if (!(GuestStack->ss_flags & SS_DISABLE)) {
@@ -437,7 +441,7 @@ bool Arm64JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, Gue
     } else {
       // We are in jit, SRA must be spilled
       for(int i = 0; i < SRA64.size(); i++) {
-        State->State.State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].GetCode());
+        ThreadState->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].GetCode());
       }
       // TODO: Also recover FPRs, not sure where the neon context is
       // This is usually not needed
@@ -463,7 +467,7 @@ bool Arm64JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, Gue
       guest_uctx->uc_mcontext.fpregs = &guest_uctx->__fpregs_mem;
 
 #define COPY_REG(x) \
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_##x] = State->State.State.gregs[X86State::REG_##x];
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_##x] = Frame->State.gregs[X86State::REG_##x];
       COPY_REG(R8);
       COPY_REG(R9);
       COPY_REG(R10);
@@ -483,19 +487,19 @@ bool Arm64JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, Gue
 #undef COPY_REG
 
       // Copy float registers
-      memcpy(guest_uctx->__fpregs_mem._st, State->State.State.mm, sizeof(State->State.State.mm));
-      memcpy(guest_uctx->__fpregs_mem._xmm, State->State.State.xmm, sizeof(State->State.State.xmm));
+      memcpy(guest_uctx->__fpregs_mem._st, Frame->State.mm, sizeof(Frame->State.mm));
+      memcpy(guest_uctx->__fpregs_mem._xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
 
       // FCW store default
-      guest_uctx->__fpregs_mem.fcw = State->State.State.FCW;
+      guest_uctx->__fpregs_mem.fcw = Frame->State.FCW;
 
       // Reconstruct FSW
       guest_uctx->__fpregs_mem.fsw =
-        (State->State.State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
-        (State->State.State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
-        (State->State.State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
-        (State->State.State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
-        (State->State.State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
 
       // Copy over signal stack information
       guest_uctx->uc_stack.ss_flags = GuestStack->ss_flags;
@@ -503,8 +507,8 @@ bool Arm64JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, Gue
       guest_uctx->uc_stack.ss_size = GuestStack->ss_size;
 
       // XXX: siginfo_t(RSI)
-      State->State.State.gregs[X86State::REG_RSI] = 0x4142434445460000;
-      State->State.State.gregs[X86State::REG_RDX] = UContextLocation;
+      Frame->State.gregs[X86State::REG_RSI] = 0x4142434445460000;
+      Frame->State.gregs[X86State::REG_RDX] = UContextLocation;
     }
     else {
       // XXX: 32bit Support
@@ -519,25 +523,25 @@ bool Arm64JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, Gue
       *(uint32_t*)NewGuestSP = SigInfoLocation;
     }
 
-    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
+    Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   }
   else {
-    State->State.State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
+    Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
   }
 
   if (CTX->Config.Is64BitMode) {
-    State->State.State.gregs[X86State::REG_RDI] = Signal;
+    Frame->State.gregs[X86State::REG_RDI] = Signal;
 
     // Set up the new SP for stack handling
     NewGuestSP -= 8;
     *(uint64_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
-    State->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
+    Frame->State.gregs[X86State::REG_RSP] = NewGuestSP;
   }
   else {
     NewGuestSP -= 4;
     *(uint32_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
     LogMan::Throw::A(CTX->X86CodeGen.SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
-    State->State.State.gregs[X86State::REG_RSP] = NewGuestSP;
+    Frame->State.gregs[X86State::REG_RSP] = NewGuestSP;
   }
 
   return true;
@@ -645,7 +649,8 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
 }
 
 bool Arm64JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
-  FEXCore::Core::SignalEvent SignalReason = State->SignalReason.load();
+  FEXCore::Core::SignalEvent SignalReason = ThreadState->SignalReason.load();
+  auto Frame = ThreadState->CurrentFrame;
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE) {
     // Store our thread state so we can come back to this
@@ -661,12 +666,12 @@ bool Arm64JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
     }
 
     // Set x28 (which is our state register) to point to our guest thread data
-    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State));
+    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
     // Ref count our faults
     // We use this to track if it is safe to clear cache
     ++SignalHandlerRefCounter;
 
-    State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
   }
 
@@ -677,7 +682,7 @@ bool Arm64JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
     // We use this to track if it is safe to clear cache
     --SignalHandlerRefCounter;
 
-    State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
   }
 
@@ -685,7 +690,7 @@ bool Arm64JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
     // Our thread is stopping
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the JIT and get out safely
-    ArchHelpers::Context::SetSp(ucontext, State->State.ReturningStackLocation);
+    ArchHelpers::Context::SetSp(ucontext, Frame->ReturningStackLocation);
 
     // Our ref counting doesn't matter anymore
     SignalHandlerRefCounter = 0;
@@ -701,9 +706,9 @@ bool Arm64JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
     }
 
     // Set x28 (which is our state register) to point to our guest thread data
-    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(State));
+    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
-    State->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
   }
 
@@ -713,7 +718,7 @@ bool Arm64JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
 Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread)
   : vixl::aarch64::Assembler(Buffer.Ptr, Buffer.Size, vixl::aarch64::PositionDependentCode)
   , CTX {ctx}
-  , State {Thread}
+  , ThreadState {Thread}
   , InitialCodeBuffer {Buffer}
 {
   CurrentCodeBuffer = &InitialCodeBuffer;
@@ -1007,7 +1012,7 @@ void *Arm64JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
   if ((GetCursorOffset() + BufferRange) > CurrentCodeBuffer->Size) {
-    State->CTX->ClearCodeCache(State, false);
+    ThreadState->CTX->ClearCodeCache(ThreadState, false);
   }
 
   // AAPCS64
@@ -1040,7 +1045,8 @@ void *Arm64JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *
     // This happens when single stepping
 
     static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, CTX)));
+    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Thread))); // Get thread
+    ldr(x0, MemOperand(x0, offsetof(FEXCore::Core::InternalThreadState, CTX))); // Get Context
     ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
 
     // If the value == 0 then we don't need to stop
@@ -1048,7 +1054,7 @@ void *Arm64JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *
     {
       // Make sure RIP is syncronized to the context
       LoadConstant(x0, HeaderOp->Entry);
-      str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+      str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
 
       // Stop the thread
       LoadConstant(x0, ThreadPauseHandlerAddressSpillSRA);
@@ -1213,14 +1219,15 @@ void Arm64JITCore::PopCalleeSavedRegisters() {
   }
 }
 
-uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record) {
+uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+  auto Thread = Frame->Thread;
   auto GuestRip = record[1];
 
   auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
 
   if (!HostCode) {
     //printf("ExitFunctionLink: Aborting, %lX not in cache\n", GuestRip);
-    Thread->State.State.rip = GuestRip;
+    Frame->State.rip = GuestRip;
     return core->AbsoluteLoopTopAddress;
   }
 
@@ -1301,7 +1308,7 @@ void Arm64JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thre
 
   uintptr_t CompileBlockPtr{};
   {
-    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::InternalThreadState *, uint64_t);
+    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
     union PtrCast {
       ClassPtrType ClassPtr;
       uintptr_t Data;
@@ -1326,7 +1333,7 @@ void Arm64JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thre
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
   add(x0, sp, 0);
-  str(x0, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, ReturningStackLocation)));
+  str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)));
 
   auto Align16B = [&Buffer, this]() {
     uint64_t CurrentOffset = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
@@ -1351,7 +1358,7 @@ void Arm64JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thre
 
   // Load in our RIP
   // Don't modify x2 since it contains our RIP once the block doesn't exist
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.rip)));
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
   auto RipReg = x2;
 
   // L1 Cache
@@ -1452,13 +1459,13 @@ void Arm64JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thre
   {
     bind(&NoBlock);
 
-    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, CTX)));
+    ldr(x0, &l_CTX);
     mov(x1, STATE);
     ldr(x3, &l_CompileBlock);
 
     // X2 contains our guest RIP
     SpillStaticRegs();
-    blr(x3); // { CTX, ThreadState, RIP}
+    blr(x3); // { CTX, Frame, RIP}
     FillStaticRegs();
 
     // X0 now contains the block pointer
@@ -1530,16 +1537,16 @@ void Arm64JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thre
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
     LoadConstant(x0, CTX->X86CodeGen.CallbackReturn);
 
-    ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+    ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
     sub(x2, x2, 16);
-    str(x2, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])));
+    str(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
 
     // Store the trampoline to the guest stack
     // Guest stack is now correctly misaligned after a regular call instruction
     str(x0, MemOperand(x2));
 
     // Store RIP to the context state
-    str(x1, MemOperand(STATE, offsetof(FEXCore::Core::InternalThreadState, State.State.rip)));
+    str(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
 
     // load static regs
     FillStaticRegs();
@@ -1569,21 +1576,21 @@ void Arm64JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thre
 
 void Arm64JITCore::SpillStaticRegs() {
   for (size_t i = 0; i < SRA64.size(); i+=2) {
-      stp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
+      stp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
   }
 
   for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-    stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
+    stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
   }
 }
 
 void Arm64JITCore::FillStaticRegs() {
   for (size_t i = 0; i < SRA64.size(); i+=2) {
-    ldp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.gregs[i])));
+    ldp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
   }
 
   for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-    ldp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::ThreadState, State.xmm[i][0])));
+    ldp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
   }
 }
 

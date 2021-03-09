@@ -18,13 +18,13 @@
 #include <filesystem>
 
 namespace FEX::HLE::x64 {
-  uint64_t SetThreadArea(FEXCore::Core::InternalThreadState *Thread, void *tls) {
-    Thread->State.State.fs = reinterpret_cast<uint64_t>(tls);
+  uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls) {
+    Frame->State.fs = reinterpret_cast<uint64_t>(tls);
     return 0;
   }
 
-  void AdjustRipForNewThread(FEXCore::Core::CPUState *Thread) {
-    Thread->rip += 2;
+  void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame *Frame) {
+    Frame->State.rip += 2;
   }
 
   static bool AnyFlagsSet(uint64_t Flags, uint64_t Mask) {
@@ -36,7 +36,7 @@ namespace FEX::HLE::x64 {
   }
 
   void RegisterThread() {
-    REGISTER_SYSCALL_IMPL_X64(futex, [](FEXCore::Core::InternalThreadState *Thread, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(futex, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
       uint64_t Result = syscall(SYS_futex,
         uaddr,
         futex_op,
@@ -47,7 +47,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(clone, [](FEXCore::Core::InternalThreadState *Thread, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(clone, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) -> uint64_t {
     #define FLAGPRINT(x, y) if (flags & (y)) LogMan::Msg::I("\tFlag: " #x)
       FLAGPRINT(CSIGNAL,              0x000000FF);
       FLAGPRINT(CLONE_VM,             0x00000100);
@@ -74,6 +74,8 @@ namespace FEX::HLE::x64 {
       FLAGPRINT(CLONE_NEWNET,         0x40000000);
       FLAGPRINT(CLONE_IO,             0x80000000);
 
+      auto Thread = Frame->Thread;
+
       if (AnyFlagsSet(flags, CLONE_UNTRACED | CLONE_PTRACE)) {
         LogMan::Msg::D("clone: Ptrace* not supported");
       }
@@ -96,18 +98,18 @@ namespace FEX::HLE::x64 {
 
         // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
 
-        return FEX::HLE::ForkGuest(Thread, flags, stack, parent_tid, child_tid, tls);
+        return FEX::HLE::ForkGuest(Thread, Frame, flags, stack, parent_tid, child_tid, tls);
       } else {
 
         if (!AllFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND)) {
           ERROR_AND_DIE("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), %X", flags);
         }
 
-        auto NewThread = FEX::HLE::CreateNewThread(Thread, flags, stack, parent_tid, child_tid, tls);
+        auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, flags, stack, parent_tid, child_tid, tls);
 
         // Return the new threads TID
-        uint64_t Result = NewThread->State.ThreadManager.GetTID();
-        LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->State.State.rip, Thread->State.State.rip);
+        uint64_t Result = NewThread->ThreadManager.GetTID();
+        LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->CurrentFrame->State.rip, Thread->CurrentFrame->State.rip);
 
         // Actually start the thread
         FEXCore::Context::RunThread(Thread->CTX, NewThread);
@@ -120,24 +122,25 @@ namespace FEX::HLE::x64 {
       }
     });
 
-    REGISTER_SYSCALL_IMPL_X64(set_robust_list, [](FEXCore::Core::InternalThreadState *Thread, struct robust_list_head *head, size_t len) -> uint64_t {
-      Thread->State.ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
+    REGISTER_SYSCALL_IMPL_X64(set_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, struct robust_list_head *head, size_t len) -> uint64_t {
+      auto Thread = Frame->Thread;
+      Thread->ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
       uint64_t Result = ::syscall(SYS_set_robust_list, head, len);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(get_robust_list, [](FEXCore::Core::InternalThreadState *Thread, int pid, struct robust_list_head **head, size_t *len_ptr) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(get_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, int pid, struct robust_list_head **head, size_t *len_ptr) -> uint64_t {
       uint64_t Result = ::syscall(SYS_get_robust_list, pid, head, len_ptr);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::InternalThreadState *Thread, const stack_t *ss, stack_t *old_ss) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::CpuStateFrame *Frame, const stack_t *ss, stack_t *old_ss) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(ss, old_ss);
     });
 
     // launch a new process under fex
     // currently does not propagate argv[0] correctly
-    REGISTER_SYSCALL_IMPL_X64(execve, [](FEXCore::Core::InternalThreadState *Thread, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(execve, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
       std::vector<const char*> Args;
       std::string Filename{};
 
@@ -191,7 +194,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(wait4, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
       uint64_t Result = ::wait4(pid, wstatus, options, rusage);
       SYSCALL_ERRNO();
     });

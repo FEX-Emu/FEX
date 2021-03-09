@@ -28,7 +28,7 @@ bool IsFullGPR(uint32_t Offset, uint8_t Size) {
     return false;
   if (Offset & 7)
     return false;
-  
+
   if (Offset < 8 || Offset >= (17 * 8))
     return false;
 
@@ -36,7 +36,7 @@ bool IsFullGPR(uint32_t Offset, uint8_t Size) {
 }
 
 bool IsGPR(uint32_t Offset) {
-  
+
   if (Offset < 8 || Offset >= (17 * 8))
     return false;
 
@@ -48,7 +48,7 @@ uint32_t GPRBit(uint32_t Offset) {
     return 0;
   }
 
-  return  1 << ((Offset - 8)/8); 
+  return  1 << ((Offset - 8)/8);
 }
 
 struct FPRInfo {
@@ -58,9 +58,9 @@ struct FPRInfo {
 };
 
 bool IsFPR(uint32_t Offset) {
-  
-  auto begin = offsetof(FEXCore::Core::ThreadState, State.xmm[0][0]);
-  auto end = offsetof(FEXCore::Core::ThreadState, State.xmm[17][0]);
+
+  auto begin = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
+  auto end = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[17][0]);
 
   if (Offset < begin || Offset >= end)
     return false;
@@ -84,7 +84,7 @@ uint64_t FPRBit(uint32_t Offset, uint32_t Size) {
     return 0;
   }
 
-  auto begin = offsetof(FEXCore::Core::ThreadState, State.xmm[0][0]);
+  auto begin = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
 
   auto regn = (Offset - begin)/16;
   auto bitn = regn * 3;
@@ -138,7 +138,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
         //// Flags ////
         if (IROp->Op == OP_STOREFLAG) {
           auto Op = IROp->C<IR::IROp_StoreFlag>();
-          
+
           auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.flag.writes |= 1UL << Op->Flag;
@@ -203,7 +203,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       auto CodeBlock = BlockIROp->C<IROp_CodeBlock>();
-      
+
       auto IROp = CurrentIR.GetNode(CurrentIR.GetNode(CodeBlock->Last)->Header.Previous)->Op(CurrentIR.GetData());
 
       if (IROp->Op == OP_JUMP) {
@@ -220,8 +220,8 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
 
         // Flags that are written by the next block can be considered as written by this block, if not read
         BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
-        
-        
+
+
         //// GPRs ////
 
         // stores to remove are written by the next block but not read
@@ -258,7 +258,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
         // Flags that are written by the next blocks can be considered as written by this block, if not read
         BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
 
-        
+
         //// GPRs ////
 
         // stores to remove are written by the next blocks but not read
@@ -300,7 +300,7 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
           }
         } else if (IROp->Op == OP_STORECONTEXT) {
           auto Op = IROp->C<IR::IROp_StoreContext>();
-          
+
           auto& BlockInfo = InfoMap[BlockNode];
 
           //// GPRs ////

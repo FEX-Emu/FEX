@@ -65,11 +65,11 @@ namespace FEXCore::Context {
   }
 
   void GetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State) {
-    memcpy(State, &CTX->ParentThread->State.State, sizeof(FEXCore::Core::CPUState));
+    memcpy(State, CTX->ParentThread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
   }
 
   void SetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State) {
-    memcpy(&CTX->ParentThread->State.State, State, sizeof(FEXCore::Core::CPUState));
+    memcpy(CTX->ParentThread->CurrentFrame, State, sizeof(FEXCore::Core::CPUState));
   }
 
   void Pause(FEXCore::Context::Context *CTX) {
@@ -82,10 +82,6 @@ namespace FEXCore::Context {
 
   void SetCustomCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory) {
     CTX->CustomCPUFactory = std::move(Factory);
-  }
-
-  void SetFallbackCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory) {
-    CTX->FallbackCPUFactory = std::move(Factory);
   }
 
   bool AddVirtualMemoryMapping([[maybe_unused]] FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t VirtualAddress, [[maybe_unused]] uint64_t PhysicalAddress, [[maybe_unused]] uint64_t Size) {
@@ -132,7 +128,7 @@ namespace FEXCore::Context {
       }
 
       // Setting running to false ensures that when they are shutdown we won't send signals to kill them
-      DeadThread->State.RunningEvents.Running = false;
+      DeadThread->RunningEvents.Running = false;
     }
 
     // We now only have one thread
@@ -178,10 +174,6 @@ namespace Debug {
     return CTX->GetRuntimeStatsForThread(Thread);
   }
 
-  FEXCore::Core::CPUState GetCPUState(FEXCore::Context::Context *CTX) {
-    return CTX->GetCPUState();
-  }
-
   bool GetDebugDataForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::Core::DebugData *Data) {
     return CTX->GetDebugDataForRIP(RIP, Data);
   }
@@ -198,10 +190,6 @@ namespace Debug {
   // void SetIRForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::IR::IntrusiveIRList *const ir) {
   //   CTX->SetIRForRIP(RIP, ir);
   // }
-
-  FEXCore::Core::ThreadState *GetThreadState(FEXCore::Context::Context *CTX) {
-    return CTX->GetThreadState();
-  }
 }
 
 }

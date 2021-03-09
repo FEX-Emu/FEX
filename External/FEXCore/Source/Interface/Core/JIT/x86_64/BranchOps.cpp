@@ -40,7 +40,7 @@ DEF_OP(CallbackReturn) {
   sub(dword [rax], 1);
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
-  add(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.gregs[X86State::REG_RSP])], 8);
+  add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])], 8);
 
   // Now jump back to the thunk
   // XXX: XMM?
@@ -96,7 +96,7 @@ DEF_OP(ExitFunction) {
 
     L(FullLookup);
     mov(rax, AbsoluteLoopTopAddress);
-    mov(qword [STATE + offsetof(FEXCore::Core::InternalThreadState, State.State.rip)], RipReg);
+    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], RipReg);
     jmp(rax);
   }
 
@@ -286,7 +286,7 @@ DEF_OP(RemoveCodeEntry) {
   mov(rsi, rax);
 
 
-  mov(rax, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntry));
+  mov(rax, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit));
   call(rax);
 
   if (NumPush & 1)

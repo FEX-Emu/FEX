@@ -20,7 +20,7 @@
 // #define DEBUG_STRACE
 
 namespace FEXCore::Core {
-struct InternalThreadState;
+struct CpuStateFrame;
 }
 
 namespace FEX::HLE {
@@ -45,8 +45,8 @@ class SyscallHandler;
   void RegisterNotImplemented();
   void RegisterStubs();
 
-uint64_t UnimplementedSyscall(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber);
-uint64_t UnimplementedSyscallSafe(FEXCore::Core::InternalThreadState *Thread, uint64_t SyscallNumber);
+uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber);
+uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber);
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler {
 public:
@@ -54,17 +54,17 @@ public:
   virtual ~SyscallHandler();
 
   // In the case that the syscall doesn't hit the optimized path then we still need to go here
-  uint64_t HandleSyscall(FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args) final override;
+  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) final override;
 
   void DefaultProgramBreak(uint64_t Base, uint64_t Size);
 
-  using SyscallPtrArg0 = uint64_t(*)(FEXCore::Core::InternalThreadState *Thread);
-  using SyscallPtrArg1 = uint64_t(*)(FEXCore::Core::InternalThreadState *Thread, uint64_t);
-  using SyscallPtrArg2 = uint64_t(*)(FEXCore::Core::InternalThreadState *Thread, uint64_t, uint64_t);
-  using SyscallPtrArg3 = uint64_t(*)(FEXCore::Core::InternalThreadState *Thread, uint64_t, uint64_t, uint64_t);
-  using SyscallPtrArg4 = uint64_t(*)(FEXCore::Core::InternalThreadState *Thread, uint64_t, uint64_t, uint64_t, uint64_t);
-  using SyscallPtrArg5 = uint64_t(*)(FEXCore::Core::InternalThreadState *Thread, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-  using SyscallPtrArg6 = uint64_t(*)(FEXCore::Core::InternalThreadState *Thread, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+  using SyscallPtrArg0 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame);
+  using SyscallPtrArg1 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t);
+  using SyscallPtrArg2 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t, uint64_t);
+  using SyscallPtrArg3 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t, uint64_t, uint64_t);
+  using SyscallPtrArg4 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t, uint64_t, uint64_t, uint64_t);
+  using SyscallPtrArg5 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+  using SyscallPtrArg6 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 
   struct SyscallFunctionDefinition {
     uint8_t NumArgs;
@@ -92,7 +92,7 @@ public:
     return {Def.NumArgs, true};
   }
 
-  uint64_t HandleBRK(FEXCore::Core::InternalThreadState *Thread, void *Addr);
+  uint64_t HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr);
 
   FEX::HLE::FileManager FM;
   FEXCore::CodeLoader *GetCodeLoader() const { return LocalLoader; }
@@ -145,7 +145,7 @@ FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode,
   FEX::HLE::SignalDelegator *_SignalDelegation,
   FEXCore::CodeLoader *Loader
   );
-uint64_t HandleSyscall(SyscallHandler *Handler, FEXCore::Core::InternalThreadState *Thread, FEXCore::HLE::SyscallArguments *Args);
+uint64_t HandleSyscall(SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);
 
 #define SYSCALL_ERRNO() do { if (Result == -1) return -errno; return Result; } while(0)
 #define SYSCALL_ERRNO_NULL() do { if (Result == 0) return -errno; return Result; } while(0)
@@ -215,7 +215,7 @@ template<typename R, typename... Args>
 struct FunctionToLambda<R(*)(Args...)> {
 	using RType = R;
 
-	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
+	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)))(FEXCore::Core::CpuStateFrame *Frame, Args...) {
 		return fn;
 	}
 };
@@ -225,7 +225,7 @@ template<typename R, typename... Args>
 struct FunctionToLambda<R(*)(Args...) noexcept> {
 	using RType = R;
 
-	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)))(FEXCore::Core::InternalThreadState *Thread, Args...) {
+	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)))(FEXCore::Core::CpuStateFrame *Frame, Args...) {
 		return fn;
 	}
 };
@@ -255,7 +255,7 @@ static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
 // Creates a variadic template lambda from a global function (via FunctionToLambda), then forwards the arguments to the specified function
 // also handles errno
 #define SYSCALL_FORWARD_ERRNO(function) \
-  FEX::HLE::FunctionToLambda<decltype(&::function)>::ReturnFunctionPointer([](FEXCore::Core::InternalThreadState *Thread, auto... Args) { \
+  FEX::HLE::FunctionToLambda<decltype(&::function)>::ReturnFunctionPointer([](FEXCore::Core::CpuStateFrame *Frame, auto... Args) { \
     FEX::HLE::FunctionToLambda<decltype(&::function)>::RType Result = ::function(Args...); \
     do { if (Result == -1) return (FEX::HLE::FunctionToLambda<decltype(&::function)>::RType)-errno; return Result; } while(0); \
   })

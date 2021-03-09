@@ -149,11 +149,11 @@ namespace FEX::HLE {
       // We have an emulation thread pointer, we can now modify its state
       if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
         if (Handler.DefaultBehaviour == DEFAULT_TERM) {
-          if (Thread->State.ThreadManager.clear_child_tid) {
-            std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->State.ThreadManager.clear_child_tid);
+          if (Thread->ThreadManager.clear_child_tid) {
+            std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
             Addr->store(0);
             syscall(SYS_futex,
-                Thread->State.ThreadManager.clear_child_tid,
+                Thread->ThreadManager.clear_child_tid,
                 FUTEX_WAKE,
                 ~0ULL,
                 0,
@@ -469,7 +469,7 @@ namespace FEX::HLE {
     bool UsingAltStack{};
     uint64_t AltStackBase = reinterpret_cast<uint64_t>(ThreadData.GuestAltStack.ss_sp);
     uint64_t AltStackEnd = AltStackBase + ThreadData.GuestAltStack.ss_size;
-    uint64_t GuestSP = ThreadData.Thread->State.State.gregs[FEXCore::X86State::REG_RSP];
+    uint64_t GuestSP = ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP];
 
     if (!(ThreadData.GuestAltStack.ss_flags & SS_DISABLE) &&
         GuestSP >= AltStackBase &&
@@ -528,7 +528,7 @@ namespace FEX::HLE {
     if (PendingSignals != 0) {
       for (int i = 0; i < 64; ++i) {
         if (PendingSignals & (1ULL << i)) {
-          tgkill(ThreadData.Thread->State.ThreadManager.PID, ThreadData.Thread->State.ThreadManager.TID, i + 1);
+          tgkill(ThreadData.Thread->ThreadManager.PID, ThreadData.Thread->ThreadManager.TID, i + 1);
           // We might not even return here which is spooky
         }
       }
