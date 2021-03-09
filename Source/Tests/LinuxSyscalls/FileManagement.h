@@ -50,7 +50,7 @@ private:
   std::string PidSelfPath;
   std::string GetEmulatedPath(const char *pathname);
 
-  FEXCore::Config::Value<std::string> Filename{FEXCore::Config::CONFIG_APP_FILENAME, ""};
-  FEXCore::Config::Value<std::string> LDPath{FEXCore::Config::CONFIG_ROOTFSPATH, ""};
+  FEX_CONFIG_OPT(Filename, APP_FILENAME);
+  FEX_CONFIG_OPT(LDPath, ROOTFSPATH);
 };
 }

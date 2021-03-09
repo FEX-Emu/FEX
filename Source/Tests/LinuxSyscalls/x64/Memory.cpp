@@ -31,7 +31,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(mmap, [](FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
-      static FEXCore::Config::Value<bool> AOTIRLoad(FEXCore::Config::CONFIG_AOTIR_LOAD, false);
+      static FEX_CONFIG_OPT(AOTIRLoad, AOTIR_LOAD);
       uint64_t Result = reinterpret_cast<uint64_t>(::mmap(addr, length, prot, flags, fd, offset));
       if (Result != -1) {
         if (!(flags & MAP_ANONYMOUS)) {

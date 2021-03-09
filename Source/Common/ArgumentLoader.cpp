@@ -189,11 +189,6 @@ namespace FEX::ArgLoader {
 #endif
       }
 
-      if (Options.is_set_by_user("Break")) {
-        bool Break = Options.get("Break");
-        Set(FEXCore::Config::ConfigOption::CONFIG_BREAK_ON_FRONTEND, std::to_string(Break));
-      }
-
       if (Options.is_set_by_user("SingleStep")) {
         bool SingleStep = Options.get("SingleStep");
         Set(FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP, std::to_string(SingleStep));

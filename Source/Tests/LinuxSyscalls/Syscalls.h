@@ -99,12 +99,12 @@ public:
   void SetCodeLoader(FEXCore::CodeLoader *Loader) { LocalLoader = Loader; }
   FEX::HLE::SignalDelegator *GetSignalDelegator() { return SignalDelegation; }
 
-  FEXCore::Config::Value<bool> IsInterpreter{FEXCore::Config::CONFIG_IS_INTERPRETER, 0};
-  FEXCore::Config::Value<bool> IsInterpreterInstalled{FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, 0};
-  FEXCore::Config::Value<std::string> Filename{FEXCore::Config::CONFIG_APP_FILENAME, ""};
-  FEXCore::Config::Value<std::string> RootFSPath{FEXCore::Config::CONFIG_ROOTFSPATH, ""};
-  FEXCore::Config::Value<uint64_t> ThreadsConfig{FEXCore::Config::CONFIG_EMULATED_CPU_CORES, 1};
-  FEXCore::Config::Value<bool> Is64BitMode{FEXCore::Config::CONFIG_IS64BIT_MODE, 0};
+  FEX_CONFIG_OPT(IsInterpreter, IS_INTERPRETER);
+  FEX_CONFIG_OPT(IsInterpreterInstalled, INTERPRETER_INSTALLED);
+  FEX_CONFIG_OPT(Filename, APP_FILENAME);
+  FEX_CONFIG_OPT(RootFSPath, ROOTFSPATH);
+  FEX_CONFIG_OPT(ThreadsConfig, EMULATED_CPU_CORES);
+  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
   uint32_t GetHostKernelVersion() const { return HostKernelVersion; }
 

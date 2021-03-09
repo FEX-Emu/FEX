@@ -29,6 +29,6 @@ namespace FEX::EmulatedFile {
       std::unordered_map<std::string, FDReadStringFunc> FDReadCreators;
 
       static int32_t ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode);
-      FEXCore::Config::Value<uint64_t> ThreadsConfig{FEXCore::Config::CONFIG_EMULATED_CPU_CORES, 1};
+      FEX_CONFIG_OPT(ThreadsConfig, EMULATED_CPU_CORES);
   };
 }

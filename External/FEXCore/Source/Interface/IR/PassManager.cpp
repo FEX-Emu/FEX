@@ -7,7 +7,7 @@
 namespace FEXCore::IR {
 
 void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllocation) {
-  FEXCore::Config::Value<bool> DisablePasses{FEXCore::Config::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, false};
+  FEX_CONFIG_OPT(DisablePasses, DEBUG_DISABLE_OPTIMIZATION_PASSES);
 
   if (!DisablePasses()) {
     InsertPass(CreateContextLoadStoreElimination());

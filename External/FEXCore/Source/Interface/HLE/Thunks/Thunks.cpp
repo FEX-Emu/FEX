@@ -23,7 +23,7 @@ static thread_local FEXCore::Core::InternalThreadState *Thread;
 
 
 namespace FEXCore {
-    
+
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
 
     class ThunkHandler_impl final: public ThunkHandler {
@@ -41,7 +41,7 @@ namespace FEXCore {
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
         */
         static void CallCallback(void *callback, void *arg0, void* arg1) {
-            
+
             Thread->State.State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
             Thread->State.State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
 
@@ -57,10 +57,10 @@ namespace FEXCore {
             auto Name = Args->Name;
             auto CallbackThunks = Args->CallbackThunks;
 
-            auto SOName = CTX->Config.ThunkLibsPath + "/" + (const char*)Name + "-host.so";
+            auto SOName = CTX->Config.ThunkLibsPath() + "/" + (const char*)Name + "-host.so";
 
             LogMan::Msg::D("Load lib: %s -> %s", Name, SOName.c_str());
-            
+
             auto Handle = dlopen(SOName.c_str(), RTLD_LOCAL | RTLD_NOW);
 
             if (!Handle) {
@@ -78,7 +78,7 @@ namespace FEXCore {
                 LogMan::Msg::E("Load lib: failed to find export %s", InitSym.c_str());
                 return;
             }
-            
+
             auto Exports = InitFN((void*)&CallCallback, CallbackThunks);
 
             auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
