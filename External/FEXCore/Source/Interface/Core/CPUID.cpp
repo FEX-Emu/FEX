@@ -375,6 +375,41 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h() {
   return Res;
 }
 
+// L1 Cache and TLB identifiers
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0005h() {
+  FEXCore::CPUID::FunctionResults Res{};
+
+  // L1 TLB Information for 2MB and 4MB pages
+  Res.eax =
+    (64 << 0)  | // Number of TLB instruction entries
+    (255 << 8) | // instruction TLB associativity type (full)
+    (64 << 16) | // Number of TLB data entries
+    (255 << 24); // data TLB associativity type (full)
+
+  // L1 TLB Information for 4KB pages
+  Res.ebx =
+    (64 << 0)  | // Number of TLB instruction entries
+    (255 << 8) | // instruction TLB associativity type (full)
+    (64 << 16) | // Number of TLB data entries
+    (255 << 24); // data TLB associativity type (full)
+
+  // L1 data cache identifiers
+  Res.ecx =
+    (64 << 0) | // L1 data cache size line in bytes
+    (1 << 8)  | // L1 data cachelines per tag
+    (8 << 16) | // L1 data cache associativity
+    (32 << 24); // L1 data cache size in KB
+
+  // L1 instruction cache identifiers
+  Res.edx =
+    (64 << 0) | // L1 instruction cache line size in bytes
+    (1 << 8)  | // L1 instruction cachelines per tag
+    (4 << 16) | // L1 instruction cache associativity
+    (64 << 24); // L1 instruction cache size in KB
+
+  return Res;
+}
+
 // L2 Cache identifiers
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h() {
   FEXCore::CPUID::FunctionResults Res{};
@@ -457,6 +492,10 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   // Processor brand string continued
   RegisterFunction(0x8000'0004, std::bind(&CPUIDEmu::Function_8000_0004h, this));
   // 0x8000'0005: L1 Cache and TLB identifiers
+#ifdef CPUID_AMD
+  // This is full reserved on Intel platforms
+  RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_8000_0005h, this));
+#endif
   // 0x8000'0006: L2 Cache identifiers
   RegisterFunction(0x8000'0006, std::bind(&CPUIDEmu::Function_8000_0006h, this));
   // Advanced power management information
