@@ -384,18 +384,17 @@ void Arm64DispatchGenerator::RestoreThreadState(void *ucontext) {
 }
 
 bool Arm64DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
+  auto Frame = ThreadState->CurrentFrame;
 
   StoreThreadState(Signal, ucontext);
 
   // Set the new PC
   ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddress);
   // Set x28 (which is our state register) to point to our guest thread data
-  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(ThreadState->CurrentFrame));
+  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
-  ThreadState->CurrentFrame->State.gregs[X86State::REG_RDI] = Signal;
-  uint64_t OldGuestSP = ThreadState->CurrentFrame->State.gregs[X86State::REG_RSP];
+  Frame->State.gregs[X86State::REG_RDI] = Signal;
+  uint64_t OldGuestSP = Frame->State.gregs[X86State::REG_RSP];
   uint64_t NewGuestSP = OldGuestSP;
 
   if (!(GuestStack->ss_flags & SS_DISABLE)) {
@@ -418,23 +417,24 @@ bool Arm64DispatchGenerator::HandleGuestSignal(int Signal, void *info, void *uco
 
   if (GuestAction->sa_flags & SA_SIGINFO) {
     // XXX: siginfo_t(RSI), ucontext (RDX)
-    ThreadState->CurrentFrame->State.gregs[X86State::REG_RSI] = 0;
-    ThreadState->CurrentFrame->State.gregs[X86State::REG_RDX] = 0;
-    ThreadState->CurrentFrame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
+    Frame->State.gregs[X86State::REG_RSI] = 0;
+    Frame->State.gregs[X86State::REG_RDX] = 0;
+    Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   }
   else {
-    ThreadState->CurrentFrame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
+    Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
   }
 
   // Set up the new SP for stack handling
   NewGuestSP -= 8;
   *(uint64_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
-  ThreadState->CurrentFrame->State.gregs[X86State::REG_RSP] = NewGuestSP;
+  Frame->State.gregs[X86State::REG_RSP] = NewGuestSP;
 
   return true;
 }
 
 bool Arm64DispatchGenerator::HandleSignalPause(int Signal, void *info, void *ucontext) {
+  auto Frame = ThreadState->CurrentFrame;
   FEXCore::Core::SignalEvent SignalReason = ThreadState->SignalReason.load();
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE) {
@@ -445,7 +445,7 @@ bool Arm64DispatchGenerator::HandleSignalPause(int Signal, void *info, void *uco
     ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
 
     // Set our state register to point to our guest thread data
-    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(ThreadState->CurrentFrame));
+    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
     ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
@@ -462,7 +462,7 @@ bool Arm64DispatchGenerator::HandleSignalPause(int Signal, void *info, void *uco
     // Our thread is stopping
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the JIT and get out safely
-    ArchHelpers::Context::SetSp(ucontext, State->CurrentFrame->ReturningStackLocation);
+    ArchHelpers::Context::SetSp(ucontext, Frame->ReturningStackLocation);
 
     // Set the new PC
     ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
