@@ -275,21 +275,56 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
 #undef OPD
   // X86 basic ALU ops just do the operation between the destination and a single source
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto ALUOp = _Add(Dest, Src);
-  // Overwrite our IR's op type
-  ALUOp.first->Header.Op = IROp;
-
   uint8_t Size = GetDstSize(Op);
+  OrderedNode *Result{};
+  OrderedNode *Dest{};
 
-  OrderedNode *Result = ALUOp;
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    switch (IROp) {
+      case FEXCore::IR::IROps::OP_ADD: {
+        Dest = _AtomicFetchAdd(DestMem, Src, Size);
+        Result = _Add(Dest, Src);
+        break;
+      }
+      case FEXCore::IR::IROps::OP_SUB: {
+        Dest = _AtomicFetchSub(DestMem, Src, Size);
+        Result = _Sub(Dest, Src);
+        break;
+      }
+      case FEXCore::IR::IROps::OP_OR: {
+        Dest = _AtomicFetchOr(DestMem, Src, Size);
+        Result = _Or(Dest, Src);
+        break;
+      }
+      case FEXCore::IR::IROps::OP_AND: {
+        Dest = _AtomicFetchAnd(DestMem, Src, Size);
+        Result = _And(Dest, Src);
+        break;
+      }
+      case FEXCore::IR::IROps::OP_XOR: {
+        Dest = _AtomicFetchXor(DestMem, Src, Size);
+        Result = _Xor(Dest, Src);
+        break;
+      }
+      default: LogMan::Msg::A("Unknown Atomic IR Op: %d", IROp); break;
+    }
+  }
+  else {
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    auto ALUOp = _Add(Dest, Src);
+    // Overwrite our IR's op type
+    ALUOp.first->Header.Op = IROp;
 
-  StoreResult(GPRClass, Op, Result, -1);
 
-  // Store result masks, but we need to
-  if (RequiresMask && Size < 4) {
-    Result = _Bfe(Size, Size * 8, 0, ALUOp);
+    Result = ALUOp;
+
+    StoreResult(GPRClass, Op, Result, -1);
+
+    // Store result masks, but we need to
+    if (RequiresMask && Size < 4) {
+      Result = _Bfe(Size, Size * 8, 0, ALUOp);
+    }
   }
 
   // Flags set
