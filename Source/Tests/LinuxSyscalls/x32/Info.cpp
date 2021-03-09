@@ -29,7 +29,7 @@ namespace FEX::HLE::x32 {
   static_assert(sizeof(sysinfo32) == 64, "Needs to be 64bytes");
 
   void RegisterInfo() {
-    REGISTER_SYSCALL_IMPL_X32(ugetrlimit, [](FEXCore::Core::InternalThreadState *Thread, int resource, rlimit32 *rlim) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(ugetrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, rlimit32 *rlim) -> uint64_t {
       struct rlimit rlim64{};
       uint64_t Result = ::getrlimit(resource, &rlim64);
       rlim->rlim_cur = rlim64.rlim_cur;
@@ -37,7 +37,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(sysinfo, [](FEXCore::Core::InternalThreadState *Thread, struct sysinfo32 *info) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(sysinfo, [](FEXCore::Core::CpuStateFrame *Frame, struct sysinfo32 *info) -> uint64_t {
       struct sysinfo Host{};
       uint64_t Result = ::sysinfo(&Host);
       if (Result != -1) {
@@ -58,7 +58,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(getrusage, [](FEXCore::Core::InternalThreadState *Thread, int who, rusage_32 *usage) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(getrusage, [](FEXCore::Core::CpuStateFrame *Frame, int who, rusage_32 *usage) -> uint64_t {
       struct rusage usage64 = *usage;
       uint64_t Result = ::getrusage(who, &usage64);
       *usage = usage64;

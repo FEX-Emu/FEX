@@ -11,7 +11,7 @@
 
 namespace FEX::HLE::x64 {
   void RegisterEpoll() {
-    REGISTER_SYSCALL_IMPL_X64(epoll_wait, [](FEXCore::Core::InternalThreadState *Thread, int epfd, epoll_event_x86 *events, int maxevents, int timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(epoll_wait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, epoll_event_x86 *events, int maxevents, int timeout) -> uint64_t {
       std::vector<struct epoll_event> Events;
       Events.resize(maxevents);
       uint64_t Result = epoll_wait(epfd, &Events.at(0), maxevents, timeout);
@@ -24,7 +24,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(epoll_ctl, [](FEXCore::Core::InternalThreadState *Thread, int epfd, int op, int fd, epoll_event_x86 *event) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(epoll_ctl, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, int op, int fd, epoll_event_x86 *event) -> uint64_t {
       struct epoll_event Event;
       struct epoll_event *EventPtr{};
       if (event) {
@@ -38,7 +38,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(epoll_pwait, [](FEXCore::Core::InternalThreadState *Thread, int epfd, epoll_event_x86 *events, int maxevent, int timeout, const void* sigmask) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(epoll_pwait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, epoll_event_x86 *events, int maxevent, int timeout, const void* sigmask) -> uint64_t {
       std::vector<struct epoll_event> Events;
       Events.resize(maxevent);
 

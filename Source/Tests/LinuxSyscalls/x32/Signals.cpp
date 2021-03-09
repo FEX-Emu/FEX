@@ -15,7 +15,7 @@ namespace SignalDelegator {
 
 namespace FEX::HLE::x32 {
   void RegisterSignals() {
-    REGISTER_SYSCALL_IMPL_X32(signal, [](FEXCore::Core::InternalThreadState *Thread, int signum, uint32_t handler) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(signal, [](FEXCore::Core::CpuStateFrame *Frame, int signum, uint32_t handler) -> uint64_t {
       FEXCore::GuestSigAction newact{};
       FEXCore::GuestSigAction oldact{};
       newact.sigaction_handler.handler = reinterpret_cast<decltype(newact.sigaction_handler.handler)>(handler);
@@ -23,7 +23,7 @@ namespace FEX::HLE::x32 {
       return static_cast<uint32_t>(reinterpret_cast<uint64_t>(oldact.sigaction_handler.handler));
     });
 
-    REGISTER_SYSCALL_IMPL_X32(rt_sigaction, [](FEXCore::Core::InternalThreadState *Thread, int signum, const GuestSigAction_32 *act, GuestSigAction_32 *oldact) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const GuestSigAction_32 *act, GuestSigAction_32 *oldact) -> uint64_t {
       FEXCore::GuestSigAction *act64_p{};
       FEXCore::GuestSigAction *old64_p{};
 

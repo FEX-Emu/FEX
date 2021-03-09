@@ -12,56 +12,56 @@
 namespace FEX::HLE {
   void RegisterSched() {
 
-    REGISTER_SYSCALL_IMPL(sched_yield, [](FEXCore::Core::InternalThreadState *Thread) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_yield, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::sched_yield();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(getpriority, [](FEXCore::Core::InternalThreadState *Thread, int which, int who) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(getpriority, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who) -> uint64_t {
       uint64_t Result = ::syscall(SYS_getpriority, which, who);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(setpriority, [](FEXCore::Core::InternalThreadState *Thread, int which, int who, int prio) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(setpriority, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who, int prio) -> uint64_t {
       uint64_t Result = ::setpriority(which, who, prio);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_setparam, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, const struct sched_param *param) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_setparam, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct sched_param *param) -> uint64_t {
       uint64_t Result = ::sched_setparam(pid, param);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_getparam, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_param *param) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_getparam, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_param *param) -> uint64_t {
       uint64_t Result = ::sched_getparam(pid, param);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_setscheduler, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, int policy, const struct sched_param *param) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_setscheduler, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int policy, const struct sched_param *param) -> uint64_t {
       uint64_t Result = ::sched_setscheduler(pid, policy, param);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_getscheduler, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_getscheduler, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
       uint64_t Result = ::sched_getscheduler(pid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_get_priority_max, [](FEXCore::Core::InternalThreadState *Thread, int policy) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_get_priority_max, [](FEXCore::Core::CpuStateFrame *Frame, int policy) -> uint64_t {
       uint64_t Result = ::sched_get_priority_max(policy);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_get_priority_min, [](FEXCore::Core::InternalThreadState *Thread, int policy) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_get_priority_min, [](FEXCore::Core::CpuStateFrame *Frame, int policy) -> uint64_t {
       uint64_t Result = ::sched_get_priority_min(policy);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_setaffinity, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, const unsigned long *mask) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_setaffinity, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, size_t cpusetsize, const unsigned long *mask) -> uint64_t {
       return 0;
     });
 
-    REGISTER_SYSCALL_IMPL(sched_getaffinity, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, size_t cpusetsize, unsigned char *mask) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_getaffinity, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, size_t cpusetsize, unsigned char *mask) -> uint64_t {
       uint64_t Cores = FEX::HLE::_SyscallHandler->ThreadsConfig();
       uint64_t Bytes = ((Cores+7) / 8);
       // If we don't have at least one byte in the resulting structure
@@ -80,12 +80,12 @@ namespace FEX::HLE {
       return Bytes;
     });
 
-    REGISTER_SYSCALL_IMPL(sched_setattr, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_attr *attr, unsigned int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_setattr, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_attr *attr, unsigned int flags) -> uint64_t {
       uint64_t Result = ::syscall(SYS_sched_setattr, pid, attr, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_getattr, [](FEXCore::Core::InternalThreadState *Thread, pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(sched_getattr, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags) -> uint64_t {
       uint64_t Result = ::syscall(SYS_sched_getattr, pid, attr, size, flags);
       SYSCALL_ERRNO();
     });

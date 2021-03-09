@@ -20,6 +20,6 @@ namespace FEX::HLE::x32 {
     uint32_t useable         : 1;
   };
 
-  uint64_t SetThreadArea(FEXCore::Core::InternalThreadState *Thread, void *tls);
+  uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls);
   void AdjustRipForNewThread(FEXCore::Core::CpuStateFrame *Frame);
 }

@@ -117,7 +117,7 @@ void RegisterSyscallInternal(int SyscallNumber,
 // Deduces return, args... from the function passed
 // Does not work with lambas, because they are objects with operator (), not functions
 template<typename R, typename ...Args>
-bool RegisterSyscall(int SyscallNumber, const char *Name, R(*fn)(FEXCore::Core::InternalThreadState *Thread, Args...)) {
+bool RegisterSyscall(int SyscallNumber, const char *Name, R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)) {
 #ifdef DEBUG_STRACE
   auto TraceFormatString = std::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
 #endif

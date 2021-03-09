@@ -1247,10 +1247,8 @@ namespace FEXCore::Context {
   }
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
-    auto Thread = Frame->Thread; // FIXME: Call HandleSyscall directly with frame
-
     uint64_t Result{};
-    Result = Handler->HandleSyscall(Thread, Args);
+    Result = Handler->HandleSyscall(Frame, Args);
     return Result;
   }
 
