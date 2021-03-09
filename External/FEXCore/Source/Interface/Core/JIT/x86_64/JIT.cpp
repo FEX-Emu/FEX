@@ -1,5 +1,6 @@
 #include "Interface/Context/Context.h"
 
+#include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"
 #include "Interface/Core/InternalThreadState.h"
 
@@ -38,28 +39,14 @@ void FreeCodeBuffer(CodeBuffer Buffer) {
 }
 
 namespace FEXCore::CPU {
-struct ContextBackup {
-  uint64_t StoredCookie;
-  // Host State
-  // RIP and RSP is stored in GPRs here
-  uint64_t GPRs[NGREG];
-  _libc_fpstate FPRState;
 
-  // Guest state
-  int Signal;
-  FEXCore::Core::CPUState GuestState;
-};
-
-void JITCore::StoreThreadState(int Signal, void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
+void X86JITCore::StoreThreadState(int Signal, void *ucontext) {
   // We can end up getting a signal at any point in our host state
   // Jump to a handler that saves all state so we can safely return
-  uint64_t OldSP = _mcontext->gregs[REG_RSP];
+  uint64_t OldSP = ArchHelpers::Context::GetSp(ucontext);
   uintptr_t NewSP = OldSP;
 
-  size_t StackOffset = sizeof(ContextBackup);
+  size_t StackOffset = sizeof(X86ContextBackup);
 
   // We need to back up behind the host's red zone
   // We do this on the guest side as well
@@ -67,16 +54,8 @@ void JITCore::StoreThreadState(int Signal, void *ucontext) {
   NewSP -= StackOffset;
   NewSP = AlignDown(NewSP, 16);
 
-  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
-
-  Context->StoredCookie = 0x4142434445464748ULL;
-
-  // Copy the GPRs
-  memcpy(&Context->GPRs[0], &_mcontext->gregs[0], NGREG * sizeof(_mcontext->gregs[0]));
-  // Copy the FPRState
-  memcpy(&Context->FPRState, _mcontext->fpregs, sizeof(_libc_fpstate));
-
-  // XXX: Save 256bit and 512bit AVX register state
+  X86ContextBackup *Context = reinterpret_cast<X86ContextBackup*>(NewSP);
+  ArchHelpers::Context::BackupContext(ucontext, Context);
 
   // Retain the action pointer so we can see it when we return
   Context->Signal = Signal;
@@ -87,50 +66,35 @@ void JITCore::StoreThreadState(int Signal, void *ucontext) {
   memcpy(&Context->GuestState, &ThreadState->State, sizeof(FEXCore::Core::CPUState));
 
   // Set the new SP
-  _mcontext->gregs[REG_RSP] = NewSP;
+  ArchHelpers::Context::SetSp(ucontext, NewSP);
 
   SignalFrames.push(NewSP);
 }
 
-void JITCore::RestoreThreadState(void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
+void X86JITCore::RestoreThreadState(void *ucontext) {
   uint64_t OldSP = SignalFrames.top();
   SignalFrames.pop();
   uintptr_t NewSP = OldSP;
-  ContextBackup *Context = reinterpret_cast<ContextBackup*>(NewSP);
-
-  if (Context->StoredCookie != 0x4142434445464748ULL) {
-    LogMan::Msg::D("COOKIE WAS NOT CORRECT!\n");
-    exit(-1);
-  }
+  X86ContextBackup *Context = reinterpret_cast<X86ContextBackup*>(NewSP);
 
   // First thing, reset the guest state
   memcpy(&ThreadState->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
 
   // Now restore host state
-
-  // Copy the GPRs
-  memcpy(&_mcontext->gregs[0], &Context->GPRs[0], NGREG * sizeof(_mcontext->gregs[0]));
-  // Copy the FPRState
-  memcpy(_mcontext->fpregs, &Context->FPRState, sizeof(_libc_fpstate));
+  ArchHelpers::Context::RestoreContext(ucontext, Context);
 
   // Restore the previous signal state
   // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
   CTX->SignalDelegation->SetCurrentSignal(Context->Signal);
 }
 
-bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
-
+bool X86JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
   StoreThreadState(Signal, ucontext);
 
   // Set the new PC
-  _mcontext->gregs[REG_RIP] = AbsoluteLoopTopAddress;
+  ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddress);
   // Set our state register to point to our guest thread data
-  _mcontext->gregs[REG_R14] = reinterpret_cast<uint64_t>(ThreadState);
+  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(ThreadState));
 
   // Ref count our faults
   // We use this to track if it is safe to clear cache
@@ -252,16 +216,14 @@ bool JITCore::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSig
   return true;
 }
 
-void JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
-  JITCore *Core = reinterpret_cast<JITCore*>(Original);
+void X86JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
+  X86JITCore *Core = reinterpret_cast<X86JITCore*>(Original);
   ThreadSharedData = Core->ThreadSharedData;
 }
 
-bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
-  ucontext_t* _context = (ucontext_t*)ucontext;
-  mcontext_t* _mcontext = &_context->uc_mcontext;
+bool X86JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
 
-  if (_mcontext->gregs[REG_RIP] == ThreadSharedData.SignalHandlerReturnAddress) {
+  if (ArchHelpers::Context::GetPc(ucontext) == ThreadSharedData.SignalHandlerReturnAddress) {
     RestoreThreadState(ucontext);
 
     // Ref count our faults
@@ -270,7 +232,7 @@ bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
     return true;
   }
 
-  if (_mcontext->gregs[REG_RIP] == PauseReturnInstruction) {
+  if (ArchHelpers::Context::GetPc(ucontext) == PauseReturnInstruction) {
     RestoreThreadState(ucontext);
 
     // Ref count our faults
@@ -282,21 +244,19 @@ bool JITCore::HandleSIGILL(int Signal, void *info, void *ucontext) {
   return false;
 }
 
-bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
+bool X86JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
   FEXCore::Core::SignalEvent SignalReason = ThreadState->SignalReason.load();
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE) {
-    ucontext_t* _context = (ucontext_t*)ucontext;
-    mcontext_t* _mcontext = &_context->uc_mcontext;
 
     // Store our thread state so we can come back to this
     StoreThreadState(Signal, ucontext);
 
     // Set the new PC
-    _mcontext->gregs[REG_RIP] = ThreadPauseHandlerAddress;
+    ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
 
     // Set our state register to point to our guest thread data
-    _mcontext->gregs[REG_R14] = reinterpret_cast<uint64_t>(ThreadState);
+    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(ThreadState));
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
@@ -318,19 +278,16 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
   }
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_STOP) {
-    ucontext_t* _context = (ucontext_t*)ucontext;
-    mcontext_t* _mcontext = &_context->uc_mcontext;
-
     // Our thread is stopping
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the JIT and get out safely
-    _mcontext->gregs[REG_RSP] = ThreadState->State.ReturningStackLocation;
+    ArchHelpers::Context::SetSp(ucontext, ThreadState->State.ReturningStackLocation);
 
     // Our ref counting doesn't matter anymore
     SignalHandlerRefCounter = 0;
 
     // Set the new PC
-    _mcontext->gregs[REG_RIP] = ThreadStopHandlerAddress;
+    ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
 
     ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
@@ -339,7 +296,7 @@ bool JITCore::HandleSignalPause(int Signal, void *info, void *ucontext) {
   return false;
 }
 
-void JITCore::PushRegs() {
+void X86JITCore::PushRegs() {
   for (auto &Xmm : RAXMM_x) {
     sub(rsp, 16);
     movaps(ptr[rsp], Xmm);
@@ -353,7 +310,7 @@ void JITCore::PushRegs() {
     sub(rsp, 8); // Align
 }
 
-void JITCore::PopRegs() {
+void X86JITCore::PopRegs() {
   auto NumPush = RA64.size();
 
   if (NumPush & 1)
@@ -367,7 +324,7 @@ void JITCore::PopRegs() {
   }
 }
 
-void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
+void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
     auto Name = FEXCore::IR::GetName(IROp->Op);
@@ -574,10 +531,10 @@ void JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   }
 }
 
-void JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
+void X86JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 }
 
-JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread)
+X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread)
   : CodeGenerator(Buffer.Size, Buffer.Ptr, nullptr)
   , CTX {ctx}
   , ThreadState {Thread}
@@ -600,7 +557,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   }
 
   for (uint32_t i = 0; i < FEXCore::IR::IROps::OP_LAST + 1; ++i) {
-    OpHandlers[i] = &JITCore::Op_Unhandled;
+    OpHandlers[i] = &X86JITCore::Op_Unhandled;
   }
 
   RegisterALUHandlers();
@@ -619,17 +576,17 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
 
     // This will register the host signal handler per thread, which is fine
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+      X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
       return Core->HandleSIGILL(Signal, info, ucontext);
     });
 
     CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+      X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
       return Core->HandleSignalPause(Signal, info, ucontext);
     });
 
     auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-      JITCore *Core = reinterpret_cast<JITCore*>(Thread->CPUBackend.get());
+      X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
       return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
     };
 
@@ -639,7 +596,7 @@ JITCore::JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadSt
   }
 }
 
-JITCore::~JITCore() {
+X86JITCore::~X86JITCore() {
   for (auto CodeBuffer : CodeBuffers) {
     FreeCodeBuffer(CodeBuffer);
   }
@@ -652,7 +609,7 @@ JITCore::~JITCore() {
   FreeCodeBuffer(InitialCodeBuffer);
 }
 
-void JITCore::ClearCache() {
+void X86JITCore::ClearCache() {
   if (*ThreadSharedData.SignalHandlerRefCounterPtr == 0) {
     if (!CodeBuffers.empty()) {
       // If we have more than one code buffer we are tracking then walk them and delete
@@ -686,13 +643,13 @@ void JITCore::ClearCache() {
     // We have signal handlers that have generated code
     // This means that we can not safely clear the code at this point in time
     // Allocate some new code buffers that we can switch over to instead
-    auto NewCodeBuffer = AllocateNewCodeBuffer(JITCore::INITIAL_CODE_SIZE);
+    auto NewCodeBuffer = AllocateNewCodeBuffer(X86JITCore::INITIAL_CODE_SIZE);
     EmplaceNewCodeBuffer(NewCodeBuffer);
     setNewBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
   }
 }
 
-IR::PhysicalRegister JITCore::GetPhys(uint32_t Node) {
+IR::PhysicalRegister X86JITCore::GetPhys(uint32_t Node) {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
   LogMan::Throw::A(PhyReg.Raw != 255, "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
@@ -700,16 +657,16 @@ IR::PhysicalRegister JITCore::GetPhys(uint32_t Node) {
   return PhyReg;
 }
 
-bool JITCore::IsFPR(uint32_t Node) {
+bool X86JITCore::IsFPR(uint32_t Node) {
   return RAData->GetNodeRegister(Node).Class == IR::FPRClass.Val;
 }
 
-bool JITCore::IsGPR(uint32_t Node) {
+bool X86JITCore::IsGPR(uint32_t Node) {
   return RAData->GetNodeRegister(Node).Class == IR::GPRClass.Val;
 }
 
 template<uint8_t RAType>
-Xbyak::Reg JITCore::GetSrc(uint32_t Node) {
+Xbyak::Reg X86JITCore::GetSrc(uint32_t Node) {
   // rax, rcx, rdx, rsi, r8, r9,
   // r10
   // Callee Saved
@@ -728,24 +685,24 @@ Xbyak::Reg JITCore::GetSrc(uint32_t Node) {
 }
 
 template
-Xbyak::Reg JITCore::GetSrc<JITCore::RA_64>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_64>(uint32_t Node);
 
 template
-Xbyak::Reg JITCore::GetSrc<JITCore::RA_32>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_32>(uint32_t Node);
 
 template
-Xbyak::Reg JITCore::GetSrc<JITCore::RA_16>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_16>(uint32_t Node);
 
 template
-Xbyak::Reg JITCore::GetSrc<JITCore::RA_8>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_8>(uint32_t Node);
 
-Xbyak::Xmm JITCore::GetSrc(uint32_t Node) {
+Xbyak::Xmm X86JITCore::GetSrc(uint32_t Node) {
   auto PhyReg = GetPhys(Node);
   return RAXMM_x[PhyReg.Reg];
 }
 
 template<uint8_t RAType>
-Xbyak::Reg JITCore::GetDst(uint32_t Node) {
+Xbyak::Reg X86JITCore::GetDst(uint32_t Node) {
   auto PhyReg = GetPhys(Node);
   if (RAType == RA_64)
     return RA64[PhyReg.Reg].cvt64();
@@ -760,19 +717,19 @@ Xbyak::Reg JITCore::GetDst(uint32_t Node) {
 }
 
 template
-Xbyak::Reg JITCore::GetDst<JITCore::RA_64>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_64>(uint32_t Node);
 
 template
-Xbyak::Reg JITCore::GetDst<JITCore::RA_32>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_32>(uint32_t Node);
 
 template
-Xbyak::Reg JITCore::GetDst<JITCore::RA_16>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_16>(uint32_t Node);
 
 template
-Xbyak::Reg JITCore::GetDst<JITCore::RA_8>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_8>(uint32_t Node);
 
 template<uint8_t RAType>
-std::pair<Xbyak::Reg, Xbyak::Reg> JITCore::GetSrcPair(uint32_t Node) {
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair(uint32_t Node) {
   auto PhyReg = GetPhys(Node);
   if (RAType == RA_64)
     return RA64Pair[PhyReg.Reg];
@@ -781,17 +738,17 @@ std::pair<Xbyak::Reg, Xbyak::Reg> JITCore::GetSrcPair(uint32_t Node) {
 }
 
 template
-std::pair<Xbyak::Reg, Xbyak::Reg> JITCore::GetSrcPair<JITCore::RA_64>(uint32_t Node);
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_64>(uint32_t Node);
 
 template
-std::pair<Xbyak::Reg, Xbyak::Reg> JITCore::GetSrcPair<JITCore::RA_32>(uint32_t Node);
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_32>(uint32_t Node);
 
-Xbyak::Xmm JITCore::GetDst(uint32_t Node) {
+Xbyak::Xmm X86JITCore::GetDst(uint32_t Node) {
   auto PhyReg = GetPhys(Node);
   return RAXMM_x[PhyReg.Reg];
 }
 
-bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
+bool X86JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
   auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
 
   if (OpHeader->Op == IR::IROps::OP_INLINECONSTANT) {
@@ -805,7 +762,7 @@ bool JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Va
   }
 }
 
-bool JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
+bool X86JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
   auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
 
   if (OpHeader->Op == IR::IROps::OP_INLINEENTRYPOINTOFFSET) {
@@ -819,7 +776,7 @@ bool JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint
   }
 }
 
-std::tuple<JITCore::SetCC, JITCore::CMovCC, JITCore::JCC> JITCore::GetCC(IR::CondClassType cond) {
+std::tuple<X86JITCore::SetCC, X86JITCore::CMovCC, X86JITCore::JCC> X86JITCore::GetCC(IR::CondClassType cond) {
     switch (cond.Val) {
     case FEXCore::IR::COND_EQ:  return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
     case FEXCore::IR::COND_NEQ: return { &CodeGenerator::setne, &CodeGenerator::cmovne, &CodeGenerator::jne };
@@ -852,7 +809,7 @@ std::tuple<JITCore::SetCC, JITCore::CMovCC, JITCore::JCC> JITCore::GetCC(IR::Con
   return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
 }
 
-void *JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *X86JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
@@ -1036,7 +993,7 @@ static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::InternalT
   ctx->IdleWaitCV.notify_all();
 }
 
-uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record) {
+uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::InternalThreadState *Thread, uint64_t *record) {
   auto GuestRip = record[1];
 
   auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
@@ -1056,7 +1013,7 @@ uint64_t JITCore::ExitFunctionLink(JITCore *core, FEXCore::Core::InternalThreadS
   return HostCode;
 }
 
-void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
+void X86JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   DispatcherCodeBuffer = AllocateNewCodeBuffer(MAX_DISPATCHER_CODE_SIZE);
   setNewBuffer(DispatcherCodeBuffer.Ptr, DispatcherCodeBuffer.Size);
 
@@ -1299,7 +1256,7 @@ void JITCore::CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread) {
   setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
 }
 
-FEXCore::CPU::CPUBackend *CreateJITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
-  return new JITCore(ctx, Thread, AllocateNewCodeBuffer(CompileThread ? JITCore::MAX_CODE_SIZE : JITCore::INITIAL_CODE_SIZE), CompileThread);
+FEXCore::CPU::CPUBackend *CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
+  return new X86JITCore(ctx, Thread, AllocateNewCodeBuffer(CompileThread ? X86JITCore::MAX_CODE_SIZE : X86JITCore::INITIAL_CODE_SIZE), CompileThread);
 }
 }

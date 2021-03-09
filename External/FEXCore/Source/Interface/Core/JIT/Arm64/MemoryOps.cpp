@@ -4,7 +4,7 @@ namespace FEXCore::CPU {
 
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 
 DEF_OP(LoadContext) {
   auto Op = IROp->C<IR::IROp_LoadContext>();
@@ -104,7 +104,7 @@ DEF_OP(LoadRegister) {
     LogMan::Throw::A(regId < SRA64.size(), "out of range regId");
 
     auto reg = SRA64[regId];
-    
+
     switch(Op->Header.Size) {
       case 1:
         LogMan::Throw::A(regOffs == 0 || regOffs == 1, "unexpected regOffs");
@@ -191,7 +191,7 @@ DEF_OP(StoreRegister) {
     LogMan::Throw::A(regId < SRA64.size(), "out of range regId");
 
     auto reg = SRA64[regId];
-    
+
     switch(Op->Header.Size) {
       case 1:
         LogMan::Throw::A(regOffs == 0 || regOffs == 1, "unexpected regOffs");
@@ -202,7 +202,7 @@ DEF_OP(StoreRegister) {
         LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), 0, 16);
         break;
-        
+
       case 4:
         LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), 0, 32);
@@ -530,7 +530,7 @@ DEF_OP(StoreFlag) {
   strb(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
 }
 
-MemOperand JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
+MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return MemOperand(Base);
   } else {
@@ -792,8 +792,8 @@ DEF_OP(VStoreMemElement) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterMemoryHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void Arm64JITCore::RegisterMemoryHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(LOADCONTEXT,         LoadContext);
   REGISTER_OP(STORECONTEXT,        StoreContext);
   REGISTER_OP(LOADREGISTER,        LoadRegister);

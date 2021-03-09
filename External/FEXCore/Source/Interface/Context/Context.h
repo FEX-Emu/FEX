@@ -28,7 +28,8 @@ class GdbServer;
 class SiganlDelegator;
 
 namespace CPU {
-  class JITCore;
+  class Arm64JITCore;
+  class X86JITCore;
 }
 namespace HLE {
 class SyscallHandler;
@@ -52,7 +53,13 @@ namespace FEXCore::Context {
 
   struct Context {
     friend class FEXCore::HLE::SyscallHandler;
-    friend class FEXCore::CPU::JITCore;
+  #ifdef JIT_ARM64
+    friend class FEXCore::CPU::Arm64JITCore;
+  #endif
+  #ifdef JIT_X86_64
+    friend class FEXCore::CPU::X86JITCore;
+  #endif
+
     friend class FEXCore::IR::Validation::IRValidation;
 
     struct {

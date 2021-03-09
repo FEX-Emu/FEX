@@ -4,7 +4,7 @@ namespace FEXCore::CPU {
 
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(VectorZero) {
   uint8_t OpSize = IROp->Size;
   switch (OpSize) {
@@ -1519,7 +1519,7 @@ DEF_OP(VSShrS) {
 
 DEF_OP(VInsElement) {
   auto Op = IROp->C<IR::IROp_VInsElement>();
-  
+
   auto reg = GetSrc(Op->Header.Args[0].ID());
 
   if (GetDst(Node).GetCode() != reg.GetCode()) {
@@ -1554,7 +1554,7 @@ DEF_OP(VInsElement) {
 
 DEF_OP(VInsScalarElement) {
   auto Op = IROp->C<IR::IROp_VInsScalarElement>();
-  
+
   auto reg = GetSrc(Op->Header.Args[0].ID());
 
   if (GetDst(Node).GetCode() != reg.GetCode()) {
@@ -2112,8 +2112,8 @@ DEF_OP(VTBL1) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterVectorHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void Arm64JITCore::RegisterVectorHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(VECTORZERO,        VectorZero);
   REGISTER_OP(VECTORIMM,         VectorImm);
   REGISTER_OP(CREATEVECTOR2,     CreateVector2);

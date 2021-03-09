@@ -4,7 +4,7 @@
 namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 
 DEF_OP(AESImc) {
   auto Op = IROp->C<IR::IROp_VAESImc>();
@@ -83,8 +83,8 @@ DEF_OP(AESKeyGenAssist) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterEncryptionHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void Arm64JITCore::RegisterEncryptionHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(VAESIMC,     AESImc);
   REGISTER_OP(VAESENC,     AESEnc);
   REGISTER_OP(VAESENCLAST, AESEncLast);

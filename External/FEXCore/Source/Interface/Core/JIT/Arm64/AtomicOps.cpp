@@ -3,7 +3,7 @@
 namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
   uint8_t OpSize = IROp->Size;
@@ -865,8 +865,8 @@ DEF_OP(AtomicFetchXor) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterAtomicHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void Arm64JITCore::RegisterAtomicHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(CASPAIR,        CASPair);
   REGISTER_OP(CAS,            CAS);
   REGISTER_OP(ATOMICADD,      AtomicAdd);

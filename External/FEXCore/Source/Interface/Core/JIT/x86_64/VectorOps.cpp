@@ -4,7 +4,7 @@
 
 namespace FEXCore::CPU {
 
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(VectorZero) {
   auto Dst = GetDst(Node);
   vpxor(Dst, Dst, Dst);
@@ -1869,8 +1869,8 @@ DEF_OP(VTBL1) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterVectorHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void X86JITCore::RegisterVectorHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(VECTORZERO,        VectorZero);
   REGISTER_OP(VECTORIMM,         VectorImm);
   REGISTER_OP(CREATEVECTOR2,     CreateVector2);

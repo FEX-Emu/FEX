@@ -3,7 +3,7 @@
 
 namespace FEXCore::CPU {
 
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(GetHostFlag) {
   auto Op = IROp->C<IR::IROp_GetHostFlag>();
 
@@ -14,8 +14,8 @@ DEF_OP(GetHostFlag) {
 }
 
 #undef DEF_OP
-void JITCore::RegisterFlagHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void X86JITCore::RegisterFlagHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(GETHOSTFLAG, GetHostFlag);
 #undef REGISTER_OP
 }

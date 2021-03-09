@@ -38,8 +38,8 @@ static bool StoreCAS8(uint8_t &Expected, uint8_t Val, uint64_t Addr) {
   return Atom->compare_exchange_strong(Expected, Val);
 }
 
-bool HandleCASPAL(void *_mcontext, void *_info, uint32_t Instr) {
-  mcontext_t* mcontext = reinterpret_cast<mcontext_t*>(_mcontext);
+bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
   if (info->si_code != BUS_ADRALN) {
@@ -827,8 +827,8 @@ std::tuple<uint64_t, bool> DoCAS64(
 
 }
 
-bool HandleCASAL(void *_mcontext, void *_info, uint32_t Instr) {
-  mcontext_t* mcontext = reinterpret_cast<mcontext_t*>(_mcontext);
+bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
   if (info->si_code != BUS_ADRALN) {
@@ -921,8 +921,8 @@ bool HandleCASAL(void *_mcontext, void *_info, uint32_t Instr) {
   return false;
 }
 
-bool HandleAtomicMemOp(void *_mcontext, void *_info, uint32_t Instr) {
-  mcontext_t* mcontext = reinterpret_cast<mcontext_t*>(_mcontext);
+bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
   if (info->si_code != BUS_ADRALN) {

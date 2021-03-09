@@ -29,7 +29,7 @@ static int64_t LREM(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
 
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(TruncElementPair) {
   auto Op = IROp->C<IR::IROp_TruncElementPair>();
 
@@ -524,14 +524,10 @@ DEF_OP(LDiv) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-#if _M_X86_64
-      CallRuntime(LDIV);
-#else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LDIV));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
-#endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
@@ -571,14 +567,10 @@ DEF_OP(LUDiv) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-#if _M_X86_64
-      CallRuntime(LUDIV);
-#else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LUDIV));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
-#endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
@@ -628,14 +620,10 @@ DEF_OP(LRem) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-#if _M_X86_64
-      CallRuntime(LREM);
-#else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LREM));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
-#endif
 
       // Result is now in x0
       // Fix the stack and any values that were stepped on
@@ -682,14 +670,11 @@ DEF_OP(LURem) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-#if _M_X86_64
-      CallRuntime(LUREM);
-#else
       LoadConstant(x3, reinterpret_cast<uint64_t>(LUREM));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
-#endif
+
       // Fix the stack and any values that were stepped on
       PopDynamicRegsAndLR();
 
@@ -945,7 +930,7 @@ DEF_OP(Select) {
   } else {
     LogMan::Msg::A("Select: Expected GPR or FPR");
   }
-  
+
   auto cc = MapSelectCC(Op->Cond);
 
   uint64_t const_true, const_false;
@@ -1022,7 +1007,7 @@ DEF_OP(FCmp) {
     fcmp(GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
   }
   auto Dst = GetReg<RA_64>(Node);
-  
+
   bool set = false;
 
   if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
@@ -1057,8 +1042,8 @@ DEF_OP(FCmp) {
 
 #undef DEF_OP
 
-void JITCore::RegisterALUHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &JITCore::Op_##x
+void Arm64JITCore::RegisterALUHandlers() {
+#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(TRUNCELEMENTPAIR,  TruncElementPair);
   REGISTER_OP(CONSTANT,          Constant);
   REGISTER_OP(ENTRYPOINTOFFSET,  EntrypointOffset);
