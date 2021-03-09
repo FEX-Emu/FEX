@@ -197,7 +197,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
         auto SelectOp = SelectOpHdr->CW<IR::IROp_Select>();
 
         // the value isn't used after the select otherwise
-        if (SelectOpHdr->Op == OP_SELECT && SelectOpNode->NumUses == 1
+        // make sure the sizes match
+        if (SelectOpHdr->Size == UnaryOpHdr->Size && SelectOpHdr->Op == OP_SELECT && SelectOpNode->NumUses == 1
           && IREmit->IsValueConstant(SelectOp->TrueVal)
           && IREmit->IsValueConstant(SelectOp->FalseVal)) {
 
