@@ -726,7 +726,10 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
   auto Features = vixl::CPUFeatures::InferFromOS();
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
-  SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
+  // RCPC is bugged on Snapdragon 865
+  // Causes glibc cond16 test to immediately throw assert
+  // __pthread_mutex_cond_lock: Assertion `mutex->__data.__owner == 0'
+  SupportsRCPC = false; //Features.Has(vixl::CPUFeatures::Feature::kRCpc);
 
   if (SupportsAtomics) {
     // Hypervisor can hide this on the c630?
