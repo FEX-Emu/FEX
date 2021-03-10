@@ -1,3 +1,5 @@
+#include <sys/sysinfo.h>
+
 #include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 
@@ -63,7 +65,7 @@ namespace FEX::ArgLoader {
 
       CPUGroup.add_option("-T", "--Threads")
           .dest("Threads")
-          .help("Number of physical hardware threads to tell the process we have")
+          .help("Number of physical hardware threads to tell the process we have. 0 will auto detect.")
           .set_default(1);
 
       CPUGroup.add_option("--smc-checks")
@@ -215,6 +217,9 @@ namespace FEX::ArgLoader {
 
       if (Options.is_set_by_user("Threads")) {
         uint64_t Config = Options.get("Threads");
+        if (Config == 0) {
+          Config = get_nprocs();
+        }
         Set(FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, std::to_string(Config));
       }
 
