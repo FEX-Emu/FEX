@@ -26,7 +26,7 @@ void Dispatcher::StoreThreadState(int Signal, void *ucontext) {
   uint64_t OldSP = ArchHelpers::Context::GetSp(ucontext);
   uintptr_t NewSP = OldSP;
 
-  size_t StackOffset = sizeof(X86ContextBackup);
+  size_t StackOffset = sizeof(ArchHelpers::Context::ContextBackup);
 
   // We need to back up behind the host's red zone
   // We do this on the guest side as well
@@ -34,7 +34,7 @@ void Dispatcher::StoreThreadState(int Signal, void *ucontext) {
   NewSP -= StackOffset;
   NewSP = AlignDown(NewSP, 16);
 
-  X86ContextBackup *Context = reinterpret_cast<X86ContextBackup*>(NewSP);
+  auto Context = reinterpret_cast<ArchHelpers::Context::ContextBackup*>(NewSP);
   ArchHelpers::Context::BackupContext(ucontext, Context);
 
   // Retain the action pointer so we can see it when we return
@@ -55,7 +55,7 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
   uint64_t OldSP = SignalFrames.top();
   SignalFrames.pop();
   uintptr_t NewSP = OldSP;
-  X86ContextBackup *Context = reinterpret_cast<X86ContextBackup*>(NewSP);
+  auto Context = reinterpret_cast<ArchHelpers::Context::ContextBackup*>(NewSP);
 
   // First thing, reset the guest state
   memcpy(ThreadState->CurrentFrame, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
