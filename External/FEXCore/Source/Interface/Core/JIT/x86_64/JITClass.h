@@ -6,6 +6,7 @@
 
 #include "Common/MathUtils.h"
 
+#define XBYAK64
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
 

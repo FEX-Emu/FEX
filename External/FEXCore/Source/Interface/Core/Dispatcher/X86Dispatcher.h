@@ -2,6 +2,7 @@
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
+#define XBYAK64
 #include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
