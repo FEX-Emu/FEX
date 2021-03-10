@@ -92,7 +92,7 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
     CreateAsmDispatch(ctx, Thread);
     CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
-      return Core->HandleSignalPause(Signal, info, ucontext);
+      return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
     });
 
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
@@ -102,7 +102,7 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
 
     auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
       InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
-      return Core->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+      return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
     };
 
     for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
@@ -113,7 +113,7 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
 
 
 InterpreterCore::~InterpreterCore() {
-  DeleteAsmDispatch();
+  delete Dispatcher;
 }
 
 

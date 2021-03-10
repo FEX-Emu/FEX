@@ -2,8 +2,8 @@
 
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/BlockSamplingData.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 
-#include "Interface/Core/JIT/x86_64/JIT.h"
 #include "Common/MathUtils.h"
 
 #include <xbyak/xbyak.h>
@@ -69,10 +69,6 @@ public:
 
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
-
-  bool HandleSIGILL(int Signal, void *info, void *ucontext);
-  bool HandleSignalPause(int Signal, void *info, void *ucontext);
-  bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
 private:
@@ -80,6 +76,7 @@ private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
   FEXCore::IR::IRListView const *IR;
+  FEXCore::CPU::Dispatcher *Dispatcher;
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
   Xbyak::util::Cpu Features{};
@@ -128,15 +125,12 @@ private:
   bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
   bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value);
 
-  void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
   IR::RegisterAllocationPass *RAPass;
   FEXCore::IR::RegisterAllocationData *RAData;
 
 #ifdef BLOCKSTATS
   bool GetSamplingData {true};
 #endif
-
-  static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 1;
 
   void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
     CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
@@ -153,19 +147,8 @@ private:
   // For code safety we can't delete code buffers until outside of all signals
   std::vector<CodeBuffer> CodeBuffers{};
 
-  // This is the codebuffer that our dispatcher lives in
-  CodeBuffer DispatcherCodeBuffer{};
   // This is the current code buffer that we are tracking
   CodeBuffer *CurrentCodeBuffer{};
-
-  uint64_t AbsoluteLoopTopAddress{};
-  uint64_t ExitFunctionLinkerAddress{};
-  uint64_t ThreadStopHandlerAddress{};
-  uint64_t ThreadPauseHandlerAddress{};
-
-  uint64_t PauseReturnInstruction{};
-
-  uint32_t SignalHandlerRefCounter{};
 
   struct CompilerSharedData {
     uint64_t SignalHandlerReturnAddress{};
@@ -175,9 +158,6 @@ private:
 
   CompilerSharedData ThreadSharedData;
 
-  void StoreThreadState(int Signal, void *ucontext);
-  void RestoreThreadState(void *ucontext);
-  std::stack<uint64_t> SignalFrames;
   uint32_t SpillSlots{};
   using SetCC = void (X86JITCore::*)(const Operand& op);
   using CMovCC = void (X86JITCore::*)(const Reg& reg, const Operand& op);

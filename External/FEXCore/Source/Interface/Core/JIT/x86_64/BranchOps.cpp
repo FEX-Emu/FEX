@@ -75,7 +75,7 @@ DEF_OP(ExitFunction) {
     jmp(qword[rax]);
 
     L(l_BranchHost);
-    dq(ExitFunctionLinkerAddress);
+    dq(Dispatcher->ExitFunctionLinkerAddress);
     L(l_BranchGuest);
     dq(NewRIP);
   } else {
@@ -95,7 +95,7 @@ DEF_OP(ExitFunction) {
     jmp(qword[LookupBase + 0]);
 
     L(FullLookup);
-    mov(rax, AbsoluteLoopTopAddress);
+    mov(rax, Dispatcher->AbsoluteLoopTopAddress);
     mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], RipReg);
     jmp(rax);
   }

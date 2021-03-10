@@ -12,7 +12,7 @@ namespace IR {
 namespace Core {
   struct DebugData;
   struct ThreadState;
-  struct InternalThreadState;
+  struct CpuStateFrame;
 }
 
 namespace CPU {

@@ -84,6 +84,10 @@ set (SRCS
   Interface/Core/X86DebugInfo.cpp
   Interface/Core/X86HelperGen.cpp
   Interface/Core/ArchHelpers/Arm64_stubs.cpp
+  Interface/Core/ArchHelpers/Arm64Emitter.cpp
+  Interface/Core/Dispatcher/Dispatcher.cpp
+  Interface/Core/Dispatcher/X86Dispatcher.cpp
+  Interface/Core/Dispatcher/Arm64Dispatcher.cpp
   Interface/Core/Interpreter/InterpreterCore.cpp
   Interface/Core/Interpreter/InterpreterOps.cpp
   Interface/Core/X86Tables/BaseTables.cpp
@@ -120,16 +124,12 @@ set (SRCS
   Utils/LogManager.cpp
   )
 
-if (_M_X86_64)
-  list(APPEND SRCS Interface/Core/Interpreter/x86_64Dispatcher.cpp)
-endif()
 if(_M_ARM_64)
   list(APPEND SRCS
-    Interface/Core/ArchHelpers/Arm64.cpp
-    Interface/Core/Interpreter/Arm64Dispatcher.cpp)
+    Interface/Core/ArchHelpers/Arm64.cpp)
 endif()
 
-set(DEFINES )
+set(DEFINES -DVIXL_INCLUDE_TARGET_AARCH64=1)
 set (JIT_LIBS )
 
 if (_M_X86_64)
@@ -170,7 +170,6 @@ if (ENABLE_JIT_ARM64)
     Interface/Core/JIT/Arm64/MiscOps.cpp
     Interface/Core/JIT/Arm64/MoveOps.cpp
     Interface/Core/JIT/Arm64/VectorOps.cpp)
-  list(APPEND JIT_LIBS vixl)
 endif()
 
 if (ENABLE_JITSYMBOLS)
@@ -223,7 +222,7 @@ check_cxx_compiler_flag(-fcolor-diagnostics CLANG_COLOR)
 function(AddLibrary Name Type)
   add_library(${Name} ${Type} ${SRCS})
   add_dependencies(${Name} IR_INC)
-  target_link_libraries(${Name} pthread rt ${JIT_LIBS} ${LINUX_LIBS} dl)
+  target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
