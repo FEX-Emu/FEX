@@ -220,10 +220,16 @@ int main(int argc, char **argv, char **const envp) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
     LogMan::Msg::E("%s: command not found", Program.c_str());
-    return 0;
+    return -ENOEXEC;
   }
 
   FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
+
+  if (!Loader.ELFWasLoaded()) {
+    // Loader couldn't load this program for some reason
+    return -ENOEXEC;
+  }
+
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 

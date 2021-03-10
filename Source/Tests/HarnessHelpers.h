@@ -747,6 +747,8 @@ public:
     return Info;
   }
 
+  bool ELFWasLoaded() const { return File.WasLoaded(); }
+
 private:
   ::ELFLoader::ELFContainer File;
   ::ELFLoader::ELFSymbolDatabase DB;

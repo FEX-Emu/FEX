@@ -70,6 +70,7 @@ public:
 
   bool WasDynamic() const { return DynamicProgram; }
   bool HasDynamicLinker() const { return !DynamicLinker.empty(); }
+  bool WasLoaded() const { return Loaded; }
   std::string &InterpreterLocation() { return DynamicLinker; }
 
   std::vector<char const*> const *GetNecessaryLibs() const { return &NecessaryLibs; }
@@ -155,6 +156,7 @@ private:
   bool DynamicProgram{false};
   std::string DynamicLinker;
   ProgramHeader TLSHeader{};
+  bool Loaded {false};
 };
 
 } // namespace ELFLoader
