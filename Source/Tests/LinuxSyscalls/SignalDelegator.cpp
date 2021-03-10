@@ -96,19 +96,16 @@ namespace FEX::HLE {
         return;
       }
 
-      // If the signal was sent by the user with kill then we can't block it
-      // If it was sent by raise() then we /can/ block it
-      bool SentByUser = SigInfo->si_code <= 0;
-
       if (Signal == SIGCHLD) {
+        bool StopOrResume = SigInfo->si_code == CLD_STOPPED || SigInfo->si_code == CLD_CONTINUED || SigInfo->si_code == CLD_TRAPPED;
+
         // Do some special handling around this signal
         // If the guest has a signal handler installed with SA_NOCLDSTOP or SA_NOCHLDWAIT then
         // handle carefully
         if (Handler.GuestAction.sa_flags & SA_NOCLDSTOP &&
-            !SentByUser) {
-          // If we were sent the signal from kill, tkill, or tgkill
-          // then si_code is set to SI_TKILL and should be delivered to the guest
-          // Otherwise if NOCLDSTOP is set without this code, just drop the signal
+            StopOrResume) {
+          // SA_NOCLDSTOP blocks SIGCHLD when si_code is CLD_STOPPED/CLD_CONTINUED/CLD_TRAPPED
+          // in that case, drop the signal
           return;
         }
 
