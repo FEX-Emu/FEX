@@ -71,7 +71,7 @@ DEF_OP(ExitFunction) {
     Literal l_BranchGuest{NewRIP};
 
     ldr(x0, &l_BranchHost);
-    blr(x0);
+    br(x0);
 
     place(&l_BranchHost);
     place(&l_BranchGuest);
