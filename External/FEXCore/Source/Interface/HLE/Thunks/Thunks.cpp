@@ -56,7 +56,7 @@ namespace FEXCore {
             auto Name = Args->Name;
             auto CallbackThunks = Args->CallbackThunks;
 
-            auto SOName = CTX->Config.ThunkLibsPath() + "/" + (const char*)Name + "-host.so";
+            auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
 
             LogMan::Msg::D("Load lib: %s -> %s", Name, SOName.c_str());
 
