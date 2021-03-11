@@ -792,8 +792,8 @@ namespace FEXCore::Context {
         auto NewIR2 = reparsed->ViewIR();
         Dump(&out2, &NewIR2, nullptr);
         if (out.str() != out2.str()) {
-          printf("one:\n %s\n", out.str().c_str());
-          printf("two:\n %s\n", out2.str().c_str());
+          LogMan::Msg::I("one:\n %s", out.str().c_str());
+          LogMan::Msg::I("two:\n %s", out2.str().c_str());
           LogMan::Msg::A("Parsed ir doesn't match\n");
         }
         delete reparsed;
@@ -810,7 +810,7 @@ namespace FEXCore::Context {
       std::stringstream out;
       auto NewIR = Thread->OpDispatcher->ViewIR();
       FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
-      printf("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
+      LogMan::Msg::I("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
     }
 
     auto RAData = Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr;
