@@ -12,12 +12,18 @@ void UnInstallHandlers() { Handlers.clear(); }
 [[noreturn]] void M(const char *fmt, va_list args) {
   size_t MsgSize = 1024;
   char *Buffer = reinterpret_cast<char*>(alloca(MsgSize));
-  size_t Return = vsnprintf(Buffer, MsgSize, fmt, args);
+  va_list argsCopy;
+  va_copy(argsCopy, args);
+  size_t Return = vsnprintf(Buffer, MsgSize, fmt, argsCopy);
+  va_end(argsCopy);
   if (Return >= MsgSize) {
     // Allocate a bigger size on failure
     MsgSize = Return;
     Buffer = reinterpret_cast<char*>(alloca(MsgSize));
-    vsnprintf(Buffer, MsgSize, fmt, args);
+    va_end(argsCopy);
+    va_copy(argsCopy, args);
+    vsnprintf(Buffer, MsgSize, fmt, argsCopy);
+    va_end(argsCopy);
   }
 
   for (auto &Handler : Handlers) {
@@ -36,12 +42,18 @@ void UnInstallHandlers() { Handlers.clear(); }
 void M(DebugLevels Level, const char *fmt, va_list args) {
   size_t MsgSize = 1024;
   char *Buffer = reinterpret_cast<char*>(alloca(MsgSize));
-  size_t Return = vsnprintf(Buffer, MsgSize, fmt, args);
+  va_list argsCopy;
+  va_copy(argsCopy, args);
+  size_t Return = vsnprintf(Buffer, MsgSize, fmt, argsCopy);
+  va_end(argsCopy);
   if (Return >= MsgSize) {
     // Allocate a bigger size on failure
     MsgSize = Return;
     Buffer = reinterpret_cast<char*>(alloca(MsgSize));
-    vsnprintf(Buffer, MsgSize, fmt, args);
+    va_end(argsCopy);
+    va_copy(argsCopy, args);
+    vsnprintf(Buffer, MsgSize, fmt, argsCopy);
+    va_end(argsCopy);
   }
   for (auto &Handler : Handlers) {
     Handler(Level, Buffer);

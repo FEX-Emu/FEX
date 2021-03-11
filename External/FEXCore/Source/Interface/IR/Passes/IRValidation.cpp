@@ -56,7 +56,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
   }
 
   NodeIsLive.Set(1); // IRHEADER
-  
+
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
@@ -271,8 +271,8 @@ bool IRValidation::Run(IREmitter *IREmit) {
     if (HadWarning) {
       Out << "Warnings:" << std::endl << Warnings.str() << std::endl;
     }
-   
-    fprintf(stderr, "%s", Out.str().c_str());
+
+    LogMan::Msg::E("%s", Out.str().c_str());
   }
 
   return false;
