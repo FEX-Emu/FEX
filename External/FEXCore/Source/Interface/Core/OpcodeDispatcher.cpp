@@ -2812,7 +2812,6 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::NOTOp(OpcodeArgs) {
-  LogMan::Throw::A(!DestIsLockedMem(Op), "Can't handle LOCK on NOT\n");
   uint8_t Size = GetSrcSize(Op);
   OrderedNode *MaskConst{};
   if (Size == 8) {
@@ -2822,9 +2821,16 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
     MaskConst = _Constant((1ULL << (Size * 8)) - 1);
   }
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  Src = _Xor(Src, MaskConst);
-  StoreResult(GPRClass, Op, Src, -1);
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+    _AtomicXor(DestMem, MaskConst, Size);
+  }
+  else {
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Src = _Xor(Src, MaskConst);
+    StoreResult(GPRClass, Op, Src, -1);
+  }
 }
 
 void OpDispatchBuilder::XADDOp(OpcodeArgs) {
