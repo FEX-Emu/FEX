@@ -1,5 +1,6 @@
 #pragma once
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <list>
 #include <memory>
@@ -132,6 +133,29 @@ namespace Type {
     Value(FEXCore::Config::ConfigOption _Option, T Default)
       : Option {_Option} {
       ValueData = FEXCore::Config::Value<T>::GetIfExists(Option, Default);
+      GetListIfExists(Option, &AppendList);
+    }
+
+    template <typename TT = T,
+      typename std::enable_if<!std::is_same<TT, std::string>::value, int>::type = 0>
+    Value(FEXCore::Config::ConfigOption _Option)
+      : Option {_Option} {
+      if (!FEXCore::Config::Exists(Option)) {
+        ERROR_AND_DIE("FEXCore::Config::Value has no value");
+      }
+
+      ValueData = FEXCore::Config::Value<T>::Get(Option);
+    }
+
+    template <typename TT = T,
+      typename std::enable_if<std::is_same<TT, std::string>::value, int>::type = 0>
+    Value(FEXCore::Config::ConfigOption _Option)
+      : Option {_Option} {
+      if (!FEXCore::Config::Exists(Option)) {
+        ERROR_AND_DIE("FEXCore::Config::Value has no value");
+      }
+
+      ValueData = FEXCore::Config::Value<T>::GetIfExists(Option);
       GetListIfExists(Option, &AppendList);
     }
 
