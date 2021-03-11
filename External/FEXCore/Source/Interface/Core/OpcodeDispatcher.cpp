@@ -4330,14 +4330,14 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // AKA if they match then don't touch RAX value
     // Otherwise set it to the rm operand
     OrderedNode *CASResult = _Select(FEXCore::IR::COND_EQ,
-      Src1Lower, Src3,
+      Src1Lower, Src3Lower,
       Src3Lower, Src1Lower);
 
     // Op1 = RAX == Op1 ? Op2 : Op1
     // If they match then set the rm operand to the input
     // else don't set the rm operand
     OrderedNode *DestResult = _Select(FEXCore::IR::COND_EQ,
-        Src1Lower, Src3,
+        Src1Lower, Src3Lower,
         Src2, Src1);
 
     // Store in to GPR Dest
