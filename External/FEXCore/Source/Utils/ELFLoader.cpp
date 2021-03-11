@@ -67,8 +67,10 @@ bool ELFContainer::IsSupportedELF(std::string const &Filename) {
 }
 
 ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter) {
+  Loaded = true;
   if (!LoadELF(Filename)) {
     LogMan::Msg::E("Couldn't Load ELF file");
+    Loaded = false;
     return;
   }
 
@@ -87,7 +89,9 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
       // Found the interpreter in the rootfs
     }
     else if (!LoadELF(RawString)) {
-      LogMan::Msg::E("Couldn't load dynamic ELF file's interpreter");
+      LogMan::Msg::E("Failed to find guest ELF's interpter '%s'", RawString);
+      LogMan::Msg::E("Did you forget to set an x86 rootfs? Currently '%s'", RootFS.c_str());
+      Loaded = false;
       return;
     }
   }
@@ -128,8 +132,6 @@ bool ELFContainer::LoadELF(std::string const &Filename) {
 
   if (!ELFFile.is_open())
     return false;
-
-  LogMan::Throw::A(ELFFile.is_open(), "Failed to open file");
 
   ELFFile.seekg(0, ELFFile.end);
   FileSize = ELFFile.tellg();
