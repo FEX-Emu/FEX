@@ -49,7 +49,7 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
 // be used by both Arm64 JIT and ARM64 Dispatcher
 class Arm64Emitter : public vixl::aarch64::Assembler {
 protected:
-  Arm64Emitter();
+  Arm64Emitter(size_t size);
 
   vixl::aarch64::CPU CPU;
   bool SupportsAtomics{};

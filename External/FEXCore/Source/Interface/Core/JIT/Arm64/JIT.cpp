@@ -392,7 +392,8 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
   : CTX {ctx}
-  , ThreadState {Thread} {
+  , ThreadState {Thread}
+  , Arm64Emitter(0) {
 
   {
     DispatcherConfig config;

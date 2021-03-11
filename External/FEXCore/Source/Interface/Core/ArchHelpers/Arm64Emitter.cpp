@@ -8,7 +8,8 @@
 namespace FEXCore::CPU {
 #define STATE x28
 
-Arm64Emitter::Arm64Emitter() : vixl::aarch64::Assembler(vixl::aarch64::PositionDependentCode) {
+// We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
+Arm64Emitter::Arm64Emitter(size_t size) : vixl::aarch64::Assembler(size, vixl::aarch64::PositionDependentCode) {
   CPU.SetUp();
 
   auto Features = vixl::CPUFeatures::InferFromOS();
