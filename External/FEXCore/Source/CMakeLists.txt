@@ -157,9 +157,7 @@ if (ENABLE_JIT_X86_64)
 endif()
 
 if (ENABLE_JIT_ARM64)
-  list(APPEND DEFINES
-    -DVIXL_INCLUDE_TARGET_AARCH64=1
-    -DJIT_ARM64)
+  list(APPEND DEFINES -DJIT_ARM64)
   list(APPEND SRCS
     Interface/Core/JIT/Arm64/JIT.cpp
     Interface/Core/JIT/Arm64/ALUOps.cpp
