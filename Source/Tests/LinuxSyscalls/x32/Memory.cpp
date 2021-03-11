@@ -86,6 +86,18 @@ namespace FEX::HLE::x32 {
       uint64_t Result = ::munlock(reinterpret_cast<void*>(0x1'0000), 0x1'0000'0000ULL - 0x1'0000);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(shmat, [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
+      uint32_t ResultAddr{};
+      uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
+          shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
+      if (Result == 0) {
+        return ResultAddr;
+      }
+      else {
+        return Result;
+      }
+    });
   }
 
 }

@@ -340,5 +340,16 @@ namespace FEX::HLE::x32 {
       }
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(futex_time64, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
+      uint64_t Result = syscall(SYS_futex,
+        uaddr,
+        futex_op,
+        val,
+        timeout,
+        uaddr2,
+        val3);
+      SYSCALL_ERRNO();
+    });
   }
 }
