@@ -352,43 +352,57 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::ADCOp(OpcodeArgs) {
-  LogMan::Throw::A(!DestIsLockedMem(Op), "Can't handle LOCK on ADC\n");
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  uint8_t Size = GetDstSize(Op);
 
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto ALUOp = _Add(Src, CF);
 
-  auto ALUOp = _Add(Dest, Src);
-  auto Carry = _Add(ALUOp, CF);
+  OrderedNode *Result{};
+  OrderedNode *Before{};
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+    Before = _AtomicFetchAdd(DestMem, ALUOp, Size);
+    Result = _Add(Before, ALUOp);
+  }
+  else {
+    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Result = _Add(Before, ALUOp);
+    StoreResult(GPRClass, Op, Result, -1);
+  }
 
-  OrderedNode *Result = Carry;
-
-  StoreResult(GPRClass, Op, Result, -1);
-  auto Size = GetDstSize(Op);
   if (Size < 4)
-    Result = _Bfe(Size, Size * 8, 0, Carry);
-  GenerateFlags_ADC(Op, Result, Dest, Src, CF);
+    Result = _Bfe(Size, Size * 8, 0, Result);
+  GenerateFlags_ADC(Op, Result, Before, Src, CF);
 }
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::SBBOp(OpcodeArgs) {
-  LogMan::Throw::A(!DestIsLockedMem(Op), "Can't handle LOCK on SBB\n");
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  auto Size = GetDstSize(Op);
 
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto ALUOp = _Add(Src, CF);
 
-  auto ALUOp = _Sub(Dest, Src);
-  auto Carry = _Sub(ALUOp, CF);
-
-  OrderedNode *Result = Carry;
-
-  StoreResult(GPRClass, Op, Result, -1);
-  auto Size = GetDstSize(Op);
-  if (Size < 4) {
-    Result = _Bfe(Size, Size * 8, 0, Carry);
+  OrderedNode *Result{};
+  OrderedNode *Before{};
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+    Before = _AtomicFetchSub(DestMem, ALUOp, Size);
+    Result = _Sub(Before, ALUOp);
   }
-  GenerateFlags_SBB(Op, Result, Dest, Src, CF);
+  else {
+    Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Result = _Sub(Before, ALUOp);
+    StoreResult(GPRClass, Op, Result, -1);
+  }
+
+  if (Size < 4) {
+    Result = _Bfe(Size, Size * 8, 0, Result);
+  }
+  GenerateFlags_SBB(Op, Result, Before, Src, CF);
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
