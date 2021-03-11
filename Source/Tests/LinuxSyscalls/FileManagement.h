@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <poll.h>
+#include <map>
 
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
@@ -49,8 +50,12 @@ private:
   std::unordered_map<int32_t, std::string> FDToNameMap;
   std::string PidSelfPath;
   std::string GetEmulatedPath(const char *pathname);
+  std::map<std::string, std::string> ThunkOverlays;
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(LDPath, ROOTFSPATH);
+  FEX_CONFIG_OPT(ThunkHostLibs, THUNKHOSTLIBSPATH);
+  FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBSPATH);
+  FEX_CONFIG_OPT(ThunkConfig, THUNKCONFIGPATH);
 };
 }

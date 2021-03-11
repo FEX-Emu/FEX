@@ -15,18 +15,109 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
+#include <tiny-json.h>
+
+#include <fstream>
+#include <filesystem>
+
 namespace FEX::HLE {
+
+static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
+  std::fstream File;
+  File.open(Filename, std::ios::in);
+
+  if (!File.is_open()) {
+    return false;
+  }
+
+  if (!File.seekg(0, std::fstream::end)) {
+    LogMan::Msg::D("Couldn't load configuration file: Seek end");
+    return false;
+  }
+
+  auto FileSize = File.tellg();
+  if (File.fail()) {
+    LogMan::Msg::D("Couldn't load configuration file: tellg");
+    return false;
+  }
+
+  if (!File.seekg(0, std::fstream::beg)) {
+    LogMan::Msg::D("Couldn't load configuration file: Seek beginning");
+    return false;
+  }
+
+  if (FileSize > 0) {
+    Data.resize(FileSize);
+    if (!File.read(&Data.at(0), FileSize)) {
+      // Probably means permissions aren't set. Just early exit
+      return false;
+    }
+    File.close();
+  }
+  else {
+    return false;
+  }
+
+  return true;
+}
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
-    // calculate the non-self link to exe
-    // Some executables do getpid, stat("/proc/$pid/exe")
-    int pid = getpid();
+  // calculate the non-self link to exe
+  // Some executables do getpid, stat("/proc/$pid/exe")
+  int pid = getpid();
 
-    char buf[50];
-    snprintf(buf, 50, "/proc/%i/exe", pid);
+  char buf[50];
+  snprintf(buf, 50, "/proc/%i/exe", pid);
 
-    PidSelfPath = std::string(buf);
+  PidSelfPath = std::string(buf);
+
+  
+  auto ThunkConfigFile = ThunkConfig();
+
+  if (ThunkConfigFile.size()) {
+
+    auto ThunkGuestPath = std::filesystem::path(ThunkGuestLibs());
+
+    std::vector<char> FileData;
+    if (LoadFile(FileData, ThunkConfigFile)) {
+      FileData.push_back(0);
+
+      json_t mem[128];
+      json_t const* json = json_create( &FileData.at(0), mem, sizeof mem / sizeof *mem );
+
+      json_t const* thunks = json_getProperty( json, "thunks" );
+      if ( !thunks || JSON_OBJ != json_getType( thunks ) ) {
+        return;
+      }
+
+      json_t const* thunk;
+      for( thunk = json_getChild( thunks ); thunk != 0; thunk = json_getSibling( thunk )) {
+        char const* GuestThunk = json_getName( thunk );
+        jsonType_t propertyType = json_getType( thunk );
+
+        if (propertyType == JSON_TEXT) {
+          char const* RootFSLib = json_getValue( thunk );
+          ThunkOverlays.emplace(RootFSLib, ThunkGuestPath / GuestThunk);
+        } else if (propertyType == JSON_ARRAY) {
+          json_t const* child;
+          for( child = json_getChild( thunk ); child != 0; child = json_getSibling( child ) ) {
+            if (json_getType( child ) == JSON_TEXT) {
+              char const* RootFSLib = json_getValue( child );
+              ThunkOverlays.emplace(RootFSLib, ThunkGuestPath / GuestThunk);
+            }
+          }
+        }
+      }
+    }
+
+    if (ThunkOverlays.size()) {
+      LogMan::Msg::I("Thunk Overlays:");
+      for (auto &Thunk: ThunkOverlays) {
+        LogMan::Msg::I("\t%s -> %s", Thunk.first.c_str(), Thunk.second.c_str());
+      }
+    }
+  }
 }
 
 FileManager::~FileManager() {
@@ -38,6 +129,11 @@ std::string FileManager::GetEmulatedPath(const char *pathname) {
       pathname[0] != '/' ||
       RootFSPath.empty()) {
     return {};
+  }
+
+  auto thunkOverlay = ThunkOverlays.find(pathname);
+  if (thunkOverlay != ThunkOverlays.end()) {
+    return thunkOverlay->second;
   }
 
   return RootFSPath + pathname;

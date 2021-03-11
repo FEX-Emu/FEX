@@ -63,7 +63,9 @@ namespace {
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_GDBSERVER,          "0");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, "1");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH,         "");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH,      "");
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBSPATH,  "");
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBSPATH, "");
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIGPATH,    "");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS,         "0");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "GALLIUM_THREAD=1");
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "GALLIUM_HUD=fps");
@@ -198,7 +200,9 @@ namespace {
 
   void FillEmulationConfig() {
     char RootFS[256]{};
-    char ThunkPath[256]{};
+    char ThunkHostPath[256]{};
+    char ThunkGuestPath[256]{};
+    char ThunkConfigPath[256]{};
 
     int NumEnvironmentVariables{};
 
@@ -212,12 +216,30 @@ namespace {
         ConfigChanged = true;
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBSPATH);
       if (Value.has_value() && !(*Value)->empty()) {
-        strncpy(ThunkPath, &(*Value)->at(0), 256);
+        strncpy(ThunkHostPath, &(*Value)->at(0), 256);
       }
-      if (ImGui::InputText("Thunk library folder:", ThunkPath, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH, ThunkPath);
+      if (ImGui::InputText("Thunk Host library folder:", ThunkHostPath, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBSPATH, ThunkHostPath);
+        ConfigChanged = true;
+      }
+
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBSPATH);
+      if (Value.has_value() && !(*Value)->empty()) {
+        strncpy(ThunkGuestPath, &(*Value)->at(0), 256);
+      }
+      if (ImGui::InputText("Thunk Guest library folder:", ThunkGuestPath, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBSPATH, ThunkGuestPath);
+        ConfigChanged = true;
+      }
+
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIGPATH);
+      if (Value.has_value() && !(*Value)->empty()) {
+        strncpy(ThunkConfigPath, &(*Value)->at(0), 256);
+      }
+      if (ImGui::InputText("Thunk Config file:", ThunkConfigPath, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIGPATH, ThunkConfigPath);
         ConfigChanged = true;
       }
 

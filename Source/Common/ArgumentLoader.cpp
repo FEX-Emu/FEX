@@ -94,15 +94,25 @@ namespace FEX::ArgLoader {
     }
     {
       Parser.set_defaults("RootFS", "");
-      Parser.set_defaults("ThunkLibs", "");
+      Parser.set_defaults("ThunkHostLibs", "");
+      Parser.set_defaults("ThunkGuestLibs", "");
+      Parser.set_defaults("ThunkConfig", "");
 
       EmulationGroup.add_option("-R", "--rootfs")
         .dest("RootFS")
         .help("Which Root filesystem prefix to use");
 
-      EmulationGroup.add_option("-t", "--thunklibs")
-        .dest("ThunkLibs")
+      EmulationGroup.add_option("-t", "--thunkhostlibs")
+        .dest("ThunkHostLibs")
         .help("Folder to find the host-side thunking libs");
+
+      EmulationGroup.add_option("-j", "--thunkguestlibs")
+        .dest("ThunkGuestLibs")
+        .help("Folder to find the guest-side thunking libs");
+
+      EmulationGroup.add_option("-k", "--thunkconfig")
+        .dest("ThunkConfig")
+        .help("A json file specifying where to overlay the thunks");
 
       EmulationGroup.add_option("-E", "--env")
         .dest("Env")
@@ -248,9 +258,19 @@ namespace FEX::ArgLoader {
         Set(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH, Option);
       }
 
-      if (Options.is_set_by_user("ThunkLibs")) {
-        std::string Option = Options["ThunkLibs"];
-        Set(FEXCore::Config::ConfigOption::CONFIG_THUNKLIBSPATH, Option);
+      if (Options.is_set_by_user("ThunkHostLibs")) {
+        std::string Option = Options["ThunkHostLibs"];
+        Set(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBSPATH, Option);
+      }
+
+      if (Options.is_set_by_user("ThunkGuestLibs")) {
+        std::string Option = Options["ThunkGuestLibs"];
+        Set(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBSPATH, Option);
+      }
+
+      if (Options.is_set_by_user("ThunkConfig")) {
+        std::string Option = Options["ThunkConfig"];
+        Set(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIGPATH, Option);
       }
 
       if (Options.is_set_by_user("Env")) {

@@ -82,7 +82,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(Core, DEFAULTCORE);
       FEX_CONFIG_OPT(MaxInstPerBlock, MAXBLOCKINST);
       FEX_CONFIG_OPT(RootFSPath, ROOTFSPATH);
-      FEX_CONFIG_OPT(ThunkLibsPath, THUNKLIBSPATH);
+      FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBSPATH);
       FEX_CONFIG_OPT(DumpIR, DUMPIR);
     } Config;
 
