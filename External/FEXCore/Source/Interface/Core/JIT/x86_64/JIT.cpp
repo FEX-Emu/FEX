@@ -568,7 +568,6 @@ void *X86JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR
   uint32_t SSACount = IR->GetSSACount();
 
   this->RAData = RAData;
-  auto HeaderOp = IR->GetHeader();
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
