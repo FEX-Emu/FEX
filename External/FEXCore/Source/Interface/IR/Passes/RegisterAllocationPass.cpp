@@ -1360,7 +1360,6 @@ namespace FEXCore::IR {
 
     // If this node is allocated above the number of physical registers we have then we need to search the interference list and spill the one
     // that is cheapest
-    FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{CurrentRegAndClass.Class};
     bool NeedsToSpill = CurrentRegAndClass.Reg == INVALID_REG;
 
     if (NeedsToSpill) {
@@ -1505,8 +1504,6 @@ namespace FEXCore::IR {
     bool Changed = false;
 
     auto IR = IREmit->ViewIR();
-
-    auto HeaderOp = IR.GetHeader();
 
     SpillSlotCount = 0;
     Graph->SpillStack.clear();
