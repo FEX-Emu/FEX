@@ -10,33 +10,11 @@
 #include <FEXCore/Core/UContext.h>
 
 #include <cmath>
-#include <signal.h>
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
 // #define DEBUG_RA 1
 // #define DEBUG_CYCLES
-
-namespace FEXCore::CPU {
-
-CodeBuffer AllocateNewCodeBuffer(size_t Size) {
-  CodeBuffer Buffer;
-  Buffer.Size = Size;
-  Buffer.Ptr = static_cast<uint8_t*>(
-               mmap(nullptr,
-                    Buffer.Size,
-                    PROT_READ | PROT_WRITE | PROT_EXEC,
-                    MAP_PRIVATE | MAP_ANONYMOUS,
-                    -1, 0));
-  LogMan::Throw::A(Buffer.Ptr != reinterpret_cast<uint8_t*>(~0ULL), "Couldn't allocate code buffer");
-  return Buffer;
-}
-
-void FreeCodeBuffer(CodeBuffer Buffer) {
-  munmap(Buffer.Ptr, Buffer.Size);
-}
-
-}
 
 namespace FEXCore::CPU {
 
@@ -283,13 +261,11 @@ void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 void X86JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 }
 
-X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread)
-  : CodeGenerator(Buffer.Size, Buffer.Ptr, nullptr)
-  , CTX {ctx}
+X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
+  : CTX {ctx}
   , ThreadState {Thread}
-  , InitialCodeBuffer {Buffer}
 {
-  CurrentCodeBuffer = &InitialCodeBuffer;
+  SetCodeBuffer(InitialCodeBuffer);
 
   RAPass = Thread->PassManager->GetRAPass();
 
@@ -330,6 +306,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
     ThreadSharedData.SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress;
 
+    Dispatcher->RegisterCodeBuffer(InitialCodeBuffer);
 
     // This will register the host signal handler per thread, which is fine
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
@@ -354,28 +331,21 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 }
 
 X86JITCore::~X86JITCore() {
-  for (auto CodeBuffer : CodeBuffers) {
-    FreeCodeBuffer(CodeBuffer);
-  }
-  CodeBuffers.clear();
-
-
-  FreeCodeBuffer(InitialCodeBuffer);
+  if (Dispatcher)
+    delete Dispatcher;
 }
 
 void X86JITCore::ClearCache() {
+  // Get the backing code buffer
   if (*ThreadSharedData.SignalHandlerRefCounterPtr == 0) {
     if (!CodeBuffers.empty()) {
-      // If we have more than one code buffer we are tracking then walk them and delete
-      // This is a cleanup step
-      for (auto CodeBuffer : CodeBuffers) {
-        FreeCodeBuffer(CodeBuffer);
+      for (auto &Buffer : CodeBuffers) {
+        Dispatcher->ForgetCodeBuffer(Buffer);
       }
       CodeBuffers.clear();
 
       // Set the current code buffer to the initial
-      setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-      CurrentCodeBuffer = &InitialCodeBuffer;
+      SetCodeBuffer(InitialCodeBuffer);
     }
 
     if (CurrentCodeBuffer->Size == MAX_CODE_SIZE) {
@@ -383,23 +353,23 @@ void X86JITCore::ClearCache() {
       reset();
     }
     else {
-      FreeCodeBuffer(InitialCodeBuffer);
+      Dispatcher->ForgetCodeBuffer(InitialCodeBuffer);
 
       // Resize the code buffer and reallocate our code size
-      CurrentCodeBuffer->Size *= 1.5;
-      CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MAX_CODE_SIZE);
+      size_t NewSize = std::min<size_t>(InitialCodeBuffer.Size * 1.5, MAX_CODE_SIZE);
+      InitialCodeBuffer = CodeBuffer(NewSize);
+      Dispatcher->RegisterCodeBuffer(InitialCodeBuffer);
 
-      InitialCodeBuffer = AllocateNewCodeBuffer(CurrentCodeBuffer->Size);
-      setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+      SetCodeBuffer(InitialCodeBuffer);
     }
   }
   else {
     // We have signal handlers that have generated code
     // This means that we can not safely clear the code at this point in time
     // Allocate some new code buffers that we can switch over to instead
-    auto NewCodeBuffer = AllocateNewCodeBuffer(X86JITCore::INITIAL_CODE_SIZE);
-    EmplaceNewCodeBuffer(NewCodeBuffer);
-    setNewBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
+    auto &NewCodeBuffer = CodeBuffers.emplace_back(INITIAL_CODE_SIZE);
+    Dispatcher->RegisterCodeBuffer(NewCodeBuffer);
+    SetCodeBuffer(NewCodeBuffer);
   }
 }
 
@@ -756,6 +726,6 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
 }
 
 FEXCore::CPU::CPUBackend *CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
-  return new X86JITCore(ctx, Thread, AllocateNewCodeBuffer(CompileThread ? X86JITCore::MAX_CODE_SIZE : X86JITCore::INITIAL_CODE_SIZE), CompileThread);
+  return new X86JITCore(ctx, Thread, CompileThread);
 }
 }

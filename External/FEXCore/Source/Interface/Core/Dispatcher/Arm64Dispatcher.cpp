@@ -17,7 +17,6 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE vixl::aarch64::Register::GetXRegFromCode(STATE_arm64)
 
 Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)

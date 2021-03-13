@@ -75,6 +75,7 @@ set (SRCS
   Interface/Context/Context.cpp
   Interface/Core/LookupCache.cpp
   Interface/Core/BlockSamplingData.cpp
+  Interface/Core/CodeBuffer.cpp
   Interface/Core/CompileService.cpp
   Interface/Core/Core.cpp
   Interface/Core/CPUID.cpp
@@ -87,6 +88,7 @@ set (SRCS
   Interface/Core/X86HelperGen.cpp
   Interface/Core/ArchHelpers/Arm64_stubs.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
+  Interface/Core/ArchHelpers/Dwarf.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
   Interface/Core/Dispatcher/X86Dispatcher.cpp
   Interface/Core/Dispatcher/Arm64Dispatcher.cpp

@@ -4,6 +4,7 @@
 #include <FEXCore/Core/SignalDelegator.h>
 
 #include "Interface/Context/Context.h"
+#include "Interface/Core/CodeBuffer.h"
 
 #include <stack>
 
@@ -46,22 +47,26 @@ public:
   bool HandleSIGILL(int Signal, void *info, void *ucontext);
   bool HandleSignalPause(int Signal, void *info, void *ucontext);
 
-  void RegisterCodeBuffer(uint8_t* start, size_t size) {
-    CodeBuffers.emplace_back(reinterpret_cast<uint64_t>(start),
-        reinterpret_cast<uint64_t>(start + size));
+  void RegisterCodeBuffer(CodeBuffer& Buffer) {
+    CodeBuffers.emplace_back(reinterpret_cast<uint64_t>(Buffer.Ptr),
+        reinterpret_cast<uint64_t>(Buffer.Ptr + Buffer.Size));
   }
 
-  void RemoveCodeBuffer(uint8_t* start);
+  void ForgetCodeBuffer(CodeBuffer& Buffer);
 
   bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true);
   bool IsAddressInDispatcher(uint64_t Address) {
     return Address >= Start && Address < End;
   }
 
+  virtual ~Dispatcher() {};
+
 protected:
   Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
     : CTX {ctx}
     , ThreadState {Thread} {}
+
+  static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
   void StoreThreadState(int Signal, void *ucontext);
   void RestoreThreadState(void *ucontext);

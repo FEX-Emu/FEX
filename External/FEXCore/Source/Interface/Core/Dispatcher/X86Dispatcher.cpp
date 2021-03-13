@@ -15,7 +15,7 @@ static Xbyak::Reg64 STATE(STATE_x86);
 
 X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
   : Dispatcher(ctx, Thread)
-  , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE) {
+  , X86Emitter(MAX_DISPATCHER_CODE_SIZE) {
 
   using namespace Xbyak;
   using namespace Xbyak::util;
@@ -64,7 +64,8 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   mov(STATE, rdi);
 
   // Create a fake stack frame so we can exit by returning
-  push(reinterpret_cast<uint64_t>(&DispatcherExit));
+  mov(rax, reinterpret_cast<uint64_t>(DispatcherExitReturn));
+  push(rax);
 
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
@@ -170,7 +171,6 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     L(ExitBlock);
     ThreadStopHandlerAddress = getCurr<uint64_t>();
 
-    add(rsp, 8);
     ret();
   }
 

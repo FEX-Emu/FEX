@@ -10,7 +10,10 @@ namespace FEXCore::CPU {
 static const vixl::aarch64::XRegister STATE(STATE_arm64);
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
-Arm64Emitter::Arm64Emitter(size_t size) : vixl::aarch64::Assembler(size, vixl::aarch64::PositionDependentCode) {
+Arm64Emitter::Arm64Emitter(size_t size) : vixl::aarch64::Assembler(vixl::aarch64::PositionDependentCode) {
+  InternalCodeBuffer = CodeBuffer(size);
+  SetCodeBuffer(InternalCodeBuffer);
+
   CPU.SetUp();
 
   auto Features = vixl::CPUFeatures::InferFromOS();
