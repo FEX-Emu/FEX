@@ -33,8 +33,9 @@ namespace FEX::HLE {
       }
       strcpy(buf->sysname, "Linux");
       strcpy(buf->release, "5.0.0");
-      strcpy(buf->version, "#" FEXCORE_VERSION);
-      static_assert(sizeof("#" FEXCORE_VERSION) <= sizeof(buf->version), "FEXCORE_VERSION define became too large!");
+      const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
+      strcpy(buf->version, version);
+      static_assert(sizeof(version) <= sizeof(buf->version), "uname version define became too large!");
       // Tell the guest that we are a 64bit kernel
       strcpy(buf->machine, "x86_64");
       return 0;

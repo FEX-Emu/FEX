@@ -2,6 +2,7 @@
 
 #include "Tests/LinuxSyscalls/FileManagement.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
+#include "git_version.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -12,10 +13,6 @@
 #include <unordered_map>
 
 #include <sys/epoll.h>
-
-#ifndef FEXCORE_VERSION
-#define FEXCORE_VERSION "1"
-#endif
 
 // #define DEBUG_STRACE
 
