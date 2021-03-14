@@ -5,6 +5,7 @@ set(LIBS FEXCore Common CommonCore)
 
 add_executable(FEXLoader ELFLoader.cpp)
 target_include_directories(FEXLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
+target_include_directories(FEXLoader PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 target_link_libraries(FEXLoader ${LIBS} LinuxEmulation)
 
@@ -62,6 +63,7 @@ target_link_libraries(TestHarness ${LIBS})
 
 add_executable(TestHarnessRunner TestHarnessRunner.cpp)
 target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
+target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 target_link_libraries(TestHarnessRunner ${LIBS} LinuxEmulation)
 
@@ -75,6 +77,7 @@ add_executable(IRLoader
   IRLoader/Loader.cpp
 )
 target_include_directories(IRLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
+target_include_directories(IRLoader PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 target_link_libraries(IRLoader ${LIBS} LinuxEmulation)
 

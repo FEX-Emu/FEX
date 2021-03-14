@@ -54,3 +54,4 @@ add_library(LinuxEmulation STATIC
 )
 
 target_link_libraries(LinuxEmulation FEXCore pthread numa)
+target_include_directories(LinuxEmulation PRIVATE ${CMAKE_BINARY_DIR}/generated)

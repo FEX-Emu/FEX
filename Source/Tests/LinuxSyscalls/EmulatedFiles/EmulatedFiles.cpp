@@ -593,6 +593,17 @@ namespace FEX::EmulatedFile {
       return f;
     };
 
+    FDReadCreators["/proc/version"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+      FILE *fp = tmpfile();
+      // UTS version NEEDS to be in a format that can pass to `date -d`
+      // Format of this is Linux version <Release> (<Compile By>@<Compile Host>) (<Linux Compiler>) #<version> {SMP, PREEMPT, PREEMPT_RT} <UTS version>\n"
+      const char kernel_version[] = "Linux version 5.0.0 (FEX@FEX) (clang) #" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__ "\n\0";
+      fwrite(kernel_version, sizeof(uint8_t), strlen(kernel_version) + 1, fp);
+      fseek(fp, 0, SEEK_SET);
+      int32_t f = fileno(fp);
+      return f;
+    };
+
     auto NumCPUCores = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
       FILE *fp = tmpfile();
       fwrite((void*)&cpus_online.at(0), sizeof(uint8_t), cpus_online.size(), fp);
