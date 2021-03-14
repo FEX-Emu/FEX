@@ -129,8 +129,7 @@ if(_M_ARM_64)
     Interface/Core/ArchHelpers/Arm64.cpp)
 endif()
 
-set(DEFINES -DVIXL_INCLUDE_TARGET_AARCH64=1)
-set (JIT_LIBS )
+set(DEFINES )
 
 if (_M_X86_64)
   list(APPEND DEFINES -D_M_X86_64=1)
