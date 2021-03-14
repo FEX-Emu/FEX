@@ -79,7 +79,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
   auto RipReg = x2;
 
-  if (!config.Interpeter) {
+  if (!config.ExecuteBlocksWithCall) {
     // L1 Cache
     ldr(x0, &l_L1Ptr);
 
@@ -137,7 +137,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     // If we've made it here then we have a real compiled block
     {
       // Jump to the block
-      if (!config.Interpeter) {
+      if (!config.ExecuteBlocksWithCall) {
         // update L1 cache
         ldr(x0, &l_L1Ptr);
 
@@ -152,7 +152,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
       }
     }
 
-    if (config.Interpeter) {
+    if (config.ExecuteBlocksWithCall) {
       // Interpreter continues execution here
       if (CTX->GetGdbServerStatus()) {
         // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
@@ -348,7 +348,7 @@ void Arm64Dispatcher::SpillSRA(void *ucontext) {
 
 void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
   DispatcherConfig config;
-  config.Interpeter = true;
+  config.ExecuteBlocksWithCall = true;
 
   Dispatcher = new Arm64Dispatcher(ctx, Thread, config);
   DispatchPtr = Dispatcher->DispatchPtr;

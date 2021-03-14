@@ -22,6 +22,8 @@ struct X86ContextBackup {
   // Guest state
   int Signal;
   FEXCore::Core::CPUState GuestState;
+
+  static constexpr int RedZoneSize = 128;
 };
 
 struct ArmContextBackup {
@@ -37,6 +39,9 @@ struct ArmContextBackup {
   // Guest state
   int Signal;
   FEXCore::Core::CPUState GuestState;
+
+  // Arm64 doesn't have a red zone
+  static constexpr int RedZoneSize = 0;
 };
 
 static inline mcontext_t* GetMContext(void* ucontext) {

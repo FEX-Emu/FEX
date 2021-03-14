@@ -10,7 +10,7 @@
 namespace FEXCore::CPU {
 
 struct DispatcherConfig {
-  bool Interpeter = false;
+  bool ExecuteBlocksWithCall = false;
   uintptr_t ExitFunctionLink = 0;
   uintptr_t ExitFunctionLinkThis = 0;
   bool StaticRegisterAssignment = false;

@@ -77,7 +77,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     // Load our RIP
     mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
 
-    if (!config.Interpeter)
+    if (!config.ExecuteBlocksWithCall)
     {
       // L1 Cache
       mov(r13, Thread->LookupCache->GetL1Pointer());
@@ -122,7 +122,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     je(NoBlock);
 
     // Update L1
-    if (config.Interpeter) {
+    if (config.ExecuteBlocksWithCall) {
       mov(r13, Thread->LookupCache->GetL1Pointer());
       mov(rcx, rdx);
       and_(rcx, LookupCache::L1_ENTRIES_MASK);
@@ -132,7 +132,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     }
 
     // Real block if we made it here
-    if (!config.Interpeter) {
+    if (!config.ExecuteBlocksWithCall) {
       jmp(rax);
     } else {
       mov(rdi, STATE);
@@ -310,7 +310,7 @@ X86Dispatcher::~X86Dispatcher() {
 
 void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
   DispatcherConfig config;
-  config.Interpeter = true;
+  config.ExecuteBlocksWithCall = true;
 
   Dispatcher = new X86Dispatcher(ctx, Thread, config);
   DispatchPtr = Dispatcher->DispatchPtr;

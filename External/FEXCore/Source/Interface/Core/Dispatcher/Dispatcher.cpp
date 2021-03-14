@@ -30,7 +30,9 @@ void Dispatcher::StoreThreadState(int Signal, void *ucontext) {
 
   // We need to back up behind the host's red zone
   // We do this on the guest side as well
-  NewSP -= 128;
+  // (does nothing on arm hosts)
+  NewSP -= ArchHelpers::Context::ContextBackup::RedZoneSize;
+
   NewSP -= StackOffset;
   NewSP = AlignDown(NewSP, 16);
 
@@ -284,8 +286,6 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
     }
-
-    ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
 
     ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
