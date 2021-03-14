@@ -46,8 +46,8 @@ class AliasType:
 @dataclass
 class StructDefinition(TypeDefinition):
     Size: int
-    Aliases: list[AliasType]
-    Members: list[TypeDefinition]
+    Aliases: list
+    Members: list
     ExpectFEXMatch: bool
 
     def __init__(self, Name, Size):
@@ -60,8 +60,8 @@ class StructDefinition(TypeDefinition):
 @dataclass
 class UnionDefinition(TypeDefinition):
     Size: int
-    Aliases: list[AliasType]
-    Members: list[TypeDefinition]
+    Aliases: list
+    Members: list
     ExpectFEXMatch: bool
 
     def __init__(self, Name, Size):
@@ -86,12 +86,12 @@ class FieldDefinition(TypeDefinition):
 class ArchDB:
     Parsed: bool
     ArchName: str
-    NamespaceScope: list[str]
+    NamespaceScope: list
     CurrentNamespace: str
     TU: TranslationUnit
-    Structs: dict[StructDefinition]
-    Unions: dict[UnionDefinition]
-    FieldDecls: list[FieldDefinition]
+    Structs: dict
+    Unions: dict
+    FieldDecls: list
     def __init__(self, ArchName):
         self.Parsed = True
         self.ArchName = ArchName
@@ -103,7 +103,7 @@ class ArchDB:
         self.FieldDecls = []
 
 class DBList:
-    DBs: list[ArchDB]
+    DBs: list
     def __init__(self, DB32, DB64, DBAArch64, DBWin32, DBWin64):
         self.DBs = [DB32, DB64, DBAArch64, DBWin32, DBWin64]
 
@@ -551,6 +551,8 @@ def main():
 
     args_x86_64 = [
         "-I/usr/include/x86_64-linux-gnu",
+        "-I/usr/x86_64-linux-gnu/include/c++/10/x86_64-linux-gnu/",
+        "-I/usr/x86_64-linux-gnu/include/",
         "-O2",
         "--target=x86_64-linux-unknown",
     ]
