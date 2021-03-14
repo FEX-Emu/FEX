@@ -234,14 +234,16 @@ endif()
 
 add_compile_options(-Wall)
 
+if (BUILD_TESTS)
+  include(CTest)
+  enable_testing()
+  message(STATUS "Unit tests are enabled")
+endif()
 add_subdirectory(External/FEXCore)
 
 add_subdirectory(Source/)
 
 if (BUILD_TESTS)
-  include(CTest)
-  enable_testing()
-  message(STATUS "Unit tests are enabled")
   add_subdirectory(unittests/)
 endif()
 
