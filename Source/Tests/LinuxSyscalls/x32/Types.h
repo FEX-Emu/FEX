@@ -22,6 +22,8 @@ using compat_long_t = int32_t;
 using compat_uptr_t = uint32_t;
 using compat_size_t = uint32_t;
 using compat_off_t = uint32_t;
+// Can't use using with aligned attributes, clang doesn't honour it
+typedef __attribute__((aligned(4))) uint64_t compat_uint64_t;
 
 template<typename T>
 class compat_ptr {
@@ -81,7 +83,10 @@ static_assert(sizeof(compat_ptr<void>) == 4, "Incorrect size");
  * Provides conversation operators for the host version
  * @{ */
 
-struct timespec32 {
+struct
+__attribute__((annotate("alias-x86_32-timespec")))
+__attribute__((annotate("fex-match")))
+timespec32 {
   int32_t tv_sec;
   int32_t tv_nsec;
 
@@ -111,7 +116,10 @@ static_assert(sizeof(timespec32) == 8, "Incorrect size");
  * Provides conversation operators for the host version
  * @{ */
 
-struct timeval32 {
+struct
+__attribute__((annotate("alias-x86_32-timeval")))
+__attribute__((annotate("fex-match")))
+timeval32 {
   int32_t tv_sec;
   int32_t tv_usec;
 
@@ -141,7 +149,10 @@ static_assert(sizeof(timeval32) == 8, "Incorrect size");
  * Provides conversation operators for the host version
  * @{ */
 
-struct iovec32 {
+struct
+__attribute__((annotate("alias-x86_32-iovec")))
+__attribute__((annotate("fex-match")))
+iovec32 {
   uint32_t iov_base;
   uint32_t iov_len;
 
@@ -164,17 +175,23 @@ static_assert(std::is_trivial<iovec32>::value, "Needs to be trivial");
 static_assert(sizeof(iovec32) == 8, "Incorrect size");
 /**  @} */
 
-struct cmsghdr32 {
+struct
+__attribute__((annotate("alias-x86_32-cmsghdr")))
+__attribute__((annotate("fex-match")))
+cmsghdr32 {
   uint32_t cmsg_len;
   int32_t cmsg_level;
   int32_t cmsg_type;
-  char    cmsg_data[0];
+  char    cmsg_data[];
 };
 
 static_assert(std::is_trivial<cmsghdr32>::value, "Needs to be trivial");
 static_assert(sizeof(cmsghdr32) == 12, "Incorrect size");
 
-struct msghdr32 {
+struct
+__attribute__((annotate("alias-x86_32-msghdr")))
+__attribute__((annotate("fex-match")))
+msghdr32 {
   compat_ptr<void> msg_name;
   socklen_t msg_namelen;
 
@@ -189,7 +206,10 @@ struct msghdr32 {
 static_assert(std::is_trivial<msghdr32>::value, "Needs to be trivial");
 static_assert(sizeof(msghdr32) == 28, "Incorrect size");
 
-struct mmsghdr_32 {
+struct
+__attribute__((annotate("alias-x86_32-mmsghdr")))
+__attribute__((annotate("fex-match")))
+mmsghdr_32 {
   msghdr32 msg_hdr;
   uint32_t msg_len;
 };
@@ -197,7 +217,10 @@ struct mmsghdr_32 {
 static_assert(std::is_trivial<mmsghdr_32>::value, "Needs to be trivial");
 static_assert(sizeof(mmsghdr_32) == 32, "Incorrect size");
 
-struct stack_t32 {
+struct
+__attribute__((annotate("alias-x86_32-stack_t")))
+__attribute__((annotate("fex-match")))
+stack_t32 {
   compat_ptr<void> ss_sp;
   compat_size_t ss_size;
   int32_t ss_flags;
@@ -360,14 +383,18 @@ struct __attribute__((packed)) stat64_32 {
 static_assert(std::is_trivial<stat64_32>::value, "Needs to be trivial");
 static_assert(sizeof(stat64_32) == 96, "Incorrect size");
 
-struct __attribute__((packed,aligned(4))) statfs64_32 {
+struct
+__attribute__((packed,aligned(4)))
+__attribute__((annotate("alias-x86_32-statfs64")))
+__attribute__((annotate("fex-match")))
+statfs64_32 {
   uint32_t f_type;
   uint32_t f_bsize;
-  uint64_t f_blocks;
-  uint64_t f_bfree;
-  uint64_t f_bavail;
-  uint64_t f_files;
-  uint64_t f_ffree;
+  compat_uint64_t f_blocks;
+  compat_uint64_t f_bfree;
+  compat_uint64_t f_bavail;
+  compat_uint64_t f_files;
+  compat_uint64_t f_ffree;
   __kernel_fsid_t f_fsid;
   uint32_t f_namelen;
   uint32_t f_frsize;
@@ -515,23 +542,68 @@ struct sigset_argpack32 {
 static_assert(std::is_trivial<sigset_argpack32>::value, "Needs to be trivial");
 static_assert(sizeof(sigset_argpack32) == 16, "Incorrect size");
 
-struct rusage_32 {
+struct
+__attribute__((annotate("alias-x86_32-rusage")))
+__attribute__((annotate("fex-match")))
+rusage_32 {
   timeval32 ru_utime;
   timeval32 ru_stime;
-  compat_long_t ru_maxrss;
-  compat_long_t ru_ixrss;
-  compat_long_t ru_idrss;
-  compat_long_t ru_isrss;
-  compat_long_t ru_minflt;
-  compat_long_t ru_majflt;
-  compat_long_t ru_nswap;
-  compat_long_t ru_inblock;
-  compat_long_t ru_oublock;
-  compat_long_t ru_msgsnd;
-  compat_long_t ru_msgrcv;
-  compat_long_t ru_nsignals;
-  compat_long_t ru_nvcsw;
-  compat_long_t ru_nivcsw;
+  union {
+    compat_long_t ru_maxrss;
+    compat_long_t __ru_maxrss_word;
+  };
+  union {
+    compat_long_t ru_ixrss;
+    compat_long_t __ru_ixrss_word;
+  };
+  union {
+    compat_long_t ru_idrss;
+    compat_long_t __ru_idrss_word;
+  };
+  union {
+    compat_long_t ru_isrss;
+    compat_long_t __ru_isrss_word;
+  };
+  union {
+    compat_long_t ru_minflt;
+    compat_long_t __ru_minflt_word;
+  };
+  union {
+    compat_long_t ru_majflt;
+    compat_long_t __ru_majflt_word;
+  };
+  union {
+    compat_long_t ru_nswap;
+    compat_long_t __ru_nswap_word;
+  };
+  union {
+    compat_long_t ru_inblock;
+    compat_long_t __ru_inblock_word;
+  };
+  union {
+    compat_long_t ru_oublock;
+    compat_long_t __ru_oublock_word;
+  };
+  union {
+    compat_long_t ru_msgsnd;
+    compat_long_t __ru_msgsnd_word;
+  };
+  union {
+    compat_long_t ru_msgrcv;
+    compat_long_t __ru_msgrcv_word;
+  };
+  union {
+    compat_long_t ru_nsignals;
+    compat_long_t __ru_nsignals_word;
+  };
+  union {
+    compat_long_t ru_nvcsw;
+    compat_long_t __ru_nvcsw_word;
+  };
+  union {
+    compat_long_t ru_nivcsw;
+    compat_long_t __ru_nivcsw_word;
+  };
 
   rusage_32() = delete;
   rusage_32(struct rusage usage)
