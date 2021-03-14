@@ -1,3 +1,4 @@
+#include "Interface/Core/ArchHelpers/StateReg.h"
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
 #include "Interface/Core/Dispatcher/Dispatcher_asm.h"
 
@@ -10,7 +11,7 @@
 
 namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
-#define STATE r14
+static Xbyak::Reg64 STATE(STATE_x86);
 
 X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
   : Dispatcher(ctx, Thread)

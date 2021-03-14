@@ -2,6 +2,7 @@
 
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "Interface/Core/ArchHelpers/StateReg.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
 #include "aarch64/assembler-aarch64.h"
@@ -12,7 +13,7 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 
-#define STATE x28
+#define STATE vixl::aarch64::Register::GetXRegFromCode(STATE_arm64)
 #define TMP1 x0
 #define TMP2 x1
 #define TMP3 x2

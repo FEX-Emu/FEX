@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Interface/Core/ArchHelpers/StateReg.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -32,7 +33,6 @@ void FreeCodeBuffer(CodeBuffer Buffer);
 
 namespace FEXCore::CPU {
 
-
 // Temp registers
 // rax, rcx, rdx, rsi, r8, r9,
 // r10, r11
@@ -43,7 +43,6 @@ namespace FEXCore::CPU {
 // 1St Argument: rdi <ThreadState>
 // XMM:
 // All temp
-#define STATE r14
 #define TMP1 rax
 #define TMP2 rcx
 #define TMP3 rdx
@@ -71,6 +70,8 @@ public:
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
+
+  static constexpr Xbyak::Reg64 STATE = Xbyak::Reg64(STATE_x86);
 
 private:
   Label* PendingTargetLabel{};

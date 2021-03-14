@@ -1,4 +1,5 @@
 #include "Interface/Core/ArchHelpers/MContext.h"
+#include "Interface/Core/ArchHelpers/StateReg.h"
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 
 #include "Interface/Core/Interpreter/InterpreterClass.h"
@@ -17,7 +18,7 @@ using namespace vixl;
 using namespace vixl::aarch64;
 
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
-#define STATE x28
+#define STATE vixl::aarch64::Register::GetXRegFromCode(STATE_arm64)
 
 Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
   : Dispatcher(ctx, Thread), Arm64Emitter(MAX_DISPATCHER_CODE_SIZE) {
