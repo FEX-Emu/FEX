@@ -2,6 +2,7 @@
 
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/InternalThreadState.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
@@ -30,7 +31,6 @@ public:
   bool NeedsOpDispatch() override { return true; }
 
   void CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
-  void DeleteAsmDispatch();
 
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
 
@@ -39,8 +39,6 @@ private:
   FEXCore::Core::InternalThreadState *State;
 
   uint32_t AllocateTmpSpace(size_t Size);
-  bool HandleSignalPause(int Signal, void *info, void *ucontext);
-  bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
 
   template<typename Res>
   Res GetDest(void* SSAData, IR::OrderedNodeWrapper Op);
@@ -48,12 +46,7 @@ private:
   template<typename Res>
   Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src);
 
-#ifdef _M_X86_64
-  X86DispatchGenerator *Generator{};
-#endif
-#ifdef _M_ARM_64
-  Arm64DispatchGenerator *Generator{};
-#endif
+  Dispatcher *Dispatcher{};
 };
 
 }

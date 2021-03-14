@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Interface/Core/LookupCache.h"
+#include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 
 #include "aarch64/assembler-aarch64.h"
-#include "aarch64/cpu-aarch64.h"
 #include "aarch64/disasm-aarch64.h"
 #include "aarch64/assembler-aarch64.h"
 
@@ -29,52 +30,14 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-// All but x29 are caller saved
-const std::array<aarch64::Register, 16> SRA64 = {
-  x4, x5, x6, x7, x8, x9, x10, x11,
-  x12, x18, x17, x16, x15, x14, x13, x29
-};
-
-// All are callee saved
-const std::array<aarch64::Register, 9> RA64 = {
-  x20, x21, x22, x23, x24, x25, x26, x27,
-  x19
-};
-
-const std::array<std::pair<aarch64::Register, aarch64::Register>, 4>  RA64Pair = {{
-  {x20, x21},
-  {x22, x23},
-  {x24, x25},
-  {x26, x27},
-}};
-
-const std::array<std::pair<aarch64::Register, aarch64::Register>, 4> RA32Pair = {{
-  {w20, w21},
-  {w22, w23},
-  {w24, w25},
-  {w26, w27},
-}};
-
-// All are caller saved
-const std::array<aarch64::VRegister, 16> SRAFPR = {
-  v16, v17, v18, v19, v20, v21, v22, v23,
-  v24, v25, v26, v27, v28, v29, v30, v31
-};
-
-//  v8..v15 = (lower 64bits) Callee saved
-const std::array<aarch64::VRegister, 12> RAFPR = {
-/*v0,  v1,  v2,  v3,*/v4,  v5,  v6,  v7,  // v0 ~ v3 are used as temps
-  v8,  v9,  v10, v11, v12, v13, v14, v15
-};
-
-class Arm64JITCore final : public CPUBackend, public vixl::aarch64::Assembler  {
+class Arm64JITCore final : public CPUBackend, public Arm64Emitter  {
 public:
   struct CodeBuffer {
     uint8_t *Ptr;
     size_t Size;
   };
 
-  explicit Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
+  explicit Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
 
   ~Arm64JITCore() override;
   std::string GetName() override { return "JIT"; }
@@ -86,17 +49,15 @@ public:
 
   void ClearCache() override;
 
-  bool HandleSIGILL(int Signal, void *info, void *ucontext);
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
-  bool HandleSignalPause(int Signal, void *info, void *ucontext);
-  bool HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
 
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
-  static CodeBuffer AllocateNewCodeBuffer(size_t Size);
+  CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
 private:
+  Dispatcher *Dispatcher;
   Label *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
@@ -162,9 +123,6 @@ private:
 #if DEBUG
   vixl::aarch64::Decoder Decoder;
 #endif
-  vixl::aarch64::CPU CPU;
-  bool SupportsAtomics{};
-  bool SupportsRCPC{};
 
   void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
     CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
@@ -181,8 +139,6 @@ private:
   // For code safety we can't delete code buffers until outside of all signals
   std::vector<CodeBuffer> CodeBuffers{};
 
-  // This is the codebuffer that our dispatcher lives in
-  CodeBuffer DispatcherCodeBuffer{};
   // This is the current code buffer that we are tracking
   CodeBuffer *CurrentCodeBuffer{};
 
@@ -190,38 +146,11 @@ private:
   static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
   static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
 
-  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true);
-
 #if DEBUG
   vixl::aarch64::Disassembler Disasm;
 #endif
 
-  void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant);
-
-  void CreateCustomDispatch(FEXCore::Core::InternalThreadState *Thread);
-  void PushCalleeSavedRegisters();
-  void PopCalleeSavedRegisters();
-
   static uint64_t ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
-
-  /**
-   * @name Dispatch Helper functions
-   * @{ */
-  uint64_t AbsoluteLoopTopAddressFillSRA{};
-  uint64_t AbsoluteLoopTopAddress{};
-  uint64_t ThreadPauseHandlerAddressSpillSRA{};
-  uint64_t ExitFunctionLinkerAddress{};
-  uint64_t ThreadPauseHandlerAddress{};
-
-  uint64_t ThreadStopHandlerAddressSpillSRA{};
-  uint64_t ThreadStopHandlerAddress{};
-  uint64_t PauseReturnInstruction{};
-
-  uint32_t SignalHandlerRefCounter{};
-
-  void StoreThreadState(int Signal, void *ucontext);
-  void RestoreThreadState(void *ucontext);
-  /**  @} */
 
   struct CompilerSharedData {
     uint64_t SignalReturnInstruction{};
@@ -232,16 +161,6 @@ private:
   CompilerSharedData ThreadSharedData;
   IR::RegisterAllocationPass *RAPass;
   IR::RegisterAllocationData *RAData;
-
-  uint32_t SpillSlots{};
-
-  void SpillStaticRegs();
-  void FillStaticRegs();
-
-  void PushDynamicRegsAndLR();
-  void PopDynamicRegsAndLR();
-
-  void ResetStack();
 
   using OpHandler = void (Arm64JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
   std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};

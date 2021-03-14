@@ -11,8 +11,7 @@
 #include <type_traits>
 
 
-namespace FEXCore::CPU {
-
+namespace FEXCore::ArchHelpers::Context {
 
 struct X86ContextBackup {
   // Host State
@@ -23,6 +22,8 @@ struct X86ContextBackup {
   // Guest state
   int Signal;
   FEXCore::Core::CPUState GuestState;
+
+  static constexpr int RedZoneSize = 128;
 };
 
 struct ArmContextBackup {
@@ -38,11 +39,10 @@ struct ArmContextBackup {
   // Guest state
   int Signal;
   FEXCore::Core::CPUState GuestState;
+
+  // Arm64 doesn't have a red zone
+  static constexpr int RedZoneSize = 0;
 };
-
-}
-
-namespace FEXCore::ArchHelpers::Context {
 
 static inline mcontext_t* GetMContext(void* ucontext) {
   ucontext_t* _context = (ucontext_t*)ucontext;
@@ -98,9 +98,10 @@ struct HostFPRState {
   __uint128_t FPRs[32];
 };
 
+using ContextBackup = ArmContextBackup;
 template <typename T>
 static inline void BackupContext(void* ucontext, T *Backup) {
-  if constexpr (std::is_same<T, FEXCore::CPU::ArmContextBackup>::value) {
+  if constexpr (std::is_same<T, ArmContextBackup>::value) {
     auto _mcontext = GetMContext(ucontext);
 
     memcpy(&Backup->GPRs[0], &_mcontext->regs[0], 31 * sizeof(uint64_t));
@@ -121,7 +122,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 
 template <typename T>
 static inline void RestoreContext(void* ucontext, T *Backup) {
-  if constexpr (std::is_same<T, FEXCore::CPU::ArmContextBackup>::value) {
+  if constexpr (std::is_same<T, ArmContextBackup>::value) {
    auto _mcontext = GetMContext(ucontext);
 
     HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
@@ -176,15 +177,16 @@ static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
   ERROR_AND_DIE("Not impelented for x86 host");
 }
 
+using ContextBackup = X86ContextBackup;
 template <typename T>
 static inline void BackupContext(void* ucontext, T *Backup) {
-  if constexpr (std::is_same<T, FEXCore::CPU::X86ContextBackup>::value) {
+  if constexpr (std::is_same<T, X86ContextBackup>::value) {
     auto _mcontext = GetMContext(ucontext);
 
     // Copy the GPRs
-    memcpy(&Backup->GPRs[0], &_mcontext->gregs[0], sizeof(FEXCore::CPU::X86ContextBackup::GPRs));
+    memcpy(&Backup->GPRs[0], &_mcontext->gregs[0], sizeof(X86ContextBackup::GPRs));
     // Copy the FPRState
-    memcpy(&Backup->FPRState, _mcontext->fpregs, sizeof(FEXCore::CPU::X86ContextBackup::FPRState));
+    memcpy(&Backup->FPRState, _mcontext->fpregs, sizeof(X86ContextBackup::FPRState));
     // XXX: Save 256bit and 512bit AVX register state
   } else {
     ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
@@ -193,13 +195,13 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 
 template <typename T>
 static inline void RestoreContext(void* ucontext, T *Backup) {
-  if constexpr (std::is_same<T, FEXCore::CPU::X86ContextBackup>::value) {
+  if constexpr (std::is_same<T, X86ContextBackup>::value) {
     auto _mcontext = GetMContext(ucontext);
 
     // Copy the GPRs
-    memcpy(&_mcontext->gregs[0], &Backup->GPRs[0], sizeof(FEXCore::CPU::X86ContextBackup::GPRs));
+    memcpy(&_mcontext->gregs[0], &Backup->GPRs[0], sizeof(X86ContextBackup::GPRs));
     // Copy the FPRState
-    memcpy(_mcontext->fpregs, &Backup->FPRState, sizeof(FEXCore::CPU::X86ContextBackup::FPRState));
+    memcpy(_mcontext->fpregs, &Backup->FPRState, sizeof(X86ContextBackup::FPRState));
   } else {
     ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
   }

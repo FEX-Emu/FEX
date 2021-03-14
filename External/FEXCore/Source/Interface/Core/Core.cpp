@@ -1128,11 +1128,6 @@ namespace FEXCore::Context {
     AddBlockMapping(Thread, GuestRIP, CodePtr, StartAddr, Length);
 
     return (uintptr_t)CodePtr;
-
-    if (DecrementRefCount)
-      --Thread->CompileBlockReentrantRefCount;
-
-    return 0;
   }
 
   void Context::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {

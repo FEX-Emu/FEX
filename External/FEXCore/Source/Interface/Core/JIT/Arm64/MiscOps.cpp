@@ -36,14 +36,14 @@ DEF_OP(Break) {
       add(sp, TMP1, 0);
 
       // Now we need to jump to the thread stop handler
-      LoadConstant(TMP1, ThreadStopHandlerAddressSpillSRA);
+      LoadConstant(TMP1, Dispatcher->ThreadStopHandlerAddressSpillSRA);
       br(TMP1);
       break;
     }
     case 6: { // INT3
       ResetStack();
 
-      LoadConstant(TMP1, ThreadPauseHandlerAddressSpillSRA);
+      LoadConstant(TMP1, Dispatcher->ThreadPauseHandlerAddressSpillSRA);
       br(TMP1);
       break;
     }

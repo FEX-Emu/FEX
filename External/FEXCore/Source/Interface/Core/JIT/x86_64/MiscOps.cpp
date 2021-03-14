@@ -37,7 +37,7 @@ DEF_OP(Break) {
       mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
 
       // Now we need to jump to the thread stop handler
-      mov(TMP1, ThreadStopHandlerAddress);
+      mov(TMP1, Dispatcher->ThreadStopHandlerAddress);
       jmp(TMP1);
       break;
     }
@@ -50,7 +50,7 @@ DEF_OP(Break) {
         }
 
         // This jump target needs to be a constant offset here
-        mov(TMP1, ThreadPauseHandlerAddress);
+        mov(TMP1, Dispatcher->ThreadPauseHandlerAddress);
         jmp(TMP1);
       }
       else {
@@ -59,7 +59,7 @@ DEF_OP(Break) {
         mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
 
         // Now we need to jump to the thread stop handler
-        mov(TMP1, ThreadStopHandlerAddress);
+        mov(TMP1, Dispatcher->ThreadStopHandlerAddress);
         jmp(TMP1);
       }
     break;
