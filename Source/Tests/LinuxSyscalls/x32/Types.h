@@ -22,8 +22,18 @@ using compat_long_t = int32_t;
 using compat_uptr_t = uint32_t;
 using compat_size_t = uint32_t;
 using compat_off_t = uint32_t;
+using compat_loff_t = int64_t;
+using compat_pid_t = int32_t;
+using compat_dev_t = uint16_t;
+using compat_ino_t = uint32_t;
+using compat_mode_t = uint16_t;
+using compat_nlink_t = uint16_t;
+using compat_uid_t = uint16_t;
+using compat_gid_t = uint16_t;
+
 // Can't use using with aligned attributes, clang doesn't honour it
 typedef __attribute__((aligned(4))) uint64_t compat_uint64_t;
+typedef __attribute__((aligned(4))) int64_t compat_int64_t;
 
 template<typename T>
 class compat_ptr {
@@ -245,17 +255,22 @@ stack_t32 {
 static_assert(std::is_trivial<stack_t32>::value, "Needs to be trivial");
 static_assert(sizeof(stack_t32) == 12, "Incorrect size");
 
-struct stat32 {
-  uint32_t st_dev;
-  uint32_t st_ino;
-  uint32_t st_nlink;
+struct
+// This does not match the glibc implementation of stat
+// Matches the definition of `struct compat_stat` in `arch/x86/include/asm/compat.h`
+__attribute__((annotate("fex-match")))
+stat32 {
+  compat_dev_t st_dev;
+  uint16_t __pad1;
+  compat_ino_t st_ino;
+  compat_mode_t st_mode;
+  compat_nlink_t st_nlink;
 
-  uint16_t st_mode;
-  uint16_t st_uid;
-  uint16_t st_gid;
-  uint16_t __pad0;
+  compat_uid_t st_uid;
+  compat_gid_t st_gid;
+  compat_dev_t st_rdev;
 
-  uint32_t st_rdev;
+  uint16_t __pad2;
   uint32_t st_size;
   uint32_t st_blksize;
   uint32_t st_blocks;  /* Number 512-byte blocks allocated. */
@@ -265,7 +280,8 @@ struct stat32 {
   uint32_t st_mtime_nsec;
   uint32_t st_ctime_;
   uint32_t st_ctime_nsec;
-  uint32_t __unused[3];
+  uint32_t __unused4;
+  uint32_t __unused5;
 
   stat32() = delete;
 
@@ -273,13 +289,13 @@ struct stat32 {
     #define COPY(x) x = host.x
     COPY(st_dev);
     COPY(st_ino);
+    COPY(st_mode);
     COPY(st_nlink);
 
-    COPY(st_mode);
     COPY(st_uid);
     COPY(st_gid);
-
     COPY(st_rdev);
+
     COPY(st_size);
     COPY(st_blksize);
     COPY(st_blocks);
@@ -296,11 +312,16 @@ struct stat32 {
   }
 };
 static_assert(std::is_trivial<stat32>::value, "Needs to be trivial");
-static_assert(sizeof(stat32) == 72, "Incorrect size");
+static_assert(sizeof(stat32) == 64, "Incorrect size");
 
-struct __attribute__((packed)) stat64_32 {
-  uint64_t st_dev;
-  uint32_t pad0;
+struct
+// This does not match the glibc implementation of stat
+// Matches the definition of `struct stat64` in `x86_64-linux-gnu/asm/stat.h`
+__attribute__((annotate("fex-match")))
+__attribute__((packed))
+stat64_32 {
+  compat_uint64_t st_dev;
+  uint8_t  __pad0[4];
   uint32_t __st_ino;
 
   uint32_t st_mode;
@@ -309,18 +330,18 @@ struct __attribute__((packed)) stat64_32 {
   uint32_t st_uid;
   uint32_t st_gid;
 
-  uint64_t st_rdev;
-  uint32_t pad3;
-  int64_t st_size;
+  compat_uint64_t st_rdev;
+  uint8_t  __pad3[4];
+  compat_int64_t st_size;
   uint32_t st_blksize;
-  uint64_t st_blocks;  /* Number 512-byte blocks allocated. */
+  compat_uint64_t st_blocks;  /* Number 512-byte blocks allocated. */
   uint32_t st_atime_;
   uint32_t st_atime_nsec;
   uint32_t st_mtime_;
   uint32_t st_mtime_nsec;
   uint32_t st_ctime_;
   uint32_t st_ctime_nsec;
-  uint64_t st_ino;
+  compat_uint64_t st_ino;
 
   stat64_32() = delete;
 
@@ -440,7 +461,10 @@ statfs64_32 {
 static_assert(std::is_trivial<statfs64_32>::value, "Needs to be trivial");
 static_assert(sizeof(statfs64_32) == 84, "Incorrect size");
 
-struct flock_32 {
+struct
+__attribute__((annotate("alias-x86_32-flock")))
+__attribute__((annotate("fex-match")))
+flock_32 {
   int16_t l_type;
   int16_t l_whence;
   int32_t l_start;
@@ -472,12 +496,17 @@ static_assert(std::is_trivial<flock_32>::value, "Needs to be trivial");
 static_assert(sizeof(flock_32) == 16, "Incorrect size");
 
 // glibc doesn't pack flock64 while the kernel does
-struct flock64_32 {
+// This does not match glibc flock64 definition
+// Matches the definition of `struct compat_flock64` in `arch/x86/include/asm/compat.h`
+struct
+__attribute__((annotate("fex-match")))
+__attribute__((packed))
+flock64_32 {
   int16_t l_type;
   int16_t l_whence;
-  int32_t l_start;
-  int32_t l_len;
-  int32_t l_pid;
+  compat_loff_t l_start;
+  compat_loff_t l_len;
+  compat_pid_t l_pid;
 
   flock64_32() = delete;
 
@@ -500,9 +529,13 @@ struct flock64_32 {
   }
 };
 static_assert(std::is_trivial<flock64_32>::value, "Needs to be trivial");
-static_assert(sizeof(flock64_32) == 16, "Incorrect size");
+static_assert(sizeof(flock64_32) == 24, "Incorrect size");
 
-struct linux_dirent {
+// There is no public definition of this struct
+// Matches the definition of `struct linux_dirent` in fs/readdir.c
+struct
+__attribute__((annotate("fex-match")))
+linux_dirent {
   uint64_t d_ino;
   int64_t  d_off;
   uint16_t d_reclen;
@@ -512,18 +545,25 @@ struct linux_dirent {
 static_assert(std::is_trivial<linux_dirent>::value, "Needs to be trivial");
 static_assert(sizeof(linux_dirent) == 24, "Incorrect size");
 
-struct linux_dirent_32 {
-  uint32_t d_ino;
-  int32_t d_off;
+// There is no public definition of this struct
+// Matches the definition of `struct compat_linux_dirent` in fs/readdir.c
+struct
+__attribute__((annotate("fex-match")))
+linux_dirent_32 {
+  compat_ulong_t d_ino;
+  compat_ulong_t d_off;
   uint16_t d_reclen;
-  uint8_t _pad[2];
-  char d_name[];
+  char d_name[1];
   /* Has hidden null character and d_type */
 };
 static_assert(std::is_trivial<linux_dirent_32>::value, "Needs to be trivial");
 static_assert(sizeof(linux_dirent_32) == 12, "Incorrect size");
 
-struct linux_dirent_64 {
+// There is no public definition of this struct
+// Matches the definition of `struct linux_dirent64` in include/linux/dirent.h
+struct
+__attribute__((annotate("fex-match")))
+linux_dirent_64 {
   uint64_t d_ino;
   uint64_t d_off;
   uint16_t d_reclen;
@@ -534,13 +574,17 @@ struct linux_dirent_64 {
 static_assert(std::is_trivial<linux_dirent_64>::value, "Needs to be trivial");
 static_assert(sizeof(linux_dirent_64) == 24, "Incorrect size");
 
-struct sigset_argpack32 {
+// There is no public definition of this struct
+// Matches `struct compat_sigset_argpack`
+struct
+__attribute__((annotate("fex-match")))
+sigset_argpack32 {
   compat_ptr<uint64_t> sigset;
-  size_t size;
+  compat_size_t size;
 };
 
 static_assert(std::is_trivial<sigset_argpack32>::value, "Needs to be trivial");
-static_assert(sizeof(sigset_argpack32) == 16, "Incorrect size");
+static_assert(sizeof(sigset_argpack32) == 8, "Incorrect size");
 
 struct
 __attribute__((annotate("alias-x86_32-rusage")))
@@ -651,10 +695,16 @@ rusage_32 {
 static_assert(std::is_trivial<rusage_32>::value, "Needs to be trivial");
 static_assert(sizeof(rusage_32) == 72, "Incorrect size");
 
-struct __attribute__((packed)) GuestSigAction_32 {
+// This definition isn't public
+// This is for rt_sigaction
+// Matches the definition for `struct compat_sigaction` in `include/linux/compat.h`
+struct
+__attribute__((packed))
+__attribute__((annotate("fex-match")))
+GuestSigAction_32 {
   FEX::HLE::x32::compat_ptr<void> handler_32;
 
-  uint64_t sa_flags;
+  uint32_t sa_flags;
   FEX::HLE::x32::compat_ptr<void> restorer_32;
   FEXCore::GuestSAMask sa_mask;
 
@@ -679,6 +729,6 @@ struct __attribute__((packed)) GuestSigAction_32 {
 };
 
 static_assert(std::is_trivial<GuestSigAction_32>::value, "Needs to be trivial");
-static_assert(sizeof(GuestSigAction_32) == 24, "Incorrect size");
+static_assert(sizeof(GuestSigAction_32) == 20, "Incorrect size");
 
 }
