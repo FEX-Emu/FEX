@@ -271,8 +271,6 @@ DEF_OP(ValidateCode) {
 }
 
 DEF_OP(RemoveCodeEntry) {
-  auto Op = IROp->C<IR::IROp_RemoveCodeEntry>();
-
   auto NumPush = RA64.size();
 
   for (auto &Reg : RA64)

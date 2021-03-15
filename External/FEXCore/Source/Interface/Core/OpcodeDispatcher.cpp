@@ -997,8 +997,6 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   // Fallback
   {
-    uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
     auto CondJump = _CondJump(SrcCond);
 
     // Taking branch block
@@ -1059,7 +1057,6 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   auto CurrentBlock = GetCurrentBlock();
 
   {
-    uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
     auto CondJump = _CondJump(CondReg, {COND_EQ});
 
     // Taking branch block
@@ -1136,7 +1133,6 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
 
   {
-    uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
     auto CondJump = _CondJump(SrcCond);
 
     // Taking branch block
@@ -1176,7 +1172,6 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   BlockSetRIP = true;
 
   // This is just an unconditional relative literal jump
@@ -4324,8 +4319,6 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   // 0x80064000
   // 0x80064000
 
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
   if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
     OrderedNode *Src1{};
     OrderedNode *Src1Lower{};

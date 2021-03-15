@@ -400,6 +400,7 @@ static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->StopThread(Thread);
 
   LogMan::Msg::A("unreachable");
+  __builtin_unreachable();
 }
 
 [[noreturn]]
@@ -407,6 +408,7 @@ static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->SignalThread(Thread, FEXCore::Core::SIGNALEVENT_RETURN);
 
   LogMan::Msg::A("unreachable");
+  __builtin_unreachable();
 }
 
 template<IR::IROps Op>
@@ -825,8 +827,6 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
       break;
     }
     case IR::OP_F80CVT: {
-      auto Op = IROp->C<IR::IROp_F80CVT>();
-
       switch (OpSize) {
         case 4: {
           *Info = GetFallbackInfo(&OpHandlers<IR::OP_F80CVT>::handle4);
@@ -988,7 +988,6 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           }
 
           case IR::OP_REMOVECODEENTRY: {
-            auto Op = IROp->C<IR::IROp_RemoveCodeEntry>();
             Thread->CTX->RemoveCodeEntry(Thread, CurrentIR->GetHeader()->Entry);
             break;
           }

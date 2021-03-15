@@ -158,12 +158,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
-
-  auto Header = CurrentIR.GetHeader();
-
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
-
-  auto HeaderOp = CurrentIR.GetHeader();
 
   {
 

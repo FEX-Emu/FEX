@@ -12,6 +12,8 @@ option(ENABLE_ASAN "Enables Clang ASAN" FALSE)
 option(ENABLE_TSAN "Enables Clang TSAN" FALSE)
 option(ENABLE_ASSERTIONS "Enables assertions in build" FALSE)
 option(ENABLE_VISUAL_DEBUGGER "Enables the visual debugger for compiling" FALSE)
+option(ENABLE_STRICT_WERROR "Enables stricter -Werror for CI" FALSE)
+option(ENABLE_WERROR "Enables -Werror" FALSE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
@@ -145,6 +147,14 @@ endif()
 check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
 if(COMPILER_SUPPORTS_MARCH_NATIVE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+endif()
+
+if(ENABLE_WERROR OR ENABLE_STRICT_WERROR)
+  add_compile_options(-Werror)
+  if (NOT ENABLE_STRICT_WERROR)
+    # Disable some Werror that can add frustration when developing
+    add_compile_options(-Wno-error=unused-variable)
+  endif()
 endif()
 
 if(_M_ARM_64)

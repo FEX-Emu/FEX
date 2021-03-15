@@ -24,6 +24,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   *out << "#0x" << std::hex << Arg;
 }
 
+[[maybe_unused]]
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, const char* Arg) {
   *out <<  Arg;
 }
@@ -91,7 +92,7 @@ static void PrintArg(std::stringstream *out, IRListView const* IR, OrderedNodeWr
     *out << "%ssa" << std::to_string(Arg.ID());
     if (RAData) {
       auto PhyReg = RAData->GetNodeRegister(Arg.ID());
-      
+
       switch (PhyReg.Class) {
         case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
         case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
