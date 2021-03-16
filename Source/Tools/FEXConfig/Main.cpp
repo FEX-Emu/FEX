@@ -571,7 +571,7 @@ int main() {
   ImGui_ImplOpenGL3_Init(glsl_version);
 
   while (!glfwWindowShouldClose(Window)) {
-    glfwPollEvents();
+    glfwWaitEvents();
 
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
