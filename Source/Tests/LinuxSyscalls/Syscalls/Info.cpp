@@ -11,7 +11,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <syslog.h>
-#include <sys/capability.h>
 #include <sys/random.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
@@ -20,6 +19,9 @@
 #include <unistd.h>
 
 namespace FEX::HLE {
+  using cap_user_header_t = void*;
+  using cap_user_data_t = void*;
+
   void RegisterInfo() {
     REGISTER_SYSCALL_IMPL(uname, [](FEXCore::Core::CpuStateFrame *Frame, struct utsname *buf) -> uint64_t {
       struct utsname Local{};
@@ -62,12 +64,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(capget, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
-      uint64_t Result = ::capget(hdrp, datap);
+      uint64_t Result = ::syscall(SYS_capget, hdrp, datap);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(capset, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, const cap_user_data_t datap) -> uint64_t {
-      uint64_t Result = ::capset(hdrp, datap);
+      uint64_t Result = ::syscall(SYS_capset, hdrp, datap);
       SYSCALL_ERRNO();
     });
 
