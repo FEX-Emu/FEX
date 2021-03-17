@@ -15,11 +15,13 @@ install(TARGETS FEXLoader
     COMPONENT runtime)
 
 set(FEX_INTERP FEXInterpreter)
-install(CODE "
+install(
+  CODE "MESSAGE(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
+  CODE "
   EXECUTE_PROCESS(COMMAND ln -f FEXLoader ${FEX_INTERP}
   WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
-  )
-")
+  )"
+)
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   add_custom_target(binfmt_misc_32
