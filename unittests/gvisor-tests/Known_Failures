@@ -110,7 +110,6 @@ pwritev2_test
 rseq_test
 rtsignal_test
 seccomp_test
-select_test
 semaphore_test
 sendfile_test
 shm_test
