@@ -5,6 +5,7 @@
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/Core/InternalThreadState.h"
+#include "Interface/Core/CodeBuffer.h"
 
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
@@ -287,25 +288,6 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 void Arm64JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 }
 
-Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
-  CodeBuffer Buffer;
-  Buffer.Size = Size;
-  Buffer.Ptr = static_cast<uint8_t*>(
-               mmap(nullptr,
-                    Buffer.Size,
-                    PROT_READ | PROT_WRITE | PROT_EXEC,
-                    MAP_PRIVATE | MAP_ANONYMOUS,
-                    -1, 0));
-  LogMan::Throw::A(!!Buffer.Ptr, "Couldn't allocate code buffer");
-  Dispatcher->RegisterCodeBuffer(Buffer.Ptr, Buffer.Size);
-  return Buffer;
-}
-
-void Arm64JITCore::FreeCodeBuffer(CodeBuffer Buffer) {
-  munmap(Buffer.Ptr, Buffer.Size);
-  Dispatcher->RemoveCodeBuffer(Buffer.Ptr);
-}
-
 bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
 
   uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(ucontext);
@@ -395,23 +377,8 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   , ThreadState {Thread}
   , Arm64Emitter(0) {
 
-  {
-    DispatcherConfig config;
-    config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
-    config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
-    config.StaticRegisterAssignment = true;
-
-    Dispatcher = new Arm64Dispatcher(CTX, ThreadState, config);
-    DispatchPtr = Dispatcher->DispatchPtr;
-    CallbackPtr = Dispatcher->CallbackPtr;
-  }
-
-  // Can't allocate a code buffer until after dispatcher is created
-  InitialCodeBuffer = AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
-  *GetBuffer() = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+  SetCodeBuffer(InitialCodeBuffer);
   SetAllowAssembler(true);
-
-  CurrentCodeBuffer = &InitialCodeBuffer;
 
   RAPass = Thread->PassManager->GetRAPass();
 
@@ -453,8 +420,19 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   RegisterEncryptionHandlers();
 
   if (!CompileThread) {
+    DispatcherConfig config;
+    config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
+    config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
+    config.StaticRegisterAssignment = true;
+
+    Dispatcher = new Arm64Dispatcher(CTX, ThreadState, config);
+    DispatchPtr = Dispatcher->DispatchPtr;
+    CallbackPtr = Dispatcher->CallbackPtr;
+
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
     ThreadSharedData.SignalReturnInstruction = Dispatcher->SignalHandlerReturnAddress;
+
+    Dispatcher->RegisterCodeBuffer(InitialCodeBuffer);
 
     // This will register the host signal handler per thread, which is fine
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
@@ -484,54 +462,46 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 }
 
 void Arm64JITCore::ClearCache() {
-  // Get the backing code buffer
-  auto Buffer = GetBuffer();
   if (*ThreadSharedData.SignalHandlerRefCounterPtr == 0) {
     if (!CodeBuffers.empty()) {
-      // If we have more than one code buffer we are tracking then walk them and delete
-      // This is a cleanup step
-      for (auto CodeBuffer : CodeBuffers) {
-        FreeCodeBuffer(CodeBuffer);
+      for (auto &Buffer : CodeBuffers) {
+        Dispatcher->ForgetCodeBuffer(Buffer);
       }
       CodeBuffers.clear();
 
       // Set the current code buffer to the initial
-      *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-      CurrentCodeBuffer = &InitialCodeBuffer;
+      SetCodeBuffer(InitialCodeBuffer);
     }
 
     if (CurrentCodeBuffer->Size == MAX_CODE_SIZE) {
       // Rewind to the start of the code cache start
-      Buffer->Reset();
+      GetBuffer()->Reset();
     }
     else {
-      FreeCodeBuffer(InitialCodeBuffer);
+      Dispatcher->ForgetCodeBuffer(InitialCodeBuffer);
 
       // Resize the code buffer and reallocate our code size
-      InitialCodeBuffer.Size *= 1.5;
-      InitialCodeBuffer.Size = std::min(InitialCodeBuffer.Size, MAX_CODE_SIZE);
+      size_t NewSize = std::min<size_t>(InitialCodeBuffer.Size * 1.5, MAX_CODE_SIZE);
+      InitialCodeBuffer = CodeBuffer(NewSize);
 
-      InitialCodeBuffer = AllocateNewCodeBuffer(InitialCodeBuffer.Size);
-      *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+      Dispatcher->RegisterCodeBuffer(InitialCodeBuffer);
+
+      SetCodeBuffer(InitialCodeBuffer);
     }
   }
   else {
     // We have signal handlers that have generated code
     // This means that we can not safely clear the code at this point in time
     // Allocate some new code buffers that we can switch over to instead
-    auto NewCodeBuffer = Arm64JITCore::AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
-    EmplaceNewCodeBuffer(NewCodeBuffer);
-    *Buffer = vixl::CodeBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
+    auto &NewCodeBuffer = CodeBuffers.emplace_back(INITIAL_CODE_SIZE);
+    Dispatcher->RegisterCodeBuffer(NewCodeBuffer);
+    SetCodeBuffer(NewCodeBuffer);
   }
 }
 
 Arm64JITCore::~Arm64JITCore() {
-  for (auto CodeBuffer : CodeBuffers) {
-    FreeCodeBuffer(CodeBuffer);
-  }
-  CodeBuffers.clear();
-
-  FreeCodeBuffer(InitialCodeBuffer);
+  if (Dispatcher)
+    delete Dispatcher;
 }
 
 static IR::PhysicalRegister GetPhys(IR::RegisterAllocationData *RAData, uint32_t Node) {

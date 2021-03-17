@@ -1,7 +1,9 @@
 #pragma once
 
+#include "Interface/Core/CodeBuffer.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "Interface/Core/ArchHelpers/StateReg.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
 #include "aarch64/assembler-aarch64.h"
@@ -12,7 +14,7 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 
-#define STATE x28
+#define STATE vixl::aarch64::Register::GetXRegFromCode(STATE_arm64)
 #define TMP1 x0
 #define TMP2 x1
 #define TMP3 x2
@@ -27,16 +29,12 @@ namespace FEXCore::Core {
 }
 
 namespace FEXCore::CPU {
+
 using namespace vixl;
 using namespace vixl::aarch64;
 
 class Arm64JITCore final : public CPUBackend, public Arm64Emitter  {
 public:
-  struct CodeBuffer {
-    uint8_t *Ptr;
-    size_t Size;
-  };
-
   explicit Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
 
   ~Arm64JITCore() override;
@@ -52,7 +50,6 @@ public:
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
 
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
-  CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
@@ -124,27 +121,17 @@ private:
   vixl::aarch64::Decoder Decoder;
 #endif
 
-  void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
-    CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
-  }
-
-  void FreeCodeBuffer(CodeBuffer Buffer);
-
   // This is the initial code buffer that we will fall back to
   // In a program without signals and code clearing, we will typically
   // only have this code buffer
-  CodeBuffer InitialCodeBuffer{};
+  CodeBuffer InitialCodeBuffer = CodeBuffer(INITIAL_CODE_SIZE);
   // This is the array of /additional/ code buffers that we may need to allocate
   // Allocation only occurs when we've hit signals and need to clear code cache
   // For code safety we can't delete code buffers until outside of all signals
   std::vector<CodeBuffer> CodeBuffers{};
 
-  // This is the current code buffer that we are tracking
-  CodeBuffer *CurrentCodeBuffer{};
-
   // We don't want to mvoe above 128MB atm because that means we will have to encode longer jumps
   static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
-  static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
 
 #if DEBUG
   vixl::aarch64::Disassembler Disasm;

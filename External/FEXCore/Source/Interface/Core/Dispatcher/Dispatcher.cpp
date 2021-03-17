@@ -317,10 +317,10 @@ uint64_t Dispatcher::GetCompileBlockPtr() {
   return CompileBlockPtr.Data;
 }
 
-void Dispatcher::RemoveCodeBuffer(uint8_t* start_to_remove) {
+void Dispatcher::ForgetCodeBuffer(CodeBuffer& Buffer) {
   for (auto iter = CodeBuffers.begin(); iter != CodeBuffers.end(); ++iter) {
     auto [start, end] = *iter;
-    if (start == reinterpret_cast<uint64_t>(start_to_remove)) {
+    if (start == reinterpret_cast<uint64_t>(Buffer.Ptr)) {
       CodeBuffers.erase(iter);
       return;
     }

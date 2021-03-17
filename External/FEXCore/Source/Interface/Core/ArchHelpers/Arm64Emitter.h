@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Interface/Core/CodeBuffer.h"
+
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
 
@@ -51,6 +53,13 @@ class Arm64Emitter : public vixl::aarch64::Assembler {
 protected:
   Arm64Emitter(size_t size);
 
+  CodeBuffer *CurrentCodeBuffer{};
+
+  void SetCodeBuffer(CodeBuffer &Buffer) {
+    *GetBuffer() = vixl::CodeBuffer(Buffer.Ptr, Buffer.Size);
+    CurrentCodeBuffer = &Buffer;
+  }
+
   vixl::aarch64::CPU CPU;
   bool SupportsAtomics{};
   bool SupportsRCPC{};
@@ -69,6 +78,9 @@ protected:
   void Align16B();
 
   uint32_t SpillSlots{};
+
+private:
+  CodeBuffer InternalCodeBuffer;
 };
 
 }
