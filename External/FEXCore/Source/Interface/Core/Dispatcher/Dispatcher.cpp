@@ -274,11 +274,10 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
   }
 
   if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_RETURN) {
-    RestoreThreadState(ucontext);
+    // This signal only comes from interpreter
 
-    // Ref count our faults
-    // We use this to track if it is safe to clear cache
-    --SignalHandlerRefCounter;
+    ArchHelpers::Context::SetSp(ucontext, Frame->ReturningStackLocation);
+    ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
 
     ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
     return true;
