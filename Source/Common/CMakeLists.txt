@@ -8,3 +8,4 @@ set(SRCS
 add_library(${NAME} STATIC ${SRCS})
 target_link_libraries(${NAME} cpp-optparse tiny-json json-maker FEXCore)
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/External/cpp-optparse/)
+target_include_directories(${NAME} PRIVATE ${CMAKE_BINARY_DIR}/generated)
