@@ -68,17 +68,23 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
   auto CTX = FEXCore::Context::CreateNewContext();
 
-  FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostFactory::CPUCreationFactory);
-
   FEXCore::Context::InitializeContext(CTX);
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-  std::unique_ptr<FEXCore::HLE::SyscallHandler> SyscallHandler{
+    std::unique_ptr<FEXCore::HLE::SyscallHandler> SyscallHandler{
     FEX::HLE::CreateHandler(
       Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT,
       CTX,
       SignalDelegation.get(),
       &Loader)};
+
+  FEX_CONFIG_OPT(Core, DEFAULTCORE);
+  if (Core == FEXCore::Config::CONFIG_CUSTOM) {
+    FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostFactory::CPUCreationFactory);
+
+    // The host core does messy things with the stack pointer, so we want the alt stack
+    SignalDelegation->EnableAltStack();
+  }
 
   bool DidFault = false;
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {

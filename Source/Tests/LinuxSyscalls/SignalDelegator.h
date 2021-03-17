@@ -80,7 +80,16 @@ namespace FEX::HLE {
 
     void SetCurrentSignal(uint32_t Signal) override;
 
+    /**
+     * @brief Enable the altstack for signal handling.
+     *
+     * Fex's regular backends shouldn't need it, and gdb backtraces don't like altstacks
+     * But It's useful for the host core, which does special things and doesn't insure a clean stack pointer
+     */
+    void EnableAltStack() { AltStack = true; }
+
   private:
+    bool AltStack{};
     enum DefaultBehaviour {
       DEFAULT_TERM,
       // Core dump based signals are supposed to have a coredump appear

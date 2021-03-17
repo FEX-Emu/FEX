@@ -21,6 +21,7 @@ namespace FEX::HLE {
 
   struct ThreadState {
     FEXCore::Core::InternalThreadState *Thread{};
+    void *AltStackPtr{};
     stack_t GuestAltStack {
       .ss_sp = nullptr,
       .ss_flags = SS_DISABLE, // By default the guest alt stack is disabled
@@ -228,6 +229,9 @@ namespace FEX::HLE {
       SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
       SignalHandler.HostAction.sa_flags = SA_SIGINFO | SA_RESTART;
 
+      if (AltStack) {
+        SignalHandler.HostAction.sa_flags |= SA_ONSTACK;
+      }
 
       Changed = true;
     } else {
@@ -332,10 +336,43 @@ namespace FEX::HLE {
 
   void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
     ThreadData.Thread = Thread;
+
+    if (AltStack) {
+      // Set up our signal alternative stack
+      // This is per thread rather than per signal
+      ThreadData.AltStackPtr = malloc(SIGSTKSZ);
+      stack_t altstack{};
+      altstack.ss_sp = ThreadData.AltStackPtr;
+      altstack.ss_size = SIGSTKSZ;
+      altstack.ss_flags = 0;
+      LogMan::Throw::A(!!altstack.ss_sp, "Couldn't allocate stack pointer");
+
+      // Register the alt stack
+      int Result = sigaltstack(&altstack, nullptr);
+      if (Result == -1) {
+        LogMan::Msg::E("Failed to install alternative signal stack %s", strerror(errno));
+      }
+    }
   }
 
   void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) {
     ThreadData.Thread = nullptr;
+
+    if (ThreadData.AltStackPtr) {
+      free(ThreadData.AltStackPtr);
+
+      ThreadData.Thread = nullptr;
+      ThreadData.AltStackPtr = nullptr;
+
+      stack_t altstack{};
+      altstack.ss_flags = SS_DISABLE;
+
+      // Uninstall the alt stack
+      int Result = sigaltstack(&altstack, nullptr);
+      if (Result == -1) {
+        LogMan::Msg::E("Failed to uninstall alternative signal stack %s", strerror(errno));
+      }
+    }
   }
 
   void SignalDelegator::MaskSignals(int how, int Signal) {
