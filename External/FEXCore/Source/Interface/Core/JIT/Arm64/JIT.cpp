@@ -430,7 +430,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     CallbackPtr = Dispatcher->CallbackPtr;
 
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
-    ThreadSharedData.SignalReturnInstruction = Dispatcher->SignalHandlerReturnAddress;
 
     Dispatcher->RegisterCodeBuffer(InitialCodeBuffer);
 

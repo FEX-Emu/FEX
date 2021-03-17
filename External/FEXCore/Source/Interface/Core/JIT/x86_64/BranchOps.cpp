@@ -20,13 +20,8 @@ DEF_OP(GuestReturn) {
 }
 
 DEF_OP(SignalReturn) {
-  // Adjust the stack first for a regular return
-  if (SpillSlots) {
-    add(rsp, SpillSlots * 16); // + 8 to consume return address
-  }
-
-  mov(TMP1, ThreadSharedData.SignalHandlerReturnAddress);
-  jmp(TMP1);
+  mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
+  ret();
 }
 
 DEF_OP(CallbackReturn) {

@@ -21,7 +21,6 @@ namespace FEX::HLE {
 
   struct ThreadState {
     FEXCore::Core::InternalThreadState *Thread{};
-    void *AltStackPtr{};
     stack_t GuestAltStack {
       .ss_sp = nullptr,
       .ss_flags = SS_DISABLE, // By default the guest alt stack is disabled
@@ -34,6 +33,9 @@ namespace FEX::HLE {
     FEXCore::GuestSAMask CurrentSignalMask{};
     // The mask prior to a suspend
     FEXCore::GuestSAMask PreviousSuspendMask{};
+
+    // Signals which are masked on both guest and host due to guest not using SA_NODEFER
+    FEXCore::GuestSAMask HostDeferedMask{};
 
     uint32_t CurrentSignal{};
     uint64_t PendingSignals{};
@@ -65,10 +67,16 @@ namespace FEX::HLE {
     return (Set->Val >> Signal) & 1;
   }
 
-  uint64_t SetSignal(FEXCore::GuestSAMask *Set, int Signal) {
+  void SetSignal(FEXCore::GuestSAMask *Set, int Signal) {
     // Signal 0 isn't real, so everything is offset by one inside the set
     Signal -= 1;
-    return Set->Val | (1ULL << Signal);
+    (Set->Val) |= (1ULL << Signal);
+  }
+
+  void ClearSignal(FEXCore::GuestSAMask *Set, int Signal) {
+    // Signal 0 isn't real, so everything is offset by one inside the set
+    Signal -= 1;
+    Set->Val &= ~(1ULL << Signal);
   }
 
   void SignalDelegator::SetCurrentSignal(uint32_t Signal) {
@@ -130,12 +138,20 @@ namespace FEX::HLE {
         ThreadData.Suspended = false;
       }
 
+      // XXX: Linux actually saves this in userspace memory (in ucontext)
+      //      which allows userspace to modify it
+      uint64_t SavedMask = ThreadData.CurrentSignalMask.Val;
+
       // OR in the sa_mask
       ThreadData.CurrentSignalMask.Val |= ThreadData.Guest_sa_mask[Signal].Val;
 
       // If NODEFER isn't set then also mask the current signal
       if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
         SetSignal(&ThreadData.CurrentSignalMask, Signal);
+
+        // When the guest doesn't SA_NODEFER, we don't either
+        // But the guest might manually unblock a signal and we need to know when to propagate that up to host
+        SetSignal(&ThreadData.HostDeferedMask, Signal);
       }
 
       ThreadData.CurrentSignal = Signal;
@@ -165,16 +181,20 @@ namespace FEX::HLE {
           std::unexpected();
         }
       }
-      else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
-        return;
-      }
-      else {
-        if (Handler.GuestHandler &&
-            Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
-          return;
+      else if (Handler.GuestAction.sigaction_handler.handler != SIG_IGN && Handler.GuestHandler) {
+        if (!Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
+          ERROR_AND_DIE("Unhandled guest exception");
         }
-        ERROR_AND_DIE("Unhandled guest exception");
       }
+
+      // Restore signal mask
+      ThreadData.CurrentSignalMask.Val = SavedMask;
+
+      if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
+        ClearSignal(&ThreadData.HostDeferedMask, Signal);
+      }
+
+      return;
     }
 
     // Unhandled crash
@@ -198,78 +218,59 @@ namespace FEX::HLE {
     }
   }
 
-  bool SignalDelegator::InstallHostThunk(int Signal) {
+  bool SignalDelegator::InstallOrUpdateHostThunk(int Signal) {
     SignalHandler &SignalHandler = HostHandlers[Signal];
-    // If the host thunk is already installed for this, just return
-    if (SignalHandler.Installed) {
-      return false;
-    }
 
-    // Now install the thunk handler
-    SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
-    SignalHandler.HostAction.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
-
-    if (SignalHandler.GuestAction.sa_flags & SA_NODEFER) {
-      // If the guest is using NODEFER then make sure to set it for the host as well
-      SignalHandler.HostAction.sa_flags |= SA_NODEFER;
-    }
-
-    /*
-     * XXX: This isn't quite as straightforward as a memcmp
-     * There are conflicting definitions between sigset_t and __sigset_t causing problems here
-    sigset_t EmptySet{};
-    sigemptyset(&EmptySet);
-    if (SignalHandler.GuestAction.sa_mask != EmptySet) {
-      // If the guest has masked some signals then we need to also mask those signals
-      SignalHandler.HostAction.sa_mask = SignalHandler.GuestAction.sa_mask;
-
-      // If the guest tried masking SIGILL or SIGBUS then too bad, we actually need this on the host
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGILL);
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGBUS);
-    }
-    */
-
-    // We don't care about the previous handler in this case
-    int Result = sigaction(Signal, &SignalHandler.HostAction, &SignalHandler.OldAction);
-    if (Result < 0) {
-      LogMan::Msg::E("Failed to install host signal thunk for signal %d: %s", Signal, strerror(errno));
-      return false;
-    }
-
-    SignalHandler.Installed = true;
-    return true;
-  }
-
-  void SignalDelegator::UpdateHostThunk(int Signal) {
-    SignalHandler &SignalHandler = HostHandlers[Signal];
     bool Changed{};
 
-    // This only gets called if a guest thunk was already installed and we need to check if we need to update the flags or signal mask
-    if ((SignalHandler.GuestAction.sa_flags ^ SignalHandler.HostAction.sa_flags) & SA_NODEFER) {
-      // NODEFER changed, we need to update this
-      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_NODEFER;
+    if (!SignalHandler.Installed) {
+      // Now install the thunk handler
+      SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
+      SignalHandler.HostAction.sa_flags = SA_SIGINFO | SA_RESTART;
+
+
       Changed = true;
+    } else {
+      // This only gets called if a guest thunk was already installed and we need to check if we need to update the flags or signal mask
+      if ((SignalHandler.GuestAction.sa_flags ^ SignalHandler.HostAction.sa_flags) & SA_NODEFER) {
+        // NODEFER changed, we need to update this
+
+        // Clear current SA_NODEFER out of host flags
+        SignalHandler.HostAction.sa_flags &= ~SA_NODEFER;
+        Changed = true;
+      }
     }
 
-    /*
-    if ((SignalHandler.GuestAction.sa_mask ^ SignalHandler.HostAction.sa_mask) & ~(SIGILL | SIGBUS)) {
-      // If the signal ignore mask has updated (avoiding the two we need for the host) then we need to update
-      SignalHandler.HostAction.sa_mask = SignalHandler.GuestAction.sa_mask;
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGILL);
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGBUS);
-      Changed = true;
-    }
-    */
+    if (Changed) {
+      // If the guest is using NODEFER then make sure to set it for the host as well
+      SignalHandler.HostAction.sa_flags |= (SignalHandler.GuestAction.sa_flags & SA_NODEFER);
 
-    if (!Changed) {
-      return;
-    }
+      /*
+      * XXX: This isn't quite as straightforward as a memcmp
+      * There are conflicting definitions between sigset_t and __sigset_t causing problems here
+      sigset_t EmptySet{};
+      sigemptyset(&EmptySet);
+      if (SignalHandler.GuestAction.sa_mask != EmptySet) {
+        // If the guest has masked some signals then we need to also mask those signals
+        SignalHandler.HostAction.sa_mask = SignalHandler.GuestAction.sa_mask;
 
-    // Only update our host signal here
-    int Result = sigaction(Signal, &SignalHandler.HostAction, nullptr);
-    if (Result < 0) {
-      LogMan::Msg::E("Failed to update host signal thunk for signal %d: %s", Signal, strerror(errno));
+        // If the guest tried masking SIGILL or SIGBUS then too bad, we actually need this on the host
+        sigdelset(SignalHandler.HostAction.sa_mask, SIGILL);
+        sigdelset(SignalHandler.HostAction.sa_mask, SIGBUS);
+      }
+      */
+
+      // We don't care about the previous handler in this case
+      int Result = sigaction(Signal, &SignalHandler.HostAction, &SignalHandler.OldAction);
+      if (Result < 0) {
+        LogMan::Msg::E("Failed to install host signal thunk for signal %d: %s", Signal, strerror(errno));
+        return false;
+      }
+
+      SignalHandler.Installed = true;
+      return true;
     }
+    return false;
   }
 
   SignalDelegator::SignalDelegator() {
@@ -331,37 +332,10 @@ namespace FEX::HLE {
 
   void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
     ThreadData.Thread = Thread;
-
-    // Set up our signal alternative stack
-    // This is per thread rather than per signal
-    ThreadData.AltStackPtr = malloc(SIGSTKSZ);
-    stack_t altstack{};
-    altstack.ss_sp = ThreadData.AltStackPtr;
-    altstack.ss_size = SIGSTKSZ;
-    altstack.ss_flags = 0;
-    LogMan::Throw::A(!!altstack.ss_sp, "Couldn't allocate stack pointer");
-
-    // Register the alt stack
-    int Result = sigaltstack(&altstack, nullptr);
-    if (Result == -1) {
-      LogMan::Msg::E("Failed to install alternative signal stack %s", strerror(errno));
-    }
   }
 
   void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) {
-    free(ThreadData.AltStackPtr);
-
     ThreadData.Thread = nullptr;
-    ThreadData.AltStackPtr = nullptr;
-
-    stack_t altstack{};
-    altstack.ss_flags = SS_DISABLE;
-
-    // Uninstall the alt stack
-    int Result = sigaltstack(&altstack, nullptr);
-    if (Result == -1) {
-      LogMan::Msg::E("Failed to uninstall alternative signal stack %s", strerror(errno));
-    }
   }
 
   void SignalDelegator::MaskSignals(int how, int Signal) {
@@ -414,7 +388,7 @@ namespace FEX::HLE {
     // Multiple threads could be calling in to this
     std::lock_guard<std::mutex> lk(HostDelegatorMutex);
     HostHandlers[Signal].Handler = Func;
-    InstallHostThunk(Signal);
+    InstallOrUpdateHostThunk(Signal);
   }
 
   void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) {
@@ -422,13 +396,13 @@ namespace FEX::HLE {
     // Multiple threads could be calling in to this
     std::lock_guard<std::mutex> lk(HostDelegatorMutex);
     HostHandlers[Signal].FrontendHandler = Func;
-    InstallHostThunk(Signal);
+    InstallOrUpdateHostThunk(Signal);
   }
 
   void SignalDelegator::RegisterHostSignalHandlerForGuest(int Signal, FEXCore::HostSignalDelegatorFunctionForGuest Func) {
     std::lock_guard<std::mutex> lk(HostDelegatorMutex);
     HostHandlers[Signal].GuestHandler = Func;
-    InstallHostThunk(Signal);
+    InstallOrUpdateHostThunk(Signal);
   }
 
   uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const FEXCore::GuestSigAction *Action, FEXCore::GuestSigAction *OldAction) {
@@ -453,10 +427,7 @@ namespace FEX::HLE {
 
       HostHandlers[Signal].GuestAction = *Action;
       ThreadData.Guest_sa_mask[Signal] = Action->sa_mask;
-      // Only attempt to install a new thunk handler if we were installing a new guest action
-      if (!InstallHostThunk(Signal)) {
-        UpdateHostThunk(Signal);
-      }
+      InstallOrUpdateHostThunk(Signal);
     }
 
     return 0;
@@ -532,21 +503,39 @@ namespace FEX::HLE {
     }
   }
 
+  static inline void for_bit_in_value(uint64_t val, std::function<void (int)> fn) {
+    while (val) {
+      int next_bit = __builtin_ffsll(val) - 1;
+      val ^= (1 << (next_bit));
+      fn(next_bit);
+    }
+  }
+
   uint64_t SignalDelegator::GuestSigProcMask(int how, const uint64_t *set, uint64_t *oldset) {
     if (!!oldset) {
       *oldset = ThreadData.CurrentSignalMask.Val;
     }
 
     if (!!set) {
-      uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
+      uint64_t MaskedSet = *set & ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
       if (how == SIG_BLOCK) {
-        ThreadData.CurrentSignalMask.Val |= *set & IgnoredSignalsMask;
+        ThreadData.CurrentSignalMask.Val |= MaskedSet;
       }
       else if (how == SIG_UNBLOCK) {
-        ThreadData.CurrentSignalMask.Val &= ~(*set & IgnoredSignalsMask);
+        ThreadData.CurrentSignalMask.Val &= ~MaskedSet;
+        if ((ThreadData.HostDeferedMask.Val & MaskedSet) != 0) {
+          for_bit_in_value(ThreadData.HostDeferedMask.Val & MaskedSet, [](int offset) {
+            UnblockSignal(offset + 1);
+          });
+        }
       }
       else if (how == SIG_SETMASK) {
-        ThreadData.CurrentSignalMask.Val = *set & IgnoredSignalsMask;
+        ThreadData.CurrentSignalMask.Val = MaskedSet;
+        if ((ThreadData.HostDeferedMask.Val & ~MaskedSet) != 0) {
+        for_bit_in_value(ThreadData.HostDeferedMask.Val & ~MaskedSet, [](int offset) {
+            UnblockSignal(offset + 1);
+          });
+        }
       }
       else {
         return -EINVAL;

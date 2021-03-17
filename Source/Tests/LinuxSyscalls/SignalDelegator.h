@@ -98,11 +98,11 @@ namespace FEX::HLE {
       FEXCore::HostSignalDelegatorFunctionForGuest GuestHandler{};
       FEXCore::GuestSigAction GuestAction{};
       DefaultBehaviour DefaultBehaviour {DEFAULT_TERM};
+      std::atomic<bool> MaskedInHandler{};
     };
 
     SignalHandler HostHandlers[MAX_SIGNALS + 1]{};
-    bool InstallHostThunk(int Signal);
-    void UpdateHostThunk(int Signal);
+    bool InstallOrUpdateHostThunk(int Signal);
 
     std::mutex HostDelegatorMutex;
     std::mutex GuestDelegatorMutex;

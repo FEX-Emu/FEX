@@ -132,7 +132,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     je(NoBlock);
 
     // Update L1
-    if (config.ExecuteBlocksWithCall) {
+    if (!config.ExecuteBlocksWithCall) {
       mov(r13, Thread->LookupCache->GetL1Pointer());
       mov(rcx, rdx);
       and_(rcx, LookupCache::L1_ENTRIES_MASK);
@@ -261,14 +261,6 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     // Back to the loop top now
     jmp(LoopTop);
   }
-
-  {
-    // Signal return handler
-    SignalHandlerReturnAddress = getCurr<uint64_t>();
-
-    ud2();
-  }
-
 
   {
     ReturnPtr = getCurr<FEXCore::Context::Context::IntCallbackReturn>();

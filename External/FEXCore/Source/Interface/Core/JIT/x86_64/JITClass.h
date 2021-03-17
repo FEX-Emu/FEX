@@ -138,8 +138,6 @@ private:
   std::vector<CodeBuffer> CodeBuffers{};
 
   struct CompilerSharedData {
-    uint64_t SignalHandlerReturnAddress{};
-
     uint32_t *SignalHandlerRefCounterPtr{};
   };
 

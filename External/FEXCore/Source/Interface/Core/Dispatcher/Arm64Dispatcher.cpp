@@ -227,14 +227,6 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
-    SignalHandlerReturnAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-
-    // Now to get back to our old location we need to do a fault dance
-    // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
-    hlt(0);
-  }
-
-  {
     ThreadPauseHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
     if (SRAEnabled)
       SpillStaticRegs();

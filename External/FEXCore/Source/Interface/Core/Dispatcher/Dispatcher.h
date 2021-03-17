@@ -33,7 +33,6 @@ public:
   uint64_t ThreadPauseHandlerAddress{};
   uint64_t ThreadPauseHandlerAddressSpillSRA{};
   uint64_t ExitFunctionLinkerAddress{};
-  uint64_t SignalHandlerReturnAddress{};
   uint64_t PauseReturnInstruction{};
 
   /**  @} */
@@ -58,6 +57,8 @@ public:
   bool IsAddressInDispatcher(uint64_t Address) {
     return Address >= Start && Address < End;
   }
+
+  void ExecuteGuestFrame(FEXCore::Core::CpuStateFrame *Frame);
 
   virtual ~Dispatcher() {};
 

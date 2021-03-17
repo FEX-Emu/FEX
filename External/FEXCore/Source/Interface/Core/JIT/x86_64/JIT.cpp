@@ -304,7 +304,6 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     CallbackPtr = Dispatcher->CallbackPtr;
 
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
-    ThreadSharedData.SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress;
 
     Dispatcher->RegisterCodeBuffer(InitialCodeBuffer);
 
