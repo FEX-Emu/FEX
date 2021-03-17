@@ -12,7 +12,6 @@
 #include <sys/ptrace.h>
 #include <grp.h>
 #include <sys/fsuid.h>
-#include <sys/capability.h>
 #include <utime.h>
 #include <signal.h>
 #include <unistd.h>
