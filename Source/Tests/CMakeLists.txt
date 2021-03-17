@@ -56,11 +56,6 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
 
 endif()
 
-add_executable(TestHarness TestHarness.cpp)
-target_include_directories(TestHarness PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-
-target_link_libraries(TestHarness ${LIBS})
-
 add_executable(TestHarnessRunner TestHarnessRunner.cpp)
 target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_BINARY_DIR}/generated)
