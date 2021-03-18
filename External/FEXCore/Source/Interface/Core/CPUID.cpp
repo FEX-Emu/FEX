@@ -448,6 +448,8 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h() {
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h() {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax = (1 << 2); // APIC timer not affected by p-state
+  Res.edx =
+    (1 << 8); // Invariant TSC
   return Res;
 }
 
