@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <poll.h>
 #include <map>
+#include <mutex>
 
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
@@ -47,6 +48,7 @@ public:
 private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
+  std::mutex FDLock;
   std::unordered_map<int32_t, std::string> FDToNameMap;
   std::string PidSelfPath;
   std::string GetEmulatedPath(const char *pathname);
