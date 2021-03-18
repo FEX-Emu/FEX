@@ -2,13 +2,16 @@
 #include "Common/Config.h"
 
 #include "OptionParser.h"
+#include "git_version.h"
 
 namespace FEX::ArgLoader {
   std::vector<std::string> RemainingArgs;
   std::vector<std::string> ProgramArguments;
 
+  static std::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
   void FEX::ArgLoader::ArgLoader::Load() {
     optparse::OptionParser Parser{};
+    Parser.version(Version);
     optparse::OptionGroup CPUGroup(Parser, "CPU Core options");
     optparse::OptionGroup EmulationGroup(Parser, "Emulation options");
     optparse::OptionGroup TestGroup(Parser, "Test Harness options");
