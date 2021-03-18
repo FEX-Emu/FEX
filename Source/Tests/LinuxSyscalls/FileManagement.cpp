@@ -144,7 +144,10 @@ uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[m
 }
 
 uint64_t FileManager::Close(int fd) {
-  FDToNameMap.erase(fd);
+  {
+    std::lock_guard<std::mutex> lk(FDLock);
+    FDToNameMap.erase(fd);
+  }
   return ::close(fd);
 }
 
@@ -264,8 +267,10 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
       fd = ::openat(dirfs, pathname, flags, mode);
   }
 
-  if (fd != -1)
+  if (fd != -1) {
+    std::lock_guard<std::mutex> lk(FDLock);
     FDToNameMap[fd] = pathname;
+  }
 
   return fd;
 }
@@ -323,6 +328,7 @@ uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat
 }
 
 std::string *FileManager::FindFDName(int fd) {
+  std::lock_guard<std::mutex> lk(FDLock);
   auto it = FDToNameMap.find(fd);
   if (it == FDToNameMap.end()) {
     return nullptr;
