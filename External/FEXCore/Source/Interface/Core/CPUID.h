@@ -51,6 +51,7 @@ private:
   FEXCore::CPUID::FunctionResults Function_02h();
   FEXCore::CPUID::FunctionResults Function_06h();
   FEXCore::CPUID::FunctionResults Function_07h();
+  FEXCore::CPUID::FunctionResults Function_15h();
   FEXCore::CPUID::FunctionResults Function_8000_0000h();
   FEXCore::CPUID::FunctionResults Function_8000_0001h();
   FEXCore::CPUID::FunctionResults Function_8000_0002h();
