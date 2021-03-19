@@ -3,9 +3,33 @@
 #include "git_version.h"
 
 #include <cstring>
+#ifdef _M_X86_64
+#include <cpuid.h>
+#endif
 
 namespace FEXCore {
 //#define CPUID_AMD
+#ifdef _M_ARM_64
+static uint32_t GetCycleCounterFrequency() {
+  uint64_t Result{};
+  __asm("mrs %[Res], CNTFRQ_EL0"
+      : [Res] "=r" (Result));
+  return Result;
+}
+#else
+static uint32_t GetCycleCounterFrequency() {
+  uint32_t eax, ebx, ecx, edx;
+  __cpuid(0, eax, ebx, ecx, edx);
+  if (eax >= 0x15) {
+    __cpuid(0x15, eax, ebx, ecx, edx);
+
+    if (eax && ebx && ecx) {
+      return ecx * ebx / eax;
+    }
+  }
+  return 0;
+}
+#endif
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h() {
   FEXCore::CPUID::FunctionResults Res{};
@@ -251,6 +275,18 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h() {
   return Res;
 }
 
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h() {
+  FEXCore::CPUID::FunctionResults Res{};
+  // TSC frequency = ECX * EBX / EAX
+  uint32_t FrequencyHz = GetCycleCounterFrequency();
+  if (FrequencyHz) {
+    Res.eax = 1;
+    Res.ebx = 1;
+    Res.ecx = FrequencyHz;
+  }
+  return Res;
+}
+
 // Highest extended function implemented
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h() {
   FEXCore::CPUID::FunctionResults Res{};
@@ -479,7 +515,11 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   // 0x12: Intel SGX capability enumeration
   // 0x13: Reserved
   // 0x14: Intel Processor trace
-  // 0x15: Timestamp counter information
+#ifndef CPUID_AMD
+  // Timestamp counter information
+  // Doesn't exist on AMD hardware
+  RegisterFunction(0x15, std::bind(&CPUIDEmu::Function_15h, this));
+#endif
   // 0x16: Processor frequency information
   // 0x17: SoC vendor attribute enumeration
 
