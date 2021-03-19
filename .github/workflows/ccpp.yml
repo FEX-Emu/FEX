@@ -113,13 +113,24 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log || true
 
+    - name: Struct verifier tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target struct_verifier
+
+    - name: Struct verifier Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
+
     - name: Truncate test results
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
       # Cap out the log files at 20M in case something crash spins and dumps fault text
       # ASM tests get quite close to 10MB
-      run: truncate --size=20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
+      run: truncate --size=<20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
 
     - name: Set runner name
       if: ${{ always() }}
