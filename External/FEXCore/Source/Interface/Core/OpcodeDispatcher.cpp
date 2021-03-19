@@ -6835,11 +6835,20 @@ void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
 
+  // Init FCW to 0x037
   auto NewFCW = _Constant(16, 0x037);
   _F80LoadFCW(NewFCW);
   _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FCW), NewFCW);
 
+  // Init FSW to 0
   SetX87Top(_Constant(0));
+
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Constant(0));
+
+  // XXX: Add FTW support
 }
 
 template<size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice>
@@ -7326,6 +7335,9 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   ST0Location = _Add(ST0Location, _Constant(8));
   auto topBytes = _VExtractElement(16, 2, data, 4);
   _StoreMem(FPRClass, 2, ST0Location, topBytes, 1);
+
+  // reset to default
+  FNINIT(Op);
 }
 
 void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
