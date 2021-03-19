@@ -679,6 +679,7 @@ namespace FEXCore::Context {
 
         TableInfo = Block.DecodedInstructions[i].TableInfo;
         DecodedInfo = &Block.DecodedInstructions[i];
+        bool IsLocked = DecodedInfo->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
 
         if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
           auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
@@ -703,11 +704,13 @@ namespace FEXCore::Context {
 
         if (TableInfo->OpcodeDispatcher) {
           auto Fn = TableInfo->OpcodeDispatcher;
+          Thread->OpDispatcher->HandledLock = false;
           std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
           if (Thread->OpDispatcher->HadDecodeFailure()) {
             HadDispatchError = true;
           }
           else {
+            LogMan::Throw::A(Thread->OpDispatcher->HandledLock == IsLocked, "Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
             BlockInstructionsLength += DecodedInfo->InstSize;
             TotalInstructionsLength += DecodedInfo->InstSize;
             ++TotalInstructions;

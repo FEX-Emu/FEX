@@ -476,6 +476,7 @@ public:
 
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
 
+  bool HandledLock = false;
 private:
   bool DecodeFailure{false};
   FEXCore::IR::IROp_IRHeader *Current_Header{};

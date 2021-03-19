@@ -280,7 +280,9 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   OrderedNode *Dest{};
 
   if (DestIsLockedMem(Op)) {
+    HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     switch (IROp) {
       case FEXCore::IR::IROps::OP_ADD: {
         Dest = _AtomicFetchAdd(DestMem, Src, Size);
@@ -361,6 +363,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   OrderedNode *Result{};
   OrderedNode *Before{};
   if (DestIsLockedMem(Op)) {
+    HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     Before = _AtomicFetchAdd(DestMem, ALUOp, Size);
@@ -388,6 +391,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   OrderedNode *Result{};
   OrderedNode *Before{};
   if (DestIsLockedMem(Op)) {
+    HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     Before = _AtomicFetchSub(DestMem, ALUOp, Size);
@@ -2452,7 +2456,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
-
+    Dest = AppendSegmentOffset(Dest, Op->Flags);
     // Get the bit selection from the src
     OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
@@ -2516,6 +2520,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    Dest = AppendSegmentOffset(Dest, Op->Flags);
 
     // Get the bit selection from the src
     OrderedNode *BitSelect = _Bfe(3, 0, Src);
@@ -2533,6 +2538,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     BitMask = _Not(BitMask);
 
     if (DestIsLockedMem(Op)) {
+      HandledLock = true;
       // XXX: Technically this can optimize to an AArch64 ldclralb
       // We don't current support this IR op though
       Result = _AtomicFetchAnd(MemoryLocation, BitMask, 1);
@@ -2593,7 +2599,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
-
+    Dest = AppendSegmentOffset(Dest, Op->Flags);
     // Get the bit selection from the src
     OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
@@ -2609,6 +2615,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
 
     if (DestIsLockedMem(Op)) {
+      HandledLock = true;
       Result = _AtomicFetchOr(MemoryLocation, BitMask, 1);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
@@ -2667,6 +2674,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    Dest = AppendSegmentOffset(Dest, Op->Flags);
     // Get the bit selection from the src
     OrderedNode *BitSelect = _Bfe(3, 0, Src);
 
@@ -2682,6 +2690,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
 
     if (DestIsLockedMem(Op)) {
+      HandledLock = true;
       Result = _AtomicFetchXor(MemoryLocation, BitMask, 1);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
@@ -2831,6 +2840,7 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
   }
 
   if (DestIsLockedMem(Op)) {
+    HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     _AtomicXor(DestMem, MaskConst, Size);
@@ -2865,6 +2875,8 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     GenerateFlags_ADD(Op, Result, Dest, Src);
   }
   else {
+    HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
+    Dest = AppendSegmentOffset(Dest, Op->Flags);
     auto Before = _AtomicFetchAdd(Dest, Src, GetSrcSize(Op));
     StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
     Result = _Add(Before, Src); // Seperate result just for flags
@@ -2995,7 +3007,9 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
   bool IsLocked = DestIsLockedMem(Op);
 
   if (IsLocked) {
+    HandledLock = true;
     auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
     Dest = _AtomicFetchAdd(DestAddress, OneConst, GetSrcSize(Op));
 
   } else {
@@ -3024,7 +3038,9 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
   bool IsLocked = DestIsLockedMem(Op);
 
   if (IsLocked) {
+    HandledLock = true;
     auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
     Dest = _AtomicFetchSub(DestAddress, OneConst, GetSrcSize(Op));
 
   } else {
@@ -4379,6 +4395,8 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
   else {
+    HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
+    
     OrderedNode *Src3{};
     OrderedNode *Src3Lower{};
     if (GPRSize == 8 && Size == 4) {
@@ -4428,6 +4446,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // Unlike CMPXCHG, the destination can only be a memory location
 
   auto Size = GetSrcSize(Op);
+  HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
   // If this is a memory location then we want the pointer to it
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
@@ -5799,7 +5818,9 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
   OrderedNode *Dest{};
 
   if (DestIsLockedMem(Op)) {
+    HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     switch (IROp) {
       case FEXCore::IR::IROps::OP_ADD: {
         Dest = _AtomicFetchAdd(DestMem, Src, Size);
@@ -7075,6 +7096,7 @@ void OpDispatchBuilder::X87ATAN(OpcodeArgs) {
 void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   _F80LoadFCW(NewFCW);
@@ -7120,6 +7142,7 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
 
 	{
     auto FCW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FCW), GPRClass);
@@ -7248,6 +7271,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   OrderedNode *Top = GetX87Top();
 	{
@@ -7331,6 +7355,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   _F80LoadFCW(NewFCW);
@@ -7498,6 +7523,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   // Saves 512bytes to the memory location provided
   // Header changes depending on if REX.W is set or not
@@ -7598,6 +7624,7 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
   
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   _F80LoadFCW(NewFCW);
