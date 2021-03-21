@@ -56,27 +56,12 @@ namespace {
     ConfigOpen = true;
     ConfigFilename = {};
     LoadedConfig = std::make_unique<FEX::Config::EmptyMapper>();
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE,        "1");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST,       "5000");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_SINGLESTEP,         "0");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK,         "1");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_GDBSERVER,          "0");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, "1");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH,         "");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBSPATH,  "");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBSPATH, "");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIGPATH,    "");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS,         "0");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "GALLIUM_THREAD=1");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "GALLIUM_HUD=fps");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT,        "TERM=xterm");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG,          "");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_DUMPIR,             "no"),
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED,        "1");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS,         "0");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS,    "0");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF,          "0");
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, "0");
+#define OPT_BASE(type, group, enum, json, env, default) \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default));
+#define OPT_STR(group, enum, json, env, default) \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);
+#define OPT_STRARRAY(group, enum, json, env, default)  // Do nothing
+#include <FEXCore/Config/ConfigValues.inl>
   }
 
   void SaveFile(std::string Filename) {
