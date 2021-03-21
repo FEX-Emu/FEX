@@ -3,6 +3,7 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <cstring>
 #include <elf.h>
+#include <filesystem>
 #include <fstream>
 #include <stdint.h>
 #include <vector>
@@ -85,7 +86,20 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
     else {
       RawString = &RawFile.at(InterpreterHeader._64->p_offset);
     }
-    if (!RootFS.empty() && LoadELF(RootFS + RawString)) {
+    std::string RootFSLink = RootFS + RawString;
+    while (std::filesystem::is_symlink(RootFSLink)) {
+      // Do some special handling if the RootFS's linker is a symlink
+      // Ubuntu's rootFS by default provides an absolute location symlink to the linker
+      // Resolve this around back to the rootfs
+      auto SymlinkTarget = std::filesystem::read_symlink(RootFSLink);
+      if (SymlinkTarget.is_absolute()) {
+        RootFSLink = RootFS + SymlinkTarget.string();
+      }
+      else {
+        break;
+      }
+    }
+    if (LoadELF(RootFSLink)) {
       // Found the interpreter in the rootfs
     }
     else if (!LoadELF(RawString)) {
