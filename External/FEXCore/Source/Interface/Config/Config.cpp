@@ -95,9 +95,10 @@ namespace FEXCore::Config {
     // Expand home if it exists
     if (Path.is_relative()) {
       std::string Home = getenv("HOME") ?: "";
-      auto it = PathName.find("~");
-      if (it != std::string::npos) {
-        PathName.replace(it, 1, Home);
+      // Home expansion only works if it is the first character
+      // This matches bash behaviour
+      if (PathName.at(0) == '~') {
+        PathName.replace(0, 1, Home);
         return PathName;
       }
 
@@ -144,7 +145,9 @@ namespace FEXCore::Config {
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_OUTPUTLOG)) {
       FEX_CONFIG_OPT(PathName, OUTPUTLOG);
-      ExpandPathIfExists(FEXCore::Config::CONFIG_OUTPUTLOG, PathName());
+      if (PathName() != "stdout" && PathName() != "stderr") {
+        ExpandPathIfExists(FEXCore::Config::CONFIG_OUTPUTLOG, PathName());
+      }
     }
   }
 
