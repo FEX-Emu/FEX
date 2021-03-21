@@ -66,7 +66,7 @@ namespace FEX::ArgLoader {
 
       CPUGroup.add_option("-T", "--Threads")
           .dest("Threads")
-          .help("Number of physical hardware threads to tell the process we have")
+          .help("Number of physical hardware threads to tell the process we have. 0 will auto detect.")
           .set_default(1);
 
       CPUGroup.add_option("--smc-checks")

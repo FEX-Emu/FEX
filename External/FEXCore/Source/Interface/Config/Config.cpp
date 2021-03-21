@@ -4,7 +4,9 @@
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Config/Config.h>
+#include <filesystem>
 #include <map>
+#include <sys/sysinfo.h>
 
 namespace FEXCore::Config {
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config) {
@@ -87,8 +89,63 @@ namespace FEXCore::Config {
     }
   }
 
+  std::string ExpandPath(std::string PathName) {
+    std::filesystem::path Path{PathName};
+
+    // Expand home if it exists
+    if (Path.is_relative()) {
+      std::string Home = getenv("HOME") ?: "";
+      auto it = PathName.find("~");
+      if (it != std::string::npos) {
+        PathName.replace(it, 1, Home);
+        return PathName;
+      }
+
+      // Expand relative path to absolute
+      return std::filesystem::absolute(Path);
+    }
+    return {};
+  }
+
   void ReloadMetaLayer() {
     Meta->Load();
+
+    // Do configuration option fix ups after everything is reloaded
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_EMULATED_CPU_CORES)) {
+      FEX_CONFIG_OPT(Cores, EMULATED_CPU_CORES);
+      if (Cores == 0) {
+        // When the number of emulated CPU cores is zero then auto detect
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_EMULATED_CPU_CORES, std::to_string(get_nprocs_conf()));
+      }
+    }
+
+    auto ExpandPathIfExists = [](FEXCore::Config::ConfigOption Config, std::string PathName) {
+      auto NewPath = ExpandPath(PathName);
+      if (!NewPath.empty()) {
+        FEXCore::Config::EraseSet(Config, NewPath);
+      }
+    };
+
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFSPATH)) {
+      FEX_CONFIG_OPT(PathName, ROOTFSPATH);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_ROOTFSPATH, PathName());
+    }
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKHOSTLIBSPATH)) {
+      FEX_CONFIG_OPT(PathName, THUNKHOSTLIBSPATH);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKHOSTLIBSPATH, PathName());
+    }
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKGUESTLIBSPATH)) {
+      FEX_CONFIG_OPT(PathName, THUNKGUESTLIBSPATH);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKGUESTLIBSPATH, PathName());
+    }
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKCONFIGPATH)) {
+      FEX_CONFIG_OPT(PathName, THUNKCONFIGPATH);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKCONFIGPATH, PathName());
+    }
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_OUTPUTLOG)) {
+      FEX_CONFIG_OPT(PathName, OUTPUTLOG);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_OUTPUTLOG, PathName());
+    }
   }
 
   void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer) {
