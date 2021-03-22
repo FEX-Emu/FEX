@@ -4376,7 +4376,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       // This allows us to only hit the ZEXT case on failure
       OrderedNode *RAXResult = _Select(FEXCore::IR::COND_EQ,
         CASResult, Src3Lower,
-        Src3, Src3Lower);
+        Src3, Src1Lower);
 
       // When the size is 4 we need to make sure not zext the GPR when the comparison fails
       _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
