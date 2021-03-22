@@ -1350,6 +1350,7 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   if (DestIsMem(Op)) {
+    HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
     Dest = AppendSegmentOffset(Dest, Op->Flags);
