@@ -4,9 +4,9 @@ import subprocess
 import os.path
 from os import path
 
-# Args: <Known Failures file> <DisabledTestsFile> <DisabledTestsTypeFile> <TestName> <Test Harness Executable> <Args>...
+# Args: <Known Failures file> <DisabledTestsFile> <DisabledTestsTypeFile> <DisabledTestsRunnerFile> <TestName> <Test Harness Executable> <Args>...
 
-if (len(sys.argv) < 6):
+if (len(sys.argv) < 7):
     sys.exit()
 
 known_failures = {}
@@ -14,10 +14,11 @@ disabled_tests = {}
 known_failures_file = sys.argv[1]
 disabled_tests_file = sys.argv[2]
 disabled_tests_type_file = sys.argv[3]
+disabled_tests_runner_file = sys.argv[4]
 
-current_test = sys.argv[4]
-runner = sys.argv[5]
-args_start_index = 6
+current_test = sys.argv[5]
+runner = sys.argv[6]
+args_start_index = 7
 
 # Open the known failures file and add it to a dictionary
 with open(known_failures_file) as kff:
@@ -30,6 +31,11 @@ with open(disabled_tests_file) as dtf:
 
 if path.exists(disabled_tests_type_file):
     with open(disabled_tests_type_file) as dtf:
+        for line in dtf:
+            disabled_tests[line.strip()] = 1
+
+if path.exists(disabled_tests_runner_file):
+    with open(disabled_tests_runner_file) as dtf:
         for line in dtf:
             disabled_tests[line.strip()] = 1
 
