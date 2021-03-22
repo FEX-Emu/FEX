@@ -25,6 +25,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Set runner label
+      run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+
     - name : submodule checkout
       # Need to update submodules
       run: git submodule update --init --depth 1

@@ -26,6 +26,11 @@ foreach(IR_SRC ${IR_SOURCES})
     "-c irjit -n 500" "ir_jit" "jit"
     )
 
+  set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests")
+  if (DEFINED ENV{runner_label})
+    set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_$ENV{runner_label}")
+  endif()
+
   list(LENGTH TEST_ARGS ARG_COUNT)
   math(EXPR ARG_COUNT "${ARG_COUNT}-1")
   foreach(Index RANGE 0 ${ARG_COUNT} 3)
@@ -46,6 +51,7 @@ foreach(IR_SRC ${IR_SOURCES})
       "${CMAKE_SOURCE_DIR}/unittests/IR/Known_Failures"
       "${CMAKE_SOURCE_DIR}/unittests/IR/Disabled_Tests"
       "${CMAKE_SOURCE_DIR}/unittests/IR/Disabled_Tests_${TEST_TYPE}"
+      "${RUNNER_DISABLED}"
       "Test_${IR_NAME}"
       "${CMAKE_BINARY_DIR}/Bin/IRLoader"
       ${ARGS_LIST} "${IR_SRC}" "${OUTPUT_CONFIG_NAME}")

@@ -60,6 +60,11 @@ foreach(ASM_SRC ${ASM_SOURCES})
       )
   endif()
 
+  set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests")
+  if (DEFINED ENV{runner_label})
+    set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_$ENV{runner_label}")
+  endif()
+
   list(LENGTH TEST_ARGS ARG_COUNT)
   math(EXPR ARG_COUNT "${ARG_COUNT}-1")
   foreach(Index RANGE 0 ${ARG_COUNT} 3)
@@ -82,6 +87,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Known_Failures"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_${TEST_TYPE}"
+      "${RUNNER_DISABLED}"
       "Test_${REL_TEST_ASM}"
       "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
       ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
