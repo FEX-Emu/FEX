@@ -111,12 +111,19 @@ namespace FEX::HLE::x64 {
         uint64_t Result = NewThread->ThreadManager.GetTID();
         LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->CurrentFrame->State.rip, Thread->CurrentFrame->State.rip);
 
+        if (flags & CLONE_VFORK) {
+          NewThread->DestroyedByParent = true;
+        }
+
         // Actually start the thread
         FEXCore::Context::RunThread(Thread->CTX, NewThread);
 
         if (flags & CLONE_VFORK) {
           // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
           NewThread->ExecutionThread.join();
+
+          // Normally a thread cleans itself up on exit. But because we need to join, we are now responsible
+          FEXCore::Context::DestroyThread(Thread->CTX, NewThread);
         }
         SYSCALL_ERRNO();
       }

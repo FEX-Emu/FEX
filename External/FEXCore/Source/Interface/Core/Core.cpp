@@ -25,6 +25,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <filesystem>
+#include <algorithm>
 
 #include "Interface/Core/GdbServer.h"
 
@@ -621,6 +622,47 @@ namespace FEXCore::Context {
     return Thread;
   }
 
+  void Context::DestroyThread(FEXCore::Core::InternalThreadState *Thread) {
+    // remove new thread object
+    {
+      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+
+      auto It = std::find(Threads.begin(), Threads.end(), Thread);
+      LogMan::Throw::A(It != Threads.end(), "Thread wasn't in Threads");
+
+      Threads.erase(It);
+    }
+
+    if (std::this_thread::get_id() == Thread->ExecutionThread.get_id()) {
+      // To be able to delete a thread from itself, we need to detached the std::thread object
+      Thread->ExecutionThread.detach();
+    }
+    delete Thread;
+  }
+
+  void Context::DeleteForkedThreads(FEXCore::Core::InternalThreadState *ExceptForThread) {
+    // This function is called after fork
+    // We need to cleanup some of the thread data that is dead
+    for (auto &DeadThread : Threads) {
+      if (DeadThread == ExceptForThread) {
+        continue;
+      }
+
+      // Setting running to false ensures that when they are shutdown we won't send signals to kill them
+      DeadThread->RunningEvents.Running = false;
+
+      // Clean up thread state
+      delete DeadThread;
+    }
+
+    // Remove all threads but the current thread from Threads
+    Threads.clear();
+    Threads.push_back(ExceptForThread);
+
+    // We now only have one thread
+    IdleWaitRefCount = 1;
+  }
+
   void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length) {
     Thread->LookupCache->AddBlockMapping(Address, Ptr, Start, Length);
   }
@@ -1181,6 +1223,11 @@ namespace FEXCore::Context {
     IdleWaitCV.notify_all();
 
     SignalDelegation->UninstallTLSState(Thread);
+
+    // If the parent thread is waiting to join, then we can't destroy our thread object
+    if (!Thread->DestroyedByParent && Thread != Thread->CTX->ParentThread) {
+      Thread->CTX->DestroyThread(Thread);
+    }
   }
 
   void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
