@@ -23,6 +23,9 @@ namespace FEXCore::Context {
   }
 
   void DestroyContext(FEXCore::Context::Context *CTX) {
+    if (CTX->ParentThread) {
+      CTX->DestroyThread(CTX->ParentThread);
+    }
     delete CTX;
   }
 
