@@ -246,6 +246,7 @@ endif()
 add_subdirectory(External/FEXCore)
 
 add_subdirectory(Source/)
+add_subdirectory(Data/AppConfig/)
 
 if (BUILD_TESTS)
   add_subdirectory(unittests/)
