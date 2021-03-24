@@ -137,6 +137,10 @@ namespace FEXCore::Config {
   }
 
   std::string ExpandPath(std::string PathName) {
+    if (PathName.empty()) {
+      return {};
+    }
+
     std::filesystem::path Path{PathName};
 
     // Expand home if it exists
