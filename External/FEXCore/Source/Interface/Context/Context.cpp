@@ -126,8 +126,8 @@ namespace FEXCore::Context {
     CTX->DestroyThread(Thread);
   }
 
-  void DeleteForkedThreads(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    CTX->DeleteForkedThreads(Thread);
+  void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    CTX->CleanupAfterFork(Thread);
   }
 
   void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation) {

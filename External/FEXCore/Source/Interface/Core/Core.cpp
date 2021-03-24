@@ -640,24 +640,40 @@ namespace FEXCore::Context {
     delete Thread;
   }
 
-  void Context::DeleteForkedThreads(FEXCore::Core::InternalThreadState *ExceptForThread) {
+  void Context::CleanupAfterFork(FEXCore::Core::InternalThreadState *LiveThread) {
     // This function is called after fork
     // We need to cleanup some of the thread data that is dead
     for (auto &DeadThread : Threads) {
-      if (DeadThread == ExceptForThread) {
+      if (DeadThread == LiveThread) {
         continue;
       }
 
       // Setting running to false ensures that when they are shutdown we won't send signals to kill them
       DeadThread->RunningEvents.Running = false;
 
-      // Clean up thread state
+      // Despite what google searches may susgest, glibc actually has special code to handle forks
+      // with multiple active threads.
+      // It cleans up the stacks of dead threads and marks them as terminated.
+      // It also cleans up a bunch of internal mutexes.
+
+      // glibc has already terminated this thread during fork; Join to finish pthread cleanup.
+      DeadThread->ExecutionThread.join();
+
+      // FIXME: TLS is probally still alive. Investigate
+
+      // Deconstructing the Interneal thread state should clean up most of the state.
+      // But if anything on the now deleted stack is holding a refrence to the heap, it will be leaked
       delete DeadThread;
+
+      // FIXME: Make sure sure nothing gets leaked via the heap. Ideas:
+      //         * Make sure nothing is allocated on the heap without ref in InternalThreadState
+      //         * Surround any code that heap allocates with a per-thread mutex.
+      //           Before forking, the the forking thread can lock all thread mutexes.
     }
 
-    // Remove all threads but the current thread from Threads
+    // Remove all threads but the live thread from Threads
     Threads.clear();
-    Threads.push_back(ExceptForThread);
+    Threads.push_back(LiveThread);
 
     // We now only have one thread
     IdleWaitRefCount = 1;

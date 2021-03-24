@@ -198,7 +198,7 @@ namespace FEXCore::Context {
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
     void DestroyThread(FEXCore::Core::InternalThreadState *Thread);
-    void DeleteForkedThreads(FEXCore::Core::InternalThreadState *ExceptForThread);
+    void CleanupAfterFork(FEXCore::Core::InternalThreadState *ExceptForThread);
 
     std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
 
