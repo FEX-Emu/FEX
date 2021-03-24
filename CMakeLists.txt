@@ -234,6 +234,10 @@ endif()
 
 add_compile_options(-Wall)
 
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/Config.h.in
+  ${CMAKE_BINARY_DIR}/generated/Config.h)
+
 if (BUILD_TESTS)
   include(CTest)
   enable_testing()
