@@ -62,6 +62,17 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
 
 endif()
 
+add_executable(FEXBash FEXBash.cpp)
+target_include_directories(FEXBash PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
+target_include_directories(FEXBash PRIVATE ${CMAKE_BINARY_DIR}/generated)
+
+target_link_libraries(FEXBash ${LIBS} LinuxEmulation)
+
+install(TARGETS FEXBash
+  RUNTIME
+    DESTINATION bin
+    COMPONENT runtime)
+
 add_executable(TestHarnessRunner TestHarnessRunner.cpp)
 target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_BINARY_DIR}/generated)
