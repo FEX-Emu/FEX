@@ -101,7 +101,6 @@ prctl_setuid_test
 prctl_test
 preadv2_test
 proc_net_test
-proc_pid_uid_gid_map_test
 proc_test
 pselect_test
 ptrace_test

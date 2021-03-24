@@ -81,7 +81,10 @@ namespace FEX::HLE::x64 {
       }
 
       if (AnyFlagsSet(flags, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID | CLONE_NEWNET)) {
-        ERROR_AND_DIE("clone: Namespaces are not supported");
+        // NEWUSER doesn't need any privileges from 3.8 onward
+        // We just don't support it yet
+        LogMan::Msg::I("Unconditionally returning EPERM on clone namespace");
+        return -EPERM;
       }
 
       if (!(flags & CLONE_THREAD)) {
