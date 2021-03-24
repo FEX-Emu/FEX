@@ -23,7 +23,7 @@ private:
 public:
   void Init(FEXCore::Context::Context *ctx);
 
-  FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function) {
+  FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function, [[maybe_unused]] uint32_t Leaf) {
     auto Handler = FunctionHandlers.find(Function);
 
     if (Handler == FunctionHandlers.end()) {

@@ -138,8 +138,8 @@ namespace FEXCore::Context {
     CTX->SyscallHandler = Handler;
   }
 
-  FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, [[maybe_unused]] uint32_t Leaf) {
-    return CTX->CPUID.RunFunction(Function);
+  FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf) {
+    return CTX->CPUID.RunFunction(Function, Leaf);
   }
 
   void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::istream>(const std::string&)> CacheReader) {

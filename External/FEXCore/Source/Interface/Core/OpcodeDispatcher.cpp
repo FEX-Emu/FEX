@@ -1563,8 +1563,10 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto Res = _CPUID(Src);
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Leaf = _LoadContext(4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
+
+  auto Res = _CPUID(Src, Leaf);
 
   OrderedNode *Result_Lower = _ExtractElementPair(Res, 0);
   OrderedNode *Result_Upper = _ExtractElementPair(Res, 1);
