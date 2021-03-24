@@ -1,0 +1,5 @@
+{
+  "Config": {
+    "Env": "STEAM_GAME_LAUNCH_SHELL=@CMAKE_INSTALL_PREFIX@/bin/FEXBash"
+  }
+}
