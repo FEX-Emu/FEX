@@ -103,6 +103,10 @@ namespace Type {
   protected:
     const LayerType Type;
     LayerOptions OptionMap;
+
+    void Erase(ConfigOption Option) {
+      OptionMap.erase(Option);
+    }
   };
 
   void Initialize();

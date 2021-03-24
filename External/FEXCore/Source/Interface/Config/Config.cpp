@@ -49,6 +49,7 @@ namespace FEXCore::Config {
 
   private:
     void MergeConfigMap(const LayerOptions &Options);
+    void MergeEnvironmentVariables(ConfigOption const &Option, LayerValue const &Value);
   };
 
   void MetaLayer::Load() {
@@ -63,10 +64,56 @@ namespace FEXCore::Config {
     }
   }
 
+
+  void MetaLayer::MergeEnvironmentVariables(ConfigOption const &Option, LayerValue const &Value) {
+    // Environment variables need a bit of additional work
+    // We want to merge the arrays rather than overwrite entirely
+    auto MetaEnvironment = OptionMap.find(Option);
+    if (MetaEnvironment == OptionMap.end()) {
+      // Doesn't exist, just insert
+      OptionMap.insert_or_assign(Option, Value);
+      return;
+    }
+
+    // If an environment variable exists in both current meta and in the incoming layer then the meta layer value is overwritten
+    std::unordered_map<std::string, std::string> LookupMap;
+    auto AddToMap = [&LookupMap](FEXCore::Config::LayerValue const &Value) {
+      for (auto &EnvVar : Value) {
+        auto ItEq = EnvVar.find_first_of("=");
+        if (ItEq == std::string::npos) {
+          // Broken environment variable
+          // Skip
+          continue;
+        }
+        auto Key = std::string_view(EnvVar.begin(), EnvVar.begin() + ItEq);
+        auto Value = std::string_view(EnvVar.begin() + ItEq + 1, EnvVar.end());
+
+        // Add the key to the map, overwriting whatever previous value was there
+        LookupMap.emplace(Key, Value);
+      }
+    };
+
+    AddToMap(MetaEnvironment->second);
+    AddToMap(Value);
+
+    // Now with the two layers merged in the map
+    // Add all the values to the option
+    Erase(Option);
+    for (auto &Val : LookupMap) {
+      // Set will emplace multiple options in to its list
+      Set(Option, Val.first + "=" + Val.second);
+    }
+  }
+
   void MetaLayer::MergeConfigMap(const LayerOptions &Options) {
     // Insert this layer's options, overlaying previous options that exist here
     for (auto &it : Options) {
-      OptionMap.insert_or_assign(it.first, it.second);
+      if (it.first == FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT) {
+        MergeEnvironmentVariables(it.first, it.second);
+      }
+      else {
+        OptionMap.insert_or_assign(it.first, it.second);
+      }
     }
   }
 
