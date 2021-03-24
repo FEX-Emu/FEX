@@ -1138,7 +1138,11 @@
       "DestClass": "GPRPair",
       "FixedDestSize": "8",
       "NumElements": "2",
-      "SSAArgs": "1"
+      "SSAArgs": "2",
+      "SSANames": [
+        "Function",
+        "Leaf"
+      ]
     },
 
     "Bfi": {

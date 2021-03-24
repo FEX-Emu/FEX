@@ -297,7 +297,7 @@ DEF_OP(RemoveCodeEntry) {
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
-  using ClassPtrType = FEXCore::CPUID::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t Function);
+  using ClassPtrType = FEXCore::CPUID::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t Function, uint32_t Leaf);
   union {
     ClassPtrType ClassPtr;
     uint64_t Raw;
@@ -314,6 +314,7 @@ DEF_OP(CPUID) {
   // Result: RAX, RDX. 4xi32
 
   mov (rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov (rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
   mov (rdi, reinterpret_cast<uint64_t>(&CTX->CPUID));
 
   auto NumPush = RA64.size();

@@ -324,10 +324,12 @@ DEF_OP(CPUID) {
 
   // x0 = CPUID Handler
   // x1 = CPUID Function
+  // x2 = CPUID Leaf
   LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->CPUID));
   mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
+  mov(x2, GetReg<RA_64>(Op->Header.Args[1].ID()));
 
-  using ClassPtrType = FEXCore::CPUID::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t);
+  using ClassPtrType = FEXCore::CPUID::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t, uint32_t);
   union PtrCast {
     ClassPtrType ClassPtr;
     uintptr_t Data;

@@ -1097,8 +1097,9 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
             auto Op = IROp->C<IR::IROp_CPUID>();
             uint64_t *DstPtr = GetDest<uint64_t*>(SSAData, WrapperOp);
             uint64_t Arg = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
+            uint64_t Leaf = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
 
-            auto Results = Thread->CTX->CPUID.RunFunction(Arg);
+            auto Results = Thread->CTX->CPUID.RunFunction(Arg, Leaf);
             memcpy(DstPtr, &Results, sizeof(uint32_t) * 4);
             break;
           }
