@@ -218,7 +218,8 @@ namespace FEXCore::Context {
   void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-  void DeleteForkedThreads(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  void DestroyThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation);
   void SetSyscallHandler(FEXCore::Context::Context *CTX, FEXCore::HLE::SyscallHandler *Handler);
   FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf);

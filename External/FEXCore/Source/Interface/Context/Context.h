@@ -197,6 +197,9 @@ namespace FEXCore::Context {
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
+    void DestroyThread(FEXCore::Core::InternalThreadState *Thread);
+    void CleanupAfterFork(FEXCore::Core::InternalThreadState *ExceptForThread);
+
     std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
 
     void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);

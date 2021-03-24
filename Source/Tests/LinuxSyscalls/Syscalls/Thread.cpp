@@ -89,7 +89,7 @@ namespace FEX::HLE {
       Thread->ThreadManager.clear_child_tid = nullptr;
 
       // Clear all the other threads that are being tracked
-      FEXCore::Context::DeleteForkedThreads(Thread->CTX, Frame->Thread);
+      FEXCore::Context::CleanupAfterFork(Thread->CTX, Frame->Thread);
 
       // only a  single thread running so no need to remove anything from the thread array
 

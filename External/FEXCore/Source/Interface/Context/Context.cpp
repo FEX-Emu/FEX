@@ -23,6 +23,9 @@ namespace FEXCore::Context {
   }
 
   void DestroyContext(FEXCore::Context::Context *CTX) {
+    if (CTX->ParentThread) {
+      CTX->DestroyThread(CTX->ParentThread);
+    }
     delete CTX;
   }
 
@@ -119,20 +122,12 @@ namespace FEXCore::Context {
     CTX->StopThread(Thread);
   }
 
-  void DeleteForkedThreads(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    // This function is called after fork
-    // We need to cleanup some of the thread data that is dead
-    for (auto &DeadThread : CTX->Threads) {
-      if (DeadThread == Thread) {
-        continue;
-      }
+  void DestroyThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    CTX->DestroyThread(Thread);
+  }
 
-      // Setting running to false ensures that when they are shutdown we won't send signals to kill them
-      DeadThread->RunningEvents.Running = false;
-    }
-
-    // We now only have one thread
-    CTX->IdleWaitRefCount = 1;
+  void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    CTX->CleanupAfterFork(Thread);
   }
 
   void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation) {

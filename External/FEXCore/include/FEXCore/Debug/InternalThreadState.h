@@ -102,8 +102,9 @@ namespace FEXCore::Core {
     uint32_t CompileBlockReentrantRefCount{};
     std::shared_ptr<FEXCore::CompileService> CompileService;
     bool IsCompileService{false};
+    bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
 
-    FEXCore::Core::CpuStateFrame BaseFrameState{};
+    alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
 
   };
   static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
