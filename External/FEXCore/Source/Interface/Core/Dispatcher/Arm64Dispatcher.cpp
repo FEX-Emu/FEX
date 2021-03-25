@@ -1,6 +1,8 @@
 #include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/ArchHelpers/StateReg.h"
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
+#include "Interface/Core/Dispatcher/Dispatcher_asm.h"
+
 
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/Context/Context.h"
@@ -44,6 +46,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   Literal l_CompileBlock {GetCompileBlockPtr()};
   Literal l_ExitFunctionLink {config.ExitFunctionLink};
   Literal l_ExitFunctionLinkThis {config.ExitFunctionLinkThis};
+  Literal l_DispatcherExitReturn {reinterpret_cast<uint64_t>(DispatcherExitReturn)};
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -52,6 +55,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   // Move our thread pointer to the correct register
   // This is passed in to parameter 0 (x0)
   mov(STATE, x0);
+
+  // Create a fake stackframe with our dispatcher exit
+  // This is mostly so dwarf unwinding can find it
+  ldr(x30, &l_DispatcherExitReturn);
+  stp(x29, x30, MemOperand(sp, -16, PreIndex));
 
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
@@ -184,9 +192,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
     PopCalleeSavedRegisters();
 
+    ldp(x29, x30, MemOperand(sp, 16, PostIndex));
+
     // Return from the function
     // LR is set to the correct return location now
-    ret();
+    br(x30);
   }
 
   {
@@ -308,9 +318,10 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   place(&l_CompileBlock);
   place(&l_ExitFunctionLink);
   place(&l_ExitFunctionLinkThis);
-
+  place(&l_DispatcherExitReturn);
 
   FinalizeCode();
+
   Start = reinterpret_cast<uint64_t>(DispatchPtr);
   End = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
   vixl::aarch64::CPU::EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));

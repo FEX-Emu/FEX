@@ -135,6 +135,7 @@ if (_M_X86_64)
 endif()
 if(_M_ARM_64)
   list(APPEND SRCS
+    Interface/Core/Dispatcher/Arm64Dispatcher.S
     Interface/Core/ArchHelpers/Arm64.cpp)
 endif()
 

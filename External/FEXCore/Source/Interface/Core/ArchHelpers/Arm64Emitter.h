@@ -56,7 +56,9 @@ protected:
   CodeBuffer *CurrentCodeBuffer{};
 
   void SetCodeBuffer(CodeBuffer &Buffer) {
-    *GetBuffer() = vixl::CodeBuffer(Buffer.Ptr, Buffer.Size);
+    vixl::CodeBuffer* CurrentVixlBuffer = GetBuffer();
+    vixl::CodeBuffer NewVixelBuffer(Buffer.Ptr, Buffer.Size);
+    *CurrentVixlBuffer = std::move(NewVixelBuffer);
     CurrentCodeBuffer = &Buffer;
   }
 
@@ -80,7 +82,7 @@ protected:
   uint32_t SpillSlots{};
 
 private:
-  CodeBuffer InternalCodeBuffer;
+  CodeBuffer InternalCodeBuffer{};
 };
 
 }

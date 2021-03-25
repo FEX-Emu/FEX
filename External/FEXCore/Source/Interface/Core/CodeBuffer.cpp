@@ -19,7 +19,9 @@ CodeBuffer::CodeBuffer(size_t Size_) : Size(Size_) {
 }
 
 CodeBuffer::~CodeBuffer() {
-  munmap(Ptr, Size);
+  if (Ptr) {
+    munmap(Ptr, Size);
+  }
 }
 
 }
