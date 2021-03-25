@@ -190,8 +190,6 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
     ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
-    PopCalleeSavedRegisters();
-
     ldp(x29, x30, MemOperand(sp, 16, PostIndex));
 
     // Return from the function
