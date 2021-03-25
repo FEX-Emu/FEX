@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(host-thunks)
 
 set(CMAKE_CXX_STANDARD 17)
+set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data directory")
 
 function(generate NAME)
   foreach(WHAT IN LISTS ARGN)
@@ -26,9 +27,15 @@ function(generate NAME)
   set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
+add_custom_target(ThunkHostsInstall)
 function(add_host_lib NAME)
-    add_library(${NAME}-host SHARED ../lib${NAME}/lib${NAME}_Host.cpp ${GEN_lib${NAME}})
-    target_include_directories(${NAME}-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  add_library(${NAME}-host SHARED ../lib${NAME}/lib${NAME}_Host.cpp ${GEN_lib${NAME}})
+  target_include_directories(${NAME}-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+
+  add_custom_target(${NAME}-host-install
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DATA_DIRECTORY}/HostThunks/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${NAME}-host.so ${DATA_DIRECTORY}/HostThunks/)
+  add_dependencies(ThunkHostsInstall ${NAME}-host-install)
 endfunction()
 
 generate(libasound function_unpacks tab_function_unpacks ldr ldr_ptrs)

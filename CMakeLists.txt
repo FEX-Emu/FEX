@@ -259,16 +259,35 @@ if (BUILD_THUNKS)
     PREFIX host-libs
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/HostLibs"
     BINARY_DIR "Host"
+    CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
+  )
+
+  install(
+    CODE "MESSAGE(\"-- Installing: host-libs\")"
+    CODE "
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target ThunkHostsInstall
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Host
+    )"
+    DEPENDS host-libs
   )
 
   ExternalProject_Add(guest-libs
     PREFIX guest-libs
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
     BINARY_DIR "Guest"
-    CMAKE_ARGS "-DX86_C_COMPILER:STRING=${X86_C_COMPILER}" "-DX86_CXX_COMPILER:STRING=${X86_CXX_COMPILER}"
+    CMAKE_ARGS "-DX86_C_COMPILER:STRING=${X86_C_COMPILER}" "-DX86_CXX_COMPILER:STRING=${X86_CXX_COMPILER}" "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
+  )
+
+  install(
+    CODE "MESSAGE(\"-- Installing: guest-libs\")"
+    CODE "
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target ThunkGuestsInstall
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
+    )"
+    DEPENDS guest-libs
   )
 endif()

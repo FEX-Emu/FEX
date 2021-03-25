@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 # These get passed in from the main cmake project
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
+set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
 set(CMAKE_C_COMPILER "${X86_C_COMPILER}")
 set(CMAKE_CXX_COMPILER "${X86_CXX_COMPILER}")
@@ -33,9 +34,16 @@ function(generate NAME)
   set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
+add_custom_target(ThunkGuestsInstall)
+
 function(add_guest_lib NAME)
-    add_library(${NAME}-guest SHARED ../lib${NAME}/lib${NAME}_Guest.cpp ${GEN_lib${NAME}})
-    target_include_directories(${NAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  add_library(${NAME}-guest SHARED ../lib${NAME}/lib${NAME}_Guest.cpp ${GEN_lib${NAME}})
+  target_include_directories(${NAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+
+  add_custom_target(${NAME}-guest-install
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DATA_DIRECTORY}/GuestThunks/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${NAME}-guest.so ${DATA_DIRECTORY}/GuestThunks/)
+  add_dependencies(ThunkGuestsInstall ${NAME}-guest-install)
 endfunction()
 
 generate(libasound thunks function_packs function_packs_public)
