@@ -1,4 +1,6 @@
+#include "Interface/Core/ArchHelpers/StateReg.h"
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
+#include "Interface/Core/Dispatcher/Dispatcher_asm.h"
 
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/Context/Context.h"
@@ -6,13 +8,14 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <cmath>
 
+
 namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
-#define STATE r14
+static Xbyak::Reg64 STATE(STATE_x86);
 
 X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
   : Dispatcher(ctx, Thread)
-  , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE) {
+  , X86Emitter(MAX_DISPATCHER_CODE_SIZE) {
 
   using namespace Xbyak;
   using namespace Xbyak::util;
@@ -60,9 +63,16 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
   mov(STATE, rdi);
 
+  // Create a fake stack frame so we can exit by returning
+  mov(rax, reinterpret_cast<uint64_t>(DispatcherExitReturn));
+  push(rax);
+
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
   mov(qword [rdi + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)], rsp);
+
+  // Fixup alignment again
+  sub(rsp, 8);
 
   Label LoopTop;
   Label FullLookup;
@@ -122,7 +132,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     je(NoBlock);
 
     // Update L1
-    if (config.ExecuteBlocksWithCall) {
+    if (!config.ExecuteBlocksWithCall) {
       mov(r13, Thread->LookupCache->GetL1Pointer());
       mov(rcx, rdx);
       and_(rcx, LookupCache::L1_ENTRIES_MASK);
@@ -160,15 +170,6 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   {
     L(ExitBlock);
     ThreadStopHandlerAddress = getCurr<uint64_t>();
-
-    add(rsp, 8);
-
-    pop(r15);
-    pop(r14);
-    pop(r13);
-    pop(r12);
-    pop(rbp);
-    pop(rbx);
 
     ret();
   }
@@ -260,14 +261,6 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     // Back to the loop top now
     jmp(LoopTop);
   }
-
-  {
-    // Signal return handler
-    SignalHandlerReturnAddress = getCurr<uint64_t>();
-
-    ud2();
-  }
-
 
   {
     ReturnPtr = getCurr<FEXCore::Context::Context::IntCallbackReturn>();

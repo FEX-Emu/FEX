@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Interface/Core/ArchHelpers/StateReg.h"
+#include "Interface/Core/ArchHelpers/X86Emitter.h"
+#include "Interface/Core/CodeBuffer.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -19,19 +22,8 @@ using namespace Xbyak;
 
 #include <tuple>
 
-namespace FEXCore::CPU {
-struct CodeBuffer {
-  uint8_t *Ptr;
-  size_t Size;
-};
-
-CodeBuffer AllocateNewCodeBuffer(size_t Size);
-void FreeCodeBuffer(CodeBuffer Buffer);
-
-}
 
 namespace FEXCore::CPU {
-
 
 // Temp registers
 // rax, rcx, rdx, rsi, r8, r9,
@@ -43,7 +35,6 @@ namespace FEXCore::CPU {
 // 1St Argument: rdi <ThreadState>
 // XMM:
 // All temp
-#define STATE r14
 #define TMP1 rax
 #define TMP2 rcx
 #define TMP3 rdx
@@ -55,9 +46,9 @@ const std::array<std::pair<Xbyak::Reg, Xbyak::Reg>, 4> RA64Pair = {{ {rsi, r8}, 
 const std::array<Xbyak::Reg, 11> RAXMM = { xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10, xmm11};
 const std::array<Xbyak::Xmm, 11> RAXMM_x = {  xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9, xmm10, xmm11};
 
-class X86JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
+class X86JITCore final : public CPUBackend, public X86Emitter {
 public:
-  explicit X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
+  explicit X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
   ~X86JITCore() override;
   std::string GetName() override { return "JIT"; }
   void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
@@ -71,6 +62,8 @@ public:
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
+
+  static constexpr Xbyak::Reg64 STATE = Xbyak::Reg64(STATE_x86);
 
 private:
   Label* PendingTargetLabel{};
@@ -133,27 +126,18 @@ private:
   bool GetSamplingData {true};
 #endif
 
-  void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
-    CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
-  }
-
   static uint64_t ExitFunctionLink(X86JITCore* code, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
 
   // This is the initial code buffer that we will fall back to
   // In a program without signals and code clearing, we will typically
   // only have this code buffer
-  CodeBuffer InitialCodeBuffer{};
+  CodeBuffer InitialCodeBuffer = CodeBuffer(INITIAL_CODE_SIZE);
   // This is the array of /additional/ code buffers that we may need to allocate
   // Allocation only occurs when we've hit signals and need to clear code cache
   // For code safety we can't delete code buffers until outside of all signals
   std::vector<CodeBuffer> CodeBuffers{};
 
-  // This is the current code buffer that we are tracking
-  CodeBuffer *CurrentCodeBuffer{};
-
   struct CompilerSharedData {
-    uint64_t SignalHandlerReturnAddress{};
-
     uint32_t *SignalHandlerRefCounterPtr{};
   };
 

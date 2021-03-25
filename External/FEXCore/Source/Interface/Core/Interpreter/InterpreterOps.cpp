@@ -10,6 +10,7 @@
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
+#include "Interface/Core/ArchHelpers/Dwarf.h"
 #include <FEXCore/Utils/LogManager.h>
 
 #include <FEXCore/Core/CPUBackend.h>
@@ -1060,6 +1061,9 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
             switch (Op->Reason) {
               case 4: // HLT
                 StopThread(Thread);
+              break;
+              case 6: // INT3
+                Backtrace();
               break;
             default: LogMan::Msg::A("Unknown Break Reason: %d", Op->Reason); break;
             }

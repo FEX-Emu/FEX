@@ -22,13 +22,13 @@ DEF_OP(GuestReturn) {
 }
 
 DEF_OP(SignalReturn) {
-  // First we must reset the stack
-  ResetStack();
+  // Load saved stack for this call frame
+  ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)));
+  add(sp, TMP1, 0);
 
-  // Now branch to our signal return helper
-  // This can't be a direct branch since the code needs to live at a constant location
-  LoadConstant(x0, ThreadSharedData.SignalReturnInstruction);
-  br(x0);
+  // Jump to cleanup code
+  LoadConstant(TMP1, Dispatcher->ThreadStopHandlerAddressSpillSRA);
+  br(TMP1);
 }
 
 DEF_OP(CallbackReturn) {

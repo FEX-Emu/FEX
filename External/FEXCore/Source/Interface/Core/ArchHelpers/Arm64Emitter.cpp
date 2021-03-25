@@ -1,4 +1,5 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "Interface/Core/ArchHelpers/StateReg.h"
 
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Core/CoreState.h>
@@ -6,10 +7,17 @@
 #include "aarch64/cpu-aarch64.h"
 
 namespace FEXCore::CPU {
-#define STATE x28
+static const vixl::aarch64::XRegister STATE(STATE_arm64);
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
-Arm64Emitter::Arm64Emitter(size_t size) : vixl::aarch64::Assembler(size, vixl::aarch64::PositionDependentCode) {
+Arm64Emitter::Arm64Emitter(size_t size) : vixl::aarch64::Assembler(0, vixl::aarch64::PositionDependentCode) {
+  if (size) {
+    auto NewCodeBuffer = CodeBuffer(size);
+    std::swap(InternalCodeBuffer, NewCodeBuffer);
+    //InternalCodeBuffer = std::move(CodeBuffer(size));
+    SetCodeBuffer(InternalCodeBuffer);
+  }
+
   CPU.SetUp();
 
   auto Features = vixl::CPUFeatures::InferFromOS();
