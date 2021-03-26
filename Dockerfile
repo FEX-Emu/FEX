@@ -5,7 +5,7 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt install -y cmake \
 clang-10 llvm-10 nasm ninja-build libnuma-dev \
 libcap-dev libglfw3-dev libepoxy-dev python3-dev \
-python3 linux-headers-5.8.0-23-generic
+python3 linux-headers-generic
 
 COPY . /opt/FEX
 
