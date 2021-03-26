@@ -4,7 +4,8 @@ FROM ubuntu:20.04 as builder
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt install -y cmake \
 clang-10 llvm-10 nasm ninja-build libnuma-dev \
-libcap-dev libglfw3-dev libepoxy-dev
+libcap-dev libglfw3-dev libepoxy-dev python3-dev \
+python3 linux-headers-generic
 
 COPY . /opt/FEX
 
