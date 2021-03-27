@@ -16,7 +16,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
     "${TEST_NAME}"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-c" "irint" "-n" "500" "-R" $ENV{ROOTFS} "--"
+    "--no-silent" "-c" "irint" "-n" "500" "-R" $ENV{ROOTFS} "--"
     "${POSIX_TEST}")
 
   add_test(NAME "${TEST_NAME}.jit.posix"
@@ -26,7 +26,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
     "${TEST_NAME}"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-c" "irjit" "-n" "500" "-R" $ENV{ROOTFS} "--"
+    "--no-silent" "-c" "irjit" "-n" "500" "-R" $ENV{ROOTFS} "--"
     "${POSIX_TEST}")
 
 endforeach()

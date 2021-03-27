@@ -174,6 +174,11 @@ namespace FEX::ArgLoader {
           .help("Disable logging")
           .action("store_true");
 
+      LoggingGroup.add_option("--no-silent")
+          .dest("SilentLog")
+          .help("Enables logging")
+          .action("store_false");
+
       LoggingGroup.add_option("-o", "--output-log")
           .dest("OutputLog")
           .help("File to write FEX output to [stdout, stderr, <Filename>]")
