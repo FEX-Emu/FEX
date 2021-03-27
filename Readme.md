@@ -16,6 +16,7 @@ On AArch64 hosts the user **MUST** have an x86-64 RootFS [Creating a RootFS](#Ro
 * clang (version 10 minimum for C++20)
 * libnuma-dev
 * libglfw3-dev (For GUI)
+* libsdl2-dev (For GUI)
 * libepoxy-dev (For GUI)
 * g++-x86-64-linux-gnu (For building thunks)
 * nasm (only if building tests)
