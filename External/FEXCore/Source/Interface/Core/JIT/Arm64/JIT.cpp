@@ -391,10 +391,9 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
 }
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
-  : CTX {ctx}
-  , ThreadState {Thread}
-  , Arm64Emitter(0) {
-
+  : Arm64Emitter(0)
+  , CTX {ctx}
+  , ThreadState {Thread} {
   {
     DispatcherConfig config;
     config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
@@ -552,6 +551,7 @@ auto Reg = GetPhys(RAData, Node);
   } else {
     LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
+  __builtin_unreachable();
 }
 
 template<>
@@ -564,6 +564,7 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(uint32_t Node) {
   } else {
     LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
+  __builtin_unreachable();
 }
 
 template<>
@@ -587,6 +588,7 @@ aarch64::VRegister Arm64JITCore::GetSrc(uint32_t Node) {
   } else {
     LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
+  __builtin_unreachable();
 }
 
 aarch64::VRegister Arm64JITCore::GetDst(uint32_t Node) {
@@ -598,6 +600,7 @@ aarch64::VRegister Arm64JITCore::GetDst(uint32_t Node) {
   } else {
     LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
   }
+  __builtin_unreachable();
 }
 
 bool Arm64JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {

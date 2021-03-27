@@ -398,7 +398,6 @@ DEF_OP(Xor) {
 
 DEF_OP(Lshl) {
   auto Op = IROp->C<IR::IROp_Lshl>();
-  uint8_t OpSize = IROp->Size;
   uint64_t Const;
   if (IsInlineConstant(Op->Header.Args[1], &Const)) {
     lsl(GRS(Node), GRS(Op->Header.Args[0].ID()), (unsigned int)Const);
@@ -409,7 +408,6 @@ DEF_OP(Lshl) {
 
 DEF_OP(Lshr) {
   auto Op = IROp->C<IR::IROp_Lshr>();
-  uint8_t OpSize = IROp->Size;
   uint64_t Const;
   if (IsInlineConstant(Op->Header.Args[1], &Const)) {
     lsr(GRS(Node), GRS(Op->Header.Args[0].ID()), (unsigned int)Const);

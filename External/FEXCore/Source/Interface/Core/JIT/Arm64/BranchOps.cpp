@@ -298,7 +298,6 @@ DEF_OP(ValidateCode) {
 }
 
 DEF_OP(RemoveCodeEntry) {
-  auto Op = IROp->C<IR::IROp_RemoveCodeEntry>();
   // Arguments are passed as follows:
   // X0: Thread
   // X1: RIP

@@ -52,7 +52,6 @@ DEF_OP(Break) {
 }
 
 DEF_OP(GetRoundingMode) {
-  auto Op = IROp->C<IR::IROp_GetRoundingMode>();
   auto Dst = GetReg<RA_64>(Node);
   mrs(Dst, FPCR);
   lsr(Dst, Dst,  22);
