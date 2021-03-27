@@ -95,7 +95,6 @@ DEF_OP(StoreContext) {
 
 DEF_OP(LoadRegister) {
   auto Op = IROp->C<IR::IROp_LoadRegister>();
-  uint8_t OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
     auto regId = (Op->Offset - offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0])) / 8;
@@ -181,8 +180,6 @@ DEF_OP(LoadRegister) {
 
 DEF_OP(StoreRegister) {
   auto Op = IROp->C<IR::IROp_StoreRegister>();
-  uint8_t OpSize = IROp->Size;
-
 
   if (Op->Class == IR::GPRClass) {
     auto regId = Op->Offset / 8 - 1;
@@ -551,6 +548,7 @@ MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Registe
       }
     }
   }
+  __builtin_unreachable();
 }
 
 DEF_OP(LoadMem) {
