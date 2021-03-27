@@ -22,8 +22,8 @@ foreach(IR_SRC ${IR_SOURCES})
 
   # Since we pass in raw IR, we don't need to worry about various IR gen options
   set(TEST_ARGS
-    "-c irint -n 500" "ir_int" "int"
-    "-c irjit -n 500" "ir_jit" "jit"
+    "--no-silent -c irint -n 500" "ir_int" "int"
+    "--no-silent -c irjit -n 500" "ir_jit" "jit"
     )
 
   set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests")
