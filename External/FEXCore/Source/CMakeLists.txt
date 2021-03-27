@@ -218,7 +218,7 @@ add_custom_target(IR_INC
 check_cxx_compiler_flag(-fdiagnostics-color=always GCC_COLOR)
 check_cxx_compiler_flag(-fcolor-diagnostics CLANG_COLOR)
 
-function(AddLibrary Name Type)
+function(AddObject Name Type)
   add_library(${Name} ${Type} ${SRCS})
   add_dependencies(${Name} IR_INC)
   target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl)
@@ -250,6 +250,17 @@ function(AddLibrary Name Type)
   endif()
 endfunction()
 
+function(AddLibrary Name Type)
+  add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
+  target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl)
+  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
+
+  target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+  target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
+  target_include_directories(${Name} PUBLIC "${CMAKE_BINARY_DIR}/include/")
+endfunction()
+
+AddObject(${PROJECT_NAME}_object OBJECT)
 AddLibrary(${PROJECT_NAME} STATIC)
 AddLibrary(${PROJECT_NAME}_shared SHARED)
 
