@@ -67,11 +67,11 @@ for path in Paths:
                     print("Error")
                     sys.exit(-1)
 
-print("# " + Root.name)
+print("## " + Root.name)
 print("")
 
 if (GlossaryLabels):
-    print ("## Glossary")
+    print ("### Glossary")
     print("")
     for item in GlossaryLabels.items():
         print("- " + item[0] + ": " + item[1])
@@ -88,12 +88,12 @@ for item in sorted(Meta.items()):
             print("")
             print("")
         Category = category
-        print("## " + Category)
+        print("### " + Category)
         if Category in CategoryLabels:
             print(CategoryLabels[Category])
         print("")
 
-    print("### " + topic)
+    print("#### " + topic)
     if meta in MetaLabels:
             print(MetaLabels[meta])
 
