@@ -46,6 +46,6 @@ void InitializeSecondaryModRMTables() {
     {((3 << 3) | 7), 1, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE, 0, nullptr}},
   };
 
-  GenerateTable(SecondModRMTableOps, SecondaryModRMExtensionOpTable, sizeof(SecondaryModRMExtensionOpTable) / sizeof(SecondaryModRMExtensionOpTable[0]));
+  GenerateTable(SecondModRMTableOps, SecondaryModRMExtensionOpTable, std::size(SecondaryModRMExtensionOpTable));
 }
 }

@@ -48,10 +48,10 @@ void InitializeH0F3ATables(Context::OperatingMode Mode) {
 
 #undef OPD
 
-  GenerateTable(H0F3ATableOps, H0F3ATable, sizeof(H0F3ATable) / sizeof(H0F3ATable[0]));
+  GenerateTable(H0F3ATableOps, H0F3ATable, std::size(H0F3ATable));
 
   if (Mode == Context::MODE_64BIT) {
-    GenerateTable(H0F3ATableOps, H0F3ATable_64, sizeof(H0F3ATable_64) / sizeof(H0F3ATable_64[0]));
+    GenerateTable(H0F3ATableOps, H0F3ATable_64, std::size(H0F3ATable_64));
   }
 }
 }

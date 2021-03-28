@@ -39,7 +39,7 @@ int main(int argc, char **argv, char **const envp) {
     BinShPath.c_str(),
     "-c",
   };
-  constexpr size_t FEXArgsCount = sizeof(FEXArgs) / sizeof(FEXArgs[0]);
+  constexpr size_t FEXArgsCount = std::size(FEXArgs);
 
   Argv.resize(Args.size() + FEXArgsCount + 1);
 
