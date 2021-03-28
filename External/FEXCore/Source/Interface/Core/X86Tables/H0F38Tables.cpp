@@ -92,6 +92,6 @@ void InitializeH0F38Tables() {
   };
 #undef OPD
 
-  GenerateTable(H0F38TableOps, H0F38Table, sizeof(H0F38Table) / sizeof(H0F38Table[0]));
+  GenerateTable(H0F38TableOps, H0F38Table, std::size(H0F38Table));
 }
 }

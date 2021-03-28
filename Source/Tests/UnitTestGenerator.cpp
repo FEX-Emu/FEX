@@ -193,7 +193,7 @@ void GeneratePrimaryTable() {
 
   bool AddressSizePrefix = false;
   auto DoNormalOps = [&](const char *NameSuffix, auto Inserter, std::optional<std::function<void()>> ModRMInserter, uint8_t REX = 0) {
-    for (size_t OpIndex = 0; OpIndex < (sizeof(BaseOps) / sizeof(BaseOps[0])); ++OpIndex) {
+    for (size_t OpIndex = 0; OpIndex < std::size(BaseOps); ++OpIndex) {
       auto &Op = BaseOps[OpIndex];
       if (Op.Type == TYPE_INST) {
         if (Op.Flags & InstFlags::FLAGS_SETS_RIP ||
@@ -764,7 +764,7 @@ void GeneratePrimaryGroupTable() {
   CurrentPrefix = "PrimaryGroup";
 
   auto DoNormalOps = [&](const char *NameSuffix, auto SkipCheck, auto Inserter, auto &Table, std::optional<std::function<void(uint8_t)>> ModRMInserter, uint8_t REX = 0) {
-    for (size_t OpIndex = 0; OpIndex < (sizeof(Table) / sizeof(Table[0])); ++OpIndex) {
+    for (size_t OpIndex = 0; OpIndex < std::size(Table); ++OpIndex) {
       auto &Op = Table[OpIndex];
       if (Op.Type == TYPE_INST) {
         if (Op.Flags & InstFlags::FLAGS_SETS_RIP ||
@@ -1147,7 +1147,7 @@ void GenerateSecondaryTable() {
   CurrentPrefix = "Secondary";
 
   auto DoNormalOps = [&](const char *NameSuffix, auto SkipCheck, auto Inserter, std::optional<std::function<void()>> ModRMInserter, uint8_t REX = 0) {
-    for (size_t OpIndex = 0; OpIndex < (sizeof(SecondBaseOps) / sizeof(SecondBaseOps[0])); ++OpIndex) {
+    for (size_t OpIndex = 0; OpIndex < std::size(SecondBaseOps); ++OpIndex) {
       auto &Op = SecondBaseOps[OpIndex];
       if (Op.Type == TYPE_INST) {
         if (Op.Flags & InstFlags::FLAGS_SETS_RIP ||
@@ -1542,7 +1542,7 @@ void GenerateSecondaryGroupTable() {
   CurrentPrefix = "SecondaryGroup";
 
   auto DoNormalOps = [&](const char *NameSuffix, auto SkipCheck, auto Inserter, std::optional<std::function<void(uint8_t)>> ModRMInserter, uint8_t REX = 0) {
-    for (size_t OpIndex = 0; OpIndex < (sizeof(SecondInstGroupOps) / sizeof(SecondInstGroupOps[0])); ++OpIndex) {
+    for (size_t OpIndex = 0; OpIndex < std::size(SecondInstGroupOps); ++OpIndex) {
       auto &Op = SecondInstGroupOps[OpIndex];
       if (Op.Type == TYPE_INST) {
         if (Op.Flags & InstFlags::FLAGS_SETS_RIP ||
@@ -1937,7 +1937,7 @@ void GenerateSSEInstructions() {
   bool AddressSizePrefix = false;
 
   auto DoNormalOps = [&](const char *NameSuffix, auto SkipCheck, auto Inserter, auto &Table, std::optional<std::function<void()>> ModRMInserter, uint8_t REX = 0) {
-    for (size_t OpIndex = 0; OpIndex < (sizeof(Table) / sizeof(Table[0])); ++OpIndex) {
+    for (size_t OpIndex = 0; OpIndex < std::size(Table); ++OpIndex) {
       auto &Op = Table[OpIndex];
       if (Op.Type == TYPE_INST) {
         if (Op.Flags & InstFlags::FLAGS_SETS_RIP ||
@@ -2419,7 +2419,7 @@ int main(int argc, char **argv, char **const envp) {
       FILE *fp = fopen(Filename.c_str(), "wbe");
 
       fprintf(fp, "HEX, Name, Num Times compiled\n");
-      for (size_t OpIndex = 0; OpIndex < (sizeof(Table) / sizeof(Table[0])); ++OpIndex) {
+      for (size_t OpIndex = 0; OpIndex < std::size(Table); ++OpIndex) {
         auto &Op = Table[OpIndex];
         if (Op.Type == TYPE_INST) {
           fprintf(fp, "0x%zx, %s, %d\n", OpIndex, Op.Name, Op.NumUnitTestsGenerated);

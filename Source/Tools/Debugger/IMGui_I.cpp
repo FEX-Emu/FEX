@@ -770,7 +770,7 @@ namespace History {
       HistoryFile.close();
 
       json_t elem[32];
-      json_t const* json = json_create(&Data.at(0), elem, sizeof(elem) / sizeof(json_t));
+      json_t const* json = json_create(&Data.at(0), elem, std::size(elem));
 
       json_t const* HistoryList = json_getProperty(json, "History");
       for (json_t const* HistoryItem = json_getChild(HistoryList);

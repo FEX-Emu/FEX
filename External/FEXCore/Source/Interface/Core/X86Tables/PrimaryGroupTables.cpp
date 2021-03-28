@@ -152,12 +152,12 @@ void InitializePrimaryGroupTables(Context::OperatingMode Mode) {
 
 #undef OPD
 
-  GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable, sizeof(PrimaryGroupOpTable) / sizeof(PrimaryGroupOpTable[0]));
+  GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable, std::size(PrimaryGroupOpTable));
   if (Mode == Context::MODE_64BIT) {
-    GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable_64, sizeof(PrimaryGroupOpTable_64) / sizeof(PrimaryGroupOpTable_64[0]));
+    GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable_64, std::size(PrimaryGroupOpTable_64));
   }
   else {
-    GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable_32, sizeof(PrimaryGroupOpTable_32) / sizeof(PrimaryGroupOpTable_32[0]));
+    GenerateTable(PrimaryInstGroupOps, PrimaryGroupOpTable_32, std::size(PrimaryGroupOpTable_32));
   }
 
 }
