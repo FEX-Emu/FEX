@@ -1,4 +1,7 @@
 #!/bin/env bash
+echo \# `git describe --always`
+echo
+
 ./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/External/FEXCore" "../"
 ./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/ThunkLibs" "../"
 ./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/Scripts" "../"
