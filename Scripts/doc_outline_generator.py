@@ -42,19 +42,19 @@ for path in Paths:
         x = re.findall("\$info\$([^\$]*)\$end_info\$", txt)
         if x:
             for entry in x[0].strip().split("\n"):
-                name = entry.split(":")[0].strip();
-                val = entry.split(":")[1].strip();
+                name = entry.split(":", 1)[0].strip();
+                val = entry.split(":", 1)[1].strip();
                 if name == "category":
-                    cat_name = val.split("~")[0].strip();
-                    cat_val = val.split("~")[1].strip();
+                    cat_name = val.split("~", 1)[0].strip();
+                    cat_val = val.split("~", 1)[1].strip();
                     CategoryLabels[cat_name] = cat_val
                 elif name == "meta":
-                    meta_name = val.split("~")[0].strip();
-                    meta_val = val.split("~")[1].strip();
+                    meta_name = val.split("~", 1)[0].strip();
+                    meta_val = val.split("~", 1)[1].strip();
                     MetaLabels[meta_name] = meta_val
                 elif name == "glossary":
-                    glossary_name = val.split("~")[0].strip();
-                    glossary_val = val.split("~")[1].strip();
+                    glossary_name = val.split("~", 1)[0].strip();
+                    glossary_val = val.split("~", 1)[1].strip();
                     GlossaryLabels[glossary_name] = glossary_val
                 elif name == "tags":
                     for meta_name in val.split(","):
@@ -67,7 +67,19 @@ for path in Paths:
                     print("Error")
                     sys.exit(-1)
 
-print("## " + Root.name)
+
+Readme = None
+if (Root / "README.md").is_file():
+    Readme = Root / "README.md"
+
+if (Root / "Readme.md").is_file():
+    Readme = Root / "Readme.md"
+
+print("## " + Root.relative_to(Base).as_posix())
+
+if Readme:
+    print("See [" + Root.name + "/" + Readme.name + "](" + Prefix + Readme.relative_to(Base).as_posix() + ") for more details")
+
 print("")
 
 if (GlossaryLabels):
