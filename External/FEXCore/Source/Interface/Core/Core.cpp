@@ -249,10 +249,11 @@ namespace FEXCore::Context {
       Input.close();
 
       size_t const EntryCount = Size / sizeof(uint64_t);
-      uint64_t *Entries = reinterpret_cast<uint64_t*>(&Data.at(0));
 
       for (size_t i = 0; i < EntryCount; ++i) {
-        EntryList.insert(Entries[i]);
+        uint64_t Entry = 0;
+        std::memcpy(&Entry, &Data[i * sizeof(Entry)], sizeof(Entry));
+        EntryList.insert(Entry);
       }
     }
   }
