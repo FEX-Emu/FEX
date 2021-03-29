@@ -1,3 +1,5 @@
+set (MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man CACHE PATH "MAN_DIR")
+
 set (SRCS
   Common/Paths.cpp
   Common/JitSymbols.cpp
@@ -213,6 +215,44 @@ add_custom_target(IR_INC
   DEPENDS "${OUTPUT_NAME}"
   DEPENDS "${OUTPUT_IR_DOC}")
 
+# Generate the configuration include file
+set(OUTPUT_CONFIG_FOLDER "${CMAKE_BINARY_DIR}/include/FEXCore/Config")
+set(OUTPUT_CONFIG_NAME "${OUTPUT_CONFIG_FOLDER}/ConfigValues.inl")
+set(OUTPUT_CONFIG_OPTION_NAME "${OUTPUT_CONFIG_FOLDER}/ConfigOptions.inl")
+set(INPUT_CONFIG_NAME "${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json")
+set(OUTPUT_MAN_NAME "${CMAKE_BINARY_DIR}/generated/FEX.1")
+
+add_custom_target(CREATE_CONFIG_FOLDER ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTPUT_CONFIG_FOLDER}")
+
+add_custom_command(
+  OUTPUT "${OUTPUT_CONFIG_NAME}"
+  OUTPUT "${OUTPUT_CONFIG_OPTION_NAME}"
+  OUTPUT "${OUTPUT_MAN_NAME}"
+  DEPENDS "${INPUT_CONFIG_NAME}"
+  DEPENDS CREATE_CONFIG_FOLDER
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py"
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py" "${INPUT_CONFIG_NAME}" "${OUTPUT_CONFIG_NAME}" "${OUTPUT_MAN_NAME}"
+  "${OUTPUT_CONFIG_OPTION_NAME}"
+  )
+
+set_source_files_properties(${OUTPUT_CONFIG_NAME} PROPERTIES
+  GENERATED TRUE)
+set_source_files_properties(${OUTPUT_CONFIG_OPTION_NAME} PROPERTIES
+  GENERATED TRUE)
+
+set_source_files_properties(${OUTPUT_MAN_NAME} PROPERTIES
+  GENERATED TRUE)
+
+# Create the target
+add_custom_target(CONFIG_INC
+  DEPENDS "${OUTPUT_CONFIG_NAME}"
+  DEPENDS "${OUTPUT_CONFIG_OPTION_NAME}"
+  DEPENDS "${OUTPUT_MAN_NAME}")
+
+# Install the man page
+install(FILES ${OUTPUT_MAN_NAME} DESTINATION ${MAN_DIR}/man1)
+
 # Add in diagnostic colours if the option is available.
 # Ninja code generator will kill colours if this isn't here
 check_cxx_compiler_flag(-fdiagnostics-color=always GCC_COLOR)
@@ -221,6 +261,8 @@ check_cxx_compiler_flag(-fcolor-diagnostics CLANG_COLOR)
 function(AddObject Name Type)
   add_library(${Name} ${Type} ${SRCS})
   add_dependencies(${Name} IR_INC)
+  add_dependencies(${Name} CONFIG_INC)
+
   target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
