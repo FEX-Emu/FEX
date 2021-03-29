@@ -56,11 +56,11 @@ namespace {
     ConfigOpen = true;
     ConfigFilename = {};
     LoadedConfig = std::make_unique<FEX::Config::EmptyMapper>();
-#define OPT_BASE(type, group, enum, json, env, default) \
+#define OPT_BASE(type, group, enum, json, default) \
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default));
-#define OPT_STR(group, enum, json, env, default) \
+#define OPT_STR(group, enum, json, default) \
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);
-#define OPT_STRARRAY(group, enum, json, env, default)  // Do nothing
+#define OPT_STRARRAY(group, enum, json, default)  // Do nothing
 #include <FEXCore/Config/ConfigValues.inl>
   }
 
@@ -92,25 +92,25 @@ namespace {
 
     if (ImGui::BeginTabItem("CPU")) {
       ImGui::Text("Core:");
-      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE);
+      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CORE);
 
       ImGui::SameLine();
       if (ImGui::RadioButton("Int", Value.has_value() && **Value == "0")) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE, "0");
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_CORE, "0");
         ConfigChanged = true;
       }
       ImGui::SameLine();
       if (ImGui::RadioButton("JIT", Value.has_value() && **Value == "1")) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_DEFAULTCORE, "1");
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_CORE, "1");
         ConfigChanged = true;
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_MAXINST);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(BlockSize, &(*Value)->at(0), 32);
       }
       if (ImGui::InputText("Block Size:", BlockSize, 32, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST, BlockSize);
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_MAXINST, BlockSize);
         ConfigChanged = true;
       }
 
@@ -121,12 +121,12 @@ namespace {
         ConfigChanged = true;
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THREADS);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(EmulatedCPUCores, &(*Value)->at(0), 32);
       }
       if (ImGui::InputText("Emulated CPU cores:", EmulatedCPUCores, 32, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_EMULATED_CPU_CORES, EmulatedCPUCores);
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THREADS, EmulatedCPUCores);
         ConfigChanged = true;
       }
 
@@ -136,7 +136,7 @@ namespace {
 
   bool EnvironmentVariableFiller(void *data, int idx, const char** out_text) {
     static char TmpString[256];
-    auto Value = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT);
+    auto Value = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENV);
     if (Value.has_value()) {
       auto List = (*Value);
       auto it = List->begin();
@@ -156,7 +156,7 @@ namespace {
   }
 
   void DeleteEnvironmentVariable(int idx) {
-    auto Value = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT);
+    auto Value = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENV);
     auto List = (*Value);
     auto it = List->begin();
 
@@ -174,7 +174,7 @@ namespace {
 
     if (ImGui::BeginPopup(EnvironmentPopupName)) {
       if (ImGui::InputText("New Environment", Environment, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT, Environment);
+        LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_ENV, Environment);
         ImGui::CloseCurrentPopup();
         ConfigChanged = true;
       }
@@ -192,44 +192,44 @@ namespace {
     int NumEnvironmentVariables{};
 
     if (ImGui::BeginTabItem("Emulation")) {
-      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH);
+      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ROOTFS);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(RootFS, &(*Value)->at(0), 256);
       }
       if (ImGui::InputText("RootFS:", RootFS, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ROOTFSPATH, RootFS);
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ROOTFS, RootFS);
         ConfigChanged = true;
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBSPATH);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBS);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(ThunkHostPath, &(*Value)->at(0), 256);
       }
       if (ImGui::InputText("Thunk Host library folder:", ThunkHostPath, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBSPATH, ThunkHostPath);
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKHOSTLIBS, ThunkHostPath);
         ConfigChanged = true;
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBSPATH);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBS);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(ThunkGuestPath, &(*Value)->at(0), 256);
       }
       if (ImGui::InputText("Thunk Guest library folder:", ThunkGuestPath, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBSPATH, ThunkGuestPath);
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKGUESTLIBS, ThunkGuestPath);
         ConfigChanged = true;
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIGPATH);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIG);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(ThunkConfigPath, &(*Value)->at(0), 256);
       }
       if (ImGui::InputText("Thunk Config file:", ThunkConfigPath, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIGPATH, ThunkConfigPath);
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THUNKCONFIG, ThunkConfigPath);
         ConfigChanged = true;
       }
 
 
-      auto ValueList = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT);
+      auto ValueList = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENV);
       if (ValueList.has_value()) {
         NumEnvironmentVariables = (*ValueList)->size();
       }
@@ -254,10 +254,10 @@ namespace {
       }
 
       ImGui::Text("Debugging:");
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_O0);
       bool DisablePasses = Value.has_value() && **Value == "1";
       if (ImGui::Checkbox("Disable Optimization Passes", &DisablePasses)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_DEBUG_DISABLE_OPTIMIZATION_PASSES, DisablePasses ? "1" : "0");
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_O0, DisablePasses ? "1" : "0");
         ConfigChanged = true;
       }
 
@@ -270,10 +270,10 @@ namespace {
     char IRDump[256]{};
 
     if (ImGui::BeginTabItem("Logging")) {
-      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS);
+      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_SILENTLOG);
       bool SilentLog = Value.has_value() && **Value == "1";
       if (ImGui::Checkbox("Silent Logging", &SilentLog)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_SILENTLOGS, SilentLog ? "1" : "0");
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_SILENTLOG, SilentLog ? "1" : "0");
         ConfigChanged = true;
       }
 
@@ -301,17 +301,17 @@ namespace {
 
   void FillHackConfig() {
     if (ImGui::BeginTabItem("Hacks")) {
-      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED);
+      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED);
       bool TSOEnabled = Value.has_value() && **Value == "1";
       if (ImGui::Checkbox("TSO Enabled", &TSOEnabled)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSO_ENABLED, TSOEnabled ? "1" : "0");
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, TSOEnabled ? "1" : "0");
         ConfigChanged = true;
       }
 
       ImGui::Text("SMC Checks: ");
       int SMCChecks = FEXCore::Config::CONFIG_SMC_MMAN;
-      
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS);
+
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_SMCCHECKS);
       if (Value.has_value()) {
         if (**Value == "0") {
           SMCChecks = FEXCore::Config::CONFIG_SMC_NONE;
@@ -328,20 +328,20 @@ namespace {
       SMCChanged |= ImGui::RadioButton("Full", &SMCChecks, FEXCore::Config::CONFIG_SMC_FULL);
 
       if (SMCChanged) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_SMC_CHECKS, std::to_string(SMCChecks));
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_SMCCHECKS, std::to_string(SMCChecks));
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ABILOCALFLAGS);
       bool UnsafeLocalFlags = Value.has_value() && **Value == "1";
       if (ImGui::Checkbox("Unsafe local flags optimization", &UnsafeLocalFlags)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ABI_LOCAL_FLAGS, UnsafeLocalFlags ? "1" : "0");
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ABILOCALFLAGS, UnsafeLocalFlags ? "1" : "0");
         ConfigChanged = true;
       }
 
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ABINOPF);
       bool NoPFCalculation = Value.has_value() && **Value == "1";
       if (ImGui::Checkbox("Disable PF calculation", &NoPFCalculation)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ABI_NO_PF, NoPFCalculation ? "1" : "0");
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ABINOPF, NoPFCalculation ? "1" : "0");
         ConfigChanged = true;
       }
 

@@ -55,9 +55,9 @@ private:
   std::map<std::string, std::string> ThunkOverlays;
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
-  FEX_CONFIG_OPT(LDPath, ROOTFSPATH);
-  FEX_CONFIG_OPT(ThunkHostLibs, THUNKHOSTLIBSPATH);
-  FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBSPATH);
-  FEX_CONFIG_OPT(ThunkConfig, THUNKCONFIGPATH);
+  FEX_CONFIG_OPT(LDPath, ROOTFS);
+  FEX_CONFIG_OPT(ThunkHostLibs, THUNKHOSTLIBS);
+  FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
+  FEX_CONFIG_OPT(ThunkConfig, THUNKCONFIG);
 };
 }

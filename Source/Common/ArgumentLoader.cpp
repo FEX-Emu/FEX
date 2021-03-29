@@ -17,12 +17,6 @@ namespace FEX::Handler {
     return "1";
   }
 
-  std::string SingleStepHandler(std::string &Value) {
-    // Single stepping also enforces single instruction size blocks
-    Set(FEXCore::Config::ConfigOption::CONFIG_MAXBLOCKINST, std::to_string(1u));
-    return Value;
-  }
-
   std::string SMCCheckHandler(std::string &Value) {
     if (Value == "none")
       return "0";

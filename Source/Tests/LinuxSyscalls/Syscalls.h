@@ -99,8 +99,8 @@ public:
   FEX_CONFIG_OPT(IsInterpreter, IS_INTERPRETER);
   FEX_CONFIG_OPT(IsInterpreterInstalled, INTERPRETER_INSTALLED);
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
-  FEX_CONFIG_OPT(RootFSPath, ROOTFSPATH);
-  FEX_CONFIG_OPT(ThreadsConfig, EMULATED_CPU_CORES);
+  FEX_CONFIG_OPT(RootFSPath, ROOTFS);
+  FEX_CONFIG_OPT(ThreadsConfig, THREADS);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
   uint32_t GetHostKernelVersion() const { return HostKernelVersion; }

@@ -4,28 +4,28 @@ import sys
 
 def print_header():
     header = '''#ifndef OPT_BASE
-#define OPT_BASE(type, group, enum, json, env, default)
+#define OPT_BASE(type, group, enum, json, default)
 #endif
 #ifndef OPT_BOOL
-#define OPT_BOOL(group, enum, json, env, default) OPT_BASE(bool, group, enum, json, env, default)
+#define OPT_BOOL(group, enum, json, default) OPT_BASE(bool, group, enum, json, default)
 #endif
 #ifndef OPT_UINT8
-#define OPT_UINT8(group, enum, json, env, default) OPT_BASE(uint8_t, group, enum, json, env, default)
+#define OPT_UINT8(group, enum, json, default) OPT_BASE(uint8_t, group, enum, json, default)
 #endif
 #ifndef OPT_INT32
-#define OPT_INT32(group, enum, json, env, default) OPT_BASE(int32_t, group, enum, json, env, default)
+#define OPT_INT32(group, enum, json, default) OPT_BASE(int32_t, group, enum, json, default)
 #endif
 #ifndef OPT_UINT32
-#define OPT_UINT32(group, enum, json, env, default) OPT_BASE(uint32_t, group, enum, json, env, default)
+#define OPT_UINT32(group, enum, json, default) OPT_BASE(uint32_t, group, enum, json, default)
 #endif
 #ifndef OPT_UINT64
-#define OPT_UINT64(group, enum, json, env, default) OPT_BASE(uint64_t, group, enum, json, env, default)
+#define OPT_UINT64(group, enum, json, default) OPT_BASE(uint64_t, group, enum, json, default)
 #endif
 #ifndef OPT_STR
-#define OPT_STR(group, enum, json, env, default) OPT_BASE(std::string, group, enum, json, env, default)
+#define OPT_STR(group, enum, json, default) OPT_BASE(std::string, group, enum, json, default)
 #endif
 #ifndef OPT_STRARRAY
-#define OPT_STRARRAY(group, enum, json, env, default) OPT_BASE(std::string, group, enum, json, env, default)
+#define OPT_STRARRAY(group, enum, json, default) OPT_BASE(std::string, group, enum, json, default)
 #endif
 
 '''
@@ -43,8 +43,8 @@ def print_tail():
 '''
     output_file.write(tail)
 
-def print_config(type, group_name, enum_name, json_name, env_name, default_value):
-    output_file.write("OPT_{0} ({1}, {2}, {3}, {4}, {5})\n".format(type.upper(), group_name.upper(), enum_name.upper(), json_name, env_name.upper(), default_value))
+def print_config(type, group_name, json_name, default_value):
+    output_file.write("OPT_{0} ({1}, {2}, {3}, {4})\n".format(type.upper(), group_name.upper(), json_name.upper(), json_name, default_value))
 
 def print_options(options):
     for op_group, group_vals in options.items():
@@ -57,9 +57,7 @@ def print_options(options):
             print_config(
                 op_vals["Type"],
                 op_group,
-                op_vals["Enum"],
                 op_key,
-                op_vals["Env"],
                 default)
 
         output_file.write("\n")
@@ -76,25 +74,18 @@ def print_unnamed_options(options):
             print_config(
                 op_vals["Type"],
                 op_group,
-                op_key, # KEY is the enum here, there is no json configuration for these
-                "INVALID",
-                "INVALID",
+                op_key.upper(), # KEY is the enum here, there is no json configuration for these
                 default)
 
         output_file.write("\n")
 
 def print_man_option(short, long, desc, default):
     if (short != None):
-        output_man.write(".It Fl {0}".format(short))
-
-    if (short != None and long != None):
-        output_man.write(" , ")
-
-    if (short == None and long != None):
+        output_man.write(".It Fl {0} , ".format(short))
+    else:
         output_man.write(".It ")
 
-    if (long != None):
-        output_man.write("Fl Fl {0}=".format(long))
+    output_man.write("Fl Fl {0}=".format(long))
 
     output_man.write("\n");
 
@@ -125,15 +116,10 @@ def print_man_options(options):
     for op_group, group_vals in options.items():
         for op_key, op_vals in group_vals.items():
             short = None
-            long = None
+            long = op_key.lower()
 
             if ("ShortArg" in op_vals):
                 short = op_vals["ShortArg"]
-            if ("LongArg" in op_vals):
-                long = op_vals["LongArg"]
-
-            if (short == None and long == None):
-                continue
 
             default = op_vals["Default"]
 
@@ -168,7 +154,7 @@ def print_man_environment(options):
                 # Wrap the string argument in quotes
                 default = "'" + default + "'"
             print_man_env_option(
-                op_vals["Env"],
+                op_key.upper(),
                 op_vals["Desc"],
                 default
             )
@@ -219,7 +205,7 @@ host-side thunks for guest communication
 '''
     output_man.write(tail)
 
-def print_config_option(type, group_name, enum_name, json_name, env_name, default_value, short, long, choices, desc):
+def print_config_option(type, group_name, json_name, default_value, short, choices, desc):
     if (type == "bool"):
         # Bool gets some special handling to add an inverted case
         output_argloader.write("{0}Group".format(group_name))
@@ -230,10 +216,9 @@ def print_config_option(type, group_name, enum_name, json_name, env_name, defaul
             AddedArg = True
             options += "\"-{0}\"".format(short)
 
-        if (long != None):
-            if (AddedArg):
-                options += ", "
-            options += "\"--{0}\"".format(long)
+        if (AddedArg):
+            options += ", "
+        options += "\"--{0}\"".format(json_name.lower())
 
         output_argloader.write(".add_option({0})".format(options))
 
@@ -258,18 +243,16 @@ def print_config_option(type, group_name, enum_name, json_name, env_name, defaul
 
         output_argloader.write("\t.set_default({0});\n\n".format(default_value));
 
-        if (long != None):
-            # Inverted case only exists if we have a long name
-            output_argloader.write("{0}Group".format(group_name))
-            output_argloader.write(".add_option(\"--no-{0}\")\n".format(long))
+        output_argloader.write("{0}Group".format(group_name))
+        output_argloader.write(".add_option(\"--no-{0}\")\n".format(json_name.lower()))
 
-            # Inverted case
-            if (default_value == "true"):
-                output_argloader.write("\t.action(\"store_true\")\n")
-            else:
-                output_argloader.write("\t.action(\"store_false\")\n")
+        # Inverted case
+        if (default_value == "true"):
+            output_argloader.write("\t.action(\"store_true\")\n")
+        else:
+            output_argloader.write("\t.action(\"store_false\")\n")
 
-            output_argloader.write("\t.dest(\"{0}\");\n".format(json_name));
+        output_argloader.write("\t.dest(\"{0}\");\n".format(json_name));
     else:
         output_argloader.write("{0}Group".format(group_name))
         options = ""
@@ -278,10 +261,9 @@ def print_config_option(type, group_name, enum_name, json_name, env_name, defaul
             AddedArg = True
             options += "\"-{0}\"".format(short)
 
-        if (long != None):
-            if (AddedArg):
-                options += ", "
-            options += "\"--{0}\"".format(long)
+        if (AddedArg):
+            options += ", "
+        options += "\"--{0}\"".format(json_name.lower())
 
         output_argloader.write(".add_option({0})".format(options))
 
@@ -326,28 +308,19 @@ def print_argloader_options(options):
                 default = "\"" + op_vals["TextDefault"] + "\""
 
             short = None
-            long = None
             choices = None
 
             if ("ShortArg" in op_vals):
                 short = op_vals["ShortArg"]
-            if ("LongArg" in op_vals):
-                long = op_vals["LongArg"]
-
             if ("Choices" in op_vals):
                 choices = op_vals["Choices"]
-
-            if (short == None and long == None):
-                continue
 
             print_config_option(
                 op_vals["Type"],
                 op_group,
-                op_vals["Enum"],
                 op_key,
-                op_vals["Env"],
                 default,
-                short, long,
+                short,
                 choices,
                 op_vals["Desc"])
 
@@ -376,7 +349,7 @@ def print_parse_argloader_options(options):
                 # these need a bit more help
                 output_argloader.write("\tauto Array = Options.all(\"{0}\");\n".format(op_key))
                 output_argloader.write("\tfor (auto iter = Array.begin(); iter != Array.end(); ++iter) {\n")
-                output_argloader.write("\t\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, *iter);\n".format(op_vals["Enum"]))
+                output_argloader.write("\t\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, *iter);\n".format(op_key.upper()))
                 output_argloader.write("\t}\n")
             else:
                 if (NeedsString):
@@ -384,7 +357,7 @@ def print_parse_argloader_options(options):
                 else:
                     output_argloader.write("\t{0} UserValue = Options.get(\"{1}\");\n".format(value_type, op_key))
 
-                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, {1}(UserValue));\n".format(op_vals["Enum"], conversion_func))
+                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, {1}(UserValue));\n".format(op_key.upper(), conversion_func))
             output_argloader.write("}\n")
 
     output_argloader.write("#endif\n")

@@ -193,12 +193,12 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, IsInterpreterInstalled() ? "1" : "0");
 
-  FEX_CONFIG_OPT(SilentLog, SILENTLOGS);
-  FEX_CONFIG_OPT(AOTIRCapture, AOTIR_GENERATE);
-  FEX_CONFIG_OPT(AOTIRLoad, AOTIR_LOAD);
+  FEX_CONFIG_OPT(SilentLog, SILENTLOG);
+  FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
+  FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
-  FEX_CONFIG_OPT(LDPath, ROOTFSPATH);
-  FEX_CONFIG_OPT(Environment, ENVIRONMENT);
+  FEX_CONFIG_OPT(LDPath, ROOTFS);
+  FEX_CONFIG_OPT(Environment, ENV);
   ::SilentLog = SilentLog();
 
   if (!::SilentLog) {

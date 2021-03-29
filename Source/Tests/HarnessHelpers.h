@@ -289,7 +289,7 @@ namespace FEX::HarnessHelper {
     bool Is64BitMode() const { return BaseConfig.OptionMode == 1; }
 
   private:
-    FEX_CONFIG_OPT(ConfigDumpGPRs, DUMP_GPRS);
+    FEX_CONFIG_OPT(ConfigDumpGPRs, DUMPGPRS);
 
     struct ConfigStructBase {
       uint64_t OptionMatch;

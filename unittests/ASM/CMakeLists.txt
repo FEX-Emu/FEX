@@ -79,7 +79,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     string(REPLACE " " ";" ARGS_LIST ${ARGS})
 
     if (TEST_NAME MATCHES "SelfModifyingCode")
-      list(APPEND ARGS_LIST "--smc-checks=full")
+      list(APPEND ARGS_LIST "--smcchecks=full")
     endif()
 
     add_test(NAME ${TEST_NAME}

@@ -788,8 +788,8 @@ namespace History {
 namespace Config {
   bool ShowConfig = true;
   struct Configs {
-    FEX_CONFIG_OPT(ConfigMaxInst, MAXBLOCKINST);
-    FEX_CONFIG_OPT(ConfigCore, DEFAULTCORE);
+    FEX_CONFIG_OPT(ConfigMaxInst, MAXINST);
+    FEX_CONFIG_OPT(ConfigCore, CORE);
     FEX_CONFIG_OPT(ConfigRunningMode, SINGLESTEP);
     FEX_CONFIG_OPT(ConfigMultiblock, MULTIBLOCK);
   };

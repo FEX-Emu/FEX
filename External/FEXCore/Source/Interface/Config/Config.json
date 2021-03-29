@@ -3,12 +3,9 @@
     "CPU": {
       "Core": {
         "Type": "uint32",
-        "Enum": "DEFAULTCORE",
-        "Env" : "CORE",
         "Default": "FEXCore::Config::ConfigCore::CONFIG_IRJIT",
         "TextDefault": "irjit",
         "ShortArg": "c",
-        "LongArg": "core",
         "Choices": [ "irint", "irjit", "host" ],
         "ArgumentHandler": "CoreHandler",
         "Desc": [
@@ -19,33 +16,24 @@
       },
       "Multiblock": {
         "Type": "bool",
-        "Enum": "MULTIBLOCK",
-        "Env" : "MULTIBLOCK",
         "Default": "true",
         "ShortArg": "m",
-        "LongArg": "multiblock",
         "Desc": [
           "Controls multiblock code compilation"
         ]
       },
       "MaxInst": {
         "Type": "int32",
-        "Enum": "MAXBLOCKINST",
-        "Env" : "MAXINST",
         "Default": "5000",
         "ShortArg": "n",
-        "LongArg": "max-inst",
         "Desc": [
           "Maximum number of instruction to store in a block"
         ]
       },
       "Threads": {
         "Type": "uint32",
-        "Enum": "EMULATED_CPU_CORES",
-        "Env" : "THREADS",
         "Default": "1",
         "ShortArg": "T",
-        "LongArg": "threads",
         "Desc": [
           "Number of physical hardware threads to tell the process we have.",
           "0 will auto detect."
@@ -55,55 +43,40 @@
     "Emulation": {
       "RootFS": {
         "Type": "str",
-        "Enum": "ROOTFSPATH",
-        "Env" : "ROOTFSPATH",
         "Default": "",
         "ShortArg": "R",
-        "LongArg": "rootfs",
         "Desc": [
           "Which Root filesystem prefix to use"
         ]
       },
       "ThunkHostLibs": {
         "Type": "str",
-        "Enum": "THUNKHOSTLIBSPATH",
-        "Env" : "THUNKHOSTLIBS",
         "Default": "",
         "ShortArg": "t",
-        "LongArg": "thunkhostlibs",
         "Desc": [
           "Folder to find the host-side thunking libraries."
         ]
       },
       "ThunkGuestLibs": {
         "Type": "str",
-        "Enum": "THUNKGUESTLIBSPATH",
-        "Env" : "THUNKGUESTLIBS",
         "Default": "",
         "ShortArg": "t",
-        "LongArg": "thunkguestlibs",
         "Desc": [
           "Folder to find the guest-side thunking libraries."
         ]
       },
       "ThunkConfig": {
         "Type": "str",
-        "Enum": "THUNKCONFIGPATH",
-        "Env" : "THUNKCONFIG",
         "Default": "",
         "ShortArg": "k",
-        "LongArg": "thunkconfig",
         "Desc": [
           "A json file specifying where to overlay the thunks."
         ]
       },
       "Env": {
         "Type": "strarray",
-        "Enum": "ENVIRONMENT",
-        "Env" : "ENV",
         "Default": "",
         "ShortArg": "E",
-        "LongArg": "env",
         "Desc": [
           "Adds an environment variable to the emulated environment."
         ]
@@ -112,33 +85,23 @@
     "Debug": {
       "SingleStep": {
         "Type": "bool",
-        "Enum": "SINGLESTEP",
-        "Env" : "SINGLESTEP",
         "Default": "false",
         "ShortArg": "S",
-        "LongArg": "single-step",
-        "ArgumentHandler": "SingleStepHandler",
         "Desc": [
           "Single stepping configuration."
         ]
       },
       "GdbServer": {
         "Type": "bool",
-        "Enum": "GDBSERVER",
-        "Env" : "GDBSERVER",
         "Default": "false",
         "ShortArg": "G",
-        "LongArg": "gdb",
         "Desc": [
           "Enables the GDB server."
         ]
       },
       "DumpIR": {
         "Type": "str",
-        "Enum": "DUMPIR",
-        "Env" : "DUMPIR",
         "Default": "no",
-        "LongArg": "dump-ir",
         "Desc": [
           "Folder to dump the IR in to.",
           "[no, stdout, stderr, <Folder>]"
@@ -146,19 +109,14 @@
       },
       "DumpGPRs": {
         "Type": "bool",
-        "Enum": "DUMP_GPRS",
-        "Env" : "DUMP_GPRS",
         "Default": "false",
         "ShortArg": "g",
-        "LongArg": "dump-gprs",
         "Desc": [
           "When the test harness ends, print the GPR state."
         ]
       },
       "O0": {
         "Type": "bool",
-        "Enum": "DEBUG_DISABLE_OPTIMIZATION_PASSES",
-        "Env" : "O0",
         "Default": "false",
         "ShortArg": "O0",
         "Desc": [
@@ -169,22 +127,16 @@
     "Logging": {
       "SilentLog": {
         "Type": "bool",
-        "Enum": "SILENTLOGS",
-        "Env" : "SILENTLOGS",
         "Default": "true",
         "ShortArg": "s",
-        "LongArg": "silent",
         "Desc": [
           "Disables logging"
         ]
       },
       "OutputLog": {
         "Type": "str",
-        "Enum": "OUTPUTLOG",
-        "Env" : "OUTPUTLOG",
         "Default": "stdout",
         "ShortArg": "o",
-        "LongArg": "output-log",
         "Desc": [
           "File to write FEX output to.",
           "[stdout, stderr, <Filename>]"
@@ -194,11 +146,8 @@
     "Hacks": {
       "SMCChecks": {
         "Type": "uint8",
-        "Enum": "SMC_CHECKS",
-        "Env" : "SMC_CHECKS",
         "Default": "FEXCore::Config::CONFIG_SMC_MMAN",
         "TextDefault": "mman",
-        "LongArg": "smc-checks",
         "ArgumentHandler": "SMCCheckHandler",
         "Desc": [
           "Checks code for modification before execution.",
@@ -209,10 +158,7 @@
       },
       "TSOEnabled": {
         "Type": "bool",
-        "Enum": "TSO_ENABLED",
-        "Env" : "TSO_ENABLED",
         "Default": "true",
-        "LongArg": "unsafe-no-tso",
         "Desc": [
           "Controls TSO IR ops.",
           "Highly likely to break any multithreaded application if disabled."
@@ -220,10 +166,7 @@
       },
       "ABILocalFlags": {
         "Type": "bool",
-        "Enum": "ABI_LOCAL_FLAGS",
-        "Env" : "ABILOCALFLAGS",
         "Default": "false",
-        "LongArg": "unsafe-local-flags",
         "Desc": [
           "When enabled enables an optimization around flags.",
           "Assumes flags are not used across cals.",
@@ -232,10 +175,7 @@
       },
       "ABINoPF": {
         "Type": "bool",
-        "Enum": "ABI_NO_PF",
-        "Env" : "ABINOPF",
         "Default": "false",
-        "LongArg": "unsafe-no-pf",
         "Desc": [
           "When enabled enables an optimization around parity flag calculation.",
           "Removes the calculation of the parity flag from GPR instructions.",
@@ -246,10 +186,7 @@
     "Misc": {
       "AOTIRCapture": {
         "Type": "bool",
-        "Enum": "AOTIR_GENERATE",
-        "Env" : "AOT_GENERATE",
         "Default": "false",
-        "LongArg": "aotir-capture",
         "Desc": [
           "Captures IR and generates an AOT IR cache.",
           "Captures both the loaded executable and libraries it loads."
@@ -257,10 +194,7 @@
       },
       "AOTIRLoad": {
         "Type": "bool",
-        "Enum": "AOTIR_LOAD",
-        "Env" : "AOT_LOAD",
         "Default": "false",
-        "LongArg": "aotir-load",
         "Desc": [
           "Loads an AOT IR cache for the loaded executable."
         ]
@@ -288,3 +222,4 @@
     }
   }
 }
+

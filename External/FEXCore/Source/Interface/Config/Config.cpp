@@ -108,7 +108,7 @@ namespace FEXCore::Config {
   void MetaLayer::MergeConfigMap(const LayerOptions &Options) {
     // Insert this layer's options, overlaying previous options that exist here
     for (auto &it : Options) {
-      if (it.first == FEXCore::Config::ConfigOption::CONFIG_ENVIRONMENT) {
+      if (it.first == FEXCore::Config::ConfigOption::CONFIG_ENV) {
         MergeEnvironmentVariables(it.first, it.second);
       }
       else {
@@ -163,11 +163,11 @@ namespace FEXCore::Config {
     Meta->Load();
 
     // Do configuration option fix ups after everything is reloaded
-    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_EMULATED_CPU_CORES)) {
-      FEX_CONFIG_OPT(Cores, EMULATED_CPU_CORES);
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THREADS)) {
+      FEX_CONFIG_OPT(Cores, THREADS);
       if (Cores == 0) {
         // When the number of emulated CPU cores is zero then auto detect
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_EMULATED_CPU_CORES, std::to_string(get_nprocs_conf()));
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THREADS, std::to_string(get_nprocs_conf()));
       }
     }
 
@@ -178,27 +178,32 @@ namespace FEXCore::Config {
       }
     };
 
-    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFSPATH)) {
-      FEX_CONFIG_OPT(PathName, ROOTFSPATH);
-      ExpandPathIfExists(FEXCore::Config::CONFIG_ROOTFSPATH, PathName());
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFS)) {
+      FEX_CONFIG_OPT(PathName, ROOTFS);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_ROOTFS, PathName());
     }
-    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKHOSTLIBSPATH)) {
-      FEX_CONFIG_OPT(PathName, THUNKHOSTLIBSPATH);
-      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKHOSTLIBSPATH, PathName());
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKHOSTLIBS)) {
+      FEX_CONFIG_OPT(PathName, THUNKHOSTLIBS);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKHOSTLIBS, PathName());
     }
-    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKGUESTLIBSPATH)) {
-      FEX_CONFIG_OPT(PathName, THUNKGUESTLIBSPATH);
-      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKGUESTLIBSPATH, PathName());
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKGUESTLIBS)) {
+      FEX_CONFIG_OPT(PathName, THUNKGUESTLIBS);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKGUESTLIBS, PathName());
     }
-    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKCONFIGPATH)) {
-      FEX_CONFIG_OPT(PathName, THUNKCONFIGPATH);
-      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKCONFIGPATH, PathName());
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKCONFIG)) {
+      FEX_CONFIG_OPT(PathName, THUNKCONFIG);
+      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKCONFIG, PathName());
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_OUTPUTLOG)) {
       FEX_CONFIG_OPT(PathName, OUTPUTLOG);
       if (PathName() != "stdout" && PathName() != "stderr") {
         ExpandPathIfExists(FEXCore::Config::CONFIG_OUTPUTLOG, PathName());
       }
+    }
+
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_SINGLESTEP)) {
+      // Single stepping also enforces single instruction size blocks
+      Set(FEXCore::Config::ConfigOption::CONFIG_MAXINST, std::to_string(1u));
     }
   }
 
