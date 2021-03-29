@@ -187,23 +187,21 @@ namespace FEXCore::Context {
     }
   }
 
-  bool Context::GetFilenameHash(std::string const &Filename, std::string &Hash) {
+  std::optional<std::string> Context::GetFilenameHash(std::string const &Filename) const {
     // Calculate a hash for the input file
-    std::ifstream Input (Filename.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
-    if (Input.is_open()) {
-      std::streampos Size;
-      Size = Input.tellg();
-      Input.seekg(0, std::ios::beg);
-      std::string Data;
-      Data.resize(Size);
-      Input.read(&Data.at(0), Size);
-      Input.close();
-
-      std::hash<std::string> string_hash;
-      Hash = std::to_string(string_hash(Data));
-      return true;
+    std::ifstream Input(Filename, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!Input) {
+      return std::nullopt;
     }
-    return false;
+
+    const auto Size = static_cast<size_t>(Input.tellg());
+    Input.seekg(0, std::ios::beg);
+    std::string Data(Size, '\0');
+    Input.read(Data.data(), Size);
+    Input.close();
+
+    std::hash<std::string> string_hash;
+    return std::to_string(string_hash(Data));
   }
 
   void Context::AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread) {
@@ -214,45 +212,47 @@ namespace FEXCore::Context {
 
   void Context::SaveEntryList() {
     std::string const &Filename = AppFilename();
-    std::string hash_string;
 
-    if (GetFilenameHash(Filename, hash_string)) {
+    if (auto const hash = GetFilenameHash(Filename)) {
       auto DataPath = FEXCore::Paths::GetEntryCachePath();
-      DataPath += "Entries_" + hash_string;
+      DataPath += "Entries_" + *hash;
 
-      std::ofstream Output (DataPath.c_str(), std::ios::out | std::ios::binary);
-      if (Output.is_open()) {
-        for (auto Entry : EntryList) {
-          Output.write(reinterpret_cast<char const*>(&Entry), sizeof(Entry));
-        }
-        Output.close();
+      std::ofstream Output(DataPath, std::ios::out | std::ios::binary);
+      if (!Output) {
+        return;
+      }
+
+      for (auto Entry : EntryList) {
+        Output.write(reinterpret_cast<char const*>(&Entry), sizeof(Entry));
       }
     }
   }
 
   void Context::LoadEntryList() {
     std::string const &Filename = AppFilename();
-    std::string hash_string;
 
-    if (GetFilenameHash(Filename, hash_string)) {
+    if (auto const hash = GetFilenameHash(Filename)) {
       auto DataPath = FEXCore::Paths::GetEntryCachePath();
-      DataPath += "Entries_" + hash_string;
+      DataPath += "Entries_" + *hash;
 
-      std::ifstream Input (DataPath.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
-      if (Input.is_open()) {
-        std::streampos Size;
-        Size = Input.tellg();
-        Input.seekg(0, std::ios::beg);
-        std::string Data;
-        Data.resize(Size);
-        Input.read(&Data.at(0), Size);
-        Input.close();
-        size_t EntryCount = Size / sizeof(uint64_t);
-        uint64_t *Entries = reinterpret_cast<uint64_t*>(&Data.at(0));
+      std::ifstream Input(DataPath, std::ios::in | std::ios::binary | std::ios::ate);
+      if (!Input) {
+        return;
+      }
 
-        for (size_t i = 0; i < EntryCount; ++i) {
-          EntryList.insert(Entries[i]);
-        }
+      auto const Size = static_cast<size_t>(Input.tellg());
+      Input.seekg(0, std::ios::beg);
+      std::string Data(Size, '\0');
+      if (!Input.read(Data.data(), Size)) {
+        return;
+      }
+      Input.close();
+
+      size_t const EntryCount = Size / sizeof(uint64_t);
+      uint64_t *Entries = reinterpret_cast<uint64_t*>(&Data.at(0));
+
+      for (size_t i = 0; i < EntryCount; ++i) {
+        EntryList.insert(Entries[i]);
       }
     }
   }
