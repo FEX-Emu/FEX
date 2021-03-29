@@ -12,14 +12,15 @@
 #include <FEXCore/Utils/Event.h>
 #include <stdint.h>
 
-#include <memory>
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <mutex>
-#include <istream>
-#include <ostream>
 #include <functional>
+#include <istream>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <ostream>
+#include <set>
+#include <unordered_map>
 
 namespace FEXCore {
 class ThunkHandler;
@@ -223,7 +224,7 @@ namespace FEXCore::Context {
     FEXCore::CodeLoader *LocalLoader{};
 
     // Entry Cache
-    bool GetFilenameHash(std::string const &Filename, std::string &Hash);
+    std::optional<std::string> GetFilenameHash(std::string const &Filename) const;
     void AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread);
     void SaveEntryList();
     std::set<uint64_t> EntryList;
