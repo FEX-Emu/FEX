@@ -25,7 +25,7 @@ int main(int argc, char **argv, char **const envp) {
     return 0;
   }
 
-  FEX_CONFIG_OPT(RootFSPath, ROOTFSPATH);
+  FEX_CONFIG_OPT(RootFSPath, ROOTFS);
   std::vector<const char*> Argv;
   std::string BinShPath = RootFSPath() + "/bin/sh";
   std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "FEXInterpreter";

@@ -33,7 +33,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(mmap, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
-      static FEX_CONFIG_OPT(AOTIRLoad, AOTIR_LOAD);
+      static FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
       uint64_t Result = reinterpret_cast<uint64_t>(::mmap(addr, length, prot, flags, fd, offset));
 
       auto Thread = Frame->Thread;

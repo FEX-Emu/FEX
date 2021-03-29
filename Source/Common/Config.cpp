@@ -171,16 +171,16 @@ namespace FEX::Config {
   }
 
   static const std::map<FEXCore::Config::ConfigOption, std::string> ConfigToNameLookup = {{
-#define OPT_BASE(type, group, enum, json, env, default) {FEXCore::Config::ConfigOption::CONFIG_##enum, #json},
+#define OPT_BASE(type, group, enum, json, default) {FEXCore::Config::ConfigOption::CONFIG_##enum, #json},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
 
   static const std::map<std::string, FEXCore::Config::ConfigOption> ConfigLookup = {{
-#define OPT_BASE(type, group, enum, json, env, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
+#define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
   static const std::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
-#define OPT_BASE(type, group, enum, json, env, default) {"FEX_" #env, FEXCore::Config::ConfigOption::CONFIG_##enum},
+#define OPT_BASE(type, group, enum, json, default) {"FEX_" #enum, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
 

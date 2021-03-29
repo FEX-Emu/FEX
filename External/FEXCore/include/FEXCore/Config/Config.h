@@ -10,7 +10,7 @@
 
 namespace FEXCore::Config {
   enum ConfigOption {
-#define OPT_BASE(type, group, enum, json, env, default) CONFIG_##enum,
+#define OPT_BASE(type, group, enum, json, default) CONFIG_##enum,
 #include <FEXCore/Config/ConfigValues.inl>
   };
 
@@ -37,15 +37,15 @@ namespace FEXCore::Config {
 
 namespace DefaultValues {
 #define P(x) x
-#define OPT_BASE(type, group, enum, json, env, default) constexpr P(type) P(enum) = P(default);
-#define OPT_STR(group, enum, json, env, default) const std::string P(enum) = P(default);
-#define OPT_STRARRAY(group, enum, json, env, default) OPT_STR(group, enum, json, env, default)
+#define OPT_BASE(type, group, enum, json, default) constexpr P(type) P(enum) = P(default);
+#define OPT_STR(group, enum, json, default) const std::string P(enum) = P(default);
+#define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
 #include <FEXCore/Config/ConfigValues.inl>
 
 namespace Type {
-#define OPT_BASE(type, group, enum, json, env, default) using P(enum) = P(type);
-#define OPT_STR(group, enum, json, env, default) using P(enum) = std::string;
-#define OPT_STRARRAY(group, enum, json, env, default) OPT_STR(group, enum, json, env, default)
+#define OPT_BASE(type, group, enum, json, default) using P(enum) = P(type);
+#define OPT_STR(group, enum, json, default) using P(enum) = std::string;
+#define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
 #include <FEXCore/Config/ConfigValues.inl>
 }
 #define FEX_CONFIG_OPT(name, enum) \
