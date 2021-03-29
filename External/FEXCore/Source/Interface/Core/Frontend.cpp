@@ -919,6 +919,7 @@ void Decoder::BranchTargetInMultiblockRange() {
 
   // If the RIP setting is conditional AND within our symbol range then it can be considered for multiblock
   uint64_t TargetRIP = 0;
+  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   bool Conditional = true;
 
   switch (DecodeInst->OP) {
@@ -944,6 +945,11 @@ void Decoder::BranchTargetInMultiblockRange() {
     default:
       return;
     break;
+  }
+
+  if (GPRSize == 4) {
+    // If we are running a 32bit guest then wrap around addresses that go above 32bit
+    TargetRIP &= 0xFFFFFFFFU;
   }
 
   // If the target RIP is within the symbol ranges then we are golden
