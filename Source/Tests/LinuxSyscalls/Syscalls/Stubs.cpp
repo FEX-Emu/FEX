@@ -36,7 +36,8 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(ptrace, [](FEXCore::Core::CpuStateFrame *Frame, int /*enum __ptrace_request*/ request, pid_t pid, void *addr, void *data) -> uint64_t {
-      SYSCALL_STUB(ptrace);
+      // We don't support this
+      return -EPERM;
     });
 
     REGISTER_SYSCALL_IMPL(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, sigset_t *set, const struct timespec*, size_t sigsetsize) -> uint64_t {
