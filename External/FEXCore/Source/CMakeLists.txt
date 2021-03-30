@@ -278,7 +278,11 @@ function(AddObject Name Type)
 
   target_compile_options(${Name}
     PRIVATE
-    -Wno-trigraphs -Wall)
+    -Wall
+    -Werror=implicit-fallthrough
+
+    -Wno-trigraphs
+  )
 
   if (GCC_COLOR)
     target_compile_options(${Name}

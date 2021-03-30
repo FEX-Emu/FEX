@@ -96,6 +96,7 @@ extFloat80_t
         switch ( roundingMode ) {
          case softfloat_round_near_even:
             if ( !(sigA & UINT64_C( 0x7FFFFFFFFFFFFFFF )) ) break;
+            __attribute__((fallthrough));
          case softfloat_round_near_maxMag:
             if ( exp == 0x3FFE ) goto mag1;
             break;

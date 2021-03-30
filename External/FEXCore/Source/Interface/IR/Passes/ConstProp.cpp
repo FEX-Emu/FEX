@@ -739,8 +739,11 @@ bool ConstProp::Run(IREmitter *IREmit) {
           }
         }
       }
+      break;
     }
-    default: break;
+
+    default:
+      break;
     }
   }
 
