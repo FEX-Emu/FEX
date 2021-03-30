@@ -1,5 +1,22 @@
 #!/usr/bin/python3
 
+# Tag Format
+#  $info$
+#  glossary: <name> ~ <definition> (Optional, registers or replaces a glossary entry)
+#  glossary: IR ~ Intermidiate Representation, a of storage for our high-level opcode representation
+#  glossary: SSA ~ Single Static Assignment, a form of representing IR in memory
+#  glossary: Basic Block ~ A block of instructions with no control flow, terminated by control flow
+#  glossary: Fragment ~ A Collection of basic blocks, possible an entire guest function or a fraction of it
+#  category: <name> ~ <description> (Optional, registers or replaces a category description)
+#  category: backend ~ Concerns itself with generating binary code from (optimized) IR
+#  meta: <name> ~ <description> (Optional, registers or replaces a meta, aka tag, description)
+#  meta: backend|arm64 ~ Arm64 Splatter backend
+#  tags: <meta name> [, <meta name>, ...] (Required if info tag exists)
+#  tags: backend|arm64
+#  desc: <short file description> (Optional)
+#  desc: Main glue logic of the arm64 splatter backend
+#  $end_info$
+
 import re
 from pathlib import Path
 import sys
