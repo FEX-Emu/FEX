@@ -4,6 +4,12 @@ import sys
 import fileinput
 import re
 
+# Handles the following formats:
+#
+# <commit message> -> goes in Misc category
+# <Category>: <commit message> -> Goes in <Category>
+# <Category>/<Tag>: <commit message> -> Goes in <Category>/<Tag>
+
 Meta = { }
 for line in sys.stdin.readlines():
     if detailed := re.findall("^([A-Za-z0-9]+)/([A-Za-z0-9]+):(.+)$", line):
