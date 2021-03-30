@@ -89,7 +89,7 @@ namespace FEXCore::Config {
         auto Value = std::string(EnvVar.begin() + ItEq + 1, EnvVar.end());
 
         // Add the key to the map, overwriting whatever previous value was there
-        LookupMap.emplace(Key, Value);
+        LookupMap.emplace(std::move(Key), std::move(Value));
       }
     };
 
