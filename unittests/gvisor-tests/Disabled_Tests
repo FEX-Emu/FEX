@@ -68,3 +68,6 @@ timers_test
 # these are flaky on x86
 itimer_test
 stat_times_test
+
+# This periodically fails on ARM hosts. `PosixError(errno=13 Permission denied) open(/proc/self/oom_score_adj, 0x1, 0)`
+proc_pid_oomscore_test
