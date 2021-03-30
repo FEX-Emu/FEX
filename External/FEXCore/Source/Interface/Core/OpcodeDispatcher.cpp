@@ -5916,6 +5916,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
   case 0x0B:
     Reason = 5;
+  break;
   case 0xCC:
     Reason = 6;
     setRIP = true;
