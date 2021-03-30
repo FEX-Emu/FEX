@@ -1,3 +1,10 @@
+/*
+$info$
+meta: frontend|x86-tables ~ Metadata that drives the frontend x86/64 decoding
+tags: frontend|x86-tables
+$end_info$
+*/
+
 #include <FEXCore/Utils/LogManager.h>
 
 #include <FEXCore/Core/Context.h>

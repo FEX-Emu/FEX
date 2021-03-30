@@ -1,3 +1,10 @@
+/*
+$info$
+tags: ir|opts
+desc: This is not used right now, possibly broken
+$end_info$
+*/
+
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 

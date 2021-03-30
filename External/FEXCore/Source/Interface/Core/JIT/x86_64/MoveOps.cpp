@@ -1,3 +1,9 @@
+/*
+$info$
+tags: backend|x86-64
+$end_info$
+*/
+
 #include "Interface/Core/JIT/x86_64/JITClass.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 

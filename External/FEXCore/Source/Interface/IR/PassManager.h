@@ -1,3 +1,9 @@
+/*
+$info$
+tags: ir|opts
+$end_info$
+*/
+
 #pragma once
 
 #include <FEXCore/IR/IntrusiveIRList.h>

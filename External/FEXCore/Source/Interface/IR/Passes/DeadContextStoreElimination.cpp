@@ -1,3 +1,10 @@
+/*
+$info$
+tags: ir|opts
+desc: Transforms ContextLoad/Store to temporaries, similar to mem2reg
+$end_info$
+*/
+
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"

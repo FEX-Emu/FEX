@@ -1,3 +1,9 @@
+/*
+$info$
+tags: glue|x86-guest-code
+$end_info$
+*/
+
 #pragma once
 #include <FEXCore/Config/Config.h>
 

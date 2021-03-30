@@ -1,3 +1,10 @@
+/*
+$info$
+meta: LinuxSyscalls|syscalls-shared ~ Syscall implementations shared between x86 and x86-64
+tags: LinuxSyscalls|syscalls-shared
+$end_info$
+*/
+
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"

@@ -1,3 +1,10 @@
+/*
+$info$
+tags: Bin|FEXBash
+desc: Launches bash under FEX and passes arguments via -c to it
+$end_info$
+*/
+
 #include "Config.h"
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"

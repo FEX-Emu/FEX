@@ -1,3 +1,10 @@
+/*
+$info$
+tags: opcodes|cpuid
+desc: Handles presented capability bits for guest cpu
+$end_info$
+*/
+
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
 #include "git_version.h"

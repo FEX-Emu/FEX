@@ -1,3 +1,10 @@
+/*
+$info$
+tags: ir|opts
+desc: Sorts the ssa storage in memory, needed for RA and others
+$end_info$
+*/
+
 #include "Common/MathUtils.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"

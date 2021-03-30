@@ -1,3 +1,10 @@
+/*
+$info$
+tags: Bin|UnitTestGenerator
+desc: Brute forces generation of tests for x86/64, incomplete, unused right now
+$end_info$
+*/
+
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"

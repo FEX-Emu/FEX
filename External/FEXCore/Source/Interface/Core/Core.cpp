@@ -1,3 +1,12 @@
+/*
+$info$
+category: glue ~ Logic that binds various parts together
+meta: glue|driver ~ Emulation mainloop related glue logic
+tags: glue|driver
+desc: Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispatcher and provides the Execution loop entrypoint
+$end_info$
+*/
+
 #include "Common/MathUtils.h"
 #include "Common/Paths.h"
 

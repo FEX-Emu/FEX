@@ -1,3 +1,10 @@
+/*
+$info$
+tags: Bin|TestHarnessRunner
+desc: Used to run Assembly tests
+$end_info$
+*/
+
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "CommonCore/HostFactory.h"

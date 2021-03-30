@@ -1,3 +1,10 @@
+/*
+$info$
+tags: glue|block-database
+desc: Stores information about blocks, and provides C++ implementations to lookup the blocks
+$end_info$
+*/
+
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Core.h"
 #include "Interface/Core/LookupCache.h"

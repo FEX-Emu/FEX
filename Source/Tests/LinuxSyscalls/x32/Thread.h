@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|syscalls-x86-32
+$end_info$
+*/
+
 #pragma once
 #include <stdint.h>
 

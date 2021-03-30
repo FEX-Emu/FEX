@@ -1,3 +1,10 @@
+/*
+$info$
+tags: Bin|FEXLoader
+desc: Glues the ELF loader, FEXCore and LinuxSyscalls to launch an elf under fex
+$end_info$
+*/
+
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"

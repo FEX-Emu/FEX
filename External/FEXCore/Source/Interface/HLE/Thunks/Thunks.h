@@ -1,3 +1,9 @@
+/*
+$info$
+tags: glue|thunks
+$end_info$
+*/
+
 #pragma once
 #include <FEXCore/IR/IR.h>
 

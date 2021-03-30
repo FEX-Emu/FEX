@@ -1,3 +1,10 @@
+/*
+$info$
+tags: LinuxSyscalls|common
+desc: Glue logic, STRACE magic
+$end_info$
+*/
+
 #pragma once
 
 #include "Tests/LinuxSyscalls/FileManagement.h"

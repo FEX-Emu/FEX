@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|syscalls-x86-32
+$end_info$
+*/
+
 ///< Enum containing all 32bit x86 linux syscalls for the guest kernel version
 enum Syscalls {
   SYSCALL_x86_restart_syscall = 0,

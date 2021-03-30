@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|syscalls-x86-64
+$end_info$
+*/
+
 { 0, "read"},
 { 1, "write"},
 { 2, "open"},

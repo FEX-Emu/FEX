@@ -1,3 +1,8 @@
+/*
+$info$
+tags: backend|arm64
+$end_info$
+*/
 
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"

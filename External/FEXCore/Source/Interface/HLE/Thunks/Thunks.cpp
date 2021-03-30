@@ -1,3 +1,10 @@
+/*
+$info$
+meta: glue|thunks ~ FEXCore side of thunks: Registration, Lookup
+tags: glue|thunks
+$end_info$
+*/
+
 #include <FEXCore/Utils/LogManager.h>
 #include "Thunks.h"
 

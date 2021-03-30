@@ -1,3 +1,10 @@
+/*
+$info$
+tags: glue|log-manager
+$end_info$
+*/
+
+
 #include <FEXCore/Utils/LogManager.h>
 #include <sstream>
 #include <vector>

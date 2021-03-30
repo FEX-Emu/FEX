@@ -1,3 +1,10 @@
+/*
+$info$
+tags: Bin|IRLoader
+desc: Used to run IR Tests
+$end_info$
+*/
+
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"

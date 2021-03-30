@@ -1,3 +1,10 @@
+/*
+$info$
+tags: glue|elf-parsing
+desc: Part of our now defunct ld-linux replacement, keeps tracks of all symbols, loads elfs, handles relocations. Small parts of this are used.
+$end_info$
+*/
+
 #include <FEXCore/Utils/ELFSymbolDatabase.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Common/MathUtils.h>

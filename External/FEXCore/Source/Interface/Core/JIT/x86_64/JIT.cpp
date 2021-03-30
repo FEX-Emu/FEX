@@ -1,3 +1,10 @@
+/*
+$info$
+tags: backend|x86-64
+desc: Main glue logic of the x86-64 splatter backend
+$end_info$
+*/
+
 #include "Interface/Context/Context.h"
 
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"

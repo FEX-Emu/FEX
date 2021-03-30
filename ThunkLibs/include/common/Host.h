@@ -1,3 +1,9 @@
+/*
+$info$
+category: thunklibs ~ These are generated + glue logic 1:1 thunks unless noted otherwise
+$end_info$
+*/
+
 #pragma once
 #include <stdint.h>
 

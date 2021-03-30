@@ -1,3 +1,9 @@
+/*
+$info$
+tags: thunklibs|asound
+$end_info$
+*/
+
 #include <stdio.h>
 
 #include <alsa/asoundlib.h>

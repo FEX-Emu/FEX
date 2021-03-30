@@ -1,3 +1,9 @@
+/*
+$info$
+tags: ir|opts
+$end_info$
+*/
+
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 

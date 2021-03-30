@@ -1,3 +1,10 @@
+/*
+$info$
+tags: thunklibs|GL
+desc: Handles glXGetProcAddress
+$end_info$
+*/
+
 #define GL_GLEXT_PROTOTYPES 1
 #define GLX_GLXEXT_PROTOTYPES 1
 

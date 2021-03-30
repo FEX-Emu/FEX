@@ -1,3 +1,10 @@
+/*
+$info$
+tags: LinuxSyscalls|common
+desc: Handles host -> host and host -> guest signal routing, emulates procmask & co
+$end_info$
+*/
+
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include "Tests/LinuxSyscalls/SignalDelegator.h"

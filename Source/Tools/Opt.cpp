@@ -1,3 +1,10 @@
+/*
+$info$
+tags: Bin|Opt
+desc: Unused
+$end_info$
+*/
+
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"

@@ -1,3 +1,11 @@
+/*
+$info$
+category: LinuxSyscalls ~ Linux syscall emulation, marshaling and passthrough
+tags: LinuxSyscalls|common
+desc: Glue logic, brk allocations
+$end_info$
+*/
+
 #include <FEXCore/Utils/LogManager.h>
 #include "Common/MathUtils.h"
 

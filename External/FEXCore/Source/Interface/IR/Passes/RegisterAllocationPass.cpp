@@ -1,3 +1,9 @@
+/*
+$info$
+tags: ir|opts
+$end_info$
+*/
+
 #include "Common/BitSet.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"

@@ -1,3 +1,10 @@
+/*
+$info$
+tags: thunklibs|GL
+desc: Uses glXGetProcAddress instead of dlsym
+$end_info$
+*/
+
 #include <cstdio>
 #include <dlfcn.h>
 
