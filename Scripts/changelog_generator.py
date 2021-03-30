@@ -22,7 +22,7 @@ for line in sys.stdin.readlines():
             Meta["_Misc"] = []
         Meta["_Misc"].append(line.strip())
 
-print("# " + sys.argv[1])
+print(sys.argv[1])
 
 Category = ""
 Tag = ""
@@ -37,11 +37,14 @@ for item in sorted(Meta.items()):
         Category = category
         Tag = ""
         print("")
-        print("## " + category)
+        print("- " + category)
     if Tag != tag and tag != category:
         Tag = tag
         print("")
-        print("### " + tag.split("/")[1])
+        print(" - " + tag.split("/")[1])
     
     for change in item[1]:
-        print("- " + change)
+        if Tag == "":
+            print(" - " + change)
+        else:
+            print("  - " + change)
