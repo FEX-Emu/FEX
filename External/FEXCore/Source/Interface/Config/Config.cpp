@@ -85,8 +85,8 @@ namespace FEXCore::Config {
           // Skip
           continue;
         }
-        auto Key = std::string_view(EnvVar.begin(), EnvVar.begin() + ItEq);
-        auto Value = std::string_view(EnvVar.begin() + ItEq + 1, EnvVar.end());
+        auto Key = std::string(EnvVar.begin(), EnvVar.begin() + ItEq);
+        auto Value = std::string(EnvVar.begin() + ItEq + 1, EnvVar.end());
 
         // Add the key to the map, overwriting whatever previous value was there
         LookupMap.emplace(Key, Value);
