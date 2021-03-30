@@ -129,26 +129,17 @@ uint8_t Decoder::PeekByte(uint8_t Offset) {
 }
 
 uint64_t Decoder::ReadData(uint8_t Size) {
-  uint64_t Res{};
-#define READ_DATA(x, y) \
-  case x: { \
-    y const *Data = reinterpret_cast<y const*>(&InstStream[InstructionSize]); \
-    Res = *Data; \
-  } \
-  break
-
-  switch (Size) {
-  case 0: return 0;
-  READ_DATA(1, uint8_t);
-  READ_DATA(2, uint16_t);
-  case 3: memcpy(&Res, &InstStream[InstructionSize], Size);
-  READ_DATA(4, uint32_t);
-  READ_DATA(8, uint64_t);
-  default:
-  LogMan::Msg::A("Unknown data size to read");
-  return 0;
+  if (Size == 0) {
+    return 0;
   }
-#undef READ_DATA
+
+  if (Size > sizeof(uint64_t)) {
+    LogMan::Msg::A("Unknown data size to read");
+    return 0;
+  }
+
+  uint64_t Res = 0;
+  std::memcpy(&Res, &InstStream[InstructionSize], Size);
 
 #ifndef NDEBUG
   for(size_t i = 0; i < Size; ++i) {
@@ -157,6 +148,7 @@ uint64_t Decoder::ReadData(uint8_t Size) {
 #else
   SkipBytes(Size);
 #endif
+
   return Res;
 }
 

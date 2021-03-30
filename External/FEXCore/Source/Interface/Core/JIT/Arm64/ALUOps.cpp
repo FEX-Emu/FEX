@@ -903,8 +903,8 @@ Condition MapSelectCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_FGT: return Condition::hi;
   case FEXCore::IR::COND_FU:  return Condition::vs;
   case FEXCore::IR::COND_FNU: return Condition::vc;
-  case FEXCore::IR::COND_VS:;
-  case FEXCore::IR::COND_VC:;
+  case FEXCore::IR::COND_VS:
+  case FEXCore::IR::COND_VC:
   case FEXCore::IR::COND_MI:
   case FEXCore::IR::COND_PL:
   default:
