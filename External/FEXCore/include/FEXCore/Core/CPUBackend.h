@@ -1,3 +1,10 @@
+/*
+$info$
+category: backend ~ IR to host code generation
+tags: backend|shared
+$end_info$
+*/
+
 #pragma once
 #include <stdint.h>
 #include <string>

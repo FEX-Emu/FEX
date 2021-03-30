@@ -1,3 +1,9 @@
+/*
+$info$
+tags: thunklibs|EGL
+$end_info$
+*/
+
 #include <cstdio>
 #include <dlfcn.h>
 

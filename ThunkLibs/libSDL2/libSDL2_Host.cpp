@@ -1,3 +1,9 @@
+/*
+$info$
+tags: thunklibs|SDL2
+$end_info$
+*/
+
 #include <stdio.h>
 
 #include <SDL2/SDL.h>

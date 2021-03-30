@@ -1,3 +1,11 @@
+/*
+$info$
+meta: ir|opts ~ IR to IR Optimization
+tags: ir|opts
+desc: Defines which passes are run, and runs them
+$end_info$
+*/
+
 #include "Interface/IR/PassManager.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"

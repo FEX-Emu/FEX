@@ -1,3 +1,10 @@
+/*
+$info$
+tags: ir|opts
+desc: Sanity Checking
+$end_info$
+*/
+
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 

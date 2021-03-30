@@ -1,3 +1,10 @@
+/*
+$info$
+meta: ir|parser ~ Text -> IR
+tags: ir|parser
+$end_info$
+*/
+
 #include <string>
 #include <vector>
 #include <istream>

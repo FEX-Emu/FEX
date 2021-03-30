@@ -1,3 +1,10 @@
+/*
+$info$
+tags: thunklibs|EGL
+desc: Depends on glXGetProcAddress thunk
+$end_info$
+*/
+
 #include <GL/glx.h>
 #include <EGL/egl.h>
 

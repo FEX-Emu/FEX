@@ -1,3 +1,9 @@
+/*
+$info$
+tags: thunklibs|X11
+$end_info$
+*/
+
 #include <stdio.h>
 
 #include <X11/Xlib.h>

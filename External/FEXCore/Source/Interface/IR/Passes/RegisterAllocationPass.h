@@ -1,3 +1,9 @@
+/*
+$info$
+tags: ir|opts
+$end_info$
+*/
+
 #pragma once
 #include "Interface/IR/PassManager.h"
 #include <FEXCore/IR/RegisterAllocationData.h>

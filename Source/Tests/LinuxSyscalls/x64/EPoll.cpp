@@ -1,3 +1,10 @@
+/*
+$info$
+meta: LinuxSyscalls|syscalls-x86-64 ~ x86-64 specific syscall implementations
+tags: LinuxSyscalls|syscalls-x86-64
+$end_info$
+*/
+
 #include "Common/MathUtils.h"
 
 #include "Tests/LinuxSyscalls/Syscalls.h"

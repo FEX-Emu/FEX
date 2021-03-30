@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|common
+$end_info$
+*/
+
 #pragma once
 #include <FEXCore/Config/Config.h>
 

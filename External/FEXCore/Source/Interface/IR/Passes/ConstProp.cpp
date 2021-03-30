@@ -1,3 +1,11 @@
+/*
+$info$
+tags: ir|opts
+desc: ConstProp, ZExt elim, addressgen coalesce, const pooling, fcmp reduction, const inlining
+$end_info$
+*/
+
+
 #if defined(_M_ARM_64)
 //aarch64 heuristics
 #include "aarch64/assembler-aarch64.h"

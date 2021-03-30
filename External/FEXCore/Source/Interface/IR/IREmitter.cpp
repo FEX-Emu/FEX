@@ -1,3 +1,10 @@
+/*
+$info$
+meta: ir|emitter ~ C++ Functions to generate IR. See IR.json for spec.
+tags: ir|emitter
+$end_info$
+*/
+
 #include <FEXCore/IR/IREmitter.h>
 
 namespace FEXCore::IR {

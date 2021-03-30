@@ -1,3 +1,10 @@
+/*
+$info$
+tags: glue|elf-parsing
+desc: Loads and parses an elf to memory. Also handles some loading & logic.
+$end_info$
+*/
+
 #include <FEXCore/Utils/Common/MathUtils.h>
 #include <FEXCore/Utils/ELFLoader.h>
 #include <FEXCore/Utils/LogManager.h>

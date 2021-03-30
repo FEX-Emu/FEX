@@ -1,3 +1,8 @@
+/*
+$info$
+tags: glue|gdbserver
+$end_info$
+*/
 
 #include <mutex>
 #include <thread>

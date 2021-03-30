@@ -1,3 +1,10 @@
+/*
+$info$
+tags: LinuxSyscalls|common
+desc: Rootfs overlay logic
+$end_info$
+*/
+
 #include "Tests/LinuxSyscalls/FileManagement.h"
 
 #include <FEXCore/Utils/LogManager.h>

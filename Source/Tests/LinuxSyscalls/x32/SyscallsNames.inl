@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|syscalls-x86-32
+$end_info$
+*/
+
 { 0, "restart_syscall" },
 { 1, "exit" },
 { 2, "fork" },

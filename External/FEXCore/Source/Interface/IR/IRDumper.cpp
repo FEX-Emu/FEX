@@ -1,3 +1,10 @@
+/*
+$info$
+meta: ir|dumper ~ IR -> Text
+tags: ir|dumper
+$end_info$
+*/
+
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>

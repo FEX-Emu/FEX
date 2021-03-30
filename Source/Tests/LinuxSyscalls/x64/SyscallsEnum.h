@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|syscalls-x86-64
+$end_info$
+*/
+
 ///< Enum containing all x86-64 linux syscalls for the guest kernel version
 enum Syscalls {
   SYSCALL_x64_read = 0,

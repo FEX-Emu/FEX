@@ -1,3 +1,10 @@
+/*
+$info$
+tags: glue|x86-guest-code
+desc: Guest-side assembly helpers used by the backends
+$end_info$
+*/
+
 #include "Interface/Core/X86HelperGen.h"
 
 #include <cstring>

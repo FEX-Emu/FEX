@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|syscalls-x86-32
+$end_info$
+*/
+
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include <FEXCore/Utils/LogManager.h>

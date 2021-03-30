@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|syscalls-x86-64
+$end_info$
+*/
+
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"

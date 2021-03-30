@@ -1,3 +1,10 @@
+/*
+$info$
+tags: glue|gdbserver
+desc: Provides a gdb interface to the guest state
+$end_info$
+*/
+
 #include <cstdlib>
 #include <cstdio>
 #include <iomanip>

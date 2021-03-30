@@ -1,3 +1,9 @@
+/*
+$info$
+tags: LinuxSyscalls|syscalls-shared
+$end_info$
+*/
+
 #pragma once
 #include <stdint.h>
 #include <sys/types.h>

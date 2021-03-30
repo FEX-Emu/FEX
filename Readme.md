@@ -10,6 +10,9 @@ ARMv7 and older x86 hardware will not work.
 Expected operating system usage is Linux. FEX has been tested with Ubuntu 20.04, 20.10, and 21.04. Also Arch Linux.
 On AArch64 hosts the user **MUST** have an x86-64 RootFS [Creating a RootFS](#RootFS-Generation).
 
+### Navigating the Source
+See the [Source Outline](docs/SourceOutline.md) for more information.
+
 ### Dependencies
 * cmake (version 3.14 minimum)
 * ninja-build

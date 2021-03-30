@@ -1,3 +1,10 @@
+/*
+$info$
+tags: ir|opts
+desc: Cross block store-after-store elimination
+$end_info$
+*/
+
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 

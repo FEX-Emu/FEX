@@ -1,3 +1,10 @@
+/*
+$info$
+tags: thunklibs|X11
+desc: Handles callbacks and varargs
+$end_info$
+*/
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>

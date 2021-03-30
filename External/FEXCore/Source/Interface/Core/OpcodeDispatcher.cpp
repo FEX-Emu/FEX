@@ -1,3 +1,10 @@
+/*
+$info$
+tags: frontend|x86-to-ir, opcodes|dispatcher-implementations
+desc: Handles x86/64 ops to IR, no-pf opt, local-flags opt
+$end_info$
+*/
+
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/HLE/Thunks/Thunks.h"

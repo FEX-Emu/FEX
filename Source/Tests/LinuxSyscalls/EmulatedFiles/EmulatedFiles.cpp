@@ -1,3 +1,10 @@
+/*
+$info$
+tags: LinuxSyscalls|common
+desc: Emulated /proc/cpuinfo, version, osrelease, etc
+$end_info$
+*/
+
 #include <cstring>
 #include <filesystem>
 #include <unistd.h>

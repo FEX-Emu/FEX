@@ -1,3 +1,10 @@
+/*
+$info$
+tags: thunklibs|SDL2
+desc: Handles sdlglproc, dload, stubs a few log fns
+$end_info$
+*/
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 

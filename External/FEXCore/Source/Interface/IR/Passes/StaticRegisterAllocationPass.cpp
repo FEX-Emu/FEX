@@ -1,3 +1,10 @@
+/*
+$info$
+tags: ir|opts
+desc: Replaces Load/StoreContext with Load/StoreReg for SRA regs
+$end_info$
+*/
+
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 

@@ -1,3 +1,10 @@
+/*
+$info$
+tags: LinuxSyscalls|common
+$end_info$
+*/
+
+
 #pragma once
 
 #include <atomic>

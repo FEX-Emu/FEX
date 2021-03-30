@@ -1,3 +1,10 @@
+/*
+$info$
+tags: ir|opts
+desc: Removes unused arguments if known syscall number
+$end_info$
+*/
+
 #include "Interface/Context/Context.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"

@@ -1,3 +1,10 @@
+/*
+$info$
+tags: frontend|x86-meta-blocks
+desc: Extracts instruction & block meta info, frontend multiblock logic
+$end_info$
+*/
+
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/InternalThreadState.h"

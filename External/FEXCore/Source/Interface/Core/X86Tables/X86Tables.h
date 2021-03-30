@@ -1,3 +1,9 @@
+/*
+$info$
+tags: frontend|x86-tables
+$end_info$
+*/
+
 #pragma once
 #include <FEXCore/Debug/X86Tables.h>
 
