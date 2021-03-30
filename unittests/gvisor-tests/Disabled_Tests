@@ -71,3 +71,5 @@ stat_times_test
 
 # This periodically fails on ARM hosts. `PosixError(errno=13 Permission denied) open(/proc/self/oom_score_adj, 0x1, 0)`
 proc_pid_oomscore_test
+# Spins forever
+ptrace_test
