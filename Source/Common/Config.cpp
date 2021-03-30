@@ -11,6 +11,7 @@
 #include <memory>
 #include <list>
 #include <string_view>
+#include <pwd.h>
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
@@ -18,18 +19,34 @@
 #include <json-maker.h>
 
 namespace FEX::Config {
+  char const* FindUserHomeThroughUID() {
+    auto passwd = getpwuid(geteuid());
+    if (passwd) {
+      return passwd->pw_dir;
+    }
+    return nullptr;
+  }
+
   std::string GetConfigFolder(bool Global) {
     std::string ConfigDir;
     if (Global) {
       ConfigDir = GLOBAL_DATA_DIRECTORY;
     }
     else {
+      // Try from the home environment variable first
       char const *HomeDir = getenv("HOME");
 
+      // Try to get home directory from uid
+      if (!HomeDir) {
+        HomeDir = FindUserHomeThroughUID();
+      }
+
+      // Try the PWD
       if (!HomeDir) {
         HomeDir = getenv("PWD");
       }
 
+      // Still doesn't exist? You get local
       if (!HomeDir) {
         HomeDir = ".";
       }
