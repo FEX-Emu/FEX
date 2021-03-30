@@ -77,9 +77,9 @@ namespace FEXCore::Config {
 
     // If an environment variable exists in both current meta and in the incoming layer then the meta layer value is overwritten
     std::unordered_map<std::string, std::string> LookupMap;
-    auto AddToMap = [&LookupMap](FEXCore::Config::LayerValue const &Value) {
-      for (auto &EnvVar : Value) {
-        auto ItEq = EnvVar.find_first_of("=");
+    const auto AddToMap = [&LookupMap](FEXCore::Config::LayerValue const &Value) {
+      for (const auto &EnvVar : Value) {
+        const auto ItEq = EnvVar.find_first_of('=');
         if (ItEq == std::string::npos) {
           // Broken environment variable
           // Skip
@@ -89,7 +89,7 @@ namespace FEXCore::Config {
         auto Value = std::string(EnvVar.begin() + ItEq + 1, EnvVar.end());
 
         // Add the key to the map, overwriting whatever previous value was there
-        LookupMap.emplace(Key, Value);
+        LookupMap.insert_or_assign(std::move(Key), std::move(Value));
       }
     };
 
