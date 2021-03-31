@@ -270,8 +270,8 @@ namespace FEXCore::Context {
   Context::~Context() {
     {
       for (auto &Thread : Threads) {
-        if (Thread->ExecutionThread.joinable()) {
-          Thread->ExecutionThread.join();
+        if (Thread->ExecutionThread->joinable()) {
+          Thread->ExecutionThread->join(nullptr);
         }
       }
 
@@ -550,11 +550,26 @@ namespace FEXCore::Context {
     LogMan::Msg::D("Done", EntryList.size());
   }
 
+  struct ExecutionThreadHandler {
+    FEXCore::Context::Context *This;
+    FEXCore::Core::InternalThreadState *Thread;
+  };
+
+  static void *ThreadHandler(void* Data) {
+    ExecutionThreadHandler *Handler = reinterpret_cast<ExecutionThreadHandler*>(Data);
+    Handler->This->ExecutionThread(Handler->Thread);
+    free(Handler);
+    return nullptr;
+  }
+
   void Context::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
     InitializeThreadData(Thread);
 
     // This will create the execution thread but it won't actually start executing
-    Thread->ExecutionThread = std::thread(&Context::ExecutionThread, this, Thread);
+    ExecutionThreadHandler *Arg = reinterpret_cast<ExecutionThreadHandler*>(malloc(sizeof(ExecutionThreadHandler)));
+    Arg->This = this;
+    Arg->Thread = Thread;
+    Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
 
     // Wait for the thread to have started
     Thread->ThreadWaiting.Wait();
@@ -643,9 +658,10 @@ namespace FEXCore::Context {
       Threads.erase(It);
     }
 
-    if (std::this_thread::get_id() == Thread->ExecutionThread.get_id()) {
+    if (Thread->ExecutionThread &&
+        Thread->ExecutionThread->IsSelf()) {
       // To be able to delete a thread from itself, we need to detached the std::thread object
-      Thread->ExecutionThread.detach();
+      Thread->ExecutionThread->detach();
     }
     delete Thread;
   }
@@ -665,9 +681,6 @@ namespace FEXCore::Context {
       // with multiple active threads.
       // It cleans up the stacks of dead threads and marks them as terminated.
       // It also cleans up a bunch of internal mutexes.
-
-      // glibc has already terminated this thread during fork; Join to finish pthread cleanup.
-      DeadThread->ExecutionThread.join();
 
       // FIXME: TLS is probally still alive. Investigate
 

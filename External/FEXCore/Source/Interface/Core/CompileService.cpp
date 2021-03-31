@@ -5,6 +5,12 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 
 namespace FEXCore {
+  static void* ThreadHandler(void *Arg) {
+    FEXCore::CompileService *This = reinterpret_cast<FEXCore::CompileService*>(Arg);
+    This->ExecutionThread();
+    return nullptr;
+  }
+
   CompileService::CompileService(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
     : CTX {ctx}
     , ParentThread {Thread} {
@@ -16,9 +22,7 @@ namespace FEXCore {
     CTX->InitializeCompiler(CompileThreadData.get(), true);
     CompileThreadData->CPUBackend->CopyNecessaryDataForCompileThread(ParentThread->CPUBackend.get());
 
-    WorkerThread = std::thread([this]() {
-      ExecutionThread();
-    });
+    WorkerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
   }
 
   void CompileService::Initialize() {
@@ -30,7 +34,7 @@ namespace FEXCore {
     ShuttingDown = true;
     // Kick the working thread
     StartWork.NotifyAll();
-    WorkerThread.join();
+    WorkerThread->join(nullptr);
   }
 
   void CompileService::ClearCache(FEXCore::Core::InternalThreadState *Thread) {

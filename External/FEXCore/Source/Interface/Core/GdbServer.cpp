@@ -959,9 +959,14 @@ void GdbServer::GdbServerLoop() {
     }
   }
 }
+static void* ThreadHandler(void *Arg) {
+  FEXCore::GdbServer *This = reinterpret_cast<FEXCore::GdbServer*>(Arg);
+  This->GdbServerLoop();
+  return nullptr;
+}
 
 void GdbServer::StartThread() {
-    gdbServerThread = std::thread(&GdbServer::GdbServerLoop, this);
+    gdbServerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
 }
 
 std::unique_ptr<std::iostream> GdbServer::OpenSocket() {

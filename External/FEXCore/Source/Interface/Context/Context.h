@@ -210,13 +210,15 @@ namespace FEXCore::Context {
     FEXCore::JITSymbols Symbols;
 #endif
 
+    // Public for threading
+    void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
 
   private:
     void WaitForIdleWithTimeout();
 
-    void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
     void NotifyPause();
 
     void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length);
