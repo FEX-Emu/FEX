@@ -288,7 +288,17 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(prctl, [](FEXCore::Core::CpuStateFrame *Frame, int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) -> uint64_t {
-      uint64_t Result = ::prctl(option, arg2, arg3, arg4, arg5);
+      uint64_t Result{};
+      switch (option) {
+      case PR_SET_SECCOMP:
+      case PR_GET_SECCOMP:
+        // FEX doesn't support seccomp
+        return -EINVAL;
+        break;
+      default:
+        Result = ::prctl(option, arg2, arg3, arg4, arg5);
+      break;
+      }
       SYSCALL_ERRNO();
     });
 
