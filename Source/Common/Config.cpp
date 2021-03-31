@@ -11,81 +11,12 @@
 #include <memory>
 #include <list>
 #include <string_view>
-#include <pwd.h>
-#include <unistd.h>
 #include <unordered_map>
 #include <vector>
 #include <tiny-json.h>
 #include <json-maker.h>
 
 namespace FEX::Config {
-  char const* FindUserHomeThroughUID() {
-    auto passwd = getpwuid(geteuid());
-    if (passwd) {
-      return passwd->pw_dir;
-    }
-    return nullptr;
-  }
-
-  std::string GetConfigFolder(bool Global) {
-    std::string ConfigDir;
-    if (Global) {
-      ConfigDir = GLOBAL_DATA_DIRECTORY;
-    }
-    else {
-      // Try from the home environment variable first
-      char const *HomeDir = getenv("HOME");
-
-      // Try to get home directory from uid
-      if (!HomeDir) {
-        HomeDir = FindUserHomeThroughUID();
-      }
-
-      // Try the PWD
-      if (!HomeDir) {
-        HomeDir = getenv("PWD");
-      }
-
-      // Still doesn't exist? You get local
-      if (!HomeDir) {
-        HomeDir = ".";
-      }
-
-      char const *ConfigXDG = getenv("XDG_CONFIG_HOME");
-      ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
-      ConfigDir += "/.fex-emu/";
-
-      // Ensure the folder structure is created for our configuration
-      if (!std::filesystem::exists(ConfigDir) &&
-          !std::filesystem::create_directories(ConfigDir)) {
-        LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigDir.c_str());
-        // Let's go local in this case
-        return "./";
-      }
-    }
-
-    return ConfigDir;
-  }
-
-  std::string GetConfigFileLocation() {
-    std::string ConfigFile = GetConfigFolder(false) + "Config.json";
-    return ConfigFile;
-  }
-
-  std::string GetApplicationConfig(std::string &Filename, bool Global) {
-    std::string ConfigFile = GetConfigFolder(Global);
-    if (!Global &&
-        !std::filesystem::exists(ConfigFile) &&
-        !std::filesystem::create_directories(ConfigFile)) {
-      LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigFile.c_str());
-      // Let's go local in this case
-      return "./";
-    }
-
-    ConfigFile += "AppConfig/" + Filename + ".json";
-    return ConfigFile;
-  }
-
   bool LoadConfigFile(std::vector<char> &Data, std::string Config) {
     std::fstream ConfigFile;
     ConfigFile.open(Config, std::ios::in);
@@ -236,7 +167,7 @@ namespace FEX::Config {
 
   MainLoader::MainLoader()
     : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN) {
-    Config = GetConfigFileLocation();
+    Config = FEXCore::Config::GetConfigFileLocation();
   }
 
   MainLoader::MainLoader(std::string ConfigFile)
@@ -252,7 +183,7 @@ namespace FEX::Config {
 
   AppLoader::AppLoader(std::string Filename, bool Global)
     : FEX::Config::OptionMapper(Global ? FEXCore::Config::LayerType::LAYER_GLOBAL_APP : FEXCore::Config::LayerType::LAYER_LOCAL_APP) {
-    Config = GetApplicationConfig(Filename, Global);
+    Config = FEXCore::Config::GetApplicationConfig(Filename, Global);
 
     // Immediately load so we can reload the meta layer
     Load();

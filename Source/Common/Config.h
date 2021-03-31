@@ -56,9 +56,5 @@ namespace FEX::Config {
     char *const *envp;
   };
 
-  std::string GetConfigFolder(bool Global);
-  std::string GetConfigFileLocation();
-  std::string GetApplicationConfig(std::string &Filename, bool Global);
-
   void SaveLayerToJSON(std::string Filename, FEXCore::Config::Layer *const Layer);
 }
