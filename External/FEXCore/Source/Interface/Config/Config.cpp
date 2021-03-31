@@ -82,6 +82,16 @@ namespace FEXCore::Config {
     return ConfigFile;
   }
 
+  std::string GetDataDirectory() {
+    std::string DataDir{};
+
+    char const *HomeDir = GetHomeDirectory();
+    char const *DataXDG = getenv("XDG_DATA_HOME");
+    DataDir = DataXDG ?: HomeDir;
+    DataDir += "/.fex-emu/";
+    return DataDir;
+  }
+
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config) {
   }
 
