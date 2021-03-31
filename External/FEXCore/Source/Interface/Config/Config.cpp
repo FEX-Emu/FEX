@@ -237,7 +237,12 @@ namespace FEXCore::Config {
       }
 
       // Expand relative path to absolute
-      return std::filesystem::absolute(Path);
+      Path = std::filesystem::absolute(Path);
+
+      // Only return if it exists
+      if (std::filesystem::exists(Path)) {
+        return Path;
+      }
     }
     return {};
   }
@@ -263,7 +268,18 @@ namespace FEXCore::Config {
 
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFS)) {
       FEX_CONFIG_OPT(PathName, ROOTFS);
-      ExpandPathIfExists(FEXCore::Config::CONFIG_ROOTFS, PathName());
+      auto ExpandedString = ExpandPath(PathName());
+      if (!ExpandedString.empty()) {
+        // Adjust the path if it ended up being relative
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
+      }
+      else if (!PathName().empty()) {
+        // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
+        std::string NamedRootFS = GetDataDirectory() + "RootFS/" + PathName();
+        if (std::filesystem::exists(NamedRootFS)) {
+          FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
+        }
+      }
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKHOSTLIBS)) {
       FEX_CONFIG_OPT(PathName, THUNKHOSTLIBS);
