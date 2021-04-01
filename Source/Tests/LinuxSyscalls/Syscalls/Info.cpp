@@ -105,8 +105,8 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(seccomp, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int operation, unsigned int flags, void *args) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_seccomp, operation, flags, args);
-      SYSCALL_ERRNO();
+      // FEX doesn't support seccomp
+      return -EINVAL;
     });
   }
 }
