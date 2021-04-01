@@ -71,7 +71,7 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(mprotect, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, uint32_t len, int prot) -> uint64_t {
-      uint64_t Result = ::mprotect(addr, len, prot);
+      uint64_t Result = ::mprotect(addr, len, prot & ~PROT_GROWSDOWN);
       if (Result != -1 && prot & PROT_EXEC) {
         FEXCore::Context::FlushCodeRange(Frame->Thread, (uintptr_t)addr, len);
       }
