@@ -449,7 +449,7 @@ namespace {
       if (ImGui::BeginPopupModal(SavedPopupAppName)) {
         if (ImGui::InputText("App name", AppName, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
           std::string AppNameString = AppName;
-          std::string Filename = FEX::Config::GetApplicationConfig(AppNameString, false);
+          std::string Filename = FEXCore::Config::GetApplicationConfig(AppNameString, false);
           SaveFile(Filename);
           ImGui::CloseCurrentPopup();
         }
@@ -486,7 +486,7 @@ namespace {
     }
     if (Selected.OpenDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_O) && io.KeyCtrl && io.KeyShift)) {
-      OpenFile(FEX::Config::GetConfigFileLocation());
+      OpenFile(FEXCore::Config::GetConfigFileLocation());
     }
     if (Selected.LoadDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_D) && io.KeyCtrl && io.KeyShift)) {
@@ -504,7 +504,7 @@ namespace {
 
     if (Selected.SaveDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_P) && io.KeyCtrl && io.KeyShift)) {
-      SaveFile(FEX::Config::GetConfigFileLocation());
+      SaveFile(FEXCore::Config::GetConfigFileLocation());
     }
     if (Selected.Close ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_W) && io.KeyCtrl && !io.KeyShift)) {
@@ -536,7 +536,7 @@ namespace {
 }
 
 int main() {
-  std::string ImGUIConfig = FEX::Config::GetConfigFolder(false) + "FEXConfig_imgui.ini";
+  std::string ImGUIConfig = FEXCore::Config::GetConfigDirectory(false) + "FEXConfig_imgui.ini";
 
   // Setup SDL
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)

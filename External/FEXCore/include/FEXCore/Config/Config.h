@@ -54,6 +54,11 @@ namespace Type {
 #undef P
 }
 
+  std::string GetDataDirectory();
+  std::string GetConfigDirectory(bool Global);
+  std::string GetConfigFileLocation();
+  std::string GetApplicationConfig(std::string &Filename, bool Global);
+
   using LayerValue = std::list<std::string>;
   using LayerOptions = std::unordered_map<ConfigOption, LayerValue>;
 

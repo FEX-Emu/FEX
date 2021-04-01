@@ -46,7 +46,14 @@
         "Default": "",
         "ShortArg": "R",
         "Desc": [
-          "Which Root filesystem prefix to use"
+          "Which Root filesystem prefix to use",
+          "This can be a filesystem path",
+          "\teg: ~/RootFS/Debian_x86_64",
+          "Or this can be a name of a rootfs",
+          "If the named rootfs exists in the FEX data folder then it will use that one",
+          "\teg: $HOME/.fex-emu/RootFS/<RootFS name>/",
+          "Or if you have XDG_DATA_HOME the config will search in that directory",
+          "\teg: $XDG_DATA_HOME/.fex-emu/RootFS/<RootFS name>/"
         ]
       },
       "ThunkHostLibs": {

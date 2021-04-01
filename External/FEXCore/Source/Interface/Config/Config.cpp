@@ -5,10 +5,93 @@
 
 #include <FEXCore/Config/Config.h>
 #include <filesystem>
+#include <pwd.h>
 #include <map>
 #include <sys/sysinfo.h>
+#include <unistd.h>
 
 namespace FEXCore::Config {
+  char const* FindUserHomeThroughUID() {
+    auto passwd = getpwuid(geteuid());
+    if (passwd) {
+      return passwd->pw_dir;
+    }
+    return nullptr;
+  }
+
+  const char *GetHomeDirectory() {
+    char const *HomeDir = getenv("HOME");
+
+    // Try to get home directory from uid
+    if (!HomeDir) {
+      HomeDir = FindUserHomeThroughUID();
+    }
+
+    // try the PWD
+    if (!HomeDir) {
+      HomeDir = getenv("PWD");
+    }
+
+    // Still doesn't exit? You get local
+    if (!HomeDir) {
+      HomeDir = ".";
+    }
+
+    return HomeDir;
+  }
+
+  std::string GetConfigDirectory(bool Global) {
+    std::string ConfigDir;
+    if (Global) {
+      ConfigDir = GLOBAL_DATA_DIRECTORY;
+    }
+    else {
+      char const *HomeDir = GetHomeDirectory();
+      char const *ConfigXDG = getenv("XDG_CONFIG_HOME");
+      ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
+      ConfigDir += "/.fex-emu/";
+
+      // Ensure the folder structure is created for our configuration
+      if (!std::filesystem::exists(ConfigDir) &&
+          !std::filesystem::create_directories(ConfigDir)) {
+        LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigDir.c_str());
+        // Let's go local in this case
+        return "./";
+      }
+    }
+
+    return ConfigDir;
+  }
+
+  std::string GetConfigFileLocation() {
+    std::string ConfigFile = GetConfigDirectory(false) + "Config.json";
+    return ConfigFile;
+  }
+
+  std::string GetApplicationConfig(std::string &Filename, bool Global) {
+    std::string ConfigFile = GetConfigDirectory(Global);
+    if (!Global &&
+        !std::filesystem::exists(ConfigFile) &&
+        !std::filesystem::create_directories(ConfigFile)) {
+      LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigFile.c_str());
+      // Let's go local in this case
+      return "./";
+    }
+
+    ConfigFile += "AppConfig/" + Filename + ".json";
+    return ConfigFile;
+  }
+
+  std::string GetDataDirectory() {
+    std::string DataDir{};
+
+    char const *HomeDir = GetHomeDirectory();
+    char const *DataXDG = getenv("XDG_DATA_HOME");
+    DataDir = DataXDG ?: HomeDir;
+    DataDir += "/.fex-emu/";
+    return DataDir;
+  }
+
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config) {
   }
 
@@ -154,7 +237,12 @@ namespace FEXCore::Config {
       }
 
       // Expand relative path to absolute
-      return std::filesystem::absolute(Path);
+      Path = std::filesystem::absolute(Path);
+
+      // Only return if it exists
+      if (std::filesystem::exists(Path)) {
+        return Path;
+      }
     }
     return {};
   }
@@ -180,7 +268,18 @@ namespace FEXCore::Config {
 
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFS)) {
       FEX_CONFIG_OPT(PathName, ROOTFS);
-      ExpandPathIfExists(FEXCore::Config::CONFIG_ROOTFS, PathName());
+      auto ExpandedString = ExpandPath(PathName());
+      if (!ExpandedString.empty()) {
+        // Adjust the path if it ended up being relative
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
+      }
+      else if (!PathName().empty()) {
+        // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
+        std::string NamedRootFS = GetDataDirectory() + "RootFS/" + PathName();
+        if (std::filesystem::exists(NamedRootFS)) {
+          FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
+        }
+      }
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKHOSTLIBS)) {
       FEX_CONFIG_OPT(PathName, THUNKHOSTLIBS);
