@@ -14,7 +14,11 @@ $end_info$
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Core/CodeLoader.h>
+#include <FEXCore/Utils/ELFLoader.h>
 #include <fcntl.h>
+#include <filesystem>
+#include <fstream>
 #include <limits.h>
 #include <linux/futex.h>
 #include <numaif.h>
@@ -30,6 +34,135 @@ $end_info$
 
 namespace FEX::HLE {
 SyscallHandler *_SyscallHandler{};
+
+static bool IsSupportedByInterpreter(std::string const &Filename) {
+  // If it is a supported ELF then we can
+  if (ELFLoader::ELFContainer::IsSupportedELF(Filename.c_str())) {
+    return true;
+  }
+
+  // If it is a shebang then we also can
+  std::fstream File;
+  size_t FileSize{0};
+  File.open(Filename, std::fstream::in | std::fstream::binary);
+
+  if (!File.is_open())
+    return false;
+
+  File.seekg(0, File.end);
+  FileSize = File.tellg();
+  File.seekg(0, File.beg);
+
+  // Is the file large enough for shebang
+  if (FileSize <= 2)
+    return false;
+
+  // Handle shebang files
+  if (File.get() == '#' &&
+      File.get() == '!') {
+    std::string InterpreterLine;
+    std::getline(File, InterpreterLine);
+    std::vector<std::string> ShebangArguments{};
+
+    // Shebang line can have a single argument
+    std::istringstream InterpreterSS(InterpreterLine);
+    std::string Argument;
+    while (std::getline(InterpreterSS, Argument, ' ')) {
+      if (Argument.empty()) {
+        continue;
+      }
+      ShebangArguments.emplace_back(Argument);
+    }
+
+    // Executable argument
+    std::string &ShebangProgram = ShebangArguments[0];
+
+    // If the filename is absolute then prepend the rootfs
+    // If it is relative then don't append the rootfs
+    if (ShebangProgram[0] == '/') {
+      std::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
+      ShebangProgram = RootFS + ShebangProgram;
+    }
+
+    std::error_code ec;
+    bool exists = std::filesystem::exists(ShebangProgram, ec);
+    if (ec || !exists) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std::vector<const char*> &envp) {
+  std::string Filename{};
+
+  std::error_code ec;
+  std::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
+  // Check the rootfs if it is available first
+  if (pathname[0] == '/') {
+    Filename = RootFS  + pathname;
+
+    bool exists = std::filesystem::exists(Filename, ec);
+    if (ec || !exists) {
+      Filename = pathname;
+    }
+  }
+  else {
+    Filename = pathname;
+  }
+
+  bool exists = std::filesystem::exists(Filename, ec);
+  if (ec || !exists) {
+    return -ENOENT;
+  }
+
+  uint64_t Result{};
+  if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled()) {
+    // If the FEX interpreter is installed then just execve the thing
+    Result = execve(Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)));
+    SYSCALL_ERRNO();
+  }
+
+  // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
+  // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
+  // Kernel does its own checks for file format support for this
+  ELFLoader::ELFContainer::ELFType Type = ELFLoader::ELFContainer::GetELFType(Filename);
+  if (!IsSupportedByInterpreter(Filename) && Type == ELFLoader::ELFContainer::ELFType::TYPE_NONE) {
+    // If our interpeter doesn't support this file format AND ELF format is NONE then ENOEXEC
+    // binfmt_misc could end up handling this case but we can't know that without parsing binfmt_misc ourselves
+    // Return -ENOEXEC until proven otherwise
+    return -ENOEXEC;
+  }
+
+  if (Type == ELFLoader::ELFContainer::ELFType::TYPE_OTHER_ELF) {
+    // We are trying to execute an ELF of a different architecture
+    // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
+    // Just execve it and let the kernel handle the process
+    Result = execve(Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)));
+    SYSCALL_ERRNO();
+  }
+
+  // We don't have an interpreter installed
+  // We now need to munge the arguments
+  std::vector<const char *> ExecveArgs{};
+  FEX::HLE::_SyscallHandler->GetCodeLoader()->GetExecveArguments(&ExecveArgs);
+  if (!FEX::HLE::_SyscallHandler->IsInterpreter()) {
+    // If we were launched from FEXLoader then we need to make sure to split arguments from FEXLoader and guest
+    ExecveArgs.emplace_back("--");
+  }
+
+  // Overwrite the filename with the new one we are redirecting to
+  argv[0] = Filename.c_str();
+
+  // Append the arguments together
+  ExecveArgs.insert(ExecveArgs.end(), argv.begin(), argv.end());
+
+  Result = execve("/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), const_cast<char *const *>(&envp.at(0)));
+
+  SYSCALL_ERRNO();
+}
 
 uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr) {
   std::lock_guard<std::mutex> lk(MMapMutex);

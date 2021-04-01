@@ -61,6 +61,11 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
   : File {file} {
   FillLibrarySearchPaths();
 
+  // Don't try to load the file if it was invalid
+  if (!File->WasLoaded()) {
+    return;
+  }
+
   std::vector<std::string> UnfilledDependencies;
   std::vector<ELFInfo*> NewLibraries;
 

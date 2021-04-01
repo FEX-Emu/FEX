@@ -12,7 +12,6 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Utils/ELFLoader.h>
 
 #include <stdint.h>
@@ -283,63 +282,19 @@ namespace FEX::HLE::x32 {
     REGISTER_SYSCALL_IMPL_X32(execve, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, uint32_t *argv, uint32_t *envp) -> uint64_t {
       std::vector<const char*> Args;
       std::vector<const char*> Envp;
-      std::string Filename{};
 
-      std::error_code ec;
-      // Check the rootfs if it is available first
-      if (pathname[0] == '/') {
-        Filename = FEX::HLE::_SyscallHandler->RootFSPath() + pathname;
-
-        bool exists = std::filesystem::exists(Filename, ec);
-        if (ec || !exists) {
-          Filename = pathname;
-        }
-      }
-      else {
-        Filename = pathname;
+      for (int i = 0; argv[i]; i++) {
+        Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
       }
 
-      bool exists = std::filesystem::exists(Filename, ec);
-      if (ec || !exists) {
-        return -ENOENT;
+      Args.push_back(nullptr);
+
+      for (int i = 0; envp[i]; i++) {
+        Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
       }
+      Envp.push_back(nullptr);
 
-      auto PushBackDefaultArgs = [&](uint32_t *argv, uint32_t *envp) {
-        for (int i = 1; argv[i]; i++) {
-          Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
-        }
-
-        Args.push_back(nullptr);
-
-        for (int i = 0; envp[i]; i++) {
-          Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
-        }
-        Envp.push_back(nullptr);
-      };
-
-      uint64_t Result{};
-      if (FEX::HLE::_SyscallHandler->IsInterpreter()) {
-        if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() && ELFLoader::ELFContainer::IsSupportedELF(Filename.c_str())) {
-          PushBackDefaultArgs(argv, envp);
-          Result = execve(Filename.c_str(), const_cast<char *const *>(&Args[0]), const_cast<char *const *>(&Envp[0]));
-          SYSCALL_ERRNO();
-        }
-        else {
-          // Otherwise we need to fall down the interpreter unsupported code path
-          FEX::HLE::_SyscallHandler->GetCodeLoader()->GetExecveArguments(&Args);
-        }
-      }
-      else {
-        FEX::HLE::_SyscallHandler->GetCodeLoader()->GetExecveArguments(&Args);
-        Args.push_back("--");
-      }
-
-      Args.emplace_back(Filename.c_str());
-      PushBackDefaultArgs(argv, envp);
-
-      Result = execve("/proc/self/exe", const_cast<char *const *>(&Args[0]), const_cast<char *const *>(&Envp[0]));
-
-      SYSCALL_ERRNO();
+      return FEX::HLE::ExecveHandler(pathname, Args, Envp);
     });
 
     REGISTER_SYSCALL_IMPL_X32(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage_32 *rusage) -> uint64_t {

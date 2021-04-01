@@ -640,6 +640,9 @@ namespace FEX::EmulatedFile {
   }
 
   int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
+    if (!pathname || strlen(pathname) == 0) {
+      return -1;
+    }
     std::error_code ec;
     bool exists = std::filesystem::exists(pathname, ec);
     if (ec) {

@@ -103,7 +103,17 @@ public:
   ELFMode GetMode() const { return Mode; }
   size_t GetProgramHeaderCount() const { return ProgramHeaders.size(); }
 
-  static bool IsSupportedELF(std::string const &Filename);
+  enum ELFType {
+    TYPE_NONE,
+    TYPE_X86_64,
+    TYPE_X86_32,
+    TYPE_OTHER_ELF,
+  };
+  static ELFType GetELFType(std::string const &Filename);
+  static bool IsSupportedELF(std::string const &Filename) {
+    ELFType Type = GetELFType(Filename);
+    return Type == TYPE_X86_64 || Type == TYPE_X86_32;
+  }
 
 private:
   bool LoadELF(std::string const &Filename);
