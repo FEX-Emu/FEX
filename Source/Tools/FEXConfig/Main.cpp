@@ -1,5 +1,7 @@
 #include "Common/Config.h"
 
+#include <FEXCore/Utils/Event.h>
+
 #include <imgui.h>
 #define YES_IMGUIFILESYSTEM
 #include <addons/imgui_user.h>
@@ -7,8 +9,11 @@
 #include <SDL.h>
 #include <SDL_scancode.h>
 #include <memory>
+#include <mutex>
 #include <filesystem>
+#include <sys/inotify.h>
 #include <thread>
+#include <unistd.h>
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
@@ -18,6 +23,7 @@ namespace {
   static bool ConfigOpen{};
   static bool ConfigChanged{};
   static int EnvironmentVariableSelected{};
+  static int NamedRootFSSelected{-1};
 
   static std::string ConfigFilename{};
   static std::unique_ptr<FEXCore::Config::Layer> LoadedConfig{};
@@ -35,6 +41,15 @@ namespace {
   static ImGuiFs::Dialog DialogSaveAs{};
   static ImGuiFs::Dialog DialogOpen{};
 
+  // Named rootfs
+  static std::vector<std::string> NamedRootFS{};
+  static std::mutex NamedRootFSUpdator{};
+
+  static std::atomic<int> INotifyFD{-1};
+  static int INotifyFolderFD{};
+  static std::thread INotifyThreadHandle{};
+  static std::atomic_bool INotifyShutdown{};
+
   void OpenMsgMessagePopup(std::string Message) {
     OpenMsgPopup = true;
     MsgMessage = Message;
@@ -50,6 +65,74 @@ namespace {
     ConfigFilename = Filename;
     LoadedConfig = std::make_unique<FEX::Config::MainLoader>(Filename);
     LoadedConfig->Load();
+  }
+
+  void LoadNamedRootFSFolder() {
+    std::scoped_lock<std::mutex> lk{NamedRootFSUpdator};
+    NamedRootFS.clear();
+    std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+    for (auto &it : std::filesystem::directory_iterator(RootFS)) {
+      if (it.is_directory()) {
+        NamedRootFS.emplace_back(it.path().filename());
+      }
+    }
+  }
+
+  void INotifyThread() {
+    while (!INotifyShutdown) {
+      constexpr size_t DATA_SIZE = (16 * (sizeof(struct inotify_event) + NAME_MAX + 1));
+      char buf[DATA_SIZE];
+      struct timeval tv{};
+      // 50 ms
+      tv.tv_usec = 50000;
+
+      int Ret{};
+      do {
+        fd_set Set{};
+        FD_ZERO(&Set);
+        FD_SET(INotifyFD, &Set);
+        Ret = select(INotifyFD + 1, &Set, nullptr, nullptr, &tv);
+      } while (Ret == 0 && INotifyFD != -1);
+
+      if (Ret == -1 || INotifyFD == -1) {
+        // Just return on error
+        INotifyShutdown = true;
+        return;
+      }
+
+      // Spin through the events, we don't actually care what they are
+      while (read(INotifyFD, buf, DATA_SIZE) > 0);
+
+      // Now update the named vector
+      LoadNamedRootFSFolder();
+
+      // Update the window
+      SDL_Event Event{};
+      Event.type = SDL_USEREVENT;
+      SDL_PushEvent(&Event);
+    }
+  }
+
+  void SetupINotify() {
+    INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+    INotifyShutdown = false;
+
+    std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+    INotifyFolderFD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
+    if (INotifyFolderFD != -1) {
+      INotifyThreadHandle = std::thread(INotifyThread);
+    }
+    else {
+      printf("Failed INotify thread\n");
+    }
+  }
+
+  void ShutdownINotify() {
+    close(INotifyFD);
+    INotifyFD = -1;
+    if (INotifyThreadHandle.joinable()) {
+      INotifyThreadHandle.join();
+    }
   }
 
   void LoadDefaultSettings() {
@@ -155,6 +238,22 @@ namespace {
     return false;
   }
 
+  bool NamedRootFSVariableFiller(void *data, int idx, const char** out_text) {
+    std::scoped_lock<std::mutex> lk{NamedRootFSUpdator};
+    static char TmpString[256];
+    if (idx >= 0 && idx < NamedRootFS.size()) {
+      // Since this is a list, we don't have a linear allocator that we can just jump to an element
+      // Just do a quick spin
+      snprintf(TmpString, 256, "%s", NamedRootFS.at(idx).c_str());
+      *out_text = TmpString;
+
+      return true;
+    }
+
+    return false;
+  }
+
+
   void DeleteEnvironmentVariable(int idx) {
     auto Value = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENV);
     auto List = (*Value);
@@ -190,13 +289,23 @@ namespace {
     char ThunkConfigPath[256]{};
 
     int NumEnvironmentVariables{};
+    int NumRootFSPaths = NamedRootFS.size();
 
     if (ImGui::BeginTabItem("Emulation")) {
       auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ROOTFS);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(RootFS, &(*Value)->at(0), 256);
       }
+      ImGui::Text("Available named RootFS folders: %d", NumRootFSPaths);
+
+      if (ImGui::ListBox("Named RootFS folders", &NamedRootFSSelected, NamedRootFSVariableFiller, nullptr, NumRootFSPaths)) {
+        strncpy(RootFS, NamedRootFS.at(NamedRootFSSelected).c_str(), 256);
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ROOTFS, RootFS);
+        ConfigChanged = true;
+      }
+
       if (ImGui::InputText("RootFS:", RootFS, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        NamedRootFSSelected = -1;
         LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ROOTFS, RootFS);
         ConfigChanged = true;
       }
@@ -487,10 +596,14 @@ namespace {
     if (Selected.OpenDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_O) && io.KeyCtrl && io.KeyShift)) {
       OpenFile(FEXCore::Config::GetConfigFileLocation());
+      LoadNamedRootFSFolder();
+      SetupINotify();
     }
     if (Selected.LoadDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_D) && io.KeyCtrl && io.KeyShift)) {
       LoadDefaultSettings();
+      LoadNamedRootFSFolder();
+      SetupINotify();
     }
 
     if (Selected.Save ||
@@ -509,6 +622,7 @@ namespace {
     if (Selected.Close ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_W) && io.KeyCtrl && !io.KeyShift)) {
       CloseConfig();
+      ShutdownINotify();
     }
 
     ImGui::End(); // End dockspace
@@ -608,6 +722,8 @@ int main() {
 
     SDL_GL_SwapWindow(window);
   }
+
+  ShutdownINotify();
 
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
