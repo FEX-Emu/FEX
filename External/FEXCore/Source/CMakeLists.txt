@@ -124,6 +124,7 @@ set (SRCS
   Utils/ELFLoader.cpp
   Utils/ELFSymbolDatabase.cpp
   Utils/LogManager.cpp
+  Utils/Threads.cpp
   )
 
 if(_M_ARM_64)

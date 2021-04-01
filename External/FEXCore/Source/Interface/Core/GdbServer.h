@@ -3,13 +3,17 @@ $info$
 tags: glue|gdbserver
 $end_info$
 */
+#pragma once
 
 #include <mutex>
 #include <thread>
 
 #include "Interface/Context/Context.h"
-
 #include "Common/NetStream.h"
+
+#include <FEXCore/Utils/Threads.h>
+
+#include <mutex>
 
 namespace FEXCore {
 
@@ -17,12 +21,14 @@ class GdbServer {
 public:
     GdbServer(FEXCore::Context::Context *ctx);
 
+    // Public for threading
+    void GdbServerLoop();
+
 private:
     void Break(int signal);
 
     std::unique_ptr<std::iostream> OpenSocket();
     void StartThread();
-    void GdbServerLoop();
     std::string ReadPacket(std::iostream &stream);
     void SendPacket(std::ostream &stream, std::string packet);
 
@@ -55,7 +61,7 @@ private:
     HandledPacketType readReg(std::string& packet);
 
     FEXCore::Context::Context *CTX;
-    std::thread gdbServerThread;
+    std::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
     std::unique_ptr<std::iostream> CommsStream;
     std::mutex sendMutex;
     bool SettingNoAckMode{false};

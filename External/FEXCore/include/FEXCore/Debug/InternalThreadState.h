@@ -5,9 +5,9 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/Utils/Threads.h>
 
 #include <unordered_map>
-#include <thread>
 
 namespace FEXCore {
   class LookupCache;
@@ -80,7 +80,7 @@ namespace FEXCore::Core {
     FEXCore::Context::Context *CTX;
     std::atomic<SignalEvent> SignalReason {SignalEvent::SIGNALEVENT_NONE};
 
-    std::thread ExecutionThread;
+    std::unique_ptr<FEXCore::Threads::Thread> ExecutionThread;
     Event StartRunning;
     Event ThreadWaiting;
 

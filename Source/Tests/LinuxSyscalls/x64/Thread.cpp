@@ -128,7 +128,7 @@ namespace FEX::HLE::x64 {
 
         if (flags & CLONE_VFORK) {
           // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
-          NewThread->ExecutionThread.join();
+          NewThread->ExecutionThread->join(nullptr);
 
           // Normally a thread cleans itself up on exit. But because we need to join, we are now responsible
           FEXCore::Context::DestroyThread(Thread->CTX, NewThread);

@@ -2,6 +2,7 @@
 
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/Utils/Threads.h>
 
 #include <memory>
 #include <thread>
@@ -45,12 +46,14 @@ class CompileService final {
     WorkItem *CompileCode(uint64_t RIP);
     void ClearCache(FEXCore::Core::InternalThreadState *Thread);
 
+    // Public for threading
+    void ExecutionThread();
+
   private:
     FEXCore::Context::Context *CTX;
     FEXCore::Core::InternalThreadState *ParentThread;
 
-    void ExecutionThread();
-    std::thread WorkerThread;
+    std::unique_ptr<FEXCore::Threads::Thread> WorkerThread;
     std::unique_ptr<FEXCore::Core::InternalThreadState> CompileThreadData;
 
     std::mutex QueueMutex{};
