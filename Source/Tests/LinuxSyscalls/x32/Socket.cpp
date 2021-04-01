@@ -149,6 +149,7 @@ namespace FEX::HLE::x32 {
 
           HostHeader.msg_flags = guest_msg->msg_flags;
           if (HostHeader.msg_controllen) {
+            //fprintf(stderr, "sendmsg: msg_controllen: %ld\n", HostHeader.msg_controllen);
             void *CurrentGuestPtr = guest_msg->msg_control;
             struct cmsghdr *CurrentHost = reinterpret_cast<struct cmsghdr*>(HostHeader.msg_control);
 
@@ -162,6 +163,7 @@ namespace FEX::HLE::x32 {
               if (msghdr_guest->cmsg_len) {
                 size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
                 CurrentHost->cmsg_len = msghdr_guest->cmsg_len + SizeIncrease;
+                //fprintf(stderr, "sendmsg: cmsg_len: %ld\n", CurrentHost->cmsg_len);
                 HostHeader.msg_controllen += SizeIncrease;
                 memcpy(CMSG_DATA(CurrentHost), msghdr_guest->cmsg_data, msghdr_guest->cmsg_len - sizeof(cmsghdr32));
               }
@@ -175,12 +177,15 @@ namespace FEX::HLE::x32 {
               }
               else {
                 CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + msghdr_guest->cmsg_len);
+                CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
                 if (CurrentGuestPtr >= reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(static_cast<void*>(guest_msg->msg_control)) + guest_msg->msg_controllen)) {
                   CurrentGuestPtr = nullptr;
                 }
               }
             }
           }
+
+          //fprintf(stderr, "sendmsg: msg_controllen final: %ld\n", HostHeader.msg_controllen);
 
           Result = ::sendmsg(Arguments[0], &HostHeader, Arguments[2]);
           break;
@@ -200,8 +205,8 @@ namespace FEX::HLE::x32 {
           HostHeader.msg_iov = &Host_iovec.at(0);
           HostHeader.msg_iovlen = guest_msg->msg_iovlen;
 
-          HostHeader.msg_control = alloca(guest_msg->msg_controllen);
-          HostHeader.msg_controllen = guest_msg->msg_controllen;
+          HostHeader.msg_control = alloca(guest_msg->msg_controllen+8);
+          HostHeader.msg_controllen = guest_msg->msg_controllen+8;
 
           HostHeader.msg_flags = guest_msg->msg_flags;
 
@@ -215,6 +220,7 @@ namespace FEX::HLE::x32 {
             guest_msg->msg_controllen = HostHeader.msg_controllen;
             guest_msg->msg_flags = HostHeader.msg_flags;
             if (HostHeader.msg_controllen) {
+              //fprintf(stderr, "recvmsg: msg_controllen: %ld\n", HostHeader.msg_controllen);
               // Host and guest cmsg data structures aren't compatible.
               // Copy them over now
               void *CurrentGuestPtr = guest_msg->msg_control;
@@ -233,15 +239,21 @@ namespace FEX::HLE::x32 {
                 if (cmsg->cmsg_len) {
                   size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
                   CurrentGuest->cmsg_len = cmsg->cmsg_len - SizeIncrease;
+                  //fprintf(stderr, "recvmsg: cmsg_len: %d\n", CurrentGuest->cmsg_len);
 
                   // Controllen size also changes
                   guest_msg->msg_controllen -= SizeIncrease;
 
                   memcpy(CurrentGuest->cmsg_data, CMSG_DATA(cmsg), cmsg->cmsg_len - sizeof(struct cmsghdr));
-                  CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + cmsg->cmsg_len);
+                  CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + CurrentGuest->cmsg_len);
+                  CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
+                } else {
+                  CurrentGuest->cmsg_len = 0;
+                  fprintf(stderr, "cmsg_len == 0?!\n");
                 }
               }
             }
+            //fprintf(stderr, "recvmsg: msg_controllen: %d\n", guest_msg->msg_controllen);
           }
           break;
         }
