@@ -67,7 +67,7 @@
       "ThunkGuestLibs": {
         "Type": "str",
         "Default": "",
-        "ShortArg": "t",
+        "ShortArg": "j",
         "Desc": [
           "Folder to find the guest-side thunking libraries."
         ]
