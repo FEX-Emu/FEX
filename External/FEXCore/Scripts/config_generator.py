@@ -362,6 +362,41 @@ def print_parse_argloader_options(options):
 
     output_argloader.write("#endif\n")
 
+def check_for_duplicate_options(options):
+    short_map = []
+    long_map = []
+
+    # Spin through all the items and see if we have a duplicate option
+    for op_group, group_vals in options.items():
+        for op_key, op_vals in group_vals.items():
+            short = None
+            long = op_key.lower()
+            long_invert = None
+            if ("ShortArg" in op_vals):
+                short = op_vals["ShortArg"]
+            if (op_vals["Type"] == "bool"):
+                long_invert = "no-" + long
+
+            # Check for short key duplication
+            if (short != None):
+                if (short in short_map):
+                    raise Exception("Short config '{0}' for option '{1}' has duplicate entry!".format(short, op_key))
+                else:
+                    short_map.append(short)
+
+            # Check for long key duplication
+            if (long in long_map):
+                raise Exception("Long config '{0}' has duplicate entry!".format(long))
+            else:
+                long_map.append(long)
+
+            # Check for long key duplication
+            if (long_invert != None):
+                if (long_invert in long_map):
+                    raise Exception("Long config '{0}' has duplicate entry!".format(long_invert))
+                else:
+                    long_map.append(long_invert)
+
 if (len(sys.argv) < 5):
     sys.exit()
 
@@ -377,6 +412,8 @@ json_object = json.loads(json_text)
 
 options = json_object["Options"]
 unnamed_options = json_object["UnnamedOptions"]
+
+check_for_duplicate_options(options)
 
 # Generate config include file
 output_file = open(output_filename, "w")
