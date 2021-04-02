@@ -56,15 +56,16 @@ namespace {
     MsgTimerStart = std::chrono::high_resolution_clock::now();
   }
 
-  void OpenFile(std::string Filename) {
+  bool OpenFile(std::string Filename) {
     if (!std::filesystem::exists(Filename)) {
       OpenMsgMessagePopup("Couldn't open: " + Filename);
-      return;
+      return false;
     }
     ConfigOpen = true;
     ConfigFilename = Filename;
     LoadedConfig = std::make_unique<FEX::Config::MainLoader>(Filename);
     LoadedConfig->Load();
+    return true;
   }
 
   void LoadNamedRootFSFolder() {
@@ -604,9 +605,10 @@ namespace {
     }
     if (Selected.OpenDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_O) && io.KeyCtrl && io.KeyShift)) {
-      OpenFile(FEXCore::Config::GetConfigFileLocation());
-      LoadNamedRootFSFolder();
-      SetupINotify();
+      if (OpenFile(FEXCore::Config::GetConfigFileLocation())) {
+        LoadNamedRootFSFolder();
+        SetupINotify();
+      }
     }
     if (Selected.LoadDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_D) && io.KeyCtrl && io.KeyShift)) {
