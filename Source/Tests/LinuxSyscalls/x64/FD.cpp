@@ -91,8 +91,8 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(pselect6, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const sigset_t *sigmask) -> uint64_t {
-      uint64_t Result = pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+    REGISTER_SYSCALL_IMPL_X64(pselect6, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const void *sigmaskpack) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_pselect6, nfds, readfds, writefds, exceptfds, timeout, sigmaskpack);
       SYSCALL_ERRNO();
     });
 
