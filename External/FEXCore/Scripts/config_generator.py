@@ -224,10 +224,7 @@ def print_config_option(type, group_name, json_name, default_value, short, choic
 
         output_argloader.write("\n")
 
-        if (default_value == "true"):
-            output_argloader.write("\t.action(\"store_false\")\n")
-        else:
-            output_argloader.write("\t.action(\"store_true\")\n")
+        output_argloader.write("\t.action(\"store_true\")\n")
 
         output_argloader.write("\t.dest(\"{0}\")\n".format(json_name));
 
@@ -246,11 +243,8 @@ def print_config_option(type, group_name, json_name, default_value, short, choic
         output_argloader.write("{0}Group".format(group_name))
         output_argloader.write(".add_option(\"--no-{0}\")\n".format(json_name.lower()))
 
-        # Inverted case
-        if (default_value == "true"):
-            output_argloader.write("\t.action(\"store_true\")\n")
-        else:
-            output_argloader.write("\t.action(\"store_false\")\n")
+        # Inverted case sets the bool to false
+        output_argloader.write("\t.action(\"store_false\")\n")
 
         output_argloader.write("\t.dest(\"{0}\");\n".format(json_name));
     else:
@@ -326,7 +320,6 @@ def print_argloader_options(options):
 
         output_argloader.write("\n")
     output_argloader.write("#endif\n")
-
 
 def print_parse_argloader_options(options):
     output_argloader.write("#ifdef AFTER_PARSE\n")
