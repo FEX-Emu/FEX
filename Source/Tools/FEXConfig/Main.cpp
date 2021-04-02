@@ -121,6 +121,11 @@ namespace {
   }
 
   void SetupINotify() {
+    if (INotifyFD == -1) {
+      // Already setup
+      return;
+    }
+
     INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
     INotifyShutdown = false;
 
@@ -128,9 +133,6 @@ namespace {
     INotifyFolderFD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
     if (INotifyFolderFD != -1) {
       INotifyThreadHandle = std::thread(INotifyThread);
-    }
-    else {
-      printf("Failed INotify thread\n");
     }
   }
 
