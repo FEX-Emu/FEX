@@ -56,21 +56,47 @@ namespace {
     MsgTimerStart = std::chrono::high_resolution_clock::now();
   }
 
-  void OpenFile(std::string Filename) {
+  void LoadDefaultSettings() {
+    ConfigOpen = true;
+    ConfigFilename = {};
+    LoadedConfig = std::make_unique<FEX::Config::EmptyMapper>();
+#define OPT_BASE(type, group, enum, json, default) \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default));
+#define OPT_STR(group, enum, json, default) \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);
+#define OPT_STRARRAY(group, enum, json, default)  // Do nothing
+#include <FEXCore/Config/ConfigValues.inl>
+  }
+
+  bool OpenFile(std::string Filename,  bool LoadDefault = false) {
     if (!std::filesystem::exists(Filename)) {
+      if (LoadDefault) {
+        LoadDefaultSettings();
+        ConfigFilename = Filename;
+        OpenMsgMessagePopup("Opened with default options: " + Filename);
+        return true;
+      }
       OpenMsgMessagePopup("Couldn't open: " + Filename);
-      return;
+      return false;
     }
     ConfigOpen = true;
     ConfigFilename = Filename;
     LoadedConfig = std::make_unique<FEX::Config::MainLoader>(Filename);
     LoadedConfig->Load();
+    return true;
   }
 
   void LoadNamedRootFSFolder() {
     std::scoped_lock<std::mutex> lk{NamedRootFSUpdator};
     NamedRootFS.clear();
     std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+    if (!std::filesystem::exists(RootFS)) {
+      // Doesn't exist, create the the folder as a user convenience
+      if (!std::filesystem::create_directories(RootFS)) {
+        // Well I guess we failed
+        return;
+      }
+    }
     for (auto &it : std::filesystem::directory_iterator(RootFS)) {
       if (it.is_directory()) {
         NamedRootFS.emplace_back(it.path().filename());
@@ -114,6 +140,11 @@ namespace {
   }
 
   void SetupINotify() {
+    if (INotifyFD == -1) {
+      // Already setup
+      return;
+    }
+
     INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
     INotifyShutdown = false;
 
@@ -121,9 +152,6 @@ namespace {
     INotifyFolderFD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
     if (INotifyFolderFD != -1) {
       INotifyThreadHandle = std::thread(INotifyThread);
-    }
-    else {
-      printf("Failed INotify thread\n");
     }
   }
 
@@ -133,18 +161,6 @@ namespace {
     if (INotifyThreadHandle.joinable()) {
       INotifyThreadHandle.join();
     }
-  }
-
-  void LoadDefaultSettings() {
-    ConfigOpen = true;
-    ConfigFilename = {};
-    LoadedConfig = std::make_unique<FEX::Config::EmptyMapper>();
-#define OPT_BASE(type, group, enum, json, default) \
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default));
-#define OPT_STR(group, enum, json, default) \
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);
-#define OPT_STRARRAY(group, enum, json, default)  // Do nothing
-#include <FEXCore/Config/ConfigValues.inl>
   }
 
   void SaveFile(std::string Filename) {
@@ -569,24 +585,24 @@ namespace {
         ImGui::EndPopup();
       }
 
-      // Need this frame delay loop since ImGui doesn't allow us to enable a popup near the end of the frame
-      if (OpenMsgPopup) {
-        ImGui::OpenPopup(MsgPopupName);
-        OpenMsgPopup = false;
-      }
-
-      // Center the saved popup in the center of the window
-      ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + viewport->Size.x / 2, viewport->Pos.y + viewport->Size.y / 2), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-      if (ImGui::BeginPopup(MsgPopupName)) {
-        ImGui::Text("%s", MsgMessage.c_str());
-        if ((std::chrono::high_resolution_clock::now() - MsgTimerStart) >= std::chrono::seconds(2)) {
-          ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-      }
-
       ImGui::End();
+    }
+
+    // Need this frame delay loop since ImGui doesn't allow us to enable a popup near the end of the frame
+    if (OpenMsgPopup) {
+      ImGui::OpenPopup(MsgPopupName);
+      OpenMsgPopup = false;
+    }
+
+    // Center the saved popup in the center of the window
+    ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + viewport->Size.x / 2, viewport->Pos.y + viewport->Size.y / 2), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    if (ImGui::BeginPopup(MsgPopupName)) {
+      ImGui::Text("%s", MsgMessage.c_str());
+      if ((std::chrono::high_resolution_clock::now() - MsgTimerStart) >= std::chrono::seconds(2)) {
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::EndPopup();
     }
 
     if (Selected.Open ||
@@ -595,9 +611,10 @@ namespace {
     }
     if (Selected.OpenDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_O) && io.KeyCtrl && io.KeyShift)) {
-      OpenFile(FEXCore::Config::GetConfigFileLocation());
-      LoadNamedRootFSFolder();
-      SetupINotify();
+      if (OpenFile(FEXCore::Config::GetConfigFileLocation(), true)) {
+        LoadNamedRootFSFolder();
+        SetupINotify();
+      }
     }
     if (Selected.LoadDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_D) && io.KeyCtrl && io.KeyShift)) {
@@ -649,7 +666,7 @@ namespace {
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
   std::string ImGUIConfig = FEXCore::Config::GetConfigDirectory(false) + "FEXConfig_imgui.ini";
 
   // Setup SDL
@@ -688,6 +705,14 @@ int main() {
   ImGui_ImplOpenGL3_Init(glsl_version);
 
   GlobalTime = std::chrono::high_resolution_clock::now();
+
+  // Attempt to open the config passed in
+  if (argc > 1) {
+    if (OpenFile(argv[1], true)) {
+      LoadNamedRootFSFolder();
+      SetupINotify();
+    }
+  }
 
   bool Done{};
   while (!Done) {
