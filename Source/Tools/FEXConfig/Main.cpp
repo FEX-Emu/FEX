@@ -56,8 +56,26 @@ namespace {
     MsgTimerStart = std::chrono::high_resolution_clock::now();
   }
 
-  bool OpenFile(std::string Filename) {
+  void LoadDefaultSettings() {
+    ConfigOpen = true;
+    ConfigFilename = {};
+    LoadedConfig = std::make_unique<FEX::Config::EmptyMapper>();
+#define OPT_BASE(type, group, enum, json, default) \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default));
+#define OPT_STR(group, enum, json, default) \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);
+#define OPT_STRARRAY(group, enum, json, default)  // Do nothing
+#include <FEXCore/Config/ConfigValues.inl>
+  }
+
+  bool OpenFile(std::string Filename,  bool LoadDefault = false) {
     if (!std::filesystem::exists(Filename)) {
+      if (LoadDefault) {
+        LoadDefaultSettings();
+        ConfigFilename = Filename;
+        OpenMsgMessagePopup("Opened with default options: " + Filename);
+        return true;
+      }
       OpenMsgMessagePopup("Couldn't open: " + Filename);
       return false;
     }
@@ -143,18 +161,6 @@ namespace {
     if (INotifyThreadHandle.joinable()) {
       INotifyThreadHandle.join();
     }
-  }
-
-  void LoadDefaultSettings() {
-    ConfigOpen = true;
-    ConfigFilename = {};
-    LoadedConfig = std::make_unique<FEX::Config::EmptyMapper>();
-#define OPT_BASE(type, group, enum, json, default) \
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default));
-#define OPT_STR(group, enum, json, default) \
-    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);
-#define OPT_STRARRAY(group, enum, json, default)  // Do nothing
-#include <FEXCore/Config/ConfigValues.inl>
   }
 
   void SaveFile(std::string Filename) {
@@ -605,7 +611,7 @@ namespace {
     }
     if (Selected.OpenDefault ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_O) && io.KeyCtrl && io.KeyShift)) {
-      if (OpenFile(FEXCore::Config::GetConfigFileLocation())) {
+      if (OpenFile(FEXCore::Config::GetConfigFileLocation(), true)) {
         LoadNamedRootFSFolder();
         SetupINotify();
       }
