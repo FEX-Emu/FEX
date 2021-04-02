@@ -286,6 +286,7 @@ function(AddObject Name Type)
     -Werror=implicit-fallthrough
 
     -Wno-trigraphs
+    -ffunction-sections
   )
 
   if (GCC_COLOR)
@@ -311,6 +312,15 @@ function(AddLibrary Name Type)
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
   target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
   target_include_directories(${Name} PUBLIC "${CMAKE_BINARY_DIR}/include/")
+
+  if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+    target_link_options(${Name}
+      PRIVATE
+      "LINKER:--gc-sections"
+      "LINKER:--strip-all"
+      "LINKER:--as-needed"
+    )
+  endif()
 endfunction()
 
 AddObject(${PROJECT_NAME}_object OBJECT)
