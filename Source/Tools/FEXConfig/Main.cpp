@@ -579,24 +579,24 @@ namespace {
         ImGui::EndPopup();
       }
 
-      // Need this frame delay loop since ImGui doesn't allow us to enable a popup near the end of the frame
-      if (OpenMsgPopup) {
-        ImGui::OpenPopup(MsgPopupName);
-        OpenMsgPopup = false;
-      }
-
-      // Center the saved popup in the center of the window
-      ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + viewport->Size.x / 2, viewport->Pos.y + viewport->Size.y / 2), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-      if (ImGui::BeginPopup(MsgPopupName)) {
-        ImGui::Text("%s", MsgMessage.c_str());
-        if ((std::chrono::high_resolution_clock::now() - MsgTimerStart) >= std::chrono::seconds(2)) {
-          ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-      }
-
       ImGui::End();
+    }
+
+    // Need this frame delay loop since ImGui doesn't allow us to enable a popup near the end of the frame
+    if (OpenMsgPopup) {
+      ImGui::OpenPopup(MsgPopupName);
+      OpenMsgPopup = false;
+    }
+
+    // Center the saved popup in the center of the window
+    ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + viewport->Size.x / 2, viewport->Pos.y + viewport->Size.y / 2), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    if (ImGui::BeginPopup(MsgPopupName)) {
+      ImGui::Text("%s", MsgMessage.c_str());
+      if ((std::chrono::high_resolution_clock::now() - MsgTimerStart) >= std::chrono::seconds(2)) {
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::EndPopup();
     }
 
     if (Selected.Open ||
