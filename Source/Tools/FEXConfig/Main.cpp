@@ -71,6 +71,13 @@ namespace {
     std::scoped_lock<std::mutex> lk{NamedRootFSUpdator};
     NamedRootFS.clear();
     std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+    if (!std::filesystem::exists(RootFS)) {
+      // Doesn't exist, create the the folder as a user convenience
+      if (!std::filesystem::create_directories(RootFS)) {
+        // Well I guess we failed
+        return;
+      }
+    }
     for (auto &it : std::filesystem::directory_iterator(RootFS)) {
       if (it.is_directory()) {
         NamedRootFS.emplace_back(it.path().filename());
