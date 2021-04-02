@@ -666,7 +666,7 @@ namespace {
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
   std::string ImGUIConfig = FEXCore::Config::GetConfigDirectory(false) + "FEXConfig_imgui.ini";
 
   // Setup SDL
@@ -705,6 +705,14 @@ int main() {
   ImGui_ImplOpenGL3_Init(glsl_version);
 
   GlobalTime = std::chrono::high_resolution_clock::now();
+
+  // Attempt to open the config passed in
+  if (argc > 1) {
+    if (OpenFile(argv[1], true)) {
+      LoadNamedRootFSFolder();
+      SetupINotify();
+    }
+  }
 
   bool Done{};
   while (!Done) {
