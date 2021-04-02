@@ -28,7 +28,7 @@ for line in sys.stdin.readlines():
             Meta["_Misc"] = []
         Meta["_Misc"].append(line.strip())
 
-print(sys.argv[1])
+print("FEX Release {0}".format(sys.argv[1]))
 
 Category = ""
 Tag = ""
