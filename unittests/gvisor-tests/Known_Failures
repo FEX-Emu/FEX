@@ -69,7 +69,6 @@ alarm_test
 arch_prctl_test
 bad_test
 chown_test
-clock_nanosleep_test
 concurrency_test
 connect_external_test
 creat_test
