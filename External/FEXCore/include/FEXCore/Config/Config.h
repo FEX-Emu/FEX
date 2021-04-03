@@ -102,16 +102,16 @@ namespace Type {
       OptionMap[Option].emplace_back(Data);
     }
 
+    void Erase(ConfigOption Option) {
+      OptionMap.erase(Option);
+    }
+
     const LayerType GetLayerType() const { return Type; }
     const LayerOptions &GetOptionMap() { return OptionMap; }
 
   protected:
     const LayerType Type;
     LayerOptions OptionMap;
-
-    void Erase(ConfigOption Option) {
-      OptionMap.erase(Option);
-    }
   };
 
   void Initialize();
@@ -127,6 +127,7 @@ namespace Type {
   std::optional<std::string*> Get(ConfigOption Option);
 
   void Set(ConfigOption Option, std::string Data);
+  void Erase(ConfigOption Option);
   void EraseSet(ConfigOption Option, std::string Data);
 
   template<typename T>
