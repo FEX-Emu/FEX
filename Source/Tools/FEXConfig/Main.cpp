@@ -66,6 +66,12 @@ namespace {
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);
 #define OPT_STRARRAY(group, enum, json, default)  // Do nothing
 #include <FEXCore/Config/ConfigValues.inl>
+
+    // Erase unnamed options which shouldn't be set
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS_INTERPRETER);
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_INTERPRETER_INSTALLED);
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_FILENAME);
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS64BIT_MODE);
   }
 
   bool OpenFile(std::string Filename,  bool LoadDefault = false) {

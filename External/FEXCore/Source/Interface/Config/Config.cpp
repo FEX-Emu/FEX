@@ -326,6 +326,10 @@ namespace FEXCore::Config {
     Meta->Set(Option, Data);
   }
 
+  void Erase(ConfigOption Option) {
+    Meta->Erase(Option);
+  }
+
   void EraseSet(ConfigOption Option, std::string Data) {
     Meta->EraseSet(Option, Data);
   }
