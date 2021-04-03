@@ -275,8 +275,8 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(eventfd, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t initval, uint32_t flags) -> uint64_t {
-      uint64_t Result = ::eventfd(initval, flags);
+    REGISTER_SYSCALL_IMPL(eventfd, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t count) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_eventfd2, count, 0);
       SYSCALL_ERRNO();
     });
 
@@ -319,8 +319,8 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(eventfd2, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int initval, int flags) -> uint64_t {
-      uint64_t Result = ::eventfd(initval, flags);
+    REGISTER_SYSCALL_IMPL(eventfd2, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int count, int flags) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_eventfd2, count, flags);
       SYSCALL_ERRNO();
     });
 
