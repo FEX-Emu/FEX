@@ -10,6 +10,7 @@ $end_info$
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/times.h>
 #include <sys/timex.h>
@@ -39,7 +40,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(clock_nanosleep, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, int flags, const struct timespec *request, struct timespec *remain) -> uint64_t {
-      uint64_t Result = ::clock_nanosleep(clockid, flags, request, remain);
+      uint64_t Result = ::syscall(SYS_clock_nanosleep, clockid, flags, request, remain);
       SYSCALL_ERRNO();
     });
 

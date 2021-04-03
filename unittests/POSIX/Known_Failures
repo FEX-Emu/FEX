@@ -1,12 +1,7 @@
 # these fail
 conformance-interfaces-clock-1-1.test
 conformance-interfaces-clock_getcpuclockid-2-1.testconformance-interfaces-clock-1-1.test
-conformance-interfaces-clock_nanosleep-11-1.test
-conformance-interfaces-clock_nanosleep-13-1.test
 conformance-interfaces-munmap-2-1.test
-conformance-interfaces-nanosleep-10000-1.test
-conformance-interfaces-nanosleep-5-1.test
-conformance-interfaces-nanosleep-6-1.test
 conformance-interfaces-sigqueue-10-1.test
 conformance-interfaces-sigqueue-11-1.test
 conformance-interfaces-sigqueue-12-1.test
