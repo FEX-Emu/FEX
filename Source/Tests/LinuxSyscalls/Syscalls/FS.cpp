@@ -120,15 +120,15 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    /*REGISTER_SYSCALL_IMPL(truncate, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, off_t length) -> uint64_t {
-      SYSCALL_STUB(truncate);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(truncate);
+    REGISTER_SYSCALL_IMPL(truncate, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, off_t length) -> uint64_t {
+      uint64_t Result = ::truncate(path, length);
+      SYSCALL_ERRNO();
+    });
 
-    /*REGISTER_SYSCALL_IMPL(creat, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, mode_t mode) -> uint64_t {
-      SYSCALL_STUB(creat);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(creat);
+    REGISTER_SYSCALL_IMPL(creat, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, mode_t mode) -> uint64_t {
+      uint64_t Result = ::creat(pathname, mode);
+      SYSCALL_ERRNO();
+    });
 
     REGISTER_SYSCALL_IMPL(chroot, [](FEXCore::Core::CpuStateFrame *Frame, const char *path) -> uint64_t {
       uint64_t Result = ::chroot(path);

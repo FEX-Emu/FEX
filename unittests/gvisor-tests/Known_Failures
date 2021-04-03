@@ -71,7 +71,6 @@ bad_test
 chown_test
 concurrency_test
 connect_external_test
-creat_test
 epoll_test
 exceptions_test
 exec_binary_test
@@ -87,7 +86,6 @@ getrusage_test
 inotify_test
 itimer_test
 memfd_test
-mknod_test
 mmap_test
 mount_test
 mremap_test
