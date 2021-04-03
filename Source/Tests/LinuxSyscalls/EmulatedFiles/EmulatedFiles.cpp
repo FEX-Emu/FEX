@@ -627,6 +627,25 @@ namespace FEX::EmulatedFile {
     FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
     FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
 
+    auto cmdline_handler = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+      FILE *fp = tmpfile();
+      auto CodeLoader = FEX::HLE::_SyscallHandler->GetCodeLoader();
+      auto Args = CodeLoader->GetApplicationArguments();
+      // cmdline is an array of null terminated arguments
+      for (size_t i = 1; i < Args->size(); ++i) {
+        auto &Arg = Args->at(i);
+        fwrite(Arg.c_str(), sizeof(uint8_t), Arg.size(), fp);
+        // Finish off with a null terminator
+        fwrite("\0", sizeof(uint8_t), 1, fp);
+      }
+      fseek(fp, 0, SEEK_SET);
+      int32_t f = fileno(fp);
+      return f;
+    };
+
+    FDReadCreators["/proc/self/cmdline"] = cmdline_handler;
+    FDReadCreators["/proc/" + std::to_string(::getpid()) + "/cmdline"] = cmdline_handler;
+
     cpus_online = "0";
     uint64_t CPUCores = ThreadsConfig();
     if (CPUCores > 1) {
