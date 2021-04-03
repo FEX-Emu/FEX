@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <vector>
 
 namespace FEXCore {
@@ -67,6 +68,7 @@ public:
   virtual uint64_t GetFinalRIP() { return ~0ULL; }
 
   virtual char const *FindSymbolNameInRange(uint64_t Address) { return nullptr; }
+  virtual std::vector<std::string> const *GetApplicationArguments() { return nullptr; }
   virtual void GetExecveArguments(std::vector<char const*> *Args) {}
 
   virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}

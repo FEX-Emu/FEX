@@ -732,6 +732,7 @@ public:
     DB.GetInitLocations(Locations);
   }
 
+  std::vector<std::string> const *GetApplicationArguments() override { return &Args; }
   void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
 
   void GetAuxv(uint64_t& addr, uint64_t& size) override {
