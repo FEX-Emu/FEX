@@ -121,7 +121,11 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       NewGuestSP -= sizeof(FEXCore::x86_64::ucontext_t);
       uint64_t UContextLocation = NewGuestSP;
 
+      NewGuestSP -= sizeof(siginfo_t);
+      uint64_t SigInfoLocation = NewGuestSP;
+
       FEXCore::x86_64::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(UContextLocation);
+      siginfo_t *guest_siginfo = reinterpret_cast<siginfo_t*>(SigInfoLocation);
 
       // We have extended float information
       guest_uctx->uc_flags |= FEXCore::x86_64::UC_FP_XSTATE;
@@ -169,8 +173,21 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       guest_uctx->uc_stack.ss_sp = GuestStack->ss_sp;
       guest_uctx->uc_stack.ss_size = GuestStack->ss_size;
 
-      // XXX: siginfo_t(RSI)
-      Frame->State.gregs[X86State::REG_RSI] = 0x4142434445460000;
+      // siginfo_t
+      siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
+      guest_siginfo->si_signo = Signal;
+      switch (Signal) {
+      case SIGSEGV:
+      case SIGBUS:
+        guest_siginfo->si_code = HostSigInfo->si_code;
+        guest_siginfo->si_errno = HostSigInfo->si_errno;
+        // Macro expansion to get the si_addr
+        guest_siginfo->si_addr = HostSigInfo->si_addr;
+        break;
+      default: LogMan::Msg::D("Unhandled siginfo_t signal: %d", Signal); break;
+      }
+
+      Frame->State.gregs[X86State::REG_RSI] = SigInfoLocation;
       Frame->State.gregs[X86State::REG_RDX] = UContextLocation;
     }
     else {
