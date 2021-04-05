@@ -768,20 +768,36 @@ DEF_OP(VNot) {
 
 DEF_OP(VUMin) {
   auto Op = IROp->C<IR::IROp_VUMin>();
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      vpminub(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
-      break;
+  if (Op->Header.Size == Op->Header.ElementSize) {
+    switch (Op->Header.ElementSize) {
+      case 8: {
+        // This isn't very nice on x86 until AVX-512
+        pextrq(TMP1, GetSrc(Op->Header.Args[0].ID()), 0);
+        pextrq(TMP2, GetSrc(Op->Header.Args[1].ID()), 0);
+        cmp(TMP1, TMP2);
+        cmovb(TMP2, TMP1);
+        pinsrq(GetDst(Node), TMP2, 0);
+        break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
     }
-    case 2: {
-      vpminuw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
-      break;
+  }
+  else {
+    switch (Op->Header.ElementSize) {
+      case 1: {
+        vpminub(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        break;
+      }
+      case 2: {
+        vpminuw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        break;
+      }
+      case 4: {
+        vpminud(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        break;
+      }
+      default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
     }
-    case 4: {
-      vpminud(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
-      break;
-    }
-    default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
 }
 
