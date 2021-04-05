@@ -5975,6 +5975,9 @@ void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
   OrderedNode *Result{};
 
   if (Scalar) {
+    // Incoming element size for the shift source is always 8
+    auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+    Src = _VUMin(8, 8, MaxShift, Src);
     Result = _VUShrS(Size, ElementSize, Dest, Src);
   }
   else {
@@ -6020,6 +6023,9 @@ void OpDispatchBuilder::PSLL(OpcodeArgs) {
   OrderedNode *Result{};
 
   if (Scalar) {
+    // Incoming element size for the shift source is always 8
+    auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+    Src = _VUMin(8, 8, MaxShift, Src);
     Result = _VUShlS(Size, ElementSize, Dest, Src);
   }
   else {
@@ -6039,6 +6045,9 @@ void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
   OrderedNode *Result{};
 
   if (Scalar) {
+    // Incoming element size for the shift source is always 8
+    auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+    Src = _VUMin(8, 8, MaxShift, Src);
     Result = _VSShrS(Size, ElementSize, Dest, Src);
   }
   else {
