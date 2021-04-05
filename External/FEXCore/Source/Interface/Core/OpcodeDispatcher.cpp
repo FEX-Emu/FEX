@@ -4241,7 +4241,11 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   uint8_t NumElements = Size / ElementSize;
   Index &= NumElements - 1;
 
-  auto Result = _VExtractToGPR(16, ElementSize, Src, Index);
+  OrderedNode *Result = _VExtractToGPR(16, ElementSize, Src, Index);
+
+  if (ElementSize < 4) {
+    Result = _Bfe(4, ElementSize * 8, 0, Result);
+  }
   StoreResult(GPRClass, Op, Result, -1);
 }
 
