@@ -775,7 +775,10 @@ DEF_OP(VUMin) {
     break;
     }
     case 8: {
-      umin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+      cmhi(VTMP1.V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      mov(VTMP2.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      bif(VTMP2.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), VTMP1.V16B());
+      mov(GetDst(Node).V2D(), VTMP2.V2D());
     break;
     }
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -798,7 +801,10 @@ DEF_OP(VSMin) {
     break;
     }
     case 8: {
-      smin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+      cmgt(VTMP1.V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      mov(VTMP2.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      bif(VTMP2.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), VTMP1.V16B());
+      mov(GetDst(Node).V2D(), VTMP2.V2D());
     break;
     }
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -821,7 +827,10 @@ DEF_OP(VUMax) {
     break;
     }
     case 8: {
-      umax(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+      cmhi(VTMP1.V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      mov(VTMP2.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      bit(VTMP2.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), VTMP1.V16B());
+      mov(GetDst(Node).V2D(), VTMP2.V2D());
     break;
     }
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -844,7 +853,10 @@ DEF_OP(VSMax) {
     break;
     }
     case 8: {
-      smax(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+      cmgt(VTMP1.V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      mov(VTMP2.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      bit(VTMP2.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), VTMP1.V16B());
+      mov(GetDst(Node).V2D(), VTMP2.V2D());
     break;
     }
     default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
