@@ -7,6 +7,13 @@ $end_info$
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
+static void PrintValue(uint64_t Value) {
+  LogMan::Msg::D("Value: 0x%lx", Value);
+}
+
+static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
+  LogMan::Msg::D("Value: 0x%016lx'%016lx", ValueUpper, Value);
+}
 
 using namespace vixl;
 using namespace vixl::aarch64;
@@ -115,6 +122,28 @@ DEF_OP(SetRoundingMode) {
   msr(FPCR, TMP1);
 }
 
+DEF_OP(Print) {
+  auto Op = IROp->C<IR::IROp_Print>();
+
+  PushDynamicRegsAndLR();
+
+  if (IsGPR(Op->Header.Args[0].ID())) {
+    mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
+    LoadConstant(x3, reinterpret_cast<uint64_t>(PrintValue));
+  }
+  else {
+    fmov(x0, GetSrc(Op->Header.Args[0].ID()).V1D());
+    // Bug in vixl that source vector needs to b V1D rather than V2D?
+    fmov(x1, GetSrc(Op->Header.Args[0].ID()).V1D(), 1);
+    LoadConstant(x3, reinterpret_cast<uint64_t>(PrintVectorValue));
+  }
+  SpillStaticRegs();
+  blr(x3);
+  FillStaticRegs();
+
+  PopDynamicRegsAndLR();
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterMiscHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -127,7 +156,7 @@ void Arm64JITCore::RegisterMiscHandlers() {
   REGISTER_OP(BREAK,      Break);
   REGISTER_OP(PHI,        NoOp);
   REGISTER_OP(PHIVALUE,   NoOp);
-  REGISTER_OP(PRINT,      Unhandled);
+  REGISTER_OP(PRINT,      Print);
   REGISTER_OP(GETROUNDINGMODE, GetRoundingMode);
   REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
   REGISTER_OP(INVALIDATEFLAGS,   NoOp);
