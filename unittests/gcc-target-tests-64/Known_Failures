@@ -1,21 +1,32 @@
-# these fail on x86 and arm
+# This has invalid asm generated for its test
+# 'foo' gets the argument in edi
+# Passes the argument to bar in eax
+# 'bar' accepts the argument in edi
+# inline asm is incorrect, needs to use =d and d on the value
 asm-5.c.gcc-target-test-64
-pr88240.c.gcc-target-test-64
+
+# Fails even on host device
+# 'test_pextrw' does a zero extend to the gpr
+# Which means its -3339 value turns in to 0xf2f5
+# While the 'compute_correct_result' value does a sign extension
+# Which turns the value in to 0xfffff2f5
+# This causes its comparison to fail
 sse2-mmx-pextrw.c.gcc-target-test-64
 
-# these fail on arm
-pr72867.c.gcc-target-test-64
-sse2-mmx-pslld.c.gcc-target-test-64
-sse2-mmx-psllq.c.gcc-target-test-64
-sse2-mmx-psllw.c.gcc-target-test-64
-sse2-mmx-psraw.c.gcc-target-test-64
-sse2-mmx-psrad.c.gcc-target-test-64
-sse2-mmx-psrld.c.gcc-target-test-64
-sse2-mmx-psrlq.c.gcc-target-test-64
-sse2-mmx-psrlw.c.gcc-target-test-64
-
-# this is flaky on the ARMv8.0 runner
-mcount_pic.c.gcc-target-test-64
-
-# this uses AVX ops (VMOVAPS)
+# Uses AVX
+# Test is compiled with -march=native, which means the build machine had avx
+# Needs to be recompiled to care about it
 pr57275.c.gcc-target-test-64
+
+# Fails even on host device
+# Stores a large 64bit value in to a union of double and 'unsigned long long'
+# 'test' loads this value in to a x87 register, then stores that value on to the stack
+# Checks the flag and skips a bunch of x87 logic, and loads that value back from the stack in to rax
+# Value has been munged from the fld + fstp step
+# 0xFFF279535D540FE4 was the original value
+# 0xFFFA79535D540FE4 was the value it turned in to
+pr88240.c.gcc-target-test-64
+
+# This relies on SIGPROF which means we need real signal support to handle this
+# Crashes or hangs depending on which runner is running it
+mcount_pic.c.gcc-target-test-64
