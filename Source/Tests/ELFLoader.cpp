@@ -244,8 +244,7 @@ int main(int argc, char **argv, char **const envp) {
   if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17) &&
       !Loader.Is64BitMode()) {
     // We require 4.17 minimum for MAP_FIXED_NOREPLACE on 32bit ELFs
-    LogMan::Msg::E("FEXLoader requires kernel 4.17 minimum");
-    return -1;
+    LogMan::Msg::E("FEXLoader requires kernel 4.17 minimum. Expect problems.");
   }
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
