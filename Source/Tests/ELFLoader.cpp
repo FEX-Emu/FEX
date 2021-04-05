@@ -283,7 +283,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> std::unique_ptr<std::istream> {
-    auto filepath = std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir" / fileid;
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / fileid;
 
     return std::make_unique<std::ifstream>(filepath, std::ios::in | std::ios::binary);
   });
@@ -291,10 +291,10 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::RunUntilExit(CTX);
 
   if (AOTIRCapture()) {
-    std::filesystem::create_directories(std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir");
+    std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir");
 
     auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
-      auto filepath = std::filesystem::path(getenv("HOME")) / ".fex-emu" / "aotir" / fileid;
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / fileid;
       auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
       if (*AOTWrite) {
         std::filesystem::resize_file(filepath, 0);
