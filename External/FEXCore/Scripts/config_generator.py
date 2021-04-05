@@ -159,7 +159,42 @@ def print_man_environment(options):
                 default
             )
 
+    print_man_environment_tail()
     output_man.write(".El\n")
+
+def print_man_environment_tail():
+
+    # Additional environment variables that live outside of the normal loop
+    print_man_env_option(
+    "FEX_APP_CONFIG_LOCATION",
+    [
+    "Allows the user to override where FEX looks for configuration files",
+    "By default FEX will look in {$HOME, $XDG_CONFIG_HOME}/.fex-emu/",
+    "This will override the full path",
+    ],
+    "''")
+
+    print_man_env_option(
+    "FEX_APP_CONFIG",
+    [
+    "Allows the user to override where FEX looks for only the application config file",
+    "By default FEX will look in {$HOME, $XDG_CONFIG_HOME}/.fex-emu/Config.json",
+    "This will override this file location",
+    "One must be careful with this option as it will override any applications that load with execve as well"
+    "If you need to support applications that execve then use FEX_APP_CONFIG_LOCATION instead"
+    ],
+    "''")
+
+    print_man_env_option(
+    "FEX_APP_DATA_LOCATION",
+    [
+    "Allows the user to override where FEX looks for data files",
+    "By default FEX will look in {$HOME, $XDG_DATA_HOME}/.fex-emu/",
+    "This will override the full path",
+    "This is the folder where FEX stores generated files like IR cache"
+    ],
+    "''")
+
 def print_man_header():
     header ='''.Dd {0}
 .Dt FEX

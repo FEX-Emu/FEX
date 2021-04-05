@@ -48,8 +48,15 @@ namespace FEXCore::Config {
     else {
       char const *HomeDir = GetHomeDirectory();
       char const *ConfigXDG = getenv("XDG_CONFIG_HOME");
-      ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
-      ConfigDir += "/.fex-emu/";
+      char const *ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
+      if (ConfigOverride) {
+        // Config override completely overrides the config directory
+        ConfigDir = ConfigOverride;
+      }
+      else {
+        ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
+        ConfigDir += "/.fex-emu/";
+      }
 
       // Ensure the folder structure is created for our configuration
       if (!std::filesystem::exists(ConfigDir) &&
@@ -64,7 +71,15 @@ namespace FEXCore::Config {
   }
 
   std::string GetConfigFileLocation() {
-    std::string ConfigFile = GetConfigDirectory(false) + "Config.json";
+    std::string ConfigFile{};
+    const char *AppConfig = getenv("FEX_APP_CONFIG");
+    if (AppConfig) {
+      // App config environment variable overwrites only the config file
+      ConfigFile = AppConfig;
+    }
+    else {
+      ConfigFile = GetConfigDirectory(false) + "Config.json";
+    }
     return ConfigFile;
   }
 
@@ -87,8 +102,15 @@ namespace FEXCore::Config {
 
     char const *HomeDir = GetHomeDirectory();
     char const *DataXDG = getenv("XDG_DATA_HOME");
-    DataDir = DataXDG ?: HomeDir;
-    DataDir += "/.fex-emu/";
+    char const *DataOverride = getenv("FEX_APP_DATA_LOCATION");
+    if (DataOverride) {
+      // Data override will override the complete directory
+      DataDir = DataOverride;
+    }
+    else {
+      DataDir = DataXDG ?: HomeDir;
+      DataDir += "/.fex-emu/";
+    }
     return DataDir;
   }
 
