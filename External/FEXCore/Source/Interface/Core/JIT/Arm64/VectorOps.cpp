@@ -32,7 +32,14 @@ DEF_OP(VectorImm) {
   uint8_t OpSize = IROp->Size;
   uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  movi(GetDst(Node).VCast(OpSize * 8, Elements), Op->Immediate);
+  if (Op->Header.ElementSize == 8) {
+    // movi with 64bit element size doesn't do what we want here
+    LoadConstant(TMP1.X(), Op->Immediate);
+    dup(GetDst(Node).V2D(), TMP1.X());
+  }
+  else {
+    movi(GetDst(Node).VCast(OpSize * 8, Elements), Op->Immediate);
+  }
 }
 
 DEF_OP(CreateVector2) {
