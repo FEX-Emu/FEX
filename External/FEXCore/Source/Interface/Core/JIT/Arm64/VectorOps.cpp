@@ -534,11 +534,13 @@ DEF_OP(VFMin) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        fmin(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+        fcmp(GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+        fcsel(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S(), Condition::mi);
       break;
       }
       case 8: {
-        fmin(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+        fcmp(GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+        fcsel(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D(), Condition::mi);
       break;
       }
       default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -548,11 +550,17 @@ DEF_OP(VFMin) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        fmin(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        fcmgt(VTMP1.V4S(), GetSrc(Op->Header.Args[1].ID()).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        mov(VTMP2.V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        bif(VTMP2.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), VTMP1.V16B());
+        mov(GetDst(Node).V4S(), VTMP2.V4S());
       break;
       }
       case 8: {
-        fmin(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        fcmgt(VTMP1.V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        mov(VTMP2.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        bif(VTMP2.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), VTMP1.V16B());
+        mov(GetDst(Node).V2D(), VTMP2.V2D());
       break;
       }
       default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -567,11 +575,13 @@ DEF_OP(VFMax) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        fmax(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+        fcmp(GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+        fcsel(GetDst(Node).S(), GetSrc(Op->Header.Args[1].ID()).S(), GetSrc(Op->Header.Args[0].ID()).S(), Condition::mi);
       break;
       }
       case 8: {
-        fmax(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+        fcmp(GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+        fcsel(GetDst(Node).D(), GetSrc(Op->Header.Args[1].ID()).D(), GetSrc(Op->Header.Args[0].ID()).D(), Condition::mi);
       break;
       }
       default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -581,11 +591,17 @@ DEF_OP(VFMax) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        fmax(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S(), GetSrc(Op->Header.Args[1].ID()).V4S());
+        fcmgt(VTMP1.V4S(), GetSrc(Op->Header.Args[1].ID()).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        mov(VTMP2.V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        bit(VTMP2.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), VTMP1.V16B());
+        mov(GetDst(Node).V4S(), VTMP2.V4S());
       break;
       }
       case 8: {
-        fmax(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D(), GetSrc(Op->Header.Args[1].ID()).V2D());
+        fcmgt(VTMP1.V2D(), GetSrc(Op->Header.Args[1].ID()).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        mov(VTMP2.V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        bit(VTMP2.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B(), VTMP1.V16B());
+        mov(GetDst(Node).V2D(), VTMP2.V2D());
       break;
       }
       default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
