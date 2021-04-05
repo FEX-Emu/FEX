@@ -73,7 +73,7 @@ DEF_OP(ExitFunction) {
   uint64_t NewRIP;
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-    Literal l_BranchHost{Dispatcher->ExitFunctionLinkerAddress};
+    Literal l_BranchHost{ThreadSharedData.Dispatcher->ExitFunctionLinkerAddress};
     Literal l_BranchGuest{NewRIP};
 
     ldr(x0, &l_BranchHost);
@@ -96,7 +96,7 @@ DEF_OP(ExitFunction) {
     br(x1);
 
     bind(&FullLookup);
-    LoadConstant(TMP1, Dispatcher->AbsoluteLoopTopAddress);
+    LoadConstant(TMP1, ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress);
     str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
     br(TMP1);
   }

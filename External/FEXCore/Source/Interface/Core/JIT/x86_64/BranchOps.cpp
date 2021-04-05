@@ -81,7 +81,7 @@ DEF_OP(ExitFunction) {
     jmp(qword[rax]);
 
     L(l_BranchHost);
-    dq(Dispatcher->ExitFunctionLinkerAddress);
+    dq(ThreadSharedData.Dispatcher->ExitFunctionLinkerAddress);
     L(l_BranchGuest);
     dq(NewRIP);
   } else {
@@ -101,7 +101,7 @@ DEF_OP(ExitFunction) {
     jmp(qword[LookupBase + 0]);
 
     L(FullLookup);
-    mov(rax, Dispatcher->AbsoluteLoopTopAddress);
+    mov(rax, ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress);
     mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], RipReg);
     jmp(rax);
   }

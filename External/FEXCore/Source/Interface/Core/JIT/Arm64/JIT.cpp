@@ -412,7 +412,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
     config.StaticRegisterAssignment = true;
 
-    Dispatcher = new Arm64Dispatcher(CTX, ThreadState, config);
+    Dispatcher = std::make_unique<Arm64Dispatcher>(CTX, ThreadState, config);
     DispatchPtr = Dispatcher->DispatchPtr;
     CallbackPtr = Dispatcher->CallbackPtr;
   }
@@ -466,6 +466,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   if (!CompileThread) {
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
     ThreadSharedData.SignalReturnInstruction = Dispatcher->SignalHandlerReturnAddress;
+    ThreadSharedData.Dispatcher = Dispatcher.get();
 
     // This will register the host signal handler per thread, which is fine
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
@@ -723,7 +724,7 @@ void *Arm64JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *
       str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
 
       // Stop the thread
-      LoadConstant(x0, Dispatcher->ThreadPauseHandlerAddressSpillSRA);
+      LoadConstant(x0, ThreadSharedData.Dispatcher->ThreadPauseHandlerAddressSpillSRA);
       br(x0);
     }
     bind(&RunBlock);
@@ -813,11 +814,11 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
   if (!HostCode) {
     //printf("ExitFunctionLink: Aborting, %lX not in cache\n", GuestRip);
     Frame->State.rip = GuestRip;
-    return core->Dispatcher->AbsoluteLoopTopAddress;
+    return core->ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress;
   }
 
   uintptr_t branch = (uintptr_t)(record) - 8;
-  auto LinkerAddress = core->Dispatcher->ExitFunctionLinkerAddress;
+  auto LinkerAddress = core->ThreadSharedData.Dispatcher->ExitFunctionLinkerAddress;
 
   auto offset = HostCode/4 - branch/4;
   if (IsInt26(offset)) {

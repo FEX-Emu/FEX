@@ -63,7 +63,7 @@ public:
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
 private:
-  Dispatcher *Dispatcher;
+  std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
   Label *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
@@ -162,6 +162,7 @@ private:
     uint64_t SignalReturnInstruction{};
 
     uint32_t *SignalHandlerRefCounterPtr{};
+    FEXCore::CPU::Dispatcher *Dispatcher{};
   };
 
   CompilerSharedData ThreadSharedData;
