@@ -113,6 +113,8 @@ private:
 
   FEXCore::IR::RegisterClassType GetRegClass(uint32_t Node);
 
+  IR::PhysicalRegister GetPhys(uint32_t Node);
+
   bool IsFPR(uint32_t Node);
   bool IsGPR(uint32_t Node);
 

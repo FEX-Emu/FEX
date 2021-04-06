@@ -546,7 +546,7 @@ Arm64JITCore::~Arm64JITCore() {
   FreeCodeBuffer(InitialCodeBuffer);
 }
 
-static IR::PhysicalRegister GetPhys(IR::RegisterAllocationData *RAData, uint32_t Node) {
+IR::PhysicalRegister Arm64JITCore::GetPhys(uint32_t Node) {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
   LogMan::Throw::A(!PhyReg.IsInvalid(), "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
@@ -556,7 +556,8 @@ static IR::PhysicalRegister GetPhys(IR::RegisterAllocationData *RAData, uint32_t
 
 template<>
 aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_32>(uint32_t Node) {
-auto Reg = GetPhys(RAData, Node);
+  auto Reg = GetPhys(Node);
+
   if (Reg.Class == IR::GPRFixedClass.Val) {
     return SRA64[Reg.Reg].W();
   } else if (Reg.Class == IR::GPRClass.Val) {
@@ -569,7 +570,8 @@ auto Reg = GetPhys(RAData, Node);
 
 template<>
 aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(uint32_t Node) {
-  auto Reg = GetPhys(RAData, Node);
+  auto Reg = GetPhys(Node);
+
   if (Reg.Class == IR::GPRFixedClass.Val) {
     return SRA64[Reg.Reg];
   } else if (Reg.Class == IR::GPRClass.Val) {
@@ -582,18 +584,19 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(uint32_t Node) {
 
 template<>
 std::pair<aarch64::Register, aarch64::Register> Arm64JITCore::GetSrcPair<Arm64JITCore::RA_32>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAData, Node).Reg;
+  uint32_t Reg = GetPhys(Node).Reg;
   return RA32Pair[Reg];
 }
 
 template<>
 std::pair<aarch64::Register, aarch64::Register> Arm64JITCore::GetSrcPair<Arm64JITCore::RA_64>(uint32_t Node) {
-  uint32_t Reg = GetPhys(RAData, Node).Reg;
+  uint32_t Reg = GetPhys(Node).Reg;
   return RA64Pair[Reg];
 }
 
 aarch64::VRegister Arm64JITCore::GetSrc(uint32_t Node) {
-  auto Reg = GetPhys(RAData, Node);
+  auto Reg = GetPhys(Node);
+
   if (Reg.Class == IR::FPRFixedClass.Val) {
     return SRAFPR[Reg.Reg];
   } else if (Reg.Class == IR::FPRClass.Val) {
@@ -605,7 +608,8 @@ aarch64::VRegister Arm64JITCore::GetSrc(uint32_t Node) {
 }
 
 aarch64::VRegister Arm64JITCore::GetDst(uint32_t Node) {
-  auto Reg = GetPhys(RAData, Node);
+  auto Reg = GetPhys(Node);
+
   if (Reg.Class == IR::FPRFixedClass.Val) {
     return SRAFPR[Reg.Reg];
   } else if (Reg.Class == IR::FPRClass.Val) {
@@ -645,7 +649,7 @@ bool Arm64JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode,
 }
 
 FEXCore::IR::RegisterClassType Arm64JITCore::GetRegClass(uint32_t Node) {
-  return FEXCore::IR::RegisterClassType {GetPhys(RAData, Node).Class};
+  return FEXCore::IR::RegisterClassType {GetPhys(Node).Class};
 }
 
 

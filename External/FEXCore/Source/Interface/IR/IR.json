@@ -1563,7 +1563,6 @@
                "Depending on backend, may only support GPR printing"
               ],
       "OpClass": "Misc",
-      "DestSize": "GetOpSize(ssa0)",
       "SSAArgs": "1",
       "SSANames": [
         "Value"
