@@ -4241,7 +4241,11 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   uint8_t NumElements = Size / ElementSize;
   Index &= NumElements - 1;
 
-  auto Result = _VExtractToGPR(16, ElementSize, Src, Index);
+  OrderedNode *Result = _VExtractToGPR(16, ElementSize, Src, Index);
+
+  if (ElementSize < 4) {
+    Result = _Bfe(4, ElementSize * 8, 0, Result);
+  }
   StoreResult(GPRClass, Op, Result, -1);
 }
 
@@ -5971,6 +5975,9 @@ void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
   OrderedNode *Result{};
 
   if (Scalar) {
+    // Incoming element size for the shift source is always 8
+    auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+    Src = _VUMin(8, 8, MaxShift, Src);
     Result = _VUShrS(Size, ElementSize, Dest, Src);
   }
   else {
@@ -6016,6 +6023,9 @@ void OpDispatchBuilder::PSLL(OpcodeArgs) {
   OrderedNode *Result{};
 
   if (Scalar) {
+    // Incoming element size for the shift source is always 8
+    auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+    Src = _VUMin(8, 8, MaxShift, Src);
     Result = _VUShlS(Size, ElementSize, Dest, Src);
   }
   else {
@@ -6035,6 +6045,9 @@ void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
   OrderedNode *Result{};
 
   if (Scalar) {
+    // Incoming element size for the shift source is always 8
+    auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+    Src = _VUMin(8, 8, MaxShift, Src);
     Result = _VSShrS(Size, ElementSize, Dest, Src);
   }
   else {
