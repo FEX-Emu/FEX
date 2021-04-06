@@ -28,7 +28,7 @@ struct ELFSymbol {
   char const *Name;
 };
 
-class ELFContainer {
+class __attribute__((visibility("default"))) ELFContainer {
 public:
   ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter);
   ~ELFContainer();

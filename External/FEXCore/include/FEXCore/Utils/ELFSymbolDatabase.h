@@ -4,7 +4,7 @@
 #include <unordered_map>
 
 namespace ELFLoader {
-class ELFSymbolDatabase final {
+class __attribute__((visibility("default"))) ELFSymbolDatabase final {
 public:
   ELFSymbolDatabase(::ELFLoader::ELFContainer *file);
   ~ELFSymbolDatabase();
