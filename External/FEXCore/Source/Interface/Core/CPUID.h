@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
 
 namespace FEXCore {
@@ -37,6 +38,7 @@ public:
   }
 private:
   FEXCore::Context::Context *CTX;
+  FEX_CONFIG_OPT(Cores, THREADS);
 
   using FunctionHandler = std::function<FEXCore::CPUID::FunctionResults()>;
   void RegisterFunction(uint32_t Function, FunctionHandler Handler) {
@@ -60,7 +62,9 @@ private:
   FEXCore::CPUID::FunctionResults Function_8000_0005h();
   FEXCore::CPUID::FunctionResults Function_8000_0006h();
   FEXCore::CPUID::FunctionResults Function_8000_0007h();
-
+  FEXCore::CPUID::FunctionResults Function_8000_0008h();
+  FEXCore::CPUID::FunctionResults Function_8000_0009h();
+  FEXCore::CPUID::FunctionResults Function_8000_0019h();
   FEXCore::CPUID::FunctionResults Function_Reserved();
 };
 }

@@ -496,6 +496,45 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h() {
   return Res;
 }
 
+// Virtual and physical address sizes
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h() {
+  FEXCore::CPUID::FunctionResults Res{};
+  Res.eax =
+    (48 << 0) | // PhysAddrSize = 48-bit
+    (48 << 8) | // LinAddrSize = 48-bit
+    (0 << 16); // GuestPhysAddrSize == PhysAddrSize
+
+  Res.ebx =
+    (0 << 2) | // XSaveErPtr: Saving and restoring error pointers
+    (0 << 1) | // IRPerf: Instructions retired count support
+    (0 << 0);  // CLZERO support
+
+  uint32_t CoreCount = Cores() - 1;
+  Res.ecx =
+    (0 << 16) |       // PerfTscSize: Performance timestamp count size
+    (0 << 12) |       // ApicIdSize: Number of bits in ApicID
+    (CoreCount << 0); // Count count subtract one
+
+  return Res;
+}
+
+// TLB 1GB page identifiers
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0019h() {
+  FEXCore::CPUID::FunctionResults Res{};
+  Res.eax =
+    (0xF << 28) | // L1 DTLB associativity for 1GB pages
+    (64 << 16) |  // L1 DTLB entry count for 1GB pages
+    (0xF << 12) | // L1 ITLB associativity for 1GB pages
+    (64 << 0);    // L1 ITLB entry count for 1GB pages
+
+  Res.ebx =
+    (0 << 28) | // L2 DTLB associativity for 1GB pages
+    (0 << 16) | // L2 DTLB entry count for 1GB pages
+    (0 << 12) | // L2 ITLB associativity for 1GB pages
+    (0 << 0);   // L2 ITLB entry count for 1GB pages
+  return Res;
+}
+
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved() {
   FEXCore::CPUID::FunctionResults Res{};
   return Res;
@@ -542,16 +581,22 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   RegisterFunction(0x8000'0004, std::bind(&CPUIDEmu::Function_8000_0004h, this));
   // 0x8000'0005: L1 Cache and TLB identifiers
 #ifdef CPUID_AMD
-  // This is full reserved on Intel platforms
   RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_8000_0005h, this));
+#else
+  // This is full reserved on Intel platforms
+  RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_Reserved, this));
 #endif
   // 0x8000'0006: L2 Cache identifiers
   RegisterFunction(0x8000'0006, std::bind(&CPUIDEmu::Function_8000_0006h, this));
   // Advanced power management information
   RegisterFunction(0x8000'0007, std::bind(&CPUIDEmu::Function_8000_0007h, this));
-  // 0x8000'0008: Virtual and physical address sizes
+  // Virtual and physical address sizes
+  RegisterFunction(0x8000'0008, std::bind(&CPUIDEmu::Function_8000_0008h, this));
+
   // 0x8000'000A: SVM Revision
-  // 0x8000'0019: TLB 1GB page identifiers
+  // TLB 1GB page identifiers
+  RegisterFunction(0x8000'0019, std::bind(&CPUIDEmu::Function_8000_0019h, this));
+
   // 0x8000'001A: Performance optimization identifiers
   // 0x8000'001B: Instruction based sampling identifiers
   // 0x8000'001C: Lightweight profiling capabilities
