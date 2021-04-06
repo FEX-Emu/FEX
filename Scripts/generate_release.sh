@@ -23,7 +23,7 @@ git tag $CURRENT -a -m "temporary"
 Scripts/generate_doc_outline.sh > docs/SourceOutline.md
 git commit docs/SourceOutline.md -m "Docs: Update for release $CURRENT"
 git tag -d $CURRENT
-git tag $CURRENT -a -m "$(Scripts/generate_changelog.sh $PREVIOUS $CURRENT)" --edit
+git tag -a $CURRENT -m "$(Scripts/generate_changelog.sh $PREVIOUS $CURRENT)" --edit
 
 echo "Inspect if everything went smoothly via 'git log -6 $CURRENT' "
 echo "if all is good, do 'git push upstream $CURRENT'"
