@@ -116,6 +116,18 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log || true
 
+    - name: gcc target tests 32
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the gvisor tests
+      run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_32
+
+    - name: GCC32 Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC32.log || true
+
     - name: Struct verifier tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
