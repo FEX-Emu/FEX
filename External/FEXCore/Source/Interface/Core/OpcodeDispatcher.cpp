@@ -130,6 +130,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LEAOp(OpcodeArgs) {
+  // LEA specifically ignores segment prefixes
   if (CTX->Config.Is64BitMode) {
     uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 :
       X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 : 4;
