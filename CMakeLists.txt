@@ -61,8 +61,8 @@ endif()
 
 if (ENABLE_ASAN)
   add_definitions(-DENABLE_ASAN=1)
-  add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
-  link_libraries(-fno-omit-frame-pointer -fsanitize=address)
+  add_compile_options(-fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope)
+  link_libraries(-fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope)
 endif()
 
 if (ENABLE_TSAN)
