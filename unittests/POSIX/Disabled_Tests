@@ -17,9 +17,7 @@ conformance-interfaces-clock_gettime-4-1.test
 conformance-interfaces-clock_getcpuclockid-2-1.test
 conformance-interfaces-mlock-speculative-12-1.test
 conformance-interfaces-mmap-11-4.test
-conformance-interfaces-mmap-21-1.test
 conformance-interfaces-mmap-23-1.test
-conformance-interfaces-mmap-31-1.test
 conformance-interfaces-pthread_attr_getschedpolicy-2-1.test
 conformance-interfaces-pthread_attr_getscope-1-1.test
 conformance-interfaces-pthread_attr_setschedpolicy-4-1.test
@@ -570,6 +568,15 @@ conformance-interfaces-clock_nanosleep-1-3.test
 conformance-interfaces-clock_nanosleep-2-2.test
 conformance-interfaces-mmap-13-1.test
 conformance-interfaces-clock_getres-3-1.test
+
+# mmap behaviour has changed versus what this is expecting
+# It is expecting mmap to fail if MAP_PRIVATE nor MAP_SHARED is set
+# Sadly it increments flags until MAP_SHARED_VALIDATE is set which allocates correctly
+conformance-interfaces-mmap-21-1.test
+
+# mmap behaviour has changed versus what this is expecting
+# It wants EOVERFLOW but kernel now returns ENOMEM
+conformance-interfaces-mmap-31-1.test
 
 # Sending signals to the process group causes every test to become flakey
 # Need to run these single threaded or change the program group prior to launch
