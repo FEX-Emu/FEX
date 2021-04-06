@@ -83,7 +83,7 @@ private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
   FEXCore::IR::IRListView const *IR;
-  FEXCore::CPU::Dispatcher *Dispatcher;
+  std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
   Xbyak::util::Cpu Features{};
@@ -161,6 +161,7 @@ private:
     uint64_t SignalHandlerReturnAddress{};
 
     uint32_t *SignalHandlerRefCounterPtr{};
+    FEXCore::CPU::Dispatcher *Dispatcher{};
   };
 
   CompilerSharedData ThreadSharedData;

@@ -330,13 +330,13 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
     config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
 
-    Dispatcher = new X86Dispatcher(CTX, ThreadState, config);
+    Dispatcher = std::make_unique<X86Dispatcher>(CTX, ThreadState, config);
     DispatchPtr = Dispatcher->DispatchPtr;
     CallbackPtr = Dispatcher->CallbackPtr;
 
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
     ThreadSharedData.SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress;
-
+    ThreadSharedData.Dispatcher = Dispatcher.get();
 
     // This will register the host signal handler per thread, which is fine
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
@@ -597,7 +597,7 @@ void *X86JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR
     cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
     je(RunBlock);
     // Else we need to pause now
-    mov(rax, Dispatcher->ThreadPauseHandlerAddress);
+    mov(rax, ThreadSharedData.Dispatcher->ThreadPauseHandlerAddress);
     jmp(rax);
     ud2();
 
@@ -749,10 +749,10 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
 
   if (!HostCode) {
     Thread->CurrentFrame->State.rip = GuestRip;
-    return core->Dispatcher->AbsoluteLoopTopAddress;
+    return core->ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress;
   }
 
-  auto LinkerAddress = core->Dispatcher->ExitFunctionLinkerAddress;
+  auto LinkerAddress = core->ThreadSharedData.Dispatcher->ExitFunctionLinkerAddress;
   Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
     // undo the link
     record[0] = LinkerAddress;

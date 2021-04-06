@@ -111,12 +111,6 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 }
 
-
-InterpreterCore::~InterpreterCore() {
-  delete Dispatcher;
-}
-
-
 void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   return reinterpret_cast<void*>(InterpreterExecution);
 }

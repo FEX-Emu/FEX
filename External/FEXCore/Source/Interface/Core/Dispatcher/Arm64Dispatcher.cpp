@@ -350,7 +350,7 @@ void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore:
   DispatcherConfig config;
   config.ExecuteBlocksWithCall = true;
 
-  Dispatcher = new Arm64Dispatcher(ctx, Thread, config);
+  Dispatcher = std::make_unique<Arm64Dispatcher>(ctx, Thread, config);
   DispatchPtr = Dispatcher->DispatchPtr;
   CallbackPtr = Dispatcher->CallbackPtr;
 

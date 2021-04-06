@@ -22,7 +22,6 @@ using DestMapType = std::vector<uint32_t>;
 class InterpreterCore final : public CPUBackend {
 public:
   explicit InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
-  ~InterpreterCore() override;
   std::string GetName() override { return "Interpreter"; }
   void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
@@ -46,7 +45,7 @@ private:
   template<typename Res>
   Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src);
 
-  Dispatcher *Dispatcher{};
+  std::unique_ptr<Dispatcher> Dispatcher{};
 };
 
 }

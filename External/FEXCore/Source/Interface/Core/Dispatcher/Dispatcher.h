@@ -18,6 +18,7 @@ struct DispatcherConfig {
 
 class Dispatcher {
 public:
+  virtual ~Dispatcher() = default;
   CPUBackend::AsmDispatch DispatchPtr;
   CPUBackend::JITCallback CallbackPtr;
   FEXCore::Context::Context::IntCallbackReturn ReturnPtr;
