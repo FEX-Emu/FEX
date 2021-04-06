@@ -130,6 +130,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LEAOp(OpcodeArgs) {
+  // LEA specifically ignores segment prefixes
   if (CTX->Config.Is64BitMode) {
     uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 :
       X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 : 4;
@@ -3080,7 +3081,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     OrderedNode *Dest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
 
     // Only ES prefix
-    Dest = AppendSegmentOffset(Dest, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     // Store to memory where RDI points
     _StoreMemAutoTSO(GPRClass, Size, Dest, Src, Size);
@@ -3139,7 +3140,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
       OrderedNode *Dest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
 
       // Only ES prefix
-      Dest = AppendSegmentOffset(Dest, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+      Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
       // Store to memory where RDI points
       _StoreMemAutoTSO(GPRClass, Size, Dest, Src, Size);
@@ -3205,7 +3206,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     {
       OrderedNode *Src = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
       OrderedNode *Dest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
-      Dest = AppendSegmentOffset(Dest, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+      Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
       Src = AppendSegmentOffset(Src, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
       Src = _LoadMemAutoTSO(GPRClass, Size, Src, Size);
@@ -3240,7 +3241,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   else {
     OrderedNode *RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
     OrderedNode *RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
-    RDI= AppendSegmentOffset(RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    RDI= AppendSegmentOffset(RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
     RSI = AppendSegmentOffset(RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
     auto Src = _LoadMemAutoTSO(GPRClass, Size, RSI, Size);
@@ -3268,7 +3269,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     OrderedNode *Dest_RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
 
     // Only ES prefix
-    Dest_RDI = AppendSegmentOffset(Dest_RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
     // Default DS prefix
     Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
@@ -3325,7 +3326,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       OrderedNode *Dest_RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
 
       // Only ES prefix
-      Dest_RDI = AppendSegmentOffset(Dest_RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+      Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
       // Default DS prefix
       Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
@@ -3476,7 +3477,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
   if (!Repeat) {
     OrderedNode *Dest_RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
-    Dest_RDI = AppendSegmentOffset(Dest_RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
@@ -3533,7 +3534,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     // Working loop
     {
       OrderedNode *Dest_RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
-      Dest_RDI = AppendSegmentOffset(Dest_RDI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+      Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
       auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
       auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
