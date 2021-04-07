@@ -8,7 +8,7 @@ $end_info$
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
-#include "HarnessHelpers.h"
+#include "ELFCodeLoader.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
