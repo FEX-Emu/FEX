@@ -1,7 +1,6 @@
-
 add_subdirectory(LinuxSyscalls)
 
-set(LIBS FEXCore Common CommonCore)
+set(LIBS FEXCore Common CommonCore FEX_jemalloc)
 
 add_executable(FEXLoader ELFLoader.cpp)
 target_include_directories(FEXLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
