@@ -63,6 +63,8 @@ public:
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
 private:
+  FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+
   std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
   Label *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
@@ -303,6 +305,8 @@ private:
   DEF_OP(StoreMem);
   DEF_OP(LoadMemTSO);
   DEF_OP(StoreMemTSO);
+  DEF_OP(ParanoidLoadMemTSO);
+  DEF_OP(ParanoidStoreMemTSO);
   DEF_OP(VLoadMemElement);
   DEF_OP(VStoreMemElement);
 
