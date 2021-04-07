@@ -188,6 +188,14 @@
           "Removes the calculation of the parity flag from GPR instructions.",
           "Assuming no uses rely on it"
         ]
+      },
+      "ParanoidTSO": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Makes TSO operations even more strict.",
+          "Forces vector loadstores to also become atomic."
+        ]
       }
     },
     "Misc": {

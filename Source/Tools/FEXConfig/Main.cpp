@@ -439,6 +439,13 @@ namespace {
         ConfigChanged = true;
       }
 
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_PARANOIDTSO);
+      bool ParanoidTSOEnabled = Value.has_value() && **Value == "1";
+      if (ImGui::Checkbox("Paranoid TSO Enabled", &ParanoidTSOEnabled)) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_PARANOIDTSO, ParanoidTSOEnabled ? "1" : "0");
+        ConfigChanged = true;
+      }
+
       ImGui::Text("SMC Checks: ");
       int SMCChecks = FEXCore::Config::CONFIG_SMC_MMAN;
 
