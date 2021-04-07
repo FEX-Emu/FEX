@@ -108,10 +108,10 @@ def print_ir_sizes(ops, defines):
 
     output_file.write("[[maybe_unused]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
 
-    output_file.write("std::string_view const& GetName(IROps Op);\n")
-    output_file.write("uint8_t GetArgs(IROps Op);\n")
-    output_file.write("FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
-    output_file.write("bool HasSideEffects(IROps Op);\n")
+    output_file.write("__attribute__((visibility(\"default\"))) std::string_view const& GetName(IROps Op);\n")
+    output_file.write("__attribute__((visibility(\"default\"))) uint8_t GetArgs(IROps Op);\n")
+    output_file.write("__attribute__((visibility(\"default\"))) FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
+    output_file.write("__attribute__((visibility(\"default\"))) bool HasSideEffects(IROps Op);\n")
 
     output_file.write("#undef IROP_SIZES\n")
     output_file.write("#endif\n\n")

@@ -9,6 +9,15 @@ target_include_directories(FEXLoader PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 target_link_libraries(FEXLoader ${LIBS} LinuxEmulation)
 
+if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+  target_link_options(FEXLoader
+    PRIVATE
+    "LINKER:--gc-sections"
+    "LINKER:--strip-all"
+    "LINKER:--as-needed"
+  )
+endif()
+
 install(TARGETS FEXLoader
   RUNTIME
     DESTINATION bin
@@ -67,6 +76,15 @@ target_include_directories(FEXBash PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_include_directories(FEXBash PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 target_link_libraries(FEXBash ${LIBS} LinuxEmulation)
+
+if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+  target_link_options(FEXBash
+    PRIVATE
+    "LINKER:--gc-sections"
+    "LINKER:--strip-all"
+    "LINKER:--as-needed"
+  )
+endif()
 
 install(TARGETS FEXBash
   RUNTIME

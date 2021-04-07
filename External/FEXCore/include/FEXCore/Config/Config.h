@@ -54,15 +54,15 @@ namespace Type {
 #undef P
 }
 
-  std::string GetDataDirectory();
-  std::string GetConfigDirectory(bool Global);
-  std::string GetConfigFileLocation();
-  std::string GetApplicationConfig(std::string &Filename, bool Global);
+  __attribute__((visibility("default"))) std::string GetDataDirectory();
+  __attribute__((visibility("default"))) std::string GetConfigDirectory(bool Global);
+  __attribute__((visibility("default"))) std::string GetConfigFileLocation();
+  __attribute__((visibility("default"))) std::string GetApplicationConfig(std::string &Filename, bool Global);
 
   using LayerValue = std::list<std::string>;
   using LayerOptions = std::unordered_map<ConfigOption, LayerValue>;
 
-  class Layer {
+  class __attribute__((visibility("default"))) Layer {
   public:
     explicit Layer(const LayerType _Type);
     virtual ~Layer();
@@ -114,24 +114,24 @@ namespace Type {
     LayerOptions OptionMap;
   };
 
-  void Initialize();
-  void Shutdown();
+  __attribute__((visibility("default"))) void Initialize();
+  __attribute__((visibility("default"))) void Shutdown();
 
-  void Load();
-  void ReloadMetaLayer();
+  __attribute__((visibility("default"))) void Load();
+  __attribute__((visibility("default"))) void ReloadMetaLayer();
 
-  void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer);
+  __attribute__((visibility("default"))) void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer);
 
-  bool Exists(ConfigOption Option);
-  std::optional<LayerValue*> All(ConfigOption Option);
-  std::optional<std::string*> Get(ConfigOption Option);
+  __attribute__((visibility("default"))) bool Exists(ConfigOption Option);
+  __attribute__((visibility("default"))) std::optional<LayerValue*> All(ConfigOption Option);
+  __attribute__((visibility("default"))) std::optional<std::string*> Get(ConfigOption Option);
 
-  void Set(ConfigOption Option, std::string Data);
-  void Erase(ConfigOption Option);
-  void EraseSet(ConfigOption Option, std::string Data);
+  __attribute__((visibility("default"))) void Set(ConfigOption Option, std::string Data);
+  __attribute__((visibility("default"))) void Erase(ConfigOption Option);
+  __attribute__((visibility("default"))) void EraseSet(ConfigOption Option, std::string Data);
 
   template<typename T>
-  class Value {
+  class __attribute__((visibility("default"))) Value {
   public:
     template <typename TT = T,
       typename std::enable_if<!std::is_same<TT, std::string>::value, int>::type = 0>

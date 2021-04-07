@@ -18,8 +18,8 @@ constexpr DebugLevels MSG_LEVEL = INFO;
 
 namespace Throw {
 using ThrowHandler = void(*)(char const *Message);
-void InstallHandler(ThrowHandler Handler);
-void UnInstallHandlers();
+__attribute__((visibility("default"))) void InstallHandler(ThrowHandler Handler);
+__attribute__((visibility("default"))) void UnInstallHandlers();
 
 [[noreturn]] void M(const char *fmt, va_list args);
 
@@ -40,10 +40,10 @@ static inline void A(bool, const char*, ...) {}
 
 namespace Msg {
 using MsgHandler = void(*)(DebugLevels Level, char const *Message);
-void InstallHandler(MsgHandler Handler);
-void UnInstallHandlers();
+__attribute__((visibility("default"))) void InstallHandler(MsgHandler Handler);
+__attribute__((visibility("default"))) void UnInstallHandlers();
 
-void M(DebugLevels Level, const char *fmt, va_list args);
+__attribute__((visibility("default"))) void M(DebugLevels Level, const char *fmt, va_list args);
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
 static inline void A(const char *fmt, ...) {

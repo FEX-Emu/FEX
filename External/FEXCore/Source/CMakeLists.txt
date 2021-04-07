@@ -266,6 +266,9 @@ function(AddObject Name Type)
 
   target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
+  set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
+  set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)
+  set_target_properties(${Name} PROPERTIES VISIBILITY_INLINES_HIDDEN TRUE)
 
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
@@ -283,6 +286,7 @@ function(AddObject Name Type)
     -Werror=implicit-fallthrough
 
     -Wno-trigraphs
+    -ffunction-sections
   )
 
   if (GCC_COLOR)
@@ -301,10 +305,22 @@ function(AddLibrary Name Type)
   add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
   target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
+  set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
+  set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)
+  set_target_properties(${Name} PROPERTIES VISIBILITY_INLINES_HIDDEN TRUE)
 
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
   target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
   target_include_directories(${Name} PUBLIC "${CMAKE_BINARY_DIR}/include/")
+
+  if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+    target_link_options(${Name}
+      PRIVATE
+      "LINKER:--gc-sections"
+      "LINKER:--strip-all"
+      "LINKER:--as-needed"
+    )
+  endif()
 endfunction()
 
 AddObject(${PROJECT_NAME}_object OBJECT)
