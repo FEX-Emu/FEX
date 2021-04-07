@@ -83,7 +83,7 @@ public:
   using SymbolAdder = std::function<void(ELFSymbol*)>;
   void AddSymbols(SymbolAdder Adder);
 
-  void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
+  //void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
 
   bool HasTLS() const { return TLSHeader._64 != nullptr; }
   uint64_t GetTLSBase() const {
