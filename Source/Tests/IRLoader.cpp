@@ -85,7 +85,7 @@ class IRCodeLoader final : public FEXCore::CodeLoader {
       IR->LoadMemory();
     }
 
-    uint64_t GetFinalRIP() override { return 0; }
+    //uint64_t GetFinalRIP() override { return 0; }
 
     virtual void AddIR(IRHandler Handler) override {
       Handler(IR->GetEntryRIP(), IR->GetIREmitter());

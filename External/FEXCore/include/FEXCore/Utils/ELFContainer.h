@@ -85,6 +85,7 @@ public:
 
   //void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
 
+
   bool HasTLS() const { return TLSHeader._64 != nullptr; }
   uint64_t GetTLSBase() const {
     if (GetMode() == ELFMode::MODE_64BIT) {

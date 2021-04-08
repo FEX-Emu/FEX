@@ -15,7 +15,7 @@ $end_info$
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/CodeLoader.h>
-#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/ELFContainer.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>

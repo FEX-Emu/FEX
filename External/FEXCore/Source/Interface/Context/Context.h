@@ -181,7 +181,7 @@ namespace FEXCore::Context {
     // XXX:
     // bool FindIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList **ir);
     // void SetIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList *const ir);
-    void LoadEntryList();
+    //void LoadEntryList();
 
     std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t, uint64_t, uint64_t> GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
@@ -227,10 +227,10 @@ namespace FEXCore::Context {
 
     // Entry Cache
     std::optional<std::string> GetFilenameHash(std::string const &Filename) const;
-    void AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread);
-    void SaveEntryList();
-    std::set<uint64_t> EntryList;
-    std::vector<uint64_t> InitLocations;
+    //void AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread);
+    //void SaveEntryList();
+    //std::set<uint64_t> EntryList;
+    //std::vector<uint64_t> InitLocations;
     uint64_t StartingRIP;
     std::mutex ExitMutex;
     std::unique_ptr<GdbServer> DebugServer;

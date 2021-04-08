@@ -419,7 +419,7 @@ namespace FEX::HarnessHelper {
       Config.LoadMemory();
     }
 
-    uint64_t GetFinalRIP() override { return RIP + RawFile.size(); }
+    //uint64_t GetFinalRIP() override { return RIP + RawFile.size(); }
 
     bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
       return Config.CompareStates(State1, State2);

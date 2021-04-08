@@ -40,7 +40,7 @@ public:
    */
   virtual uint64_t DefaultRIP() const = 0;
 
-  virtual void GetInitLocations(std::vector<uint64_t> *Locations) {}
+  //virtual void GetInitLocations(std::vector<uint64_t> *Locations) {}
 
   /**
    * @brief Allows the loader to map memory regions that it needs
@@ -65,9 +65,9 @@ public:
    *
    * @return When the debugger reaches this RIP then we know that we have completed
    */
-  virtual uint64_t GetFinalRIP() { return ~0ULL; }
+  //virtual uint64_t GetFinalRIP() { return ~0ULL; }
 
-  virtual char const *FindSymbolNameInRange(uint64_t Address) { return nullptr; }
+  //virtual char const *FindSymbolNameInRange(uint64_t Address) { return nullptr; }
   virtual std::vector<std::string> const *GetApplicationArguments() { return nullptr; }
   virtual void GetExecveArguments(std::vector<char const*> *Args) {}
 

@@ -9,13 +9,14 @@ $end_info$
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
 #include "ELFCodeLoader.h"
+#include "ELFCodeLoader2.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
-#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
@@ -25,6 +26,7 @@ $end_info$
 #include <vector>
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 
 namespace {
 static bool SilentLog;
@@ -230,7 +232,9 @@ int main(int argc, char **argv, char **const envp) {
     return -ENOEXEC;
   }
 
-  FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
+    
+  ELFCodeLoader2 Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
+  //FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
@@ -248,6 +252,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
+  
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
 
@@ -259,6 +264,8 @@ int main(int argc, char **argv, char **const envp) {
       SignalDelegation.get(),
       &Loader)};
   auto BRKInfo = Loader.GetBRKInfo();
+  //fprintf(stderr, "BRK %lX - %ld\n", BRKInfo.Base, BRKInfo.Size);
+  
   SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
@@ -275,6 +282,10 @@ int main(int argc, char **argv, char **const envp) {
         FEXCore::Context::Stop(CTX);
       }
     });
+  }
+
+  for(auto handler: Loader.LoadFns) {
+    handler(CTX);
   }
 
   if (AOTIRLoad() || AOTIRCapture()) {

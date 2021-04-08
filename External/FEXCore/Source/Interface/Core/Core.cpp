@@ -212,7 +212,7 @@ namespace FEXCore::Context {
     std::hash<std::string> string_hash;
     return std::to_string(string_hash(Data));
   }
-
+#if 0
   void Context::AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread) {
     for (auto &IR : Thread->LocalIRCache) {
       EntryList.insert(IR.first);
@@ -266,6 +266,7 @@ namespace FEXCore::Context {
       }
     }
   }
+  #endif
 
   Context::~Context() {
     {
@@ -274,11 +275,11 @@ namespace FEXCore::Context {
           Thread->ExecutionThread->join(nullptr);
         }
       }
-
+#if 0
       for (auto &Thread : Threads) {
         AddThreadRIPsToEntryList(Thread);
       }
-
+#endif
       for (auto &Thread : Threads) {
 
         if (Thread->CompileService) {
@@ -288,9 +289,9 @@ namespace FEXCore::Context {
       }
       Threads.clear();
     }
-
+#if 0
     SaveEntryList();
-
+#endif
     // AOTIRCache needs manual clear
     for (auto &Mod: AOTIRCache) {
       for (auto &Entry: Mod.second) {
@@ -332,7 +333,7 @@ namespace FEXCore::Context {
     Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = Loader->SetupStack();
 
     Loader->LoadMemory();
-    Loader->GetInitLocations(&InitLocations);
+    //Loader->GetInitLocations(&InitLocations);
 
     Thread->CurrentFrame->State.rip = StartingRIP = Loader->DefaultRIP();
 
@@ -542,12 +543,14 @@ namespace FEXCore::Context {
 
     LocalLoader->AddIR(IRHandler);
 
+#if 0
     // Compile all of our cached entries
     LogMan::Msg::D("Precompiling: %ld blocks...", EntryList.size());
     for (auto Entry : EntryList) {
       CompileRIP(Thread, Entry);
     }
     LogMan::Msg::D("Done", EntryList.size());
+  #endif
   }
 
   struct ExecutionThreadHandler {
