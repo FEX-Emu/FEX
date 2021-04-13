@@ -787,6 +787,150 @@ DEF_OP(StoreMemTSO) {
   }
 }
 
+DEF_OP(ParanoidLoadMemTSO) {
+  auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+
+  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+
+  if (!Op->Offset.IsInvalid()) {
+    LogMan::Msg::A("LoadMemTSO: No offset allowed");
+  }
+
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    if (Op->Size == 1) {
+      // 8bit load is always aligned to natural alignment
+      auto Dst = GetReg<RA_64>(Node);
+      ldarb(Dst, MemSrc);
+    }
+    else {
+      auto Dst = GetReg<RA_64>(Node);
+      nop();
+      switch (Op->Size) {
+        case 2:
+          ldarh(Dst, MemSrc);
+          break;
+        case 4:
+          ldar(Dst.W(), MemSrc);
+          break;
+        case 8:
+          ldar(Dst, MemSrc);
+          break;
+        default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+      }
+      nop();
+    }
+  }
+  else {
+    auto Dst = GetDst(Node);
+    switch (Op->Size) {
+      case 2:
+        nop();
+        ldarh(TMP1, MemSrc);
+        nop();
+        fmov(Dst, TMP1);
+        break;
+      case 4:
+        nop();
+        ldar(TMP1.W(), MemSrc);
+        nop();
+        fmov(Dst, TMP1);
+        break;
+      case 8:
+        nop();
+        ldar(TMP1, MemSrc);
+        nop();
+        fmov(Dst, TMP1);
+        break;
+      case 16:
+        nop();
+        ldaxp(TMP1, TMP2, MemSrc);
+        clrex();
+        mov(Dst.V2D(), 0, TMP1);
+        mov(Dst.V2D(), 1, TMP2);
+        break;
+      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+    }
+  }
+}
+
+DEF_OP(ParanoidStoreMemTSO) {
+  auto Op = IROp->C<IR::IROp_StoreMemTSO>();
+  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+
+  if (!Op->Offset.IsInvalid()) {
+    LogMan::Msg::A("StoreMemTSO: No offset allowed");
+  }
+
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    if (Op->Size == 1) {
+      // 8bit load is always aligned to natural alignment
+      stlrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+    }
+    else {
+      nop();
+      switch (Op->Size) {
+        case 2:
+          stlrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          break;
+        case 4:
+          stlr(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
+          break;
+        case 8:
+          stlr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          break;
+        default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+      }
+      nop();
+    }
+  }
+  else {
+    auto Src = GetSrc(Op->Header.Args[1].ID());
+    if (Op->Size == 1) {
+      // 8bit load is always aligned to natural alignment
+      mov(TMP1, Src.V4S(), 0);
+      stlrb(TMP1, MemSrc);
+    }
+    else {
+      switch (Op->Size) {
+        case 2:
+          mov(TMP1, Src.V4S(), 0);
+          nop();
+          stlrh(TMP1, MemSrc);
+          nop();
+          break;
+        case 4:
+          mov(TMP1, Src.V4S(), 0);
+          nop();
+          stlr(TMP1.W(), MemSrc);
+          nop();
+          break;
+        case 8:
+          mov(TMP1, Src.V2D(), 0);
+          nop();
+          stlr(TMP1, MemSrc);
+          nop();
+          break;
+        case 16: {
+          // Move vector to GPRs
+          mov(TMP1, Src.V2D(), 0);
+          mov(TMP2, Src.V2D(), 1);
+          Label B;
+          bind(&B);
+
+          nop(); // < Overwritten with DMB
+          // ldaxp must not have both the destination registers be the same
+          ldaxp(xzr, TMP3, MemSrc); // <- Can hit SIGBUS
+          nop(); // < Overwritten with DMB
+          stlxp(TMP3, TMP1, TMP2, MemSrc); // <- Can also hit SIGBUS
+          cbnz(TMP3, &B); // < Overwritten with DMB
+          break;
+        }
+        default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+      }
+    }
+  }
+}
+
 DEF_OP(VLoadMemElement) {
   LogMan::Msg::A("Unimplemented");
 }
@@ -810,8 +954,14 @@ void Arm64JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STOREFLAG,           StoreFlag);
   REGISTER_OP(LOADMEM,             LoadMem);
   REGISTER_OP(STOREMEM,            StoreMem);
-  REGISTER_OP(LOADMEMTSO,          LoadMemTSO);
-  REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
+  if (ParanoidTSO()) {
+    REGISTER_OP(LOADMEMTSO,          ParanoidLoadMemTSO);
+    REGISTER_OP(STOREMEMTSO,         ParanoidStoreMemTSO);
+  }
+  else {
+    REGISTER_OP(LOADMEMTSO,          LoadMemTSO);
+    REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
+  }
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
 #undef REGISTER_OP

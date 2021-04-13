@@ -12,6 +12,12 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t ATOMIC_MEM_MASK = 0x3B200C00;
   constexpr uint32_t ATOMIC_MEM_INST = 0x38200000;
 
+  constexpr uint32_t LDAXP_MASK = 0xBF'FF'80'00;
+  constexpr uint32_t LDAXP_INST = 0x88'7F'80'00;
+
+  constexpr uint32_t STLXP_MASK = 0xBF'E0'80'00;
+  constexpr uint32_t STLXP_INST = 0x88'20'80'00;
+
   // Load ops are 4 bits
   // Acquire and release bits are independent on the instruction
   constexpr uint32_t ATOMIC_ADD_OP  = 0b0000;
