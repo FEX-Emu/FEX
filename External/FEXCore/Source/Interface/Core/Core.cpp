@@ -196,78 +196,6 @@ namespace FEXCore::Context {
     }
   }
 
-  std::optional<std::string> Context::GetFilenameHash(std::string const &Filename) const {
-    // Calculate a hash for the input file
-    std::ifstream Input(Filename, std::ios::in | std::ios::binary | std::ios::ate);
-    if (!Input) {
-      return std::nullopt;
-    }
-
-    const auto Size = static_cast<size_t>(Input.tellg());
-    Input.seekg(0, std::ios::beg);
-    std::string Data(Size, '\0');
-    Input.read(Data.data(), Size);
-    Input.close();
-
-    std::hash<std::string> string_hash;
-    return std::to_string(string_hash(Data));
-  }
-#if 0
-  void Context::AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread) {
-    for (auto &IR : Thread->LocalIRCache) {
-      EntryList.insert(IR.first);
-    }
-  }
-
-  void Context::SaveEntryList() {
-    std::string const &Filename = AppFilename();
-
-    if (auto const hash = GetFilenameHash(Filename)) {
-      auto DataPath = FEXCore::Paths::GetEntryCachePath();
-      DataPath += "Entries_" + *hash;
-
-      std::ofstream Output(DataPath, std::ios::out | std::ios::binary);
-      if (!Output) {
-        return;
-      }
-
-      for (auto Entry : EntryList) {
-        Output.write(reinterpret_cast<char const*>(&Entry), sizeof(Entry));
-      }
-    }
-  }
-
-  void Context::LoadEntryList() {
-    std::string const &Filename = AppFilename();
-
-    if (auto const hash = GetFilenameHash(Filename)) {
-      auto DataPath = FEXCore::Paths::GetEntryCachePath();
-      DataPath += "Entries_" + *hash;
-
-      std::ifstream Input(DataPath, std::ios::in | std::ios::binary | std::ios::ate);
-      if (!Input) {
-        return;
-      }
-
-      auto const Size = static_cast<size_t>(Input.tellg());
-      Input.seekg(0, std::ios::beg);
-      std::string Data(Size, '\0');
-      if (!Input.read(Data.data(), Size)) {
-        return;
-      }
-      Input.close();
-
-      size_t const EntryCount = Size / sizeof(uint64_t);
-
-      for (size_t i = 0; i < EntryCount; ++i) {
-        uint64_t Entry = 0;
-        std::memcpy(&Entry, &Data[i * sizeof(Entry)], sizeof(Entry));
-        EntryList.insert(Entry);
-      }
-    }
-  }
-  #endif
-
   Context::~Context() {
     {
       for (auto &Thread : Threads) {
@@ -275,11 +203,7 @@ namespace FEXCore::Context {
           Thread->ExecutionThread->join(nullptr);
         }
       }
-#if 0
-      for (auto &Thread : Threads) {
-        AddThreadRIPsToEntryList(Thread);
-      }
-#endif
+
       for (auto &Thread : Threads) {
 
         if (Thread->CompileService) {
@@ -289,9 +213,7 @@ namespace FEXCore::Context {
       }
       Threads.clear();
     }
-#if 0
-    SaveEntryList();
-#endif
+
     // AOTIRCache needs manual clear
     for (auto &Mod: AOTIRCache) {
       for (auto &Entry: Mod.second) {
@@ -333,7 +255,6 @@ namespace FEXCore::Context {
     Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = Loader->SetupStack();
 
     Loader->LoadMemory();
-    //Loader->GetInitLocations(&InitLocations);
 
     Thread->CurrentFrame->State.rip = StartingRIP = Loader->DefaultRIP();
 
@@ -543,14 +464,6 @@ namespace FEXCore::Context {
 
     LocalLoader->AddIR(IRHandler);
 
-#if 0
-    // Compile all of our cached entries
-    LogMan::Msg::D("Precompiling: %ld blocks...", EntryList.size());
-    for (auto Entry : EntryList) {
-      CompileRIP(Thread, Entry);
-    }
-    LogMan::Msg::D("Done", EntryList.size());
-  #endif
   }
 
   struct ExecutionThreadHandler {

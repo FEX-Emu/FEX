@@ -338,13 +338,11 @@ ELFSymbol const *ELFSymbolDatabase::GetSymbolInRange(RangeType Address) {
   return Sym->second;
 }
 
-#if 0
 void ELFSymbolDatabase::GetInitLocations(std::vector<uint64_t> *Locations) {
   // Walk the initialization order and fill the locations for initializations
   for (auto ELF : InitializationOrder) {
     ELF->Container->GetInitLocations(ELF->GuestBase, Locations);
   }
 }
-#endif
 
 }

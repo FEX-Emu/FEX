@@ -14,7 +14,7 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/ELFSymbolDatabase.h>
 
 namespace FEX::HarnessHelper {
@@ -419,7 +419,6 @@ namespace FEX::HarnessHelper {
       Config.LoadMemory();
     }
 
-    //uint64_t GetFinalRIP() override { return RIP + RawFile.size(); }
 
     bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
       return Config.CompareStates(State1, State2);

@@ -28,7 +28,7 @@ struct ELFSymbol {
   char const *Name;
 };
 
-class __attribute__((visibility("default"))) ELFContainer {
+class ELFContainer {
 public:
   ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter);
   ~ELFContainer();
@@ -83,7 +83,7 @@ public:
   using SymbolAdder = std::function<void(ELFSymbol*)>;
   void AddSymbols(SymbolAdder Adder);
 
-  //void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
+  void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
 
 
   bool HasTLS() const { return TLSHeader._64 != nullptr; }

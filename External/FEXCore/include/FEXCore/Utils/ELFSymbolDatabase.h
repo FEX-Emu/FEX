@@ -21,7 +21,7 @@ public:
   ::ELFLoader::ELFSymbol const *GetGlobalSymbolInRange(RangeType Address);
   ::ELFLoader::ELFSymbol const *GetNoWeakSymbolInRange(RangeType Address);
 
-  //void GetInitLocations(std::vector<uint64_t> *Locations);
+  void GetInitLocations(std::vector<uint64_t> *Locations);
 
 private:
   ::ELFLoader::ELFContainer *File;

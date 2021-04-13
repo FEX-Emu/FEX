@@ -1229,7 +1229,6 @@ void ELFContainer::PrintDynamicTable() const {
   }
 }
 
-#if 0
 void ELFContainer::GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations) {
   if (Mode == MODE_32BIT) {
     // If INIT exists then add that first
@@ -1286,6 +1285,5 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t>
     }
   }
 }
-#endif
 
 } // namespace ELFLoader

@@ -72,8 +72,6 @@ public:
   using SyscallPtrArg5 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
   using SyscallPtrArg6 = uint64_t(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 
-  //virtual void *MemMap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
-
   struct SyscallFunctionDefinition {
     uint8_t NumArgs;
     union {

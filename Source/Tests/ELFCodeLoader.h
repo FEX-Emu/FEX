@@ -285,31 +285,23 @@ public:
   }
 
   void MapMemoryRegion() override {
-    #if 1
     auto DoMMap = [](uint64_t Address, size_t Size, bool FixedNoReplace) -> void* {
-      fprintf(stderr, "MAPPING %p %lu %x %x %d %ld\n", Address, Size, 0, FixedNoReplace, 0, 0l);
-
       void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, (FixedNoReplace ? MAP_FIXED_NOREPLACE : MAP_FIXED) | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
       LogMan::Throw::A(Result != (void*)~0ULL, "Couldn't mmap");
       return Result;
     };
 
     DB.MapMemoryRegions(DoMMap);
-    #endif
   }
 
   void LoadMemory() override {
-    #if 1
     auto ELFLoaderWrapper = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
-      fprintf(stderr, "COPYING %p %lu %x %x %d %ld\n", Addr, Size, 0, 0, 0, 0l);
       memcpy(reinterpret_cast<void*>(Addr), Data, Size);
     };
     DB.WriteLoadableSections(ELFLoaderWrapper);
-    #endif
   }
 
-#if 0
-  char const *FindSymbolNameInRange(uint64_t Address) override {
+  char const *FindSymbolNameInRange(uint64_t Address) {
     
     ELFLoader::ELFSymbol const *Sym;
     Sym = DB.GetSymbolInRange(std::make_pair(Address, 1));
@@ -320,10 +312,9 @@ public:
     return nullptr;
   }
 
-  void GetInitLocations(std::vector<uint64_t> *Locations) override {
+  void GetInitLocations(std::vector<uint64_t> *Locations) {
     DB.GetInitLocations(Locations);
   }
-#endif
 
   std::vector<std::string> const *GetApplicationArguments() override { return &Args; }
   void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
