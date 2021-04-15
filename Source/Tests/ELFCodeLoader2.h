@@ -199,7 +199,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     }
 
     if (!MainElf.InterpreterElf.empty()) {
-      if (!InterpElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf))
+      if (!InterpElf.ReadElf(ResolveRootfsFile(MainElf.InterpreterElf, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf))
         return;
 
       if (!InterpElf.InterpreterElf.empty())
