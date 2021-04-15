@@ -546,6 +546,14 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     }
   }
 
+  std::vector<std::string> const *GetApplicationArguments() override { return &Args; }
+  void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
+
+  void GetAuxv(uint64_t& addr, uint64_t& size) override {
+    addr = AuxTabBase;
+    size = AuxTabSize;
+  }
+  
   bool Is64BitMode() {
     return MainElf.type == ::ELFLoader::ELFContainer::TYPE_X86_64;
   }
