@@ -76,7 +76,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     if (rv == MAP_FAILED) {
       // uhoh, something went wrong
-      LogMan::Throw::A(rv != MAP_FAILED, "MapFile: Some elf mapping failed, %d, fd: %d\n", errno, file.fd);
+      LogMan::Msg::E("MapFile: Some elf mapping failed, %d, fd: %d\n", errno, file.fd);
       return false;
     } else {
       auto Filename = get_fdpath(file.fd);
