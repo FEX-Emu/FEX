@@ -73,7 +73,7 @@ public:
     return STACK_SIZE;
   }
 
-  uint64_t SetupStack() override
+  uint64_t GetStackPointer() override
   {
     return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   }
@@ -83,13 +83,17 @@ public:
     return IR->GetEntryRIP();
   }
 
-  void MapMemoryRegion(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override
+  bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override
   {
     // Map the memory regions the test file asks for
     IR->MapRegions();
+
+    LoadMemory();
+
+    return true;
   }
 
-  void LoadMemory() override
+  void LoadMemory()
   {
     IR->LoadMemory();
   }
@@ -134,6 +138,7 @@ int main(int argc, char **argv, char **const envp)
   if (Loader.IsValid())
   {
     IRCodeLoader CodeLoader{&Loader};
+    CodeLoader.MapMemory(nullptr, nullptr);
     FEXCore::Context::InitCore(CTX, &CodeLoader);
     FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 

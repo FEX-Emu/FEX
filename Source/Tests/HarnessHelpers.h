@@ -349,7 +349,7 @@ namespace FEX::HarnessHelper {
       return STACK_SIZE;
     }
 
-    uint64_t SetupStack() override {
+    uint64_t GetStackPointer() override {
       if (Config.Is64BitMode()) {
         return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) + STACK_SIZE;
       }
@@ -364,7 +364,7 @@ namespace FEX::HarnessHelper {
       return RIP;
     }
 
-    void MapMemoryRegion(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override {
+    bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override {
       bool LimitedSize = true;
       auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
         void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -410,9 +410,13 @@ namespace FEX::HarnessHelper {
       for (auto& [region, size] : Config.GetMemoryRegions()) {
         DoMMap(region, size);
       }
+
+      LoadMemory();
+      
+      return true;
     }
 
-    void LoadMemory() override {
+    void LoadMemory() {
       // Memory base here starts at the start location we passed back with GetLayout()
       // This will write at [CODE_START_RANGE + 0, RawFile.size() )
       memcpy(reinterpret_cast<void*>(RIP), &RawFile.at(0), RawFile.size());
