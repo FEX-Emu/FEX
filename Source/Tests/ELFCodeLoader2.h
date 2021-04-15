@@ -171,16 +171,34 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return LoadBase;
   }
 
+  std::string ResolveRootfsFile(std::string File, std::string RootFS) {
+    std::string RootFSLink = RootFS + File;
+    while (std::filesystem::is_symlink(RootFSLink)) {
+      // Do some special handling if the RootFS's linker is a symlink
+      // Ubuntu's rootFS by default provides an absolute location symlink to the linker
+      // Resolve this around back to the rootfs
+      auto SymlinkTarget = std::filesystem::read_symlink(RootFSLink);
+      if (SymlinkTarget.is_absolute()) {
+        RootFSLink = RootFS + SymlinkTarget.string();
+      }
+      else {
+        break;
+      }
+    }
+
+    return RootFSLink;
+  }
+
   public:
   std::vector<std::function<void(FEXCore::Context::Context *CTX)>> AOTMappers;
   ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
-    if (!MainElf.ReadElf(Filename))
+    if (!MainElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !MainElf.ReadElf(Filename))
       return;
 
     if (!MainElf.InterpreterElf.empty()) {
-      if (!InterpElf.ReadElf(MainElf.InterpreterElf))
+      if (!InterpElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf))
         return;
 
       if (!InterpElf.InterpreterElf.empty())
@@ -290,7 +308,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, 0, 0);
     
-    if ((void*)BrkStart != MAP_FAILED) {
+    if ((void*)BrkStart == MAP_FAILED) {
       LogMan::Msg::E("Failed to allocate BRK @ %lx, %d\n", BrkBase, errno);
       return false;
     }

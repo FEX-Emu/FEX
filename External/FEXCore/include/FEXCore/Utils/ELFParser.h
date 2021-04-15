@@ -23,7 +23,7 @@ struct ELFParser {
   int fd {-1};
 
   bool ReadElf(const std::string &file) {
-
+    Closefd();
     static_assert(EI_CLASS == 4);
 
     type = ::ELFLoader::ELFContainer::TYPE_NONE;
