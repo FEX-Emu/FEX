@@ -194,8 +194,9 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
-    if (!MainElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !MainElf.ReadElf(Filename))
+    if (!MainElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !MainElf.ReadElf(Filename)) {
       return;
+    }
 
     if (!MainElf.InterpreterElf.empty()) {
       if (!InterpElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf))
