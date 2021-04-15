@@ -118,6 +118,8 @@ namespace FEXCore::Context {
    */
   __attribute__((visibility("default"))) ExitReason RunUntilExit(FEXCore::Context::Context *CTX);
 
+  __attribute__((visibility("default"))) void CompileRIP(FEXCore::Context::Context *CTX, uint64_t GuestRIP);
+
   /**
    * @brief Gets the program exit status
    *

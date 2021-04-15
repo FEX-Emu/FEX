@@ -70,7 +70,7 @@ DEF_OP(Break) {
       }
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Break reason: %d", Op->Reason);
+    //default: LOGMAN_MSG_A("Unknown Break reason: %d", Op->Reason);
   }
 }
 

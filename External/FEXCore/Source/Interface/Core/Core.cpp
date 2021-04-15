@@ -670,7 +670,9 @@ namespace FEXCore::Context {
             HadDispatchError = true;
           }
           else {
-            LOGMAN_THROW_A(Thread->OpDispatcher->HandledLock == IsLocked, "Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+            if (Thread->OpDispatcher->HandledLock != IsLocked)
+              HadDispatchError = true;
+            //LOGMAN_THROW_A(Thread->OpDispatcher->HandledLock == IsLocked, "Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
             BlockInstructionsLength += DecodedInfo->InstSize;
             TotalInstructionsLength += DecodedInfo->InstSize;
             ++TotalInstructions;
@@ -686,7 +688,7 @@ namespace FEXCore::Context {
           if (TotalInstructions == 0) {
             // Couldn't handle any instruction in op dispatcher
             Thread->OpDispatcher->ResetWorkingList();
-            return { nullptr, nullptr, 0, 0, 0, 0};
+            return { nullptr, nullptr, 0, 0, 0, 0 };
           }
           else {
             uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
@@ -904,6 +906,9 @@ namespace FEXCore::Context {
       GeneratedIR = true;
     }
 
+    if (IRList == nullptr) {
+      return { nullptr, nullptr, nullptr, nullptr, false, 0, 0 };
+    }
     // Attempt to get the CPU backend to compile this code
     return { Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR, StartAddr, Length};
   }
@@ -1077,6 +1082,12 @@ namespace FEXCore::Context {
       GeneratedIR = Generated;
       StartAddr = _StartAddr;
       Length = _Length;
+    }
+
+    if (CodePtr == nullptr) {
+      if (DecrementRefCount)
+        --Thread->CompileBlockReentrantRefCount;
+      return 0;
     }
 
     LOGMAN_THROW_A(CodePtr != nullptr, "Failed to compile code %lX", GuestRIP);

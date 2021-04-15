@@ -80,9 +80,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       return false;
     } else {
       auto Filename = get_fdpath(file.fd);
-      AOTMappers.push_back([=](auto CTX){
-        FEXCore::Context::AddNamedRegion(CTX, (uintptr_t)rv, size, off, Filename);
-      });
+      Sections.push_back({(uintptr_t)rv, size, (off_t)off, Filename, (prot & PROT_EXEC) != 0});
 
       return true;
     }
@@ -196,7 +194,15 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   }
 
   public:
-  std::vector<std::function<void(FEXCore::Context::Context *CTX)>> AOTMappers;
+  struct LoadedSection {
+    uintptr_t Base;
+    size_t Size;
+    off_t Offs;
+    std::string Filename;
+    bool Executable;
+  };
+
+  std::vector<LoadedSection> Sections;
   ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
@@ -559,7 +565,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     addr = AuxTabBase;
     size = AuxTabSize;
   }
-  
+
   bool Is64BitMode() {
     return MainElf.type == ::ELFLoader::ELFContainer::TYPE_X86_64;
   }

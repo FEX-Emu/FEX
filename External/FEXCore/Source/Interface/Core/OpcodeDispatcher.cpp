@@ -1504,7 +1504,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
           _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, fs), Src);
         }
         break;
-      default: LOGMAN_MSG_A("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
+      default: return; //LOGMAN_MSG_A("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
     }
   }
   else {
@@ -1539,7 +1539,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
           Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, fs), GPRClass);
         }
         break;
-      default: LOGMAN_MSG_A("Unknown segment register: %d", Op->Src[0].TypeGPR.GPR);
+      default: return; //LOGMAN_MSG_A("Unknown segment register: %d", Op->Src[0].TypeGPR.GPR);
     }
     StoreResult(GPRClass, Op, Segment, -1);
   }
@@ -1597,14 +1597,14 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
   auto Size = GetSrcSize(Op) * 8;
-
+LogMan::Msg::A
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64)
     Src = _And(Src, _Constant(0x3F));
   else
     Src = _And(Src, _Constant(0x1F));
 
-  OrderedNode *Result = _Lshl(Dest, Src);
+  OrderedNode *Result = _Lshl(Dest, Src);LogMan::Msg::A
 
   StoreResult(GPRClass, Op, Result, -1);
 

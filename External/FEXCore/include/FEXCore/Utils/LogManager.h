@@ -32,7 +32,7 @@ static inline void A(bool Value, const char *fmt, ...) {
     va_end(args);
   }
 }
-#define LOGMAN_THROW_A(pred, ...) do { LogMan::Throw::A(pred, __VA_ARGS__); } while (0)
+#define LOGMAN_THROW_A(pred, ...) do { LOGMAN_THROW_A(pred, __VA_ARGS__); } while (0)
 #else
 static inline void A(bool, const char*, ...) {}
 #define LOGMAN_THROW_A(pred, ...) do {} while (0)

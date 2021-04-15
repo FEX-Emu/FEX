@@ -30,6 +30,8 @@ $end_info$
 #include <filesystem>
 #include <algorithm>
 
+extern uint64_t SectionMaxAddress;
+
 namespace {
 static bool SilentLog;
 static FILE *OutputFD {stdout};
@@ -326,11 +328,52 @@ int main(int argc, char **argv, char **const envp) {
     return open(filepath.c_str(), O_RDONLY);
   });
 
-  for(auto handler: Loader.AOTMappers) {
-    handler(CTX);
-  }
+  if (AOTIRCapture()) {
+    for(auto Section: Loader.Sections) {
+      FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
+      if (Section.Executable && Section.Size > 16) {
+        std::vector<uintptr_t> BranchTargets;
+        for (size_t Offset = 0; Offset < (Section.Size - 16); Offset++) {
+          uint8_t *pCode = (uint8_t *)(Section.Base + Offset);
 
-  FEXCore::Context::RunUntilExit(CTX);
+          if (*pCode == 0xE8) {
+            uintptr_t Destination = (int)(pCode[1] | (pCode[2] << 8) | (pCode[3] << 16) | (pCode[4] << 24));
+            Destination += (uintptr_t)pCode + 5;
+
+            auto DestinationPtr = (uint8_t*)Destination;
+            
+            if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
+              continue; // outside of current section, unlikely to be real code
+
+            if (DestinationPtr[0] == 0 && DestinationPtr[1] == 0)
+              continue; // add al, [rax], unlikely to be real code
+/*
+            if (DestinationPtr[0] == 0x44 && DestinationPtr[1] == 0x0f && DestinationPtr[2] == 0x6f)
+              continue; // REX.W + movq leads to frontend bugs
+*/
+            BranchTargets.push_back(Destination);
+          }
+
+          if (pCode[0] == 0xf3 && pCode[1] == 0x0f && pCode[2] == 0x1e && pCode[3] == 0xfa) {
+            BranchTargets.push_back((uintptr_t)pCode);
+          }
+        }
+
+        SectionMaxAddress = Section.Base + Section.Size;
+
+        fprintf(stderr, "Found %ld Branch Targets\n", BranchTargets.size());
+        int counter = 0;
+        for (auto RIP: BranchTargets) {
+          if ((counter++) % 1000 == 0)
+            fprintf(stderr, "\rCompiling %d %lX", counter, RIP);
+          FEXCore::Context::CompileRIP(CTX, RIP);
+        }
+        fprintf(stderr, "\rAll done \n");
+      }
+    }
+  } else {
+    FEXCore::Context::RunUntilExit(CTX);
+  }
 
   if (AOTIRCapture()) {
     std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir");

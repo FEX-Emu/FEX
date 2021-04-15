@@ -16,6 +16,8 @@ $end_info$
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/Utils/LogManager.h>
 
+__attribute__((visibility("default"))) uint64_t SectionMaxAddress = 0;
+
 namespace FEXCore::Frontend {
 using namespace FEXCore::X86Tables;
 
@@ -475,6 +477,9 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     CurrentDest->TypeGPR.Type = DecodedOperand::TYPE_GPR;
     DecodeInst->Dest.TypeGPR.HighBits = (Is8BitDest && !HasREX && (Op & 0b111) >= 0b100) || HasHighXMM;
     CurrentDest->TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, Op & 0b111, Is8BitDest, HasREX, false, false);
+
+    if (CurrentDest->TypeGPR.GPR  == FEXCore::X86State::REG_INVALID)
+      return false;
   }
 
   uint8_t Bytes = Info->MoreBytes;
@@ -501,27 +506,36 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     GPR.TypeGPR.HighBits = (GPR8Bit && ModRM.reg >= 0b100 && !HasREX) || HasHighXMM;
     GPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_R ? 1 : 0, ModRM.reg, GPR8Bit, HasREX, HasXMMGPR, HasMMGPR);
 
+    if (GPR.TypeGPR.GPR == FEXCore::X86State::REG_INVALID)
+      return false;
+
     // ModRM.mod == 0b11 == Register
     // ModRM.Mod != 0b11 == Register-direct addressing
     if (ModRM.mod == 0b11) {
       NonGPR.TypeGPR.Type = DecodedOperand::TYPE_GPR;
       NonGPR.TypeGPR.HighBits = (NonGPR8Bit && ModRM.rm >= 0b100 && !HasREX) || HasHighXMM;
       NonGPR.TypeGPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, NonGPR8Bit, HasREX, HasXMMNonGPR, HasMMNonGPR);
+      if (NonGPR.TypeGPR.GPR == FEXCore::X86State::REG_INVALID)
+        return false;
     }
     else {
       auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
       (this->*Disp)(&NonGPR, ModRM);
     }
+
+    return true;
   };
 
   size_t CurrentSrc = 0;
 
   if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM) {
     if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_DST) {
-      ModRMOperand(DecodeInst->Src[CurrentSrc], DecodeInst->Dest, HasXMMSrc, HasXMMDst, HasMMSrc, HasMMDst, Is8BitSrc, Is8BitDest);
+      if (!ModRMOperand(DecodeInst->Src[CurrentSrc], DecodeInst->Dest, HasXMMSrc, HasXMMDst, HasMMSrc, HasMMDst, Is8BitSrc, Is8BitDest))
+        return false;
     }
     else {
-      ModRMOperand(DecodeInst->Dest, DecodeInst->Src[CurrentSrc], HasXMMDst, HasXMMSrc, HasMMDst, HasMMSrc, Is8BitDest, Is8BitSrc);
+      if (!ModRMOperand(DecodeInst->Dest, DecodeInst->Src[CurrentSrc], HasXMMDst, HasXMMSrc, HasMMDst, HasMMSrc, Is8BitDest, Is8BitSrc))
+        return false;
     }
     ++CurrentSrc;
   }
@@ -681,7 +695,8 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
       uint8_t Byte2 = ReadByte();
       pp = Byte2 & 0b11;
       map_select = Byte1 & 0b11111;
-      LOGMAN_THROW_A(map_select >= 1 && map_select <= 3, "We don't understand a map_select of: %d", map_select);
+      //LOGMAN_THROW_A(map_select >= 1 && map_select <= 3, "We don't understand a map_select of: %d", map_select);
+      return false;
     }
 
     uint16_t VEXOp = ReadByte();
@@ -909,6 +924,10 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
 
   }
 
+  if (DecodeInst->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    assert(DecodeInst->Dest.TypeGPR.GPR != 255);
+  }
+
   return true;
 }
 
@@ -993,7 +1012,7 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
   // If we don't have symbols available then we become a bit optimistic about multiblock ranges
   if (!SymbolAvailable) {
     // If we don't have a symbol available then assume all branches are valid for multiblock
-    SymbolMaxAddress = ~0ULL;
+    SymbolMaxAddress = SectionMaxAddress;
     SymbolMinAddress = EntryPoint;
   }
 
@@ -1023,6 +1042,9 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
 
       if (ErrorDuringDecoding) {
         LogMan::Msg::D("Couldn't Decode something at 0x%lx, Started at 0x%lx", PC + PCOffset, PC);
+        if (Blocks.size() == 1) {
+          return false;
+        }
         LOGMAN_THROW_A(Blocks.size() != 1, "Decode Error in entry block");
 
         CurrentBlockDecoding.HasInvalidInstruction = true;

@@ -61,6 +61,7 @@ friend class FEXCore::IR::PassManager;
     return _LoadContext(Offset, Class, Size);
   }
   IRPair<IROp_StoreContext> _StoreContext(RegisterClassType Class, uint8_t Size, uint32_t Offset, OrderedNode *ssa0) {
+    assert(Offset != 4048);
     return _StoreContext(ssa0, Offset, Class, Size);
   }
   IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
