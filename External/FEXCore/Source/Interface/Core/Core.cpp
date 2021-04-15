@@ -250,11 +250,7 @@ namespace FEXCore::Context {
     // We are the parent thread
     ParentThread = Thread;
 
-    Loader->MapMemoryRegion();
-
-    Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = Loader->SetupStack();
-
-    Loader->LoadMemory();
+    Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = Loader->GetStackPointer();
 
     Thread->CurrentFrame->State.rip = StartingRIP = Loader->DefaultRIP();
 

@@ -241,6 +241,16 @@ int main(int argc, char **argv, char **const envp) {
     return -ENOEXEC;
   }
 
+
+  if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return mmap(addr, length, prot, flags, fd, offset);
+    }, [](void *addr, size_t length) {
+      return munmap(addr, length);
+    })) {
+    // failed to map
+    return -ENOEXEC; 
+  }
+
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
@@ -284,9 +294,6 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
-  for(auto handler: Loader.LoadFns) {
-    handler(CTX);
-  }
 
   if (AOTIRLoad() || AOTIRCapture()) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
@@ -297,6 +304,10 @@ int main(int argc, char **argv, char **const envp) {
 
     return std::make_unique<std::ifstream>(filepath, std::ios::in | std::ios::binary);
   });
+
+  for(auto handler: Loader.AOTMappers) {
+    handler(CTX);
+  }
 
   FEXCore::Context::RunUntilExit(CTX);
 

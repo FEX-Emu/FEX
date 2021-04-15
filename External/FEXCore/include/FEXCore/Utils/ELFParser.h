@@ -178,9 +178,14 @@ struct ELFParser {
     return true;
   }
 
-  ~ELFParser() {
+  void Closefd() {
     if (fd != -1) {
       close(fd);
+      fd = -1;
     }
+  }
+
+  ~ELFParser() {
+    Closefd();
   }
 };

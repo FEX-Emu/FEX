@@ -23,6 +23,7 @@
 #include <sys/personality.h>
 #include <fcntl.h>
 #include <filesystem>
+#include <sys/auxv.h>
 
 #define PAGE_START(x) ((x) & ~(uintptr_t)(4095))
 #define PAGE_OFFSET(x) ((x) & 4095)
@@ -59,7 +60,8 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return PAGE_ALIGN(last->p_vaddr + last->p_memsz) - PAGE_START(first->p_vaddr);
   }
 
-  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr &Header, int prot, int flags) {
+  template<typename T>
+  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr &Header, int prot, int flags, T Mapper) {
 
     auto addr = Base + PAGE_START(Header.p_vaddr);
     auto size = Header.p_filesz + PAGE_OFFSET(Header.p_vaddr);
@@ -68,19 +70,18 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     size = PAGE_ALIGN(size);
 
     void *rv;
- 
-    int fd = file.fd;
 
     //fprintf(stderr, "MapFile: %lx %ld off: %ld\n", addr, size, off);
-    rv = mmap((void*)addr, size, prot, flags, file.fd, off);
+    rv = Mapper((void*)addr, size, prot, flags, file.fd, off);
 
     if (rv == MAP_FAILED) {
-      fprintf(stderr, "MapFile: Some elf mapping failed, %d\n", errno);
       // uhoh, something went wrong
+      LogMan::Throw::A(rv != MAP_FAILED, "MapFile: Some elf mapping failed, %d, fd: %d\n", errno, file.fd);
       return false;
     } else {
-      LoadFns.push_back([=](auto CTX){
-        FEXCore::Context::AddNamedRegion(CTX, (uintptr_t)rv, size, off, get_fdpath(fd));
+      auto Filename = get_fdpath(file.fd);
+      AOTMappers.push_back([=](auto CTX){
+        FEXCore::Context::AddNamedRegion(CTX, (uintptr_t)rv, size, off, Filename);
       });
 
       return true;
@@ -102,15 +103,22 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return rv;
   }
 
-  uintptr_t LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase) {
+  template <typename TMap, typename TUnmap>
+  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, TMap Mapper, TUnmap Unmapper) {
 
     uintptr_t LoadBase = 0;
        
     if (Elf.ehdr.e_type == ET_DYN) {
       // needs base address
       auto TotalSize  = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
-      LoadBase = (uintptr_t)mmap(0, TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | (Is64BitMode() ? 0 : MAP_32BIT), 0, 0);
-      munmap((void*)LoadBase, TotalSize);
+      LoadBase = (uintptr_t)Mapper(0, TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
+      if ((void*)LoadBase == MAP_FAILED) {
+        return {};
+      }
+
+      if (Unmapper((void*)LoadBase, TotalSize) == -1) {
+        return {};
+      }
       //fprintf(stderr, "elf %d: %lx-%lx\n", Elf.fd, LoadBase, LoadBase + TotalSize);
     }
 
@@ -125,19 +133,26 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 			int MapProt = MapFlags(Header);
       int MapType = MAP_PRIVATE | MAP_DENYWRITE | MAP_FIXED_NOREPLACE;
 
-			MapFile(Elf, LoadBase, Header, MapProt, MapType);
+			if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Mapper)) {
+        return {};
+      }
 	
       if (Header.p_memsz > Header.p_filesz) {
         // clear bss
         auto BSSStart = LoadBase + Header.p_vaddr + Header.p_filesz;
         auto BSSPageStart = PAGE_ALIGN(BSSStart);
         auto BSSPageEnd = PAGE_ALIGN(LoadBase + Header.p_vaddr + Header.p_memsz);
-        memset((void*)BSSStart, 0, BSSPageStart - BSSStart);
+
+        // Only clear padding bytes if the section is writable
+        if (Header.p_flags & PF_W) {
+          memset((void*)BSSStart, 0, BSSPageStart - BSSStart);
+        }
 
         if (BSSPageStart != BSSPageEnd) {
-          auto bss = mmap((void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, 0, 0);
+          auto bss = Mapper((void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, 0, 0);
           if ((void*)bss == MAP_FAILED) {
-            fprintf(stderr, "Failed to allocate BSS @ %p, %d\n", bss, errno);
+            LogMan::Msg::E("Failed to allocate BSS @ %p, %d\n", bss, errno);
+            return {};
           }
         }
       }
@@ -157,7 +172,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   }
 
   public:
-  std::vector<std::function<void(FEXCore::Context::Context *CTX)>> LoadFns;
+  std::vector<std::function<void(FEXCore::Context::Context *CTX)>> AOTMappers;
   ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
@@ -176,62 +191,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     }
 
     ElfValid = true;
-
-    for (auto Header: MainElf.phdrs) {
-      if (Header.p_type == PT_GNU_STACK) {
-        if (Header.p_flags & PF_X)
-          ExecutableStack = true;
-      }
-
-      // We ignore LOPROC..HIPROC here, kernel has a platform specific hook about it
-      // Both for the main and the interpreter elf
-    }
-
-    // Set the process personality here
-    // This needs some more investigation
-    // READ_IMPLIES_EXEC might be default for 32-bit elfs
-    // Also, what about ADDR_LIMIT_3GB & co ?
-    personality(PER_LINUX | (ExecutableStack ? READ_IMPLIES_EXEC : 0));
-
-    // What about ASLR and such ?
-    // ADDR_LIMIT_3GB STACK -> 0xc0000000 else -> 0xFFFFe000
-
-    // map stack here, so that nothing gets mapped there
-    if (Is64BitMode()) {
-      StackPointer = reinterpret_cast<uintptr_t>(mmap(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
-    }
-    else {
-      StackPointer = reinterpret_cast<uintptr_t>(mmap(reinterpret_cast<void*>(STACK_OFFSET), StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
-      LogMan::Throw::A(StackPointer != ~0ULL, "mmap failed");
-    }
-
-    // load the main elf
-
-    uintptr_t BrkBase = 0;
-
-    uintptr_t LoadBase = LoadElfFile(MainElf, &BrkBase);
-
-    // XXX Randomise brk?
-
-    BrkStart = (uint64_t)mmap((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, 0, 0);
-    
-    if ((void*)BrkStart == MAP_FAILED) {
-      fprintf(stderr, "Failed to allocate BRK @ %lx, %d\n", BrkBase, errno);
-    }
-
-    MainElfBase = LoadBase + MainElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
-    MainElfEntrypoint = LoadBase + MainElf.ehdr.e_entry;
-
-    if (!MainElf.InterpreterElf.empty()) {
-      uint64_t InterpLoadBase = LoadElfFile(InterpElf, nullptr);
-      InterpeterElfBase = InterpLoadBase + InterpElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
-      Entrypoint = InterpLoadBase + InterpElf.ehdr.e_entry;
-    } else {
-      InterpeterElfBase = 0;
-      Entrypoint = MainElfEntrypoint;
-    }
-
-    // All done
 
     if (!!envp) {
       // If we had envp passed in then make sure to set it up on the guest
@@ -258,11 +217,106 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       EnvironmentBackingSize += EnvironmentVariables[i].size() + 1;
     }
 
-    AuxVariables.emplace_back(auxv_t{11, 1000}); // AT_UID
-    AuxVariables.emplace_back(auxv_t{12, 1000}); // AT_EUID
-    AuxVariables.emplace_back(auxv_t{13, 1000}); // AT_GID
-    AuxVariables.emplace_back(auxv_t{14, 1000}); // AT_EGID
-    AuxVariables.emplace_back(auxv_t{17, 0x64}); // AT_CLKTIK
+    for (auto &Arg : ParsedArgs) {
+      LoaderArgs.emplace_back(Arg.c_str());
+    }
+  }
+
+  virtual uint64_t StackSize() const override { return STACK_SIZE; }
+  virtual uint64_t GetStackPointer() override { return StackPointer; }
+  virtual uint64_t DefaultRIP() const override { return Entrypoint; };
+
+  struct auxv32_t {
+    uint32_t key;
+    uint32_t val;
+  };
+
+  struct auxv_t {
+    uint64_t key;
+    uint64_t val;
+  };
+
+  virtual bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override {
+
+    for (auto Header: MainElf.phdrs) {
+      if (Header.p_type == PT_GNU_STACK) {
+        if (Header.p_flags & PF_X)
+          ExecutableStack = true;
+      }
+
+      // We ignore LOPROC..HIPROC here, kernel has a platform specific hook about it
+      // Both for the main and the interpreter elf
+    }
+
+    // Set the process personality here
+    // This needs some more investigation
+    // READ_IMPLIES_EXEC might be default for 32-bit elfs
+    // Also, what about ADDR_LIMIT_3GB & co ?
+    if (-1 == personality(PER_LINUX | (ExecutableStack ? READ_IMPLIES_EXEC : 0)))
+      return false;
+
+    // What about ASLR and such ?
+    // ADDR_LIMIT_3GB STACK -> 0xc0000000 else -> 0xFFFFe000
+
+    // map stack here, so that nothing gets mapped there
+    if (Is64BitMode()) {
+      StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
+    }
+    else {
+      StackPointer = reinterpret_cast<uintptr_t>(Mapper(reinterpret_cast<void*>(STACK_OFFSET), StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
+    }
+
+    if (StackPointer == ~0ULL) {
+      LogMan::Msg::E("Allocating stack failed");
+      return false;
+    }
+
+    // load the main elf
+
+    uintptr_t BrkBase = 0;
+
+    uintptr_t LoadBase = 0;
+
+    if (auto elf = LoadElfFile(MainElf, &BrkBase, Mapper, Unmapper)) {
+      LoadBase = *elf;
+    } else {
+      LogMan::Msg::E("Failed to load elf file");
+      return false;
+    }
+
+    // XXX Randomise brk?
+
+    BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, 0, 0);
+    
+    LogMan::Throw::A((void*)BrkStart != MAP_FAILED, "Failed to allocate BRK @ %lx, %d\n", BrkBase, errno);
+
+    MainElfBase = LoadBase + MainElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
+    MainElfEntrypoint = LoadBase + MainElf.ehdr.e_entry;
+
+    if (!MainElf.InterpreterElf.empty()) {
+      uint64_t InterpLoadBase = 0;
+      if (auto elf = LoadElfFile(InterpElf, nullptr, Mapper, Unmapper)) {
+        InterpLoadBase = *elf;
+      } else {
+        LogMan::Msg::E("Failed to load interpreter elf file");
+        return false;
+      }
+
+      InterpeterElfBase = InterpLoadBase + InterpElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
+      Entrypoint = InterpLoadBase + InterpElf.ehdr.e_entry;
+    } else {
+      InterpeterElfBase = 0;
+      Entrypoint = MainElfEntrypoint;
+    }
+
+    // All done
+
+    // Setup AuxVars
+    AuxVariables.emplace_back(auxv_t{11, getauxval(AT_UID)}); // AT_UID
+    AuxVariables.emplace_back(auxv_t{12, getauxval(AT_EUID)}); // AT_EUID
+    AuxVariables.emplace_back(auxv_t{13, getauxval(AT_GID)}); // AT_GID
+    AuxVariables.emplace_back(auxv_t{14, getauxval(AT_EGID)}); // AT_EGID
+    AuxVariables.emplace_back(auxv_t{17, getauxval(AT_CLKTCK)}); // AT_CLKTIK
     AuxVariables.emplace_back(auxv_t{6, 0x1000}); // AT_PAGESIZE
     AuxVariables.emplace_back(auxv_t{25, ~0ULL}); // AT_RANDOM
     AuxVariables.emplace_back(auxv_t{23, 0}); // AT_SECURE
@@ -295,22 +349,15 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
 
-    for (auto &Arg : ParsedArgs) {
-      LoaderArgs.emplace_back(Arg.c_str());
-    }
+    SetupStack();
+
+    // Cleanup FDs so they don't stay open
+    MainElf.Closefd();
+    InterpElf.Closefd();
+    return true;
   }
 
-  virtual uint64_t StackSize() const override { return STACK_SIZE; }
-  
-  struct auxv32_t {
-    uint32_t key;
-    uint32_t val;
-  };
-  struct auxv_t {
-    uint64_t key;
-    uint64_t val;
-  };
-
+  // Helper for stack setup
   template <typename PointerType, typename AuxType, size_t PointerSize>
   static void SetupPointers(
     uintptr_t StackPointer,
@@ -396,8 +443,8 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     *AuxTabSize = sizeof(AuxType) * AuxVariables.size();
   }
 
-
-  uint64_t SetupStack() override {
+  // Setups the stack initial data (argv, envp, auxv)
+  void SetupStack() {
     StackPointer += StackSize();
     // Set up our initial CPU state
     uint64_t SizeOfPointer = Is64BitMode() ? 8 : 4;
@@ -473,15 +520,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
         RandomNumberLocation
         );
     }
-
-    return StackPointer;
   }
-
-  virtual uint64_t DefaultRIP() const override { return Entrypoint; };
-
-  virtual void MapMemoryRegion() override { }
-
-  virtual void LoadMemory() override { }
 
   bool Is64BitMode() {
     return MainElf.type == ::ELFLoader::ELFContainer::TYPE_X86_64;

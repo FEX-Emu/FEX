@@ -191,7 +191,7 @@ public:
     *AuxTabSize = sizeof(AuxType) * AuxVariables.size();
   }
 
-  uint64_t SetupStack() override {
+  uint64_t GetStackPointer() override {
     uintptr_t StackPointer{};
     if (File.GetMode() == ::ELFLoader::ELFContainer::MODE_64BIT) {
       StackPointer = reinterpret_cast<uintptr_t>(mmap(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
@@ -284,17 +284,21 @@ public:
     return DB.DefaultRIP();
   }
 
-  void MapMemoryRegion() override {
-    auto DoMMap = [](uint64_t Address, size_t Size, bool FixedNoReplace) -> void* {
-      void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, (FixedNoReplace ? MAP_FIXED_NOREPLACE : MAP_FIXED) | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override {
+    auto DoMMap = [Mapper](uint64_t Address, size_t Size, bool FixedNoReplace) -> void* {
+      void *Result = Mapper(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, (FixedNoReplace ? MAP_FIXED_NOREPLACE : MAP_FIXED) | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
       LogMan::Throw::A(Result != (void*)~0ULL, "Couldn't mmap");
       return Result;
     };
 
     DB.MapMemoryRegions(DoMMap);
+
+    LoadMemory();
+
+    return true;
   }
 
-  void LoadMemory() override {
+  void LoadMemory() {
     auto ELFLoaderWrapper = [&](void const *Data, uint64_t Addr, uint64_t Size) -> void {
       memcpy(reinterpret_cast<void*>(Addr), Data, Size);
     };
