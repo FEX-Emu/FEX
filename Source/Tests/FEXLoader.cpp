@@ -245,6 +245,7 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
+    LogMan::Msg::E("Invalid or Unsupported elf file.");
     return -ENOEXEC;
   }
 
@@ -261,6 +262,7 @@ int main(int argc, char **argv, char **const envp) {
       return munmap(addr, length);
     })) {
       // failed to map
+      LogMan::Msg::E("Failed to map 64-bit elf file.");
       return -ENOEXEC; 
     }
   } else {
@@ -271,6 +273,7 @@ int main(int argc, char **argv, char **const envp) {
       return Allocator->munmap(addr, length);
     })) {
       // failed to map
+      LogMan::Msg::E("Failed to map 32-bit elf file.");
       return -ENOEXEC; 
     }
   }

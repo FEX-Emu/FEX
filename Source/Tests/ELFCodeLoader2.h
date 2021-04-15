@@ -252,8 +252,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     // This needs some more investigation
     // READ_IMPLIES_EXEC might be default for 32-bit elfs
     // Also, what about ADDR_LIMIT_3GB & co ?
-    if (-1 == personality(PER_LINUX | (ExecutableStack ? READ_IMPLIES_EXEC : 0)))
+    if (-1 == personality(PER_LINUX | (ExecutableStack ? READ_IMPLIES_EXEC : 0))) {
+      LogMan::Msg::E("Setting personality failed");
       return false;
+    }
 
     // What about ASLR and such ?
     // ADDR_LIMIT_3GB STACK -> 0xc0000000 else -> 0xFFFFe000
@@ -288,7 +290,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, 0, 0);
     
-    LogMan::Throw::A((void*)BrkStart != MAP_FAILED, "Failed to allocate BRK @ %lx, %d\n", BrkBase, errno);
+    if ((void*)BrkStart != MAP_FAILED) {
+      LogMan::Msg::E("Failed to allocate BRK @ %lx, %d\n", BrkBase, errno);
+      return false;
+    }
 
     MainElfBase = LoadBase + MainElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
     MainElfEntrypoint = LoadBase + MainElf.ehdr.e_entry;
