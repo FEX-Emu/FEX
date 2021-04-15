@@ -56,7 +56,6 @@ private:
 
   std::mutex FDLock;
   std::unordered_map<int32_t, std::string> FDToNameMap;
-  std::string PidSelfPath;
   std::string GetEmulatedPath(const char *pathname);
   std::map<std::string, std::string> ThunkOverlays;
 
