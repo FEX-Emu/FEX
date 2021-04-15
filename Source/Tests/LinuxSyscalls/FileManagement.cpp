@@ -70,15 +70,6 @@ static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
-  // calculate the non-self link to exe
-  // Some executables do getpid, stat("/proc/$pid/exe")
-  int pid = getpid();
-
-  char buf[50];
-  snprintf(buf, 50, "/proc/%i/exe", pid);
-
-  PidSelfPath = std::string(buf);
-
   
   auto ThunkConfigFile = ThunkConfig();
 
@@ -216,7 +207,14 @@ uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int 
 }
 
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
-  if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, PidSelfPath.c_str()) == 0) {
+  // calculate the non-self link to exe
+  // Some executables do getpid, stat("/proc/$pid/exe")
+  int pid = getpid();
+
+  char PidSelfPath[50];
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+
+  if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
     auto App = Filename();
     strncpy(buf, App.c_str(), bufsiz);
     return std::min(bufsiz, App.size());
