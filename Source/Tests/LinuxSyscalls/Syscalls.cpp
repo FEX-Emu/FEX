@@ -314,21 +314,4 @@ uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t 
   return -ENOSYS;
 }
 
-FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode,
-  FEXCore::Context::Context *ctx,
-  FEX::HLE::SignalDelegator *_SignalDelegation,
-  FEXCore::CodeLoader *Loader) {
-
-  FEX::HLE::SyscallHandler *Result{};
-  if (Mode == FEXCore::Context::MODE_64BIT) {
-    Result = FEX::HLE::x64::CreateHandler(ctx, _SignalDelegation);
-  }
-  else {
-    Result = FEX::HLE::x32::CreateHandler(ctx, _SignalDelegation);
-  }
-
-  Result->SetCodeLoader(Loader);
-  return Result;
-}
-
 }

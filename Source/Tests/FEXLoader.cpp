@@ -10,7 +10,8 @@ $end_info$
 #include "Common/Config.h"
 #include "ELFCodeLoader.h"
 #include "ELFCodeLoader2.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
@@ -232,7 +233,13 @@ int main(int argc, char **argv, char **const envp) {
     return -ENOEXEC;
   }
 
-    
+
+  uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
+  if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+    // We require 4.17 minimum for MAP_FIXED_NOREPLACE
+    LogMan::Msg::E("FEXLoader requires kernel 4.17 minimum. Expect problems.");
+  }
+
   ELFCodeLoader2 Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
   //FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
 
@@ -241,38 +248,48 @@ int main(int argc, char **argv, char **const envp) {
     return -ENOEXEC;
   }
 
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+
+  FEX::HLE::x32::MemAllocator *Allocator = nullptr;
+
+  if (Loader.Is64BitMode()) {
+    if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return mmap(addr, length, prot, flags, fd, offset);
     }, [](void *addr, size_t length) {
       return munmap(addr, length);
     })) {
-    // failed to map
-    return -ENOEXEC; 
+      // failed to map
+      return -ENOEXEC; 
+    }
+  } else {
+    Allocator = new FEX::HLE::x32::MemAllocator();
+    if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return Allocator->mmap(addr, length, prot, flags, fd, offset);
+    }, [Allocator](void *addr, size_t length) {
+      return Allocator->munmap(addr, length);
+    })) {
+      // failed to map
+      return -ENOEXEC; 
+    }
   }
-
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
-
-  uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-  if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17) &&
-      !Loader.Is64BitMode()) {
-    // We require 4.17 minimum for MAP_FIXED_NOREPLACE on 32bit ELFs
-    LogMan::Msg::E("FEXLoader requires kernel 4.17 minimum. Expect problems.");
-  }
-
+  
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
   
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  
   std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
-    FEX::HLE::CreateHandler(
-      Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT,
-      CTX,
-      SignalDelegation.get(),
-      &Loader)};
+    Loader.Is64BitMode() ?
+      FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get()) :
+      FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), Allocator)
+  };
+
+  SyscallHandler->SetCodeLoader(&Loader);
+  
   auto BRKInfo = Loader.GetBRKInfo();
   //fprintf(stderr, "BRK %lX - %ld\n", BRKInfo.Base, BRKInfo.Size);
   
