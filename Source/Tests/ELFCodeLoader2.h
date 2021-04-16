@@ -80,7 +80,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       return false;
     } else {
       auto Filename = get_fdpath(file.fd);
-      Sections.push_back({(uintptr_t)rv, size, (off_t)off, Filename, (prot & PROT_EXEC) != 0});
+      Sections.push_back({Base, (uintptr_t)rv, size, (off_t)off, Filename, (prot & PROT_EXEC) != 0});
 
       return true;
     }
@@ -195,6 +195,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
   public:
   struct LoadedSection {
+    uintptr_t ElfBase;
     uintptr_t Base;
     size_t Size;
     off_t Offs;

@@ -580,6 +580,40 @@ void ELFContainer::CalculateSymbols() {
         }
       }
     }
+
+    Elf64_Shdr const *StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
+    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+    for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
+      Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
+      if (strcmp(&SHStrings[hdr->sh_name], ".eh_frame_hdr") == 0) {
+        auto eh_frame_hdr = &RawFile.at(hdr->sh_offset);
+        printf("Found it! %p\n", eh_frame_hdr);
+        if (eh_frame_hdr[0] == 1 && eh_frame_hdr[1] == 0x1B && eh_frame_hdr[2] == 0x3 && eh_frame_hdr[3] == 0x3b) {
+          // ptr enc : 4 bytes, signed, pcrel
+          // fde count : 4 bytes udata
+          // table enc : 4 bytes, signed, datarel
+          printf("ptrenc: %d\n", *(int*)(eh_frame_hdr + 4));
+          int fde_count = *(int*)(eh_frame_hdr + 8);
+          printf("fde count: %d\n", fde_count);
+
+          struct entry {
+            int32_t pc;
+            int32_t fde;
+          };
+
+          entry *Table = (entry*)(eh_frame_hdr+12);
+          for (int f = 0; f < fde_count; f++) {
+            uintptr_t Entry = (uintptr_t)(Table[f].pc + hdr->sh_offset);
+            ELFSymbol sym;
+            sym.Address = Entry;
+            sym.Name = "unwind";
+            sym.FileOffset = 1;
+            Symbols.push_back(sym);
+          }
+        }
+        break;
+      }
+    }
   }
 }
 

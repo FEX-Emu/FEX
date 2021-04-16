@@ -29,8 +29,10 @@ $end_info$
 #include <fstream>
 #include <filesystem>
 #include <algorithm>
+#include <set>
 
 extern uint64_t SectionMaxAddress;
+extern std::set<uint64_t> ExternalBranches;
 
 namespace {
 static bool SilentLog;
@@ -328,11 +330,31 @@ int main(int argc, char **argv, char **const envp) {
     return open(filepath.c_str(), O_RDONLY);
   });
 
+  for(auto Section: Loader.Sections) {
+    FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
+  }
+
   if (AOTIRCapture()) {
     for(auto Section: Loader.Sections) {
-      FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
       if (Section.Executable && Section.Size > 16) {
-        std::vector<uintptr_t> BranchTargets;
+        ELFLoader::ELFContainer container{Section.Filename, "", false};
+
+        std::set<uintptr_t> BranchTargets;
+
+        container.AddSymbols([&](ELFLoader::ELFSymbol* sym) {
+          auto Destination = sym->Address + Section.ElfBase;
+
+          if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
+            //printf("Sym : %lx %lx out of range\n", sym->Address, Destination);
+            return; // outside of current section, unlikely to be real code
+          }
+
+          BranchTargets.insert(Destination);
+        });
+
+
+        printf("Symbol + Unwind seed: %ld\n", BranchTargets.size());
+
         for (size_t Offset = 0; Offset < (Section.Size - 16); Offset++) {
           uint8_t *pCode = (uint8_t *)(Section.Base + Offset);
 
@@ -351,24 +373,38 @@ int main(int argc, char **argv, char **const envp) {
             if (DestinationPtr[0] == 0x44 && DestinationPtr[1] == 0x0f && DestinationPtr[2] == 0x6f)
               continue; // REX.W + movq leads to frontend bugs
 */
-            BranchTargets.push_back(Destination);
+            BranchTargets.insert(Destination);
           }
 
           if (pCode[0] == 0xf3 && pCode[1] == 0x0f && pCode[2] == 0x1e && pCode[3] == 0xfa) {
-            BranchTargets.push_back((uintptr_t)pCode);
+            BranchTargets.insert((uintptr_t)pCode);
           }
         }
 
         SectionMaxAddress = Section.Base + Section.Size;
 
-        fprintf(stderr, "Found %ld Branch Targets\n", BranchTargets.size());
+        std::set<uint64_t> Compiled;
         int counter = 0;
-        for (auto RIP: BranchTargets) {
-          if ((counter++) % 1000 == 0)
-            fprintf(stderr, "\rCompiling %d %lX", counter, RIP);
-          FEXCore::Context::CompileRIP(CTX, RIP);
-        }
-        fprintf(stderr, "\rAll done \n");
+        do {        
+          fprintf(stderr, "Found %ld Branch Targets\n", BranchTargets.size());
+          for (auto RIP: BranchTargets) {
+            if ((counter++) % 1000 == 0)
+              fprintf(stderr, "\rCompiling %d %lX", counter, RIP - Section.ElfBase);
+            FEXCore::Context::CompileRIP(CTX, RIP);
+            Compiled.insert(RIP);
+          }
+          fprintf(stderr, "\nPass Done \n");
+          BranchTargets.clear();
+          for (auto Destination: ExternalBranches) {
+            if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
+              continue;
+            if (Compiled.contains(Destination))
+              continue;
+            BranchTargets.insert(Destination);
+          }
+          ExternalBranches.clear();
+        } while (BranchTargets.size() > 0);
+        fprintf(stderr, "\nAll Done: %d\n", counter);
       }
     }
   } else {
