@@ -12,7 +12,7 @@ static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
 X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
   : Dispatcher(ctx, Thread)
-  , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE) {
+  , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE, nullptr, this) {
 
   using namespace Xbyak;
   using namespace Xbyak::util;
