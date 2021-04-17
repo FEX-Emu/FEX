@@ -667,9 +667,12 @@ namespace FEX::EmulatedFile {
     if (ec) {
       return -1;
     }
-    string cpath = exists ? std::filesystem::canonical(pathname)
+    string cpath = exists ? std::filesystem::canonical(pathname, ec)
       : std::filesystem::path(pathname).lexically_normal(); // *Note: this doesn't transform to absolute
 
+    if (ec) {
+      return -1;
+    }
     auto Creator = FDReadCreators.find(cpath);
     if (Creator == FDReadCreators.end()) {
       return -1;
