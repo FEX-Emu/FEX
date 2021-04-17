@@ -15,6 +15,7 @@ $end_info$
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/CodeLoader.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/ELFContainer.h>
 #include <fcntl.h>
 #include <filesystem>
@@ -191,7 +192,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
 
         uint64_t RemainingSize = DataSpaceMaxSize - NewSizeAligned;
         // We have pages we can unmap
-        munmap(reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
+        FEXCore::Allocator::munmap(reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
         DataSpaceMaxSize = NewSizeAligned;
       }
       else if (NewSize > DataSpaceMaxSize) {
@@ -203,12 +204,12 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
           return DataSpace + DataSpaceSize;
         }
 
-        uint64_t NewBRK = (uint64_t)mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        uint64_t NewBRK = (uint64_t)FEXCore::Allocator::mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
         if (NewBRK != ~0ULL && NewBRK != (DataSpace + DataSpaceMaxSize)) {
           // Couldn't allocate that the region we wanted
           // Can happen if MAP_FIXED_NOREPLACE isn't understood by the kernel
-          munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
+          FEXCore::Allocator::munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
           NewBRK = ~0ULL;
         }
 
@@ -243,7 +244,7 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalD
 }
 
 SyscallHandler::~SyscallHandler() {
-  munmap(reinterpret_cast<void*>(DataSpace + DataSpaceStartingSize), DataSpaceMaxSize - DataSpaceStartingSize);
+  FEXCore::Allocator::munmap(reinterpret_cast<void*>(DataSpace + DataSpaceStartingSize), DataSpaceMaxSize - DataSpaceStartingSize);
 }
 
 uint32_t SyscallHandler::CalculateHostKernelVersion() {
