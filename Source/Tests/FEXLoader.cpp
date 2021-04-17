@@ -17,6 +17,7 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/LogManager.h>
 
@@ -257,13 +258,13 @@ int main(int argc, char **argv, char **const envp) {
 
   if (Loader.Is64BitMode()) {
     if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return mmap(addr, length, prot, flags, fd, offset);
+      return FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset);
     }, [](void *addr, size_t length) {
-      return munmap(addr, length);
+      return FEXCore::Allocator::munmap(addr, length);
     })) {
       // failed to map
       LogMan::Msg::E("Failed to map 64-bit elf file.");
-      return -ENOEXEC; 
+      return -ENOEXEC;
     }
   } else {
     Allocator = new FEX::HLE::x32::MemAllocator();
@@ -274,17 +275,17 @@ int main(int argc, char **argv, char **const envp) {
     })) {
       // failed to map
       LogMan::Msg::E("Failed to map 32-bit elf file.");
-      return -ENOEXEC; 
+      return -ENOEXEC;
     }
   }
-  
+
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-  
+
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-  
+
   std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
     Loader.Is64BitMode() ?
       FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get()) :
@@ -292,10 +293,10 @@ int main(int argc, char **argv, char **const envp) {
   };
 
   SyscallHandler->SetCodeLoader(&Loader);
-  
+
   auto BRKInfo = Loader.GetBRKInfo();
   //fprintf(stderr, "BRK %lX - %ld\n", BRKInfo.Base, BRKInfo.Size);
-  
+
   SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
