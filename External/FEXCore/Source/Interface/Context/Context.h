@@ -178,11 +178,6 @@ namespace FEXCore::Context {
     bool GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data);
     bool FindHostCodeForRIP(uint64_t RIP, uint8_t **Code);
 
-    // XXX:
-    // bool FindIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList **ir);
-    // void SetIRForRIP(uint64_t RIP, FEXCore::IR::IntrusiveIRList *const ir);
-    void LoadEntryList();
-
     std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t, uint64_t, uint64_t> GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
     std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
@@ -226,11 +221,6 @@ namespace FEXCore::Context {
     FEXCore::CodeLoader *LocalLoader{};
 
     // Entry Cache
-    std::optional<std::string> GetFilenameHash(std::string const &Filename) const;
-    void AddThreadRIPsToEntryList(FEXCore::Core::InternalThreadState *Thread);
-    void SaveEntryList();
-    std::set<uint64_t> EntryList;
-    std::vector<uint64_t> InitLocations;
     uint64_t StartingRIP;
     std::mutex ExitMutex;
     std::unique_ptr<GdbServer> DebugServer;

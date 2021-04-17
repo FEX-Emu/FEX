@@ -527,9 +527,9 @@ uint64_t MemAllocator::shmdt(const void* shmaddr) {
       });
   }
 
-  x32SyscallHandler::x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation)
+  x32SyscallHandler::x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator)
     : SyscallHandler {ctx, _SignalDelegation} {
-    AllocHandler = std::make_unique<MemAllocator>();
+    AllocHandler.reset(Allocator);
     OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX32;
     RegisterSyscallHandlers();
   }
@@ -607,8 +607,8 @@ uint64_t MemAllocator::shmdt(const void* shmaddr) {
 #endif
   }
 
-  FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation) {
-    return new x32SyscallHandler(ctx, _SignalDelegation);
+  FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator) {
+    return new x32SyscallHandler(ctx, _SignalDelegation, Allocator);
   }
 
 }

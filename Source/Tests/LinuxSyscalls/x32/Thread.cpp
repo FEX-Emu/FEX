@@ -12,8 +12,6 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 
-#include <FEXCore/Utils/ELFLoader.h>
-
 #include <stdint.h>
 #include <linux/futex.h>
 #include <sys/syscall.h>

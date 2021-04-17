@@ -97,7 +97,7 @@ private:
 
 class x32SyscallHandler final : public FEX::HLE::SyscallHandler {
 public:
-  x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+  x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator);
 
   FEX::HLE::x32::MemAllocator *GetAllocator() { return AllocHandler.get(); }
 
@@ -106,7 +106,7 @@ private:
   std::unique_ptr<MemAllocator> AllocHandler{};
 };
 
-FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator);
 void RegisterSyscallInternal(int SyscallNumber,
 #ifdef DEBUG_STRACE
   const std::string& TraceFormatString,

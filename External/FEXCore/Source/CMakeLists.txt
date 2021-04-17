@@ -121,7 +121,7 @@ set (SRCS
   Interface/IR/Passes/StaticRegisterAllocationPass.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
-  Utils/ELFLoader.cpp
+  Utils/ELFContainer.cpp
   Utils/ELFSymbolDatabase.cpp
   Utils/LogManager.cpp
   Utils/Threads.cpp

@@ -15,7 +15,7 @@ $end_info$
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/CodeLoader.h>
-#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/ELFContainer.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
@@ -312,23 +312,6 @@ uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t Sysc
 
 uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber) {
   return -ENOSYS;
-}
-
-FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode,
-  FEXCore::Context::Context *ctx,
-  FEX::HLE::SignalDelegator *_SignalDelegation,
-  FEXCore::CodeLoader *Loader) {
-
-  FEX::HLE::SyscallHandler *Result{};
-  if (Mode == FEXCore::Context::MODE_64BIT) {
-    Result = FEX::HLE::x64::CreateHandler(ctx, _SignalDelegation);
-  }
-  else {
-    Result = FEX::HLE::x32::CreateHandler(ctx, _SignalDelegation);
-  }
-
-  Result->SetCodeLoader(Loader);
-  return Result;
 }
 
 }

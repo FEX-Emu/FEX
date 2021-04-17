@@ -6,7 +6,7 @@ $end_info$
 */
 
 #include <FEXCore/Utils/Common/MathUtils.h>
-#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <cstring>
 #include <elf.h>
@@ -1285,6 +1285,5 @@ void ELFContainer::GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t>
     }
   }
 }
-
 
 } // namespace ELFLoader

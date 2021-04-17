@@ -146,11 +146,6 @@ private:
 
 };
 
-FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::OperatingMode Mode,
-  FEXCore::Context::Context *ctx,
-  FEX::HLE::SignalDelegator *_SignalDelegation,
-  FEXCore::CodeLoader *Loader
-  );
 uint64_t HandleSyscall(SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);
 
 #define SYSCALL_ERRNO() do { if (Result == -1) return -errno; return Result; } while(0)

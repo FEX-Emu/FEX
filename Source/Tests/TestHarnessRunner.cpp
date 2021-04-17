@@ -9,7 +9,8 @@ $end_info$
 #include "Common/EnvironmentLoader.h"
 #include "CommonCore/HostFactory.h"
 #include "HarnessHelpers.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
@@ -79,13 +80,36 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::InitializeContext(CTX);
 
+
+  FEX::HLE::x32::MemAllocator *Allocator = nullptr;
+
+  if (Loader.Is64BitMode()) {
+    if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return mmap(addr, length, prot, flags, fd, offset);
+    }, [](void *addr, size_t length) {
+      return munmap(addr, length);
+    })) {
+      // failed to map
+      return -ENOEXEC; 
+    }
+  } else {
+    Allocator = new FEX::HLE::x32::MemAllocator();
+    if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return Allocator->mmap(addr, length, prot, flags, fd, offset);
+    }, [Allocator](void *addr, size_t length) {
+      return Allocator->munmap(addr, length);
+    })) {
+      // failed to map
+      return -ENOEXEC; 
+    }
+  }
+
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-  std::unique_ptr<FEXCore::HLE::SyscallHandler> SyscallHandler{
-    FEX::HLE::CreateHandler(
-      Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT,
-      CTX,
-      SignalDelegation.get(),
-      &Loader)};
+  std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
+    Loader.Is64BitMode() ?
+      FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get()) :
+      FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), Allocator)
+  };
 
   bool DidFault = false;
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {

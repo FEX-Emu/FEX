@@ -8,14 +8,16 @@ $end_info$
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
-#include "HarnessHelpers.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "ELFCodeLoader.h"
+#include "ELFCodeLoader2.h"
+#include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
-#include <FEXCore/Utils/ELFLoader.h>
+#include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
@@ -25,6 +27,7 @@ $end_info$
 #include <vector>
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 
 namespace {
 static bool SilentLog;
@@ -230,35 +233,69 @@ int main(int argc, char **argv, char **const envp) {
     return -ENOEXEC;
   }
 
-  FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
+
+  uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
+  if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+    // We require 4.17 minimum for MAP_FIXED_NOREPLACE
+    LogMan::Msg::E("FEXLoader requires kernel 4.17 minimum. Expect problems.");
+  }
+
+  ELFCodeLoader2 Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
+  //FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
+    LogMan::Msg::E("Invalid or Unsupported elf file.");
     return -ENOEXEC;
   }
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-  if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17) &&
-      !Loader.Is64BitMode()) {
-    // We require 4.17 minimum for MAP_FIXED_NOREPLACE on 32bit ELFs
-    LogMan::Msg::E("FEXLoader requires kernel 4.17 minimum. Expect problems.");
-  }
 
+  FEX::HLE::x32::MemAllocator *Allocator = nullptr;
+
+  if (Loader.Is64BitMode()) {
+    if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return mmap(addr, length, prot, flags, fd, offset);
+    }, [](void *addr, size_t length) {
+      return munmap(addr, length);
+    })) {
+      // failed to map
+      LogMan::Msg::E("Failed to map 64-bit elf file.");
+      return -ENOEXEC; 
+    }
+  } else {
+    Allocator = new FEX::HLE::x32::MemAllocator();
+    if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return Allocator->mmap(addr, length, prot, flags, fd, offset);
+    }, [Allocator](void *addr, size_t length) {
+      return Allocator->munmap(addr, length);
+    })) {
+      // failed to map
+      LogMan::Msg::E("Failed to map 32-bit elf file.");
+      return -ENOEXEC; 
+    }
+  }
+  
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
+  
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  
   std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
-    FEX::HLE::CreateHandler(
-      Loader.Is64BitMode() ? FEXCore::Context::OperatingMode::MODE_64BIT : FEXCore::Context::OperatingMode::MODE_32BIT,
-      CTX,
-      SignalDelegation.get(),
-      &Loader)};
+    Loader.Is64BitMode() ?
+      FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get()) :
+      FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), Allocator)
+  };
+
+  SyscallHandler->SetCodeLoader(&Loader);
+  
   auto BRKInfo = Loader.GetBRKInfo();
+  //fprintf(stderr, "BRK %lX - %ld\n", BRKInfo.Base, BRKInfo.Size);
+  
   SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
@@ -277,6 +314,7 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
+
   if (AOTIRLoad() || AOTIRCapture()) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
   }
@@ -286,6 +324,10 @@ int main(int argc, char **argv, char **const envp) {
 
     return std::make_unique<std::ifstream>(filepath, std::ios::in | std::ios::binary);
   });
+
+  for(auto handler: Loader.AOTMappers) {
+    handler(CTX);
+  }
 
   FEXCore::Context::RunUntilExit(CTX);
 

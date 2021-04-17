@@ -18,10 +18,12 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/LogManager.h>
 
-void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
+void MsgHandler(LogMan::DebugLevels Level, char const *Message)
+{
   const char *CharLevel{nullptr};
 
-  switch (Level) {
+  switch (Level)
+  {
   case LogMan::NONE:
     CharLevel = "NONE";
     break;
@@ -52,51 +54,62 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   fflush(stdout);
 }
 
-void AssertHandler(char const *Message) {
+void AssertHandler(char const *Message)
+{
   printf("[ASSERT] %s\n", Message);
   fflush(stdout);
 }
 
+class IRCodeLoader final : public FEXCore::CodeLoader
+{
+public:
+  IRCodeLoader(FEX::IRLoader::Loader *Loader)
+      : IR{Loader}
+  {
+  }
 
-class IRCodeLoader final : public FEXCore::CodeLoader {
-	public:
-    IRCodeLoader(FEX::IRLoader::Loader *Loader)
-      : IR {Loader} {
-    }
+  uint64_t StackSize() const override
+  {
+    return STACK_SIZE;
+  }
 
-    uint64_t StackSize() const override {
-      return STACK_SIZE;
-    }
+  uint64_t GetStackPointer() override
+  {
+    return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+  }
 
-    uint64_t SetupStack() override {
-      return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-    }
+  uint64_t DefaultRIP() const override
+  {
+    return IR->GetEntryRIP();
+  }
 
-    uint64_t DefaultRIP() const override {
-      return IR->GetEntryRIP();
-    }
+  bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override
+  {
+    // Map the memory regions the test file asks for
+    IR->MapRegions();
 
-    void MapMemoryRegion() override {
-      // Map the memory regions the test file asks for
-      IR->MapRegions();
-    }
+    LoadMemory();
 
-    void LoadMemory() override {
-      IR->LoadMemory();
-    }
+    return true;
+  }
 
-    uint64_t GetFinalRIP() override { return 0; }
+  void LoadMemory()
+  {
+    IR->LoadMemory();
+  }
 
-    virtual void AddIR(IRHandler Handler) override {
-      Handler(IR->GetEntryRIP(), IR->GetIREmitter());
-    }
+  virtual void AddIR(IRHandler Handler) override
+  {
+    Handler(IR->GetEntryRIP(), IR->GetIREmitter());
+  }
 
-  private:
-    FEX::IRLoader::Loader *IR;
-    constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
+private:
+  FEX::IRLoader::Loader *IR;
+  constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 };
 
-int main(int argc, char **argv, char **const envp) {
+int main(int argc, char **argv, char **const envp)
+{
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
@@ -118,19 +131,23 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
 
-	FEX::IRLoader::Loader Loader(Args[0], Args[1]);
+  FEX::IRLoader::Loader Loader(Args[0], Args[1]);
 
   int Return{};
 
-	if (Loader.IsValid()) {
+  if (Loader.IsValid())
+  {
     IRCodeLoader CodeLoader{&Loader};
+    CodeLoader.MapMemory(nullptr, nullptr);
     FEXCore::Context::InitCore(CTX, &CodeLoader);
     FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
     // There might already be an exit handler, leave it installed
-    if(!FEXCore::Context::GetExitHandler(CTX)) {
+    if (!FEXCore::Context::GetExitHandler(CTX))
+    {
       FEXCore::Context::SetExitHandler(CTX, [&](uint64_t thread, FEXCore::Context::ExitReason reason) {
-        if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG) {
+        if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG)
+        {
           ShutdownReason = reason;
           FEXCore::Context::Stop(CTX);
         }
@@ -150,7 +167,8 @@ int main(int argc, char **argv, char **const envp) {
 
     Return = Passed ? 0 : -1;
   }
-  else {
+  else
+  {
     LogMan::Msg::E("Couldn't load IR");
     Return = -1;
   }
