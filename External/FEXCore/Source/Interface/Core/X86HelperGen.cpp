@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86HelperGen.h"
+#include <FEXCore/Utils/Allocator.h>
 
 #include <cstring>
 #include <stdlib.h>
@@ -31,7 +32,7 @@ X86GeneratedCode::X86GeneratedCode() {
 }
 
 X86GeneratedCode::~X86GeneratedCode() {
-  munmap(CodePtr, CODE_SIZE);
+  FEXCore::Allocator::munmap(CodePtr, CODE_SIZE);
 }
 
 void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
@@ -39,7 +40,7 @@ void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
 
   if (Is64BitMode()) {
     // 64bit mode can have its sigret handler anywhere
-    return mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   }
 
   // First 64bit page
@@ -49,14 +50,14 @@ void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
   // We need to have the sigret handler in the lower 32bits of memory space
   // Scan top down and try to allocate a location
   for (size_t Location = 0xFFFF'E000; Location != 0x0; Location -= 0x1000) {
-    void *Ptr = mmap(reinterpret_cast<void*>(Location), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    void *Ptr = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Location), Size, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     if (Ptr != MAP_FAILED &&
         reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
       // Failed to map in the lower 32bits
       // Try again
       // Can happen in the case that host kernel ignores MAP_FIXED_NOREPLACE
-      munmap(Ptr, Size);
+      FEXCore::Allocator::munmap(Ptr, Size);
       continue;
     }
 
