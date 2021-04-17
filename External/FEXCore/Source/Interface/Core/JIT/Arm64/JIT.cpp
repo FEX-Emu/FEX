@@ -22,6 +22,7 @@ $end_info$
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/UContext.h>
+#include <FEXCore/Utils/Allocator.h>
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
 #include <sys/mman.h>
@@ -303,7 +304,7 @@ Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
   CodeBuffer Buffer;
   Buffer.Size = Size;
   Buffer.Ptr = static_cast<uint8_t*>(
-               mmap(nullptr,
+               FEXCore::Allocator::mmap(nullptr,
                     Buffer.Size,
                     PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE | MAP_ANONYMOUS,
@@ -314,7 +315,7 @@ Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
 }
 
 void Arm64JITCore::FreeCodeBuffer(CodeBuffer Buffer) {
-  munmap(Buffer.Ptr, Buffer.Size);
+  FEXCore::Allocator::munmap(Buffer.Ptr, Buffer.Size);
   Dispatcher->RemoveCodeBuffer(Buffer.Ptr);
 }
 
