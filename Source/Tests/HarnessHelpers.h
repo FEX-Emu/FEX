@@ -13,6 +13,7 @@
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/ELFSymbolDatabase.h>
@@ -351,10 +352,10 @@ namespace FEX::HarnessHelper {
 
     uint64_t GetStackPointer() override {
       if (Config.Is64BitMode()) {
-        return reinterpret_cast<uint64_t>(mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) + STACK_SIZE;
+        return reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) + STACK_SIZE;
       }
       else {
-        uint64_t Result = reinterpret_cast<uint64_t>(mmap(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+        uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
         LogMan::Throw::A(Result != ~0ULL, "mmap failed");
         return Result + STACK_SIZE;
       }
@@ -367,7 +368,7 @@ namespace FEX::HarnessHelper {
     bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override {
       bool LimitedSize = true;
       auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
-        void *Result = mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        void *Result = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         LogMan::Throw::A(Result == reinterpret_cast<void*>(Address), "mmap failed");
         return Result;
       };
