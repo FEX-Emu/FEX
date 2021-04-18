@@ -11,14 +11,13 @@ add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<epoxy/gl.h>)
 add_executable(${NAME} ${SRCS})
 
 target_include_directories(${NAME} PRIVATE ${LLVM_INCLUDE_DIRS})
-target_include_directories(${NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 
 target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/)
 target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/Tools/Debugger/)
 
 target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/imgui/examples/)
 
-target_link_libraries(${NAME} PRIVATE FEXCore Common CommonCore pthread epoxy ${SDL2_LIBRARIES} X11 EGL imgui tiny-json json-maker)
+target_link_libraries(${NAME} PRIVATE FEXCore Common CommonCore pthread epoxy SDL2::SDL2 X11 EGL imgui tiny-json json-maker)
 
 install(TARGETS ${NAME}
   RUNTIME
