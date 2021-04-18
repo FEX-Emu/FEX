@@ -160,18 +160,26 @@ if(ENABLE_WERROR OR ENABLE_STRICT_WERROR)
 endif()
 
 if(_M_ARM_64)
-  # Due to an oversight in llvm, it declares any reasonably new Kryo CPU to only be ARMv8.0
-  # Manually detect newer CPU revisions until clang and llvm fixes their bug
-  # This script will either provide a supported CPU or 'native'
-  # Additionally -march doesn't work under AArch64+Clang, so you have to use -mcpu or -mtune
-  execute_process(COMMAND python3 "${PROJECT_SOURCE_DIR}/Scripts/aarch64_fit_native.py" "/proc/cpuinfo"
-    OUTPUT_VARIABLE AARCH64_CPU)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
+    # Clang 12.0 fixed the -mcpu=native bug with mixed big.little implementers
+    check_cxx_compiler_flag("-mcpu=native" COMPILER_SUPPORTS_CPU_TYPE)
+    if(COMPILER_SUPPORTS_CPU_TYPE)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
+    endif()
+  else()
+    # Due to an oversight in llvm, it declares any reasonably new Kryo CPU to only be ARMv8.0
+    # Manually detect newer CPU revisions until clang and llvm fixes their bug
+    # This script will either provide a supported CPU or 'native'
+    # Additionally -march doesn't work under AArch64+Clang, so you have to use -mcpu or -mtune
+    execute_process(COMMAND python3 "${PROJECT_SOURCE_DIR}/Scripts/aarch64_fit_native.py" "/proc/cpuinfo"
+      OUTPUT_VARIABLE AARCH64_CPU)
 
-  string(STRIP ${AARCH64_CPU} AARCH64_CPU)
+    string(STRIP ${AARCH64_CPU} AARCH64_CPU)
 
-  check_cxx_compiler_flag("-mcpu=${AARCH64_CPU}" COMPILER_SUPPORTS_CPU_TYPE)
-  if(COMPILER_SUPPORTS_CPU_TYPE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=${AARCH64_CPU}")
+    check_cxx_compiler_flag("-mcpu=${AARCH64_CPU}" COMPILER_SUPPORTS_CPU_TYPE)
+    if(COMPILER_SUPPORTS_CPU_TYPE)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=${AARCH64_CPU}")
+    endif()
   endif()
 endif()
 
