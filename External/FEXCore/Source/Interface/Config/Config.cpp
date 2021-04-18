@@ -415,5 +415,6 @@ namespace FEXCore::Config {
       *List = **Value;
     }
   }
+  template void Value<std::string>::GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List);
 }
 
