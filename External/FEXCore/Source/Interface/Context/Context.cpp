@@ -153,6 +153,10 @@ namespace FEXCore::Context {
     return CTX->WriteAOTIRCache(CacheWriter);
   }
 
+  void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
+    CTX->WriteFilesWithCode(Writer);
+  }
+
   void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name) {
     return CTX->AddNamedRegion(Base, Length, Offset, Name);
   }

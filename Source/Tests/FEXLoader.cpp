@@ -412,8 +412,18 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::RunUntilExit(CTX);
   }
 
+  std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir");
+
+  FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
+    int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
+    if (fd != -1) {
+      write(fd, filename.c_str(), filename.size());
+      close(fd);
+    }
+  });
+
   if (AOTIRCapture() || AOTIRGenerate()) {
-    std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir");
 
     auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
       auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / fileid;

@@ -844,6 +844,18 @@ namespace FEXCore::Context {
       GeneratedIR = false;
     }
 
+    {
+      std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+      auto file = AddrToFile.lower_bound(GuestRIP);
+      if (file != AddrToFile.begin()) {
+        --file;
+        if (!file->second.ContainsCode) {
+          file->second.ContainsCode = true;
+          FilesWithCode[file->second.fileid] = file->second.filename;
+        }
+      }
+    }
+
     if (IRList == nullptr && Config.AOTIRLoad) {
       std::lock_guard<std::mutex> lk(AOTIRCacheLock);
       auto file = AddrToFile.lower_bound(GuestRIP);
@@ -956,6 +968,12 @@ namespace FEXCore::Context {
 
     return true;
 
+  }
+
+  void Context::WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
+    for( const auto &File: FilesWithCode) {
+      Writer(File.first, File.second);
+    }
   }
 
   bool Context::WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
@@ -1277,7 +1295,7 @@ namespace FEXCore::Context {
 
       std::lock_guard<std::mutex> lk(AOTIRCacheLock);
 
-      AddrToFile.insert({ Base, { Base, Size, Offset, fileid, nullptr } });
+      AddrToFile.insert({ Base, { Base, Size, Offset, fileid, filename, nullptr, false} });
 
       if (Config.AOTIRLoad && !AOTIRCache.contains(fileid) && AOTIRLoader) {
         auto streamfd = AOTIRLoader(fileid);

@@ -161,11 +161,13 @@ namespace FEXCore::Context {
       uint64_t Len;
       uint64_t Offset;
       std::string fileid;
+      std::string filename;
       void *CachedFileEntry;
+      bool ContainsCode;
     };
 
     std::map<uint64_t, AddrToFileEntry> AddrToFile;
-
+    std::map<std::string, std::string> FilesWithCode;
 
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
@@ -218,6 +220,8 @@ namespace FEXCore::Context {
 
     bool LoadAOTIRCache(int streamfd);
     bool WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
+    void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer);
+    
     // Used for thread creation from syscalls
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
