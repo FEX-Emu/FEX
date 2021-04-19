@@ -31,55 +31,13 @@ $end_info$
 
 #include "Interface/HLE/Thunks/Thunks.h"
 
+#include <xxh3.h>
 #include <fstream>
 #include <unistd.h>
 #include <filesystem>
 #include <algorithm>
 
 #include "Interface/Core/GdbServer.h"
-
-namespace {
-  // Compression function for Merkle-Damgard construction.
-  // This function is generated using the framework provided.
-  #define mix(h) ({					\
-        (h) ^= (h) >> 23;		\
-        (h) *= 0x2127599bf4325c37ULL;	\
-        (h) ^= (h) >> 47; })
-
-  static uint64_t fasthash64(const void *buf, size_t len, uint64_t seed)
-  {
-    const uint64_t    m = 0x880355f21e6d1965ULL;
-    const uint64_t *pos = (const uint64_t *)buf;
-    const uint64_t *end = pos + (len / 8);
-    const unsigned char *pos2;
-    uint64_t h = seed ^ (len * m);
-    uint64_t v;
-
-    while (pos != end) {
-      v  = *pos++;
-      h ^= mix(v);
-      h *= m;
-    }
-
-    pos2 = (const unsigned char*)pos;
-    v = 0;
-
-    switch (len & 7) {
-    case 7: v ^= (uint64_t)pos2[6] << 48; [[fallthrough]]; 
-    case 6: v ^= (uint64_t)pos2[5] << 40; [[fallthrough]];
-    case 5: v ^= (uint64_t)pos2[4] << 32; [[fallthrough]];
-    case 4: v ^= (uint64_t)pos2[3] << 24; [[fallthrough]];
-    case 3: v ^= (uint64_t)pos2[2] << 16; [[fallthrough]];
-    case 2: v ^= (uint64_t)pos2[1] << 8;  [[fallthrough]];
-    case 1: v ^= (uint64_t)pos2[0];
-      h ^= mix(v);
-      h *= m;
-    }
-
-    return mix(h);
-  }
-  #undef mix
-}
 
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
@@ -856,7 +814,7 @@ namespace FEXCore::Context {
         if (AOTEntry != Mod->end()) {
           // verify hash
           auto MappedStart = AOTEntry->second.start + file->second.Start  - file->second.Offset;
-          auto hash = fasthash64((void*)MappedStart, AOTEntry->second.len, 0);
+          auto hash = XXH3_64bits((void*)MappedStart, AOTEntry->second.len);
           if (hash == AOTEntry->second.crc) {
             IRList = AOTEntry->second.IR;
             //LogMan::Msg::D("using %s + %lx -> %lx\n", file->second.fileid.c_str(), AOTEntry->first, GuestRIP);
@@ -1105,7 +1063,7 @@ namespace FEXCore::Context {
         RAData->IsShared = true;
         IRList->IsShared = true;
 
-        auto hash = fasthash64((void*)StartAddr, Length, 0);
+        auto hash = XXH3_64bits((void*)StartAddr, Length);
 
         auto file = AddrToFile.lower_bound(StartAddr);
         if (file != AddrToFile.begin()) {
@@ -1253,7 +1211,7 @@ namespace FEXCore::Context {
     auto base_filename = std::filesystem::path(filename).filename().string();
 
     if (base_filename.size()) {
-      auto filename_hash = fasthash64(filename.c_str(), filename.size(), 0xBAADF00D);
+      auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());
 
       auto fileid = base_filename + "-" + std::to_string(filename_hash) + "-";
 
