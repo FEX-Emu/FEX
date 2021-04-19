@@ -207,6 +207,14 @@
           "Captures both the loaded executable and libraries it loads."
         ]
       },
+      "AOTIRGenerate": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Scans file for executable code and generates an AOT IR cache.",
+          "Does not run the executable."
+        ]
+      },
       "AOTIRLoad": {
         "Type": "bool",
         "Default": "false",

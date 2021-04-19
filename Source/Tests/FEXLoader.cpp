@@ -210,6 +210,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEX_CONFIG_OPT(SilentLog, SILENTLOG);
   FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
+  FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
   FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
@@ -320,7 +321,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
 
-  if (AOTIRLoad() || AOTIRCapture()) {
+  if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
   }
 
@@ -334,7 +335,7 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
   }
 
-  if (AOTIRCapture()) {
+  if (AOTIRGenerate()) {
     for(auto Section: Loader.Sections) {
       if (Section.Executable && Section.Size > 16) {
         ELFLoader::ELFContainer container{Section.Filename, "", false};
@@ -386,10 +387,10 @@ int main(int argc, char **argv, char **const envp) {
         std::set<uint64_t> Compiled;
         int counter = 0;
         do {        
-          fprintf(stderr, "Found %ld Branch Targets\n", BranchTargets.size());
+          fprintf(stderr, "Discovered %ld Branch Targets in this pass\n", BranchTargets.size());
           for (auto RIP: BranchTargets) {
             if ((counter++) % 1000 == 0)
-              fprintf(stderr, "\rCompiling %d %lX", counter, RIP - Section.ElfBase);
+              fprintf(stderr, "\rCompiling %d %lX ", counter, RIP - Section.ElfBase);
             FEXCore::Context::CompileRIP(CTX, RIP);
             Compiled.insert(RIP);
           }
@@ -411,7 +412,7 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::RunUntilExit(CTX);
   }
 
-  if (AOTIRCapture()) {
+  if (AOTIRCapture() || AOTIRGenerate()) {
     std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir");
 
     auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {

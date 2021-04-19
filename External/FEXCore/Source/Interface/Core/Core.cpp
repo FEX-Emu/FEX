@@ -1111,7 +1111,7 @@ namespace FEXCore::Context {
       Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
 
       // Add to AOT cache if aot generation is enabled
-      if (Config.AOTIRCapture && RAData) {
+      if ((Config.AOTIRCapture() || Config.AOTIRGenerate()) && RAData) {
         std::lock_guard<std::mutex> lk(AOTIRCacheLock);
 
         RAData->IsShared = true;
