@@ -669,7 +669,7 @@ bool Arm64JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode,
   if (OpHeader->Op == IR::IROps::OP_INLINEENTRYPOINTOFFSET) {
     auto Op = OpHeader->C<IR::IROp_InlineEntrypointOffset>();
     if (Value) {
-      *Value = IR->GetHeader()->Entry + Op->Offset;
+      *Value = Entry + Op->Offset;
     }
     return true;
   } else {
@@ -694,17 +694,18 @@ bool Arm64JITCore::IsGPR(uint32_t Node) {
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
-void *Arm64JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   using namespace aarch64;
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
+  this->Entry = Entry;
   this->RAData = RAData;
 
   auto HeaderOp = IR->GetHeader();
 
   #ifndef NDEBUG
-  LoadConstant(x0, HeaderOp->Entry);
+  LoadConstant(x0, Entry);
   #endif
 
   this->IR = IR;
@@ -736,7 +737,7 @@ void *Arm64JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *
   // X4-r18 = RA
 
   auto Buffer = GetBuffer();
-  auto Entry = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  auto GuestEntry = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
 
  if (CTX->GetGdbServerStatus()) {
     aarch64::Label RunBlock;
@@ -753,7 +754,7 @@ void *Arm64JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *
     cbz(w0, &RunBlock);
     {
       // Make sure RIP is syncronized to the context
-      LoadConstant(x0, HeaderOp->Entry);
+      LoadConstant(x0, Entry);
       str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
 
       // Stop the thread
@@ -827,15 +828,15 @@ void *Arm64JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *
   FinalizeCode();
 
   auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
-  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(Entry), CodeEnd - reinterpret_cast<uint64_t>(Entry));
+  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(GuestEntry), CodeEnd - reinterpret_cast<uint64_t>(GuestEntry));
 
   if (DebugData) {
-    DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(CodeEnd) - reinterpret_cast<uintptr_t>(Entry);
+    DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(CodeEnd) - reinterpret_cast<uintptr_t>(GuestEntry);
   }
 
   this->IR = nullptr;
 
-  return reinterpret_cast<void*>(Entry);
+  return reinterpret_cast<void*>(GuestEntry);
 }
 
 uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {

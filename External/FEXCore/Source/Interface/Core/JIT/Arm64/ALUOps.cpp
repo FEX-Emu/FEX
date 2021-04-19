@@ -59,7 +59,7 @@ DEF_OP(Constant) {
 DEF_OP(EntrypointOffset) {
   auto Op = IROp->C<IR::IROp_EntrypointOffset>();
 
-  auto Constant = IR->GetHeader()->Entry + Op->Offset;
+  auto Constant = Entry + Op->Offset;
   auto Dst = GetReg<RA_64>(Node);
   LoadConstant(Dst, Constant);
 }

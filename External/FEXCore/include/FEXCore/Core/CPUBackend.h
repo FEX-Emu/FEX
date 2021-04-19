@@ -51,7 +51,7 @@ class LLVMCore;
      * @return An executable function pointer that is theoretically compiled from this point.
      * Is actually a function pointer of type `void (FEXCore::Core::ThreadState *Thread)
      */
-    virtual void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) = 0;
+    virtual void *CompileCode(uint64_t Entry, FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) = 0;
 
     /**
      * @brief Function for mapping memory in to the CPUBackend's visible space. Allows setting up virtual mappings if required

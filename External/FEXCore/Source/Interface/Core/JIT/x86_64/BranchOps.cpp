@@ -253,7 +253,7 @@ DEF_OP(ValidateCode) {
   int idx = 0;
 
   xor_(GetDst<RA_64>(Node), GetDst<RA_64>(Node));
-  mov(rax, IR->GetHeader()->Entry + Op->Offset);
+  mov(rax, Entry + Op->Offset);
   mov(rbx, 1);
   while (len >= 4) {
     cmp(dword[rax + idx], *(uint32_t*)(OldCode + idx));
@@ -286,7 +286,7 @@ DEF_OP(RemoveCodeEntry) {
     sub(rsp, 8); // Align
 
   mov(rdi, STATE);
-  mov(rax, IR->GetHeader()->Entry); // imm64 move
+  mov(rax, Entry); // imm64 move
   mov(rsi, rax);
 
 

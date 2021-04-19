@@ -30,7 +30,7 @@ namespace HostFactory {
     explicit HostCore(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, bool Fallback);
     ~HostCore() override;
     std::string GetName() override { return "Host Core"; }
-    void* CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
+    void* CompileCode(uint64_t Entry, FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
     void *MapRegion(void *HostPtr, uint64_t VirtualGuestPtr, uint64_t Size) override {
       return HostPtr;
@@ -170,7 +170,7 @@ namespace HostFactory {
     ready();
   }
 
-  void* HostCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+  void* HostCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
     return nullptr;
   }
 

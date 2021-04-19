@@ -922,7 +922,7 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
   return false;
 }
 
-void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData) {
+void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uint64_t Entry, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData) {
   volatile void* stack = alloca(0);
 
   // Debug data is only passed in debug builds
@@ -978,7 +978,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           case IR::OP_VALIDATECODE: {
             auto Op = IROp->C<IR::IROp_ValidateCode>();
 
-            auto CodePtr = CurrentIR->GetHeader()->Entry + Op->Offset;
+            auto CodePtr = Entry + Op->Offset;
             if (memcmp((void*)CodePtr, &Op->CodeOriginalLow, Op->CodeLength) != 0) {
               GD = 1;
             } else {
@@ -988,7 +988,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
           }
 
           case IR::OP_REMOVECODEENTRY: {
-            Thread->CTX->RemoveCodeEntry(Thread, CurrentIR->GetHeader()->Entry);
+            Thread->CTX->RemoveCodeEntry(Thread, Entry);
             break;
           }
 
@@ -1207,7 +1207,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, FEX
 
           case IR::OP_ENTRYPOINTOFFSET: {
             auto Op = IROp->C<IR::IROp_EntrypointOffset>();
-            GD = CurrentIR->GetHeader()->Entry + Op->Offset;
+            GD = Entry + Op->Offset;
             break;
           }
           case IR::OP_CONSTANT: {

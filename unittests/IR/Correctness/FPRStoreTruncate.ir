@@ -18,7 +18,7 @@
 
 
 
-(%ssa1) IRHeader #0x1000, %ssa2, #0
+(%ssa1) IRHeader %ssa2, #0
   (%ssa2) CodeBlock %ssa6, %end, %begin
     (%begin i0) BeginBlock %ssa2
 ; Clear registers

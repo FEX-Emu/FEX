@@ -262,7 +262,7 @@ DEF_OP(ValidateCode) {
   int idx = 0;
 
   LoadConstant(GetReg<RA_64>(Node), 0);
-  LoadConstant(x0, IR->GetHeader()->Entry + Op->Offset);
+  LoadConstant(x0, Entry + Op->Offset);
   LoadConstant(x1, 1);
 
   while (len >= 8)
@@ -311,7 +311,7 @@ DEF_OP(RemoveCodeEntry) {
   PushDynamicRegsAndLR();
 
   mov(x0, STATE);
-  LoadConstant(x1, IR->GetHeader()->Entry);
+  LoadConstant(x1, Entry);
 
   LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit));
   SpillStaticRegs();

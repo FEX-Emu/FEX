@@ -31,7 +31,7 @@ static void InterpreterExecution(FEXCore::Core::CpuStateFrame *Frame) {
 
   auto LocalEntry = Thread->LocalIRCache.find(Thread->CurrentFrame->State.rip);
 
-  InterpreterOps::InterpretIR(Thread, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
+  InterpreterOps::InterpretIR(Thread, Thread->CurrentFrame->State.rip, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
 }
 
 bool InterpreterCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
@@ -111,7 +111,7 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 }
 
-void *InterpreterCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   return reinterpret_cast<void*>(InterpreterExecution);
 }
 

@@ -4537,7 +4537,7 @@ void OpDispatchBuilder::CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder:
 
 void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
   Entry = RIP;
-  auto IRHeader = _IRHeader(InvalidNode, RIP, 0);
+  auto IRHeader = _IRHeader(InvalidNode, 0);
   Current_Header = IRHeader.first;
   Current_HeaderNode = IRHeader;
   CreateJumpBlocks(Blocks);
@@ -4782,7 +4782,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
 
 OrderedNode *OpDispatchBuilder::GetDynamicPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  return _EntrypointOffset(Op->PC + Op->InstSize + Offset - Current_Header->Entry, GPRSize);
+  return _EntrypointOffset(Op->PC + Op->InstSize + Offset - Entry, GPRSize);
 }
 
 OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad) {
