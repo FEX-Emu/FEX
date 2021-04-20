@@ -326,7 +326,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / fileid;
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
     return open(filepath.c_str(), O_RDONLY);
   });
@@ -426,7 +426,7 @@ int main(int argc, char **argv, char **const envp) {
   if (AOTIRCapture() || AOTIRGenerate()) {
 
     auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / fileid;
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
       auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
       if (*AOTWrite) {
         std::filesystem::resize_file(filepath, 0);
