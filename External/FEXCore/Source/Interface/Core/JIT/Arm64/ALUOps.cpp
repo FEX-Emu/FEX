@@ -159,7 +159,6 @@ DEF_OP(Mul) {
   switch (OpSize) {
     case 4:
       mul(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
-      sxtw(Dst, Dst);
     break;
     case 8:
       mul(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
@@ -345,7 +344,7 @@ DEF_OP(MulH) {
       sxtw(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       sxtw(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
       mul(TMP1, TMP1, TMP2);
-      sbfx(GetReg<RA_64>(Node), TMP1, 32, 32);
+      ubfx(GetReg<RA_64>(Node), TMP1, 32, 32);
     break;
     case 8:
       smulh(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
