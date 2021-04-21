@@ -16,6 +16,7 @@ class TypeDefinition:
     TYPE_STRUCT = 1
     TYPE_UNION = 2
     TYPE_FIELD = 3
+    TYPE_VARDECL = 4
 
     name: str
     type: int
@@ -83,6 +84,19 @@ class FieldDefinition(TypeDefinition):
         self.Alignment = Alignment
 
 @dataclass
+class VarDeclDefinition(TypeDefinition):
+    Size: int
+    Aliases: list
+    ExpectFEXMatch: bool
+    Value: str
+
+    def __init__(self, Name, Size):
+        super(VarDeclDefinition, self).__init__(Name, TypeDefinition.TYPE_VARDECL)
+        self.Size = Size
+        self.Aliases = []
+        self.ExpectFEXMatch = False
+
+@dataclass
 class ArchDB:
     Parsed: bool
     ArchName: str
@@ -91,6 +105,7 @@ class ArchDB:
     TU: TranslationUnit
     Structs: dict
     Unions: dict
+    VarDecls: dict
     FieldDecls: list
     def __init__(self, ArchName):
         self.Parsed = True
@@ -100,6 +115,7 @@ class ArchDB:
         self.TU = None
         self.Structs = {}
         self.Unions = {}
+        self.VarDecls = {}
         self.FieldDecls = []
 
 class DBList:
@@ -197,18 +213,62 @@ def HandleUnionDeclCursor(Arch, Cursor, NameOverride = ""):
 
     return Arch
 
+def HandleVarDeclCursor(Arch, Cursor):
+    CursorName = Cursor.spelling
+    DeclType = Cursor.type
+    Def = Cursor.get_definition()
+
+    VarDecl = VarDeclDefinition(
+        Name = CursorName,
+        Size = DeclType.get_size())
+    Arch.VarDecls[VarDecl.Name] = HandleVarDeclElements(Arch, VarDecl, Cursor)
+    return Arch
+
+def HandleVarDeclElements(Arch, VarDecl, Cursor):
+    for Child in Cursor.get_children():
+
+        if (Child.kind == CursorKind.ANNOTATE_ATTR):
+            if (Child.spelling.startswith("ioctl-alias-")):
+                Sections = Child.spelling.split("-")
+                if (Sections[2] == "x86_32"):
+                    VarDecl.Aliases.append(AliasType(Sections[3], AliasType.ALIAS_X86_32))
+                elif (Sections[2] == "x86_64"):
+                    VarDecl.Aliases.append(AliasType(Sections[3], AliasType.ALIAS_X86_64))
+                elif (Sections[2] == "aarch64"):
+                    VarDecl.Aliases.append(AliasType(Sections[3], AliasType.ALIAS_AARCH64))
+                elif (Sections[2] == "win32"):
+                    VarDecl.Aliases.append(AliasType(Sections[3], AliasType.ALIAS_WIN32))
+                elif (Sections[2] == "win64"):
+                    VarDecl.Aliases.append(AliasType(Sections[3], AliasType.ALIAS_WIN64))
+                else:
+                    logging.critical ("Can't handle alias type '{0}'".format(Child.spelling))
+                    Arch.Parsed = False
+            elif (Child.spelling == "fex-match"):
+                VarDecl.ExpectedFEXMatch = True
+            else:
+                # Unknown annotation
+                pass
+        elif (Child.kind == CursorKind.TYPE_REF or
+              Child.kind == CursorKind.UNEXPOSED_EXPR or
+              Child.kind == CursorKind.PAREN_EXPR or
+              Child.kind == CursorKind.BINARY_OPERATOR
+              ):
+              pass
+
+    return VarDecl
+
+
 def HandleTypeDefDeclCursor(Arch, Cursor):
     TypeDefType = Cursor.underlying_typedef_type
     CanonicalType = TypeDefType.get_canonical()
 
+    TypeDefName = Cursor.type.get_typedef_name()
+
     if (TypeDefType.kind == TypeKind.ELABORATED and CanonicalType.kind == TypeKind.RECORD):
-        TypeDefName = Cursor.type.get_typedef_name()
         if (len(TypeDefName) != 0):
-            logging.info ("Found Typedef Decl'{0}'".format(TypeDefName))
-            logging.info ("\tSize of type: {0}".format(CanonicalType.get_size()));
             HandleTypeDefDecl(Arch, Cursor, TypeDefName)
 
-            # Append namespace
+	    # Append namespace
             Arch.NamespaceScope.append(TypeDefName)
             SetNamespace(Arch)
 
@@ -225,11 +285,20 @@ def HandleTypeDefDeclCursor(Arch, Cursor):
             # Pop namespace off
             Arch.NamespaceScope.pop()
             SetNamespace(Arch)
+    else:
+        if (len(TypeDefName) != 0):
+            Def = Cursor.get_definition()
+
+            VarDecl = VarDeclDefinition(
+                Name = TypeDefName,
+                Size = CanonicalType.get_size())
+            Arch.VarDecls[VarDecl.Name] = HandleVarDeclElements(Arch, VarDecl, Cursor)
+
     return Arch
 
 def HandleStructElements(Arch, Struct, Cursor):
     for Child in Cursor.get_children():
-        logging.info ("\t\tStruct/Union Children: Cursor \"{0}{1}\" of kind {2}".format(Arch.CurrentNamespace, Child.spelling, Child.kind))
+        # logging.info ("\t\tStruct/Union Children: Cursor \"{0}{1}\" of kind {2}".format(Arch.CurrentNamespace, Child.spelling, Child.kind))
         if (Child.kind == CursorKind.ANNOTATE_ATTR):
             if (Child.spelling.startswith("alias-")):
                 Sections = Child.spelling.split("-")
@@ -245,6 +314,8 @@ def HandleStructElements(Arch, Struct, Cursor):
                     Struct.Aliases.append(AliasType(Sections[2], AliasType.ALIAS_WIN64))
                 else:
                     logging.critical ("Can't handle alias type '{0}'".format(Child.spelling))
+                    Arch.Parsed = False
+
             elif (Child.spelling == "fex-match"):
                 Struct.ExpectedFEXMatch = True
             else:
@@ -259,10 +330,10 @@ def HandleStructElements(Arch, Struct, Cursor):
                 OffsetOf = ParentType.get_offset(Child.spelling),
                 Alignment = FieldType.get_align())
 
-            logging.info ("\t{0}".format(Child.spelling))
-            logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
-            logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
-            logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
+            #logging.info ("\t{0}".format(Child.spelling))
+            #logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
+            #logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
+            #logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
             Struct.Members.append(Field)
             Arch.FieldDecls.append(Field)
         elif (Child.kind == CursorKind.STRUCT_DECL):
@@ -274,10 +345,10 @@ def HandleStructElements(Arch, Struct, Cursor):
                 OffsetOf = ParentType.get_offset(Child.spelling),
                 Alignment = FieldType.get_align())
 
-            logging.info ("\t{0}".format(Child.spelling))
-            logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
-            logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
-            logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
+            #logging.info ("\t{0}".format(Child.spelling))
+            #logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
+            #logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
+            #logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
             Struct.Members.append(Field)
             Arch.FieldDecls.append(Field)
             Arch = HandleStructDeclCursor(Arch, Child)
@@ -333,7 +404,6 @@ def HandleCursor(Arch, Cursor):
         return
 
     for Child in Cursor.get_children():
-        logging.info ("\tCursor \"{0}\" of kind {1}".format(Child.spelling, Child.kind))
         if (Child.kind == CursorKind.TRANSLATION_UNIT):
             Arch = HandleCursor(Arch, Child)
         elif (Child.kind == CursorKind.FIELD_DECL):
@@ -344,6 +414,8 @@ def HandleCursor(Arch, Cursor):
             Arch = HandleStructDeclCursor(Arch, Child)
         elif (Child.kind == CursorKind.TYPEDEF_DECL):
             Arch = HandleTypeDefDeclCursor(Arch, Child)
+        elif (Child.kind == CursorKind.VAR_DECL):
+            Arch = HandleVarDeclCursor(Arch, Child)
         elif (Child.kind == CursorKind.NAMESPACE):
             # Append namespace
             Arch.NamespaceScope.append(Child.spelling)
@@ -455,7 +527,8 @@ def CompareAliases(DB, DBs):
             # XXX: Oops, shouldn't have anonymous structs
             continue
 
-        logging.info ("Comparing Aliases {0}".format(StructDef.Name))
+        if (len(StructDef.Aliases) != 0):
+            logging.info ("Comparing Aliases {0}".format(StructDef.Name))
 
         for Alias in StructDef.Aliases:
             OtherDB = DBs.DBs[Alias.AliasType]
@@ -469,6 +542,29 @@ def CompareAliases(DB, DBs):
             if not (ThisAlias):
                 logging.error ("Couldn't Alias to Arch {0} successfully".format(OtherDB.ArchName))
             Passed &= ThisAlias
+
+    for VarDeclKey, VarDecl in DB.VarDecls.items():
+        if (len(VarDeclKey) == 0):
+            # XXX: Oops, shouldn't have anonymous vardecls
+            continue
+
+
+        for Alias in VarDecl.Aliases:
+            OtherDB = DBs.DBs[Alias.AliasType]
+            OtherAlias = OtherDB.VarDecls.get(Alias.Name)
+            if (OtherAlias == None):
+                logging.critical ("Couldn't find alias {0} in {1} DB".format(Alias.Name, OtherDB.ArchName))
+                Passed = False
+                continue
+
+            if (VarDecl.Size != OtherAlias.Size):
+                logging.critical("VarDecl: {0}/{1} didn't match {2}/{3}: {4:08X} != {5:08X}".format(VarDeclKey, DB.ArchName, Alias.Name,
+                    OtherDB.ArchName,
+                    VarDecl.Size, OtherAlias.Size))
+                Passed = False
+                continue
+
+
     return Passed
 
 def CompareCrossArch(DB1, DB2):
