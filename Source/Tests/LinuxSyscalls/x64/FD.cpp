@@ -208,5 +208,15 @@ namespace FEX::HLE::x64 {
       uint64_t Result = ::sendfile(out_fd, in_fd, offset, count);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X64(dup, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd) -> uint64_t {
+      uint64_t Result = ::dup(oldfd);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(dup2, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd, int newfd) -> uint64_t {
+      uint64_t Result = ::dup2(oldfd, newfd);
+      SYSCALL_ERRNO();
+    });
   }
 }

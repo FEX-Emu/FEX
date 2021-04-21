@@ -7,7 +7,9 @@ $end_info$
 #include "Common/MathUtils.h"
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/IoctlEmulation.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 
@@ -31,28 +33,6 @@ ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigset_argpack32>, "%lx")
 
 namespace FEX::HLE::x32 {
   using fd_set32 = uint32_t;
-#ifdef _M_X86_64
-  uint32_t ioctl32(int fd, uint32_t request, uint32_t args) {
-    uint32_t Result{};
-    // x86-64 with compatibility compiled in can still reach the 32bit syscall handler through int 0x80
-    // It can also access through the x32 syscall API which will eventually be deprecated and removed
-    // x32 ioctl number is ((1U << 30) | 514)
-#define NR_ioctl_x86 54
-    __asm volatile("int $0x80;"
-        : "=a" (Result)
-        : "a" (NR_ioctl_x86)
-        , "b" (fd)
-        , "c" (request)
-        , "d" (args)
-        : "memory");
-    return Result;
-  }
-#else
-  uint32_t ioctl32(int fd, uint32_t request, uint32_t args) {
-    // Not currently implemented on AArch64
-    return -ENOSYS;
-  }
-#endif
 
   void RegisterFD() {
     REGISTER_SYSCALL_IMPL_X32(poll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
@@ -299,8 +279,28 @@ namespace FEX::HLE::x32 {
             break;
           }
           break;
+          case F_DUPFD:
+          case F_DUPFD_CLOEXEC:
+          FEX::HLE::x32::CheckAndAddFDDuplication(fd, Result);
+          break;
           default: break;
         }
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(dup, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd) -> uint64_t {
+      uint64_t Result = ::dup(oldfd);
+      if (Result != -1) {
+        CheckAndAddFDDuplication(oldfd, Result);
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(dup2, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd, int newfd) -> uint64_t {
+      uint64_t Result = ::dup2(oldfd, newfd);
+      if (Result != -1) {
+        CheckAndAddFDDuplication(oldfd, newfd);
       }
       SYSCALL_ERRNO();
     });
@@ -386,9 +386,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(ioctl, [](FEXCore::Core::CpuStateFrame *Frame, int fd, uint32_t request, uint32_t args) -> uint64_t {
-      return ioctl32(fd, request, args);
-    });
+    REGISTER_SYSCALL_IMPL_X32(ioctl, ioctl32);
 
     REGISTER_SYSCALL_IMPL_X32(getdents, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
 #ifdef SYS_getdents

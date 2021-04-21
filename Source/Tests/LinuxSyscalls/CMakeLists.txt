@@ -1,3 +1,4 @@
+add_compile_options(-fno-operator-names)
 
 add_library(LinuxEmulation STATIC
     FileManagement.cpp
@@ -18,6 +19,7 @@ add_library(LinuxEmulation STATIC
     x32/Thread.cpp
     x32/Time.cpp
     x32/Timer.cpp
+    x32/IoctlEmulation.cpp
     x64/EPoll.cpp
     x64/FD.cpp
     x64/IO.cpp
@@ -65,7 +67,8 @@ math(EXPR ARG_COUNT "${ARG_COUNT}-1")
 
 set (ARGS
   "-x" "c++"
-  "-std=c++20")
+  "-std=c++20"
+  "-fno-operator-names")
 # Global include directories
 get_directory_property (INC_DIRS INCLUDE_DIRECTORIES)
 list(TRANSFORM INC_DIRS PREPEND "-I")
