@@ -123,6 +123,7 @@ set (SRCS
   Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
   Utils/Allocator.cpp
+  Utils/Allocator/64BitAllocator.cpp
   Utils/ELFContainer.cpp
   Utils/ELFSymbolDatabase.cpp
   Utils/LogManager.cpp
