@@ -60,7 +60,14 @@ target_include_directories(LinuxEmulation PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 set(HEADERS_TO_VERIFY
   x32/Types.h x86_32 # This needs to match structs to 32bit structs
-  )
+  x32/Ioctl/asound.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/drm.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/streams.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/usbdev.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/input.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/sockios.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/joystick.h x86_32 # This needs to match structs to 32bit structs
+)
 
 list(LENGTH HEADERS_TO_VERIFY ARG_COUNT)
 math(EXPR ARG_COUNT "${ARG_COUNT}-1")
