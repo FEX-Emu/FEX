@@ -142,7 +142,7 @@
       },
       "OutputLog": {
         "Type": "str",
-        "Default": "stdout",
+        "Default": "stderr",
         "ShortArg": "o",
         "Desc": [
           "File to write FEX output to.",

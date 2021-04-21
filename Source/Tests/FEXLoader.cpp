@@ -32,7 +32,7 @@ $end_info$
 
 namespace {
 static bool SilentLog;
-static FILE *OutputFD {stdout};
+static FILE *OutputFD {stderr};
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   const char *CharLevel{nullptr};
