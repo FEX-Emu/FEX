@@ -382,17 +382,6 @@ namespace FEX::HarnessHelper {
         // We test [120, 127] (Top)
         // Can fit in two pages
         DoMMap(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2);
-
-        // SIB32 Bottom
-        // We test INT_MIN, INT_MIN + 8
-        DoMMap(0x2'0000'0000, PAGE_SIZE);
-        // SIB32 Middle
-        // We test -8 + 8
-        DoMMap(0x2'8000'0000 - PAGE_SIZE, PAGE_SIZE * 2);
-
-        // SIB32 Top
-        // We Test INT_MAX - 8, INT_MAX
-        DoMMap(0x3'0000'0000 - PAGE_SIZE, PAGE_SIZE * 2);
       }
       else {
         // This is scratch memory location and SIB8 location
@@ -413,7 +402,7 @@ namespace FEX::HarnessHelper {
       }
 
       LoadMemory();
-      
+
       return true;
     }
 
