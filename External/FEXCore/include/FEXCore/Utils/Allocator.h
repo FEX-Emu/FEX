@@ -16,4 +16,6 @@ namespace FEXCore::Allocator {
   __attribute__((visibility("default"))) extern MALLOC_Hook malloc;
   __attribute__((visibility("default"))) extern REALLOC_Hook realloc;
   __attribute__((visibility("default"))) extern FREE_Hook free;
+
+  void SetupHooks();
 }
