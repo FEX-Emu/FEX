@@ -81,9 +81,6 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::InitializeContext(CTX);
 
-
-  FEX::HLE::x32::MemAllocator *Allocator = nullptr;
-
   if (Loader.Is64BitMode()) {
     if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset);
@@ -94,11 +91,13 @@ int main(int argc, char **argv, char **const envp) {
       return -ENOEXEC;
     }
   } else {
-    Allocator = new FEX::HLE::x32::MemAllocator();
-    if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return Allocator->mmap(addr, length, prot, flags, fd, offset);
-    }, [Allocator](void *addr, size_t length) {
-      return Allocator->munmap(addr, length);
+    // Setup our userspace allocator
+    FEXCore::Allocator::SetupHooks();
+
+    if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return ::mmap(addr, length, prot, flags, fd, offset);
+    }, [](void *addr, size_t length) {
+      return ::munmap(addr, length);
     })) {
       // failed to map
       return -ENOEXEC;
@@ -109,7 +108,7 @@ int main(int argc, char **argv, char **const envp) {
   std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
     Loader.Is64BitMode() ?
       FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get()) :
-      FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), Allocator)
+      FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get())
   };
 
   bool DidFault = false;
