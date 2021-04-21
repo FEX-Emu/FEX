@@ -1,5 +1,6 @@
 #pragma once
 #include "IR.h"
+#include <FEXCore/Utils/Allocator.h>
 
 namespace FEXCore::IR {
 
@@ -47,9 +48,9 @@ class RegisterAllocationData {
 struct RegisterAllocationDataDeleter {
   void operator()(RegisterAllocationData* r) {
     if (!r->IsShared) {
-      free(r);
+      FEXCore::Allocator::free(r);
     }
   }
 };
 
-} 
+}

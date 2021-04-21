@@ -28,6 +28,7 @@ $end_info$
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/Allocator.h>
 
 #include "Interface/HLE/Thunks/Thunks.h"
 #include "FEXCore/Utils/Allocator.h"
@@ -180,7 +181,7 @@ namespace FEXCore::Context {
     for (auto &Mod: AOTIRCaptureCache) {
       for (auto &Entry: Mod.second) {
         delete Entry.second.IR;
-        free(Entry.second.RAData);
+        FEXCore::Allocator::free(Entry.second.RAData);
       }
     }
 
@@ -436,7 +437,7 @@ namespace FEXCore::Context {
   static void *ThreadHandler(void* Data) {
     ExecutionThreadHandler *Handler = reinterpret_cast<ExecutionThreadHandler*>(Data);
     Handler->This->ExecutionThread(Handler->Thread);
-    free(Handler);
+    FEXCore::Allocator::free(Handler);
     return nullptr;
   }
 
@@ -444,7 +445,7 @@ namespace FEXCore::Context {
     InitializeThreadData(Thread);
 
     // This will create the execution thread but it won't actually start executing
-    ExecutionThreadHandler *Arg = reinterpret_cast<ExecutionThreadHandler*>(malloc(sizeof(ExecutionThreadHandler)));
+    ExecutionThreadHandler *Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
     Arg->This = this;
     Arg->Thread = Thread;
     Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);

@@ -10,6 +10,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <string.h>
@@ -341,7 +342,7 @@ namespace FEX::HLE {
 
     // Set up our signal alternative stack
     // This is per thread rather than per signal
-    ThreadData.AltStackPtr = malloc(SIGSTKSZ);
+    ThreadData.AltStackPtr = FEXCore::Allocator::malloc(SIGSTKSZ);
     stack_t altstack{};
     altstack.ss_sp = ThreadData.AltStackPtr;
     altstack.ss_size = SIGSTKSZ;

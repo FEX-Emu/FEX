@@ -8,6 +8,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/Core/OpcodeDispatcher.h"
+#include <FEXCore/Utils/Allocator.h>
 
 #include <iterator>
 #include <unordered_set>
@@ -262,7 +263,7 @@ namespace {
     Graph->Nodes.resize(NodeCount);
     Graph->VisitedNodePredecessors.clear();
     Graph->AllocData.reset();
-    Graph->AllocData.reset((FEXCore::IR::RegisterAllocationData*)malloc(FEXCore::IR::RegisterAllocationData::Size(NodeCount)));
+    Graph->AllocData.reset((FEXCore::IR::RegisterAllocationData*)FEXCore::Allocator::malloc(FEXCore::IR::RegisterAllocationData::Size(NodeCount)));
     memset(&Graph->AllocData->Map[0], INVALID_REGCLASS.Raw, NodeCount);
     Graph->AllocData->MapCount = NodeCount;
     Graph->AllocData->IsShared = false; // not shared by default
