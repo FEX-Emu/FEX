@@ -5,6 +5,7 @@
 
 #include "HarnessHelpers.h"
 
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <string>
@@ -31,7 +32,7 @@ namespace FEX::IRLoader {
 
       void MapRegions() {
         for (auto& [region, size] : Config.GetMemoryRegions()) {
-          mmap(reinterpret_cast<void*>(region), size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+          FEXCore::Allocator::mmap(reinterpret_cast<void*>(region), size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         }
       }
 

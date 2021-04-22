@@ -13,6 +13,7 @@
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/ELFSymbolDatabase.h>
@@ -194,10 +195,10 @@ public:
   uint64_t GetStackPointer() override {
     uintptr_t StackPointer{};
     if (File.GetMode() == ::ELFLoader::ELFContainer::MODE_64BIT) {
-      StackPointer = reinterpret_cast<uintptr_t>(mmap(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+      StackPointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::mmap(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
     }
     else {
-      StackPointer = reinterpret_cast<uintptr_t>(mmap(reinterpret_cast<void*>(STACK_OFFSET), StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+      StackPointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
       LogMan::Throw::A(StackPointer != ~0ULL, "mmap failed");
     }
 

@@ -16,6 +16,7 @@ $end_info$
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <fstream>
 #include <filesystem>
 
@@ -28,7 +29,7 @@ static std::string get_fdpath(int fd)
 namespace FEX::HLE::x64 {
   void RegisterMemory() {
     REGISTER_SYSCALL_IMPL_X64(munmap, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length) -> uint64_t {
-      uint64_t Result = ::munmap(addr, length);
+      uint64_t Result = FEXCore::Allocator::munmap(addr, length);
 
       auto Thread = Frame->Thread;
       if (Result != -1) {
@@ -40,7 +41,7 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(mmap, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
       static FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
-      uint64_t Result = reinterpret_cast<uint64_t>(::mmap(addr, length, prot, flags, fd, offset));
+      uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset));
 
       auto Thread = Frame->Thread;
       if (Result != -1) {

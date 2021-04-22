@@ -21,6 +21,7 @@ $end_info$
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cassert>
@@ -85,12 +86,12 @@ int main(int argc, char **argv, char **const envp) {
 
   if (Loader.Is64BitMode()) {
     if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return mmap(addr, length, prot, flags, fd, offset);
+      return FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset);
     }, [](void *addr, size_t length) {
-      return munmap(addr, length);
+      return FEXCore::Allocator::munmap(addr, length);
     })) {
       // failed to map
-      return -ENOEXEC; 
+      return -ENOEXEC;
     }
   } else {
     Allocator = new FEX::HLE::x32::MemAllocator();
@@ -100,7 +101,7 @@ int main(int argc, char **argv, char **const envp) {
       return Allocator->munmap(addr, length);
     })) {
       // failed to map
-      return -ENOEXEC; 
+      return -ENOEXEC;
     }
   }
 

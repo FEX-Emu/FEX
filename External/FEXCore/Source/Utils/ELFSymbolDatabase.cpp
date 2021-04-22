@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include <FEXCore/Utils/ELFSymbolDatabase.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Common/MathUtils.h>
 
@@ -110,7 +111,7 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
   FillSymbols();
 
   if (LocalInfo.Container->WasDynamic() && File->GetMode() == ELFContainer::MODE_64BIT) {
-    ELFBase = mmap(nullptr, ELFMemorySize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    ELFBase = FEXCore::Allocator::mmap(nullptr, ELFMemorySize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     FillMemoryLayouts(reinterpret_cast<uintptr_t>(ELFBase));
     FillInitializationOrder();
     FillSymbols();
@@ -121,7 +122,7 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
 
 ELFSymbolDatabase::~ELFSymbolDatabase() {
   if (ELFBase) {
-    munmap(ELFBase, ELFMemorySize);
+    FEXCore::Allocator::munmap(ELFBase, ELFMemorySize);
     ELFBase = nullptr;
   }
 }
