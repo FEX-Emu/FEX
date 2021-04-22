@@ -172,7 +172,13 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   }
 
   std::string ResolveRootfsFile(std::string File, std::string RootFS) {
+    // If the path is relative then just run that
+    if (std::filesystem::path(File).is_relative()) {
+      return File;
+    }
+
     std::string RootFSLink = RootFS + File;
+
     while (std::filesystem::is_symlink(RootFSLink)) {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
