@@ -45,7 +45,11 @@ public:
       CodePages[CurrentPage].push_back(Address);
     }
 
-    // no need to update L1 or L2, they will get updated on first lookup
+    // There is no need to update L1 or L2, they will get updated on first lookup
+    // However, adding to L1 here increases performance
+    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    L1Entry.GuestCode = Address;
+    L1Entry.HostCode = (uintptr_t)HostCode;
   }
 
   void Erase(uint64_t Address) {
