@@ -7,7 +7,6 @@
 #include <bit>
 #include <bitset>
 #include <cassert>
-#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -17,6 +16,7 @@
 #include <stdio.h>
 #include <set>
 #include <sys/mman.h>
+#include <sys/utsname.h>
 #include <sys/resource.h>
 #include <syscall.h>
 #include <vector>
@@ -136,6 +136,14 @@ namespace Alloc::OSAllocator {
 
         return LiveIter;
       }
+
+      // 32-bit old kernel workarounds
+      struct PtrCache {
+        uint32_t Ptr;
+        uint32_t Size;
+      };
+      PtrCache *Steal32BitIfOldKernel();
+      void Clear32BitOnOldKernel(PtrCache *Base);
   };
 
 void OSAllocator_64Bit::DetermineVASize() {
@@ -477,9 +485,126 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   return 0;
 }
 
+OSAllocator_64Bit::PtrCache *OSAllocator_64Bit::Steal32BitIfOldKernel() {
+  // First calculate kernel version
+  struct utsname buf{};
+  if (uname(&buf) == -1) {
+    return nullptr;
+  }
+
+  int32_t Major{};
+  int32_t Minor{};
+  int32_t Patch{};
+  char Tmp{};
+  std::istringstream ss{buf.release};
+  ss >> Major;
+  ss.read(&Tmp, 1);
+  ss >> Minor;
+  ss.read(&Tmp, 1);
+  ss >> Patch;
+  ss.read(&Tmp, 1);
+  uint32_t Version = (Major << 24) | (Minor << 16) | Patch;
+
+  if (Version >= ((4 << 24) | (17 << 16) | 0)) {
+    // If the kernel is >= 4.17 then it supports MAP_FIXED_NOREPLACE
+    return nullptr;
+  }
+
+  OSAllocator_64Bit::PtrCache *Cache{};
+  uint32_t CacheSize{};
+  uint32_t CurrentCacheOffset = 0;
+  constexpr std::array<size_t, 6> ReservedVMARegionSizes = {{
+    1ULL * 1024 * 1024 * 1024, // 1GB
+    512ULL * 1024 * 1024,      // 512MB
+    128ULL * 1024 * 1024,      // 128MB
+    32ULL * 1024 * 1024,       // 32MB
+    1ULL * 1024 * 1024,        // 1MB
+    4096ULL                    // One page
+  }};
+  constexpr size_t AllocationSizeMaxIndex = ReservedVMARegionSizes.size() - 1;
+  uint64_t CurrentSizeIndex = 0;
+
+  constexpr size_t LOWER_BOUND_32 = 0x1'0000;
+  constexpr size_t UPPER_BOUND_32 = LOWER_BOUND;
+
+  for (size_t MemoryOffset = LOWER_BOUND_32; MemoryOffset < UPPER_BOUND_32;) {
+    size_t AllocationSize = ReservedVMARegionSizes[CurrentSizeIndex];
+    size_t MemoryOffsetUpper = MemoryOffset + AllocationSize;
+
+    // If we would go above the upper bound on size then try the next size
+    if (MemoryOffsetUpper > UPPER_BOUND_32) {
+      ++CurrentSizeIndex;
+      continue;
+    }
+
+    void *Ptr = ::mmap(reinterpret_cast<void*>(MemoryOffset), AllocationSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+
+    // If we managed to allocate and not get the address we want then unmap it
+    // This happens with kernels older than 4.17
+    if (reinterpret_cast<uintptr_t>(Ptr) + AllocationSize > UPPER_BOUND_32) {
+      munmap(Ptr, AllocationSize);
+      Ptr = reinterpret_cast<void*>(~0ULL);
+    }
+
+    // If we failed to allocate and we are on the smallest allocation size then just continue onward
+    // This page was unmappable
+    if (reinterpret_cast<uintptr_t>(Ptr) == ~0ULL && CurrentSizeIndex == AllocationSizeMaxIndex) {
+      CurrentSizeIndex = 0;
+      MemoryOffset += AllocationSize;
+      continue;
+    }
+
+    // Congratulations we were able to map this bit
+    // Reset and claim it was available
+    if (reinterpret_cast<uintptr_t>(Ptr) != ~0ULL) {
+      if (!Cache) {
+        Cache = reinterpret_cast<OSAllocator_64Bit::PtrCache *>(Ptr);
+        CacheSize = AllocationSize;
+      }
+      else {
+        Cache[CurrentCacheOffset] = {
+          .Ptr = static_cast<uint32_t>(reinterpret_cast<uint64_t>(Ptr)),
+          .Size = static_cast<uint32_t>(AllocationSize)
+        };
+        ++CurrentCacheOffset;
+      }
+
+      CurrentSizeIndex = 0;
+      MemoryOffset += AllocationSize;
+      continue;
+    }
+
+    // Couldn't allocate at this size
+    // Increase and continue
+    ++CurrentSizeIndex;
+  }
+
+  Cache[CurrentCacheOffset] = {
+    .Ptr = static_cast<uint32_t>(reinterpret_cast<uint64_t>(Cache)),
+    .Size = CacheSize,
+  };
+  return Cache;
+}
+
+void OSAllocator_64Bit::Clear32BitOnOldKernel(OSAllocator_64Bit::PtrCache *Base) {
+  if (Base == nullptr) {
+    return;
+  }
+
+  for (size_t i = 0;; ++i) {
+    void *Ptr = reinterpret_cast<void*>(Base[i].Ptr);
+    size_t Size = Base[i].Size;
+    munmap(Ptr, Size);
+    if (Ptr == Base) {
+      break;
+    }
+  }
+}
+
 OSAllocator_64Bit::OSAllocator_64Bit() {
   malloc_trim(0);
   DetermineVASize();
+  auto ArrayPtr = Steal32BitIfOldKernel();
 
   // On allocation try and steal the entire upper 64bits of address space for mapping
   constexpr std::array<size_t, 8> ReservedVMARegionSizes = {{
@@ -543,12 +668,12 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
       else {
         bool Merged = false;
         if (PrevReserved) {
-          Merged = MergeReservedRegionIfPossible(PrevReserved, MemoryOffset, AllocationSize);
+          Merged = MergeReservedRegionIfPossible(PrevReserved, reinterpret_cast<uint64_t>(Ptr), AllocationSize);
         }
 
         if (!Merged) {
           ReservedVMARegion *Region = ObjectAlloc->new_construct<ReservedVMARegion>();
-          Region->Base = MemoryOffset;
+          Region->Base = reinterpret_cast<uint64_t>(Ptr);
           Region->RegionSize = AllocationSize;
           ReservedRegions->emplace_back(Region);
           PrevReserved = Region;
@@ -564,6 +689,8 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
     // Increase and continue
     ++CurrentSizeIndex;
   }
+
+  Clear32BitOnOldKernel(ArrayPtr);
 }
 
 OSAllocator_64Bit::~OSAllocator_64Bit() {
