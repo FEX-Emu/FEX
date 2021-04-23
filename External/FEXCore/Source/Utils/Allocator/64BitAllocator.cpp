@@ -514,7 +514,8 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
 
     // If we managed to allocate and not get the address we want then unmap it
     // This happens with kernels older than 4.17
-    if (reinterpret_cast<uintptr_t>(Ptr) != MemoryOffset) {
+    if (reinterpret_cast<uintptr_t>(Ptr) != MemoryOffset &&
+        reinterpret_cast<uintptr_t>(Ptr) < LOWER_BOUND) {
       munmap(Ptr, AllocationSize);
       Ptr = reinterpret_cast<void*>(~0ULL);
     }
