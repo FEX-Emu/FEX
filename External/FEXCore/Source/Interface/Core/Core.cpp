@@ -605,6 +605,8 @@ namespace FEXCore::Context {
 
     Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
 
+    uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
+
     for (size_t j = 0; j < CodeBlocks->size(); ++j) {
       FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
       // Set the block entry point
@@ -619,8 +621,7 @@ namespace FEXCore::Context {
       uint64_t InstsInBlock = Block.NumInstructions;
 
       if (Block.HasInvalidInstruction) {
-        uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
-        Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry));
+        Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize));
         break;
       }
 
@@ -645,7 +646,7 @@ namespace FEXCore::Context {
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
           Thread->OpDispatcher->_RemoveCodeEntry();
-          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(Block.Entry + BlockInstructionsLength));
+          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
 
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
 
@@ -683,7 +684,7 @@ namespace FEXCore::Context {
             uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
 
             // We had some instructions. Early exit
-            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_Constant(GPRSize * 8, Block.Entry + BlockInstructionsLength));
+            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
             break;
           }
         }

@@ -4561,7 +4561,7 @@ void OpDispatchBuilder::Finalize() {
 
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
-    _ExitFunction(_Constant(GPRSize * 8, Handler.first));
+    _ExitFunction(_EntrypointOffset(Handler.first - Entry, GPRSize));
   }
 }
 
