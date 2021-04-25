@@ -6,6 +6,7 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IREmitter.h>
 
@@ -83,6 +84,8 @@ private:
     ValidationPasses.emplace_back(Pass);
   }
 #endif
+
+  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 };
 }
 
