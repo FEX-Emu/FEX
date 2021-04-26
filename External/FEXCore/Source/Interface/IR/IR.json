@@ -79,7 +79,6 @@
         "Blocks"
       ],
       "Args": [
-        "uint64_t", "Entry",
         "uint32_t", "BlockCount"
       ]
     },

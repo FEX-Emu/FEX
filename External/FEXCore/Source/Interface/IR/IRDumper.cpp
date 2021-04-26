@@ -167,7 +167,6 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
   ++CurrentIndent;
   AddIndent();
   *out << "(%ssa0) " << "IRHeader ";
-  *out << "#0x" << std::hex << HeaderOp->Entry << ", ";
   *out << "%ssa" << HeaderOp->Blocks.ID() << ", ";
   *out << "#" << std::dec << HeaderOp->BlockCount << std::endl;
 

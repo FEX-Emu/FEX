@@ -20,7 +20,7 @@ namespace FEX::IRLoader {
 
     if (ParsedCode) {
       auto NewIR = ParsedCode->ViewIR();
-      EntryRIP = NewIR.GetHeader()->Entry;
+      EntryRIP = 0x40000;
       
       std::stringstream out;
       FEXCore::IR::Dump(&out, &NewIR, nullptr);

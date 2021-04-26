@@ -530,7 +530,7 @@ bool X86JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, u
   if (OpHeader->Op == IR::IROps::OP_INLINEENTRYPOINTOFFSET) {
     auto Op = OpHeader->C<IR::IROp_InlineEntrypointOffset>();
     if (Value) {
-      *Value = IR->GetHeader()->Entry + Op->Offset;
+      *Value = Entry + Op->Offset;
     }
     return true;
   } else {
@@ -571,10 +571,11 @@ std::tuple<X86JITCore::SetCC, X86JITCore::CMovCC, X86JITCore::JCC> X86JITCore::G
   return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
 }
 
-void *X86JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
+  this->Entry = Entry;
   this->RAData = RAData;
 
   // Fairly excessive buffer range to make sure we don't overflow
@@ -583,7 +584,7 @@ void *X86JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR
     ThreadState->CTX->ClearCodeCache(ThreadState, false);
   }
 
-	void *Entry = getCurr<void*>();
+	void *GuestEntry = getCurr<void*>();
   this->IR = IR;
 
   if (CTX->GetGdbServerStatus()) {
@@ -614,7 +615,7 @@ void *X86JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR
   }
 
 #ifdef BLOCKSTATS
-  BlockSamplingData::BlockData *SamplingData = CTX->BlockData->GetBlockData(HeaderOp->Entry);
+  BlockSamplingData::BlockData *SamplingData = CTX->BlockData->GetBlockData(Entry);
   if (GetSamplingData) {
     mov(rcx, reinterpret_cast<uintptr_t>(SamplingData));
     rdtsc();
@@ -731,15 +732,15 @@ void *X86JITCore::CompileCode([[maybe_unused]] FEXCore::IR::IRListView const *IR
   }
   PendingTargetLabel = nullptr;
 
-  void *Exit = getCurr<void*>();
+  void *GuestExit = getCurr<void*>();
   this->IR = nullptr;
 
   ready();
 
   if (DebugData) {
-    DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(Exit) - reinterpret_cast<uintptr_t>(Entry);
+    DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(GuestExit) - reinterpret_cast<uintptr_t>(GuestEntry);
   }
-  return Entry;
+  return GuestEntry;
 }
 
 uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {

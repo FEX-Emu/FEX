@@ -23,7 +23,7 @@ class InterpreterCore final : public CPUBackend {
 public:
   explicit InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
   std::string GetName() override { return "Interpreter"; }
-  void *CompileCode(FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
+  void *CompileCode(uint64_t Entry, FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
   void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
