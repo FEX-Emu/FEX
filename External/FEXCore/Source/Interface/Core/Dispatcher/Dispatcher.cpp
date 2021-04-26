@@ -108,7 +108,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   if (GuestAction->sa_flags & SA_SIGINFO) {
     if (SRAEnabled) {
       if (!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), false)) {
-        LogMan::Throw::A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
+        LOGMAN_THROW_A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
       } else {
         // We are in jit, SRA must be spilled
         SpillSRA(ucontext);
@@ -220,7 +220,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   else {
     NewGuestSP -= 4;
     *(uint32_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
-    LogMan::Throw::A(CTX->X86CodeGen.SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
+    LOGMAN_THROW_A(CTX->X86CodeGen.SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
     Frame->State.gregs[X86State::REG_RSP] = NewGuestSP;
   }
 
@@ -264,7 +264,7 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
     } else {
       if (SRAEnabled) {
         // We are in non-jit, SRA is already spilled
-        LogMan::Throw::A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
+        LOGMAN_THROW_A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
     }
@@ -299,7 +299,7 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
     } else {
       if (SRAEnabled) {
         // We are in non-jit, SRA is already spilled
-        LogMan::Throw::A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
+        LOGMAN_THROW_A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
     }

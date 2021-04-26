@@ -61,7 +61,7 @@ void CreateCoreCallback(char const *Filename, bool ELF) {
     Result = FEXCore::Context::InitCore(CTX, &Loader);
   }
 
-  LogMan::Throw::A(Result, "Couldn't initialize CTX");
+  LOGMAN_THROW_A(Result, "Couldn't initialize CTX");
 
   FEX::DebuggerState::SetContext(CTX);
   FEX::DebuggerState::SetHasNewState();

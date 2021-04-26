@@ -31,7 +31,7 @@ DEF_OP(Fence) {
     case IR::Fence_Store.Val:
       dmb(FullSystem, BarrierWrites);
       break;
-    default: LogMan::Msg::A("Unknown Fence: %d", Op->Fence); break;
+    default: LOGMAN_MSG_A("Unknown Fence: %d", Op->Fence); break;
   }
 }
 
@@ -60,7 +60,7 @@ DEF_OP(Break) {
       br(TMP1);
       break;
     }
-    default: LogMan::Msg::A("Unknown Break reason: %d", Op->Reason);
+    default: LOGMAN_MSG_A("Unknown Break reason: %d", Op->Reason);
   }
 }
 

@@ -280,7 +280,7 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXC
   // for missing syscalls
   case 255: return std::invoke(Def.Ptr1, Frame, Args->Argument[0]);
   default:
-    LogMan::Msg::A("Unhandled syscall: %d", Args->Argument[0]);
+    LOGMAN_MSG_A("Unhandled syscall: %d", Args->Argument[0]);
     return -1;
   break;
   }

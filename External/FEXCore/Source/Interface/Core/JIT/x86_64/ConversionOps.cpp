@@ -31,7 +31,7 @@ DEF_OP(VInsGPR) {
       pinsrq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()), Op->Index);
       break;
     }
-    default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
 }
 
@@ -52,12 +52,12 @@ DEF_OP(VCastFromGPR) {
     case 8:
       vmovq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()).cvt64());
       break;
-    default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
   }
 }
 
 DEF_OP(Float_FromGPR_U) {
-  LogMan::Msg::A("Unimplemented");
+  LOGMAN_MSG_A("Unimplemented");
 }
 
 DEF_OP(Float_FromGPR_S) {
@@ -95,12 +95,12 @@ DEF_OP(Float_FToF) {
       cvtsd2ss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
       break;
     }
-    default: LogMan::Msg::A("Unknown FCVT sizes: 0x%x", Conv);
+    default: LOGMAN_MSG_A("Unknown FCVT sizes: 0x%x", Conv);
   }
 }
 
 DEF_OP(Vector_UToF) {
-  LogMan::Msg::A("Unimplemented");
+  LOGMAN_MSG_A("Unimplemented");
 }
 
 DEF_OP(Vector_SToF) {
@@ -121,12 +121,12 @@ DEF_OP(Vector_SToF) {
       cvtsi2sd(xmm15, rax);
       movlhps(GetDst(Node), xmm15);
     break;
-    default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
   }
 }
 
 DEF_OP(Vector_FToZU) {
-  LogMan::Msg::A("Unimplemented");
+  LOGMAN_MSG_A("Unimplemented");
 }
 
 DEF_OP(Vector_FToZS) {
@@ -138,12 +138,12 @@ DEF_OP(Vector_FToZS) {
     case 8:
       cvttpd2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
     break;
-    default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
   }
 }
 
 DEF_OP(Vector_FToU) {
-  LogMan::Msg::A("Unimplemented");
+  LOGMAN_MSG_A("Unimplemented");
 }
 
 DEF_OP(Vector_FToS) {
@@ -155,7 +155,7 @@ DEF_OP(Vector_FToS) {
     case 8:
       cvtpd2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
     break;
-    default: LogMan::Msg::A("Unknown castGPR element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
   }
 }
 
@@ -172,7 +172,7 @@ DEF_OP(Vector_FToF) {
       cvtpd2ps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
       break;
     }
-    default: LogMan::Msg::A("Unknown Conversion Type : 0%04x", Conv); break;
+    default: LOGMAN_MSG_A("Unknown Conversion Type : 0%04x", Conv); break;
   }
 }
 

@@ -132,7 +132,7 @@ namespace FEX::HarnessHelper {
   inline void ReadFile(std::string const &Filename, std::vector<char> *Data) {
     std::fstream TestFile;
     TestFile.open(Filename, std::fstream::in | std::fstream::binary);
-    LogMan::Throw::A(TestFile.is_open(), "Failed to open file");
+    LOGMAN_THROW_A(TestFile.is_open(), "Failed to open file");
 
     TestFile.seekg(0, std::fstream::end);
     size_t FileSize = TestFile.tellg();
@@ -356,7 +356,7 @@ namespace FEX::HarnessHelper {
       }
       else {
         uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-        LogMan::Throw::A(Result != ~0ULL, "mmap failed");
+        LOGMAN_THROW_A(Result != ~0ULL, "mmap failed");
         return Result + STACK_SIZE;
       }
     }
@@ -369,7 +369,7 @@ namespace FEX::HarnessHelper {
       bool LimitedSize = true;
       auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
         void *Result = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        LogMan::Throw::A(Result == reinterpret_cast<void*>(Address), "mmap failed");
+        LOGMAN_THROW_A(Result == reinterpret_cast<void*>(Address), "mmap failed");
         return Result;
       };
 

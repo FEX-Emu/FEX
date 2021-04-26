@@ -34,7 +34,7 @@ DEF_OP(CASPair) {
       mov(Dst.first, TMP3);
       mov(Dst.second, TMP4);
       break;
-    default: LogMan::Msg::A("Unsupported: %d", OpSize);
+    default: LOGMAN_MSG_A("Unsupported: %d", OpSize);
     }
   }
   else {
@@ -89,7 +89,7 @@ DEF_OP(CASPair) {
         bind(&LoopExpected);
         break;
       }
-      default: LogMan::Msg::A("Unsupported: %d", OpSize);
+      default: LOGMAN_MSG_A("Unsupported: %d", OpSize);
     }
   }
 }
@@ -115,7 +115,7 @@ DEF_OP(CAS) {
     case 2: casalh(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
     case 4: casal(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
     case 8: casal(TMP2.X(), Desired.X(), MemOperand(MemSrc)); break;
-    default: LogMan::Msg::A("Unsupported: %d", OpSize);
+    default: LOGMAN_MSG_A("Unsupported: %d", OpSize);
     }
     mov(GetReg<RA_64>(Node), TMP2);
   }
@@ -206,7 +206,7 @@ DEF_OP(CAS) {
 
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", OpSize);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", OpSize);
     }
   }
 }
@@ -222,7 +222,7 @@ DEF_OP(AtomicAdd) {
     case 2: staddlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 4: staddl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 8: staddl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -264,7 +264,7 @@ DEF_OP(AtomicAdd) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -281,7 +281,7 @@ DEF_OP(AtomicSub) {
     case 2: staddlh(TMP2.W(), MemOperand(MemSrc)); break;
     case 4: staddl(TMP2.W(), MemOperand(MemSrc)); break;
     case 8: staddl(TMP2.X(), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -323,7 +323,7 @@ DEF_OP(AtomicSub) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -340,7 +340,7 @@ DEF_OP(AtomicAnd) {
     case 2: stclrlh(TMP2.W(), MemOperand(MemSrc)); break;
     case 4: stclrl(TMP2.W(), MemOperand(MemSrc)); break;
     case 8: stclrl(TMP2.X(), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -382,7 +382,7 @@ DEF_OP(AtomicAnd) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -398,7 +398,7 @@ DEF_OP(AtomicOr) {
     case 2: stsetlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 4: stsetl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 8: stsetl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -440,7 +440,7 @@ DEF_OP(AtomicOr) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -456,7 +456,7 @@ DEF_OP(AtomicXor) {
     case 2: steorlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 4: steorl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 8: steorl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -498,7 +498,7 @@ DEF_OP(AtomicXor) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -515,7 +515,7 @@ DEF_OP(AtomicSwap) {
     case 2: swplh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: swpl(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: swpl(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -558,7 +558,7 @@ DEF_OP(AtomicSwap) {
         mov(GetReg<RA_64>(Node), TMP2.X());
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -573,7 +573,7 @@ DEF_OP(AtomicFetchAdd) {
     case 2: ldaddalh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldaddal(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldaddal(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -619,7 +619,7 @@ DEF_OP(AtomicFetchAdd) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -635,7 +635,7 @@ DEF_OP(AtomicFetchSub) {
     case 2: ldaddalh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldaddal(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldaddal(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -681,7 +681,7 @@ DEF_OP(AtomicFetchSub) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -697,7 +697,7 @@ DEF_OP(AtomicFetchAnd) {
     case 2: ldclralh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldclral(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldclral(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -743,7 +743,7 @@ DEF_OP(AtomicFetchAnd) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -758,7 +758,7 @@ DEF_OP(AtomicFetchOr) {
     case 2: ldsetalh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldsetal(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldsetal(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -804,7 +804,7 @@ DEF_OP(AtomicFetchOr) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }
@@ -819,7 +819,7 @@ DEF_OP(AtomicFetchXor) {
     case 2: ldeoralh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldeoral(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldeoral(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
   else {
@@ -865,7 +865,7 @@ DEF_OP(AtomicFetchXor) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
     }
   }
 }

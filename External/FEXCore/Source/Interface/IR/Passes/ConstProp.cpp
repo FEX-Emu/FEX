@@ -260,7 +260,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       auto ghf = IROp->CW<IR::IROp_GetHostFlag>();
 
       auto fcmp = IREmit->GetOpHeader(ghf->GPR)->CW<IR::IROp_FCmp>();
-      LogMan::Throw::A(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP, "Unexpected OP_GETHOSTFLAG source");
+      LOGMAN_THROW_A(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP, "Unexpected OP_GETHOSTFLAG source");
       if(fcmp->Header.Op == OP_FCMP) {
         fcmp->Flags |= 1 << ghf->Flag;
       }
@@ -463,7 +463,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
 
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) &&
           IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-        LogMan::Msg::A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
+        LOGMAN_MSG_A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
       }
     break;
     }
@@ -479,7 +479,7 @@ bool ConstProp::Run(IREmitter *IREmit) {
       uint64_t Constant1;
 
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
-        LogMan::Msg::A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
+        LOGMAN_MSG_A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
       }
     break;
     }

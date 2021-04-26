@@ -49,7 +49,7 @@ public:
 
   OrderedNode* GetNewJumpBlock(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);
-    LogMan::Throw::A(it != JumpTargets.end(), "Couldn't find block generated for 0x%lx", RIP);
+    LOGMAN_THROW_A(it != JumpTargets.end(), "Couldn't find block generated for 0x%lx", RIP);
     return it->second.BlockEntry;
   }
 

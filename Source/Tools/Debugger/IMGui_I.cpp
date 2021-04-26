@@ -625,7 +625,7 @@ namespace IR {
       //   Header.IRSize = ir->GetOffset();
       //   std::fstream IRFile;
       //   IRFile.open(File, std::fstream::out | std::fstream::binary);
-      //   LogMan::Throw::A(IRFile.is_open(), "Failed to open file");
+      //   LOGMAN_THROW_A(IRFile.is_open(), "Failed to open file");
 
       //   IRFile.write(reinterpret_cast<char*>(&Header), sizeof(Header));
       //   IRFile.write(ir->GetOpAs<char>(0), Header.IRSize);
@@ -638,7 +638,7 @@ namespace IR {
     IRFileHeader Header;
     std::fstream IRFile;
     IRFile.open(Filename, std::fstream::in | std::fstream::binary);
-    LogMan::Throw::A(IRFile.is_open(), "Failed to open file");
+    LOGMAN_THROW_A(IRFile.is_open(), "Failed to open file");
 
     IRFile.read(reinterpret_cast<char*>(&Header), sizeof(Header));
 
@@ -705,7 +705,7 @@ namespace History {
 
     std::fstream HistoryFile;
     HistoryFile.open("History.json", std::fstream::out);
-    LogMan::Throw::A(HistoryFile.is_open(), "Failed to open file");
+    LOGMAN_THROW_A(HistoryFile.is_open(), "Failed to open file");
 
     HistoryFile.write(Buffer, strlen(Buffer));
     HistoryFile.close();

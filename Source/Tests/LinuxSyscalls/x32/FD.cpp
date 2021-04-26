@@ -203,7 +203,7 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(fstatfs64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, size_t sz, struct statfs64_32 *buf) -> uint64_t {
-      LogMan::Throw::A(sz == sizeof(struct statfs64_32), "This needs to match");
+      LOGMAN_THROW_A(sz == sizeof(struct statfs64_32), "This needs to match");
 
       struct statfs64 host_stat;
       uint64_t Result = ::fstatfs64(fd, &host_stat);
@@ -214,7 +214,7 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(statfs64, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, size_t sz, struct statfs64_32 *buf) -> uint64_t {
-      LogMan::Throw::A(sz == sizeof(struct statfs64_32), "This needs to match");
+      LOGMAN_THROW_A(sz == sizeof(struct statfs64_32), "This needs to match");
 
       struct statfs host_stat;
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, &host_stat);
@@ -279,7 +279,7 @@ namespace FEX::HLE::x32 {
         case F_SETFL:
           break;
 
-        default: LogMan::Msg::A("Unhandled fcntl64: 0x%x", cmd); break;
+        default: LOGMAN_MSG_A("Unhandled fcntl64: 0x%x", cmd); break;
       }
 
       uint64_t Result = ::fcntl(fd, cmd, lock_arg);

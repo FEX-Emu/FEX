@@ -378,7 +378,7 @@ friend class FEXCore::IR::PassManager;
   }
 
   void SetJumpTarget(IR::IROp_Jump *Op, OrderedNode *Target) {
-    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+    LOGMAN_THROW_A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting Jump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
@@ -386,7 +386,7 @@ friend class FEXCore::IR::PassManager;
     Op->Header.Args[0].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
   void SetTrueJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
-    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+    LOGMAN_THROW_A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting CondJump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
@@ -394,7 +394,7 @@ friend class FEXCore::IR::PassManager;
     Op->TrueBlock.NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
   void SetFalseJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
-    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+    LOGMAN_THROW_A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting CondJump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
@@ -403,7 +403,7 @@ friend class FEXCore::IR::PassManager;
   }
 
   void SetJumpTarget(IRPair<IROp_Jump> Op, OrderedNode *Target) {
-    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+    LOGMAN_THROW_A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting Jump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
@@ -411,14 +411,14 @@ friend class FEXCore::IR::PassManager;
     Op.first->Header.Args[0].NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
   void SetTrueJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
-    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+    LOGMAN_THROW_A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting CondJump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
     Op.first->TrueBlock.NodeOffset = Target->Wrapped(ListData.Begin()).NodeOffset;
   }
   void SetFalseJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
-    LogMan::Throw::A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
+    LOGMAN_THROW_A(Target->Op(Data.Begin())->Op == OP_CODEBLOCK,
         "Tried setting CondJump target to %%ssa%d %s",
         Target->Wrapped(ListData.Begin()).ID(),
         std::string(IR::GetName(Target->Op(Data.Begin())->Op)).c_str());
@@ -487,7 +487,7 @@ friend class FEXCore::IR::PassManager;
 
     ReplaceUsesWithAfter(Node, NewNode, Start);
 
-    LogMan::Throw::A(Node->NumUses == 0, "Node still used");
+    LOGMAN_THROW_A(Node->NumUses == 0, "Node still used");
 
     // Since we have deleted ALL uses, we can safely delete the node.
     Remove(Node);
@@ -501,8 +501,8 @@ friend class FEXCore::IR::PassManager;
   OrderedNode *GetPackedRFLAG(bool Lower8);
 
   void CopyData(IREmitter const &rhs) {
-    LogMan::Throw::A(rhs.Data.BackingSize() <= Data.BackingSize(), "Trying to take ownership of data that is too large");
-    LogMan::Throw::A(rhs.ListData.BackingSize() <= ListData.BackingSize(), "Trying to take ownership of data that is too large");
+    LOGMAN_THROW_A(rhs.Data.BackingSize() <= Data.BackingSize(), "Trying to take ownership of data that is too large");
+    LOGMAN_THROW_A(rhs.ListData.BackingSize() <= ListData.BackingSize(), "Trying to take ownership of data that is too large");
     Data.CopyData(rhs.Data);
     ListData.CopyData(rhs.ListData);
     InvalidNode = rhs.InvalidNode->Wrapped(rhs.ListData.Begin()).GetNode(ListData.Begin());
@@ -565,7 +565,7 @@ friend class FEXCore::IR::PassManager;
   /**  @} */
   void LinkCodeBlocks(OrderedNode *CodeNode, OrderedNode *Next) {
     FEXCore::IR::IROp_CodeBlock *CurrentIROp = CodeNode->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
+    LOGMAN_THROW_A(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
 
     CodeNode->append(ListData.Begin(), Next);
   }

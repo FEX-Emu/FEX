@@ -545,7 +545,7 @@ namespace FEX::HLE::x32 {
         int32_t cmd = third & 0xFF;
         compat_ptr<semun_32> semun(ptr);
         bool IPC64 = third & 0x100;
-#define UNHANDLED(x) case x: LogMan::Msg::A("Unhandled semctl cmd: " #x); break
+#define UNHANDLED(x) case x: LOGMAN_MSG_A("Unhandled semctl cmd: " #x); break
         switch (cmd) {
           case IPC_SET: {
             struct semid_ds buf{};
@@ -608,7 +608,7 @@ namespace FEX::HLE::x32 {
           case GETVAL:
             Result = ::semctl(semid, semnum, cmd);
             break;
-          default: LogMan::Msg::A("Unhandled semctl cmd: %d", cmd); return -EINVAL; break;
+          default: LOGMAN_MSG_A("Unhandled semctl cmd: %d", cmd); return -EINVAL; break;
         }
 #undef UNHANDLED
         break;
@@ -658,7 +658,7 @@ namespace FEX::HLE::x32 {
         int32_t cmd = third & 0xFF;
         msgun_32 *msgun = reinterpret_cast<msgun_32*>(ptr);
         bool IPC64 = third & 0x100;
-#define UNHANDLED(x) case x: LogMan::Msg::A("Unhandled msgctl cmd: " #x); break
+#define UNHANDLED(x) case x: LOGMAN_MSG_A("Unhandled msgctl cmd: " #x); break
         switch (cmd) {
           UNHANDLED(IPC_SET);
           case MSG_STAT:
@@ -688,7 +688,7 @@ namespace FEX::HLE::x32 {
           case IPC_RMID:
             Result = ::msgctl(msqid, cmd, nullptr);
             break;
-          default: LogMan::Msg::A("Unhandled msgctl cmd: %d", cmd); return -EINVAL; break;
+          default: LOGMAN_MSG_A("Unhandled msgctl cmd: %d", cmd); return -EINVAL; break;
         }
 #undef UNHANDLED
         break;
@@ -785,7 +785,7 @@ namespace FEX::HLE::x32 {
             Result = ::shmctl(shmid, cmd, nullptr);
             break;
 
-          default: LogMan::Msg::A("Unhandled shmctl cmd: %d", cmd); return -EINVAL; break;
+          default: LOGMAN_MSG_A("Unhandled shmctl cmd: %d", cmd); return -EINVAL; break;
         }
         break;
       }

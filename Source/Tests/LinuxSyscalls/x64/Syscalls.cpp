@@ -138,7 +138,7 @@ namespace FEX::HLE::x64 {
       auto SyscallNumber = Syscall.SyscallNumber;
       auto Name = GetSyscallName(SyscallNumber);
       auto &Def = Definitions.at(SyscallNumber);
-      LogMan::Throw::A(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, %d, %s", SyscallNumber, Name);
+      LOGMAN_THROW_A(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, %d, %s", SyscallNumber, Name);
       Def.Ptr = Syscall.SyscallHandler;
       Def.NumArgs = Syscall.ArgumentCount;
 #ifdef DEBUG_STRACE

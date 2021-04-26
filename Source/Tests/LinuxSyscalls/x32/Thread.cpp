@@ -27,7 +27,7 @@ namespace FEX::HLE::x32 {
 
     static bool Initialized = false;
     if (Initialized == true && u_info->entry_number == -1) {
-      LogMan::Msg::A("Trying to load a new GDT");
+      LOGMAN_MSG_A("Trying to load a new GDT");
     }
     if (u_info->entry_number == -1) {
       u_info->entry_number = 12; // Sure?

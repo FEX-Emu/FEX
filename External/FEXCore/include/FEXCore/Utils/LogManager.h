@@ -32,8 +32,10 @@ static inline void A(bool Value, const char *fmt, ...) {
     va_end(args);
   }
 }
+#define LOGMAN_THROW_A(pred, ...) do { LogMan::Throw::A(pred, __VA_ARGS__); } while (0)
 #else
 static inline void A(bool, const char*, ...) {}
+#define LOGMAN_THROW_A(pred, ...) do {} while (0)
 #endif
 
 } // namespace Throw
@@ -55,8 +57,10 @@ static inline void A(const char *fmt, ...) {
   }
   __builtin_trap();
 }
+#define LOGMAN_MSG_A(...) do { LogMan::Msg::A(__VA_ARGS__); } while (0)
 #else
 static inline void A(const char*, ...) {}
+#define LOGMAN_MSG_A(...) do {} while(0)
 #endif
 
 static inline void E(const char *fmt, ...) {

@@ -308,7 +308,7 @@ def print_ir_allocator_helpers(ops, defines):
 
     output_file.write("\tuint8_t GetOpElements(OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
-    output_file.write("\t\tLogMan::Throw::A(HeaderOp->HasDest, \"Op %s has no dest\\n\", GetName(HeaderOp->Op));\n")
+    output_file.write("\t\tLOGMAN_THROW_A(HeaderOp->HasDest, \"Op %s has no dest\\n\", GetName(HeaderOp->Op));\n")
     output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 

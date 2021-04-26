@@ -55,7 +55,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
   std::vector<uint32_t> Uses(CurrentIR.GetSSACount(), 0);
 
   auto HeaderOp = CurrentIR.GetHeader();
-  LogMan::Throw::A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+  LOGMAN_THROW_A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   IR::RegisterAllocationData * RAData{};
   if (Manager->HasRAPass()) {
@@ -66,7 +66,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+    LOGMAN_THROW_A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
     uint32_t BlockID = CurrentIR.GetID(BlockNode);
 
@@ -209,7 +209,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
           break;
         }
         default:
-          // LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
+          // LOGMAN_MSG_A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
         break;
       }
     }
