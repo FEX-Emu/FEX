@@ -67,6 +67,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
   aarch64::Label FullLookup{};
+  aarch64::Label CallBlock{};
   aarch64::Label LoopTop{};
   aarch64::Label ExitSpillSRA{};
   aarch64::Label ThreadPauseHandler{};
@@ -79,16 +80,19 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
   auto RipReg = x2;
 
-  if (!config.ExecuteBlocksWithCall) {
-    // L1 Cache
-    ldr(x0, &l_L1Ptr);
+  // L1 Cache
+  ldr(x0, &l_L1Ptr);
 
-    and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
-    add(x0, x0, Operand(x3, Shift::LSL, 4));
-    ldp(x1, x0, MemOperand(x0));
-    cmp(x0, RipReg);
-    b(&FullLookup, Condition::ne);
-    br(x1);
+  and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
+  add(x0, x0, Operand(x3, Shift::LSL, 4));
+  ldp(x3, x0, MemOperand(x0));
+  cmp(x0, RipReg);
+  b(&FullLookup, Condition::ne);
+
+  if (!config.ExecuteBlocksWithCall) {
+    br(x3);
+  } else {
+    b(&CallBlock);
   }
 
   // L1C check failed, do a full lookup
@@ -136,40 +140,37 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
     // If we've made it here then we have a real compiled block
     {
+      // update L1 cache
+      ldr(x0, &l_L1Ptr);
+
+      and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
+      add(x0, x0, Operand(x1, Shift::LSL, 4));
+      stp(x3, x2, MemOperand(x0));
+
       // Jump to the block
       if (!config.ExecuteBlocksWithCall) {
-        // update L1 cache
-        ldr(x0, &l_L1Ptr);
-
-        and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
-        add(x0, x0, Operand(x1, Shift::LSL, 4));
-        stp(x3, x2, MemOperand(x0));
-
         br(x3);
       } else {
+        bind(&CallBlock);
         mov(x0, STATE);
         blr(x3);
-      }
-    }
 
-    if (config.ExecuteBlocksWithCall) {
-      // Interpreter continues execution here
-      if (CTX->GetGdbServerStatus()) {
-        // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
-        // This happens when single stepping
+        if (CTX->GetGdbServerStatus()) {
+          // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
+          // This happens when single stepping
 
-        static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-        ldr(x0, &l_CTX);
-        ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
-        // If the value == 0 then branch to the top
-        cbz(x0, &LoopTop);
-        // Else we need to pause now
-        b(&ThreadPauseHandler);
-      }
-      else {
-        // Unconditionally loop to the top
-        // We will only stop on error when compiling a block or signal
-        b(&LoopTop);
+          static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
+          ldr(x0, &l_CTX);
+          ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
+          // If the value == 0 then branch to the top
+          cbz(x0, &LoopTop);
+          // Else we need to pause now
+          b(&ThreadPauseHandler);
+        } else {
+          // Unconditionally loop to the top
+          // We will only stop on error when compiling a block or signal
+          b(&LoopTop);
+        }
       }
     }
   }
