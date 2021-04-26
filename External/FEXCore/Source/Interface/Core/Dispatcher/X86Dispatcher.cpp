@@ -66,6 +66,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
   Label LoopTop;
   Label FullLookup;
+  Label CallBlock;
   Label NoBlock;
   Label ExitBlock;
   Label ThreadPauseHandler;
@@ -77,17 +78,20 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     // Load our RIP
     mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
 
-    if (!config.ExecuteBlocksWithCall)
-    {
-      // L1 Cache
-      mov(r13, Thread->LookupCache->GetL1Pointer());
-      mov(rax, rdx);
+    // L1 Cache
+    mov(r13, Thread->LookupCache->GetL1Pointer());
+    mov(rax, rdx);
 
-      and_(rax, LookupCache::L1_ENTRIES_MASK);
-      shl(rax, 4);
-      cmp(qword[r13 + rax + 8], rdx);
-      jne(FullLookup);
+    and_(rax, LookupCache::L1_ENTRIES_MASK);
+    shl(rax, 4);
+    cmp(qword[r13 + rax + 8], rdx);
+    jne(FullLookup);
+
+    if (!config.ExecuteBlocksWithCall) {
       jmp(qword[r13 + rax + 0]);
+    } else {
+      mov(rax, qword[r13 + rax + 0]);
+      jmp(CallBlock);
     }
 
     L(FullLookup);
@@ -122,19 +126,19 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     je(NoBlock);
 
     // Update L1
-    if (config.ExecuteBlocksWithCall) {
-      mov(r13, Thread->LookupCache->GetL1Pointer());
-      mov(rcx, rdx);
-      and_(rcx, LookupCache::L1_ENTRIES_MASK);
-      shl(rcx, 1);
-      mov(qword[r13 + rcx*8 + 8], rdx);
-      mov(qword[r13 + rcx*8 + 0], rax);
-    }
+    
+    mov(r13, Thread->LookupCache->GetL1Pointer());
+    mov(rcx, rdx);
+    and_(rcx, LookupCache::L1_ENTRIES_MASK);
+    shl(rcx, 1);
+    mov(qword[r13 + rcx*8 + 8], rdx);
+    mov(qword[r13 + rcx*8 + 0], rax);
 
     // Real block if we made it here
     if (!config.ExecuteBlocksWithCall) {
       jmp(rax);
     } else {
+      L(CallBlock);
       mov(rdi, STATE);
       call(rax);
 
