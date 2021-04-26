@@ -105,7 +105,7 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 find_package(Python 3.0 REQUIRED COMPONENTS Interpreter)
-pkg_check_modules(XXHASH libxxhash>=0.8.0 REQUIRED)
+pkg_check_modules(XXHASH libxxhash>=0.7.3 REQUIRED)
 
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
