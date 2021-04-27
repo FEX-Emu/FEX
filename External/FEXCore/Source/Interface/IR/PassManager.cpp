@@ -19,6 +19,13 @@ void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllo
 
   if (!DisablePasses()) {
     InsertPass(CreateContextLoadStoreElimination());
+
+    if (Is64BitMode()) {
+      // This needs to run after RCLSE
+      // This only matters for 64-bit code since these instructions don't exist in 32-bit
+      InsertPass(CreateLongDivideEliminationPass());
+    }
+
     InsertPass(CreateDeadStoreElimination());
     InsertPass(CreatePassDeadCodeElimination());
     InsertPass(CreateConstProp(InlineConstants));

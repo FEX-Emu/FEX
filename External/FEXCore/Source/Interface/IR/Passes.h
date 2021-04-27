@@ -14,6 +14,7 @@ FEXCore::IR::Pass* CreatePassDeadCodeElimination();
 FEXCore::IR::Pass* CreateIRCompaction();
 FEXCore::IR::RegisterAllocationPass* CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA);
 FEXCore::IR::Pass* CreateStaticRegisterAllocationPass();
+FEXCore::IR::Pass* CreateLongDivideEliminationPass();
 
 namespace Validation {
 FEXCore::IR::Pass* CreateIRValidation();
