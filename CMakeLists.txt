@@ -162,8 +162,9 @@ if(ENABLE_WERROR OR ENABLE_STRICT_WERROR)
 endif()
 
 if(_M_ARM_64)
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 999999.0)
     # Clang 12.0 fixed the -mcpu=native bug with mixed big.little implementers
+    # Clang can not currently check for native Apple M1 type in hypervisor. Currently disabled
     check_cxx_compiler_flag("-mcpu=native" COMPILER_SUPPORTS_CPU_TYPE)
     if(COMPILER_SUPPORTS_CPU_TYPE)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
@@ -173,7 +174,7 @@ if(_M_ARM_64)
     # Manually detect newer CPU revisions until clang and llvm fixes their bug
     # This script will either provide a supported CPU or 'native'
     # Additionally -march doesn't work under AArch64+Clang, so you have to use -mcpu or -mtune
-    execute_process(COMMAND python3 "${PROJECT_SOURCE_DIR}/Scripts/aarch64_fit_native.py" "/proc/cpuinfo"
+    execute_process(COMMAND python3 "${PROJECT_SOURCE_DIR}/Scripts/aarch64_fit_native.py" "/proc/cpuinfo" "${CMAKE_CXX_COMPILER_VERSION}"
       OUTPUT_VARIABLE AARCH64_CPU)
 
     string(STRIP ${AARCH64_CPU} AARCH64_CPU)

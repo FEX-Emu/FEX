@@ -2,6 +2,7 @@
 import re
 import sys
 import subprocess
+from distutils.version import LooseVersion, StrictVersion
 
 # Order this list from oldest to newest
 # try not to list something newer than our minimum compiler supported version
@@ -23,6 +24,11 @@ BigCoreIDs = {
         tuple([0x51, 0x800]): "cortex-a73", # Kryo 2xx Gold
         tuple([0x51, 0x802]): "cortex-a75", # Kryo 3xx Gold
         tuple([0x51, 0x804]): "cortex-a76", # Kryo 4xx Gold
+        # Apple M1 Parallels hypervisor
+        tuple([0x41, 0x0]):
+            [ ["apple-a13", "0.0"], # If we aren't on 12.0+
+              ["apple-a14", "12.0"], # Only exists in 12.0+
+            ],
 }
 
 LittleCoreIDs = {
@@ -37,10 +43,11 @@ LittleCoreIDs = {
         tuple([0x51, 0x805]): "cortex-a55", # Kryo 4xx/5xx Silver
 }
 
-# Args: </proc/cpuinfo file>
-if (len(sys.argv) < 2):
+# Args: </proc/cpuinfo file> <clang version>
+if (len(sys.argv) < 3):
     sys.exit()
 
+clang_version = sys.argv[2]
 cpuinfo = []
 with open(sys.argv[1]) as cpuinfo_file:
     current_implementer = 0
@@ -58,7 +65,13 @@ largest_little = "native"
 
 for core in cpuinfo:
     if BigCoreIDs.get(core):
-        largest_big = BigCoreIDs.get(core)
+        IDList = BigCoreIDs.get(core)
+        if type(IDList) is list:
+            for ID in IDList:
+                if StrictVersion(clang_version) >= StrictVersion(ID[1]):
+                    largest_big = ID[0]
+        else:
+            largest_big = BigCoreIDs.get(core)
 
     if LittleCoreIDs.get(core):
         largest_little = LittleCoreIDs.get(core)
