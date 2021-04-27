@@ -85,28 +85,11 @@ namespace FEX::EmulatedFile {
     Info info {res_1};
 
     uint32_t Family = info.FamilyID + (info.FamilyID == 0xF ? info.ExFamilyID : 0);
-    for (int i = 0; i < CPUCores; ++i) {
-      cpu_stream << "processor       : " << i << std::endl; // Logical id
-      cpu_stream << "vendor_id       : " << vendorid.Str << std::endl;
-      cpu_stream << "cpu family      : " << Family  << std::endl;
-      cpu_stream << "model           : " << (info.Model + (info.FamilyID >= 6 ? (info.ExModelID << 4) : 0)) << std::endl;
-      cpu_stream << "model name      : " << modelname.Str << std::endl;
-      cpu_stream << "stepping        : " << info.Stepping << std::endl;
-      cpu_stream << "microcode       : 0x0" << std::endl;
-      cpu_stream << "cpu MHz         : 3000" << std::endl;
-      cpu_stream << "cache size      : 512 KB" << std::endl;
-      cpu_stream << "physical id     : 0" << std::endl; // Socket id (always 0 for a single socket system)
-      cpu_stream << "siblings        : " << CPUCores << std::endl; // Number of logical cores
-      cpu_stream << "core id         : " << i << std::endl; // Physical id
-      cpu_stream << "cpu cores       : " << CPUCores << std::endl; // Number of physical cores
-      cpu_stream << "apicid          : " << i << std::endl;
-      cpu_stream << "initial apicid  : " << i << std::endl;
-      cpu_stream << "fpu             : " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
-      cpu_stream << "fpu_exception   : " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
-      cpu_stream << "cpuid level     : " << vendorid.id << std::endl;
-      cpu_stream << "wp              : yes" << std::endl;
-      cpu_stream << "flags           : ";
-#define FLAG(flag, name) if (flag) { cpu_stream << name << " "; }
+    std::ostringstream flags_data{};
+    // Generate the flags data up front
+    // This is the same per core
+    {
+#define FLAG(flag, name) if (flag) { flags_data << name << " "; }
       FLAG(res_1.edx & (1 << 0), "fpu")
       FLAG(res_1.edx & (1 << 1), "vme")
       FLAG(res_1.edx & (1 << 2), "de")
@@ -560,8 +543,29 @@ namespace FEX::EmulatedFile {
         "flush_l1d")
       FLAG(res_7.edx & (1 << 29),
         "arch_capabilities")
+    }
 
-      cpu_stream << std::endl;
+    for (int i = 0; i < CPUCores; ++i) {
+      cpu_stream << "processor       : " << i << std::endl; // Logical id
+      cpu_stream << "vendor_id       : " << vendorid.Str << std::endl;
+      cpu_stream << "cpu family      : " << Family  << std::endl;
+      cpu_stream << "model           : " << (info.Model + (info.FamilyID >= 6 ? (info.ExModelID << 4) : 0)) << std::endl;
+      cpu_stream << "model name      : " << modelname.Str << std::endl;
+      cpu_stream << "stepping        : " << info.Stepping << std::endl;
+      cpu_stream << "microcode       : 0x0" << std::endl;
+      cpu_stream << "cpu MHz         : 3000" << std::endl;
+      cpu_stream << "cache size      : 512 KB" << std::endl;
+      cpu_stream << "physical id     : 0" << std::endl; // Socket id (always 0 for a single socket system)
+      cpu_stream << "siblings        : " << CPUCores << std::endl; // Number of logical cores
+      cpu_stream << "core id         : " << i << std::endl; // Physical id
+      cpu_stream << "cpu cores       : " << CPUCores << std::endl; // Number of physical cores
+      cpu_stream << "apicid          : " << i << std::endl;
+      cpu_stream << "initial apicid  : " << i << std::endl;
+      cpu_stream << "fpu             : " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
+      cpu_stream << "fpu_exception   : " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
+      cpu_stream << "cpuid level     : " << vendorid.id << std::endl;
+      cpu_stream << "wp              : yes" << std::endl;
+      cpu_stream << "flags           : " << flags_data.str() << std::endl;
 
       // We don't have any bugs, don't question it
       cpu_stream << "bugs            : " << std::endl;
