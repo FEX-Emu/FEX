@@ -59,7 +59,7 @@ public:
 
     it->second.HaveEmitted = true;
 
-    if (CurrentCodeBlock->Wrapped(ListData.Begin()).ID() == it->second.BlockEntry->Wrapped(ListData.Begin()).ID()) return;
+    if (CurrentCodeBlock->Wrapped(DualListData.ListBegin()).ID() == it->second.BlockEntry->Wrapped(DualListData.ListBegin()).ID()) return;
 
     // We have hit a RIP that is a jump target
     // Thus we need to end up in a new block

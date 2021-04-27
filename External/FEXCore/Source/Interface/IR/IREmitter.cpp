@@ -9,18 +9,17 @@ $end_info$
 
 namespace FEXCore::IR {
 void IREmitter::ResetWorkingList() {
-  Data.Reset();
-  ListData.Reset();
+  DualListData.Reset();
   CodeBlocks.clear();
   CurrentWriteCursor = nullptr;
   // This is necessary since we do "null" pointer checks
-  InvalidNode = reinterpret_cast<OrderedNode*>(ListData.Allocate(sizeof(OrderedNode)));
+  InvalidNode = reinterpret_cast<OrderedNode*>(DualListData.ListAllocate(sizeof(OrderedNode)));
   memset(InvalidNode, 0, sizeof(OrderedNode));
   CurrentCodeBlock = nullptr;
 }
 
 void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After, AllNodesIterator End) {
-  uintptr_t ListBegin = ListData.Begin();
+  uintptr_t ListBegin = DualListData.ListBegin();
   auto NodeId = Node->Wrapped(ListBegin).ID();
 
   while (After != End) {
@@ -45,8 +44,8 @@ void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode,
 }
 
 void IREmitter::ReplaceNodeArgument(OrderedNode *Node, uint8_t Arg, OrderedNode *NewArg) {
-  uintptr_t ListBegin = ListData.Begin();
-  uintptr_t DataBegin = Data.Begin();
+  uintptr_t ListBegin = DualListData.ListBegin();
+  uintptr_t DataBegin = DualListData.DataBegin();
 
   FEXCore::IR::IROp_Header *IROp = Node->Op(DataBegin);
   OrderedNodeWrapper OldArgWrapper = IROp->Args[Arg];
@@ -57,8 +56,8 @@ void IREmitter::ReplaceNodeArgument(OrderedNode *Node, uint8_t Arg, OrderedNode 
 }
 
 void IREmitter::RemoveArgUses(OrderedNode *Node) {
-  uintptr_t ListBegin = ListData.Begin();
-  uintptr_t DataBegin = Data.Begin();
+  uintptr_t ListBegin = DualListData.ListBegin();
+  uintptr_t DataBegin = DualListData.DataBegin();
 
   FEXCore::IR::IROp_Header *IROp = Node->Op(DataBegin);
 
@@ -72,7 +71,7 @@ void IREmitter::RemoveArgUses(OrderedNode *Node) {
 void IREmitter::Remove(OrderedNode *Node) {
   RemoveArgUses(Node);
 
-  Node->Unlink(ListData.Begin());
+  Node->Unlink(DualListData.ListBegin());
 }
 
 IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode* insertAfter) {
@@ -84,13 +83,13 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
     LinkCodeBlocks(insertAfter, CodeNode);
   } else {
     LOGMAN_THROW_A(CurrentCodeBlock != nullptr, "CurrentCodeBlock must not be null here");
-    
+
     // Find last block
     auto LastBlock = CurrentCodeBlock;
 
-    while (LastBlock->Header.Next.GetNode(ListData.Begin()) != InvalidNode)
-      LastBlock = LastBlock->Header.Next.GetNode(ListData.Begin());
-    
+    while (LastBlock->Header.Next.GetNode(DualListData.ListBegin()) != InvalidNode)
+      LastBlock = LastBlock->Header.Next.GetNode(DualListData.ListBegin());
+
     // Append it after the last block
     LinkCodeBlocks(LastBlock, CodeNode);
   }
@@ -102,12 +101,12 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
 
 void IREmitter::SetCurrentCodeBlock(OrderedNode *Node) {
   CurrentCodeBlock = Node;
-  LOGMAN_THROW_A(Node->Op(Data.Begin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '%s'", std::string(IR::GetName(Node->Op(Data.Begin())->Op)).c_str());
-  SetWriteCursor(Node->Op(Data.Begin())->CW<IROp_CodeBlock>()->Begin.GetNode(ListData.Begin()));
+  LOGMAN_THROW_A(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '%s'", std::string(IR::GetName(Node->Op(DualListData.DataBegin())->Op)).c_str());
+  SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
 }
 
 void IREmitter::ReplaceWithConstant(OrderedNode *Node, uint64_t Value) {
-    auto Header = Node->Op(Data.Begin());
+    auto Header = Node->Op(DualListData.DataBegin());
 
     if (IRSizes[Header->Op] >= sizeof(IROp_Constant)) {
       // Unlink any arguments the node currently has

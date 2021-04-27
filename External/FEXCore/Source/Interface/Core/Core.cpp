@@ -930,7 +930,7 @@ namespace FEXCore::Context {
           return false;
         }
 
-        IR->IsShared = true;
+        IR->SetShared(true);
         RAData->IsShared = true;
 
         Mod.insert({addr, {start, len, crc, IR, RAData}});
@@ -1060,7 +1060,7 @@ namespace FEXCore::Context {
         std::lock_guard<std::mutex> lk(AOTIRCacheLock);
 
         RAData->IsShared = true;
-        IRList->IsShared = true;
+        IRList->SetShared(true);
 
         auto hash = XXH3_64bits((void*)StartAddr, Length);
 

@@ -4544,7 +4544,7 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::vector<FEXCore::Fronten
 
   auto Block = GetNewJumpBlock(RIP);
   SetCurrentCodeBlock(Block);
-  IRHeader.first->Blocks = Block->Wrapped(ListData.Begin());
+  IRHeader.first->Blocks = Block->Wrapped(DualListData.ListBegin());
 }
 
 void OpDispatchBuilder::Finalize() {
@@ -4552,7 +4552,7 @@ void OpDispatchBuilder::Finalize() {
 
   // Node 0 is invalid node
   OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(GetNode(1));
-  FEXCore::IR::IROp_Header *IROp = RealNode->Op(Data.Begin());
+  FEXCore::IR::IROp_Header *IROp = RealNode->Op(DualListData.DataBegin());
   LOGMAN_THROW_A(IROp->Op == OP_IRHEADER, "First op in function must be our header");
 
   // Let's walk the jump blocks and see if we have handled every block target

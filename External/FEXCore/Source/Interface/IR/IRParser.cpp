@@ -520,7 +520,7 @@ class IRParser: public FEXCore::IR::IREmitter {
         if (i == 1) {
           // First code block is the entry block
           // Link the header to the first block
-          IRHeader.first->Blocks = CodeBlock.Node->Wrapped(ListData.Begin());
+          IRHeader.first->Blocks = CodeBlock.Node->Wrapped(DualListData.ListBegin());
         }
         CodeBlocks.emplace_back(CodeBlock.Node);
       }
@@ -553,7 +553,7 @@ class IRParser: public FEXCore::IR::IREmitter {
           }
 
           CurrentBlock = Def.Node;
-          CurrentBlockOp = CurrentBlock->Op(Data.Begin())->CW<FEXCore::IR::IROp_CodeBlock>();
+          CurrentBlockOp = CurrentBlock->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_CodeBlock>();
           break;
         }
 
@@ -571,7 +571,7 @@ class IRParser: public FEXCore::IR::IREmitter {
           if (!CheckPrintError(Def, Adjust.first)) return false;
 
           Def.Node = _BeginBlock(Adjust.second);
-          CurrentBlockOp->Begin = Def.Node->Wrapped(ListData.Begin());
+          CurrentBlockOp->Begin = Def.Node->Wrapped(DualListData.ListBegin());
           break;
         }
 
@@ -588,7 +588,7 @@ class IRParser: public FEXCore::IR::IREmitter {
           if (!CheckPrintError(Def, Adjust.first)) return false;
 
           Def.Node = _EndBlock(Adjust.second);
-          CurrentBlockOp->Last = Def.Node->Wrapped(ListData.Begin());
+          CurrentBlockOp->Last = Def.Node->Wrapped(DualListData.ListBegin());
 
           CurrentBlock = nullptr;
           CurrentBlockOp = nullptr;
@@ -615,7 +615,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
 
       if (Def.HasDefinition) {
-        auto IROp = Def.Node->Op(Data.Begin());
+        auto IROp = Def.Node->Op(DualListData.DataBegin());
         if (Def.Size.Elements()) {
           IROp->Size = Def.Size.Bytes() * Def.Size.Elements();
           IROp->ElementSize = Def.Size.Bytes();

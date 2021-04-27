@@ -277,7 +277,7 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\tusing IRPair = Wrapper<T>;\n\n")
 
     output_file.write("\tIRPair<IROp_Header> AllocateRawOp(size_t HeaderSize) {\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<IROp_Header*>(Data.Allocate(HeaderSize));\n")
+    output_file.write("\t\tauto Op = reinterpret_cast<IROp_Header*>(DualListData.DataAllocate(HeaderSize));\n")
     output_file.write("\t\tmemset(Op, 0, HeaderSize);\n")
     output_file.write("\t\tOp->Op = IROps::OP_DUMMY;\n")
     output_file.write("\t\treturn IRPair<IROp_Header>{Op, CreateNode(Op)};\n")
@@ -286,7 +286,7 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\ttemplate<class T, IROps T2>\n")
     output_file.write("\tT *AllocateOrphanOp() {\n")
     output_file.write("\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<T*>(Data.Allocate(Size));\n")
+    output_file.write("\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n")
     output_file.write("\t\tmemset(Op, 0, Size);\n")
     output_file.write("\t\tOp->Header.Op = T2;\n")
     output_file.write("\t\treturn Op;\n")
@@ -295,25 +295,25 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\ttemplate<class T, IROps T2>\n")
     output_file.write("\tIRPair<T> AllocateOp() {\n")
     output_file.write("\t\tsize_t Size = FEXCore::IR::GetSize(T2);\n")
-    output_file.write("\t\tauto Op = reinterpret_cast<T*>(Data.Allocate(Size));\n")
+    output_file.write("\t\tauto Op = reinterpret_cast<T*>(DualListData.DataAllocate(Size));\n")
     output_file.write("\t\tmemset(Op, 0, Size);\n")
     output_file.write("\t\tOp->Header.Op = T2;\n")
     output_file.write("\t\treturn IRPair<T>{Op, CreateNode(&Op->Header)};\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tuint8_t GetOpSize(OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
+    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\treturn HeaderOp->Size;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tuint8_t GetOpElements(OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
+    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\tLOGMAN_THROW_A(HeaderOp->HasDest, \"Op %s has no dest\\n\", GetName(HeaderOp->Op));\n")
     output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tbool OpHasDest(OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
+    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\treturn HeaderOp->HasDest;\n")
     output_file.write("\t}\n\n")
 
@@ -387,22 +387,20 @@ def print_ir_allocator_helpers(ops, defines):
             output_file.write(") {\n")
 
             output_file.write("\t\tauto Op = AllocateOp<IROp_%s, IROps::OP_%s>();\n" % (op_key, op_key.upper()))
-            output_file.write("\t\tOp.first->Header.NumArgs = %d;\n" % (SSAArgs))
+
+            if (SSAArgs != 0):
+                output_file.write("\t\tauto ListDataBegin = DualListData.ListBegin();\n")
+                for i in range(0, SSAArgs):
+                    output_file.write("\t\tOp.first->Header.Args[%d] = ssa%d->Wrapped(ListDataBegin);\n" % (i, i))
 
             if (SSAArgs != 0):
                 for i in range(0, SSAArgs):
-                    output_file.write("\t\tOp.first->Header.Args[%d] = ssa%d->Wrapped(ListData.Begin());\n" % (i, i))
                     output_file.write("\t\tssa%d->AddUse();\n" % (i))
 
             if (HasArgs):
                 for i in range(1, len(op_vals["Args"]), 2):
                     data_name = op_vals["Args"][i]
                     output_file.write("\t\tOp.first->%s = %s;\n" % (data_name, data_name))
-
-            if (HasFixedDestSize):
-                output_file.write("\t\tOp.first->Header.Size = %d;\n" % FixedDestSize)
-            if (HasDestSize):
-                output_file.write("\t\tOp.first->Header.Size = %s;\n" % DestSize)
 
             if (HasDest):
                 # We can only infer a size if we have arguments
@@ -412,9 +410,17 @@ def print_ir_allocator_helpers(ops, defines):
                     if (SSAArgs != 0):
                         for i in range(0, SSAArgs):
                             output_file.write("\t\tuint8_t Size%d = GetOpSize(ssa%s);\n" % (i, i))
+                        for i in range(0, SSAArgs):
                             output_file.write("\t\tInferSize = std::max(InferSize, Size%d);\n" % (i))
 
                     output_file.write("\t\tOp.first->Header.Size = InferSize;\n")
+
+            output_file.write("\t\tOp.first->Header.NumArgs = %d;\n" % (SSAArgs))
+
+            if (HasFixedDestSize):
+                output_file.write("\t\tOp.first->Header.Size = %d;\n" % FixedDestSize)
+            if (HasDestSize):
+                output_file.write("\t\tOp.first->Header.Size = %s;\n" % DestSize)
 
             output_file.write("\t\tOp.first->Header.ElementSize = Op.first->Header.Size / (%s);\n" % NumElements)
 
@@ -499,7 +505,7 @@ def print_ir_parser_allocator_helpers(ops, defines):
 
             if (SSAArgs != 0):
                 for i in range(0, SSAArgs):
-                    output_file.write("\t\tOp.first->Header.Args[%d] = ssa%d->Wrapped(ListData.Begin());\n" % (i, i))
+                    output_file.write("\t\tOp.first->Header.Args[%d] = ssa%d->Wrapped(DualListData.ListBegin());\n" % (i, i))
                     output_file.write("\t\tssa%d->AddUse();\n" % (i))
 
             if (HasArgs):
