@@ -523,7 +523,7 @@ namespace FEXCore::Context {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
 
       auto It = std::find(Threads.begin(), Threads.end(), Thread);
-      LogMan::Throw::A(It != Threads.end(), "Thread wasn't in Threads");
+      LOGMAN_THROW_A(It != Threads.end(), "Thread wasn't in Threads");
 
       Threads.erase(It);
     }
@@ -662,7 +662,7 @@ namespace FEXCore::Context {
             HadDispatchError = true;
           }
           else {
-            LogMan::Throw::A(Thread->OpDispatcher->HandledLock == IsLocked, "Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+            LOGMAN_THROW_A(Thread->OpDispatcher->HandledLock == IsLocked, "Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
             BlockInstructionsLength += DecodedInfo->InstSize;
             TotalInstructionsLength += DecodedInfo->InstSize;
             ++TotalInstructions;
@@ -741,7 +741,7 @@ namespace FEXCore::Context {
       out.seekg(0);
       auto reparsed = IR::Parse(&out);
       if (reparsed == nullptr) {
-        LogMan::Msg::A("Failed to parse ir\n");
+        LOGMAN_MSG_A("Failed to parse ir\n");
       } else {
         std::stringstream out2;
         auto NewIR2 = reparsed->ViewIR();
@@ -749,7 +749,7 @@ namespace FEXCore::Context {
         if (out.str() != out2.str()) {
           LogMan::Msg::I("one:\n %s", out.str().c_str());
           LogMan::Msg::I("two:\n %s", out2.str().c_str());
-          LogMan::Msg::A("Parsed ir doesn't match\n");
+          LOGMAN_MSG_A("Parsed ir doesn't match\n");
         }
         delete reparsed;
       }
@@ -1035,7 +1035,7 @@ namespace FEXCore::Context {
       Length = _Length;
     }
 
-    LogMan::Throw::A(CodePtr != nullptr, "Failed to compile code %lX", GuestRIP);
+    LOGMAN_THROW_A(CodePtr != nullptr, "Failed to compile code %lX", GuestRIP);
 
     // The core managed to compile the code.
 #if ENABLE_JITSYMBOLS

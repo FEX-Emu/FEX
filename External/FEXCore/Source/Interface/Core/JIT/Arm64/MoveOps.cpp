@@ -26,7 +26,7 @@ DEF_OP(ExtractElementPair) {
       mov (GetReg<RA_64>(Node), Regs[Op->Element]);
       break;
     }
-    default: LogMan::Msg::A("Unknown Size"); break;
+    default: LOGMAN_MSG_A("Unknown Size"); break;
   }
 }
 
@@ -52,7 +52,7 @@ DEF_OP(CreateElementPair) {
       RegTmp = x0;
       break;
     }
-    default: LogMan::Msg::A("Unknown Size"); break;
+    default: LOGMAN_MSG_A("Unknown Size"); break;
   }
 
   if (Dst.first.GetCode() != RegSecond.GetCode()) {

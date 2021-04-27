@@ -83,7 +83,7 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
       if (NameToELF.find(Lib) == NameToELF.end()) {
         std::string LibraryPath;
         bool Found = FindLibraryFile(&LibraryPath, Lib.c_str());
-        LogMan::Throw::A(Found, "Couldn't find library '%s'", Lib.c_str());
+        LOGMAN_THROW_A(Found, "Couldn't find library '%s'", Lib.c_str());
         auto Info = DynamicELFInfo.emplace_back(new ELFInfo{});
         Info->Name = Lib;
         Info->Container = new ::ELFLoader::ELFContainer(LibraryPath, {}, true);
@@ -165,7 +165,7 @@ void ELFSymbolDatabase::FillMemoryLayouts(uint64_t DefinedBase) {
     uint64_t CurrentELFAlignedSize = AlignUp(std::get<2>(LocalInfo.CustomLayout), 4096);
     if (CurrentELFBase < 0x10000) {
       // We can't allocate memory in the first 16KB,  Hopefully no elfs require this.
-      LogMan::Msg::A("Elf requires memory mapped in the first 16kb");
+      LOGMAN_MSG_A("Elf requires memory mapped in the first 16kb");
     }
 
     std::get<2>(LocalInfo.CustomLayout) = CurrentELFAlignedSize;

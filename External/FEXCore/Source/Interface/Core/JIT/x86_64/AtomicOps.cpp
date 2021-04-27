@@ -55,7 +55,7 @@ DEF_OP(CASPair) {
       mov(Dst.second, rdx);
     break;
     }
-    default: LogMan::Msg::A("Unsupported: %d", OpSize);
+    default: LOGMAN_MSG_A("Unsupported: %d", OpSize);
   }
 }
 
@@ -104,7 +104,7 @@ DEF_OP(CAS) {
     mov (GetDst<RA_64>(Node), rax);
   break;
   }
-  default: LogMan::Msg::A("Unsupported: %d", OpSize);
+  default: LOGMAN_MSG_A("Unsupported: %d", OpSize);
   }
 }
 
@@ -127,7 +127,7 @@ DEF_OP(AtomicAdd) {
     case 8:
       add(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicAdd size: %d", Op->Size);
   }
 }
 
@@ -149,7 +149,7 @@ DEF_OP(AtomicSub) {
     case 8:
       sub(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicAdd size: %d", Op->Size);
   }
 }
 
@@ -171,7 +171,7 @@ DEF_OP(AtomicAnd) {
     case 8:
       and_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicAdd size: %d", Op->Size);
   }
 }
 
@@ -193,7 +193,7 @@ DEF_OP(AtomicOr) {
     case 8:
       or_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicAdd size: %d", Op->Size);
   }
 }
 
@@ -215,7 +215,7 @@ DEF_OP(AtomicXor) {
     case 8:
       xor_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicAdd size: %d", Op->Size);
   }
 }
 
@@ -246,7 +246,7 @@ DEF_OP(AtomicSwap) {
       lock();
       xchg(qword [MemReg], GetDst<RA_64>(Node));
       break;
-    default:  LogMan::Msg::A("Unhandled AtomicAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicAdd size: %d", Op->Size);
   }
 }
 
@@ -279,7 +279,7 @@ DEF_OP(AtomicFetchAdd) {
       xadd(qword [MemReg], rcx);
       mov(GetDst<RA_64>(Node), rcx);
       break;
-    default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicFetchAdd size: %d", Op->Size);
   }
 }
 
@@ -316,7 +316,7 @@ DEF_OP(AtomicFetchSub) {
       xadd(qword [MemReg], rcx);
       mov(GetDst<RA_64>(Node), rcx);
       break;
-    default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicFetchAdd size: %d", Op->Size);
   }
 }
 
@@ -394,7 +394,7 @@ DEF_OP(AtomicFetchAnd) {
       mov(GetDst<RA_64>(Node), TMP3.cvt64());
       break;
     }
-    default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicFetchAdd size: %d", Op->Size);
   }
 }
 
@@ -471,7 +471,7 @@ DEF_OP(AtomicFetchOr) {
       mov(GetDst<RA_64>(Node), TMP3.cvt64());
       break;
     }
-    default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicFetchAdd size: %d", Op->Size);
   }
 }
 
@@ -548,7 +548,7 @@ DEF_OP(AtomicFetchXor) {
       mov(GetDst<RA_64>(Node), TMP3.cvt64());
       break;
     }
-    default:  LogMan::Msg::A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+    default:  LOGMAN_MSG_A("Unhandled AtomicFetchAdd size: %d", Op->Size);
   }
 }
 

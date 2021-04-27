@@ -211,18 +211,18 @@ namespace {
     size_t ClassifiedStructSize{};
     ContextClassificationInfo->Lookup.reserve(sizeof(FEXCore::Core::CPUState));
     for (auto &it : *ContextClassification) {
-      LogMan::Throw::A(it.Class.Offset == ContextClassificationInfo->Lookup.size(), "Offset missmatch %d %d", it.Class.Offset == ContextClassificationInfo->Lookup.size());
+      LOGMAN_THROW_A(it.Class.Offset == ContextClassificationInfo->Lookup.size(), "Offset missmatch %d %d", it.Class.Offset == ContextClassificationInfo->Lookup.size());
       for (int i = 0; i < it.Class.Size; i++) {
         ContextClassificationInfo->Lookup.push_back(&it);
       }
       ClassifiedStructSize += it.Class.Size;
     }
 
-    LogMan::Throw::A(ClassifiedStructSize == sizeof(FEXCore::Core::CPUState),
+    LOGMAN_THROW_A(ClassifiedStructSize == sizeof(FEXCore::Core::CPUState),
       "Classified CPUStruct size doesn't match real CPUState struct size! %ld != %ld",
       ClassifiedStructSize, sizeof(FEXCore::Core::CPUState));
 
-    LogMan::Throw::A(ContextClassificationInfo->Lookup.size() == sizeof(FEXCore::Core::CPUState),
+    LOGMAN_THROW_A(ContextClassificationInfo->Lookup.size() == sizeof(FEXCore::Core::CPUState),
       "Classified CPUStruct size doesn't match real CPUState struct size! %ld != %ld",
       ContextClassificationInfo->Lookup.size(), sizeof(FEXCore::Core::CPUState));
   }
@@ -306,15 +306,15 @@ ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ContextClassificationInfo,
 }
 
 ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode) {
-  LogMan::Throw::A((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
-  LogMan::Throw::A(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
+  LOGMAN_THROW_A((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
+  LOGMAN_THROW_A(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
 
   // If we aren't fully overwriting the member then it is a partial write that we need to track
   if (Size < Info->Class.Size) {
     AccessType = AccessType == ACCESS_WRITE ? ACCESS_PARTIAL_WRITE : ACCESS_PARTIAL_READ;
   }
   if (Size > Info->Class.Size) {
-    LogMan::Msg::A("Can't handle this");
+    LOGMAN_MSG_A("Can't handle this");
   }
 
   Info->Accessed = AccessType;
@@ -500,7 +500,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
               else if (LastClass == GPRClass) {
                 LastNode = IREmit->_Bfe(Info->AccessSize, TruncateSize * 8, 0, LastNode);
               } else {
-                LogMan::Msg::A("Unhandled Register class");
+                LOGMAN_MSG_A("Unhandled Register class");
               }
             }
 

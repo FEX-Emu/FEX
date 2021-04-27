@@ -44,7 +44,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
     auto Name = FEXCore::IR::GetName(IROp->Op);
-    LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+    LOGMAN_MSG_A("Unhandled IR Op: %s", std::string(Name).c_str());
   } else {
     switch(Info.ABI) {
       case FABI_VOID_U16:{
@@ -292,7 +292,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
       case FABI_UNKNOWN:
       default:
       auto Name = FEXCore::IR::GetName(IROp->Op);
-        LogMan::Msg::A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
+        LOGMAN_MSG_A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
     }
   }
 }
@@ -309,7 +309,7 @@ Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
                     PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE | MAP_ANONYMOUS,
                     -1, 0));
-  LogMan::Throw::A(!!Buffer.Ptr, "Couldn't allocate code buffer");
+  LOGMAN_THROW_A(!!Buffer.Ptr, "Couldn't allocate code buffer");
   Dispatcher->RegisterCodeBuffer(Buffer.Ptr, Buffer.Size);
   return Buffer;
 }
@@ -578,7 +578,7 @@ Arm64JITCore::~Arm64JITCore() {
 IR::PhysicalRegister Arm64JITCore::GetPhys(uint32_t Node) {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
-  LogMan::Throw::A(!PhyReg.IsInvalid(), "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
+  LOGMAN_THROW_A(!PhyReg.IsInvalid(), "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
 
   return PhyReg;
 }
@@ -592,7 +592,7 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_32>(uint32_t Node) {
   } else if (Reg.Class == IR::GPRClass.Val) {
     return RA64[Reg.Reg].W();
   } else {
-    LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
+    LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
   }
   __builtin_unreachable();
 }
@@ -606,7 +606,7 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(uint32_t Node) {
   } else if (Reg.Class == IR::GPRClass.Val) {
     return RA64[Reg.Reg];
   } else {
-    LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
+    LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
   }
   __builtin_unreachable();
 }
@@ -631,7 +631,7 @@ aarch64::VRegister Arm64JITCore::GetSrc(uint32_t Node) {
   } else if (Reg.Class == IR::FPRClass.Val) {
     return RAFPR[Reg.Reg];
   } else {
-    LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
+    LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
   }
   __builtin_unreachable();
 }
@@ -644,7 +644,7 @@ aarch64::VRegister Arm64JITCore::GetDst(uint32_t Node) {
   } else if (Reg.Class == IR::FPRClass.Val) {
     return RAFPR[Reg.Reg];
   } else {
-    LogMan::Throw::A(false, "Unexpected Class: %d", Reg.Class);
+    LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
   }
   __builtin_unreachable();
 }
@@ -764,7 +764,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     bind(&RunBlock);
   }
 
-  //LogMan::Throw::A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
+  //LOGMAN_THROW_A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
 
   SpillSlots = RAData->SpillSlots();
 
@@ -782,7 +782,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+    LOGMAN_THROW_A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     {
       uint32_t Node = IR->GetID(BlockNode);

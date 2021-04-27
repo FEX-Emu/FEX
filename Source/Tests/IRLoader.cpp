@@ -122,7 +122,7 @@ int main(int argc, char **argv, char **const envp)
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
 
-  LogMan::Throw::A(Args.size() > 1, "Not enough arguments");
+  LOGMAN_THROW_A(Args.size() > 1, "Not enough arguments");
 
   FEXCore::Context::InitializeStaticTables();
   auto CTX = FEXCore::Context::CreateNewContext();

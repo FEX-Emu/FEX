@@ -36,7 +36,7 @@ CodeBuffer AllocateNewCodeBuffer(size_t Size) {
                     PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE | MAP_ANONYMOUS,
                     -1, 0));
-  LogMan::Throw::A(Buffer.Ptr != reinterpret_cast<uint8_t*>(~0ULL), "Couldn't allocate code buffer");
+  LOGMAN_THROW_A(Buffer.Ptr != reinterpret_cast<uint8_t*>(~0ULL), "Couldn't allocate code buffer");
   return Buffer;
 }
 
@@ -85,7 +85,7 @@ void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
     auto Name = FEXCore::IR::GetName(IROp->Op);
-    LogMan::Msg::A("Unhandled IR Op: %s", std::string(Name).c_str());
+    LOGMAN_MSG_A("Unhandled IR Op: %s", std::string(Name).c_str());
   } else {
     switch(Info.ABI) {
       case FABI_VOID_U16: {
@@ -283,7 +283,7 @@ void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
       case FABI_UNKNOWN:
       default:
       auto Name = FEXCore::IR::GetName(IROp->Op);
-        LogMan::Msg::A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
+        LOGMAN_MSG_A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
     }
   }
 }
@@ -414,7 +414,7 @@ void X86JITCore::ClearCache() {
 IR::PhysicalRegister X86JITCore::GetPhys(uint32_t Node) {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
-  LogMan::Throw::A(PhyReg.Raw != 255, "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
+  LOGMAN_THROW_A(PhyReg.Raw != 255, "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
 
   return PhyReg;
 }
@@ -563,7 +563,7 @@ std::tuple<X86JITCore::SetCC, X86JITCore::CMovCC, X86JITCore::JCC> X86JITCore::G
     case FEXCore::IR::COND_VS:
     case FEXCore::IR::COND_VC:
     default:
-      LogMan::Msg::A("Unsupported compare type");
+      LOGMAN_MSG_A("Unsupported compare type");
       break;
   }
 
@@ -606,7 +606,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     L(RunBlock);
   }
 
-  LogMan::Throw::A(RAData != nullptr, "Needs RA");
+  LOGMAN_THROW_A(RAData != nullptr, "Needs RA");
 
   SpillSlots = RAData->SpillSlots();
 
@@ -663,7 +663,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     using namespace FEXCore::IR;
     {
       auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
-      LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+      LOGMAN_THROW_A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
       uint32_t Node = IR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);

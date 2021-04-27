@@ -111,7 +111,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 
     // Host FPR state starts at _mcontext->reserved[0];
     HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
-    LogMan::Throw::A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
+    LOGMAN_THROW_A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
     Backup->FPSR = HostState->FPSR;
     Backup->FPCR = HostState->FPCR;
     memcpy(&Backup->FPRs[0], &HostState->FPRs[0], 32 * sizeof(__uint128_t));
@@ -126,7 +126,7 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
    auto _mcontext = GetMContext(ucontext);
 
     HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
-    LogMan::Throw::A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
+    LOGMAN_THROW_A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
     memcpy(&HostState->FPRs[0], &Backup->FPRs[0], 32 * sizeof(__uint128_t));
     HostState->FPCR = Backup->FPCR;
     HostState->FPSR = Backup->FPSR;

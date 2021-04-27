@@ -376,7 +376,7 @@ bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
     case FEXCore::IR::COND_VS:
     case FEXCore::IR::COND_VC:
     default:
-      LogMan::Msg::A("Unsupported compare type");
+      LOGMAN_MSG_A("Unsupported compare type");
       break;
   }
 
@@ -399,7 +399,7 @@ Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src) {
 static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->StopThread(Thread);
 
-  LogMan::Msg::A("unreachable");
+  LOGMAN_MSG_A("unreachable");
   __builtin_unreachable();
 }
 
@@ -407,7 +407,7 @@ static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
 static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->SignalThread(Thread, FEXCore::Core::SIGNALEVENT_RETURN);
 
-  LogMan::Msg::A("unreachable");
+  LOGMAN_MSG_A("unreachable");
   __builtin_unreachable();
 }
 
@@ -711,7 +711,7 @@ struct OpHandlers<IR::OP_F80LOADFCW> {
       case 0: extF80_roundingPrecision = 32; break;
       case 2: extF80_roundingPrecision = 64; break;
       case 3: extF80_roundingPrecision = 80; break;
-      case 1: LogMan::Msg::A("Invalid x87 precision mode, %d", PC);
+      case 1: LOGMAN_MSG_A("Invalid x87 precision mode, %d", PC);
     }
 
     auto RC = (NewFCW >> 10) & 3;
@@ -959,7 +959,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
     using namespace FEXCore::IR;
     auto [BlockNode, BlockHeader] = BlockIterator();
     auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
-    LogMan::Throw::A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+    LOGMAN_THROW_A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     // We grab these nodes this way so we can iterate easily
     auto CodeBegin = CurrentIR->at(BlockIROp->Begin);
@@ -1009,7 +1009,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               case IR::Fence_Store.Val:
                 std::atomic_thread_fence(std::memory_order_release);
                 break;
-              default: LogMan::Msg::A("Unknown Fence: %d", Op->Fence); break;
+              default: LOGMAN_MSG_A("Unknown Fence: %d", Op->Fence); break;
             }
             break;
           }
@@ -1061,7 +1061,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               case 4: // HLT
                 StopThread(Thread);
               break;
-            default: LogMan::Msg::A("Unknown Break Reason: %d", Op->Reason); break;
+            default: LOGMAN_MSG_A("Unknown Break Reason: %d", Op->Reason); break;
             }
             break;
           }
@@ -1118,7 +1118,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               LogMan::Msg::I("     Value[1] in Arg: 0x%lx, %ld", Src1, Src1);
             }
             else
-              LogMan::Msg::A("Unknown value size: %d", OpSize);
+              LOGMAN_MSG_A("Unknown value size: %d", OpSize);
             break;
           }
           case IR::OP_CYCLECOUNTER: {
@@ -1150,7 +1150,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             auto Op = IROp->C<IR::IROp_VExtractToGPR>();
             uint32_t SourceSize = GetOpSize(Op->Header.Args[0]);
 
-            LogMan::Throw::A(OpSize <= 16, "OpSize is too large for VExtractToGPR: %d", OpSize);
+            LOGMAN_THROW_A(OpSize <= 16, "OpSize is too large for VExtractToGPR: %d", OpSize);
 
             if (SourceSize == 16) {
               __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
@@ -1179,7 +1179,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
           case IR::OP_VEXTRACTELEMENT: {
             auto Op = IROp->C<IR::IROp_VExtractElement>();
             uint32_t SourceSize = GetOpSize(Op->Header.Args[0]);
-            LogMan::Throw::A(OpSize <= 16, "OpSize is too large for VExtractToGPR: %d", OpSize);
+            LOGMAN_THROW_A(OpSize <= 16, "OpSize is too large for VExtractToGPR: %d", OpSize);
             if (SourceSize == 16) {
               __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
               uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
@@ -1240,7 +1240,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, Data, OpSize);
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled LoadContext size: %d", OpSize);
+              default:  LOGMAN_MSG_A("Unhandled LoadContext size: %d", OpSize);
             }
             #undef LOAD_CTX
             break;
@@ -1270,7 +1270,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, Data, Op->Size);
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled LoadContextIndexed size: %d", Op->Size);
             }
             #undef LOAD_CTX
             break;
@@ -1344,7 +1344,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, Result ? &Src1 : &Expected, 16);
                 break;
               }
-              default: LogMan::Msg::A("Unknown CAS size: %d", Size); break;
+              default: LOGMAN_MSG_A("Unknown CAS size: %d", Size); break;
             }
             break;
           }
@@ -1360,7 +1360,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Result;
                 break;
               }
-              default: LogMan::Msg::A("Unhandled Truncation size: %d", Op->Size); break;
+              default: LOGMAN_MSG_A("Unhandled Truncation size: %d", Op->Size); break;
             }
             break;
           }
@@ -1445,7 +1445,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               STORE_DATA(2, uint16_t)
               STORE_DATA(4, uint32_t)
               STORE_DATA(8, uint64_t)
-              default: LogMan::Msg::A("Unhandled StoreMem size"); break;
+              default: LOGMAN_MSG_A("Unhandled StoreMem size"); break;
             }
             #undef STORE_DATA
             break;
@@ -1468,7 +1468,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (OpSize) {
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Size: %d", OpSize); break;
             }
             break;
           }
@@ -1481,7 +1481,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (OpSize) {
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Size: %d", OpSize); break;
             }
             break;
           }
@@ -1495,7 +1495,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               case 8:
                 GD = -static_cast<int64_t>(Src);
                 break;
-              default: LogMan::Msg::A("Unknown NEG Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown NEG Size: %d\n", OpSize); break;
             };
             break;
           }
@@ -1511,7 +1511,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
               DO_OP(16, __uint128_t, Func)
-              default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Size: %d", OpSize); break;
             }
             break;
           }
@@ -1526,7 +1526,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_OP(2, uint16_t, Func)
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Size: %d", OpSize); break;
             }
             break;
           }
@@ -1541,7 +1541,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_OP(2, uint16_t, Func)
               DO_OP(4, uint32_t, Func)
               DO_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Size: %d", OpSize); break;
             }
             break;
           }
@@ -1557,7 +1557,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               case 8:
                 GD = static_cast<int64_t>(Src1) << (Src2 & Mask);
                 break;
-              default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown LSHL Size: %d\n", OpSize); break;
             };
             break;
           }
@@ -1573,7 +1573,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               case 8:
                 GD = static_cast<uint64_t>(Src1) >> (Src2 & Mask);
                 break;
-              default: LogMan::Msg::A("Unknown LSHR Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown LSHR Size: %d\n", OpSize); break;
             };
             break;
           }
@@ -1589,7 +1589,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               case 8:
                 GD = (uint64_t)(static_cast<int64_t>(Src1) >> (Src2 & Mask));
                 break;
-              default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown ASHR Size: %d\n", OpSize); break;
             };
             break;
           }
@@ -1611,7 +1611,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Ror(static_cast<uint64_t>(Src1), static_cast<uint64_t>(Src2));
                 break;
               }
-              default: LogMan::Msg::A("Unknown ROR Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown ROR Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1636,7 +1636,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Extr(static_cast<uint64_t>(Src1), static_cast<uint64_t>(Src2), Op->LSB);
                 break;
               }
-              default: LogMan::Msg::A("Unknown EXTR Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown EXTR Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1665,7 +1665,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Tmp, 16);
                 break;
               }
-              default: LogMan::Msg::A("Unknown Mul Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Mul Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1685,7 +1685,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Tmp >> 64;
               }
               break;
-              default: LogMan::Msg::A("Unknown MulH Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown MulH Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1706,7 +1706,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Tmp, 16);
                 break;
               }
-              default: LogMan::Msg::A("Unknown UMul Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown UMul Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1730,7 +1730,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Tmp >> 64;
                 break;
               }
-              default: LogMan::Msg::A("Unknown UMulH Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown UMulH Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1757,7 +1757,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Tmp, 16);
                 break;
               }
-              default: LogMan::Msg::A("Unknown Mul Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Mul Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1784,7 +1784,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Tmp, 16);
                 break;
               }
-              default: LogMan::Msg::A("Unknown Mul Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Mul Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1811,7 +1811,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Tmp, 16);
                 break;
               }
-              default: LogMan::Msg::A("Unknown Mul Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Mul Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1838,7 +1838,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Tmp, 16);
                 break;
               }
-              default: LogMan::Msg::A("Unknown Mul Size: %d\n", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown Mul Size: %d\n", OpSize); break;
             }
             break;
           }
@@ -1862,7 +1862,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               case 2: GD = ((16 + OpSize * 8) - __builtin_clz(*GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
               case 4: GD = (OpSize * 8 - __builtin_clz(*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
               case 8: GD = (OpSize * 8 - __builtin_clzll(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
-              default: LogMan::Msg::A("Unknown REV size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown REV size: %d", OpSize); break;
             }
             break;
           }
@@ -1872,7 +1872,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               case 2: GD = __builtin_bswap16(*GetSrc<uint16_t*>(SSAData, Op->Header.Args[0])); break;
               case 4: GD = __builtin_bswap32(*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0])); break;
               case 8: GD = __builtin_bswap64(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0])); break;
-              default: LogMan::Msg::A("Unknown REV size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown REV size: %d", OpSize); break;
             }
             break;
           }
@@ -1911,7 +1911,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                   GD = sizeof(Src) * 8;
                 break;
               }
-              default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;
             }
             break;
           }
@@ -1952,7 +1952,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                   GD = sizeof(Src) * 8;
                 break;
               }
-              default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;
             }
             break;
           }
@@ -1970,7 +1970,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
           }
           case IR::OP_SBFE: {
             auto Op = IROp->C<IR::IROp_Sbfe>();
-            LogMan::Throw::A(OpSize < 16, "OpSize is too large for BFE: %d", OpSize);
+            LOGMAN_THROW_A(OpSize < 16, "OpSize is too large for BFE: %d", OpSize);
             int64_t Src = *GetSrc<int64_t*>(SSAData, Op->Header.Args[0]);
             uint64_t ShiftLeftAmount = (64 - (Op->Width + Op->lsb));
             uint64_t ShiftRightAmount = ShiftLeftAmount + Op->lsb;
@@ -1981,7 +1981,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
           }
           case IR::OP_BFE: {
             auto Op = IROp->C<IR::IROp_Bfe>();
-            LogMan::Throw::A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
+            LOGMAN_THROW_A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
             uint64_t SourceMask = (1ULL << Op->Width) - 1;
             if (Op->Width == 64)
               SourceMask = ~0ULL;
@@ -2064,7 +2064,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Result ? Src1 : Expected;
                 break;
               }
-              default: LogMan::Msg::A("Unknown CAS size: %d", Size); break;
+              default: LOGMAN_MSG_A("Unknown CAS size: %d", Size); break;
             }
             break;
           }
@@ -2095,7 +2095,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 *Data += Src;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2126,7 +2126,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 *Data -= Src;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2157,7 +2157,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 *Data &= Src;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2188,7 +2188,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 *Data |= Src;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2219,7 +2219,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 *Data ^= Src;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2254,7 +2254,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Previous;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2289,7 +2289,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Previous;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2324,7 +2324,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Previous;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2359,7 +2359,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Previous;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2394,7 +2394,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Previous;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
@@ -2429,14 +2429,14 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 GD = Previous;
                 break;
               }
-              default:  LogMan::Msg::A("Unhandled Atomic size: %d", Op->Size);
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
             }
             break;
           }
           // Vector ops
           case IR::OP_CREATEVECTOR2: {
             auto Op = IROp->C<IR::IROp_CreateVector2>();
-            LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+            LOGMAN_THROW_A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
             void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
             void *Src2 = GetSrc<void*>(SSAData, Op->Header.Args[1]);
             uint8_t Tmp[16];
@@ -2455,7 +2455,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               CREATE_VECTOR(2, uint16_t)
               CREATE_VECTOR(4, uint32_t)
               CREATE_VECTOR(8, uint64_t)
-              default: LogMan::Msg::A("Unknown Element Size: %d", ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", ElementSize); break;
             }
             #undef CREATE_VECTOR
             memcpy(GDP, Tmp, OpSize);
@@ -2465,7 +2465,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
           case IR::OP_SPLATVECTOR4:
           case IR::OP_SPLATVECTOR2: {
             auto Op = IROp->C<IR::IROp_SplatVector2>();
-            LogMan::Throw::A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+            LOGMAN_THROW_A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
             void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
             uint8_t Tmp[16];
             uint8_t Elements = 0;
@@ -2473,7 +2473,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.Op) {
               case IR::OP_SPLATVECTOR4: Elements = 4; break;
               case IR::OP_SPLATVECTOR2: Elements = 2; break;
-              default: LogMan::Msg::A("Uknown Splat size"); break;
+              default: LOGMAN_MSG_A("Uknown Splat size"); break;
             }
 
             #define CREATE_VECTOR(elementsize, type) \
@@ -2490,7 +2490,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               CREATE_VECTOR(2, uint16_t)
               CREATE_VECTOR(4, uint32_t)
               CREATE_VECTOR(8, uint64_t)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.Size); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.Size); break;
             }
             #undef CREATE_VECTOR
             memcpy(GDP, Tmp, OpSize);
@@ -2639,7 +2639,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_0SRC_OP(2, int16_t, Func)
               DO_VECTOR_0SRC_OP(4, int32_t, Func)
               DO_VECTOR_0SRC_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2657,7 +2657,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_OP(2, int16_t, Func)
               DO_VECTOR_1SRC_OP(4, int32_t, Func)
               DO_VECTOR_1SRC_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2673,7 +2673,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_OP(4, float, Func)
               DO_VECTOR_1SRC_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2692,7 +2692,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_OP(2, uint16_t, Func)
               DO_VECTOR_1SRC_OP(4, uint32_t, Func)
               DO_VECTOR_1SRC_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2711,7 +2711,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_OP(2, int16_t, Func)
               DO_VECTOR_1SRC_OP(4, int32_t, Func)
               DO_VECTOR_1SRC_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2730,7 +2730,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_OP(2, uint16_t, Func)
               DO_VECTOR_1SRC_OP(4, uint32_t, Func)
               DO_VECTOR_1SRC_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2750,7 +2750,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2769,7 +2769,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2791,7 +2791,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2813,7 +2813,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2845,7 +2845,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t, Func)
               DO_VECTOR_OP(4, int32_t, Func)
               DO_VECTOR_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2873,7 +2873,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t, Func)
               DO_VECTOR_OP(4, int32_t, Func)
               DO_VECTOR_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2891,7 +2891,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_OP(4, float, Func)
               DO_VECTOR_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2908,7 +2908,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_PAIR_OP(4, float, Func)
               DO_VECTOR_PAIR_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2925,7 +2925,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_OP(4, float, Func)
               DO_VECTOR_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2944,7 +2944,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_PAIR_OP(2, uint16_t, Func)
               DO_VECTOR_PAIR_OP(4, uint32_t, Func)
               DO_VECTOR_PAIR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2962,7 +2962,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_REDUCE_1SRC_OP(2, int16_t, Func, 0)
               DO_VECTOR_REDUCE_1SRC_OP(4, int32_t, Func, 0)
               DO_VECTOR_REDUCE_1SRC_OP(8, int64_t, Func, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, Op->Header.ElementSize);
             break;
@@ -2979,7 +2979,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_OP(1, uint8_t,  Func)
               DO_VECTOR_OP(2, uint16_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -2997,7 +2997,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_OP(2, int16_t, Func)
               DO_VECTOR_1SRC_OP(4, int32_t, Func)
               DO_VECTOR_1SRC_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3014,7 +3014,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_OP(4, float, Func)
               DO_VECTOR_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3031,7 +3031,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_OP(4, float, Func)
               DO_VECTOR_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3048,7 +3048,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_OP(4, float, Func)
               DO_VECTOR_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3065,7 +3065,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_OP(4, float, Func)
               DO_VECTOR_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3081,7 +3081,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_OP(4, float, Func)
               DO_VECTOR_1SRC_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3097,7 +3097,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_OP(4, float, Func)
               DO_VECTOR_1SRC_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3113,7 +3113,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_OP(4, float, Func)
               DO_VECTOR_1SRC_OP(8, double, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3181,7 +3181,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_2TYPE_OP(1, uint8_t, uint16_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, uint32_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, uint64_t, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3200,7 +3200,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_2TYPE_OP_TOP(1, uint8_t, uint16_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP_TOP(2, uint16_t, uint32_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP_TOP(4, uint32_t, uint64_t, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3216,7 +3216,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(1, int8_t, int16_t, Func, std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max())
               DO_VECTOR_1SRC_2TYPE_OP(2, int16_t, int32_t, Func, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max())
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3233,7 +3233,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP_TOP(1, int8_t, int16_t, Func, std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max())
               DO_VECTOR_1SRC_2TYPE_OP_TOP(2, int16_t, int32_t, Func, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max())
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3249,7 +3249,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(1, uint8_t, int16_t, Func, 0, (1 << 8) - 1)
               DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, int32_t, Func, 0, (1 << 16) - 1)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3266,7 +3266,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP_TOP(1, uint8_t, int16_t, Func, 0, (1 << 8) - 1)
               DO_VECTOR_1SRC_2TYPE_OP_TOP(2, uint16_t, int32_t, Func, 0, (1 << 16) - 1)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3282,7 +3282,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(4, float, uint32_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, double, uint64_t, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3298,7 +3298,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(4, float, int32_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, double, int64_t, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3314,7 +3314,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, float, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, uint64_t, double, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3330,7 +3330,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, float, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, int64_t, double, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3346,7 +3346,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, float, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, uint64_t, double, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3362,7 +3362,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, float, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, int64_t, double, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3381,7 +3381,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3400,7 +3400,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t, Func)
               DO_VECTOR_OP(4, int32_t, Func)
               DO_VECTOR_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3419,7 +3419,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_2SRC_2TYPE_OP(2, uint16_t, uint8_t, Func)
               DO_VECTOR_2SRC_2TYPE_OP(4, uint32_t, uint16_t, Func)
               DO_VECTOR_2SRC_2TYPE_OP(8, uint64_t, uint32_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3438,7 +3438,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_2SRC_2TYPE_OP(2, int16_t, int8_t, Func)
               DO_VECTOR_2SRC_2TYPE_OP(4, int32_t, int16_t, Func)
               DO_VECTOR_2SRC_2TYPE_OP(8, int64_t, int32_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3457,7 +3457,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(2, uint16_t, uint8_t, Func)
               DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(4, uint32_t, uint16_t, Func)
               DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(8, uint64_t, uint32_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3476,7 +3476,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(2, int16_t, int8_t, Func)
               DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(4, int32_t, int16_t, Func)
               DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(8, int64_t, int32_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, Op->Header.Size);
             break;
@@ -3493,7 +3493,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_2TYPE_OP(2, int16_t, int8_t, Func,  0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, int16_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, int64_t, int32_t, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3510,7 +3510,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(2, int16_t, int8_t, Func,  0, 0)
               DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(4, int32_t, int16_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(8, int64_t, int32_t, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3527,7 +3527,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, uint8_t, Func,  0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, uint16_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, uint64_t, uint32_t, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3545,7 +3545,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(2, uint16_t, uint8_t, Func,  0, 0)
               DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(4, uint32_t, uint16_t, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(8, uint64_t, uint32_t, Func, 0, 0)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3564,7 +3564,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3583,7 +3583,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t, Func)
               DO_VECTOR_OP(4, int32_t, Func)
               DO_VECTOR_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3602,7 +3602,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3621,7 +3621,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t, Func)
               DO_VECTOR_OP(4, int32_t, Func)
               DO_VECTOR_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3640,7 +3640,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3659,7 +3659,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t, Func)
               DO_VECTOR_OP(4, int32_t, Func)
               DO_VECTOR_OP(8, int64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3680,7 +3680,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_SCALAR_OP(4, uint32_t, Func)
               DO_VECTOR_SCALAR_OP(8, uint64_t, Func)
               DO_VECTOR_SCALAR_OP(16, __uint128_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3700,7 +3700,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_SCALAR_OP(4, uint32_t, Func)
               DO_VECTOR_SCALAR_OP(8, uint64_t, Func)
               DO_VECTOR_SCALAR_OP(16, __uint128_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3720,7 +3720,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_SCALAR_OP(4, int32_t, Func)
               DO_VECTOR_SCALAR_OP(8, int64_t, Func)
               DO_VECTOR_SCALAR_OP(16, __int128_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3739,7 +3739,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t, Func)
               DO_VECTOR_OP(4, uint32_t, Func)
               DO_VECTOR_OP(8, uint64_t, Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3795,7 +3795,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 }
                 break;
               }
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
 
             memcpy(GDP, Tmp, OpSize);
@@ -3834,7 +3834,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
                 break;
               }
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             };
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3872,7 +3872,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 Dst_d[Op->DestIdx] = Src2_d;
                 break;
               }
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             };
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -3905,7 +3905,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t,  Func)
               DO_VECTOR_OP(4, uint32_t,  Func)
               DO_VECTOR_OP(8, uint64_t,  Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
 
             memcpy(GDP, Tmp, OpSize);
@@ -3925,7 +3925,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, uint16_t,  Func)
               DO_VECTOR_OP(4, uint32_t,  Func)
               DO_VECTOR_OP(8, uint64_t,  Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
 
             memcpy(GDP, Tmp, OpSize);
@@ -3945,7 +3945,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t,  Func)
               DO_VECTOR_OP(4, int32_t,  Func)
               DO_VECTOR_OP(8, int64_t,  Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
 
             memcpy(GDP, Tmp, OpSize);
@@ -3965,7 +3965,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t,  Func)
               DO_VECTOR_OP(4, int32_t,  Func)
               DO_VECTOR_OP(8, int64_t,  Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
 
             memcpy(GDP, Tmp, OpSize);
@@ -3985,7 +3985,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_OP(2, int16_t,  Func)
               DO_VECTOR_OP(4, int32_t,  Func)
               DO_VECTOR_OP(8, int64_t,  Func)
-              default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
 
             memcpy(GDP, Tmp, OpSize);
@@ -4029,7 +4029,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Res, OpSize);
                 break;
               }
-              default: LogMan::Msg::A("Unknown LUDIV Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown LUDIV Size: %d", OpSize); break;
             }
             break;
           }
@@ -4071,7 +4071,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Res, OpSize);
                 break;
               }
-              default: LogMan::Msg::A("Unknown LDIV Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown LDIV Size: %d", OpSize); break;
             }
             break;
           }
@@ -4113,7 +4113,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Res, OpSize);
                 break;
               }
-              default: LogMan::Msg::A("Unknown LUREM Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown LUREM Size: %d", OpSize); break;
             }
             break;
           }
@@ -4154,7 +4154,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Res, OpSize);
                 break;
               }
-              default: LogMan::Msg::A("Unknown LREM Size: %d", OpSize); break;
+              default: LOGMAN_MSG_A("Unknown LREM Size: %d", OpSize); break;
             }
             break;
           }
@@ -4308,7 +4308,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 memcpy(GDP, &Dst, 4);
                 break;
               }
-              default: LogMan::Msg::A("Unknown FCVT sizes: 0x%x", Conv);
+              default: LOGMAN_MSG_A("Unknown FCVT sizes: 0x%x", Conv);
             }
             break;
           }
@@ -4337,7 +4337,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
 
                 break;
               }
-              default: LogMan::Msg::A("Unknown Conversion Type : 0%04x", Conv); break;
+              default: LOGMAN_MSG_A("Unknown Conversion Type : 0%04x", Conv); break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
@@ -4443,14 +4443,14 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               switch (Op->Header.ElementSize) {
               DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
               DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
             else {
               switch (Op->Header.ElementSize) {
               DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
               DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
 
@@ -4471,14 +4471,14 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               switch (Op->Header.ElementSize) {
               DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
               DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
             else {
               switch (Op->Header.ElementSize) {
               DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
               DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
 
@@ -4499,14 +4499,14 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               switch (Op->Header.ElementSize) {
               DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
               DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
             else {
               switch (Op->Header.ElementSize) {
               DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
               DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
 
@@ -4527,14 +4527,14 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               switch (Op->Header.ElementSize) {
               DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
               DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
             else {
               switch (Op->Header.ElementSize) {
               DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
               DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
 
@@ -4555,14 +4555,14 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               switch (Op->Header.ElementSize) {
               DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
               DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
             else {
               switch (Op->Header.ElementSize) {
               DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
               DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
 
@@ -4583,14 +4583,14 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               switch (Op->Header.ElementSize) {
               DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
               DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
             else {
               switch (Op->Header.ElementSize) {
               DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
               DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
-              default: LogMan::Msg::A("Unsupported elementSize: %d", Op->Header.ElementSize);
+              default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
               }
             }
 
@@ -5134,7 +5134,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             break;
           }
           default:
-            LogMan::Msg::A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
+            LOGMAN_MSG_A("Unknown IR Op: %d(%s)", IROp->Op, FEXCore::IR::GetName(IROp->Op).data());
             break;
         }
 

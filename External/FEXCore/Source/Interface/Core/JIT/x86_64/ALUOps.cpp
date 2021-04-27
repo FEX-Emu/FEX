@@ -20,7 +20,7 @@ DEF_OP(TruncElementPair) {
       mov(Dst.second, Src.second);
       break;
     }
-    default: LogMan::Msg::A("Unhandled Truncation size: %d", Op->Size); break;
+    default: LOGMAN_MSG_A("Unhandled Truncation size: %d", Op->Size); break;
   }
 }
 
@@ -70,7 +70,7 @@ DEF_OP(Add) {
     case 8:
       add(rax, Const);
       break;
-    default:  LogMan::Msg::A("Unhandled Add size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled Add size: %d", OpSize);
       break;
     }
   } else {
@@ -81,7 +81,7 @@ DEF_OP(Add) {
     case 8:
       add(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LogMan::Msg::A("Unhandled Add size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled Add size: %d", OpSize);
       break;
     }
   }
@@ -103,7 +103,7 @@ DEF_OP(Sub) {
     case 8:
       sub(rax, Const);
       break;
-    default:  LogMan::Msg::A("Unhandled Sub size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled Sub size: %d", OpSize);
       break;
     }
   } else {
@@ -114,7 +114,7 @@ DEF_OP(Sub) {
     case 8:
       sub(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LogMan::Msg::A("Unhandled Sub size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled Sub size: %d", OpSize);
       break;
     }
   }
@@ -136,7 +136,7 @@ DEF_OP(Neg) {
     Src = GetSrc<RA_64>(Op->Header.Args[0].ID());
     Dst = GetDst<RA_64>(Node);
     break;
-  default:  LogMan::Msg::A("Unhandled Neg size: %d", OpSize);
+  default:  LOGMAN_MSG_A("Unhandled Neg size: %d", OpSize);
     break;
   }
   mov(Dst, Src);
@@ -160,7 +160,7 @@ DEF_OP(Mul) {
     imul(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
     mov(Dst, rax);
   break;
-  default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+  default: LOGMAN_MSG_A("Unknown Sext size: %d", OpSize);
   }
 }
 
@@ -179,7 +179,7 @@ DEF_OP(UMul) {
     mul(GetSrc<RA_64>(Op->Header.Args[1].ID()));
     mov(GetDst<RA_64>(Node), rax);
   break;
-  default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+  default: LOGMAN_MSG_A("Unknown Sext size: %d", OpSize);
   }
 }
 
@@ -218,7 +218,7 @@ DEF_OP(Div) {
     mov(GetDst<RA_64>(Node), rax);
   break;
   }
-  default: LogMan::Msg::A("Unknown UDIV Size: %d", Size); break;
+  default: LOGMAN_MSG_A("Unknown UDIV Size: %d", Size); break;
   }
 }
 
@@ -261,7 +261,7 @@ DEF_OP(UDiv) {
     mov(GetDst<RA_64>(Node), rax);
   break;
   }
-  default: LogMan::Msg::A("Unknown UDIV OpSize: %d", OpSize); break;
+  default: LOGMAN_MSG_A("Unknown UDIV OpSize: %d", OpSize); break;
   }
 }
 
@@ -298,7 +298,7 @@ DEF_OP(Rem) {
     mov(GetDst<RA_64>(Node), rdx);
   break;
   }
-  default: LogMan::Msg::A("Unknown UDIV Size: %d", OpSize); break;
+  default: LOGMAN_MSG_A("Unknown UDIV Size: %d", OpSize); break;
   }
 }
 
@@ -341,7 +341,7 @@ DEF_OP(URem) {
     mov(GetDst<RA_64>(Node), rdx);
   break;
   }
-  default: LogMan::Msg::A("Unknown UDIV OpSize: %d", OpSize); break;
+  default: LOGMAN_MSG_A("Unknown UDIV OpSize: %d", OpSize); break;
   }
 }
 
@@ -360,7 +360,7 @@ DEF_OP(MulH) {
     imul(GetSrc<RA_64>(Op->Header.Args[1].ID()));
     mov(GetDst<RA_64>(Node), rdx);
   break;
-  default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+  default: LOGMAN_MSG_A("Unknown Sext size: %d", OpSize);
   }
 }
 
@@ -379,7 +379,7 @@ DEF_OP(UMulH) {
     mul(GetSrc<RA_64>(Op->Header.Args[1].ID()));
     mov(GetDst<RA_64>(Node), rdx);
   break;
-  default: LogMan::Msg::A("Unknown Sext size: %d", OpSize);
+  default: LOGMAN_MSG_A("Unknown Sext size: %d", OpSize);
   }
 }
 
@@ -441,7 +441,7 @@ DEF_OP(Lshl) {
         mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
         shl(GetDst<RA_64>(Node), Const);
         break;
-      default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
+      default: LOGMAN_MSG_A("Unknown LSHL Size: %d\n", OpSize); break;
     };
   } else {
     mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
@@ -456,7 +456,7 @@ DEF_OP(Lshl) {
         mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
         shl(GetDst<RA_64>(Node), cl);
         break;
-      default: LogMan::Msg::A("Unknown LSHL Size: %d\n", OpSize); break;
+      default: LOGMAN_MSG_A("Unknown LSHL Size: %d\n", OpSize); break;
     };
   }
 }
@@ -488,7 +488,7 @@ DEF_OP(Lshr) {
         mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
         shr(GetDst<RA_64>(Node), Const);
         break;
-      default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
+      default: LOGMAN_MSG_A("Unknown Size: %d\n", OpSize); break;
     };
 
   } else {
@@ -512,7 +512,7 @@ DEF_OP(Lshr) {
         mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
         shr(GetDst<RA_64>(Node), cl);
         break;
-      default: LogMan::Msg::A("Unknown Size: %d\n", OpSize); break;
+      default: LOGMAN_MSG_A("Unknown Size: %d\n", OpSize); break;
     };
   }
 }
@@ -546,7 +546,7 @@ DEF_OP(Ashr) {
       mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
       sar(GetDst<RA_64>(Node), Const);
     break;
-    default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
+    default: LOGMAN_MSG_A("Unknown ASHR Size: %d\n", OpSize); break;
     };
 
   } else {
@@ -571,7 +571,7 @@ DEF_OP(Ashr) {
       mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
       sar(GetDst<RA_64>(Node), cl);
     break;
-    default: LogMan::Msg::A("Unknown ASHR Size: %d\n", OpSize); break;
+    default: LOGMAN_MSG_A("Unknown ASHR Size: %d\n", OpSize); break;
     };
   }
 }
@@ -596,7 +596,7 @@ DEF_OP(Ror) {
         ror(rax, Const);
       break;
       }
-      default: LogMan::Msg::A("Unknown ROR Size: %d\n", OpSize); break;
+      default: LOGMAN_MSG_A("Unknown ROR Size: %d\n", OpSize); break;
     }
   } else {
     mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
@@ -612,7 +612,7 @@ DEF_OP(Ror) {
         ror(rax, cl);
       break;
       }
-      default: LogMan::Msg::A("Unknown ROR Size: %d\n", OpSize); break;
+      default: LOGMAN_MSG_A("Unknown ROR Size: %d\n", OpSize); break;
     }
   }
   mov(GetDst<RA_64>(Node), rax);
@@ -668,7 +668,7 @@ DEF_OP(LDiv) {
       mov(GetDst<RA_64>(Node), rax);
       break;
     }
-    default: LogMan::Msg::A("Unknown LDIV OpSize: %d", OpSize); break;
+    default: LOGMAN_MSG_A("Unknown LDIV OpSize: %d", OpSize); break;
   }
 }
 
@@ -700,7 +700,7 @@ DEF_OP(LUDiv) {
       mov(GetDst<RA_64>(Node), rax);
       break;
     }
-    default: LogMan::Msg::A("Unknown LUDIV OpSize: %d", OpSize); break;
+    default: LOGMAN_MSG_A("Unknown LUDIV OpSize: %d", OpSize); break;
   }
 }
 
@@ -732,7 +732,7 @@ DEF_OP(LRem) {
       mov(GetDst<RA_64>(Node), rdx);
       break;
     }
-    default: LogMan::Msg::A("Unknown LREM OpSize: %d", OpSize); break;
+    default: LOGMAN_MSG_A("Unknown LREM OpSize: %d", OpSize); break;
   }
 }
 
@@ -764,7 +764,7 @@ DEF_OP(LURem) {
       mov(GetDst<RA_64>(Node), rdx);
       break;
     }
-    default: LogMan::Msg::A("Unknown LUDIV OpSize: %d", OpSize); break;
+    default: LOGMAN_MSG_A("Unknown LUDIV OpSize: %d", OpSize); break;
   }
 }
 
@@ -829,7 +829,7 @@ DEF_OP(FindMSB) {
     case 8:
       bsr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
       break;
-    default: LogMan::Msg::A("Unknown OpSize: %d", OpSize);
+    default: LOGMAN_MSG_A("Unknown OpSize: %d", OpSize);
   }
 }
 
@@ -853,7 +853,7 @@ DEF_OP(FindTrailingZeros) {
       mov(rax, 0x40);
       cmovz(GetDst<RA_64>(Node), rax);
       break;
-    default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+    default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;
   }
 }
 
@@ -876,7 +876,7 @@ DEF_OP(CountLeadingZeroes) {
         lzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
         break;
       }
-      default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+      default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;
     }
   }
   else {
@@ -915,7 +915,7 @@ DEF_OP(CountLeadingZeroes) {
         mov(GetDst<RA_64>(Node), rax);
         break;
       }
-      default: LogMan::Msg::A("Unknown size: %d", OpSize); break;
+      default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;
     }
   }
 }
@@ -937,7 +937,7 @@ DEF_OP(Rev) {
       mov (GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
       bswap(GetDst<RA_64>(Node).cvt64());
       break;
-    default: LogMan::Msg::A("Unknown REV size: %d", OpSize); break;
+    default: LOGMAN_MSG_A("Unknown REV size: %d", OpSize); break;
   }
 }
 
@@ -972,7 +972,7 @@ DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
   uint8_t OpSize = IROp->Size;
 
-  LogMan::Throw::A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
+  LOGMAN_THROW_A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
 
   auto Dst = GetDst<RA_64>(Node);
 
@@ -1073,7 +1073,7 @@ DEF_OP(Select) {
 
   if (is_const_true || is_const_false) {
     if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
-      LogMan::Msg::A("Select: Unsupported compare inline parameters");
+      LOGMAN_MSG_A("Select: Unsupported compare inline parameters");
     }
     (this->*SetCC)(al);
     movzx(Dst, al);
@@ -1104,7 +1104,7 @@ DEF_OP(VExtractToGPR) {
       pextrq(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
     break;
     }
-    default: LogMan::Msg::A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
 }
 

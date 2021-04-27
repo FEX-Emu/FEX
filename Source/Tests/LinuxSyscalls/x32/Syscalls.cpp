@@ -358,7 +358,7 @@ uint64_t MemAllocator::shmat(int shmid, const void* shmaddr, int shmflg, uint32_
       uint32_t SmallRet = Result >> 32;
       if (!(SmallRet == 0 ||
             SmallRet == ~0U)) {
-        LogMan::Msg::A("Syscall returning something with data in the upper 32bits! BUG!");
+        LOGMAN_MSG_A("Syscall returning something with data in the upper 32bits! BUG!");
         return -ENOMEM;
       }
 
@@ -590,7 +590,7 @@ uint64_t MemAllocator::shmdt(const void* shmaddr) {
       auto SyscallNumber = Syscall.SyscallNumber;
       auto Name = GetSyscallName(SyscallNumber);
       auto &Def = Definitions.at(SyscallNumber);
-      LogMan::Throw::A(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, %d, %s", SyscallNumber, Name);
+      LOGMAN_THROW_A(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, %d, %s", SyscallNumber, Name);
       Def.Ptr = Syscall.SyscallHandler;
       Def.NumArgs = Syscall.ArgumentCount;
 #ifdef DEBUG_STRACE

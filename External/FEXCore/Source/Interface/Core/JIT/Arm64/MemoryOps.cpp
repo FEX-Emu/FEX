@@ -29,7 +29,7 @@ DEF_OP(LoadContext) {
     case 8:
       ldr(GetReg<RA_64>(Node), MemOperand(STATE, Op->Offset));
     break;
-    default:  LogMan::Msg::A("Unhandled LoadContext size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled LoadContext size: %d", OpSize);
     }
   }
   else {
@@ -50,7 +50,7 @@ DEF_OP(LoadContext) {
     case 16:
       ldr(Dst, MemOperand(STATE, Op->Offset));
     break;
-    default:  LogMan::Msg::A("Unhandled LoadContext size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled LoadContext size: %d", OpSize);
     }
   }
 }
@@ -72,7 +72,7 @@ DEF_OP(StoreContext) {
     case 8:
       str(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
     break;
-    default:  LogMan::Msg::A("Unhandled StoreContext size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled StoreContext size: %d", OpSize);
     }
   }
   else {
@@ -93,7 +93,7 @@ DEF_OP(StoreContext) {
     case 16:
       str(Src, MemOperand(STATE, Op->Offset));
     break;
-    default:  LogMan::Msg::A("Unhandled LoadContext size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled LoadContext size: %d", OpSize);
     }
   }
 }
@@ -106,29 +106,29 @@ DEF_OP(LoadRegister) {
     auto regId = (Op->Offset - offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0])) / 8;
     auto regOffs = Op->Offset & 7;
 
-    LogMan::Throw::A(regId < SRA64.size(), "out of range regId");
+    LOGMAN_THROW_A(regId < SRA64.size(), "out of range regId");
 
     auto reg = SRA64[regId];
 
     switch(Op->Header.Size) {
       case 1:
-        LogMan::Throw::A(regOffs == 0 || regOffs == 1, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0 || regOffs == 1, "unexpected regOffs");
         ubfx(GetReg<RA_64>(Node), reg, regOffs * 8, 8);
         break;
 
       case 2:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         ubfx(GetReg<RA_64>(Node), reg, 0, 16);
         break;
 
       case 4:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Node).GetCode() != reg.GetCode())
           mov(GetReg<RA_32>(Node), reg.W());
         break;
 
       case 8:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Node).GetCode() != reg.GetCode())
           mov(GetReg<RA_64>(Node), reg);
         break;
@@ -137,24 +137,24 @@ DEF_OP(LoadRegister) {
     auto regId = (Op->Offset - offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0])) / 16;
     auto regOffs = Op->Offset & 15;
 
-    LogMan::Throw::A(regId < SRAFPR.size(), "out of range regId");
+    LOGMAN_THROW_A(regId < SRAFPR.size(), "out of range regId");
 
     auto guest = SRAFPR[regId];
     auto host = GetSrc(Node);
 
     switch(Op->Header.Size) {
       case 1:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         mov(host.B(), guest.B());
         break;
 
       case 2:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         fmov(host.H(), guest.H());
         break;
 
       case 4:
-        LogMan::Throw::A((regOffs & 3) == 0, "unexpected regOffs");
+        LOGMAN_THROW_A((regOffs & 3) == 0, "unexpected regOffs");
         if (regOffs == 0) {
           if (host.GetCode() != guest.GetCode())
             fmov(host.S(), guest.S());
@@ -164,7 +164,7 @@ DEF_OP(LoadRegister) {
         break;
 
       case 8:
-        LogMan::Throw::A((regOffs & 7) == 0, "unexpected regOffs");
+        LOGMAN_THROW_A((regOffs & 7) == 0, "unexpected regOffs");
         if (regOffs == 0) {
           if (host.GetCode() != guest.GetCode())
             mov(host.D(), guest.D());
@@ -174,13 +174,13 @@ DEF_OP(LoadRegister) {
         break;
 
       case 16:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         if (host.GetCode() != guest.GetCode())
           mov(host.Q(), guest.Q());
         break;
     }
   } else {
-    LogMan::Throw::A(false, "Unhandled Op->Class %d", Op->Class);
+    LOGMAN_THROW_A(false, "Unhandled Op->Class %d", Op->Class);
   }
 }
 
@@ -191,28 +191,28 @@ DEF_OP(StoreRegister) {
     auto regId = Op->Offset / 8 - 1;
     auto regOffs = Op->Offset & 7;
 
-    LogMan::Throw::A(regId < SRA64.size(), "out of range regId");
+    LOGMAN_THROW_A(regId < SRA64.size(), "out of range regId");
 
     auto reg = SRA64[regId];
 
     switch(Op->Header.Size) {
       case 1:
-        LogMan::Throw::A(regOffs == 0 || regOffs == 1, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0 || regOffs == 1, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), regOffs * 8, 8);
         break;
 
       case 2:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), 0, 16);
         break;
 
       case 4:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), 0, 32);
         break;
 
       case 8:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Op->Value.ID()).GetCode() != reg.GetCode())
           mov(reg, GetReg<RA_64>(Op->Value.ID()));
         break;
@@ -221,7 +221,7 @@ DEF_OP(StoreRegister) {
     auto regId = (Op->Offset - offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0])) / 16;
     auto regOffs = Op->Offset & 15;
 
-    LogMan::Throw::A(regId < SRAFPR.size(), "regId out of range");
+    LOGMAN_THROW_A(regId < SRAFPR.size(), "regId out of range");
 
     auto guest = SRAFPR[regId];
     auto host = GetSrc(Op->Value.ID());
@@ -232,28 +232,28 @@ DEF_OP(StoreRegister) {
         break;
 
       case 2:
-        LogMan::Throw::A((regOffs & 1) == 0, "unexpected regOffs");
+        LOGMAN_THROW_A((regOffs & 1) == 0, "unexpected regOffs");
         ins(guest.V8H(), regOffs/2, host.V8H(), 0);
         break;
 
       case 4:
-        LogMan::Throw::A((regOffs & 3) == 0, "unexpected regOffs");
+        LOGMAN_THROW_A((regOffs & 3) == 0, "unexpected regOffs");
         ins(guest.V4S(), regOffs/4, host.V4S(), 0);
         break;
 
       case 8:
-        LogMan::Throw::A((regOffs & 7) == 0, "unexpected regOffs");
+        LOGMAN_THROW_A((regOffs & 7) == 0, "unexpected regOffs");
         ins(guest.V2D(), regOffs / 8, host.V2D(), 0);
         break;
 
       case 16:
-        LogMan::Throw::A(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_A(regOffs == 0, "unexpected regOffs");
         if (guest.GetCode() != host.GetCode())
           mov(guest.Q(), host.Q());
         break;
     }
   } else {
-    LogMan::Throw::A(false, "Unhandled Op->Class %d", Op->Class);
+    LOGMAN_THROW_A(false, "Unhandled Op->Class %d", Op->Class);
   }
 }
 
@@ -287,15 +287,15 @@ DEF_OP(LoadContextIndexed) {
         ldr(GetReg<RA_64>(Node), MemOperand(TMP1, Op->BaseOffset));
         break;
       default:
-        LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+        LOGMAN_MSG_A("Unhandled LoadContextIndexed size: %d", Op->Size);
       }
       break;
     }
     case 16:
-      LogMan::Msg::A("Invalid Class load of size 16");
+      LOGMAN_MSG_A("Invalid Class load of size 16");
       break;
     default:
-      LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+      LOGMAN_MSG_A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
     }
   }
   else {
@@ -332,12 +332,12 @@ DEF_OP(LoadContextIndexed) {
         }
         break;
       default:
-        LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+        LOGMAN_MSG_A("Unhandled LoadContextIndexed size: %d", Op->Size);
       }
       break;
     }
     default:
-      LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+      LOGMAN_MSG_A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
     }
   }
 }
@@ -373,15 +373,15 @@ DEF_OP(StoreContextIndexed) {
         str(value, MemOperand(TMP1, Op->BaseOffset));
         break;
       default:
-        LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+        LOGMAN_MSG_A("Unhandled LoadContextIndexed size: %d", Op->Size);
       }
       break;
     }
     case 16:
-      LogMan::Msg::A("Invalid Class load of size 16");
+      LOGMAN_MSG_A("Invalid Class load of size 16");
       break;
     default:
-      LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+      LOGMAN_MSG_A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
     }
   }
   else {
@@ -420,12 +420,12 @@ DEF_OP(StoreContextIndexed) {
         }
         break;
       default:
-        LogMan::Msg::A("Unhandled LoadContextIndexed size: %d", Op->Size);
+        LOGMAN_MSG_A("Unhandled LoadContextIndexed size: %d", Op->Size);
       }
       break;
     }
     default:
-      LogMan::Msg::A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+      LOGMAN_MSG_A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
     }
   }
 }
@@ -453,7 +453,7 @@ DEF_OP(SpillRegister) {
       str(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
       break;
     }
-    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled SpillRegister size: %d", OpSize);
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
     switch (OpSize) {
@@ -469,10 +469,10 @@ DEF_OP(SpillRegister) {
       str(GetSrc(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
       break;
     }
-    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled SpillRegister size: %d", OpSize);
     }
   } else {
-    LogMan::Msg::A("Unhandled SpillRegister class: %d", Op->Class.Val);
+    LOGMAN_MSG_A("Unhandled SpillRegister class: %d", Op->Class.Val);
   }
 }
 
@@ -499,7 +499,7 @@ DEF_OP(FillRegister) {
       ldr(GetReg<RA_64>(Node), MemOperand(sp, SlotOffset));
       break;
     }
-    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled SpillRegister size: %d", OpSize);
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
     switch (OpSize) {
@@ -515,10 +515,10 @@ DEF_OP(FillRegister) {
       ldr(GetDst(Node), MemOperand(sp, SlotOffset));
       break;
     }
-    default:  LogMan::Msg::A("Unhandled SpillRegister size: %d", OpSize);
+    default:  LOGMAN_MSG_A("Unhandled SpillRegister size: %d", OpSize);
     }
   } else {
-    LogMan::Msg::A("Unhandled FillRegister class: %d", Op->Class.Val);
+    LOGMAN_MSG_A("Unhandled FillRegister class: %d", Op->Class.Val);
   }
 }
 
@@ -538,7 +538,7 @@ MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Registe
     return MemOperand(Base);
   } else {
     if (OffsetScale != 1 && OffsetScale != AccessSize) {
-        LogMan::Msg::A("Unhandled GenerateMemOperand OffsetScale: %d", OffsetScale);
+        LOGMAN_MSG_A("Unhandled GenerateMemOperand OffsetScale: %d", OffsetScale);
     }
     uint64_t Const;
     if (IsInlineConstant(Offset, &Const)) {
@@ -550,7 +550,7 @@ MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Registe
         case IR::MEM_OFFSET_UXTW.Val: return MemOperand(Base, RegOffset.W(), Extend::UXTW, (int)std::log2(OffsetScale) );
         case IR::MEM_OFFSET_SXTW.Val: return MemOperand(Base, RegOffset.W(), Extend::SXTW, (int)std::log2(OffsetScale) );
 
-        default: LogMan::Msg::A("Unhandled GenerateMemOperand OffsetType: %d", OffsetType.Val); break;
+        default: LOGMAN_MSG_A("Unhandled GenerateMemOperand OffsetType: %d", OffsetType.Val); break;
       }
     }
   }
@@ -578,7 +578,7 @@ DEF_OP(LoadMem) {
       case 8:
         ldr(Dst, MemSrc);
         break;
-      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
     }
   }
   else {
@@ -599,7 +599,7 @@ DEF_OP(LoadMem) {
       case 16:
         ldr(Dst, MemSrc);
         break;
-      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
     }
   }
 }
@@ -610,7 +610,7 @@ DEF_OP(LoadMemTSO) {
   auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
 
   if (!Op->Offset.IsInvalid()) {
-    LogMan::Msg::A("LoadMemTSO: No offset allowed");
+    LOGMAN_MSG_A("LoadMemTSO: No offset allowed");
   }
 
   if (SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
@@ -633,7 +633,7 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldapr(Dst, MemSrc);
           break;
-        default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+        default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
       }
       nop();
     }
@@ -658,7 +658,7 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldar(Dst, MemSrc);
           break;
-        default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+        default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
       }
       nop();
     }
@@ -679,7 +679,7 @@ DEF_OP(LoadMemTSO) {
       case 16:
         ldr(Dst, MemSrc);
         break;
-      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
     }
     dmb(InnerShareable, BarrierAll);
   }
@@ -706,7 +706,7 @@ DEF_OP(StoreMem) {
       case 8:
         str(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
         break;
-      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
     }
   }
   else {
@@ -727,7 +727,7 @@ DEF_OP(StoreMem) {
       case 16:
         str(Src, MemSrc);
         break;
-      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
     }
   }
 }
@@ -737,7 +737,7 @@ DEF_OP(StoreMemTSO) {
   auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
 
   if (!Op->Offset.IsInvalid()) {
-    LogMan::Msg::A("StoreMemTSO: No offset allowed");
+    LOGMAN_MSG_A("StoreMemTSO: No offset allowed");
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -757,7 +757,7 @@ DEF_OP(StoreMemTSO) {
         case 8:
           stlr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
-        default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+        default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
       }
       nop();
     }
@@ -781,7 +781,7 @@ DEF_OP(StoreMemTSO) {
       case 16:
         str(Src, MemSrc);
         break;
-      default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
     }
     dmb(InnerShareable, BarrierAll);
   }
@@ -793,7 +793,7 @@ DEF_OP(ParanoidLoadMemTSO) {
   auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
 
   if (!Op->Offset.IsInvalid()) {
-    LogMan::Msg::A("LoadMemTSO: No offset allowed");
+    LOGMAN_MSG_A("LoadMemTSO: No offset allowed");
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -815,7 +815,7 @@ DEF_OP(ParanoidLoadMemTSO) {
         case 8:
           ldar(Dst, MemSrc);
           break;
-        default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+        default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
       }
       nop();
     }
@@ -848,7 +848,7 @@ DEF_OP(ParanoidLoadMemTSO) {
         mov(Dst.V2D(), 0, TMP1);
         mov(Dst.V2D(), 1, TMP2);
         break;
-      default:  LogMan::Msg::A("Unhandled LoadMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
     }
   }
 }
@@ -858,7 +858,7 @@ DEF_OP(ParanoidStoreMemTSO) {
   auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
 
   if (!Op->Offset.IsInvalid()) {
-    LogMan::Msg::A("StoreMemTSO: No offset allowed");
+    LOGMAN_MSG_A("StoreMemTSO: No offset allowed");
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -878,7 +878,7 @@ DEF_OP(ParanoidStoreMemTSO) {
         case 8:
           stlr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
-        default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+        default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
       }
       nop();
     }
@@ -925,18 +925,18 @@ DEF_OP(ParanoidStoreMemTSO) {
           cbnz(TMP3, &B); // < Overwritten with DMB
           break;
         }
-        default:  LogMan::Msg::A("Unhandled StoreMem size: %d", Op->Size);
+        default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
       }
     }
   }
 }
 
 DEF_OP(VLoadMemElement) {
-  LogMan::Msg::A("Unimplemented");
+  LOGMAN_MSG_A("Unimplemented");
 }
 
 DEF_OP(VStoreMemElement) {
-  LogMan::Msg::A("Unimplemented");
+  LOGMAN_MSG_A("Unimplemented");
 }
 
 #undef DEF_OP

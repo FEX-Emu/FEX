@@ -108,10 +108,10 @@ def print_ir_sizes(ops, defines):
 
     output_file.write("[[maybe_unused]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
 
-    output_file.write("__attribute__((visibility(\"default\"))) std::string_view const& GetName(IROps Op);\n")
-    output_file.write("__attribute__((visibility(\"default\"))) uint8_t GetArgs(IROps Op);\n")
-    output_file.write("__attribute__((visibility(\"default\"))) FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
-    output_file.write("__attribute__((visibility(\"default\"))) bool HasSideEffects(IROps Op);\n")
+    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) std::string_view const& GetName(IROps Op);\n")
+    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) uint8_t GetArgs(IROps Op);\n")
+    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
+    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) bool HasSideEffects(IROps Op);\n")
 
     output_file.write("#undef IROP_SIZES\n")
     output_file.write("#endif\n\n")
@@ -308,7 +308,7 @@ def print_ir_allocator_helpers(ops, defines):
 
     output_file.write("\tuint8_t GetOpElements(OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(Data.Begin());\n")
-    output_file.write("\t\tLogMan::Throw::A(HeaderOp->HasDest, \"Op %s has no dest\\n\", GetName(HeaderOp->Op));\n")
+    output_file.write("\t\tLOGMAN_THROW_A(HeaderOp->HasDest, \"Op %s has no dest\\n\", GetName(HeaderOp->Op));\n")
     output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 

@@ -134,7 +134,7 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
   //PrintInitArray();
   //PrintDynamicTable();
 
-  //LogMan::Throw::A(InterpreterHeader == nullptr, "Can only handle static programs");
+  //LOGMAN_THROW_A(InterpreterHeader == nullptr, "Can only handle static programs");
 }
 
 ELFContainer::~ELFContainer() {
@@ -196,8 +196,8 @@ bool ELFContainer::LoadELF_32() {
 
   memcpy(&Header, reinterpret_cast<Elf32_Ehdr *>(&RawFile.at(0)),
          sizeof(Elf32_Ehdr));
-  LogMan::Throw::A(Header._32.e_phentsize == sizeof(Elf32_Phdr), "PH Entry size wasn't correct size");
-  LogMan::Throw::A(Header._32.e_shentsize == sizeof(Elf32_Shdr), "PH Entry size wasn't correct size");
+  LOGMAN_THROW_A(Header._32.e_phentsize == sizeof(Elf32_Phdr), "PH Entry size wasn't correct size");
+  LOGMAN_THROW_A(Header._32.e_shentsize == sizeof(Elf32_Shdr), "PH Entry size wasn't correct size");
 
   if (Header._32.e_machine != EM_386) {
     LogMan::Msg::D("32bit ELF wasn't x86 based");
@@ -237,8 +237,8 @@ bool ELFContainer::LoadELF_64() {
 
   memcpy(&Header, reinterpret_cast<Elf64_Ehdr *>(&RawFile.at(0)),
          sizeof(Elf64_Ehdr));
-  LogMan::Throw::A(Header._64.e_phentsize == 56, "PH Entry size wasn't 56");
-  LogMan::Throw::A(Header._64.e_shentsize == 64, "PH Entry size wasn't 64");
+  LOGMAN_THROW_A(Header._64.e_phentsize == 56, "PH Entry size wasn't 56");
+  LOGMAN_THROW_A(Header._64.e_shentsize == 64, "PH Entry size wasn't 64");
 
   if (Header._64.e_machine != EM_X86_64) {
     LogMan::Msg::D("64bit ELF wasn't x86-64 based");
@@ -408,9 +408,9 @@ void ELFContainer::CalculateSymbols() {
     uint64_t NumSymTabSymbols = 0;
     uint64_t NumDynSymSymbols = 0;
     if (SymTabHeader) {
-      LogMan::Throw::A(SymTabHeader->sh_link < SectionHeaders.size(),
+      LOGMAN_THROW_A(SymTabHeader->sh_link < SectionHeaders.size(),
                        "Symbol table string table section is wrong");
-      LogMan::Throw::A(SymTabHeader->sh_entsize == sizeof(Elf32_Sym),
+      LOGMAN_THROW_A(SymTabHeader->sh_entsize == sizeof(Elf32_Sym),
                        "Entry size doesn't match symbol entry");
 
       StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._32;
@@ -419,9 +419,9 @@ void ELFContainer::CalculateSymbols() {
     }
 
     if (DynSymTabHeader) {
-      LogMan::Throw::A(DynSymTabHeader->sh_link < SectionHeaders.size(),
+      LOGMAN_THROW_A(DynSymTabHeader->sh_link < SectionHeaders.size(),
                        "Symbol table string table section is wrong");
-      LogMan::Throw::A(DynSymTabHeader->sh_entsize == sizeof(Elf32_Sym),
+      LOGMAN_THROW_A(DynSymTabHeader->sh_entsize == sizeof(Elf32_Sym),
                        "Entry size doesn't match symbol entry");
 
       DynStringTableHeader = SectionHeaders.at(DynSymTabHeader->sh_link)._32;
@@ -511,9 +511,9 @@ void ELFContainer::CalculateSymbols() {
     uint64_t NumSymTabSymbols = 0;
     uint64_t NumDynSymSymbols = 0;
     if (SymTabHeader) {
-      LogMan::Throw::A(SymTabHeader->sh_link < SectionHeaders.size(),
+      LOGMAN_THROW_A(SymTabHeader->sh_link < SectionHeaders.size(),
                        "Symbol table string table section is wrong");
-      LogMan::Throw::A(SymTabHeader->sh_entsize == sizeof(Elf64_Sym),
+      LOGMAN_THROW_A(SymTabHeader->sh_entsize == sizeof(Elf64_Sym),
                        "Entry size doesn't match symbol entry");
 
       StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._64;
@@ -522,9 +522,9 @@ void ELFContainer::CalculateSymbols() {
     }
 
     if (DynSymTabHeader) {
-      LogMan::Throw::A(DynSymTabHeader->sh_link < SectionHeaders.size(),
+      LOGMAN_THROW_A(DynSymTabHeader->sh_link < SectionHeaders.size(),
                        "Symbol table string table section is wrong");
-      LogMan::Throw::A(DynSymTabHeader->sh_entsize == sizeof(Elf64_Sym),
+      LOGMAN_THROW_A(DynSymTabHeader->sh_entsize == sizeof(Elf64_Sym),
                        "Entry size doesn't match symbol entry");
 
       DynStringTableHeader = SectionHeaders.at(DynSymTabHeader->sh_link)._64;
@@ -665,7 +665,7 @@ void ELFContainer::PrintHeader() const {
 
 void ELFContainer::PrintSectionHeaders() const {
   if (Mode == MODE_32BIT) {
-    LogMan::Throw::A(Header._32.e_shstrndx < SectionHeaders.size(),
+    LOGMAN_THROW_A(Header._32.e_shstrndx < SectionHeaders.size(),
                      "String index section is wrong index!");
     Elf32_Shdr const *StrHeader = SectionHeaders.at(Header._32.e_shstrndx)._32;
     char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
@@ -685,7 +685,7 @@ void ELFContainer::PrintSectionHeaders() const {
     }
   }
   else {
-    LogMan::Throw::A(Header._64.e_shstrndx < SectionHeaders.size(),
+    LOGMAN_THROW_A(Header._64.e_shstrndx < SectionHeaders.size(),
                      "String index section is wrong index!");
     Elf64_Shdr const *StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
     char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
@@ -708,7 +708,7 @@ void ELFContainer::PrintSectionHeaders() const {
 
 void ELFContainer::PrintProgramHeaders() const {
   if (Mode == MODE_32BIT) {
-    LogMan::Throw::A(Header._32.e_shstrndx < SectionHeaders.size(),
+    LOGMAN_THROW_A(Header._32.e_shstrndx < SectionHeaders.size(),
                      "String index section is wrong index!");
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
       Elf32_Phdr const *hdr = ProgramHeaders.at(i)._32;
@@ -723,7 +723,7 @@ void ELFContainer::PrintProgramHeaders() const {
     }
   }
   else {
-    LogMan::Throw::A(Header._64.e_shstrndx < SectionHeaders.size(),
+    LOGMAN_THROW_A(Header._64.e_shstrndx < SectionHeaders.size(),
                      "String index section is wrong index!");
     for (uint32_t i = 0; i < ProgramHeaders.size(); ++i) {
       Elf64_Phdr const *hdr = ProgramHeaders.at(i)._64;
@@ -757,9 +757,9 @@ void ELFContainer::PrintSymbolTable() const {
       return;
     }
 
-    LogMan::Throw::A(SymTabHeader->sh_link < SectionHeaders.size(),
+    LOGMAN_THROW_A(SymTabHeader->sh_link < SectionHeaders.size(),
                      "Symbol table string table section is wrong");
-    LogMan::Throw::A(SymTabHeader->sh_entsize == sizeof(Elf32_Sym),
+    LOGMAN_THROW_A(SymTabHeader->sh_entsize == sizeof(Elf32_Sym),
                      "Entry size doesn't match symbol entry");
 
     StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._32;
@@ -795,9 +795,9 @@ void ELFContainer::PrintSymbolTable() const {
       return;
     }
 
-    LogMan::Throw::A(SymTabHeader->sh_link < SectionHeaders.size(),
+    LOGMAN_THROW_A(SymTabHeader->sh_link < SectionHeaders.size(),
                      "Symbol table string table section is wrong");
-    LogMan::Throw::A(SymTabHeader->sh_entsize == sizeof(Elf64_Sym),
+    LOGMAN_THROW_A(SymTabHeader->sh_entsize == sizeof(Elf64_Sym),
                      "Entry size doesn't match symbol entry");
 
     StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._64;
@@ -842,12 +842,12 @@ void ELFContainer::PrintRelocationTable() const {
         LogMan::Msg::D("Relocation Section: '%s'", &SHStrings[RelaHeader->sh_name]);
 
         if (RelaHeader->sh_info != 0) {
-          LogMan::Throw::A(RelaHeader->sh_info < SectionHeaders.size(), "Rela header pointers to invalid GOT header");
+          LOGMAN_THROW_A(RelaHeader->sh_info < SectionHeaders.size(), "Rela header pointers to invalid GOT header");
           GOTHeader = SectionHeaders.at(RelaHeader->sh_info)._64;
         }
 
         if (RelaHeader->sh_link != 0) {
-          LogMan::Throw::A(RelaHeader->sh_link < SectionHeaders.size(), "Rela header pointers to invalid dyndym header");
+          LOGMAN_THROW_A(RelaHeader->sh_link < SectionHeaders.size(), "Rela header pointers to invalid dyndym header");
           DynSymHeader = SectionHeaders.at(RelaHeader->sh_link)._64;
 
           StringTableHeader = SectionHeaders.at(DynSymHeader->sh_link)._64;
@@ -865,7 +865,7 @@ void ELFContainer::PrintRelocationTable() const {
           LogMan::Msg::D("\toffset: 0x%lx", Entry->r_offset);
           LogMan::Msg::D("\tSym:    0x%lx", Sym);
           if (DynSymHeader && Sym != 0) {
-            LogMan::Throw::A(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
+            LOGMAN_THROW_A(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
 
             uint64_t offset = DynSymHeader->sh_offset + Sym * DynSymHeader->sh_entsize;
             Elf64_Sym const *Symbol =
@@ -928,12 +928,12 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
         RelaHeader = hdr;
 
         if (RelaHeader->sh_info != 0) {
-          LogMan::Throw::A(RelaHeader->sh_info < SectionHeaders.size(), "Rela header pointers to invalid GOT header");
+          LOGMAN_THROW_A(RelaHeader->sh_info < SectionHeaders.size(), "Rela header pointers to invalid GOT header");
           GOTHeader = SectionHeaders.at(RelaHeader->sh_info)._64;
         }
 
         if (RelaHeader->sh_link != 0) {
-          LogMan::Throw::A(RelaHeader->sh_link < SectionHeaders.size(), "Rela header pointers to invalid dyndym header");
+          LOGMAN_THROW_A(RelaHeader->sh_link < SectionHeaders.size(), "Rela header pointers to invalid dyndym header");
           DynSymHeader = SectionHeaders.at(RelaHeader->sh_link)._64;
 
           StringTableHeader = SectionHeaders.at(DynSymHeader->sh_link)._64;
@@ -950,7 +950,7 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
           Elf64_Sym const *EntrySymbol {nullptr};
           char const *EntrySymbolName {nullptr};
           if (DynSymHeader && Sym != 0) {
-            LogMan::Throw::A(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
+            LOGMAN_THROW_A(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
 
             uint64_t offset = DynSymHeader->sh_offset + Sym * DynSymHeader->sh_entsize;
             EntrySymbol =

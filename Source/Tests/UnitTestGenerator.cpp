@@ -2405,7 +2405,7 @@ int main(int argc, char **argv, char **const envp) {
 
   auto Args = FEX::ArgLoader::Get();
 
-  LogMan::Throw::A(!Args.empty(), "Not enough arguments");
+  LOGMAN_THROW_A(!Args.empty(), "Not enough arguments");
 
   FEXCore::X86Tables::InitializeInfoTables(FEXCore::Context::MODE_64BIT);
 

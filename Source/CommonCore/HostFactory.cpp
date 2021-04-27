@@ -179,7 +179,7 @@ namespace HostFactory {
   }
 #else
   FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread) {
-    LogMan::Msg::A("HostCPU factory doesn't exist for this host");
+    LOGMAN_MSG_A("HostCPU factory doesn't exist for this host");
     return nullptr;
   }
 #endif
