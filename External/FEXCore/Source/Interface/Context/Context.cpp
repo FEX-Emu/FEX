@@ -142,7 +142,7 @@ namespace FEXCore::Context {
     return CTX->CPUID.RunFunction(Function, Leaf);
   }
 
-  void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::istream>(const std::string&)> CacheReader) {
+  void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader) {
     CTX->AOTIRLoader = CacheReader;
   }
 

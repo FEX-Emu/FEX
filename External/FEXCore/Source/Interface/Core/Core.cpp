@@ -36,6 +36,9 @@ $end_info$
 #include <unistd.h>
 #include <filesystem>
 #include <algorithm>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include "Interface/Core/GdbServer.h"
 
@@ -172,12 +175,16 @@ namespace FEXCore::Context {
       Threads.clear();
     }
 
-    // AOTIRCache needs manual clear
-    for (auto &Mod: AOTIRCache) {
+    // AOTIRCaptureCache needs manual clear
+    for (auto &Mod: AOTIRCaptureCache) {
       for (auto &Entry: Mod.second) {
         delete Entry.second.IR;
         free(Entry.second.RAData);
       }
+    }
+
+    for (auto &Mod: AOTIRCache) {
+      munmap(Mod.second.mapping, Mod.second.size);
     }
   }
 
@@ -776,6 +783,41 @@ namespace FEXCore::Context {
     return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength, Thread->FrontendDecoder->DecodedMinAddress, Thread->FrontendDecoder->DecodedMaxAddress - Thread->FrontendDecoder->DecodedMinAddress };
   }
 
+  AOTIRInlineEntry *AOTIRInlineIndex::GetInlineEntry(uint64_t DataOffset) {
+    uintptr_t This = (uintptr_t)this;
+
+    return (AOTIRInlineEntry*)(This + DataBase + DataOffset);
+  }
+
+  AOTIRInlineEntry *AOTIRInlineIndex::Find(uint64_t GuestStart) {
+    ssize_t l = 0;
+    ssize_t r = Count - 1;
+
+    while (l <= r) {
+      size_t m = l + (r - l) / 2;
+
+      if (Entries[m].GuestStart == GuestStart)
+        return GetInlineEntry(Entries[m].DataOffset);
+      else if (Entries[m].GuestStart < GuestStart)
+        l = m + 1;
+      else
+        r = m - 1;
+    }
+
+    return nullptr;
+  }
+
+  IR::RegisterAllocationData *AOTIRInlineEntry::GetRAData() {
+    return (IR::RegisterAllocationData *)InlineData;
+  }
+
+  IR::IRListView *AOTIRInlineEntry::GetIRData() {
+    auto RAData = GetRAData();
+    auto Offset = RAData->Size(RAData->MapCount);
+
+    return (IR::IRListView *)&InlineData[Offset];
+  }
+
   std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
@@ -804,28 +846,36 @@ namespace FEXCore::Context {
       auto file = AddrToFile.lower_bound(GuestRIP);
       if (file != AddrToFile.begin()) {
         --file;
-        auto Mod = (decltype(AOTIRCache)::value_type::second_type*) file->second.CachedFileEntry;
+        auto Mod = (AOTIRInlineIndex*)file->second.CachedFileEntry;
 
         if (Mod == nullptr) {
-          file->second.CachedFileEntry = Mod = &AOTIRCache[file->second.fileid];
+          file->second.CachedFileEntry = Mod = AOTIRCache[file->second.fileid].Array;
         }
 
-        auto AOTEntry = Mod->find(GuestRIP - file->second.Start + file->second.Offset);
+        if (Mod != nullptr)
+        {
+          auto AOTEntry = Mod->Find(GuestRIP - file->second.Start + file->second.Offset);
 
-        if (AOTEntry != Mod->end()) {
-          // verify hash
-          auto MappedStart = AOTEntry->second.start + file->second.Start  - file->second.Offset;
-          auto hash = XXH3_64bits((void*)MappedStart, AOTEntry->second.len);
-          if (hash == AOTEntry->second.crc) {
-            IRList = AOTEntry->second.IR;
-            //LogMan::Msg::D("using %s + %lx -> %lx\n", file->second.fileid.c_str(), AOTEntry->first, GuestRIP);
+          if (AOTEntry) {
+            // verify hash
+            auto MappedStart = GuestRIP;
+            auto hash = XXH3_64bits((void*)MappedStart, AOTEntry->GuestLength);
+            if (hash == AOTEntry->GuestHash) {
+              IRList = AOTEntry->GetIRData();
+              //LogMan::Msg::D("using %s + %lx -> %lx\n", file->second.fileid.c_str(), AOTEntry->first, GuestRIP);
 
-            RAData = AOTEntry->second.RAData;
-            DebugData = new FEXCore::Core::DebugData();
-            StartAddr = MappedStart;
-            Length = AOTEntry->second.len;
 
-            GeneratedIR = true;
+              RAData = AOTEntry->GetRAData();;
+              DebugData = new FEXCore::Core::DebugData();
+              StartAddr = MappedStart;
+              Length = AOTEntry->GuestLength;
+
+              GeneratedIR = true;
+            } else {
+              LogMan::Msg::I("AOTIR: hash check failed %lx\n", MappedStart);
+            }
+          } else {
+            //LogMan::Msg::I("AOTIR: Failed to find %lx, %lx, %s\n", GuestRIP, GuestRIP - file->second.Start + file->second.Offset, file->second.fileid.c_str());
           }
         }
       }
@@ -857,87 +907,49 @@ namespace FEXCore::Context {
     return { Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR, StartAddr, Length};
   }
 
-  bool Context::LoadAOTIRCache(std::istream &stream) {
-    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+  static bool readAll(int fd, void *data, size_t size) {
+    int rv = read(fd, data, size);
+
+    if (rv != size)
+      return false;
+    else
+      return true;
+  }
+
+  bool Context::LoadAOTIRCache(int streamfd) {
     uint64_t tag;
-    stream.read((char*)&tag, sizeof(tag));
-    if (!stream || tag != 0xDEADBEEFC0D30002)
+    
+    if (!readAll(streamfd, (char*)&tag, sizeof(tag)) || tag != 0xDEADBEEFC0D30003)
+      return false;
+    
+    std::string Module;
+    uint64_t ModSize;
+    
+    if (!readAll(streamfd,  (char*)&ModSize, sizeof(ModSize)))
       return false;
 
-    uint64_t ModCount;
-    stream.read((char*)&ModCount, sizeof(ModCount));
-    if (!stream)
+    Module.resize(ModSize);
+    if (!readAll(streamfd,  (char*)&Module[0], Module.size()))
       return false;
 
-    for (int ModIndex = 0; ModIndex < ModCount; ModIndex++) {
-      std::string Module;
-      uint64_t ModSize;
-      stream.read((char*)&ModSize, sizeof(ModSize));
-      if (!stream)
-        return false;
+    struct stat fileinfo;
+    if (fstat(streamfd, &fileinfo) < 0)
+      return false;
+    size_t Size = (fileinfo.st_size + 4095) & ~4095;
 
-      Module.resize(ModSize);
-      stream.read((char*)&Module[0], Module.size());
-      if (!stream)
-        return false;
+    void *FilePtr = mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE, streamfd, 0);
 
-      auto &Mod = AOTIRCache[Module];
+    if (FilePtr == MAP_FAILED)
+      return false;
 
-      uint64_t FnCount;
-      stream.read((char*)&FnCount, sizeof(FnCount));
-      if (!stream)
-        return false;
+    auto Array = (AOTIRInlineIndex *)((char*)FilePtr + sizeof(tag) + sizeof(ModSize) + ((ModSize+31) & ~31));
 
-      LogMan::Msg::D("AOTIR: Module %s has %ld functions", Module.c_str(), FnCount);
-      for (int FnIndex = 0; FnIndex < FnCount; FnIndex++) {
-        uint64_t addr, start, crc, len;
-        stream.read((char*)&addr, sizeof(addr));
-        if (!stream)
-          return false;
+    AOTIRCache.insert({Module, {Array, FilePtr, Size}});
 
-        stream.read((char*)&start, sizeof(start));
-        if (!stream)
-          return false;
-        stream.read((char*)&len, sizeof(len));
-        if (!stream)
-          return false;
-        stream.read((char*)&crc, sizeof(crc));
-        if (!stream)
-          return false;
-        auto IR = new IR::IRListView(stream);
-        if (!stream) {
-          delete IR;
-          return false;
-        }
-        uint64_t RASize;
-        stream.read((char*)&RASize, sizeof(RASize));
-        if (!stream) {
-          delete IR;
-          return false;
-        }
-        IR::RegisterAllocationData *RAData = (IR::RegisterAllocationData *)malloc(IR::RegisterAllocationData::Size(RASize));
-        RAData->MapCount = RASize;
-
-        stream.read((char*)&RAData->Map[0], sizeof(RAData->Map[0]) * RASize);
-
-        if (!stream) {
-          delete IR;
-          return false;
-        }
-        stream.read((char*)&RAData->SpillSlotCount, sizeof(RAData->SpillSlotCount));
-        if (!stream) {
-          delete IR;
-          return false;
-        }
-
-        IR->SetShared(true);
-        RAData->IsShared = true;
-
-        Mod.insert({addr, {start, len, crc, IR, RAData}});
-      }
-    }
+    LogMan::Msg::D("AOTIR: Module %s has %ld functions", Module.c_str(), Array->Count);
 
     return true;
+
   }
 
   bool Context::WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
@@ -945,7 +957,7 @@ namespace FEXCore::Context {
 
     bool rv = true;
 
-    for (auto AOTModule: AOTIRCache) {
+    for (auto AOTModule: AOTIRCaptureCache) {
       if (AOTModule.second.size() == 0) {
         continue;
       }
@@ -954,28 +966,59 @@ namespace FEXCore::Context {
       if (!*stream) {
         rv = false;
       }
-      uint64_t tag = 0xDEADBEEFC0D30002;
+      uint64_t tag = 0xDEADBEEFC0D30003;
       stream->write((char*)&tag, sizeof(tag));
 
-      uint64_t ModCount = 1;
-      stream->write((char*)&ModCount, sizeof(ModCount));
       auto ModSize = AOTModule.first.size();
       stream->write((char*)&ModSize, sizeof(ModSize));
       stream->write((char*)&AOTModule.first[0], ModSize);
 
+      auto Skip = ((ModSize + 31) & ~31) - ModSize;
+      char Zero = 0;
+      for (int i = 0; i < Skip; i++)
+        stream->write(&Zero, 1);
+
+      // AOTIRInlineIndex
+      
+
       auto FnCount = AOTModule.second.size();
       stream->write((char*)&FnCount, sizeof(FnCount));
 
+      size_t DataBase = sizeof(FnCount) + sizeof(DataBase) + FnCount * sizeof(AOTIRInlineIndexEntry);
+      stream->write((char*)&DataBase, sizeof(DataBase));
+
+      size_t DataOffset = 0;
       for (auto entry: AOTModule.second) {
+        //AOTIRInlineIndexEntry
+
+        // GuestStart
         stream->write((char*)&entry.first, sizeof(entry.first));
-        stream->write((char*)&entry.second.start, sizeof(entry.second.start));
-        stream->write((char*)&entry.second.len, sizeof(entry.second.len));
+
+        // DataOffset
+        stream->write((char*)&DataOffset, sizeof(DataOffset));
+
+
+        DataOffset += sizeof(entry.second.crc);
+        DataOffset += sizeof(entry.second.len);
+
+        DataOffset += entry.second.RAData->Size(entry.second.RAData->MapCount);
+
+        DataOffset += entry.second.IR->GetInlineSize();
+      }
+
+      // AOTIRInlineEntry
+      for (auto entry: AOTModule.second) {
+        //GuestHash
         stream->write((char*)&entry.second.crc, sizeof(entry.second.crc));
+
+        //GuestLength
+        stream->write((char*)&entry.second.len, sizeof(entry.second.len));
+        
+        // RAData (inline)
+        stream->write((char*)entry.second.RAData, entry.second.RAData->Size(entry.second.RAData->MapCount));
+        
+        // IRData (inline)
         entry.second.IR->Serialize(*stream);
-        uint64_t RASize = entry.second.RAData->MapCount;
-        stream->write((char*)&RASize, sizeof(RASize));
-        stream->write((char*)&entry.second.RAData->Map[0], sizeof(entry.second.RAData->Map[0]) * RASize);
-        stream->write((char*)&entry.second.RAData->SpillSlotCount, sizeof(entry.second.RAData->SpillSlotCount));
       }
     }
 
@@ -1068,7 +1111,7 @@ namespace FEXCore::Context {
         if (file != AddrToFile.begin()) {
           --file;
           if (file->second.Start <= StartAddr && (file->second.Start + file->second.Len) >= (StartAddr + Length)) {
-            AOTIRCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {StartAddr - file->second.Start + file->second.Offset, Length, hash, IRList, RAData}});
+            AOTIRCaptureCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {StartAddr - file->second.Start + file->second.Offset, Length, hash, IRList, RAData}});
           }
         }
       }
@@ -1220,18 +1263,22 @@ namespace FEXCore::Context {
       fileid += Config.ABILocalFlags ? "L" : "l";
       fileid += Config.ABINoPF ? "p" : "P";
 
+      std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+
       AddrToFile.insert({ Base, { Base, Size, Offset, fileid, nullptr } });
 
       if (Config.AOTIRLoad && !AOTIRCache.contains(fileid) && AOTIRLoader) {
-        auto stream = AOTIRLoader(fileid);
-        if (*stream) {
-          LoadAOTIRCache(*stream);
+        auto streamfd = AOTIRLoader(fileid);
+        if (streamfd != -1) {
+          LoadAOTIRCache(streamfd);
+          close(streamfd);
         }
       }
     }
   }
 
   void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
+    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
     // TODO: Support partial removing
     AddrToFile.erase(Base);
   }

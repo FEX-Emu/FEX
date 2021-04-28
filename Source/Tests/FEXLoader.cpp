@@ -320,10 +320,10 @@ int main(int argc, char **argv, char **const envp) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
   }
 
-  FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> std::unique_ptr<std::istream> {
+  FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
     auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / fileid;
 
-    return std::make_unique<std::ifstream>(filepath, std::ios::in | std::ios::binary);
+    return open(filepath.c_str(), O_RDONLY);
   });
 
   for(auto handler: Loader.AOTMappers) {

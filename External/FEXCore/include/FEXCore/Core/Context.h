@@ -226,7 +226,7 @@ namespace FEXCore::Context {
 
   __attribute__((visibility("default"))) void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name);
   __attribute__((visibility("default"))) void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length);
-  __attribute__((visibility("default"))) void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::istream>(const std::string&)> CacheReader);
+  __attribute__((visibility("default"))) void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader);
   __attribute__((visibility("default"))) bool WriteAOTIR(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
   __attribute__((visibility("default"))) void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length);
 }
