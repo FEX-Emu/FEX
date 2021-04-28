@@ -174,6 +174,23 @@ fex_drm_msm_wait_fence {
 
 }
 
+namespace I915 {
+
+// I915 defines if they don't exist
+// Older DRM doesn't have this
+#ifndef DRM_IOCTL_I915_GEM_MMAP_OFFSET
+struct drm_i915_gem_mmap_offset {
+	uint32_t handle;
+	uint32_t pad;
+	compat_uint64_t offset;
+	compat_uint64_t flags;
+	compat_uint64_t extensions;
+};
+
+#define DRM_IOCTL_I915_GEM_MMAP_OFFSET  DRM_IOWR(DRM_COMMAND_BASE + DRM_I915_GEM_MMAP_GTT, FEX::HLE::x32::I915::drm_i915_gem_mmap_offset)
+#endif
+}
+
 #include "Tests/LinuxSyscalls/x32/Ioctl/drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/msm_drm.inl"
