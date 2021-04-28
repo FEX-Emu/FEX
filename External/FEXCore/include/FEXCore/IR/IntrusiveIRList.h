@@ -19,70 +19,94 @@ namespace FEXCore::IR {
  *
  * Can potentially support reallocation if we are smart and make sure to invalidate anything holding a true pointer
  */
-class IntrusiveAllocator final {
+class DualIntrusiveAllocator final {
   public:
-    IntrusiveAllocator() = delete;
-    IntrusiveAllocator(IntrusiveAllocator &&) = delete;
-    IntrusiveAllocator(size_t Size)
+    DualIntrusiveAllocator() = delete;
+    DualIntrusiveAllocator(DualIntrusiveAllocator &&) = delete;
+    DualIntrusiveAllocator(size_t Size)
       : MemorySize {Size} {
-      Data = reinterpret_cast<uintptr_t>(malloc(Size));
+      Data = reinterpret_cast<uintptr_t>(malloc(Size * 2));
+      List = reinterpret_cast<uintptr_t>(Data + Size);
     }
 
-    ~IntrusiveAllocator() {
+    ~DualIntrusiveAllocator() {
       free(reinterpret_cast<void*>(Data));
     }
 
-    bool CheckSize(size_t Size) {
-      size_t NewOffset = CurrentOffset + Size;
+    bool DataCheckSize(size_t Size) {
+      size_t NewOffset = DataCurrentOffset + Size;
       return NewOffset <= MemorySize;
     }
 
-    void *Allocate(size_t Size) {
-      assert(CheckSize(Size) &&
-        "Ran out of space in IntrusiveAllocator during allocation");
-      size_t NewOffset = CurrentOffset + Size;
-      uintptr_t NewPointer = Data + CurrentOffset;
-      CurrentOffset = NewOffset;
+    bool ListCheckSize(size_t Size) {
+      size_t NewOffset = ListCurrentOffset + Size;
+      return NewOffset <= MemorySize;
+    }
+
+    void *DataAllocate(size_t Size) {
+      assert(DataCheckSize(Size) &&
+        "Ran out of space in DualIntrusiveAllocator during allocation");
+      size_t NewOffset = DataCurrentOffset + Size;
+      uintptr_t NewPointer = Data + DataCurrentOffset;
+      DataCurrentOffset = NewOffset;
       return reinterpret_cast<void*>(NewPointer);
     }
 
-    size_t Size() const { return CurrentOffset; }
-    size_t BackingSize() const { return MemorySize; }
+    void *ListAllocate(size_t Size) {
+      assert(ListCheckSize(Size) &&
+        "Ran out of space in DualIntrusiveAllocator during allocation");
+      size_t NewOffset = ListCurrentOffset + Size;
+      uintptr_t NewPointer = List + ListCurrentOffset;
+      ListCurrentOffset = NewOffset;
+      return reinterpret_cast<void*>(NewPointer);
+    }
 
-    uintptr_t const Begin() const { return Data; }
+    size_t DataSize() const { return DataCurrentOffset; }
+    size_t DataBackingSize() const { return MemorySize; }
 
-    void Reset() { CurrentOffset = 0; }
+    size_t ListSize() const { return ListCurrentOffset; }
+    size_t ListBackingSize() const { return MemorySize; }
 
-    void CopyData(IntrusiveAllocator const &rhs) {
-      CurrentOffset = rhs.CurrentOffset;
-      memcpy(reinterpret_cast<void*>(Data), reinterpret_cast<void*>(rhs.Data), CurrentOffset);
+    uintptr_t const DataBegin() const { return Data; }
+    uintptr_t const ListBegin() const { return List; }
+
+    void Reset() { DataCurrentOffset = 0; ListCurrentOffset = 0; }
+
+    void CopyData(DualIntrusiveAllocator const &rhs) {
+      DataCurrentOffset = rhs.DataCurrentOffset;
+      ListCurrentOffset = rhs.ListCurrentOffset;
+      memcpy(reinterpret_cast<void*>(Data), reinterpret_cast<void*>(rhs.Data), DataCurrentOffset);
+      memcpy(reinterpret_cast<void*>(List), reinterpret_cast<void*>(rhs.List), ListCurrentOffset);
     }
 
   private:
-    size_t CurrentOffset {0};
-    size_t MemorySize;
     uintptr_t Data;
+    uintptr_t List;
+    size_t DataCurrentOffset {0};
+    size_t ListCurrentOffset {0};
+    size_t MemorySize;
 };
+
 
 class IRListView final {
 public:
   IRListView() = delete;
   IRListView(IRListView &&) = delete;
 
-  IRListView(IntrusiveAllocator *Data, IntrusiveAllocator *List, bool _IsCopy) : IsCopy(_IsCopy) {
-    DataSize = Data->Size();
-    ListSize = List->Size();
+  IRListView(DualIntrusiveAllocator *Data, bool _IsCopy) : IsCopy(_IsCopy) {
+    DataSize = Data->DataSize();
+    ListSize = Data->ListSize();
 
     if (IsCopy) {
       IRData = malloc(DataSize + ListSize);
       ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
-      memcpy(IRData, reinterpret_cast<void*>(Data->Begin()), DataSize);
-      memcpy(ListData, reinterpret_cast<void*>(List->Begin()), ListSize);
+      memcpy(IRData, reinterpret_cast<void*>(Data->DataBegin()), DataSize);
+      memcpy(ListData, reinterpret_cast<void*>(Data->ListBegin()), ListSize);
     }
     else {
       // We are just pointing to the data
-      IRData = reinterpret_cast<void*>(Data->Begin());
-      ListData = reinterpret_cast<void*>(List->Begin());
+      IRData = reinterpret_cast<void*>(Data->DataBegin());
+      ListData = reinterpret_cast<void*>(Data->ListBegin());
     }
   }
 
@@ -103,7 +127,7 @@ public:
   IRListView(std::istream& stream) : IsCopy(true) {
     stream.read((char*)&DataSize, sizeof(DataSize));
     stream.read((char*)&ListSize, sizeof(ListSize));
-    
+
     IRData = malloc(DataSize + ListSize);
     ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
     stream.read((char*)IRData, DataSize);
@@ -134,6 +158,8 @@ public:
   size_t GetDataSize() const { return DataSize; }
   size_t GetListSize() const { return ListSize; }
   size_t GetSSACount() const { return ListSize / sizeof(OrderedNode); }
+  bool IsShared() const { return _IsShared; }
+  void SetShared(bool Set) { _IsShared = Set; }
 
   uint32_t GetID(OrderedNode *Node) const {
     return Node->Wrapped(GetListData()).ID();
@@ -172,7 +198,6 @@ public:
     return Wrapper.GetNode(GetListData());
   }
 
-  bool IsShared {false};
 private:
   struct BlockRange {
     using iterator = NodeIterator;
@@ -222,7 +247,6 @@ private:
       return iterator(View->GetListData(), View->GetData());
     }
   };
-
 
 public:
 
@@ -284,11 +308,12 @@ private:
   size_t DataSize;
   size_t ListSize;
   bool IsCopy;
+  bool _IsShared {false};
 };
 
 struct IRListViewDeleter {
   void operator()(IRListView* r) {
-    if (!r->IsShared) {
+    if (!r->IsShared()) {
       delete r;
     }
   }

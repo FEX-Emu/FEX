@@ -240,13 +240,11 @@ class OrderedNode final {
     }
 
     static void SetPrevious(uintptr_t Base, value_type Node, value_type New) {
-      if (Node.NodeOffset == 0) return;
       OrderedNode *RealNode = Node.GetNode(Base);
       RealNode->Header.Previous = New;
     }
 
     static void SetNext(uintptr_t Base, value_type Node, value_type New) {
-      if (Node.NodeOffset == 0) return;
       OrderedNode *RealNode = Node.GetNode(Base);
       RealNode->Header.Next = New;
     }
