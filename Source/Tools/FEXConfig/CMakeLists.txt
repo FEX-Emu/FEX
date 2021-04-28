@@ -23,7 +23,7 @@ else()
   target_include_directories(${NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
   target_link_libraries(${NAME} PRIVATE ${SDL2_LIBRARIES})
 endif()
-target_link_libraries(${NAME} PRIVATE FEXCore Common CommonCore pthread epoxy SDL2::SDL2 X11 EGL imgui tiny-json json-maker)
+target_link_libraries(${NAME} PRIVATE FEXCore Common CommonCore pthread epoxy X11 EGL imgui tiny-json json-maker)
 
 install(TARGETS ${NAME}
   RUNTIME
