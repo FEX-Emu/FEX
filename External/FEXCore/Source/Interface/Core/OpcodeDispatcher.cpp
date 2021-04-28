@@ -1597,14 +1597,14 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
   auto Size = GetSrcSize(Op) * 8;
-LogMan::Msg::A
+
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64)
     Src = _And(Src, _Constant(0x3F));
   else
     Src = _And(Src, _Constant(0x1F));
 
-  OrderedNode *Result = _Lshl(Dest, Src);LogMan::Msg::A
+  OrderedNode *Result = _Lshl(Dest, Src);
 
   StoreResult(GPRClass, Op, Result, -1);
 
