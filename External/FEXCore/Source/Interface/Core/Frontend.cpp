@@ -694,8 +694,10 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
       uint8_t Byte2 = ReadByte();
       pp = Byte2 & 0b11;
       map_select = Byte1 & 0b11111;
-      //LOGMAN_THROW_A(map_select >= 1 && map_select <= 3, "We don't understand a map_select of: %d", map_select);
-      return false;
+      if (!(map_select >= 1 && map_select <= 3)) {
+        LogMan::Msg::E("We don't understand a map_select of: %d", map_select);
+        return false;
+      }
     }
 
     uint16_t VEXOp = ReadByte();
