@@ -1106,12 +1106,10 @@ namespace FEXCore::Context {
     }
 
     if (CodePtr == nullptr) {
-      if (DecrementRefCount)
-        --Thread->CompileBlockReentrantRefCount;
+      LogMan::Msg::E("Failed to compile code  %lX - aborting process", GuestRIP);
+      abort();
       return 0;
     }
-
-    LOGMAN_THROW_A(CodePtr != nullptr, "Failed to compile code %lX", GuestRIP);
 
     // The core managed to compile the code.
 #if ENABLE_JITSYMBOLS
