@@ -971,6 +971,7 @@ namespace FEXCore::Context {
   }
 
   void Context::WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
+    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
     for( const auto &File: FilesWithCode) {
       Writer(File.first, File.second);
     }

@@ -67,12 +67,12 @@ private:
   uint64_t MaxCondBranchBackwards {~0ULL};
   uint64_t SymbolMaxAddress {};
   uint64_t SymbolMinAddress {~0ULL};
-  uint64_t SectionMaxAddress = ~0ULL;
+  uint64_t SectionMaxAddress {~0ULL};
 
   std::vector<DecodedBlocks> Blocks;
   std::set<uint64_t> BlocksToDecode;
   std::set<uint64_t> HasBlocks;
-  std::set<uint64_t> *ExternalBranches;
+  std::set<uint64_t> *ExternalBranches {nullptr};
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
