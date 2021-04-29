@@ -2,10 +2,35 @@
 FEX={$1:FEXLoader}
 for fileid in ~/.fex-emu/aotir/*.path; do
 	filename=`cat "$fileid"`
-	if [ -f "${fileid%.path}.aotir" ]; then
-		echo "$filename has already been generated"
+	args=""
+	if [ "${fileid: -6 : 1}" == "P" ]; then
+		args="$args --no-abinopf"
 	else
-		echo "Processing $filename ($fileid)"
-		Bin/FEXLoader --aotirgenerate  "$filename"
+		args="$args --abinopf"
+	fi
+
+	if [ "${fileid: -7 : 1}" == "L" ]; then
+		args="$args --abilocalflags"
+	else
+		args="$args --no-abilocalflags"
+	fi
+	
+	if [ "${fileid: -8 : 1}" == "T" ]; then
+		args="$args --tsoenabled"
+	else
+		args="$args --no-tsoenabled"
+	fi
+	
+	if [ "${fileid: -9 : 1}" == "S" ]; then
+		args="$args --smc=full"
+	else
+		args="$args --smc=mman"
+	fi
+		
+	if [ -f "${fileid%.path}.aotir" ]; then
+		echo "`basename $fileid` has already been generated"
+	else
+		echo "Processing `basename $fileid` ($filename) with $args"
+		Bin/FEXLoader --aotirgenerate $args "$filename"
 	fi
 done
