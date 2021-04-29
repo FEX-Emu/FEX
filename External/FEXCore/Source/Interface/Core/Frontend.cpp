@@ -17,9 +17,6 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <set>
 
-__attribute__((visibility("default"))) uint64_t SectionMaxAddress = ~0ULL;
-__attribute__((visibility("default"))) std::set<uint64_t> ExternalBranches;
-
 namespace FEXCore::Frontend {
 using namespace FEXCore::X86Tables;
 
@@ -960,7 +957,9 @@ void Decoder::BranchTargetInMultiblockRange() {
       Conditional = false;
     break;
     case 0xE8: // Call - Immediate target, We don't want to inline calls
-      ExternalBranches.insert(DecodeInst->PC + DecodeInst->InstSize);
+      if (ExternalBranches) {
+        ExternalBranches->insert(DecodeInst->PC + DecodeInst->InstSize);
+      }
       [[fallthrough]];
     case 0xC2: // RET imm
     case 0xC3: // RET
@@ -994,7 +993,9 @@ void Decoder::BranchTargetInMultiblockRange() {
       BlocksToDecode.emplace(TargetRIP);
     }
   } else {
-    ExternalBranches.insert(TargetRIP);
+    if (ExternalBranches) {
+      ExternalBranches->insert(TargetRIP);
+    }
   }
 }
 

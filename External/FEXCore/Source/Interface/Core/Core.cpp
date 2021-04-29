@@ -1312,4 +1312,9 @@ namespace FEXCore::Context {
     // TODO: Support partial removing
     AddrToFile.erase(Base);
   }
+
+  void ConfigureAOTGen(FEXCore::Context::Context *CTX, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
+    CTX->ParentThread->FrontendDecoder->SetExternalBranches(ExternalBranches);
+    CTX->ParentThread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
+  }
 }

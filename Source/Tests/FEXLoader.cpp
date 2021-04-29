@@ -31,9 +31,6 @@ $end_info$
 #include <algorithm>
 #include <set>
 
-extern uint64_t SectionMaxAddress;
-extern std::set<uint64_t> ExternalBranches;
-
 namespace {
 static bool SilentLog;
 static FILE *OutputFD {stdout};
@@ -354,7 +351,7 @@ int main(int argc, char **argv, char **const envp) {
         });
 
 
-        printf("Symbol + Unwind seed: %ld\n", BranchTargets.size());
+        LogMan::Msg::I("Symbol + Unwind seed: %ld", BranchTargets.size());
 
         for (size_t Offset = 0; Offset < (Section.Size - 16); Offset++) {
           uint8_t *pCode = (uint8_t *)(Section.Base + Offset);
@@ -382,19 +379,22 @@ int main(int argc, char **argv, char **const envp) {
           }
         }
 
-        SectionMaxAddress = Section.Base + Section.Size;
+        uint64_t SectionMaxAddress = Section.Base + Section.Size;
+        std::set<uint64_t> ExternalBranches;
+
+        FEXCore::Context::ConfigureAOTGen(CTX, &ExternalBranches, SectionMaxAddress);
 
         std::set<uint64_t> Compiled;
         int counter = 0;
         do {        
-          fprintf(stderr, "Discovered %ld Branch Targets in this pass\n", BranchTargets.size());
+          LogMan::Msg::I("Discovered %ld Branch Targets in this pass", BranchTargets.size());
           for (auto RIP: BranchTargets) {
             if ((counter++) % 1000 == 0)
-              fprintf(stderr, "\rCompiling %d %lX ", counter, RIP - Section.ElfBase);
+              LogMan::Msg::I("Compiling %d %lX", counter, RIP - Section.ElfBase);
             FEXCore::Context::CompileRIP(CTX, RIP);
             Compiled.insert(RIP);
           }
-          fprintf(stderr, "\nPass Done \n");
+          LogMan::Msg::I("\nPass Done");
           BranchTargets.clear();
           for (auto Destination: ExternalBranches) {
             if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
@@ -405,7 +405,7 @@ int main(int argc, char **argv, char **const envp) {
           }
           ExternalBranches.clear();
         } while (BranchTargets.size() > 0);
-        fprintf(stderr, "\nAll Done: %d\n", counter);
+        LogMan::Msg::I("\nAll Done: %d", counter);
       }
     }
   } else {

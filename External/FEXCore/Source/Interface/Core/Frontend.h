@@ -33,6 +33,8 @@ public:
   uint64_t DecodedMinAddress {};
   uint64_t DecodedMaxAddress {~0ULL};
   
+  void SetSectionMaxAddress(uint64_t v) { SectionMaxAddress = v; }
+  void SetExternalBranches(std::set<uint64_t> *v) { ExternalBranches = v; }
 private:
   FEXCore::Context::Context *CTX;
 
@@ -65,10 +67,12 @@ private:
   uint64_t MaxCondBranchBackwards {~0ULL};
   uint64_t SymbolMaxAddress {};
   uint64_t SymbolMinAddress {~0ULL};
+  uint64_t SectionMaxAddress = ~0ULL;
 
   std::vector<DecodedBlocks> Blocks;
   std::set<uint64_t> BlocksToDecode;
   std::set<uint64_t> HasBlocks;
+  std::set<uint64_t> *ExternalBranches;
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
