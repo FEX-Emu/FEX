@@ -1052,7 +1052,15 @@ namespace FEXCore::Context {
     return rv;
   }
 
+  void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+    auto NewBlock = CompileBlock(Frame, GuestRIP);
 
+    if (NewBlock == 0) {
+      LogMan::Msg::E("CompileBlockJit: Failed to compile code %lX - aborting process", GuestRIP);
+      abort();
+    }
+  }
+  
   uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto Thread = Frame->Thread;
 
@@ -1106,8 +1114,8 @@ namespace FEXCore::Context {
     }
 
     if (CodePtr == nullptr) {
-      LogMan::Msg::E("Failed to compile code  %lX - aborting process", GuestRIP);
-      abort();
+      if (DecrementRefCount)
+        --Thread->CompileBlockReentrantRefCount;
       return 0;
     }
 

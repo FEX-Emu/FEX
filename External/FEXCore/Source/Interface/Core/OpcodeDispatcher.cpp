@@ -1549,7 +1549,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
       default: 
         LogMan::Msg::E("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
         DecodeFailure = true;
-        break;
+        return;
     }
     StoreResult(GPRClass, Op, Segment, -1);
   }

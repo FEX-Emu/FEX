@@ -217,6 +217,9 @@ namespace FEXCore::Context {
 
     std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
+    
+    // same as CompileBlock, but aborts on failure
+    void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
     bool LoadAOTIRCache(int streamfd);
     bool WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
