@@ -1493,18 +1493,25 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), Src);
         break;
       case 6: // GS
-        //LOGMAN_THROW_A(!CTX->Config.Is64BitMode, "We don't support modifying GS selector in 64bit mode!");
         if (!CTX->Config.Is64BitMode) {
           _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, gs), Src);
+        } else {
+          LogMan::Msg::E("We don't support modifying GS selector in 64bit mode!");
+          DecodeFailure = true;
         }
         break;
       case 7: // FS
-        //LOGMAN_THROW_A(!CTX->Config.Is64BitMode, "We don't support modifying FS selector in 64bit mode!");
         if (!CTX->Config.Is64BitMode) {
           _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, fs), Src);
+        } else {
+          LogMan::Msg::E("We don't support modifying FS selector in 64bit mode!");
+          DecodeFailure = true;
         }
         break;
-      default: return; //LOGMAN_MSG_A("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
+      default:
+        LogMan::Msg::E("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
+        DecodeFailure = true;
+        break;
     }
   }
   else {
@@ -1539,7 +1546,10 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
           Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, fs), GPRClass);
         }
         break;
-      default: return; //LOGMAN_MSG_A("Unknown segment register: %d", Op->Src[0].TypeGPR.GPR);
+      default: 
+        LogMan::Msg::E("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
+        DecodeFailure = true;
+        break;
     }
     StoreResult(GPRClass, Op, Segment, -1);
   }

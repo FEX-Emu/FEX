@@ -665,14 +665,16 @@ namespace FEXCore::Context {
         if (TableInfo->OpcodeDispatcher) {
           auto Fn = TableInfo->OpcodeDispatcher;
           Thread->OpDispatcher->HandledLock = false;
+          Thread->OpDispatcher->ResetDecodeFailure();
           std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
           if (Thread->OpDispatcher->HadDecodeFailure()) {
             HadDispatchError = true;
           }
           else {
-            if (Thread->OpDispatcher->HandledLock != IsLocked)
+            if (Thread->OpDispatcher->HandledLock != IsLocked) {
               HadDispatchError = true;
-            //LOGMAN_THROW_A(Thread->OpDispatcher->HandledLock == IsLocked, "Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+              LogMan::Msg::E("Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+            }
             BlockInstructionsLength += DecodedInfo->InstSize;
             TotalInstructionsLength += DecodedInfo->InstSize;
             ++TotalInstructions;

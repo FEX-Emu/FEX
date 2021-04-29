@@ -81,9 +81,9 @@ public:
     //  rdi, 0x8
     //  cmp qword [rdi-8], 0
     //  jne .label
-    if (!BlockSetRIP) {
+    if (LastOp && !BlockSetRIP) {
       auto it = JumpTargets.find(NextRIP);
-      if (it == JumpTargets.end() && LastOp) {
+      if (it == JumpTargets.end()) {
 
         uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
         // If we don't have a jump target to a new block then we have to leave
@@ -104,6 +104,7 @@ public:
   OpDispatchBuilder(FEXCore::Context::Context *ctx);
 
   void ResetWorkingList();
+  void ResetDecodeFailure() { DecodeFailure = false; }
   bool HadDecodeFailure() { return DecodeFailure; }
 
   void BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
