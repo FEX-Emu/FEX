@@ -30,6 +30,7 @@ $end_info$
 #include <FEXCore/HLE/SyscallHandler.h>
 
 #include "Interface/HLE/Thunks/Thunks.h"
+#include "FEXCore/Utils/Allocator.h"
 
 #include <xxh3.h>
 #include <fstream>
@@ -184,7 +185,7 @@ namespace FEXCore::Context {
     }
 
     for (auto &Mod: AOTIRCache) {
-      munmap(Mod.second.mapping, Mod.second.size);
+      FEXCore::Allocator::munmap(Mod.second.mapping, Mod.second.size);
     }
   }
 
@@ -937,7 +938,7 @@ namespace FEXCore::Context {
       return false;
     size_t Size = (fileinfo.st_size + 4095) & ~4095;
 
-    void *FilePtr = mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE, streamfd, 0);
+    void *FilePtr = FEXCore::Allocator::mmap(nullptr, Size, PROT_READ, MAP_SHARED, streamfd, 0);
 
     if (FilePtr == MAP_FAILED)
       return false;
