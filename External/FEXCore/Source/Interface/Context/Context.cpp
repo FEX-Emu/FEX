@@ -50,8 +50,8 @@ namespace FEXCore::Context {
     CTX->Step();
   }
 
-  void CompileRIP(FEXCore::Context::Context *CTX, uint64_t GuestRIP) {
-    CTX->CompileBlock(CTX->ParentThread->CurrentFrame, GuestRIP);
+  void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    Thread->CTX->CompileBlock(Thread->CurrentFrame, GuestRIP);
   }
 
   FEXCore::Context::ExitReason RunUntilExit(FEXCore::Context::Context *CTX) {

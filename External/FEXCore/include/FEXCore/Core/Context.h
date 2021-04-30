@@ -119,7 +119,7 @@ namespace FEXCore::Context {
    */
   __attribute__((visibility("default"))) ExitReason RunUntilExit(FEXCore::Context::Context *CTX);
 
-  __attribute__((visibility("default"))) void CompileRIP(FEXCore::Context::Context *CTX, uint64_t GuestRIP);
+  __attribute__((visibility("default"))) void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
   /**
    * @brief Gets the program exit status
@@ -235,5 +235,5 @@ namespace FEXCore::Context {
   __attribute__((visibility("default"))) void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer);
   __attribute__((visibility("default"))) void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length);
 
-  __attribute__((visibility("default"))) void ConfigureAOTGen(FEXCore::Context::Context *CTX, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);
+  __attribute__((visibility("default"))) void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);
 }
