@@ -745,6 +745,8 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
   DecodeInst->PC = PC;
 
   for(;;) {
+    if (InstructionSize >= MAX_INST_SIZE)
+      return false;
     uint8_t Op = ReadByte();
     switch (Op) {
     case 0x0F: {// Escape Op
