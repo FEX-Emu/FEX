@@ -673,7 +673,7 @@ namespace FEXCore::Context {
           else {
             if (Thread->OpDispatcher->HandledLock != IsLocked) {
               HadDispatchError = true;
-              LogMan::Msg::E("Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+              LogMan::Msg::E("Missing LOCK HANDLER at 0x%lx{'%s'}", Block.Entry + BlockInstructionsLength, TableInfo->Name);
             }
             BlockInstructionsLength += DecodedInfo->InstSize;
             TotalInstructionsLength += DecodedInfo->InstSize;

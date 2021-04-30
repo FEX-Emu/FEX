@@ -189,7 +189,11 @@ RSP
 SS
 */
 void OpDispatchBuilder::IRETOp(OpcodeArgs) {
-  LOGMAN_THROW_A(CTX->Config.Is64BitMode == true, "IRET only implemented for x64");
+  if (CTX->Config.Is64BitMode == false) {
+    LogMan::Msg::E("IRET only implemented for x64");
+    DecodeFailure = true;
+    return;
+  }
 
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
@@ -2794,7 +2798,11 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), LocalResultHigh);
   }
   else if (Size == 8) {
-    LOGMAN_THROW_A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");
+    if (!CTX->Config.Is64BitMode) {
+      LogMan::Msg::E("Doesn't exist in 32bit mode");
+      DecodeFailure = true;
+      return;
+    }
     // 64bits stored in RAX
     // 64bits stored in RDX
     ResultHigh = _MulH(Src1, Src2);
@@ -2839,7 +2847,11 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
     _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), ResultHigh);
   }
   else if (Size == 8) {
-    LOGMAN_THROW_A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");
+    if (!CTX->Config.Is64BitMode) {
+      LogMan::Msg::E("Doesn't exist in 32bit mode");
+      DecodeFailure = true;
+      return;
+    }
     // 64bits stored in RAX
     // 64bits stored in RDX
     ResultHigh = _UMulH(Src1, Src2);
@@ -3018,7 +3030,11 @@ void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::INCOp(OpcodeArgs) {
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX), "Can't handle REP on this\n");
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
+    LogMan::Msg::E("Can't handle REP on this");
+    DecodeFailure = true;
+    return;
+  }
 
   OrderedNode *Dest;
   OrderedNode *Result;
@@ -3049,7 +3065,11 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::DECOp(OpcodeArgs) {
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX), "Can't handle REP on this\n");
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
+    LogMan::Msg::E("Can't handle REP on this");
+    DecodeFailure = true;
+    return;
+  }
 
   OrderedNode *Dest;
   OrderedNode *Result;
@@ -3080,8 +3100,17 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on STOS");
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
+    LogMan::Msg::E("Invalid REPNE on STOS");
+    DecodeFailure = true;
+    return;
+  }
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
+    LogMan::Msg::E("Can't handle adddress size");
+    DecodeFailure = true;
+    return;
+  }
+  
   auto Size = GetSrcSize(Op);
 
   bool Repeat = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
@@ -3180,8 +3209,16 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "Invalid REPNE on MOVS\n");
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
+    LogMan::Msg::E("Invalid REPNE on MOVS");
+    DecodeFailure = true;
+    return;
+  }
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
+    LogMan::Msg::E("Can't handle adddress size");
+    DecodeFailure = true;
+    return;
+  }
 
   // RA now can handle these to be here, to avoud DF accesses
   auto Size = GetSrcSize(Op);
@@ -3270,7 +3307,12 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
+    LogMan::Msg::E("Can't handle adddress size");
+    DecodeFailure = true;
+    return;
+  }
+
   auto Size = GetSrcSize(Op);
 
   bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
@@ -3385,8 +3427,16 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 void OpDispatchBuilder::LODSOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX), "LODS doesn't support REPNE");
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
+    LogMan::Msg::E("Invalid REPNE on LODS");
+    DecodeFailure = true;
+    return;
+  }
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
+    LogMan::Msg::E("Can't handle adddress size");
+    DecodeFailure = true;
+    return;
+  }
 
   auto Size = GetSrcSize(Op);
   bool Repeat = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
@@ -3478,7 +3528,11 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SCASOp(OpcodeArgs) {
-  LOGMAN_THROW_A(!(Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE), "Can't handle adddress size\n");
+  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
+    LogMan::Msg::E("Can't handle adddress size");
+    DecodeFailure = true;
+    return;
+  }
 
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
@@ -3644,7 +3698,11 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::NEGOp(OpcodeArgs) {
-  LOGMAN_THROW_A(!DestIsLockedMem(Op), "Can't handle LOCK on NEG\n");
+  if (DestIsLockedMem(Op)) {
+    LogMan::Msg::E("Can't handle LOCK on NEG");
+    DecodeFailure = true;
+    return;
+  }
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto ZeroConst = _Constant(0);
   OrderedNode *Result = _Sub(ZeroConst, Dest);
@@ -3695,7 +3753,11 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), URemOp);
   }
   else if (Size == 8) {
-    LOGMAN_THROW_A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");
+    if (!CTX->Config.Is64BitMode) {
+      LogMan::Msg::E("Doesn't exist in 32bit mode");
+      DecodeFailure = true;
+      return;
+    }
     OrderedNode *Src1 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
     OrderedNode *Src2 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), GPRClass);
 
@@ -3746,7 +3808,11 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), URemOp);
   }
   else if (Size == 8) {
-    LOGMAN_THROW_A(CTX->Config.Is64BitMode, "Doesn't exist in 32bit mode");
+    if (!CTX->Config.Is64BitMode) {
+      LogMan::Msg::E("Doesn't exist in 32bit mode");
+      DecodeFailure = true;
+      return;
+    }
     OrderedNode *Src1 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
     OrderedNode *Src2 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), GPRClass);
 
