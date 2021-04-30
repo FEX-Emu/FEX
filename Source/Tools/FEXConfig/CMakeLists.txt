@@ -17,7 +17,7 @@ target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/Tools/Debu
 
 target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/imgui/examples/)
 
-if (TARGET SDL2)
+if (TARGET SDL2::SDL2)
   target_link_libraries(${NAME} PRIVATE SDL2::SDL2)
 else()
   target_include_directories(${NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
