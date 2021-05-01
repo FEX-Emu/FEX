@@ -73,3 +73,6 @@ stat_times_test
 proc_pid_oomscore_test
 # Spins forever
 ptrace_test
+
+# Spins from sigtimedwait implementation
+sigtimedwait_test
