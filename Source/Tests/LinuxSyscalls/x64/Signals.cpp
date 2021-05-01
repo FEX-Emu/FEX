@@ -20,6 +20,10 @@ namespace FEX::HLE::x64 {
     REGISTER_SYSCALL_IMPL_X64(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const FEXCore::GuestSigAction *act, FEXCore::GuestSigAction *oldact) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act, oldact);
     });
+
+    REGISTER_SYSCALL_IMPL_X64(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, siginfo_t *info, const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
+      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, info, timeout, sigsetsize);
+    });
   }
 }
 

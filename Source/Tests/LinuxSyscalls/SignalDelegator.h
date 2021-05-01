@@ -81,6 +81,7 @@ namespace FEX::HLE {
     uint64_t GuestSigProcMask(int how, const uint64_t *set, uint64_t *oldset);
     uint64_t GuestSigPending(uint64_t *set, size_t sigsetsize);
     uint64_t GuestSigSuspend(uint64_t *set, size_t sigsetsize);
+    uint64_t GuestSigTimedWait(uint64_t *set, siginfo_t *info, const struct timespec *timeout, size_t sigsetsize);
 
     // Called from the thunk handler to handle the signal
     void HandleSignal(int Signal, void *Info, void *UContext);
