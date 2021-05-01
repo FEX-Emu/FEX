@@ -89,77 +89,90 @@ class DualIntrusiveAllocator final {
 
 
 class IRListView final {
+  enum Flags {
+    FLAG_IsCopy = 1,
+    FLAG_Shared = 2,
+  };
+
 public:
   IRListView() = delete;
   IRListView(IRListView &&) = delete;
 
-  IRListView(DualIntrusiveAllocator *Data, bool _IsCopy) : IsCopy(_IsCopy) {
+  IRListView(DualIntrusiveAllocator *Data, bool _IsCopy) {
+    SetCopy(_IsCopy);
     DataSize = Data->DataSize();
     ListSize = Data->ListSize();
 
-    if (IsCopy) {
-      IRData = malloc(DataSize + ListSize);
-      ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
-      memcpy(IRData, reinterpret_cast<void*>(Data->DataBegin()), DataSize);
-      memcpy(ListData, reinterpret_cast<void*>(Data->ListBegin()), ListSize);
+    if (_IsCopy) {
+      IRDataInternal = malloc(DataSize + ListSize);
+      ListDataInternal = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRDataInternal) + DataSize);
+      memcpy(IRDataInternal, reinterpret_cast<void*>(Data->DataBegin()), DataSize);
+      memcpy(ListDataInternal, reinterpret_cast<void*>(Data->ListBegin()), ListSize);
     }
     else {
       // We are just pointing to the data
-      IRData = reinterpret_cast<void*>(Data->DataBegin());
-      ListData = reinterpret_cast<void*>(Data->ListBegin());
+      IRDataInternal = reinterpret_cast<void*>(Data->DataBegin());
+      ListDataInternal = reinterpret_cast<void*>(Data->ListBegin());
     }
   }
 
-  IRListView(IRListView *Old, bool _IsCopy) : IsCopy(_IsCopy) {
+  IRListView(IRListView *Old, bool _IsCopy) {
+    SetCopy(_IsCopy);
     DataSize = Old->DataSize;
     ListSize = Old->ListSize;
-    if (IsCopy) {
-      IRData = malloc(DataSize + ListSize);
-      ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
-      memcpy(IRData, Old->IRData, DataSize);
-      memcpy(ListData, Old->ListData, ListSize);
+    if (_IsCopy) {
+      IRDataInternal = malloc(DataSize + ListSize);
+      ListDataInternal = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRDataInternal) + DataSize);
+      memcpy(IRDataInternal, Old->IRDataInternal, DataSize);
+      memcpy(ListDataInternal, Old->ListDataInternal, ListSize);
     } else {
-      IRData = Old->IRData;
-      ListData = Old->ListData;
+      IRDataInternal = Old->IRDataInternal;
+      ListDataInternal = Old->ListDataInternal;
     }
-  }
-
-  IRListView(std::istream& stream) : IsCopy(true) {
-    stream.read((char*)&DataSize, sizeof(DataSize));
-    stream.read((char*)&ListSize, sizeof(ListSize));
-
-    IRData = malloc(DataSize + ListSize);
-    ListData = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRData) + DataSize);
-    stream.read((char*)IRData, DataSize);
-    stream.read((char*)ListData, ListSize);
   }
 
   ~IRListView() {
-    if (IsCopy) {
-      free (IRData);
+    if (IsCopy()) {
+      free (IRDataInternal);
       // ListData is just offset from IRData
     }
   }
 
   void Serialize(std::ostream& stream) {
+    void *nul = nullptr;
+    //void *IRDataInternal;
+    stream.write((char*)&nul, sizeof(nul));
+    //void *ListDataInternal;
+    stream.write((char*)&nul, sizeof(nul));
+    //size_t DataSize;
     stream.write((char*)&DataSize, sizeof(DataSize));
+    //size_t ListSize;
     stream.write((char*)&ListSize, sizeof(ListSize));
-    stream.write((char*)IRData, DataSize);
-    stream.write((char*)ListData, ListSize);
+    //uint64_t Flags;
+    uint64_t WrittenFlags = Flags | FLAG_Shared; //on disk format always has the Shared flag
+    stream.write((char*)&WrittenFlags, sizeof(WrittenFlags));
+    
+    // inline data
+    stream.write((char*)GetData(), DataSize);
+    stream.write((char*)GetListData(), ListSize);
+  }
+
+  size_t GetInlineSize() {
+    static_assert(sizeof(*this) == 40);
+    return sizeof(*this) + DataSize + ListSize;
   }
 
   IRListView *CreateCopy() {
     return new IRListView(this, true);
   }
 
-  uintptr_t const GetData() const { return reinterpret_cast<uintptr_t>(IRData); }
-  uintptr_t const GetListData() const { return reinterpret_cast<uintptr_t>(ListData); }
-
   size_t GetDataSize() const { return DataSize; }
   size_t GetListSize() const { return ListSize; }
   size_t GetSSACount() const { return ListSize / sizeof(OrderedNode); }
-  bool IsShared() const { return _IsShared; }
-  void SetShared(bool Set) { _IsShared = Set; }
+  bool IsCopy() const { return Flags & FLAG_IsCopy; }
+  void SetCopy(bool Set) { if (Set) Flags |= FLAG_IsCopy; else Flags &= ~FLAG_IsCopy; }
+  bool IsShared() const { return Flags & FLAG_Shared; }
+  void SetShared(bool Set) { if (Set) Flags |= FLAG_Shared; else Flags &= ~FLAG_Shared; }
 
   uint32_t GetID(OrderedNode *Node) const {
     return Node->Wrapped(GetListData()).ID();
@@ -268,7 +281,7 @@ public:
   {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
-    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
 
   /**
@@ -280,7 +293,7 @@ public:
   {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = 0;
-    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
 
   /**
@@ -288,27 +301,35 @@ public:
    * @return Iterator for this op
    */
   iterator at(OrderedNodeWrapper Wrapped) const noexcept {
-    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
 
   iterator at(uint32_t ID) const noexcept {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = ID * sizeof(OrderedNode);
-    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
 
   iterator at(OrderedNode *Node) const noexcept {
-    auto Wrapped = Node->Wrapped(reinterpret_cast<uintptr_t>(ListData));
-    return iterator(reinterpret_cast<uintptr_t>(ListData), reinterpret_cast<uintptr_t>(IRData), Wrapped);
+    auto Wrapped = Node->Wrapped(reinterpret_cast<uintptr_t>(GetListData()));
+    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
+  }
+
+  uintptr_t const GetData() const {
+    return reinterpret_cast<uintptr_t>(IRDataInternal ? IRDataInternal : InlineData);
+  }
+
+  uintptr_t const GetListData() const {
+    return reinterpret_cast<uintptr_t>(ListDataInternal ? ListDataInternal : &InlineData[DataSize]);
   }
 
 private:
-  void *IRData;
-  void *ListData;
+  void *IRDataInternal;
+  void *ListDataInternal;
   size_t DataSize;
   size_t ListSize;
-  bool IsCopy;
-  bool _IsShared {false};
+  uint64_t Flags {0};
+  uint8_t InlineData[0];
 };
 
 struct IRListViewDeleter {

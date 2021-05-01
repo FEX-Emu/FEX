@@ -52,6 +52,39 @@ namespace FEXCore::Context {
     MODE_SINGLESTEP = 1,
   };
 
+  struct AOTIRCaptureCacheEntry {
+    uint64_t start;
+    uint64_t len;
+    uint64_t crc;
+    IR::IRListView *IR;
+    IR::RegisterAllocationData *RAData;
+  };
+
+  struct AOTIRInlineEntry {
+    uint64_t GuestHash;
+    uint64_t GuestLength;
+
+    /* RAData followed by IRData */
+    uint8_t InlineData[0];
+
+      IR::RegisterAllocationData *GetRAData();
+      IR::IRListView *GetIRData();
+  };
+
+  struct AOTIRInlineIndexEntry {
+    uint64_t GuestStart;
+    uint64_t DataOffset;
+  };
+
+  struct AOTIRInlineIndex {
+    uint64_t Count;
+    uint64_t DataBase;
+    AOTIRInlineIndexEntry Entries[0];
+
+    AOTIRInlineEntry *Find(uint64_t GuestStart);
+    AOTIRInlineEntry *GetInlineEntry(uint64_t DataOffset);
+  };
+
   struct Context {
     friend class FEXCore::HLE::SyscallHandler;
   #ifdef JIT_ARM64
@@ -113,15 +146,14 @@ namespace FEXCore::Context {
     std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
 
     struct AOTIRCacheEntry {
-      uint64_t start;
-      uint64_t len;
-      uint64_t crc;
-      IR::IRListView *IR;
-      IR::RegisterAllocationData *RAData;
+      AOTIRInlineIndex *Array;
+      void *mapping;
+      size_t size;
     };
 
-    std::function<std::unique_ptr<std::istream>(const std::string&)> AOTIRLoader;
-    std::unordered_map<std::string, std::map<uint64_t, AOTIRCacheEntry>> AOTIRCache;
+    std::unordered_map<std::string, AOTIRCacheEntry> AOTIRCache;
+    std::function<int(const std::string&)> AOTIRLoader;
+    std::unordered_map<std::string, std::map<uint64_t, AOTIRCaptureCacheEntry>> AOTIRCaptureCache;
 
     struct AddrToFileEntry {
       uint64_t Start;
@@ -183,7 +215,7 @@ namespace FEXCore::Context {
     std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
-    bool LoadAOTIRCache(std::istream &stream);
+    bool LoadAOTIRCache(int streamfd);
     bool WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
     // Used for thread creation from syscalls
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);
