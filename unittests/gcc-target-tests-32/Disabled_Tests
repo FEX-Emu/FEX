@@ -1,2 +1,5 @@
 # Uses AVX
 pr57275.c.gcc-target-test-64
+
+# Consistently crashes on Solidrun only in CI
+20080723-1.c.gcc-target-test-32

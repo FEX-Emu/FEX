@@ -4,3 +4,6 @@ sse2-mmx-pextrw.c.gcc-target-test-32
 
 # this uses AVX ops (VMOVAPS)
 pr57275.c.gcc-target-test-32
+
+# Consistently crashes on Solidrun only in CI
+20080723-1.c.gcc-target-test-32
