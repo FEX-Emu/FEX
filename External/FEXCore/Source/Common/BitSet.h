@@ -1,5 +1,6 @@
 #pragma once
 #include "Common/MathUtils.h"
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstring>
@@ -17,15 +18,15 @@ struct BitSet final {
   void Allocate(size_t Elements) {
     size_t AllocateSize = AlignUp(Elements, MinimumSizeBits) / MinimumSize;
     LOGMAN_THROW_A((AllocateSize * MinimumSize) >= Elements, "Fail");
-    Memory = static_cast<ElementType*>(malloc(AllocateSize));
+    Memory = static_cast<ElementType*>(FEXCore::Allocator::malloc(AllocateSize));
   }
   void Realloc(size_t Elements) {
     size_t AllocateSize = AlignUp(Elements, MinimumSizeBits) / MinimumSize;
     LOGMAN_THROW_A((AllocateSize * MinimumSize) >= Elements, "Fail");
-    Memory = static_cast<ElementType*>(realloc(Memory, AllocateSize));
+    Memory = static_cast<ElementType*>(FEXCore::Allocator::realloc(Memory, AllocateSize));
   }
   void Free() {
-    free(Memory);
+    FEXCore::Allocator::free(Memory);
     Memory = nullptr;
   }
   bool Get(T Element) {

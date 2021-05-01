@@ -16,6 +16,7 @@ $end_info$
 #include <sys/ipc.h>
 #include <unistd.h>
 #include <filesystem>
+#include <sys/shm.h>
 
 static std::string get_fdpath(int fd)
 {
@@ -24,7 +25,6 @@ static std::string get_fdpath(int fd)
 }
 
 namespace FEX::HLE::x32 {
-
   void RegisterMemory() {
     REGISTER_SYSCALL_IMPL_X32(mmap, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t addr, uint32_t length, int prot, int flags, int fd, int32_t offset) -> uint64_t {
       auto Result = (uint64_t)static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
@@ -39,7 +39,6 @@ namespace FEX::HLE::x32 {
         }
         FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)Result, length);
       }
-
       return Result;
     });
 
@@ -63,10 +62,12 @@ namespace FEX::HLE::x32 {
     REGISTER_SYSCALL_IMPL_X32(munmap, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length) -> uint64_t {
       auto Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
         munmap(addr, length);
+
       if (Result != -1) {
         FEXCore::Context::RemoveNamedRegion(Frame->Thread->CTX, (uintptr_t)addr, length);
         FEXCore::Context::FlushCodeRange(Frame->Thread, (uintptr_t)addr, length);
       }
+
       return Result;
     });
 

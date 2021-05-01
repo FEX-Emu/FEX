@@ -81,7 +81,6 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::InitializeContext(CTX);
 
-
   FEX::HLE::x32::MemAllocator *Allocator = nullptr;
 
   if (Loader.Is64BitMode()) {
@@ -94,13 +93,21 @@ int main(int argc, char **argv, char **const envp) {
       return -ENOEXEC;
     }
   } else {
-    Allocator = new FEX::HLE::x32::MemAllocator();
+    // Setup our userspace allocator
+    uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
+    if (KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+      FEXCore::Allocator::SetupHooks();
+    }
+
+    Allocator = FEX::HLE::x32::CreateAllocator(KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17));
+
     if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return Allocator->mmap(addr, length, prot, flags, fd, offset);
     }, [Allocator](void *addr, size_t length) {
       return Allocator->munmap(addr, length);
     })) {
       // failed to map
+      LogMan::Msg::E("Failed to map 32-bit elf file.");
       return -ENOEXEC;
     }
   }

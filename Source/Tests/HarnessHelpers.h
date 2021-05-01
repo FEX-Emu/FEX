@@ -356,7 +356,7 @@ namespace FEX::HarnessHelper {
       }
       else {
         uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-        LOGMAN_THROW_A(Result != ~0ULL, "mmap failed");
+        LOGMAN_THROW_A(Result != ~0ULL, "Stack Pointer mmap failed");
         return Result + STACK_SIZE;
       }
     }
@@ -369,7 +369,7 @@ namespace FEX::HarnessHelper {
       bool LimitedSize = true;
       auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
         void *Result = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        LOGMAN_THROW_A(Result == reinterpret_cast<void*>(Address), "mmap failed");
+        LOGMAN_THROW_A(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
         return Result;
       };
 
@@ -382,17 +382,6 @@ namespace FEX::HarnessHelper {
         // We test [120, 127] (Top)
         // Can fit in two pages
         DoMMap(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2);
-
-        // SIB32 Bottom
-        // We test INT_MIN, INT_MIN + 8
-        DoMMap(0x2'0000'0000, PAGE_SIZE);
-        // SIB32 Middle
-        // We test -8 + 8
-        DoMMap(0x2'8000'0000 - PAGE_SIZE, PAGE_SIZE * 2);
-
-        // SIB32 Top
-        // We Test INT_MAX - 8, INT_MAX
-        DoMMap(0x3'0000'0000 - PAGE_SIZE, PAGE_SIZE * 2);
       }
       else {
         // This is scratch memory location and SIB8 location
@@ -413,7 +402,7 @@ namespace FEX::HarnessHelper {
       }
 
       LoadMemory();
-      
+
       return true;
     }
 

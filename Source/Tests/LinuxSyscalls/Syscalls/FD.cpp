@@ -107,16 +107,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(dup, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd) -> uint64_t {
-      uint64_t Result = ::dup(oldfd);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(dup2, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd, int newfd) -> uint64_t {
-      uint64_t Result = ::dup2(oldfd, newfd);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(dup3, [](FEXCore::Core::CpuStateFrame* Frame, int oldfd, int newfd, int flags) -> uint64_t {
       flags = RemapFlags(flags);
       uint64_t Result = ::dup3(oldfd, newfd, flags);

@@ -199,7 +199,7 @@ public:
     }
     else {
       StackPointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-      LOGMAN_THROW_A(StackPointer != ~0ULL, "mmap failed");
+      LOGMAN_THROW_A(StackPointer != ~0ULL, "Get Stack Pointer mmap failed");
     }
 
     StackPointer += StackSize();

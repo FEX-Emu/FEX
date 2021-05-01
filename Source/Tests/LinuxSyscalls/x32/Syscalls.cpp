@@ -22,7 +22,73 @@ $end_info$
 #endif
 
 namespace FEX::HLE::x32 {
-uint64_t MemAllocator::FindPageRange(uint64_t Start, size_t Pages) {
+class MemAllocator32Bit final : public MemAllocator {
+private:
+  static constexpr uint64_t PAGE_SHIFT = 12;
+  static constexpr uint64_t PAGE_SIZE = 1 << PAGE_SHIFT;
+  static constexpr uint64_t PAGE_MASK = (1 << PAGE_SHIFT) - 1;
+  static constexpr uint64_t BASE_KEY = 16;
+  const uint64_t TOP_KEY = 0xFFFF'F000ULL >> PAGE_SHIFT;
+
+public:
+  MemAllocator32Bit() {
+    // First 16 pages are taken by the Linux kernel
+    for (size_t i = 0; i < 16; ++i) {
+      MappedPages.set(i);
+    }
+    // Take the top page as well
+    MappedPages.set(TOP_KEY);
+    if (SearchDown) {
+      LastScanLocation = TOP_KEY;
+      LastKeyLocation = TOP_KEY;
+      FindPageRangePtr = &MemAllocator32Bit::FindPageRange_TopDown;
+    }
+    else {
+      LastScanLocation = BASE_KEY;
+      LastKeyLocation = BASE_KEY;
+      FindPageRangePtr = &MemAllocator32Bit::FindPageRange;
+    }
+  }
+  void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
+  int munmap(void *addr, size_t length) override;
+  void *mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) override;
+  uint64_t shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override;
+  uint64_t shmdt(const void* shmaddr) override;
+  static constexpr bool SearchDown = true;
+
+  // PageAddr is a page already shifted to page index
+  // PagesLength is the number of pages
+  void SetUsedPages(uint64_t PageAddr, size_t PagesLength) {
+    // Set the range as mapped
+    for (size_t i = 0; i < PagesLength; ++i) {
+      MappedPages.set(PageAddr + i);
+    }
+  }
+
+  // PageAddr is a page already shifted to page index
+  // PagesLength is the number of pages
+  void SetFreePages(uint64_t PageAddr, size_t PagesLength) {
+    // Set the range as unused
+    for (size_t i = 0; i < PagesLength; ++i) {
+      MappedPages.reset(PageAddr + i);
+    }
+  }
+
+private:
+  // Set that contains 4k mapped pages
+  // This is the full 32bit memory range
+  std::bitset<0x10'0000> MappedPages;
+  std::map<uint32_t, int> PageToShm{};
+  uint64_t LastScanLocation{};
+  uint64_t LastKeyLocation{};
+  std::mutex AllocMutex{};
+  uint64_t FindPageRange(uint64_t Start, size_t Pages);
+  uint64_t FindPageRange_TopDown(uint64_t Start, size_t Pages);
+  using FindHandler = uint64_t(MemAllocator32Bit::*)(uint64_t Start, size_t Pages);
+  FindHandler FindPageRangePtr{};
+};
+
+uint64_t MemAllocator32Bit::FindPageRange(uint64_t Start, size_t Pages) {
   // Linear range scan
   while (Start != TOP_KEY) {
     bool Free = true;
@@ -46,7 +112,7 @@ uint64_t MemAllocator::FindPageRange(uint64_t Start, size_t Pages) {
   return 0;
 }
 
-uint64_t MemAllocator::FindPageRange_TopDown(uint64_t Start, size_t Pages) {
+uint64_t MemAllocator32Bit::FindPageRange_TopDown(uint64_t Start, size_t Pages) {
   // Linear range scan
   while (Start >= BASE_KEY &&
          Start <= TOP_KEY) {
@@ -69,7 +135,7 @@ uint64_t MemAllocator::FindPageRange_TopDown(uint64_t Start, size_t Pages) {
   return 0;
 }
 
-void *MemAllocator::mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+void *MemAllocator32Bit::mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
   size_t PagesLength = AlignUp(length, PAGE_SIZE) >> PAGE_SHIFT;
 
@@ -195,7 +261,7 @@ restart:
   return 0;
 }
 
-int MemAllocator::munmap(void *addr, size_t length) {
+int MemAllocator32Bit::munmap(void *addr, size_t length) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
   size_t PagesLength = AlignUp(length, PAGE_SIZE) >> PAGE_SHIFT;
 
@@ -240,7 +306,7 @@ int MemAllocator::munmap(void *addr, size_t length) {
   return 0;
 }
 
-void *MemAllocator::mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) {
+void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) {
   size_t OldPagesLength = AlignUp(old_size, PAGE_SIZE) >> PAGE_SHIFT;
   size_t NewPagesLength = AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
 
@@ -348,7 +414,7 @@ void *MemAllocator::mremap(void *old_address, size_t old_size, size_t new_size, 
   return reinterpret_cast<void*>(-errno);
 }
 
-uint64_t MemAllocator::shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) {
+uint64_t MemAllocator32Bit::shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
 
   if (shmaddr != nullptr) {
@@ -461,7 +527,7 @@ restart:
     }
   }
 }
-uint64_t MemAllocator::shmdt(const void* shmaddr) {
+uint64_t MemAllocator32Bit::shmdt(const void* shmaddr) {
   uint32_t AddrPage = reinterpret_cast<uint64_t>(shmaddr) >> PAGE_SHIFT;
   auto it = PageToShm.find(AddrPage);
 
@@ -474,6 +540,44 @@ uint64_t MemAllocator::shmdt(const void* shmaddr) {
   PageToShm.erase(it);
   return Result;
 }
+
+class MemAllocatorPassThrough final : public MemAllocator {
+public:
+  void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override {
+    uint64_t Result = (uint64_t)::mmap(addr, length, prot, flags, fd, offset);
+    if (Result == ~0ULL) {
+      return reinterpret_cast<void*>(-errno);
+    }
+    return reinterpret_cast<void*>(Result);
+  }
+
+  int munmap(void *addr, size_t length) override {
+    uint64_t Result = (uint64_t)::munmap(addr, length);
+    SYSCALL_ERRNO();
+  }
+
+  void *mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) override {
+    uint64_t Result = (uint64_t)::mremap(old_address, old_size, new_size, flags, new_address);
+    if (Result == ~0ULL) {
+      return reinterpret_cast<void*>(-errno);
+    }
+    return reinterpret_cast<void*>(Result);
+  }
+
+  uint64_t shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override {
+    uint64_t Result = (uint64_t)::shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg);
+    if (Result != ~0ULL) {
+      *ResultAddress = Result;
+      Result = 0;
+    }
+    SYSCALL_ERRNO();
+  }
+
+  uint64_t shmdt(const void* shmaddr) override {
+    uint64_t Result = ::shmdt(shmaddr);
+    SYSCALL_ERRNO();
+  }
+};
 
   void RegisterEpoll();
   void RegisterFD();
@@ -605,6 +709,15 @@ uint64_t MemAllocator::shmdt(const void* shmaddr) {
       }
     }
 #endif
+  }
+
+  FEX::HLE::x32::MemAllocator *CreateAllocator(bool Use32BitAllocator) {
+    if (Use32BitAllocator) {
+      return new MemAllocator32Bit();
+    }
+    else {
+      return new MemAllocatorPassThrough();
+    }
   }
 
   FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator) {

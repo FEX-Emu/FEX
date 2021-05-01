@@ -1,3 +1,4 @@
+add_compile_options(-fno-operator-names)
 
 add_library(LinuxEmulation STATIC
     FileManagement.cpp
@@ -18,6 +19,7 @@ add_library(LinuxEmulation STATIC
     x32/Thread.cpp
     x32/Time.cpp
     x32/Timer.cpp
+    x32/IoctlEmulation.cpp
     x64/EPoll.cpp
     x64/FD.cpp
     x64/IO.cpp
@@ -58,14 +60,22 @@ target_include_directories(LinuxEmulation PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 set(HEADERS_TO_VERIFY
   x32/Types.h x86_32 # This needs to match structs to 32bit structs
-  )
+  x32/Ioctl/asound.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/drm.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/streams.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/usbdev.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/input.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/sockios.h x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/joystick.h x86_32 # This needs to match structs to 32bit structs
+)
 
 list(LENGTH HEADERS_TO_VERIFY ARG_COUNT)
 math(EXPR ARG_COUNT "${ARG_COUNT}-1")
 
 set (ARGS
   "-x" "c++"
-  "-std=c++20")
+  "-std=c++20"
+  "-fno-operator-names")
 # Global include directories
 get_directory_property (INC_DIRS INCLUDE_DIRECTORIES)
 list(TRANSFORM INC_DIRS PREPEND "-I")

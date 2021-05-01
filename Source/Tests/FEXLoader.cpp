@@ -32,7 +32,7 @@ $end_info$
 
 namespace {
 static bool SilentLog;
-static FILE *OutputFD {stdout};
+static FILE *OutputFD {stderr};
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   const char *CharLevel{nullptr};
@@ -253,7 +253,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-
   FEX::HLE::x32::MemAllocator *Allocator = nullptr;
 
   if (Loader.Is64BitMode()) {
@@ -267,7 +266,19 @@ int main(int argc, char **argv, char **const envp) {
       return -ENOEXEC;
     }
   } else {
-    Allocator = new FEX::HLE::x32::MemAllocator();
+    FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
+    if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+      Use32BitAllocator = true;
+    }
+
+    // Setup our userspace allocator
+    if (!Use32BitAllocator &&
+        KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+      FEXCore::Allocator::SetupHooks();
+    }
+
+    Allocator = FEX::HLE::x32::CreateAllocator(Use32BitAllocator);
+
     if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return Allocator->mmap(addr, length, prot, flags, fd, offset);
     }, [Allocator](void *addr, size_t length) {
@@ -295,7 +306,6 @@ int main(int argc, char **argv, char **const envp) {
   SyscallHandler->SetCodeLoader(&Loader);
 
   auto BRKInfo = Loader.GetBRKInfo();
-  //fprintf(stderr, "BRK %lX - %ld\n", BRKInfo.Base, BRKInfo.Size);
 
   SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
 

@@ -123,6 +123,7 @@ set (SRCS
   Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
   Utils/Allocator.cpp
+  Utils/Allocator/64BitAllocator.cpp
   Utils/ELFContainer.cpp
   Utils/ELFSymbolDatabase.cpp
   Utils/LogManager.cpp
@@ -266,7 +267,7 @@ function(AddObject Name Type)
   add_dependencies(${Name} IR_INC)
   add_dependencies(${Name} CONFIG_INC)
 
-  target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl xxhash)
+  target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl xxhash FEX_jemalloc)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
   set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)
@@ -305,7 +306,7 @@ endfunction()
 
 function(AddLibrary Name Type)
   add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
-  target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl xxhash)
+  target_link_libraries(${Name} pthread rt vixl ${LINUX_LIBS} dl xxhash FEX_jemalloc)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
   set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)

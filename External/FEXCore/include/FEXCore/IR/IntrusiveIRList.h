@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FEXCore/IR/IR.h"
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cassert>
@@ -25,12 +26,13 @@ class DualIntrusiveAllocator final {
     DualIntrusiveAllocator(DualIntrusiveAllocator &&) = delete;
     DualIntrusiveAllocator(size_t Size)
       : MemorySize {Size} {
-      Data = reinterpret_cast<uintptr_t>(malloc(Size * 2));
+      Data = reinterpret_cast<uintptr_t>(FEXCore::Allocator::malloc(Size * 2));
       List = reinterpret_cast<uintptr_t>(Data + Size);
     }
 
+
     ~DualIntrusiveAllocator() {
-      free(reinterpret_cast<void*>(Data));
+      FEXCore::Allocator::free(reinterpret_cast<void*>(Data));
     }
 
     bool DataCheckSize(size_t Size) {
