@@ -29,15 +29,29 @@ struct InternalThreadState;
 namespace FEX::HLE::x32 {
 #include "SyscallsEnum.h"
 
+class MemAllocator {
+public:
+  virtual ~MemAllocator() = default;
+  virtual void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
+  virtual int munmap(void *addr, size_t length) = 0;
+  virtual void *mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) = 0;
+  virtual uint64_t shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) = 0;
+  virtual uint64_t shmdt(const void* shmaddr) = 0;
+};
+
 class x32SyscallHandler final : public FEX::HLE::SyscallHandler {
 public:
-  x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+  x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator);
+
+  FEX::HLE::x32::MemAllocator *GetAllocator() { return AllocHandler.get(); }
 
 private:
   void RegisterSyscallHandlers();
+  std::unique_ptr<MemAllocator> AllocHandler{};
 };
 
-FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+FEX::HLE::x32::MemAllocator *CreateAllocator(bool Use32BitAllocator);
+FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator);
 void RegisterSyscallInternal(int SyscallNumber,
 #ifdef DEBUG_STRACE
   const std::string& TraceFormatString,

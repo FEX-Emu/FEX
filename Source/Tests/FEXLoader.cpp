@@ -253,6 +253,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
+  FEX::HLE::x32::MemAllocator *Allocator = nullptr;
+
   if (Loader.Is64BitMode()) {
     if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset);
@@ -265,12 +267,16 @@ int main(int argc, char **argv, char **const envp) {
     }
   } else {
     // Setup our userspace allocator
-    FEXCore::Allocator::SetupHooks();
+    if (KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+      FEXCore::Allocator::SetupHooks();
+    }
 
-    if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return ::mmap(addr, length, prot, flags, fd, offset);
-    }, [](void *addr, size_t length) {
-      return ::munmap(addr, length);
+    Allocator = FEX::HLE::x32::CreateAllocator(KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17));
+
+    if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return Allocator->mmap(addr, length, prot, flags, fd, offset);
+    }, [Allocator](void *addr, size_t length) {
+      return Allocator->munmap(addr, length);
     })) {
       // failed to map
       LogMan::Msg::E("Failed to map 32-bit elf file.");
@@ -288,7 +294,7 @@ int main(int argc, char **argv, char **const envp) {
   std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
     Loader.Is64BitMode() ?
       FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get()) :
-      FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get())
+      FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), Allocator)
   };
 
   SyscallHandler->SetCodeLoader(&Loader);

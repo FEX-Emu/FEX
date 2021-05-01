@@ -694,18 +694,13 @@ namespace FEX::HLE::x32 {
         break;
       }
       case OP_SHMAT: {
-        Result = (uint64_t)::shmat(first, reinterpret_cast<const void*>(ptr), second);
-        if (Result == ~0ULL) {
-          return -errno;
-        }
-        else {
-          *reinterpret_cast<uint32_t*>(third) = Result;
-          return 0;
-        }
+        Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
+          shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
         break;
       }
       case OP_SHMDT: {
-        Result = ::shmdt(reinterpret_cast<void*>(ptr));
+        Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
+          shmdt(reinterpret_cast<void*>(ptr));
         break;
       }
       case OP_SHMGET: {
