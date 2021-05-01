@@ -266,12 +266,18 @@ int main(int argc, char **argv, char **const envp) {
       return -ENOEXEC;
     }
   } else {
+    FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
+    if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+      Use32BitAllocator = true;
+    }
+
     // Setup our userspace allocator
-    if (KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+    if (!Use32BitAllocator &&
+        KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
       FEXCore::Allocator::SetupHooks();
     }
 
-    Allocator = FEX::HLE::x32::CreateAllocator(KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17));
+    Allocator = FEX::HLE::x32::CreateAllocator(Use32BitAllocator);
 
     if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return Allocator->mmap(addr, length, prot, flags, fd, offset);
