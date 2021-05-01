@@ -175,6 +175,7 @@ namespace FEX::HLE::x32 {
               }
               else {
                 CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + msghdr_guest->cmsg_len);
+                CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
                 if (CurrentGuestPtr >= reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(static_cast<void*>(guest_msg->msg_control)) + guest_msg->msg_controllen)) {
                   CurrentGuestPtr = nullptr;
                 }
@@ -200,8 +201,8 @@ namespace FEX::HLE::x32 {
           HostHeader.msg_iov = &Host_iovec.at(0);
           HostHeader.msg_iovlen = guest_msg->msg_iovlen;
 
-          HostHeader.msg_control = alloca(guest_msg->msg_controllen);
-          HostHeader.msg_controllen = guest_msg->msg_controllen;
+          HostHeader.msg_control = alloca(guest_msg->msg_controllen*2);
+          HostHeader.msg_controllen = guest_msg->msg_controllen*2;
 
           HostHeader.msg_flags = guest_msg->msg_flags;
 
@@ -238,7 +239,9 @@ namespace FEX::HLE::x32 {
                   guest_msg->msg_controllen -= SizeIncrease;
 
                   memcpy(CurrentGuest->cmsg_data, CMSG_DATA(cmsg), cmsg->cmsg_len - sizeof(struct cmsghdr));
-                  CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + cmsg->cmsg_len);
+                  CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + CurrentGuest->cmsg_len);
+                  CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
+
                 }
               }
             }
