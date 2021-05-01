@@ -119,6 +119,17 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
     return -ENOENT;
   }
 
+  int pid = getpid();
+
+  char PidSelfPath[50];
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+
+  if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
+    // If pointing to self then redirect to the application
+    // JRE and shapez.io does this
+    Filename = FEX::HLE::_SyscallHandler->Filename();
+  }
+
   uint64_t Result{};
   if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled()) {
     // If the FEX interpreter is installed then just execve the thing
