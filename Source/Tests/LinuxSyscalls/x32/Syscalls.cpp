@@ -584,6 +584,7 @@ public:
   void RegisterFS();
   void RegisterInfo();
   void RegisterMemory();
+  void RegisterMsg();
   void RegisterNotImplemented();
   void RegisterSched();
   void RegisterSemaphore();
@@ -680,6 +681,7 @@ public:
     FEX::HLE::x32::RegisterFS();
     FEX::HLE::x32::RegisterInfo();
     FEX::HLE::x32::RegisterMemory();
+    FEX::HLE::x32::RegisterMsg();
     FEX::HLE::x32::RegisterNotImplemented();
     FEX::HLE::x32::RegisterSched();
     FEX::HLE::x32::RegisterSemaphore();
