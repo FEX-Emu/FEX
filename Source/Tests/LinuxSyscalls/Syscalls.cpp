@@ -22,7 +22,6 @@ $end_info$
 #include <fstream>
 #include <limits.h>
 #include <linux/futex.h>
-#include <numaif.h>
 #include <poll.h>
 #include <sys/mman.h>
 #include <sys/time.h>

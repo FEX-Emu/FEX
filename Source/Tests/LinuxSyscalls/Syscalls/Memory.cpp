@@ -13,7 +13,6 @@ $end_info$
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-#include <numaif.h>
 
 namespace FEX::HLE {
   void RegisterMemory() {
@@ -59,27 +58,27 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(mbind, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, unsigned long len, int mode, const unsigned long *nodemask, unsigned long maxnode, unsigned flags) -> uint64_t {
-      uint64_t Result = ::mbind(addr, len, mode, nodemask, maxnode, flags);
+      uint64_t Result = ::syscall(SYS_mbind, addr, len, mode, nodemask, maxnode, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(get_mempolicy, [](FEXCore::Core::CpuStateFrame *Frame, int *mode, unsigned long *nodemask, unsigned long maxnode, void *addr, unsigned long flags) -> uint64_t {
-      uint64_t Result = ::get_mempolicy(mode, nodemask, maxnode, addr, flags);
+      uint64_t Result = ::syscall(SYS_get_mempolicy, mode, nodemask, maxnode, addr, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(set_mempolicy, [](FEXCore::Core::CpuStateFrame *Frame, int mode, const unsigned long *nodemask, unsigned long maxnode) -> uint64_t {
-      uint64_t Result = ::set_mempolicy(mode, nodemask, maxnode);
+      uint64_t Result = ::syscall(SYS_set_mempolicy, mode, nodemask, maxnode);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(migrate_pages, [](FEXCore::Core::CpuStateFrame *Frame, int pid, unsigned long maxnode, const unsigned long *old_nodes, const unsigned long *new_nodes) -> uint64_t {
-      uint64_t Result = ::migrate_pages(pid, maxnode, old_nodes, new_nodes);
+      uint64_t Result = ::syscall(SYS_migrate_pages, pid, maxnode, old_nodes, new_nodes);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(move_pages, [](FEXCore::Core::CpuStateFrame *Frame, int pid, unsigned long count, void **pages, const int *nodes, int *status, int flags) -> uint64_t {
-      uint64_t Result = ::move_pages(pid, count, pages, nodes, status, flags);
+      uint64_t Result = ::syscall(SYS_move_pages, pid, count, pages, nodes, status, flags);
       SYSCALL_ERRNO();
     });
 

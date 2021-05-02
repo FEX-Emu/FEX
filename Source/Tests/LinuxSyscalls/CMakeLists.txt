@@ -11,6 +11,7 @@ add_library(LinuxEmulation STATIC
     x32/FS.cpp
     x32/Info.cpp
     x32/Memory.cpp
+    x32/Msg.cpp
     x32/NotImplemented.cpp
     x32/Semaphore.cpp
     x32/Sched.cpp
