@@ -8,6 +8,7 @@
 #include "Tests/LinuxSyscalls/x32/Ioctl/sockios.h"
 #include "Tests/LinuxSyscalls/x32/Ioctl/input.h"
 #include "Tests/LinuxSyscalls/x32/Ioctl/joystick.h"
+#include "Tests/LinuxSyscalls/x32/Ioctl/wireless.h"
 #undef _BASIC_META
 #undef _BASIC_META_VAR
 #undef _CUSTOM_META
@@ -59,7 +60,6 @@ namespace FEX::HLE::x32 {
         FDToHandler[NewFD] = it->second;
       }
     }
-
     uint32_t AMDGPU_Handler(int fd, uint32_t cmd, uint32_t args) {
       switch (_IOC_NR(cmd)) {
         case _IOC_NR(FEX_DRM_IOCTL_AMDGPU_GEM_METADATA): {
@@ -125,6 +125,70 @@ namespace FEX::HLE::x32 {
       return -EPERM;
     }
 
+    uint32_t I915_Handler(int fd, uint32_t cmd, uint32_t args) {
+#define SIMPLE(enum, type) case _IOC_NR(FEX_##enum): { \
+          I915::fex_##type *guest = reinterpret_cast<I915::fex_##type*>(args); \
+          type host = *guest; \
+          uint64_t Result = ioctl(fd, enum, &host); \
+          *guest = host; \
+          return Result; \
+          break; \
+        }
+
+
+      switch (_IOC_NR(cmd)) {
+        SIMPLE(DRM_IOCTL_I915_BATCHBUFFER, drm_i915_batchbuffer_t)
+        SIMPLE(DRM_IOCTL_I915_IRQ_EMIT, drm_i915_irq_emit_t)
+        SIMPLE(DRM_IOCTL_I915_GETPARAM, drm_i915_getparam_t)
+        SIMPLE(DRM_IOCTL_I915_ALLOC, drm_i915_mem_alloc_t)
+        SIMPLE(DRM_IOCTL_I915_CMDBUFFER, drm_i915_cmdbuffer_t)
+
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+      // DRM
+#include "Tests/LinuxSyscalls/x32/Ioctl/i915_drm.inl"
+        {
+          return ioctl(fd, cmd, args);
+          break;
+        }
+        default:
+          UnhandledIoctl("I915", fd, cmd, args);
+          return -EPERM;
+          break;
+      }
+#undef SIMPLE
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+      return -EPERM;
+    }
+
+    uint32_t Panfrost_Handler(int fd, uint32_t cmd, uint32_t args) {
+      switch (_IOC_NR(cmd)) {
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+      // DRM
+#include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
+        {
+          return ioctl(fd, cmd, args);
+          break;
+        }
+        default:
+          UnhandledIoctl("Panfrost", fd, cmd, args);
+          return -EPERM;
+          break;
+      }
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+      return -EPERM;
+    }
     void AssignDeviceTypeToFD(int fd, drm_version const &Version) {
       if (Version.name) {
         if (strcmp(Version.name, "amdgpu") == 0) {
@@ -133,6 +197,12 @@ namespace FEX::HLE::x32 {
         else if (strcmp(Version.name, "msm") == 0) {
           FDToHandler[fd] = MSM_Handler;
         }
+        else if (strcmp(Version.name, "i915") == 0) {
+          FDToHandler[fd] = I915_Handler;
+        }
+        else if (strcmp(Version.name, "panfrost") == 0) {
+          FDToHandler[fd] = Panfrost_Handler;
+        }
         else {
           LogMan::Msg::E("Unknown DRM device: '%s'", Version.name);
         }
@@ -140,6 +210,15 @@ namespace FEX::HLE::x32 {
     }
 
     uint32_t Handler(int fd, uint32_t cmd, uint32_t args) {
+#define SIMPLE(enum, type) case _IOC_NR(FEX_##enum): { \
+          DRM::fex_##type *guest = reinterpret_cast<DRM::fex_##type*>(args); \
+          type host = *guest; \
+          uint64_t Result = ioctl(fd, enum, &host); \
+          *guest = host; \
+          return Result; \
+          break; \
+        }
+
       switch (_IOC_NR(cmd)) {
         case _IOC_NR(FEX_DRM_IOCTL_VERSION): {
           fex_drm_version *version = reinterpret_cast<fex_drm_version*>(args);
@@ -150,11 +229,39 @@ namespace FEX::HLE::x32 {
           return Result;
           break;
         }
-        case _IOC_NR(FEX_DRM_IOCTL_GET_UNIQUE): {
-          DRM::fex_drm_unique *val = reinterpret_cast<DRM::fex_drm_unique*>(args);
-          drm_unique Host_val = *val;
-          uint64_t Result = ioctl(fd, DRM_IOCTL_GET_UNIQUE, &Host_val);
-          *val = Host_val;
+
+        SIMPLE(DRM_IOCTL_GET_UNIQUE, drm_unique)
+        SIMPLE(DRM_IOCTL_GET_CLIENT, drm_client)
+        SIMPLE(DRM_IOCTL_GET_STATS, drm_stats)
+        SIMPLE(DRM_IOCTL_SET_UNIQUE, drm_unique)
+
+        SIMPLE(DRM_IOCTL_ADD_MAP, drm_map)
+        SIMPLE(DRM_IOCTL_ADD_BUFS, drm_buf_desc)
+        SIMPLE(DRM_IOCTL_MARK_BUFS, drm_buf_desc)
+        SIMPLE(DRM_IOCTL_INFO_BUFS, drm_buf_info)
+        SIMPLE(DRM_IOCTL_MAP_BUFS, drm_buf_map)
+        SIMPLE(DRM_IOCTL_FREE_BUFS, drm_buf_free)
+        SIMPLE(DRM_IOCTL_RM_MAP, drm_map)
+        SIMPLE(DRM_IOCTL_SET_SAREA_CTX, drm_ctx_priv_map)
+        SIMPLE(DRM_IOCTL_GET_SAREA_CTX, drm_ctx_priv_map)
+
+        SIMPLE(DRM_IOCTL_RES_CTX,     drm_ctx_res)
+        SIMPLE(DRM_IOCTL_DMA,         drm_dma)
+        SIMPLE(DRM_IOCTL_SG_ALLOC,    drm_scatter_gather)
+        SIMPLE(DRM_IOCTL_SG_FREE,     drm_scatter_gather)
+        SIMPLE(DRM_IOCTL_UPDATE_DRAW, drm_update_draw)
+        SIMPLE(DRM_IOCTL_MODE_GETPLANERESOURCES, drm_mode_get_plane_res)
+        SIMPLE(DRM_IOCTL_MODE_ADDFB2,            drm_mode_fb_cmd2)
+        SIMPLE(DRM_IOCTL_MODE_OBJ_GETPROPERTIES, drm_mode_obj_get_properties)
+        SIMPLE(DRM_IOCTL_MODE_OBJ_SETPROPERTY,   drm_mode_obj_set_property)
+        SIMPLE(DRM_IOCTL_MODE_GETFB2,            drm_mode_fb_cmd2)
+
+        case _IOC_NR(FEX_DRM_IOCTL_WAIT_VBLANK): {
+          fex_drm_wait_vblank *guest = reinterpret_cast<fex_drm_wait_vblank*>(args);
+          drm_wait_vblank Host{};
+          Host.request = guest->request;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_VERSION, &Host);
+          guest->reply = Host.reply;
           return Result;
           break;
         }
@@ -198,6 +305,7 @@ namespace FEX::HLE::x32 {
           return -EPERM;
           break;
       }
+#undef SIMPLE
 #undef _BASIC_META
 #undef _BASIC_META_VAR
 #undef _CUSTOM_META
@@ -236,6 +344,8 @@ namespace FEX::HLE::x32 {
 #include "Tests/LinuxSyscalls/x32/Ioctl/sockios.inl"
       // Joystick
 #include "Tests/LinuxSyscalls/x32/Ioctl/joystick.inl"
+      // Wireless
+#include "Tests/LinuxSyscalls/x32/Ioctl/wireless.inl"
 
 #undef _BASIC_META
 #undef _BASIC_META_VAR
