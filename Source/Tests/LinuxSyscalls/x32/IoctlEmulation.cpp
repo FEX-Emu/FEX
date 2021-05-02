@@ -125,6 +125,30 @@ namespace FEX::HLE::x32 {
       return -EPERM;
     }
 
+    uint32_t Nouveau_Handler(int fd, uint32_t cmd, uint32_t args) {
+      switch (_IOC_NR(cmd)) {
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+      // DRM
+#include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
+        {
+          return ioctl(fd, cmd, args);
+          break;
+        }
+        default:
+          UnhandledIoctl("Nouveau", fd, cmd, args);
+          return -EPERM;
+          break;
+      }
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+      return -EPERM;
+    }
+
     uint32_t I915_Handler(int fd, uint32_t cmd, uint32_t args) {
 #define SIMPLE(enum, type) case _IOC_NR(FEX_##enum): { \
           I915::fex_##type *guest = reinterpret_cast<I915::fex_##type*>(args); \
@@ -189,6 +213,31 @@ namespace FEX::HLE::x32 {
 #undef _CUSTOM_META_OFFSET
       return -EPERM;
     }
+
+    uint32_t Lima_Handler(int fd, uint32_t cmd, uint32_t args) {
+      switch (_IOC_NR(cmd)) {
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+      // DRM
+#include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
+        {
+          return ioctl(fd, cmd, args);
+          break;
+        }
+        default:
+          UnhandledIoctl("Lima", fd, cmd, args);
+          return -EPERM;
+          break;
+      }
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+      return -EPERM;
+    }
+
     void AssignDeviceTypeToFD(int fd, drm_version const &Version) {
       if (Version.name) {
         if (strcmp(Version.name, "amdgpu") == 0) {
@@ -197,11 +246,17 @@ namespace FEX::HLE::x32 {
         else if (strcmp(Version.name, "msm") == 0) {
           FDToHandler[fd] = MSM_Handler;
         }
+        else if (strcmp(Version.name, "nouveau") == 0) {
+          FDToHandler[fd] = Nouveau_Handler;
+        }
         else if (strcmp(Version.name, "i915") == 0) {
           FDToHandler[fd] = I915_Handler;
         }
         else if (strcmp(Version.name, "panfrost") == 0) {
           FDToHandler[fd] = Panfrost_Handler;
+        }
+        else if (strcmp(Version.name, "lima") == 0) {
+          FDToHandler[fd] = Lima_Handler;
         }
         else {
           LogMan::Msg::E("Unknown DRM device: '%s'", Version.name);
