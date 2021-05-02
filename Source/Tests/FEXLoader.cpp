@@ -350,6 +350,19 @@ int main(int argc, char **argv, char **const envp) {
           BranchTargets.insert(Destination);
         });
 
+        LogMan::Msg::I("Symbol seed: %ld", BranchTargets.size());
+
+        container.AddUnwindEntries([&](uintptr_t Entry) {
+          auto Destination = Entry + Section.ElfBase;
+
+          if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
+            //printf("Sym : %lx %lx out of range\n", sym->Address, Destination);
+            return; // outside of current section, unlikely to be real code
+          }
+
+          BranchTargets.insert(Destination);
+        });
+
 
         LogMan::Msg::I("Symbol + Unwind seed: %ld", BranchTargets.size());
 

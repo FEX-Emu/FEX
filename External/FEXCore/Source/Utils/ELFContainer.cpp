@@ -477,6 +477,36 @@ void ELFContainer::CalculateSymbols() {
         }
       }
     }
+
+    Elf32_Shdr const *StrHeader = SectionHeaders.at(Header._32.e_shstrndx)._32;
+    char const *SHStrings = &RawFile.at(StrHeader->sh_offset);
+    for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
+      Elf32_Shdr const *hdr = SectionHeaders.at(i)._32;
+      if (strcmp(&SHStrings[hdr->sh_name], ".eh_frame_hdr") == 0) {
+        auto eh_frame_hdr = &RawFile.at(hdr->sh_offset);
+        // we only handle this specific unwind table encoding
+        if (eh_frame_hdr[0] == 1 && eh_frame_hdr[1] == 0x1B && eh_frame_hdr[2] == 0x3 && eh_frame_hdr[3] == 0x3b) {
+          // ptr enc : 4 bytes, signed, pcrel
+          // fde count : 4 bytes udata
+          // table enc : 4 bytes, signed, datarel
+          int fde_count = *(int*)(eh_frame_hdr + 8);
+          UnwindEntries.clear();
+          UnwindEntries.reserve(fde_count);
+
+          struct entry {
+            int32_t pc;
+            int32_t fde;
+          };
+
+          entry *Table = (entry*)(eh_frame_hdr+12);
+          for (int f = 0; f < fde_count; f++) {
+            uintptr_t Entry = (uintptr_t)(Table[f].pc + hdr->sh_offset);
+            UnwindEntries.push_back(Entry);
+          }
+        }
+        break;
+      }
+    }
   }
   else {
     Elf64_Shdr const *SymTabHeader{nullptr};
@@ -587,12 +617,14 @@ void ELFContainer::CalculateSymbols() {
       Elf64_Shdr const *hdr = SectionHeaders.at(i)._64;
       if (strcmp(&SHStrings[hdr->sh_name], ".eh_frame_hdr") == 0) {
         auto eh_frame_hdr = &RawFile.at(hdr->sh_offset);
+        // we only handle this specific unwind table encoding
         if (eh_frame_hdr[0] == 1 && eh_frame_hdr[1] == 0x1B && eh_frame_hdr[2] == 0x3 && eh_frame_hdr[3] == 0x3b) {
           // ptr enc : 4 bytes, signed, pcrel
           // fde count : 4 bytes udata
           // table enc : 4 bytes, signed, datarel
           int fde_count = *(int*)(eh_frame_hdr + 8);
-          LogMan::Msg::I("fde count: %d\n", fde_count);
+          UnwindEntries.clear();
+          UnwindEntries.reserve(fde_count);
 
           struct entry {
             int32_t pc;
@@ -602,12 +634,7 @@ void ELFContainer::CalculateSymbols() {
           entry *Table = (entry*)(eh_frame_hdr+12);
           for (int f = 0; f < fde_count; f++) {
             uintptr_t Entry = (uintptr_t)(Table[f].pc + hdr->sh_offset);
-            ELFSymbol sym;
-            sym.Address = Entry;
-            sym.Size = 0;
-            sym.Name = "unwind";
-            sym.FileOffset = 1;
-            Symbols.push_back(sym);
+            UnwindEntries.push_back(Entry);
           }
         }
         break;
@@ -660,6 +687,11 @@ void ELFContainer::AddSymbols(SymbolAdder Adder) {
     if (Sym.FileOffset) {
       Adder(&Sym);
     }
+  }
+}
+void ELFContainer::AddUnwindEntries(UnwindAdder Adder) {
+  for (auto Entry : UnwindEntries) {
+    Adder(Entry);
   }
 }
 

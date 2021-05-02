@@ -83,6 +83,9 @@ public:
   using SymbolAdder = std::function<void(ELFSymbol*)>;
   void AddSymbols(SymbolAdder Adder);
 
+  using UnwindAdder = std::function<void(uintptr_t)>;
+  void AddUnwindEntries(UnwindAdder Adder);
+
   void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
 
 
@@ -152,6 +155,7 @@ private:
   std::vector<SectionHeader> SectionHeaders;
   std::vector<ProgramHeader> ProgramHeaders;
   std::vector<ELFSymbol> Symbols;
+  std::vector<uintptr_t> UnwindEntries;
   std::unordered_map<std::string, ELFSymbol *> SymbolMap;
   std::map<uint64_t, ELFSymbol *> SymbolMapByAddress;
 
