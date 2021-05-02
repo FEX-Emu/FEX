@@ -39,17 +39,17 @@ namespace FEX::HLE {
 
     // last two parameters are optional
     REGISTER_SYSCALL_IMPL(mq_open, [](FEXCore::Core::CpuStateFrame *Frame, const char *name, int oflag, mode_t mode, struct mq_attr *attr) -> uint64_t {
-      uint64_t Result = ::mq_open(name, oflag, mode, attr);
+      uint64_t Result = ::syscall(SYS_mq_open, name, oflag, mode, attr);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(mq_unlink, [](FEXCore::Core::CpuStateFrame *Frame, const char *name) -> uint64_t {
-      uint64_t Result = ::mq_unlink(name);
+      uint64_t Result = ::syscall(SYS_mq_unlink, name);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(mq_notify, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, const struct sigevent *sevp) -> uint64_t {
-      uint64_t Result = ::mq_notify(mqdes, sevp);
+      uint64_t Result = ::syscall(SYS_mq_notify, mqdes, sevp);
       SYSCALL_ERRNO();
     });
 
