@@ -8243,6 +8243,19 @@ void OpDispatchBuilder::FenceOp(OpcodeArgs) {
   _Fence({FenceType});
 }
 
+void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
+  if (Op->ModRM == 0xF8) {
+    // 0xF8 is SFENCE
+    _Fence({FEXCore::IR::Fence_Store});
+  }
+  else {
+    // This is a CLFlush
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+    _CacheLineClear(DestMem);
+  }
+}
+
 void OpDispatchBuilder::PSADBW(OpcodeArgs) {
   // The documentation is actually incorrect in how this instruction operates
   // It strongly implies that the `abs(dest[i] - src[i])` operates in 8bit space
@@ -8942,7 +8955,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 3), 1, &OpDispatchBuilder::STMXCSR},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_Load.Val>},      //LFENCE
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_LoadStore.Val>}, //MFENCE
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_Store.Val>},     //SFENCE
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::StoreFenceOrCLFlush},     //SFENCE
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_FS>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_GS>},
