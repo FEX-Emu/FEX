@@ -69,6 +69,9 @@ protected:
   void Align16B();
 
   uint32_t SpillSlots{};
+
+  uint32_t DCacheLineSize{};
+  uint32_t ICacheLineSize{};
 };
 
 }

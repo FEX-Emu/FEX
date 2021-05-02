@@ -939,6 +939,21 @@ DEF_OP(VStoreMemElement) {
   LOGMAN_MSG_A("Unimplemented");
 }
 
+DEF_OP(CacheLineClear) {
+  auto Op = IROp->C<IR::IROp_CacheLineClear>();
+
+  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+
+  // Clear dcache only
+  // icache doesn't matter here since the guest application shouldn't be calling clflush on JIT code.
+  mov(TMP1, MemReg);
+  for (size_t i = 0; i < std::max(1U, DCacheLineSize / 64U); ++i) {
+    dc(DataCacheOp::CVAU, TMP1);
+    add(TMP1, TMP1, DCacheLineSize);
+  }
+  dsb(InnerShareable, BarrierAll);
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterMemoryHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -964,6 +979,7 @@ void Arm64JITCore::RegisterMemoryHandlers() {
   }
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
+  REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
 #undef REGISTER_OP
 }
 }

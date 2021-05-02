@@ -792,6 +792,17 @@
       ]
     },
 
+    "CacheLineClear": {
+      "Desc": ["Does a 64 byte cacheline clear at the address specified"
+              ],
+      "HasSideEffects": true,
+      "OpClass": "Memory",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Addr"
+      ]
+    },
+
     "Add": {
       "Desc": [ "Integer Add",
                 "Will truncate to 64 or 32bits"

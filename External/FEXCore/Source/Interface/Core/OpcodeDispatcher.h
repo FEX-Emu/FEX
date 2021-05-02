@@ -458,6 +458,8 @@ public:
   template<uint8_t FenceType>
   void FenceOp(OpcodeArgs);
 
+  void StoreFenceOrCLFlush(OpcodeArgs);
+
   void PSADBW(OpcodeArgs);
 
   void AESImcOp(OpcodeArgs);

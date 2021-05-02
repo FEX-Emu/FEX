@@ -308,6 +308,7 @@ private:
   DEF_OP(StoreMem);
   DEF_OP(VLoadMemElement);
   DEF_OP(VStoreMemElement);
+  DEF_OP(CacheLineClear);
 
   ///< Misc ops
   DEF_OP(EndBlock);

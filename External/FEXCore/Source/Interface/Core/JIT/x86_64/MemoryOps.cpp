@@ -573,6 +573,14 @@ DEF_OP(VStoreMemElement) {
   LOGMAN_MSG_A("Unimplemented");
 }
 
+DEF_OP(CacheLineClear) {
+  auto Op = IROp->C<IR::IROp_CacheLineClear>();
+
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
+
+  clflush(ptr [MemReg]);
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterMemoryHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -592,6 +600,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STOREMEMTSO,         StoreMem);
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
+  REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
 #undef REGISTER_OP
 }
 }

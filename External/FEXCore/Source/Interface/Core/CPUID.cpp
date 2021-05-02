@@ -124,7 +124,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h() {
     (1 << 16) | // Page Attribute Table
     (1 << 17) | // 36bit page size extension
     (0 << 18) | // Processor serial number
-    (0 << 19) | // CLFLUSH
+    (1 << 19) | // CLFLUSH
     (0 << 20) | // Reserved
     (0 << 21) | // Debug store
     (0 << 22) | // Thermal monitor and software controled clock

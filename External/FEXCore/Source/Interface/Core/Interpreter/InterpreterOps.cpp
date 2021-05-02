@@ -30,6 +30,17 @@
 
 namespace FEXCore::CPU {
 
+static inline void CacheLineFlush(char *Addr) {
+#ifdef _M_X86_64
+  __asm volatile (
+    "clflush (%[Addr]);"
+    :: [Addr] "r" (Addr)
+    : "memory");
+#else
+  __builtin___clear_cache(Addr, Addr+64);
+#endif
+}
+
 namespace AES {
   static __uint128_t InvShiftRows(uint8_t *State) {
     uint8_t Shifted[16] = {
@@ -1450,6 +1461,16 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             #undef STORE_DATA
             break;
           }
+          case IR::OP_CACHELINECLEAR: {
+            auto Op = IROp->C<IR::IROp_CacheLineClear>();
+
+            char *Data = *GetSrc<char **>(SSAData, Op->Addr);
+
+            // 64-byte cache line clear
+            CacheLineFlush(Data);
+            break;
+          }
+
           #define DO_OP(size, type, func)              \
             case size: {                                      \
             auto *Dst_d  = reinterpret_cast<type*>(GDP);  \

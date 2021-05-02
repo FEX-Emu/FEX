@@ -310,6 +310,7 @@ private:
   DEF_OP(ParanoidStoreMemTSO);
   DEF_OP(VLoadMemElement);
   DEF_OP(VStoreMemElement);
+  DEF_OP(CacheLineClear);
 
   ///< Misc ops
   DEF_OP(EndBlock);

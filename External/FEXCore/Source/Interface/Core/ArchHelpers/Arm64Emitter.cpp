@@ -29,6 +29,17 @@ Arm64Emitter::Arm64Emitter(size_t size) : vixl::aarch64::Assembler(size, vixl::a
   if (!SupportsAtomics) {
     WARN_ONCE("Host CPU doesn't support atomics. Expect bad performance");
   }
+
+#ifdef _M_ARM_64
+  // We need to get the CPU's cache line size
+  // We expect sane targets that have correct cacheline sizes across clusters
+  uint64_t CTR;
+  __asm volatile ("mrs %[ctr], ctr_el0"
+    : [ctr] "=r"(CTR));
+
+  DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
+  ICacheLineSize = 4 << (CTR & 0xF);
+#endif
 }
 
 void Arm64Emitter::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
