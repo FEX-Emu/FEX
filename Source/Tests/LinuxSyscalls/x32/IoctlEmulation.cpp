@@ -417,6 +417,7 @@ namespace FEX::HLE::x32 {
 #include "Tests/LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/msm_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/i915_drm.inl"
+#include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
 
