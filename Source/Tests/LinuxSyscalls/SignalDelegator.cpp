@@ -611,4 +611,23 @@ namespace FEX::HLE {
     return Result == -1 ? -errno : Result;
 
   }
+
+  uint64_t SignalDelegator::GuestSigTimedWait(uint64_t *set, siginfo_t *info, const struct timespec *timeout, size_t sigsetsize) {
+    if (sigsetsize > sizeof(uint64_t)) {
+      return -EINVAL;
+    }
+
+    sigset_t HostSet{};
+    sigemptyset(&HostSet);
+
+    for (int32_t i = 0; i < MAX_SIGNALS; ++i) {
+      if (*set & (1ULL << i)) {
+        sigaddset(&HostSet, i + 1);
+      }
+    }
+
+    uint64_t Result = sigtimedwait(&HostSet, info, timeout);
+
+    return Result == -1 ? -errno : Result;
+  }
 }

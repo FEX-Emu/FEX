@@ -14,15 +14,11 @@ conformance-interfaces-sigqueue-6-1.test
 conformance-interfaces-sigqueue-7-1.test
 conformance-interfaces-sigqueue-8-1.test
 conformance-interfaces-sigqueue-9-1.test
-conformance-interfaces-sigtimedwait-1-1.test
-conformance-interfaces-sigtimedwait-2-1.test
 conformance-interfaces-sigtimedwait-4-1.test
 conformance-interfaces-sigtimedwait-5-1.test
-conformance-interfaces-sigtimedwait-6-1.test
 conformance-interfaces-sigwait-1-1.test
 conformance-interfaces-sigwait-2-1.test
 conformance-interfaces-sigwait-3-1.test
-conformance-interfaces-sigwait-4-1.test
 conformance-interfaces-sigwait-8-1.test
 conformance-interfaces-sigwaitinfo-1-1.test
 conformance-interfaces-sigwaitinfo-2-1.test

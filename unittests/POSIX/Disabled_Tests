@@ -542,6 +542,14 @@ conformance-interfaces-raise-2-1.test
 # Signals change this behaviour
 conformance-interfaces-sigpending-1-1.test
 conformance-interfaces-sigpending-2-1.test
+conformance-interfaces-sigwait-1-1.test
+conformance-interfaces-sigwait-2-1.test
+conformance-interfaces-sigwait-3-1.test
+conformance-interfaces-sigwait-8-1.test
+conformance-interfaces-sigwaitinfo-1-1.test
+conformance-interfaces-sigwaitinfo-5-1.test
+conformance-interfaces-sigwaitinfo-6-1.test
+conformance-interfaces-sigwaitinfo-9-1.test
 
 # Causes long timeout with signal change
 conformance-interfaces-mmap-11-2.test

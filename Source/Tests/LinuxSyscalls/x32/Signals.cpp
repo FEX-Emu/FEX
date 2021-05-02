@@ -52,5 +52,16 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, siginfo_t *info, const struct timespec32* timeout, size_t sigsetsize) -> uint64_t {
+      struct timespec* timeout_ptr{};
+      struct timespec tp64{};
+      if (timeout) {
+        tp64 = *timeout;
+        timeout_ptr = &tp64;
+      }
+
+      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, info, timeout_ptr, sigsetsize);
+    });
+
   }
 }

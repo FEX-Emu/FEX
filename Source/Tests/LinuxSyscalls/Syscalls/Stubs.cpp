@@ -40,10 +40,6 @@ namespace FEX::HLE {
       return -EPERM;
     });
 
-    REGISTER_SYSCALL_IMPL(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, sigset_t *set, const struct timespec*, size_t sigsetsize) -> uint64_t {
-      SYSCALL_STUB(rt_sigtimedwait);
-    });
-
     REGISTER_SYSCALL_IMPL(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, siginfo_t *uinfo) -> uint64_t {
       SYSCALL_STUB(rt_sigqueueinfo);
     });
