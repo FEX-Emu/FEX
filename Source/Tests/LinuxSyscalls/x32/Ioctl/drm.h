@@ -8,6 +8,7 @@
 #include <drm/drm_mode.h>
 #include <drm/i915_drm.h>
 #include <drm/amdgpu_drm.h>
+#include <drm/lima_drm.h>
 #include <drm/panfrost_drm.h>
 #include <drm/msm_drm.h>
 #include <drm/nouveau_drm.h>
@@ -917,6 +918,7 @@ struct drm_i915_gem_mmap_offset {
 #include "Tests/LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/msm_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/i915_drm.inl"
+#include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
 

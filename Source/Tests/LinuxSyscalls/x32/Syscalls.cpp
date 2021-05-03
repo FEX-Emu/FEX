@@ -6,6 +6,7 @@ $end_info$
 
 #include "Common/MathUtils.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/IoctlEmulation.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
@@ -690,6 +691,8 @@ public:
     FEX::HLE::x32::RegisterThread();
     FEX::HLE::x32::RegisterTime();
     FEX::HLE::x32::RegisterTimer();
+
+    FEX::HLE::x32::InitializeStaticIoctlHandlers();
 
     // Set all the new definitions
     for (auto &Syscall : syscalls_x32) {
