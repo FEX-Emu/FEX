@@ -50,6 +50,9 @@ namespace FEXCore::Context {
     CTX->Step();
   }
 
+  void CompileRIP(FEXCore::Context::Context *CTX, uint64_t GuestRIP) {
+    CTX->CompileBlock(CTX->ParentThread->CurrentFrame, GuestRIP);
+  }
 
   FEXCore::Context::ExitReason RunUntilExit(FEXCore::Context::Context *CTX) {
     return CTX->RunUntilExit();
@@ -148,6 +151,10 @@ namespace FEXCore::Context {
 
   bool WriteAOTIR(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
     return CTX->WriteAOTIRCache(CacheWriter);
+  }
+
+  void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
+    CTX->WriteFilesWithCode(Writer);
   }
 
   void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name) {

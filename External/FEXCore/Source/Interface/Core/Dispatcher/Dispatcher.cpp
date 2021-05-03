@@ -323,14 +323,14 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
 }
 
 uint64_t Dispatcher::GetCompileBlockPtr() {
-  using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
+  using ClassPtrType = void (FEXCore::Context::Context::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
   union PtrCast {
     ClassPtrType ClassPtr;
     uintptr_t Data;
   };
 
   PtrCast CompileBlockPtr;
-  CompileBlockPtr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
+  CompileBlockPtr.ClassPtr = &FEXCore::Context::Context::CompileBlockJit;
   return CompileBlockPtr.Data;
 }
 

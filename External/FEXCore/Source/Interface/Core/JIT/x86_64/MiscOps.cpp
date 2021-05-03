@@ -37,6 +37,12 @@ DEF_OP(Break) {
     case 5: // Guest ud2
       ud2();
     break;
+    case 2: // overflow
+      ud2();
+      break;
+    case 3: // int 1
+      ud2();
+      break;
     case 4: { // HLT
       // Time to quit
       // Set our stack to the starting stack location

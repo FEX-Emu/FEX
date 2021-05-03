@@ -578,7 +578,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           if (LastStoreNode != nullptr)
           {
             IREmit->SetWriteCursor(CodeNode);
-            RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + F, 1, ACCESS_WRITE, IREmit->_InlineConstant(0), CodeNode);
+            RecordAccess(&LocalInfo, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + F, 1, ACCESS_WRITE, IREmit->_Constant(0), CodeNode);
 
             IREmit->Remove(LastStoreNode);
             Changed = true;

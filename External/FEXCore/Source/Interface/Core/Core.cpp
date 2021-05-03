@@ -666,12 +666,16 @@ namespace FEXCore::Context {
         if (TableInfo->OpcodeDispatcher) {
           auto Fn = TableInfo->OpcodeDispatcher;
           Thread->OpDispatcher->HandledLock = false;
+          Thread->OpDispatcher->ResetDecodeFailure();
           std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
           if (Thread->OpDispatcher->HadDecodeFailure()) {
             HadDispatchError = true;
           }
           else {
-            LOGMAN_THROW_A(Thread->OpDispatcher->HandledLock == IsLocked, "Missing LOCK HANDLER at 0x%lx{'%s'}\n", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+            if (Thread->OpDispatcher->HandledLock != IsLocked) {
+              HadDispatchError = true;
+              LogMan::Msg::E("Missing LOCK HANDLER at 0x%lx{'%s'}", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+            }
             BlockInstructionsLength += DecodedInfo->InstSize;
             TotalInstructionsLength += DecodedInfo->InstSize;
             ++TotalInstructions;
@@ -687,7 +691,7 @@ namespace FEXCore::Context {
           if (TotalInstructions == 0) {
             // Couldn't handle any instruction in op dispatcher
             Thread->OpDispatcher->ResetWorkingList();
-            return { nullptr, nullptr, 0, 0, 0, 0};
+            return { nullptr, nullptr, 0, 0, 0, 0 };
           }
           else {
             uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
@@ -843,6 +847,18 @@ namespace FEXCore::Context {
       GeneratedIR = false;
     }
 
+    {
+      std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+      auto file = AddrToFile.lower_bound(GuestRIP);
+      if (file != AddrToFile.begin()) {
+        --file;
+        if (!file->second.ContainsCode) {
+          file->second.ContainsCode = true;
+          FilesWithCode[file->second.fileid] = file->second.filename;
+        }
+      }
+    }
+
     if (IRList == nullptr && Config.AOTIRLoad) {
       std::lock_guard<std::mutex> lk(AOTIRCacheLock);
       auto file = AddrToFile.lower_bound(GuestRIP);
@@ -905,6 +921,9 @@ namespace FEXCore::Context {
       GeneratedIR = true;
     }
 
+    if (IRList == nullptr) {
+      return { nullptr, nullptr, nullptr, nullptr, false, 0, 0 };
+    }
     // Attempt to get the CPU backend to compile this code
     return { Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR, StartAddr, Length};
   }
@@ -952,6 +971,13 @@ namespace FEXCore::Context {
 
     return true;
 
+  }
+
+  void Context::WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
+    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+    for( const auto &File: FilesWithCode) {
+      Writer(File.first, File.second);
+    }
   }
 
   bool Context::WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
@@ -1027,7 +1053,15 @@ namespace FEXCore::Context {
     return rv;
   }
 
+  void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+    auto NewBlock = CompileBlock(Frame, GuestRIP);
 
+    if (NewBlock == 0) {
+      LogMan::Msg::E("CompileBlockJit: Failed to compile code %lX - aborting process", GuestRIP);
+      abort();
+    }
+  }
+  
   uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto Thread = Frame->Thread;
 
@@ -1080,7 +1114,11 @@ namespace FEXCore::Context {
       Length = _Length;
     }
 
-    LOGMAN_THROW_A(CodePtr != nullptr, "Failed to compile code %lX", GuestRIP);
+    if (CodePtr == nullptr) {
+      if (DecrementRefCount)
+        --Thread->CompileBlockReentrantRefCount;
+      return 0;
+    }
 
     // The core managed to compile the code.
 #if ENABLE_JITSYMBOLS
@@ -1101,7 +1139,7 @@ namespace FEXCore::Context {
       Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
 
       // Add to AOT cache if aot generation is enabled
-      if (Config.AOTIRCapture && RAData) {
+      if ((Config.AOTIRCapture() || Config.AOTIRGenerate()) && RAData) {
         std::lock_guard<std::mutex> lk(AOTIRCacheLock);
 
         RAData->IsShared = true;
@@ -1267,7 +1305,7 @@ namespace FEXCore::Context {
 
       std::lock_guard<std::mutex> lk(AOTIRCacheLock);
 
-      AddrToFile.insert({ Base, { Base, Size, Offset, fileid, nullptr } });
+      AddrToFile.insert({ Base, { Base, Size, Offset, fileid, filename, nullptr, false} });
 
       if (Config.AOTIRLoad && !AOTIRCache.contains(fileid) && AOTIRLoader) {
         auto streamfd = AOTIRLoader(fileid);
@@ -1283,5 +1321,10 @@ namespace FEXCore::Context {
     std::lock_guard<std::mutex> lk(AOTIRCacheLock);
     // TODO: Support partial removing
     AddrToFile.erase(Base);
+  }
+
+  void ConfigureAOTGen(FEXCore::Context::Context *CTX, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
+    CTX->ParentThread->FrontendDecoder->SetExternalBranches(ExternalBranches);
+    CTX->ParentThread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
   }
 }

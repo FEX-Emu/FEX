@@ -29,6 +29,7 @@ $end_info$
 #include <fstream>
 #include <filesystem>
 #include <algorithm>
+#include <set>
 
 namespace {
 static bool SilentLog;
@@ -206,6 +207,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEX_CONFIG_OPT(SilentLog, SILENTLOG);
   FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
+  FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
   FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
@@ -326,27 +328,128 @@ int main(int argc, char **argv, char **const envp) {
   }
 
 
-  if (AOTIRLoad() || AOTIRCapture()) {
+  if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
   }
 
   FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / fileid;
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
     return open(filepath.c_str(), O_RDONLY);
   });
 
-  for(auto handler: Loader.AOTMappers) {
-    handler(CTX);
+  for(auto Section: Loader.Sections) {
+    FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
   }
 
-  FEXCore::Context::RunUntilExit(CTX);
+  if (AOTIRGenerate()) {
+    for(auto Section: Loader.Sections) {
+      if (Section.Executable && Section.Size > 16) {
+        ELFLoader::ELFContainer container{Section.Filename, "", false};
 
-  if (AOTIRCapture()) {
-    std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir");
+        std::set<uintptr_t> BranchTargets;
+
+        container.AddSymbols([&](ELFLoader::ELFSymbol* sym) {
+          auto Destination = sym->Address + Section.ElfBase;
+
+          if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
+            //printf("Sym : %lx %lx out of range\n", sym->Address, Destination);
+            return; // outside of current section, unlikely to be real code
+          }
+
+          BranchTargets.insert(Destination);
+        });
+
+        LogMan::Msg::I("Symbol seed: %ld", BranchTargets.size());
+
+        container.AddUnwindEntries([&](uintptr_t Entry) {
+          auto Destination = Entry + Section.ElfBase;
+
+          if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
+            //printf("Sym : %lx %lx out of range\n", sym->Address, Destination);
+            return; // outside of current section, unlikely to be real code
+          }
+
+          BranchTargets.insert(Destination);
+        });
+
+
+        LogMan::Msg::I("Symbol + Unwind seed: %ld", BranchTargets.size());
+
+        for (size_t Offset = 0; Offset < (Section.Size - 16); Offset++) {
+          uint8_t *pCode = (uint8_t *)(Section.Base + Offset);
+
+          if (*pCode == 0xE8) {
+            uintptr_t Destination = (int)(pCode[1] | (pCode[2] << 8) | (pCode[3] << 16) | (pCode[4] << 24));
+            Destination += (uintptr_t)pCode + 5;
+
+            auto DestinationPtr = (uint8_t*)Destination;
+            
+            if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
+              continue; // outside of current section, unlikely to be real code
+
+            if (DestinationPtr[0] == 0 && DestinationPtr[1] == 0)
+              continue; // add al, [rax], unlikely to be real code
+/*
+            if (DestinationPtr[0] == 0x44 && DestinationPtr[1] == 0x0f && DestinationPtr[2] == 0x6f)
+              continue; // REX.W + movq leads to frontend bugs
+*/
+            BranchTargets.insert(Destination);
+          }
+
+          if (pCode[0] == 0xf3 && pCode[1] == 0x0f && pCode[2] == 0x1e && pCode[3] == 0xfa) {
+            BranchTargets.insert((uintptr_t)pCode);
+          }
+        }
+
+        uint64_t SectionMaxAddress = Section.Base + Section.Size;
+        std::set<uint64_t> ExternalBranches;
+
+        FEXCore::Context::ConfigureAOTGen(CTX, &ExternalBranches, SectionMaxAddress);
+
+        std::set<uint64_t> Compiled;
+        int counter = 0;
+        do {        
+          LogMan::Msg::I("Discovered %ld Branch Targets in this pass", BranchTargets.size());
+          for (auto RIP: BranchTargets) {
+            if ((counter++) % 1000 == 0)
+              LogMan::Msg::I("Compiling %d %lX", counter, RIP - Section.ElfBase);
+            FEXCore::Context::CompileRIP(CTX, RIP);
+            Compiled.insert(RIP);
+          }
+          LogMan::Msg::I("\nPass Done");
+          BranchTargets.clear();
+          for (auto Destination: ExternalBranches) {
+            if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
+              continue;
+            if (Compiled.contains(Destination))
+              continue;
+            BranchTargets.insert(Destination);
+          }
+          ExternalBranches.clear();
+        } while (BranchTargets.size() > 0);
+        LogMan::Msg::I("\nAll Done: %d", counter);
+      }
+    }
+  } else {
+    FEXCore::Context::RunUntilExit(CTX);
+  }
+
+  std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir");
+
+  FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
+    int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
+    if (fd != -1) {
+      write(fd, filename.c_str(), filename.size());
+      close(fd);
+    }
+  });
+
+  if (AOTIRCapture() || AOTIRGenerate()) {
 
     auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / fileid;
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
       auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
       if (*AOTWrite) {
         std::filesystem::resize_file(filepath, 0);

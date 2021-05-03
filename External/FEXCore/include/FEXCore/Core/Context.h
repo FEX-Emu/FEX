@@ -9,6 +9,7 @@
 #include <istream>
 #include <ostream>
 #include <memory>
+#include <set>
 
 namespace FEXCore {
   class CodeLoader;
@@ -117,6 +118,8 @@ namespace FEXCore::Context {
    * @return The ExitReason for the parentthread.
    */
   __attribute__((visibility("default"))) ExitReason RunUntilExit(FEXCore::Context::Context *CTX);
+
+  __attribute__((visibility("default"))) void CompileRIP(FEXCore::Context::Context *CTX, uint64_t GuestRIP);
 
   /**
    * @brief Gets the program exit status
@@ -228,5 +231,8 @@ namespace FEXCore::Context {
   __attribute__((visibility("default"))) void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length);
   __attribute__((visibility("default"))) void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader);
   __attribute__((visibility("default"))) bool WriteAOTIR(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
+  __attribute__((visibility("default"))) void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer);
   __attribute__((visibility("default"))) void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length);
+
+  __attribute__((visibility("default"))) void ConfigureAOTGen(FEXCore::Context::Context *CTX, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);
 }

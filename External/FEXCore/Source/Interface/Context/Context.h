@@ -111,6 +111,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(ABILocalFlags, ABILOCALFLAGS);
       FEX_CONFIG_OPT(ABINoPF, ABINOPF);
       FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
+      FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
       FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
       FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
       FEX_CONFIG_OPT(Core, CORE);
@@ -160,11 +161,13 @@ namespace FEXCore::Context {
       uint64_t Len;
       uint64_t Offset;
       std::string fileid;
+      std::string filename;
       void *CachedFileEntry;
+      bool ContainsCode;
     };
 
     std::map<uint64_t, AddrToFileEntry> AddrToFile;
-
+    std::map<std::string, std::string> FilesWithCode;
 
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
@@ -214,9 +217,14 @@ namespace FEXCore::Context {
 
     std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
+    
+    // same as CompileBlock, but aborts on failure
+    void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
     bool LoadAOTIRCache(int streamfd);
     bool WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
+    void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer);
+    
     // Used for thread creation from syscalls
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);

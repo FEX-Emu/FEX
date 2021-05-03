@@ -181,19 +181,10 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   {
     L(NoBlock);
 
-    using ClassPtrType = uintptr_t (FEXCore::Context::Context::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
-    union PtrCast {
-      ClassPtrType ClassPtr;
-      uintptr_t Data;
-    };
-
-    PtrCast Ptr;
-    Ptr.ClassPtr = &FEXCore::Context::Context::CompileBlock;
-
     // {rdi, rsi, rdx}
     mov(rdi, reinterpret_cast<uint64_t>(CTX));
     mov(rsi, STATE);
-    mov(rax, Ptr.Data);
+    mov(rax, GetCompileBlockPtr());
 
     call(rax);
 
