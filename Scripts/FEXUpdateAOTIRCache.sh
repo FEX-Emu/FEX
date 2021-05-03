@@ -31,6 +31,6 @@ for fileid in ~/.fex-emu/aotir/*.path; do
 		echo "`basename $fileid` has already been generated"
 	else
 		echo "Processing `basename $fileid` ($filename) with $args"
-		Bin/FEXLoader --aotirgenerate $args "$filename"
+		$FEX --aotirgenerate $args "$filename"
 	fi
 done
