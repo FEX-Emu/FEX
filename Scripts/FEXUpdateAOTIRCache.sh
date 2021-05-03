@@ -1,5 +1,6 @@
 #!/bin/bash
-FEX={$1:FEXLoader}
+FEX=${1:-FEXLoader}
+echo Using $FEX
 for fileid in ~/.fex-emu/aotir/*.path; do
 	filename=`cat "$fileid"`
 	args=""
