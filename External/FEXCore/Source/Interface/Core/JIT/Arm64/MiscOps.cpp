@@ -42,6 +42,9 @@ DEF_OP(Break) {
     case 5: // Guest ud2
       hlt(4);
       break;
+    case 1: // Int <imm8>
+      hlt(4);
+      break;
     case 2: // overflow
       hlt(4);
       break;
