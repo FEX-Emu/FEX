@@ -45,7 +45,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     echo "Attempting to install FEX-x86 misc now."
     COMMAND ${CMAKE_COMMAND} -E
       echo
-      ':FEX-x86:M:0:\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:CF' > /proc/sys/fs/binfmt_misc/register
+      ':FEX-x86:M:0:\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:CF' > /proc/sys/fs/binfmt_misc/register
     COMMAND ${CMAKE_COMMAND} -E
     echo "binfmt_misc FEX-x86 installed"
   )
@@ -59,7 +59,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     echo "Attempting to install FEX-x86_64 misc now."
     COMMAND ${CMAKE_COMMAND} -E
       echo
-      ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:CF' > /proc/sys/fs/binfmt_misc/register
+      ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:CF' > /proc/sys/fs/binfmt_misc/register
     COMMAND ${CMAKE_COMMAND} -E
     echo "binfmt_misc FEX-x86_64 installed"
   )
