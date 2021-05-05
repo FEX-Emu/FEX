@@ -51,6 +51,8 @@ public:
 
   std::string *FindFDName(int fd);
 
+  std::optional<std::string> GetSelf(const char *Pathname);
+
 private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 

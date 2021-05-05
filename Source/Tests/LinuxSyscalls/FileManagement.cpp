@@ -137,8 +137,28 @@ std::string FileManager::GetEmulatedPath(const char *pathname) {
   return RootFSPath + pathname;
 }
 
+
+std::optional<std::string> FileManager::GetSelf(const char *Pathname) {
+  if (!Pathname) {
+    return std::nullopt;
+  }
+
+  int pid = getpid();
+
+  char PidSelfPath[50];
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+
+  if (strcmp(Pathname, "/proc/self/exe") == 0 || strcmp(Pathname, PidSelfPath) == 0) {
+    return Filename();
+  }
+
+  return Pathname;
+}
+
 uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[maybe_unused]] uint32_t mode) {
-  return ::open(pathname, flags, mode);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+  return ::open(SelfPath, flags, mode);
 }
 
 uint64_t FileManager::Close(int fd) {
@@ -150,60 +170,75 @@ uint64_t FileManager::Close(int fd) {
 }
 
 uint64_t FileManager::Stat(const char *pathname, void *buf) {
-  auto Path = GetEmulatedPath(pathname);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::stat(Path.c_str(), reinterpret_cast<struct stat*>(buf));
     if (Result != -1)
       return Result;
   }
-  return ::stat(pathname, reinterpret_cast<struct stat*>(buf));
+  return ::stat(SelfPath, reinterpret_cast<struct stat*>(buf));
 }
 
-uint64_t FileManager::Lstat(const char *path, void *buf) {
-  auto Path = GetEmulatedPath(path);
+uint64_t FileManager::Lstat(const char *pathname, void *buf) {
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::lstat(Path.c_str(), reinterpret_cast<struct stat*>(buf));
     if (Result != -1)
       return Result;
   }
 
-  return ::lstat(path, reinterpret_cast<struct stat*>(buf));
+  return ::lstat(SelfPath, reinterpret_cast<struct stat*>(buf));
 }
 
 uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
-  auto Path = GetEmulatedPath(pathname);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::access(Path.c_str(), mode);
     if (Result != -1)
       return Result;
   }
 
-  return ::access(pathname, mode);
+  return ::access(SelfPath, mode);
 }
 
 uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode) {
-  auto Path = GetEmulatedPath(pathname);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::syscall(SYS_faccessat, dirfd, Path.c_str(), mode);
     if (Result != -1)
       return Result;
   }
 
-  return ::syscall(SYS_faccessat, dirfd, pathname, mode);
+  return ::syscall(SYS_faccessat, dirfd, SelfPath, mode);
 }
 
 uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int flags) {
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
 #ifndef SYS_faccessat2
   const uint32_t SYS_faccessat2 = 439;
 #endif
-  auto Path = GetEmulatedPath(pathname);
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::syscall(SYS_faccessat2, dirfd, Path.c_str(), mode, flags);
     if (Result != -1)
       return Result;
   }
 
-  return ::syscall(SYS_faccessat2, dirfd, pathname, mode, flags);
+  return ::syscall(SYS_faccessat2, dirfd, SelfPath, mode, flags);
 }
 
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
@@ -231,73 +266,82 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
 }
 
 uint64_t FileManager::Chmod(const char *pathname, mode_t mode) {
-  auto Path = GetEmulatedPath(pathname);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::chmod(Path.c_str(), mode);
     if (Result != -1)
       return Result;
   }
 
-  return ::chmod(pathname, mode);
+  return ::chmod(SelfPath, mode);
 }
 
 uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz) {
-  if (strcmp(pathname, "/proc/self/exe") == 0) {
-    auto App = Filename();
-    strncpy(buf, App.c_str(), bufsiz);
-    return std::min(bufsiz, App.size());
-  }
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(pathname);
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::readlinkat(dirfd, Path.c_str(), buf, bufsiz);
     if (Result != -1)
       return Result;
   }
 
-  return ::readlinkat(dirfd, pathname, buf, bufsiz);
+  return ::readlinkat(dirfd, SelfPath, buf, bufsiz);
 }
 
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, int flags, uint32_t mode) {
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
   int32_t fd = -1;
 
-  fd = EmuFD.OpenAt(dirfs, pathname, flags, mode);
+  fd = EmuFD.OpenAt(dirfs, SelfPath, flags, mode);
   if (fd == -1) {
-    auto Path = GetEmulatedPath(pathname);
+    auto Path = GetEmulatedPath(SelfPath);
     if (!Path.empty()) {
       fd = ::openat(dirfs, Path.c_str(), flags, mode);
     }
 
     if (fd == -1)
-      fd = ::openat(dirfs, pathname, flags, mode);
+      fd = ::openat(dirfs, SelfPath, flags, mode);
   }
 
   if (fd != -1) {
     std::lock_guard<std::mutex> lk(FDLock);
-    FDToNameMap[fd] = pathname;
+    FDToNameMap[fd] = SelfPath;
   }
 
   return fd;
 }
 
 uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf) {
-  auto Path = GetEmulatedPath(pathname);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::statx(dirfd, Path.c_str(), flags, mask, statxbuf);
     if (Result != -1)
       return Result;
   }
-  return ::statx(dirfd, pathname, flags, mask, statxbuf);
+  return ::statx(dirfd, SelfPath, flags, mask, statxbuf);
 }
 
 uint64_t FileManager::Mknod(const char *pathname, mode_t mode, dev_t dev) {
-  auto Path = GetEmulatedPath(pathname);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::mknod(Path.c_str(), mode, dev);
     if (Result != -1)
       return Result;
   }
-  return ::mknod(pathname, mode, dev);
+  return ::mknod(SelfPath, mode, dev);
 }
 
 uint64_t FileManager::Statfs(const char *path, void *buf) {
@@ -311,25 +355,31 @@ uint64_t FileManager::Statfs(const char *path, void *buf) {
 }
 
 uint64_t FileManager::NewFSStatAt(int dirfd, const char *pathname, struct stat *buf, int flag) {
-  auto Path = GetEmulatedPath(pathname);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::fstatat(dirfd, Path.c_str(), buf, flag);
     if (Result != -1) {
       return Result;
     }
   }
-  return ::fstatat(dirfd, pathname, buf, flag);
+  return ::fstatat(dirfd, SelfPath, buf, flag);
 }
 
 uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat64 *buf, int flag) {
-  auto Path = GetEmulatedPath(pathname);
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
     uint64_t Result = ::fstatat64(dirfd, Path.c_str(), buf, flag);
     if (Result != -1) {
       return Result;
     }
   }
-  return ::fstatat64(dirfd, pathname, buf, flag);
+  return ::fstatat64(dirfd, SelfPath, buf, flag);
 }
 
 std::string *FileManager::FindFDName(int fd) {
