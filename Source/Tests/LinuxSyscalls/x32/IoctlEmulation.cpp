@@ -51,6 +51,13 @@ namespace FEX::HLE::x32 {
     LogMan::Msg::A("@@@@@@@@@@@@@@@@@@@@@@@@@");
   }
 
+  namespace BasicHandler {
+    uint64_t BasicHandler(int fd, uint32_t cmd, uint32_t args) {
+      uint64_t Result = ::ioctl(fd, cmd, args);
+      SYSCALL_ERRNO();
+    }
+  }
+
   namespace DRM {
     std::map<uint32_t, std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)>> FDToHandler;
 
@@ -66,8 +73,10 @@ namespace FEX::HLE::x32 {
           AMDGPU::fex_drm_amdgpu_gem_metadata *val = reinterpret_cast<AMDGPU::fex_drm_amdgpu_gem_metadata*>(args);
           drm_amdgpu_gem_metadata Host_val = *val;
           uint64_t Result = ioctl(fd, DRM_IOCTL_AMDGPU_GEM_METADATA, &Host_val);
-          *val = Host_val;
-          return Result;
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
           break;
         }
 #define _BASIC_META(x) case _IOC_NR(x):
@@ -77,7 +86,8 @@ namespace FEX::HLE::x32 {
       // DRM
 #include "Tests/LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
         {
-          return ioctl(fd, cmd, args);
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
           break;
         }
         default:
@@ -97,9 +107,11 @@ namespace FEX::HLE::x32 {
         case _IOC_NR(FEX_DRM_IOCTL_MSM_WAIT_FENCE): {
           MSM::fex_drm_msm_wait_fence *val = reinterpret_cast<MSM::fex_drm_msm_wait_fence*>(args);
           drm_msm_wait_fence Host_val = *val;
-          uint64_t Result = ioctl(fd, DRM_IOCTL_MSM_WAIT_FENCE, &Host_val);
-          *val = Host_val;
-          return Result;
+          uint64_t Result = ::ioctl(fd, DRM_IOCTL_MSM_WAIT_FENCE, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
           break;
         }
 
@@ -110,7 +122,8 @@ namespace FEX::HLE::x32 {
       // DRM
 #include "Tests/LinuxSyscalls/x32/Ioctl/msm_drm.inl"
         {
-          return ioctl(fd, cmd, args);
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
           break;
         }
         default:
@@ -134,7 +147,8 @@ namespace FEX::HLE::x32 {
       // DRM
 #include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
         {
-          return ioctl(fd, cmd, args);
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
           break;
         }
         default:
@@ -153,9 +167,11 @@ namespace FEX::HLE::x32 {
 #define SIMPLE(enum, type) case _IOC_NR(FEX_##enum): { \
           I915::fex_##type *guest = reinterpret_cast<I915::fex_##type*>(args); \
           type host = *guest; \
-          uint64_t Result = ioctl(fd, enum, &host); \
-          *guest = host; \
-          return Result; \
+          uint64_t Result = ::ioctl(fd, enum, &host); \
+          if (Result != -1) { \
+            *guest = host; \
+          } \
+          SYSCALL_ERRNO(); \
           break; \
         }
 
@@ -174,7 +190,8 @@ namespace FEX::HLE::x32 {
       // DRM
 #include "Tests/LinuxSyscalls/x32/Ioctl/i915_drm.inl"
         {
-          return ioctl(fd, cmd, args);
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
           break;
         }
         default:
@@ -199,7 +216,8 @@ namespace FEX::HLE::x32 {
       // DRM
 #include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
         {
-          return ioctl(fd, cmd, args);
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
           break;
         }
         default:
@@ -223,7 +241,8 @@ namespace FEX::HLE::x32 {
       // DRM
 #include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
         {
-          return ioctl(fd, cmd, args);
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
           break;
         }
         default:
@@ -268,9 +287,11 @@ namespace FEX::HLE::x32 {
 #define SIMPLE(enum, type) case _IOC_NR(FEX_##enum): { \
           DRM::fex_##type *guest = reinterpret_cast<DRM::fex_##type*>(args); \
           type host = *guest; \
-          uint64_t Result = ioctl(fd, enum, &host); \
-          *guest = host; \
-          return Result; \
+          uint64_t Result = ::ioctl(fd, enum, &host); \
+          if (Result != -1) { \
+            *guest = host; \
+          } \
+          SYSCALL_ERRNO(); \
           break; \
         }
 
@@ -278,10 +299,12 @@ namespace FEX::HLE::x32 {
         case _IOC_NR(FEX_DRM_IOCTL_VERSION): {
           fex_drm_version *version = reinterpret_cast<fex_drm_version*>(args);
           drm_version Host_Version = *version;
-          uint64_t Result = ioctl(fd, DRM_IOCTL_VERSION, &Host_Version);
-          *version = Host_Version;
-          AssignDeviceTypeToFD(fd, Host_Version);
-          return Result;
+          uint64_t Result = ::ioctl(fd, DRM_IOCTL_VERSION, &Host_Version);
+          if (Result != -1) {
+            *version = Host_Version;
+            AssignDeviceTypeToFD(fd, Host_Version);
+          }
+          SYSCALL_ERRNO();
           break;
         }
 
@@ -315,9 +338,11 @@ namespace FEX::HLE::x32 {
           fex_drm_wait_vblank *guest = reinterpret_cast<fex_drm_wait_vblank*>(args);
           drm_wait_vblank Host{};
           Host.request = guest->request;
-          uint64_t Result = ioctl(fd, DRM_IOCTL_VERSION, &Host);
-          guest->reply = Host.reply;
-          return Result;
+          uint64_t Result = ::ioctl(fd, DRM_IOCTL_VERSION, &Host);
+          if (Result != -1) {
+            guest->reply = Host.reply;
+          }
+          SYSCALL_ERRNO();
           break;
         }
         // Passthrough
@@ -328,8 +353,8 @@ namespace FEX::HLE::x32 {
       // DRM
 #include "Tests/LinuxSyscalls/x32/Ioctl/drm.inl"
         {
-          uint64_t Result = ioctl(fd, cmd, args);
-          return Result;
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
           break;
         }
 
@@ -382,10 +407,10 @@ namespace FEX::HLE::x32 {
     using namespace sockios;
 
     const std::vector<IoctlHandler> LocalHandlers = {{
-#define _BASIC_META(x) IoctlHandler{_IOC_TYPE(x), ::ioctl},
-#define _BASIC_META_VAR(x, args...) IoctlHandler{_IOC_TYPE(x(args)), ::ioctl},
-#define _CUSTOM_META(name, ioctl_num) IoctlHandler{_IOC_TYPE(FEX_##name), ::ioctl},
-#define _CUSTOM_META_OFFSET(name, ioctl_num, offset) IoctlHandler{_IOC_TYPE(FEX_##name), ::ioctl},
+#define _BASIC_META(x) IoctlHandler{_IOC_TYPE(x), FEX::HLE::x32::BasicHandler::BasicHandler},
+#define _BASIC_META_VAR(x, args...) IoctlHandler{_IOC_TYPE(x(args)), FEX::HLE::x32::BasicHandler::BasicHandler},
+#define _CUSTOM_META(name, ioctl_num) IoctlHandler{_IOC_TYPE(FEX_##name), FEX::HLE::x32::BasicHandler::BasicHandler},
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset) IoctlHandler{_IOC_TYPE(FEX_##name), FEX::HLE::x32::BasicHandler::BasicHandler},
 
       // Asound
 #include "Tests/LinuxSyscalls/x32/Ioctl/asound.inl"
