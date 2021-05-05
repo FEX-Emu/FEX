@@ -35,6 +35,8 @@ install(
   )"
 )
 
+install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXUpdateAOTIRCache.sh" DESTINATION bin RENAME FEXUpdateAOTIRCache)
+
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   add_custom_target(binfmt_misc_32
     COMMAND ${CMAKE_COMMAND} -E
