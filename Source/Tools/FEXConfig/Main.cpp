@@ -146,7 +146,7 @@ namespace {
   }
 
   void SetupINotify() {
-    if (INotifyFD == -1) {
+    if (INotifyFD != -1) {
       // Already setup
       return;
     }
