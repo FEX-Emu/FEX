@@ -1,4 +1,4 @@
-# FEX-2103-188-g6346a280
+# FEX-2105
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -86,7 +86,7 @@ Emulation mainloop related glue logic
 - [Core.cpp](../External/FEXCore/Source/Interface/Core/Core.cpp): Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispatcher and provides the Execution loop entrypoint
 
 #### elf-parsing
-- [ELFLoader.cpp](../External/FEXCore/Source/Utils/ELFLoader.cpp): Loads and parses an elf to memory. Also handles some loading & logic.
+- [ELFContainer.cpp](../External/FEXCore/Source/Utils/ELFContainer.cpp): Loads and parses an elf to memory. Also handles some loading & logic.
 - [ELFSymbolDatabase.cpp](../External/FEXCore/Source/Utils/ELFSymbolDatabase.cpp): Part of our now defunct ld-linux replacement, keeps tracks of all symbols, loads elfs, handles relocations. Small parts of this are used.
 
 #### gdbserver
@@ -127,6 +127,7 @@ IR to IR Optimization
 - [DeadStoreElimination.cpp](../External/FEXCore/Source/Interface/IR/Passes/DeadStoreElimination.cpp): Cross block store-after-store elimination
 - [IRCompaction.cpp](../External/FEXCore/Source/Interface/IR/Passes/IRCompaction.cpp): Sorts the ssa storage in memory, needed for RA and others
 - [IRValidation.cpp](../External/FEXCore/Source/Interface/IR/Passes/IRValidation.cpp): Sanity checking pass
+- [LongDivideRemovalPass.cpp](../External/FEXCore/Source/Interface/IR/Passes/LongDivideRemovalPass.cpp): Long divide elimination pass
 - [PhiValidation.cpp](../External/FEXCore/Source/Interface/IR/Passes/PhiValidation.cpp): Sanity checking pass
 - [RedundantFlagCalculationElimination.cpp](../External/FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
 - [RegisterAllocationPass.cpp](../External/FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.cpp)
@@ -189,7 +190,7 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 - [FEXBash.cpp](../Source/Tests/FEXBash.cpp): Launches bash under FEX and passes arguments via -c to it
 
 #### FEXLoader
-- [ELFLoader.cpp](../Source/Tests/ELFLoader.cpp): Glues the ELF loader, FEXCore and LinuxSyscalls to launch an elf under fex
+- [FEXLoader.cpp](../Source/Tests/FEXLoader.cpp): Glues the ELF loader, FEXCore and LinuxSyscalls to launch an elf under fex
 
 #### IRLoader
 - [IRLoader.cpp](../Source/Tests/IRLoader.cpp): Used to run IR Tests
@@ -244,6 +245,7 @@ x86-32 specific syscall implementations
 - [FS.cpp](../Source/Tests/LinuxSyscalls/x32/FS.cpp)
 - [Info.cpp](../Source/Tests/LinuxSyscalls/x32/Info.cpp)
 - [Memory.cpp](../Source/Tests/LinuxSyscalls/x32/Memory.cpp)
+- [Msg.cpp](../Source/Tests/LinuxSyscalls/x32/Msg.cpp)
 - [NotImplemented.cpp](../Source/Tests/LinuxSyscalls/x32/NotImplemented.cpp)
 - [Sched.cpp](../Source/Tests/LinuxSyscalls/x32/Sched.cpp)
 - [Semaphore.cpp](../Source/Tests/LinuxSyscalls/x32/Semaphore.cpp)
