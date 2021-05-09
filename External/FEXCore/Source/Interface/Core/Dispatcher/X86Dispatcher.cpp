@@ -293,7 +293,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
   #if ENABLE_JITSYMBOLS
     std::string Name = "Dispatch_" + std::to_string(::gettid());
-    CTX->Symbols.Register(Start, End-Start, Name);
+    CTX->Symbols.Register(reinterpret_cast<void*>(Start), End-Start, Name);
   #endif
 }
 
