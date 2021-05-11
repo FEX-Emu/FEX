@@ -177,14 +177,6 @@ namespace FEXCore::Context {
       Threads.clear();
     }
 
-    // AOTIRCaptureCache needs manual clear
-    for (auto &Mod: AOTIRCaptureCache) {
-      for (auto &Entry: Mod.second) {
-        delete Entry.second.IR;
-        FEXCore::Allocator::free(Entry.second.RAData);
-      }
-    }
-
     for (auto &Mod: AOTIRCache) {
       FEXCore::Allocator::munmap(Mod.second.mapping, Mod.second.size);
     }
@@ -824,6 +816,22 @@ namespace FEXCore::Context {
     return (IR::IRListView *)&InlineData[Offset];
   }
 
+  void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView *IRList, FEXCore::IR::RegisterAllocationData *RAData) {
+    Index.emplace(GuestRIP, Stream->tellp());
+
+    //GuestHash
+    Stream->write((char*)&Hash, sizeof(Hash));
+
+    //GuestLength
+    Stream->write((char*)&Length, sizeof(Length));
+    
+    // RAData (inline)
+    Stream->write((char*)RAData, RAData->Size(RAData->MapCount));
+    
+    // IRData (inline)
+    IRList->Serialize(*Stream);
+  }
+
   std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
@@ -940,17 +948,28 @@ namespace FEXCore::Context {
   bool Context::LoadAOTIRCache(int streamfd) {
     uint64_t tag;
     
-    if (!readAll(streamfd, (char*)&tag, sizeof(tag)) || tag != 0xDEADBEEFC0D30003)
+    if (!readAll(streamfd, (char*)&tag, sizeof(tag)) || tag != 0xDEADBEEFC0D30004)
       return false;
     
     std::string Module;
     uint64_t ModSize;
+    uint64_t IndexSize;
     
+    lseek(streamfd, -sizeof(ModSize), SEEK_END);
+
     if (!readAll(streamfd,  (char*)&ModSize, sizeof(ModSize)))
       return false;
 
     Module.resize(ModSize);
+
+    lseek(streamfd, -sizeof(ModSize) - ModSize, SEEK_END);
+
     if (!readAll(streamfd,  (char*)&Module[0], Module.size()))
+      return false;
+
+    lseek(streamfd, -sizeof(ModSize) - ModSize - sizeof(IndexSize), SEEK_END);
+
+    if (!readAll(streamfd,  (char*)&IndexSize, sizeof(IndexSize)))
       return false;
 
     struct stat fileinfo;
@@ -958,12 +977,14 @@ namespace FEXCore::Context {
       return false;
     size_t Size = (fileinfo.st_size + 4095) & ~4095;
 
+    size_t IndexOffset = fileinfo.st_size - IndexSize -sizeof(ModSize) - ModSize - sizeof(IndexSize);
+
     void *FilePtr = FEXCore::Allocator::mmap(nullptr, Size, PROT_READ, MAP_SHARED, streamfd, 0);
 
     if (FilePtr == MAP_FAILED)
       return false;
 
-    auto Array = (AOTIRInlineIndex *)((char*)FilePtr + sizeof(tag) + sizeof(ModSize) + ((ModSize+31) & ~31));
+    auto Array = (AOTIRInlineIndex *)((char*)FilePtr + IndexOffset);
 
     AOTIRCache.insert({Module, {Array, FilePtr, Size}});
 
@@ -980,77 +1001,45 @@ namespace FEXCore::Context {
     }
   }
 
-  bool Context::WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
+  void Context::FinalizeAOTIRCache() {
     std::lock_guard<std::mutex> lk(AOTIRCacheLock);
 
-    bool rv = true;
-
-    for (auto AOTModule: AOTIRCaptureCache) {
-      if (AOTModule.second.size() == 0) {
+    for (auto &AOTModule: AOTIRCaptureCache) {
+      if (!AOTModule.second.Stream) {
         continue;
       }
 
-      auto stream = CacheWriter(AOTModule.first);
-      if (!*stream) {
-        rv = false;
-      }
-      uint64_t tag = 0xDEADBEEFC0D30003;
-      stream->write((char*)&tag, sizeof(tag));
-
       auto ModSize = AOTModule.first.size();
-      stream->write((char*)&ModSize, sizeof(ModSize));
-      stream->write((char*)&AOTModule.first[0], ModSize);
-
-      auto Skip = ((ModSize + 31) & ~31) - ModSize;
+      auto &stream = AOTModule.second.Stream;
+      
+      // pad to 32 bytes
       char Zero = 0;
-      for (int i = 0; i < Skip; i++)
+      while(stream->tellp() & 31)
         stream->write(&Zero, 1);
 
       // AOTIRInlineIndex
-      
+      auto FnCount = AOTModule.second.Index.size();
+      size_t DataBase = -stream->tellp();
 
-      auto FnCount = AOTModule.second.size();
       stream->write((char*)&FnCount, sizeof(FnCount));
-
-      size_t DataBase = sizeof(FnCount) + sizeof(DataBase) + FnCount * sizeof(AOTIRInlineIndexEntry);
       stream->write((char*)&DataBase, sizeof(DataBase));
 
-      size_t DataOffset = 0;
-      for (auto entry: AOTModule.second) {
+      for (auto entry: AOTModule.second.Index) {
         //AOTIRInlineIndexEntry
 
         // GuestStart
         stream->write((char*)&entry.first, sizeof(entry.first));
 
         // DataOffset
-        stream->write((char*)&DataOffset, sizeof(DataOffset));
-
-
-        DataOffset += sizeof(entry.second.crc);
-        DataOffset += sizeof(entry.second.len);
-
-        DataOffset += entry.second.RAData->Size(entry.second.RAData->MapCount);
-
-        DataOffset += entry.second.IR->GetInlineSize();
+        stream->write((char*)&entry.second, sizeof(entry.second));
       }
-
-      // AOTIRInlineEntry
-      for (auto entry: AOTModule.second) {
-        //GuestHash
-        stream->write((char*)&entry.second.crc, sizeof(entry.second.crc));
-
-        //GuestLength
-        stream->write((char*)&entry.second.len, sizeof(entry.second.len));
-        
-        // RAData (inline)
-        stream->write((char*)entry.second.RAData, entry.second.RAData->Size(entry.second.RAData->MapCount));
-        
-        // IRData (inline)
-        entry.second.IR->Serialize(*stream);
-      }
+      
+      // End of file header
+      auto IndexSize = FnCount * sizeof(AOTIRInlineIndexEntry) + sizeof(DataBase) + sizeof(FnCount);
+      stream->write((char*)&IndexSize, sizeof(IndexSize));
+      stream->write((char*)&AOTModule.first[0], ModSize);
+      stream->write((char*)&ModSize, sizeof(ModSize));
     }
-
-    return rv;
   }
 
   void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
@@ -1151,7 +1140,13 @@ namespace FEXCore::Context {
         if (file != AddrToFile.begin()) {
           --file;
           if (file->second.Start <= StartAddr && (file->second.Start + file->second.Len) >= (StartAddr + Length)) {
-            AOTIRCaptureCache[file->second.fileid].insert({GuestRIP - file->second.Start + file->second.Offset, {StartAddr - file->second.Start + file->second.Offset, Length, hash, IRList, RAData}});
+            auto *AotFile = &AOTIRCaptureCache[file->second.fileid];
+            if (!AotFile->Stream) {
+              AotFile->Stream = AOTIRWriter(file->second.fileid);
+              uint64_t tag = 0xDEADBEEFC0D30004;
+              AotFile->Stream->write((char*)&tag, sizeof(tag));
+            }
+            AotFile->AppendAOTIRCaptureCache(GuestRIP - file->second.Start + file->second.Offset, StartAddr - file->second.Start + file->second.Offset, Length, hash, IRList, RAData);
           }
         }
       }

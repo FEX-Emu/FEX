@@ -149,8 +149,12 @@ namespace FEXCore::Context {
     CTX->AOTIRLoader = CacheReader;
   }
 
-  bool WriteAOTIR(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
-    return CTX->WriteAOTIRCache(CacheWriter);
+  void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
+    CTX->AOTIRWriter = CacheWriter;
+  }
+
+  void FinalizeAOTIRCache(FEXCore::Context::Context *CTX) {
+    CTX->FinalizeAOTIRCache();
   }
 
   void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
