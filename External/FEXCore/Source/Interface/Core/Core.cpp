@@ -826,7 +826,11 @@ namespace FEXCore::Context {
     Stream->write((char*)&Length, sizeof(Length));
     
     // RAData (inline)
+    // In file, IsShared is always set
+    auto Shared = RAData->IsShared;
+    RAData->IsShared = true;
     Stream->write((char*)RAData, RAData->Size(RAData->MapCount));
+    RAData->IsShared = Shared;
     
     // IRData (inline)
     IRList->Serialize(*Stream);
@@ -1124,15 +1128,9 @@ namespace FEXCore::Context {
 
     // Insert to caches if we generated IR
     if (GeneratedIR) {
-      Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
-      Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
-
       // Add to AOT cache if aot generation is enabled
       if ((Config.AOTIRCapture() || Config.AOTIRGenerate()) && RAData) {
         std::lock_guard<std::mutex> lk(AOTIRCacheLock);
-
-        RAData->IsShared = true;
-        IRList->SetShared(true);
 
         auto hash = XXH3_64bits((void*)StartAddr, Length);
 
@@ -1149,7 +1147,24 @@ namespace FEXCore::Context {
             AotFile->AppendAOTIRCaptureCache(GuestRIP - file->second.Start + file->second.Offset, StartAddr - file->second.Start + file->second.Offset, Length, hash, IRList, RAData);
           }
         }
+
+        if (Config.AOTIRGenerate()) {
+          // cleanup memory and early exit here -- we're not running the application
+          delete IRList;
+          FEXCore::Allocator::free(RAData);
+
+          if (DecrementRefCount)
+            --Thread->CompileBlockReentrantRefCount;
+
+          Thread->CPUBackend->ClearCache();
+          
+          return (uintptr_t)CodePtr;
+        }
       }
+
+      // Add to thread local ir cache
+      Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
+      Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
     }
 
     if (DecrementRefCount)
