@@ -33,6 +33,19 @@ ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigset_argpack32>, "%lx")
 
 namespace FEX::HLE::x32 {
   using fd_set32 = uint32_t;
+#ifdef _M_X86_64
+  uint32_t ioctl_32(FEXCore::Core::CpuStateFrame*, int fd, uint32_t cmd, uint32_t args) {
+    uint32_t Result{};
+    __asm volatile("int $0x80;"
+        : "=a" (Result)
+        : "a" (SYSCALL_x86_ioctl)
+        , "b" (fd)
+        , "c" (cmd)
+        , "d" (args)
+        : "memory");
+    return Result;
+  }
+#endif
 
   void RegisterFD() {
     REGISTER_SYSCALL_IMPL_X32(poll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {

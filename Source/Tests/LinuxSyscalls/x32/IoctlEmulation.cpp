@@ -27,20 +27,6 @@ extern "C" {
 #include <unistd.h>
 
 namespace FEX::HLE::x32 {
-#ifdef _M_X86_64
-  uint32_t ioctl_32(int fd, uint32_t cmd, uint32_t args) {
-    uint32_t Result{};
-    __asm volatile("int $0x80;"
-        : "=a" (Result)
-        : "a" (SYSCALL_x86_ioctl)
-        , "b" (fd)
-        , "c" (cmd)
-        , "d" (args)
-        : "memory");
-    return Result;
-  }
-#endif
-
   static void UnhandledIoctl(const char *Type, int fd, uint32_t cmd, uint32_t args) {
     LogMan::Msg::E("@@@@@@@@@@@@@@@@@@@@@@@@@");
     LogMan::Msg::E("Unhandled %s ioctl(%d, 0x%08x, 0x%08x)", Type, fd, cmd, args);
@@ -59,14 +45,108 @@ namespace FEX::HLE::x32 {
   }
 
   namespace DRM {
-    std::map<uint32_t, std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)>> FDToHandler;
+    uint32_t AddAndRunHandler(int fd, uint32_t cmd, uint32_t args);
+    void AssignDeviceTypeToFD(int fd, drm_version const &Version);
+
+    template <size_t LRUSize>
+    class LRUCacheFDCache {
+    public:
+      LRUCacheFDCache() {
+        // Set the last element to our handler
+        // This element will always be the last one
+        LRUCache[LRUSize] = std::make_pair(0, AddAndRunHandler);
+      }
+
+      using HandlerType = uint32_t(*)(int fd, uint32_t cmd, uint32_t args);
+      void SetFDHandler(uint32_t FD, HandlerType Handler) {
+        FDToHandler[FD] = Handler;
+      }
+
+      void DuplicateFD(int fd, int NewFD) {
+        auto it = FDToHandler.find(fd);
+        if (it != FDToHandler.end()) {
+          FDToHandler[NewFD] = it->second;
+        }
+      }
+
+      HandlerType FindHandler(uint32_t FD) {
+        HandlerType Handler{};
+        for (size_t i = 0; i < LRUSize; ++i) {
+          auto &it = LRUCache[i];
+          if (it.first == FD) {
+            if (i == 0) {
+              // If we are the first in the queue then just return it
+              return it.second;
+            }
+            Handler = it.second;
+            break;
+          }
+        }
+
+        if (Handler) {
+          AddToFront(FD, Handler);
+          return Handler;
+        }
+        return LRUCache[LRUSize].second;
+      }
+
+      uint32_t AddAndRunMapHandler(int fd, uint32_t cmd, uint32_t args) {
+        // Couldn't find in cache, check map
+        {
+          auto it = FDToHandler.find(fd);
+          if (it != FDToHandler.end()) {
+            // Found, add to the cache
+            AddToFront(fd, it->second);
+            return it->second(fd, cmd, args);
+          }
+        }
+
+        // Wasn't found in map, query it
+        drm_version Host_Version{};
+        Host_Version.name = reinterpret_cast<char*>(alloca(128));
+        Host_Version.name_len = 128;
+        uint64_t Result = ioctl(fd, DRM_IOCTL_VERSION, &Host_Version);
+
+        // Add it to the map and double check that it was added
+        // Next time around when the ioctl is used then it will be added to cache
+        if (Result != -1) {
+          AssignDeviceTypeToFD(fd, Host_Version);
+        }
+
+        auto it = FDToHandler.find(fd);
+
+        if (it == FDToHandler.end()) {
+          // We don't understand this DRM ioctl
+          return -EPERM;
+        }
+        Result = it->second(fd, cmd, args);
+        SYSCALL_ERRNO();
+      }
+
+    private:
+      void AddToFront(uint32_t FD, HandlerType Handler) {
+        // Push the element to the front if we found one
+        // First copy all the other elements back one
+        // Ensuring the final element isn't written over
+        memmove(&LRUCache[1], &LRUCache[0], (LRUSize - 1) * sizeof(LRUCache[0]));
+        // Now set the first element to the one we just found
+        LRUCache[0] = std::make_pair(FD, Handler);
+      }
+      // With four elements total (3 + 1) then this is a single cacheline in size
+      std::pair<uint32_t, HandlerType> LRUCache[LRUSize + 1];
+      std::map<uint32_t, HandlerType> FDToHandler;
+    };
+
+    static LRUCacheFDCache<3> FDToHandler;
+
+    uint32_t AddAndRunHandler(int fd, uint32_t cmd, uint32_t args) {
+      return FDToHandler.AddAndRunMapHandler(fd, cmd, args);
+    }
 
     void CheckAndAddFDDuplication(int fd, int NewFD) {
-      auto it = FDToHandler.find(fd);
-      if (it != FDToHandler.end()) {
-        FDToHandler[NewFD] = it->second;
-      }
+      FDToHandler.DuplicateFD(fd, NewFD);
     }
+
     uint32_t AMDGPU_Handler(int fd, uint32_t cmd, uint32_t args) {
       switch (_IOC_NR(cmd)) {
         case _IOC_NR(FEX_DRM_IOCTL_AMDGPU_GEM_METADATA): {
@@ -260,22 +340,22 @@ namespace FEX::HLE::x32 {
     void AssignDeviceTypeToFD(int fd, drm_version const &Version) {
       if (Version.name) {
         if (strcmp(Version.name, "amdgpu") == 0) {
-          FDToHandler[fd] = AMDGPU_Handler;
+          FDToHandler.SetFDHandler(fd, AMDGPU_Handler);
         }
         else if (strcmp(Version.name, "msm") == 0) {
-          FDToHandler[fd] = MSM_Handler;
+          FDToHandler.SetFDHandler(fd, MSM_Handler);
         }
         else if (strcmp(Version.name, "nouveau") == 0) {
-          FDToHandler[fd] = Nouveau_Handler;
+          FDToHandler.SetFDHandler(fd, Nouveau_Handler);
         }
         else if (strcmp(Version.name, "i915") == 0) {
-          FDToHandler[fd] = I915_Handler;
+          FDToHandler.SetFDHandler(fd, I915_Handler);
         }
         else if (strcmp(Version.name, "panfrost") == 0) {
-          FDToHandler[fd] = Panfrost_Handler;
+          FDToHandler.SetFDHandler(fd, Panfrost_Handler);
         }
         else if (strcmp(Version.name, "lima") == 0) {
-          FDToHandler[fd] = Lima_Handler;
+          FDToHandler.SetFDHandler(fd, Lima_Handler);
         }
         else {
           LogMan::Msg::E("Unknown DRM device: '%s'", Version.name);
@@ -360,24 +440,8 @@ namespace FEX::HLE::x32 {
 
         case DRM_COMMAND_BASE ... (DRM_COMMAND_END - 1): {
           // This is the space of the DRM device commands
-          auto it = FDToHandler.find(fd);
-          if (it == FDToHandler.end()) {
-            drm_version Host_Version{};
-            Host_Version.name = reinterpret_cast<char*>(alloca(128));
-            Host_Version.name_len = 128;
-            uint64_t Result = ioctl(fd, DRM_IOCTL_VERSION, &Host_Version);
-
-            if (Result != -1) {
-              AssignDeviceTypeToFD(fd, Host_Version);
-            }
-
-            it = FDToHandler.find(fd);
-
-            if (it == FDToHandler.end()) {
-              return -EPERM;
-            }
-          }
-          return it->second(fd, cmd, args);
+          auto it = FDToHandler.FindHandler(fd);
+          return it(fd, cmd, args);
         break;
         }
         default:
@@ -400,7 +464,7 @@ namespace FEX::HLE::x32 {
     std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)> Handler;
   };
 
-  static std::unordered_map<uint32_t, std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)>> Handlers;
+  static std::vector<std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)>> Handlers;
 
   void InitializeStaticIoctlHandlers() {
     using namespace DRM;
@@ -452,20 +516,15 @@ namespace FEX::HLE::x32 {
 #undef _CUSTOM_META_OFFSET
     }};
 
+    Handlers.assign(1U << _IOC_TYPEBITS, FEX::HLE::x32::BasicHandler::BasicHandler);
+
     for (auto &Arg : LocalHandlers) {
       Handlers[Arg.Command] = Arg.Handler;
     }
   }
 
   uint32_t ioctl32(FEXCore::Core::CpuStateFrame *Frame, int fd, uint32_t request, uint32_t args) {
-    //return ioctl_32(fd, request, args);
-    auto It = Handlers.find(_IOC_TYPE(request));
-    if (It == Handlers.end()) {
-      UnhandledIoctl("Base", fd, request, args);
-      return -EPERM;
-    }
-
-    return It->second(fd, request, args);
+    return Handlers[_IOC_TYPE(request)](fd, request, args);
   }
 
   void CheckAndAddFDDuplication(int fd, int NewFD) {
