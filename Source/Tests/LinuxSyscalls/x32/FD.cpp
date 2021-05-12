@@ -62,23 +62,12 @@ namespace FEX::HLE::x32 {
         timed_ptr = &tp64;
       }
 
-      sigset_t HostSet{};
-
-      if (sigmask) {
-        sigemptyset(&HostSet);
-
-        for (int32_t i = 0; i < (sigsetsize * 8); ++i) {
-          if (*sigmask & (1ULL << i)) {
-            sigaddset(&HostSet, i + 1);
-          }
-        }
-      }
-
-      uint64_t Result = ppoll(
+      uint64_t Result = ::syscall(SYS_ppoll,
         fds,
         nfds,
         timed_ptr,
-        sigmask ? &HostSet : nullptr);
+        sigmask,
+        sigsetsize);
 
       if (timeout_ts) {
         *timeout_ts = tp64;
@@ -88,24 +77,13 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(ppoll_time64, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, struct timespec *timeout_ts, const uint64_t *sigmask, size_t sigsetsize) -> uint64_t {
-      // sigsetsize is unused here since it is currently a constant and not exposed through glibc
-      sigset_t HostSet{};
 
-      if (sigmask) {
-        sigemptyset(&HostSet);
-
-        for (int32_t i = 0; i < (sigsetsize * 8); ++i) {
-          if (*sigmask & (1ULL << i)) {
-            sigaddset(&HostSet, i + 1);
-          }
-        }
-      }
-
-      uint64_t Result = ppoll(
+      uint64_t Result = ::syscall(SYS_ppoll,
         fds,
         nfds,
         timeout_ts,
-        sigmask ? &HostSet : nullptr);
+        sigmask,
+        sigsetsize);
 
       SYSCALL_ERRNO();
     });
