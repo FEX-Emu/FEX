@@ -41,10 +41,32 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(mmap, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
       static FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
+
+#ifdef _M_ARM_64
+      constexpr uint32_t X86_64_MAP_32BIT = 0x40;
+
+      // Handle MAP_32BIT without a full allocator
+      // Set address to a low address to force the kernel to allocate bottom up
+      bool Map32Bit = (flags & X86_64_MAP_32BIT) &&
+          !(flags & (MAP_FIXED | MAP_FIXED_NOREPLACE));
+      if (Map32Bit) {
+        addr = reinterpret_cast<void*>(0x1'0000);
+        // Remove the flag
+        flags &= ~X86_64_MAP_32BIT;
+      }
+#endif
       uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset));
 
       auto Thread = Frame->Thread;
       if (Result != -1) {
+#ifdef _M_ARM_64
+        if (Map32Bit) {
+          if ((Result + length) >= 0x1'0000'0000ULL) {
+            FEXCore::Allocator::munmap(reinterpret_cast<void*>(Result), length);
+            return -ENOMEM;
+          }
+        }
+#endif
         if (!(flags & MAP_ANONYMOUS)) {
           auto filename = get_fdpath(fd);
 
