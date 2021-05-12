@@ -161,7 +161,9 @@ std::optional<std::string> FileManager::GetSelf(const char *Pathname) {
   char PidSelfPath[50];
   snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
 
-  if (strcmp(Pathname, "/proc/self/exe") == 0 || strcmp(Pathname, PidSelfPath) == 0) {
+  if (strcmp(Pathname, "/proc/self/exe") == 0 ||
+      strcmp(Pathname, "/proc/thread-self/exe") == 0 ||
+      strcmp(Pathname, PidSelfPath) == 0) {
     return Filename();
   }
 
@@ -262,7 +264,9 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   char PidSelfPath[50];
   snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
 
-  if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
+  if (strcmp(pathname, "/proc/self/exe") == 0 ||
+      strcmp(pathname, "/proc/thread-self/exe") == 0 ||
+      strcmp(pathname, PidSelfPath) == 0) {
     auto App = Filename();
     strncpy(buf, App.c_str(), bufsiz);
     return std::min(bufsiz, App.size());
