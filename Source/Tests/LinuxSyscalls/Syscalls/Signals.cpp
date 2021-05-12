@@ -35,6 +35,9 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(userfaultfd, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
+      // Disable userfaultfd until we can properly emulate it
+      // This is okay because the kernel configuration allows you to disable it at compile time
+      return -ENOSYS;
       uint64_t Result = ::syscall(SYS_userfaultfd, flags);
       SYSCALL_ERRNO();
     });
