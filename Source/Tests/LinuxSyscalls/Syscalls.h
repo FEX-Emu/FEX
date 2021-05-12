@@ -20,6 +20,7 @@ $end_info$
 #include <unordered_map>
 
 #include <sys/epoll.h>
+#include <fcntl.h>
 
 // #define DEBUG_STRACE
 
@@ -251,6 +252,59 @@ struct __attribute__((packed)) epoll_event_x86 {
 };
 static_assert(std::is_trivial<epoll_event_x86>::value, "Needs to be trivial");
 static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
+
+  inline static int RemapFromX86Flags(int flags) {
+#ifdef _M_X86_64
+    // Nothing to change here
+#elif _M_ARM_64
+    constexpr int X86_64_FLAG_O_DIRECT    =  040000;
+    constexpr int X86_64_FLAG_O_LARGEFILE = 0100000;
+    constexpr int X86_64_FLAG_O_DIRECTORY = 0200000;
+    constexpr int X86_64_FLAG_O_NOFOLLOW  = 0400000;
+
+    constexpr int AARCH64_FLAG_O_DIRECTORY = 040000;
+    constexpr int AARCH64_FLAG_O_NOFOLLOW  = 0100000;
+    constexpr int AARCH64_FLAG_O_DIRECT    = 0200000;
+    constexpr int AARCH64_FLAG_O_LARGEFILE = 0400000;
+
+    int new_flags{};
+    if (flags & X86_64_FLAG_O_DIRECT) {    flags = (flags & ~X86_64_FLAG_O_DIRECT);    new_flags |= AARCH64_FLAG_O_DIRECT; }
+    if (flags & X86_64_FLAG_O_LARGEFILE) { flags = (flags & ~X86_64_FLAG_O_LARGEFILE); new_flags |= AARCH64_FLAG_O_LARGEFILE; }
+    if (flags & X86_64_FLAG_O_DIRECTORY) { flags = (flags & ~X86_64_FLAG_O_DIRECTORY); new_flags |= AARCH64_FLAG_O_DIRECTORY; }
+    if (flags & X86_64_FLAG_O_NOFOLLOW) {  flags = (flags & ~X86_64_FLAG_O_NOFOLLOW);  new_flags |= AARCH64_FLAG_O_NOFOLLOW; }
+    flags |= new_flags;
+#else
+#error Unknown flag remappings for this host platform
+#endif
+    return flags;
+  }
+
+  inline static int RemapToX86Flags(int flags) {
+#ifdef _M_X86_64
+    // Nothing to change here
+#elif _M_ARM_64
+    constexpr int X86_64_FLAG_O_DIRECT    =  040000;
+    constexpr int X86_64_FLAG_O_LARGEFILE = 0100000;
+    constexpr int X86_64_FLAG_O_DIRECTORY = 0200000;
+    constexpr int X86_64_FLAG_O_NOFOLLOW  = 0400000;
+
+    constexpr int AARCH64_FLAG_O_DIRECTORY =  040000;
+    constexpr int AARCH64_FLAG_O_NOFOLLOW  = 0100000;
+    constexpr int AARCH64_FLAG_O_DIRECT    = 0200000;
+    constexpr int AARCH64_FLAG_O_LARGEFILE = 0400000;
+
+    int new_flags{};
+    if (flags & AARCH64_FLAG_O_DIRECT) {    flags = (flags & ~AARCH64_FLAG_O_DIRECT);    new_flags |= X86_64_FLAG_O_DIRECT; }
+    if (flags & AARCH64_FLAG_O_LARGEFILE) { flags = (flags & ~AARCH64_FLAG_O_LARGEFILE); new_flags |= X86_64_FLAG_O_LARGEFILE; }
+    if (flags & AARCH64_FLAG_O_DIRECTORY) { flags = (flags & ~AARCH64_FLAG_O_DIRECTORY); new_flags |= X86_64_FLAG_O_DIRECTORY; }
+    if (flags & AARCH64_FLAG_O_NOFOLLOW) {  flags = (flags & ~AARCH64_FLAG_O_NOFOLLOW);  new_flags |= X86_64_FLAG_O_NOFOLLOW; }
+    flags |= new_flags;
+#else
+#error Unknown flag remappings for this host platform
+#endif
+    return flags;
+  }
+
 }
 
 // Creates a variadic template lambda from a global function (via FunctionToLambda), then forwards the arguments to the specified function

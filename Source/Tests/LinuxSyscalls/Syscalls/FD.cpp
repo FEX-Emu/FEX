@@ -24,24 +24,6 @@ $end_info$
 #include <sys/syscall.h>
 
 namespace FEX::HLE {
-  static int RemapFlags(int flags) {
-#ifdef _M_X86_64
-    // Nothing to change here
-#elif _M_ARM_64
-    constexpr int X86_64_FLAG_O_DIRECT    =  040000;
-    constexpr int X86_64_FLAG_O_LARGEFILE = 0100000;
-    constexpr int X86_64_FLAG_O_DIRECTORY = 0200000;
-    constexpr int X86_64_FLAG_O_NOFOLLOW  = 0400000;
-    if (flags & X86_64_FLAG_O_DIRECT)    flags = (flags & ~X86_64_FLAG_O_DIRECT)    | O_DIRECT;
-    if (flags & X86_64_FLAG_O_LARGEFILE) flags = (flags & ~X86_64_FLAG_O_LARGEFILE) | O_LARGEFILE;
-    if (flags & X86_64_FLAG_O_DIRECTORY) flags = (flags & ~X86_64_FLAG_O_DIRECTORY) | O_DIRECTORY;
-    if (flags & X86_64_FLAG_O_NOFOLLOW)  flags = (flags & ~X86_64_FLAG_O_NOFOLLOW)  | O_NOFOLLOW;
-#else
-#error Unknown flag remappings for this host platform
-#endif
-    return flags;
-  }
-
   void RegisterFD(FEX::HLE::SyscallHandler *const Handler) {
     REGISTER_SYSCALL_IMPL(read, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count) -> uint64_t {
       uint64_t Result = ::read(fd, buf, count);
@@ -54,7 +36,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(open, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, int flags, uint32_t mode) -> uint64_t {
-      flags = RemapFlags(flags);
+      flags = FEX::HLE::RemapFromX86Flags(flags);
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.Open(pathname, flags, mode);
       SYSCALL_ERRNO();
     });
@@ -108,7 +90,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(dup3, [](FEXCore::Core::CpuStateFrame* Frame, int oldfd, int newfd, int flags) -> uint64_t {
-      flags = RemapFlags(flags);
+      flags = FEX::HLE::RemapFromX86Flags(flags);
       uint64_t Result = ::dup3(oldfd, newfd, flags);
       SYSCALL_ERRNO();
     });
@@ -169,7 +151,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(openat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfs, const char *pathname, int flags, uint32_t mode) -> uint64_t {
-      flags = RemapFlags(flags);
+      flags = FEX::HLE::RemapFromX86Flags(flags);
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.Openat(dirfs, pathname, flags, mode);
       SYSCALL_ERRNO();
     });
@@ -185,11 +167,13 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(fchownat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, uid_t owner, gid_t group, int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::fchownat(dirfd, pathname, owner, group, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(unlinkat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::unlinkat(dirfd, pathname, flags);
       SYSCALL_ERRNO();
     });
@@ -200,6 +184,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(linkat, [](FEXCore::Core::CpuStateFrame *Frame, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::linkat(olddirfd, oldpath, newdirfd, newpath, flags);
       SYSCALL_ERRNO();
     });
@@ -236,26 +221,31 @@ namespace FEX::HLE {
     }
 
     REGISTER_SYSCALL_IMPL(splice, [](FEXCore::Core::CpuStateFrame *Frame, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::splice(fd_in, off_in, fd_out, off_out, len, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(tee, [](FEXCore::Core::CpuStateFrame *Frame, int fd_in, int fd_out, size_t len, unsigned int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::tee(fd_in, fd_out, len, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(sync_file_range, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, off64_t nbytes, unsigned int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::sync_file_range(fd, offset, nbytes, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(timerfd_create, [](FEXCore::Core::CpuStateFrame *Frame, int32_t clockid, int32_t flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::timerfd_create(clockid, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(timerfd_settime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::timerfd_settime(fd, flags, new_value, old_value);
       SYSCALL_ERRNO();
     });
@@ -271,50 +261,55 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(pipe2, [](FEXCore::Core::CpuStateFrame *Frame, int pipefd[2], int flags) -> uint64_t {
-      flags = RemapFlags(flags);
+      flags = FEX::HLE::RemapFromX86Flags(flags);
       uint64_t Result = ::pipe2(pipefd, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(inotify_init1, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
-      flags = RemapFlags(flags);
+      // Flags don't need remapped
       uint64_t Result = ::inotify_init1(flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(renameat2, [](FEXCore::Core::CpuStateFrame *Frame, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::renameat2(olddirfd, oldpath, newdirfd, newpath, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(memfd_create, [](FEXCore::Core::CpuStateFrame *Frame, const char *name, uint32_t flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::memfd_create(name, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(statx, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statx(dirfd, pathname, flags, mask, statxbuf);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(name_to_handle_at, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, struct file_handle *handle, int *mount_id, int flags) -> uint64_t {
-      flags = RemapFlags(flags);
+      // Flags don't need remapped
       uint64_t Result = ::name_to_handle_at(dirfd, pathname, handle, mount_id, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(open_by_handle_at, [](FEXCore::Core::CpuStateFrame *Frame, int mount_fd, struct file_handle *handle, int flags) -> uint64_t {
-      flags = RemapFlags(flags);
+      // Flags don't need remapped
       uint64_t Result = ::open_by_handle_at(mount_fd, handle, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(eventfd2, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int count, int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::syscall(SYS_eventfd2, count, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(copy_file_range, [](FEXCore::Core::CpuStateFrame *Frame, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
+      // Flags don't need remapped
       uint64_t Result = ::copy_file_range(fd_in, off_in, fd_out, off_out, len, flags);
       SYSCALL_ERRNO();
     });
