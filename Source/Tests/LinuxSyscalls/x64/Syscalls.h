@@ -76,10 +76,6 @@ bool RegisterSyscall(int num, const char *name, F f){
 
 }
 
-// Helpers to register a syscall implementation
-// Creates a syscall forward from a glibc wrapper, and registers it
-#define REGISTER_SYSCALL_FORWARD_ERRNO_X64(function) do { RegisterSyscall(x64::SYSCALL_x64_##function, #function, SYSCALL_FORWARD_ERRNO(function)); } while(0)
-
 // Registers syscall for 64bit only
 #define REGISTER_SYSCALL_IMPL_X64(name, lambda) \
   struct impl_##name { \

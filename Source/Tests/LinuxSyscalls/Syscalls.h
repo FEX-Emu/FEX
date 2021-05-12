@@ -202,12 +202,6 @@ std::string CollectArgsFmtString() {
 #define ARG_TO_STR(tpy, str)
 #endif
 
-/////
-// REGISTER_SYSCALL_FORWARD_ERRNO implementation
-// Given a syscall wrapper, it generate a syscall implementation using the wrapper's signature, forward the arguments
-// and register to syscalls via RegisterSyscall
-/////
-
 // Helper that allows us to create a variadic template lambda from a given signature
 // by creating a function that expects a fuction pointer with the given signature as a parameter
 template <typename T>
@@ -306,21 +300,6 @@ static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
   }
 
 }
-
-// Creates a variadic template lambda from a global function (via FunctionToLambda), then forwards the arguments to the specified function
-// also handles errno
-#define SYSCALL_FORWARD_ERRNO(function) \
-  FEX::HLE::FunctionToLambda<decltype(&::function)>::ReturnFunctionPointer([](FEXCore::Core::CpuStateFrame *Frame, auto... Args) { \
-    FEX::HLE::FunctionToLambda<decltype(&::function)>::RType Result = ::function(Args...); \
-    do { if (Result == -1) return (FEX::HLE::FunctionToLambda<decltype(&::function)>::RType)-errno; return Result; } while(0); \
-  })
-
-// Helpers to register a syscall implementation
-// Creates a syscall forward from a glibc wrapper, and registers it
-#define REGISTER_SYSCALL_FORWARD_ERRNO(function) do { \
-  FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##function, #function, SYSCALL_FORWARD_ERRNO(function)); \
-  FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##function, #function, SYSCALL_FORWARD_ERRNO(function)); \
-  } while(0)
 
 // Registers syscall for both 32bit and 64bit
 #define REGISTER_SYSCALL_IMPL(name, lambda) \
