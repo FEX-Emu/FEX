@@ -645,6 +645,10 @@ namespace FEX::EmulatedFile {
         // Finish off with a null terminator
         fwrite("\0", sizeof(uint8_t), 1, fp);
       }
+
+      // One additional null terminator to finish the list
+      fwrite("\0", sizeof(uint8_t), 1, fp);
+
       fseek(fp, 0, SEEK_SET);
       int32_t f = fileno(fp);
       return f;
