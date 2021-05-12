@@ -75,7 +75,6 @@ epoll_test
 exceptions_test
 exec_binary_test
 exec_test
-fadvise64_test
 fallocate_test
 fcntl_test
 flock_test
