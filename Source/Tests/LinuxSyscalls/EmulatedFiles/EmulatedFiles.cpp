@@ -546,38 +546,41 @@ namespace FEX::EmulatedFile {
     }
 
     for (int i = 0; i < CPUCores; ++i) {
-      cpu_stream << "processor       : " << i << std::endl; // Logical id
-      cpu_stream << "vendor_id       : " << vendorid.Str << std::endl;
-      cpu_stream << "cpu family      : " << Family  << std::endl;
-      cpu_stream << "model           : " << (info.Model + (info.FamilyID >= 6 ? (info.ExModelID << 4) : 0)) << std::endl;
-      cpu_stream << "model name      : " << modelname.Str << std::endl;
-      cpu_stream << "stepping        : " << info.Stepping << std::endl;
-      cpu_stream << "microcode       : 0x0" << std::endl;
-      cpu_stream << "cpu MHz         : 3000" << std::endl;
-      cpu_stream << "cache size      : 512 KB" << std::endl;
-      cpu_stream << "physical id     : 0" << std::endl; // Socket id (always 0 for a single socket system)
-      cpu_stream << "siblings        : " << CPUCores << std::endl; // Number of logical cores
-      cpu_stream << "core id         : " << i << std::endl; // Physical id
-      cpu_stream << "cpu cores       : " << CPUCores << std::endl; // Number of physical cores
-      cpu_stream << "apicid          : " << i << std::endl;
-      cpu_stream << "initial apicid  : " << i << std::endl;
-      cpu_stream << "fpu             : " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
-      cpu_stream << "fpu_exception   : " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
-      cpu_stream << "cpuid level     : " << vendorid.id << std::endl;
-      cpu_stream << "wp              : yes" << std::endl;
-      cpu_stream << "flags           : " << flags_data.str() << std::endl;
+      cpu_stream << "processor\t: " << i << std::endl; // Logical id
+      cpu_stream << "vendor_id\t: " << vendorid.Str << std::endl;
+      cpu_stream << "cpu family\t: " << Family  << std::endl;
+      cpu_stream << "model\t\t: " << (info.Model + (info.FamilyID >= 6 ? (info.ExModelID << 4) : 0)) << std::endl;
+      cpu_stream << "model name\t: " << modelname.Str << std::endl;
+      cpu_stream << "stepping\t: " << info.Stepping << std::endl;
+      cpu_stream << "microcode\t: 0x0" << std::endl;
+      cpu_stream << "cpu MHz\t\t: 3000" << std::endl;
+      cpu_stream << "cache size\t: 512 KB" << std::endl;
+      cpu_stream << "physical id\t: 0" << std::endl; // Socket id (always 0 for a single socket system)
+      cpu_stream << "siblings\t: " << CPUCores << std::endl; // Number of logical cores
+      cpu_stream << "core id\t\t: " << i << std::endl; // Physical id
+      cpu_stream << "cpu cores\t: " << CPUCores << std::endl; // Number of physical cores
+      cpu_stream << "apicid\t\t: " << i << std::endl;
+      cpu_stream << "initial apicid\t: " << i << std::endl;
+      cpu_stream << "fpu\t\t: " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
+      cpu_stream << "fpu_exception\t: " << (res_1.edx & (1 << 0) ? "yes" : "no") << std::endl;
+      cpu_stream << "cpuid level\t: " << vendorid.id << std::endl;
+      cpu_stream << "wp\t\t: yes" << std::endl;
+      cpu_stream << "flags\t\t: " << flags_data.str() << std::endl;
 
       // We don't have any bugs, don't question it
-      cpu_stream << "bugs            : " << std::endl;
-      cpu_stream << "bogomips        : 8000.0" << std::endl;
+      cpu_stream << "bugs\t\t: " << std::endl;
+      cpu_stream << "bogomips\t: 8000.0" << std::endl;
       // These next four aren't necessarily correct
-      cpu_stream << "TLB size        : 2560 4K pages" << std::endl;
-      cpu_stream << "clflush size    : 64" << std::endl;
-      cpu_stream << "cache_alignment : 64" << std::endl;
+      cpu_stream << "TLB size\t: 2560 4K pages" << std::endl;
+      cpu_stream << "clflush size\t: 64" << std::endl;
+      cpu_stream << "cache_alignment\t : 64" << std::endl;
 
       // Cortex-A is 40 or 44 bits physical, and 48/52 virtual
       // Choose the lesser configuration
-      cpu_stream << "address sizes   : 40 bits physical, 48 bits virtual" << std::endl;
+      cpu_stream << "address sizes\t: 40 bits physical, 48 bits virtual" << std::endl;
+
+      // No power management but required to report
+      cpu_stream << "power management: " << std::endl;
 
       cpu_stream << std::endl;
     }
