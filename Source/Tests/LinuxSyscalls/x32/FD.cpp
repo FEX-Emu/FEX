@@ -263,13 +263,15 @@ namespace FEX::HLE::x32 {
           break;
         }
 
+        case F_SETFL:
+          lock_arg = (void*)FEX::HLE::RemapFromX86Flags(arg);
+          break;
         // Maps directly
         case F_DUPFD:
         case F_DUPFD_CLOEXEC:
         case F_GETFD:
         case F_SETFD:
         case F_GETFL:
-        case F_SETFL:
           break;
 
         default: LOGMAN_MSG_A("Unhandled fcntl64: 0x%x", cmd); break;
@@ -294,8 +296,12 @@ namespace FEX::HLE::x32 {
           break;
           case F_DUPFD:
           case F_DUPFD_CLOEXEC:
-          FEX::HLE::x32::CheckAndAddFDDuplication(fd, Result);
-          break;
+            FEX::HLE::x32::CheckAndAddFDDuplication(fd, Result);
+            break;
+          case F_GETFL: {
+            Result = FEX::HLE::RemapToX86Flags(Result);
+            break;
+          }
           default: break;
         }
       }

@@ -77,7 +77,21 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(fcntl, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int cmd, uint64_t arg) -> uint64_t {
-      uint64_t Result = ::fcntl(fd, cmd, arg);
+      uint64_t Result{};
+      switch (cmd) {
+      case F_GETFL:
+        Result = ::fcntl(fd, cmd, arg);
+        if (Result != -1) {
+          Result = FEX::HLE::RemapToX86Flags(Result);
+        }
+        break;
+      case F_SETFL:
+        Result = ::fcntl(fd, cmd, FEX::HLE::RemapFromX86Flags(arg));
+        break;
+      default:
+        Result = ::fcntl(fd, cmd, arg);
+        break;
+      }
       SYSCALL_ERRNO();
     });
 
