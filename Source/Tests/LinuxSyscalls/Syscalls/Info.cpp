@@ -34,6 +34,8 @@ namespace FEX::HLE {
       if (::uname(&Local) == 0) {
         memcpy(buf->nodename, Local.nodename, sizeof(Local.nodename));
         static_assert(sizeof(Local.nodename) <= sizeof(buf->nodename));
+        memcpy(buf->domainname, Local.domainname, sizeof(Local.domainname));
+        static_assert(sizeof(Local.domainname) <= sizeof(buf->domainname));
       }
       else {
         strcpy(buf->nodename, "FEXCore");
