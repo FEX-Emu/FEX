@@ -121,7 +121,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
 FileManager::~FileManager() {
 }
 
-std::string FileManager::GetEmulatedPath(const char *pathname) {
+std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
   auto RootFSPath = LDPath();
   if (!pathname ||
       pathname[0] != '/' ||
@@ -134,7 +134,20 @@ std::string FileManager::GetEmulatedPath(const char *pathname) {
     return thunkOverlay->second;
   }
 
-  return RootFSPath + pathname;
+  std::string Path = RootFSPath + pathname;
+  if (FollowSymlink) {
+    std::error_code ec;
+    while(std::filesystem::is_symlink(Path, ec)) {
+      auto SymlinkTarget = std::filesystem::read_symlink(Path);
+      if (SymlinkTarget.is_absolute()) {
+        Path = RootFSPath + SymlinkTarget.string();
+      }
+      else {
+        break;
+      }
+    }
+  }
+  return Path;
 }
 
 
@@ -301,7 +314,7 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
 
   fd = EmuFD.OpenAt(dirfs, SelfPath, flags, mode);
   if (fd == -1) {
-    auto Path = GetEmulatedPath(SelfPath);
+    auto Path = GetEmulatedPath(SelfPath, true);
     if (!Path.empty()) {
       fd = ::openat(dirfs, Path.c_str(), flags, mode);
     }
