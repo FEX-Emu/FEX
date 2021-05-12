@@ -109,7 +109,6 @@ select_test
 semaphore_test
 sendfile_test
 shm_test
-sigaction_test
 sigaltstack_test
 sigiret_test
 signalfd_test
