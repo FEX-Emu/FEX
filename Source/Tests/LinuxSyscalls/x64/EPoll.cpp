@@ -15,13 +15,15 @@ $end_info$
 #include <stdint.h>
 #include <sys/epoll.h>
 #include <vector>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 namespace FEX::HLE::x64 {
   void RegisterEpoll() {
     REGISTER_SYSCALL_IMPL_X64(epoll_wait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, epoll_event_x86 *events, int maxevents, int timeout) -> uint64_t {
       std::vector<struct epoll_event> Events;
       Events.resize(maxevents);
-      uint64_t Result = epoll_wait(epfd, &Events.at(0), maxevents, timeout);
+      uint64_t Result = ::syscall(SYS_epoll_pwait, epfd, &Events.at(0), maxevents, timeout, nullptr, 8);
 
       if (Result != -1) {
         for (size_t i = 0; i < Result; ++i) {
@@ -38,23 +40,24 @@ namespace FEX::HLE::x64 {
         Event = *event;
         EventPtr = &Event;
       }
-      uint64_t Result = epoll_ctl(epfd, op, fd, EventPtr);
+      uint64_t Result = ::syscall(SYS_epoll_ctl, epfd, op, fd, EventPtr);
       if (Result != -1 && event) {
         *event = Event;
       }
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(epoll_pwait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, epoll_event_x86 *events, int maxevent, int timeout, const void* sigmask) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(epoll_pwait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, epoll_event_x86 *events, int maxevent, int timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
       std::vector<struct epoll_event> Events;
       Events.resize(maxevent);
 
-      uint64_t Result = epoll_pwait(
+      uint64_t Result = ::syscall(SYS_epoll_pwait,
         epfd,
         &Events.at(0),
         maxevent,
         timeout,
-        reinterpret_cast<const sigset_t*>(sigmask));
+        sigmask,
+        sigsetsize);
 
       if (Result != -1) {
         for (size_t i = 0; i < Result; ++i) {
