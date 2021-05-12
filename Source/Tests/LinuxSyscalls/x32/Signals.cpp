@@ -29,7 +29,11 @@ namespace FEX::HLE::x32 {
       return static_cast<uint32_t>(reinterpret_cast<uint64_t>(oldact.sigaction_handler.handler));
     });
 
-    REGISTER_SYSCALL_IMPL_X32(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const GuestSigAction_32 *act, GuestSigAction_32 *oldact) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const GuestSigAction_32 *act, GuestSigAction_32 *oldact, size_t sigsetsize) -> uint64_t {
+      if (sigsetsize != 8) {
+        return -EINVAL;
+      }
+
       FEXCore::GuestSigAction *act64_p{};
       FEXCore::GuestSigAction *old64_p{};
 
@@ -45,11 +49,11 @@ namespace FEX::HLE::x32 {
       }
 
       uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act64_p, old64_p);
-      if (Result != -1 && oldact) {
+      if (Result == 0 && oldact) {
         *oldact = old64;
       }
 
-      SYSCALL_ERRNO();
+      return Result;
     });
 
     REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, siginfo_t *info, const struct timespec32* timeout, size_t sigsetsize) -> uint64_t {
