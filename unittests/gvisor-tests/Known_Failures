@@ -67,7 +67,6 @@ affinity_test
 aio_test
 alarm_test
 arch_prctl_test
-bad_test
 chown_test
 concurrency_test
 connect_external_test
