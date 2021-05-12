@@ -123,7 +123,9 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
   char PidSelfPath[50];
   snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
 
-  if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
+  if (strcmp(pathname, "/proc/self/exe") == 0 ||
+      strcmp(pathname, "/proc/thread-self/exe") == 0 ||
+      strcmp(pathname, PidSelfPath) == 0) {
     // If pointing to self then redirect to the application
     // JRE and shapez.io does this
     Filename = FEX::HLE::_SyscallHandler->Filename();
