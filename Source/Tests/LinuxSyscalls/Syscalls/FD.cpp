@@ -149,7 +149,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(fadvise64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off_t offset, off_t len, int advice) -> uint64_t {
-      uint64_t Result = ::posix_fadvise64(fd, offset, len, advice);
+      uint64_t Result = ::syscall(SYS_fadvise64, fd, offset, len, advice);
       SYSCALL_ERRNO();
     });
 
