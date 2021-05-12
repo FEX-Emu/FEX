@@ -17,7 +17,11 @@ $end_info$
 
 namespace FEX::HLE::x64 {
   void RegisterSignals() {
-    REGISTER_SYSCALL_IMPL_X64(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const FEXCore::GuestSigAction *act, FEXCore::GuestSigAction *oldact) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const FEXCore::GuestSigAction *act, FEXCore::GuestSigAction *oldact, size_t sigsetsize) -> uint64_t {
+      if (sigsetsize != 8) {
+        return -EINVAL;
+      }
+
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act, oldact);
     });
 
