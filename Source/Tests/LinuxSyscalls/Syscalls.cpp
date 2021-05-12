@@ -277,6 +277,10 @@ uint32_t SyscallHandler::CalculateHostKernelVersion() {
 }
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
+  if (Args->Argument[0] >= Definitions.size()) {
+    return -ENOSYS;
+  }
+
   auto &Def = Definitions[Args->Argument[0]];
   uint64_t Result{};
   switch (Def.NumArgs) {
