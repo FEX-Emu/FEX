@@ -66,7 +66,6 @@ access_test
 affinity_test
 aio_test
 alarm_test
-arch_prctl_test
 concurrency_test
 connect_external_test
 epoll_test
