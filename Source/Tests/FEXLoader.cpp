@@ -338,6 +338,19 @@ int main(int argc, char **argv, char **const envp) {
     return open(filepath.c_str(), O_RDONLY);
   });
 
+  FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+    auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
+    if (*AOTWrite) {
+      std::filesystem::resize_file(filepath, 0);
+      AOTWrite->seekp(0);
+      LogMan::Msg::I("AOTIR: Storing %s", fileid.c_str());
+    } else {
+      LogMan::Msg::I("AOTIR: Failed to store %s", fileid.c_str());
+    }
+    return AOTWrite;
+  });
+
   for(auto Section: Loader.Sections) {
     FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
   }
@@ -448,24 +461,10 @@ int main(int argc, char **argv, char **const envp) {
 
   if (AOTIRCapture() || AOTIRGenerate()) {
 
-    auto WroteCache = FEXCore::Context::WriteAOTIR(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-      auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
-      if (*AOTWrite) {
-        std::filesystem::resize_file(filepath, 0);
-        AOTWrite->seekp(0);
-        LogMan::Msg::I("AOTIR: Storing %s", fileid.c_str());
-      } else {
-        LogMan::Msg::I("AOTIR: Failed to store %s", fileid.c_str());
-      }
-      return AOTWrite;
-    });
 
-    if (WroteCache) {
-      LogMan::Msg::I("AOTIR Cache Stored");
-    } else {
-      LogMan::Msg::E("AOTIR Cache Store Failed");
-    }
+    FEXCore::Context::FinalizeAOTIRCache(CTX);
+
+    LogMan::Msg::I("AOTIR Cache Stored");
   }
 
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);

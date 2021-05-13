@@ -230,7 +230,8 @@ namespace FEXCore::Context {
   __attribute__((visibility("default"))) void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name);
   __attribute__((visibility("default"))) void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length);
   __attribute__((visibility("default"))) void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader);
-  __attribute__((visibility("default"))) bool WriteAOTIR(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
+  __attribute__((visibility("default"))) void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
+  __attribute__((visibility("default"))) void FinalizeAOTIRCache(FEXCore::Context::Context *CTX);
   __attribute__((visibility("default"))) void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer);
   __attribute__((visibility("default"))) void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length);
 

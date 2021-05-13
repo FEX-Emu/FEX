@@ -52,14 +52,6 @@ namespace FEXCore::Context {
     MODE_SINGLESTEP = 1,
   };
 
-  struct AOTIRCaptureCacheEntry {
-    uint64_t start;
-    uint64_t len;
-    uint64_t crc;
-    IR::IRListView *IR;
-    IR::RegisterAllocationData *RAData;
-  };
-
   struct AOTIRInlineEntry {
     uint64_t GuestHash;
     uint64_t GuestLength;
@@ -67,8 +59,8 @@ namespace FEXCore::Context {
     /* RAData followed by IRData */
     uint8_t InlineData[0];
 
-      IR::RegisterAllocationData *GetRAData();
-      IR::IRListView *GetIRData();
+    IR::RegisterAllocationData *GetRAData();
+    IR::IRListView *GetIRData();
   };
 
   struct AOTIRInlineIndexEntry {
@@ -83,6 +75,13 @@ namespace FEXCore::Context {
 
     AOTIRInlineEntry *Find(uint64_t GuestStart);
     AOTIRInlineEntry *GetInlineEntry(uint64_t DataOffset);
+  };
+
+  struct AOTIRCaptureCacheEntry {
+    std::unique_ptr<std::ostream> Stream;
+    std::map<uint64_t, uint64_t> Index;
+
+    void AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView *IRList, FEXCore::IR::RegisterAllocationData *RAData);
   };
 
   struct Context {
@@ -154,7 +153,8 @@ namespace FEXCore::Context {
 
     std::unordered_map<std::string, AOTIRCacheEntry> AOTIRCache;
     std::function<int(const std::string&)> AOTIRLoader;
-    std::unordered_map<std::string, std::map<uint64_t, AOTIRCaptureCacheEntry>> AOTIRCaptureCache;
+    std::function<std::unique_ptr<std::ostream>(const std::string&)> AOTIRWriter;
+    std::unordered_map<std::string, AOTIRCaptureCacheEntry> AOTIRCaptureCache;
 
     struct AddrToFileEntry {
       uint64_t Start;
@@ -222,7 +222,7 @@ namespace FEXCore::Context {
     void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
     bool LoadAOTIRCache(int streamfd);
-    bool WriteAOTIRCache(std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
+    void FinalizeAOTIRCache();
     void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer);
     
     // Used for thread creation from syscalls
@@ -257,7 +257,6 @@ namespace FEXCore::Context {
     void NotifyPause();
 
     void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length);
-
     FEXCore::CodeLoader *LocalLoader{};
 
     // Entry Cache
