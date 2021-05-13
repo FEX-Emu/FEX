@@ -46,23 +46,20 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    /*
     REGISTER_SYSCALL_IMPL(chown, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
-      SYSCALL_STUB(chown);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(chown);
+      uint64_t Result = ::chown(pathname, owner, group);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(fchown, [](FEXCore::Core::CpuStateFrame *Frame, int fd, uid_t owner, gid_t group) -> uint64_t {
-      SYSCALL_STUB(fchown);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(fchown);
+      uint64_t Result = ::fchown(fd, owner, group);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(lchown, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
-      SYSCALL_STUB(lchown);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(lchown);
+      uint64_t Result = ::lchown(pathname, owner, group);
+      SYSCALL_ERRNO();
+    });
 
     REGISTER_SYSCALL_IMPL(lseek, [](FEXCore::Core::CpuStateFrame *Frame, int fd, uint64_t offset, int whence) -> uint64_t {
       uint64_t Result = ::lseek(fd, offset, whence);

@@ -166,83 +166,70 @@ namespace FEX::HLE {
     });
 
 
-    /*
     REGISTER_SYSCALL_IMPL(syncfs, [](FEXCore::Core::CpuStateFrame *Frame, int fd) -> uint64_t {
-      SYSCALL_STUB(syncfs);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(syncfs);
+      uint64_t Result = ::syncfs(fd);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(setxattr, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name, const void *value, size_t size, int flags) -> uint64_t {
-      SYSCALL_STUB(setxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(setxattr);
+      uint64_t Result = ::setxattr(path, name, value, size, flags);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(lsetxattr, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name, const void *value, size_t size, int flags) -> uint64_t {
-      SYSCALL_STUB(lsetxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(lsetxattr);
+      uint64_t Result = ::lsetxattr(path, name, value, size, flags);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(fsetxattr, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const char *name, const void *value, size_t size, int flags) -> uint64_t {
-      SYSCALL_STUB(fsetxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(fsetxattr);
+      uint64_t Result = ::fsetxattr(fd, name, value, size, flags);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(getxattr, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name, void *value, size_t size) -> uint64_t {
-      SYSCALL_STUB(getxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(getxattr);
+      uint64_t Result = ::getxattr(path, name, value, size);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(lgetxattr, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name, void *value, size_t size) -> uint64_t {
-      SYSCALL_STUB(lgetxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(lgetxattr);
+      uint64_t Result = ::lgetxattr(path, name, value, size);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(fgetxattr, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const char *name, void *value, size_t size) -> uint64_t {
-      SYSCALL_STUB(fgetxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(fgetxattr);
+      uint64_t Result = ::fgetxattr(fd, name, value, size);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(listxattr, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, char *list, size_t size) -> uint64_t {
-      SYSCALL_STUB(listxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(listxattr);
+      uint64_t Result = ::listxattr(path, list, size);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(llistxattr, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, char *list, size_t size) -> uint64_t {
-      SYSCALL_STUB(llistxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(llistxattr);
+      uint64_t Result = ::llistxattr(path, list, size);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(flistxattr, [](FEXCore::Core::CpuStateFrame *Frame, int fd, char *list, size_t size) -> uint64_t {
-      SYSCALL_STUB(flistxattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(flistxattr);
+      uint64_t Result = ::flistxattr(fd, list, size);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(removexattr, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name) -> uint64_t {
-      SYSCALL_STUB(removexattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(removexattr);
+      uint64_t Result = ::removexattr(path, name);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(lremovexattr, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name) -> uint64_t {
-      SYSCALL_STUB(lremovexattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(lremovexattr);
+      uint64_t Result = ::lremovexattr(path, name);
+      SYSCALL_ERRNO();
+    });
 
-    /*
     REGISTER_SYSCALL_IMPL(fremovexattr, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const char *name) -> uint64_t {
-      SYSCALL_STUB(fremovexattr);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(fremovexattr);
+      uint64_t Result = ::fremovexattr(fd, name);
+      SYSCALL_ERRNO();
+    });
 
     REGISTER_SYSCALL_IMPL(fanotify_init, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int flags, unsigned int event_f_flags) -> uint64_t {
       uint64_t Result = ::fanotify_init(flags, event_f_flags);

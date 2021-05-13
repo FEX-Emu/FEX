@@ -67,7 +67,6 @@ affinity_test
 aio_test
 alarm_test
 arch_prctl_test
-chown_test
 concurrency_test
 connect_external_test
 epoll_test
@@ -125,7 +124,6 @@ socket_netlink_route_test
 socket_stress_test
 splice_test
 stat_test
-sync_test
 sysret_test
 tcp_socket_test
 time_test

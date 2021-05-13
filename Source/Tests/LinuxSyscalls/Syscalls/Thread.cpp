@@ -356,31 +356,30 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    /*
     REGISTER_SYSCALL_IMPL(setpgid, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, pid_t pgid) -> uint64_t {
-      SYSCALL_STUB(setpgid);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(setpgid);
+      uint64_t Result = ::setpgid(pid, pgid);
+      SYSCALL_ERRNO();
+    });
 
-    /*REGISTER_SYSCALL_IMPL(getpgid, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
-      SYSCALL_STUB(getpgid);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(getpgid);
+    REGISTER_SYSCALL_IMPL(getpgid, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
+      uint64_t Result = ::getpgid(pid);
+      SYSCALL_ERRNO();
+    });
 
-    /*REGISTER_SYSCALL_IMPL(setfsuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsuid) -> uint64_t {
-      SYSCALL_STUB(setfsuid);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(setfsuid);
+    REGISTER_SYSCALL_IMPL(setfsuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsuid) -> uint64_t {
+      uint64_t Result = ::setfsuid(fsuid);
+      SYSCALL_ERRNO();
+    });
 
-    /*REGISTER_SYSCALL_IMPL(setfsgid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsgid) -> uint64_t {
-      SYSCALL_STUB(setfsgid);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(setfsgid);
+    REGISTER_SYSCALL_IMPL(setfsgid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsgid) -> uint64_t {
+      uint64_t Result = ::setfsgid(fsgid);
+      SYSCALL_ERRNO();
+    });
 
-    /*REGISTER_SYSCALL_IMPL(getsid, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
-      SYSCALL_STUB(getsid);
-    });*/
-    REGISTER_SYSCALL_FORWARD_ERRNO(getsid);
+    REGISTER_SYSCALL_IMPL(getsid, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
+      uint64_t Result = ::getsid(pid);
+      SYSCALL_ERRNO();
+    });
 
     REGISTER_SYSCALL_IMPL(waitid, [](FEXCore::Core::CpuStateFrame *Frame, idtype_t idtype, id_t id, siginfo_t *infop, int options) -> uint64_t {
       uint64_t Result = ::waitid(idtype, id, infop, options);
