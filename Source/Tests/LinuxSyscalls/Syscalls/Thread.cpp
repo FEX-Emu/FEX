@@ -303,13 +303,22 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(arch_prctl, [](FEXCore::Core::CpuStateFrame *Frame, int code, unsigned long addr) -> uint64_t {
+      constexpr uint64_t TASK_MAX = (1ULL << 48); // 48-bits until we can query the host side VA sanely. AArch64 doesn't expose this in cpuinfo
       uint64_t Result{};
       switch (code) {
         case 0x1001: // ARCH_SET_GS
+          if (addr >= TASK_MAX) {
+            // Ignore a non-canonical address
+            return -EPERM;
+          }
           Frame->State.gs = addr;
           Result = 0;
         break;
         case 0x1002: // ARCH_SET_FS
+          if (addr >= TASK_MAX) {
+            // Ignore a non-canonical address
+            return -EPERM;
+          }
           Frame->State.fs = addr;
           Result = 0;
         break;
