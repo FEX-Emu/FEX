@@ -191,9 +191,9 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(ppoll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout_ts, const sigset_t *sigmask, size_t sigsetsize) -> uint64_t {
-      // sigsetsize is unused here since it is currently a constant and not exposed through glibc
-      uint64_t Result = ::ppoll(fds, nfds, timeout_ts, sigmask);
+    REGISTER_SYSCALL_IMPL_X64(ppoll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, struct timespec *timeout_ts, const uint64_t *sigmask, size_t sigsetsize) -> uint64_t {
+      // glibc wrapper doesn't allow timeout_ts to be modified like the kernel does
+      uint64_t Result = ::syscall(SYS_ppoll, fds, nfds, timeout_ts, sigmask, sigsetsize);
       SYSCALL_ERRNO();
     });
 
