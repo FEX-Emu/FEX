@@ -116,6 +116,8 @@ include_directories(External/jemalloc/pregen/include/)
 add_subdirectory(External/cpp-optparse/)
 include_directories(External/cpp-optparse/)
 
+add_subdirectory(External/fmt/)
+
 add_subdirectory(External/imgui/)
 include_directories(External/imgui/)
 
