@@ -43,6 +43,7 @@ $end_info$
 #include <sys/stat.h>
 
 #include "Interface/Core/GdbServer.h"
+#include <shared_mutex>
 
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
@@ -52,7 +53,60 @@ namespace FEXCore::CPU {
   }
 }
 
-static std::mutex AOTIRCacheLock;
+static std::shared_mutex AOTIRCacheLock;
+static std::shared_mutex AOTIRCaptureCacheWriteoutLock;
+static std::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
+static std::atomic<bool> AOTIRCaptureCacheWriteoutFlusing;
+
+void AOTIRCaptureCacheWriteoutQueue_Flush() {
+
+  {
+    std::shared_lock lk{AOTIRCaptureCacheWriteoutLock};
+    if (AOTIRCaptureCacheWriteoutQueue.size() == 0) {
+      AOTIRCaptureCacheWriteoutFlusing.store(false);
+      return;    
+    }
+  }
+  
+  for (;;) {
+    AOTIRCaptureCacheWriteoutLock.lock();
+    std::function<void()> fn = std::move(AOTIRCaptureCacheWriteoutQueue.front());
+    bool MaybeEmpty = false;
+    AOTIRCaptureCacheWriteoutQueue.pop();
+    MaybeEmpty = AOTIRCaptureCacheWriteoutQueue.size() == 0;
+    AOTIRCaptureCacheWriteoutLock.unlock();
+
+    fn();
+    if (MaybeEmpty) {
+      std::shared_lock lk{AOTIRCaptureCacheWriteoutLock};
+      if (AOTIRCaptureCacheWriteoutQueue.size() == 0) {
+        AOTIRCaptureCacheWriteoutFlusing.store(false);
+        return;
+      }
+    }
+  }
+
+  LOGMAN_MSG_A("Must never get here");
+}
+
+void AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn) {
+  bool Flush = false;
+
+  {
+    std::unique_lock lk{AOTIRCaptureCacheWriteoutLock};
+    AOTIRCaptureCacheWriteoutQueue.push(fn);
+    if (AOTIRCaptureCacheWriteoutQueue.size() > 10000) {
+      Flush = true;
+    }
+  }
+
+  bool test_val = false;
+  if (Flush && AOTIRCaptureCacheWriteoutFlusing.compare_exchange_strong(test_val, true)) {
+    AOTIRCaptureCacheWriteoutQueue_Flush();
+  }
+}
+
+
 
 namespace FEXCore::Core {
 struct ThreadLocalData {
@@ -434,8 +488,6 @@ namespace FEXCore::Context {
   }
 
   void Context::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
-    InitializeThreadData(Thread);
-
     // This will create the execution thread but it won't actually start executing
     ExecutionThreadHandler *Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
     Arg->This = this;
@@ -514,6 +566,7 @@ namespace FEXCore::Context {
     Thread->ThreadManager.parent_tid = ParentTID;
 
     InitializeCompiler(Thread, false);
+    InitializeThreadData(Thread);
 
     return Thread;
   }
@@ -817,23 +870,25 @@ namespace FEXCore::Context {
   }
 
   void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView *IRList, FEXCore::IR::RegisterAllocationData *RAData) {
-    Index.emplace(GuestRIP, Stream->tellp());
+    auto Inserted = Index.emplace(GuestRIP, Stream->tellp());
 
-    //GuestHash
-    Stream->write((char*)&Hash, sizeof(Hash));
+    if (Inserted.second) {
+      //GuestHash
+      Stream->write((char*)&Hash, sizeof(Hash));
 
-    //GuestLength
-    Stream->write((char*)&Length, sizeof(Length));
-    
-    // RAData (inline)
-    // In file, IsShared is always set
-    auto Shared = RAData->IsShared;
-    RAData->IsShared = true;
-    Stream->write((char*)RAData, RAData->Size(RAData->MapCount));
-    RAData->IsShared = Shared;
-    
-    // IRData (inline)
-    IRList->Serialize(*Stream);
+      //GuestLength
+      Stream->write((char*)&Length, sizeof(Length));
+      
+      // RAData (inline)
+      // In file, IsShared is always set
+      auto Shared = RAData->IsShared;
+      RAData->IsShared = true;
+      Stream->write((char*)RAData, RAData->Size(RAData->MapCount));
+      RAData->IsShared = Shared;
+      
+      // IRData (inline)
+      IRList->Serialize(*Stream);
+    }
   }
 
   std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -860,7 +915,7 @@ namespace FEXCore::Context {
     }
 
     {
-      std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+      std::shared_lock lk(AOTIRCacheLock);
       auto file = AddrToFile.lower_bound(GuestRIP);
       if (file != AddrToFile.begin()) {
         --file;
@@ -872,7 +927,7 @@ namespace FEXCore::Context {
     }
 
     if (IRList == nullptr && Config.AOTIRLoad) {
-      std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+      std::shared_lock lk(AOTIRCacheLock);
       auto file = AddrToFile.lower_bound(GuestRIP);
       if (file != AddrToFile.begin()) {
         --file;
@@ -999,14 +1054,16 @@ namespace FEXCore::Context {
   }
 
   void Context::WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
-    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+    std::shared_lock lk(AOTIRCacheLock);
     for( const auto &File: FilesWithCode) {
       Writer(File.first, File.second);
     }
   }
 
   void Context::FinalizeAOTIRCache() {
-    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+    AOTIRCaptureCacheWriteoutQueue_Flush();
+
+    std::unique_lock lk(AOTIRCacheLock);
 
     for (auto &AOTModule: AOTIRCaptureCache) {
       if (!AOTModule.second.Stream) {
@@ -1054,7 +1111,7 @@ namespace FEXCore::Context {
       abort();
     }
   }
-  
+
   uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto Thread = Frame->Thread;
 
@@ -1130,28 +1187,34 @@ namespace FEXCore::Context {
     if (GeneratedIR) {
       // Add to AOT cache if aot generation is enabled
       if ((Config.AOTIRCapture() || Config.AOTIRGenerate()) && RAData) {
-        std::lock_guard<std::mutex> lk(AOTIRCacheLock);
-
         auto hash = XXH3_64bits((void*)StartAddr, Length);
+
+        std::shared_lock lk(AOTIRCacheLock);
 
         auto file = AddrToFile.lower_bound(StartAddr);
         if (file != AddrToFile.begin()) {
           --file;
           if (file->second.Start <= StartAddr && (file->second.Start + file->second.Len) >= (StartAddr + Length)) {
-            auto *AotFile = &AOTIRCaptureCache[file->second.fileid];
-            if (!AotFile->Stream) {
-              AotFile->Stream = AOTIRWriter(file->second.fileid);
-              uint64_t tag = 0xDEADBEEFC0D30004;
-              AotFile->Stream->write((char*)&tag, sizeof(tag));
-            }
-            AotFile->AppendAOTIRCaptureCache(GuestRIP - file->second.Start + file->second.Offset, StartAddr - file->second.Start + file->second.Offset, Length, hash, IRList, RAData);
+            auto LocalRIP = GuestRIP - file->second.Start + file->second.Offset;
+            auto LocalStartAddr = StartAddr - file->second.Start + file->second.Offset;
+            auto fileid = file->second.fileid;
+            AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRList, RAData, fileid]() {
+              auto *AotFile = &AOTIRCaptureCache[fileid];
+
+              if (!AotFile->Stream) {
+                AotFile->Stream = AOTIRWriter(fileid);
+                uint64_t tag = 0xDEADBEEFC0D30004;
+                AotFile->Stream->write((char*)&tag, sizeof(tag));
+              }
+              AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRList, RAData);
+              delete IRList;
+              FEXCore::Allocator::free(RAData);
+            });
           }
         }
 
         if (Config.AOTIRGenerate()) {
           // cleanup memory and early exit here -- we're not running the application
-          delete IRList;
-          FEXCore::Allocator::free(RAData);
 
           if (DecrementRefCount)
             --Thread->CompileBlockReentrantRefCount;
@@ -1313,7 +1376,7 @@ namespace FEXCore::Context {
       fileid += Config.ABILocalFlags ? "L" : "l";
       fileid += Config.ABINoPF ? "p" : "P";
 
-      std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+      std::unique_lock lk(AOTIRCacheLock);
 
       AddrToFile.insert({ Base, { Base, Size, Offset, fileid, filename, nullptr, false} });
 
@@ -1328,13 +1391,13 @@ namespace FEXCore::Context {
   }
 
   void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
-    std::lock_guard<std::mutex> lk(AOTIRCacheLock);
+    std::unique_lock lk(AOTIRCacheLock);
     // TODO: Support partial removing
     AddrToFile.erase(Base);
   }
 
-  void ConfigureAOTGen(FEXCore::Context::Context *CTX, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
-    CTX->ParentThread->FrontendDecoder->SetExternalBranches(ExternalBranches);
-    CTX->ParentThread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
+  void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
+    Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);
+    Thread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
   }
 }

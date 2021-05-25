@@ -30,6 +30,10 @@ $end_info$
 #include <filesystem>
 #include <algorithm>
 #include <set>
+#include <thread>
+#include <queue>
+
+#include <sys/sysinfo.h>
 
 namespace {
 static bool SilentLog;
@@ -158,6 +162,152 @@ bool IsInterpreterInstalled() {
   // The interpreter is installed if both the binfmt_misc handlers are available
   return std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86") &&
          std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64");
+}
+
+void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection &Section) {
+
+  // Make sure this section is executable and big enough
+  if (!Section.Executable || Section.Size < 16)
+    return;
+  
+  std::set<uintptr_t> InitialBranchTargets;
+
+  // Load the ELF again with symbol parsing this time
+  ELFLoader::ELFContainer container{Section.Filename, "", false};
+
+  // Add symbols to the branch targets list
+  container.AddSymbols([&](ELFLoader::ELFSymbol* sym) {
+    auto Destination = sym->Address + Section.ElfBase;
+
+    if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
+      return; // outside of current section, unlikely to be real code
+    }
+
+    InitialBranchTargets.insert(Destination);
+  });
+
+  LogMan::Msg::I("Symbol seed: %ld", InitialBranchTargets.size());
+
+  // Add unwind entries to the branch target list
+  container.AddUnwindEntries([&](uintptr_t Entry) {
+    auto Destination = Entry + Section.ElfBase;
+
+    if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
+      return; // outside of current section, unlikely to be real code
+    }
+
+    InitialBranchTargets.insert(Destination);
+  });
+
+  LogMan::Msg::I("Symbol + Unwind seed: %ld", InitialBranchTargets.size());
+
+  // Scan the executable section and try to find function entries
+  for (size_t Offset = 0; Offset < (Section.Size - 16); Offset++) {
+    uint8_t *pCode = (uint8_t *)(Section.Base + Offset);
+
+    // Possible CALL <disp32>
+    if (*pCode == 0xE8) {
+      uintptr_t Destination = (int)(pCode[1] | (pCode[2] << 8) | (pCode[3] << 16) | (pCode[4] << 24));
+      Destination += (uintptr_t)pCode + 5;
+
+      auto DestinationPtr = (uint8_t*)Destination;
+      
+      if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
+        continue; // outside of current section, unlikely to be real code
+
+      if (DestinationPtr[0] == 0 && DestinationPtr[1] == 0)
+        continue; // add al, [rax], unlikely to be real code
+
+      InitialBranchTargets.insert(Destination);
+    }
+
+    // endbr64 marker marks an indirect branch destination
+    if (pCode[0] == 0xf3 && pCode[1] == 0x0f && pCode[2] == 0x1e && pCode[3] == 0xfa) {
+      InitialBranchTargets.insert((uintptr_t)pCode);
+    }
+  }
+
+  uint64_t SectionMaxAddress = Section.Base + Section.Size;
+
+  std::set<uint64_t> Compiled;
+  std::atomic<int> counter = 0;
+
+  std::queue<uint64_t> BranchTargets;
+  
+  // Setup BranchTargets, Compiled sets from InitiaBranchTargets
+
+  Compiled.insert(InitialBranchTargets.begin(), InitialBranchTargets.end());
+  for (auto BranchTarget: InitialBranchTargets) {
+    BranchTargets.push(BranchTarget);
+  }
+
+  InitialBranchTargets.clear();
+
+
+  std::mutex QueueMutex;
+  std::vector<std::thread> ThreadPool;
+
+  for (int i = 0; i < get_nprocs_conf(); i++) {
+    std::thread thd([&BranchTargets, CTX, &counter, &Compiled, &Section, &QueueMutex, SectionMaxAddress]() {
+
+      // Setup thread - Each compilation thread uses its own backing FEX thread
+      FEXCore::Core::CPUState state;
+      auto Thread = FEXCore::Context::CreateThread(CTX, &state, gettid());
+      std::set<uint64_t> ExternalBranchesLocal;
+      FEXCore::Context::ConfigureAOTGen(Thread, &ExternalBranchesLocal, SectionMaxAddress);
+
+
+      for (;;) {
+        uint64_t BranchTarget;
+
+        // Get a entrypoint to process from the queue
+        QueueMutex.lock();
+        if (BranchTargets.empty()) {
+          QueueMutex.unlock();
+          break; // no entrypoint to process - exit
+        }
+
+        BranchTarget = BranchTargets.front();
+        BranchTargets.pop();
+        QueueMutex.unlock();
+
+        // Compile entrypoint
+        counter++;
+        FEXCore::Context::CompileRIP(Thread, BranchTarget);
+
+        // Are there more branches?
+        if (ExternalBranchesLocal.size() > 0) {
+          // Add them to the "to process" list
+          QueueMutex.lock();
+          for(auto Destination: ExternalBranchesLocal) {
+              if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
+                continue;
+              if (Compiled.contains(Destination))
+                continue;
+              Compiled.insert(Destination);
+            BranchTargets.push(Destination);
+          }
+          QueueMutex.unlock();
+          ExternalBranchesLocal.clear();
+        }
+      }
+
+      // All entryproints processed, cleanup this thread
+      FEXCore::Context::DestroyThread(CTX, Thread);
+    });
+
+    // Add to the thread pool
+    ThreadPool.push_back(std::move(thd));
+  }
+
+  // Make sure all threads are finished
+  for (auto & Thread: ThreadPool) {
+    Thread.join();
+  }
+
+  ThreadPool.clear();
+
+  LogMan::Msg::I("\nAll Done: %d", counter.load());
 }
 
 int main(int argc, char **argv, char **const envp) {
@@ -356,93 +506,8 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (AOTIRGenerate()) {
-    for(auto Section: Loader.Sections) {
-      if (Section.Executable && Section.Size > 16) {
-        ELFLoader::ELFContainer container{Section.Filename, "", false};
-
-        std::set<uintptr_t> BranchTargets;
-
-        container.AddSymbols([&](ELFLoader::ELFSymbol* sym) {
-          auto Destination = sym->Address + Section.ElfBase;
-
-          if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
-            //printf("Sym : %lx %lx out of range\n", sym->Address, Destination);
-            return; // outside of current section, unlikely to be real code
-          }
-
-          BranchTargets.insert(Destination);
-        });
-
-        LogMan::Msg::I("Symbol seed: %ld", BranchTargets.size());
-
-        container.AddUnwindEntries([&](uintptr_t Entry) {
-          auto Destination = Entry + Section.ElfBase;
-
-          if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) ) {
-            //printf("Sym : %lx %lx out of range\n", sym->Address, Destination);
-            return; // outside of current section, unlikely to be real code
-          }
-
-          BranchTargets.insert(Destination);
-        });
-
-
-        LogMan::Msg::I("Symbol + Unwind seed: %ld", BranchTargets.size());
-
-        for (size_t Offset = 0; Offset < (Section.Size - 16); Offset++) {
-          uint8_t *pCode = (uint8_t *)(Section.Base + Offset);
-
-          if (*pCode == 0xE8) {
-            uintptr_t Destination = (int)(pCode[1] | (pCode[2] << 8) | (pCode[3] << 16) | (pCode[4] << 24));
-            Destination += (uintptr_t)pCode + 5;
-
-            auto DestinationPtr = (uint8_t*)Destination;
-            
-            if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
-              continue; // outside of current section, unlikely to be real code
-
-            if (DestinationPtr[0] == 0 && DestinationPtr[1] == 0)
-              continue; // add al, [rax], unlikely to be real code
-/*
-            if (DestinationPtr[0] == 0x44 && DestinationPtr[1] == 0x0f && DestinationPtr[2] == 0x6f)
-              continue; // REX.W + movq leads to frontend bugs
-*/
-            BranchTargets.insert(Destination);
-          }
-
-          if (pCode[0] == 0xf3 && pCode[1] == 0x0f && pCode[2] == 0x1e && pCode[3] == 0xfa) {
-            BranchTargets.insert((uintptr_t)pCode);
-          }
-        }
-
-        uint64_t SectionMaxAddress = Section.Base + Section.Size;
-        std::set<uint64_t> ExternalBranches;
-
-        FEXCore::Context::ConfigureAOTGen(CTX, &ExternalBranches, SectionMaxAddress);
-
-        std::set<uint64_t> Compiled;
-        int counter = 0;
-        do {        
-          LogMan::Msg::I("Discovered %ld Branch Targets in this pass", BranchTargets.size());
-          for (auto RIP: BranchTargets) {
-            if ((counter++) % 1000 == 0)
-              LogMan::Msg::I("Compiling %d %lX", counter, RIP - Section.ElfBase);
-            FEXCore::Context::CompileRIP(CTX, RIP);
-            Compiled.insert(RIP);
-          }
-          LogMan::Msg::I("\nPass Done");
-          BranchTargets.clear();
-          for (auto Destination: ExternalBranches) {
-            if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
-              continue;
-            if (Compiled.contains(Destination))
-              continue;
-            BranchTargets.insert(Destination);
-          }
-          ExternalBranches.clear();
-        } while (BranchTargets.size() > 0);
-        LogMan::Msg::I("\nAll Done: %d", counter);
-      }
+    for(auto &Section: Loader.Sections) {
+      AOTGenSection(CTX, Section);
     }
   } else {
     FEXCore::Context::RunUntilExit(CTX);
