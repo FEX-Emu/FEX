@@ -689,18 +689,48 @@ int main(int argc, char **argv) {
       return -1;
   }
 
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-
   // Create window with graphics context
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
   SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window* window = SDL_CreateWindow("#FEXConfig", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 640, window_flags);
-  SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+  SDL_GLContext gl_context{};
+  const char* glsl_version{};
+
+  // Try a GL 3.0 context
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+  gl_context = SDL_GL_CreateContext(window);
+  glsl_version = "#version 130";
+
+  if (!gl_context) {
+    // 3.0 failed, let's try 2.1
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    gl_context = SDL_GL_CreateContext(window);
+    glsl_version = "#version 120";
+
+    if (!gl_context) {
+      // 2.1 failed, let's try ES 2.0
+      SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+      SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+      SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+      SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+      gl_context = SDL_GL_CreateContext(window);
+      glsl_version = "#version 100";
+
+      if (!gl_context) {
+        printf("Couldn't create GL context: %s\n", SDL_GetError());
+        return -1;
+      }
+    }
+  }
+
   SDL_GL_MakeCurrent(window, gl_context);
   SDL_GL_SetSwapInterval(1); // Enable vsync
 
@@ -714,7 +744,6 @@ int main(int argc, char **argv) {
   io.IniFilename = &ImGUIConfig.at(0);
 
   ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-  const char* glsl_version = "#version 130";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
   GlobalTime = std::chrono::high_resolution_clock::now();
