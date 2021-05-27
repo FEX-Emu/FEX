@@ -31,7 +31,7 @@ void InitializeH0F3ATables(Context::OperatingMode Mode) {
     {OPD(0, PF_3A_66,   0x17), 1, X86InstInfo{"EXTRACTPS",       TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(0, PF_3A_66,   0x20), 1, X86InstInfo{"PINSRB",          TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_8BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR,           1, nullptr}},
-    {OPD(0, PF_3A_66,   0x21), 1, X86InstInfo{"INSERTPS",        TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(0, PF_3A_66,   0x21), 1, X86InstInfo{"INSERTPS",        TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,           1, nullptr}},
     {OPD(0, PF_3A_66,   0x22), 1, X86InstInfo{"PINSRD",          TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR,           1, nullptr}},
     {OPD(0, PF_3A_66,   0x40), 1, X86InstInfo{"DPPS",            TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(0, PF_3A_66,   0x41), 1, X86InstInfo{"DPPD",            TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},

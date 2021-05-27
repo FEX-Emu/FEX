@@ -325,6 +325,7 @@ public:
   void ANDNOp(OpcodeArgs);
   template<size_t ElementSize>
   void PINSROp(OpcodeArgs);
+  void InsertPSOp(OpcodeArgs);
   template<size_t ElementSize>
   void PExtrOp(OpcodeArgs);
   template<size_t ElementSize, bool Signed>
