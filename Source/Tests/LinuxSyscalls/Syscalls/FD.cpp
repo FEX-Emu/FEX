@@ -212,9 +212,18 @@ namespace FEX::HLE {
         uint64_t Result = FEX::HLE::_SyscallHandler->FM.FAccessat2(dirfd, pathname, mode, flags);
         SYSCALL_ERRNO();
       });
+
+      REGISTER_SYSCALL_IMPL(pidfd_getfd, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int fd, unsigned int flags) -> uint64_t {
+#ifndef SYS_pidfd_getfd
+#define SYS_pidfd_getfd 438
+#endif
+        uint64_t Result = ::syscall(SYS_pidfd_getfd, pidfd, fd, flags);
+        SYSCALL_ERRNO();
+      });
     }
     else {
       REGISTER_SYSCALL_IMPL(faccessat2, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(pidfd_getfd, UnimplementedSyscallSafe);
     }
 
     REGISTER_SYSCALL_IMPL(splice, [](FEXCore::Core::CpuStateFrame *Frame, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
