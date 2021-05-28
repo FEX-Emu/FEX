@@ -35,6 +35,7 @@ class SyscallHandler;
   void RegisterFS();
   void RegisterInfo();
   void RegisterIO();
+  void RegisterIOUring(FEX::HLE::SyscallHandler *const Handler);
   void RegisterKey();
   void RegisterMemory();
   void RegisterMsg();

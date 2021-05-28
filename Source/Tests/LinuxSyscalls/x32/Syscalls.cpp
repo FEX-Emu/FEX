@@ -662,6 +662,7 @@ public:
     FEX::HLE::RegisterFS();
     FEX::HLE::RegisterInfo();
     FEX::HLE::RegisterIO();
+    FEX::HLE::RegisterIOUring(this);
     FEX::HLE::RegisterKey();
     FEX::HLE::RegisterMemory();
     FEX::HLE::RegisterMsg();
