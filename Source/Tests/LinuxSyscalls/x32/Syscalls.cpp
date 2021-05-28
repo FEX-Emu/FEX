@@ -580,7 +580,7 @@ public:
   }
 };
 
-  void RegisterEpoll();
+  void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler);
   void RegisterFD();
   void RegisterFS();
   void RegisterInfo();
@@ -677,7 +677,7 @@ public:
     FEX::HLE::RegisterStubs();
 
     // 32bit specific
-    FEX::HLE::x32::RegisterEpoll();
+    FEX::HLE::x32::RegisterEpoll(this);
     FEX::HLE::x32::RegisterFD();
     FEX::HLE::x32::RegisterFS();
     FEX::HLE::x32::RegisterInfo();
