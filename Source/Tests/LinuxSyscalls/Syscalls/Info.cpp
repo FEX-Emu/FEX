@@ -42,7 +42,12 @@ namespace FEX::HLE {
         LogMan::Msg::E("Couldn't determine host nodename. Defaulting to '%s'", buf->nodename);
       }
       strcpy(buf->sysname, "Linux");
-      strcpy(buf->release, "5.0.0");
+      uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
+      snprintf(buf->release, sizeof(buf->release), "%d.%d.%d",
+        FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelMinor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+
       const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
       strcpy(buf->version, version);
       static_assert(sizeof(version) <= sizeof(buf->version), "uname version define became too large!");
