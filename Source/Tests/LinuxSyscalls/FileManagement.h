@@ -32,6 +32,7 @@ public:
   ~FileManager();
   uint64_t Open(const char *pathname, int flags, uint32_t mode);
   uint64_t Close(int fd);
+  uint64_t CloseRange(unsigned int first, unsigned int last, unsigned int flags);
   uint64_t Stat(const char *pathname, void *buf);
   uint64_t Lstat(const char *path, void *buf);
   uint64_t Access(const char *pathname, int mode);

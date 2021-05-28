@@ -319,5 +319,15 @@ namespace FEX::HLE {
       uint64_t Result = ::copy_file_range(fd_in, off_in, fd_out, off_out, len, flags);
       SYSCALL_ERRNO();
     });
+
+    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 9, 0)) {
+      REGISTER_SYSCALL_IMPL(close_range, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int first, unsigned int last, unsigned int flags) -> uint64_t {
+        uint64_t Result = FEX::HLE::_SyscallHandler->FM.CloseRange(first, last, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(close_range, UnimplementedSyscallSafe);
+    }
   }
 }
