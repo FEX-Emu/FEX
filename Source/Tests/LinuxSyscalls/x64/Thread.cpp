@@ -32,15 +32,24 @@ namespace FEX::HLE::x64 {
     Frame->State.rip += 2;
   }
 
-  static bool AnyFlagsSet(uint64_t Flags, uint64_t Mask) {
-    return (Flags & Mask) != 0;
-  }
-
-  static bool AllFlagsSet(uint64_t Flags, uint64_t Mask) {
-    return (Flags & Mask) == Mask;
-  }
-
   void RegisterThread() {
+    REGISTER_SYSCALL_IMPL_X64(clone, ([](FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) -> uint64_t {
+      FEX::HLE::clone3_args args {
+        .flags = flags & ~CSIGNAL, // This no longer contains CSIGNAL
+        .pidfd = reinterpret_cast<uint64_t>(parent_tid), // For clone, pidfd is duplicated here
+        .child_tid = reinterpret_cast<uint64_t>(child_tid),
+        .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
+        .exit_signal = flags & CSIGNAL,
+        .stack = reinterpret_cast<uint64_t>(stack),
+        .stack_size = ~0ULL, // This syscall isn't able to see the stack size
+        .tls = reinterpret_cast<uint64_t>(tls),
+        .set_tid = 0, // This syscall isn't able to select TIDs
+        .set_tid_size = 0,
+        .cgroup = 0, // This syscall can't select cgroups
+      };
+      return CloneHandler(Frame, &args);
+    }));
+
     REGISTER_SYSCALL_IMPL_X64(futex, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
       uint64_t Result = syscall(SYS_futex,
         uaddr,
@@ -50,93 +59,6 @@ namespace FEX::HLE::x64 {
         uaddr2,
         val3);
       SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X64(clone, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) -> uint64_t {
-    #define FLAGPRINT(x, y) if (flags & (y)) LogMan::Msg::I("\tFlag: " #x)
-      FLAGPRINT(CSIGNAL,              0x000000FF);
-      FLAGPRINT(CLONE_VM,             0x00000100);
-      FLAGPRINT(CLONE_FS,             0x00000200);
-      FLAGPRINT(CLONE_FILES,          0x00000400);
-      FLAGPRINT(CLONE_SIGHAND,        0x00000800);
-      FLAGPRINT(CLONE_PTRACE,         0x00002000);
-      FLAGPRINT(CLONE_VFORK,          0x00004000);
-      FLAGPRINT(CLONE_PARENT,         0x00008000);
-      FLAGPRINT(CLONE_THREAD,         0x00010000);
-      FLAGPRINT(CLONE_NEWNS,          0x00020000);
-      FLAGPRINT(CLONE_SYSVSEM,        0x00040000);
-      FLAGPRINT(CLONE_SETTLS,         0x00080000);
-      FLAGPRINT(CLONE_PARENT_SETTID,  0x00100000);
-      FLAGPRINT(CLONE_CHILD_CLEARTID, 0x00200000);
-      FLAGPRINT(CLONE_DETACHED,       0x00400000);
-      FLAGPRINT(CLONE_UNTRACED,       0x00800000);
-      FLAGPRINT(CLONE_CHILD_SETTID,   0x01000000);
-      FLAGPRINT(CLONE_NEWCGROUP,      0x02000000);
-      FLAGPRINT(CLONE_NEWUTS,         0x04000000);
-      FLAGPRINT(CLONE_NEWIPC,         0x08000000);
-      FLAGPRINT(CLONE_NEWUSER,        0x10000000);
-      FLAGPRINT(CLONE_NEWPID,         0x20000000);
-      FLAGPRINT(CLONE_NEWNET,         0x40000000);
-      FLAGPRINT(CLONE_IO,             0x80000000);
-
-      auto Thread = Frame->Thread;
-
-      if (AnyFlagsSet(flags, CLONE_UNTRACED | CLONE_PTRACE)) {
-        LogMan::Msg::D("clone: Ptrace* not supported");
-      }
-
-      if (AnyFlagsSet(flags, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID | CLONE_NEWNET)) {
-        // NEWUSER doesn't need any privileges from 3.8 onward
-        // We just don't support it yet
-        LogMan::Msg::I("Unconditionally returning EPERM on clone namespace");
-        return -EPERM;
-      }
-
-      if (!(flags & CLONE_THREAD)) {
-
-        if (flags & CLONE_VFORK) {
-          flags &= ~CLONE_VFORK;
-          flags &= ~CLONE_VM;
-          LogMan::Msg::D("clone: WARNING: CLONE_VFORK w/o CLONE_THREAD");
-        }
-
-        if (AnyFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
-          LogMan::Msg::I("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), %X", flags);
-          return -EPERM;
-        }
-
-        // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
-
-        return FEX::HLE::ForkGuest(Thread, Frame, flags, stack, parent_tid, child_tid, tls);
-      } else {
-
-        if (!AllFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND)) {
-          LogMan::Msg::I("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), %X", flags);
-          return -EPERM;
-        }
-
-        auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, flags, stack, parent_tid, child_tid, tls);
-
-        // Return the new threads TID
-        uint64_t Result = NewThread->ThreadManager.GetTID();
-        LogMan::Msg::D("Child [%d] starting at: 0x%lx. Parent was at 0x%lx", Result, NewThread->CurrentFrame->State.rip, Thread->CurrentFrame->State.rip);
-
-        if (flags & CLONE_VFORK) {
-          NewThread->DestroyedByParent = true;
-        }
-
-        // Actually start the thread
-        FEXCore::Context::RunThread(Thread->CTX, NewThread);
-
-        if (flags & CLONE_VFORK) {
-          // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
-          NewThread->ExecutionThread->join(nullptr);
-
-          // Normally a thread cleans itself up on exit. But because we need to join, we are now responsible
-          FEXCore::Context::DestroyThread(Thread->CTX, NewThread);
-        }
-        SYSCALL_ERRNO();
-      }
     });
 
     REGISTER_SYSCALL_IMPL_X64(set_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, struct robust_list_head *head, size_t len) -> uint64_t {

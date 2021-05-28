@@ -10,11 +10,13 @@ $end_info$
 #include "Common/MathUtils.h"
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/CodeLoader.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/ELFContainer.h>
 #include <fcntl.h>
@@ -191,6 +193,126 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
 
   SYSCALL_ERRNO();
 }
+
+static bool AnyFlagsSet(uint64_t Flags, uint64_t Mask) {
+  return (Flags & Mask) != 0;
+}
+
+static bool AllFlagsSet(uint64_t Flags, uint64_t Mask) {
+  return (Flags & Mask) == Mask;
+}
+
+uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
+  uint64_t flags = args->flags;
+#define FLAGPRINT(x, y) if (args->flags & (y)) LogMan::Msg::I("\tFlag: " #x)
+  FLAGPRINT(CSIGNAL,              0x000000FF);
+  FLAGPRINT(CLONE_VM,             0x00000100);
+  FLAGPRINT(CLONE_FS,             0x00000200);
+  FLAGPRINT(CLONE_FILES,          0x00000400);
+  FLAGPRINT(CLONE_SIGHAND,        0x00000800);
+  FLAGPRINT(CLONE_PTRACE,         0x00002000);
+  FLAGPRINT(CLONE_VFORK,          0x00004000);
+  FLAGPRINT(CLONE_PARENT,         0x00008000);
+  FLAGPRINT(CLONE_THREAD,         0x00010000);
+  FLAGPRINT(CLONE_NEWNS,          0x00020000);
+  FLAGPRINT(CLONE_SYSVSEM,        0x00040000);
+  FLAGPRINT(CLONE_SETTLS,         0x00080000);
+  FLAGPRINT(CLONE_PARENT_SETTID,  0x00100000);
+  FLAGPRINT(CLONE_CHILD_CLEARTID, 0x00200000);
+  FLAGPRINT(CLONE_DETACHED,       0x00400000);
+  FLAGPRINT(CLONE_UNTRACED,       0x00800000);
+  FLAGPRINT(CLONE_CHILD_SETTID,   0x01000000);
+  FLAGPRINT(CLONE_NEWCGROUP,      0x02000000);
+  FLAGPRINT(CLONE_NEWUTS,         0x04000000);
+  FLAGPRINT(CLONE_NEWIPC,         0x08000000);
+  FLAGPRINT(CLONE_NEWUSER,        0x10000000);
+  FLAGPRINT(CLONE_NEWPID,         0x20000000);
+  FLAGPRINT(CLONE_NEWNET,         0x40000000);
+  FLAGPRINT(CLONE_IO,             0x80000000);
+
+  auto Thread = Frame->Thread;
+
+  if (AnyFlagsSet(flags, CLONE_UNTRACED | CLONE_PTRACE)) {
+    LogMan::Msg::D("clone: Ptrace* not supported");
+  }
+
+  // Clone3 flags
+#ifndef CLONE_CLEAR_SIGHAND
+#define CLONE_CLEAR_SIGHAND 0x100000000ULL
+#endif
+#ifndef CLONE_INTO_CGROUP
+#define CLONE_INTO_CGROUP 0x200000000ULL
+#endif
+
+  if (AnyFlagsSet(flags, CLONE_CLEAR_SIGHAND)) {
+    LogMan::Msg::D("clone3: CLONE_CLEAR_SIGHAND unsupported");
+  }
+
+  if (AnyFlagsSet(flags, CLONE_INTO_CGROUP)) {
+    LogMan::Msg::D("clone3: CLONE_INTO_CGROUP unsupported");
+    return -EOPNOTSUPP;
+  }
+
+  if (args->set_tid_size > 0) {
+    LogMan::Msg::D("clone3: set_tid unsupported");
+    return -EPERM;
+  }
+
+  if (AnyFlagsSet(flags, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID | CLONE_NEWNET)) {
+    // NEWUSER doesn't need any privileges from 3.8 onward
+    // We just don't support it yet
+    LogMan::Msg::I("Unconditionally returning EPERM on clone namespace");
+    return -EPERM;
+  }
+
+  if (!(flags & CLONE_THREAD)) {
+
+    if (flags & CLONE_VFORK) {
+      flags &= ~CLONE_VFORK;
+      flags &= ~CLONE_VM;
+      LogMan::Msg::D("clone: WARNING: CLONE_VFORK w/o CLONE_THREAD");
+    }
+
+    if (AnyFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
+      LogMan::Msg::I("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), %X", flags);
+      return -EPERM;
+    }
+
+    // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
+    return FEX::HLE::ForkGuest(Thread, Frame, flags,
+      reinterpret_cast<void*>(args->stack),
+      reinterpret_cast<pid_t*>(args->parent_tid),
+      reinterpret_cast<pid_t*>(args->child_tid),
+      reinterpret_cast<void*>(args->tls));
+  } else {
+
+    if (!AllFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND)) {
+      LogMan::Msg::I("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), %X", flags);
+      return -EPERM;
+    }
+
+    auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, args);
+
+    // Return the new threads TID
+    uint64_t Result = NewThread->ThreadManager.GetTID();
+
+    if (flags & CLONE_VFORK) {
+      NewThread->DestroyedByParent = true;
+    }
+
+    // Actually start the thread
+    FEXCore::Context::RunThread(Thread->CTX, NewThread);
+
+    if (flags & CLONE_VFORK) {
+      // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
+      NewThread->ExecutionThread->join(nullptr);
+
+      // Normally a thread cleans itself up on exit. But because we need to join, we are now responsible
+      FEXCore::Context::DestroyThread(Thread->CTX, NewThread);
+    }
+    SYSCALL_ERRNO();
+  }
+};
 
 uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr) {
   std::lock_guard<std::mutex> lk(MMapMutex);

@@ -267,6 +267,21 @@ struct open_how {
   uint64_t resolve;
 };
 
+struct clone3_args {
+  uint64_t flags;
+  uint64_t pidfd;
+  uint64_t child_tid;
+  uint64_t parent_tid;
+  uint64_t exit_signal;
+  uint64_t stack;
+  uint64_t stack_size;
+  uint64_t tls;
+  uint64_t set_tid;
+  uint64_t set_tid_size;
+  uint64_t cgroup;
+};
+uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args);
+
   inline static int RemapFromX86Flags(int flags) {
 #ifdef _M_X86_64
     // Nothing to change here
