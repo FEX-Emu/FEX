@@ -253,6 +253,8 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalD
   , SignalDelegation {_SignalDelegation} {
   FEX::HLE::_SyscallHandler = this;
   HostKernelVersion = CalculateHostKernelVersion();
+  GuestKernelVersion = CalculateGuestKernelVersion();
+
 }
 
 SyscallHandler::~SyscallHandler() {
@@ -276,6 +278,11 @@ uint32_t SyscallHandler::CalculateHostKernelVersion() {
   ss.read(&Tmp, 1);
   ss >> Patch;
   return (Major << 24) | (Minor << 16) | Patch;
+}
+
+uint32_t SyscallHandler::CalculateGuestKernelVersion() {
+  // We currently only emulate a kernel between the ranges of Kernel 5.0.0 and 5.12.0
+  return std::max(KernelVersion(5, 0), std::min(KernelVersion(5, 12), GetHostKernelVersion()));
 }
 
 uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
