@@ -107,7 +107,7 @@ namespace FEXCore::Core {
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
 
   };
-  static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
+  // static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
 }
 
 
