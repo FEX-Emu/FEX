@@ -95,7 +95,7 @@ static bool IsSupportedByInterpreter(std::string const &Filename) {
   return false;
 }
 
-uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std::vector<const char*> &envp) {
+uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std::vector<const char*> &envp, ExecveAtArgs *Args) {
   std::string Filename{};
 
   std::error_code ec;
@@ -134,7 +134,12 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
   uint64_t Result{};
   if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled()) {
     // If the FEX interpreter is installed then just execve the thing
-    Result = execve(Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)));
+    if (Args) {
+      Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)), Args->flags);
+    }
+    else {
+      Result = execve(Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)));
+    }
     SYSCALL_ERRNO();
   }
 
@@ -153,7 +158,12 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
     // We are trying to execute an ELF of a different architecture
     // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
     // Just execve it and let the kernel handle the process
-    Result = execve(Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)));
+    if (Args) {
+      Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)), Args->flags);
+    }
+    else {
+      Result = execve(Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)));
+    }
     SYSCALL_ERRNO();
   }
 
@@ -172,7 +182,12 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
   // Append the arguments together
   ExecveArgs.insert(ExecveArgs.end(), argv.begin(), argv.end());
 
-  Result = execve("/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), const_cast<char *const *>(&envp.at(0)));
+  if (Args) {
+    Result = ::syscall(SYS_execveat, Args->dirfd, "/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), const_cast<char *const *>(&envp.at(0)), Args->flags);
+  }
+  else {
+    Result = execve("/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), const_cast<char *const *>(&envp.at(0)));
+  }
 
   SYSCALL_ERRNO();
 }

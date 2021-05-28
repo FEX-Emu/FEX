@@ -173,8 +173,32 @@ namespace FEX::HLE::x64 {
 
       Envp.push_back(nullptr);
 
-      return FEX::HLE::ExecveHandler(pathname, Args, Envp);
+      return FEX::HLE::ExecveHandler(pathname, Args, Envp, nullptr);
     });
+
+    REGISTER_SYSCALL_IMPL_X64(execveat, ([](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags) -> uint64_t {
+      std::vector<const char*> Args;
+      std::vector<const char*> Envp;
+
+      for (int i = 0; argv[i]; i++) {
+        Args.push_back(argv[i]);
+      }
+
+      Args.push_back(nullptr);
+
+      for (int i = 0; envp[i]; i++) {
+        Envp.push_back(envp[i]);
+      }
+
+      Envp.push_back(nullptr);
+
+      FEX::HLE::ExecveAtArgs AtArgs {
+        .dirfd = dirfd,
+        .flags = flags,
+      };
+
+      return FEX::HLE::ExecveHandler(pathname, Args, Envp, &AtArgs);
+    }));
 
     REGISTER_SYSCALL_IMPL_X64(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
       uint64_t Result = ::wait4(pid, wstatus, options, rusage);

@@ -54,7 +54,12 @@ class SyscallHandler;
 uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber);
 uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber);
 
-uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std::vector<const char*> &envp);
+struct ExecveAtArgs {
+  int dirfd;
+  int flags;
+};
+
+uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std::vector<const char*> &envp, ExecveAtArgs *Args);
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler {
 public:
