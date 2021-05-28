@@ -668,7 +668,7 @@ public:
     FEX::HLE::RegisterSched();
     FEX::HLE::RegisterSemaphore();
     FEX::HLE::RegisterSHM();
-    FEX::HLE::RegisterSignals();
+    FEX::HLE::RegisterSignals(this);
     FEX::HLE::RegisterSocket();
     FEX::HLE::RegisterThread();
     FEX::HLE::RegisterTime();

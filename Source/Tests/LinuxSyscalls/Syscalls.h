@@ -42,7 +42,7 @@ class SyscallHandler;
   void RegisterSched();
   void RegisterSemaphore();
   void RegisterSHM();
-  void RegisterSignals();
+  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler);
   void RegisterSocket();
   void RegisterThread();
   void RegisterTime();

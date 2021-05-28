@@ -21,7 +21,7 @@ namespace SignalDelegator {
 }
 
 namespace FEX::HLE {
-  void RegisterSignals() {
+  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler) {
     REGISTER_SYSCALL_IMPL(rt_sigprocmask, [](FEXCore::Core::CpuStateFrame *Frame, int how, const uint64_t *set, uint64_t *oldset) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(how, set, oldset);
     });
@@ -41,5 +41,15 @@ namespace FEX::HLE {
       uint64_t Result = ::syscall(SYS_userfaultfd, flags);
       SYSCALL_ERRNO();
     });
+
+    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 1, 0)) {
+      REGISTER_SYSCALL_IMPL(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, siginfo_t *info, unsigned int flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYS_pidfd_send_signal);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(pidfd_send_signal, UnimplementedSyscallSafe);
+    }
   }
 }
