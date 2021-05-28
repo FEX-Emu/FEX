@@ -18,7 +18,7 @@ namespace FEX::HLE::x64 {
   void RegisterInfo();
   void RegisterIO();
   void RegisterIoctl();
-  void RegisterMemory();
+  void RegisterMemory(FEX::HLE::SyscallHandler *const Handler);
   void RegisterMsg();
   void RegisterSched();
   void RegisterSocket();
@@ -123,7 +123,7 @@ namespace FEX::HLE::x64 {
     FEX::HLE::x64::RegisterInfo();
     FEX::HLE::x64::RegisterIO();
     FEX::HLE::x64::RegisterIoctl();
-    FEX::HLE::x64::RegisterMemory();
+    FEX::HLE::x64::RegisterMemory(this);
     FEX::HLE::x64::RegisterMsg();
     FEX::HLE::x64::RegisterSched();
     FEX::HLE::x64::RegisterSocket();
