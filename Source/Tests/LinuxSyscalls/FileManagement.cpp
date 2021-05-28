@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Tests/LinuxSyscalls/FileManagement.h"
+#include "Tests/LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
 #include <cstring>
@@ -353,6 +354,36 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
   }
 
   return fd;
+}
+
+uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_how *how, size_t usize) {
+#ifndef SYS_openat2
+#define SYS_openat2 437
+#endif
+
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  int32_t fd = -1;
+
+  fd = EmuFD.OpenAt(dirfs, SelfPath, how->flags, how->mode);
+  if (fd == -1) {
+    auto Path = GetEmulatedPath(SelfPath, true);
+    if (!Path.empty()) {
+      fd = ::syscall(SYS_openat2, dirfs, Path.c_str(), how, usize);
+    }
+
+    if (fd == -1)
+      fd = ::syscall(SYS_openat2, dirfs, SelfPath, how, usize);
+  }
+
+  if (fd != -1) {
+    std::lock_guard<std::mutex> lk(FDLock);
+    FDToNameMap[fd] = SelfPath;
+  }
+
+  return fd;
+
 }
 
 uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf) {

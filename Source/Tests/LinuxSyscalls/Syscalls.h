@@ -247,6 +247,12 @@ struct __attribute__((packed)) epoll_event_x86 {
 static_assert(std::is_trivial<epoll_event_x86>::value, "Needs to be trivial");
 static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
 
+struct open_how {
+  uint64_t flags;
+  uint64_t mode;
+  uint64_t resolve;
+};
+
   inline static int RemapFromX86Flags(int flags) {
 #ifdef _M_X86_64
     // Nothing to change here

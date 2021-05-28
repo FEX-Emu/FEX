@@ -23,6 +23,8 @@ struct Context;
 
 namespace FEX::HLE {
 
+struct open_how;
+
 class FileManager final {
 public:
   FileManager() = delete;
@@ -42,6 +44,7 @@ public:
   uint64_t Chmod(const char *pathname, mode_t mode);
   uint64_t Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz);
   uint64_t Openat(int dirfs, const char *pathname, int flags, uint32_t mode);
+  uint64_t Openat2(int dirfs, const char *pathname, FEX::HLE::open_how *how, size_t usize);
   uint64_t Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf);
   uint64_t Mknod(const char *pathname, mode_t mode, dev_t dev);
   uint64_t NewFSStatAt(int dirfd, const char *pathname, struct stat *buf, int flag);

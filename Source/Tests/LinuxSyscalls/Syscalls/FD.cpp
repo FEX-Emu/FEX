@@ -220,10 +220,21 @@ namespace FEX::HLE {
         uint64_t Result = ::syscall(SYS_pidfd_getfd, pidfd, fd, flags);
         SYSCALL_ERRNO();
       });
+
+      REGISTER_SYSCALL_IMPL(openat2, [](FEXCore::Core::CpuStateFrame *Frame, int dirfs, const char *pathname, struct open_how *how, size_t usize) -> uint64_t {
+        open_how HostHow{};
+        size_t HostSize = std::min(sizeof(open_how), usize);
+        memcpy(&HostHow, how, HostSize);
+
+        HostHow.flags = FEX::HLE::RemapFromX86Flags(HostHow.flags);
+        uint64_t Result = FEX::HLE::_SyscallHandler->FM.Openat2(dirfs, pathname, &HostHow, HostSize);
+        SYSCALL_ERRNO();
+      });
     }
     else {
       REGISTER_SYSCALL_IMPL(faccessat2, UnimplementedSyscallSafe);
       REGISTER_SYSCALL_IMPL(pidfd_getfd, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(openat2, UnimplementedSyscallSafe);
     }
 
     REGISTER_SYSCALL_IMPL(splice, [](FEXCore::Core::CpuStateFrame *Frame, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
