@@ -220,10 +220,21 @@ namespace FEX::HLE {
         uint64_t Result = ::syscall(SYS_pidfd_getfd, pidfd, fd, flags);
         SYSCALL_ERRNO();
       });
+
+      REGISTER_SYSCALL_IMPL(openat2, [](FEXCore::Core::CpuStateFrame *Frame, int dirfs, const char *pathname, struct open_how *how, size_t usize) -> uint64_t {
+        open_how HostHow{};
+        size_t HostSize = std::min(sizeof(open_how), usize);
+        memcpy(&HostHow, how, HostSize);
+
+        HostHow.flags = FEX::HLE::RemapFromX86Flags(HostHow.flags);
+        uint64_t Result = FEX::HLE::_SyscallHandler->FM.Openat2(dirfs, pathname, &HostHow, HostSize);
+        SYSCALL_ERRNO();
+      });
     }
     else {
       REGISTER_SYSCALL_IMPL(faccessat2, UnimplementedSyscallSafe);
       REGISTER_SYSCALL_IMPL(pidfd_getfd, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(openat2, UnimplementedSyscallSafe);
     }
 
     REGISTER_SYSCALL_IMPL(splice, [](FEXCore::Core::CpuStateFrame *Frame, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
@@ -319,5 +330,25 @@ namespace FEX::HLE {
       uint64_t Result = ::copy_file_range(fd_in, off_in, fd_out, off_out, len, flags);
       SYSCALL_ERRNO();
     });
+
+    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 3, 0)) {
+      REGISTER_SYSCALL_IMPL(pidfd_open, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, unsigned int flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYS_pidfd_open, pid, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(pidfd_open, UnimplementedSyscallSafe);
+    }
+
+    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 9, 0)) {
+      REGISTER_SYSCALL_IMPL(close_range, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int first, unsigned int last, unsigned int flags) -> uint64_t {
+        uint64_t Result = FEX::HLE::_SyscallHandler->FM.CloseRange(first, last, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(close_range, UnimplementedSyscallSafe);
+    }
   }
 }

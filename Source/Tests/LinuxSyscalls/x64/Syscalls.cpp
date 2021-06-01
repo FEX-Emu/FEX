@@ -13,12 +13,12 @@ $end_info$
 #include <map>
 
 namespace FEX::HLE::x64 {
-  void RegisterEpoll();
+  void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler);
   void RegisterFD();
   void RegisterInfo();
   void RegisterIO();
   void RegisterIoctl();
-  void RegisterMemory();
+  void RegisterMemory(FEX::HLE::SyscallHandler *const Handler);
   void RegisterMsg();
   void RegisterSched();
   void RegisterSocket();
@@ -103,13 +103,14 @@ namespace FEX::HLE::x64 {
     FEX::HLE::RegisterFS();
     FEX::HLE::RegisterInfo();
     FEX::HLE::RegisterIO();
+    FEX::HLE::RegisterIOUring(this);
     FEX::HLE::RegisterKey();
     FEX::HLE::RegisterMemory();
     FEX::HLE::RegisterMsg();
     FEX::HLE::RegisterSched();
     FEX::HLE::RegisterSemaphore();
     FEX::HLE::RegisterSHM();
-    FEX::HLE::RegisterSignals();
+    FEX::HLE::RegisterSignals(this);
     FEX::HLE::RegisterSocket();
     FEX::HLE::RegisterThread();
     FEX::HLE::RegisterTime();
@@ -118,12 +119,12 @@ namespace FEX::HLE::x64 {
     FEX::HLE::RegisterStubs();
 
     // 64bit specific
-    FEX::HLE::x64::RegisterEpoll();
+    FEX::HLE::x64::RegisterEpoll(this);
     FEX::HLE::x64::RegisterFD();
     FEX::HLE::x64::RegisterInfo();
     FEX::HLE::x64::RegisterIO();
     FEX::HLE::x64::RegisterIoctl();
-    FEX::HLE::x64::RegisterMemory();
+    FEX::HLE::x64::RegisterMemory(this);
     FEX::HLE::x64::RegisterMsg();
     FEX::HLE::x64::RegisterSched();
     FEX::HLE::x64::RegisterSocket();

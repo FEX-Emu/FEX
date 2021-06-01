@@ -33,7 +33,8 @@ $end_info$
 ARG_TO_STR(idtype_t, "%u")
 
 namespace FEX::HLE {
-  FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context:: Context *CTX, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
+  FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context:: Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
+    uint64_t flags = args->flags;
     FEXCore::Core::CPUState NewThreadState{};
     // Clone copies the parent thread's state
     memcpy(&NewThreadState, Frame, sizeof(FEXCore::Core::CPUState));
@@ -41,21 +42,21 @@ namespace FEX::HLE {
     NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
     NewThreadState.gregs[FEXCore::X86State::REG_RBX] = 0;
     NewThreadState.gregs[FEXCore::X86State::REG_RBP] = 0;
-    NewThreadState.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack);
+    NewThreadState.gregs[FEXCore::X86State::REG_RSP] = args->stack;
 
-    auto NewThread = FEXCore::Context::CreateThread(CTX, &NewThreadState, reinterpret_cast<uint64_t>(parent_tid));
+    auto NewThread = FEXCore::Context::CreateThread(CTX, &NewThreadState, args->parent_tid);
     FEXCore::Context::InitializeThread(CTX, NewThread);
 
     if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
       if (flags & CLONE_SETTLS) {
-        x64::SetThreadArea(NewThread->CurrentFrame, tls);
+        x64::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(args->tls));
       }
       // Set us to start just after the syscall instruction
       x64::AdjustRipForNewThread(NewThread->CurrentFrame);
     }
     else {
       if (flags & CLONE_SETTLS) {
-        x32::SetThreadArea(NewThread->CurrentFrame, tls);
+        x32::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(args->tls));
       }
       x32::AdjustRipForNewThread(NewThread->CurrentFrame);
     }
@@ -65,20 +66,32 @@ namespace FEX::HLE {
 
     // Sets the child TID to pointer in ParentTID
     if (flags & CLONE_PARENT_SETTID) {
-      *parent_tid = Result;
+      *reinterpret_cast<pid_t*>(args->parent_tid) = Result;
     }
 
     // Sets the child TID to the pointer in ChildTID
     if (flags & CLONE_CHILD_SETTID) {
-      NewThread->ThreadManager.set_child_tid = child_tid;
-      *child_tid = Result;
+      NewThread->ThreadManager.set_child_tid = reinterpret_cast<int32_t*>(args->child_tid);
+      *reinterpret_cast<pid_t*>(args->child_tid) = Result;
     }
 
     // When the thread exits, clear the child thread ID at ChildTID
     // Additionally wakeup a futex at that address
     // Address /may/ be changed with SET_TID_ADDRESS syscall
     if (flags & CLONE_CHILD_CLEARTID) {
-      NewThread->ThreadManager.clear_child_tid = child_tid;
+      NewThread->ThreadManager.clear_child_tid = reinterpret_cast<int32_t*>(args->child_tid);
+    }
+
+    // clone3 flag
+    if (flags & CLONE_PIDFD) {
+      // Use pidfd_open to emulate this flag
+      int pidfd = ::syscall(SYS_pidfd_open, Result, 0);
+      if (Result == ~0ULL) {
+        LogMan::Msg::E("Couldn't get pidfd of TID %d\n", Result);
+      }
+      else {
+        *reinterpret_cast<int*>(args->pidfd) = pidfd;
+      }
     }
 
     return NewThread;
@@ -161,6 +174,12 @@ namespace FEX::HLE {
     REGISTER_SYSCALL_IMPL(vfork, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0);
     });
+
+    REGISTER_SYSCALL_IMPL(clone3, ([](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *cl_args, size_t size) -> uint64_t {
+      FEX::HLE::clone3_args args{};
+      memcpy(&args, cl_args, std::min(sizeof(FEX::HLE::clone3_args), size));
+      return CloneHandler(Frame, &args);
+    }));
 
     REGISTER_SYSCALL_IMPL(exit, [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
       auto Thread = Frame->Thread;

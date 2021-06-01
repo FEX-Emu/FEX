@@ -41,6 +41,7 @@ add_library(LinuxEmulation STATIC
     Syscalls/FS.cpp
     Syscalls/Info.cpp
     Syscalls/IO.cpp
+    Syscalls/IOUring.cpp
     Syscalls/Key.cpp
     Syscalls/Memory.cpp
     Syscalls/Msg.cpp

@@ -14,6 +14,6 @@ struct CPUState;
 }
 
 namespace FEX::HLE {
-  FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls);
+  FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args);
   uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls);
 }

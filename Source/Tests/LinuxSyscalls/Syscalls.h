@@ -35,6 +35,7 @@ class SyscallHandler;
   void RegisterFS();
   void RegisterInfo();
   void RegisterIO();
+  void RegisterIOUring(FEX::HLE::SyscallHandler *const Handler);
   void RegisterKey();
   void RegisterMemory();
   void RegisterMsg();
@@ -42,7 +43,7 @@ class SyscallHandler;
   void RegisterSched();
   void RegisterSemaphore();
   void RegisterSHM();
-  void RegisterSignals();
+  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler);
   void RegisterSocket();
   void RegisterThread();
   void RegisterTime();
@@ -53,7 +54,12 @@ class SyscallHandler;
 uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber);
 uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber);
 
-uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std::vector<const char*> &envp);
+struct ExecveAtArgs {
+  int dirfd;
+  int flags;
+};
+
+uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std::vector<const char*> &envp, ExecveAtArgs *Args);
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler {
 public:
@@ -114,11 +120,18 @@ public:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
   uint32_t GetHostKernelVersion() const { return HostKernelVersion; }
+  uint32_t GetGuestKernelVersion() const { return GuestKernelVersion; }
 
   static uint32_t CalculateHostKernelVersion();
+  uint32_t CalculateGuestKernelVersion();
+
   static uint32_t KernelVersion(uint32_t Major, uint32_t Minor = 0, uint32_t Patch = 0) {
     return (Major << 24) | (Minor << 16) | Patch;
   }
+
+  static uint32_t KernelMajor(uint32_t Version) { return Version >> 24; }
+  static uint32_t KernelMinor(uint32_t Version) { return (Version >> 16) & 0xFF; }
+  static uint32_t KernelPatch(uint32_t Version) { return Version & 0xFFFF; }
 
 protected:
   std::vector<SyscallFunctionDefinition> Definitions{};
@@ -132,6 +145,7 @@ protected:
 
   // (Major << 24) | (Minor << 16) | Patch
   uint32_t HostKernelVersion{};
+  uint32_t GuestKernelVersion{};
 
 private:
 
@@ -246,6 +260,27 @@ struct __attribute__((packed)) epoll_event_x86 {
 };
 static_assert(std::is_trivial<epoll_event_x86>::value, "Needs to be trivial");
 static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
+
+struct open_how {
+  uint64_t flags;
+  uint64_t mode;
+  uint64_t resolve;
+};
+
+struct clone3_args {
+  uint64_t flags;
+  uint64_t pidfd;
+  uint64_t child_tid;
+  uint64_t parent_tid;
+  uint64_t exit_signal;
+  uint64_t stack;
+  uint64_t stack_size;
+  uint64_t tls;
+  uint64_t set_tid;
+  uint64_t set_tid_size;
+  uint64_t cgroup;
+};
+uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args);
 
   inline static int RemapFromX86Flags(int flags) {
 #ifdef _M_X86_64

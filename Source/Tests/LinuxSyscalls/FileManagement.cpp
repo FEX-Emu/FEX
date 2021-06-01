@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Tests/LinuxSyscalls/FileManagement.h"
+#include "Tests/LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
 #include <cstring>
@@ -184,6 +185,26 @@ uint64_t FileManager::Close(int fd) {
   return ::close(fd);
 }
 
+uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned int flags) {
+#ifndef SYS_close_range
+#define SYS_close_range 436
+#endif
+#ifndef CLOSE_RANGE_CLOEXEC
+#define CLOSE_RANGE_CLOEXEC (1U << 2)
+#endif
+
+  if (!(flags & CLOSE_RANGE_CLOEXEC)) {
+    // If the flag was set then it doesn't actually close the FDs
+    // Just sets the flag on a range
+    std::lock_guard<std::mutex> lk(FDLock);
+    for (unsigned int i = first; i <= last; ++i) {
+      // We remove from first to last inclusive
+      FDToNameMap.erase(i);
+    }
+  }
+  return ::syscall(SYS_close_range, first, last, flags);
+}
+
 uint64_t FileManager::Stat(const char *pathname, void *buf) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
@@ -333,6 +354,36 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
   }
 
   return fd;
+}
+
+uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_how *how, size_t usize) {
+#ifndef SYS_openat2
+#define SYS_openat2 437
+#endif
+
+  auto NewPath = GetSelf(pathname);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  int32_t fd = -1;
+
+  fd = EmuFD.OpenAt(dirfs, SelfPath, how->flags, how->mode);
+  if (fd == -1) {
+    auto Path = GetEmulatedPath(SelfPath, true);
+    if (!Path.empty()) {
+      fd = ::syscall(SYS_openat2, dirfs, Path.c_str(), how, usize);
+    }
+
+    if (fd == -1)
+      fd = ::syscall(SYS_openat2, dirfs, SelfPath, how, usize);
+  }
+
+  if (fd != -1) {
+    std::lock_guard<std::mutex> lk(FDLock);
+    FDToNameMap[fd] = SelfPath;
+  }
+
+  return fd;
+
 }
 
 uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t mask, struct statx *statxbuf) {

@@ -600,8 +600,12 @@ namespace FEX::EmulatedFile {
 
     FDReadCreators["/proc/sys/kernel/osrelease"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
       FILE *fp = tmpfile();
-      const char kernel_version[] = "5.0.0\0";
-      fwrite(kernel_version, sizeof(uint8_t), strlen(kernel_version) + 1, fp);
+      uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
+      fprintf(fp, "%d.%d.%d\n",
+        FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelMinor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+      fputc('\0', fp);
       fseek(fp, 0, SEEK_SET);
       int32_t f = fileno(fp);
       return f;
@@ -611,8 +615,13 @@ namespace FEX::EmulatedFile {
       FILE *fp = tmpfile();
       // UTS version NEEDS to be in a format that can pass to `date -d`
       // Format of this is Linux version <Release> (<Compile By>@<Compile Host>) (<Linux Compiler>) #<version> {SMP, PREEMPT, PREEMPT_RT} <UTS version>\n"
-      const char kernel_version[] = "Linux version 5.0.0 (FEX@FEX) (clang) #" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__ "\n\0";
-      fwrite(kernel_version, sizeof(uint8_t), strlen(kernel_version) + 1, fp);
+      const char kernel_version[] = "Linux version %d.%d.%d (FEX@FEX) (clang) #" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__ "\n";
+      uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
+      fprintf(fp, kernel_version,
+        FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelMinor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+      fputc('\0', fp);
       fseek(fp, 0, SEEK_SET);
       int32_t f = fileno(fp);
       return f;

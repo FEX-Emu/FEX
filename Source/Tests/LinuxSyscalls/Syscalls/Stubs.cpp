@@ -64,11 +64,6 @@ namespace FEX::HLE {
       SYSCALL_STUB(rt_tgsigqueueinfo);
     });
 
-    // execute program relative to a directory file descriptor
-    REGISTER_SYSCALL_IMPL(execveat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags) -> uint64_t {
-      SYSCALL_STUB(execveat);
-    });
-
     REGISTER_SYSCALL_IMPL(rseq, [](FEXCore::Core::CpuStateFrame *Frame,  struct rseq  *rseq, uint32_t rseq_len, int flags, uint32_t sig) -> uint64_t {
       SYSCALL_STUB(rseq);
     });

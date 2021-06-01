@@ -175,16 +175,23 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
       // siginfo_t
       siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
-      guest_siginfo->si_signo = Signal;
-      switch (Signal) {
-      case SIGSEGV:
-      case SIGBUS:
-        guest_siginfo->si_code = HostSigInfo->si_code;
-        guest_siginfo->si_errno = HostSigInfo->si_errno;
-        // Macro expansion to get the si_addr
-        guest_siginfo->si_addr = HostSigInfo->si_addr;
-        break;
-      default: LogMan::Msg::D("Unhandled siginfo_t signal: %d", Signal); break;
+      if (HostSigInfo->si_code == SI_USER) {
+        // If the signal was a user signal then we need to pass this struct through unaltered
+        // Guest might be doing something with it
+        *guest_siginfo = *HostSigInfo;
+      }
+      else {
+        guest_siginfo->si_signo = Signal;
+        switch (Signal) {
+        case SIGSEGV:
+        case SIGBUS:
+          guest_siginfo->si_code = HostSigInfo->si_code;
+          guest_siginfo->si_errno = HostSigInfo->si_errno;
+          // Macro expansion to get the si_addr
+          guest_siginfo->si_addr = HostSigInfo->si_addr;
+          break;
+        default: LogMan::Msg::D("Unhandled siginfo_t signal: %d", Signal); break;
+        }
       }
 
       Frame->State.gregs[X86State::REG_RSI] = SigInfoLocation;
