@@ -418,6 +418,9 @@ struct X86InstInfo {
     // We don't care if the opcode dispatcher differs
     return true;
   }
+  bool operator!=(const X86InstInfo &b) const {
+    return !operator==(b);
+  }
 };
 
 static_assert(std::is_trivial<X86InstInfo>::value, "X86InstInfo needs to be trivial");
