@@ -4307,6 +4307,50 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs) {
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
+void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
+  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  uint8_t Imm = Op->Src[1].TypeLiteral.Literal;
+  uint8_t CountS = (Imm >> 6);
+  uint8_t CountD = (Imm >> 4) & 0b11;
+  uint8_t ZMask = Imm & 0xF;
+
+  OrderedNode *Dest{};
+  if (ZMask != 0xF) {
+    // Only need to load destination if it isn't a full zero
+    Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
+  }
+
+  if (!(ZMask & (1 << CountD))) {
+    // In the case that ZMask overwrites the destination element, then don't even insert
+    OrderedNode *Src{};
+    if (Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+      Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    }
+    else {
+      // If loading from memory then CountS is forced to zero
+      CountS = 0;
+      Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+    }
+
+    Dest = _VInsElement(GetDstSize(Op), 4, CountD, CountS, Dest, Src);
+  }
+
+  // ZMask happens after insert
+  if (ZMask == 0xF) {
+    Dest = _VectorImm(0, 16, 4);
+  }
+  else if (ZMask) {
+    auto Zero = _VectorImm(0, 16, 4);
+    for (size_t i = 0; i < 4; ++i) {
+      if (ZMask & (1 << i)) {
+        Dest = _VInsElement(GetDstSize(Op), 4, i, 0, Dest, Zero);
+      }
+    }
+  }
+
+  StoreResult(FPRClass, Op, Dest, -1);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -9357,6 +9401,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(1, PF_3A_66,   0x16), 1, &OpDispatchBuilder::PExtrOp<8>},
 
     {OPD(0, PF_3A_66,   0x20), 1, &OpDispatchBuilder::PINSROp<1>},
+    {OPD(0, PF_3A_66,   0x21), 1, &OpDispatchBuilder::InsertPSOp},
     {OPD(0, PF_3A_66,   0x22), 1, &OpDispatchBuilder::PINSROp<4>},
     {OPD(1, PF_3A_66,   0x22), 1, &OpDispatchBuilder::PINSROp<8>},
 
