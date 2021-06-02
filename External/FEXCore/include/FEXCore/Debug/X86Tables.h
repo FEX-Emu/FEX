@@ -100,36 +100,36 @@ inline void PopOpAddrIf(uint32_t *Flags, uint32_t Flag) {
 }
 
 struct DecodedOperand {
-  enum {
-    TYPE_NONE,
-    TYPE_GPR,
-    TYPE_GPR_DIRECT,
-    TYPE_GPR_INDIRECT,
-    TYPE_RIP_RELATIVE,
-    TYPE_LITERAL,
-    TYPE_SIB,
+  enum class OpType : uint8_t {
+    Nothing,
+    GPR,
+    GPRDirect,
+    GPRIndirect,
+    RIPRelative,
+    Literal,
+    SIB,
   };
 
   bool IsNone() const {
-    return Type == TYPE_NONE;
+    return Type == OpType::Nothing;
   }
   bool IsGPR() const {
-    return Type == TYPE_GPR;
+    return Type == OpType::GPR;
   }
   bool IsGPRDirect() const {
-    return Type == TYPE_GPR_DIRECT;
+    return Type == OpType::GPRDirect;
   }
   bool IsGPRIndirect() const {
-    return Type == TYPE_GPR_INDIRECT;
+    return Type == OpType::GPRIndirect;
   }
   bool IsRIPRelative() const {
-    return Type == TYPE_RIP_RELATIVE;
+    return Type == OpType::RIPRelative;
   }
   bool IsLiteral() const {
-    return Type == TYPE_LITERAL;
+    return Type == OpType::Literal;
   }
   bool IsSIB() const {
-    return Type == TYPE_SIB;
+    return Type == OpType::SIB;
   }
 
   union TypeUnion {
@@ -163,7 +163,7 @@ struct DecodedOperand {
     } SIB;
   };
 
-  uint8_t Type;
+  OpType Type;
   TypeUnion Data;
 };
 
