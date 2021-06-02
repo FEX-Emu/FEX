@@ -197,7 +197,7 @@ void Decoder::DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     }
   }
 
-  Operand->Type = DecodedOperand::TYPE_SIB;
+  Operand->Type = DecodedOperand::OpType::SIB;
   Operand->Data.SIB.Scale = 1;
   Operand->Data.SIB.Offset = Literal;
 
@@ -277,7 +277,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     }
 
     // SIB
-    Operand->Type = DecodedOperand::TYPE_SIB;
+    Operand->Type = DecodedOperand::OpType::SIB;
     Operand->Data.SIB.Scale = 1 << SIB.scale;
 
     // The invalid encoding types are described at Table 1-12. "promoted nsigned is always non-zero"
@@ -300,12 +300,12 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
       uint32_t Literal;
       Literal = ReadData(4);
 
-      Operand->Type = DecodedOperand::TYPE_RIP_RELATIVE;
+      Operand->Type = DecodedOperand::OpType::RIPRelative;
       Operand->Data.RIPLiteral.Value.u = Literal;
     }
     else {
       // Register-direct addressing
-      Operand->Type = DecodedOperand::TYPE_GPR_DIRECT;
+      Operand->Type = DecodedOperand::OpType::GPRDirect;
       Operand->Data.GPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
     }
   }
@@ -318,7 +318,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     }
     Displacement = DisplacementSize;
 
-    Operand->Type = DecodedOperand::TYPE_GPR_INDIRECT;
+    Operand->Type = DecodedOperand::OpType::GPRIndirect;
     Operand->Data.GPRIndirect.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, false, false, false, false);
     Operand->Data.GPRIndirect.Displacement = Literal;
   }
@@ -460,7 +460,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ||
       HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RDX)) {
     // Some instructions hardcode their destination as RAX
-    CurrentDest->Type = DecodedOperand::TYPE_GPR;
+    CurrentDest->Type = DecodedOperand::OpType::GPR;
     CurrentDest->Data.GPR.HighBits = false;
     CurrentDest->Data.GPR.GPR = HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ? FEXCore::X86State::REG_RAX : FEXCore::X86State::REG_RDX;
     CurrentDest = &DecodeInst->Src[0];
@@ -473,7 +473,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     // This also means that the destination is always a GPR on these ones
     // ADDITIONALLY:
     // If there is a REX prefix then that allows extended GPR usage
-    CurrentDest->Type = DecodedOperand::TYPE_GPR;
+    CurrentDest->Type = DecodedOperand::OpType::GPR;
     DecodeInst->Dest.Data.GPR.HighBits = (Is8BitDest && !HasREX && (Op & 0b111) >= 0b100) || HasHighXMM;
     CurrentDest->Data.GPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, Op & 0b111, Is8BitDest, HasREX, false, false);
 
@@ -501,7 +501,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     ModRM.Hex = DecodeInst->ModRM;
 
     // Decode the GPR source first
-    GPR.Type = DecodedOperand::TYPE_GPR;
+    GPR.Type = DecodedOperand::OpType::GPR;
     GPR.Data.GPR.HighBits = (GPR8Bit && ModRM.reg >= 0b100 && !HasREX) || HasHighXMM;
     GPR.Data.GPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_R ? 1 : 0, ModRM.reg, GPR8Bit, HasREX, HasXMMGPR, HasMMGPR);
 
@@ -511,7 +511,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     // ModRM.mod == 0b11 == Register
     // ModRM.Mod != 0b11 == Register-direct addressing
     if (ModRM.mod == 0b11) {
-      NonGPR.Type = DecodedOperand::TYPE_GPR;
+      NonGPR.Type = DecodedOperand::OpType::GPR;
       NonGPR.Data.GPR.HighBits = (NonGPR8Bit && ModRM.rm >= 0b100 && !HasREX) || HasHighXMM;
       NonGPR.Data.GPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, NonGPR8Bit, HasREX, HasXMMNonGPR, HasMMNonGPR);
       if (NonGPR.Data.GPR.GPR == FEXCore::X86State::REG_INVALID)
@@ -540,13 +540,13 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
   }
 
   if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RAX)) {
-    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::TYPE_GPR;
+    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
     DecodeInst->Src[CurrentSrc].Data.GPR.GPR = FEXCore::X86State::REG_RAX;
     ++CurrentSrc;
   }
   else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_RCX)) {
-    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::TYPE_GPR;
+    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
     DecodeInst->Src[CurrentSrc].Data.GPR.GPR = FEXCore::X86State::REG_RCX;
     ++CurrentSrc;
@@ -574,7 +574,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     }
 
     Bytes = 0;
-    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::TYPE_LITERAL;
+    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::Literal;
     DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal;
   }
 
