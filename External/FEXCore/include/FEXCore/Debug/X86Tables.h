@@ -99,7 +99,7 @@ inline void PopOpAddrIf(uint32_t *Flags, uint32_t Flag) {
 
 }
 
-union DecodedOperand {
+struct DecodedOperand {
   enum {
     TYPE_NONE,
     TYPE_GPR,
@@ -110,43 +110,61 @@ union DecodedOperand {
     TYPE_SIB,
   };
 
-  struct {
-    uint8_t Type;
-  } TypeNone;
+  bool IsNone() const {
+    return Type == TYPE_NONE;
+  }
+  bool IsGPR() const {
+    return Type == TYPE_GPR;
+  }
+  bool IsGPRDirect() const {
+    return Type == TYPE_GPR_DIRECT;
+  }
+  bool IsGPRIndirect() const {
+    return Type == TYPE_GPR_INDIRECT;
+  }
+  bool IsRIPRelative() const {
+    return Type == TYPE_RIP_RELATIVE;
+  }
+  bool IsLiteral() const {
+    return Type == TYPE_LITERAL;
+  }
+  bool IsSIB() const {
+    return Type == TYPE_SIB;
+  }
 
-  struct {
-    uint8_t Type;
-    bool HighBits;
-    uint8_t GPR;
-  } TypeGPR;
+  union TypeUnion {
+    struct {
+      bool HighBits;
+      uint8_t GPR;
+    } GPR;
 
-  struct {
-    uint8_t Type;
-    uint8_t GPR;
-    int32_t Displacement;
-  } TypeGPRIndirect;
+    struct {
+      uint8_t GPR;
+      int32_t Displacement;
+    } GPRIndirect;
 
-  struct {
-    uint8_t Type;
-    union {
-      int32_t s;
-      uint32_t u;
+    struct {
+      union {
+        int32_t s;
+        uint32_t u;
+      } Value;
+    } RIPLiteral;
+
+    struct {
+      uint8_t Size;
+      uint64_t Value;
     } Literal;
-  } TypeRIPLiteral;
 
-  struct {
-    uint8_t Type;
-    uint8_t Size;
-    uint64_t Literal;
-  } TypeLiteral;
+    struct {
+      uint8_t Index; // ~0 invalid
+      uint8_t Base; // ~0 invalid
+      uint32_t Scale  : 8;
+      int32_t Offset;
+    } SIB;
+  };
 
-  struct {
-    uint8_t Type;
-    uint8_t Index; // ~0 invalid
-    uint8_t Base; // ~0 invalid
-    uint32_t Scale  : 8;
-    int32_t Offset;
-  } TypeSIB;
+  uint8_t Type;
+  TypeUnion Data;
 };
 
 struct DecodedInst {

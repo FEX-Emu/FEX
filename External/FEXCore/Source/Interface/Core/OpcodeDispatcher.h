@@ -526,12 +526,12 @@ private:
   OrderedNode * GetX87Top();
   void SetX87Top(OrderedNode *Value);
 
-  bool DestIsLockedMem(FEXCore::X86Tables::DecodedOp Op) {
-    return Op->Dest.TypeNone.Type !=FEXCore::X86Tables::DecodedOperand::TYPE_GPR && (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK);
+  bool DestIsLockedMem(FEXCore::X86Tables::DecodedOp Op) const {
+    return DestIsMem(Op) && (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
   }
 
-  bool DestIsMem(FEXCore::X86Tables::DecodedOp Op) {
-    return Op->Dest.TypeNone.Type !=FEXCore::X86Tables::DecodedOperand::TYPE_GPR;
+  bool DestIsMem(FEXCore::X86Tables::DecodedOp Op) const {
+    return !Op->Dest.IsGPR();
   }
 
   void CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
