@@ -1002,9 +1002,9 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   auto SrcCond = SelectCC(Op->OP & 0xF, TakeBranch, DoNotTakeBranch);
 
-  LOGMAN_THROW_A(Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].TypeLiteral.Literal;
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
 
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
@@ -1025,7 +1025,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = GetDynamicPC(Op, Op->Src[0].TypeLiteral.Literal);
+      auto NewRIP = GetDynamicPC(Op, Op->Src[0].Data.Literal.Value);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1061,9 +1061,9 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   TakeBranch = _Constant(1);
   DoNotTakeBranch = _Constant(0);
 
-  LOGMAN_THROW_A(Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].TypeLiteral.Literal;
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
 
   OrderedNode *CondReg = _LoadContext(JcxGPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
 
@@ -1085,7 +1085,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = GetDynamicPC(Op, Op->Src[0].TypeLiteral.Literal);
+      auto NewRIP = GetDynamicPC(Op, Op->Src[0].Data.Literal.Value);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1124,9 +1124,9 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
 
   uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].TypeLiteral.Literal;
+  uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Data.Literal.Value;
 
   OrderedNode *CondReg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   CondReg = _Sub(CondReg, _Constant(SrcSize * 8, 1));
@@ -1161,7 +1161,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = GetDynamicPC(Op, Op->Src[1].TypeLiteral.Literal);
+      auto NewRIP = GetDynamicPC(Op, Op->Src[1].Data.Literal.Value);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1192,8 +1192,8 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
 
   // This is just an unconditional relative literal jump
   if (Multiblock) {
-    LOGMAN_THROW_A(Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-    uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].TypeLiteral.Literal;
+    LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+    uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
     auto JumpBlock = JumpTargets.find(Target);
     if (JumpBlock != JumpTargets.end()) {
       _Jump(GetNewJumpBlock(Target));
@@ -1206,7 +1206,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
       SetJumpTarget(Jump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
-      _ExitFunction(GetDynamicPC(Op, Op->Src[0].TypeLiteral.Literal));
+      _ExitFunction(GetDynamicPC(Op, Op->Src[0].Data.Literal.Value));
     }
     return;
   }
@@ -1344,10 +1344,8 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   // Load both the source and the destination
   if (Op->OP == 0x90 &&
       GetSrcSize(Op) >= 4 &&
-      Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
-      Op->Src[0].TypeGPR.GPR == FEXCore::X86State::REG_RAX &&
-      Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
-      Op->Dest.TypeGPR.GPR == FEXCore::X86State::REG_RAX) {
+      Op->Src[0].IsGPR() && Op->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_RAX &&
+      Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
     // This is one heck of a sucky special case
     // If we are the 0x90 XCHG opcode (Meaning source is GPR RAX)
     // and destination register is ALSO RAX
@@ -1482,7 +1480,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
   if (ToSeg) {
     OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 2, Op->Flags, -1);
 
-    switch (Op->Dest.TypeGPR.GPR) {
+    switch (Op->Dest.Data.GPR.GPR) {
       case 0: // ES
         _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, es), Src);
         break;
@@ -1513,7 +1511,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         }
         break;
       default:
-        LogMan::Msg::E("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
+        LogMan::Msg::E("Unknown segment register: %d", Op->Dest.Data.GPR.GPR);
         DecodeFailure = true;
         break;
     }
@@ -1521,7 +1519,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
   else {
     OrderedNode *Segment{};
 
-    switch (Op->Src[0].TypeGPR.GPR) {
+    switch (Op->Src[0].Data.GPR.GPR) {
       case 0: // ES
         Segment = _LoadContext(2, offsetof(FEXCore::Core::CPUState, es), GPRClass);
         break;
@@ -1551,7 +1549,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         }
         break;
       default: 
-        LogMan::Msg::E("Unknown segment register: %d", Op->Dest.TypeGPR.GPR);
+        LogMan::Msg::E("Unknown segment register: %d", Op->Dest.Data.GPR.GPR);
         DecodeFailure = true;
         return;
     }
@@ -1636,9 +1634,9 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
 void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
   auto Size = GetSrcSize(Op) * 8;
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -1694,9 +1692,9 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
 void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
   auto Size = GetSrcSize(Op) * 8;
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -1771,9 +1769,9 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
   auto Size = GetSrcSize(Op) * 8;
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -1860,16 +1858,16 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
   auto Size = GetSrcSize(Op) * 8;
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64)
-    Shift = Op->Src[1].TypeLiteral.Literal & 0x3F;
+    Shift = Op->Src[1].Data.Literal.Value & 0x3F;
   else
-    Shift = Op->Src[1].TypeLiteral.Literal & 0x1F;
+    Shift = Op->Src[1].Data.Literal.Value & 0x1F;
 
   if (Shift != 0) {
     OrderedNode *ShiftRight = _Constant(Shift);
@@ -1931,9 +1929,9 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
 void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
   auto Size = GetSrcSize(Op) * 8;
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -1999,9 +1997,9 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
 void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
   auto Size = GetSrcSize(Op) * 8;
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -2077,9 +2075,9 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
 void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
   auto Size = GetSrcSize(Op) * 8;
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
@@ -2452,17 +2450,17 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   uint32_t Size = GetDstSize(Op) * 8;
   uint32_t Mask = Size - 1;
 
-  if (Op->Src[SrcIndex].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   }
   else {
     // Can only be an immediate
     // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].TypeLiteral.Literal & Mask);
+    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
     AlreadyMasked = true;
   }
 
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR()) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
     OrderedNode *BitSelect{};
@@ -2511,17 +2509,17 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   uint32_t Size = GetDstSize(Op) * 8;
   uint32_t Mask = Size - 1;
 
-  if (Op->Src[SrcIndex].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   }
   else {
     // Can only be an immediate
     // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].TypeLiteral.Literal & Mask);
+    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
     AlreadyMasked = true;
   }
 
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR()) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
     OrderedNode *BitSelect{};
@@ -2591,17 +2589,17 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   uint32_t Size = GetDstSize(Op) * 8;
   uint32_t Mask = Size - 1;
 
-  if (Op->Src[SrcIndex].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   }
   else {
     // Can only be an immediate
     // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].TypeLiteral.Literal & Mask);
+    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
     AlreadyMasked = true;
   }
 
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR()) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
     OrderedNode *BitSelect{};
@@ -2666,17 +2664,17 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   uint32_t Size = GetDstSize(Op) * 8;
   uint32_t Mask = Size - 1;
 
-  if (Op->Src[SrcIndex].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   }
   else {
     // Can only be an immediate
     // Masked by operand size
-    Src = _Constant(Size, Op->Src[SrcIndex].TypeLiteral.Literal & Mask);
+    Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
     AlreadyMasked = true;
   }
 
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR()) {
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
     OrderedNode *BitSelect{};
@@ -2892,7 +2890,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op) * 8;
 
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR()) {
     // If this is a GPR then we can just do an Add
     Result = _Add(Dest, Src);
 
@@ -2983,8 +2981,8 @@ void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
 void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
 
-  LOGMAN_THROW_A(Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t Value = Op->Src[0].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t Value = Op->Src[0].Data.Literal.Value;
 
   uint16_t AllocSpace = Value & 0xFFFF;
   uint8_t Level = (Value >> 16) & 0x1F;
@@ -3896,7 +3894,7 @@ void OpDispatchBuilder::MOVLHPSOp(OpcodeArgs) {
 void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR()) {
     // If the destination is a GPR then the source is memory
     // xmm1[127:64] = src
     OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
@@ -3913,9 +3911,9 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR()) {
     // xmm, xmm is movhlps special case
-    if (Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    if (Op->Src[0].IsGPR()) {
       OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
       Src = _VExtractElement(16, 8, Src, 1);
       auto Result = _VInsScalarElement(16, 8, 0, Dest, Src);
@@ -3951,15 +3949,14 @@ void OpDispatchBuilder::MOVSLDUPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
-      Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
     // MOVSS xmm1, xmm2
     OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
     OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
     auto Result = _VInsScalarElement(16, 4, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   }
-  else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  else if (Op->Dest.IsGPR()) {
     // MOVSS xmm1, mem32
     // xmm1[127:0] <- zext(mem32)
     OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
@@ -3973,15 +3970,14 @@ void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
-      Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
     // xmm1[63:0] <- xmm2[63:0]
     OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
     auto Result = _VInsScalarElement(16, 8, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   }
-  else if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  else if (Op->Dest.IsGPR()) {
     // xmm1[127:0] <- zext(mem64)
     OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 8, Op->Flags, -1);
     StoreResult(FPRClass, Op, Src, -1);
@@ -4114,10 +4110,11 @@ void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
 void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    _StoreContext(FPRClass, 8, offsetof(FEXCore::Core::CPUState, xmm[Op->Dest.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][0]), Src);
+  if (Op->Dest.IsGPR()) {
+    const auto gpr = Op->Dest.Data.GPR.GPR;
+    _StoreContext(FPRClass, 8, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][0]), Src);
     auto Const = _Constant(0);
-    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, xmm[Op->Dest.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][1]), Const);
+    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][1]), Const);
   }
   else {
     // This is simple, just store the result
@@ -4215,7 +4212,7 @@ void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
   LOGMAN_THROW_A(ElementSize != 0, "What. No element size?");
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  uint8_t Shuffle = Op->Src[1].TypeLiteral.Literal;
+  uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
 
   uint8_t NumElements = Size / ElementSize;
 
@@ -4244,7 +4241,7 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  uint8_t Shuffle = Op->Src[1].TypeLiteral.Literal;
+  uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
 
   uint8_t NumElements = Size / ElementSize;
 
@@ -4296,8 +4293,8 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t Index = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t Index = Op->Src[1].Data.Literal.Value;
 
   uint8_t NumElements = Size / ElementSize;
   Index &= NumElements - 1;
@@ -4308,8 +4305,8 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint8_t Imm = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint8_t Imm = Op->Src[1].Data.Literal.Value;
   uint8_t CountS = (Imm >> 6);
   uint8_t CountD = (Imm >> 4) & 0b11;
   uint8_t ZMask = Imm & 0xF;
@@ -4323,7 +4320,7 @@ void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
   if (!(ZMask & (1 << CountD))) {
     // In the case that ZMask overwrites the destination element, then don't even insert
     OrderedNode *Src{};
-    if (Op->Src[0].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+    if (Op->Src[0].IsGPR()) {
       Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
     }
     else {
@@ -4356,8 +4353,8 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t Index = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t Index = Op->Src[1].Data.Literal.Value;
 
   uint8_t NumElements = Size / ElementSize;
   Index &= NumElements - 1;
@@ -4470,7 +4467,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   // 0x80064000
   // 0x80064000
 
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
+  if (Op->Dest.IsGPR()) {
     OrderedNode *Src1{};
     OrderedNode *Src1Lower{};
 
@@ -4774,13 +4771,13 @@ OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t
 }
 
 OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad) {
-  LOGMAN_THROW_A(Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_DIRECT ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_INDIRECT ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_RIP_RELATIVE ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_SIB
-        , "Unsupported Src type");
+  LOGMAN_THROW_A(Operand.IsGPR() ||
+                 Operand.IsLiteral() ||
+                 Operand.IsGPRDirect() ||
+                 Operand.IsGPRIndirect() ||
+                 Operand.IsRIPRelative() ||
+                 Operand.IsSIB(),
+                 "Unsupported Src type");
 
   OrderedNode *Src {nullptr};
   bool LoadableType = false;
@@ -4788,66 +4785,67 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (GPRSize >> 1) : GPRSize;
 
-  if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL) {
-    uint64_t constant = Operand.TypeLiteral.Literal;
-    uint64_t width = Operand.TypeLiteral.Size * 8;
+  if (Operand.IsLiteral()) {
+    uint64_t constant = Operand.Data.Literal.Value;
+    uint64_t width = Operand.Data.Literal.Size * 8;
 
-    if (Operand.TypeLiteral.Size != 8) {
+    if (Operand.Data.Literal.Size != 8) {
       // zero extend
       constant = constant & ((1ULL << width) - 1);
     }
     Src = _Constant(width, constant);
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_MM_0) {
-      Src = _LoadContext(OpSize, offsetof(FEXCore::Core::CPUState, mm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_MM_0]), FPRClass);
+  else if (Operand.IsGPR()) {
+    const auto gpr = Operand.Data.GPR.GPR;
+    if (gpr >= FEXCore::X86State::REG_MM_0) {
+      Src = _LoadContext(OpSize, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]), FPRClass);
     }
-    else if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
-      Src = _LoadContext(OpSize, offsetof(FEXCore::Core::CPUState, xmm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][Operand.TypeGPR.HighBits ? 1 : 0]), FPRClass);
+    else if (gpr >= FEXCore::X86State::REG_XMM_0) {
+      Src = _LoadContext(OpSize, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][Operand.Data.GPR.HighBits ? 1 : 0]), FPRClass);
     }
     else {
-      Src = _LoadContext(OpSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]) + (Operand.TypeGPR.HighBits ? 1 : 0), GPRClass);
+      Src = _LoadContext(OpSize, offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (Operand.Data.GPR.HighBits ? 1 : 0), GPRClass);
     }
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_DIRECT) {
-    Src = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), GPRClass);
+  else if (Operand.IsGPRDirect()) {
+    Src = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]), GPRClass);
     LoadableType = true;
-    StackAccess = Operand.TypeGPR.GPR == FEXCore::X86State::REG_RSP;
+    StackAccess = Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP;
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_INDIRECT) {
-    auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPRIndirect.GPR]), GPRClass);
-    auto Constant = _Constant(GPRSize * 8, Operand.TypeGPRIndirect.Displacement);
+  else if (Operand.IsGPRIndirect()) {
+    auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]), GPRClass);
+    auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
 
 		Src = _Add(GPR, Constant);
 
     LoadableType = true;
-    StackAccess = Operand.TypeGPRIndirect.GPR == FEXCore::X86State::REG_RSP;
+    StackAccess = Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP;
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_RIP_RELATIVE) {
+  else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
-      Src = GetDynamicPC(Op, Operand.TypeRIPLiteral.Literal.s);
+      Src = GetDynamicPC(Op, Operand.Data.RIPLiteral.Value.s);
     }
     else {
       // 32bit this isn't RIP relative but instead absolute
-      Src = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal.u);
+      Src = _Constant(GPRSize * 8, Operand.Data.RIPLiteral.Value.u);
     }
 
     LoadableType = true;
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_SIB) {
+  else if (Operand.IsSIB()) {
     OrderedNode *Tmp {};
-    if (Operand.TypeSIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = _LoadContext(AddrSize , offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Index]), GPRClass);
+    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
+      Tmp = _LoadContext(AddrSize , offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Index]), GPRClass);
 
-      if (Operand.TypeSIB.Scale != 1) {
-        auto Constant = _Constant(GPRSize * 8, Operand.TypeSIB.Scale);
+      if (Operand.Data.SIB.Scale != 1) {
+        auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
         Tmp = _Mul(Tmp, Constant);
       }
-      StackAccess |= Operand.TypeSIB.Index == FEXCore::X86State::REG_RSP;
+      StackAccess |= Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP;
     }
 
-    if (Operand.TypeSIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Base]), GPRClass);
+    if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
+      auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Base]), GPRClass);
 
       if (Tmp != nullptr) {
         Tmp = _Add(Tmp, GPR);
@@ -4855,15 +4853,15 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
       else {
         Tmp = GPR;
       }
-      StackAccess |= Operand.TypeSIB.Base == FEXCore::X86State::REG_RSP;
+      StackAccess |= Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP;
     }
 
-    if (Operand.TypeSIB.Offset) {
+    if (Operand.Data.SIB.Offset) {
       if (Tmp != nullptr) {
-        Src = _Add(Tmp, _Constant(GPRSize * 8, Operand.TypeSIB.Offset));
+        Src = _Add(Tmp, _Constant(GPRSize * 8, Operand.Data.SIB.Offset));
       }
       else {
-        Src = _Constant(GPRSize * 8, Operand.TypeSIB.Offset);
+        Src = _Constant(GPRSize * 8, Operand.Data.SIB.Offset);
       }
     }
     else {
@@ -4884,7 +4882,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     LoadableType = true;
   }
   else {
-    LOGMAN_MSG_A("Unknown Src Type: %d\n", Operand.TypeNone.Type);
+    LOGMAN_MSG_A("Unknown Src Type: %d\n", Operand.Type);
   }
 
   if ((LoadableType && LoadData) || ForceLoad) {
@@ -4911,12 +4909,12 @@ OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class,
 }
 
 void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align) {
-  LOGMAN_THROW_A((Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_DIRECT ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_INDIRECT ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_RIP_RELATIVE ||
-          Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_SIB
+  LOGMAN_THROW_A((Operand.IsGPR() ||
+          Operand.IsLiteral() ||
+          Operand.IsGPRDirect() ||
+          Operand.IsGPRIndirect() ||
+          Operand.IsRIPRelative() ||
+          Operand.IsSIB()
         ), "Unsupported Dest type");
 
   // 8Bit and 16bit destination types store their result without effecting the upper bits
@@ -4927,16 +4925,17 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (GPRSize >> 1) : GPRSize;
 
-  if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL) {
-    MemStoreDst = _Constant(Operand.TypeLiteral.Size * 8, Operand.TypeLiteral.Literal);
+  if (Operand.IsLiteral()) {
+    MemStoreDst = _Constant(Operand.Data.Literal.Size * 8, Operand.Data.Literal.Value);
     MemStore = true; // Literals are ONLY hardcoded memory destinations
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR) {
-    if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_MM_0) {
-      _StoreContext(Class, OpSize, offsetof(FEXCore::Core::CPUState, mm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_MM_0]), Src);
+  else if (Operand.IsGPR()) {
+    const auto gpr = Operand.Data.GPR.GPR;
+    if (gpr >= FEXCore::X86State::REG_MM_0) {
+      _StoreContext(Class, OpSize, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]), Src);
     }
-    else if (Operand.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
-      _StoreContext(Class, OpSize, offsetof(FEXCore::Core::CPUState, xmm[Operand.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][Operand.TypeGPR.HighBits ? 1 : 0]), Src);
+    else if (gpr >= FEXCore::X86State::REG_XMM_0) {
+      _StoreContext(Class, OpSize, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][Operand.Data.GPR.HighBits ? 1 : 0]), Src);
     }
     else {
       if (GPRSize == 8 && OpSize == 4) {
@@ -4944,51 +4943,51 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         // For all other sizes, the upper bits are guaranteed to already be zero
          OrderedNode *Value = GetOpSize(Src) == 8 ? _Bfe(4, 32, 0, Src) : Src;
 
-        LOGMAN_THROW_A(!Operand.TypeGPR.HighBits, "Can't handle 32bit store to high 8bit register");
-        _StoreContext(Class, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), Value);
+        LOGMAN_THROW_A(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
+        _StoreContext(Class, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[gpr]), Value);
       }
       else {
         LOGMAN_THROW_A(!(GPRSize == 4 && OpSize > 4), "Oops had a %d GPR load", OpSize);
-        _StoreContext(Class, std::min(GPRSize, OpSize), offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]) + (Operand.TypeGPR.HighBits ? 1 : 0), Src);
+        _StoreContext(Class, std::min(GPRSize, OpSize), offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (Operand.Data.GPR.HighBits ? 1 : 0), Src);
       }
     }
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_DIRECT) {
-    MemStoreDst = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPR.GPR]), GPRClass);
+  else if (Operand.IsGPRDirect()) {
+    MemStoreDst = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]), GPRClass);
     MemStore = true;
-    StackAccess = Operand.TypeGPR.GPR == FEXCore::X86State::REG_RSP;
+    StackAccess = Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP;
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR_INDIRECT) {
-    auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeGPRIndirect.GPR]), GPRClass);
-    auto Constant = _Constant(GPRSize * 8, Operand.TypeGPRIndirect.Displacement);
+  else if (Operand.IsGPRIndirect()) {
+    auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]), GPRClass);
+    auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
 
     MemStoreDst = _Add(GPR, Constant);
     MemStore = true;
-    StackAccess = Operand.TypeGPRIndirect.GPR == FEXCore::X86State::REG_RSP;
+    StackAccess = Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP;
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_RIP_RELATIVE) {
+  else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
-      MemStoreDst = GetDynamicPC(Op, Operand.TypeRIPLiteral.Literal.s);
+      MemStoreDst = GetDynamicPC(Op, Operand.Data.RIPLiteral.Value.s);
     }
     else {
       // 32bit this isn't RIP relative but instead absolute
-      MemStoreDst = _Constant(GPRSize * 8, Operand.TypeRIPLiteral.Literal.u);
+      MemStoreDst = _Constant(GPRSize * 8, Operand.Data.RIPLiteral.Value.u);
     }
     MemStore = true;
   }
-  else if (Operand.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_SIB) {
+  else if (Operand.IsSIB()) {
     OrderedNode *Tmp {};
-    if (Operand.TypeSIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Index]), GPRClass);
+    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
+      Tmp = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Index]), GPRClass);
 
-      if (Operand.TypeSIB.Scale != 1) {
-        auto Constant = _Constant(GPRSize * 8, Operand.TypeSIB.Scale);
+      if (Operand.Data.SIB.Scale != 1) {
+        auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
         Tmp = _Mul(Tmp, Constant);
       }
     }
 
-    if (Operand.TypeSIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.TypeSIB.Base]), GPRClass);
+    if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
+      auto GPR = _LoadContext(AddrSize, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Base]), GPRClass);
 
       if (Tmp != nullptr) {
         Tmp = _Add(Tmp, GPR);
@@ -4998,12 +4997,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       }
     }
 
-    if (Operand.TypeSIB.Offset) {
+    if (Operand.Data.SIB.Offset) {
       if (Tmp != nullptr) {
-        MemStoreDst = _Add(Tmp, _Constant(GPRSize * 8, Operand.TypeSIB.Offset));
+        MemStoreDst = _Add(Tmp, _Constant(GPRSize * 8, Operand.Data.SIB.Offset));
       }
       else {
-        MemStoreDst = _Constant(GPRSize * 8, Operand.TypeSIB.Offset);
+        MemStoreDst = _Constant(GPRSize * 8, Operand.Data.SIB.Offset);
       }
     }
     else {
@@ -6028,7 +6027,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   switch (Op->OP) {
   case 0xCD:
     Reason = 1;
-    Literal = Op->Src[0].TypeLiteral.Literal;
+    Literal = Op->Src[0].Data.Literal.Value;
     if (Literal == 0x80) {
       // Syscall on linux
       SyscallOp(Op);
@@ -6112,8 +6111,8 @@ template<size_t ElementSize>
 void OpDispatchBuilder::PSRLI(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t ShiftConstant = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
   auto Size = GetSrcSize(Op);
 
@@ -6125,8 +6124,8 @@ template<size_t ElementSize>
 void OpDispatchBuilder::PSLLI(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t ShiftConstant = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
   auto Size = GetSrcSize(Op);
 
@@ -6179,8 +6178,8 @@ void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -6191,8 +6190,8 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -6204,8 +6203,8 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t Shift = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t Shift = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -6451,8 +6450,8 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
-  if (Op->Dest.TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_GPR &&
-      Op->Dest.TypeGPR.GPR >= FEXCore::X86State::REG_XMM_0) {
+  if (Op->Dest.IsGPR() &&
+      Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_XMM_0) {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
     // zext to 128bit
     auto Converted = _VCastFromGPR(16, GetSrcSize(Op), Src);
@@ -6514,7 +6513,7 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   else {
     Src2 = Dest;
   }
-  uint8_t CompType = Op->Src[1].TypeLiteral.Literal;
+  uint8_t CompType = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Result{};
   // This maps 1:1 to an AArch64 NEON Op
@@ -6578,7 +6577,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
 
   OrderedNode *data{};
 
-  if (Op->Src[0].TypeNone.Type != 0) {
+  if (!Op->Src[0].IsNone()) {
     // Read from memory
     data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
   }
@@ -6729,7 +6728,7 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
 
   auto mask = _Constant(7);
 
-  if (Op->Src[0].TypeNone.Type != 0) {
+  if (!Op->Src[0].IsNone()) {
     // Memory arg
     if (width == 16 || width == 32 || width == 64) {
       if (Integer) {
@@ -6773,7 +6772,7 @@ void OpDispatchBuilder::FMUL(OpcodeArgs) {
 
   auto mask = _Constant(7);
 
-  if (Op->Src[0].TypeNone.Type != 0) {
+  if (!Op->Src[0].IsNone()) {
     // Memory arg
 
     if (width == 16 || width == 32 || width == 64) {
@@ -6820,7 +6819,7 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
 
   auto mask = _Constant(7);
 
-  if (Op->Src[0].TypeNone.Type != 0) {
+  if (!Op->Src[0].IsNone()) {
     // Memory arg
 
     if (width == 16 || width == 32 || width == 64) {
@@ -6873,7 +6872,7 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
 
   auto mask = _Constant(7);
 
-  if (Op->Src[0].TypeNone.Type != 0) {
+  if (!Op->Src[0].IsNone()) {
     // Memory arg
 
     if (width == 16 || width == 32 || width == 64) {
@@ -7026,7 +7025,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
   OrderedNode *arg{};
   OrderedNode *b{};
 
-  if (Op->Src[0].TypeNone.Type != 0) {
+  if (!Op->Src[0].IsNone()) {
     // Memory arg
     if (width == 16 || width == 32 || width == 64) {
       if (Integer) {
@@ -7823,7 +7822,7 @@ void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Size = GetDstSize(Op);
 
-  uint8_t Index = Op->Src[1].TypeLiteral.Literal;
+  uint8_t Index = Op->Src[1].Data.Literal.Value;
   OrderedNode *Res{};
   if (Index >= (Size * 2)) {
     // If the immediate is greater than both vectors combined then it zeroes the vector
@@ -7952,7 +7951,7 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
   // This instruction is a bit special in that if the source is MMX then it zexts to 128bit
   if (ToXMM) {
     Src = _VMov(Src, 16);
-    _StoreContext(FPRClass, 16, offsetof(FEXCore::Core::CPUState, xmm[Op->Dest.TypeGPR.GPR - FEXCore::X86State::REG_XMM_0][0]), Src);
+    _StoreContext(FPRClass, 16, offsetof(FEXCore::Core::CPUState, xmm[Op->Dest.Data.GPR.GPR - FEXCore::X86State::REG_XMM_0][0]), Src);
   }
   else {
     // This is simple, just store the result
@@ -8458,8 +8457,8 @@ void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  LOGMAN_THROW_A(Op->Src[1].TypeNone.Type == FEXCore::X86Tables::DecodedOperand::TYPE_LITERAL, "Src1 needs to be literal here");
-  uint64_t RCON = Op->Src[1].TypeLiteral.Literal;
+  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t RCON = Op->Src[1].Data.Literal.Value;
 
   auto Res = _VAESKeyGenAssist(Src, RCON);
   StoreResult(FPRClass, Op, Res, -1);
