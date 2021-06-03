@@ -351,7 +351,7 @@ void Dispatcher::RemoveCodeBuffer(uint8_t* start_to_remove) {
   }
 }
 
-bool Dispatcher::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) {
+bool Dispatcher::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) const {
   for (auto [start, end] : CodeBuffers) {
     if (Address >= start && Address < end) {
       return true;

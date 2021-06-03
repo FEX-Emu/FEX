@@ -181,7 +181,7 @@ namespace FEXCore::Context {
 
     bool InitCore(FEXCore::CodeLoader *Loader);
     FEXCore::Context::ExitReason RunUntilExit();
-    int GetProgramStatus();
+    int GetProgramStatus() const;
     bool IsPaused() const { return !Running; }
     void Pause();
     void Run();
@@ -192,7 +192,7 @@ namespace FEXCore::Context {
     void StopThread(FEXCore::Core::InternalThreadState *Thread);
     void SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event);
 
-    bool GetGdbServerStatus() { return (bool)DebugServer; }
+    bool GetGdbServerStatus() const { return DebugServer != nullptr; }
     void StartGdbServer();
     void StopGdbServer();
     void HandleCallback(uint64_t RIP);

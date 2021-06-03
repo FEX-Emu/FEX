@@ -131,7 +131,7 @@ uint8_t Decoder::ReadByte() {
   return Byte;
 }
 
-uint8_t Decoder::PeekByte(uint8_t Offset) {
+uint8_t Decoder::PeekByte(uint8_t Offset) const {
   uint8_t Byte = InstStream[InstructionSize + Offset];
   return Byte;
 }

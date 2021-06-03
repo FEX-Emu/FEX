@@ -21,7 +21,7 @@ union PhysicalRegister {
     return PhysicalRegister(InvalidClass, InvalidReg);
   }
 
-  bool IsInvalid() {
+  bool IsInvalid() const {
     return *this == Invalid();
   }
 };
