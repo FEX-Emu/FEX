@@ -40,7 +40,7 @@ namespace FEX::Config {
 
   class AppLoader final : public FEX::Config::OptionMapper {
   public:
-    explicit AppLoader(std::string Filename, bool Global);
+    explicit AppLoader(const std::string& Filename, bool Global);
     void Load();
 
   private:
@@ -56,5 +56,5 @@ namespace FEX::Config {
     char *const *envp;
   };
 
-  void SaveLayerToJSON(std::string Filename, FEXCore::Config::Layer *const Layer);
+  void SaveLayerToJSON(const std::string& Filename, FEXCore::Config::Layer *const Layer);
 }

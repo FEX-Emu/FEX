@@ -57,7 +57,7 @@ namespace Type {
   __attribute__((visibility("default"))) std::string GetDataDirectory();
   __attribute__((visibility("default"))) std::string GetConfigDirectory(bool Global);
   __attribute__((visibility("default"))) std::string GetConfigFileLocation();
-  __attribute__((visibility("default"))) std::string GetApplicationConfig(std::string &Filename, bool Global);
+  __attribute__((visibility("default"))) std::string GetApplicationConfig(const std::string &Filename, bool Global);
 
   using LayerValue = std::list<std::string>;
   using LayerOptions = std::unordered_map<ConfigOption, LayerValue>;
