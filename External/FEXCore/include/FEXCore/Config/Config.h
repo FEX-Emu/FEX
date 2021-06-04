@@ -94,12 +94,12 @@ namespace Type {
     }
 
     void Set(ConfigOption Option, std::string Data) {
-      OptionMap[Option].emplace_back(Data);
+      OptionMap[Option].emplace_back(std::move(Data));
     }
 
     void EraseSet(ConfigOption Option, std::string Data) {
-      OptionMap.erase(Option);
-      OptionMap[Option].emplace_back(Data);
+      Erase(Option);
+      Set(Option, std::move(Data));
     }
 
     void Erase(ConfigOption Option) {
@@ -137,14 +137,14 @@ namespace Type {
       typename std::enable_if<!std::is_same<TT, std::string>::value, int>::type = 0>
     Value(FEXCore::Config::ConfigOption _Option, T Default)
       : Option {_Option} {
-      ValueData = FEXCore::Config::Value<T>::GetIfExists(Option, Default);
+      ValueData = GetIfExists(Option, Default);
     }
 
     template <typename TT = T,
       typename std::enable_if<std::is_same<TT, std::string>::value, int>::type = 0>
     Value(FEXCore::Config::ConfigOption _Option, T Default)
       : Option {_Option} {
-      ValueData = FEXCore::Config::Value<T>::GetIfExists(Option, Default);
+      ValueData = GetIfExists(Option, Default);
       GetListIfExists(Option, &AppendList);
     }
 
@@ -156,7 +156,7 @@ namespace Type {
         ERROR_AND_DIE("FEXCore::Config::Value has no value");
       }
 
-      ValueData = FEXCore::Config::Value<T>::Get(Option);
+      ValueData = Get(Option);
     }
 
     template <typename TT = T,
@@ -167,13 +167,13 @@ namespace Type {
         ERROR_AND_DIE("FEXCore::Config::Value has no value");
       }
 
-      ValueData = FEXCore::Config::Value<T>::GetIfExists(Option);
+      ValueData = GetIfExists(Option);
       GetListIfExists(Option, &AppendList);
     }
 
     operator T() const { return ValueData; }
     T operator()() const { return ValueData; }
-    Value<T>(T Value) { ValueData = Value; }
+    Value<T>(T Value) { ValueData = std::move(Value); }
     std::list<T> &All() { return AppendList; }
 
   private:
