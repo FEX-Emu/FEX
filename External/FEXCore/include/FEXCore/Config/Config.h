@@ -94,12 +94,12 @@ namespace Type {
     }
 
     void Set(ConfigOption Option, std::string Data) {
-      OptionMap[Option].emplace_back(Data);
+      OptionMap[Option].emplace_back(std::move(Data));
     }
 
     void EraseSet(ConfigOption Option, std::string Data) {
-      OptionMap.erase(Option);
-      OptionMap[Option].emplace_back(Data);
+      Erase(Option);
+      Set(Option, std::move(Data));
     }
 
     void Erase(ConfigOption Option) {
@@ -173,7 +173,7 @@ namespace Type {
 
     operator T() const { return ValueData; }
     T operator()() const { return ValueData; }
-    Value<T>(T Value) { ValueData = Value; }
+    Value<T>(T Value) { ValueData = std::move(Value); }
     std::list<T> &All() { return AppendList; }
 
   private:
