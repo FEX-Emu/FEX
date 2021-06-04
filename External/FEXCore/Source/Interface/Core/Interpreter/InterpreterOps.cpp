@@ -1609,10 +1609,10 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             uint8_t Mask = OpSize * 8 - 1;
             switch (OpSize) {
               case 4:
-                GD = static_cast<int32_t>(Src1) << (Src2 & Mask);
+                GD = static_cast<uint32_t>(Src1) << (Src2 & Mask);
                 break;
               case 8:
-                GD = static_cast<int64_t>(Src1) << (Src2 & Mask);
+                GD = static_cast<uint64_t>(Src1) << (Src2 & Mask);
                 break;
               default: LOGMAN_MSG_A("Unknown LSHL Size: %d\n", OpSize); break;
             };
