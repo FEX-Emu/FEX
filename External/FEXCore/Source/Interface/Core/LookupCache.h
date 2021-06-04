@@ -98,8 +98,8 @@ public:
 
   void HintUsedRange(uint64_t Address, uint64_t Size);
 
-  uintptr_t GetL1Pointer() { return L1Pointer; }
-  uintptr_t GetPagePointer() { return PagePointer; }
+  uintptr_t GetL1Pointer() const { return L1Pointer; }
+  uintptr_t GetPagePointer() const { return PagePointer; }
   uintptr_t GetVirtualMemorySize() const { return VirtualMemSize; }
 
   constexpr static size_t L1_ENTRIES = 1 * 1024 * 1024; // Must be a power of 2

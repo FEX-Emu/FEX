@@ -7,12 +7,12 @@ namespace FEXCore::HLE {
 // Tracking relationships between thread IDs and such
 class ThreadManagement {
 public:
-  uint64_t GetUID()  { return UID; }
-  uint64_t GetGID()  { return GID; }
-  uint64_t GetEUID() { return EUID; }
-  uint64_t GetEGID() { return EGID; }
-  uint64_t GetTID()  { return TID; }
-  uint64_t GetPID() { return PID; }
+  uint64_t GetUID()  const { return UID; }
+  uint64_t GetGID()  const { return GID; }
+  uint64_t GetEUID() const { return EUID; }
+  uint64_t GetEGID() const { return EGID; }
+  uint64_t GetTID()  const { return TID; }
+  uint64_t GetPID()  const { return PID; }
 
   uint64_t UID{1000};
   uint64_t GID{1000};

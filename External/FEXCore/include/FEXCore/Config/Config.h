@@ -106,8 +106,8 @@ namespace Type {
       OptionMap.erase(Option);
     }
 
-    const LayerType GetLayerType() const { return Type; }
-    const LayerOptions &GetOptionMap() { return OptionMap; }
+    LayerType GetLayerType() const { return Type; }
+    const LayerOptions &GetOptionMap() const { return OptionMap; }
 
   protected:
     const LayerType Type;
@@ -171,8 +171,8 @@ namespace Type {
       GetListIfExists(Option, &AppendList);
     }
 
-    operator T() { return ValueData; }
-    T operator()() { return ValueData; }
+    operator T() const { return ValueData; }
+    T operator()() const { return ValueData; }
     Value<T>(T Value) { ValueData = Value; }
     std::list<T> &All() { return AppendList; }
 

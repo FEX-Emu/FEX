@@ -96,35 +96,35 @@ private:
   constexpr static uint8_t RA_FPR = 2;
 
   template<uint8_t RAType>
-  aarch64::Register GetReg(uint32_t Node);
+  aarch64::Register GetReg(uint32_t Node) const;
 
   template<>
-  aarch64::Register GetReg<RA_32>(uint32_t Node);
+  aarch64::Register GetReg<RA_32>(uint32_t Node) const;
   template<>
-  aarch64::Register GetReg<RA_64>(uint32_t Node);
+  aarch64::Register GetReg<RA_64>(uint32_t Node) const;
 
   template<uint8_t RAType>
-  std::pair<aarch64::Register, aarch64::Register> GetSrcPair(uint32_t Node);
+  std::pair<aarch64::Register, aarch64::Register> GetSrcPair(uint32_t Node) const;
 
   template<>
-  std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_32>(uint32_t Node);
+  std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_32>(uint32_t Node) const;
   template<>
-  std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_64>(uint32_t Node);
+  std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_64>(uint32_t Node) const;
 
-  aarch64::VRegister GetSrc(uint32_t Node);
-  aarch64::VRegister GetDst(uint32_t Node);
+  aarch64::VRegister GetSrc(uint32_t Node) const;
+  aarch64::VRegister GetDst(uint32_t Node) const;
 
-  FEXCore::IR::RegisterClassType GetRegClass(uint32_t Node);
+  FEXCore::IR::RegisterClassType GetRegClass(uint32_t Node) const;
 
-  IR::PhysicalRegister GetPhys(uint32_t Node);
+  IR::PhysicalRegister GetPhys(uint32_t Node) const;
 
-  bool IsFPR(uint32_t Node);
-  bool IsGPR(uint32_t Node);
+  bool IsFPR(uint32_t Node) const;
+  bool IsGPR(uint32_t Node) const;
 
   MemOperand GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
 
-  bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
-  bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value);
+  bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr) const;
+  bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const;
 
   struct LiveRange {
     uint32_t Begin;

@@ -411,7 +411,7 @@ void X86JITCore::ClearCache() {
   }
 }
 
-IR::PhysicalRegister X86JITCore::GetPhys(uint32_t Node) {
+IR::PhysicalRegister X86JITCore::GetPhys(uint32_t Node) const {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
   LOGMAN_THROW_A(PhyReg.Raw != 255, "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
@@ -419,98 +419,98 @@ IR::PhysicalRegister X86JITCore::GetPhys(uint32_t Node) {
   return PhyReg;
 }
 
-bool X86JITCore::IsFPR(uint32_t Node) {
+bool X86JITCore::IsFPR(uint32_t Node) const {
   return RAData->GetNodeRegister(Node).Class == IR::FPRClass.Val;
 }
 
-bool X86JITCore::IsGPR(uint32_t Node) {
+bool X86JITCore::IsGPR(uint32_t Node) const {
   return RAData->GetNodeRegister(Node).Class == IR::GPRClass.Val;
 }
 
 template<uint8_t RAType>
-Xbyak::Reg X86JITCore::GetSrc(uint32_t Node) {
+Xbyak::Reg X86JITCore::GetSrc(uint32_t Node) const {
   // rax, rcx, rdx, rsi, r8, r9,
   // r10
   // Callee Saved
   // rbx, rbp, r12, r13, r14, r15
   auto PhyReg = GetPhys(Node);
-  if (RAType == RA_64)
+  if constexpr (RAType == RA_64)
     return RA64[PhyReg.Reg].cvt64();
-  else if (RAType == RA_XMM)
+  else if constexpr (RAType == RA_XMM)
     return RAXMM[PhyReg.Reg];
-  else if (RAType == RA_32)
+  else if constexpr (RAType == RA_32)
     return RA64[PhyReg.Reg].cvt32();
-  else if (RAType == RA_16)
+  else if constexpr (RAType == RA_16)
     return RA64[PhyReg.Reg].cvt16();
-  else if (RAType == RA_8)
+  else if constexpr (RAType == RA_8)
     return RA64[PhyReg.Reg].cvt8();
 }
 
 template
-Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_64>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_64>(uint32_t Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_32>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_32>(uint32_t Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_16>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_16>(uint32_t Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_8>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_8>(uint32_t Node) const;
 
-Xbyak::Xmm X86JITCore::GetSrc(uint32_t Node) {
+Xbyak::Xmm X86JITCore::GetSrc(uint32_t Node) const {
   auto PhyReg = GetPhys(Node);
   return RAXMM_x[PhyReg.Reg];
 }
 
 template<uint8_t RAType>
-Xbyak::Reg X86JITCore::GetDst(uint32_t Node) {
+Xbyak::Reg X86JITCore::GetDst(uint32_t Node) const {
   auto PhyReg = GetPhys(Node);
-  if (RAType == RA_64)
+  if constexpr (RAType == RA_64)
     return RA64[PhyReg.Reg].cvt64();
-  else if (RAType == RA_XMM)
+  else if constexpr (RAType == RA_XMM)
     return RAXMM[PhyReg.Reg];
-  else if (RAType == RA_32)
+  else if constexpr (RAType == RA_32)
     return RA64[PhyReg.Reg].cvt32();
-  else if (RAType == RA_16)
+  else if constexpr (RAType == RA_16)
     return RA64[PhyReg.Reg].cvt16();
-  else if (RAType == RA_8)
+  else if constexpr (RAType == RA_8)
     return RA64[PhyReg.Reg].cvt8();
 }
 
 template
-Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_64>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_64>(uint32_t Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_32>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_32>(uint32_t Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_16>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_16>(uint32_t Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_8>(uint32_t Node);
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_8>(uint32_t Node) const;
 
 template<uint8_t RAType>
-std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair(uint32_t Node) {
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair(uint32_t Node) const {
   auto PhyReg = GetPhys(Node);
-  if (RAType == RA_64)
+  if constexpr (RAType == RA_64)
     return RA64Pair[PhyReg.Reg];
-  else if (RAType == RA_32)
+  else if constexpr (RAType == RA_32)
     return {RA64Pair[PhyReg.Reg].first.cvt32(), RA64Pair[PhyReg.Reg].second.cvt32()};
 }
 
 template
-std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_64>(uint32_t Node);
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_64>(uint32_t Node) const;
 
 template
-std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_32>(uint32_t Node);
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_32>(uint32_t Node) const;
 
-Xbyak::Xmm X86JITCore::GetDst(uint32_t Node) {
+Xbyak::Xmm X86JITCore::GetDst(uint32_t Node) const {
   auto PhyReg = GetPhys(Node);
   return RAXMM_x[PhyReg.Reg];
 }
 
-bool X86JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
+bool X86JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const {
   auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
 
   if (OpHeader->Op == IR::IROps::OP_INLINECONSTANT) {
@@ -524,7 +524,7 @@ bool X86JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t*
   }
 }
 
-bool X86JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) {
+bool X86JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const {
   auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
 
   if (OpHeader->Op == IR::IROps::OP_INLINEENTRYPOINTOFFSET) {

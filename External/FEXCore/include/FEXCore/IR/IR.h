@@ -275,13 +275,13 @@ struct CondClassType final {
 
 struct MemOffsetType final {
   uint8_t Val;
-  operator uint8_t() {
+  operator uint8_t() const {
     return Val;
   }
-  int operator ==(const MemOffsetType other) {
+  int operator ==(const MemOffsetType other) const {
     return Val == other.Val;
   }
-  int operator !=(const MemOffsetType other) {
+  int operator !=(const MemOffsetType other) const {
     return Val != other.Val;
   }
 };
@@ -383,7 +383,7 @@ public:
 		return { RealNode, RealNode->Op(IRList) };
 	}
 
-  uint32_t ID() {
+  uint32_t ID() const {
     return Node.ID();
   }
 

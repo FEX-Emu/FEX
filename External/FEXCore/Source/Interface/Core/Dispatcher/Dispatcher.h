@@ -54,8 +54,8 @@ public:
 
   void RemoveCodeBuffer(uint8_t* start);
 
-  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true);
-  bool IsAddressInDispatcher(uint64_t Address) {
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const;
+  bool IsAddressInDispatcher(uint64_t Address) const {
     return Address >= Start && Address < End;
   }
 

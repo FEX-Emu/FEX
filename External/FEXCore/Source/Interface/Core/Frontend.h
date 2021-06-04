@@ -26,7 +26,7 @@ public:
   Decoder(FEXCore::Context::Context *ctx);
   bool DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC);
 
-  std::vector<DecodedBlocks> const *GetDecodedBlocks() {
+  std::vector<DecodedBlocks> const *GetDecodedBlocks() const {
     return &Blocks;
   }
 
@@ -43,7 +43,7 @@ private:
   void BranchTargetInMultiblockRange();
 
   uint8_t ReadByte();
-  uint8_t PeekByte(uint8_t Offset);
+  uint8_t PeekByte(uint8_t Offset) const;
   uint64_t ReadData(uint8_t Size);
   void SkipBytes(uint8_t Size) { InstructionSize += Size; }
   bool NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op);

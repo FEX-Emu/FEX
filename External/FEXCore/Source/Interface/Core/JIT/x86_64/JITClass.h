@@ -112,26 +112,26 @@ private:
   constexpr static uint8_t RA_64 = 3;
   constexpr static uint8_t RA_XMM = 4;
 
-  IR::PhysicalRegister GetPhys(uint32_t Node);
+  IR::PhysicalRegister GetPhys(uint32_t Node) const;
 
-  bool IsFPR(uint32_t Node);
-  bool IsGPR(uint32_t Node);
-
-  template<uint8_t RAType>
-  Xbyak::Reg GetSrc(uint32_t Node);
-  template<uint8_t RAType>
-  std::pair<Xbyak::Reg, Xbyak::Reg> GetSrcPair(uint32_t Node);
+  bool IsFPR(uint32_t Node) const;
+  bool IsGPR(uint32_t Node) const;
 
   template<uint8_t RAType>
-  Xbyak::Reg GetDst(uint32_t Node);
+  Xbyak::Reg GetSrc(uint32_t Node) const;
+  template<uint8_t RAType>
+  std::pair<Xbyak::Reg, Xbyak::Reg> GetSrcPair(uint32_t Node) const;
 
-  Xbyak::Xmm GetSrc(uint32_t Node);
-  Xbyak::Xmm GetDst(uint32_t Node);
+  template<uint8_t RAType>
+  Xbyak::Reg GetDst(uint32_t Node) const;
 
-  Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
+  Xbyak::Xmm GetSrc(uint32_t Node) const;
+  Xbyak::Xmm GetDst(uint32_t Node) const;
 
-  bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr);
-  bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value);
+  Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) const;
+
+  bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr) const;
+  bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const;
 
   IR::RegisterAllocationPass *RAPass;
   FEXCore::IR::RegisterAllocationData *RAData;

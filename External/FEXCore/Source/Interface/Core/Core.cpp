@@ -457,7 +457,7 @@ namespace FEXCore::Context {
     }
   }
 
-  int Context::GetProgramStatus() {
+  int Context::GetProgramStatus() const {
     return ParentThread->StatusCode;
   }
 
