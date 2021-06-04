@@ -4013,44 +4013,6 @@ void OpDispatchBuilder::PSUBQOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PMINUOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto ALUOp = _VUMin(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, ALUOp, -1);
-}
-
-template<size_t ElementSize>
-void OpDispatchBuilder::PMAXUOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto ALUOp = _VUMax(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, ALUOp, -1);
-}
-
-void OpDispatchBuilder::PMINSWOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto ALUOp = _VSMin(Size, 2, Dest, Src);
-  StoreResult(FPRClass, Op, ALUOp, -1);
-}
-
-void OpDispatchBuilder::PMAXSWOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto ALUOp = _VSMax(Size, 2, Dest, Src);
-  StoreResult(FPRClass, Op, ALUOp, -1);
-}
-
 template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -4368,21 +4330,6 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, -1);
 }
 
-template<size_t ElementSize, bool Signed>
-void OpDispatchBuilder::PMULOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  OrderedNode *Res{};
-  if (Signed)
-    Res = _VSMul(Size, ElementSize, Dest, Src);
-  else
-    Res = _VUMul(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, Res, -1);
-}
-
 template<size_t ElementSize>
 void OpDispatchBuilder::PSIGN(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -4409,37 +4356,6 @@ void OpDispatchBuilder::PSIGN(OpcodeArgs) {
   // Or our results
   OrderedNode *Res = _VOr(Size, ElementSize, CmpGT, _VOr(Size, ElementSize, CmpLT, CmpEQ));
   StoreResult(FPRClass, Op, Res, -1);
-}
-
-template<size_t ElementSize>
-void OpDispatchBuilder::PABS(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto Res = _VAbs(Size, ElementSize, Src);
-  StoreResult(FPRClass, Op, Res, -1);
-}
-
-template<size_t ElementSize>
-void OpDispatchBuilder::PCMPEQOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  // This maps 1:1 to an AArch64 NEON Op
-  auto ALUOp = _VCMPEQ(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, ALUOp, -1);
-}
-
-template<size_t ElementSize>
-void OpDispatchBuilder::PCMPGTOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  // This maps 1:1 to an AArch64 NEON Op
-  auto ALUOp = _VCMPGT(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
 void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
@@ -8645,9 +8561,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x61, 1, &OpDispatchBuilder::PUNPCKLOp<2>},
     {0x62, 1, &OpDispatchBuilder::PUNPCKLOp<4>},
     {0x63, 1, &OpDispatchBuilder::PACKSSOp<2>},
-    {0x64, 1, &OpDispatchBuilder::PCMPGTOp<1>},
-    {0x65, 1, &OpDispatchBuilder::PCMPGTOp<2>},
-    {0x66, 1, &OpDispatchBuilder::PCMPGTOp<4>},
+    {0x64, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 1>},
+    {0x65, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 2>},
+    {0x66, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 4>},
     {0x67, 1, &OpDispatchBuilder::PACKUSOp<2>},
     {0x68, 1, &OpDispatchBuilder::PUNPCKHOp<1>},
     {0x69, 1, &OpDispatchBuilder::PUNPCKHOp<2>},
@@ -8655,9 +8571,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x6B, 1, &OpDispatchBuilder::PACKSSOp<4>},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, false, true>},
 
-    {0x74, 1, &OpDispatchBuilder::PCMPEQOp<1>},
-    {0x75, 1, &OpDispatchBuilder::PCMPEQOp<2>},
-    {0x76, 1, &OpDispatchBuilder::PCMPEQOp<4>},
+    {0x74, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 1>},
+    {0x75, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 2>},
+    {0x76, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 4>},
     {0x77, 1, &OpDispatchBuilder::NOPOp},
 
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4, false>},
@@ -8667,15 +8583,15 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4, true, 0>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8, true, 0>},
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
-    {0xD5, 1, &OpDispatchBuilder::PMULOp<2, true>},
+    {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 2>},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::PSUBSOp<1, false>},
     {0xD9, 1, &OpDispatchBuilder::PSUBSOp<2, false>},
-    {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
+    {0xDA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 1>},
     {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 8>},
     {0xDC, 1, &OpDispatchBuilder::PADDSOp<1, false>},
     {0xDD, 1, &OpDispatchBuilder::PADDSOp<2, false>},
-    {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
+    {0xDE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 1>},
     {0xDF, 1, &OpDispatchBuilder::ANDNOp},
     {0xE0, 1, &OpDispatchBuilder::PAVGOp<1>},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2, true, 0>},
@@ -8686,11 +8602,11 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xE7, 1, &OpDispatchBuilder::MOVUPSOp},
     {0xE8, 1, &OpDispatchBuilder::PSUBSOp<1, true>},
     {0xE9, 1, &OpDispatchBuilder::PSUBSOp<2, true>},
-    {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
+    {0xEA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 2>},
     {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 8>},
     {0xEC, 1, &OpDispatchBuilder::PADDSOp<1, true>},
     {0xED, 1, &OpDispatchBuilder::PADDSOp<2, true>},
-    {0xEE, 1, &OpDispatchBuilder::PMAXSWOp},
+    {0xEE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 2>},
     {0xEF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 8>},
 
     {0xF1, 1, &OpDispatchBuilder::PSLL<2, true, 0>},
@@ -8935,9 +8851,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x61, 1, &OpDispatchBuilder::PUNPCKLOp<2>},
     {0x62, 1, &OpDispatchBuilder::PUNPCKLOp<4>},
     {0x63, 1, &OpDispatchBuilder::PACKSSOp<2>},
-    {0x64, 1, &OpDispatchBuilder::PCMPGTOp<1>},
-    {0x65, 1, &OpDispatchBuilder::PCMPGTOp<2>},
-    {0x66, 1, &OpDispatchBuilder::PCMPGTOp<4>},
+    {0x64, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 1>},
+    {0x65, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 2>},
+    {0x66, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 4>},
     {0x67, 1, &OpDispatchBuilder::PACKUSOp<2>},
     {0x68, 1, &OpDispatchBuilder::PUNPCKHOp<1>},
     {0x69, 1, &OpDispatchBuilder::PUNPCKHOp<2>},
@@ -8949,9 +8865,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x6F, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<4, false, true>},
 
-    {0x74, 1, &OpDispatchBuilder::PCMPEQOp<1>},
-    {0x75, 1, &OpDispatchBuilder::PCMPEQOp<2>},
-    {0x76, 1, &OpDispatchBuilder::PCMPEQOp<4>},
+    {0x74, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 1>},
+    {0x75, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 2>},
+    {0x76, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 4>},
     {0x78, 1, nullptr}, // GROUP 17
     {0x7C, 1, &OpDispatchBuilder::HADDP<8>},
     {0x7D, 1, &OpDispatchBuilder::HSUBP<8>},
@@ -8967,16 +8883,16 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4, true, 0>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8, true, 0>},
     {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
-    {0xD5, 1, &OpDispatchBuilder::PMULOp<2, true>},
+    {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 2>},
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>},
     {0xD9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>},
-    {0xDA, 1, &OpDispatchBuilder::PMINUOp<1>},
+    {0xDA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 1>},
     {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
     {0xDC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 1>},
     {0xDD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 2>},
-    {0xDE, 1, &OpDispatchBuilder::PMAXUOp<1>},
+    {0xDE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 1>},
     {0xDF, 1, &OpDispatchBuilder::ANDNOp},
     {0xE0, 1, &OpDispatchBuilder::PAVGOp<1>},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2, true, 0>},
@@ -8988,7 +8904,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xE7, 1, &OpDispatchBuilder::MOVVectorOp},
     {0xE8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 1>},
     {0xE9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 2>},
-    {0xEA, 1, &OpDispatchBuilder::PMINSWOp},
+    {0xEA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 2>},
     {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
     {0xEC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 1>},
     {0xED, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 2>},
@@ -9341,6 +9257,7 @@ constexpr uint16_t PF_F2 = 3;
 #define OPD(prefix, opcode) ((prefix << 8) | opcode)
   constexpr uint16_t PF_38_NONE = 0;
   constexpr uint16_t PF_38_66   = 1;
+
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F38Table = {
     {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
     {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::PSHUFBOp},
@@ -9366,12 +9283,12 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
     {OPD(PF_38_NONE, 0x0B), 1, &OpDispatchBuilder::PMULHRSW},
     {OPD(PF_38_66,   0x0B), 1, &OpDispatchBuilder::PMULHRSW},
-    {OPD(PF_38_NONE, 0x1C), 1, &OpDispatchBuilder::PABS<1>},
-    {OPD(PF_38_66,   0x1C), 1, &OpDispatchBuilder::PABS<1>},
-    {OPD(PF_38_NONE, 0x1D), 1, &OpDispatchBuilder::PABS<2>},
-    {OPD(PF_38_66,   0x1D), 1, &OpDispatchBuilder::PABS<2>},
-    {OPD(PF_38_NONE, 0x1E), 1, &OpDispatchBuilder::PABS<4>},
-    {OPD(PF_38_66,   0x1E), 1, &OpDispatchBuilder::PABS<4>},
+    {OPD(PF_38_NONE, 0x1C), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 1, false>},
+    {OPD(PF_38_66,   0x1C), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 1, false>},
+    {OPD(PF_38_NONE, 0x1D), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2, false>},
+    {OPD(PF_38_66,   0x1D), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2, false>},
+    {OPD(PF_38_NONE, 0x1E), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4, false>},
+    {OPD(PF_38_66,   0x1E), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4, false>},
     {OPD(PF_38_66,   0x2A), 1, &OpDispatchBuilder::MOVAPSOp},
     {OPD(PF_38_66,   0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
 
