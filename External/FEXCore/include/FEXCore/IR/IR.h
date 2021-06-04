@@ -70,11 +70,10 @@ struct NodeWrapperBase final {
   Type const *GetNode(uintptr_t Base) const { return reinterpret_cast<Type*>(Base + NodeOffset); }
 
   void SetOffset(uintptr_t Base, uintptr_t Value) { NodeOffset = Value - Base; }
-  constexpr bool operator==(NodeWrapperBase<Type> const &rhs) const { return NodeOffset == rhs.NodeOffset; }
-  constexpr bool operator!=(NodeWrapperBase<Type> const &rhs) const { return !operator==(rhs); }
+  friend constexpr bool operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
 };
 
-static_assert(std::is_trivial<NodeWrapperBase<OrderedNode>>::value);
+static_assert(std::is_trivial_v<NodeWrapperBase<OrderedNode>>);
 
 static_assert(sizeof(NodeWrapperBase<OrderedNode>) == sizeof(uint32_t));
 
@@ -252,76 +251,73 @@ class OrderedNode final {
     void SetUses(uint32_t Uses) { NumUses = Uses; }
 };
 
-static_assert(std::is_trivial<OrderedNode>::value);
-static_assert(std::is_trivially_copyable<OrderedNode>::value);
+static_assert(std::is_trivial_v<OrderedNode>);
+static_assert(std::is_trivially_copyable_v<OrderedNode>);
 static_assert(offsetof(OrderedNode, Header) == 0);
 static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_t)));
 
 struct RegisterClassType final {
   uint32_t Val;
-  operator uint32_t() {
+  constexpr operator uint32_t() const {
     return Val;
   }
-  constexpr bool operator==(RegisterClassType const &rhs) const { return Val == rhs.Val; }
-  constexpr bool operator!=(RegisterClassType const &rhs) const { return !operator==(rhs); }
+  friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
 };
 
 struct CondClassType final {
   uint8_t Val;
-  operator uint8_t() {
+  constexpr operator uint8_t() const {
     return Val;
   }
+  friend constexpr bool operator==(const CondClassType&, const CondClassType&) = default;
 };
 
 struct MemOffsetType final {
   uint8_t Val;
-  operator uint8_t() const {
+  constexpr operator uint8_t() const {
     return Val;
   }
-  int operator ==(const MemOffsetType other) const {
-    return Val == other.Val;
-  }
-  int operator !=(const MemOffsetType other) const {
-    return Val != other.Val;
-  }
+  friend constexpr bool operator==(const MemOffsetType&, const MemOffsetType&) = default;
 };
 
 struct TypeDefinition final {
   uint16_t Val;
-  operator uint16_t() const {
+
+  constexpr operator uint16_t() const {
     return Val;
   }
 
-  static TypeDefinition Create(uint8_t Bytes) {
+  static constexpr TypeDefinition Create(uint8_t Bytes) {
     TypeDefinition Type{};
     Type.Val = Bytes << 8;
     return Type;
   }
 
-  static TypeDefinition Create(uint8_t Bytes, uint8_t Elements) {
+  static constexpr TypeDefinition Create(uint8_t Bytes, uint8_t Elements) {
     TypeDefinition Type{};
     Type.Val = (Bytes << 8) | (Elements & 255);
     return Type;
   }
 
-  uint8_t Bytes() const {
+  constexpr uint8_t Bytes() const {
     return Val >> 8;
   }
 
-  uint8_t Elements() const {
+  constexpr uint8_t Elements() const {
     return Val & 255;
   }
+
+  friend constexpr bool operator==(const TypeDefinition&, const TypeDefinition&) = default;
 };
 
-static_assert(std::is_trivial<TypeDefinition>::value);
+static_assert(std::is_trivial_v<TypeDefinition>);
 
 struct FenceType final {
   uint8_t Val;
-  operator uint8_t() const {
+  constexpr operator uint8_t() const {
     return Val;
   }
-  constexpr bool operator==(FenceType const &rhs) const { return Val == rhs.Val; }
-  constexpr bool operator!=(FenceType const &rhs) const { return !operator==(rhs); }
+  friend constexpr bool operator==(const FenceType&, const FenceType&) = default;
 };
 
 struct SHA256Sum final {
