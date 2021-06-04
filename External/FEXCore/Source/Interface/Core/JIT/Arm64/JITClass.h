@@ -287,6 +287,7 @@ private:
   DEF_OP(Vector_FToU);
   DEF_OP(Vector_FToS);
   DEF_OP(Vector_FToF);
+  DEF_OP(Vector_FToI);
 
   ///< Flag ops
   DEF_OP(GetHostFlag);
@@ -336,6 +337,7 @@ private:
   DEF_OP(SplatVector4);
   DEF_OP(VMov);
   DEF_OP(VAnd);
+  DEF_OP(VBic);
   DEF_OP(VOr);
   DEF_OP(VXor);
   DEF_OP(VAdd);
@@ -346,8 +348,10 @@ private:
   DEF_OP(VSQSub);
   DEF_OP(VAddP);
   DEF_OP(VAddV);
+  DEF_OP(VUMinV);
   DEF_OP(VURAvg);
   DEF_OP(VAbs);
+  DEF_OP(VPopcount);
   DEF_OP(VFAdd);
   DEF_OP(VFAddP);
   DEF_OP(VFSub);
@@ -367,6 +371,8 @@ private:
   DEF_OP(VSMax);
   DEF_OP(VZip);
   DEF_OP(VZip2);
+  DEF_OP(VUnZip);
+  DEF_OP(VUnZip2);
   DEF_OP(VBSL);
   DEF_OP(VCMPEQ);
   DEF_OP(VCMPEQZ);
@@ -389,6 +395,7 @@ private:
   DEF_OP(VInsElement);
   DEF_OP(VInsScalarElement);
   DEF_OP(VExtractElement);
+  DEF_OP(VDupElement);
   DEF_OP(VExtr);
   DEF_OP(VSLI);
   DEF_OP(VSRI);
@@ -411,6 +418,7 @@ private:
   DEF_OP(VSMull);
   DEF_OP(VUMull2);
   DEF_OP(VSMull2);
+  DEF_OP(VUABDL);
   DEF_OP(VTBL1);
 
   ///< Encryption ops

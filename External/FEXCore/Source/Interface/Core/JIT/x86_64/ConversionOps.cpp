@@ -176,6 +176,38 @@ DEF_OP(Vector_FToF) {
   }
 }
 
+DEF_OP(Vector_FToI) {
+  auto Op = IROp->C<IR::IROp_Vector_FToI>();
+  uint8_t RoundMode{};
+
+  switch (Op->Round) {
+    case FEXCore::IR::Round_Nearest.Val:
+      RoundMode = 0b0000'0'0'00;
+    break;
+    case FEXCore::IR::Round_Negative_Infinity.Val:
+      RoundMode = 0b0000'0'0'01;
+    break;
+    case FEXCore::IR::Round_Positive_Infinity.Val:
+      RoundMode = 0b0000'0'0'10;
+    break;
+    case FEXCore::IR::Round_Towards_Zero.Val:
+      RoundMode = 0b0000'0'0'11;
+    break;
+    case FEXCore::IR::Round_Host.Val:
+      RoundMode = 0b0000'0'1'00;
+    break;
+  }
+
+  switch (Op->Header.ElementSize) {
+    case 4:
+      roundps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), RoundMode);
+    break;
+    case 8:
+      roundpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), RoundMode);
+    break;
+  }
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterConversionHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -191,6 +223,7 @@ void X86JITCore::RegisterConversionHandlers() {
   REGISTER_OP(VECTOR_FTOU,     Vector_FToU);
   REGISTER_OP(VECTOR_FTOS,     Vector_FToS);
   REGISTER_OP(VECTOR_FTOF,     Vector_FToF);
+  REGISTER_OP(VECTOR_FTOI,     Vector_FToI);
 #undef REGISTER_OP
 }
 }

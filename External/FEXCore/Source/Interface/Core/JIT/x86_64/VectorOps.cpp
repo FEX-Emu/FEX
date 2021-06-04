@@ -139,6 +139,14 @@ DEF_OP(VAnd) {
   vpand(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
 }
 
+DEF_OP(VBic) {
+  auto Op = IROp->C<IR::IROp_VBic>();
+  // This doesn't map directly to ARM
+  vpcmpeqd(xmm15, xmm15, xmm15);
+  vpxor(xmm15, GetSrc(Op->Header.Args[1].ID()), xmm15);
+  vpand(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+}
+
 DEF_OP(VOr) {
   auto Op = IROp->C<IR::IROp_VOr>();
   vpor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
@@ -355,6 +363,23 @@ DEF_OP(VAddV) {
   movaps(Dest, xmm15);
 }
 
+DEF_OP(VUMinV) {
+  auto Op = IROp->C<IR::IROp_VUMinV>();
+
+  auto Src = GetSrc(Op->Header.Args[0].ID());
+  auto Dest = GetDst(Node);
+  switch (Op->Header.ElementSize) {
+    case 2: {
+      phminposuw(Dest, Src);
+      // Extract the upper bits which are zero, overwriting position
+      pextrw(eax, Dest, 2);
+      pinsrw(Dest, eax, 1);
+    break;
+    }
+    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+  }
+}
+
 DEF_OP(VURAvg) {
   auto Op = IROp->C<IR::IROp_VURAvg>();
   switch (Op->Header.ElementSize) {
@@ -391,6 +416,32 @@ DEF_OP(VAbs) {
     }
     default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
   }
+}
+
+DEF_OP(VPopcount) {
+  auto Op = IROp->C<IR::IROp_VPopcount>();
+  uint8_t OpSize = IROp->Size;
+  // This only supports 8bit popcount on 8byte to 16byte registers
+
+  auto Src = GetSrc(Op->Header.Args[0].ID());
+  auto Dest = GetDst(Node);
+  vpxor(xmm15, xmm15, xmm15);
+  uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+  // This is disgustingly bad on x86-64 but we only need it for compatibility
+  switch (Op->Header.ElementSize) {
+    case 1: {
+      for (size_t i = 0; i < Elements; ++i) {
+        pextrb(eax, Src, i);
+        popcnt(eax, eax);
+        pinsrb(xmm15, eax, i);
+      }
+      break;
+    }
+    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+  }
+
+  movaps(Dest, xmm15);
 }
 
 DEF_OP(VFAdd) {
@@ -933,6 +984,112 @@ DEF_OP(VZip2) {
   }
 }
 
+DEF_OP(VUnZip) {
+  auto Op = IROp->C<IR::IROp_VUnZip>();
+  uint8_t OpSize = IROp->Size;
+
+  if (OpSize == 8) {
+    LOGMAN_MSG_A("Unsupported registersize on VunZip");
+  }
+  else {
+    switch (Op->Header.ElementSize) {
+      case 1: {
+        // Shuffle low bits
+        mov(rax, 0x0E'0C'0A'08'06'04'02'00); // Lower
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        vmovq(xmm15, rax);
+        pinsrq(xmm15, rcx, 1);
+        vpshufb(xmm14, GetSrc(Op->Header.Args[0].ID()), xmm15);
+        vpshufb(xmm13, GetSrc(Op->Header.Args[1].ID()), xmm15);
+        // movlhps back to combine
+        vmovlhps(GetDst(Node), xmm14, xmm13);
+        break;
+      }
+      case 2: {
+        // Shuffle low bits
+        mov(rax, 0x0D'0C'09'08'05'04'01'00); // Lower
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        vmovq(xmm15, rax);
+        pinsrq(xmm15, rcx, 1);
+        vpshufb(xmm14, GetSrc(Op->Header.Args[0].ID()), xmm15);
+        vpshufb(xmm13, GetSrc(Op->Header.Args[1].ID()), xmm15);
+        // movlhps back to combine
+        vmovlhps(GetDst(Node), xmm14, xmm13);
+        break;
+      }
+      case 4: {
+        vshufps(GetDst(Node),
+          GetSrc(Op->Header.Args[0].ID()),
+          GetSrc(Op->Header.Args[1].ID()),
+          0b10'00'10'00);
+        break;
+      }
+      case 8: {
+        vshufpd(GetDst(Node),
+          GetSrc(Op->Header.Args[0].ID()),
+          GetSrc(Op->Header.Args[1].ID()),
+          0b0'0);
+        break;
+      }
+      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    }
+  }
+}
+
+DEF_OP(VUnZip2) {
+  auto Op = IROp->C<IR::IROp_VUnZip2>();
+  uint8_t OpSize = IROp->Size;
+
+
+  if (OpSize == 8) {
+    LOGMAN_MSG_A("Unsupported registersize on VunZip");
+  }
+  else {
+    switch (Op->Header.ElementSize) {
+      case 1: {
+        // Shuffle low bits
+        mov(rax, 0x0F'0D'0B'09'07'05'03'01); // Lower
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        vmovq(xmm15, rax);
+        pinsrq(xmm15, rcx, 1);
+        vpshufb(xmm14, GetSrc(Op->Header.Args[0].ID()), xmm15);
+        vpshufb(xmm13, GetSrc(Op->Header.Args[1].ID()), xmm15);
+        // movlhps back to combine
+        vmovlhps(GetDst(Node), xmm14, xmm13);
+        break;
+      }
+      case 2: {
+        // Shuffle low bits
+        mov(rax, 0x0F'0E'0B'0A'07'06'03'02); // Lower
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        vmovq(xmm15, rax);
+        pinsrq(xmm15, rcx, 1);
+        vpshufb(xmm14, GetSrc(Op->Header.Args[0].ID()), xmm15);
+        vpshufb(xmm13, GetSrc(Op->Header.Args[1].ID()), xmm15);
+        // movlhps back to combine
+        vmovlhps(GetDst(Node), xmm14, xmm13);
+        break;
+      }
+      case 4: {
+        vshufps(GetDst(Node),
+          GetSrc(Op->Header.Args[0].ID()),
+          GetSrc(Op->Header.Args[1].ID()),
+          0b11'01'11'01);
+        break;
+      }
+      case 8: {
+        vshufpd(GetDst(Node),
+          GetSrc(Op->Header.Args[0].ID()),
+          GetSrc(Op->Header.Args[1].ID()),
+          0b1'1);
+        break;
+      }
+      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    }
+  }
+}
+
+
 DEF_OP(VBSL) {
   auto Op = IROp->C<IR::IROp_VBSL>();
   vpand(xmm0, GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
@@ -1407,6 +1564,61 @@ DEF_OP(VExtractElement) {
   }
 }
 
+DEF_OP(VDupElement) {
+  auto Op = IROp->C<IR::IROp_VDupElement>();
+
+  switch (Op->Header.ElementSize) {
+    case 1: {
+      // First extract the index
+      pextrb(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      // Insert it in to the first element of the destination
+      pinsrb(GetDst(Node), eax, 0);
+      pinsrb(GetDst(Node), eax, 1);
+      // Shuffle low elements
+      vpshuflw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0);
+      // Insert element in to the first upper 64bit element
+      pinsrb(GetDst(Node), eax, 8);
+      pinsrb(GetDst(Node), eax, 9);
+      // Shuffle high elements
+      vpshufhw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0);
+      break;
+    }
+    case 2: {
+      // First extract the index
+      pextrw(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      // Insert it in to the first element of the destination
+      pinsrw(GetDst(Node), eax, 0);
+      // Shuffle low elements
+      vpshuflw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0);
+      // Insert element in to the first upper 64bit element
+      pinsrw(GetDst(Node), eax, 4);
+      // Shuffle high elements
+      vpshufhw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0);
+      break;
+    }
+    case 4: {
+      vpshufd(GetDst(Node),
+        GetSrc(Op->Header.Args[0].ID()),
+        (Op->Index << 0) |
+        (Op->Index << 2) |
+        (Op->Index << 4) |
+        (Op->Index << 6));
+      break;
+    }
+    case 8: {
+      vshufpd(GetDst(Node),
+        GetSrc(Op->Header.Args[0].ID()),
+        GetSrc(Op->Header.Args[0].ID()),
+        (Op->Index << 0) |
+        (Op->Index << 1));
+      break;
+    }
+    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+  }
+}
+
+
+
 DEF_OP(VExtr) {
   auto Op = IROp->C<IR::IROp_VExtr>();
   uint8_t OpSize = IROp->Size;
@@ -1460,14 +1672,36 @@ DEF_OP(VUShrI) {
 
 DEF_OP(VSShrI) {
   auto Op = IROp->C<IR::IROp_VSShrI>();
-  movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+  auto Dest = GetDst(Node);
+  movapd(Dest, GetSrc(Op->Header.Args[0].ID()));
   switch (Op->Header.ElementSize) {
+    case 1: {
+      // This isn't a native instruction on x86
+      uint8_t OpSize = IROp->Size;
+      uint8_t Elements = OpSize / Op->Header.ElementSize;
+      for (int i = 0; i < Elements; ++i) {
+        pextrb(eax, Dest, i);
+        movsx(eax, al);
+        sar(al, Op->BitShift);
+        pinsrb(Dest, eax, i);
+      }
+      break;
+    }
     case 2: {
-      psraw(GetDst(Node), Op->BitShift);
+      psraw(Dest, Op->BitShift);
       break;
     }
     case 4: {
-      psrad(GetDst(Node), Op->BitShift);
+      psrad(Dest, Op->BitShift);
+      break;
+    }
+    case 8: {
+      // This isn't a native instruction on x86
+      for (int i = 0; i < 2; ++i) {
+        pextrq(rax, Dest, i);
+        sar(rax, Op->BitShift);
+        pinsrq(Dest, rax, i);
+      }
       break;
     }
     default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
@@ -1872,6 +2106,27 @@ DEF_OP(VSMull2) {
   }
 }
 
+DEF_OP(VUABDL) {
+  auto Op = IROp->C<IR::IROp_VUABDL>();
+  switch (Op->Header.ElementSize) {
+    case 2: {
+      pmovzxbw(xmm14, GetSrc(Op->Header.Args[0].ID()));
+      pmovzxbw(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      vpsubw(GetDst(Node), xmm14, xmm15);
+      vpabsw(GetDst(Node), GetDst(Node));
+      break;
+    }
+    case 4: {
+      pmovzxwd(xmm14, GetSrc(Op->Header.Args[0].ID()));
+      pmovzxwd(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      vpsubd(GetDst(Node), xmm14, xmm15);
+      vpabsd(GetDst(Node), GetDst(Node));
+      break;
+    }
+    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+  }
+}
+
 DEF_OP(VTBL1) {
   auto Op = IROp->C<IR::IROp_VTBL1>();
   uint8_t OpSize = IROp->Size;
@@ -1901,6 +2156,7 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(SPLATVECTOR4,      SplatVector);
   REGISTER_OP(VMOV,              VMov);
   REGISTER_OP(VAND,              VAnd);
+  REGISTER_OP(VBIC,              VBic);
   REGISTER_OP(VOR,               VOr);
   REGISTER_OP(VXOR,              VXor);
   REGISTER_OP(VADD,              VAdd);
@@ -1911,8 +2167,10 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSQSUB,            VSQSub);
   REGISTER_OP(VADDP,             VAddP);
   REGISTER_OP(VADDV,             VAddV);
+  REGISTER_OP(VUMINV,            VUMinV);
   REGISTER_OP(VURAVG,            VURAvg);
   REGISTER_OP(VABS,              VAbs);
+  REGISTER_OP(VPOPCOUNT,         VPopcount);
   REGISTER_OP(VFADD,             VFAdd);
   REGISTER_OP(VFADDP,            VFAddP);
   REGISTER_OP(VFSUB,             VFSub);
@@ -1932,6 +2190,8 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSMAX,             VSMax);
   REGISTER_OP(VZIP,              VZip);
   REGISTER_OP(VZIP2,             VZip2);
+  REGISTER_OP(VUNZIP,            VUnZip);
+  REGISTER_OP(VUNZIP2,           VUnZip2);
   REGISTER_OP(VBSL,              VBSL);
   REGISTER_OP(VCMPEQ,            VCMPEQ);
   REGISTER_OP(VCMPEQZ,           VCMPEQZ);
@@ -1954,6 +2214,7 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VINSELEMENT,       VInsElement);
   REGISTER_OP(VINSSCALARELEMENT, VInsScalarElement);
   REGISTER_OP(VEXTRACTELEMENT,   VExtractElement);
+  REGISTER_OP(VDUPELEMENT,       VDupElement);
   REGISTER_OP(VEXTR,             VExtr);
   REGISTER_OP(VSLI,              VSLI);
   REGISTER_OP(VSRI,              VSRI);
@@ -1977,6 +2238,7 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSMULL,            VSMull);
   REGISTER_OP(VUMULL2,           VUMull2);
   REGISTER_OP(VSMULL2,           VSMull2);
+  REGISTER_OP(VUABDL,            VUABDL);
   REGISTER_OP(VTBL1,             VTBL1);
 #undef REGISTER_OP
 }
