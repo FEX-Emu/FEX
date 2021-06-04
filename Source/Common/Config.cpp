@@ -166,13 +166,13 @@ namespace FEX::Config {
   }
 
   MainLoader::MainLoader()
-    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN) {
-    Config = FEXCore::Config::GetConfigFileLocation();
+    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
+    , Config{FEXCore::Config::GetConfigFileLocation()} {
   }
 
   MainLoader::MainLoader(std::string ConfigFile)
-    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN) {
-    Config = ConfigFile;
+    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
+    , Config{std::move(ConfigFile)} {
   }
 
   void MainLoader::Load() {
