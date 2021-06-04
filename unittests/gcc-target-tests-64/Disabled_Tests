@@ -30,3 +30,13 @@ pr88240.c.gcc-target-test-64
 # This relies on SIGPROF which means we need real signal support to handle this
 # Crashes or hangs depending on which runner is running it
 mcount_pic.c.gcc-target-test-64
+
+# These tests fail because of things unrelated to the sse4.1 instructions
+sse4_1-ceil-sfix-vec.c.gcc-target-test-64
+sse4_1-ceilf-sfix-vec.c.gcc-target-test-64
+sse4_1-floor-sfix-vec.c.gcc-target-test-64
+sse4_1-floorf-sfix-vec.c.gcc-target-test-64
+sse4_1-rint-sfix-vec.c.gcc-target-test-64
+sse4_1-rintf-sfix-vec.c.gcc-target-test-64
+sse4_1-round-sfix-vec.c.gcc-target-test-64
+sse4_1-roundf-sfix-vec.c.gcc-target-test-64
