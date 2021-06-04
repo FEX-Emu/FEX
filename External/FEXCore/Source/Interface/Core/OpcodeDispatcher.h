@@ -456,6 +456,23 @@ public:
   void AESDecLastOp(OpcodeArgs);
   void AESKeyGenAssist(OpcodeArgs);
 
+  template<size_t ElementSize, size_t DstElementSize, bool Signed>
+  void ExtendVectorElements(OpcodeArgs);
+  template<size_t ElementSize, bool Scalar>
+  void VectorRound(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void VectorBlend(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void VectorVariableBlend(OpcodeArgs);
+  void PTestOp(OpcodeArgs);
+  void PHMINPOSUWOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void DPPOp(OpcodeArgs);
+
+  void MPSADBWOp(OpcodeArgs);
+
   void UnimplementedOp(OpcodeArgs);
 
 #undef OpcodeArgs
