@@ -137,14 +137,14 @@ namespace Type {
       typename std::enable_if<!std::is_same<TT, std::string>::value, int>::type = 0>
     Value(FEXCore::Config::ConfigOption _Option, T Default)
       : Option {_Option} {
-      ValueData = FEXCore::Config::Value<T>::GetIfExists(Option, Default);
+      ValueData = GetIfExists(Option, Default);
     }
 
     template <typename TT = T,
       typename std::enable_if<std::is_same<TT, std::string>::value, int>::type = 0>
     Value(FEXCore::Config::ConfigOption _Option, T Default)
       : Option {_Option} {
-      ValueData = FEXCore::Config::Value<T>::GetIfExists(Option, Default);
+      ValueData = GetIfExists(Option, Default);
       GetListIfExists(Option, &AppendList);
     }
 
@@ -156,7 +156,7 @@ namespace Type {
         ERROR_AND_DIE("FEXCore::Config::Value has no value");
       }
 
-      ValueData = FEXCore::Config::Value<T>::Get(Option);
+      ValueData = Get(Option);
     }
 
     template <typename TT = T,
@@ -167,7 +167,7 @@ namespace Type {
         ERROR_AND_DIE("FEXCore::Config::Value has no value");
       }
 
-      ValueData = FEXCore::Config::Value<T>::GetIfExists(Option);
+      ValueData = GetIfExists(Option);
       GetListIfExists(Option, &AppendList);
     }
 
