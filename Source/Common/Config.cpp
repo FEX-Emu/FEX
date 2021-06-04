@@ -123,7 +123,7 @@ namespace FEX::Config {
 #include <FEXCore/Config/ConfigValues.inl>
   }};
 
-  static const std::map<std::string, FEXCore::Config::ConfigOption> ConfigLookup = {{
+  static const std::map<std::string, FEXCore::Config::ConfigOption, std::less<>> ConfigLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
