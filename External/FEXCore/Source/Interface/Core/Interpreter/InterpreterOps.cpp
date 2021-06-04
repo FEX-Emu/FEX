@@ -4340,6 +4340,10 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
 
             uint64_t Offset = Op->Index * Op->Header.ElementSize * 8;
             __uint128_t Mask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
+            if (Op->Header.ElementSize == 8) {
+              Mask = ~0ULL;
+            }
+            Src2 = Src2 & Mask;
             Mask <<= Offset;
             Mask = ~Mask;
             __uint128_t Dst = Src1 & Mask;
