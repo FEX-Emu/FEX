@@ -22,7 +22,9 @@
 #include <optional>
 #include <ostream>
 #include <set>
+#include <shared_mutex>
 #include <unordered_map>
+#include <queue>
 
 namespace FEXCore {
 class ThunkHandler;
@@ -265,6 +267,14 @@ namespace FEXCore::Context {
     uint64_t StartingRIP;
     std::mutex ExitMutex;
     std::unique_ptr<GdbServer> DebugServer;
+
+    std::shared_mutex AOTIRCacheLock;
+    std::shared_mutex AOTIRCaptureCacheWriteoutLock;
+    std::atomic<bool> AOTIRCaptureCacheWriteoutFlusing;
+
+    std::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
+    void AOTIRCaptureCacheWriteoutQueue_Flush();
+    void AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn);
 
     bool StartPaused = false;
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
