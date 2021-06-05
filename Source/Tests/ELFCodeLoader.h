@@ -285,7 +285,7 @@ public:
     return DB.DefaultRIP();
   }
 
-  bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override {
+  bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) override {
     auto DoMMap = [Mapper](uint64_t Address, size_t Size, bool FixedNoReplace) -> void* {
       void *Result = Mapper(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, (FixedNoReplace ? MAP_FIXED_NOREPLACE : MAP_FIXED) | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
       LOGMAN_THROW_A(Result != (void*)~0ULL, "Couldn't mmap");

@@ -16,6 +16,10 @@ class IREmitter;
 */
 class CodeLoader {
 public:
+  using MapperFn = std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)>;
+  using UnmapperFn = std::function<int(void *addr, size_t length)>;
+
+  virtual ~CodeLoader() = default;
 
   /**
    * @brief CPU Core uses this to choose what the stack size should be for this code
@@ -35,7 +39,7 @@ public:
   /**
    * @brief Maps and copies the executable, also sets up stack
    */
-  virtual bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) { return false; }
+  virtual bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) { return false; }
 
   virtual std::vector<std::string> const *GetApplicationArguments() { return nullptr; }
   virtual void GetExecveArguments(std::vector<char const*> *Args) {}
