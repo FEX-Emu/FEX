@@ -19,6 +19,8 @@ public:
   using MapperFn = std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)>;
   using UnmapperFn = std::function<int(void *addr, size_t length)>;
 
+  virtual ~CodeLoader() = default;
+
   /**
    * @brief CPU Core uses this to choose what the stack size should be for this code
    */
