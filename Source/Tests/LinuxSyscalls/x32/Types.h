@@ -48,7 +48,9 @@ public:
   compat_ptr(uint32_t In) : Ptr {In} {}
   compat_ptr(T *In) : Ptr {static_cast<uint32_t>(reinterpret_cast<uintptr_t>(In))} {}
 
-  T operator*() const {
+  template<typename T2 = T,
+    typename = std::enable_if<!std::is_same<T2, void>::value, T2>>
+  T2& operator*() const {
     return *Interpret();
   }
 
