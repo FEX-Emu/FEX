@@ -29,14 +29,14 @@ public:
 };
 
 template<typename T>
-uint64_t getMask(T Op) {
+static uint64_t getMask(T Op) {
   uint64_t NumBits = Op->Header.Size * 8;
   return (~0ULL) >> (64 - NumBits);
 }
 
 
 template<>
-uint64_t getMask(IROp_Header* Op) {
+static uint64_t getMask(IROp_Header* Op) {
   uint64_t NumBits = Op->Size * 8;
   return (~0ULL) >> (64 - NumBits);
 }
@@ -69,8 +69,7 @@ static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
   }
 }
 
-std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t AccessSize,  IROp_Header* AddressHeader) {
-
+static std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddressing(IREmitter *IREmit, uint8_t AccessSize,  IROp_Header* AddressHeader) {
   auto Src0Header = IREmit->GetOpHeader(AddressHeader->Args[0]);
   if (Src0Header->Size == 8) {
     //Try to optimize: Base + MUL(Offset, Scale)
@@ -124,7 +123,7 @@ std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtendedAddres
   return { MEM_OFFSET_SXTX, 1, IREmit->UnwrapNode(AddressHeader->Args[0]), IREmit->UnwrapNode(AddressHeader->Args[1]) };
 }
 
-OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t mask) {
+static OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t mask) {
   #if 1 // HOTFIX: We need to clear up the meaning of opsize and dest size. See #594
     return src;
   #else
@@ -151,7 +150,7 @@ OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper sr
   #endif
 }
 
-bool IsBfeAlreadyDone(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t Width) {
+static bool IsBfeAlreadyDone(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t Width) {
   auto IROp = IREmit->GetOpHeader(src);
   if (IROp->Op == OP_BFE) {
     auto Op = IROp->C<IR::IROp_Bfe>();
