@@ -327,7 +327,7 @@ class IRParser: public FEXCore::IR::IREmitter {
 
 
   bool Parse() {
-    auto CheckPrintError = [&](LineDefinition &Def, DecodeFailure Failure) -> bool {
+    const auto CheckPrintError = [&](const LineDefinition &Def, DecodeFailure Failure) -> bool {
       if (Failure != DecodeFailure::DECODE_OKAY) {
         LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
         LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
