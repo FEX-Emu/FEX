@@ -455,12 +455,10 @@ class IRParser: public FEXCore::IR::IREmitter {
         }
         else {
           while (!RemainingLine.empty()) {
-            size_t ArgEnd = std::string::npos;
-            ArgEnd = RemainingLine.find_first_of(",");
+            const size_t ArgEnd = RemainingLine.find(',');
+            std::string Arg = trim(RemainingLine.substr(0, ArgEnd));
 
-            std::string Arg = RemainingLine.substr(0, ArgEnd);
-            Arg = trim(Arg);
-            Def.Args.emplace_back(Arg);
+            Def.Args.emplace_back(std::move(Arg));
 
             RemainingLine.erase(0, ArgEnd+1); // +1 to ensure we go past the ','
             if (ArgEnd == std::string::npos)
@@ -469,8 +467,8 @@ class IRParser: public FEXCore::IR::IREmitter {
         }
       }
 
-      Defs.emplace_back(Def);
-		}
+      CurrentDef = &Defs.emplace_back(std::move(Def));
+    }
 
     // Ensure all of the ops are real ops
     for(size_t i = 0; i < Defs.size(); ++i) {
