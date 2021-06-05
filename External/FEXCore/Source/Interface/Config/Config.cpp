@@ -83,7 +83,7 @@ namespace FEXCore::Config {
     return ConfigFile;
   }
 
-  std::string GetApplicationConfig(std::string &Filename, bool Global) {
+  std::string GetApplicationConfig(const std::string &Filename, bool Global) {
     std::string ConfigFile = GetConfigDirectory(Global);
     if (!Global &&
         !std::filesystem::exists(ConfigFile) &&

@@ -17,7 +17,7 @@
 #include <json-maker.h>
 
 namespace FEX::Config {
-  bool LoadConfigFile(std::vector<char> &Data, std::string Config) {
+  static bool LoadConfigFile(std::vector<char> &Data, const std::string &Config) {
     std::fstream ConfigFile;
     ConfigFile.open(Config, std::ios::in);
 
@@ -72,7 +72,7 @@ namespace FEX::Config {
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
-  void LoadJSonConfig(std::string &Config, std::function<void(const char *Name, const char *ConfigSring)> Func) {
+  static void LoadJSonConfig(const std::string &Config, std::function<void(const char *Name, const char *ConfigSring)> Func) {
     std::vector<char> Data;
     if (!LoadConfigFile(Data, Config)) {
       return;
@@ -123,7 +123,7 @@ namespace FEX::Config {
 #include <FEXCore/Config/ConfigValues.inl>
   }};
 
-  static const std::map<std::string, FEXCore::Config::ConfigOption> ConfigLookup = {{
+  static const std::map<std::string, FEXCore::Config::ConfigOption, std::less<>> ConfigLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
@@ -132,7 +132,7 @@ namespace FEX::Config {
 #include <FEXCore/Config/ConfigValues.inl>
   }};
 
-  void SaveLayerToJSON(std::string Filename, FEXCore::Config::Layer *const Layer) {
+  void SaveLayerToJSON(const std::string& Filename, FEXCore::Config::Layer *const Layer) {
     char Buffer[4096];
     char *Dest{};
     Dest = json_objOpen(Buffer, nullptr);
@@ -166,13 +166,13 @@ namespace FEX::Config {
   }
 
   MainLoader::MainLoader()
-    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN) {
-    Config = FEXCore::Config::GetConfigFileLocation();
+    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
+    , Config{FEXCore::Config::GetConfigFileLocation()} {
   }
 
   MainLoader::MainLoader(std::string ConfigFile)
-    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN) {
-    Config = ConfigFile;
+    : FEX::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
+    , Config{std::move(ConfigFile)} {
   }
 
   void MainLoader::Load() {
@@ -181,7 +181,7 @@ namespace FEX::Config {
     });
   }
 
-  AppLoader::AppLoader(std::string Filename, bool Global)
+  AppLoader::AppLoader(const std::string& Filename, bool Global)
     : FEX::Config::OptionMapper(Global ? FEXCore::Config::LayerType::LAYER_GLOBAL_APP : FEXCore::Config::LayerType::LAYER_LOCAL_APP) {
     Config = FEXCore::Config::GetApplicationConfig(Filename, Global);
 
