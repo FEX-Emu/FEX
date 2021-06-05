@@ -17,13 +17,15 @@ $end_info$
 #include "Common/SoftFloat.h"
 #include <FEXCore/Utils/LogManager.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <string.h>
+#include <cstring>
 #include <fcntl.h>
-#include <unistd.h>
+#include <fmt/format.h>
 #include <fstream>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 
 #include "GdbServer.h"
 #include <FEXCore/Core/CodeLoader.h>
@@ -34,12 +36,12 @@ namespace FEXCore
 
 void GdbServer::Break(int signal) {
     std::lock_guard lk(sendMutex);
+    if (!CommsStream) {
+      return;
+    }
 
-    std::ostringstream ss;
-    ss << "S" << std::setfill('0') << std::setw(2) << std::hex << signal;
-
-    if (CommsStream)
-        SendPacket(*CommsStream, ss.str());
+    const auto str = fmt::format("S{:02x}", signal);
+    SendPacket(*CommsStream, str);
 }
 
 GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
@@ -65,7 +67,7 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
     StartThread();
 }
 
-static int calculateChecksum(std::string &packet) {
+static int calculateChecksum(const std::string &packet) {
     unsigned char checksum = 0;
     for (const char &c : packet) {
         checksum += c;
@@ -99,11 +101,9 @@ static std::string encodeHex(unsigned char *data, size_t length) {
 }
 
 static std::string getThreadName(uint32_t ThreadID) {
-  std::fstream fs;
-  std::ostringstream ThreadFile;
-  ThreadFile << "/proc/" << getpid() << "/task/" << ThreadID << "/comm";
+  const auto ThreadFile = fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
+  std::fstream fs(ThreadFile, std::fstream::in | std::fstream::binary);
 
-  fs.open(ThreadFile.str(), std::fstream::in | std::fstream::binary);
   if (fs.is_open()) {
     std::string ThreadName;
     fs >> ThreadName;
@@ -135,7 +135,7 @@ std::string GdbServer::ReadPacket(std::iostream &stream) {
         switch(c) {
         case '$': // start of packet
             if (packet.size() != 0)
-                LogMan::Msg::E("Dropping unexpected data: \"%s\"", packet.c_str());
+                LogMan::Msg::EFmt("Dropping unexpected data: \"{}\"", packet);
 
             // clear any existing data, must have been a mistake.
             packet = std::string();
@@ -156,7 +156,7 @@ std::string GdbServer::ReadPacket(std::iostream &stream) {
             if (calculateChecksum(packet) == expected_checksum) {
                 return packet;
             } else {
-                LogMan::Msg::E("Received Invalid Packet: $%s#%02x %c%c", packet.c_str(), expected_checksum);
+                LogMan::Msg::EFmt("Received Invalid Packet: ${}#{:02x}", packet, expected_checksum);
             }
             break;
         }
@@ -169,10 +169,10 @@ std::string GdbServer::ReadPacket(std::iostream &stream) {
     return "";
 }
 
-static std::string escapePacket(std::string packet) {
+static std::string escapePacket(const std::string& packet) {
     std::ostringstream ss;
 
-    for(auto &c : packet) {
+    for(const auto &c : packet) {
         switch (c) {
         case '$':
         case '#':
@@ -191,13 +191,11 @@ static std::string escapePacket(std::string packet) {
     return ss.str();
 }
 
-void GdbServer::SendPacket(std::ostream &stream, std::string packet) {
-  auto escaped = escapePacket(packet);
-  std::ostringstream ss;
+void GdbServer::SendPacket(std::ostream &stream, const std::string& packet) {
+  const auto escaped = escapePacket(packet);
+  const auto str = fmt::format("${}#{:02x}", escaped, calculateChecksum(escaped));
 
-  ss << '$' << escaped << '#';
-  ss << std::setfill('0') << std::setw(2) << std::hex << (int)calculateChecksum(escaped);
-  stream << ss.str() << std::flush;
+  stream << str << std::flush;
 }
 
 void GdbServer::SendACK(std::ostream &stream, bool NACK) {
@@ -279,7 +277,7 @@ std::string GdbServer::readRegs() {
   return encodeHex((unsigned char *)&GDB, sizeof(GDBContextDefinition));
 }
 
-GdbServer::HandledPacketType GdbServer::readReg(std::string& packet) {
+GdbServer::HandledPacketType GdbServer::readReg(const std::string& packet) {
 	size_t addr;
 	auto ss = std::istringstream(packet);
 	ss.get(); // Drop first letter
@@ -357,7 +355,7 @@ GdbServer::HandledPacketType GdbServer::readReg(std::string& packet) {
     return {encodeHex((unsigned char *)(&Empty), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
   }
 
-  LogMan::Msg::E("Unknown GDB register 0x%lx", addr);
+  LogMan::Msg::EFmt("Unknown GDB register 0x{:x}", addr);
   return {"E00", HandledPacketType::TYPE_ACK};
 }
 
@@ -462,7 +460,7 @@ std::string buildTargetXML() {
     return xml.str();
 }
 
-GdbServer::HandledPacketType GdbServer::handleXfer(std::string &packet) {
+GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
     std::string object;
     std::string rw;
     std::string annex;
@@ -548,10 +546,9 @@ GdbServer::HandledPacketType GdbServer::handleXfer(std::string &packet) {
 
 static size_t CheckMemMapping(uint64_t Address, size_t Size) {
   uint64_t AddressEnd = Address + Size;
-
-  std::fstream fs;
-  fs.open("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
   std::string Line;
+
   while (std::getline(fs, Line)) {
     if (fs.eof()) break;
     uint64_t Begin, End;
@@ -568,32 +565,29 @@ static size_t CheckMemMapping(uint64_t Address, size_t Size) {
     }
   }
 
-  fs.close();
   return 0;
 }
 
 GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
-  std::fstream fs;
-  fs.open("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
   std::string Line;
   std::string const &RuntimeExecutable = Filename();
+
   while (std::getline(fs, Line)) {
     uint64_t Begin, End;
     char Filename[255];
     if (sscanf(Line.c_str(), "%lx-%lx %*c%*c%*c%*c %*x %*x:%*x %*d%s", &Begin, &End, Filename) == 3) {
       if (RuntimeExecutable == Filename) {
-        std::ostringstream ss;
-        ss << "Text=" << std::hex << Begin << ";Data=" << std::hex << Begin << ";Bss=" << std::hex << Begin;
-        ss << std::flush;
-        return {ss.str(), HandledPacketType::TYPE_ACK};
+        auto str = fmt::format("Text={:x};Data={:x};Bss={:x}", Begin, Begin, Begin);
+        return {std::move(str), HandledPacketType::TYPE_ACK};
       }
     }
   }
-  fs.close();
+
   return {"Text=0;Data=0;Bss=0", HandledPacketType::TYPE_ACK};
 }
 
-GdbServer::HandledPacketType GdbServer::handleMemory(std::string &packet) {
+GdbServer::HandledPacketType GdbServer::handleMemory(const std::string &packet) {
     bool write;
     size_t addr;
     size_t length;
@@ -634,8 +628,8 @@ GdbServer::HandledPacketType GdbServer::handleMemory(std::string &packet) {
 }
 
 
-GdbServer::HandledPacketType GdbServer::handleQuery(std::string &packet) {
-  auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
+GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
+  const auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
 
   if (match("qSupported")) {
     return {"PacketSize=5000;xmlRegisters=i386;qXfer:exec-file:read+;qXfer:features:read+;", HandledPacketType::TYPE_ACK};
@@ -693,8 +687,8 @@ GdbServer::HandledPacketType GdbServer::handleQuery(std::string &packet) {
   return {"", HandledPacketType::TYPE_UNKNOWN};
 }
 
-GdbServer::HandledPacketType GdbServer::handleV(std::string& packet) {
-    auto match = [&](std::string str) -> std::optional<std::istringstream> {
+GdbServer::HandledPacketType GdbServer::handleV(const std::string& packet) {
+    const auto match = [&](const std::string& str) -> std::optional<std::istringstream> {
         if (packet.rfind(str, 0) == 0) {
             auto ss = std::istringstream(packet);
             ss.seekg(str.size());
@@ -703,18 +697,11 @@ GdbServer::HandledPacketType GdbServer::handleV(std::string& packet) {
         return std::nullopt;
     };
 
-    auto F = [](int result) {
-        std::ostringstream ss;
-        ss << "F" << std::hex << result;
-        return ss.str(); };
-    auto F_error = [&]() {
-        std::ostringstream ss;
-        ss << "F-1," << std::hex << errno;
-        return ss.str(); };
-    auto F_data = [&](int result, std::string data) {
-        std::ostringstream ss;
-        ss << "F" << std::hex << result << ";" << data;
-        return ss.str(); };
+    const auto F       = [](int result) { return fmt::format("F{:x}", result); };
+    const auto F_error = [] { return fmt::format("F-1,{:x}", errno); };
+    const auto F_data  = [](int result, const std::string& data) {
+        return fmt::format("F{:x};{}", result, data);
+    };
 
     std::optional<std::istringstream> ss;
     if((ss = match("vFile:open:"))) {
@@ -736,11 +723,11 @@ GdbServer::HandledPacketType GdbServer::handleV(std::string& packet) {
         return {F(pid == 0 ? 0 : -1), HandledPacketType::TYPE_ACK}; // Only support the common filesystem
     }
     if((ss = match("vFile:close:"))) {
-			int fd;
-			*ss >> std::hex >> fd;
-			close(fd);
-			return {F(0), HandledPacketType::TYPE_ACK};
-		}
+      int fd;
+      *ss >> std::hex >> fd;
+      close(fd);
+      return {F(0), HandledPacketType::TYPE_ACK};
+    }
     if((ss = match("vFile:pread:"))) {
         int fd, count, offset;
 
@@ -777,7 +764,7 @@ GdbServer::HandledPacketType GdbServer::handleV(std::string& packet) {
         }
 
         if (ss->fail()) {
- 						return {"E00", HandledPacketType::TYPE_ACK};
+            return {"E00", HandledPacketType::TYPE_ACK};
         }
 
         switch (action) {
@@ -787,27 +774,25 @@ GdbServer::HandledPacketType GdbServer::handleV(std::string& packet) {
           }
         case 's': {
             CTX->Step();
-						SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
-            std::ostringstream ss;
-            ss << "T05thread:" << std::setfill('0') << std::setw(2) << std::hex << getpid() << ";core:2c;";
-
-            SendPacketPair({ss.str(), HandledPacketType::TYPE_ACK});
+            SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
+            auto str = fmt::format("T05thread:{:02x};core:2c;", getpid());
+            SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
             return {"OK", HandledPacketType::TYPE_ACK};
           }
         case 't':
             // This thread isn't part of the thread pool
             CTX->Stop(false /* Ignore current thread */);
- 						return {"OK", HandledPacketType::TYPE_ACK};
+            return {"OK", HandledPacketType::TYPE_ACK};
         default:
- 						return {"E00", HandledPacketType::TYPE_ACK};
+            return {"E00", HandledPacketType::TYPE_ACK};
         }
 
     }
-		return {"", HandledPacketType::TYPE_ACK};
+    return {"", HandledPacketType::TYPE_ACK};
 }
 
-GdbServer::HandledPacketType GdbServer::handleThreadOp(std::string &packet) {
-  auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
+GdbServer::HandledPacketType GdbServer::handleThreadOp(const std::string &packet) {
+  const auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
 
   if (match("Hc")) {
     // Sets thread to this ID for stepping
@@ -823,7 +808,7 @@ GdbServer::HandledPacketType GdbServer::handleThreadOp(std::string &packet) {
   if (match("Hg")) {
     // Sets thread for "other" operations
     auto ss = std::istringstream(packet);
-    ss.seekg(std::string("Hg").size());
+    ss.seekg(std::string_view("Hg").size());
     ss >> std::hex >> CurrentDebuggingThread;
 
     // This must return quick otherwise IDA complains
@@ -834,7 +819,7 @@ GdbServer::HandledPacketType GdbServer::handleThreadOp(std::string &packet) {
   return {"", HandledPacketType::TYPE_UNKNOWN};
 }
 
-GdbServer::HandledPacketType GdbServer::handleBreakpoint(std::string &packet) {
+GdbServer::HandledPacketType GdbServer::handleBreakpoint(const std::string &packet) {
   auto ss = std::istringstream(packet);
 
   bool Set{};
@@ -850,17 +835,15 @@ GdbServer::HandledPacketType GdbServer::handleBreakpoint(std::string &packet) {
   return {"OK", HandledPacketType::TYPE_ACK};
 }
 
-GdbServer::HandledPacketType GdbServer::ProcessPacket(std::string &packet) {
+GdbServer::HandledPacketType GdbServer::ProcessPacket(const std::string &packet) {
   switch (packet[0]) {
     case '?': {
       // Indicates the reason that the thread has stopped
       // Behaviour changes if the target is in non-stop mode
       // Binja doesn't support S response here
       //return {"S00", HandledPacketType::TYPE_ACK};
-      std::ostringstream ss;
-      ss << "T00thread:" << std::setfill('0') << std::setw(2) << std::hex << getpid() << ";core:2c;";
-
-      return {ss.str(), HandledPacketType::TYPE_ACK};
+      auto str = fmt::format("T00thread:{:02x};core:2c;", getpid());
+      return {std::move(str), HandledPacketType::TYPE_ACK};
     }
     case 'g':
       return {readRegs(), HandledPacketType::TYPE_ACK};
@@ -890,14 +873,14 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(std::string &packet) {
   }
 }
 
-void GdbServer::SendPacketPair(HandledPacketType response) {
+void GdbServer::SendPacketPair(const HandledPacketType& response) {
   std::lock_guard lk(sendMutex);
   if (response.TypeResponse == HandledPacketType::TYPE_ACK ||
       response.TypeResponse == HandledPacketType::TYPE_ONLYACK) {
     SendACK(*CommsStream, false);
   }
   else if (response.TypeResponse == HandledPacketType::TYPE_NACK ||
-      response.TypeResponse == HandledPacketType::TYPE_ONLYNACK) {
+           response.TypeResponse == HandledPacketType::TYPE_ONLYNACK) {
     SendACK(*CommsStream, true);
   }
 
@@ -905,8 +888,8 @@ void GdbServer::SendPacketPair(HandledPacketType response) {
     SendPacket(*CommsStream, "");
   }
   else if (response.TypeResponse != HandledPacketType::TYPE_ONLYNACK &&
-      response.TypeResponse != HandledPacketType::TYPE_ONLYACK &&
-      response.TypeResponse != HandledPacketType::TYPE_NONE) {
+           response.TypeResponse != HandledPacketType::TYPE_ONLYACK &&
+           response.TypeResponse != HandledPacketType::TYPE_NONE) {
     SendPacket(*CommsStream, response.Response);
   }
 }
@@ -927,7 +910,7 @@ void GdbServer::GdbServerLoop() {
             response = ProcessPacket(packet);
             SendPacketPair(response);
             if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
-              LogMan::Msg::D("Unknown packet %s", packet.c_str());
+              LogMan::Msg::DFmt("Unknown packet {}", packet);
             }
             break;
         }
@@ -943,13 +926,12 @@ void GdbServer::GdbServerLoop() {
             break;
         case '\x03': { // ASCII EOT
             CTX->Pause();
-            std::ostringstream ss;
-            ss << "T02thread:" << std::setfill('0') << std::setw(2) << std::hex << getpid() << ";core:2c;";
-            SendPacketPair({ss.str(), HandledPacketType::TYPE_ACK});
+            auto str = fmt::format("T02thread:{:02x};core:2c;", getpid());
+            SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
             break;
           }
         default:
-            LogMan::Msg::D("GdbServer: Unexpected byte %c (%02x)", c, c);
+            LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", static_cast<char>(c), c);
         }
     }
 
@@ -1003,7 +985,7 @@ std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
 
     // Block until a connection arrives
 
-    LogMan::Msg::I("GdbServer, waiting for connection on localhost:8086");
+    LogMan::Msg::IFmt("GdbServer, waiting for connection on localhost:8086");
     listen(sockfd, 1);
 
     new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
