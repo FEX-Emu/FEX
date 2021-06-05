@@ -59,6 +59,7 @@ add_library(LinuxEmulation STATIC
 
 target_link_libraries(LinuxEmulation FEXCore pthread numa)
 target_include_directories(LinuxEmulation PRIVATE ${CMAKE_BINARY_DIR}/generated)
+target_include_directories(LinuxEmulation PRIVATE ${PROJECT_SOURCE_DIR}/External/drm-headers/include/)
 
 set(HEADERS_TO_VERIFY
   x32/Types.h x86_32 # This needs to match structs to 32bit structs

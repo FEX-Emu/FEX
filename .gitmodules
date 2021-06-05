@@ -36,3 +36,6 @@
 [submodule "External/fmt"]
 	path = External/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "External/drm-headers"]
+	path = External/drm-headers
+	url = https://github.com/FEX-Emu/drm-headers.git
