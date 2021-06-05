@@ -6,7 +6,9 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
+
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 
 #include <fcntl.h>
 #include <sys/time.h>
@@ -16,7 +18,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x64 {
-  struct __attribute__((packed)) guest_stat {
+  struct FEX_PACKED guest_stat {
     __kernel_ulong_t  st_dev;
     __kernel_ulong_t  st_ino;
     __kernel_ulong_t  st_nlink;

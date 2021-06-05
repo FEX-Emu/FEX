@@ -6,7 +6,10 @@ $end_info$
 */
 
 #pragma once
-#include <stdint.h>
+
+#include <FEXCore/Utils/CompilerDefs.h>
+
+#include <cstdint>
 #include <string>
 
 namespace FEXCore {
@@ -85,8 +88,8 @@ class LLVMCore;
     virtual void ClearCache() {}
     virtual void CopyNecessaryDataForCompileThread(CPUBackend *Original) {}
 
-    using AsmDispatch = __attribute__((naked)) void(*)(FEXCore::Core::CpuStateFrame *Frame);
-    using JITCallback = __attribute__((naked)) void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
+    using AsmDispatch = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame);
+    using JITCallback = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
 
     JITCallback CallbackPtr{};
   protected:

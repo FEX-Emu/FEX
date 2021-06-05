@@ -266,7 +266,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
   {
     ReturnPtr = getCurr<FEXCore::Context::Context::IntCallbackReturn>();
-//  using CallbackReturn =  __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
+//  using CallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
 
     // rdi = thread
     // rsi = rsp

@@ -15,6 +15,8 @@ $end_info$
 #include <optional>
 #include "Common/NetStream.h"
 #include "Common/SoftFloat.h"
+
+#include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstring>
@@ -216,7 +218,7 @@ void GdbServer::SendACK(std::ostream &stream, bool NACK) {
   }
 }
 
-struct __attribute__((packed)) GDBContextDefinition {
+struct FEX_PACKED GDBContextDefinition {
   uint64_t gregs[16];
   uint64_t rip;
   uint32_t eflags;

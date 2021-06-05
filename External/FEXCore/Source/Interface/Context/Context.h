@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Common/JitSymbols.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
@@ -9,6 +10,7 @@
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
 #include <stdint.h>
 
@@ -120,7 +122,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(DumpIR, DUMPIR);
     } Config;
 
-    using IntCallbackReturn =  __attribute__((naked)) void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
+    using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
     IntCallbackReturn InterpreterCallbackReturn;
 
     FEXCore::HostFeatures HostFeatures;

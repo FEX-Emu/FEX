@@ -13,6 +13,7 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -240,7 +241,7 @@ struct FunctionToLambda<R(*)(Args...) noexcept> {
 	}
 };
 
-struct __attribute__((packed)) epoll_event_x86 {
+struct FEX_PACKED epoll_event_x86 {
   uint32_t events;
   epoll_data_t data;
 

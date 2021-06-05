@@ -1,4 +1,7 @@
 #pragma once
+
+#include <FEXCore/Utils/CompilerDefs.h>
+
 #include <cstdint>
 #include <functional>
 #include <signal.h>
@@ -7,11 +10,11 @@ namespace FEXCore {
 namespace Core {
   struct InternalThreadState;
 }
-  struct __attribute__((packed)) GuestSAMask {
+  struct FEX_PACKED GuestSAMask {
     uint64_t Val;
   };
 
-  struct __attribute__((packed)) GuestSigAction {
+  struct FEX_PACKED GuestSigAction {
     union {
       void (*handler)(int);
       void (*sigaction)(int, siginfo_t *, void*);

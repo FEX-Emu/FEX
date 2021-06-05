@@ -1,0 +1,21 @@
+#pragma once
+
+// Contains general abstractions related to compilers used to build FEX.
+
+// Specifies the minimum alignment for a variable or structure field, measured in bytes.
+#define FEX_ALIGNED(alignment) __attribute__((aligned(alignment)))
+
+// Allows annotating declarations with extra information.
+#define FEX_ANNOTATE(annotation_str) __attribute__((annotate(annotation_str)))
+
+// Makes the attributed entity have the default DSO visibility level.
+// Compiler options can affect the visibility of symbols. This attribute
+// overrides said changes. This gives entities external linkage.
+#define FEX_DEFAULT_VISIBILITY __attribute__((visibility("default")))
+
+// Indicates that the specified function doesn't need a function prologue/epilogue.
+// emitted for it by the compiler.
+#define FEX_NAKED __attribute__((naked))
+
+// Specifies that a structure member or structure itself should have the smallest possible alignment.
+#define FEX_PACKED __attribute__((packed))

@@ -1,8 +1,8 @@
 #pragma once
+
 #include "Common/Config.h"
 #include "Common/MathUtils.h"
 
-#include <FEXCore/Core/CodeLoader.h>
 #include <array>
 #include <bitset>
 #include <cassert>
@@ -10,13 +10,15 @@
 #include <fstream>
 #include <sys/mman.h>
 #include <vector>
+
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/Allocator.h>
-#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/ELFSymbolDatabase.h>
+#include <FEXCore/Utils/LogManager.h>
 
 namespace FEX::HarnessHelper {
   inline bool CompareStates(FEXCore::Core::CPUState const& State1,
@@ -306,24 +308,24 @@ namespace FEX::HarnessHelper {
       uint32_t OptionMemDataOffset;
       uint32_t OptionMemDataCount;
       uint8_t  AdditionalData[];
-    }__attribute__((packed));
+    } FEX_PACKED;
 
     struct MemoryRegionBase {
       uint64_t Region;
       uint64_t Size;
-    } __attribute__((packed));
+    } FEX_PACKED;
 
     struct RegDataStructBase {
       uint32_t RegDataCount;
       uint64_t RegKey;
       uint64_t RegValues[];
-    } __attribute__((packed));
+    } FEX_PACKED;
 
     struct MemDataStructBase {
       uint64_t address;
       uint32_t length;
       uint8_t data[];
-    } __attribute__((packed));
+    } FEX_PACKED;
 
     std::vector<char> RawConfigFile;
     ConfigStructBase BaseConfig;

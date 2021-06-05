@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FEXCore/Utils/CompilerDefs.h>
+
 #include <functional>
 #include <cstdarg>
 #include <sstream>
@@ -21,8 +23,8 @@ constexpr DebugLevels MSG_LEVEL = INFO;
 
 namespace Throw {
 using ThrowHandler = void(*)(char const *Message);
-__attribute__((visibility("default"))) void InstallHandler(ThrowHandler Handler);
-__attribute__((visibility("default"))) void UnInstallHandlers();
+FEX_DEFAULT_VISIBILITY void InstallHandler(ThrowHandler Handler);
+FEX_DEFAULT_VISIBILITY void UnInstallHandlers();
 
 [[noreturn]] void M(const char *fmt, va_list args);
 
@@ -63,10 +65,10 @@ static inline void AFmt(bool, const char*, ...) {}
 
 namespace Msg {
 using MsgHandler = void(*)(DebugLevels Level, char const *Message);
-__attribute__((visibility("default"))) void InstallHandler(MsgHandler Handler);
-__attribute__((visibility("default"))) void UnInstallHandlers();
+FEX_DEFAULT_VISIBILITY void InstallHandler(MsgHandler Handler);
+FEX_DEFAULT_VISIBILITY void UnInstallHandlers();
 
-__attribute__((visibility("default"))) void M(DebugLevels Level, const char *fmt, va_list args);
+FEX_DEFAULT_VISIBILITY void M(DebugLevels Level, const char *fmt, va_list args);
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
 static inline void A(const char *fmt, ...) {
@@ -140,7 +142,7 @@ static inline void ERR(const char *fmt, ...) {
 
 // Fmt-capable interface.
 
-__attribute__((visibility("default"))) void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args);
+FEX_DEFAULT_VISIBILITY void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args);
 
 template <typename... Args>
 static inline void MFmt(DebugLevels level, const char* fmt, const Args&... args) {

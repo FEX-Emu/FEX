@@ -1,12 +1,15 @@
 #pragma once
+
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
+#include <FEXCore/Utils/CompilerDefs.h>
+
 #include <atomic>
 #include <cstddef>
 #include <stdint.h>
 #include <string_view>
 
 namespace FEXCore::Core {
-  struct __attribute__((packed)) CPUState {
+  struct FEX_PACKED CPUState {
     uint64_t rip; ///< Current core's RIP. May not be entirely accurate while JIT is active
     uint64_t gregs[16];
     uint64_t : 64;
@@ -51,6 +54,6 @@ namespace FEXCore::Core {
 
   constexpr uint64_t PAGE_SIZE = 4096;
 
-  __attribute__((visibility("default"))) std::string_view const& GetFlagName(unsigned Flag);
-  __attribute__((visibility("default"))) std::string_view const& GetGRegName(unsigned Reg);
+  FEX_DEFAULT_VISIBILITY std::string_view const& GetFlagName(unsigned Flag);
+  FEX_DEFAULT_VISIBILITY std::string_view const& GetGRegName(unsigned Reg);
 }

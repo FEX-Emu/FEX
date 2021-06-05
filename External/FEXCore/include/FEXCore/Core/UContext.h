@@ -1,4 +1,7 @@
 #pragma once
+
+#include <FEXCore/Utils/CompilerDefs.h>
+
 #include <cstddef>
 #include <cstdint>
 
@@ -13,7 +16,7 @@ namespace FEXCore {
     constexpr uint64_t UC_STRICT_RESTORE_SS = (1ULL << 2);
 
     ///< Describes the signal stack
-    struct __attribute__((packed)) stack_t {
+    struct FEX_PACKED stack_t {
       void *ss_sp;
       int32_t ss_flags;
       uint32_t : 32;
@@ -21,7 +24,7 @@ namespace FEXCore {
     };
     static_assert(sizeof(FEXCore::x86_64::stack_t) == 24, "This needs to be the right size");
 
-    struct __attribute__((packed)) _libc_fpstate {
+    struct FEX_PACKED _libc_fpstate {
       // This is in FXSAVE format
       uint16_t fcw;
       uint16_t fsw;
@@ -65,19 +68,19 @@ namespace FEXCore {
     };
     static_assert(FEX_REG_CR2 == 22, "Oops");
 
-    struct __attribute__((packed)) mcontext_t {
+    struct FEX_PACKED mcontext_t {
       uint64_t gregs[23];
       FEXCore::x86_64::_libc_fpstate *fpregs;
       uint64_t __reserved[8];
     };
     static_assert(sizeof(FEXCore::x86_64::mcontext_t) == 256, "This needs to be the right size");
 
-    struct __attribute__((packed)) sigset_t {
+    struct FEX_PACKED sigset_t {
       uint64_t val[16];
     };
     static_assert(sizeof(FEXCore::x86_64::sigset_t) == 128, "This needs to be the right size");
 
-    struct __attribute__((packed)) ucontext_t {
+    struct FEX_PACKED ucontext_t {
       uint64_t uc_flags;
       FEXCore::x86_64::ucontext_t *uc_link;
       FEXCore::x86_64::stack_t uc_stack;
@@ -92,12 +95,12 @@ namespace FEXCore {
   }
 
   namespace x86 {
-    struct __attribute__((packed)) siginfo_t {
+    struct FEX_PACKED siginfo_t {
       uint32_t pad[32];
     };
     static_assert(sizeof(FEXCore::x86::siginfo_t) == 128, "This needs to be the right size");
 
-    struct __attribute__((packed)) ucontext_t {
+    struct FEX_PACKED ucontext_t {
       uint32_t pad[91];
     };
     static_assert(sizeof(FEXCore::x86::ucontext_t) == 364, "This needs to be the right size");
