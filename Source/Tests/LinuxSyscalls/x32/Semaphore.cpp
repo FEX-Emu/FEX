@@ -33,7 +33,7 @@ namespace FEX::HLE::x32 {
   };
 
   struct msgbuf_32 {
-    uint32_t mtype;
+    compat_long_t mtype;
     char mtext[1];
   };
 
@@ -640,13 +640,29 @@ namespace FEX::HLE::x32 {
         std::vector<uint8_t> Tmp(second + sizeof(size_t));
         struct msgbuf *TmpMsg = reinterpret_cast<struct msgbuf *>(&Tmp.at(0));
 
-        Result = ::msgrcv(first, TmpMsg, second, *reinterpret_cast<uint32_t*>(fifth), third);
+        if (call >> 16) {
+          Result = ::msgrcv(first, TmpMsg, second, fifth, third);
+          if (Result != -1) {
+            msgbuf_32 *src = reinterpret_cast<msgbuf_32*>(ptr);
+            src->mtype = TmpMsg->mtype;
+            memcpy(src->mtext, TmpMsg->mtext, Result);
+          }
 
-        if (Result != -1) {
-          msgbuf_32 *src = reinterpret_cast<msgbuf_32*>(*reinterpret_cast<uint32_t*>(ptr));
-          src->mtype = TmpMsg->mtype;
-          memcpy(src->mtext, TmpMsg->mtext, Result);
         }
+        else {
+          struct compat_ipc_kludge {
+            compat_uptr_t msgp;
+            compat_long_t msgtyp;
+          };
+          compat_ipc_kludge *ipck = reinterpret_cast<compat_ipc_kludge*>(ptr);
+          Result = ::msgrcv(first, TmpMsg, second, ipck->msgtyp, third);
+          if (Result != -1) {
+            msgbuf_32 *src = reinterpret_cast<msgbuf_32*>(ipck->msgp);
+            ipck->msgtyp = TmpMsg->mtype;
+            memcpy(src->mtext, TmpMsg->mtext, Result);
+          }
+        }
+
         break;
       }
       case OP_MSGGET: {
@@ -655,9 +671,10 @@ namespace FEX::HLE::x32 {
       }
       case OP_MSGCTL: {
         uint32_t msqid = first;
-        int32_t cmd = third & 0xFF;
-        msgun_32 *msgun = reinterpret_cast<msgun_32*>(ptr);
-        bool IPC64 = third & 0x100;
+        int32_t cmd = second & 0xFF;
+        msgun_32 msgun{};
+        msgun.val = ptr;
+        bool IPC64 = second & 0x100;
 #define UNHANDLED(x) case x: LOGMAN_MSG_A("Unhandled msgctl cmd: " #x); break
         switch (cmd) {
           UNHANDLED(IPC_SET);
@@ -668,10 +685,10 @@ namespace FEX::HLE::x32 {
             Result = ::msgctl(msqid, cmd, &buf);
             if (Result != -1) {
               if (IPC64) {
-                *msgun->buf64 = buf;
+                *msgun.buf64 = buf;
               }
               else {
-                *msgun->buf32 = buf;
+                *msgun.buf32 = buf;
               }
             }
             break;
@@ -681,7 +698,7 @@ namespace FEX::HLE::x32 {
             struct msginfo mi{};
             Result = ::msgctl(msqid, cmd, reinterpret_cast<struct msqid_ds*>(&mi));
             if (Result != -1) {
-              memcpy(msgun->__buf, &mi, sizeof(mi));
+              memcpy(msgun.__buf, &mi, sizeof(mi));
             }
             break;
           }
