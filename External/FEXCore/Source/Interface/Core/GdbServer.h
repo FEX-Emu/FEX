@@ -30,7 +30,7 @@ private:
     std::unique_ptr<std::iostream> OpenSocket();
     void StartThread();
     std::string ReadPacket(std::iostream &stream);
-    void SendPacket(std::ostream &stream, std::string packet);
+    void SendPacket(std::ostream &stream, const std::string& packet);
 
     void SendACK(std::ostream &stream, bool NACK);
 
@@ -47,18 +47,18 @@ private:
       ResponseType TypeResponse{};
     };
 
-    void SendPacketPair(HandledPacketType packetPair);
-    HandledPacketType ProcessPacket(std::string &packet);
-    HandledPacketType handleQuery(std::string &packet);
-    HandledPacketType handleXfer(std::string &packet);
-    HandledPacketType handleMemory(std::string &packet);
-    HandledPacketType handleV(std::string& packet);
-    HandledPacketType handleThreadOp(std::string &packet);
-    HandledPacketType handleBreakpoint(std::string &packet);
+    void SendPacketPair(const HandledPacketType& packetPair);
+    HandledPacketType ProcessPacket(const std::string &packet);
+    HandledPacketType handleQuery(const std::string &packet);
+    HandledPacketType handleXfer(const std::string &packet);
+    HandledPacketType handleMemory(const std::string &packet);
+    HandledPacketType handleV(const std::string& packet);
+    HandledPacketType handleThreadOp(const std::string &packet);
+    HandledPacketType handleBreakpoint(const std::string &packet);
     HandledPacketType handleProgramOffsets();
 
     std::string readRegs();
-    HandledPacketType readReg(std::string& packet);
+    HandledPacketType readReg(const std::string& packet);
 
     FEXCore::Context::Context *CTX;
     std::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
