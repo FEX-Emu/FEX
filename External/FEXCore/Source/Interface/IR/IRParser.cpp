@@ -505,14 +505,14 @@ class IRParser: public FEXCore::IR::IREmitter {
     SetWriteCursor(nullptr); // isolate the header from everything following
 
     // Initialize SSANameMapper with Invalid value
-    SSANameMapper["%Invalid"] = Invalid();
+    SSANameMapper.insert_or_assign("%Invalid", Invalid());
 
     // Spin through the blocks and generate basic block ops
     for(size_t i = 0; i < Defs.size(); ++i) {
       auto &Def = Defs[i];
       if (Def.OpEnum == FEXCore::IR::IROps::OP_CODEBLOCK) {
         auto CodeBlock = _CodeBlock(InvalidNode, InvalidNode);
-        SSANameMapper[Def.Definition] = CodeBlock.Node;
+        SSANameMapper.insert_or_assign(Def.Definition, CodeBlock.Node);
         Def.Node = CodeBlock.Node;
 
         if (i == 1) {
@@ -622,7 +622,7 @@ class IRParser: public FEXCore::IR::IREmitter {
           IROp->Size = Def.Size.Bytes();
           IROp->ElementSize = 0;
         }
-        SSANameMapper[Def.Definition] = Def.Node;
+        SSANameMapper.insert_or_assign(Def.Definition, Def.Node);
       }
     }
 
@@ -630,11 +630,11 @@ class IRParser: public FEXCore::IR::IREmitter {
 	}
 
   void InitializeStaticTables() {
-    if (NameToOpMap.size() == 0) {
+    if (NameToOpMap.empty()) {
       for (FEXCore::IR::IROps Op = FEXCore::IR::IROps::OP_DUMMY;
          Op <= FEXCore::IR::IROps::OP_LAST;
          Op = static_cast<FEXCore::IR::IROps>(static_cast<uint32_t>(Op) + 1)) {
-        NameToOpMap[FEXCore::IR::GetName(Op)] = Op;
+        NameToOpMap.insert_or_assign(FEXCore::IR::GetName(Op), Op);
       }
     }
   }
