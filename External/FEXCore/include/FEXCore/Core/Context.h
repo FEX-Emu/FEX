@@ -5,6 +5,7 @@
 
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 
 #include <istream>
 #include <ostream>
@@ -50,7 +51,7 @@ namespace FEXCore::Context {
   /**
    * @brief This initializes internal FEXCore state that is shared between contexts and requires overhead to setup
    */
-  __attribute__((visibility("default"))) void InitializeStaticTables(OperatingMode Mode = MODE_64BIT);
+  FEX_DEFAULT_VISIBILITY void InitializeStaticTables(OperatingMode Mode = MODE_64BIT);
 
   /**
    * @brief [[threadsafe]] Create a new FEXCore context object
@@ -59,7 +60,7 @@ namespace FEXCore::Context {
    *
    * @return a new context object
    */
-  __attribute__((visibility("default"))) FEXCore::Context::Context *CreateNewContext();
+  FEX_DEFAULT_VISIBILITY FEXCore::Context::Context *CreateNewContext();
 
   /**
    * @brief Post creation context initialization
@@ -69,14 +70,14 @@ namespace FEXCore::Context {
    *
    * @return true if we managed to initialize correctly
    */
-  __attribute__((visibility("default"))) bool InitializeContext(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY bool InitializeContext(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Destroy the context object
    *
    * @param CTX
    */
-  __attribute__((visibility("default"))) void DestroyContext(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY void DestroyContext(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Allows setting up in memory code and other things prior to launchign code execution
@@ -86,17 +87,17 @@ namespace FEXCore::Context {
    *
    * @return true if we loaded code
    */
-  __attribute__((visibility("default"))) bool InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
+  FEX_DEFAULT_VISIBILITY bool InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
 
-  __attribute__((visibility("default"))) void SetExitHandler(FEXCore::Context::Context *CTX, std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> handler);
-  __attribute__((visibility("default"))) std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> GetExitHandler(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY void SetExitHandler(FEXCore::Context::Context *CTX, std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> handler);
+  FEX_DEFAULT_VISIBILITY std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> GetExitHandler(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Pauses execution on the CPU core
    *
    * Blocks until all threads have paused.
    */
-  __attribute__((visibility("default"))) void Pause(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY void Pause(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Starts (or continues) the CPU core
@@ -105,7 +106,7 @@ namespace FEXCore::Context {
    * Use RunUntilExit() for synchonous executions
    *
    */
-  __attribute__((visibility("default"))) void Run(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY void Run(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Runs the CPU core until it exits
@@ -117,9 +118,9 @@ namespace FEXCore::Context {
    *
    * @return The ExitReason for the parentthread.
    */
-  __attribute__((visibility("default"))) ExitReason RunUntilExit(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY ExitReason RunUntilExit(FEXCore::Context::Context *CTX);
 
-  __attribute__((visibility("default"))) void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+  FEX_DEFAULT_VISIBILITY void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
   /**
    * @brief Gets the program exit status
@@ -129,21 +130,21 @@ namespace FEXCore::Context {
    *
    * @return The program exit status
    */
-  __attribute__((visibility("default"))) int GetProgramStatus(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY int GetProgramStatus(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Tells the core to shutdown
    *
    * Blocks until shutdown
    */
-  __attribute__((visibility("default"))) void Stop(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY void Stop(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Executes one instruction
    *
    * Returns once execution is complete.
    */
-  __attribute__((visibility("default"))) void Step(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY void Step(FEXCore::Context::Context *CTX);
 
   /**
    * @brief [[threadsafe]] Returns the ExitReason of the parent thread. Typically used for async result status
@@ -152,7 +153,7 @@ namespace FEXCore::Context {
    *
    * @return The ExitReason for the parentthread
    */
-  __attribute__((visibility("default"))) ExitReason GetExitReason(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY ExitReason GetExitReason(FEXCore::Context::Context *CTX);
 
   /**
    * @brief [[theadsafe]] Checks if the Context is either done working or paused(in the case of single stepping)
@@ -163,7 +164,7 @@ namespace FEXCore::Context {
    *
    * @return true if the core is done or paused
    */
-  __attribute__((visibility("default"))) bool IsDone(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY bool IsDone(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Gets a copy the CPUState of the parent thread
@@ -171,7 +172,7 @@ namespace FEXCore::Context {
    * @param CTX The context that we created
    * @param State The state object to populate
    */
-  __attribute__((visibility("default"))) void GetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State);
+  FEX_DEFAULT_VISIBILITY void GetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State);
 
   /**
    * @brief Copies the CPUState provided to the parent thread
@@ -179,7 +180,7 @@ namespace FEXCore::Context {
    * @param CTX The context that we created
    * @param State The satate object to copy from
    */
-  __attribute__((visibility("default"))) void SetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State);
+  FEX_DEFAULT_VISIBILITY void SetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State);
 
   /**
    * @brief Allows the frontend to pass in a custom CPUBackend creation factory
@@ -189,7 +190,7 @@ namespace FEXCore::Context {
    * @param CTX The context that we created
    * @param Factory The factory that the context will call if the DefaultCore config ise set to CUSTOM
    */
-  __attribute__((visibility("default"))) void SetCustomCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory);
+  FEX_DEFAULT_VISIBILITY void SetCustomCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory);
 
   /**
    * @brief Sets up memory regions on the guest for mirroring within the guest's VM space
@@ -200,7 +201,7 @@ namespace FEXCore::Context {
    *
    * @return true when successfully mapped. false if there was an error adding
    */
-  __attribute__((visibility("default"))) bool AddVirtualMemoryMapping(FEXCore::Context::Context *CTX, uint64_t VirtualAddress, uint64_t PhysicalAddress, uint64_t Size);
+  FEX_DEFAULT_VISIBILITY bool AddVirtualMemoryMapping(FEXCore::Context::Context *CTX, uint64_t VirtualAddress, uint64_t PhysicalAddress, uint64_t Size);
 
   /**
    * @brief Allows the frontend to set a custom syscall handler
@@ -210,30 +211,30 @@ namespace FEXCore::Context {
    * @param Syscall Which syscall ID to install a visitor to
    * @param Visitor The Visitor to install
    */
-  __attribute__((visibility("default"))) void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, uint64_t Syscall, FEXCore::HLE::SyscallVisitor *Visitor);
+  FEX_DEFAULT_VISIBILITY void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, uint64_t Syscall, FEXCore::HLE::SyscallVisitor *Visitor);
 
-  __attribute__((visibility("default"))) void HandleCallback(FEXCore::Context::Context *CTX, uint64_t RIP);
+  FEX_DEFAULT_VISIBILITY void HandleCallback(FEXCore::Context::Context *CTX, uint64_t RIP);
 
-  __attribute__((visibility("default"))) void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func);
-  __attribute__((visibility("default"))) void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func);
+  FEX_DEFAULT_VISIBILITY void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func);
+  FEX_DEFAULT_VISIBILITY void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func);
 
-  __attribute__((visibility("default"))) FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
-  __attribute__((visibility("default"))) void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-  __attribute__((visibility("default"))) void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-  __attribute__((visibility("default"))) void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-  __attribute__((visibility("default"))) void DestroyThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-  __attribute__((visibility("default"))) void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-  __attribute__((visibility("default"))) void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation);
-  __attribute__((visibility("default"))) void SetSyscallHandler(FEXCore::Context::Context *CTX, FEXCore::HLE::SyscallHandler *Handler);
-  __attribute__((visibility("default"))) FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf);
+  FEX_DEFAULT_VISIBILITY FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
+  FEX_DEFAULT_VISIBILITY void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void DestroyThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation);
+  FEX_DEFAULT_VISIBILITY void SetSyscallHandler(FEXCore::Context::Context *CTX, FEXCore::HLE::SyscallHandler *Handler);
+  FEX_DEFAULT_VISIBILITY FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf);
 
-  __attribute__((visibility("default"))) void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name);
-  __attribute__((visibility("default"))) void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length);
-  __attribute__((visibility("default"))) void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader);
-  __attribute__((visibility("default"))) void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
-  __attribute__((visibility("default"))) void FinalizeAOTIRCache(FEXCore::Context::Context *CTX);
-  __attribute__((visibility("default"))) void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer);
-  __attribute__((visibility("default"))) void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length);
+  FEX_DEFAULT_VISIBILITY void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name);
+  FEX_DEFAULT_VISIBILITY void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length);
+  FEX_DEFAULT_VISIBILITY void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader);
+  FEX_DEFAULT_VISIBILITY void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter);
+  FEX_DEFAULT_VISIBILITY void FinalizeAOTIRCache(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer);
+  FEX_DEFAULT_VISIBILITY void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length);
 
-  __attribute__((visibility("default"))) void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);
+  FEX_DEFAULT_VISIBILITY void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);
 }

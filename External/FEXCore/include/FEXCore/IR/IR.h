@@ -1,8 +1,11 @@
 #pragma once
+
+#include <FEXCore/Utils/CompilerDefs.h>
+
 #include <array>
 #include <cassert>
 #include <cstdint>
-#include <string.h>
+#include <cstring>
 #include <sstream>
 #include <tuple>
 
@@ -459,8 +462,8 @@ public:
 class IRListView;
 class IREmitter;
 
-__attribute__((visibility("default"))) void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData);
-__attribute__((visibility("default"))) IREmitter* Parse(std::istream *in);
+FEX_DEFAULT_VISIBILITY void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData);
+FEX_DEFAULT_VISIBILITY IREmitter* Parse(std::istream *in);
 
 template<typename Type>
 inline uint32_t NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }

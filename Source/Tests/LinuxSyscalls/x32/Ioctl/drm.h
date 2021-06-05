@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FEXCore/Utils/CompilerDefs.h>
+
 #include "Tests/LinuxSyscalls/x32/Types.h"
 #include "Tests/LinuxSyscalls/x32/Ioctl/HelperDefines.h"
 
@@ -20,8 +22,8 @@ namespace FEX::HLE::x32 {
 
 namespace DRM {
 struct
-__attribute__((annotate("alias-x86_32-drm_version")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_version")
+FEX_ANNOTATE("fex-match")
 fex_drm_version {
 	int version_major;	  /**< Major version */
 	int version_minor;	  /**< Minor version */
@@ -66,8 +68,8 @@ fex_drm_version {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_unique")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_unique")
+FEX_ANNOTATE("fex-match")
 fex_drm_unique {
 	compat_size_t unique_len;
 	compat_ptr<char> unique;
@@ -88,8 +90,8 @@ fex_drm_unique {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_map")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_map")
+FEX_ANNOTATE("fex-match")
 fex_drm_map {
 	uint32_t offset;
 	uint32_t size;
@@ -122,8 +124,8 @@ fex_drm_map {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_client")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_client")
+FEX_ANNOTATE("fex-match")
 fex_drm_client {
 	int32_t idx;
 	int32_t auth;
@@ -156,8 +158,8 @@ fex_drm_client {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_stats")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_stats")
+FEX_ANNOTATE("fex-match")
 fex_drm_stats {
 	uint32_t count;
 	struct {
@@ -187,8 +189,8 @@ fex_drm_stats {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_buf_desc")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_buf_desc")
+FEX_ANNOTATE("fex-match")
 fex_drm_buf_desc {
 	int32_t count;
   int32_t size;
@@ -225,8 +227,8 @@ fex_drm_buf_desc {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_buf_info")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_buf_info")
+FEX_ANNOTATE("fex-match")
 fex_drm_buf_info {
 	int32_t count;
 	compat_ptr<struct drm_buf_desc> list;
@@ -247,8 +249,8 @@ fex_drm_buf_info {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_buf_pub")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_buf_pub")
+FEX_ANNOTATE("fex-match")
 fex_drm_buf_pub {
 	int32_t idx;
 	int32_t total;
@@ -275,8 +277,8 @@ fex_drm_buf_pub {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_buf_map")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_buf_map")
+FEX_ANNOTATE("fex-match")
 fex_drm_buf_map {
 	int32_t count;
 #ifdef __cplusplus
@@ -313,8 +315,8 @@ fex_drm_buf_map {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_buf_free")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_buf_free")
+FEX_ANNOTATE("fex-match")
 fex_drm_buf_free {
 	int32_t count;
 	compat_ptr<int> list;
@@ -335,8 +337,8 @@ fex_drm_buf_free {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_ctx_priv_map")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_ctx_priv_map")
+FEX_ANNOTATE("fex-match")
 fex_drm_ctx_priv_map {
 	uint32_t ctx_id;
 	compat_ptr<void> handle;
@@ -357,8 +359,8 @@ fex_drm_ctx_priv_map {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_ctx_res")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_ctx_res")
+FEX_ANNOTATE("fex-match")
 fex_drm_ctx_res {
 	int32_t count;
 	compat_ptr<struct drm_ctx> contexts;
@@ -378,8 +380,8 @@ fex_drm_ctx_res {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_dma")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_dma")
+FEX_ANNOTATE("fex-match")
 fex_drm_dma {
 	int32_t context;
 	int32_t send_count;
@@ -424,8 +426,8 @@ fex_drm_dma {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_scatter_gather")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_scatter_gather")
+FEX_ANNOTATE("fex-match")
 fex_drm_scatter_gather {
 	uint32_t size;
 	uint32_t handle;
@@ -446,8 +448,8 @@ fex_drm_scatter_gather {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_wait_vblank_request")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_wait_vblank_request")
+FEX_ANNOTATE("fex-match")
 fex_drm_wait_vblank_request {
 	enum drm_vblank_seq_type type;
 	uint32_t sequence;
@@ -471,8 +473,8 @@ fex_drm_wait_vblank_request {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_wait_vblank_reply")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_wait_vblank_reply")
+FEX_ANNOTATE("fex-match")
 fex_drm_wait_vblank_reply {
 	enum drm_vblank_seq_type type;
 	uint32_t sequence;
@@ -499,8 +501,8 @@ fex_drm_wait_vblank_reply {
 };
 
 union
-__attribute__((annotate("alias-x86_32-drm_wait_vblank")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_wait_vblank")
+FEX_ANNOTATE("fex-match")
 fex_drm_wait_vblank {
 	fex_drm_wait_vblank_request request;
 	fex_drm_wait_vblank_reply reply;
@@ -509,9 +511,9 @@ fex_drm_wait_vblank {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_update_draw")))
-__attribute__((annotate("fex-match")))
-__attribute__((packed))
+FEX_ANNOTATE("alias-x86_32-drm_update_draw")
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
 fex_drm_update_draw {
 	drm_drawable_t handle;
 	uint32_t type;
@@ -538,9 +540,9 @@ fex_drm_update_draw {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_mode_get_plane_res")))
-__attribute__((annotate("fex-match")))
-__attribute__((packed))
+FEX_ANNOTATE("alias-x86_32-drm_mode_get_plane_res")
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
 fex_drm_mode_get_plane_res {
 	compat_uint64_t plane_id_ptr;
 	uint32_t count_planes;
@@ -560,9 +562,9 @@ fex_drm_mode_get_plane_res {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_mode_fb_cmd2")))
-__attribute__((annotate("fex-match")))
-__attribute__((packed))
+FEX_ANNOTATE("alias-x86_32-drm_mode_fb_cmd2")
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
 fex_drm_mode_fb_cmd2 {
 	uint32_t fb_id;
 	uint32_t width;
@@ -608,9 +610,9 @@ fex_drm_mode_fb_cmd2 {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_mode_obj_get_properties")))
-__attribute__((annotate("fex-match")))
-__attribute__((packed))
+FEX_ANNOTATE("alias-x86_32-drm_mode_obj_get_properties")
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
 fex_drm_mode_obj_get_properties {
 	compat_uint64_t props_ptr;
 	compat_uint64_t prop_values_ptr;
@@ -639,9 +641,9 @@ fex_drm_mode_obj_get_properties {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_mode_obj_set_property")))
-__attribute__((annotate("fex-match")))
-__attribute__((packed))
+FEX_ANNOTATE("alias-x86_32-drm_mode_obj_set_property")
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
 fex_drm_mode_obj_set_property {
 	compat_uint64_t value;
 	uint32_t prop_id;
@@ -671,8 +673,8 @@ fex_drm_mode_obj_set_property {
 
 namespace AMDGPU {
 struct
-__attribute__((annotate("alias-x86_32-drm_amdgpu_gem_metadata")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_amdgpu_gem_metadata")
+FEX_ANNOTATE("fex-match")
 fex_drm_amdgpu_gem_metadata {
 	__u32	handle;
 	__u32	op;
@@ -708,8 +710,8 @@ fex_drm_amdgpu_gem_metadata {
 
 namespace MSM {
 struct
-__attribute__((annotate("alias-x86_32-drm_msm_timespec")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_msm_timespec")
+FEX_ANNOTATE("fex-match")
 fex_drm_msm_timespec {
 	compat_int64_t tv_sec;
 	compat_int64_t tv_nsec;
@@ -729,9 +731,9 @@ fex_drm_msm_timespec {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_msm_wait_fence")))
-__attribute__((annotate("fex-match")))
-__attribute__((packed))
+FEX_ANNOTATE("alias-x86_32-drm_msm_wait_fence")
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
 fex_drm_msm_wait_fence {
 	uint32_t fence;
 	uint32_t pad;
@@ -762,8 +764,8 @@ fex_drm_msm_wait_fence {
 namespace I915 {
 
 struct
-__attribute__((annotate("alias-x86_32-drm_i915_batchbuffer")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_i915_batchbuffer")
+FEX_ANNOTATE("fex-match")
 fex_drm_i915_batchbuffer_t {
 	int32_t start;
 	int32_t used;
@@ -796,8 +798,8 @@ fex_drm_i915_batchbuffer_t {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_i915_irq_emit")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_i915_irq_emit")
+FEX_ANNOTATE("fex-match")
 fex_drm_i915_irq_emit_t {
 	compat_ptr<int> irq_seq;
 
@@ -815,8 +817,8 @@ fex_drm_i915_irq_emit_t {
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_i915_getparam")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_i915_getparam")
+FEX_ANNOTATE("fex-match")
 fex_drm_i915_getparam_t
 {
 	int32_t param;
@@ -837,8 +839,8 @@ fex_drm_i915_getparam_t
 };
 
 struct
-__attribute__((annotate("alias-x86_32-drm_i915_mem_alloc")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-drm_i915_mem_alloc")
+FEX_ANNOTATE("fex-match")
 fex_drm_i915_mem_alloc_t
 {
 	int32_t region;
@@ -865,8 +867,8 @@ fex_drm_i915_mem_alloc_t
 };
 
 struct
-__attribute__((annotate("alias-x86_32-_drm_i915_cmdbuffer")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-_drm_i915_cmdbuffer")
+FEX_ANNOTATE("fex-match")
 fex_drm_i915_cmdbuffer_t
 {
 	compat_ptr<char> buf;

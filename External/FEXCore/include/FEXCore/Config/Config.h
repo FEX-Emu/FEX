@@ -1,5 +1,7 @@
 #pragma once
+
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <list>
@@ -54,15 +56,15 @@ namespace Type {
 #undef P
 }
 
-  __attribute__((visibility("default"))) std::string GetDataDirectory();
-  __attribute__((visibility("default"))) std::string GetConfigDirectory(bool Global);
-  __attribute__((visibility("default"))) std::string GetConfigFileLocation();
-  __attribute__((visibility("default"))) std::string GetApplicationConfig(const std::string &Filename, bool Global);
+  FEX_DEFAULT_VISIBILITY std::string GetDataDirectory();
+  FEX_DEFAULT_VISIBILITY std::string GetConfigDirectory(bool Global);
+  FEX_DEFAULT_VISIBILITY std::string GetConfigFileLocation();
+  FEX_DEFAULT_VISIBILITY std::string GetApplicationConfig(const std::string &Filename, bool Global);
 
   using LayerValue = std::list<std::string>;
   using LayerOptions = std::unordered_map<ConfigOption, LayerValue>;
 
-  class __attribute__((visibility("default"))) Layer {
+  class FEX_DEFAULT_VISIBILITY Layer {
   public:
     explicit Layer(const LayerType _Type);
     virtual ~Layer();
@@ -114,24 +116,24 @@ namespace Type {
     LayerOptions OptionMap;
   };
 
-  __attribute__((visibility("default"))) void Initialize();
-  __attribute__((visibility("default"))) void Shutdown();
+  FEX_DEFAULT_VISIBILITY void Initialize();
+  FEX_DEFAULT_VISIBILITY void Shutdown();
 
-  __attribute__((visibility("default"))) void Load();
-  __attribute__((visibility("default"))) void ReloadMetaLayer();
+  FEX_DEFAULT_VISIBILITY void Load();
+  FEX_DEFAULT_VISIBILITY void ReloadMetaLayer();
 
-  __attribute__((visibility("default"))) void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer);
+  FEX_DEFAULT_VISIBILITY void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer);
 
-  __attribute__((visibility("default"))) bool Exists(ConfigOption Option);
-  __attribute__((visibility("default"))) std::optional<LayerValue*> All(ConfigOption Option);
-  __attribute__((visibility("default"))) std::optional<std::string*> Get(ConfigOption Option);
+  FEX_DEFAULT_VISIBILITY bool Exists(ConfigOption Option);
+  FEX_DEFAULT_VISIBILITY std::optional<LayerValue*> All(ConfigOption Option);
+  FEX_DEFAULT_VISIBILITY std::optional<std::string*> Get(ConfigOption Option);
 
-  __attribute__((visibility("default"))) void Set(ConfigOption Option, std::string Data);
-  __attribute__((visibility("default"))) void Erase(ConfigOption Option);
-  __attribute__((visibility("default"))) void EraseSet(ConfigOption Option, std::string Data);
+  FEX_DEFAULT_VISIBILITY void Set(ConfigOption Option, std::string Data);
+  FEX_DEFAULT_VISIBILITY void Erase(ConfigOption Option);
+  FEX_DEFAULT_VISIBILITY void EraseSet(ConfigOption Option, std::string Data);
 
   template<typename T>
-  class __attribute__((visibility("default"))) Value {
+  class FEX_DEFAULT_VISIBILITY Value {
   public:
     template <typename TT = T,
       typename std::enable_if<!std::is_same<TT, std::string>::value, int>::type = 0>

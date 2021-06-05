@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 
 #include <cstdint>
 #include <cstring>
@@ -476,29 +477,29 @@ constexpr size_t MAX_XOP_GROUP_TABLE_SIZE = (1 << 6);
 
 constexpr size_t MAX_EVEX_TABLE_SIZE = 256;
 
-extern __attribute__((visibility("default"))) X86InstInfo BaseOps[MAX_PRIMARY_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo SecondBaseOps[MAX_SECOND_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo RepModOps[MAX_REP_MOD_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo RepNEModOps[MAX_REPNE_MOD_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo OpSizeModOps[MAX_OPSIZE_MOD_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo PrimaryInstGroupOps[MAX_INST_GROUP_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo SecondInstGroupOps[MAX_INST_SECOND_GROUP_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo SecondModRMTableOps[MAX_SECOND_MODRM_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo X87Ops[MAX_X87_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo DDDNowOps[MAX_3DNOW_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo H0F38TableOps[MAX_0F_38_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo H0F3ATableOps[MAX_0F_3A_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo BaseOps[MAX_PRIMARY_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo SecondBaseOps[MAX_SECOND_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo RepModOps[MAX_REP_MOD_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo RepNEModOps[MAX_REPNE_MOD_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo OpSizeModOps[MAX_OPSIZE_MOD_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo PrimaryInstGroupOps[MAX_INST_GROUP_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo SecondInstGroupOps[MAX_INST_SECOND_GROUP_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo SecondModRMTableOps[MAX_SECOND_MODRM_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo X87Ops[MAX_X87_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo DDDNowOps[MAX_3DNOW_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo H0F38TableOps[MAX_0F_38_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo H0F3ATableOps[MAX_0F_3A_TABLE_SIZE];
 
 // VEX
-extern __attribute__((visibility("default"))) X86InstInfo VEXTableOps[MAX_VEX_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo VEXTableGroupOps[MAX_VEX_GROUP_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo VEXTableOps[MAX_VEX_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo VEXTableGroupOps[MAX_VEX_GROUP_TABLE_SIZE];
 
 // XOP
-extern __attribute__((visibility("default"))) X86InstInfo XOPTableOps[MAX_XOP_TABLE_SIZE];
-extern __attribute__((visibility("default"))) X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo XOPTableOps[MAX_XOP_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_SIZE];
 
 // EVEX
-extern __attribute__((visibility("default"))) X86InstInfo EVEXTableOps[MAX_EVEX_TABLE_SIZE];
+extern FEX_DEFAULT_VISIBILITY X86InstInfo EVEXTableOps[MAX_EVEX_TABLE_SIZE];
 
-__attribute__((visibility("default"))) void InitializeInfoTables(Context::OperatingMode Mode);
+FEX_DEFAULT_VISIBILITY void InitializeInfoTables(Context::OperatingMode Mode);
 }

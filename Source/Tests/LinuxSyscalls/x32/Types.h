@@ -7,6 +7,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 
 #include <bits/types/stack_t.h>
 #include <cstdint>
@@ -38,8 +39,8 @@ using compat_uid_t = uint16_t;
 using compat_gid_t = uint16_t;
 
 // Can't use using with aligned attributes, clang doesn't honour it
-typedef __attribute__((aligned(4))) uint64_t compat_uint64_t;
-typedef __attribute__((aligned(4))) int64_t compat_int64_t;
+typedef FEX_ALIGNED(4) uint64_t compat_uint64_t;
+typedef FEX_ALIGNED(4) int64_t compat_int64_t;
 
 template<typename T>
 class compat_ptr {
@@ -102,8 +103,8 @@ static_assert(sizeof(compat_ptr<void>) == 4, "Incorrect size");
  * @{ */
 
 struct
-__attribute__((annotate("alias-x86_32-timespec")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-timespec")
+FEX_ANNOTATE("fex-match")
 timespec32 {
   int32_t tv_sec;
   int32_t tv_nsec;
@@ -135,8 +136,8 @@ static_assert(sizeof(timespec32) == 8, "Incorrect size");
  * @{ */
 
 struct
-__attribute__((annotate("alias-x86_32-timeval")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-timeval")
+FEX_ANNOTATE("fex-match")
 timeval32 {
   int32_t tv_sec;
   int32_t tv_usec;
@@ -168,8 +169,8 @@ static_assert(sizeof(timeval32) == 8, "Incorrect size");
  * @{ */
 
 struct
-__attribute__((annotate("alias-x86_32-iovec")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-iovec")
+FEX_ANNOTATE("fex-match")
 iovec32 {
   uint32_t iov_base;
   uint32_t iov_len;
@@ -194,8 +195,8 @@ static_assert(sizeof(iovec32) == 8, "Incorrect size");
 /**  @} */
 
 struct
-__attribute__((annotate("alias-x86_32-cmsghdr")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-cmsghdr")
+FEX_ANNOTATE("fex-match")
 cmsghdr32 {
   uint32_t cmsg_len;
   int32_t cmsg_level;
@@ -207,8 +208,8 @@ static_assert(std::is_trivial<cmsghdr32>::value, "Needs to be trivial");
 static_assert(sizeof(cmsghdr32) == 12, "Incorrect size");
 
 struct
-__attribute__((annotate("alias-x86_32-msghdr")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-msghdr")
+FEX_ANNOTATE("fex-match")
 msghdr32 {
   compat_ptr<void> msg_name;
   socklen_t msg_namelen;
@@ -225,8 +226,8 @@ static_assert(std::is_trivial<msghdr32>::value, "Needs to be trivial");
 static_assert(sizeof(msghdr32) == 28, "Incorrect size");
 
 struct
-__attribute__((annotate("alias-x86_32-mmsghdr")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-mmsghdr")
+FEX_ANNOTATE("fex-match")
 mmsghdr_32 {
   msghdr32 msg_hdr;
   uint32_t msg_len;
@@ -236,8 +237,8 @@ static_assert(std::is_trivial<mmsghdr_32>::value, "Needs to be trivial");
 static_assert(sizeof(mmsghdr_32) == 32, "Incorrect size");
 
 struct
-__attribute__((annotate("alias-x86_32-stack_t")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-stack_t")
+FEX_ANNOTATE("fex-match")
 stack_t32 {
   compat_ptr<void> ss_sp;
   compat_size_t ss_size;
@@ -266,7 +267,7 @@ static_assert(sizeof(stack_t32) == 12, "Incorrect size");
 struct
 // This does not match the glibc implementation of stat
 // Matches the definition of `struct compat_stat` in `arch/x86/include/asm/compat.h`
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("fex-match")
 stat32 {
   compat_dev_t st_dev;
   uint16_t __pad1;
@@ -325,8 +326,8 @@ static_assert(sizeof(stat32) == 64, "Incorrect size");
 struct
 // This does not match the glibc implementation of stat
 // Matches the definition of `struct stat64` in `x86_64-linux-gnu/asm/stat.h`
-__attribute__((annotate("fex-match")))
-__attribute__((packed))
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
 stat64_32 {
   compat_uint64_t st_dev;
   uint8_t  __pad0[4];
@@ -413,9 +414,10 @@ static_assert(std::is_trivial<stat64_32>::value, "Needs to be trivial");
 static_assert(sizeof(stat64_32) == 96, "Incorrect size");
 
 struct
-__attribute__((packed,aligned(4)))
-__attribute__((annotate("alias-x86_32-statfs64")))
-__attribute__((annotate("fex-match")))
+FEX_PACKED
+FEX_ALIGNED(4)
+FEX_ANNOTATE("alias-x86_32-statfs64")
+FEX_ANNOTATE("fex-match")
 statfs64_32 {
   uint32_t f_type;
   uint32_t f_bsize;
@@ -470,8 +472,8 @@ static_assert(std::is_trivial<statfs64_32>::value, "Needs to be trivial");
 static_assert(sizeof(statfs64_32) == 84, "Incorrect size");
 
 struct
-__attribute__((annotate("alias-x86_32-flock")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-flock")
+FEX_ANNOTATE("fex-match")
 flock_32 {
   int16_t l_type;
   int16_t l_whence;
@@ -507,8 +509,8 @@ static_assert(sizeof(flock_32) == 16, "Incorrect size");
 // This does not match glibc flock64 definition
 // Matches the definition of `struct compat_flock64` in `arch/x86/include/asm/compat.h`
 struct
-__attribute__((annotate("fex-match")))
-__attribute__((packed))
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
 flock64_32 {
   int16_t l_type;
   int16_t l_whence;
@@ -542,7 +544,7 @@ static_assert(sizeof(flock64_32) == 24, "Incorrect size");
 // There is no public definition of this struct
 // Matches the definition of `struct linux_dirent` in fs/readdir.c
 struct
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("fex-match")
 linux_dirent {
   uint64_t d_ino;
   int64_t  d_off;
@@ -556,7 +558,7 @@ static_assert(sizeof(linux_dirent) == 24, "Incorrect size");
 // There is no public definition of this struct
 // Matches the definition of `struct compat_linux_dirent` in fs/readdir.c
 struct
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("fex-match")
 linux_dirent_32 {
   compat_ulong_t d_ino;
   compat_ulong_t d_off;
@@ -570,7 +572,7 @@ static_assert(sizeof(linux_dirent_32) == 12, "Incorrect size");
 // There is no public definition of this struct
 // Matches the definition of `struct linux_dirent64` in include/linux/dirent.h
 struct
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("fex-match")
 linux_dirent_64 {
   uint64_t d_ino;
   uint64_t d_off;
@@ -585,7 +587,7 @@ static_assert(sizeof(linux_dirent_64) == 24, "Incorrect size");
 // There is no public definition of this struct
 // Matches `struct compat_sigset_argpack`
 struct
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("fex-match")
 sigset_argpack32 {
   compat_ptr<uint64_t> sigset;
   compat_size_t size;
@@ -595,8 +597,8 @@ static_assert(std::is_trivial<sigset_argpack32>::value, "Needs to be trivial");
 static_assert(sizeof(sigset_argpack32) == 8, "Incorrect size");
 
 struct
-__attribute__((annotate("alias-x86_32-rusage")))
-__attribute__((annotate("fex-match")))
+FEX_ANNOTATE("alias-x86_32-rusage")
+FEX_ANNOTATE("fex-match")
 rusage_32 {
   timeval32 ru_utime;
   timeval32 ru_stime;
@@ -707,8 +709,8 @@ static_assert(sizeof(rusage_32) == 72, "Incorrect size");
 // This is for rt_sigaction
 // Matches the definition for `struct compat_sigaction` in `include/linux/compat.h`
 struct
-__attribute__((packed))
-__attribute__((annotate("fex-match")))
+FEX_PACKED
+FEX_ANNOTATE("fex-match")
 GuestSigAction_32 {
   FEX::HLE::x32::compat_ptr<void> handler_32;
 
