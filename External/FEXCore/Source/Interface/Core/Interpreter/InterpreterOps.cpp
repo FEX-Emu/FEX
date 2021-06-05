@@ -416,7 +416,7 @@ static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
 
 [[noreturn]]
 static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
-  Thread->CTX->SignalThread(Thread, FEXCore::Core::SIGNALEVENT_RETURN);
+  Thread->CTX->SignalThread(Thread, FEXCore::Core::SignalEvent::Return);
 
   LOGMAN_MSG_A("unreachable");
   __builtin_unreachable();

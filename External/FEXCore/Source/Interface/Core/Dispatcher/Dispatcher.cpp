@@ -261,7 +261,7 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
   FEXCore::Core::SignalEvent SignalReason = ThreadState->SignalReason.load();
   auto Frame = ThreadState->CurrentFrame;
 
-  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE) {
+  if (SignalReason == FEXCore::Core::SignalEvent::Pause) {
     // Store our thread state so we can come back to this
     StoreThreadState(Signal, ucontext);
 
@@ -286,11 +286,11 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
     // We use this to track if it is safe to clear cache
     ++SignalHandlerRefCounter;
 
-    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
     return true;
   }
 
-  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_STOP) {
+  if (SignalReason == FEXCore::Core::SignalEvent::Stop) {
     // Our thread is stopping
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the core and get out safely
@@ -311,18 +311,18 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
       ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
     }
 
-    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
     return true;
   }
 
-  if (SignalReason == FEXCore::Core::SignalEvent::SIGNALEVENT_RETURN) {
+  if (SignalReason == FEXCore::Core::SignalEvent::Return) {
     RestoreThreadState(ucontext);
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
     --SignalHandlerRefCounter;
 
-    ThreadState->SignalReason.store(FEXCore::Core::SIGNALEVENT_NONE);
+    ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
     return true;
   }
 
