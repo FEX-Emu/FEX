@@ -268,8 +268,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     uint64_t val;
   };
 
-  virtual bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override {
-
+  bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) override {
     for (auto Header: MainElf.phdrs) {
       if (Header.p_type == PT_GNU_STACK) {
         if (Header.p_flags & PF_X)

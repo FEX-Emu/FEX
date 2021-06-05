@@ -84,7 +84,7 @@ public:
     return IR->GetEntryRIP();
   }
 
-  bool MapMemory(std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)> Mapper, std::function<int(void *addr, size_t length)> Unmapper) override
+  bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) override
   {
     // Map the memory regions the test file asks for
     IR->MapRegions();
