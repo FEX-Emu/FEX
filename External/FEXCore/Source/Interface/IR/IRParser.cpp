@@ -196,7 +196,7 @@ class IRParser: public FEXCore::IR::IREmitter {
 
   template<>
   std::pair<DecodeFailure, FEXCore::IR::CondClassType> DecodeValue(std::string &Arg) {
-    std::array<std::string, 22> CondNames = {
+    static constexpr std::array<std::string_view, 22> CondNames = {
       "EQ",
       "NEQ",
       "UGE",
@@ -231,7 +231,7 @@ class IRParser: public FEXCore::IR::IREmitter {
 
   template<>
   std::pair<DecodeFailure, FEXCore::IR::MemOffsetType> DecodeValue(std::string &Arg) {
-    std::array<std::string, 3> Names = {
+    static constexpr std::array<std::string_view, 3> Names = {
       "SXTX",
       "UXTW",
       "SXTW",
@@ -247,7 +247,7 @@ class IRParser: public FEXCore::IR::IREmitter {
 
   template<>
   std::pair<DecodeFailure, FEXCore::IR::FenceType> DecodeValue(std::string &Arg) {
-    std::array<std::string, 3> Names = {
+    static constexpr std::array<std::string_view, 3> Names = {
       "Loads",
       "Stores",
       "LoadStores",
