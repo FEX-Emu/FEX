@@ -267,7 +267,7 @@ function(AddObject Name Type)
   add_dependencies(${Name} IR_INC)
   add_dependencies(${Name} CONFIG_INC)
 
-  target_link_libraries(${Name} pthread vixl dl xxhash FEX_jemalloc)
+  target_link_libraries(${Name} pthread vixl dl fmt::fmt xxhash FEX_jemalloc)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
   set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)

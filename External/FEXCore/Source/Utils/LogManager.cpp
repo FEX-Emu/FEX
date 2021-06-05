@@ -39,6 +39,16 @@ void UnInstallHandlers() { Handlers.clear(); }
 
   __builtin_trap();
 }
+
+void MFmt(const char *fmt, const fmt::format_args& args) {
+  auto msg = fmt::vformat(fmt, args);
+
+  for (auto& Handler : Handlers) {
+    Handler(msg.c_str());
+  }
+
+  __builtin_trap();
+}
 } // namespace Throw
 
 namespace Msg {
@@ -64,6 +74,14 @@ void M(DebugLevels Level, const char *fmt, va_list args) {
   }
   for (auto &Handler : Handlers) {
     Handler(Level, Buffer);
+  }
+}
+
+void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args) {
+  const auto msg = fmt::vformat(fmt, args);
+
+  for (auto& Handler : Handlers) {
+    Handler(level, msg.c_str());
   }
 }
 
