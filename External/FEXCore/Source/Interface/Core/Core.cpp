@@ -328,7 +328,7 @@ namespace FEXCore::Context {
     // Tell all the threads that they should pause
     std::lock_guard<std::mutex> lk(ThreadCreationMutex);
     for (auto &Thread : Threads) {
-      Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_PAUSE);
+      Thread->SignalReason.store(FEXCore::Core::SignalEvent::Pause);
       if (Thread->RunningEvents.Running.load()) {
         // Only attempt to stop this thread if it is running
         tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
@@ -349,7 +349,7 @@ namespace FEXCore::Context {
     // Spin up all the threads
     std::lock_guard<std::mutex> lk(ThreadCreationMutex);
     for (auto &Thread : Threads) {
-      Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_RETURN);
+      Thread->SignalReason.store(FEXCore::Core::SignalEvent::Return);
       Thread->RunningEvents.WaitingToStart.store(true);
     }
 
@@ -429,7 +429,7 @@ namespace FEXCore::Context {
 
   void Context::StopThread(FEXCore::Core::InternalThreadState *Thread) {
     if (Thread->RunningEvents.Running.exchange(false)) {
-      Thread->SignalReason.store(FEXCore::Core::SignalEvent::SIGNALEVENT_STOP);
+      Thread->SignalReason.store(FEXCore::Core::SignalEvent::Stop);
       tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
     }
   }

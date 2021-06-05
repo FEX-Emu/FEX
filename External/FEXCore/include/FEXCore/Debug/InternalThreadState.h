@@ -54,11 +54,11 @@ namespace FEXCore::Core {
     std::vector<DebugDataSubblock> Subblocks;
   };
 
-  enum SignalEvent {
-    SIGNALEVENT_NONE, // If the guest uses our signal we need to know it was errant on our end
-    SIGNALEVENT_PAUSE,
-    SIGNALEVENT_STOP,
-    SIGNALEVENT_RETURN,
+  enum class SignalEvent {
+    Nothing, // If the guest uses our signal we need to know it was errant on our end
+    Pause,
+    Stop,
+    Return,
   };
 
   struct LocalIREntry {
@@ -78,7 +78,7 @@ namespace FEXCore::Core {
     } RunningEvents;
 
     FEXCore::Context::Context *CTX;
-    std::atomic<SignalEvent> SignalReason {SignalEvent::SIGNALEVENT_NONE};
+    std::atomic<SignalEvent> SignalReason{SignalEvent::Nothing};
 
     std::unique_ptr<FEXCore::Threads::Thread> ExecutionThread;
     Event StartRunning;
