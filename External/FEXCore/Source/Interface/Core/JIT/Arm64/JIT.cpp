@@ -23,6 +23,7 @@ $end_info$
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
 #include <sys/mman.h>
@@ -594,7 +595,8 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_32>(uint32_t Node) const
   } else {
     LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
   }
-  __builtin_unreachable();
+
+  FEX_UNREACHABLE;
 }
 
 template<>
@@ -608,7 +610,8 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(uint32_t Node) const
   } else {
     LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
   }
-  __builtin_unreachable();
+
+  FEX_UNREACHABLE;
 }
 
 template<>
@@ -633,7 +636,8 @@ aarch64::VRegister Arm64JITCore::GetSrc(uint32_t Node) const {
   } else {
     LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
   }
-  __builtin_unreachable();
+
+  FEX_UNREACHABLE;
 }
 
 aarch64::VRegister Arm64JITCore::GetDst(uint32_t Node) const {
@@ -646,7 +650,8 @@ aarch64::VRegister Arm64JITCore::GetDst(uint32_t Node) const {
   } else {
     LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
   }
-  __builtin_unreachable();
+
+  FEX_UNREACHABLE;
 }
 
 bool Arm64JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const {

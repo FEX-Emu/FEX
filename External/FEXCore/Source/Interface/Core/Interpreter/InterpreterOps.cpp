@@ -10,12 +10,13 @@
 #include "Interface/Core/DebugData.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
-#include <FEXCore/Utils/LogManager.h>
 
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include "Interface/HLE/Thunks/Thunks.h"
 
@@ -411,7 +412,7 @@ static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->StopThread(Thread);
 
   LOGMAN_MSG_A("unreachable");
-  __builtin_unreachable();
+  FEX_UNREACHABLE;
 }
 
 [[noreturn]]
@@ -419,7 +420,7 @@ static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
   Thread->CTX->SignalThread(Thread, FEXCore::Core::SignalEvent::Return);
 
   LOGMAN_MSG_A("unreachable");
-  __builtin_unreachable();
+  FEX_UNREACHABLE;
 }
 
 template<IR::IROps Op>

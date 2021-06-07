@@ -19,3 +19,8 @@
 
 // Specifies that a structure member or structure itself should have the smallest possible alignment.
 #define FEX_PACKED __attribute__((packed))
+
+// Dictates to the compiler that the path this is on should not be reachable
+// from normal execution control flow. If normal execution does reach this,
+// then program behavior is undefined.
+#define FEX_UNREACHABLE __builtin_unreachable()
