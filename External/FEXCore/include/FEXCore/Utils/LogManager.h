@@ -78,7 +78,7 @@ static inline void A(const char *fmt, ...) {
     M(ASSERT, fmt, args);
     va_end(args);
   }
-  __builtin_trap();
+  FEX_TRAP_EXECUTION;
 }
 #define LOGMAN_MSG_A(...) do { LogMan::Msg::A(__VA_ARGS__); } while (0)
 #else
@@ -137,7 +137,7 @@ static inline void ERR(const char *fmt, ...) {
 #define ERROR_AND_DIE(...) \
   do { \
     LogMan::Msg::E(__VA_ARGS__); \
-    __builtin_trap(); \
+    FEX_TRAP_EXECUTION; \
   } while(0)
 
 // Fmt-capable interface.
@@ -190,7 +190,7 @@ static inline void AFmt(const char *fmt, const Args&... args) {
     return;
   }
   MFmtImpl(ASSERT, fmt, fmt::make_format_args(args...));
-  __builtin_trap();
+  FEX_TRAP_EXECUTION;
 }
 #define LOGMAN_MSG_A_FMT(...) do { LogMan::Msg::AFmt(__VA_ARGS__); } while (0)
 #else
@@ -211,7 +211,7 @@ static inline void AFmt(const char*, const Args&...) {}
 #define ERROR_AND_DIE_FMT(...) \
   do { \
     LogMan::Msg::EFmt(__VA_ARGS__); \
-    __builtin_trap(); \
+    FEX_TRAP_EXECUTION; \
   } while(0)
 
 } // namespace Msg

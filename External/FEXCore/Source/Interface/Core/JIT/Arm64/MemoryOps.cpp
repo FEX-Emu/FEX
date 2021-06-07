@@ -5,6 +5,7 @@ $end_info$
 */
 
 #include "Interface/Core/JIT/Arm64/JITClass.h"
+#include <FEXCore/Utils/CompilerDefs.h>
 
 namespace FEXCore::CPU {
 
@@ -554,7 +555,8 @@ MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Registe
       }
     }
   }
-  __builtin_unreachable();
+
+  FEX_UNREACHABLE;
 }
 
 DEF_OP(LoadMem) {
