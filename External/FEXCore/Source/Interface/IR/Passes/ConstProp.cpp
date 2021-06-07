@@ -735,9 +735,9 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
         uint64_t NewConstant = (Constant1 * Constant2) & getMask(Op);
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
-      } else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && __builtin_popcountl(Constant2) == 1) {
+      } else if (IREmit->IsValueConstant(Op->Header.Args[1], &Constant2) && std::popcount(Constant2) == 1) {
         if (IROp->Size == 4 || IROp->Size == 8) {
-          uint64_t amt = __builtin_ctzl(Constant2);
+          uint64_t amt = std::countr_zero(Constant2);
           IREmit->SetWriteCursor(CodeNode);
           auto shift = IREmit->_Lshl(CurrentIR.GetNode(Op->Header.Args[0]), IREmit->_Constant(amt));
           shift.first->Header.Size = IROp->Size; // force Lshl to be the same size as the original Mul

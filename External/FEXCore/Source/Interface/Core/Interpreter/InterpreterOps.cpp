@@ -1867,7 +1867,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
           case IR::OP_POPCOUNT: {
             auto Op = IROp->C<IR::IROp_Popcount>();
             uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-            GD = __builtin_popcountl(Src);
+            GD = std::popcount(Src);
             break;
           }
           case IR::OP_FINDLSB: {
@@ -1880,10 +1880,10 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
           case IR::OP_FINDMSB: {
             auto Op = IROp->C<IR::IROp_FindMSB>();
             switch (OpSize) {
-              case 1: GD = ((24 + OpSize * 8) - __builtin_clz(*GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
-              case 2: GD = ((16 + OpSize * 8) - __builtin_clz(*GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
-              case 4: GD = (OpSize * 8 - __builtin_clz(*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
-              case 8: GD = (OpSize * 8 - __builtin_clzll(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
+              case 1: GD = (OpSize * 8 - std::countl_zero(*GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
+              case 2: GD = (OpSize * 8 - std::countl_zero(*GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
+              case 4: GD = (OpSize * 8 - std::countl_zero(*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
+              case 8: GD = (OpSize * 8 - std::countl_zero(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]))) - 1; break;
               default: LOGMAN_MSG_A("Unknown REV size: %d", OpSize); break;
             }
             break;
@@ -1903,34 +1903,22 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             switch (OpSize) {
               case 1: {
                 auto Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
-                if (Src)
-                  GD = __builtin_ctz(Src);
-                else
-                  GD = sizeof(Src) * 8;
+                GD = std::countr_zero(Src);
                 break;
               }
               case 2: {
                 auto Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]);
-                if (Src)
-                  GD = __builtin_ctz(Src);
-                else
-                  GD = sizeof(Src) * 8;
+                GD = std::countr_zero(Src);
                 break;
               }
               case 4: {
                 auto Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
-                if (Src)
-                  GD = __builtin_ctz(Src);
-                else
-                  GD = sizeof(Src) * 8;
+                GD = std::countr_zero(Src);
                 break;
               }
               case 8: {
                 auto Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-                if (Src)
-                  GD = __builtin_ctzll(Src);
-                else
-                  GD = sizeof(Src) * 8;
+                GD = std::countr_zero(Src);
                 break;
               }
               default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;
@@ -1941,37 +1929,23 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             auto Op = IROp->C<IR::IROp_CountLeadingZeroes>();
             switch (OpSize) {
               case 1: {
-                uint32_t Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
-                Src <<= 24;
-                if (Src)
-                  GD = __builtin_clz(Src);
-                else
-                  GD = 8;
+                auto Src = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
+                GD = std::countl_zero(Src);
                 break;
               }
               case 2: {
-                uint32_t Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]);
-                Src <<= 16;
-                if (Src)
-                  GD = __builtin_clz(Src);
-                else
-                  GD = 16;
+                auto Src = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]);
+                GD = std::countl_zero(Src);
                 break;
               }
               case 4: {
                 auto Src = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
-                if (Src)
-                  GD = __builtin_clz(Src);
-                else
-                  GD = sizeof(Src) * 8;
+                GD = std::countl_zero(Src);
                 break;
               }
               case 8: {
                 auto Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-                if (Src)
-                  GD = __builtin_clzll(Src);
-                else
-                  GD = sizeof(Src) * 8;
+                GD = std::countl_zero(Src);
                 break;
               }
               default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;

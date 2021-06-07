@@ -10,6 +10,7 @@ $end_info$
 #include "Interface/HLE/Thunks/Thunks.h"
 
 #include <FEXCore/Core/CoreState.h>
+#include <bit>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
@@ -4266,7 +4267,7 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
   // [63:0]   = Src1[Selection]
   // [127:64] = Src2[Selection]
   uint8_t SelectionMask = NumElements - 1;
-  uint8_t ShiftAmount = __builtin_popcount(SelectionMask);
+  uint8_t ShiftAmount = std::popcount(SelectionMask);
   for (uint8_t Element = 0; Element < NumElements; ++Element) {
     Dest = _VInsElement(Size, ElementSize, Element, Shuffle & SelectionMask, Dest, Srcs[Element]);
     Shuffle >>= ShiftAmount;

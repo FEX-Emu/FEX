@@ -5,6 +5,7 @@
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <bit>
 #include <cmath>
 
 #include "aarch64/assembler-aarch64.h"
@@ -103,7 +104,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   ldr(x0, &l_PagePtr);
 
   // Mask the address by the virtual address size so we can check for aliases
-  if (__builtin_popcountl(VirtualMemorySize) == 1) {
+  if (std::popcount(VirtualMemorySize) == 1) {
     and_(x3, RipReg, Thread->LookupCache->GetVirtualMemorySize() - 1);
   }
   else {
