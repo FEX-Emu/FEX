@@ -37,7 +37,7 @@ void UnInstallHandlers() { Handlers.clear(); }
     Handler(Buffer);
   }
 
-  __builtin_trap();
+  FEX_TRAP_EXECUTION;
 }
 
 void MFmt(const char *fmt, const fmt::format_args& args) {
@@ -47,7 +47,7 @@ void MFmt(const char *fmt, const fmt::format_args& args) {
     Handler(msg.c_str());
   }
 
-  __builtin_trap();
+  FEX_TRAP_EXECUTION;
 }
 } // namespace Throw
 
