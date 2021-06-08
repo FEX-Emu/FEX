@@ -302,21 +302,21 @@ class IRParser: public FEXCore::IR::IREmitter {
 
   IRParser(std::istream *text) {
     InitializeStaticTables();
-    
+
     std::string TmpLine;
     while (!text->eof()) {
       std::getline(*text, TmpLine);
-			if (text->eof()) {
-				break;
-			}
+      if (text->eof()) {
+        break;
+      }
       if (text->fail()) {
-        LogMan::Msg::E("Failed to getline on line: %ld", Lines.size());
+        LogMan::Msg::EFmt("Failed to getline on line: {}", Lines.size());
         return;
       }
       Lines.emplace_back(TmpLine);
     }
 
-		ResetWorkingList();
+    ResetWorkingList();
     Loaded = Parse();
   }
 
@@ -329,9 +329,9 @@ class IRParser: public FEXCore::IR::IREmitter {
   bool Parse() {
     const auto CheckPrintError = [&](const LineDefinition &Def, DecodeFailure Failure) -> bool {
       if (Failure != DecodeFailure::DECODE_OKAY) {
-        LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-        LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-        LogMan::Msg::E("Value Couldn't be decoded due to %s", DecodeErrorToString(Failure).c_str());
+        LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+        LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+        LogMan::Msg::EFmt("Value Couldn't be decoded due to {}", DecodeErrorToString(Failure));
         return false;
       }
 
@@ -339,13 +339,13 @@ class IRParser: public FEXCore::IR::IREmitter {
     };
 
     // String parse every line for our definitions
-		for (size_t i = 0; i < Lines.size(); ++i) {
-			std::string Line = Lines[i];
+    for (size_t i = 0; i < Lines.size(); ++i) {
+      std::string Line = Lines[i];
       LineDefinition Def{};
-			CurrentDef = &Def;
+      CurrentDef = &Def;
       Def.LineNumber = i;
 
-			Line = trim(Line);
+      Line = trim(Line);
 
       // Skip empty lines
       if (Line.empty()) {
@@ -359,8 +359,8 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
 
       size_t CurrentPos{};
-			// Let's see if this node is assigning something first
-			if (Line[0] == '%') {
+      // Let's see if this node is assigning something first
+      if (Line[0] == '%') {
         size_t DefinitionEnd = std::string::npos;
         if ((DefinitionEnd = Line.find_first_of("=", CurrentPos)) != std::string::npos) {
           Def.Definition = Line.substr(0, DefinitionEnd);
@@ -369,12 +369,12 @@ class IRParser: public FEXCore::IR::IREmitter {
           CurrentPos = DefinitionEnd + 1; // +1 to ensure we go past then assignment
         }
         else {
-          LogMan::Msg::E("Error on Line: %d", i);
-          LogMan::Msg::E("%s", Lines[i].c_str());
-          LogMan::Msg::E("SSA declaration without assignment");
+          LogMan::Msg::EFmt("Error on Line: {}", i);
+          LogMan::Msg::EFmt("{}", Lines[i]);
+          LogMan::Msg::EFmt("SSA declaration without assignment");
           return false;
         }
-			}
+      }
 
       // Check if we are pulling in some IR from the IR Printer
       // Prints (%ssa%d) at the start of lines without a definition
@@ -387,7 +387,9 @@ class IRParser: public FEXCore::IR::IREmitter {
             Type = trim(Type);
 
             auto DefinitionSize = DecodeValue<FEXCore::IR::TypeDefinition>(Type);
-            if (!CheckPrintError(Def, DefinitionSize.first)) return false;
+            if (!CheckPrintError(Def, DefinitionSize.first)) {
+              return false;
+            }
             Def.Size = DefinitionSize.second;
           }
 
@@ -396,9 +398,9 @@ class IRParser: public FEXCore::IR::IREmitter {
           CurrentPos = DefinitionEnd + 1;
         }
         else {
-          LogMan::Msg::E("Error on Line: %d", i);
-          LogMan::Msg::E("%s", Lines[i].c_str());
-          LogMan::Msg::E("SSA value with numbered SSA provided but no closing parentheses");
+          LogMan::Msg::EFmt("Error on Line: {}", i);
+          LogMan::Msg::EFmt("{}", Lines[i]);
+          LogMan::Msg::EFmt("SSA value with numbered SSA provided but no closing parentheses");
           return false;
         }
       }
@@ -417,9 +419,9 @@ class IRParser: public FEXCore::IR::IREmitter {
         }
 
         if (Def.Definition == "%Invalid") {
-          LogMan::Msg::E("Error on Line: %d", i);
-          LogMan::Msg::E("%s", Lines[i].c_str());
-          LogMan::Msg::E("Definition tried to define reserved %Invalid ssa node");
+          LogMan::Msg::EFmt("Error on Line: {}", i);
+          LogMan::Msg::EFmt("{}", Lines[i]);
+          LogMan::Msg::EFmt("Definition tried to define reserved %Invalid ssa node");
           return false;
         }
       }
@@ -436,9 +438,9 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
       else {
         if (RemainingLine.empty()) {
-          LogMan::Msg::E("Error on Line: %d", i);
-          LogMan::Msg::E("%s", Lines[i].c_str());
-          LogMan::Msg::E("Line without an IROp?");
+          LogMan::Msg::EFmt("Error on Line: {}", i);
+          LogMan::Msg::EFmt("{}", Lines[i]);
+          LogMan::Msg::EFmt("Line without an IROp?");
           return false;
         }
 
@@ -475,9 +477,9 @@ class IRParser: public FEXCore::IR::IREmitter {
       auto &Def = Defs[i];
       auto Op = NameToOpMap.find(Def.IROp);
       if (Op == NameToOpMap.end()) {
-        LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-        LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-        LogMan::Msg::E("IROp '%s' doesn't exist", Def.IROp.c_str());
+        LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+        LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+        LogMan::Msg::EFmt("IROp '{}' doesn't exist", Def.IROp);
         return false;
       }
       Def.OpEnum = Op->second;
@@ -487,11 +489,11 @@ class IRParser: public FEXCore::IR::IREmitter {
     IRPair<IROp_IRHeader> IRHeader;
     {
       auto &Def = Defs[0];
-			CurrentDef = &Def;
+      CurrentDef = &Def;
       if (Def.OpEnum != FEXCore::IR::IROps::OP_IRHEADER) {
-        LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-        LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-        LogMan::Msg::E("First op needs to be IRHeader. Was '%s'", Def.IROp.c_str());
+        LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+        LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+        LogMan::Msg::EFmt("First op needs to be IRHeader. Was '{}'", Def.IROp);
         return false;
       }
 
@@ -530,23 +532,22 @@ class IRParser: public FEXCore::IR::IREmitter {
     FEXCore::IR::IROp_CodeBlock *CurrentBlockOp{};
     for(size_t i = 1; i < Defs.size(); ++i) {
       auto &Def = Defs[i];
-			CurrentDef = &Def;
-
+      CurrentDef = &Def;
 
       switch (Def.OpEnum) {
         // Special handled
         case FEXCore::IR::IROps::OP_IRHEADER:
-          LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-          LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-          LogMan::Msg::E("IRHEADER used in the middle of the block!");
+          LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+          LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+          LogMan::Msg::EFmt("IRHEADER used in the middle of the block!");
           return false; // only one OP_IRHEADER allowed per block
 
         case FEXCore::IR::IROps::OP_CODEBLOCK: {
           SetWriteCursor(nullptr); // isolate from previous block
           if (CurrentBlock != nullptr) {
-            LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-            LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-            LogMan::Msg::E("CodeBlock being used inside of already existing codeblock!");
+            LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+            LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+            LogMan::Msg::EFmt("CodeBlock being used inside of already existing codeblock!");
             return false;
           }
 
@@ -558,15 +559,16 @@ class IRParser: public FEXCore::IR::IREmitter {
 
         case FEXCore::IR::IROps::OP_BEGINBLOCK: {
           if (CurrentBlock == nullptr) {
-            LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-            LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-            LogMan::Msg::E("EndBlock being used outside of a block!");
+            LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+            LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+            LogMan::Msg::EFmt("EndBlock being used outside of a block!");
             return false;
           }
 
           auto Adjust = DecodeValue<OrderedNode*>(Def.Args[0]);
-
-          if (!CheckPrintError(Def, Adjust.first)) return false;
+          if (!CheckPrintError(Def, Adjust.first)) {
+            return false;
+          }
 
           Def.Node = _BeginBlock(Adjust.second);
           CurrentBlockOp->Begin = Def.Node->Wrapped(DualListData.ListBegin());
@@ -575,15 +577,16 @@ class IRParser: public FEXCore::IR::IREmitter {
 
         case FEXCore::IR::IROps::OP_ENDBLOCK: {
           if (CurrentBlock == nullptr) {
-            LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-            LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-            LogMan::Msg::E("EndBlock being used outside of a block!");
+            LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+            LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+            LogMan::Msg::EFmt("EndBlock being used outside of a block!");
             return false;
           }
 
           auto Adjust = DecodeValue<OrderedNode*>(Def.Args[0]);
-
-          if (!CheckPrintError(Def, Adjust.first)) return false;
+          if (!CheckPrintError(Def, Adjust.first)) {
+            return false;
+          }
 
           Def.Node = _EndBlock(Adjust.second);
           CurrentBlockOp->Last = Def.Node->Wrapped(DualListData.ListBegin());
@@ -595,20 +598,18 @@ class IRParser: public FEXCore::IR::IREmitter {
         }
 
         case FEXCore::IR::IROps::OP_DUMMY: {
-          LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-          LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-          LogMan::Msg::E("Dummy op must not be used");
-
+          LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+          LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+          LogMan::Msg::EFmt("Dummy op must not be used");
           break;
         }
 #define IROP_PARSER_SWITCH_HELPERS
 #include <FEXCore/IR/IRDefines.inc>
         default: {
-          LogMan::Msg::E("Error on Line: %d", Def.LineNumber);
-          LogMan::Msg::E("%s", Lines[Def.LineNumber].c_str());
-          LogMan::Msg::E("Unhandled Op enum '%s' in parser", Def.IROp.c_str());
+          LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+          LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+          LogMan::Msg::EFmt("Unhandled Op enum '{}' in parser", Def.IROp);
           return false;
-          break;
         }
       }
 
