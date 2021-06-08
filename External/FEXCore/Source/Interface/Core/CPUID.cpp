@@ -90,7 +90,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h() {
     (0 << 16) | // Reserved
     (0 << 17) | // Process-context identifiers
     (1 << 18) | // Prefetching from memory mapped device
-    (0 << 19) | // SSE4.1
+    (1 << 19) | // SSE4.1
     (0 << 20) | // SSE4.2
     (0 << 21) | // X2APIC
     (1 << 22) | // MOVBE

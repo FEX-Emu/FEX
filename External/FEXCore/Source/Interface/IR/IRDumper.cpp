@@ -154,6 +154,17 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   }
 }
 
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::RoundType Arg) {
+  switch (Arg) {
+    case FEXCore::IR::Round_Nearest: *out << "Nearest"; break;
+    case FEXCore::IR::Round_Negative_Infinity: *out << "-Inf"; break;
+    case FEXCore::IR::Round_Positive_Infinity: *out << "+Inf"; break;
+    case FEXCore::IR::Round_Towards_Zero: *out << "Towards Zero"; break;
+    case FEXCore::IR::Round_Host: *out << "Host"; break;
+    default: *out << "<Unknown Round Type>"; break;
+  }
+}
+
 void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData) {
   auto HeaderOp = IR->GetHeader();
 

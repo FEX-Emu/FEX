@@ -198,6 +198,62 @@ DEF_OP(Vector_FToF) {
   }
 }
 
+DEF_OP(Vector_FToI) {
+  auto Op = IROp->C<IR::IROp_Vector_FToI>();
+  switch (Op->Round) {
+    case FEXCore::IR::Round_Nearest.Val:
+      switch (Op->Header.ElementSize) {
+        case 4:
+          frintn(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        break;
+        case 8:
+          frintn(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        break;
+      }
+    break;
+    case FEXCore::IR::Round_Negative_Infinity.Val:
+      switch (Op->Header.ElementSize) {
+        case 4:
+          frintm(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        break;
+        case 8:
+          frintm(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        break;
+      }
+    break;
+    case FEXCore::IR::Round_Positive_Infinity.Val:
+      switch (Op->Header.ElementSize) {
+        case 4:
+          frintp(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        break;
+        case 8:
+          frintp(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        break;
+      }
+    break;
+    case FEXCore::IR::Round_Towards_Zero.Val:
+      switch (Op->Header.ElementSize) {
+        case 4:
+          frintz(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        break;
+        case 8:
+          frintz(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        break;
+      }
+    break;
+    case FEXCore::IR::Round_Host.Val:
+      switch (Op->Header.ElementSize) {
+        case 4:
+          frinti(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+        break;
+        case 8:
+          frinti(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+        break;
+      }
+    break;
+  }
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterConversionHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -213,6 +269,7 @@ void Arm64JITCore::RegisterConversionHandlers() {
   REGISTER_OP(VECTOR_FTOU,     Vector_FToU);
   REGISTER_OP(VECTOR_FTOS,     Vector_FToS);
   REGISTER_OP(VECTOR_FTOF,     Vector_FToF);
+  REGISTER_OP(VECTOR_FTOI,     Vector_FToI);
 #undef REGISTER_OP
 }
 }

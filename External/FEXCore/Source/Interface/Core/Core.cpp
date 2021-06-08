@@ -43,7 +43,6 @@ $end_info$
 #include <sys/stat.h>
 
 #include "Interface/Core/GdbServer.h"
-#include <shared_mutex>
 
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
@@ -52,61 +51,6 @@ namespace FEXCore::CPU {
     return true;
   }
 }
-
-static std::shared_mutex AOTIRCacheLock;
-static std::shared_mutex AOTIRCaptureCacheWriteoutLock;
-static std::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
-static std::atomic<bool> AOTIRCaptureCacheWriteoutFlusing;
-
-void AOTIRCaptureCacheWriteoutQueue_Flush() {
-
-  {
-    std::shared_lock lk{AOTIRCaptureCacheWriteoutLock};
-    if (AOTIRCaptureCacheWriteoutQueue.size() == 0) {
-      AOTIRCaptureCacheWriteoutFlusing.store(false);
-      return;    
-    }
-  }
-  
-  for (;;) {
-    AOTIRCaptureCacheWriteoutLock.lock();
-    std::function<void()> fn = std::move(AOTIRCaptureCacheWriteoutQueue.front());
-    bool MaybeEmpty = false;
-    AOTIRCaptureCacheWriteoutQueue.pop();
-    MaybeEmpty = AOTIRCaptureCacheWriteoutQueue.size() == 0;
-    AOTIRCaptureCacheWriteoutLock.unlock();
-
-    fn();
-    if (MaybeEmpty) {
-      std::shared_lock lk{AOTIRCaptureCacheWriteoutLock};
-      if (AOTIRCaptureCacheWriteoutQueue.size() == 0) {
-        AOTIRCaptureCacheWriteoutFlusing.store(false);
-        return;
-      }
-    }
-  }
-
-  LOGMAN_MSG_A("Must never get here");
-}
-
-void AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn) {
-  bool Flush = false;
-
-  {
-    std::unique_lock lk{AOTIRCaptureCacheWriteoutLock};
-    AOTIRCaptureCacheWriteoutQueue.push(fn);
-    if (AOTIRCaptureCacheWriteoutQueue.size() > 10000) {
-      Flush = true;
-    }
-  }
-
-  bool test_val = false;
-  if (Flush && AOTIRCaptureCacheWriteoutFlusing.compare_exchange_strong(test_val, true)) {
-    AOTIRCaptureCacheWriteoutQueue_Flush();
-  }
-}
-
-
 
 namespace FEXCore::Core {
 struct ThreadLocalData {
@@ -201,6 +145,53 @@ namespace DefaultFallbackCore {
 }
 
 namespace FEXCore::Context {
+  void Context::AOTIRCaptureCacheWriteoutQueue_Flush() {
+    {
+      std::shared_lock lk{AOTIRCaptureCacheWriteoutLock};
+      if (AOTIRCaptureCacheWriteoutQueue.size() == 0) {
+        AOTIRCaptureCacheWriteoutFlusing.store(false);
+        return;
+      }
+    }
+
+    for (;;) {
+      AOTIRCaptureCacheWriteoutLock.lock();
+      std::function<void()> fn = std::move(AOTIRCaptureCacheWriteoutQueue.front());
+      bool MaybeEmpty = false;
+      AOTIRCaptureCacheWriteoutQueue.pop();
+      MaybeEmpty = AOTIRCaptureCacheWriteoutQueue.size() == 0;
+      AOTIRCaptureCacheWriteoutLock.unlock();
+
+      fn();
+      if (MaybeEmpty) {
+        std::shared_lock lk{AOTIRCaptureCacheWriteoutLock};
+        if (AOTIRCaptureCacheWriteoutQueue.size() == 0) {
+          AOTIRCaptureCacheWriteoutFlusing.store(false);
+          return;
+        }
+      }
+    }
+
+    LOGMAN_MSG_A("Must never get here");
+  }
+
+  void Context::AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn) {
+    bool Flush = false;
+
+    {
+      std::unique_lock lk{AOTIRCaptureCacheWriteoutLock};
+      AOTIRCaptureCacheWriteoutQueue.push(fn);
+      if (AOTIRCaptureCacheWriteoutQueue.size() > 10000) {
+        Flush = true;
+      }
+    }
+
+    bool test_val = false;
+    if (Flush && AOTIRCaptureCacheWriteoutFlusing.compare_exchange_strong(test_val, true)) {
+      AOTIRCaptureCacheWriteoutQueue_Flush();
+    }
+  }
+
   Context::Context() {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
@@ -878,14 +869,14 @@ namespace FEXCore::Context {
 
       //GuestLength
       Stream->write((char*)&Length, sizeof(Length));
-      
+
       // RAData (inline)
       // In file, IsShared is always set
       auto Shared = RAData->IsShared;
       RAData->IsShared = true;
       Stream->write((char*)RAData, RAData->Size(RAData->MapCount));
       RAData->IsShared = Shared;
-      
+
       // IRData (inline)
       IRList->Serialize(*Stream);
     }
@@ -1006,14 +997,14 @@ namespace FEXCore::Context {
 
   bool Context::LoadAOTIRCache(int streamfd) {
     uint64_t tag;
-    
+
     if (!readAll(streamfd, (char*)&tag, sizeof(tag)) || tag != 0xDEADBEEFC0D30004)
       return false;
-    
+
     std::string Module;
     uint64_t ModSize;
     uint64_t IndexSize;
-    
+
     lseek(streamfd, -sizeof(ModSize), SEEK_END);
 
     if (!readAll(streamfd,  (char*)&ModSize, sizeof(ModSize)))
@@ -1072,7 +1063,7 @@ namespace FEXCore::Context {
 
       auto ModSize = AOTModule.first.size();
       auto &stream = AOTModule.second.Stream;
-      
+
       // pad to 32 bytes
       char Zero = 0;
       while(stream->tellp() & 31)
@@ -1094,7 +1085,7 @@ namespace FEXCore::Context {
         // DataOffset
         stream->write((char*)&entry.second, sizeof(entry.second));
       }
-      
+
       // End of file header
       auto IndexSize = FnCount * sizeof(AOTIRInlineIndexEntry) + sizeof(DataBase) + sizeof(FnCount);
       stream->write((char*)&IndexSize, sizeof(IndexSize));
@@ -1220,7 +1211,7 @@ namespace FEXCore::Context {
             --Thread->CompileBlockReentrantRefCount;
 
           Thread->CPUBackend->ClearCache();
-          
+
           return (uintptr_t)CodePtr;
         }
       }

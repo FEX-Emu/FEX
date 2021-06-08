@@ -260,12 +260,6 @@ public:
   template<size_t ElementSize>
   void PSUBQOp(OpcodeArgs);
   template<size_t ElementSize>
-  void PMINUOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PMAXUOp(OpcodeArgs);
-  void PMINSWOp(OpcodeArgs);
-  void PMAXSWOp(OpcodeArgs);
-  template<size_t ElementSize>
   void MOVMSKOp(OpcodeArgs);
   void MOVMSKOpOne(OpcodeArgs);
   template<size_t ElementSize>
@@ -275,10 +269,6 @@ public:
   void PSHUFBOp(OpcodeArgs);
   template<size_t ElementSize, bool HalfSize, bool Low>
   void PSHUFDOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PCMPEQOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PCMPGTOp(OpcodeArgs);
   void MOVDOp(OpcodeArgs);
   template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
   void PSRLDOp(OpcodeArgs);
@@ -328,14 +318,9 @@ public:
   void InsertPSOp(OpcodeArgs);
   template<size_t ElementSize>
   void PExtrOp(OpcodeArgs);
-  template<size_t ElementSize, bool Signed>
-  void PMULOp(OpcodeArgs);
 
   template<size_t ElementSize>
   void PSIGN(OpcodeArgs);
-
-  template<size_t ElementSize>
-  void PABS(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>
@@ -470,6 +455,23 @@ public:
   void AESDecOp(OpcodeArgs);
   void AESDecLastOp(OpcodeArgs);
   void AESKeyGenAssist(OpcodeArgs);
+
+  template<size_t ElementSize, size_t DstElementSize, bool Signed>
+  void ExtendVectorElements(OpcodeArgs);
+  template<size_t ElementSize, bool Scalar>
+  void VectorRound(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void VectorBlend(OpcodeArgs);
+
+  template<size_t ElementSize>
+  void VectorVariableBlend(OpcodeArgs);
+  void PTestOp(OpcodeArgs);
+  void PHMINPOSUWOp(OpcodeArgs);
+  template<size_t ElementSize>
+  void DPPOp(OpcodeArgs);
+
+  void MPSADBWOp(OpcodeArgs);
 
   void UnimplementedOp(OpcodeArgs);
 

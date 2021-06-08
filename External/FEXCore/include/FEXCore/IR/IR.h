@@ -323,6 +323,14 @@ struct FenceType final {
   friend constexpr bool operator==(const FenceType&, const FenceType&) = default;
 };
 
+struct RoundType final {
+  uint8_t Val;
+  constexpr operator uint8_t() const {
+    return Val;
+  }
+  friend constexpr bool operator==(const RoundType&, const RoundType&) = default;
+};
+
 struct SHA256Sum final {
   uint8_t data[32];
   bool operator<(SHA256Sum const &rhs) const { return memcmp(data, rhs.data, sizeof(data)) < 0; }

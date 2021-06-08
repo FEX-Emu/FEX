@@ -12,6 +12,10 @@ static void PrintValue(uint64_t Value) {
   LogMan::Msg::D("Value: 0x%lx", Value);
 }
 
+static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
+  LogMan::Msg::D("Value: 0x%016lx'%016lx", ValueUpper, Value);
+}
+
 #define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 
 DEF_OP(Fence) {
@@ -119,24 +123,22 @@ DEF_OP(SetRoundingMode) {
 DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 
-  for (auto &Reg : RA64)
-    push(Reg);
+  PushRegs();
+  if (IsGPR(Op->Header.Args[0].ID())) {
+    mov (rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
-  auto NumPush = RA64.size();
-  if (NumPush & 1)
-    sub(rsp, 8); // Align
+    mov(rax, reinterpret_cast<uintptr_t>(PrintValue));
+  }
+  else {
+    pextrq(rdi, GetSrc(Op->Header.Args[0].ID()), 0);
+    pextrq(rsi, GetSrc(Op->Header.Args[0].ID()), 1);
 
-  mov (rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-
-  mov(rax, reinterpret_cast<uintptr_t>(PrintValue));
+    mov(rax, reinterpret_cast<uintptr_t>(PrintVectorValue));
+  }
 
   call(rax);
 
-  if (NumPush & 1)
-    add(rsp, 8); // Align
-
-  for (uint32_t i = RA64.size(); i > 0; --i)
-    pop(RA64[i - 1]);
+  PopRegs();
 }
 
 #undef DEF_OP

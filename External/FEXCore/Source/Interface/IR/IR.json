@@ -60,6 +60,12 @@
     "constexpr static uint8_t ROUND_MODE_TOWARDS_ZERO      = 3",
     "constexpr static uint8_t ROUND_MODE_FLUSH_TO_ZERO     = 1 << 2",
 
+    "static constexpr FEXCore::IR::RoundType Round_Nearest {ROUND_MODE_NEAREST}",
+    "static constexpr FEXCore::IR::RoundType Round_Negative_Infinity {ROUND_MODE_NEGATIVE_INFINITY}",
+    "static constexpr FEXCore::IR::RoundType Round_Positive_Infinity {ROUND_MODE_POSITIVE_INFINITY}",
+    "static constexpr FEXCore::IR::RoundType Round_Towards_Zero {ROUND_MODE_TOWARDS_ZERO} /* Truncate */",
+    "static constexpr FEXCore::IR::RoundType Round_Host {ROUND_MODE_TOWARDS_ZERO + 1}",
+
     "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTX {0};",
     "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1};",
     "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2};"
@@ -1664,6 +1670,23 @@
       ]
     },
 
+    "VBic": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Vector1",
+        "Vector2"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VOr": {
       "OpClass": "Vector",
       "HasDest": true,
@@ -1809,8 +1832,8 @@
       "NumElements": "RegisterSize / ElementSize",
       "SSAArgs": "2",
       "SSANames": [
-        "Vector1",
-        "Vector2"
+        "VectorLower",
+        "VectorUpper"
       ],
       "HelperArgs": [
         "uint8_t", "RegisterSize",
@@ -1821,6 +1844,25 @@
     "VAddV": {
       "OpClass": "Vector",
       "Desc": ["Does a horizontal vector add of elements across the source vector",
+               "Result is a zero extended scalar"
+              ],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUMinV": {
+      "OpClass": "Vector",
+      "Desc": ["Does a horizontal vector unsigned minimum of elements across the source vector",
                "Result is a zero extended scalar"
               ],
       "HasDest": true,
@@ -1873,6 +1915,24 @@
       ]
     },
 
+    "VPopcount": {
+      "OpClass": "Vector",
+      "Desc": ["Does a popcount for each element of the register"
+              ],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VFAdd": {
       "OpClass": "Vector",
       "HasDest": true,
@@ -1899,8 +1959,8 @@
       "NumElements": "RegisterSize / ElementSize",
       "SSAArgs": "2",
       "SSANames": [
-        "Vector1",
-        "Vector2"
+        "VectorLow",
+        "VectorHigh"
       ],
       "HelperArgs": [
         "uint8_t", "RegisterSize",
@@ -2176,6 +2236,40 @@
     },
 
     "VZip2": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Lower",
+        "Upper"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUnZip": {
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Lower",
+        "Upper"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUnZip2": {
       "OpClass": "Vector",
       "HasDest": true,
       "DestClass": "FPR",
@@ -2570,6 +2664,26 @@
       "HasDest": true,
       "DestClass": "FPR",
       "DestSize": "ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ],
+      "Args": [
+        "uint8_t", "Index"
+      ]
+    },
+
+    "VDupElement": {
+      "Desc": ["Duplicates one element from the source register across the whole register"],
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
       "SSAArgs": "1",
       "SSANames": [
         "Vector"
@@ -3124,6 +3238,28 @@
       ]
     },
 
+    "Vector_FToI": {
+      "OpClass": "Conv",
+      "Desc": ["Vector op: Rounds float to integral",
+               "Rounding mode determined by argument"
+              ],
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Vector"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ],
+      "Args":[
+        "FEXCore::IR::RoundType", "Round"
+      ]
+    },
+
     "VUMul": {
       "OpClass": "Vector",
       "HasDest": true,
@@ -3216,6 +3352,25 @@
     "VSMull2": {
       "OpClass": "Vector",
       "Dest": "Multiplies the high elements with size extension",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / (ElementSize << 1)",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Vector1",
+        "Vector2"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
+    "VUABDL": {
+      "OpClass": "Vector",
+      "Desc": ["Unsigned Absolute Difference Long"
+              ],
       "HasDest": true,
       "DestClass": "FPR",
       "DestSize": "RegisterSize",

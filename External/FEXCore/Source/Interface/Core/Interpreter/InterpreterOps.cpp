@@ -21,6 +21,7 @@
 
 #include "Interface/HLE/Thunks/Thunks.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <limits>
@@ -1217,7 +1218,41 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             }
             break;
           }
+          case IR::OP_VDUPELEMENT: {
+            auto Op = IROp->C<IR::IROp_VDupElement>();
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
 
+            LOGMAN_THROW_A(OpSize <= 16, "OpSize is too large for VDupElement: %d", OpSize);
+            if (OpSize == 16) {
+              __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
+              uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
+              if (Op->Header.ElementSize == 8)
+                SourceMask = ~0ULL;
+
+              __uint128_t Src = *GetSrc<__uint128_t*>(SSAData, Op->Header.Args[0]);
+              Src >>= Shift;
+              Src &= SourceMask;
+              for (size_t i = 0; i < Elements; ++i) {
+                memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GDP) + (Op->Header.ElementSize * i)),
+                  &Src, Op->Header.ElementSize);
+              }
+            }
+            else {
+              uint64_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
+              uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
+              if (Op->Header.ElementSize == 8)
+                SourceMask = ~0ULL;
+
+              uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
+              Src >>= Shift;
+              Src &= SourceMask;
+              for (size_t i = 0; i < Elements; ++i) {
+                memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GDP) + (Op->Header.ElementSize * i)),
+                  &Src, Op->Header.ElementSize);
+              }
+            }
+            break;
+          }
           case IR::OP_ENTRYPOINTOFFSET: {
             auto Op = IROp->C<IR::IROp_EntrypointOffset>();
             GD = Entry + Op->Offset;
@@ -1575,10 +1610,10 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             uint8_t Mask = OpSize * 8 - 1;
             switch (OpSize) {
               case 4:
-                GD = static_cast<int32_t>(Src1) << (Src2 & Mask);
+                GD = static_cast<uint32_t>(Src1) << (Src2 & Mask);
                 break;
               case 8:
-                GD = static_cast<int64_t>(Src1) << (Src2 & Mask);
+                GD = static_cast<uint64_t>(Src1) << (Src2 & Mask);
                 break;
               default: LOGMAN_MSG_A("Unknown LSHL Size: %d\n", OpSize); break;
             };
@@ -2519,6 +2554,16 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             memcpy(GDP, &Dst, 16);
             break;
           }
+          case IR::OP_VBIC: {
+            auto Op = IROp->C<IR::IROp_VBic>();
+            __uint128_t Src1 = *GetSrc<__uint128_t*>(SSAData, Op->Header.Args[0]);
+            __uint128_t Src2 = *GetSrc<__uint128_t*>(SSAData, Op->Header.Args[1]);
+
+            __uint128_t Dst = Src1 & ~Src2;
+            memcpy(GDP, &Dst, 16);
+            break;
+          }
+
           case IR::OP_VXOR: {
             auto Op = IROp->C<IR::IROp_VXor>();
             __uint128_t Src1 = *GetSrc<__uint128_t*>(SSAData, Op->Header.Args[0]);
@@ -2964,6 +3009,24 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             memcpy(GDP, Tmp, Op->Header.ElementSize);
             break;
           }
+          case IR::OP_VUMINV: {
+            auto Op = IROp->C<IR::IROp_VUMinV>();
+            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func = [](auto current, auto a) { return std::min(current, a); };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_REDUCE_1SRC_OP(1, uint8_t, Func, ~0)
+              DO_VECTOR_REDUCE_1SRC_OP(2, uint16_t, Func, ~0)
+              DO_VECTOR_REDUCE_1SRC_OP(4, uint32_t, Func, ~0U)
+              DO_VECTOR_REDUCE_1SRC_OP(8, uint64_t, Func, ~0ULL)
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, Op->Header.ElementSize);
+            break;
+          }
           case IR::OP_VURAVG: {
             auto Op = IROp->C<IR::IROp_VURAvg>();
             void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -2994,6 +3057,24 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               DO_VECTOR_1SRC_OP(2, int16_t, Func)
               DO_VECTOR_1SRC_OP(4, int32_t, Func)
               DO_VECTOR_1SRC_OP(8, int64_t, Func)
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
+          case IR::OP_VPOPCOUNT: {
+            auto Op = IROp->C<IR::IROp_VPopcount>();
+            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func = [](auto a) { return std::popcount(a); };
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_1SRC_OP(1, uint8_t, Func)
+              DO_VECTOR_1SRC_OP(2, uint16_t, Func)
+              DO_VECTOR_1SRC_OP(4, uint32_t, Func)
+              DO_VECTOR_1SRC_OP(8, uint64_t, Func)
               default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
@@ -3478,6 +3559,28 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             memcpy(GDP, Tmp, Op->Header.Size);
             break;
           }
+          case IR::OP_VUABDL: {
+            auto Op = IROp->C<IR::IROp_VUABDL>();
+            void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(SSAData, Op->Header.Args[1]);
+
+            uint8_t Tmp[16];
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+            auto Func8 = [](auto a, auto b) { return std::abs((int16_t)a - (int16_t)b); };
+            auto Func16 = [](auto a, auto b) { return std::abs((int32_t)a - (int32_t)b); };
+            auto Func32 = [](auto a, auto b) { return std::abs((int64_t)a - (int64_t)b); };
+
+            switch (Op->Header.ElementSize) {
+              DO_VECTOR_2SRC_2TYPE_OP(2, uint16_t, uint8_t, Func8)
+              DO_VECTOR_2SRC_2TYPE_OP(4, uint32_t, uint16_t, Func16)
+              DO_VECTOR_2SRC_2TYPE_OP(8, uint64_t, uint32_t, Func32)
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
           case IR::OP_VSXTL: {
             auto Op = IROp->C<IR::IROp_VSXTL>();
             void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -3798,6 +3901,64 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             memcpy(GDP, Tmp, OpSize);
             break;
           }
+          case IR::OP_VUNZIP2:
+          case IR::OP_VUNZIP: {
+            auto Op = IROp->C<IR::IROp_VUnZip>();
+            void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            void *Src2 = GetSrc<void*>(SSAData, Op->Header.Args[1]);
+            uint8_t Tmp[16];
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+            unsigned Start = IROp->Op == IR::OP_VUNZIP ? 0 : 1;
+            Elements >>= 1;
+
+            switch (Op->Header.ElementSize) {
+              case 1: {
+                auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
+                auto *Src1_d = reinterpret_cast<uint8_t*>(Src1);
+                auto *Src2_d = reinterpret_cast<uint8_t*>(Src2);
+                for (unsigned i = 0; i < Elements; ++i) {
+                  Dst_d[i] = Src1_d[Start + (i * 2)];
+                  Dst_d[Elements+i] = Src2_d[Start + (i * 2)];
+                }
+                break;
+              }
+              case 2: {
+                auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp);
+                auto *Src1_d = reinterpret_cast<uint16_t*>(Src1);
+                auto *Src2_d = reinterpret_cast<uint16_t*>(Src2);
+                for (unsigned i = 0; i < Elements; ++i) {
+                  Dst_d[i] = Src1_d[Start + (i * 2)];
+                  Dst_d[Elements+i] = Src2_d[Start + (i * 2)];
+                }
+                break;
+              }
+              case 4: {
+                auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp);
+                auto *Src1_d = reinterpret_cast<uint32_t*>(Src1);
+                auto *Src2_d = reinterpret_cast<uint32_t*>(Src2);
+                for (unsigned i = 0; i < Elements; ++i) {
+                  Dst_d[i] = Src1_d[Start + (i * 2)];
+                  Dst_d[Elements+i] = Src2_d[Start + (i * 2)];
+                }
+                break;
+              }
+              case 8: {
+                auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
+                auto *Src1_d = reinterpret_cast<uint64_t*>(Src1);
+                auto *Src2_d = reinterpret_cast<uint64_t*>(Src2);
+                for (unsigned i = 0; i < Elements; ++i) {
+                  Dst_d[i] = Src1_d[Start + (i * 2)];
+                  Dst_d[Elements+i] = Src2_d[Start + (i * 2)];
+                }
+                break;
+              }
+              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+            }
+
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
+
           case IR::OP_VINSELEMENT: {
             auto Op = IROp->C<IR::IROp_VInsElement>();
             void *Src1 = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -4180,6 +4341,10 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
 
             uint64_t Offset = Op->Index * Op->Header.ElementSize * 8;
             __uint128_t Mask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
+            if (Op->Header.ElementSize == 8) {
+              Mask = ~0ULL;
+            }
+            Src2 = Src2 & Mask;
             Mask <<= Offset;
             Mask = ~Mask;
             __uint128_t Dst = Src1 & Mask;
@@ -4335,6 +4500,53 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 break;
               }
               default: LOGMAN_MSG_A("Unknown Conversion Type : 0%04x", Conv); break;
+            }
+            memcpy(GDP, Tmp, OpSize);
+            break;
+          }
+          case IR::OP_VECTOR_FTOI: {
+            auto Op = IROp->C<IR::IROp_Vector_FToI>();
+            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
+            uint8_t Tmp[16]{};
+
+            uint8_t Elements = OpSize / Op->Header.ElementSize;
+            auto Func_Nearest = [](auto a) { return std::rint(a); };
+            auto Func_Neg = [](auto a) { return std::floor(a); };
+            auto Func_Pos = [](auto a) { return std::ceil(a); };
+            auto Func_Trunc = [](auto a) { return std::trunc(a); };
+            auto Func_Host = [](auto a) { return std::rint(a); };
+
+            switch (Op->Round) {
+              case FEXCore::IR::Round_Nearest.Val:
+                switch (Op->Header.ElementSize) {
+                  DO_VECTOR_1SRC_OP(4, float, Func_Nearest)
+                  DO_VECTOR_1SRC_OP(8, double, Func_Nearest)
+                }
+              break;
+              case FEXCore::IR::Round_Negative_Infinity.Val:
+                switch (Op->Header.ElementSize) {
+                  DO_VECTOR_1SRC_OP(4, float, Func_Neg)
+                  DO_VECTOR_1SRC_OP(8, double, Func_Neg)
+                }
+              break;
+              case FEXCore::IR::Round_Positive_Infinity.Val:
+                switch (Op->Header.ElementSize) {
+                  DO_VECTOR_1SRC_OP(4, float, Func_Pos)
+                  DO_VECTOR_1SRC_OP(8, double, Func_Pos)
+                }
+              break;
+              case FEXCore::IR::Round_Towards_Zero.Val:
+                switch (Op->Header.ElementSize) {
+                  DO_VECTOR_1SRC_OP(4, float, Func_Trunc)
+                  DO_VECTOR_1SRC_OP(8, double, Func_Trunc)
+                }
+              break;
+              case FEXCore::IR::Round_Host.Val:
+                switch (Op->Header.ElementSize) {
+                  DO_VECTOR_1SRC_OP(4, float, Func_Host)
+                  DO_VECTOR_1SRC_OP(8, double, Func_Host)
+                }
+              break;
             }
             memcpy(GDP, Tmp, OpSize);
             break;
