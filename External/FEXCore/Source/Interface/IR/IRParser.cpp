@@ -362,7 +362,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       // Let's see if this node is assigning something first
       if (Line[0] == '%') {
         size_t DefinitionEnd = std::string::npos;
-        if ((DefinitionEnd = Line.find_first_of("=", CurrentPos)) != std::string::npos) {
+        if ((DefinitionEnd = Line.find_first_of('=', CurrentPos)) != std::string::npos) {
           Def.Definition = Line.substr(0, DefinitionEnd);
           Def.Definition = trim(Def.Definition);
           Def.HasDefinition = true;
@@ -380,9 +380,9 @@ class IRParser: public FEXCore::IR::IREmitter {
       // Prints (%ssa%d) at the start of lines without a definition
       if (Line[0] == '(') {
         size_t DefinitionEnd = std::string::npos;
-        if ((DefinitionEnd = Line.find_first_of(")", CurrentPos)) != std::string::npos) {
+        if ((DefinitionEnd = Line.find_first_of(')', CurrentPos)) != std::string::npos) {
           size_t SSAEnd = std::string::npos;
-          if ((SSAEnd = Line.find_last_of(" ", DefinitionEnd)) != std::string::npos) {
+          if ((SSAEnd = Line.find_last_of(' ', DefinitionEnd)) != std::string::npos) {
             std::string Type = Line.substr(SSAEnd + 1, DefinitionEnd - SSAEnd - 1);
             Type = trim(Type);
 
@@ -408,7 +408,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       if (Def.HasDefinition) {
         // Let's check if we have a size declared with this variable
         size_t NameEnd = std::string::npos;
-        if ((NameEnd = Def.Definition.find_first_of(" ")) != std::string::npos) {
+        if ((NameEnd = Def.Definition.find_first_of(' ')) != std::string::npos) {
           std::string Type = Def.Definition.substr(NameEnd + 1);
           Type = trim(Type);
           Def.Definition = trim(Def.Definition.substr(0, NameEnd));
