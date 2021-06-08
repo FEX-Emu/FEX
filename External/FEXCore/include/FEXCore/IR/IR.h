@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <sstream>
 #include <tuple>
 
@@ -471,7 +472,7 @@ class IRListView;
 class IREmitter;
 
 FEX_DEFAULT_VISIBILITY void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData);
-FEX_DEFAULT_VISIBILITY IREmitter* Parse(std::istream *in);
+FEX_DEFAULT_VISIBILITY std::unique_ptr<IREmitter> Parse(std::istream *in);
 
 template<typename Type>
 inline uint32_t NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }

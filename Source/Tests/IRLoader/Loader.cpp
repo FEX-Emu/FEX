@@ -16,7 +16,7 @@ namespace FEX::IRLoader {
       return;
     }
 
-    ParsedCode.reset(FEXCore::IR::Parse(&fp));
+    ParsedCode = FEXCore::IR::Parse(&fp);
 
     if (ParsedCode) {
       auto NewIR = ParsedCode->ViewIR();

@@ -643,13 +643,12 @@ class IRParser: public FEXCore::IR::IREmitter {
 
 } // anon namespace
 
-IREmitter* Parse(std::istream *in) {
-    auto parser = new IRParser(in);
+std::unique_ptr<IREmitter> Parse(std::istream *in) {
+    auto parser = std::make_unique<IRParser>(in);
 
     if (parser->Loaded) {
       return parser;
     } else {
-      delete parser;
       return nullptr;
     }
 }
