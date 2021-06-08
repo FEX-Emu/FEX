@@ -15,6 +15,7 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/ELFSymbolDatabase.h>
@@ -216,7 +217,7 @@ namespace FEX::HarnessHelper {
           [[maybe_unused]] std::bitset<64> RegFlags = RegData->RegKey;
           assert(RegFlags.count() == 1  && "Must set reg data explicitly per register");
 
-          size_t NameIndex = __builtin_ffsl(RegData->RegKey)- 1;
+          size_t NameIndex = FEXCore::FindFirstSetBit(RegData->RegKey) - 1;
           auto Offset = OffsetArray[NameIndex];
           uint64_t *State1Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State1) + Offset);
           uint64_t *State2Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State2) + Offset);

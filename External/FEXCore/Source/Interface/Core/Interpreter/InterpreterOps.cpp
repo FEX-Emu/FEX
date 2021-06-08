@@ -15,6 +15,7 @@
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 
@@ -1873,7 +1874,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
           case IR::OP_FINDLSB: {
             auto Op = IROp->C<IR::IROp_FindLSB>();
             uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-            uint64_t Result = __builtin_ffsll(Src);
+            uint64_t Result = FindFirstSetBit(Src);
             GD = Result - 1;
             break;
           }
@@ -1891,9 +1892,9 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
           case IR::OP_REV: {
             auto Op = IROp->C<IR::IROp_Rev>();
             switch (OpSize) {
-              case 2: GD = __builtin_bswap16(*GetSrc<uint16_t*>(SSAData, Op->Header.Args[0])); break;
-              case 4: GD = __builtin_bswap32(*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0])); break;
-              case 8: GD = __builtin_bswap64(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0])); break;
+              case 2: GD = BSwap16(*GetSrc<uint16_t*>(SSAData, Op->Header.Args[0])); break;
+              case 4: GD = BSwap32(*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0])); break;
+              case 8: GD = BSwap64(*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0])); break;
               default: LOGMAN_MSG_A("Unknown REV size: %d", OpSize); break;
             }
             break;
