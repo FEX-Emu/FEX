@@ -37,7 +37,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
 }
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, CondClassType Arg) {
-  std::array<std::string, 22> CondNames = {
+  static constexpr std::array<std::string_view, 22> CondNames = {
     "EQ",
     "NEQ",
     "UGE",
@@ -66,7 +66,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
 }
 
 static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, MemOffsetType Arg) {
-  std::array<std::string, 3> Names = {
+  static constexpr std::array<std::string_view, 3> Names = {
     "SXTX",
     "UXTW",
     "SXTW",
