@@ -66,7 +66,8 @@ std::string DecodeErrorToString(DecodeFailure Failure) {
     case DecodeFailure::DECODE_INVALID_CONDFLAG: return "Invalid Conditional name";
     case DecodeFailure::DECODE_INVALID_MEMOFFSETTYPE: return "Invalid Memory Offset Type";
     case DecodeFailure::DECODE_INVALID_FENCETYPE: return "Invalid Fence Type";
-  };
+  }
+  return "Unknown Error";
 }
 
 std::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
