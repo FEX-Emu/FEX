@@ -1108,42 +1108,63 @@ DEF_OP(VExtractToGPR) {
   }
 }
 
-DEF_OP(Float_ToGPR_ZU) {
-  LogMan::Msg::D("Unimplemented");
-}
-
 DEF_OP(Float_ToGPR_ZS) {
   auto Op = IROp->C<IR::IROp_Float_ToGPR_ZS>();
-  if (Op->Header.ElementSize == 8) {
-    cvttsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
-  }
-  else {
-    cvttss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
-  }
-}
 
-DEF_OP(Float_ToGPR_U) {
-  LogMan::Msg::D("Unimplemented");
+  uint16_t Conv = (IROp->Size << 8) | Op->SrcElementSize;
+  switch (Conv) {
+    case 0x0804: // int64_t <- float
+      cvttss2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+    break;
+    case 0x0808: // int64_t <- double
+      cvttsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+    break;
+    case 0x0404: // int32_t <- float
+      cvttss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+    break;
+    case 0x0408: // int32_t <- double
+      cvttsd2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+    break;
+  }
 }
 
 DEF_OP(Float_ToGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_ToGPR_S>();
-  if (Op->Header.ElementSize == 8) {
-    cvtsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
-  }
-  else {
-    cvtss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+  uint16_t Conv = (IROp->Size << 8) | Op->SrcElementSize;
+  switch (Conv) {
+    case 0x0804: // int64_t <- float
+      cvtss2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+    break;
+    case 0x0808: // int64_t <- double
+      cvtsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+    break;
+    case 0x0404: // int32_t <- float
+      cvtss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+    break;
+    case 0x0408: // int32_t <- double
+      cvtsd2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+    break;
   }
 }
 
 DEF_OP(FCmp) {
   auto Op = IROp->C<IR::IROp_FCmp>();
 
-  if (Op->ElementSize == 4) {
-    ucomiss(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  if (Op->Flags & (1 << IR::FCMP_FLAG_UNORDERED)) {
+    if (Op->ElementSize == 4) {
+      ucomiss(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+    }
+    else {
+      ucomisd(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+    }
   }
   else {
-    ucomisd(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+    if (Op->ElementSize == 4) {
+      comiss(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+    }
+    else {
+      comisd(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+    }
   }
   mov (rdx, 0);
 
@@ -1217,9 +1238,7 @@ void X86JITCore::RegisterALUHandlers() {
   REGISTER_OP(SBFE,              Sbfe);
   REGISTER_OP(SELECT,            Select);
   REGISTER_OP(VEXTRACTTOGPR,     VExtractToGPR);
-  REGISTER_OP(FLOAT_TOGPR_ZU,    Float_ToGPR_ZU);
   REGISTER_OP(FLOAT_TOGPR_ZS,    Float_ToGPR_ZS);
-  REGISTER_OP(FLOAT_TOGPR_U,     Float_ToGPR_U);
   REGISTER_OP(FLOAT_TOGPR_S,     Float_ToGPR_S);
   REGISTER_OP(FCMP,              FCmp);
 #undef REGISTER_OP
