@@ -74,22 +74,22 @@ std::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
 class IRParser: public FEXCore::IR::IREmitter {
   public:
   template<typename Type>
-  std::pair<DecodeFailure, Type> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, Type> DecodeValue(const std::string &Arg) {
     return {DecodeFailure::DECODE_UNKNOWN_TYPE, {}};
   }
 
 
   template<>
-  std::pair<DecodeFailure, uint8_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, uint8_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint8_t Result = strtoul(&Arg.at(1), nullptr, 0);
     if (errno == ERANGE) return {DecodeFailure::DECODE_INVALIDRANGE, 0};
     return {DecodeFailure::DECODE_OKAY, Result};
-	}
+  }
 
   template<>
-  std::pair<DecodeFailure, bool> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, bool> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint8_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -98,7 +98,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint16_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, uint16_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint16_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -107,7 +107,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint32_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, uint32_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint32_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -116,7 +116,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint64_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, uint64_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint64_t Result = strtoull(&Arg.at(1), nullptr, 0);
@@ -125,7 +125,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, int64_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, int64_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     int64_t Result = (int64_t)strtoull(&Arg.at(1), nullptr, 0);
@@ -134,7 +134,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, IR::SHA256Sum> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, IR::SHA256Sum> DecodeValue(const std::string &Arg) {
     IR::SHA256Sum Result;
 
     if (Arg.at(0) != 's' || Arg.at(1) != 'h' || Arg.at(2) != 'a' || Arg.at(3) != '2' || Arg.at(4) != '5' || Arg.at(5) != '6' || Arg.at(6) != ':')
@@ -165,7 +165,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::RegisterClassType> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::RegisterClassType> DecodeValue(const std::string &Arg) {
     if (Arg == "GPR") {
       return {DecodeFailure::DECODE_OKAY, FEXCore::IR::GPRClass};
     }
@@ -183,7 +183,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::TypeDefinition> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::TypeDefinition> DecodeValue(const std::string &Arg) {
     uint8_t Size{}, Elements{1};
     int NumArgs = sscanf(Arg.c_str(), "i%hhdv%hhd", &Size, &Elements);
 
@@ -195,7 +195,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::CondClassType> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::CondClassType> DecodeValue(const std::string &Arg) {
     static constexpr std::array<std::string_view, 22> CondNames = {
       "EQ",
       "NEQ",
@@ -230,7 +230,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::MemOffsetType> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::MemOffsetType> DecodeValue(const std::string &Arg) {
     static constexpr std::array<std::string_view, 3> Names = {
       "SXTX",
       "UXTW",
@@ -246,7 +246,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::FenceType> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::FenceType> DecodeValue(const std::string &Arg) {
     static constexpr std::array<std::string_view, 3> Names = {
       "Loads",
       "Stores",
@@ -262,23 +262,22 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, OrderedNode*> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, OrderedNode*> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '%') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     // Strip off the type qualifier from the ssa value
-    size_t ArgEnd = std::string::npos;
     std::string SSAName = trim(Arg);
-    ArgEnd = SSAName.find_first_of(" ");
+    const size_t ArgEnd = SSAName.find_first_of(' ');
 
     if (ArgEnd != std::string::npos) {
-			SSAName = SSAName.substr(0, ArgEnd);
-		}
+      SSAName = SSAName.substr(0, ArgEnd);
+    }
 
-		// Forward declarations may make this not succed
+    // Forward declarations may make this not succed
     auto Op = SSANameMapper.find(SSAName);
-		if (Op == SSANameMapper.end()) {
+    if (Op == SSANameMapper.end()) {
       return {DecodeFailure::DECODE_UNKNOWN_SSA, nullptr};
-		}
+    }
 
     return {DecodeFailure::DECODE_OKAY, Op->second};
   }
