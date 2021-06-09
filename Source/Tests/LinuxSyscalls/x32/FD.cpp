@@ -622,7 +622,7 @@ namespace FEX::HLE::x32 {
         }
       }
 
-      if (sigmaskpack) {
+      if (sigmaskpack && sigmaskpack->sigset) {
         uint64_t *sigmask = sigmaskpack->sigset;
         size_t sigsetsize = sigmaskpack->size;
         for (int32_t i = 0; i < (sigsetsize * 8); ++i) {
@@ -746,7 +746,7 @@ namespace FEX::HLE::x32 {
         }
       }
 
-      if (sigmaskpack) {
+      if (sigmaskpack && sigmaskpack->sigset) {
         uint64_t *sigmask = sigmaskpack->sigset;
         size_t sigsetsize = sigmaskpack->size;
         for (int32_t i = 0; i < (sigsetsize * 8); ++i) {
