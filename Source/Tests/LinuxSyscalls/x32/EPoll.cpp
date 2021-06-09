@@ -12,20 +12,20 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 
-#include <stdint.h>
+#include <algorithm>
+#include <cstdint>
 #include <sys/epoll.h>
-#include <vector>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::epoll_event_x86>, "%lx")
 
 namespace FEX::HLE::x32 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler) {
     REGISTER_SYSCALL_IMPL_X32(epoll_wait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, compat_ptr<epoll_event_x86> events, int maxevents, int timeout) -> uint64_t {
-      std::vector<struct epoll_event> Events;
-      Events.resize(maxevents);
-      uint64_t Result = ::syscall(SYS_epoll_pwait, epfd, &Events.at(0), maxevents, timeout, nullptr);
+      std::vector<struct epoll_event> Events(std::max(0, maxevents));
+      uint64_t Result = ::syscall(SYS_epoll_pwait, epfd, Events.data(), maxevents, timeout, nullptr);
 
       if (Result != -1) {
         for (size_t i = 0; i < Result; ++i) {
@@ -45,12 +45,11 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(epoll_pwait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, compat_ptr<epoll_event_x86> events, int maxevent, int timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
-      std::vector<struct epoll_event> Events;
-      Events.resize(maxevent);
+      std::vector<struct epoll_event> Events(std::max(0, maxevent));
 
       uint64_t Result = ::syscall(SYS_epoll_pwait,
         epfd,
-        &Events.at(0),
+        Events.data(),
         maxevent,
         timeout,
         sigmask,
@@ -70,8 +69,7 @@ namespace FEX::HLE::x32 {
 #define SYS_epoll_pwait2 354
 #endif
       REGISTER_SYSCALL_IMPL_X32(epoll_pwait2, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, compat_ptr<epoll_event_x86> events, int maxevent, compat_ptr<timespec32> timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
-        std::vector<struct epoll_event> Events;
-        Events.resize(maxevent);
+        std::vector<struct epoll_event> Events(std::max(0, maxevent));
 
         struct timespec tp64{};
         struct timespec *timed_ptr{};
@@ -82,7 +80,7 @@ namespace FEX::HLE::x32 {
 
         uint64_t Result = ::syscall(SYS_epoll_pwait2,
           epfd,
-          &Events.at(0),
+          Events.data(),
           maxevent,
           timed_ptr,
           sigmask,
