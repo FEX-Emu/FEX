@@ -7,6 +7,7 @@ $end_info$
 
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <functional>
 #include <mutex>
@@ -108,7 +109,7 @@ namespace FEX::HLE {
       DefaultBehaviour DefaultBehaviour {DEFAULT_TERM};
     };
 
-    SignalHandler HostHandlers[MAX_SIGNALS + 1]{};
+    std::array<SignalHandler, MAX_SIGNALS + 1> HostHandlers{};
     bool InstallHostThunk(int Signal);
     void UpdateHostThunk(int Signal);
 
