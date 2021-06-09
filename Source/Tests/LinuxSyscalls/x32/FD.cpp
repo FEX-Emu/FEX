@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 
+#include <algorithm>
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -32,6 +33,13 @@ $end_info$
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigset_argpack32>, "%lx")
 
 namespace FEX::HLE::x32 {
+  // Used to ensure no bogus values are passed into readv/writev family syscalls.
+  // This is mainly to sanitize vector sizing. It's fine for the bogus value
+  // itself to pass into the syscall, since the kernel will handle it.
+  static constexpr int SanitizeIOCount(int count) {
+    return std::max(0, count);
+  }
+
   using fd_set32 = uint32_t;
 #ifdef _M_X86_64
   uint32_t ioctl_32(FEXCore::Core::CpuStateFrame*, int fd, uint32_t cmd, uint32_t args) {
@@ -100,21 +108,14 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(readv, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, int iovcnt) -> uint64_t {
-      std::vector<iovec> Host_iovec(iovcnt);
-      for (int i = 0; i < iovcnt; ++i) {
-        Host_iovec[i] = iov[i];
-      }
-
-      uint64_t Result = ::readv(fd, &Host_iovec.at(0), iovcnt);
+      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
+      uint64_t Result = ::readv(fd, Host_iovec.data(), iovcnt);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(writev, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, int iovcnt) -> uint64_t {
-      std::vector<iovec> Host_iovec(iovcnt);
-      for (int i = 0; i < iovcnt; ++i) {
-        Host_iovec[i] = iov[i];
-      }
-      uint64_t Result = ::writev(fd, &Host_iovec.at(0), iovcnt);
+      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
+      uint64_t Result = ::writev(fd, Host_iovec.data(), iovcnt);
       SYSCALL_ERRNO();
     });
 
@@ -303,74 +304,46 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(preadv, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, int iovcnt, off_t offset) -> uint64_t {
-      std::vector<iovec> Host_iovec(iovcnt);
-      for (int i = 0; i < iovcnt; ++i) {
-        Host_iovec[i] = iov[i];
-      }
+      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
-      uint64_t Result = ::preadv(fd, &Host_iovec.at(0), iovcnt, offset);
+      uint64_t Result = ::preadv(fd, Host_iovec.data(), iovcnt, offset);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(pwritev, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, int iovcnt, off_t offset) -> uint64_t {
-      std::vector<iovec> Host_iovec(iovcnt);
-      for (int i = 0; i < iovcnt; ++i) {
-        Host_iovec[i] = iov[i];
-      }
+      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
-      uint64_t Result = ::pwritev(fd, &Host_iovec.at(0), iovcnt, offset);
+      uint64_t Result = ::pwritev(fd, Host_iovec.data(), iovcnt, offset);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(process_vm_readv, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct iovec32 *local_iov, unsigned long liovcnt, const struct iovec32 *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
-      std::vector<iovec> Host_local_iovec(liovcnt);
-      std::vector<iovec> Host_remote_iovec(riovcnt);
+      std::vector<iovec> Host_local_iovec(local_iov, local_iov + SanitizeIOCount(liovcnt));
+      std::vector<iovec> Host_remote_iovec(remote_iov, remote_iov + SanitizeIOCount(riovcnt));
 
-      for (int i = 0; i < liovcnt; ++i) {
-        Host_local_iovec[i] = local_iov[i];
-      }
-
-      for (int i = 0; i < riovcnt; ++i) {
-        Host_remote_iovec[i] = remote_iov[i];
-      }
-
-      uint64_t Result = ::process_vm_readv(pid, &Host_local_iovec.at(0), liovcnt, &Host_remote_iovec.at(0), riovcnt, flags);
+      uint64_t Result = ::process_vm_readv(pid, Host_local_iovec.data(), liovcnt, Host_remote_iovec.data(), riovcnt, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(process_vm_writev, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct iovec32 *local_iov, unsigned long liovcnt, const struct iovec32 *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
-      std::vector<iovec> Host_local_iovec(liovcnt);
-      std::vector<iovec> Host_remote_iovec(riovcnt);
+      std::vector<iovec> Host_local_iovec(local_iov, local_iov + SanitizeIOCount(liovcnt));
+      std::vector<iovec> Host_remote_iovec(remote_iov, remote_iov + SanitizeIOCount(riovcnt));
 
-      for (int i = 0; i < liovcnt; ++i) {
-        Host_local_iovec[i] = local_iov[i];
-      }
-
-      for (int i = 0; i < riovcnt; ++i) {
-        Host_remote_iovec[i] = remote_iov[i];
-      }
-
-      uint64_t Result = ::process_vm_writev(pid, &Host_local_iovec.at(0), liovcnt, &Host_remote_iovec.at(0), riovcnt, flags);
+      uint64_t Result = ::process_vm_writev(pid, Host_local_iovec.data(), liovcnt, Host_remote_iovec.data(), riovcnt, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(preadv2, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, int iovcnt, off_t offset, int flags) -> uint64_t {
-      std::vector<iovec> Host_iovec(iovcnt);
-      for (int i = 0; i < iovcnt; ++i) {
-        Host_iovec[i] = iov[i];
-      }
+      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
-      uint64_t Result = ::preadv2(fd, &Host_iovec.at(0), iovcnt, offset, flags);
+      uint64_t Result = ::preadv2(fd, Host_iovec.data(), iovcnt, offset, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(pwritev2, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, int iovcnt, off_t offset, int flags) -> uint64_t {
-      std::vector<iovec> Host_iovec(iovcnt);
-      for (int i = 0; i < iovcnt; ++i) {
-        Host_iovec[i] = iov[i];
-      }
+      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
-      uint64_t Result = ::pwritev2(fd, &Host_iovec.at(0), iovcnt, offset, flags);
+      uint64_t Result = ::pwritev2(fd, Host_iovec.data(), iovcnt, offset, flags);
       SYSCALL_ERRNO();
     });
 
