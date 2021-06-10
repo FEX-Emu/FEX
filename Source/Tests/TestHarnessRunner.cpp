@@ -142,7 +142,18 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::I("Faulted? %s", DidFault ? "Yes" : "No");
   LogMan::Msg::I("Passed? %s", Passed ? "Yes" : "No");
 
+  SyscallHandler.reset();
+  SignalDelegation.reset();
+
   FEXCore::Context::DestroyContext(CTX);
+  FEXCore::Context::ShutdownStaticTables();
+
+  FEXCore::Config::Shutdown();
+
+  LogMan::Throw::UnInstallHandlers();
+  LogMan::Msg::UnInstallHandlers();
+
+  FEXCore::Allocator::ClearHooks();
 
   return Passed ? 0 : -1;
 }

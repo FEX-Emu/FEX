@@ -20,4 +20,5 @@ namespace FEXCore::Allocator {
   FEX_DEFAULT_VISIBILITY extern FREE_Hook free;
 
   void SetupHooks();
+  void ClearHooks();
 }

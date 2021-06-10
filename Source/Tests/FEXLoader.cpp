@@ -37,7 +37,7 @@ $end_info$
 
 namespace {
 static bool SilentLog;
-static FILE *OutputFD {stderr};
+static int OutputFD {STDERR_FILENO};
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   const char *CharLevel{nullptr};
@@ -70,15 +70,17 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   }
 
   if (!SilentLog) {
-    fprintf(OutputFD, "[%s] %s\n", CharLevel, Message);
-    fflush(OutputFD);
+    std::ostringstream Output;
+    Output << "[" << CharLevel << "] " << Message << std::endl;
+    write(OutputFD, Output.str().c_str(), Output.str().size());
   }
 }
 
 void AssertHandler(char const *Message) {
   if (!SilentLog) {
-    fprintf(OutputFD, "[ASSERT] %s\n", Message);
-    fflush(OutputFD);
+    std::ostringstream Output;
+    Output << "[ASSERT] " << Message << std::endl;
+    write(OutputFD, Output.str().c_str(), Output.str().size());
   }
 }
 
@@ -169,7 +171,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
   // Make sure this section is executable and big enough
   if (!Section.Executable || Section.Size < 16)
     return;
-  
+
   std::set<uintptr_t> InitialBranchTargets;
 
   // Load the ELF again with symbol parsing this time
@@ -211,7 +213,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
       Destination += (uintptr_t)pCode + 5;
 
       auto DestinationPtr = (uint8_t*)Destination;
-      
+
       if (! (Destination >= Section.Base && Destination <= (Section.Base + Section.Size)) )
         continue; // outside of current section, unlikely to be real code
 
@@ -233,7 +235,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
   std::atomic<int> counter = 0;
 
   std::queue<uint64_t> BranchTargets;
-  
+
   // Setup BranchTargets, Compiled sets from InitiaBranchTargets
 
   Compiled.insert(InitialBranchTargets.begin(), InitialBranchTargets.end());
@@ -367,13 +369,13 @@ int main(int argc, char **argv, char **const envp) {
   if (!::SilentLog) {
     auto LogFile = OutputLog();
     if (LogFile == "stderr") {
-      OutputFD = stderr;
+      OutputFD = STDERR_FILENO;
     }
     else if (LogFile == "stdout") {
-      OutputFD = stdout;
+      OutputFD = STDOUT_FILENO;
     }
     else if (!LogFile.empty()) {
-      OutputFD = fopen(LogFile.c_str(), "wb");
+      OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
     }
   }
 
@@ -442,6 +444,7 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
+  // System allocator is now system allocator or FEX
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
   auto CTX = FEXCore::Context::CreateNewContext();
@@ -477,7 +480,6 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
-
   if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
   }
@@ -501,12 +503,12 @@ int main(int argc, char **argv, char **const envp) {
     return AOTWrite;
   });
 
-  for(auto Section: Loader.Sections) {
+  for(auto Section: *Loader.Sections) {
     FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
   }
 
   if (AOTIRGenerate()) {
-    for(auto &Section: Loader.Sections) {
+    for(auto &Section: *Loader.Sections) {
       AOTGenSection(CTX, Section);
     }
   } else {
@@ -538,16 +540,17 @@ int main(int argc, char **argv, char **const envp) {
   SignalDelegation.reset();
   FEXCore::Context::DestroyContext(CTX);
 
+  FEXCore::Context::ShutdownStaticTables();
+
+  Loader.FreeSections();
+
   FEXCore::Config::Shutdown();
 
   LogMan::Throw::UnInstallHandlers();
   LogMan::Msg::UnInstallHandlers();
 
-  if (OutputFD != stderr &&
-      OutputFD != stdout &&
-      OutputFD != nullptr) {
-    fclose(OutputFD);
-  }
+  FEXCore::Allocator::ClearHooks();
+  // Allocator is now original system allocator
 
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;

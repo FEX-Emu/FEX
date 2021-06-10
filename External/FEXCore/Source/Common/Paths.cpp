@@ -6,10 +6,13 @@
 #include <sys/stat.h>
 
 namespace FEXCore::Paths {
-  std::string CachePath;
-  std::string EntryCache;
+  std::unique_ptr<std::string> CachePath;
+  std::unique_ptr<std::string> EntryCache;
 
   void InitializePaths() {
+    CachePath = std::make_unique<std::string>();
+    EntryCache = std::make_unique<std::string>();
+
     char const *HomeDir = getenv("HOME");
 
     if (!HomeDir) {
@@ -22,29 +25,34 @@ namespace FEXCore::Paths {
 
     char *XDGDataDir = getenv("XDG_DATA_DIR");
     if (XDGDataDir) {
-      CachePath = XDGDataDir;
+      *CachePath = XDGDataDir;
     }
     else {
       if (HomeDir) {
-        CachePath = HomeDir;
+        *CachePath = HomeDir;
       }
     }
 
-    CachePath += "/.fex-emu/";
-    EntryCache = CachePath + "/EntryCache/";
+    *CachePath += "/.fex-emu/";
+    *EntryCache = *CachePath + "/EntryCache/";
 
     // Ensure the folder structure is created for our Data
-    if (!std::filesystem::exists(EntryCache) &&
-        !std::filesystem::create_directories(EntryCache)) {
-      LogMan::Msg::D("Couldn't create EntryCache directory: '%s'", EntryCache.c_str());
+    if (!std::filesystem::exists(*EntryCache) &&
+        !std::filesystem::create_directories(*EntryCache)) {
+      LogMan::Msg::D("Couldn't create EntryCache directory: '%s'", EntryCache->c_str());
     }
   }
 
+  void ShutdownPaths() {
+    CachePath.reset();
+    EntryCache.reset();
+  }
+
   std::string GetCachePath() {
-    return CachePath;
+    return *CachePath;
   }
 
   std::string GetEntryCachePath() {
-    return EntryCache;
+    return *EntryCache;
   }
 }
