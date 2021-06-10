@@ -300,7 +300,7 @@ namespace FEX::HLE {
 
     // Most signals default to termination
     // These ones are slightly different
-    const std::vector<std::pair<int, SignalDelegator::DefaultBehaviour>> SignalDefaultBehaviours = {
+    static constexpr std::array<std::pair<int, SignalDelegator::DefaultBehaviour>, 14> SignalDefaultBehaviours = {{
       {SIGQUIT,   DEFAULT_COREDUMP},
       {SIGILL,    DEFAULT_COREDUMP},
       {SIGTRAP,   DEFAULT_COREDUMP},
@@ -315,10 +315,10 @@ namespace FEX::HLE {
       {SIGXFSZ,   DEFAULT_COREDUMP},
       {SIGSYS,    DEFAULT_COREDUMP},
       {SIGWINCH,  DEFAULT_IGNORE},
-    };
+    }};
 
-    for (auto Behaviour : SignalDefaultBehaviours) {
-      HostHandlers[Behaviour.first].DefaultBehaviour = Behaviour.second;
+    for (const auto [Signal, Behaviour] : SignalDefaultBehaviours) {
+      HostHandlers[Signal].DefaultBehaviour = Behaviour;
     }
   }
 
