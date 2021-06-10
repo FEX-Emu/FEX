@@ -60,15 +60,16 @@ namespace FEX::Config {
     jsonPool_t PoolObject;
     std::unique_ptr<std::list<json_t>> json_objects;
   };
+  static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
   json_t* PoolInit(jsonPool_t* Pool) {
-    JsonAllocator* alloc = json_containerOf(Pool, JsonAllocator, PoolObject);
+    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
     alloc->json_objects = std::make_unique<std::list<json_t>>();
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
   json_t* PoolAlloc(jsonPool_t* Pool) {
-    JsonAllocator* alloc = json_containerOf(Pool, JsonAllocator, PoolObject);
+    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
