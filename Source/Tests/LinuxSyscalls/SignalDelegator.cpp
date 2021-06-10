@@ -420,27 +420,27 @@ namespace FEX::HLE {
   void SignalDelegator::RegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
-    std::lock_guard<std::mutex> lk(HostDelegatorMutex);
-    HostHandlers[Signal].Handler = Func;
+    std::lock_guard lk(HostDelegatorMutex);
+    HostHandlers[Signal].Handler = std::move(Func);
     InstallHostThunk(Signal);
   }
 
   void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
-    std::lock_guard<std::mutex> lk(HostDelegatorMutex);
-    HostHandlers[Signal].FrontendHandler = Func;
+    std::lock_guard lk(HostDelegatorMutex);
+    HostHandlers[Signal].FrontendHandler = std::move(Func);
     InstallHostThunk(Signal);
   }
 
   void SignalDelegator::RegisterHostSignalHandlerForGuest(int Signal, FEXCore::HostSignalDelegatorFunctionForGuest Func) {
-    std::lock_guard<std::mutex> lk(HostDelegatorMutex);
-    HostHandlers[Signal].GuestHandler = Func;
+    std::lock_guard lk(HostDelegatorMutex);
+    HostHandlers[Signal].GuestHandler = std::move(Func);
     InstallHostThunk(Signal);
   }
 
   uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const FEXCore::GuestSigAction *Action, FEXCore::GuestSigAction *OldAction) {
-    std::lock_guard<std::mutex> lk(GuestDelegatorMutex);
+    std::lock_guard lk(GuestDelegatorMutex);
 
     // Invalid signal specified
     if (Signal > MAX_SIGNALS) {
