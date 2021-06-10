@@ -583,7 +583,11 @@ friend class FEXCore::IR::PassManager;
    * @{ */
   /**  @} */
   void LinkCodeBlocks(OrderedNode *CodeNode, OrderedNode *Next) {
-    FEXCore::IR::IROp_CodeBlock *CurrentIROp = CodeNode->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_CodeBlock>();
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    FEXCore::IR::IROp_CodeBlock *CurrentIROp =
+#endif
+    CodeNode->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_CodeBlock>();
+
     LOGMAN_THROW_A(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
 
     CodeNode->append(DualListData.ListBegin(), Next);
