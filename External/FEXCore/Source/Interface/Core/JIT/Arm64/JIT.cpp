@@ -893,7 +893,7 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
   return HostCode;
 }
 
-FEXCore::CPU::CPUBackend *CreateArm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
-  return new Arm64JITCore(ctx, Thread, CompileThread);
+std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
+  return std::make_unique<Arm64JITCore>(ctx, Thread, CompileThread);
 }
 }
