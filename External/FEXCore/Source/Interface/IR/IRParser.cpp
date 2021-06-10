@@ -66,7 +66,8 @@ std::string DecodeErrorToString(DecodeFailure Failure) {
     case DecodeFailure::DECODE_INVALID_CONDFLAG: return "Invalid Conditional name";
     case DecodeFailure::DECODE_INVALID_MEMOFFSETTYPE: return "Invalid Memory Offset Type";
     case DecodeFailure::DECODE_INVALID_FENCETYPE: return "Invalid Fence Type";
-  };
+  }
+  return "Unknown Error";
 }
 
 std::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
@@ -74,22 +75,22 @@ std::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
 class IRParser: public FEXCore::IR::IREmitter {
   public:
   template<typename Type>
-  std::pair<DecodeFailure, Type> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, Type> DecodeValue(const std::string &Arg) {
     return {DecodeFailure::DECODE_UNKNOWN_TYPE, {}};
   }
 
 
   template<>
-  std::pair<DecodeFailure, uint8_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, uint8_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint8_t Result = strtoul(&Arg.at(1), nullptr, 0);
     if (errno == ERANGE) return {DecodeFailure::DECODE_INVALIDRANGE, 0};
     return {DecodeFailure::DECODE_OKAY, Result};
-	}
+  }
 
   template<>
-  std::pair<DecodeFailure, bool> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, bool> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint8_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -98,7 +99,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint16_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, uint16_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint16_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -107,7 +108,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint32_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, uint32_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint32_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -116,7 +117,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint64_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, uint64_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint64_t Result = strtoull(&Arg.at(1), nullptr, 0);
@@ -125,7 +126,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, int64_t> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, int64_t> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     int64_t Result = (int64_t)strtoull(&Arg.at(1), nullptr, 0);
@@ -134,7 +135,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, IR::SHA256Sum> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, IR::SHA256Sum> DecodeValue(const std::string &Arg) {
     IR::SHA256Sum Result;
 
     if (Arg.at(0) != 's' || Arg.at(1) != 'h' || Arg.at(2) != 'a' || Arg.at(3) != '2' || Arg.at(4) != '5' || Arg.at(5) != '6' || Arg.at(6) != ':')
@@ -165,7 +166,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::RegisterClassType> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::RegisterClassType> DecodeValue(const std::string &Arg) {
     if (Arg == "GPR") {
       return {DecodeFailure::DECODE_OKAY, FEXCore::IR::GPRClass};
     }
@@ -183,7 +184,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::TypeDefinition> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::TypeDefinition> DecodeValue(const std::string &Arg) {
     uint8_t Size{}, Elements{1};
     int NumArgs = sscanf(Arg.c_str(), "i%hhdv%hhd", &Size, &Elements);
 
@@ -195,7 +196,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::CondClassType> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::CondClassType> DecodeValue(const std::string &Arg) {
     static constexpr std::array<std::string_view, 22> CondNames = {
       "EQ",
       "NEQ",
@@ -230,7 +231,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::MemOffsetType> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::MemOffsetType> DecodeValue(const std::string &Arg) {
     static constexpr std::array<std::string_view, 3> Names = {
       "SXTX",
       "UXTW",
@@ -246,7 +247,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::FenceType> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::FenceType> DecodeValue(const std::string &Arg) {
     static constexpr std::array<std::string_view, 3> Names = {
       "Loads",
       "Stores",
@@ -262,23 +263,22 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, OrderedNode*> DecodeValue(std::string &Arg) {
+  std::pair<DecodeFailure, OrderedNode*> DecodeValue(const std::string &Arg) {
     if (Arg.at(0) != '%') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     // Strip off the type qualifier from the ssa value
-    size_t ArgEnd = std::string::npos;
     std::string SSAName = trim(Arg);
-    ArgEnd = SSAName.find_first_of(" ");
+    const size_t ArgEnd = SSAName.find_first_of(' ');
 
     if (ArgEnd != std::string::npos) {
-			SSAName = SSAName.substr(0, ArgEnd);
-		}
+      SSAName = SSAName.substr(0, ArgEnd);
+    }
 
-		// Forward declarations may make this not succed
+    // Forward declarations may make this not succed
     auto Op = SSANameMapper.find(SSAName);
-		if (Op == SSANameMapper.end()) {
+    if (Op == SSANameMapper.end()) {
       return {DecodeFailure::DECODE_UNKNOWN_SSA, nullptr};
-		}
+    }
 
     return {DecodeFailure::DECODE_OKAY, Op->second};
   }
@@ -362,7 +362,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       // Let's see if this node is assigning something first
       if (Line[0] == '%') {
         size_t DefinitionEnd = std::string::npos;
-        if ((DefinitionEnd = Line.find_first_of("=", CurrentPos)) != std::string::npos) {
+        if ((DefinitionEnd = Line.find_first_of('=', CurrentPos)) != std::string::npos) {
           Def.Definition = Line.substr(0, DefinitionEnd);
           Def.Definition = trim(Def.Definition);
           Def.HasDefinition = true;
@@ -380,9 +380,9 @@ class IRParser: public FEXCore::IR::IREmitter {
       // Prints (%ssa%d) at the start of lines without a definition
       if (Line[0] == '(') {
         size_t DefinitionEnd = std::string::npos;
-        if ((DefinitionEnd = Line.find_first_of(")", CurrentPos)) != std::string::npos) {
+        if ((DefinitionEnd = Line.find_first_of(')', CurrentPos)) != std::string::npos) {
           size_t SSAEnd = std::string::npos;
-          if ((SSAEnd = Line.find_last_of(" ", DefinitionEnd)) != std::string::npos) {
+          if ((SSAEnd = Line.find_last_of(' ', DefinitionEnd)) != std::string::npos) {
             std::string Type = Line.substr(SSAEnd + 1, DefinitionEnd - SSAEnd - 1);
             Type = trim(Type);
 
@@ -408,7 +408,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       if (Def.HasDefinition) {
         // Let's check if we have a size declared with this variable
         size_t NameEnd = std::string::npos;
-        if ((NameEnd = Def.Definition.find_first_of(" ")) != std::string::npos) {
+        if ((NameEnd = Def.Definition.find_first_of(' ')) != std::string::npos) {
           std::string Type = Def.Definition.substr(NameEnd + 1);
           Type = trim(Type);
           Def.Definition = trim(Def.Definition.substr(0, NameEnd));
@@ -643,13 +643,12 @@ class IRParser: public FEXCore::IR::IREmitter {
 
 } // anon namespace
 
-IREmitter* Parse(std::istream *in) {
-    auto parser = new IRParser(in);
+std::unique_ptr<IREmitter> Parse(std::istream *in) {
+    auto parser = std::make_unique<IRParser>(in);
 
     if (parser->Loaded) {
       return parser;
     } else {
-      delete parser;
       return nullptr;
     }
 }

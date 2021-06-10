@@ -800,7 +800,6 @@ namespace FEXCore::Context {
           LogMan::Msg::I("two:\n %s", out2.str().c_str());
           LOGMAN_MSG_A("Parsed ir doesn't match\n");
         }
-        delete reparsed;
       }
     }
     // Run the passmanager over the IR from the dispatcher
