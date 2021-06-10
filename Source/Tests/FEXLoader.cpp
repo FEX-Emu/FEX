@@ -444,6 +444,7 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
+  // System allocator is now system allocator or FEX
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
   auto CTX = FEXCore::Context::CreateNewContext();
@@ -479,7 +480,6 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
-
   if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
     LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
   }
@@ -503,12 +503,12 @@ int main(int argc, char **argv, char **const envp) {
     return AOTWrite;
   });
 
-  for(auto Section: Loader.Sections) {
+  for(auto Section: *Loader.Sections) {
     FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
   }
 
   if (AOTIRGenerate()) {
-    for(auto &Section: Loader.Sections) {
+    for(auto &Section: *Loader.Sections) {
       AOTGenSection(CTX, Section);
     }
   } else {
@@ -540,11 +540,17 @@ int main(int argc, char **argv, char **const envp) {
   SignalDelegation.reset();
   FEXCore::Context::DestroyContext(CTX);
 
+  FEXCore::Context::ShutdownStaticTables();
+
+  Loader.FreeSections();
+
   FEXCore::Config::Shutdown();
 
   LogMan::Throw::UnInstallHandlers();
   LogMan::Msg::UnInstallHandlers();
 
+  FEXCore::Allocator::ClearHooks();
+  // Allocator is now original system allocator
 
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
