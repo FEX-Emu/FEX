@@ -865,8 +865,7 @@ DEF_OP(Bfi) {
 
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_A(OpSize <= 8, "OpSize is too large for BFE: %d", OpSize);
+  LOGMAN_THROW_A(IROp->Size <= 8, "OpSize is too large for BFE: %d", IROp->Size);
   LOGMAN_THROW_A(Op->Width != 0, "Invalid BFE width of 0");
 
   auto Dst = GetReg<RA_64>(Node);
