@@ -30,7 +30,7 @@ namespace FEX::HLE {
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler
     SignalDelegator();
-    virtual ~SignalDelegator();
+    ~SignalDelegator() override;
 
     /**
      * @brief Registers an emulated thread's object to a TLS object
