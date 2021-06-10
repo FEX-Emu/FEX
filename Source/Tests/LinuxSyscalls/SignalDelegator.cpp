@@ -170,7 +170,7 @@ namespace FEX::HLE {
 
           // Doesn't return
           FEXCore::Context::StopThread(Thread->CTX, Thread);
-          std::unexpected();
+          std::terminate();
         }
       }
       else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
