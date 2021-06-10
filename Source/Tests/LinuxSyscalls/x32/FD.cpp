@@ -243,7 +243,7 @@ namespace FEX::HLE::x32 {
         }
 
         case F_SETFL:
-          lock_arg = (void*)FEX::HLE::RemapFromX86Flags(arg);
+          lock_arg = reinterpret_cast<void*>(FEX::HLE::RemapFromX86Flags(arg));
           break;
         // Maps directly
         case F_DUPFD:
