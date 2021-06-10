@@ -376,7 +376,7 @@ namespace FEX::HLE {
       Thread->StatusCode = status;
       FEXCore::Context::Stop(Thread->CTX);
       // This will never be reached
-      std::unexpected();
+      std::terminate();
     });
 
     REGISTER_SYSCALL_IMPL(prlimit64, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int resource, const struct rlimit *new_limit, struct rlimit *old_limit) -> uint64_t {
