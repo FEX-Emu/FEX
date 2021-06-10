@@ -174,11 +174,11 @@ namespace HostFactory {
     return nullptr;
   }
 
-  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread) {
-    return new HostCore(CTX, Thread, false);
+  std::unique_ptr<FEXCore::CPU::CPUBackend> CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread) {
+    return std::make_unique<HostCore>(CTX, Thread, false);
   }
 #else
-  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread) {
+  std::unique_ptr<FEXCore::CPU::CPUBackend> CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread) {
     LOGMAN_MSG_A("HostCPU factory doesn't exist for this host");
     return nullptr;
   }

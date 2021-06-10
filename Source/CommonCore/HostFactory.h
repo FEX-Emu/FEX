@@ -1,3 +1,7 @@
+#pragma once
+
+#include <memory>
+
 namespace FEXCore::CPU {
   class CPUBackend;
 }
@@ -9,6 +13,5 @@ namespace FEXCore::Core {
 }
 
 namespace HostFactory {
-  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread);
-  FEXCore::CPU::CPUBackend *CPUCreationFactoryFallback(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread);
+  std::unique_ptr<FEXCore::CPU::CPUBackend> CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread);
 }

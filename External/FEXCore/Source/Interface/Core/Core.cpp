@@ -520,21 +520,23 @@ namespace FEXCore::Context {
     // Create CPU backend
     switch (Config.Core) {
     case FEXCore::Config::CONFIG_INTERPRETER:
-      State->CPUBackend.reset(FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread));
+      State->CPUBackend = FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread);
       break;
     case FEXCore::Config::CONFIG_IRJIT:
       State->PassManager->InsertRegisterAllocationPass(DoSRA);
 
 #if (_M_X86_64 && JIT_X86_64)
-      State->CPUBackend.reset(FEXCore::CPU::CreateX86JITCore(this, State, CompileThread));
+      State->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, State, CompileThread);
 #elif (_M_ARM_64 && JIT_ARM64)
-      State->CPUBackend.reset(FEXCore::CPU::CreateArm64JITCore(this, State, CompileThread));
+      State->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, State, CompileThread);
 #else
       ERROR_AND_DIE("FEXCore has been compiled without a viable JIT core");
 #endif
 
       break;
-    case FEXCore::Config::CONFIG_CUSTOM:      State->CPUBackend.reset(CustomCPUFactory(this, State)); break;
+    case FEXCore::Config::CONFIG_CUSTOM:
+      State->CPUBackend = CustomCPUFactory(this, State);
+      break;
     default: ERROR_AND_DIE("Unknown core configuration");
     }
   }

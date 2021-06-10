@@ -46,7 +46,7 @@ namespace FEXCore::Context {
     MODE_32BIT,
     MODE_64BIT,
   };
-  using CustomCPUFactoryType = std::function<FEXCore::CPU::CPUBackend* (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
+  using CustomCPUFactoryType = std::function<std::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
 
   /**
    * @brief This initializes internal FEXCore state that is shared between contexts and requires overhead to setup

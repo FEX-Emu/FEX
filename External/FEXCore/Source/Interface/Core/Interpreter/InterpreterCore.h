@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 namespace FEXCore::Context {
 struct Context;
 }
@@ -11,6 +13,6 @@ namespace FEXCore::Core {
 namespace FEXCore::CPU {
 class CPUBackend;
 
-FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
+std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
 
 }

@@ -115,8 +115,8 @@ void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR:
   return reinterpret_cast<void*>(InterpreterExecution);
 }
 
-FEXCore::CPU::CPUBackend *CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
-  return new InterpreterCore(ctx, Thread, CompileThread);
+std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
+  return std::make_unique<InterpreterCore>(ctx, Thread, CompileThread);
 }
 
 }
