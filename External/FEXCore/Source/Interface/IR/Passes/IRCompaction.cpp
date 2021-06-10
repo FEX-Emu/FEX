@@ -153,8 +153,10 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   {
     // Fixup the arguments of all the IROps
     for (auto &Block : GeneratedCodeBlocks) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       auto BlockIROp = LocalIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Block.NewNode);
       LOGMAN_THROW_A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+#endif
 
       for (auto [LocalNode, LocalIROp] : LocalIR.GetCode(Block.NewNode)) {
 
