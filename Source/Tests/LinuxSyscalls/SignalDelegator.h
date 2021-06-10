@@ -7,6 +7,7 @@ $end_info$
 
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <functional>
 #include <mutex>
@@ -29,7 +30,7 @@ namespace FEX::HLE {
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler
     SignalDelegator();
-    virtual ~SignalDelegator();
+    ~SignalDelegator() override;
 
     /**
      * @brief Registers an emulated thread's object to a TLS object
@@ -108,7 +109,7 @@ namespace FEX::HLE {
       DefaultBehaviour DefaultBehaviour {DEFAULT_TERM};
     };
 
-    SignalHandler HostHandlers[MAX_SIGNALS + 1]{};
+    std::array<SignalHandler, MAX_SIGNALS + 1> HostHandlers{};
     bool InstallHostThunk(int Signal);
     void UpdateHostThunk(int Signal);
 

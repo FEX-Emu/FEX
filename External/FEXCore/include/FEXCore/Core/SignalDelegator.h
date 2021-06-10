@@ -30,6 +30,8 @@ namespace Core {
 
   class SignalDelegator {
   public:
+    virtual ~SignalDelegator() = default;
+
     /**
      * @brief Registers an emulated thread's object to a TLS object
      *
