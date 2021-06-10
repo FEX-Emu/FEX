@@ -3349,22 +3349,6 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             memcpy(GDP, Tmp, OpSize);
             break;
           }
-          case IR::OP_VECTOR_UTOF: {
-            auto Op = IROp->C<IR::IROp_Vector_UToF>();
-            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
-            uint8_t Tmp[16];
-
-            uint8_t Elements = OpSize / Op->Header.ElementSize;
-
-            auto Func = [](auto a, auto min, auto max) { return a; };
-            switch (Op->Header.ElementSize) {
-              DO_VECTOR_1SRC_2TYPE_OP(4, float, uint32_t, Func, 0, 0)
-              DO_VECTOR_1SRC_2TYPE_OP(8, double, uint64_t, Func, 0, 0)
-              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
-            }
-            memcpy(GDP, Tmp, OpSize);
-            break;
-          }
           case IR::OP_VECTOR_STOF: {
             auto Op = IROp->C<IR::IROp_Vector_SToF>();
             void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -3381,22 +3365,6 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             memcpy(GDP, Tmp, OpSize);
             break;
           }
-          case IR::OP_VECTOR_FTOZU: {
-            auto Op = IROp->C<IR::IROp_Vector_FToZU>();
-            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
-            uint8_t Tmp[16];
-
-            uint8_t Elements = OpSize / Op->Header.ElementSize;
-
-            auto Func = [](auto a, auto min, auto max) { return a; };
-            switch (Op->Header.ElementSize) {
-              DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, float, Func, 0, 0)
-              DO_VECTOR_1SRC_2TYPE_OP(8, uint64_t, double, Func, 0, 0)
-              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
-            }
-            memcpy(GDP, Tmp, OpSize);
-            break;
-          }
           case IR::OP_VECTOR_FTOZS: {
             auto Op = IROp->C<IR::IROp_Vector_FToZS>();
             void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
@@ -3404,26 +3372,10 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
 
             uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-            auto Func = [](auto a, auto min, auto max) { return a; };
+            auto Func = [](auto a, auto min, auto max) { return std::trunc(a); };
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, float, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, int64_t, double, Func, 0, 0)
-              default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
-            }
-            memcpy(GDP, Tmp, OpSize);
-            break;
-          }
-          case IR::OP_VECTOR_FTOU: {
-            auto Op = IROp->C<IR::IROp_Vector_FToU>();
-            void *Src = GetSrc<void*>(SSAData, Op->Header.Args[0]);
-            uint8_t Tmp[16];
-
-            uint8_t Elements = OpSize / Op->Header.ElementSize;
-
-            auto Func = [](auto a, auto min, auto max) { return a; };
-            switch (Op->Header.ElementSize) {
-              DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, float, Func, 0, 0)
-              DO_VECTOR_1SRC_2TYPE_OP(8, uint64_t, double, Func, 0, 0)
               default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
             }
             memcpy(GDP, Tmp, OpSize);
@@ -3436,7 +3388,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
 
             uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-            auto Func = [](auto a, auto min, auto max) { return a; };
+            auto Func = [](auto a, auto min, auto max) { return std::nearbyint(a); };
             switch (Op->Header.ElementSize) {
               DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, float, Func, 0, 0)
               DO_VECTOR_1SRC_2TYPE_OP(8, int64_t, double, Func, 0, 0)
@@ -4381,78 +4333,57 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             }
             break;
           }
-          case IR::OP_FLOAT_FROMGPR_U: {
-            auto Op = IROp->C<IR::IROp_Float_FromGPR_U>();
-            uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
-            switch (Conv) {
-              case 0x0404: { // Float <- int32_t
-                float Dst = (float)*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
-                memcpy(GDP, &Dst, Op->Header.ElementSize);
-                break;
-              }
-              case 0x0408: { // Float <- int64_t
-                float Dst = (float)*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-                memcpy(GDP, &Dst, Op->Header.ElementSize);
-                break;
-              }
-              case 0x0804: { // Double <- int32_t
-                double Dst = (double)*GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
-                memcpy(GDP, &Dst, Op->Header.ElementSize);
-                break;
-              }
-              case 0x0808: { // Double <- int64_t
-                double Dst = (double)*GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-                memcpy(GDP, &Dst, Op->Header.ElementSize);
-                break;
-              }
-            }
-            break;
-          }
           case IR::OP_FLOAT_TOGPR_ZS: {
             auto Op = IROp->C<IR::IROp_Float_ToGPR_ZS>();
-            if (Op->Header.ElementSize == 8) {
-              int64_t Dst = (int64_t)*GetSrc<double*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
-            }
-            else {
-              int32_t Dst = (int32_t)*GetSrc<float*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
-            }
-            break;
-          }
-          case IR::OP_FLOAT_TOGPR_ZU: {
-            auto Op = IROp->C<IR::IROp_Float_ToGPR_ZU>();
-            if (Op->Header.ElementSize == 8) {
-              uint64_t Dst = (uint64_t)*GetSrc<double*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
-            }
-            else {
-              uint32_t Dst = (uint32_t)*GetSrc<float*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
+            uint16_t Conv = (IROp->Size << 8) | Op->SrcElementSize;
+            switch (Conv) {
+              case 0x0804: { // int64_t <- float
+                int64_t Dst = (int64_t)std::trunc(*GetSrc<float*>(SSAData, Op->Header.Args[0]));
+                memcpy(GDP, &Dst, IROp->Size);
+                break;
+              }
+              case 0x0808: { // int64_t <- double
+                int64_t Dst = (int64_t)std::trunc(*GetSrc<double*>(SSAData, Op->Header.Args[0]));
+                memcpy(GDP, &Dst, IROp->Size);
+                break;
+              }
+              case 0x0404: { // int32_t <- float
+                int32_t Dst = (int32_t)std::trunc(*GetSrc<float*>(SSAData, Op->Header.Args[0]));
+                memcpy(GDP, &Dst, IROp->Size);
+                break;
+              }
+              case 0x0408: { // int32_t <- double
+                int32_t Dst = (int32_t)std::trunc(*GetSrc<double*>(SSAData, Op->Header.Args[0]));
+                memcpy(GDP, &Dst, IROp->Size);
+                break;
+              }
             }
             break;
           }
           case IR::OP_FLOAT_TOGPR_S: {
             auto Op = IROp->C<IR::IROp_Float_ToGPR_S>();
-            if (Op->Header.ElementSize == 8) {
-              int64_t Dst = (int64_t)*GetSrc<double*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
-            }
-            else {
-              int32_t Dst = (int32_t)*GetSrc<float*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
-            }
-            break;
-          }
-          case IR::OP_FLOAT_TOGPR_U: {
-            auto Op = IROp->C<IR::IROp_Float_ToGPR_U>();
-            if (Op->Header.ElementSize == 8) {
-              uint64_t Dst = (uint64_t)*GetSrc<double*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
-            }
-            else {
-              uint32_t Dst = (uint32_t)*GetSrc<float*>(SSAData, Op->Header.Args[0]);
-              memcpy(GDP, &Dst, Op->Header.ElementSize);
+            uint16_t Conv = (IROp->Size << 8) | Op->SrcElementSize;
+            switch (Conv) {
+              case 0x0804: { // int64_t <- float
+                int64_t Dst = (int64_t)std::nearbyint(*GetSrc<float*>(SSAData, Op->Header.Args[0]));
+                memcpy(GDP, &Dst, IROp->Size);
+                break;
+              }
+              case 0x0808: { // int64_t <- double
+                int64_t Dst = (int64_t)std::nearbyint(*GetSrc<double*>(SSAData, Op->Header.Args[0]));
+                memcpy(GDP, &Dst, IROp->Size);
+                break;
+              }
+              case 0x0404: { // int32_t <- float
+                int32_t Dst = (int32_t)std::nearbyint(*GetSrc<float*>(SSAData, Op->Header.Args[0]));
+                memcpy(GDP, &Dst, IROp->Size);
+                break;
+              }
+              case 0x0408: { // int32_t <- double
+                int32_t Dst = (int32_t)std::nearbyint(*GetSrc<double*>(SSAData, Op->Header.Args[0]));
+                memcpy(GDP, &Dst, IROp->Size);
+                break;
+              }
             }
             break;
           }

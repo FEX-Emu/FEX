@@ -56,10 +56,6 @@ DEF_OP(VCastFromGPR) {
   }
 }
 
-DEF_OP(Float_FromGPR_U) {
-  LOGMAN_MSG_A("Unimplemented");
-}
-
 DEF_OP(Float_FromGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
   uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
@@ -99,10 +95,6 @@ DEF_OP(Float_FToF) {
   }
 }
 
-DEF_OP(Vector_UToF) {
-  LOGMAN_MSG_A("Unimplemented");
-}
-
 DEF_OP(Vector_SToF) {
   auto Op = IROp->C<IR::IROp_Vector_SToF>();
   switch (Op->Header.ElementSize) {
@@ -125,10 +117,6 @@ DEF_OP(Vector_SToF) {
   }
 }
 
-DEF_OP(Vector_FToZU) {
-  LOGMAN_MSG_A("Unimplemented");
-}
-
 DEF_OP(Vector_FToZS) {
   auto Op = IROp->C<IR::IROp_Vector_FToZS>();
   switch (Op->Header.ElementSize) {
@@ -140,10 +128,6 @@ DEF_OP(Vector_FToZS) {
     break;
     default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
   }
-}
-
-DEF_OP(Vector_FToU) {
-  LOGMAN_MSG_A("Unimplemented");
 }
 
 DEF_OP(Vector_FToS) {
@@ -213,14 +197,10 @@ void X86JITCore::RegisterConversionHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(VINSGPR,         VInsGPR);
   REGISTER_OP(VCASTFROMGPR,    VCastFromGPR);
-  REGISTER_OP(FLOAT_FROMGPR_U, Float_FromGPR_U);
   REGISTER_OP(FLOAT_FROMGPR_S, Float_FromGPR_S);
   REGISTER_OP(FLOAT_FTOF,      Float_FToF);
-  REGISTER_OP(VECTOR_UTOF,     Vector_UToF);
   REGISTER_OP(VECTOR_STOF,     Vector_SToF);
-  REGISTER_OP(VECTOR_FTOZU,    Vector_FToZU);
   REGISTER_OP(VECTOR_FTOZS,    Vector_FToZS);
-  REGISTER_OP(VECTOR_FTOU,     Vector_FToU);
   REGISTER_OP(VECTOR_FTOS,     Vector_FToS);
   REGISTER_OP(VECTOR_FTOF,     Vector_FToF);
   REGISTER_OP(VECTOR_FTOI,     Vector_FToI);

@@ -969,34 +969,49 @@ DEF_OP(VExtractToGPR) {
   }
 }
 
-DEF_OP(Float_ToGPR_ZU) {
-  LogMan::Msg::D("Unimplemented");
-}
-
 DEF_OP(Float_ToGPR_ZS) {
   auto Op = IROp->C<IR::IROp_Float_ToGPR_ZS>();
-  if (Op->Header.ElementSize == 8) {
-    fcvtzs(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).D());
+  aarch64::Register Dst{};
+  aarch64::VRegister Src{};
+  if (Op->SrcElementSize == 8) {
+    Src = GetSrc(Op->Header.Args[0].ID()).D();
   }
   else {
-    fcvtzs(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).S());
+    Src = GetSrc(Op->Header.Args[0].ID()).S();
   }
-}
 
-DEF_OP(Float_ToGPR_U) {
-  LogMan::Msg::D("Unimplemented");
+  if (IROp->Size == 8) {
+    Dst = GetReg<RA_64>(Node);
+  }
+  else {
+    Dst = GetReg<RA_32>(Node);
+  }
+
+  fcvtzs(Dst, Src);
 }
 
 DEF_OP(Float_ToGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_ToGPR_S>();
-  if (Op->Header.ElementSize == 8) {
+
+  aarch64::Register Dst{};
+  aarch64::VRegister Src{};
+  if (Op->SrcElementSize == 8) {
     frinti(VTMP1.D(), GetSrc(Op->Header.Args[0].ID()).D());
-    fcvtzs(GetReg<RA_64>(Node), VTMP1.D());
+    Src = VTMP1.D();
   }
   else {
     frinti(VTMP1.S(), GetSrc(Op->Header.Args[0].ID()).S());
-    fcvtzs(GetReg<RA_32>(Node), VTMP1.S());
+    Src = VTMP1.S();
   }
+
+  if (IROp->Size == 8) {
+    Dst = GetReg<RA_64>(Node);
+  }
+  else {
+    Dst = GetReg<RA_32>(Node);
+  }
+
+  fcvtzs(Dst, Src);
 }
 
 DEF_OP(FCmp) {
@@ -1087,9 +1102,7 @@ void Arm64JITCore::RegisterALUHandlers() {
   REGISTER_OP(SBFE,              Sbfe);
   REGISTER_OP(SELECT,            Select);
   REGISTER_OP(VEXTRACTTOGPR,     VExtractToGPR);
-  REGISTER_OP(FLOAT_TOGPR_ZU,    Float_ToGPR_ZU);
   REGISTER_OP(FLOAT_TOGPR_ZS,    Float_ToGPR_ZS);
-  REGISTER_OP(FLOAT_TOGPR_U,     Float_ToGPR_U);
   REGISTER_OP(FLOAT_TOGPR_S,     Float_ToGPR_S);
   REGISTER_OP(FCMP,              FCmp);
 

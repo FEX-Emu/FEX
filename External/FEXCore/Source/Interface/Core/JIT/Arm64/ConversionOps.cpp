@@ -56,10 +56,6 @@ DEF_OP(VCastFromGPR) {
   }
 }
 
-DEF_OP(Float_FromGPR_U) {
-  LOGMAN_MSG_A("Unimplemented");
-}
-
 DEF_OP(Float_FromGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
   uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
@@ -99,19 +95,6 @@ DEF_OP(Float_FToF) {
   }
 }
 
-DEF_OP(Vector_UToF) {
-  auto Op = IROp->C<IR::IROp_Vector_UToF>();
-  switch (Op->Header.ElementSize) {
-    case 4:
-      ucvtf(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
-    break;
-    case 8:
-      ucvtf(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
-    break;
-    default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
-  }
-}
-
 DEF_OP(Vector_SToF) {
   auto Op = IROp->C<IR::IROp_Vector_SToF>();
   switch (Op->Header.ElementSize) {
@@ -125,19 +108,6 @@ DEF_OP(Vector_SToF) {
   }
 }
 
-DEF_OP(Vector_FToZU) {
-  auto Op = IROp->C<IR::IROp_Vector_FToZU>();
-  switch (Op->Header.ElementSize) {
-    case 4:
-      fcvtzu(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
-    break;
-    case 8:
-      fcvtzu(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
-    break;
-    default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
-  }
-}
-
 DEF_OP(Vector_FToZS) {
   auto Op = IROp->C<IR::IROp_Vector_FToZS>();
   switch (Op->Header.ElementSize) {
@@ -146,21 +116,6 @@ DEF_OP(Vector_FToZS) {
     break;
     case 8:
       fcvtzs(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
-    break;
-    default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
-  }
-}
-
-DEF_OP(Vector_FToU) {
-  auto Op = IROp->C<IR::IROp_Vector_FToU>();
-  switch (Op->Header.ElementSize) {
-    case 4:
-      frinti(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
-      fcvtzu(GetDst(Node).V4S(), GetDst(Node).V4S());
-    break;
-    case 8:
-      frinti(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
-      fcvtzu(GetDst(Node).V2D(), GetDst(Node).V2D());
     break;
     default: LOGMAN_MSG_A("Unknown castGPR element size: %d", Op->Header.ElementSize);
   }
@@ -259,14 +214,10 @@ void Arm64JITCore::RegisterConversionHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(VINSGPR,         VInsGPR);
   REGISTER_OP(VCASTFROMGPR,    VCastFromGPR);
-  REGISTER_OP(FLOAT_FROMGPR_U, Float_FromGPR_U);
   REGISTER_OP(FLOAT_FROMGPR_S, Float_FromGPR_S);
   REGISTER_OP(FLOAT_FTOF,      Float_FToF);
-  REGISTER_OP(VECTOR_UTOF,     Vector_UToF);
   REGISTER_OP(VECTOR_STOF,     Vector_SToF);
-  REGISTER_OP(VECTOR_FTOZU,    Vector_FToZU);
   REGISTER_OP(VECTOR_FTOZS,    Vector_FToZS);
-  REGISTER_OP(VECTOR_FTOU,     Vector_FToU);
   REGISTER_OP(VECTOR_FTOS,     Vector_FToS);
   REGISTER_OP(VECTOR_FTOF,     Vector_FToF);
   REGISTER_OP(VECTOR_FTOI,     Vector_FToI);

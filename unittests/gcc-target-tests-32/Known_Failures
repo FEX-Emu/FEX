@@ -19,3 +19,7 @@ sse4_1-round-sfix-vec.c.gcc-target-test-32
 sse4_1-roundf-sfix-vec.c.gcc-target-test-32
 sse4_1-rint-vec.c.gcc-target-test-32
 sse4_1-roundf-vec.c.gcc-target-test-32
+
+# These tests fail on Nvidia Xavier ONLY
+sse4_1-rintf-vec.c.gcc-target-test-32
+sse4_1-round-vec.c.gcc-target-test-32

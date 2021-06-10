@@ -1483,24 +1483,6 @@
       ]
     },
 
-    "Float_ToGPR_U": {
-      "Desc": ["Moves the scalar element to a GPR with conversion",
-               "Converts the 32bit or 64bit float to an unsigned integer",
-               "Rounding mode determined by host flag's rounding mode"
-              ],
-      "OpClass": "ALU",
-      "HasDest": true,
-      "DestClass": "GPR",
-      "DestSize": "ElementSize",
-      "SSAArgs": "1",
-      "SSANames": [
-        "Scalar"
-      ],
-      "Args": [
-        "uint8_t", "ElementSize"
-      ]
-    },
-
     "Float_ToGPR_S": {
       "Desc": ["Moves the scalar element to a GPR with conversion",
                "Converts the 32bit or 64bit float to an signed integer",
@@ -1509,30 +1491,16 @@
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
-      "DestSize": "ElementSize",
+      "DestSize": "DestElementSize",
       "SSAArgs": "1",
       "SSANames": [
         "Scalar"
       ],
-      "Args": [
-        "uint8_t", "ElementSize"
-      ]
-    },
-
-    "Float_ToGPR_ZU": {
-      "Desc": ["Moves the scalar element to a GPR with conversion",
-               "Converts the 32bit or 64bit float to an unsigned integer rounding towards zero (Truncating)"
-              ],
-      "OpClass": "ALU",
-      "HasDest": true,
-      "DestClass": "GPR",
-      "DestSize": "ElementSize",
-      "SSAArgs": "1",
-      "SSANames": [
-        "Scalar"
+      "HelperArgs": [
+        "uint8_t", "DestElementSize"
       ],
       "Args": [
-        "uint8_t", "ElementSize"
+        "uint8_t", "SrcElementSize"
       ]
     },
 
@@ -1543,13 +1511,16 @@
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
-      "DestSize": "ElementSize",
+      "DestSize": "DestElementSize",
       "SSAArgs": "1",
       "SSANames": [
         "Scalar"
       ],
+      "HelperArgs": [
+        "uint8_t", "DestElementSize"
+      ],
       "Args": [
-        "uint8_t", "ElementSize"
+        "uint8_t", "SrcElementSize"
       ]
     },
 
@@ -3049,27 +3020,6 @@
       ]
     },
 
-    "Float_FromGPR_U": {
-      "OpClass": "Conv",
-      "Desc": ["Scalar op: Converts unsigned GPR to Scalar float",
-               "Zeroes the upper bits of the vector register"
-              ],
-      "HasDest": true,
-      "DestClass": "FPR",
-      "DestSize": "DstElementSize",
-      "NumElements": "1",
-      "SSAArgs": "1",
-      "SSANames": [
-        "GPR"
-      ],
-      "HelperArgs": [
-        "uint8_t", "DstElementSize"
-      ],
-      "Args": [
-        "uint8_t", "SrcElementSize"
-      ]
-    },
-
     "Float_FromGPR_S": {
       "OpClass": "Conv",
       "Desc": ["Scalar op: Converts signed GPR to Scalar float",
@@ -3146,47 +3096,11 @@
       ]
     },
 
-    "Vector_FToU": {
-      "OpClass": "Conv",
-      "Desc": ["Vector op: Converts float to unsigned integer",
-               "Rounding mode determined by host rounding mode"
-              ],
-      "HasDest": true,
-      "DestClass": "FPR",
-      "DestSize": "RegisterSize",
-      "NumElements": "RegisterSize / ElementSize",
-      "SSAArgs": "1",
-      "SSANames": [
-        "Vector"
-      ],
-      "HelperArgs": [
-        "uint8_t", "RegisterSize",
-        "uint8_t", "ElementSize"
-      ]
-    },
-
     "Vector_FToS": {
       "OpClass": "Conv",
       "Desc": ["Vector op: Converts float to signed integer, rounding towards zero",
                "Rounding mode determined by host rounding mode"
               ],
-      "HasDest": true,
-      "DestClass": "FPR",
-      "DestSize": "RegisterSize",
-      "NumElements": "RegisterSize / ElementSize",
-      "SSAArgs": "1",
-      "SSANames": [
-        "Vector"
-      ],
-      "HelperArgs": [
-        "uint8_t", "RegisterSize",
-        "uint8_t", "ElementSize"
-      ]
-    },
-
-    "Vector_FToZU": {
-      "OpClass": "Conv",
-      "Desc": "Vector op: Converts float to unsigned integer, rounding towards zero",
       "HasDest": true,
       "DestClass": "FPR",
       "DestSize": "RegisterSize",
