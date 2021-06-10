@@ -534,7 +534,9 @@ namespace FEXCore::Context {
 #endif
 
       break;
-    case FEXCore::Config::CONFIG_CUSTOM:      State->CPUBackend.reset(CustomCPUFactory(this, State)); break;
+    case FEXCore::Config::CONFIG_CUSTOM:
+      State->CPUBackend = CustomCPUFactory(this, State);
+      break;
     default: ERROR_AND_DIE("Unknown core configuration");
     }
   }
