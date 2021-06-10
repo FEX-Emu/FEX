@@ -1399,11 +1399,13 @@ namespace FEXCore::IR {
         if (InterferenceNode != ~0U) {
           FEXCore::IR::RegisterClassType InterferenceRegClass = FEXCore::IR::RegisterClassType{Graph->AllocData->Map[InterferenceNode].Class};
           uint32_t SpillSlot = FindSpillSlot(InterferenceNode, InterferenceRegClass);
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
           RegisterNode *InterferenceRegisterNode = &Graph->Nodes[InterferenceNode];
           LOGMAN_THROW_A(SpillSlot != ~0U, "Interference Node doesn't have a spill slot!");
           //LOGMAN_THROW_A(InterferenceRegisterNode->Head.RegAndClass.Reg != INVALID_REG, "Interference node never assigned a register?");
           LOGMAN_THROW_A(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
           LOGMAN_THROW_A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
+#endif
 
           // This is the op that we need to dump
           auto [InterferenceOrderedNode, InterferenceIROp] = IR.at(InterferenceNode)();
