@@ -1,4 +1,4 @@
-# FEX-2105
+# FEX-2106
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -164,6 +164,10 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 - [libGL_Guest.cpp](../ThunkLibs/libGL/libGL_Guest.cpp): Handles glXGetProcAddress
 - [libGL_Host.cpp](../ThunkLibs/libGL/libGL_Host.cpp): Uses glXGetProcAddress instead of dlsym
 
+#### GLESv2
+- [libGLESv2_Guest.cpp](../ThunkLibs/libGLESv2/libGLESv2_Guest.cpp)
+- [libGLESv2_Host.cpp](../ThunkLibs/libGLESv2/libGLESv2_Host.cpp): Uses eglGetProcAddress instead of dlsym
+
 #### SDL2
 - [libSDL2_Guest.cpp](../ThunkLibs/libSDL2/libSDL2_Guest.cpp): Handles sdlglproc, dload, stubs a few log fns
 - [libSDL2_Host.cpp](../ThunkLibs/libSDL2/libSDL2_Host.cpp)
@@ -222,10 +226,12 @@ Syscall implementations shared between x86 and x86-64
 - [FD.cpp](../Source/Tests/LinuxSyscalls/Syscalls/FD.cpp)
 - [FS.cpp](../Source/Tests/LinuxSyscalls/Syscalls/FS.cpp)
 - [IO.cpp](../Source/Tests/LinuxSyscalls/Syscalls/IO.cpp)
+- [IOUring.cpp](../Source/Tests/LinuxSyscalls/Syscalls/IOUring.cpp)
 - [Info.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Info.cpp)
 - [Key.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Key.cpp)
 - [Memory.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Memory.cpp)
 - [Msg.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Msg.cpp)
+- [Namespace.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Namespace.cpp)
 - [NotImplemented.cpp](../Source/Tests/LinuxSyscalls/Syscalls/NotImplemented.cpp)
 - [SHM.cpp](../Source/Tests/LinuxSyscalls/Syscalls/SHM.cpp)
 - [Sched.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Sched.cpp)
@@ -280,6 +286,7 @@ x86-64 specific syscall implementations
 - [Thread.cpp](../Source/Tests/LinuxSyscalls/x64/Thread.cpp)
 - [Thread.h](../Source/Tests/LinuxSyscalls/x64/Thread.h)
 - [Time.cpp](../Source/Tests/LinuxSyscalls/x64/Time.cpp)
+- [Types.h](../Source/Tests/LinuxSyscalls/x64/Types.h)
 
 ## unittests
 See [unittests/Readme.md](../unittests/Readme.md) for more details
