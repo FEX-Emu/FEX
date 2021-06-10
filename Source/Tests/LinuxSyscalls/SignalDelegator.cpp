@@ -17,6 +17,7 @@ $end_info$
 
 #include <linux/futex.h>
 #include <bits/types/stack_t.h>
+#include <sys/mman.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -342,7 +343,7 @@ namespace FEX::HLE {
 
     // Set up our signal alternative stack
     // This is per thread rather than per signal
-    ThreadData.AltStackPtr = FEXCore::Allocator::malloc(SIGSTKSZ);
+    ThreadData.AltStackPtr = FEXCore::Allocator::mmap(nullptr, SIGSTKSZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     stack_t altstack{};
     altstack.ss_sp = ThreadData.AltStackPtr;
     altstack.ss_size = SIGSTKSZ;
@@ -357,7 +358,7 @@ namespace FEX::HLE {
   }
 
   void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) {
-    free(ThreadData.AltStackPtr);
+    FEXCore::Allocator::munmap(ThreadData.AltStackPtr, SIGSTKSZ);
 
     ThreadData.Thread = nullptr;
     ThreadData.AltStackPtr = nullptr;
