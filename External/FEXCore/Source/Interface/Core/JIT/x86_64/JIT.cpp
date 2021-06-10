@@ -84,8 +84,10 @@ void X86JITCore::PopRegs() {
 void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     auto Name = FEXCore::IR::GetName(IROp->Op);
     LOGMAN_MSG_A("Unhandled IR Op: %s", std::string(Name).c_str());
+#endif
   } else {
     switch(Info.ABI) {
       case FABI_VOID_U16: {
@@ -282,8 +284,11 @@ void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 
       case FABI_UNKNOWN:
       default:
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       auto Name = FEXCore::IR::GetName(IROp->Op);
         LOGMAN_MSG_A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
+#endif
+        break;
     }
   }
 }
@@ -662,8 +667,10 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
     {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
       LOGMAN_THROW_A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+#endif
 
       uint32_t Node = IR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
