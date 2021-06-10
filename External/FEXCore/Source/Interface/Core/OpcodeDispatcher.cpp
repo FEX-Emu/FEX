@@ -4602,7 +4602,10 @@ void OpDispatchBuilder::Finalize() {
 
   // Node 0 is invalid node
   OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(GetNode(1));
-  FEXCore::IR::IROp_Header *IROp = RealNode->Op(DualListData.DataBegin());
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  FEXCore::IR::IROp_Header *IROp =
+#endif
+  RealNode->Op(DualListData.DataBegin());
   LOGMAN_THROW_A(IROp->Op == OP_IRHEADER, "First op in function must be our header");
 
   // Let's walk the jump blocks and see if we have handled every block target
