@@ -14,6 +14,10 @@ namespace FEXCore::Context {
     IR::InstallOpcodeHandlers(Mode);
   }
 
+  void ShutdownStaticTables() {
+    FEXCore::Paths::ShutdownPaths();
+  }
+
   FEXCore::Context::Context *CreateNewContext() {
     return new FEXCore::Context::Context{};
   }
