@@ -110,7 +110,7 @@ namespace FEX::HLE::x64 {
 #ifndef SYS_process_madvise
 #define SYS_process_madvise 440
 #endif
-    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 10, 0)) {
+    if (Handler->IsHostKernelVersionAtLeast(5, 10, 0)) {
       REGISTER_SYSCALL_IMPL_X64(process_madvise, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, const struct iovec *iovec, size_t vlen, int advice, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_process_madvise, pidfd, iovec, vlen, advice, flags);
         SYSCALL_ERRNO();

@@ -64,7 +64,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 11, 0)) {
+    if (Handler->IsHostKernelVersionAtLeast(5, 11, 0)) {
 #ifndef SYS_epoll_pwait2
 #define SYS_epoll_pwait2 354
 #endif

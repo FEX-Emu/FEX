@@ -20,7 +20,7 @@ namespace SignalDelegator {
 
 namespace FEX::HLE {
   void RegisterIOUring(FEX::HLE::SyscallHandler *const Handler) {
-    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 1, 0)) {
+    if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
       REGISTER_SYSCALL_IMPL(io_uring_setup, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t entries, void* params) -> uint64_t {
         uint64_t Result = ::syscall(SYS_io_uring_setup, entries, params);
         SYSCALL_ERRNO();

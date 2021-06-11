@@ -206,7 +206,7 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 8, 0)) {
+    if (Handler->IsHostKernelVersionAtLeast(5, 8, 0)) {
       // Only exists on kernel 5.8+
       REGISTER_SYSCALL_IMPL(faccessat2, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, int mode, int flags) -> uint64_t {
         uint64_t Result = FEX::HLE::_SyscallHandler->FM.FAccessat2(dirfd, pathname, mode, flags);
@@ -331,7 +331,7 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 3, 0)) {
+    if (Handler->IsHostKernelVersionAtLeast(5, 3, 0)) {
       REGISTER_SYSCALL_IMPL(pidfd_open, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_pidfd_open, pid, flags);
         SYSCALL_ERRNO();
@@ -341,7 +341,7 @@ namespace FEX::HLE {
       REGISTER_SYSCALL_IMPL(pidfd_open, UnimplementedSyscallSafe);
     }
 
-    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 9, 0)) {
+    if (Handler->IsHostKernelVersionAtLeast(5, 9, 0)) {
       REGISTER_SYSCALL_IMPL(close_range, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int first, unsigned int last, unsigned int flags) -> uint64_t {
         uint64_t Result = FEX::HLE::_SyscallHandler->FM.CloseRange(first, last, flags);
         SYSCALL_ERRNO();

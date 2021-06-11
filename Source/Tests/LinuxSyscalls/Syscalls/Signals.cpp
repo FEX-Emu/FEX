@@ -42,7 +42,7 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 1, 0)) {
+    if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
       REGISTER_SYSCALL_IMPL(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, siginfo_t *info, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_pidfd_send_signal);
         SYSCALL_ERRNO();
