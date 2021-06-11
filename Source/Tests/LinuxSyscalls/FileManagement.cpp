@@ -349,8 +349,8 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
   }
 
   if (fd != -1) {
-    std::lock_guard<std::mutex> lk(FDLock);
-    FDToNameMap[fd] = SelfPath;
+    std::lock_guard lk(FDLock);
+    FDToNameMap.insert_or_assign(fd, SelfPath);
   }
 
   return fd;
@@ -378,8 +378,8 @@ uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_ho
   }
 
   if (fd != -1) {
-    std::lock_guard<std::mutex> lk(FDLock);
-    FDToNameMap[fd] = SelfPath;
+    std::lock_guard lk(FDLock);
+    FDToNameMap.insert_or_assign(fd, SelfPath);
   }
 
   return fd;
