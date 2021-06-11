@@ -63,7 +63,7 @@ private:
   std::mutex FDLock;
   std::unordered_map<int32_t, std::string> FDToNameMap;
   std::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
-  std::map<std::string, std::string> ThunkOverlays;
+  std::map<std::string, std::string, std::less<>> ThunkOverlays;
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
