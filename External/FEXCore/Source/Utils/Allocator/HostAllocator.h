@@ -29,6 +29,7 @@ static inline uint64_t AlignUp(uint64_t value, uint64_t size) {
       GlobalAllocator(HostAllocator *_Alloc)
         : Alloc {_Alloc} {}
 
+      virtual ~GlobalAllocator() = default;
       virtual void *malloc(size_t Size) = 0;
       virtual void *calloc(size_t num, size_t size) = 0;
       virtual void *realloc(void *ptr, size_t size) = 0;
