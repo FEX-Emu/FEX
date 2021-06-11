@@ -709,7 +709,7 @@ OSAllocator_64Bit::~OSAllocator_64Bit() {
   }
 }
 
-Alloc::HostAllocator *Create64BitAllocator() {
-  return new OSAllocator_64Bit{};
+std::unique_ptr<Alloc::HostAllocator> Create64BitAllocator() {
+  return std::make_unique<OSAllocator_64Bit>();
 }
 }

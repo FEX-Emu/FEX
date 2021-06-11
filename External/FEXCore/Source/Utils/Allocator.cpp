@@ -74,7 +74,7 @@ namespace FEXCore::Allocator {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void SetupHooks() {
-    Alloc64.reset(Alloc::OSAllocator::Create64BitAllocator());
+    Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
     __mmap_hook   = FEX_mmap;
     __munmap_hook = FEX_munmap;
     FEXCore::Allocator::mmap = FEX_mmap;

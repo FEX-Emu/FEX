@@ -1,6 +1,8 @@
 #pragma once
+
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <sys/types.h>
 
 constexpr static uint64_t PAGE_SIZE = 4096;
@@ -36,10 +38,8 @@ static inline uint64_t AlignUp(uint64_t value, uint64_t size) {
       virtual void *memalign(size_t alignment, size_t size) = 0;
       virtual void free(void *ptr) = 0;
   };
-
-  GlobalAllocator *CreateBasicAllocator(HostAllocator *Alloc);
 }
 
 namespace Alloc::OSAllocator {
-Alloc::HostAllocator *Create64BitAllocator();
+std::unique_ptr<Alloc::HostAllocator> Create64BitAllocator();
 }
