@@ -123,6 +123,10 @@ public:
   uint32_t GetHostKernelVersion() const { return HostKernelVersion; }
   uint32_t GetGuestKernelVersion() const { return GuestKernelVersion; }
 
+  bool IsHostKernelVersionAtLeast(uint32_t Major, uint32_t Minor = 0, uint32_t Patch = 0) const {
+    return GetHostKernelVersion() >= KernelVersion(Major, Minor, Patch);
+  }
+
   static uint32_t CalculateHostKernelVersion();
   uint32_t CalculateGuestKernelVersion();
 
