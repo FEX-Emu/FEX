@@ -46,7 +46,7 @@ namespace {
       for (int i = 1; i < Size; i++)
         Items[i] = 0xDEADBEEF;
       #endif
-      Next.release();
+      Next.reset();
     }
 
     BucketList() {
@@ -144,7 +144,7 @@ namespace {
         }
         else if (++i == Size) {
           if (that->Next->Items[0] == 0) {
-            that->Next.release();
+            that->Next.reset();
             foundThat->Items[foundI] = that->Items[Size-1];
             that->Items[Size-1] = 0;
             break;
