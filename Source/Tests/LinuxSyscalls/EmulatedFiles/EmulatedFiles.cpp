@@ -19,6 +19,25 @@ $end_info$
 using string = std::string;
 
 namespace FEX::EmulatedFile {
+  /**
+   * @brief Generates a temporary file using raw FDs
+   *
+   * Since we are hooking syscalls that are expecting to use raw FDs, we need to make sure to also use raw FDs.
+   * The guest application can leave these FDs dangling.
+   *
+   * Using glibc tmpfile creates a FILE which glibc tracks and will try cleaning up on application exit.
+   * If we are running a 32-bit application then this dangling FILE will be allocated using the FEX allcator
+   * Which will have already been cleaned up on shutdown.
+   *
+   * Dangling raw FD is safe since if the guest doesn't close them, then the kernel cleans them up on application close.
+   *
+   * @return A temporary file that we can use
+   */
+  static int GenTmpFD() {
+    int fd = open("/tmp", O_RDWR | O_TMPFILE | O_EXCL |  S_IRUSR | S_IWUSR);
+    return fd;
+  }
+
   std::string GenerateCPUInfo(FEXCore::Context::Context *ctx, uint32_t CPUCores) {
     std::ostringstream cpu_stream{};
     auto res_0 = FEXCore::Context::RunCPUIDFunction(ctx, 0, 0);
@@ -591,48 +610,48 @@ namespace FEX::EmulatedFile {
   EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context *ctx)
     : CTX {ctx} {
     FDReadCreators["/proc/cpuinfo"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      FILE *fp = tmpfile();
-      fwrite((void*)&cpu_info.at(0), sizeof(uint8_t), cpu_info.size(), fp);
-      fseek(fp, 0, SEEK_SET);
-      int32_t f = fileno(fp);
-      return f;
+      int FD = GenTmpFD();
+      write(FD, (void*)&cpu_info.at(0), cpu_info.size());
+      lseek(FD, 0, SEEK_SET);
+      return FD;
     };
 
     FDReadCreators["/proc/sys/kernel/osrelease"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      FILE *fp = tmpfile();
+      int FD = GenTmpFD();
       uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
-      fprintf(fp, "%d.%d.%d\n",
+      char Tmp[64]{};
+      snprintf(Tmp, sizeof(Tmp), "%d.%d.%d\n",
         FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
         FEX::HLE::SyscallHandler::KernelMinor(GuestVersion),
         FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
-      fputc('\0', fp);
-      fseek(fp, 0, SEEK_SET);
-      int32_t f = fileno(fp);
-      return f;
+      // + 1 to ensure null at the end
+      write(FD, Tmp, strlen(Tmp) + 1);
+      lseek(FD, 0, SEEK_SET);
+      return FD;
     };
 
     FDReadCreators["/proc/version"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      FILE *fp = tmpfile();
+      int FD = GenTmpFD();
       // UTS version NEEDS to be in a format that can pass to `date -d`
       // Format of this is Linux version <Release> (<Compile By>@<Compile Host>) (<Linux Compiler>) #<version> {SMP, PREEMPT, PREEMPT_RT} <UTS version>\n"
       const char kernel_version[] = "Linux version %d.%d.%d (FEX@FEX) (clang) #" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__ "\n";
       uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
-      fprintf(fp, kernel_version,
+      char Tmp[sizeof(kernel_version) + 64]{};
+      snprintf(Tmp, sizeof(Tmp), kernel_version,
         FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
         FEX::HLE::SyscallHandler::KernelMinor(GuestVersion),
         FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
-      fputc('\0', fp);
-      fseek(fp, 0, SEEK_SET);
-      int32_t f = fileno(fp);
-      return f;
+      // + 1 to ensure null at the end
+      write(FD, Tmp, strlen(Tmp) + 1);
+      lseek(FD, 0, SEEK_SET);
+      return FD;
     };
 
     auto NumCPUCores = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      FILE *fp = tmpfile();
-      fwrite((void*)&cpus_online.at(0), sizeof(uint8_t), cpus_online.size(), fp);
-      fseek(fp, 0, SEEK_SET);
-      int32_t f = fileno(fp);
-      return f;
+      int FD = GenTmpFD();
+      write(FD, (void*)&cpus_online.at(0), cpus_online.size());
+      lseek(FD, 0, SEEK_SET);
+      return FD;
     };
 
     FDReadCreators["/sys/devices/system/cpu/online"] = NumCPUCores;
@@ -644,23 +663,22 @@ namespace FEX::EmulatedFile {
     FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
 
     auto cmdline_handler = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
-      FILE *fp = tmpfile();
+      int FD = GenTmpFD();
       auto CodeLoader = FEX::HLE::_SyscallHandler->GetCodeLoader();
       auto Args = CodeLoader->GetApplicationArguments();
+      char NullChar{};
       // cmdline is an array of null terminated arguments
       for (size_t i = 1; i < Args->size(); ++i) {
         auto &Arg = Args->at(i);
-        fwrite(Arg.c_str(), sizeof(uint8_t), Arg.size(), fp);
+        write(FD, Arg.c_str(), Arg.size());
         // Finish off with a null terminator
-        fwrite("\0", sizeof(uint8_t), 1, fp);
+        write(FD, &NullChar, sizeof(uint8_t));
       }
 
       // One additional null terminator to finish the list
-      fwrite("\0", sizeof(uint8_t), 1, fp);
-
-      fseek(fp, 0, SEEK_SET);
-      int32_t f = fileno(fp);
-      return f;
+      write(FD, &NullChar, sizeof(uint8_t));
+      lseek(FD, 0, SEEK_SET);
+      return FD;
     };
 
     FDReadCreators["/proc/self/cmdline"] = cmdline_handler;
@@ -710,11 +728,10 @@ namespace FEX::EmulatedFile {
       return -1;
     }
 
-    FILE* fp = tmpfile();
-    fwrite((void*)auxvBase, 1, auxvSize, fp);
-    fseek(fp, 0, SEEK_SET);
-    int32_t f = fileno(fp);
-    return f;
+    int FD = GenTmpFD();
+    write(FD, (void*)auxvBase, auxvSize);
+    lseek(FD, 0, SEEK_SET);
+    return FD;
   }
 }
 
