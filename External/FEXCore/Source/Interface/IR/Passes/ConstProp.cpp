@@ -992,8 +992,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-FEXCore::IR::Pass* CreateConstProp(bool InlineConstants) {
-  return new ConstProp(InlineConstants);
+std::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants) {
+  return std::make_unique<ConstProp>(InlineConstants);
 }
 
 }

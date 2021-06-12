@@ -94,8 +94,8 @@ bool StaticRegisterAllocationPass::Run(IREmitter *IREmit) {
   return true;
 }
 
-FEXCore::IR::Pass* CreateStaticRegisterAllocationPass() {
-  return new StaticRegisterAllocationPass{};
+std::unique_ptr<FEXCore::IR::Pass> CreateStaticRegisterAllocationPass() {
+  return std::make_unique<StaticRegisterAllocationPass>();
 }
 
 }

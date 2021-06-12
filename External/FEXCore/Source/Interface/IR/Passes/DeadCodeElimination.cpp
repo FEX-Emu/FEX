@@ -59,10 +59,8 @@ void DeadCodeElimination::markUsed(OrderedNodeWrapper *CodeOp, IROp_Header *IROp
 
 }
 
-
-FEXCore::IR::Pass* CreatePassDeadCodeElimination() {
-  return new DeadCodeElimination{};
+std::unique_ptr<FEXCore::IR::Pass> CreatePassDeadCodeElimination() {
+  return std::make_unique<DeadCodeElimination>();
 }
-
 
 }

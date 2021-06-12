@@ -199,8 +199,8 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   return true;
 }
 
-FEXCore::IR::Pass* CreateIRCompaction() {
-  return new IRCompaction{};
+std::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction() {
+  return std::make_unique<IRCompaction>();
 }
 
 }

@@ -285,7 +285,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
   return false;
 }
 
-FEXCore::IR::Pass* CreateIRValidation() {
-  return new IRValidation{};
+std::unique_ptr<FEXCore::IR::Pass> CreateIRValidation() {
+  return std::make_unique<IRValidation>();
 }
 }

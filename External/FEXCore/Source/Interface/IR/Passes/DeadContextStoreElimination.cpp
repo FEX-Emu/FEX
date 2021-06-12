@@ -283,7 +283,7 @@ class RCLSE final : public FEXCore::IR::Pass {
 public:
   RCLSE() {
     ClassifyContextStruct(&ClassifiedStruct);
-    DCE.reset(FEXCore::IR::CreatePassDeadCodeElimination());
+    DCE = FEXCore::IR::CreatePassDeadCodeElimination();
   }
   bool Run(FEXCore::IR::IREmitter *IREmit) override;
 private:
@@ -636,8 +636,8 @@ bool RCLSE::Run(FEXCore::IR::IREmitter *IREmit) {
 
 namespace FEXCore::IR {
 
-FEXCore::IR::Pass* CreateContextLoadStoreElimination() {
-  return new RCLSE{};
+std::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination() {
+  return std::make_unique<RCLSE>();
 }
 
 }

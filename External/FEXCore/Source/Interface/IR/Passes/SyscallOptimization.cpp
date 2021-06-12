@@ -44,12 +44,11 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
     }
   }
 
-
   return Changed;
 }
 
-FEXCore::IR::Pass* CreateSyscallOptimization() {
-  return new SyscallOptimization{};
+std::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization() {
+  return std::make_unique<SyscallOptimization>();
 }
 
 }
