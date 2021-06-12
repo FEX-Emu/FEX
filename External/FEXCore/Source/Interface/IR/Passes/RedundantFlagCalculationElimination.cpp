@@ -59,8 +59,8 @@ bool DeadFlagCalculationEliminination::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-FEXCore::IR::Pass* CreateDeadFlagCalculationEliminination() {
-  return new DeadFlagCalculationEliminination{};
+std::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination() {
+  return std::make_unique<DeadFlagCalculationEliminination>();
 }
 
 }

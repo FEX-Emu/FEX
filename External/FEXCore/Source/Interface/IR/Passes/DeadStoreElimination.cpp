@@ -331,8 +331,8 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-FEXCore::IR::Pass* CreateDeadStoreElimination() {
-  return new DeadStoreElimination{};
+std::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination() {
+  return std::make_unique<DeadStoreElimination>();
 }
 
 }

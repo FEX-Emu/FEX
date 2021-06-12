@@ -106,7 +106,7 @@ bool LongDivideEliminationPass::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-FEXCore::IR::Pass* CreateLongDivideEliminationPass() {
-  return new LongDivideEliminationPass{};
+std::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass() {
+  return std::make_unique<LongDivideEliminationPass>();
 }
 }

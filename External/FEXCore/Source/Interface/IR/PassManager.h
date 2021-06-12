@@ -42,9 +42,9 @@ class PassManager final {
 public:
   void AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllocation);
   void AddDefaultValidationPasses();
-  void InsertPass(Pass *Pass) {
+  Pass* InsertPass(std::unique_ptr<Pass> Pass) {
     Pass->RegisterPassManager(this);
-    Passes.emplace_back(Pass);
+    return Passes.emplace_back(std::move(Pass)).get();
   }
 
   void InsertRegisterAllocationPass(bool OptimizeSRA);
@@ -73,15 +73,15 @@ protected:
 
 private:
   Pass *RAPass{};
-  FEXCore::IR::Pass *CompactionPass{};
+  Pass *CompactionPass{};
 
   std::vector<std::unique_ptr<Pass>> Passes;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   std::vector<std::unique_ptr<Pass>> ValidationPasses;
-  void InsertValidationPass(Pass *Pass) {
+  void InsertValidationPass(std::unique_ptr<Pass> Pass) {
     Pass->RegisterPassManager(this);
-    ValidationPasses.emplace_back(Pass);
+    ValidationPasses.emplace_back(std::move(Pass));
   }
 #endif
 

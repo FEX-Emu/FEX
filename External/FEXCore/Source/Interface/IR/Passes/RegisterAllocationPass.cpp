@@ -1538,7 +1538,7 @@ namespace FEXCore::IR {
     return Changed;
   }
 
-  FEXCore::IR::RegisterAllocationPass* CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA) {
-    return new ConstrainedRAPass{CompactionPass, OptimizeSRA};
+  std::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA) {
+    return std::make_unique<ConstrainedRAPass>(CompactionPass, OptimizeSRA);
   }
 }

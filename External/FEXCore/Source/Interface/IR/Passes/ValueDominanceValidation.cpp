@@ -212,8 +212,8 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   return false;
 }
 
-FEXCore::IR::Pass* CreateValueDominanceValidation() {
-  return new ValueDominanceValidation{};
+std::unique_ptr<FEXCore::IR::Pass> CreateValueDominanceValidation() {
+  return std::make_unique<ValueDominanceValidation>();
 }
 
 }

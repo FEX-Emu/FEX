@@ -45,10 +45,9 @@ void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllo
       InsertPass(CreateStaticRegisterAllocationPass());
   }
 
-  CompactionPass = CreateIRCompaction();
   // If the IR is compacted post-RA then the node indexing gets messed up and the backend isn't able to find the register assigned to a node
   // Compact before IR, don't worry about RA generating spills/fills
-  InsertPass(CompactionPass);
+  CompactionPass = InsertPass(CreateIRCompaction());
 }
 
 void PassManager::AddDefaultValidationPasses() {
@@ -60,8 +59,7 @@ void PassManager::AddDefaultValidationPasses() {
 }
 
 void PassManager::InsertRegisterAllocationPass(bool OptimizeSRA) {
-    RAPass = IR::CreateRegisterAllocationPass(CompactionPass, OptimizeSRA);
-    InsertPass(RAPass);
+  RAPass = InsertPass(IR::CreateRegisterAllocationPass(CompactionPass, OptimizeSRA));
 }
 
 bool PassManager::Run(IREmitter *IREmit) {
