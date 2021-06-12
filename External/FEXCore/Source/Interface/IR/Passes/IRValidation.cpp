@@ -11,7 +11,7 @@ $end_info$
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Common/BitSet.h"
 
-#include <iostream>
+#include <sstream>
 
 namespace {
   struct BlockInfo {
@@ -279,7 +279,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
       Out << "Warnings:" << std::endl << Warnings.str() << std::endl;
     }
 
-    LogMan::Msg::E("%s", Out.str().c_str());
+    LogMan::Msg::EFmt("{}", Out.str());
   }
 
   return false;

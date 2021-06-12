@@ -8,9 +8,9 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
-#include <iostream>
 #include <map>
 #include <list>
+#include <sstream>
 #include <unordered_map>
 
 namespace {
@@ -206,7 +206,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
       Out << "Warnings:" << std::endl << Warnings.str() << std::endl;
     }
 
-    LogMan::Msg::E(Out.str().c_str());
+    LogMan::Msg::EFmt("{}", Out.str());
   }
 
   return false;

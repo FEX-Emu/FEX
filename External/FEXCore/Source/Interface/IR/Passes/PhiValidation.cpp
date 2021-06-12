@@ -8,7 +8,7 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
-#include <iostream>
+#include <sstream>
 
 namespace FEXCore::IR::Validation {
 
@@ -59,7 +59,7 @@ bool PhiValidation::Run(IREmitter *IREmit) {
 
     Out << "Errors:" << std::endl << Errors.str() << std::endl;
 
-    LogMan::Msg::E(Out.str().c_str());
+    LogMan::Msg::EFmt("{}", Out.str());
   }
 
 
