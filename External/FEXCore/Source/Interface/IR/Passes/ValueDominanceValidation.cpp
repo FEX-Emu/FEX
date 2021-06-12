@@ -206,7 +206,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
       Out << "Warnings:" << std::endl << Warnings.str() << std::endl;
     }
 
-    LogMan::Msg::E(Out.str().c_str());
+    LogMan::Msg::EFmt("{}", Out.str());
   }
 
   return false;
