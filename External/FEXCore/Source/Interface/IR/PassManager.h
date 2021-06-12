@@ -52,7 +52,7 @@ public:
   bool Run(IREmitter *IREmit);
 
   void RegisterExitHandler(ShouldExitHandler Handler) {
-    ExitHandler = Handler;
+    ExitHandler = std::move(Handler);
   }
 
   bool HasRAPass() const {
