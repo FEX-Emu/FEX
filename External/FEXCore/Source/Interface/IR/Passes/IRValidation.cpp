@@ -11,7 +11,7 @@ $end_info$
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Common/BitSet.h"
 
-#include <iostream>
+#include <sstream>
 
 namespace {
   struct BlockInfo {

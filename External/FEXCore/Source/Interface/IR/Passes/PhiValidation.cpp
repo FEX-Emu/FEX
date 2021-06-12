@@ -8,7 +8,7 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
-#include <iostream>
+#include <sstream>
 
 namespace FEXCore::IR::Validation {
 

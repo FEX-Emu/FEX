@@ -8,9 +8,9 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
-#include <iostream>
 #include <map>
 #include <list>
+#include <sstream>
 #include <unordered_map>
 
 namespace {
