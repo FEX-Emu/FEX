@@ -14,30 +14,48 @@ namespace FEXCore::Threads {
     void *Ptr;
     size_t Size;
   };
-  std::mutex StackPoolMutex{};
-  std::deque<StackPoolItem> StackPool;
+  std::mutex DeadStackPoolMutex{};
+  std::mutex LiveStackPoolMutex{};
+
+  std::deque<StackPoolItem> DeadStackPool;
+  std::deque<StackPoolItem> LiveStackPool;
 
   void *AllocateStackObject(size_t Size) {
-    std::unique_lock<std::mutex> lk{StackPoolMutex};
-    if (StackPool.size() == 0) {
+    std::lock_guard lk{DeadStackPoolMutex};
+    if (DeadStackPool.size() == 0) {
       // Nothing in the pool, just allocate
       return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_GROWSDOWN, -1, 0);
     }
 
     // Keep the first item in the stack pool
-    auto Result = StackPool.front().Ptr;
-    StackPool.pop_front();
+    auto Result = DeadStackPool.front().Ptr;
+    DeadStackPool.pop_front();
 
     // Erase the rest as a garbage collection step
-    for (auto &Item : StackPool) {
+    for (auto &Item : DeadStackPool) {
       FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
     }
     return Result;
   }
 
-  void AddStackToPool(void *Ptr, size_t Size) {
-    std::unique_lock<std::mutex> lk{StackPoolMutex};
-    StackPool.emplace_back(StackPoolItem{Ptr, Size});
+  void AddStackToDeadPool(void *Ptr, size_t Size) {
+    std::lock_guard lk{DeadStackPoolMutex};
+    DeadStackPool.emplace_back(StackPoolItem{Ptr, Size});
+  }
+
+  void AddStackToLivePool(void *Ptr, size_t Size) {
+    std::lock_guard lk{LiveStackPoolMutex};
+    LiveStackPool.emplace_back(StackPoolItem{Ptr, Size});
+  }
+
+  void RemoveStackFromLivePool(void *Ptr) {
+    std::lock_guard lk{LiveStackPoolMutex};
+    for (auto it = LiveStackPool.begin(); it != LiveStackPool.end(); ++it) {
+      if (it->Ptr == Ptr) {
+        LiveStackPool.erase(it);
+        return;
+      }
+    }
   }
 
   void *InitializeThread(void *Ptr);
@@ -49,6 +67,7 @@ namespace FEXCore::Threads {
       , UserArg {Arg} {
       pthread_attr_t Attr{};
       Stack = AllocateStackObject(STACK_SIZE);
+      AddStackToLivePool(Stack, STACK_SIZE);
       pthread_attr_init(&Attr);
       pthread_attr_setstack(&Attr, Stack, STACK_SIZE);
       pthread_create(&Thread, &Attr, Func, Arg);
@@ -87,7 +106,8 @@ namespace FEXCore::Threads {
     }
 
     void FreeStack() {
-      AddStackToPool(Stack, STACK_SIZE);
+      RemoveStackFromLivePool(Stack);
+      AddStackToDeadPool(Stack, STACK_SIZE);
     }
 
     private:
@@ -115,14 +135,48 @@ namespace FEXCore::Threads {
     return std::make_unique<PThread>(Func, Arg);
   }
 
+  void CleanupAfterFork_PThread() {
+    // We don't need to pull the mutex here
+    // After a fork we are the only thread running
+    // Just need to make sure not to delete our own stack
+    uintptr_t StackLocation = reinterpret_cast<uintptr_t>(alloca(0));
+
+    auto ClearStackPool = [&](auto &StackPool) {
+      for (auto it = StackPool.begin(); it != StackPool.end(); ) {
+        StackPoolItem &Item = *it;
+        uintptr_t ItemStack = reinterpret_cast<uintptr_t>(Item.Ptr);
+        if (ItemStack <= StackLocation && (ItemStack + Item.Size) > StackLocation) {
+          // This is our stack item, skip it
+          ++it;
+        }
+        else {
+          // Untracked stack. Clean it up
+          FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
+          it = StackPool.erase(it);
+        }
+      }
+    };
+
+    // Clear both dead stacks and live stacks
+    ClearStackPool(DeadStackPool);
+    ClearStackPool(LiveStackPool);
+
+    LogMan::Throw::A((DeadStackPool.size() + LiveStackPool.size()) <= 1, "After fork we should only have zero or one tracked stacks!");
+  }
+
   static FEXCore::Threads::Pointers Ptrs = {
     .CreateThread = CreateThread_PThread,
+    .CleanupAfterFork = CleanupAfterFork_PThread,
   };
 
   std::unique_ptr<FEXCore::Threads::Thread> FEXCore::Threads::Thread::Create(
     ThreadFunc Func,
     void* Arg) {
     return Ptrs.CreateThread(Func, Arg);
+  }
+
+  void FEXCore::Threads::Thread::CleanupAfterFork() {
+    return Ptrs.CleanupAfterFork();
   }
 
   void FEXCore::Threads::Thread::SetInternalPointers(Pointers const &_Ptrs) {
