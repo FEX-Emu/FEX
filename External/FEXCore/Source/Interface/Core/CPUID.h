@@ -24,23 +24,23 @@ private:
 public:
   void Init(FEXCore::Context::Context *ctx);
 
-  FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function, [[maybe_unused]] uint32_t Leaf) {
+  FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function, uint32_t Leaf) {
     auto Handler = FunctionHandlers.find(Function);
 
     if (Handler == FunctionHandlers.end()) {
       #ifndef NDEBUG
-        LogMan::Msg::E("Unhandled CPU ID function, 0x%x", Function);
+        LogMan::Msg::E("Unhandled CPU ID function, 0x%x-0x%x", Function, Leaf);
       #endif
-      return Function_Reserved();
+      return Function_Reserved(Leaf);
     }
 
-    return Handler->second();
+    return Handler->second(Leaf);
   }
 private:
   FEXCore::Context::Context *CTX;
   FEX_CONFIG_OPT(Cores, THREADS);
 
-  using FunctionHandler = std::function<FEXCore::CPUID::FunctionResults()>;
+  using FunctionHandler = std::function<FEXCore::CPUID::FunctionResults(uint32_t Leaf)>;
   void RegisterFunction(uint32_t Function, FunctionHandler Handler) {
     FunctionHandlers[Function] = Handler;
   }
@@ -48,23 +48,26 @@ private:
   std::unordered_map<uint32_t, FunctionHandler> FunctionHandlers;
 
   // Functions
-  FEXCore::CPUID::FunctionResults Function_0h();
-  FEXCore::CPUID::FunctionResults Function_01h();
-  FEXCore::CPUID::FunctionResults Function_02h();
-  FEXCore::CPUID::FunctionResults Function_06h();
-  FEXCore::CPUID::FunctionResults Function_07h();
-  FEXCore::CPUID::FunctionResults Function_15h();
-  FEXCore::CPUID::FunctionResults Function_8000_0000h();
-  FEXCore::CPUID::FunctionResults Function_8000_0001h();
-  FEXCore::CPUID::FunctionResults Function_8000_0002h();
-  FEXCore::CPUID::FunctionResults Function_8000_0003h();
-  FEXCore::CPUID::FunctionResults Function_8000_0004h();
-  FEXCore::CPUID::FunctionResults Function_8000_0005h();
-  FEXCore::CPUID::FunctionResults Function_8000_0006h();
-  FEXCore::CPUID::FunctionResults Function_8000_0007h();
-  FEXCore::CPUID::FunctionResults Function_8000_0008h();
-  FEXCore::CPUID::FunctionResults Function_8000_0009h();
-  FEXCore::CPUID::FunctionResults Function_8000_0019h();
-  FEXCore::CPUID::FunctionResults Function_Reserved();
+  FEXCore::CPUID::FunctionResults Function_0h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_01h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_02h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_04h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_06h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_07h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_0Dh(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_15h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0000h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0001h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0002h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0003h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0004h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0005h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0006h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0007h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0008h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0009h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_0019h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_8000_001Dh(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_Reserved(uint32_t Leaf);
 };
 }
