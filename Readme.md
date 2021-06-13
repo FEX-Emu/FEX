@@ -17,7 +17,6 @@ See the [Source Outline](docs/SourceOutline.md) for more information.
 * cmake (version 3.14 minimum)
 * ninja-build
 * clang (version 10 minimum for C++20)
-* libnuma-dev
 * libglfw3-dev (For GUI)
 * libsdl2-dev (For GUI)
 * libepoxy-dev (For GUI)
