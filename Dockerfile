@@ -3,7 +3,7 @@ FROM ubuntu:20.04 as builder
 
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt install -y cmake \
-clang-10 llvm-10 nasm ninja-build libnuma-dev \
+clang-10 llvm-10 nasm ninja-build \
 libcap-dev libglfw3-dev libepoxy-dev python3-dev \
 python3 linux-headers-generic
 
@@ -23,7 +23,7 @@ FROM ubuntu:20.04
 
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt install -y \
-libnuma-dev libcap-dev libglfw3-dev libepoxy-dev
+libcap-dev libglfw3-dev libepoxy-dev
 
 COPY --from=builder /opt/FEX/build/Bin/* /usr/bin/
 
