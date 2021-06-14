@@ -666,6 +666,15 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
         LiveRegions = ObjectAlloc->new_construct(LiveRegions, ObjectAlloc);
       }
       else {
+
+        // If the allocation size is large than a page, then try allowing it to be a huge page
+        // This enables the kernel to use transparent large pages in the allocator which can reduce memory pressure
+        // Considering we are allocating the entire VA space, this is a good thing
+        // If MADV_HUGEPAGE isn't support then this will fail harmlessly
+        if (AllocationSize > 4096) {
+          ::madvise(Ptr, AllocationSize, MADV_HUGEPAGE);
+        }
+
         bool Merged = false;
         if (PrevReserved) {
           Merged = MergeReservedRegionIfPossible(PrevReserved, reinterpret_cast<uint64_t>(Ptr), AllocationSize);
