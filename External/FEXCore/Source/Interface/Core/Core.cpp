@@ -617,6 +617,9 @@ namespace FEXCore::Context {
 
     // We now only have one thread
     IdleWaitRefCount = 1;
+
+    // Clean up dead stacks
+    FEXCore::Threads::Thread::CleanupAfterFork();
   }
 
   void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length) {
