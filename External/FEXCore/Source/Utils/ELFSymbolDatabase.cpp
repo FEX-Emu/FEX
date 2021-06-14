@@ -82,7 +82,10 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
     for (auto &Lib : UnfilledDependencies) {
       if (NameToELF.find(Lib) == NameToELF.end()) {
         std::string LibraryPath;
-        bool Found = FindLibraryFile(&LibraryPath, Lib.c_str());
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+        bool Found =
+#endif
+        FindLibraryFile(&LibraryPath, Lib.c_str());
         LOGMAN_THROW_A(Found, "Couldn't find library '%s'", Lib.c_str());
         auto Info = DynamicELFInfo.emplace_back(new ELFInfo{});
         Info->Name = Lib;

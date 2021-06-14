@@ -698,9 +698,11 @@ public:
     // Set all the new definitions
     for (auto &Syscall : syscalls_x32) {
       auto SyscallNumber = Syscall.SyscallNumber;
-      auto Name = GetSyscallName(SyscallNumber);
       auto &Def = Definitions.at(SyscallNumber);
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+      auto Name = GetSyscallName(SyscallNumber);
       LOGMAN_THROW_A(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, %d, %s", SyscallNumber, Name);
+#endif
       Def.Ptr = Syscall.SyscallHandler;
       Def.NumArgs = Syscall.ArgumentCount;
 #ifdef DEBUG_STRACE

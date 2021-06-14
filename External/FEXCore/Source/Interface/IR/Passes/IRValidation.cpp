@@ -54,8 +54,10 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
   std::vector<uint32_t> Uses(CurrentIR.GetSSACount(), 0);
 
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   auto HeaderOp = CurrentIR.GetHeader();
   LOGMAN_THROW_A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+#endif
 
   IR::RegisterAllocationData * RAData{};
   if (Manager->HasRAPass()) {

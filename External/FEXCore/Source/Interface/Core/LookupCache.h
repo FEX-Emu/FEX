@@ -38,7 +38,10 @@ public:
   std::map<uint64_t, std::vector<uint64_t>> CodePages;
 
   void AddBlockMapping(uint64_t Address, void *HostCode, uint64_t Start, uint64_t Length) { 
-    auto InsertPoint = BlockList.emplace(Address, (uintptr_t)HostCode);
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    auto InsertPoint =
+#endif
+    BlockList.emplace(Address, (uintptr_t)HostCode);
     LOGMAN_THROW_A(InsertPoint.second == true, "Dupplicate block mapping added");
 
     for (auto CurrentPage = Start >> 12, EndPage = (Start + Length) >> 12; CurrentPage <= EndPage; CurrentPage++) {

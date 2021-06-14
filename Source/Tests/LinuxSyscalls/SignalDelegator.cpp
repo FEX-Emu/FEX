@@ -318,7 +318,7 @@ namespace FEX::HLE {
       {SIGWINCH,  DEFAULT_IGNORE},
     }};
 
-    for (const auto [Signal, Behaviour] : SignalDefaultBehaviours) {
+    for (const auto &[Signal, Behaviour] : SignalDefaultBehaviours) {
       HostHandlers[Signal].DefaultBehaviour = Behaviour;
     }
   }

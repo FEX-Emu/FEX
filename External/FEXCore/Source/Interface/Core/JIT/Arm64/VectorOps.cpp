@@ -766,7 +766,6 @@ DEF_OP(VFRSqrt) {
 
 DEF_OP(VNeg) {
   auto Op = IROp->C<IR::IROp_VNeg>();
-  uint8_t OpSize = IROp->Size;
   switch (Op->Header.ElementSize) {
   case 1:
     neg(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
@@ -780,13 +779,12 @@ DEF_OP(VNeg) {
   case 8:
     neg(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
     break;
-  default: LOGMAN_MSG_A("Unsupported Not size: %d", OpSize);
+  default: LOGMAN_MSG_A("Unsupported Not size: %d", IROp->Size);
   }
 }
 
 DEF_OP(VFNeg) {
   auto Op = IROp->C<IR::IROp_VFNeg>();
-  uint8_t OpSize = IROp->Size;
   switch (Op->Header.ElementSize) {
   case 4:
     fneg(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
@@ -794,7 +792,7 @@ DEF_OP(VFNeg) {
   case 8:
     fneg(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
     break;
-  default: LOGMAN_MSG_A("Unsupported Not size: %d", OpSize);
+  default: LOGMAN_MSG_A("Unsupported Not size: %d", IROp->Size);
   }
 }
 
