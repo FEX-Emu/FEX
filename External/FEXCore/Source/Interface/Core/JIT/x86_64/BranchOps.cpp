@@ -319,8 +319,9 @@ DEF_OP(CPUID) {
   //
   // Result: RAX, RDX. 4xi32
 
-  mov (rsi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-  mov (rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+  // rsi can be in the source registers, so copy argument to edx first
+  mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+  mov (esi, GetSrc<RA_32>(Op->Header.Args[0].ID()));
   mov (rdi, reinterpret_cast<uint64_t>(&CTX->CPUID));
 
   auto NumPush = RA64.size();

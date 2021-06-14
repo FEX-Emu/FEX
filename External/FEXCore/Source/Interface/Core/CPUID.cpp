@@ -15,7 +15,26 @@ $end_info$
 #endif
 
 namespace FEXCore {
-//#define CPUID_AMD
+constexpr uint32_t SUPPORTS_AVX = 0;
+// #define CPUID_AMD
+#ifdef CPUID_AMD
+constexpr uint32_t FAMILY_IDENTIFIER =
+  0 |          // Stepping
+  (0xA << 4) | // Model
+  (0xF << 8) | // Family ID
+  (0 << 12) |  // Processor type
+  (0 << 16) |  // Extended model ID
+  (1 << 20);   // Extended family ID
+#else
+constexpr uint32_t FAMILY_IDENTIFIER =
+  0 |          // Stepping
+  (0x7 << 4) |   // Model
+  (0x6 << 8) | // Family ID
+  (0 << 12) |  // Processor type
+  (1 << 16) |  // Extended model ID
+  (0x0 << 20);   // Extended family ID
+#endif
+
 #ifdef _M_ARM_64
 static uint32_t GetCycleCounterFrequency() {
   uint64_t Result{};
@@ -38,7 +57,7 @@ static uint32_t GetCycleCounterFrequency() {
 }
 #endif
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
 
   // EBX, EDX, ECX become the manufacturer id string
@@ -57,25 +76,23 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h() {
 }
 
 // Processor Info and Features bits
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
+  uint32_t CoreCount = Cores();
 
-  Res.eax = 0 | // Stepping
-    (0 << 4) | // Model
-    (0xF << 8) | // Family ID
-    (0 << 12) | // Processor type
-    (0 << 16) | // Extended model ID
-    (0 << 20); // Extended family ID
+  Res.eax = FAMILY_IDENTIFIER;
+
   Res.ebx = 0 | // Brand index
     (8 << 8) | // Cache line size in bytes
-    (8 << 16) | // Number of addressable IDs for the logical cores in the physical CPU
+    (CoreCount << 16) | // Number of addressable IDs for the logical cores in the physical CPU
     (0 << 24); // Local APIC ID
+
   Res.ecx =
     (1 <<  0) | // SSE3
     (0 <<  1) | // PCLMULQDQ
     (1 <<  2) | // DS area supports 64bit layout
     (1 <<  3) | // MWait
-    (1 <<  4) | // DS-CPL
+    (0 <<  4) | // DS-CPL
     (0 <<  5) | // VMX
     (0 <<  6) | // SMX
     (0 <<  7) | // Intel SpeedStep
@@ -89,7 +106,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h() {
     (0 << 15) | // Perfmon and debug capability
     (0 << 16) | // Reserved
     (0 << 17) | // Process-context identifiers
-    (1 << 18) | // Prefetching from memory mapped device
+    (0 << 18) | // Prefetching from memory mapped device
     (1 << 19) | // SSE4.1
     (0 << 20) | // SSE4.2
     (0 << 21) | // X2APIC
@@ -99,7 +116,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h() {
     (CTX->HostFeatures.SupportsAES << 25) | // AES
     (0 << 26) | // XSAVE
     (0 << 27) | // OSXSAVE
-    (0 << 28) | // AVX
+    (SUPPORTS_AVX << 28) | // AVX
     (0 << 29) | // F16C
     (0 << 30) | // RDRAND
     (0 << 31);  // Hypervisor always returns zero
@@ -132,16 +149,16 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h() {
     (1 << 24) | // FXSAVE/FXRSTOR
     (1 << 25) | // SSE
     (1 << 26) | // SSE2
-    (1 << 27) | // Self Snoop
+    (0 << 27) | // Self Snoop
     (1 << 28) | // Max APIC IDs reserved field is valid
-    (1 << 29) | // Thermal monitor
+    (0 << 29) | // Thermal monitor
     (0 << 30) | // Reserved
-    (1 << 31);  // Pending break enable
+    (0 << 31);  // Pending break enable
   return Res;
 }
 
 // 2: Cache and TLB information
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
 
   // returns default values from i7 model 1Ah
@@ -165,124 +182,286 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_02h() {
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_06h() {
+// 4: Deterministic cache parameters for each level
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_04h(uint32_t Leaf) {
+  FEXCore::CPUID::FunctionResults Res{};
+  constexpr uint32_t CacheType_Data = 1;
+  constexpr uint32_t CacheType_Instruction = 2;
+  constexpr uint32_t CacheType_Unified = 3;
+
+  if (Leaf == 0) {
+    // Report L1D
+    uint32_t CoreCount = Cores() - 1;
+
+    Res.eax = CacheType_Data | // Cache type
+      (0b001 << 5) |      // Cache level
+      (1 << 8)  |         // Self initializing cache level
+      (0 << 9)  |         // Fully associative
+      (0 << 14) |         // Maximum number of addressable IDs for logical processors sharing this cache (With SMT this would be 1)
+      (CoreCount << 26);  // Maximum number of addressable IDs for processor cores in the physical package
+
+    Res.ebx =
+      (63 << 0) | // Line Size - 1 : Claiming 64 byte
+      (0 << 12) | // Physical Line partitions
+      (7 << 22);  // Associativity - 1 : Claiming 8 way
+
+    // 32KB
+    Res.ecx = 63; // Number of sets - 1 : Claiming 64 sets
+
+    Res.edx =
+      (0 << 0) | // Write-back invalidate
+      (0 << 1) | // Cache inclusiveness - Includes lower caches
+      (0 << 2);  // Complex cache indexing - 0: Direct, 1: Complex
+  }
+  else if (Leaf == 1) {
+    // Report L1I
+    uint32_t CoreCount = Cores() - 1;
+
+    Res.eax = CacheType_Instruction | // Cache type
+      (0b001 << 5) |      // Cache level
+      (1 << 8)  |         // Self initializing cache level
+      (0 << 9)  |         // Fully associative
+      (0 << 14) |         // Maximum number of addressable IDs for logical processors sharing this cache (With SMT this would be 1)
+      (CoreCount << 26); // Maximum number of addressable IDs for processor cores in the physical package
+
+    Res.ebx =
+      (63 << 0) | // Line Size - 1 : Claiming 64 byte
+      (0 << 12) | // Physical Line partitions
+      (7 << 22);  // Associativity - 1 : Claiming 8 way
+
+    // 32KB
+    Res.ecx = 63; // Number of sets - 1 : Claiming 64 sets
+
+    Res.edx =
+      (0 << 0) | // Write-back invalidate
+      (0 << 1) | // Cache inclusiveness - Includes lower caches
+      (0 << 2);  // Complex cache indexing - 0: Direct, 1: Complex
+  }
+  else if (Leaf == 2) {
+    // Report L2
+    uint32_t CoreCount = Cores() - 1;
+
+    Res.eax = CacheType_Unified | // Cache type
+      (0b010 << 5) |      // Cache level
+      (1 << 8)  |         // Self initializing cache level
+      (0 << 9)  |         // Fully associative
+      (0 << 14) |         // Maximum number of addressable IDs for logical processors sharing this cache
+      (CoreCount << 26);  // Maximum number of addressable IDs for processor cores in the physical package
+
+    Res.ebx =
+      (63 << 0) | // Line Size - 1 : Claiming 64 byte
+      (0 << 12) | // Physical Line partitions
+      (7 << 22);  // Associativity - 1 : Claiming 8 way
+
+    // 512KB
+    Res.ecx = 0x3FF; // Number of sets - 1 : Claiming 1024 sets
+
+    Res.edx =
+      (0 << 0) | // Write-back invalidate
+      (0 << 1) | // Cache inclusiveness - Includes lower caches
+      (0 << 2);  // Complex cache indexing - 0: Direct, 1: Complex
+  }
+  else if (Leaf == 3) {
+    // Report L3
+    uint32_t CoreCount = Cores() - 1;
+
+    Res.eax = CacheType_Unified | // Cache type
+      (0b011 << 5) |      // Cache level
+      (1 << 8)  |         // Self initializing cache level
+      (0 << 9)  |         // Fully associative
+      (CoreCount << 14) | // Maximum number of addressable IDs for logical processors sharing this cache
+      (CoreCount << 26);  // Maximum number of addressable IDs for processor cores in the physical package
+
+    Res.ebx =
+      (63 << 0) | // Line Size - 1 : Claiming 64 byte
+      (0 << 12) | // Physical Line partitions
+      (7 << 22);  // Associativity - 1 : Claiming 8 way
+
+    // 8MB
+    Res.ecx = 0x4000; // Number of sets - 1 : Claiming 16384 sets
+
+    Res.edx =
+      (0 << 0) | // Write-back invalidate
+      (0 << 1) | // Cache inclusiveness - Includes lower caches
+      (1 << 2);  // Complex cache indexing - 0: Direct, 1: Complex
+  }
+
+  return Res;
+}
+
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_06h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax = (1 << 2); // Always running APIC
   Res.ecx = (0 << 3); // Intel performance energy bias preference (EPB)
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
+  if (Leaf == 0) {
+    // Number of subfunctions
+    Res.eax = 0x0;
+    Res.ebx =
+      (1 <<  0) | // FS/GS support
+      (0 <<  1) | // TSC adjust MSR
+      (0 <<  2) | // SGX
+      (0 <<  3) | // BMI1
+      (0 <<  4) | // Intel Hardware Lock Elison
+      (0 <<  5) | // AVX2 support
+      (1 <<  6) | // FPU data pointer updated only on exception
+      (1 <<  7) | // SMEP support
+      (0 <<  8) | // BMI2
+      (0 <<  9) | // Enhanced REP MOVSB/STOSB
+      (1 << 10) | // INVPCID for system software control of process-context
+      (0 << 11) | // Restricted transactional memory
+      (0 << 12) | // Intel resource directory technology Monitoring
+      (1 << 13) | // Deprecates FPU CS and DS
+      (0 << 14) | // Intel MPX
+      (0 << 15) | // Intel Resource Directory Technology Allocation
+      (0 << 16) | // Reserved
+      (0 << 17) | // Reserved
+      (0 << 18) | // RDSEED
+      (0 << 19) | // ADCX and ADOX instructions
+      (0 << 20) | // SMAP Supervisor mode access prevention and CLAC/STAC instructions
+      (0 << 21) | // Reserved
+      (0 << 22) | // Reserved
+      (0 << 23) | // CLFLUSHOPT instruction
+      (0 << 24) | // CLWB instruction
+      (0 << 25) | // Intel processor trace
+      (0 << 26) | // Reserved
+      (0 << 27) | // Reserved
+      (0 << 28) | // Reserved
+      (0 << 29) | // SHA instructions
+      (0 << 30) | // Reserved
+      (0 << 31);  // Reserved
 
-  // Number of subfunctions
-  Res.eax = 0x0;
-  Res.ebx =
-    (1 <<  0) | // FS/GS support
-    (0 <<  1) | // TSC adjust MSR
-    (0 <<  2) | // SGX
-    (0 <<  3) | // BMI1
-    (0 <<  4) | // Intel Hardware Lock Elison
-    (0 <<  5) | // AVX2 support
-    (1 <<  6) | // FPU data pointer updated only on exception
-    (1 <<  7) | // SMEP support
-    (0 <<  8) | // BMI2
-    (0 <<  9) | // Enhanced REP MOVSB/STOSB
-    (1 << 10) | // INVPCID for system software control of process-context
-    (0 << 11) | // Restricted transactional memory
-    (0 << 12) | // Intel resource directory technology Monitoring
-    (1 << 13) | // Deprecates FPU CS and DS
-    (0 << 14) | // Intel MPX
-    (0 << 15) | // Intel Resource Directory Technology Allocation
-    (0 << 16) | // Reserved
-    (0 << 17) | // Reserved
-    (0 << 18) | // RDSEED
-    (0 << 19) | // ADCX and ADOX instructions
-    (0 << 20) | // SMAP Supervisor mode access prevention and CLAC/STAC instructions
-    (0 << 21) | // Reserved
-    (0 << 22) | // Reserved
-    (0 << 23) | // CLFLUSHOPT instruction
-    (0 << 24) | // CLWB instruction
-    (0 << 25) | // Intel processor trace
-    (0 << 26) | // Reserved
-    (0 << 27) | // Reserved
-    (0 << 28) | // Reserved
-    (0 << 29) | // SHA instructions
-    (0 << 30) | // Reserved
-    (0 << 31);  // Reserved
+    Res.ecx =
+      (1 <<  0) | // PREFETCHWT1
+      (0 <<  1) | // AVX512VBMI
+      (0 <<  2) | // Usermode instruction prevention
+      (0 <<  3) | // Protection keys for user mode pages
+      (0 <<  4) | // OS protection keys
+      (0 <<  5) | // waitpkg
+      (0 <<  6) | // AVX512_VBMI2
+      (0 <<  7) | // CET shadow stack
+      (0 <<  8) | // GFNI
+      (0 <<  9) | // VAES
+      (0 << 10) | // VPCLMULQDQ
+      (0 << 11) | // AVX512_VNNI
+      (0 << 12) | // AVX512_BITALG
+      (0 << 13) | // Intel Total Memory Encryption
+      (0 << 14) | // AVX512_VPOPCNTDQ
+      (0 << 15) | // Reserved
+      (0 << 16) | // 5 Level page tables
+      (0 << 17) | // MPX MAWAU
+      (0 << 18) | // MPX MAWAU
+      (0 << 19) | // MPX MAWAU
+      (0 << 20) | // MPX MAWAU
+      (0 << 21) | // MPX MAWAU
+      (0 << 22) | // RDPID Read Processor ID
+      (0 << 23) | // Reserved
+      (0 << 24) | // Reserved
+      (0 << 25) | // CLDEMOTE
+      (0 << 26) | // Reserved
+      (0 << 27) | // MOVDIRI
+      (0 << 28) | // MOVDIR64B
+      (0 << 29) | // Reserved
+      (0 << 30) | // SGX Launch configuration
+      (0 << 31);  // Reserved
 
-  Res.ecx =
-    (1 <<  0) | // PREFETCHWT1
-    (0 <<  1) | // AVX512VBMI
-    (0 <<  2) | // Usermode instruction prevention
-    (0 <<  3) | // Protection keys for user mode pages
-    (1 <<  4) | // OS protection keys
-    (0 <<  5) | // waitpkg
-    (0 <<  6) | // AVX512_VBMI2
-    (0 <<  7) | // CET shadow stack
-    (0 <<  8) | // GFNI
-    (0 <<  9) | // VAES
-    (0 << 10) | // VPCLMULQDQ
-    (0 << 11) | // AVX512_VNNI
-    (0 << 12) | // AVX512_BITALG
-    (0 << 13) | // Intel Total Memory Encryption
-    (0 << 14) | // AVX512_VPOPCNTDQ
-    (0 << 15) | // Reserved
-    (0 << 16) | // 5 Level page tables
-    (0 << 17) | // MPX MAWAU
-    (0 << 18) | // MPX MAWAU
-    (0 << 19) | // MPX MAWAU
-    (0 << 20) | // MPX MAWAU
-    (0 << 21) | // MPX MAWAU
-    (0 << 22) | // RDPID Read Processor ID
-    (0 << 23) | // Reserved
-    (0 << 24) | // Reserved
-    (0 << 25) | // CLDEMOTE
-    (0 << 26) | // Reserved
-    (0 << 27) | // MOVDIRI
-    (0 << 28) | // MOVDIR64B
-    (0 << 29) | // Reserved
-    (0 << 30) | // SGX Launch configuration
-    (0 << 31);  // Reserved
-
-  Res.edx =
-    (0 <<  0) | // Reserved
-    (0 <<  1) | // Reserved
-    (0 <<  2) | // AVX512_4VNNIW
-    (0 <<  3) | // AVX512_4FMAPS
-    (0 <<  4) | // Fast Short Rep Mov
-    (0 <<  5) | // Reserved
-    (0 <<  6) | // Reserved
-    (0 <<  7) | // Reserved
-    (0 <<  8) | // AVX512_VP2INTERSECT
-    (0 <<  9) | // Reserved
-    (0 << 10) | // VERW clears CPU buffers
-    (0 << 11) | // Reserved
-    (0 << 12) | // Reserved
-    (0 << 13) | // Reserved
-    (0 << 14) | // SERIALIZE instruction
-    (0 << 15) | // Reserved
-    (0 << 16) | // Reserved
-    (0 << 17) | // Reserved
-    (0 << 18) | // Intel PCONFIG
-    (0 << 19) | // Intel Architectural LBR
-    (0 << 20) | // Intel CET
-    (0 << 21) | // Reserved
-    (0 << 22) | // Reserved
-    (0 << 23) | // Reserved
-    (0 << 24) | // Reserved
-    (0 << 25) | // Reserved
-    (0 << 26) | // Reserved
-    (0 << 27) | // Reserved
-    (0 << 28) | // L1D Flush
-    (0 << 29) | // Arch capabilities
-    (0 << 30) | // Reserved
-    (0 << 31);  // Reserved
+    Res.edx =
+      (0 <<  0) | // Reserved
+      (0 <<  1) | // Reserved
+      (0 <<  2) | // AVX512_4VNNIW
+      (0 <<  3) | // AVX512_4FMAPS
+      (0 <<  4) | // Fast Short Rep Mov
+      (0 <<  5) | // Reserved
+      (0 <<  6) | // Reserved
+      (0 <<  7) | // Reserved
+      (0 <<  8) | // AVX512_VP2INTERSECT
+      (0 <<  9) | // Reserved
+      (0 << 10) | // VERW clears CPU buffers
+      (0 << 11) | // Reserved
+      (0 << 12) | // Reserved
+      (0 << 13) | // Reserved
+      (0 << 14) | // SERIALIZE instruction
+      (0 << 15) | // Reserved
+      (0 << 16) | // Reserved
+      (0 << 17) | // Reserved
+      (0 << 18) | // Intel PCONFIG
+      (0 << 19) | // Intel Architectural LBR
+      (0 << 20) | // Intel CET
+      (0 << 21) | // Reserved
+      (0 << 22) | // Reserved
+      (0 << 23) | // Reserved
+      (0 << 24) | // Reserved
+      (0 << 25) | // Reserved
+      (0 << 26) | // Reserved
+      (0 << 27) | // Reserved
+      (0 << 28) | // L1D Flush
+      (0 << 29) | // Arch capabilities
+      (0 << 30) | // Reserved
+      (0 << 31);  // Reserved
+  }
 
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0Dh(uint32_t Leaf) {
+  // Leaf 0
+  FEXCore::CPUID::FunctionResults Res{};
+
+  uint32_t XFeatureSupportedSizeMax = SUPPORTS_AVX ? 0x0000'0340 : 0x0000'0240; // XFeatureEnabledSizeMax: Legacy Header + FPU/SSE + AVX
+  if (Leaf == 0) {
+    // XFeatureSupportedMask[31:0]
+    Res.eax =
+      (1 << 0) |            // X87 support
+      (1 << 1) |            // 128-bit SSE support
+      (SUPPORTS_AVX << 2) | // 256-bit AVX support
+      (0b00 << 3) |         // MPX State
+      (0b000 << 5) |        // AVX-512 state
+      (0 << 8) |            // "Used for IA32_XSS" ... Used for what?
+      (0 << 9);             // PKRU state
+
+    // EBX and ECX doesn't need to match if a feature is supported but not enabled
+    Res.ebx = XFeatureSupportedSizeMax;
+    Res.ecx = XFeatureSupportedSizeMax; // XFeatureSupportedSizeMax: Size in bytes of XSAVE/XRSTOR area
+
+    // XFeatureSupportedMask[63:32]
+    Res.edx = 0; // Upper 32-bits of XFeatureSupportedMask
+  }
+  else if (Leaf == 1) {
+    Res.eax =
+      (0 << 0) | // XSAVEOPT
+      (0 << 1) | // XSAVEC (and XRSTOR)
+      (0 << 2) | // XGETBV - XGETBV with ECX=1 supported
+      (0 << 3);  // XSAVES - XSAVES, XRSTORS, and IA32_XSS supported
+
+    // Same information as Leaf 0 for ebx
+    Res.ebx = XFeatureSupportedSizeMax;
+
+    // Lower supported 32bits of IA32_XSS MSR. IA32_XSS[n] can only be set to 1 if ECX[n] is 1
+    Res.ecx =
+      (0b0000'0000 << 0) | // Used for XCR0
+      (0 << 8) |           // PT state
+      (0 << 9);            // Used for XCR0
+
+    // Upper supported 32bits of IA32_XSS MSR. IA32_XSS[n+32] can only be set to 1 if EDX[n] is 1
+    // Entirely reserved atm
+    Res.edx = 0;
+  }
+  else if (Leaf == 2) {
+    Res.eax = SUPPORTS_AVX ? 0x0000'0100 : 0; // YmmSaveStateSize
+    Res.ebx = SUPPORTS_AVX ? 0x0000'0240 : 0; // YmmSaveStateOffset
+
+    // Reserved
+    Res.ecx = 0;
+    Res.edx = 0;
+  }
+  return Res;
+}
+
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   // TSC frequency = ECX * EBX / EAX
   uint32_t FrequencyHz = GetCycleCounterFrequency();
@@ -295,7 +474,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h() {
 }
 
 // Highest extended function implemented
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax = 0x8000001F;
 
@@ -314,15 +493,10 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h() {
 }
 
 // Extended processor and feature bits
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
 
-  Res.eax = 0 | // Stepping
-    (0 << 4) | // Model
-    (0 << 8) | // Family ID
-    (0 << 12) | // Processor type
-    (0 << 16) | // Extended model ID
-    (0 << 20); // Extended family ID
+  Res.eax = FAMILY_IDENTIFIER;
 
   Res.ecx =
     (1 <<  0) | // LAHF/SAHF
@@ -347,13 +521,13 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h() {
     (0 << 19) | // Reserved
     (0 << 20) | // Reserved
     (0 << 21) | // Reserved
-    (1 << 22) | // Topology extensions support
-    (1 << 23) | // Core performance counter extensions
-    (1 << 24) | // NB performance counter extensions
+    (0 << 22) | // Topology extensions support
+    (0 << 23) | // Core performance counter extensions
+    (0 << 24) | // NB performance counter extensions
     (0 << 25) | // Reserved
     (0 << 26) | // Data breakpoints extensions
-    (1 << 27) | // Performance TSC
-    (1 << 28) | // L2 perf counter extensions
+    (0 << 27) | // Performance TSC
+    (0 << 28) | // L2 perf counter extensions
     (0 << 29) | // Reserved
     (0 << 30) | // Reserved
     (0 << 31);  // Reserved
@@ -385,7 +559,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h() {
     (1 << 23) | // MMX
     (1 << 24) | // FXSAVE/FXRSTOR
     (1 << 25) | // FXSAVE/FXRSTOR Optimizations
-    (1 << 26) | // 1 gigabit pages
+    (0 << 26) | // 1 gigabit pages
     (0 << 27) | // RDTSCP
     (0 << 28) | // Reserved
     (1 << 29) | // Long Mode
@@ -400,26 +574,26 @@ constexpr char ProcessorBrand[48] = {
 };
 
 //Processor brand string
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   memcpy(&Res, &ProcessorBrand[0], sizeof(FEXCore::CPUID::FunctionResults));
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   memcpy(&Res, &ProcessorBrand[16], sizeof(FEXCore::CPUID::FunctionResults));
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   memcpy(&Res, &ProcessorBrand[32], sizeof(FEXCore::CPUID::FunctionResults));
   return Res;
 }
 
 // L1 Cache and TLB identifiers
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0005h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0005h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
 
   // L1 TLB Information for 2MB and 4MB pages
@@ -454,7 +628,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0005h() {
 }
 
 // L2 Cache identifiers
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
 
   // L2 TLB Information for 2MB and 4MB pages
@@ -488,7 +662,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0006h() {
 }
 
 // Advanced power management
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax = (1 << 2); // APIC timer not affected by p-state
   Res.edx =
@@ -497,7 +671,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0007h() {
 }
 
 // Virtual and physical address sizes
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax =
     (48 << 0) | // PhysAddrSize = 48-bit
@@ -512,14 +686,14 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h() {
   uint32_t CoreCount = Cores() - 1;
   Res.ecx =
     (0 << 16) |       // PerfTscSize: Performance timestamp count size
-    (0 << 12) |       // ApicIdSize: Number of bits in ApicID
+    ((uint32_t)std::log2(CoreCount + 1) << 12) |       // ApicIdSize: Number of bits in ApicID
     (CoreCount << 0); // Count count subtract one
 
   return Res;
 }
 
 // TLB 1GB page identifiers
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0019h() {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0019h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   Res.eax =
     (0xF << 28) | // L1 DTLB associativity for 1GB pages
@@ -535,27 +709,128 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0019h() {
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved() {
+// Deterministic cache parameters for each level
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_001Dh(uint32_t Leaf) {
+  // This is nearly a copy of CPUID function 4h
+  // There are some minor changes though
+
+  FEXCore::CPUID::FunctionResults Res{};
+  constexpr uint32_t CacheType_Data = 1;
+  constexpr uint32_t CacheType_Instruction = 2;
+  constexpr uint32_t CacheType_Unified = 3;
+
+  if (Leaf == 0) {
+    // Report L1D
+    Res.eax = CacheType_Data | // Cache type
+      (0b001 << 5) |      // Cache level
+      (1 << 8)  |         // Self initializing cache level
+      (0 << 9)  |         // Fully associative
+      (0 << 14);          // Maximum number of addressable IDs for logical processors sharing this cache (With SMT this would be 1)
+
+    Res.ebx =
+      (63 << 0) | // Line Size - 1 : Claiming 64 byte
+      (0 << 12) | // Physical Line partitions
+      (7 << 22);  // Associativity - 1 : Claiming 8 way
+
+    // 32KB
+    Res.ecx = 63; // Number of sets - 1 : Claiming 64 sets
+
+    Res.edx =
+      (0 << 0) | // Write-back invalidate
+      (0 << 1);  // Cache inclusiveness - Includes lower caches
+  }
+  else if (Leaf == 1) {
+    // Report L1I
+    Res.eax = CacheType_Instruction | // Cache type
+      (0b001 << 5) |      // Cache level
+      (1 << 8)  |         // Self initializing cache level
+      (0 << 9)  |         // Fully associative
+      (0 << 14);          // Maximum number of addressable IDs for logical processors sharing this cache (With SMT this would be 1)
+
+    Res.ebx =
+      (63 << 0) | // Line Size - 1 : Claiming 64 byte
+      (0 << 12) | // Physical Line partitions
+      (7 << 22);  // Associativity - 1 : Claiming 8 way
+
+    // 32KB
+    Res.ecx = 63; // Number of sets - 1 : Claiming 64 sets
+
+    Res.edx =
+      (0 << 0) | // Write-back invalidate
+      (0 << 1);  // Cache inclusiveness - Includes lower caches
+  }
+  else if (Leaf == 2) {
+    // Report L2
+    Res.eax = CacheType_Unified | // Cache type
+      (0b010 << 5) |      // Cache level
+      (1 << 8)  |         // Self initializing cache level
+      (0 << 9)  |         // Fully associative
+      (0 << 14);          // Maximum number of addressable IDs for logical processors sharing this cache
+
+    Res.ebx =
+      (63 << 0) | // Line Size - 1 : Claiming 64 byte
+      (0 << 12) | // Physical Line partitions
+      (7 << 22);  // Associativity - 1 : Claiming 8 way
+
+    // 512KB
+    Res.ecx = 0x3FF; // Number of sets - 1 : Claiming 1024 sets
+
+    Res.edx =
+      (0 << 0) | // Write-back invalidate
+      (0 << 1);  // Cache inclusiveness - Includes lower caches
+  }
+  else if (Leaf == 3) {
+    // Report L3
+    uint32_t CoreCount = Cores() - 1;
+
+    Res.eax = CacheType_Unified | // Cache type
+      (0b011 << 5) |      // Cache level
+      (1 << 8)  |         // Self initializing cache level
+      (0 << 9)  |         // Fully associative
+      (CoreCount << 14);  // Maximum number of addressable IDs for logical processors sharing this cache
+
+    Res.ebx =
+      (63 << 0) | // Line Size - 1 : Claiming 64 byte
+      (0 << 12) | // Physical Line partitions
+      (7 << 22);  // Associativity - 1 : Claiming 8 way
+
+    // 8MB
+    Res.ecx = 0x4000; // Number of sets - 1 : Claiming 16384 sets
+
+    Res.edx =
+      (0 << 0) | // Write-back invalidate
+      (0 << 1);  // Cache inclusiveness - Includes lower caches
+  }
+
+  return Res;
+}
+
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   return Res;
 }
 
 void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   CTX = ctx;
-  RegisterFunction(0, std::bind(&CPUIDEmu::Function_0h, this));
-  RegisterFunction(1, std::bind(&CPUIDEmu::Function_01h, this));
-  RegisterFunction(2, std::bind(&CPUIDEmu::Function_02h, this));
+  using namespace std::placeholders;
+  RegisterFunction(0, std::bind(&CPUIDEmu::Function_0h, this, _1));
+  RegisterFunction(1, std::bind(&CPUIDEmu::Function_01h, this, _1));
+  RegisterFunction(2, std::bind(&CPUIDEmu::Function_02h, this, _1));
   // 3: Serial Number(previously), now reserved
-  // 4: Deterministic cache parameters for each level
+#ifndef CPUID_AMD
+  // Deterministic cache parameters for each level
+  RegisterFunction(0x4, std::bind(&CPUIDEmu::Function_04h, this, _1));
+#endif
   // 5: Monitor/mwait
   // Thermal and power management
-  RegisterFunction(6, std::bind(&CPUIDEmu::Function_06h, this));
+  RegisterFunction(6, std::bind(&CPUIDEmu::Function_06h, this, _1));
   // Extended feature flags
-  RegisterFunction(7, std::bind(&CPUIDEmu::Function_07h, this));
+  RegisterFunction(7, std::bind(&CPUIDEmu::Function_07h, this, _1));
   // 9: Direct Cache Access information
   // 0x0A: Architectural performance monitoring
   // 0x0B: Extended topology enumeration
   // 0x0D: Processor extended state enumeration
+  RegisterFunction(0x0D, std::bind(&CPUIDEmu::Function_0Dh, this, _1));
   // 0x0F: Intel RDT monitoring
   // 0x10: Intel RDT allocation enumeration
   // 0x12: Intel SGX capability enumeration
@@ -564,43 +839,47 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
 #ifndef CPUID_AMD
   // Timestamp counter information
   // Doesn't exist on AMD hardware
-  RegisterFunction(0x15, std::bind(&CPUIDEmu::Function_15h, this));
+  RegisterFunction(0x15, std::bind(&CPUIDEmu::Function_15h, this, _1));
 #endif
   // 0x16: Processor frequency information
   // 0x17: SoC vendor attribute enumeration
 
   // Largest extended function number
-  RegisterFunction(0x8000'0000, std::bind(&CPUIDEmu::Function_8000_0000h, this));
+  RegisterFunction(0x8000'0000, std::bind(&CPUIDEmu::Function_8000_0000h, this, _1));
   // Processor vendor
-  RegisterFunction(0x8000'0001, std::bind(&CPUIDEmu::Function_8000_0001h, this));
+  RegisterFunction(0x8000'0001, std::bind(&CPUIDEmu::Function_8000_0001h, this, _1));
   // Processor brand string
-  RegisterFunction(0x8000'0002, std::bind(&CPUIDEmu::Function_8000_0002h, this));
+  RegisterFunction(0x8000'0002, std::bind(&CPUIDEmu::Function_8000_0002h, this, _1));
   // Processor brand string continued
-  RegisterFunction(0x8000'0003, std::bind(&CPUIDEmu::Function_8000_0003h, this));
+  RegisterFunction(0x8000'0003, std::bind(&CPUIDEmu::Function_8000_0003h, this, _1));
   // Processor brand string continued
-  RegisterFunction(0x8000'0004, std::bind(&CPUIDEmu::Function_8000_0004h, this));
+  RegisterFunction(0x8000'0004, std::bind(&CPUIDEmu::Function_8000_0004h, this, _1));
   // 0x8000'0005: L1 Cache and TLB identifiers
 #ifdef CPUID_AMD
-  RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_8000_0005h, this));
+  RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_8000_0005h, this, _1));
 #else
   // This is full reserved on Intel platforms
-  RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_Reserved, this));
+  RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_Reserved, this, _1));
 #endif
   // 0x8000'0006: L2 Cache identifiers
-  RegisterFunction(0x8000'0006, std::bind(&CPUIDEmu::Function_8000_0006h, this));
+  RegisterFunction(0x8000'0006, std::bind(&CPUIDEmu::Function_8000_0006h, this, _1));
   // Advanced power management information
-  RegisterFunction(0x8000'0007, std::bind(&CPUIDEmu::Function_8000_0007h, this));
+  RegisterFunction(0x8000'0007, std::bind(&CPUIDEmu::Function_8000_0007h, this, _1));
   // Virtual and physical address sizes
-  RegisterFunction(0x8000'0008, std::bind(&CPUIDEmu::Function_8000_0008h, this));
+  RegisterFunction(0x8000'0008, std::bind(&CPUIDEmu::Function_8000_0008h, this, _1));
 
   // 0x8000'000A: SVM Revision
   // TLB 1GB page identifiers
-  RegisterFunction(0x8000'0019, std::bind(&CPUIDEmu::Function_8000_0019h, this));
+  RegisterFunction(0x8000'0019, std::bind(&CPUIDEmu::Function_8000_0019h, this, _1));
 
   // 0x8000'001A: Performance optimization identifiers
   // 0x8000'001B: Instruction based sampling identifiers
   // 0x8000'001C: Lightweight profiling capabilities
   // 0x8000'001D: Cache properties
+#ifdef CPUID_AMD
+  // Deterministic cache parameters for each level
+  RegisterFunction(0x8000'001D, std::bind(&CPUIDEmu::Function_8000_001Dh, this, _1));
+#endif
   // 0x8000'001E: Extended APIC ID
   // 0x8000'001F: AMD Secure Encryption
 }
