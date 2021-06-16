@@ -51,11 +51,11 @@ auto OpToIndex = [](uint8_t Op) constexpr -> uint8_t {
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
 void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
   constexpr size_t SyscallArgs = 7;
-  std::array<uint64_t, SyscallArgs> *GPRIndexes {};
-  static std::array<uint64_t, SyscallArgs> GPRIndexes_64 = {
+  using SyscallArray = std::array<uint64_t, SyscallArgs>;
+
+  const SyscallArray *GPRIndexes {};
+  static constexpr SyscallArray GPRIndexes_64 = {
     FEXCore::X86State::REG_RAX,
     FEXCore::X86State::REG_RDI,
     FEXCore::X86State::REG_RSI,
@@ -64,8 +64,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     FEXCore::X86State::REG_R8,
     FEXCore::X86State::REG_R9,
   };
-
-  static std::array<uint64_t, SyscallArgs> GPRIndexes_32 = {
+  static constexpr SyscallArray GPRIndexes_32 = {
     FEXCore::X86State::REG_RAX,
     FEXCore::X86State::REG_RBX,
     FEXCore::X86State::REG_RCX,
@@ -74,8 +73,9 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     FEXCore::X86State::REG_RDI,
     FEXCore::X86State::REG_RBP,
   };
+  static_assert(GPRIndexes_64.size() == GPRIndexes_32.size());
 
-  auto OSABI = CTX->SyscallHandler->GetOSABI();
+  const auto OSABI = CTX->SyscallHandler->GetOSABI();
   if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX64) {
     GPRIndexes = &GPRIndexes_64;
   }
@@ -86,17 +86,19 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     LogMan::Msg::D("Unhandled OSABI syscall");
   }
 
+  const uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   auto NewRIP = GetDynamicPC(Op, -Op->InstSize);
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
 
+  const auto& GPRIndicesRef = *GPRIndexes;
   auto SyscallOp = _Syscall(
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes->at(0) * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes->at(1) * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes->at(2) * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes->at(3) * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes->at(4) * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes->at(5) * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndexes->at(6) * 8, GPRClass));
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[0] * 8, GPRClass),
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[1] * 8, GPRClass),
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[2] * 8, GPRClass),
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[3] * 8, GPRClass),
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[4] * 8, GPRClass),
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[5] * 8, GPRClass),
+    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[6] * 8, GPRClass));
 
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), SyscallOp);
 }
