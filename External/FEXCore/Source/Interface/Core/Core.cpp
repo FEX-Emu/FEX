@@ -110,39 +110,7 @@ constexpr std::array<std::string_view const, 16> RegNames = {
 std::string_view const& GetGRegName(unsigned Reg) {
   return RegNames[Reg];
 }
-
-namespace DefaultFallbackCore {
-  class DefaultFallbackCore final : public FEXCore::CPU::CPUBackend {
-  public:
-    explicit DefaultFallbackCore(FEXCore::Core::ThreadState *Thread)
-      : ThreadState {reinterpret_cast<FEXCore::Core::InternalThreadState*>(Thread)} {
-    }
-    ~DefaultFallbackCore() override = default;
-
-    std::string GetName() override { return "Default Fallback"; }
-
-    void *MapRegion(void *HostPtr, uint64_t VirtualGuestPtr, uint64_t Size) override {
-      return HostPtr;
-    }
-
-    void Initialize() override {}
-    bool NeedsOpDispatch() override { return false; }
-
-    void *CompileCode(uint64_t Entry, FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override {
-      LogMan::Msg::E("Fell back to default code handler at RIP: 0x%lx", ThreadState->CurrentFrame->State.rip);
-      return nullptr;
-    }
-
-  private:
-    FEXCore::Core::InternalThreadState *ThreadState;
-  };
-
-  FEXCore::CPU::CPUBackend *CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::ThreadState *Thread) {
-    return new DefaultFallbackCore(Thread);
-  }
-}
-
-}
+} // namespace FEXCore::Core
 
 namespace FEXCore::Context {
   void Context::AOTIRCaptureCacheWriteoutQueue_Flush() {
