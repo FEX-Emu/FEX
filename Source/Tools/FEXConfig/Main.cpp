@@ -111,7 +111,7 @@ namespace {
       }
       else if (it.is_regular_file()) {
         // If it is a regular file then we need to check if it is a valid archive
-        if (it.path().extension() == "sqsh" &&
+        if (it.path().extension() == ".sqsh" &&
             FEX::FormatCheck::IsSquashFS(it.path().string())) {
           NamedRootFS.emplace_back(it.path().filename());
         }
