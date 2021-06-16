@@ -4,6 +4,7 @@ set(SRCS
   Config.cpp
   EnvironmentLoader.cpp
   FileFormatCheck.cpp
+  RootFSSetup.cpp
   StringUtil.cpp)
 
 add_library(${NAME} STATIC ${SRCS})
