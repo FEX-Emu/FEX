@@ -655,7 +655,7 @@ namespace FEXCore::Context {
 
     Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
 
-    uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
+    const uint8_t GPRSize = GetGPRSize();
 
     for (size_t j = 0; j < CodeBlocks->size(); ++j) {
       FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
@@ -735,7 +735,7 @@ namespace FEXCore::Context {
             return { nullptr, nullptr, 0, 0, 0, 0 };
           }
           else {
-            uint8_t GPRSize = Config.Is64BitMode ? 8 : 4;
+            const uint8_t GPRSize = GetGPRSize();
 
             // We had some instructions. Early exit
             Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));

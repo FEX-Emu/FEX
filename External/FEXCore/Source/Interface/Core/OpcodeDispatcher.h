@@ -85,7 +85,7 @@ public:
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end()) {
 
-        uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+        const uint8_t GPRSize = CTX->GetGPRSize();
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
         auto RelocatedNextRIP = _EntrypointOffset(NextRIP - Entry, GPRSize);

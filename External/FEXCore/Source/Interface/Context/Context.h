@@ -242,6 +242,8 @@ namespace FEXCore::Context {
 
     std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
 
+    uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
+
     void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);
     void RemoveNamedRegion(uintptr_t Base, uintptr_t Size);
 
