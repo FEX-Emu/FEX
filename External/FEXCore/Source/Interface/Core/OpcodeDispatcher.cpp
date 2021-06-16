@@ -86,7 +86,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     LogMan::Msg::D("Unhandled OSABI syscall");
   }
 
-  const uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
   auto NewRIP = GetDynamicPC(Op, -Op->InstSize);
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
 
@@ -104,10 +104,8 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  uint8_t *sha256;
-
-  sha256 = (uint8_t *)(Op->PC + 2);
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  uint8_t *sha256 = (uint8_t *)(Op->PC + 2);
 
   _Thunk(
     _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass),
@@ -115,14 +113,9 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   );
 
   auto Constant = _Constant(GPRSize);
-
   auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
-
   auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
-
-  OrderedNode *NewSP;
-
-  NewSP = _Add(OldSP, Constant);
+  OrderedNode *NewSP = _Add(OldSP, Constant);
 
   // Store the new stack pointer
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), NewSP);
@@ -153,7 +146,7 @@ void OpDispatchBuilder::NOPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RETOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
@@ -198,7 +191,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
     return;
   }
 
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   auto Constant = _Constant(GPRSize);
 
@@ -226,7 +219,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
   // Store the new RIP
   _SignalReturn();
   auto NewRIP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, rip), GPRClass);
@@ -236,7 +229,7 @@ void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
   // Store the new RIP
   _CallbackReturn();
   auto NewRIP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, rip), GPRClass);
@@ -425,8 +418,8 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
-  uint8_t Size = GetSrcSize(Op);
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t Size = GetSrcSize(Op);
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
@@ -444,8 +437,8 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
-  uint8_t Size = GetSrcSize(Op);
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t Size = GetSrcSize(Op);
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -521,9 +514,9 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
 
 template<uint32_t SegmentReg>
 void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
-  uint8_t SrcSize = GetSrcSize(Op);
-  uint8_t DstSize = GetDstSize(Op);
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t SrcSize = GetSrcSize(Op);
+  const uint8_t DstSize = GetDstSize(Op);
+  const uint8_t GPRSize = CTX->GetGPRSize();
   auto Constant = _Constant(DstSize);
 
   auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
@@ -563,8 +556,8 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
-  uint8_t Size = GetSrcSize(Op);
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t Size = GetSrcSize(Op);
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   auto Constant = _Constant(Size);
 
@@ -637,10 +630,9 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
 
 template<uint32_t SegmentReg>
 void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
-  uint8_t SrcSize = GetSrcSize(Op);
-  uint8_t DstSize = GetDstSize(Op);
-
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t SrcSize = GetSrcSize(Op);
+  const uint8_t DstSize = GetDstSize(Op);
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   auto Constant = _Constant(SrcSize);
 
@@ -677,10 +669,10 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   // First we move RBP in to RSP and then behave effectively like a pop
-  uint8_t Size = GetSrcSize(Op);
+  const uint8_t Size = GetSrcSize(Op);
   auto Constant = _Constant(Size);
 
   auto OldBP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBP]), GPRClass);
@@ -697,7 +689,7 @@ void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CALLOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   BlockSetRIP = true;
 
@@ -728,10 +720,10 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
   BlockSetRIP = true;
 
-  uint8_t Size = GetSrcSize(Op);
+  const uint8_t Size = GetSrcSize(Op);
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   auto ConstantPCReturn = GetDynamicPC(Op);
@@ -1056,7 +1048,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
 void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   BlockSetRIP = true;
-  uint8_t JcxGPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  uint8_t JcxGPRSize = CTX->GetGPRSize();
   JcxGPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (JcxGPRSize >> 1) : JcxGPRSize;
 
   IRPair<IROp_Constant> TakeBranch;
@@ -1584,7 +1576,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Leaf = _LoadContext(4, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
@@ -2815,8 +2807,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
-  uint8_t Size = GetSrcSize(Op);
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t Size = GetSrcSize(Op);
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
@@ -2942,7 +2934,7 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
   OrderedNode *Src = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RBX]), GPRClass);
   OrderedNode *Offset = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
 
@@ -2982,15 +2974,15 @@ void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::EnterOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t Value = Op->Src[0].Data.Literal.Value;
+  const uint64_t Value = Op->Src[0].Data.Literal.Value;
 
-  uint16_t AllocSpace = Value & 0xFFFF;
-  uint8_t Level = (Value >> 16) & 0x1F;
+  const uint16_t AllocSpace = Value & 0xFFFF;
+  const uint8_t Level = (Value >> 16) & 0x1F;
 
-  auto PushValue = [&](uint8_t Size, OrderedNode *Src) {
+  const auto PushValue = [&](uint8_t Size, OrderedNode *Src) {
     auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
 
     auto NewSP = _Sub(OldSP, _Constant(Size));
@@ -3021,7 +3013,7 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   auto Counter = _CycleCounter();
   auto CounterLow = _Bfe(32, 0, Counter);
@@ -3100,7 +3092,6 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
     LogMan::Msg::E("Invalid REPNE on STOS");
     DecodeFailure = true;
@@ -3111,10 +3102,10 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     DecodeFailure = true;
     return;
   }
-  
-  auto Size = GetSrcSize(Op);
 
-  bool Repeat = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Size = GetSrcSize(Op);
+  const bool Repeat = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) != 0;
 
   if (!Repeat) {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -3209,7 +3200,6 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
     LogMan::Msg::E("Invalid REPNE on MOVS");
     DecodeFailure = true;
@@ -3221,8 +3211,9 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     return;
   }
 
-  // RA now can handle these to be here, to avoud DF accesses
-  auto Size = GetSrcSize(Op);
+  // RA now can handle these to be here, to avoid DF accesses
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Size = GetSrcSize(Op);
   auto SizeConst = _Constant(Size);
   auto NegSizeConst = _Constant(-Size);
 
@@ -3306,15 +3297,14 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
     LogMan::Msg::E("Can't handle adddress size");
     DecodeFailure = true;
     return;
   }
 
-  auto Size = GetSrcSize(Op);
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Size = GetSrcSize(Op);
 
   bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
   if (!Repeat) {
@@ -3426,8 +3416,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LODSOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
     LogMan::Msg::E("Invalid REPNE on LODS");
     DecodeFailure = true;
@@ -3439,8 +3427,9 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     return;
   }
 
-  auto Size = GetSrcSize(Op);
-  bool Repeat = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Size = GetSrcSize(Op);
+  const bool Repeat = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) != 0;
 
   if (!Repeat) {
     OrderedNode *Dest_RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
@@ -3535,10 +3524,9 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     return;
   }
 
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
-  auto Size = GetSrcSize(Op);
-  bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Size = GetSrcSize(Op);
+  const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX)) != 0;
 
   if (!Repeat) {
     OrderedNode *Dest_RDI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
@@ -3653,18 +3641,16 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  const uint8_t Size = GetSrcSize(Op);
 
-  uint8_t Size = GetSrcSize(Op);
   OrderedNode *Src = GetPackedRFLAG(false);
   if (Size != 8) {
     Src = _Bfe(Size * 8, 0, Src);
   }
 
   auto Constant = _Constant(Size);
-
   auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
-
   auto NewSP = _Sub(OldSP, Constant);
 
   // Store the new stack pointer
@@ -3675,9 +3661,9 @@ void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  const uint8_t Size = GetSrcSize(Op);
 
-  uint8_t Size = GetSrcSize(Op);
   auto Constant = _Constant(Size);
 
   auto OldSP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
@@ -3718,12 +3704,11 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::DIVOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
   // This loads the divisor
   OrderedNode *Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  auto Size = GetSrcSize(Op);
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Size = GetSrcSize(Op);
 
   if (Size == 1) {
     OrderedNode *Src1 = _LoadContext(2, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
@@ -3771,12 +3756,11 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
   // This loads the divisor
   OrderedNode *Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  auto Size = GetSrcSize(Op);
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Size = GetSrcSize(Op);
 
   if (Size == 1) {
     OrderedNode *Src1 = _LoadContext(2, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), GPRClass);
@@ -3826,8 +3810,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::BSFOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  const uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
   OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
@@ -3852,8 +3836,8 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  const uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
   OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
@@ -4322,19 +4306,19 @@ void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = GetSrcSize(Op);
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].Data.Literal.Value;
 
-  uint8_t NumElements = Size / ElementSize;
+  const uint8_t NumElements = Size / ElementSize;
   Index &= NumElements - 1;
 
   OrderedNode *Result = _VExtractToGPR(16, ElementSize, Src, Index);
 
   if (Op->Dest.IsGPR()) {
-    uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+    const uint8_t GPRSize = CTX->GetGPRSize();
 
     // If we are storing to a GPR then we zero extend it
     if (ElementSize < 4) {
@@ -4392,8 +4376,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 //    *Xn = Xt
 // Xs = MemData
 
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-
+  const auto GPRSize = CTX->GetGPRSize();
   auto Size = GetSrcSize(Op);
 
   // This is our source register
@@ -4508,12 +4491,12 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
   // REX.W used to determine if it is 16byte or 8byte
   // Unlike CMPXCHG, the destination can only be a memory location
 
-  auto Size = GetSrcSize(Op);
-  HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
+  const auto Size = GetSrcSize(Op);
+  HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
   // If this is a memory location then we want the pointer to it
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
 
@@ -4600,7 +4583,7 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::vector<FEXCore::Fronten
 }
 
 void OpDispatchBuilder::Finalize() {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   // Node 0 is invalid node
   OrderedNode *RealNode = reinterpret_cast<OrderedNode*>(GetNode(1));
@@ -4657,7 +4640,7 @@ uint8_t OpDispatchBuilder::GetSrcSize(FEXCore::X86Tables::DecodedOp Op) const {
 }
 
 OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   if (CTX->Config.Is64BitMode) {
     if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
@@ -4720,8 +4703,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   OrderedNode *Src {nullptr};
   bool LoadableType = false;
   bool StackAccess = false;
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (GPRSize >> 1) : GPRSize;
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  const uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
 
   if (Operand.IsLiteral()) {
     uint64_t constant = Operand.Data.Literal.Value;
@@ -4837,12 +4820,12 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
 }
 
 OrderedNode *OpDispatchBuilder::GetDynamicPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
   return _EntrypointOffset(Op->PC + Op->InstSize + Offset - Entry, GPRSize);
 }
 
 OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad) {
-  uint8_t OpSize = GetSrcSize(Op);
+  const uint8_t OpSize = GetSrcSize(Op);
   return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Align, LoadData, ForceLoad);
 }
 
@@ -4860,8 +4843,8 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   OrderedNode *MemStoreDst {nullptr};
   bool MemStore = false;
   bool StackAccess = false;
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (GPRSize >> 1) : GPRSize;
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  const uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
 
   if (Operand.IsLiteral()) {
     MemStoreDst = _Constant(Operand.Data.Literal.Size * 8, Operand.Data.Literal.Value);
@@ -5993,7 +5976,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
 
   if (setRIP) {
-    uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+    const uint8_t GPRSize = CTX->GetGPRSize();
 
     BlockSetRIP = setRIP;
 
@@ -6320,21 +6303,21 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
 
 void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   // Until we get correct PHI nodes this is required to be a loop unroll
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
-  auto Size = GetSrcSize(Op) * 8;
+  const auto GPRSize = CTX->GetGPRSize();
+  const auto Size = uint32_t{GetSrcSize(Op)} * 8;
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
   OrderedNode *MemDest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
 
-  auto NumElements = Size / 64;
+  const size_t NumElements = Size / 64;
   for (size_t Element = 0; Element < NumElements; ++Element) {
     // Extract the current element
     auto SrcElement = _VExtractToGPR(GetSrcSize(Op), 8, Src, Element);
     auto DestElement = _VExtractToGPR(GetSrcSize(Op), 8, Dest, Element);
 
-    size_t NumSelectBits = 64 / 8;
+    constexpr size_t NumSelectBits = 64 / 8;
     for (size_t Select = 0; Select < NumSelectBits; ++Select) {
       auto SelectMask = _Bfe(1, 8 * Select + 7, SrcElement);
       auto CondJump = _CondJump(SelectMask, {COND_EQ});
@@ -8663,7 +8646,7 @@ void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
 
   // We don't actually support this instruction
   // Multiblock may hit it though

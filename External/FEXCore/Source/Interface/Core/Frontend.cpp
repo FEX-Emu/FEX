@@ -939,7 +939,7 @@ void Decoder::BranchTargetInMultiblockRange() {
 
   // If the RIP setting is conditional AND within our symbol range then it can be considered for multiblock
   uint64_t TargetRIP = 0;
-  uint8_t GPRSize = CTX->Config.Is64BitMode ? 8 : 4;
+  const uint8_t GPRSize = CTX->GetGPRSize();
   bool Conditional = true;
 
   switch (DecodeInst->OP) {
