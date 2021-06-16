@@ -1,8 +1,9 @@
 set(NAME Common)
 set(SRCS
   ArgumentLoader.cpp
-  EnvironmentLoader.cpp
   Config.cpp
+  EnvironmentLoader.cpp
+  FileFormatCheck.cpp
   StringUtil.cpp)
 
 add_library(${NAME} STATIC ${SRCS})
