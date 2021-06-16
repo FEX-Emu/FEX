@@ -142,16 +142,20 @@ int main(int argc, char **argv, char **envp) {
 
     if (pid == 0) {
       const char *argv[5];
-      argv[0] = "/usr/bin/fusermount";
+      argv[0] = "/bin/fusermount";
       argv[1] = "-u";
       argv[2] = "-q";
       argv[3] = MountPath;
       argv[4] = nullptr;
 
       if (execve(argv[0], (char * const*)argv, envp) == -1) {
-        fprintf(stderr, "fusermount failed to execute. You may have an mount living at '%s' to clean up now\n", SquashFSPath);
-        fprintf(stderr, "Try `%s %s %s %s`\n", argv[0], argv[1], argv[2], argv[3]);
-        exit(1);
+        // Try another location
+        argv[0] = "/usr/bin/fusermount";
+        if (execve(argv[0], (char * const*)argv, envp) == -1) {
+          fprintf(stderr, "fusermount failed to execute. You may have an mount living at '%s' to clean up now\n", SquashFSPath);
+          fprintf(stderr, "Try `%s %s %s %s`\n", argv[0], argv[1], argv[2], argv[3]);
+          exit(1);
+        }
       }
     }
     else {
