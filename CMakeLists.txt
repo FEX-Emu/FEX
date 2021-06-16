@@ -252,7 +252,7 @@ add_compile_options(-Wall)
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Config.h.in
-  ${CMAKE_BINARY_DIR}/generated/Config.h)
+  ${CMAKE_BINARY_DIR}/generated/ConfigDefines.h)
 
 if (BUILD_TESTS)
   include(CTest)
