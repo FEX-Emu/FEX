@@ -21,7 +21,9 @@ namespace FEXCore::Frontend {
 using namespace FEXCore::X86Tables;
 
 static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool HasREX, bool HasXMM, bool HasMM, uint8_t InvalidOffset = 16) {
-  constexpr std::array<uint64_t, 16> GPRIndexes = {
+  using GPRArray = std::array<uint64_t, 16>;
+
+  static constexpr GPRArray GPRIndexes = {
     // Classical ordering?
     FEXCore::X86State::REG_RAX,
     FEXCore::X86State::REG_RCX,
@@ -41,7 +43,7 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
     FEXCore::X86State::REG_R15,
   };
 
-  constexpr std::array<uint64_t, 16> GPR8BitHighIndexes = {
+  static constexpr GPRArray GPR8BitHighIndexes = {
     // Classical ordering?
     FEXCore::X86State::REG_RAX,
     FEXCore::X86State::REG_RCX,
@@ -61,7 +63,7 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
     FEXCore::X86State::REG_R15,
   };
 
-  constexpr std::array<uint64_t, 16> XMMIndexes = {
+  static constexpr GPRArray XMMIndexes = {
     FEXCore::X86State::REG_XMM_0,
     FEXCore::X86State::REG_XMM_1,
     FEXCore::X86State::REG_XMM_2,
@@ -80,7 +82,7 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
     FEXCore::X86State::REG_XMM_15,
   };
 
-  constexpr std::array<uint64_t, 16> MMIndexes = {
+  static constexpr GPRArray MMIndexes = {
     FEXCore::X86State::REG_MM_0,
     FEXCore::X86State::REG_MM_1,
     FEXCore::X86State::REG_MM_2,
@@ -99,7 +101,7 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
     FEXCore::X86State::REG_INVALID
   };
 
-  const std::array<uint64_t, 16> *GPRs = &GPRIndexes;
+  const GPRArray *GPRs = &GPRIndexes;
   if (HasXMM) {
     GPRs = &XMMIndexes;
   }
