@@ -21,7 +21,7 @@ namespace FEXCore::Frontend {
 using namespace FEXCore::X86Tables;
 
 static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool HasREX, bool HasXMM, bool HasMM, uint8_t InvalidOffset = 16) {
-  using GPRArray = std::array<uint64_t, 16>;
+  using GPRArray = std::array<uint32_t, 16>;
 
   static constexpr GPRArray GPRIndexes = {
     // Classical ordering?
