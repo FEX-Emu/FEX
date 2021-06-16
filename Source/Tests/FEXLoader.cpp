@@ -6,8 +6,9 @@ $end_info$
 */
 
 #include "Common/ArgumentLoader.h"
-#include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
+#include "Common/EnvironmentLoader.h"
+#include "Common/RootFSSetup.h"
 #include "ELFCodeLoader.h"
 #include "ELFCodeLoader2.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
@@ -356,6 +357,12 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::ReloadMetaLayer();
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, IsInterpreterInstalled() ? "1" : "0");
+
+  // Ensure RootFS is setup before config options try to pull CONFIG_ROOTFS
+  if (!FEX::RootFS::Setup(envp)) {
+    LogMan::Msg::E("RootFS failure");
+    return -1;
+  }
 
   FEX_CONFIG_OPT(SilentLog, SILENTLOG);
   FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);

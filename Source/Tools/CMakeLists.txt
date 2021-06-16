@@ -3,6 +3,7 @@ if (ENABLE_VISUAL_DEBUGGER)
 endif()
 
 add_subdirectory(FEXConfig/)
+add_subdirectory(FEXMountDaemon/)
 
 set(NAME Opt)
 set(SRCS Opt.cpp)

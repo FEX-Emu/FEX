@@ -1,4 +1,5 @@
 #include "Common/Config.h"
+#include "Common/FileFormatCheck.h"
 
 #include <FEXCore/Utils/Event.h>
 
@@ -11,6 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <filesystem>
+#include <fstream>
 #include <sys/inotify.h>
 #include <thread>
 #include <unistd.h>
@@ -106,6 +108,13 @@ namespace {
     for (auto &it : std::filesystem::directory_iterator(RootFS)) {
       if (it.is_directory()) {
         NamedRootFS.emplace_back(it.path().filename());
+      }
+      else if (it.is_regular_file()) {
+        // If it is a regular file then we need to check if it is a valid archive
+        if (it.path().extension() == "sqsh" &&
+            FEX::FormatCheck::IsSquashFS(it.path().string())) {
+          NamedRootFS.emplace_back(it.path().filename());
+        }
       }
     }
   }
