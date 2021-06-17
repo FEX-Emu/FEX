@@ -1,4 +1,6 @@
 #pragma once
+
+#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cmath>
@@ -159,23 +161,17 @@ struct X80SoftFloat {
 
   operator float() const {
     const float32_t Result = extF80_to_f32(*this);
-    float flt;
-    std::memcpy(&flt, &Result, sizeof(flt));
-    return flt;
+    return FEXCore::BitCast<float>(Result);
   }
 
   operator double() const {
     const float64_t Result = extF80_to_f64(*this);
-    double flt;
-    std::memcpy(&flt, &Result, sizeof(flt));
-    return flt;
+    return FEXCore::BitCast<double>(Result);
   }
 
   operator BIGFLOAT() const {
     const float128_t Result = extF80_to_f128(*this);
-    BIGFLOAT flt;
-    std::memcpy(&flt, &Result, sizeof(flt));
-    return flt;
+    return FEXCore::BitCast<BIGFLOAT>(Result);
   }
 
   operator int16_t() const {
@@ -202,15 +198,11 @@ struct X80SoftFloat {
   }
 
   void operator=(const float rhs) {
-    float32_t flt;
-    std::memcpy(&flt, &rhs, sizeof(flt));
-    *this = f32_to_extF80(flt);
+    *this = f32_to_extF80(FEXCore::BitCast<float32_t>(rhs));
   }
 
   void operator=(const double rhs) {
-    float64_t flt;
-    std::memcpy(&flt, &rhs, sizeof(flt));
-    *this = f64_to_extF80(flt);
+    *this = f64_to_extF80(FEXCore::BitCast<float64_t>(rhs));
   }
 
   void operator=(const int16_t rhs) {
@@ -236,21 +228,15 @@ struct X80SoftFloat {
   }
 
   X80SoftFloat(const float rhs) {
-    float32_t flt;
-    std::memcpy(&flt, &rhs, sizeof(float32_t));
-    *this = f32_to_extF80(flt);
+    *this = f32_to_extF80(FEXCore::BitCast<float32_t>(rhs));
   }
 
   X80SoftFloat(const double rhs) {
-    float64_t flt;
-    std::memcpy(&flt, &rhs, sizeof(float64_t));
-    *this = f64_to_extF80(flt);
+    *this = f64_to_extF80(FEXCore::BitCast<float64_t>(rhs));
   }
 
   X80SoftFloat(BIGFLOAT rhs) {
-    float128_t flt;
-    std::memcpy(&flt, &rhs, sizeof(float128_t));
-    *this = f128_to_extF80(flt);
+    *this = f128_to_extF80(FEXCore::BitCast<float128_t>(rhs));
   }
 
   X80SoftFloat(const int16_t rhs) {
