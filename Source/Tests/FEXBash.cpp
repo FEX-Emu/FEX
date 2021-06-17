@@ -9,6 +9,7 @@ $end_info$
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
+#include "Common/RootFSSetup.h"
 
 #include <FEXCore/Config/Config.h>
 #include <filesystem>
@@ -30,6 +31,12 @@ int main(int argc, char **argv, char **const envp) {
   if (Args.empty()) {
     // Early exit if we weren't passed an argument
     return 0;
+  }
+
+  // Ensure RootFS is setup before config options try to pull CONFIG_ROOTFS
+  if (!FEX::RootFS::Setup(envp)) {
+    LogMan::Msg::E("RootFS failure");
+    return -1;
   }
 
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
