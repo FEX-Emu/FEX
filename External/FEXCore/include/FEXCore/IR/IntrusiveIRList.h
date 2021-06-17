@@ -69,8 +69,8 @@ class DualIntrusiveAllocator final {
     size_t ListSize() const { return ListCurrentOffset; }
     size_t ListBackingSize() const { return MemorySize; }
 
-    uintptr_t const DataBegin() const { return Data; }
-    uintptr_t const ListBegin() const { return List; }
+    uintptr_t DataBegin() const { return Data; }
+    uintptr_t ListBegin() const { return List; }
 
     void Reset() { DataCurrentOffset = 0; ListCurrentOffset = 0; }
 
@@ -159,7 +159,7 @@ public:
     stream.write((char*)GetListData(), ListSize);
   }
 
-  size_t GetInlineSize() {
+  size_t GetInlineSize() const {
     static_assert(sizeof(*this) == 40);
     return sizeof(*this) + DataSize + ListSize;
   }
@@ -317,11 +317,11 @@ public:
     return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
 
-  uintptr_t const GetData() const {
+  uintptr_t GetData() const {
     return reinterpret_cast<uintptr_t>(IRDataInternal ? IRDataInternal : InlineData);
   }
 
-  uintptr_t const GetListData() const {
+  uintptr_t GetListData() const {
     return reinterpret_cast<uintptr_t>(ListDataInternal ? ListDataInternal : &InlineData[DataSize]);
   }
 

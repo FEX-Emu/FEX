@@ -286,6 +286,7 @@ function(AddObject Name Type)
   target_compile_options(${Name}
     PRIVATE
     -Wall
+    -Werror=ignored-qualifiers
     -Werror=implicit-fallthrough
 
     -Wno-trigraphs

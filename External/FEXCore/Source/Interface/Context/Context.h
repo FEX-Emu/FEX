@@ -240,7 +240,7 @@ namespace FEXCore::Context {
     void DestroyThread(FEXCore::Core::InternalThreadState *Thread);
     void CleanupAfterFork(FEXCore::Core::InternalThreadState *ExceptForThread);
 
-    std::vector<FEXCore::Core::InternalThreadState*> *const GetThreads() { return &Threads; }
+    std::vector<FEXCore::Core::InternalThreadState*>* GetThreads() { return &Threads; }
 
     uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
 
