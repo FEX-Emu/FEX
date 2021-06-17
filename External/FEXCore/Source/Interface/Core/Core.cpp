@@ -837,16 +837,16 @@ namespace FEXCore::Context {
 
     if (Inserted.second) {
       //GuestHash
-      Stream->write((char*)&Hash, sizeof(Hash));
+      Stream->write((const char*)&Hash, sizeof(Hash));
 
       //GuestLength
-      Stream->write((char*)&Length, sizeof(Length));
+      Stream->write((const char*)&Length, sizeof(Length));
 
       // RAData (inline)
       // In file, IsShared is always set
       auto Shared = RAData->IsShared;
       RAData->IsShared = true;
-      Stream->write((char*)RAData, RAData->Size(RAData->MapCount));
+      Stream->write((const char*)RAData, RAData->Size(RAData->MapCount));
       RAData->IsShared = Shared;
 
       // IRData (inline)
@@ -1028,41 +1028,41 @@ namespace FEXCore::Context {
 
     std::unique_lock lk(AOTIRCacheLock);
 
-    for (auto &AOTModule: AOTIRCaptureCache) {
-      if (!AOTModule.second.Stream) {
+    for (auto& [String, Entry] : AOTIRCaptureCache) {
+      if (!Entry.Stream) {
         continue;
       }
 
-      auto ModSize = AOTModule.first.size();
-      auto &stream = AOTModule.second.Stream;
+      const auto ModSize = String.size();
+      auto &stream = Entry.Stream;
 
       // pad to 32 bytes
-      char Zero = 0;
+      constexpr char Zero = 0;
       while(stream->tellp() & 31)
         stream->write(&Zero, 1);
 
       // AOTIRInlineIndex
-      auto FnCount = AOTModule.second.Index.size();
-      size_t DataBase = -stream->tellp();
+      const auto FnCount = Entry.Index.size();
+      const size_t DataBase = -stream->tellp();
 
-      stream->write((char*)&FnCount, sizeof(FnCount));
-      stream->write((char*)&DataBase, sizeof(DataBase));
+      stream->write((const char*)&FnCount, sizeof(FnCount));
+      stream->write((const char*)&DataBase, sizeof(DataBase));
 
-      for (auto entry: AOTModule.second.Index) {
+      for (const auto& [GuestStart, DataOffset] : Entry.Index) {
         //AOTIRInlineIndexEntry
 
         // GuestStart
-        stream->write((char*)&entry.first, sizeof(entry.first));
+        stream->write((const char*)&GuestStart, sizeof(GuestStart));
 
         // DataOffset
-        stream->write((char*)&entry.second, sizeof(entry.second));
+        stream->write((const char*)&DataOffset, sizeof(DataOffset));
       }
 
       // End of file header
-      auto IndexSize = FnCount * sizeof(AOTIRInlineIndexEntry) + sizeof(DataBase) + sizeof(FnCount);
-      stream->write((char*)&IndexSize, sizeof(IndexSize));
-      stream->write((char*)&AOTModule.first[0], ModSize);
-      stream->write((char*)&ModSize, sizeof(ModSize));
+      const auto IndexSize = FnCount * sizeof(AOTIRInlineIndexEntry) + sizeof(DataBase) + sizeof(FnCount);
+      stream->write((const char*)&IndexSize, sizeof(IndexSize));
+      stream->write(String.c_str(), ModSize);
+      stream->write((const char*)&ModSize, sizeof(ModSize));
     }
   }
 

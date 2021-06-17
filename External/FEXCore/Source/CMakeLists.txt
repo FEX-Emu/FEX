@@ -286,6 +286,7 @@ function(AddObject Name Type)
   target_compile_options(${Name}
     PRIVATE
     -Wall
+    -Werror=cast-qual
     -Werror=ignored-qualifiers
     -Werror=implicit-fallthrough
 

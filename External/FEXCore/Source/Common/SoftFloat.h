@@ -158,18 +158,24 @@ struct X80SoftFloat {
   }
 
   operator float() const {
-    float32_t Result = extF80_to_f32(*this);
-    return *(float*)&Result;
+    const float32_t Result = extF80_to_f32(*this);
+    float flt;
+    std::memcpy(&flt, &Result, sizeof(flt));
+    return flt;
   }
 
   operator double() const {
-    float64_t Result = extF80_to_f64(*this);
-    return *(double*)&Result;
+    const float64_t Result = extF80_to_f64(*this);
+    double flt;
+    std::memcpy(&flt, &Result, sizeof(flt));
+    return flt;
   }
 
   operator BIGFLOAT() const {
-    float128_t Result = extF80_to_f128(*this);
-    return *(BIGFLOAT*)&Result;
+    const float128_t Result = extF80_to_f128(*this);
+    BIGFLOAT flt;
+    std::memcpy(&flt, &Result, sizeof(flt));
+    return flt;
   }
 
   operator int16_t() const {
@@ -196,11 +202,15 @@ struct X80SoftFloat {
   }
 
   void operator=(const float rhs) {
-    *this = f32_to_extF80(*(float32_t*)&rhs);
+    float32_t flt;
+    std::memcpy(&flt, &rhs, sizeof(flt));
+    *this = f32_to_extF80(flt);
   }
 
   void operator=(const double rhs) {
-    *this = f64_to_extF80(*(float64_t*)&rhs);
+    float64_t flt;
+    std::memcpy(&flt, &rhs, sizeof(flt));
+    *this = f64_to_extF80(flt);
   }
 
   void operator=(const int16_t rhs) {
@@ -226,15 +236,21 @@ struct X80SoftFloat {
   }
 
   X80SoftFloat(const float rhs) {
-    *this = f32_to_extF80(*(float32_t*)&rhs);
+    float32_t flt;
+    std::memcpy(&flt, &rhs, sizeof(float32_t));
+    *this = f32_to_extF80(flt);
   }
 
   X80SoftFloat(const double rhs) {
-    *this = f64_to_extF80(*(float64_t*)&rhs);
+    float64_t flt;
+    std::memcpy(&flt, &rhs, sizeof(float64_t));
+    *this = f64_to_extF80(flt);
   }
 
   X80SoftFloat(BIGFLOAT rhs) {
-    *this = f128_to_extF80(*(float128_t*)&rhs);
+    float128_t flt;
+    std::memcpy(&flt, &rhs, sizeof(float128_t));
+    *this = f128_to_extF80(flt);
   }
 
   X80SoftFloat(const int16_t rhs) {
