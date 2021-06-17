@@ -624,3 +624,8 @@ conformance-interfaces-killpg-4-1.test
 conformance-interfaces-killpg-5-1.test
 conformance-interfaces-killpg-6-1.test
 conformance-interfaces-killpg-8-1.test
+
+# This test is flaky
+# It puts the thread to sleep for 1 second and expects to wake up within 10ms of the timer
+# If the kernel is doing other things then this 10ms time is too strict and fails periodically
+conformance-interfaces-sigtimedwait-1-1.test
