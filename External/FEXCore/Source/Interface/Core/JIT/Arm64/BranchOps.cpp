@@ -257,7 +257,7 @@ DEF_OP(Thunk) {
 
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
-  uint8_t *OldCode = (uint8_t *)&Op->CodeOriginalLow;
+  const auto *OldCode = (const uint8_t *)&Op->CodeOriginalLow;
   int len = Op->CodeLength;
   int idx = 0;
 
@@ -268,7 +268,7 @@ DEF_OP(ValidateCode) {
   while (len >= 8)
   {
     ldr(x2, MemOperand(x0, idx));
-    LoadConstant(x3, *(uint32_t *)(OldCode + idx));
+    LoadConstant(x3, *(const uint32_t *)(OldCode + idx));
     cmp(x2, x3);
     csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
     len -= 8;
@@ -277,7 +277,7 @@ DEF_OP(ValidateCode) {
   while (len >= 4)
   {
     ldr(w2, MemOperand(x0, idx));
-    LoadConstant(w3, *(uint32_t *)(OldCode + idx));
+    LoadConstant(w3, *(const uint32_t *)(OldCode + idx));
     cmp(w2, w3);
     csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
     len -= 4;
@@ -286,7 +286,7 @@ DEF_OP(ValidateCode) {
   while (len >= 2)
   {
     ldrh(w2, MemOperand(x0, idx));
-    LoadConstant(w3, *(uint16_t *)(OldCode + idx));
+    LoadConstant(w3, *(const uint16_t *)(OldCode + idx));
     cmp(w2, w3);
     csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
     len -= 2;
@@ -295,7 +295,7 @@ DEF_OP(ValidateCode) {
   while (len >= 1)
   {
     ldrb(w2, MemOperand(x0, idx));
-    LoadConstant(w3, *(uint8_t *)(OldCode + idx));
+    LoadConstant(w3, *(const uint8_t *)(OldCode + idx));
     cmp(w2, w3);
     csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
     len -= 1;

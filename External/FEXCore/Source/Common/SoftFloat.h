@@ -1,4 +1,6 @@
 #pragma once
+
+#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cmath>
@@ -158,18 +160,18 @@ struct X80SoftFloat {
   }
 
   operator float() const {
-    float32_t Result = extF80_to_f32(*this);
-    return *(float*)&Result;
+    const float32_t Result = extF80_to_f32(*this);
+    return FEXCore::BitCast<float>(Result);
   }
 
   operator double() const {
-    float64_t Result = extF80_to_f64(*this);
-    return *(double*)&Result;
+    const float64_t Result = extF80_to_f64(*this);
+    return FEXCore::BitCast<double>(Result);
   }
 
   operator BIGFLOAT() const {
-    float128_t Result = extF80_to_f128(*this);
-    return *(BIGFLOAT*)&Result;
+    const float128_t Result = extF80_to_f128(*this);
+    return FEXCore::BitCast<BIGFLOAT>(Result);
   }
 
   operator int16_t() const {
@@ -196,11 +198,11 @@ struct X80SoftFloat {
   }
 
   void operator=(const float rhs) {
-    *this = f32_to_extF80(*(float32_t*)&rhs);
+    *this = f32_to_extF80(FEXCore::BitCast<float32_t>(rhs));
   }
 
   void operator=(const double rhs) {
-    *this = f64_to_extF80(*(float64_t*)&rhs);
+    *this = f64_to_extF80(FEXCore::BitCast<float64_t>(rhs));
   }
 
   void operator=(const int16_t rhs) {
@@ -226,15 +228,15 @@ struct X80SoftFloat {
   }
 
   X80SoftFloat(const float rhs) {
-    *this = f32_to_extF80(*(float32_t*)&rhs);
+    *this = f32_to_extF80(FEXCore::BitCast<float32_t>(rhs));
   }
 
   X80SoftFloat(const double rhs) {
-    *this = f64_to_extF80(*(float64_t*)&rhs);
+    *this = f64_to_extF80(FEXCore::BitCast<float64_t>(rhs));
   }
 
   X80SoftFloat(BIGFLOAT rhs) {
-    *this = f128_to_extF80(*(float128_t*)&rhs);
+    *this = f128_to_extF80(FEXCore::BitCast<float128_t>(rhs));
   }
 
   X80SoftFloat(const int16_t rhs) {

@@ -248,7 +248,7 @@ DEF_OP(Thunk) {
 
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
-  uint8_t* OldCode = (uint8_t*)&Op->CodeOriginalLow;
+  const auto* OldCode = (const uint8_t*)&Op->CodeOriginalLow;
   int len = Op->CodeLength;
   int idx = 0;
 
@@ -256,20 +256,20 @@ DEF_OP(ValidateCode) {
   mov(rax, Entry + Op->Offset);
   mov(rbx, 1);
   while (len >= 4) {
-    cmp(dword[rax + idx], *(uint32_t*)(OldCode + idx));
+    cmp(dword[rax + idx], *(const uint32_t*)(OldCode + idx));
     cmovne(GetDst<RA_64>(Node), rbx);
     len-=4;
     idx+=4;
   }
   while (len >= 2) {
-    mov(rcx, *(uint16_t*)(OldCode + idx));
+    mov(rcx, *(const uint16_t*)(OldCode + idx));
     cmp(word[rax + idx], cx);
     cmovne(GetDst<RA_64>(Node), rbx);
     len-=2;
     idx+=2;
   }
   while (len >= 1) {
-    cmp(byte[rax + idx], *(uint8_t*)(OldCode + idx));
+    cmp(byte[rax + idx], *(const uint8_t*)(OldCode + idx));
     cmovne(GetDst<RA_64>(Node), rbx);
     len-=1;
     idx+=1;
