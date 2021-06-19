@@ -15,7 +15,6 @@ $end_info$
 #include <sys/swap.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include <sys/vfs.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/xattr.h>
@@ -108,16 +107,6 @@ namespace FEX::HLE {
 #else
       return -ENOSYS;
 #endif
-    });
-
-    REGISTER_SYSCALL_IMPL(statfs, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, struct statfs *buf) -> uint64_t {
-      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, buf);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(fstatfs, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct statfs *buf) -> uint64_t {
-      uint64_t Result = ::fstatfs(fd, buf);
-      SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(truncate, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, off_t length) -> uint64_t {

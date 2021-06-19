@@ -15,6 +15,7 @@ $end_info$
 #include <sys/uio.h>
 #include <sys/sendfile.h>
 #include <sys/syscall.h>
+#include <sys/vfs.h>
 #include <unistd.h>
 
 namespace FEX::HLE::x64 {
@@ -232,6 +233,16 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(dup2, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd, int newfd) -> uint64_t {
       uint64_t Result = ::dup2(oldfd, newfd);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(statfs, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, struct statfs *buf) -> uint64_t {
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, buf);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(fstatfs, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct statfs *buf) -> uint64_t {
+      uint64_t Result = ::fstatfs(fd, buf);
       SYSCALL_ERRNO();
     });
   }
