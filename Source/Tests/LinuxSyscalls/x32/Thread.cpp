@@ -25,14 +25,28 @@ namespace FEX::HLE::x32 {
   uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls) {
     struct x32::user_desc* u_info = reinterpret_cast<struct x32::user_desc*>(tls);
 
-    static bool Initialized = false;
-    if (Initialized == true && u_info->entry_number == -1) {
-      LOGMAN_MSG_A("Trying to load a new GDT");
-    }
+    // The kernel only gives 32-bit userspace 3 TLS segments
+    // 6 = glibc
+    // 7 = wine fs
+    // 8 = etc
+    constexpr uint32_t NextEntry = 6;
+    constexpr uint32_t MaxEntry = NextEntry+3;
     if (u_info->entry_number == -1) {
-      u_info->entry_number = 12; // Sure?
-      Initialized = true;
+      for (uint32_t i = NextEntry; i < MaxEntry; ++i) {
+        auto GDT = &Frame->State.gdt[i];
+        if (GDT->base == 0) {
+          // If the base is zero then it isn't present with our setup
+          u_info->entry_number = i;
+          break;
+        }
+      }
+
+      if (u_info->entry_number == -1) {
+        // Couldn't find a slot. Return empty handed
+        return -ESRCH;
+      }
     }
+
     // Now we need to update the thread's GDT to handle this change
     auto GDT = &Frame->State.gdt[u_info->entry_number];
     GDT->base = u_info->base_addr;
