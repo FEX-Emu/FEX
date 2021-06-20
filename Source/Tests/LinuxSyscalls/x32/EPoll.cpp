@@ -20,6 +20,7 @@ $end_info$
 #include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::epoll_event_x86>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::timespec32>, "%lx")
 
 namespace FEX::HLE::x32 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler) {
