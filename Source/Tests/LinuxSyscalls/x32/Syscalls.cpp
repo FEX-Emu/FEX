@@ -207,7 +207,15 @@ restart:
             errno != EEXIST) {
           return reinterpret_cast<void*>(-errno);
         }
-        else if (MappedPtr == MAP_FAILED) {
+        else if (MappedPtr == MAP_FAILED ||
+                 MappedPtr >= reinterpret_cast<void*>(TOP_KEY << PAGE_SHIFT)) {
+          // Handles the case where MAP_FIXED_NOREPLACE failed with MAP_FAILED
+          // or if the host system's kernel isn't new enough then it returns the wrong pointer
+          if (MappedPtr >= reinterpret_cast<void*>(TOP_KEY << PAGE_SHIFT)) {
+            // Make sure to munmap this so we don't leak memory
+            ::munmap(MappedPtr, length);
+          }
+
           if (UpperPage == TOP_KEY) {
             BottomPage = BASE_KEY;
             Wrapped = true;
