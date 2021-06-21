@@ -178,6 +178,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
 
 /*
 stack contains:
+Size of each member is 64-bit, 32-bit, or 16-bit depending on operating size
 RIP
 CS
 EFLAGS
@@ -185,8 +186,9 @@ RSP
 SS
 */
 void OpDispatchBuilder::IRETOp(OpcodeArgs) {
-  if (CTX->Config.Is64BitMode == false) {
-    LogMan::Msg::E("IRET only implemented for x64");
+  // Operand Size override unsupported!
+  if ((Op->Flags & X86Tables::DecodeFlags::FLAG_OPERAND_SIZE) != 0) {
+    LogMan::Msg::E("IRET only implemented for 64bit and 32bit sizes");
     DecodeFailure = true;
     return;
   }
@@ -197,7 +199,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
 
   OrderedNode* SP = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), GPRClass);
 
-  // RIP (64 bits)
+  // RIP (64/32/16 bits)
   auto NewRIP = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
   SP = _Add(SP, Constant);
   //CS (lower 16 used)
@@ -206,13 +208,17 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   //eflags (lower 16 used)
   auto eflags = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
   SetPackedRFLAG(false, eflags);
-  SP = _Add(SP, Constant);
-  // RSP
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
-  SP = _Add(SP, Constant);
-  //ss
-  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
-  SP = _Add(SP, Constant);
+
+  if (CTX->Config.Is64BitMode) {
+    // RSP and SS only happen in 64-bit mode or if this is a CPL mode jump!
+    SP = _Add(SP, Constant);
+    // RSP
+    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+    SP = _Add(SP, Constant);
+    //ss
+    _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+    SP = _Add(SP, Constant);
+  }
 
   _ExitFunction(NewRIP);
   BlockSetRIP = true;
