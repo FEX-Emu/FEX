@@ -31,7 +31,7 @@ namespace FEX::HLE::x32 {
         mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, offset);
 
       auto Thread = Frame->Thread;
-      if (Result != -1) {
+      if (Result < -4096) {
         if (!(flags & MAP_ANONYMOUS)) {
           auto filename = get_fdpath(fd);
 
@@ -47,7 +47,7 @@ namespace FEX::HLE::x32 {
         mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, (uint64_t)pgoffset * 0x1000);
 
       auto Thread = Frame->Thread;
-      if (Result != -1) {
+      if (Result < -4096) {
         if (!(flags & MAP_ANONYMOUS)) {
           auto filename = get_fdpath(fd);
 
@@ -63,7 +63,7 @@ namespace FEX::HLE::x32 {
       auto Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
         munmap(addr, length);
 
-      if (Result != -1) {
+      if (Result == 0) {
         FEXCore::Context::RemoveNamedRegion(Frame->Thread->CTX, (uintptr_t)addr, length);
         FEXCore::Context::FlushCodeRange(Frame->Thread, (uintptr_t)addr, length);
       }
