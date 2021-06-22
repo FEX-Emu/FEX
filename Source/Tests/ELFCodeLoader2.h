@@ -56,7 +56,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     if (first == headers.end())
       return 0;
-    
+
     return PAGE_ALIGN(last->p_vaddr + last->p_memsz) - PAGE_START(first->p_vaddr);
   }
 
@@ -106,7 +106,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, TMap Mapper, TUnmap Unmapper) {
 
     uintptr_t LoadBase = 0;
-       
+
     if (Elf.ehdr.e_type == ET_DYN) {
       // needs base address
       auto TotalSize  = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
@@ -135,7 +135,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 			if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Mapper)) {
         return {};
       }
-	
+
       if (Header.p_memsz > Header.p_filesz) {
         // clear bss
         auto BSSStart = LoadBase + Header.p_vaddr + Header.p_filesz;
@@ -297,12 +297,8 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     // ADDR_LIMIT_3GB STACK -> 0xc0000000 else -> 0xFFFFe000
 
     // map stack here, so that nothing gets mapped there
-    if (Is64BitMode()) {
-      StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
-    }
-    else {
-      StackPointer = reinterpret_cast<uintptr_t>(Mapper(reinterpret_cast<void*>(STACK_OFFSET), StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
-    }
+    // This works with both 64-bit and 32-bit. The mapper will only give us a function in the correct region
+    StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
     if (StackPointer == ~0ULL) {
       LogMan::Msg::E("Allocating stack failed");
@@ -325,7 +321,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     // XXX Randomise brk?
 
     BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, 0, 0);
-    
+
     if ((void*)BrkStart == MAP_FAILED) {
       LogMan::Msg::E("Failed to allocate BRK @ %lx, %d\n", BrkBase, errno);
       return false;
@@ -585,7 +581,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
   constexpr static uint64_t BRK_SIZE = 8 * 1024 * 1024;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
-  constexpr static uint64_t STACK_OFFSET = 0xc000'0000;
 
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;

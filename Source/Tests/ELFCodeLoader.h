@@ -194,13 +194,7 @@ public:
 
   uint64_t GetStackPointer() override {
     uintptr_t StackPointer{};
-    if (File.GetMode() == ::ELFLoader::ELFContainer::MODE_64BIT) {
-      StackPointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::mmap(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-    }
-    else {
-      StackPointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-      LOGMAN_THROW_A(StackPointer != ~0ULL, "Get Stack Pointer mmap failed");
-    }
+    StackPointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::mmap(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 
     StackPointer += StackSize();
     // Set up our initial CPU state
@@ -307,13 +301,13 @@ public:
   }
 
   char const *FindSymbolNameInRange(uint64_t Address) {
-    
+
     ELFLoader::ELFSymbol const *Sym;
     Sym = DB.GetSymbolInRange(std::make_pair(Address, 1));
     if (Sym) {
       return Sym->Name;
     }
-    
+
     return nullptr;
   }
 
@@ -356,7 +350,6 @@ private:
   uint64_t EnvironmentBackingSize{};
 
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
-  constexpr static uint64_t STACK_OFFSET = 0xc000'0000;
 };
 
 }
