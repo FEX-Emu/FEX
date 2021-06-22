@@ -174,6 +174,24 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(statfs, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, statfs32_32 *buf) -> uint64_t {
+      struct statfs host_stat;
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, &host_stat);
+      if (Result != -1) {
+        *buf = host_stat;
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(fstatfs, [](FEXCore::Core::CpuStateFrame *Frame, int fd, statfs32_32 *buf) -> uint64_t {
+      struct statfs host_stat;
+      uint64_t Result = ::fstatfs(fd, &host_stat);
+      if (Result != -1) {
+        *buf = host_stat;
+      }
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X32(fstatfs64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, size_t sz, struct statfs64_32 *buf) -> uint64_t {
       LOGMAN_THROW_A(sz == sizeof(struct statfs64_32), "This needs to match");
 

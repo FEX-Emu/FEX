@@ -472,6 +472,62 @@ static_assert(std::is_trivial<statfs64_32>::value, "Needs to be trivial");
 static_assert(sizeof(statfs64_32) == 84, "Incorrect size");
 
 struct
+FEX_ANNOTATE("alias-x86_32-statfs")
+FEX_ANNOTATE("fex-match")
+statfs32_32 {
+  int32_t f_type;
+  int32_t f_bsize;
+  int32_t f_blocks;
+  int32_t f_bfree;
+  int32_t f_bavail;
+  int32_t f_files;
+  int32_t f_ffree;
+  __kernel_fsid_t f_fsid;
+  int32_t f_namelen;
+  int32_t f_frsize;
+  int32_t f_flags;
+  int32_t pad[4];
+
+  statfs32_32() = delete;
+
+  statfs32_32(struct statfs host) {
+    #define COPY(x) x = host.x
+    COPY(f_type);
+    COPY(f_bsize);
+    COPY(f_blocks);
+    COPY(f_bfree);
+    COPY(f_bavail);
+    COPY(f_files);
+    COPY(f_ffree);
+    COPY(f_namelen);
+    COPY(f_frsize);
+    COPY(f_flags);
+
+    memcpy(&f_fsid, &host.f_fsid, sizeof(f_fsid));
+    #undef COPY
+  }
+
+  statfs32_32(struct statfs64 host) {
+    #define COPY(x) x = host.x
+    COPY(f_type);
+    COPY(f_bsize);
+    COPY(f_blocks);
+    COPY(f_bfree);
+    COPY(f_bavail);
+    COPY(f_files);
+    COPY(f_ffree);
+    COPY(f_namelen);
+    COPY(f_frsize);
+    COPY(f_flags);
+
+    memcpy(&f_fsid, &host.f_fsid, sizeof(f_fsid));
+    #undef COPY
+  }
+};
+static_assert(std::is_trivial<statfs32_32>::value, "Needs to be trivial");
+static_assert(sizeof(statfs32_32) == 64, "Incorrect size");
+
+struct
 FEX_ANNOTATE("alias-x86_32-flock")
 FEX_ANNOTATE("fex-match")
 flock_32 {

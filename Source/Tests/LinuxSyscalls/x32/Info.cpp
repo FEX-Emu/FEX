@@ -28,8 +28,9 @@ namespace FEX::HLE::x32 {
     uint32_t freeswap;
     uint16_t procs;
     uint32_t totalhigh;
+    uint32_t freehigh;
     uint32_t mem_unit;
-    char _pad[12];
+    char _pad[8];
   };
 
   static_assert(sizeof(sysinfo32) == 64, "Needs to be 64bytes");
@@ -49,16 +50,32 @@ namespace FEX::HLE::x32 {
       if (Result != -1) {
 #define Copy(x) info->x = static_cast<decltype(info->x)>(std::min(Host.x, static_cast<decltype(Host.x)>(std::numeric_limits<decltype(info->x)>::max())));
         Copy(uptime);
+        Copy(procs);
+#define CopyShift(x) info->x = static_cast<decltype(info->x)>(Host.x >> ShiftAmount);
+
         info->loads[0] = std::min(Host.loads[0], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
         info->loads[1] = std::min(Host.loads[1], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
         info->loads[2] = std::min(Host.loads[2], static_cast<unsigned long>(std::numeric_limits<uint32_t>::max()));
-        Copy(totalram);
-        Copy(sharedram);
-        Copy(bufferram);
-        Copy(totalswap);
-        Copy(freeswap);
-        Copy(procs);
-        Copy(totalhigh);
+
+        // If any result can't fit in to a uint32_t then we need to shift the mem_unit and all the members
+        // Set the mem_unit to the pagesize
+        uint32_t ShiftAmount{};
+        if ((Host.totalram >> 32) != 0 ||
+            (Host.totalswap >> 32) != 0) {
+
+          while (Host.mem_unit < 4096) {
+            Host.mem_unit <<= 1;
+            ++ShiftAmount;
+          }
+        }
+
+        CopyShift(totalram);
+        CopyShift(sharedram);
+        CopyShift(bufferram);
+        CopyShift(totalswap);
+        CopyShift(freeswap);
+        CopyShift(totalhigh);
+        CopyShift(freehigh);
         Copy(mem_unit);
       }
       SYSCALL_ERRNO();
