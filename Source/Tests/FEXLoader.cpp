@@ -252,6 +252,8 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
 
   for (int i = 0; i < get_nprocs_conf(); i++) {
     std::thread thd([&BranchTargets, CTX, &counter, &Compiled, &Section, &QueueMutex, SectionMaxAddress]() {
+      // Set the priority of the thread so it doesn't overwhelm the system when running in the background
+      setpriority(PRIO_PROCESS, ::gettid(), 19);
 
       // Setup thread - Each compilation thread uses its own backing FEX thread
       FEXCore::Core::CPUState state;
