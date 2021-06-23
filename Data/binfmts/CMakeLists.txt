@@ -1,0 +1,4 @@
+install(FILES FEX-x86
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/binfmts/)
+install(FILES FEX-x86_64
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/binfmts/)
