@@ -310,3 +310,63 @@ if (BUILD_THUNKS)
     DEPENDS guest-libs
   )
 endif()
+
+set(FEX_VERSION_MAJOR "0")
+set(FEX_VERSION_MINOR "0")
+set(FEX_VERSION_PATCH "0")
+
+find_package(Git)
+if (GIT_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --abbrev=0
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE GIT_DESCRIBE_STRING
+    RESULT_VARIABLE GIT_ERROR
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  if (NOT ${GIT_ERROR} EQUAL 0)
+    # Likely built in a way that doesn't have tags
+    # Setup a version tag that is unknown
+    set(GIT_DESCRIBE_STRING "FEX-0000")
+  endif()
+
+  # Change something like `FEX-2106.1-76-<hash>` in to a list
+  string(REPLACE "-" ";" DESCRIBE_LIST ${GIT_DESCRIBE_STRING})
+
+  # Extract the `2106.1` element
+  list(GET DESCRIBE_LIST 1 DESCRIBE_LIST)
+
+  # Change `2106.1` in to a list
+  string(REPLACE "." ";" DESCRIBE_LIST ${DESCRIBE_LIST})
+
+  # Calculate list size
+  list(LENGTH DESCRIBE_LIST LIST_SIZE)
+
+  # Pull out the major version
+  list(GET DESCRIBE_LIST 0 FEX_VERSION_MAJOR)
+
+  # Minor version only exists if there is a .1 at the end
+  # eg: 2106 versus 2106.1
+  if (LIST_SIZE GREATER 1)
+    list(GET DESCRIBE_LIST 1 FEX_VERSION_MINOR)
+  endif()
+endif()
+
+# Package creation
+set (CPACK_GENERATOR "DEB")
+set (CPACK_PACKAGE_CONTACT "team@fex-emu.org")
+set (CPACK_PACKAGE_VERSION_MAJOR "${FEX_VERSION_MAJOR}")
+set (CPACK_PACKAGE_VERSION_MINOR "${FEX_VERSION_MINOR}")
+set (CPACK_PACKAGE_VERSION_PATCH "${FEX_VERSION_PATCH}")
+
+# Debian defines
+set (CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6")
+set (CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/CPack/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CPack/prerm")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  # binfmt_misc conflicts with qemu-user-static
+  # We also only install binfmt_misc on aarch64 hosts
+  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "qemu-user-static")
+endif()
+include (CPack)
