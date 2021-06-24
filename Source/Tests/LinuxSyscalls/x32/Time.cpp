@@ -96,11 +96,15 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(utimensat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const compat_ptr<timespec32> times, int flags) -> uint64_t {
-      timespec times64[2]{};
-      times64[0] = times[0];
-      times64[1] = times[1];
-
-      uint64_t Result = ::syscall(SYS_utimensat, dirfd, pathname, times64, flags);
+      uint64_t Result = 0;
+      if (times) {
+        timespec times64[2]{};
+        times64[0] = times[0];
+        times64[1] = times[1];
+        Result = ::syscall(SYS_utimensat, dirfd, pathname, times64, flags);
+      } else {
+        Result = ::syscall(SYS_utimensat, dirfd, pathname, nullptr, flags);
+      }
       SYSCALL_ERRNO();
     });
 
