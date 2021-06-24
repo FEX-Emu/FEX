@@ -12,12 +12,14 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 
-#include <stdint.h>
+#include <cstdint>
+#include <filesystem>
+
+#include <grp.h>
 #include <linux/futex.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <filesystem>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::stack_t32>, "%x")
 
@@ -128,6 +130,16 @@ namespace FEX::HLE::x32 {
         timeout_ptr,
         uaddr2,
         val3);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(getgroups32, [](FEXCore::Core::CpuStateFrame *Frame, int size, gid_t list[]) -> uint64_t {
+      uint64_t Result = ::getgroups(size, list);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(setgroups32, [](FEXCore::Core::CpuStateFrame *Frame, size_t size, const gid_t *list) -> uint64_t {
+      uint64_t Result = ::setgroups(size, list);
       SYSCALL_ERRNO();
     });
 
