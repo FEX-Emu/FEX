@@ -133,5 +133,18 @@ namespace FEX::HLE::x32 {
       uint64_t Result = ::utimensat(dirfd, pathname, times, flags);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(utimes, [](FEXCore::Core::CpuStateFrame *Frame, const char *filename, const timeval32 times[2]) -> uint64_t {
+      uint64_t Result = 0;
+      if (times) {
+        struct timeval times64[2]{};
+        times64[0] = times[0];
+        times64[1] = times[1];
+        Result = ::utimes(filename, times64);
+      } else {
+        Result = ::utimes(filename, nullptr);
+      }
+      SYSCALL_ERRNO();
+    });
   }
 }
