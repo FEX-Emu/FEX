@@ -214,9 +214,19 @@ namespace FEX::HLE {
       return false;
     }
 
-    // Now install the thunk handler
-    SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
+    // Default flags for us
     SignalHandler.HostAction.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
+
+    if (HostHandlers[Signal].Required == false &&
+        (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL ||
+         SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN)) {
+      // If getting set to DFL or IGN on first install then just install to those
+      SignalHandler.HostAction.sa_handler = SignalHandler.GuestAction.sigaction_handler.handler;
+    }
+    else {
+      // Now install the thunk handler
+      SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
+    }
 
     if (SignalHandler.GuestAction.sa_flags & SA_NODEFER) {
       // If the guest is using NODEFER then make sure to set it for the host as well
@@ -251,13 +261,27 @@ namespace FEX::HLE {
 
   void SignalDelegator::UpdateHostThunk(int Signal) {
     SignalHandler &SignalHandler = HostHandlers[Signal];
-    bool Changed{};
 
     // This only gets called if a guest thunk was already installed and we need to check if we need to update the flags or signal mask
     if ((SignalHandler.GuestAction.sa_flags ^ SignalHandler.HostAction.sa_flags) & SA_NODEFER) {
       // NODEFER changed, we need to update this
       SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_NODEFER;
-      Changed = true;
+    }
+
+    if ((SignalHandler.GuestAction.sa_flags ^ SignalHandler.HostAction.sa_flags) & SA_RESTART) {
+      // RESTART changed, we need to update this
+      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_RESTART;
+    }
+
+    if (HostHandlers[Signal].Required == false &&
+        (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL ||
+         SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN)) {
+      // If we are changing a none required signal back to DFL or IGN then we can allow this
+      SignalHandler.HostAction.sa_handler = SignalHandler.GuestAction.sigaction_handler.handler;
+    }
+    else {
+      // Set the handler to host handler
+      SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
     }
 
     /*
@@ -269,10 +293,6 @@ namespace FEX::HLE {
       Changed = true;
     }
     */
-
-    if (!Changed) {
-      return;
-    }
 
     // Only update our host signal here
     int Result = sigaction(Signal, &SignalHandler.HostAction, nullptr);
@@ -418,26 +438,27 @@ namespace FEX::HLE {
     return true;
   }
 
-  void SignalDelegator::RegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) {
+  void SignalDelegator::RegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
     HostHandlers[Signal].Handler = std::move(Func);
+    HostHandlers[Signal].Required = Required;
     InstallHostThunk(Signal);
   }
 
-  void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) {
+  void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
     HostHandlers[Signal].FrontendHandler = std::move(Func);
+    HostHandlers[Signal].Required = Required;
     InstallHostThunk(Signal);
   }
 
   void SignalDelegator::RegisterHostSignalHandlerForGuest(int Signal, FEXCore::HostSignalDelegatorFunctionForGuest Func) {
     std::lock_guard lk(HostDelegatorMutex);
     HostHandlers[Signal].GuestHandler = std::move(Func);
-    InstallHostThunk(Signal);
   }
 
   uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const FEXCore::GuestSigAction *Action, FEXCore::GuestSigAction *OldAction) {

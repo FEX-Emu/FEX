@@ -54,8 +54,8 @@ namespace Core {
      *
      * It's a process level signal handler so one must be careful
      */
-    virtual void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) = 0;
-    virtual void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) = 0;
+    virtual void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) = 0;
+    virtual void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) = 0;
 
     /**
      * @brief Registers a signal handler for the host to handle a signal specifically for guest handling

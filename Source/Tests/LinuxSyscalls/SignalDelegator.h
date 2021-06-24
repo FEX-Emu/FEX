@@ -62,8 +62,8 @@ namespace FEX::HLE {
      *
      * It's a process level signal handler so one must be careful
      */
-    void RegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) override;
-    void RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) override;
+    void RegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) override;
+    void RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) override;
 
     /**
      * @brief Registers a signal handler for the host to handle a signal specifically for guest handling
@@ -100,6 +100,7 @@ namespace FEX::HLE {
 
     struct SignalHandler {
       std::atomic<bool> Installed{};
+      bool Required{};
       struct sigaction HostAction{};
       struct sigaction OldAction{};
       FEXCore::HostSignalDelegatorFunction Handler{};

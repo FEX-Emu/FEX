@@ -247,12 +247,12 @@ namespace FEXCore::Context {
     Thread->CPUBackend->CallbackPtr(Thread->CurrentFrame, RIP);
   }
 
-  void Context::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
-      SignalDelegation->RegisterHostSignalHandler(Signal, Func);
+  void Context::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+      SignalDelegation->RegisterHostSignalHandler(Signal, Func, Required);
   }
 
-  void Context::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func) {
-    SignalDelegation->RegisterFrontendHostSignalHandler(Signal, Func);
+  void Context::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+    SignalDelegation->RegisterFrontendHostSignalHandler(Signal, Func, Required);
   }
 
   void Context::WaitForIdle() {

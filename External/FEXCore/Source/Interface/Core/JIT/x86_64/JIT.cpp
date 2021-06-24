@@ -348,12 +348,12 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
       return Core->Dispatcher->HandleSIGILL(Signal, info, ucontext);
-    });
+    }, true);
 
     CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
       return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
-    });
+    }, true);
 
     auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
       X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());

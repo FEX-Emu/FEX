@@ -56,12 +56,13 @@ namespace HostFactory {
         auto InternalThread = Thread;
         HostCore *Core = reinterpret_cast<HostCore*>(InternalThread->CPUBackend.get());
         return Core->HandleSIGSEGV(Thread, Signal, info, ucontext);
-      }
+      },
+      true
     );
 
     FEXCore::Context::RegisterHostSignalHandler(CTX, 63, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       return true;
-    });
+    }, true);
   }
 
   bool HostCore::HandleSIGSEGV(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
