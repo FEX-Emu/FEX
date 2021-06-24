@@ -17,6 +17,7 @@ $end_info$
 
 #include <grp.h>
 #include <linux/futex.h>
+#include <sys/fsuid.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -170,6 +171,16 @@ namespace FEX::HLE::x32 {
 
     REGISTER_SYSCALL_IMPL_X32(getegid32, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getegid();
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(setfsuid32, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsuid) -> uint64_t {
+      uint64_t Result = ::setfsuid(fsuid);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(setfsgid32, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsgid) -> uint64_t {
+      uint64_t Result = ::setfsgid(fsgid);
       SYSCALL_ERRNO();
     });
 
