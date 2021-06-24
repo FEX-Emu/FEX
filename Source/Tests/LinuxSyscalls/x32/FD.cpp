@@ -119,6 +119,21 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(chown32, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
+      uint64_t Result = ::chown(pathname, owner, group);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(fchown32, [](FEXCore::Core::CpuStateFrame *Frame, int fd, uid_t owner, gid_t group) -> uint64_t {
+      uint64_t Result = ::fchown(fd, owner, group);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(lchown32, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
+      uint64_t Result = ::lchown(pathname, owner, group);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X32(stat, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, stat32 *buf) -> uint64_t {
       struct stat host_stat;
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.Stat(pathname, &host_stat);
