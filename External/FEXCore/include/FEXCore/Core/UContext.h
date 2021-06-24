@@ -96,7 +96,24 @@ namespace FEXCore {
 
   namespace x86 {
     struct FEX_PACKED siginfo_t {
-      uint32_t pad[32];
+      int si_signo;
+      int si_errno;
+      int si_code;
+      union {
+        uint32_t pad[29];
+        /* SIGILL, SIGFPE, SIGSEGV, SIBUS */
+        struct {
+          uint32_t addr;
+        } _sigfault;
+        /* SIGCHLD */
+        struct {
+          int32_t pid;
+          int32_t uid;
+          int32_t status;
+          int32_t utime;
+          int32_t stime;
+        } _sigchld;
+      } _sifields;
     };
     static_assert(sizeof(FEXCore::x86::siginfo_t) == 128, "This needs to be the right size");
 
