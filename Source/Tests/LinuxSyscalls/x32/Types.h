@@ -37,6 +37,7 @@ using compat_mode_t = uint16_t;
 using compat_nlink_t = uint16_t;
 using compat_uid_t = uint16_t;
 using compat_gid_t = uint16_t;
+using compat_old_sigset_t = uint32_t;
 
 // Can't use using with aligned attributes, clang doesn't honour it
 typedef FEX_ALIGNED(4) uint64_t compat_uint64_t;

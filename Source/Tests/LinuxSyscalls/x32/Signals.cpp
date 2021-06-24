@@ -21,6 +21,16 @@ namespace SignalDelegator {
 
 namespace FEX::HLE::x32 {
   void RegisterSignals() {
+    REGISTER_SYSCALL_IMPL_X32(sigpending, [](FEXCore::Core::CpuStateFrame *Frame, compat_old_sigset_t *set) -> uint64_t {
+      uint64_t HostSet{};
+      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(&HostSet, 8);
+      if (Result == 0) {
+        // This old interface only returns the lower signals
+        *set = HostSet & ~0U;
+      }
+      return Result;
+    });
+
     REGISTER_SYSCALL_IMPL_X32(signal, [](FEXCore::Core::CpuStateFrame *Frame, int signum, uint32_t handler) -> uint64_t {
       FEXCore::GuestSigAction newact{};
       FEXCore::GuestSigAction oldact{};
