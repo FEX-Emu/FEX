@@ -37,16 +37,22 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(nanosleep, [](FEXCore::Core::CpuStateFrame *Frame, const timespec32 *req, timespec32 *rem) -> uint64_t {
-      struct timespec req64{};
       struct timespec rem64{};
-
       struct timespec *rem64_ptr{};
-      req64 = *req;
+
       if (rem) {
         rem64 = *rem;
         rem64_ptr = &rem64;
       }
-      uint64_t Result = ::nanosleep(&req64, &rem64);
+
+      uint64_t Result = 0;
+      if (req) {
+        const struct timespec req64 = *req;
+        Result = ::nanosleep(&req64, &rem64);
+      } else {
+        Result = ::nanosleep(nullptr, &rem64);
+      }
+
       if (rem) {
         *rem = rem64;
       }
@@ -72,16 +78,22 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(clock_nanosleep, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, int flags, const timespec32 *request, timespec32 *remain) -> uint64_t {
-      struct timespec req64{};
       struct timespec rem64{};
       struct timespec *rem64_ptr{};
 
-      req64 = *request;
       if (remain) {
         rem64 = *remain;
         rem64_ptr = &rem64;
       }
-      uint64_t Result = ::clock_nanosleep(clockid, flags, &req64, rem64_ptr);
+
+      uint64_t Result = 0;
+      if (request) {
+        const struct timespec req64 = *request;
+        Result = ::clock_nanosleep(clockid, flags, &req64, rem64_ptr);
+      } else {
+        Result = ::clock_nanosleep(clockid, flags, nullptr, rem64_ptr);
+      }
+
       if (remain) {
         *remain = rem64;
       }
@@ -89,9 +101,13 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(clock_settime, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, const timespec32 *tp) -> uint64_t {
-      struct timespec tp64{};
-      tp64 = *tp;
-      uint64_t Result = ::clock_settime(clockid, &tp64);
+      uint64_t Result = 0;
+      if (tp) {
+        const struct timespec tp64 = *tp;
+        Result = ::clock_settime(clockid, &tp64);
+      } else {
+        Result = ::clock_settime(clockid, nullptr);
+      }
       SYSCALL_ERRNO();
     });
 
