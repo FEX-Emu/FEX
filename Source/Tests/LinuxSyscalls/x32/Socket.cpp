@@ -40,6 +40,123 @@ namespace FEX::HLE::x32 {
     OP_SENDMMSG = 20,
   };
 
+  static uint64_t SendMsg(int sockfd, const struct msghdr32 *msg, int flags) {
+    struct msghdr HostHeader{};
+    std::vector<iovec> Host_iovec(msg->msg_iovlen);
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+      Host_iovec[i] = msg->msg_iov[i];
+    }
+
+    HostHeader.msg_name = msg->msg_name;
+    HostHeader.msg_namelen = msg->msg_namelen;
+
+    HostHeader.msg_iov = &Host_iovec.at(0);
+    HostHeader.msg_iovlen = msg->msg_iovlen;
+
+    HostHeader.msg_control = alloca(msg->msg_controllen * 2);
+    HostHeader.msg_controllen = msg->msg_controllen;
+
+    HostHeader.msg_flags = msg->msg_flags;
+    if (HostHeader.msg_controllen) {
+      void *CurrentGuestPtr = msg->msg_control;
+      struct cmsghdr *CurrentHost = reinterpret_cast<struct cmsghdr*>(HostHeader.msg_control);
+
+      for (cmsghdr32 *msghdr_guest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr);
+          CurrentGuestPtr != 0;
+          msghdr_guest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr)) {
+
+        CurrentHost->cmsg_level = msghdr_guest->cmsg_level;
+        CurrentHost->cmsg_type = msghdr_guest->cmsg_type;
+
+        if (msghdr_guest->cmsg_len) {
+          size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
+          CurrentHost->cmsg_len = msghdr_guest->cmsg_len + SizeIncrease;
+          HostHeader.msg_controllen += SizeIncrease;
+          memcpy(CMSG_DATA(CurrentHost), msghdr_guest->cmsg_data, msghdr_guest->cmsg_len - sizeof(cmsghdr32));
+        }
+
+        // Go to next host
+        CurrentHost = CMSG_NXTHDR(&HostHeader, CurrentHost);
+
+        // Go to next msg
+        if (msghdr_guest->cmsg_len < sizeof(cmsghdr32)) {
+          CurrentGuestPtr = nullptr;
+        }
+        else {
+          CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + msghdr_guest->cmsg_len);
+          CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
+          if (CurrentGuestPtr >= reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(static_cast<void*>(msg->msg_control)) + msg->msg_controllen)) {
+            CurrentGuestPtr = nullptr;
+          }
+        }
+      }
+    }
+
+    uint64_t Result = ::sendmsg(sockfd, &HostHeader, flags);
+    SYSCALL_ERRNO();
+  }
+
+  static uint64_t RecvMsg(int sockfd, struct msghdr32 *msg, int flags) {
+    struct msghdr HostHeader{};
+    std::vector<iovec> Host_iovec(msg->msg_iovlen);
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+      Host_iovec[i] = msg->msg_iov[i];
+    }
+
+    HostHeader.msg_name = msg->msg_name;
+    HostHeader.msg_namelen = msg->msg_namelen;
+
+    HostHeader.msg_iov = &Host_iovec.at(0);
+    HostHeader.msg_iovlen = msg->msg_iovlen;
+
+    HostHeader.msg_control = alloca(msg->msg_controllen*2);
+    HostHeader.msg_controllen = msg->msg_controllen*2;
+
+    HostHeader.msg_flags = msg->msg_flags;
+
+    uint64_t Result = ::recvmsg(sockfd, &HostHeader, flags);
+    if (Result != -1) {
+      for (int i = 0; i < msg->msg_iovlen; ++i) {
+        msg->msg_iov[i] = Host_iovec[i];
+      }
+
+      msg->msg_namelen = HostHeader.msg_namelen;
+      msg->msg_controllen = HostHeader.msg_controllen;
+      msg->msg_flags = HostHeader.msg_flags;
+      if (HostHeader.msg_controllen) {
+        // Host and guest cmsg data structures aren't compatible.
+        // Copy them over now
+        void *CurrentGuestPtr = msg->msg_control;
+        for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&HostHeader);
+            cmsg != nullptr;
+            cmsg = CMSG_NXTHDR(&HostHeader, cmsg)) {
+          cmsghdr32 *CurrentGuest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr);
+
+          // Copy over the header first
+          // cmsg_len needs to be adjusted by the size of the header between host and guest
+          // Host is 16 bytes, guest is 12 bytes
+          CurrentGuest->cmsg_level = cmsg->cmsg_level;
+          CurrentGuest->cmsg_type = cmsg->cmsg_type;
+
+          // Now copy over the data
+          if (cmsg->cmsg_len) {
+            size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
+            CurrentGuest->cmsg_len = cmsg->cmsg_len - SizeIncrease;
+
+            // Controllen size also changes
+            msg->msg_controllen -= SizeIncrease;
+
+            memcpy(CurrentGuest->cmsg_data, CMSG_DATA(cmsg), cmsg->cmsg_len - sizeof(struct cmsghdr));
+            CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + CurrentGuest->cmsg_len);
+            CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
+
+          }
+        }
+      }
+    }
+    SYSCALL_ERRNO();
+  }
+
   void RegisterSocket() {
     REGISTER_SYSCALL_IMPL_X32(socketcall, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t call, uint32_t *Arguments) -> uint64_t {
       uint64_t Result{};
@@ -130,122 +247,11 @@ namespace FEX::HLE::x32 {
           break;
         }
         case OP_SENDMSG: {
-          const struct msghdr32 *guest_msg = reinterpret_cast<const struct msghdr32*>(Arguments[1]);
-
-          struct msghdr HostHeader{};
-          std::vector<iovec> Host_iovec(guest_msg->msg_iovlen);
-          for (int i = 0; i < guest_msg->msg_iovlen; ++i) {
-            Host_iovec[i] = guest_msg->msg_iov[i];
-          }
-
-          HostHeader.msg_name = guest_msg->msg_name;
-          HostHeader.msg_namelen = guest_msg->msg_namelen;
-
-          HostHeader.msg_iov = &Host_iovec.at(0);
-          HostHeader.msg_iovlen = guest_msg->msg_iovlen;
-
-          HostHeader.msg_control = alloca(guest_msg->msg_controllen * 2);
-          HostHeader.msg_controllen = guest_msg->msg_controllen;
-
-          HostHeader.msg_flags = guest_msg->msg_flags;
-          if (HostHeader.msg_controllen) {
-            void *CurrentGuestPtr = guest_msg->msg_control;
-            struct cmsghdr *CurrentHost = reinterpret_cast<struct cmsghdr*>(HostHeader.msg_control);
-
-            for (cmsghdr32 *msghdr_guest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr);
-                CurrentGuestPtr != 0;
-                msghdr_guest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr)) {
-
-              CurrentHost->cmsg_level = msghdr_guest->cmsg_level;
-              CurrentHost->cmsg_type = msghdr_guest->cmsg_type;
-
-              if (msghdr_guest->cmsg_len) {
-                size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
-                CurrentHost->cmsg_len = msghdr_guest->cmsg_len + SizeIncrease;
-                HostHeader.msg_controllen += SizeIncrease;
-                memcpy(CMSG_DATA(CurrentHost), msghdr_guest->cmsg_data, msghdr_guest->cmsg_len - sizeof(cmsghdr32));
-              }
-
-              // Go to next host
-              CurrentHost = CMSG_NXTHDR(&HostHeader, CurrentHost);
-
-              // Go to next msg
-              if (msghdr_guest->cmsg_len < sizeof(cmsghdr32)) {
-                CurrentGuestPtr = nullptr;
-              }
-              else {
-                CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + msghdr_guest->cmsg_len);
-                CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
-                if (CurrentGuestPtr >= reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(static_cast<void*>(guest_msg->msg_control)) + guest_msg->msg_controllen)) {
-                  CurrentGuestPtr = nullptr;
-                }
-              }
-            }
-          }
-
-          Result = ::sendmsg(Arguments[0], &HostHeader, Arguments[2]);
+          return SendMsg(Arguments[0], reinterpret_cast<const struct msghdr32*>(Arguments[1]), Arguments[2]);
           break;
         }
         case OP_RECVMSG: {
-          struct msghdr32 *guest_msg = reinterpret_cast<struct msghdr32*>(Arguments[1]);
-
-          struct msghdr HostHeader{};
-          std::vector<iovec> Host_iovec(guest_msg->msg_iovlen);
-          for (int i = 0; i < guest_msg->msg_iovlen; ++i) {
-            Host_iovec[i] = guest_msg->msg_iov[i];
-          }
-
-          HostHeader.msg_name = guest_msg->msg_name;
-          HostHeader.msg_namelen = guest_msg->msg_namelen;
-
-          HostHeader.msg_iov = &Host_iovec.at(0);
-          HostHeader.msg_iovlen = guest_msg->msg_iovlen;
-
-          HostHeader.msg_control = alloca(guest_msg->msg_controllen*2);
-          HostHeader.msg_controllen = guest_msg->msg_controllen*2;
-
-          HostHeader.msg_flags = guest_msg->msg_flags;
-
-          Result = ::recvmsg(Arguments[0], &HostHeader, Arguments[2]);
-          if (Result != -1) {
-            for (int i = 0; i < guest_msg->msg_iovlen; ++i) {
-              guest_msg->msg_iov[i] = Host_iovec[i];
-            }
-
-            guest_msg->msg_namelen = HostHeader.msg_namelen;
-            guest_msg->msg_controllen = HostHeader.msg_controllen;
-            guest_msg->msg_flags = HostHeader.msg_flags;
-            if (HostHeader.msg_controllen) {
-              // Host and guest cmsg data structures aren't compatible.
-              // Copy them over now
-              void *CurrentGuestPtr = guest_msg->msg_control;
-              for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&HostHeader);
-                  cmsg != nullptr;
-                  cmsg = CMSG_NXTHDR(&HostHeader, cmsg)) {
-                cmsghdr32 *CurrentGuest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr);
-
-                // Copy over the header first
-                // cmsg_len needs to be adjusted by the size of the header between host and guest
-                // Host is 16 bytes, guest is 12 bytes
-                CurrentGuest->cmsg_level = cmsg->cmsg_level;
-                CurrentGuest->cmsg_type = cmsg->cmsg_type;
-
-                // Now copy over the data
-                if (cmsg->cmsg_len) {
-                  size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
-                  CurrentGuest->cmsg_len = cmsg->cmsg_len - SizeIncrease;
-
-                  // Controllen size also changes
-                  guest_msg->msg_controllen -= SizeIncrease;
-
-                  memcpy(CurrentGuest->cmsg_data, CMSG_DATA(cmsg), cmsg->cmsg_len - sizeof(struct cmsghdr));
-                  CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + CurrentGuest->cmsg_len);
-                  CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
-
-                }
-              }
-            }
-          }
+          return RecvMsg(Arguments[0], reinterpret_cast<struct msghdr32*>(Arguments[1]), Arguments[2]);
           break;
         }
         default:
@@ -253,6 +259,10 @@ namespace FEX::HLE::x32 {
           break;
       }
       SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(sendmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, const struct msghdr32 *msg, int flags) -> uint64_t {
+      return SendMsg(sockfd, msg, flags);
     });
 
     REGISTER_SYSCALL_IMPL_X32(sendmmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) -> uint64_t {
@@ -342,6 +352,10 @@ namespace FEX::HLE::x32 {
         }
       }
       SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(recvmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, struct msghdr32 *msg, int flags) -> uint64_t {
+      return RecvMsg(sockfd, msg, flags);
     });
   }
 }
