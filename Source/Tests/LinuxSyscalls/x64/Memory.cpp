@@ -107,6 +107,11 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X64(shmdt, [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
+      uint64_t Result = ::shmdt(shmaddr);
+      SYSCALL_ERRNO();
+    });
+
 #ifndef SYS_process_madvise
 #define SYS_process_madvise 440
 #endif

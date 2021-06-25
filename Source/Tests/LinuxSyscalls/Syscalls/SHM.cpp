@@ -23,10 +23,5 @@ namespace FEX::HLE {
       uint64_t Result = ::shmctl(shmid, cmd, buf);
       SYSCALL_ERRNO();
     });
-
-    REGISTER_SYSCALL_IMPL(shmdt, [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
-      uint64_t Result = ::shmdt(shmaddr);
-      SYSCALL_ERRNO();
-    });
   }
 }
