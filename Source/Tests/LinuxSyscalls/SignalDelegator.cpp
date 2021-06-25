@@ -233,20 +233,19 @@ namespace FEX::HLE {
       SignalHandler.HostAction.sa_flags |= SA_NODEFER;
     }
 
-    /*
-     * XXX: This isn't quite as straightforward as a memcmp
-     * There are conflicting definitions between sigset_t and __sigset_t causing problems here
-    sigset_t EmptySet{};
-    sigemptyset(&EmptySet);
-    if (SignalHandler.GuestAction.sa_mask != EmptySet) {
-      // If the guest has masked some signals then we need to also mask those signals
-      SignalHandler.HostAction.sa_mask = SignalHandler.GuestAction.sa_mask;
+    // Walk the signals we have that are required and make sure to remove it from the mask
+    // This'll likely be SIGILL, SIGBUS, SIG63
 
-      // If the guest tried masking SIGILL or SIGBUS then too bad, we actually need this on the host
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGILL);
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGBUS);
+    // If the guest has masked some signals then we need to also mask those signals
+    sigemptyset(&SignalHandler.HostAction.sa_mask);
+    for (size_t i = 1; i < HostHandlers.size(); ++i) {
+      if (HostHandlers[i].Required) {
+        sigdelset(&SignalHandler.HostAction.sa_mask, i);
+      }
+      else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
+        sigaddset(&SignalHandler.HostAction.sa_mask, i);
+      }
     }
-    */
 
     // We don't care about the previous handler in this case
     int Result = sigaction(Signal, &SignalHandler.HostAction, &SignalHandler.OldAction);
@@ -284,15 +283,17 @@ namespace FEX::HLE {
       SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
     }
 
-    /*
-    if ((SignalHandler.GuestAction.sa_mask ^ SignalHandler.HostAction.sa_mask) & ~(SIGILL | SIGBUS)) {
-      // If the signal ignore mask has updated (avoiding the two we need for the host) then we need to update
-      SignalHandler.HostAction.sa_mask = SignalHandler.GuestAction.sa_mask;
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGILL);
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGBUS);
-      Changed = true;
+    // Walk the signals we have that are required and make sure to remove it from the mask
+    // This'll likely be SIGILL, SIGBUS, SIG63
+    sigemptyset(&SignalHandler.HostAction.sa_mask);
+    for (size_t i = 1; i < HostHandlers.size(); ++i) {
+      if (HostHandlers[i].Required) {
+        sigdelset(&SignalHandler.HostAction.sa_mask, i);
+      }
+      else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
+        sigaddset(&SignalHandler.HostAction.sa_mask, i);
+      }
     }
-    */
 
     // Only update our host signal here
     int Result = sigaction(Signal, &SignalHandler.HostAction, nullptr);
@@ -581,6 +582,24 @@ namespace FEX::HLE {
       else {
         return -EINVAL;
       }
+
+      // Now actually set the host mask
+      // This will hide from the guest that we are not actually setting all of the masks it wants
+      sigset_t HostSet{};
+      sigemptyset(&HostSet);
+
+      for (size_t i = 0; i < MAX_SIGNALS; ++i) {
+        if (HostHandlers[i + 1].Required) {
+          // If it is a required host signal then we can't mask it
+          continue;
+        }
+
+        if (ThreadData.CurrentSignalMask.Val & (1ULL << i)) {
+          sigaddset(&HostSet, i + 1);
+        }
+      }
+
+      pthread_sigmask(SIG_SETMASK, &HostSet, nullptr);
     }
 
     CheckForPendingSignals();
@@ -594,6 +613,19 @@ namespace FEX::HLE {
     }
 
     *set = ThreadData.PendingSignals;
+
+    sigset_t HostSet{};
+    if (sigpending(&HostSet) == 0) {
+      uint64_t HostSignals{};
+      for (size_t i = 0; i < MAX_SIGNALS; ++i) {
+        if (sigismember(&HostSet, i + 1)) {
+          HostSignals |= (1ULL << i);
+        }
+      }
+
+      // Merge the real pending signal mask as well
+      *set |= HostSignals;
+    }
     return 0;
   }
 
