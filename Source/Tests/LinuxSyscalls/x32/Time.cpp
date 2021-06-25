@@ -95,6 +95,19 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(futimesat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const timeval32 times[2]) -> uint64_t {
+      uint64_t Result = 0;
+      if (times) {
+        struct timeval times64[2]{};
+        times64[0] = times[0];
+        times64[1] = times[1];
+        Result = ::futimesat(dirfd, pathname, times64);
+      } else {
+        Result = ::futimesat(dirfd, pathname, nullptr);
+      }
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X32(utimensat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const compat_ptr<timespec32> times, int flags) -> uint64_t {
       uint64_t Result = 0;
       if (times) {
