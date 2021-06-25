@@ -36,6 +36,18 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(settimeofday, [](FEXCore::Core::CpuStateFrame *Frame, const timeval32 *tv, const struct timezone *tz) -> uint64_t {
+      struct timeval tv64{};
+      struct timeval *tv_ptr{};
+      if (tv) {
+        tv64 = *tv;
+        tv_ptr = &tv64;
+      }
+
+      const uint64_t Result = ::settimeofday(tv_ptr, tz);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X32(nanosleep, [](FEXCore::Core::CpuStateFrame *Frame, const timespec32 *req, timespec32 *rem) -> uint64_t {
       struct timespec req64{};
       struct timespec rem64{};
