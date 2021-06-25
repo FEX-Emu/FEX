@@ -37,16 +37,22 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(nanosleep, [](FEXCore::Core::CpuStateFrame *Frame, const timespec32 *req, timespec32 *rem) -> uint64_t {
-      struct timespec req64{};
       struct timespec rem64{};
-
       struct timespec *rem64_ptr{};
-      req64 = *req;
+
       if (rem) {
         rem64 = *rem;
         rem64_ptr = &rem64;
       }
-      uint64_t Result = ::nanosleep(&req64, &rem64);
+
+      uint64_t Result = 0;
+      if (req) {
+        const struct timespec req64 = *req;
+        Result = ::nanosleep(&req64, &rem64);
+      } else {
+        Result = ::nanosleep(nullptr, &rem64);
+      }
+
       if (rem) {
         *rem = rem64;
       }
