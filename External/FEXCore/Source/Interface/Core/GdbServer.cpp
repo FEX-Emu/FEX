@@ -64,7 +64,7 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
           usleep(100000);
 
         return true;
-    });
+    }, true);
 
     StartThread();
 }

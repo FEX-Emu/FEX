@@ -175,24 +175,10 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
       // siginfo_t
       siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
-      if (HostSigInfo->si_code == SI_USER) {
-        // If the signal was a user signal then we need to pass this struct through unaltered
-        // Guest might be doing something with it
-        *guest_siginfo = *HostSigInfo;
-      }
-      else {
-        guest_siginfo->si_signo = Signal;
-        switch (Signal) {
-        case SIGSEGV:
-        case SIGBUS:
-          guest_siginfo->si_code = HostSigInfo->si_code;
-          guest_siginfo->si_errno = HostSigInfo->si_errno;
-          // Macro expansion to get the si_addr
-          guest_siginfo->si_addr = HostSigInfo->si_addr;
-          break;
-        default: LogMan::Msg::D("Unhandled siginfo_t signal: %d", Signal); break;
-        }
-      }
+      // aarch64 and x86_64 siginfo_t matches. We can just copy this over
+      // SI_USER could also potentially have random data in it, needs to be bit perfect
+      // For guest faults we don't have a real way to reconstruct state to a real guest RIP
+      *guest_siginfo = *HostSigInfo;
 
       Frame->State.gregs[X86State::REG_RSI] = SigInfoLocation;
       Frame->State.gregs[X86State::REG_RDX] = UContextLocation;
@@ -202,7 +188,36 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       NewGuestSP -= sizeof(FEXCore::x86::ucontext_t);
       uint64_t UContextLocation = 0; // NewGuestSP;
       NewGuestSP -= sizeof(FEXCore::x86::siginfo_t);
-      uint64_t SigInfoLocation = 0; // NewGuestSP;
+      uint64_t SigInfoLocation = NewGuestSP;
+
+      FEXCore::x86::siginfo_t *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(SigInfoLocation);
+      siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
+
+      // These three elements are in every siginfo
+      guest_siginfo->si_signo = HostSigInfo->si_signo;
+      guest_siginfo->si_errno = HostSigInfo->si_errno;
+      guest_siginfo->si_code = HostSigInfo->si_code;
+
+      switch (Signal) {
+        case SIGSEGV:
+        case SIGBUS:
+          // Macro expansion to get the si_addr
+          // Can't really give a real result here. Pull from the context for now
+          guest_siginfo->_sifields._sigfault.addr = Frame->State.rip;
+          break;
+        case SIGCHLD:
+          guest_siginfo->_sifields._sigchld.pid = HostSigInfo->si_pid;
+          guest_siginfo->_sifields._sigchld.uid = HostSigInfo->si_uid;
+          guest_siginfo->_sifields._sigchld.status = HostSigInfo->si_status;
+          guest_siginfo->_sifields._sigchld.utime = HostSigInfo->si_utime;
+          guest_siginfo->_sifields._sigchld.stime = HostSigInfo->si_stime;
+          break;
+      default:
+        LogMan::Msg::D("Unhandled siginfo_t signal: %d", Signal);
+        // Hope for the best, most things just copy over
+        memcpy(guest_siginfo, info, sizeof(siginfo_t));
+        break;
+      }
 
       NewGuestSP -= 4;
       *(uint32_t*)NewGuestSP = UContextLocation;

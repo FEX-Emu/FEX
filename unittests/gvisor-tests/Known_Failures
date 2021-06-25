@@ -86,7 +86,6 @@ mount_test
 mremap_test
 open_create_test
 open_test
-pause_test
 pipe_test
 ppoll_test
 prctl_setuid_test
@@ -104,7 +103,6 @@ seccomp_test
 select_test
 semaphore_test
 sendfile_test
-shm_test
 sigaltstack_test
 sigiret_test
 signalfd_test
@@ -125,14 +123,15 @@ splice_test
 stat_test
 sysret_test
 tcp_socket_test
-time_test
 timers_test
 tkill_test
-truncate_test
 vfork_test
 wait_test
-write_test
 xatttr_test
+
+# The behaviour of this is different between x86 and ARM
+# SIGSEGV kills a thread successfully on ARM but not on x86
+time_test
 
 # these are disabled
 # never terminates (even though we use timeout)
@@ -168,3 +167,7 @@ semaphore_test
 # these are flaky on x86
 itimer_test
 stat_times_test
+
+# The behaviour of this changes depending on if you have asserts enabled or not
+# siginfo_t with unsynchronized context
+pause_test

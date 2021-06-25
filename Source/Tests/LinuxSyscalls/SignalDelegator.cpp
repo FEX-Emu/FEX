@@ -214,29 +214,38 @@ namespace FEX::HLE {
       return false;
     }
 
-    // Now install the thunk handler
-    SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
+    // Default flags for us
     SignalHandler.HostAction.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
+
+    if (HostHandlers[Signal].Required == false &&
+        (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL ||
+         SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN)) {
+      // If getting set to DFL or IGN on first install then just install to those
+      SignalHandler.HostAction.sa_handler = SignalHandler.GuestAction.sigaction_handler.handler;
+    }
+    else {
+      // Now install the thunk handler
+      SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
+    }
 
     if (SignalHandler.GuestAction.sa_flags & SA_NODEFER) {
       // If the guest is using NODEFER then make sure to set it for the host as well
       SignalHandler.HostAction.sa_flags |= SA_NODEFER;
     }
 
-    /*
-     * XXX: This isn't quite as straightforward as a memcmp
-     * There are conflicting definitions between sigset_t and __sigset_t causing problems here
-    sigset_t EmptySet{};
-    sigemptyset(&EmptySet);
-    if (SignalHandler.GuestAction.sa_mask != EmptySet) {
-      // If the guest has masked some signals then we need to also mask those signals
-      SignalHandler.HostAction.sa_mask = SignalHandler.GuestAction.sa_mask;
+    // Walk the signals we have that are required and make sure to remove it from the mask
+    // This'll likely be SIGILL, SIGBUS, SIG63
 
-      // If the guest tried masking SIGILL or SIGBUS then too bad, we actually need this on the host
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGILL);
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGBUS);
+    // If the guest has masked some signals then we need to also mask those signals
+    sigemptyset(&SignalHandler.HostAction.sa_mask);
+    for (size_t i = 1; i < HostHandlers.size(); ++i) {
+      if (HostHandlers[i].Required) {
+        sigdelset(&SignalHandler.HostAction.sa_mask, i);
+      }
+      else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
+        sigaddset(&SignalHandler.HostAction.sa_mask, i);
+      }
     }
-    */
 
     // We don't care about the previous handler in this case
     int Result = sigaction(Signal, &SignalHandler.HostAction, &SignalHandler.OldAction);
@@ -251,27 +260,39 @@ namespace FEX::HLE {
 
   void SignalDelegator::UpdateHostThunk(int Signal) {
     SignalHandler &SignalHandler = HostHandlers[Signal];
-    bool Changed{};
 
     // This only gets called if a guest thunk was already installed and we need to check if we need to update the flags or signal mask
     if ((SignalHandler.GuestAction.sa_flags ^ SignalHandler.HostAction.sa_flags) & SA_NODEFER) {
       // NODEFER changed, we need to update this
       SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_NODEFER;
-      Changed = true;
     }
 
-    /*
-    if ((SignalHandler.GuestAction.sa_mask ^ SignalHandler.HostAction.sa_mask) & ~(SIGILL | SIGBUS)) {
-      // If the signal ignore mask has updated (avoiding the two we need for the host) then we need to update
-      SignalHandler.HostAction.sa_mask = SignalHandler.GuestAction.sa_mask;
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGILL);
-      sigdelset(SignalHandler.HostAction.sa_mask, SIGBUS);
-      Changed = true;
+    if ((SignalHandler.GuestAction.sa_flags ^ SignalHandler.HostAction.sa_flags) & SA_RESTART) {
+      // RESTART changed, we need to update this
+      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_RESTART;
     }
-    */
 
-    if (!Changed) {
-      return;
+    if (HostHandlers[Signal].Required == false &&
+        (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL ||
+         SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN)) {
+      // If we are changing a none required signal back to DFL or IGN then we can allow this
+      SignalHandler.HostAction.sa_handler = SignalHandler.GuestAction.sigaction_handler.handler;
+    }
+    else {
+      // Set the handler to host handler
+      SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
+    }
+
+    // Walk the signals we have that are required and make sure to remove it from the mask
+    // This'll likely be SIGILL, SIGBUS, SIG63
+    sigemptyset(&SignalHandler.HostAction.sa_mask);
+    for (size_t i = 1; i < HostHandlers.size(); ++i) {
+      if (HostHandlers[i].Required) {
+        sigdelset(&SignalHandler.HostAction.sa_mask, i);
+      }
+      else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
+        sigaddset(&SignalHandler.HostAction.sa_mask, i);
+      }
     }
 
     // Only update our host signal here
@@ -418,26 +439,27 @@ namespace FEX::HLE {
     return true;
   }
 
-  void SignalDelegator::RegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) {
+  void SignalDelegator::RegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
     HostHandlers[Signal].Handler = std::move(Func);
+    HostHandlers[Signal].Required = Required;
     InstallHostThunk(Signal);
   }
 
-  void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func) {
+  void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
     HostHandlers[Signal].FrontendHandler = std::move(Func);
+    HostHandlers[Signal].Required = Required;
     InstallHostThunk(Signal);
   }
 
   void SignalDelegator::RegisterHostSignalHandlerForGuest(int Signal, FEXCore::HostSignalDelegatorFunctionForGuest Func) {
     std::lock_guard lk(HostDelegatorMutex);
     HostHandlers[Signal].GuestHandler = std::move(Func);
-    InstallHostThunk(Signal);
   }
 
   uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const FEXCore::GuestSigAction *Action, FEXCore::GuestSigAction *OldAction) {
@@ -560,6 +582,24 @@ namespace FEX::HLE {
       else {
         return -EINVAL;
       }
+
+      // Now actually set the host mask
+      // This will hide from the guest that we are not actually setting all of the masks it wants
+      sigset_t HostSet{};
+      sigemptyset(&HostSet);
+
+      for (size_t i = 0; i < MAX_SIGNALS; ++i) {
+        if (HostHandlers[i + 1].Required) {
+          // If it is a required host signal then we can't mask it
+          continue;
+        }
+
+        if (ThreadData.CurrentSignalMask.Val & (1ULL << i)) {
+          sigaddset(&HostSet, i + 1);
+        }
+      }
+
+      pthread_sigmask(SIG_SETMASK, &HostSet, nullptr);
     }
 
     CheckForPendingSignals();
@@ -573,6 +613,19 @@ namespace FEX::HLE {
     }
 
     *set = ThreadData.PendingSignals;
+
+    sigset_t HostSet{};
+    if (sigpending(&HostSet) == 0) {
+      uint64_t HostSignals{};
+      for (size_t i = 0; i < MAX_SIGNALS; ++i) {
+        if (sigismember(&HostSet, i + 1)) {
+          HostSignals |= (1ULL << i);
+        }
+      }
+
+      // Merge the real pending signal mask as well
+      *set |= HostSignals;
+    }
     return 0;
   }
 

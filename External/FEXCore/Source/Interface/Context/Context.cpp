@@ -105,12 +105,12 @@ namespace FEXCore::Context {
     CTX->HandleCallback(RIP);
   }
 
-  void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func) {
-      CTX->RegisterHostSignalHandler(Signal, Func);
+  void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required) {
+      CTX->RegisterHostSignalHandler(Signal, Func, Required);
   }
 
-  void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func) {
-    CTX->RegisterFrontendHostSignalHandler(Signal, Func);
+  void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required) {
+    CTX->RegisterFrontendHostSignalHandler(Signal, Func, Required);
   }
 
   FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
