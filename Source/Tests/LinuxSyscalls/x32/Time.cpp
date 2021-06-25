@@ -89,9 +89,13 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(clock_settime, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, const timespec32 *tp) -> uint64_t {
-      struct timespec tp64{};
-      tp64 = *tp;
-      uint64_t Result = ::clock_settime(clockid, &tp64);
+      uint64_t Result = 0;
+      if (tp) {
+        const struct timespec tp64 = *tp;
+        Result = ::clock_settime(clockid, &tp64);
+      } else {
+        Result = ::clock_settime(clockid, nullptr);
+      }
       SYSCALL_ERRNO();
     });
 
