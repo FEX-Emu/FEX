@@ -90,10 +90,21 @@ namespace FEXCore::Config {
         !std::filesystem::create_directories(ConfigFile)) {
       LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigFile.c_str());
       // Let's go local in this case
-      return "./";
+      return "./" + Filename + ".json";
     }
 
-    ConfigFile += "AppConfig/" + Filename + ".json";
+    ConfigFile += "AppConfig/";
+
+    // Attempt to create the local folder if it doesn't exist
+    if (!Global &&
+        !std::filesystem::exists(ConfigFile) &&
+        !std::filesystem::create_directories(ConfigFile)) {
+      LogMan::Msg::D("Couldn't create AppConfig directory: '%s'", ConfigFile.c_str());
+      // Let's go local in this case
+      return "./" + Filename + ".json";
+    }
+
+    ConfigFile += Filename + ".json";
     return ConfigFile;
   }
 
