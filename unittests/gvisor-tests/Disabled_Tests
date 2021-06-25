@@ -76,3 +76,11 @@ ptrace_test
 
 # Spins from sigtimedwait implementation
 sigtimedwait_test
+
+# The behaviour of this is different between x86 and ARM
+# SIGSEGV kills a thread successfully on ARM but not on x86
+time_test
+
+# The behaviour of this changes depending on if you have asserts enabled or not
+# siginfo_t with unsynchronized context
+pause_test
