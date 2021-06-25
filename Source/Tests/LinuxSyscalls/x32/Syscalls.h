@@ -15,6 +15,7 @@ $end_info$
 #include <bitset>
 #include <condition_variable>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 
@@ -41,7 +42,7 @@ public:
 
 class x32SyscallHandler final : public FEX::HLE::SyscallHandler {
 public:
-  x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator);
+  x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, std::unique_ptr<MemAllocator> Allocator);
 
   FEX::HLE::x32::MemAllocator *GetAllocator() { return AllocHandler.get(); }
 
@@ -50,8 +51,11 @@ private:
   std::unique_ptr<MemAllocator> AllocHandler{};
 };
 
-FEX::HLE::x32::MemAllocator *CreateAllocator(bool Use32BitAllocator);
-FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, MemAllocator *Allocator);
+std::unique_ptr<FEX::HLE::x32::MemAllocator> CreateAllocator(bool Use32BitAllocator);
+std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx,
+                                                        FEX::HLE::SignalDelegator *_SignalDelegation,
+                                                        std::unique_ptr<MemAllocator> Allocator);
+
 void RegisterSyscallInternal(int SyscallNumber,
 #ifdef DEBUG_STRACE
   const std::string& TraceFormatString,

@@ -11,6 +11,7 @@ $end_info$
 
 #include <atomic>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 
@@ -26,7 +27,8 @@ struct InternalThreadState;
 namespace FEX::HLE::x64 {
 #include "SyscallsEnum.h"
 
-FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+
 void RegisterSyscallInternal(int SyscallNumber,
 #ifdef DEBUG_STRACE
   const std::string& TraceFormatString,
