@@ -96,11 +96,15 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(utimensat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const compat_ptr<timespec32> times, int flags) -> uint64_t {
-      timespec times64[2]{};
-      times64[0] = times[0];
-      times64[1] = times[1];
-
-      uint64_t Result = ::syscall(SYS_utimensat, dirfd, pathname, times64, flags);
+      uint64_t Result = 0;
+      if (times) {
+        timespec times64[2]{};
+        times64[0] = times[0];
+        times64[1] = times[1];
+        Result = ::syscall(SYS_utimensat, dirfd, pathname, times64, flags);
+      } else {
+        Result = ::syscall(SYS_utimensat, dirfd, pathname, nullptr, flags);
+      }
       SYSCALL_ERRNO();
     });
 
@@ -131,6 +135,19 @@ namespace FEX::HLE::x32 {
 
     REGISTER_SYSCALL_IMPL_X32(utimensat_time64, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
       uint64_t Result = ::utimensat(dirfd, pathname, times, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(utimes, [](FEXCore::Core::CpuStateFrame *Frame, const char *filename, const timeval32 times[2]) -> uint64_t {
+      uint64_t Result = 0;
+      if (times) {
+        struct timeval times64[2]{};
+        times64[0] = times[0];
+        times64[1] = times[1];
+        Result = ::utimes(filename, times64);
+      } else {
+        Result = ::utimes(filename, nullptr);
+      }
       SYSCALL_ERRNO();
     });
   }
