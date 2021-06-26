@@ -257,9 +257,7 @@ namespace FEX::HLE::x32 {
 
     REGISTER_SYSCALL_IMPL_X32(sendmmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) -> uint64_t {
       std::vector<iovec> Host_iovec;
-      std::vector<uint8_t> Controllen;
-      std::vector<struct msghdr> Messages{vlen};
-      std::vector<struct mmsghdr> HostMmsg{vlen};
+      std::vector<struct mmsghdr> HostMmsg(vlen);
 
       // Walk the iovec and convert them
       // Calculate controllen at the same time
@@ -274,7 +272,7 @@ namespace FEX::HLE::x32 {
         }
       }
 
-      Controllen.resize(Controllen_size);
+      std::vector<uint8_t> Controllen(Controllen_size);
 
       size_t current_iov{};
       size_t current_controllen_offset{};
@@ -333,7 +331,7 @@ namespace FEX::HLE::x32 {
         HostMmsg[i].msg_len = msgvec[i].msg_len;
       }
 
-      uint64_t Result = ::sendmmsg(sockfd, &HostMmsg.at(0), vlen, flags);
+      uint64_t Result = ::sendmmsg(sockfd, HostMmsg.data(), vlen, flags);
 
       if (Result != -1) {
         // Update guest msglen
