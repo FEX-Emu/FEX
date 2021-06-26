@@ -158,7 +158,7 @@ namespace FEX::HLE::x64 {
 #endif
   }
 
-  FEX::HLE::SyscallHandler *CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation) {
-    return new x64SyscallHandler(ctx, _SignalDelegation);
+  std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation) {
+    return std::make_unique<x64SyscallHandler>(ctx, _SignalDelegation);
   }
 }

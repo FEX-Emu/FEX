@@ -416,7 +416,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  FEX::HLE::x32::MemAllocator *Allocator = nullptr;
+  std::unique_ptr<FEX::HLE::x32::MemAllocator> Allocator;
 
   if (Loader.Is64BitMode()) {
     if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
@@ -442,9 +442,9 @@ int main(int argc, char **argv, char **const envp) {
 
     Allocator = FEX::HLE::x32::CreateAllocator(Use32BitAllocator);
 
-    if (!Loader.MapMemory([Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+    if (!Loader.MapMemory([&Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return Allocator->mmap(addr, length, prot, flags, fd, offset);
-    }, [Allocator](void *addr, size_t length) {
+    }, [&Allocator](void *addr, size_t length) {
       return Allocator->munmap(addr, length);
     })) {
       // failed to map
@@ -459,13 +459,9 @@ int main(int argc, char **argv, char **const envp) {
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
 
-  std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-
-  std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler{
-    Loader.Is64BitMode() ?
-      FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get()) :
-      FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), Allocator)
-  };
+  auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
+                                             : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
   SyscallHandler->SetCodeLoader(&Loader);
 
