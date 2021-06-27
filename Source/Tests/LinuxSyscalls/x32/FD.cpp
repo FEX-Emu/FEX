@@ -240,8 +240,9 @@ namespace FEX::HLE::x32 {
 
       void *lock_arg = (void*)arg;
       struct flock tmp{};
+      int old_cmd = cmd;
 
-      switch (cmd) {
+      switch (old_cmd) {
         case OP_GETLK64_32: {
           cmd = F_GETLK;
           lock_arg = (void*)&tmp;
@@ -292,7 +293,7 @@ namespace FEX::HLE::x32 {
       uint64_t Result = ::fcntl(fd, cmd, lock_arg);
 
       if (Result != -1) {
-        switch (cmd) {
+        switch (old_cmd) {
           case OP_GETLK64_32: {
             *reinterpret_cast<flock64_32*>(arg) = tmp;
             break;
