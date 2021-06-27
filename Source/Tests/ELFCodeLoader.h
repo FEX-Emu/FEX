@@ -1,6 +1,8 @@
 #pragma once
 #include "Common/Config.h"
 #include "Common/MathUtils.h"
+#include "Linux/Utils/ELFContainer.h"
+#include "Linux/Utils/ELFSymbolDatabase.h"
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <array>
@@ -15,8 +17,6 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/Utils/ELFContainer.h>
-#include <FEXCore/Utils/ELFSymbolDatabase.h>
 
 namespace FEX::HarnessHelper {
 

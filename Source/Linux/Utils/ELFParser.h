@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "ELFContainer.h"
+#include "Linux/Utils/ELFContainer.h"
 
 /*
   Simpler elf parser, checks for the elf MAGIC COOKIE
@@ -31,9 +31,9 @@ struct ELFParser {
     std::ifstream elf(file);
 
     fd = ::open(file.c_str(), O_RDONLY);
-    
+
     if (fd == -1) {
-      LogMan::Msg::E("Failed to open '%s'", file.c_str());
+      // Likely just doesn't exist
       return false;
     }
 
@@ -82,12 +82,12 @@ struct ELFParser {
         LogMan::Msg::E("Invalid e_phentsize32 from '%s'", file.c_str());
         return false;
       }
-      
+
       // Convert to 64 bit header
       for (int i = 0; i < EI_NIDENT; i++)
         ehdr.e_ident[i] = hdr32.e_ident[i];
 
-      #define COPY(name) ehdr.name = hdr32.name      
+      #define COPY(name) ehdr.name = hdr32.name
       COPY(e_type);
       COPY(e_machine);
       COPY(e_version);
@@ -112,7 +112,7 @@ struct ELFParser {
 
     } else if (header[EI_CLASS] == ELFCLASS64) {
       elf.read((char*)&ehdr, sizeof(ehdr));
-      
+
       if (!elf.good()) {
         LogMan::Msg::E("Failed to read Ehdr64 from '%s'", file.c_str());
         return false;
@@ -158,12 +158,12 @@ struct ELFParser {
     if (type == ::ELFLoader::ELFContainer::TYPE_X86_32) {
       Elf32_Phdr phdrs32[ehdr.e_phnum];
       elf.read((char*)phdrs32, sizeof(Elf32_Phdr) * ehdr.e_phnum);
-      
+
       if (!elf.good()) {
         LogMan::Msg::E("Failed to read phdr32 from '%s'", file.c_str());
         return false;
       }
-      
+
       // Convert to 64 bit program headers
       phdrs.resize(ehdr.e_phnum);
 
@@ -185,13 +185,13 @@ struct ELFParser {
       phdrs.resize(ehdr.e_phnum);
 
       elf.read((char*)&phdrs[0], sizeof(Elf64_Phdr) * ehdr.e_phnum);
-      
+
       if (!elf.good()) {
         LogMan::Msg::E("Failed to read phdr64 from '%s'", file.c_str());
         return false;
       }
     }
-    
+
     for (auto phdr : phdrs) {
       if (phdr.p_type == PT_INTERP) {
         elf.seekg(phdr.p_offset);

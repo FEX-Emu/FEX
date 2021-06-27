@@ -8,6 +8,7 @@ $end_info$
 
 #include <FEXCore/Utils/LogManager.h>
 #include "Common/MathUtils.h"
+#include "Linux/Utils/ELFContainer.h"
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/Syscalls/Thread.h"
@@ -18,7 +19,6 @@ $end_info$
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
-#include <FEXCore/Utils/ELFContainer.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>

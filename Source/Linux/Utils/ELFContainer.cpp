@@ -5,8 +5,8 @@ desc: Loads and parses an elf to memory. Also handles some loading & logic.
 $end_info$
 */
 
-#include <FEXCore/Utils/Common/MathUtils.h>
-#include <FEXCore/Utils/ELFContainer.h>
+#include "Common/MathUtils.h"
+#include "Linux/Utils/ELFContainer.h"
 #include <FEXCore/Utils/LogManager.h>
 #include <cstring>
 #include <elf.h>

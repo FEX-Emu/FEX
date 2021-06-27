@@ -2,6 +2,8 @@
 
 #include "Common/Config.h"
 #include "Common/MathUtils.h"
+#include "Linux/Utils/ELFContainer.h"
+#include "Linux/Utils/ELFSymbolDatabase.h"
 
 #include <array>
 #include <bitset>
@@ -17,8 +19,6 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/Utils/ELFContainer.h>
-#include <FEXCore/Utils/ELFSymbolDatabase.h>
 #include <FEXCore/Utils/LogManager.h>
 
 namespace FEX::HarnessHelper {

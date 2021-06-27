@@ -14,12 +14,12 @@ $end_info$
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
+#include "Linux/Utils/ELFContainer.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Allocator.h>
-#include <FEXCore/Utils/ELFContainer.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>

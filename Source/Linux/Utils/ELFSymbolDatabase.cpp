@@ -5,10 +5,11 @@ desc: Part of our now defunct ld-linux replacement, keeps tracks of all symbols,
 $end_info$
 */
 
-#include <FEXCore/Utils/ELFSymbolDatabase.h>
+#include "Common/MathUtils.h"
+#include "Linux/Utils/ELFSymbolDatabase.h"
+
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/Utils/Common/MathUtils.h>
 
 #include <cstring>
 #include <elf.h>
