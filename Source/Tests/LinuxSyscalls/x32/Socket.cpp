@@ -321,6 +321,7 @@ namespace FEX::HLE::x32 {
             }
             else {
               CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + msghdr_guest->cmsg_len);
+              CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
               if (CurrentGuestPtr >= reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(static_cast<void*>(guest.msg_control)) + guest.msg_controllen)) {
                 CurrentGuestPtr = nullptr;
               }
