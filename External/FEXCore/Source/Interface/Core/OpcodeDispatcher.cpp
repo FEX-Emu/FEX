@@ -9673,20 +9673,17 @@ constexpr uint16_t PF_F2 = 3;
     {0x7F, 1, &OpDispatchBuilder::UnimplementedOp},
   };
 
-  uint64_t NumInsts{};
-  auto InstallToTable = [&NumInsts](auto& FinalTable, auto& LocalTable) {
+  auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
     for (auto Op : LocalTable) {
       auto OpNum = std::get<0>(Op);
       auto Dispatcher = std::get<2>(Op);
       for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
         LOGMAN_THROW_A(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
         FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
-        if (Dispatcher)
-          ++NumInsts;
       }
     }
   };
-  auto InstallToX87Table = [&NumInsts](auto& FinalTable, auto& LocalTable) {
+  auto InstallToX87Table = [](auto& FinalTable, auto& LocalTable) {
     for (auto Op : LocalTable) {
       auto OpNum = std::get<0>(Op);
       bool Repeat = (OpNum & 0x8000) != 0;
@@ -9701,8 +9698,6 @@ constexpr uint16_t PF_F2 = 3;
           FinalTable[(OpNum | 0x40) + i].OpcodeDispatcher = Dispatcher;
           FinalTable[(OpNum | 0x80) + i].OpcodeDispatcher = Dispatcher;
         }
-        if (Dispatcher)
-          ++NumInsts;
       }
     }
   };
@@ -9733,8 +9728,6 @@ constexpr uint16_t PF_F2 = 3;
   InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3ATable);
   InstallToTable(FEXCore::X86Tables::VEXTableOps, VEXTable);
   InstallToTable(FEXCore::X86Tables::EVEXTableOps, EVEXTable);
-
-  LogMan::Msg::D("We installed %ld instructions to the tables", NumInsts);
 }
 
 }

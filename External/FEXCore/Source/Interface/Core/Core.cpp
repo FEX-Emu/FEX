@@ -374,8 +374,6 @@ namespace FEXCore::Context {
         }
         if (Thread->RunningEvents.Running.load()) {
           StopThread(Thread);
-        } else {
-          LogMan::Msg::D("Skipping thread %p: Already stopped", Thread);
         }
       }
     }
@@ -1214,8 +1212,6 @@ namespace FEXCore::Context {
 
     ++IdleWaitRefCount;
 
-    LogMan::Msg::D("[%d] Waiting to run", Thread->ThreadManager.TID.load());
-
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
 
@@ -1223,8 +1219,6 @@ namespace FEXCore::Context {
       // Parent thread doesn't need to wait to run
       Thread->StartRunning.Wait();
     }
-
-    LogMan::Msg::D("[%d] Running", Thread->ThreadManager.TID.load());
 
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
 
