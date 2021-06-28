@@ -115,12 +115,10 @@ namespace FEX::HLE {
       // Handle child setup now
       if (stack != nullptr) {
         // use specified stack
-        LogMan::Msg::D("@@@@@@@ Fork uses custom stack");
         Frame->State.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack);
       } else {
         // In the case of fork and nullptr stack then the child uses the same stack space as the parent
         // Same virtual address, different addressspace
-        LogMan::Msg::D("@@@@@@@ Fork uses parent stack");
       }
 
       if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
