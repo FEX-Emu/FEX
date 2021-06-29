@@ -40,16 +40,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sendmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, const struct msghdr *msg, int flags) -> uint64_t {
-      uint64_t Result = ::sendmsg(sockfd, msg, flags);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(recvmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, struct msghdr *msg, int flags) -> uint64_t {
-      uint64_t Result = ::recvmsg(sockfd, msg, flags);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(shutdown, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, int how) -> uint64_t {
       uint64_t Result = ::shutdown(sockfd, how);
       SYSCALL_ERRNO();

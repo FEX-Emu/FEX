@@ -105,6 +105,12 @@ namespace FEX::HLE::x32 {
         return Result;
       }
     });
+
+    REGISTER_SYSCALL_IMPL_X32(shmdt, [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
+      uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
+        shmdt(shmaddr);
+      SYSCALL_ERRNO();
+    });
   }
 
 }

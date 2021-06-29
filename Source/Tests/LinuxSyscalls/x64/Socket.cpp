@@ -24,5 +24,15 @@ namespace FEX::HLE::x64 {
       uint64_t Result = ::sendmmsg(sockfd, msgvec, vlen, flags);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X64(sendmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, const struct msghdr *msg, int flags) -> uint64_t {
+      uint64_t Result = ::sendmsg(sockfd, msg, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(recvmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, struct msghdr *msg, int flags) -> uint64_t {
+      uint64_t Result = ::recvmsg(sockfd, msg, flags);
+      SYSCALL_ERRNO();
+    });
   }
 }
