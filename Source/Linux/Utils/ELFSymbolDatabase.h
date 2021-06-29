@@ -1,13 +1,12 @@
 #pragma once
 
-#include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/Utils/ELFContainer.h>
+#include "Linux/Utils/ELFContainer.h"
 
 #include <unordered_map>
 #include <vector>
 
 namespace ELFLoader {
-class FEX_DEFAULT_VISIBILITY ELFSymbolDatabase final {
+class ELFSymbolDatabase final {
 public:
   ELFSymbolDatabase(::ELFLoader::ELFContainer *file);
   ~ELFSymbolDatabase();

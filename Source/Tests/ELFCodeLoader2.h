@@ -2,6 +2,8 @@
 #pragma once
 #include "Common/Config.h"
 #include "Common/MathUtils.h"
+#include "Linux/Utils/ELFParser.h"
+#include "Linux/Utils/ELFSymbolDatabase.h"
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <array>
@@ -16,8 +18,6 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/Utils/ELFParser.h>
-#include <FEXCore/Utils/ELFSymbolDatabase.h>
 
 #include <elf.h>
 #include <sys/personality.h>
