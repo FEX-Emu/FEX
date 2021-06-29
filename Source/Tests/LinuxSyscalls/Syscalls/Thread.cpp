@@ -352,6 +352,12 @@ namespace FEX::HLE {
         case 0x3001: // ARCH_CET_STATUS
           Result = -EINVAL; // We don't support CET, return EINVAL
         break;
+        case 0x1011: // ARCH_GET_CPUID
+          return 1;
+        break;
+        case 0x1012: // ARCH_SET_CPUID
+          return -ENODEV; // Claim we don't support faulting on CPUID
+        break;
         default:
           LogMan::Msg::E("Unknown prctl: 0x%x", code);
           Result = -EINVAL;
