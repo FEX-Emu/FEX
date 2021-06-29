@@ -36,7 +36,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(epoll_ctl, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, int op, int fd, epoll_event_x86 *event) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(epoll_ctl, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, int op, int fd, compat_ptr<epoll_event_x86> event) -> uint64_t {
       struct epoll_event Event = *event;
       uint64_t Result = ::syscall(SYS_epoll_ctl, epfd, op, fd, &Event);
       if (Result != -1) {
