@@ -249,7 +249,9 @@ namespace FEX::HLE {
 
     // We don't care about the previous handler in this case
     int Result = sigaction(Signal, &SignalHandler.HostAction, &SignalHandler.OldAction);
-    if (Result < 0) {
+    if (Result < 0 &&
+        !(Signal == 32 || Signal == 33)) {
+      // Signal 32 and 33 are consumed by glibc. We don't handle this atm
       LogMan::Msg::E("Failed to install host signal thunk for signal %d: %s", Signal, strerror(errno));
       return false;
     }
@@ -297,7 +299,9 @@ namespace FEX::HLE {
 
     // Only update our host signal here
     int Result = sigaction(Signal, &SignalHandler.HostAction, nullptr);
-    if (Result < 0) {
+    if (Result < 0 &&
+        !(Signal == 32 || Signal == 33)) {
+      // Signal 32 and 33 are consumed by glibc. We don't handle this atm
       LogMan::Msg::E("Failed to update host signal thunk for signal %d: %s", Signal, strerror(errno));
     }
   }

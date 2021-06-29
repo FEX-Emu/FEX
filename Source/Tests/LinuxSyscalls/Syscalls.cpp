@@ -204,35 +204,39 @@ static bool AllFlagsSet(uint64_t Flags, uint64_t Mask) {
 
 uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
   uint64_t flags = args->flags;
-#define FLAGPRINT(x, y) if (args->flags & (y)) LogMan::Msg::I("\tFlag: " #x)
-  FLAGPRINT(CSIGNAL,              0x000000FF);
-  FLAGPRINT(CLONE_VM,             0x00000100);
-  FLAGPRINT(CLONE_FS,             0x00000200);
-  FLAGPRINT(CLONE_FILES,          0x00000400);
-  FLAGPRINT(CLONE_SIGHAND,        0x00000800);
-  FLAGPRINT(CLONE_PTRACE,         0x00002000);
-  FLAGPRINT(CLONE_VFORK,          0x00004000);
-  FLAGPRINT(CLONE_PARENT,         0x00008000);
-  FLAGPRINT(CLONE_THREAD,         0x00010000);
-  FLAGPRINT(CLONE_NEWNS,          0x00020000);
-  FLAGPRINT(CLONE_SYSVSEM,        0x00040000);
-  FLAGPRINT(CLONE_SETTLS,         0x00080000);
-  FLAGPRINT(CLONE_PARENT_SETTID,  0x00100000);
-  FLAGPRINT(CLONE_CHILD_CLEARTID, 0x00200000);
-  FLAGPRINT(CLONE_DETACHED,       0x00400000);
-  FLAGPRINT(CLONE_UNTRACED,       0x00800000);
-  FLAGPRINT(CLONE_CHILD_SETTID,   0x01000000);
-  FLAGPRINT(CLONE_NEWCGROUP,      0x02000000);
-  FLAGPRINT(CLONE_NEWUTS,         0x04000000);
-  FLAGPRINT(CLONE_NEWIPC,         0x08000000);
-  FLAGPRINT(CLONE_NEWUSER,        0x10000000);
-  FLAGPRINT(CLONE_NEWPID,         0x20000000);
-  FLAGPRINT(CLONE_NEWNET,         0x40000000);
-  FLAGPRINT(CLONE_IO,             0x80000000);
+  auto PrintFlags = [](uint64_t Flags) -> void {
+#define FLAGPRINT(x, y) if (Flags & (y)) LogMan::Msg::I("\tFlag: " #x)
+    FLAGPRINT(CSIGNAL,              0x000000FF);
+    FLAGPRINT(CLONE_VM,             0x00000100);
+    FLAGPRINT(CLONE_FS,             0x00000200);
+    FLAGPRINT(CLONE_FILES,          0x00000400);
+    FLAGPRINT(CLONE_SIGHAND,        0x00000800);
+    FLAGPRINT(CLONE_PTRACE,         0x00002000);
+    FLAGPRINT(CLONE_VFORK,          0x00004000);
+    FLAGPRINT(CLONE_PARENT,         0x00008000);
+    FLAGPRINT(CLONE_THREAD,         0x00010000);
+    FLAGPRINT(CLONE_NEWNS,          0x00020000);
+    FLAGPRINT(CLONE_SYSVSEM,        0x00040000);
+    FLAGPRINT(CLONE_SETTLS,         0x00080000);
+    FLAGPRINT(CLONE_PARENT_SETTID,  0x00100000);
+    FLAGPRINT(CLONE_CHILD_CLEARTID, 0x00200000);
+    FLAGPRINT(CLONE_DETACHED,       0x00400000);
+    FLAGPRINT(CLONE_UNTRACED,       0x00800000);
+    FLAGPRINT(CLONE_CHILD_SETTID,   0x01000000);
+    FLAGPRINT(CLONE_NEWCGROUP,      0x02000000);
+    FLAGPRINT(CLONE_NEWUTS,         0x04000000);
+    FLAGPRINT(CLONE_NEWIPC,         0x08000000);
+    FLAGPRINT(CLONE_NEWUSER,        0x10000000);
+    FLAGPRINT(CLONE_NEWPID,         0x20000000);
+    FLAGPRINT(CLONE_NEWNET,         0x40000000);
+    FLAGPRINT(CLONE_IO,             0x80000000);
+#undef FLAGPRINT
+  };
 
   auto Thread = Frame->Thread;
 
   if (AnyFlagsSet(flags, CLONE_UNTRACED | CLONE_PTRACE)) {
+    PrintFlags(flags);
     LogMan::Msg::D("clone: Ptrace* not supported");
   }
 
@@ -245,10 +249,12 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
 #endif
 
   if (AnyFlagsSet(flags, CLONE_CLEAR_SIGHAND)) {
+    PrintFlags(flags);
     LogMan::Msg::D("clone3: CLONE_CLEAR_SIGHAND unsupported");
   }
 
   if (AnyFlagsSet(flags, CLONE_INTO_CGROUP)) {
+    PrintFlags(flags);
     LogMan::Msg::D("clone3: CLONE_INTO_CGROUP unsupported");
     return -EOPNOTSUPP;
   }
@@ -261,6 +267,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   if (AnyFlagsSet(flags, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID | CLONE_NEWNET)) {
     // NEWUSER doesn't need any privileges from 3.8 onward
     // We just don't support it yet
+    PrintFlags(flags);
     LogMan::Msg::I("Unconditionally returning EPERM on clone namespace");
     return -EPERM;
   }
@@ -268,12 +275,14 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   if (!(flags & CLONE_THREAD)) {
 
     if (flags & CLONE_VFORK) {
+      PrintFlags(flags);
       flags &= ~CLONE_VFORK;
       flags &= ~CLONE_VM;
       LogMan::Msg::D("clone: WARNING: CLONE_VFORK w/o CLONE_THREAD");
     }
 
     if (AnyFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
+      PrintFlags(flags);
       LogMan::Msg::I("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), %X", flags);
       return -EPERM;
     }
@@ -285,8 +294,8 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
       reinterpret_cast<pid_t*>(args->child_tid),
       reinterpret_cast<void*>(args->tls));
   } else {
-
     if (!AllFlagsSet(flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND)) {
+      PrintFlags(flags);
       LogMan::Msg::I("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), %X", flags);
       return -EPERM;
     }
