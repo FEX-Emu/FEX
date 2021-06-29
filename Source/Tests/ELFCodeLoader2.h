@@ -68,6 +68,11 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     auto off = Header.p_offset - PAGE_OFFSET(Header.p_vaddr);
 
     size = PAGE_ALIGN(size);
+    if (size == 0) {
+      // PT_LOAD section without a file size
+      // Will need to have a memory size that is not zero instead
+      return true;
+    }
 
     void *rv;
 
