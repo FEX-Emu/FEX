@@ -147,7 +147,7 @@ namespace FEXCore::Context {
     std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
 
     CustomCPUFactoryType CustomCPUFactory;
-    std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> CustomExitHandler;
+    FEXCore::Context::ExitHandler CustomExitHandler;
 
     struct AOTIRCacheEntry {
       AOTIRInlineIndex *Array;
