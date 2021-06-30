@@ -217,9 +217,28 @@ namespace FEXCore::Context {
     bool GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data);
     bool FindHostCodeForRIP(uint64_t RIP, uint8_t **Code);
 
-    std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t, uint64_t, uint64_t> GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    struct GenerateIRResult {
+      FEXCore::IR::IRListView* IRList;
+      // User's responsibility to deallocate this.
+      FEXCore::IR::RegisterAllocationData* RAData;
+      uint64_t TotalInstructions;
+      uint64_t TotalInstructionsLength;
+      uint64_t StartAddr;
+      uint64_t Length;
+    };
+    [[nodiscard]] GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
-    std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    struct CompileCodeResult {
+      void* CompiledCode;
+      FEXCore::IR::IRListView* IRData;
+      FEXCore::Core::DebugData* DebugData;
+      // User's responsibility to deallocate this.
+      FEXCore::IR::RegisterAllocationData* RAData;
+      bool GeneratedIR;
+      uint64_t StartAddr;
+      uint64_t Length;
+    };
+    [[nodiscard]] CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
     
     // same as CompileBlock, but aborts on failure

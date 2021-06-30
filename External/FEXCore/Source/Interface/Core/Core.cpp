@@ -604,7 +604,7 @@ namespace FEXCore::Context {
     }
   }
 
-  std::tuple<FEXCore::IR::IRListView *, FEXCore::IR::RegisterAllocationData *, uint64_t, uint64_t, uint64_t, uint64_t> Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
     GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
 
@@ -614,7 +614,7 @@ namespace FEXCore::Context {
     uint64_t TotalInstructionsLength {0};
 
     if (!Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP)) {
-      return { nullptr, nullptr, 0, 0, 0, 0 };
+      return {};
     }
 
     auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
@@ -792,7 +792,14 @@ namespace FEXCore::Context {
 
     Thread->OpDispatcher->ResetWorkingList();
 
-    return {IRList, RAData.release(), TotalInstructions, TotalInstructionsLength, Thread->FrontendDecoder->DecodedMinAddress, Thread->FrontendDecoder->DecodedMaxAddress - Thread->FrontendDecoder->DecodedMinAddress };
+    return {
+      .IRList = IRList,
+      .RAData = RAData.release(),
+      .TotalInstructions = TotalInstructions,
+      .TotalInstructionsLength = TotalInstructionsLength,
+      .StartAddr = Thread->FrontendDecoder->DecodedMinAddress,
+      .Length = Thread->FrontendDecoder->DecodedMaxAddress - Thread->FrontendDecoder->DecodedMinAddress,
+    };
   }
 
   AOTIRInlineEntry *AOTIRInlineIndex::GetInlineEntry(uint64_t DataOffset) {
@@ -852,7 +859,7 @@ namespace FEXCore::Context {
     }
   }
 
-  std::tuple<void *, FEXCore::IR::IRListView *, FEXCore::Core::DebugData *, FEXCore::IR::RegisterAllocationData *, bool, uint64_t, uint64_t> Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  Context::CompileCodeResult Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData *RAData {};
@@ -950,10 +957,18 @@ namespace FEXCore::Context {
     }
 
     if (IRList == nullptr) {
-      return { nullptr, nullptr, nullptr, nullptr, false, 0, 0 };
+      return {};
     }
     // Attempt to get the CPU backend to compile this code
-    return { Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData), IRList, DebugData, RAData, GeneratedIR, StartAddr, Length};
+    return {
+      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData),
+      .IRData = IRList,
+      .DebugData = DebugData,
+      .RAData = RAData,
+      .GeneratedIR = GeneratedIR,
+      .StartAddr = StartAddr,
+      .Length = Length,
+    };
   }
 
   static bool readAll(int fd, void *data, size_t size) {
