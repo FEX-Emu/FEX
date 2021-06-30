@@ -4610,7 +4610,7 @@ void OpDispatchBuilder::Finalize() {
 }
 
 uint8_t OpDispatchBuilder::GetDstSize(FEXCore::X86Tables::DecodedOp Op) const {
-  constexpr std::array<uint8_t, 8> Sizes = {
+  static constexpr std::array<uint8_t, 8> Sizes = {
     0, // Invalid DEF
     1,
     2,
@@ -4628,7 +4628,7 @@ uint8_t OpDispatchBuilder::GetDstSize(FEXCore::X86Tables::DecodedOp Op) const {
 }
 
 uint8_t OpDispatchBuilder::GetSrcSize(FEXCore::X86Tables::DecodedOp Op) const {
-  constexpr std::array<uint8_t, 8> Sizes = {
+  static constexpr std::array<uint8_t, 8> Sizes = {
     0, // Invalid DEF
     1,
     2,
