@@ -96,7 +96,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
     (0 <<  5) | // VMX
     (0 <<  6) | // SMX
     (0 <<  7) | // Intel SpeedStep
-    (0 <<  8) | // Thermal Monitor 2
+    (1 <<  8) | // Thermal Monitor 2
     (1 <<  9) | // SSSE3
     (0 << 10) | // L1 context ID
     (0 << 11) | // Silicon debug
@@ -151,7 +151,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
     (1 << 26) | // SSE2
     (0 << 27) | // Self Snoop
     (1 << 28) | // Max APIC IDs reserved field is valid
-    (0 << 29) | // Thermal monitor
+    (1 << 29) | // Thermal monitor
     (0 << 30) | // Reserved
     (0 << 31);  // Pending break enable
   return Res;
