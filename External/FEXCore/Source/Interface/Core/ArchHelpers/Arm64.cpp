@@ -157,6 +157,13 @@ bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
           mcontext->regs[ExpectedReg2] = FailedResult >> 32;
           return true;
         }
+
+        // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+        // This means our CAS fails because what we wanted to store was already stored
+        uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+        mcontext->regs[ExpectedReg1] = FailedResult & ~0U;
+        mcontext->regs[ExpectedReg2] = FailedResult >> 32;
+        return true;
       }
     }
     else {
@@ -200,20 +207,18 @@ bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
           __uint128_t FailedResultOurBits = TmpExpected & Mask;
           __uint128_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-          __uint128_t FailedDesiredOurBits = TmpDesired & Mask;
           __uint128_t FailedDesiredNotOurBits = TmpDesired & NegMask;
           if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
             // If the bits changed that weren't part of our regular CAS then we need to try again
             continue;
           }
-          if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-            // If the bits changed that we were wanting to change then we have failed and can return
-            // We need to extract the bits and return them in EXPECTED
-            uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-            mcontext->regs[ExpectedReg1] = FailedResult & ~0U;
-            mcontext->regs[ExpectedReg2] = FailedResult >> 32;
-            return true;
-          }
+
+          // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+          // This means our CAS fails because what we wanted to store was already stored
+          uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+          mcontext->regs[ExpectedReg1] = FailedResult & ~0U;
+          mcontext->regs[ExpectedReg2] = FailedResult >> 32;
+          return true;
         }
       }
     }
@@ -226,8 +231,9 @@ using CASExpectedFn = T (*)(T Src, T Expected);
 template <typename T>
 using CASDesiredFn = T (*)(T Src, T Desired);
 
+template<bool Retry>
 static
-std::tuple<uint16_t, bool> DoCAS16(
+uint16_t DoCAS16(
   uint16_t DesiredSrc,
   uint16_t ExpectedSrc,
   uint64_t Addr,
@@ -240,49 +246,66 @@ std::tuple<uint16_t, bool> DoCAS16(
     // Need a dual 8bit CAS loop
     uint64_t AddrUpper = Addr + 1;
 
-    uint8_t ActualUpper{};
-    uint8_t ActualLower{};
-    // Careful ordering here
-    ActualUpper = LoadAcquire8(AddrUpper);
-    ActualLower = LoadAcquire8(Addr);
+    while (1) {
+      uint8_t ActualUpper{};
+      uint8_t ActualLower{};
+      // Careful ordering here
+      ActualUpper = LoadAcquire8(AddrUpper);
+      ActualLower = LoadAcquire8(Addr);
 
-    uint16_t Actual = ActualUpper;
-    Actual <<= 8;
-    Actual |= ActualLower;
+      uint16_t Actual = ActualUpper;
+      Actual <<= 8;
+      Actual |= ActualLower;
 
-    uint16_t Desired = DesiredFunction(Actual, DesiredSrc);
-    uint8_t DesiredLower = Desired;
-    uint8_t DesiredUpper = Desired >> 8;
+      uint16_t Desired = DesiredFunction(Actual, DesiredSrc);
+      uint8_t DesiredLower = Desired;
+      uint8_t DesiredUpper = Desired >> 8;
 
-    uint16_t Expected = ExpectedFunction(Actual, ExpectedSrc);
-    uint8_t ExpectedLower = Expected;
-    uint8_t ExpectedUpper = Expected >> 8;
+      uint16_t Expected = ExpectedFunction(Actual, ExpectedSrc);
+      uint8_t ExpectedLower = Expected;
+      uint8_t ExpectedUpper = Expected >> 8;
 
-    if (ActualUpper == ExpectedUpper &&
-        ActualLower == ExpectedLower) {
-      if (StoreCAS8(ExpectedUpper, DesiredUpper, AddrUpper)) {
-        if (StoreCAS8(ExpectedLower, DesiredLower, Addr)) {
-          // Stored successfully
-          return std::make_tuple(Expected, true);
+      bool Tear = false;
+      if (ActualUpper == ExpectedUpper &&
+          ActualLower == ExpectedLower) {
+        if (StoreCAS8(ExpectedUpper, DesiredUpper, AddrUpper)) {
+          if (StoreCAS8(ExpectedLower, DesiredLower, Addr)) {
+            // Stored successfully
+            return Expected;
+          }
+          else {
+            // CAS managed to tear, we can't really solve this
+            // Continue down the path to let the guest know values weren't expected
+            Tear = true;
+          }
         }
-        else {
-          // CAS managed to tear, we can't really solve this
-          // Continue down the path to let the guest know values weren't expected
-        }
+
+        ActualLower = ExpectedLower;
+        ActualUpper = ExpectedUpper;
       }
 
-      ActualLower = ExpectedLower;
-      ActualUpper = ExpectedUpper;
+      // If the bits changed that we were wanting to change then we have failed and can return
+      // We need to extract the bits and return them in EXPECTED
+      uint16_t FailedResult = ActualUpper;
+      FailedResult <<= 8;
+      FailedResult |= ActualLower;
+
+      if constexpr (Retry) {
+        if (Tear) {
+          // If we are retrying and tearing then we can't do anything here
+          // XXX: Resolve with TME
+          return FailedResult;
+        }
+        else {
+          // We can retry safely
+        }
+      }
+      else {
+        // Without Retry (CAS) then we have failed regardless of tear
+        // CAS failed but handled successfully
+        return FailedResult;
+      }
     }
-
-    // If the bits changed that we were wanting to change then we have failed and can return
-    // We need to extract the bits and return them in EXPECTED
-    uint16_t FailedResult = ActualUpper;
-    FailedResult <<= 8;
-    FailedResult |= ActualLower;
-
-    // CAS failed but handled successfully
-    return std::make_tuple(FailedResult, false);
   }
   else {
     AlignmentMask = 0b111;
@@ -321,28 +344,30 @@ std::tuple<uint16_t, bool> DoCAS16(
         bool CASResult = Atomic128->compare_exchange_strong(TmpExpected, TmpDesired);
         if (CASResult) {
           // Successful, so we are done
-          return std::make_tuple(Expected >> (Alignment * 8), true);
+          return Expected >> (Alignment * 8);
         }
         else {
+          if constexpr (Retry) {
+            // If we failed but we have enabled retry then just retry without checking results
+            // CAS can't retry but atomic memory ops need to retry until passing
+            continue;
+          }
           // Not successful
           // Now we need to check the results to see if we need to try again
           __uint128_t FailedResultOurBits = TmpExpected & Mask;
           __uint128_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-          __uint128_t FailedDesiredOurBits = TmpDesired & Mask;
           __uint128_t FailedDesiredNotOurBits = TmpDesired & NegMask;
           if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
             // If the bits changed that weren't part of our regular CAS then we need to try again
             continue;
           }
-          if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-            // If the bits changed that we were wanting to change then we have failed and can return
-            // We need to extract the bits and return them in EXPECTED
-            uint16_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-            LogMan::Msg::D("Expected 0x%04x, Desired 0x%04x, Result 0x%04x", (uint16_t)(Expected >> (Alignment * 8)), DesiredSrc, FailedResult);
-            // CAS failed but handled successfully
-            return std::make_tuple(FailedResult, false);
-          }
+
+          // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+          // This means our CAS fails because what we wanted to store was already stored
+          uint16_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+          // CAS failed but handled successfully
+          return FailedResult;
         }
       }
     }
@@ -384,28 +409,31 @@ std::tuple<uint16_t, bool> DoCAS16(
           bool CASResult = Atomic->compare_exchange_strong(TmpExpected, TmpDesired);
           if (CASResult) {
             // Successful, so we are done
-            return std::make_tuple(Expected >> (Alignment * 8), true);
+            return Expected >> (Alignment * 8);
           }
           else {
+            if constexpr (Retry) {
+              // If we failed but we have enabled retry then just retry without checking results
+              // CAS can't retry but atomic memory ops need to retry until passing
+              continue;
+            }
             // Not successful
             // Now we need to check the results to see if we can try again
             uint64_t FailedResultOurBits = TmpExpected & Mask;
             uint64_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-            uint64_t FailedDesiredOurBits = TmpDesired & Mask;
             uint64_t FailedDesiredNotOurBits = TmpDesired & NegMask;
 
             if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
               // If the bits changed that weren't part of our regular CAS then we need to try again
               continue;
             }
-            if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-              // If the bits changed that we were wanting to change then we have failed and can return
-              // We need to extract the bits and return them in EXPECTED
-              uint16_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-              // CAS failed but handled successfully
-              return std::make_tuple(FailedResult, false);
-            }
+
+            // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+            // This means our CAS fails because what we wanted to store was already stored
+            uint16_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+            // CAS failed but handled successfully
+            return FailedResult;
           }
         }
       }
@@ -447,28 +475,31 @@ std::tuple<uint16_t, bool> DoCAS16(
           bool CASResult = Atomic->compare_exchange_strong(TmpExpected, TmpDesired);
           if (CASResult) {
             // Successful, so we are done
-            return std::make_tuple(Expected >> (Alignment * 8), true);
+            return Expected >> (Alignment * 8);
           }
           else {
+            if constexpr (Retry) {
+              // If we failed but we have enabled retry then just retry without checking results
+              // CAS can't retry but atomic memory ops need to retry until passing
+              continue;
+            }
             // Not successful
             // Now we need to check the results to see if we can try again
             uint32_t FailedResultOurBits = TmpExpected & Mask;
             uint32_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-            uint32_t FailedDesiredOurBits = TmpDesired & Mask;
             uint32_t FailedDesiredNotOurBits = TmpDesired & NegMask;
 
             if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
               // If the bits changed that weren't part of our regular CAS then we need to try again
               continue;
             }
-            if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-              // If the bits changed that we were wanting to change then we have failed and can return
-              // We need to extract the bits and return them in EXPECTED
-              uint16_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-              // CAS failed but handled successfully
-              return std::make_tuple(FailedResult, false);
-            }
+
+            // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+            // This means our CAS fails because what we wanted to store was already stored
+            uint16_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+            // CAS failed but handled successfully
+            return FailedResult;
           }
         }
       }
@@ -476,8 +507,9 @@ std::tuple<uint16_t, bool> DoCAS16(
   }
 }
 
+template<bool Retry>
 static
-std::tuple<uint32_t, bool> DoCAS32(
+uint32_t DoCAS32(
   uint32_t DesiredSrc,
   uint32_t ExpectedSrc,
   uint64_t Addr,
@@ -514,6 +546,7 @@ std::tuple<uint32_t, bool> DoCAS32(
       TmpDesired &= NegMask;
       TmpDesired |= Desired << (Alignment * 8);
 
+      bool Tear = false;
       if (TmpExpected == TmpActual) {
         uint32_t TmpExpectedLower = TmpExpected;
         uint32_t TmpExpectedUpper = TmpExpected >> 32;
@@ -524,11 +557,12 @@ std::tuple<uint32_t, bool> DoCAS32(
         if (StoreCAS32(TmpExpectedUpper, TmpDesiredUpper, AddrUpper)) {
           if (StoreCAS32(TmpExpectedLower, TmpDesiredLower, Addr)) {
             // Stored successfully
-            return std::make_tuple(Expected, true);
+            return Expected;
           }
           else {
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
+            Tear = true;
           }
         }
 
@@ -546,18 +580,30 @@ std::tuple<uint32_t, bool> DoCAS32(
       uint64_t FailedResultOurBits = TmpExpected & Mask;
       uint64_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-      uint64_t FailedDesiredOurBits = TmpDesired & Mask;
       uint64_t FailedDesiredNotOurBits = TmpDesired & NegMask;
       if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
         // If the bits changed that weren't part of our regular CAS then we need to try again
         continue;
       }
-      if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-        // If the bits changed that we were wanting to change then we have failed and can return
-        // We need to extract the bits and return them in EXPECTED
-        uint32_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+
+      // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+      // This means our CAS fails because what we wanted to store was already stored
+      uint32_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+
+      if constexpr (Retry) {
+        if (Tear) {
+          // If we are retrying and tearing then we can't do anything here
+          // XXX: Resolve with TME
+          return FailedResult;
+        }
+        else {
+          // We can retry safely
+        }
+      }
+      else {
+        // Without Retry (CAS) then we have failed regardless of tear
         // CAS failed but handled successfully
-        return std::make_tuple(FailedResult, false);
+        return FailedResult;
       }
     }
   }
@@ -596,27 +642,31 @@ std::tuple<uint32_t, bool> DoCAS32(
         bool CASResult = Atomic128->compare_exchange_strong(TmpExpected, TmpDesired);
         if (CASResult) {
           // Stored successfully
-          return std::make_tuple(Expected, true);
+          return Expected;
         }
         else {
+          if constexpr (Retry) {
+            // If we failed but we have enabled retry then just retry without checking results
+            // CAS can't retry but atomic memory ops need to retry until passing
+            continue;
+          }
+
           // Not successful
           // Now we need to check the results to see if we need to try again
           __uint128_t FailedResultOurBits = TmpExpected & Mask;
           __uint128_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-          __uint128_t FailedDesiredOurBits = TmpDesired & Mask;
           __uint128_t FailedDesiredNotOurBits = TmpDesired & NegMask;
           if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
             // If the bits changed that weren't part of our regular CAS then we need to try again
             continue;
           }
-          if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-            // If the bits changed that we were wanting to change then we have failed and can return
-            // We need to extract the bits and return them in EXPECTED
-            uint32_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-            // CAS failed but handled successfully
-            return std::make_tuple(FailedResult, false);
-          }
+
+          // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+          // This means our CAS fails because what we wanted to store was already stored
+          uint32_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+          // CAS failed but handled successfully
+          return FailedResult;
         }
       }
     }
@@ -655,36 +705,41 @@ std::tuple<uint32_t, bool> DoCAS32(
         bool CASResult = Atomic->compare_exchange_strong(TmpExpected, TmpDesired);
         if (CASResult) {
           // Stored successfully
-          return std::make_tuple(Expected, true);
+          return Expected;
         }
         else {
+          if constexpr (Retry) {
+            // If we failed but we have enabled retry then just retry without checking results
+            // CAS can't retry but atomic memory ops need to retry until passing
+            continue;
+          }
+
           // Not successful
           // Now we need to check the results to see if we can try again
           uint64_t FailedResultOurBits = TmpExpected & Mask;
           uint64_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-          uint64_t FailedDesiredOurBits = TmpDesired & Mask;
           uint64_t FailedDesiredNotOurBits = TmpDesired & NegMask;
 
           if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
             // If the bits changed that weren't part of our regular CAS then we need to try again
             continue;
           }
-          if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-            // If the bits changed that we were wanting to change then we have failed and can return
-            // We need to extract the bits and return them in EXPECTED
-            uint32_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-            // CAS failed but handled successfully
-            return std::make_tuple(FailedResult, false);
-          }
+
+          // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+          // This means our CAS fails because what we wanted to store was already stored
+          uint32_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+          // CAS failed but handled successfully
+          return FailedResult;
         }
       }
     }
   }
 }
 
+template<bool Retry>
 static
-std::tuple<uint64_t, bool> DoCAS64(
+uint64_t DoCAS64(
   uint64_t DesiredSrc,
   uint64_t ExpectedSrc,
   uint64_t Addr,
@@ -729,15 +784,17 @@ std::tuple<uint64_t, bool> DoCAS64(
       uint64_t TmpDesiredLower = TmpDesired;
       uint64_t TmpDesiredUpper = TmpDesired >> 64;
 
+      bool Tear = false;
       if (TmpExpected == TmpActual) {
         if (StoreCAS64(TmpExpectedUpper, TmpDesiredUpper, AddrUpper)) {
           if (StoreCAS64(TmpExpectedLower, TmpDesiredLower, Addr)) {
             // Stored successfully
-            return std::make_tuple(Expected, true);
+            return Expected;
           }
           else {
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
+            Tear = true;
           }
         }
 
@@ -755,18 +812,30 @@ std::tuple<uint64_t, bool> DoCAS64(
       __uint128_t FailedResultOurBits = TmpExpected & Mask;
       __uint128_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-      __uint128_t FailedDesiredOurBits = TmpDesired & Mask;
       __uint128_t FailedDesiredNotOurBits = TmpDesired & NegMask;
       if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
         // If the bits changed that weren't part of our regular CAS then we need to try again
         continue;
       }
-      if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-        // If the bits changed that we were wanting to change then we have failed and can return
-        // We need to extract the bits and return them in EXPECTED
-        uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+
+      // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+      // This means our CAS fails because what we wanted to store was already stored
+      uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+
+      if constexpr (Retry) {
+        if (Tear) {
+          // If we are retrying and tearing then we can't do anything here
+          // XXX: Resolve with TME
+          return FailedResult;
+        }
+        else {
+          // We can retry safely
+        }
+      }
+      else {
+        // Without Retry (CAS) then we have failed regardless of tear
         // CAS failed but handled successfully
-        return std::make_tuple(FailedResult, false);
+        return FailedResult;
       }
     }
   }
@@ -801,35 +870,34 @@ std::tuple<uint64_t, bool> DoCAS64(
       bool CASResult = Atomic128->compare_exchange_strong(TmpExpected, TmpDesired);
       if (CASResult) {
         // Stored successfully
-        return std::make_tuple(Expected, true);
+        return Expected;
       }
       else {
+        if constexpr (Retry) {
+          // If we failed but we have enabled retry then just retry without checking results
+          // CAS can't retry but atomic memory ops need to retry until passing
+          continue;
+        }
+
         // Not successful
         // Now we need to check the results to see if we need to try again
         __uint128_t FailedResultOurBits = TmpExpected & Mask;
         __uint128_t FailedResultNotOurBits = TmpExpected & NegMask;
 
-        __uint128_t FailedDesiredOurBits = TmpDesired & Mask;
         __uint128_t FailedDesiredNotOurBits = TmpDesired & NegMask;
         if ((FailedResultNotOurBits ^ FailedDesiredNotOurBits) != 0) {
           // If the bits changed that weren't part of our regular CAS then we need to try again
           continue;
         }
-        if ((FailedResultOurBits ^ FailedDesiredOurBits) != 0) {
-          // If the bits changed that we were wanting to change then we have failed and can return
-          // We need to extract the bits and return them in EXPECTED
-          uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-          // CAS failed but handled successfully
-          return std::make_tuple(FailedResult, false);
-        }
 
-        // If we got here, that means the CAS failed
-        // NotOurBits didn't change and bits we cared about didn't change
-        ERROR_AND_DIE("Impossible");
+        // This happens in the case that between Load and CAS that something has store our desired in to the memory location
+        // This means our CAS fails because what we wanted to store was already stored
+        uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
+        // CAS failed but handled successfully
+        return FailedResult;
       }
     }
   }
-
 }
 
 bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
@@ -860,7 +928,7 @@ bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
   // 8bit can't be unaligned
   // Only need to handle 16, 32, 64
   if (Size == 2) {
-    auto Res = DoCAS16(
+    auto Res = DoCAS16<false>(
       mcontext->regs[DesiredReg],
       mcontext->regs[ExpectedReg],
       Addr,
@@ -876,12 +944,12 @@ bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
     if (ExpectedReg != 31) {
-      mcontext->regs[ExpectedReg] = std::get<0>(Res);
+      mcontext->regs[ExpectedReg] = Res;
     }
     return true;
   }
   else if (Size == 4) {
-    auto Res = DoCAS32(
+    auto Res = DoCAS32<false>(
       mcontext->regs[DesiredReg],
       mcontext->regs[ExpectedReg],
       Addr,
@@ -897,12 +965,12 @@ bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
     if (ExpectedReg != 31) {
-      mcontext->regs[ExpectedReg] = std::get<0>(Res);
+      mcontext->regs[ExpectedReg] = Res;
     }
     return true;
   }
   else if (Size == 8) {
-    auto Res = DoCAS64(
+    auto Res = DoCAS64<false>(
       mcontext->regs[DesiredReg],
       mcontext->regs[ExpectedReg],
       Addr,
@@ -918,7 +986,7 @@ bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
     if (ExpectedReg != 31) {
-      mcontext->regs[ExpectedReg] = std::get<0>(Res);
+      mcontext->regs[ExpectedReg] = Res;
     }
     return true;
   }
@@ -993,21 +1061,16 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
         break;
     }
 
-    bool Passed = false;
-    while (!Passed) {
-      auto Res = DoCAS16(
-        mcontext->regs[SourceReg],
-        0, // Unused
-        Addr,
-        NOPExpected,
-        DesiredFunction);
-      Passed = std::get<1>(Res);
-      // If we passed and our destination register is not zero
-      // Then we need to update the result register with what was in memory
-      if (Passed &&
-          ResultReg != 31) {
-        mcontext->regs[ResultReg] = std::get<0>(Res);
-      }
+    auto Res = DoCAS16<true>(
+      mcontext->regs[SourceReg],
+      0, // Unused
+      Addr,
+      NOPExpected,
+      DesiredFunction);
+    // If we passed and our destination register is not zero
+    // Then we need to update the result register with what was in memory
+    if (ResultReg != 31) {
+      mcontext->regs[ResultReg] = Res;
     }
     return true;
   }
@@ -1060,21 +1123,16 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
         break;
     }
 
-    bool Passed = false;
-    while (!Passed) {
-      auto Res = DoCAS32(
-        mcontext->regs[SourceReg],
-        0, // Unused
-        Addr,
-        NOPExpected,
-        DesiredFunction);
-      Passed = std::get<1>(Res);
-      // If we passed and our destination register is not zero
-      // Then we need to update the result register with what was in memory
-      if (Passed &&
-          ResultReg != 31) {
-        mcontext->regs[ResultReg] = std::get<0>(Res);
-      }
+    auto Res = DoCAS32<true>(
+      mcontext->regs[SourceReg],
+      0, // Unused
+      Addr,
+      NOPExpected,
+      DesiredFunction);
+    // If we passed and our destination register is not zero
+    // Then we need to update the result register with what was in memory
+    if (ResultReg != 31) {
+      mcontext->regs[ResultReg] = Res;
     }
     return true;
   }
@@ -1127,21 +1185,16 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
         break;
     }
 
-    bool Passed = false;
-    while (!Passed) {
-      auto Res = DoCAS64(
-        mcontext->regs[SourceReg],
-        0, // Unused
-        Addr,
-        NOPExpected,
-        DesiredFunction);
-      Passed = std::get<1>(Res);
-      // If we passed and our destination register is not zero
-      // Then we need to update the result register with what was in memory
-      if (Passed &&
-          ResultReg != 31) {
-        mcontext->regs[ResultReg] = std::get<0>(Res);
-      }
+    auto Res = DoCAS64<true>(
+      mcontext->regs[SourceReg],
+      0, // Unused
+      Addr,
+      NOPExpected,
+      DesiredFunction);
+    // If we passed and our destination register is not zero
+    // Then we need to update the result register with what was in memory
+    if (ResultReg != 31) {
+      mcontext->regs[ResultReg] = Res;
     }
     return true;
   }
