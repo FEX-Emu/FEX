@@ -19,6 +19,7 @@ $end_info$
 #include <bits/types/stack_t.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
+#include <sys/signalfd.h>
 #include <unistd.h>
 
 namespace FEX::HLE {
@@ -688,4 +689,32 @@ namespace FEX::HLE {
 
     return Result == -1 ? -errno : Result;
   }
+
+  uint64_t SignalDelegator::GuestSignalFD(int fd, const uint64_t *set, size_t sigsetsize, int flags) {
+    if (sigsetsize > sizeof(uint64_t)) {
+      return -EINVAL;
+    }
+
+    sigset_t HostSet{};
+    sigemptyset(&HostSet);
+
+    for (size_t i = 0; i < MAX_SIGNALS; ++i) {
+      if (HostHandlers[i + 1].Required) {
+        // For now skip our internal signals
+        continue;
+      }
+
+      if (ThreadData.CurrentSignalMask.Val & (1ULL << i)) {
+        sigaddset(&HostSet, i + 1);
+      }
+    }
+
+    // XXX: This is a barebones implementation just to get applications that listen for SIGCHLD to work
+    // In the future we need our own listern thread that forwards the result
+    // Thread is necessary to prevent deadlocks for a thread that has signaled on the same thread listening to the FD and blocking is enabled
+    uint64_t Result = signalfd(fd, &HostSet, flags);
+
+    return Result == -1 ? -errno : Result;
+  }
+
 }
