@@ -46,7 +46,10 @@ namespace FEXCore::Context {
     MODE_32BIT,
     MODE_64BIT,
   };
+
   using CustomCPUFactoryType = std::function<std::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
+
+  using ExitHandler = std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)>;
 
   /**
    * @brief This initializes internal FEXCore state that is shared between contexts and requires overhead to setup
@@ -90,8 +93,8 @@ namespace FEXCore::Context {
    */
   FEX_DEFAULT_VISIBILITY bool InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
 
-  FEX_DEFAULT_VISIBILITY void SetExitHandler(FEXCore::Context::Context *CTX, std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> handler);
-  FEX_DEFAULT_VISIBILITY std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> GetExitHandler(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY void SetExitHandler(FEXCore::Context::Context *CTX, ExitHandler handler);
+  FEX_DEFAULT_VISIBILITY ExitHandler GetExitHandler(FEXCore::Context::Context *CTX);
 
   /**
    * @brief Pauses execution on the CPU core

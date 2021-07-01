@@ -37,12 +37,11 @@ namespace FEXCore::Context {
     return CTX->InitCore(Loader);
   }
 
-  void SetExitHandler(FEXCore::Context::Context *CTX,
-      std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> handler) {
-    CTX->CustomExitHandler = handler;
+  void SetExitHandler(FEXCore::Context::Context *CTX, ExitHandler handler) {
+    CTX->CustomExitHandler = std::move(handler);
   }
 
-  std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)> GetExitHandler(FEXCore::Context::Context *CTX) {
+  ExitHandler GetExitHandler(FEXCore::Context::Context *CTX) {
     return CTX->CustomExitHandler;
   }
 

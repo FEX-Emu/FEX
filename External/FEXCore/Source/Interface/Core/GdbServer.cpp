@@ -47,11 +47,11 @@ void GdbServer::Break(int signal) {
 }
 
 GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
-    ctx->CustomExitHandler = [this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
+    Context::SetExitHandler(ctx, [this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
         if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
             this->Break(SIGTRAP);
         }
-    };
+    });
 
     // This is a total hack as there is currently no way to resume once hitting a segfault
     // But it's semi-useful for debugging.
