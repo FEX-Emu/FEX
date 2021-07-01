@@ -1,4 +1,4 @@
-# FEX-2106
+# FEX-2107
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -84,10 +84,6 @@ Logic that binds various parts together
 #### driver
 Emulation mainloop related glue logic
 - [Core.cpp](../External/FEXCore/Source/Interface/Core/Core.cpp): Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispatcher and provides the Execution loop entrypoint
-
-#### elf-parsing
-- [ELFContainer.cpp](../External/FEXCore/Source/Utils/ELFContainer.cpp): Loads and parses an elf to memory. Also handles some loading & logic.
-- [ELFSymbolDatabase.cpp](../External/FEXCore/Source/Utils/ELFSymbolDatabase.cpp): Part of our now defunct ld-linux replacement, keeps tracks of all symbols, loads elfs, handles relocations. Small parts of this are used.
 
 #### gdbserver
 - [GdbServer.cpp](../External/FEXCore/Source/Interface/Core/GdbServer.cpp): Provides a gdb interface to the guest state
