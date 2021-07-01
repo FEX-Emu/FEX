@@ -221,13 +221,18 @@ bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
   return false;
 }
 
+template <typename T>
+using CASExpectedFn = T (*)(T Src, T Expected);
+template <typename T>
+using CASDesiredFn = T (*)(T Src, T Desired);
+
 static
 std::tuple<uint16_t, bool> DoCAS16(
   uint16_t DesiredSrc,
   uint16_t ExpectedSrc,
   uint64_t Addr,
-  std::function<uint16_t(uint16_t SrcVal, uint16_t Expected)> ExpectedFunction,
-  std::function<uint16_t(uint16_t SrcVal, uint16_t Desired)> DesiredFunction) {
+  CASExpectedFn<uint16_t> ExpectedFunction,
+  CASDesiredFn<uint16_t> DesiredFunction) {
   // 16 bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) == 15) {
@@ -476,8 +481,8 @@ std::tuple<uint32_t, bool> DoCAS32(
   uint32_t DesiredSrc,
   uint32_t ExpectedSrc,
   uint64_t Addr,
-  std::function<uint32_t(uint32_t SrcVal, uint32_t Expected)> ExpectedFunction,
-  std::function<uint32_t(uint32_t SrcVal, uint32_t Desired)> DesiredFunction) {
+  CASExpectedFn<uint32_t> ExpectedFunction,
+  CASDesiredFn<uint32_t> DesiredFunction) {
   // 32 bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 12) {
@@ -683,8 +688,8 @@ std::tuple<uint64_t, bool> DoCAS64(
   uint64_t DesiredSrc,
   uint64_t ExpectedSrc,
   uint64_t Addr,
-  std::function<uint64_t(uint64_t SrcVal, uint64_t Expected)> ExpectedFunction,
-  std::function<uint64_t(uint64_t SrcVal, uint64_t Desired)> DesiredFunction) {
+  CASExpectedFn<uint64_t> ExpectedFunction,
+  CASDesiredFn<uint64_t> DesiredFunction) {
   // 64bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 8) {
@@ -964,7 +969,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
       return Desired;
     };
 
-    std::function<uint16_t(uint16_t SrcVal, uint16_t Desired)> DesiredFunction;
+    CASDesiredFn<uint16_t> DesiredFunction{};
 
     switch (Op) {
       case ATOMIC_ADD_OP:
@@ -1031,7 +1036,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
       return Desired;
     };
 
-    std::function<uint32_t(uint32_t SrcVal, uint32_t Desired)> DesiredFunction;
+    CASDesiredFn<uint32_t> DesiredFunction{};
 
     switch (Op) {
       case ATOMIC_ADD_OP:
@@ -1098,7 +1103,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
       return Desired;
     };
 
-    std::function<uint64_t(uint64_t SrcVal, uint64_t Desired)> DesiredFunction;
+    CASDesiredFn<uint64_t> DesiredFunction{};
 
     switch (Op) {
       case ATOMIC_ADD_OP:
