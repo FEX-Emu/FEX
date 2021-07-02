@@ -939,7 +939,7 @@ void GdbServer::GdbServerLoop() {
 
     {
         std::lock_guard lk(sendMutex);
-        CommsStream.release();
+        CommsStream.reset();
     }
   }
 }
