@@ -52,14 +52,6 @@ namespace FEX::HLE {
       SYSCALL_STUB(restart_syscall);
     });
 
-    REGISTER_SYSCALL_IMPL(signalfd, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const sigset_t *mask, size_t sizemask) -> uint64_t {
-      SYSCALL_STUB(signalfd);
-    });
-
-    REGISTER_SYSCALL_IMPL(signalfd4, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const sigset_t *mask, size_t sizemask, int flags) -> uint64_t {
-      SYSCALL_STUB(signalfd4);
-    });
-
     REGISTER_SYSCALL_IMPL(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, siginfo_t *info) -> uint64_t {
       SYSCALL_STUB(rt_tgsigqueueinfo);
     });

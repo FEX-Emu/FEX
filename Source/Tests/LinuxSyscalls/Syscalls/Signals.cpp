@@ -42,6 +42,14 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL(signalfd, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const uint64_t *mask, size_t sigsetsize) -> uint64_t {
+      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, 0);
+    });
+
+    REGISTER_SYSCALL_IMPL(signalfd4, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const uint64_t *mask, size_t sigsetsize, int flags) -> uint64_t {
+      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, flags);
+    });
+
     if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
       REGISTER_SYSCALL_IMPL(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, siginfo_t *info, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_pidfd_send_signal, pidfd, sig, info, flags);
