@@ -40,20 +40,12 @@ namespace FEX::HLE {
       return -EPERM;
     });
 
-    REGISTER_SYSCALL_IMPL(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, siginfo_t *uinfo) -> uint64_t {
-      SYSCALL_STUB(rt_sigqueueinfo);
-    });
-
     REGISTER_SYSCALL_IMPL(modify_ldt, [](FEXCore::Core::CpuStateFrame *Frame, int func, void *ptr, unsigned long bytecount) -> uint64_t {
       SYSCALL_STUB(modify_ldt);
     });
 
     REGISTER_SYSCALL_IMPL(restart_syscall, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       SYSCALL_STUB(restart_syscall);
-    });
-
-    REGISTER_SYSCALL_IMPL(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, siginfo_t *info) -> uint64_t {
-      SYSCALL_STUB(rt_tgsigqueueinfo);
     });
 
     REGISTER_SYSCALL_IMPL(rseq, [](FEXCore::Core::CpuStateFrame *Frame,  struct rseq  *rseq, uint32_t rseq_len, int flags, uint32_t sig) -> uint64_t {
