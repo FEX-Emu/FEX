@@ -105,7 +105,12 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   // Don't need this offset if we aren't going to be putting siginfo in to it
   NewGuestSP -= 128;
 
-  if (GuestAction->sa_flags & SA_SIGINFO) {
+  // siginfo_t
+  siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
+
+  if (GuestAction->sa_flags & SA_SIGINFO &&
+      !(HostSigInfo->si_code == SI_QUEUE || // If the siginfo comes from sigqueue or user then we don't need to check
+        HostSigInfo->si_code == SI_USER)) {
     if (SRAEnabled) {
       if (!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), false)) {
         LOGMAN_THROW_A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
@@ -173,8 +178,6 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       guest_uctx->uc_stack.ss_sp = GuestStack->ss_sp;
       guest_uctx->uc_stack.ss_size = GuestStack->ss_size;
 
-      // siginfo_t
-      siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
       // aarch64 and x86_64 siginfo_t matches. We can just copy this over
       // SI_USER could also potentially have random data in it, needs to be bit perfect
       // For guest faults we don't have a real way to reconstruct state to a real guest RIP
@@ -191,7 +194,6 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       uint64_t SigInfoLocation = NewGuestSP;
 
       FEXCore::x86::siginfo_t *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(SigInfoLocation);
-      siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
 
       // These three elements are in every siginfo
       guest_siginfo->si_signo = HostSigInfo->si_signo;
