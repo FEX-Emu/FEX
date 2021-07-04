@@ -2751,8 +2751,15 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   }
 
   auto Dest = _Mul(Src1, Src2);
+  OrderedNode *ResultHigh{};
+  if (Size < 8) {
+    ResultHigh = _Sbfe(Size * 8, Size * 8, Dest);
+  }
+  else {
+    ResultHigh = _MulH(Src1, Src2);
+  }
   StoreResult(GPRClass, Op, Dest, -1);
-  GenerateFlags_MUL(Op, Dest, _MulH(Src1, Src2));
+  GenerateFlags_MUL(Op, Dest, ResultHigh);
 }
 
 void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
@@ -2766,8 +2773,16 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   }
 
   auto Dest = _Mul(Src1, Src2);
+  OrderedNode *ResultHigh{};
+  if (Size < 8) {
+    ResultHigh = _Sbfe(Size * 8, Size * 8, Dest);
+  }
+  else {
+    ResultHigh = _MulH(Src1, Src2);
+  }
+
   StoreResult(GPRClass, Op, Dest, -1);
-  GenerateFlags_MUL(Op, Dest, _MulH(Src1, Src2));
+  GenerateFlags_MUL(Op, Dest, ResultHigh);
 }
 
 void OpDispatchBuilder::IMULOp(OpcodeArgs) {
@@ -2800,8 +2815,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     // Make sure they get Zext correctly
     auto LocalResult = _Bfe(32, 0, Result);
     auto LocalResultHigh = _Bfe(32, 32, Result);
-    Result = _Sbfe(32, 0, Result);
     ResultHigh = _Sbfe(32, 32, Result);
+    Result = _Sbfe(32, 0, Result);
     _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), LocalResult);
     _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]), LocalResultHigh);
   }
