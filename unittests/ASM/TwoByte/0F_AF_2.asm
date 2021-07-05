@@ -1,7 +1,7 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "R15": "0x0000000000c00030"
+    "R15": "0x000f000000c00030"
   }
 }
 %endif
@@ -27,6 +27,17 @@
 
 mov r8, 0xe0000000
 mov r15, 0
+
+; Negative * Negative
+mov eax, 0x00008000
+mov ebx, 0x00008000
+imul ax, bx
+ofcfmerge
+
+mov eax, 0x80000000
+mov ebx, 0x80000000
+imul eax, ebx
+ofcfmerge
 
 ; Positive * Positive
 mov rax, 128
