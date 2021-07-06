@@ -105,7 +105,13 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 find_package(Python 3.0 REQUIRED COMPONENTS Interpreter)
-pkg_check_modules(XXHASH libxxhash REQUIRED)
+pkg_check_modules(XXHASH libxxhash>=0.8.0 QUIET)
+
+if (NOT XXHASH_FOUND)
+  message(STATUS "xxHash not found. Using Externals")
+  add_subdirectory(External/xxhash/)
+  include_directories(External/xxhash/)
+endif()
 
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")

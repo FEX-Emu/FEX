@@ -33,7 +33,7 @@ $end_info$
 #include "Interface/HLE/Thunks/Thunks.h"
 #include "FEXCore/Utils/Allocator.h"
 
-#include <xxh3.h>
+#include <xxhash.h>
 #include <fstream>
 #include <unistd.h>
 #include <filesystem>

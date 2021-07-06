@@ -39,3 +39,6 @@
 [submodule "External/drm-headers"]
 	path = External/drm-headers
 	url = https://github.com/FEX-Emu/drm-headers.git
+[submodule "External/xxhash"]
+	path = External/xxhash
+	url = https://github.com/FEX-Emu/xxHash.git
