@@ -393,7 +393,7 @@ int main(int argc, char **argv, char **const envp) {
   if (!std::filesystem::exists(Program)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
-    LogMan::Msg::E("%s: command not found", Program.c_str());
+    fprintf(stderr, "%s: command not found\n", Program.c_str());
     return -ENOEXEC;
   }
 
@@ -409,7 +409,16 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
-    LogMan::Msg::E("Invalid or Unsupported elf file.");
+    fprintf(stderr, "Invalid or Unsupported elf file.\n");
+#ifdef _M_ARM_64
+    fprintf(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
+    fprintf(stderr, "Current RootFS path set to '%s'\n", LDPath().c_str());
+    std::error_code ec;
+    if (LDPath().size() == 0 ||
+        std::filesystem::exists(LDPath(), ec) == false) {
+      fprintf(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
+    }
+#endif
     return -ENOEXEC;
   }
 
