@@ -12,6 +12,7 @@ $end_info$
 
 #include <iterator>
 #include <unordered_set>
+#include <sys/mman.h>
 
 #define SRA_DEBUG(...) // printf(__VA_ARGS__)
 
@@ -177,6 +178,7 @@ namespace {
   };
 
   static_assert(sizeof(RegisterNode) == 128 * 4);
+  constexpr size_t REGISTER_NODES_PER_PAGE = FEXCore::Core::PAGE_SIZE / sizeof(RegisterNode);
 
   struct RegisterSet {
     std::vector<RegisterClass> Classes;
@@ -204,8 +206,8 @@ namespace {
   struct RegisterGraph {
     std::unique_ptr<FEXCore::IR::RegisterAllocationData, FEXCore::IR::RegisterAllocationDataDeleter> AllocData;
     RegisterSet Set;
-    std::vector<RegisterNode> Nodes;
-    uint32_t NodeCount;
+    RegisterNode *Nodes{};
+    uint32_t NodeCount{};
     std::vector<SpillStackUnit> SpillStack;
     std::unordered_map<uint32_t, std::unordered_set<uint32_t>> BlockPredecessors;
     std::unordered_map<uint32_t, std::unordered_set<uint32_t>> VisitedNodePredecessors;
@@ -254,15 +256,30 @@ namespace {
   }
 
   void FreeRegisterGraph(RegisterGraph *Graph) {
+    if (Graph->Nodes) {
+      ::munmap(Graph->Nodes, Graph->NodeCount * sizeof(RegisterNode));
+    }
     delete Graph;
   }
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount) {
-    NodeCount = AlignUp(NodeCount, sizeof(uint64_t));
-    Graph->Nodes.clear();
-    Graph->Nodes.resize(NodeCount);
+    NodeCount = AlignUp(NodeCount, REGISTER_NODES_PER_PAGE);
+    if (Graph->NodeCount < NodeCount) {
+      if (Graph->Nodes) {
+        // If the needed node count is smaller than what we currently have allocated
+        // then unmap it so we can remap a larger memory space
+        ::munmap(Graph->Nodes, Graph->NodeCount * sizeof(RegisterNode));
+      }
+
+      // We don't have a mapping, allocate a space that gives us a default zero mapping
+      Graph->Nodes = reinterpret_cast<RegisterNode *>(::mmap(0, NodeCount * sizeof(RegisterNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+    }
+    else {
+      // If we already have an allocation then zero out how many nodes we need
+      memset(Graph->Nodes, 0, NodeCount * sizeof(RegisterNode));
+    }
+
     Graph->VisitedNodePredecessors.clear();
-    Graph->AllocData.reset();
     Graph->AllocData.reset((FEXCore::IR::RegisterAllocationData*)FEXCore::Allocator::malloc(FEXCore::IR::RegisterAllocationData::Size(NodeCount)));
     memset(&Graph->AllocData->Map[0], INVALID_REGCLASS.Raw, NodeCount);
     Graph->AllocData->MapCount = NodeCount;
