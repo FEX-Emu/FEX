@@ -81,6 +81,10 @@ set (SRCS
   Interface/Core/Frontend.cpp
   Interface/Core/GdbServer.cpp
   Interface/Core/HostFeatures.cpp
+  Interface/Core/OpcodeDispatcher/Crypto.cpp
+  Interface/Core/OpcodeDispatcher/Flags.cpp
+  Interface/Core/OpcodeDispatcher/Vector.cpp
+  Interface/Core/OpcodeDispatcher/X87.cpp
   Interface/Core/OpcodeDispatcher.cpp
   Interface/Core/X86Tables.cpp
   Interface/Core/X86DebugInfo.cpp

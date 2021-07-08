@@ -270,15 +270,15 @@ public:
   template<size_t ElementSize, bool HalfSize, bool Low>
   void PSHUFDOp(OpcodeArgs);
   void MOVDOp(OpcodeArgs);
-  template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
+  template<size_t ElementSize>
   void PSRLDOp(OpcodeArgs);
   template<size_t ElementSize>
   void PSRLI(OpcodeArgs);
   template<size_t ElementSize>
   void PSLLI(OpcodeArgs);
-  template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
+  template<size_t ElementSize>
   void PSLL(OpcodeArgs);
-  template<size_t ElementSize, bool Scalar, uint32_t SrcIndex>
+  template<size_t ElementSize>
   void PSRAOp(OpcodeArgs);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
@@ -299,9 +299,9 @@ public:
   void Vector_CVT_Float_To_Float(OpcodeArgs);
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
-  template<size_t SrcElementSize, bool Signed, bool Widen>
+  template<size_t SrcElementSize, bool Widen>
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  template<size_t SrcElementSize, bool HostRoundingMode>
   void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs);
   void MASKMOVOp(OpcodeArgs);
   void MOVBetweenGPR_FPR(OpcodeArgs);
@@ -501,9 +501,19 @@ private:
   uint8_t GetSrcSize(FEXCore::X86Tables::DecodedOp Op) const;
 
   template<unsigned BitOffset>
-  void SetRFLAG(OrderedNode *Value);
-  void SetRFLAG(OrderedNode *Value, unsigned BitOffset);
-  OrderedNode *GetRFLAG(unsigned BitOffset);
+  void SetRFLAG(OrderedNode *Value) {
+    flagsOp = FLAGS_OP_NONE;
+    _StoreFlag(_Bfe(1, 0, Value), BitOffset);
+  }
+
+  void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
+    flagsOp = FLAGS_OP_NONE;
+    _StoreFlag(_Bfe(1, 0, Value), BitOffset);
+  }
+
+  OrderedNode *GetRFLAG(unsigned BitOffset) {
+    return _LoadFlag(BitOffset);
+  }
 
   OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
