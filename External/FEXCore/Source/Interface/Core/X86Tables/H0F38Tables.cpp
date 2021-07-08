@@ -4,6 +4,8 @@ tags: frontend|x86-tables
 $end_info$
 */
 
+#include <FEXCore/Core/Context.h>
+
 #include "Interface/Core/X86Tables/X86Tables.h"
 
 namespace FEXCore::X86Tables {

@@ -6,7 +6,6 @@ $end_info$
 
 #pragma once
 
-#include "Interface/Core/LookupCache.h"
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 

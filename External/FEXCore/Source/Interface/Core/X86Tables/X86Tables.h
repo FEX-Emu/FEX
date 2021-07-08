@@ -6,6 +6,7 @@ $end_info$
 
 #pragma once
 #include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/Core/Context.h>
 
 #include <FEXCore/Utils/LogManager.h>
 
@@ -112,6 +113,8 @@ static inline void GenerateX87Table(X86InstInfo *FinalTable, U16U8InfoStruct con
     }
   }
 };
+
+void InitializeInfoTables(Context::OperatingMode Mode);
 
 }
 

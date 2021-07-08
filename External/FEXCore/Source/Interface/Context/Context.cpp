@@ -2,6 +2,7 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Core.h"
 #include "Interface/Core/OpcodeDispatcher.h"
+#include "Interface/Core/X86Tables/X86Tables.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
