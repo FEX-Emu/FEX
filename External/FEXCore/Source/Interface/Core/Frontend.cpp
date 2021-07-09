@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <set>
+#include <sys/mman.h>
 
 namespace FEXCore::Frontend {
 using namespace FEXCore::X86Tables;
@@ -122,7 +123,16 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
 
 Decoder::Decoder(FEXCore::Context::Context *ctx)
   : CTX {ctx} {
-  DecodedBuffer.resize(DefaultDecodedBufferSize);
+  // Using mmap is a start-up time optimization
+  // Take advantage of page faulting to reduce startup time for minimal runtime cost
+  DecodedBuffer =
+    reinterpret_cast<FEXCore::X86Tables::DecodedInst *>(
+      ::mmap(0, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize,
+      PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+}
+
+Decoder::~Decoder() {
+  ::munmap(DecodedBuffer, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize);
 }
 
 uint8_t Decoder::ReadByte() {
@@ -214,28 +224,28 @@ void Decoder::DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RDI},
     {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RSI},
     {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RDI},
-    {FEXCore::X86State::REG_RSI, 255},
-    {FEXCore::X86State::REG_RDI, 255},
-    {255, 255},
-    {FEXCore::X86State::REG_RBX, 255},
+    {FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_INVALID, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_INVALID},
     // Mod = 0b01
     {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RSI},
     {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RDI},
     {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RSI},
     {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RDI},
-    {FEXCore::X86State::REG_RSI, 255},
-    {FEXCore::X86State::REG_RDI, 255},
-    {FEXCore::X86State::REG_RBP, 255},
-    {FEXCore::X86State::REG_RBX, 255},
+    {FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_INVALID},
     // Mod = 0b10
     {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RSI},
     {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_RDI},
     {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RSI},
     {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_RDI},
-    {FEXCore::X86State::REG_RSI, 255},
-    {FEXCore::X86State::REG_RDI, 255},
-    {FEXCore::X86State::REG_RBP, 255},
-    {FEXCore::X86State::REG_RBX, 255},
+    {FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_RBP, FEXCore::X86State::REG_INVALID},
+    {FEXCore::X86State::REG_RBX, FEXCore::X86State::REG_INVALID},
   }};
 
   uint8_t LookupIndex = ModRM.mod << 3 | ModRM.rm;
@@ -929,7 +939,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
   }
 
   if (DecodeInst->Dest.IsGPR()) {
-    assert(DecodeInst->Dest.Data.GPR.GPR != 255);
+    assert(DecodeInst->Dest.Data.GPR.GPR != FEXCore::X86State::REG_INVALID);
   }
 
   return true;
@@ -1091,7 +1101,7 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
       }
 
       if (DecodedSize >= CTX->Config.MaxInstPerBlock ||
-          DecodedSize >= DecodedBuffer.size()) {
+          DecodedSize >= DefaultDecodedBufferSize) {
         break;
       }
 
@@ -1108,7 +1118,7 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
 
     // Copy over only the number of instructions we decoded
     CurrentBlockDecoding.NumInstructions = BlockNumberOfInstructions;
-    CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer.at(BlockStartOffset);
+    CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer[BlockStartOffset];
   }
 
 

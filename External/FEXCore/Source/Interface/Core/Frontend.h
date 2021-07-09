@@ -24,6 +24,7 @@ public:
   };
 
   Decoder(FEXCore::Context::Context *ctx);
+  ~Decoder();
   bool DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC);
 
   std::vector<DecodedBlocks> const *GetDecodedBlocks() const {
@@ -50,7 +51,7 @@ private:
   bool NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op);
 
   static constexpr size_t DefaultDecodedBufferSize = 0x10000;
-  std::vector<FEXCore::X86Tables::DecodedInst> DecodedBuffer;
+  FEXCore::X86Tables::DecodedInst *DecodedBuffer{};
   size_t DecodedSize {};
 
   uint8_t const *InstStream;

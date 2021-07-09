@@ -170,3 +170,6 @@ stat_times_test
 # The behaviour of this changes depending on if you have asserts enabled or not
 # siginfo_t with unsynchronized context
 pause_test
+
+# ARMv8.4 periodically flakes on this one
+rtsignal_test
