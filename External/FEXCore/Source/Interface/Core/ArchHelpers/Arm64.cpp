@@ -1393,6 +1393,140 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
   return false;
 }
 
+bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+
+  if (info->si_code != BUS_ADRALN) {
+    // This only handles alignment problems
+    return false;
+  }
+  uint32_t Size = 1 << (Instr >> 30);
+
+  uint32_t ResultReg = Instr & 0b11111;
+  uint32_t AddressReg = (Instr >> 5) & 0b11111;
+
+  uint64_t Addr = mcontext->regs[AddressReg];
+
+  if (Size == 2) {
+    auto Res = DoLoad16(Addr);
+    // We set the result register if it isn't a zero register
+    if (ResultReg != 31) {
+      mcontext->regs[ResultReg] = Res;
+    }
+    return true;
+  }
+  else if (Size == 4) {
+    auto Res = DoLoad32(Addr);
+    // We set the result register if it isn't a zero register
+    if (ResultReg != 31) {
+      mcontext->regs[ResultReg] = Res;
+    }
+    return true;
+  }
+  else if (Size == 8) {
+    auto Res = DoLoad64(Addr);
+    // We set the result register if it isn't a zero register
+    if (ResultReg != 31) {
+      mcontext->regs[ResultReg] = Res;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+
+  if (info->si_code != BUS_ADRALN) {
+    // This only handles alignment problems
+    return false;
+  }
+  uint32_t Size = 1 << (Instr >> 30);
+
+  uint32_t DataReg = Instr & 0x1F;
+  uint32_t AddressReg = (Instr >> 5) & 0b11111;
+
+  uint64_t Addr = mcontext->regs[AddressReg];
+
+  constexpr bool DoRetry = false;
+  if (Size == 2) {
+    DoCAS16<DoRetry>(
+      mcontext->regs[DataReg],
+      0, // Unused
+      Addr,
+      [](uint16_t SrcVal, uint16_t) -> uint16_t {
+        // Expected is just src
+        return SrcVal;
+      },
+      [](uint16_t, uint16_t Desired) -> uint16_t {
+        // Desired is just Desired
+        return Desired;
+      });
+    return true;
+  }
+  else if (Size == 4) {
+    DoCAS32<DoRetry>(
+      mcontext->regs[DataReg],
+      0, // Unused
+      Addr,
+      [](uint32_t SrcVal, uint32_t) -> uint32_t {
+        // Expected is just src
+        return SrcVal;
+      },
+      [](uint32_t, uint32_t Desired) -> uint32_t {
+        // Desired is just Desired
+        return Desired;
+      });
+    return true;
+  }
+  else if (Size == 8) {
+    DoCAS64<DoRetry>(
+      mcontext->regs[DataReg],
+      0, // Unused
+      Addr,
+      [](uint64_t SrcVal, uint64_t) -> uint64_t {
+        // Expected is just src
+        return SrcVal;
+      },
+      [](uint64_t, uint64_t Desired) -> uint64_t {
+        // Desired is just Desired
+        return Desired;
+      });
+    return true;
+  }
+
+  return false;
+}
+
+bool HandleAtomicLoad128(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+
+  if (info->si_code != BUS_ADRALN) {
+    // This only handles alignment problems
+    return false;
+  }
+  uint32_t ResultReg = Instr & 0b11111;
+  uint32_t ResultReg2 = (Instr >> 10) & 0x1F;
+  uint32_t AddressReg = (Instr >> 5) & 0b11111;
+
+  uint64_t Addr = mcontext->regs[AddressReg];
+
+  auto Res = DoLoad128(Addr);
+  // We set the result register if it isn't a zero register
+  if (ResultReg != 31) {
+    mcontext->regs[ResultReg] = std::get<0>(Res);
+  }
+  if (ResultReg2 != 31) {
+    mcontext->regs[ResultReg2] = std::get<1>(Res);
+  }
+
+  return true;
+}
+
 uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);

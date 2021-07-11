@@ -72,6 +72,9 @@ namespace FEXCore::ArchHelpers::Arm64 {
     return (Instr >> RM_OFFSET) & REGISTER_MASK;
   }
 
+  bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr);
+  bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr);
+  bool HandleAtomicLoad128(void *_ucontext, void *_info, uint32_t Instr);
   uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info);
   bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr);
   bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr);
