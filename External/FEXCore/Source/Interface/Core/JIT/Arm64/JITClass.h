@@ -257,6 +257,7 @@ private:
   DEF_OP(AtomicFetchAnd);
   DEF_OP(AtomicFetchOr);
   DEF_OP(AtomicFetchXor);
+  DEF_OP(AtomicFetchNeg);
 
   ///< Branch ops
   DEF_OP(GuestCallDirect);

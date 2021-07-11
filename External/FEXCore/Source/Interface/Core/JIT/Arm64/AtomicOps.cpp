@@ -877,6 +877,56 @@ DEF_OP(AtomicFetchXor) {
   }
 }
 
+DEF_OP(AtomicFetchNeg) {
+  auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
+  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+
+  // TMP2-TMP3
+  switch (Op->Size) {
+    case 1: {
+      aarch64::Label LoopTop;
+      bind(&LoopTop);
+      ldaxrb(TMP2.W(), MemOperand(MemSrc));
+      neg(TMP3.W(), TMP2.W());
+      stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+      cbnz(TMP4.W(), &LoopTop);
+      mov(GetReg<RA_32>(Node), TMP2.W());
+      break;
+    }
+    case 2: {
+      aarch64::Label LoopTop;
+      bind(&LoopTop);
+      ldaxrh(TMP2.W(), MemOperand(MemSrc));
+      neg(TMP3.W(), TMP2.W());
+      stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+      cbnz(TMP4.W(), &LoopTop);
+      mov(GetReg<RA_32>(Node), TMP2.W());
+      break;
+    }
+    case 4: {
+      aarch64::Label LoopTop;
+      bind(&LoopTop);
+      ldaxr(TMP2.W(), MemOperand(MemSrc));
+      neg(TMP3.W(), TMP2.W());
+      stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+      cbnz(TMP4.W(), &LoopTop);
+      mov(GetReg<RA_32>(Node), TMP2.W());
+      break;
+    }
+    case 8: {
+      aarch64::Label LoopTop;
+      bind(&LoopTop);
+      ldaxr(TMP2, MemOperand(MemSrc));
+      neg(TMP3, TMP2);
+      stlxr(TMP4, TMP3, MemOperand(MemSrc));
+      cbnz(TMP4, &LoopTop);
+      mov(GetReg<RA_64>(Node), TMP2);
+      break;
+    }
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
+  }
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterAtomicHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -893,6 +943,7 @@ void Arm64JITCore::RegisterAtomicHandlers() {
   REGISTER_OP(ATOMICFETCHAND, AtomicFetchAnd);
   REGISTER_OP(ATOMICFETCHOR,  AtomicFetchOr);
   REGISTER_OP(ATOMICFETCHXOR, AtomicFetchXor);
+  REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);
 #undef REGISTER_OP
 }
 }
