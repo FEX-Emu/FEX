@@ -3715,20 +3715,30 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::NEGOp(OpcodeArgs) {
-  if (DestIsLockedMem(Op)) {
-    LogMan::Msg::E("Can't handle LOCK on NEG");
-    DecodeFailure = true;
-    return;
-  }
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
+
+  auto Size = GetSrcSize(Op);
   auto ZeroConst = _Constant(0);
-  OrderedNode *Result = _Sub(ZeroConst, Dest);
 
-  StoreResult(GPRClass, Op, Result, -1);
+  OrderedNode *Dest{};
+  OrderedNode *Result{};
 
-  auto Size = GetSrcSize(Op) * 8;
-  if (Size < 32)
-    Result = _Bfe(Size, 0, Result);
+  if (DestIsLockedMem(Op)) {
+    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+
+    Dest = _AtomicFetchNeg(DestMem, Size);
+    Result = _Neg(Dest);
+  }
+  else {
+    Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+    Result = _Neg(Dest);
+
+    StoreResult(GPRClass, Op, Result, -1);
+  }
+
+  if (Size < 4)
+    Result = _Bfe(Size * 8, 0, Result);
 
   GenerateFlags_SUB(Op, Result, ZeroConst, Dest);
 }
