@@ -102,11 +102,11 @@ uint8_t AtomicFetchNeg(uint8_t *Addr) {
 
   __asm__ volatile(
   R"(
-  .AtomicFetchNeg8:
+  1:
     ldaxrb %w[Result], [%[Memory]];
     neg %w[Tmp], %w[Result];
     stlxrb %w[TmpStatus], %w[Tmp], [%[Memory]];
-    cbnz %w[TmpStatus], .AtomicFetchNeg8;
+    cbnz %w[TmpStatus], 1b;
   )"
   : [Result] "=r" (Result)
   , [Tmp] "=r" (Tmp)
@@ -125,11 +125,11 @@ uint16_t AtomicFetchNeg(uint16_t *Addr) {
 
   __asm__ volatile(
   R"(
-  .AtomicFetchNeg16:
+  1:
     ldaxrh %w[Result], [%[Memory]];
     neg %w[Tmp], %w[Result];
     stlxrh %w[TmpStatus], %w[Tmp], [%[Memory]];
-    cbnz %w[TmpStatus], .AtomicFetchNeg16;
+    cbnz %w[TmpStatus], 1b;
   )"
   : [Result] "=r" (Result)
   , [Tmp] "=r" (Tmp)
@@ -148,11 +148,11 @@ uint32_t AtomicFetchNeg(uint32_t *Addr) {
 
   __asm__ volatile(
   R"(
-  .AtomicFetchNeg32:
+  1:
     ldaxr %w[Result], [%[Memory]];
     neg %w[Tmp], %w[Result];
     stlxr %w[TmpStatus], %w[Tmp], [%[Memory]];
-    cbnz %w[TmpStatus], .AtomicFetchNeg32;
+    cbnz %w[TmpStatus], 1b;
   )"
   : [Result] "=r" (Result)
   , [Tmp] "=r" (Tmp)
@@ -171,11 +171,11 @@ uint64_t AtomicFetchNeg(uint64_t *Addr) {
 
   __asm__ volatile(
   R"(
-  .AtomicFetchNeg64:
+  1:
     ldaxr %[Result], [%[Memory]];
     neg %[Tmp], %[Result];
     stlxr %w[TmpStatus], %[Tmp], [%[Memory]];
-    cbnz %w[TmpStatus], .AtomicFetchNeg64;
+    cbnz %w[TmpStatus], 1b;
   )"
   : [Result] "=r" (Result)
   , [Tmp] "=r" (Tmp)
