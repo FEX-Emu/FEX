@@ -806,7 +806,6 @@ DEF_OP(ParanoidLoadMemTSO) {
     }
     else {
       auto Dst = GetReg<RA_64>(Node);
-      nop();
       switch (Op->Size) {
         case 2:
           ldarh(Dst, MemSrc);
@@ -819,29 +818,22 @@ DEF_OP(ParanoidLoadMemTSO) {
           break;
         default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
       }
-      nop();
     }
   }
   else {
     auto Dst = GetDst(Node);
     switch (Op->Size) {
       case 2:
-        nop();
-        ldarh(TMP1, MemSrc);
-        nop();
-        fmov(Dst, TMP1);
+        ldarh(TMP1.W(), MemSrc);
+        fmov(Dst.H(), TMP1.W());
         break;
       case 4:
-        nop();
         ldar(TMP1.W(), MemSrc);
-        nop();
-        fmov(Dst, TMP1);
+        fmov(Dst.S(), TMP1.W());
         break;
       case 8:
-        nop();
         ldar(TMP1, MemSrc);
-        nop();
-        fmov(Dst, TMP1);
+        fmov(Dst.D(), TMP1);
         break;
       case 16:
         nop();
@@ -869,7 +861,6 @@ DEF_OP(ParanoidStoreMemTSO) {
       stlrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
     }
     else {
-      nop();
       switch (Op->Size) {
         case 2:
           stlrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
@@ -882,35 +873,28 @@ DEF_OP(ParanoidStoreMemTSO) {
           break;
         default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
       }
-      nop();
     }
   }
   else {
     auto Src = GetSrc(Op->Header.Args[1].ID());
     if (Op->Size == 1) {
       // 8bit load is always aligned to natural alignment
-      mov(TMP1, Src.V4S(), 0);
+      mov(TMP1.W(), Src.V16B(), 0);
       stlrb(TMP1, MemSrc);
     }
     else {
       switch (Op->Size) {
         case 2:
-          mov(TMP1, Src.V4S(), 0);
-          nop();
+          mov(TMP1.W(), Src.V8H(), 0);
           stlrh(TMP1, MemSrc);
-          nop();
           break;
         case 4:
-          mov(TMP1, Src.V4S(), 0);
-          nop();
+          mov(TMP1.W(), Src.V4S(), 0);
           stlr(TMP1.W(), MemSrc);
-          nop();
           break;
         case 8:
           mov(TMP1, Src.V2D(), 0);
-          nop();
           stlr(TMP1, MemSrc);
-          nop();
           break;
         case 16: {
           // Move vector to GPRs

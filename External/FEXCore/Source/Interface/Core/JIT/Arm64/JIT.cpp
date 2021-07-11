@@ -345,26 +345,52 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
     0b1011'0000'0000; // Inner shareable all
   if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00 || // LDAR*
       (Instr & 0x3F'FF'FC'00) == 0x38'BF'C0'00) { // LDAPR*
-    uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
-    LDR |= Size << 30;
-    LDR |= AddrReg << 5;
-    LDR |= DataReg;
-    PC[-1] = DMB;
-    PC[0] = LDR;
-    PC[1] = DMB;
-    // Back up one instruction and have another go
-    ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+    if (ParanoidTSO()) {
+      if (FEXCore::ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr)) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+        return true;
+      }
+      else {
+        LogMan::Msg::E("Unhandled JIT SIGBUS LDAR*: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+        return false;
+      }
+    }
+    else {
+      uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
+      LDR |= Size << 30;
+      LDR |= AddrReg << 5;
+      LDR |= DataReg;
+      PC[-1] = DMB;
+      PC[0] = LDR;
+      PC[1] = DMB;
+      // Back up one instruction and have another go
+      ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+    }
   }
   else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
-    uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
-    STR |= Size << 30;
-    STR |= AddrReg << 5;
-    STR |= DataReg;
-    PC[-1] = DMB;
-    PC[0] = STR;
-    PC[1] = DMB;
-    // Back up one instruction and have another go
-    ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+    if (ParanoidTSO()) {
+      if (FEXCore::ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr)) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+        return true;
+      }
+      else {
+        LogMan::Msg::E("Unhandled JIT SIGBUS STLR*: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+        return false;
+      }
+    }
+    else {
+      uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
+      STR |= Size << 30;
+      STR |= AddrReg << 5;
+      STR |= DataReg;
+      PC[-1] = DMB;
+      PC[0] = STR;
+      PC[1] = DMB;
+      // Back up one instruction and have another go
+      ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+    }
   }
   else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXP_MASK) == FEXCore::ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
     uint32_t DataReg2 = (Instr >> 10) & 0x1F;
