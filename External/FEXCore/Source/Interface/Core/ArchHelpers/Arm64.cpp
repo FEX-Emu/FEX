@@ -8,6 +8,27 @@
 #include <signal.h>
 
 namespace FEXCore::ArchHelpers::Arm64 {
+static __uint128_t LoadAcquire128(uint64_t Addr) {
+  __uint128_t Result{};
+  uint64_t Lower;
+  uint64_t Upper;
+  // This specifically avoids using std::atomic<__uint128_t>
+  // std::atomic helper does a ldaxp + stxp pair that crashes when the page is only mapped readable
+  __asm volatile(
+R"(
+  ldaxp %[ResultLower], %[ResultUpper], [%[Addr]];
+  clrex;
+)"
+  : [ResultLower] "=r" (Lower)
+  , [ResultUpper] "=r" (Upper)
+  : [Addr] "r" (Addr)
+  : "memory");
+  Result = Upper;
+  Result <<= 64;
+  Result |= Lower;
+  return Result;
+}
+
 static uint64_t LoadAcquire64(uint64_t Addr) {
   std::atomic<uint64_t> *Atom = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
   return Atom->load(std::memory_order_acquire);
@@ -224,6 +245,175 @@ bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
     }
   }
   return false;
+}
+
+uint16_t DoLoad16(uint64_t Addr) {
+  uint64_t AlignmentMask = 0b1111;
+  if ((Addr & AlignmentMask) == 15) {
+    // Address crosses over 16byte or 64byte threshold
+    // Needs two loads
+    uint64_t AddrUpper = Addr + 1;
+    uint8_t ActualUpper{};
+    uint8_t ActualLower{};
+    // Careful ordering here
+    ActualUpper = LoadAcquire8(AddrUpper);
+    ActualLower = LoadAcquire8(Addr);
+
+    uint16_t Result = ActualUpper;
+    Result <<= 8;
+    Result |= ActualLower;
+    return Result;
+  }
+  else {
+    AlignmentMask = 0b111;
+    if ((Addr & AlignmentMask) == 7) {
+      // Crosses 8byte boundary
+      // Needs 128bit load
+      // Fits within a 16byte region
+      uint64_t Alignment = Addr & 0b1111;
+      Addr &= ~0b1111ULL;
+
+      __uint128_t TmpResult = LoadAcquire128(Addr);
+
+      // Zexts the result
+      uint16_t Result = TmpResult >> (Alignment * 8);
+      return Result;
+    }
+    else {
+      AlignmentMask = 0b11;
+      if ((Addr & AlignmentMask) == 3) {
+        // Crosses 4byte boundary
+        // Needs 64bit Load
+        uint64_t Alignment = Addr & AlignmentMask;
+        Addr &= ~AlignmentMask;
+
+        std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+        uint64_t TmpResult = Atomic->load();
+
+        // Zexts the result
+        uint16_t Result = TmpResult >> (Alignment * 8);
+        return Result;
+      }
+      else {
+        // Fits within 4byte boundary
+        // Only needs 32bit Load
+        // Only alignment offset will be 1 here
+        uint64_t Alignment = Addr & AlignmentMask;
+        Addr &= ~AlignmentMask;
+
+        std::atomic<uint32_t> *Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
+        uint32_t TmpResult = Atomic->load();
+
+        // Zexts the result
+        uint16_t Result = TmpResult >> (Alignment * 8);
+        return Result;
+      }
+    }
+  }
+}
+
+uint32_t DoLoad32(uint64_t Addr) {
+  uint64_t AlignmentMask = 0b1111;
+  if ((Addr & AlignmentMask) > 12) {
+    // Address crosses over 16byte threshold
+    // Needs dual 32bit load
+    uint64_t Alignment = Addr & 0b11;
+    Addr &= ~0b11ULL;
+
+    uint64_t AddrUpper = Addr + 4;
+
+    // Careful ordering here
+    uint32_t ActualUpper = LoadAcquire32(AddrUpper);
+    uint32_t ActualLower = LoadAcquire32(Addr);
+
+    uint64_t Result = ActualUpper;
+    Result <<= 32;
+    Result |= ActualLower;
+    return Result >> (Alignment * 8);
+  }
+  else {
+    AlignmentMask = 0b111;
+    if ((Addr & AlignmentMask) >= 5) {
+      // Crosses 8byte boundary
+      // Needs 128bit load
+      // Fits within a 16byte region
+      uint64_t Alignment = Addr & 0b1111;
+      Addr &= ~0b1111ULL;
+
+      __uint128_t TmpResult = LoadAcquire128(Addr);
+
+      return TmpResult >> (Alignment * 8);
+    }
+    else {
+      // Fits within 8byte boundary
+      // Only needs 64bit CAS
+      // Alignments can be [1,5)
+      uint64_t Alignment = Addr & AlignmentMask;
+      Addr &= ~AlignmentMask;
+
+      std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+      uint64_t TmpResult = Atomic->load();
+
+      return TmpResult >> (Alignment * 8);
+    }
+  }
+}
+
+uint64_t DoLoad64(uint64_t Addr) {
+  uint64_t AlignmentMask = 0b1111;
+  if ((Addr & AlignmentMask) > 8) {
+    uint64_t Alignment = Addr & 0b111;
+    Addr &= ~0b111ULL;
+    uint64_t AddrUpper = Addr + 8;
+
+    // Crosses a 16byte boundary
+    // Needs two 8 byte loads
+    uint64_t ActualUpper{};
+    uint64_t ActualLower{};
+    // Careful ordering here
+    ActualUpper = LoadAcquire64(AddrUpper);
+    ActualLower = LoadAcquire64(Addr);
+
+    __uint128_t Result = ActualUpper;
+    Result <<= 64;
+    Result |= ActualLower;
+    return Result >> (Alignment * 8);
+  }
+  else {
+    // Fits within a 16byte region
+    uint64_t Alignment = Addr & AlignmentMask;
+    Addr &= ~AlignmentMask;
+    __uint128_t TmpResult = LoadAcquire128(Addr);
+    uint64_t Result = TmpResult >> (Alignment * 8);
+    return Result;
+  }
+}
+
+std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
+  // Any misalignment here means we cross a 16byte boundary
+  // So we need two 128bit loads
+  uint64_t Alignment = Addr & 0b1111;
+  Addr &= ~0b1111ULL;
+  uint64_t AddrUpper = Addr + 16;
+
+  union AlignedData {
+    struct {
+      __uint128_t Lower;
+      __uint128_t Upper;
+    } Large;
+    struct {
+      uint8_t Data[32];
+    } Bytes;
+  };
+
+  AlignedData *Data = reinterpret_cast<AlignedData*>(alloca(sizeof(AlignedData)));
+  Data->Large.Upper = LoadAcquire128(AddrUpper);
+  Data->Large.Lower = LoadAcquire128(Addr);
+
+  uint64_t ResultLower{}, ResultUpper{};
+  memcpy(&ResultLower, &Data->Bytes.Data[Alignment], sizeof(uint64_t));
+  memcpy(&ResultUpper, &Data->Bytes.Data[Alignment + sizeof(uint64_t)], sizeof(uint64_t));
+  return {ResultLower, ResultUpper};
 }
 
 template <typename T>
