@@ -528,31 +528,30 @@ DEF_OP(AtomicSwap) {
   }
   else {
     // TMP2-TMP3
-    mov(TMP3, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (Op->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+        stlxrb(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
-        uxtb(GetReg<RA_64>(Node), TMP2.W());
+        uxtb(GetReg<RA_32>(Node), TMP2.W());
         break;
       }
       case 2: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+        stlxrh(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
-        uxtw(GetReg<RA_64>(Node), TMP2.W());
+        uxtw(GetReg<RA_32>(Node), TMP2.W());
         break;
       }
       case 4: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+        stlxr(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
         break;
@@ -561,7 +560,7 @@ DEF_OP(AtomicSwap) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        stlxr(TMP4, TMP3.X(), MemOperand(MemSrc));
+        stlxr(TMP4, GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
         cbnz(TMP4, &LoopTop);
         mov(GetReg<RA_64>(Node), TMP2.X());
         break;
