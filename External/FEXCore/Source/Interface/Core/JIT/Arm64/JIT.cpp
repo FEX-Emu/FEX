@@ -428,6 +428,18 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
       return false;
     }
   }
+  else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXR_MASK) == FEXCore::ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
+    uint64_t BytesToSkip = FEXCore::ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ucontext, info);
+    if (BytesToSkip) {
+      // Skip this instruction now
+      ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
+      return true;
+    }
+    else {
+      LogMan::Msg::E("Unhandled JIT SIGBUS LDAXR: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+      return false;
+    }
+  }
   else {
     LogMan::Msg::E("Unhandled JIT SIGBUS: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
     return false;

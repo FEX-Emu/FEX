@@ -1,4 +1,5 @@
 #include "Interface/Core/ArchHelpers/Arm64.h"
+#include "Interface/Core/ArchHelpers/MContext.h"
 
 #include <FEXCore/Utils/LogManager.h>
 
@@ -1390,6 +1391,367 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
   }
 
   return false;
+}
+
+uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+
+  if (info->si_code != BUS_ADRALN) {
+    // This only handles alignment problems
+    return 0;
+  }
+
+  uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
+  uint32_t Instr = PC[0];
+
+  // Atomic Add
+  // [1] ldaxrb(TMP2.W(), MemOperand(MemSrc));
+  // [2] add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+  // [3] stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
+  // [4] cbnz(TMP2.W(), &LoopTop);
+  //
+  // Atomic Fetch Add
+  // [1] ldaxrb(TMP2.W(), MemOperand(MemSrc));
+  // [2] add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+  // [3] stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+  // [4] cbnz(TMP4.W(), &LoopTop);
+  // [5] mov(GetReg<RA_32>(Node), TMP2.W());
+  //
+  // Atomic Swap
+  //
+  // [1] ldaxrb(TMP2.W(), MemOperand(MemSrc));
+  // [2] stlxrb(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
+  // [3] cbnz(TMP4.W(), &LoopTop);
+  // [4] uxtb(GetReg<RA_64>(Node), TMP2.W());
+  //
+  // ASSUMPTIONS:
+  // - Both cases:
+  //   - The [2]ALU op: (Non NEG case)
+  //     - First source is from [1]ldaxr
+  //     - Second source is incoming value
+  //   - The [2]ALU op: (NEG case)
+  //     - First source is zero register
+  //     - The second source is the from [1]ldaxr
+  //   - No ALU op: (SWAP case)
+  //     - No DataSourceRegister
+  //
+  // - In Atomic case (non-fetch)
+  //   - The [3]stlxr instruction status + memory register are the SAME register
+  //
+  // - In Atomic FETCH case
+  //   - The [3]stlxr instruction's status + memory register are never the same register
+  //   - The [5]mov instruction source is always the destination register from [1] ldaxr*
+  uint32_t ResultReg = GetRdReg(Instr);
+  uint32_t AddressReg = GetRnReg(Instr);
+  uint64_t Addr = mcontext->regs[AddressReg];
+
+  size_t NumInstructionsToSkip = 0;
+
+  // Are we an Atomic op or AtomicFetch?
+  bool AtomicFetch = false;
+
+  // This is the register that is the incoming source to the ALU operation
+  // <DataResultReg> = <Load Exclusive Value> <Op> <DataSourceReg>
+  // NEG case is special
+  // <DataResultReg> = Zero <Sub> <Load Exclusive Value>
+  // DataSourceRegister must always be the Rm register
+  uint32_t DataSourceReg {};
+  ExclusiveAtomicPairType AtomicOp {ExclusiveAtomicPairType::TYPE_SWAP};
+
+  // Scan forward at most five instructions to find our instructions
+  for (size_t i = 1; i < 6; ++i) {
+    uint32_t NextInstr = PC[i];
+    if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::ADD_INST) {
+      AtomicOp = ExclusiveAtomicPairType::TYPE_ADD;
+      DataSourceReg = GetRmReg(NextInstr);
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::SUB_INST) {
+      uint32_t RnReg = GetRnReg(NextInstr);
+      if (RnReg == REGISTER_MASK) {
+        // Zero reg means neg
+        AtomicOp = ExclusiveAtomicPairType::TYPE_NEG;
+      }
+      else {
+        AtomicOp = ExclusiveAtomicPairType::TYPE_SUB;
+      }
+      DataSourceReg = GetRmReg(NextInstr);
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::AND_INST) {
+      AtomicOp = ExclusiveAtomicPairType::TYPE_AND;
+      DataSourceReg = GetRmReg(NextInstr);
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::OR_INST) {
+      AtomicOp = ExclusiveAtomicPairType::TYPE_OR;
+      DataSourceReg = GetRmReg(NextInstr);
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::EOR_INST) {
+      AtomicOp = ExclusiveAtomicPairType::TYPE_EOR;
+      DataSourceReg = GetRmReg(NextInstr);
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXR_MASK) == FEXCore::ArchHelpers::Arm64::STLXR_INST) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+      // Just double check that the memory destination matches
+      uint32_t StoreAddressReg = GetRnReg(NextInstr);
+      LOGMAN_THROW_A(StoreAddressReg == AddressReg, "StoreExclusive memory register didn't match the store exclusive register");
+#endif
+      uint32_t StatusReg = GetRmReg(NextInstr);
+      uint32_t StoreResultReg = GetRdReg(NextInstr);
+      // We are an atomic fetch instruction if the data register isn't the status register
+      AtomicFetch = !(StatusReg == StoreResultReg);
+      if (AtomicOp == ExclusiveAtomicPairType::TYPE_SWAP) {
+        // In the case of swap we don't have an ALU op inbetween
+        // Source is directly in STLXR
+        DataSourceReg = StoreResultReg;
+      }
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::CBNZ_MASK) == FEXCore::ArchHelpers::Arm64::CBNZ_INST) {
+      // Found the CBNZ, we want to skip to just after this instruction when done
+      NumInstructionsToSkip = i + 1;
+      // This is the last instruction we care about. Leave now
+      break;
+    }
+    else {
+      LogMan::Msg::A("Unknown instruction 0x%08x", NextInstr);
+    }
+  }
+
+  uint32_t Size = 1 << (Instr >> 30);
+
+  constexpr bool DoRetry = true;
+  if (Size == 2) {
+    using AtomicType = uint16_t;
+    auto NOPExpected = [](AtomicType SrcVal, AtomicType) -> AtomicType {
+      return SrcVal;
+    };
+
+    auto ADDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal + Desired;
+    };
+
+    auto SUBDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal - Desired;
+    };
+
+    auto ANDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal & Desired;
+    };
+
+    auto ORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal | Desired;
+    };
+
+    auto EORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal ^ Desired;
+    };
+
+    auto NEGDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return -SrcVal;
+    };
+
+    auto SWAPDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return Desired;
+    };
+
+    CASDesiredFn<AtomicType> DesiredFunction{};
+
+    switch (AtomicOp) {
+      case ExclusiveAtomicPairType::TYPE_SWAP:
+        DesiredFunction = SWAPDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_ADD:
+        DesiredFunction = ADDDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_SUB:
+        DesiredFunction = SUBDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_AND:
+        DesiredFunction = ANDDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_OR:
+        DesiredFunction = ORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_EOR:
+        DesiredFunction = EORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_NEG:
+        DesiredFunction = NEGDesired;
+        break;
+      default:
+        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", AtomicOp);
+        return false;
+        break;
+    }
+
+    auto Res = DoCAS16<DoRetry>(
+      mcontext->regs[DataSourceReg],
+      0, // Unused
+      Addr,
+      NOPExpected,
+      DesiredFunction);
+
+    if (AtomicFetch && ResultReg != 31) {
+      // On atomic fetch then we store the resulting value back in to the loadacquire destination register
+      // We want the memory value BEFORE the ALU op
+      mcontext->regs[ResultReg] = Res;
+    }
+  }
+  else if (Size == 4) {
+    using AtomicType = uint32_t;
+    auto NOPExpected = [](AtomicType SrcVal, AtomicType) -> AtomicType {
+      return SrcVal;
+    };
+
+    auto ADDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal + Desired;
+    };
+
+    auto SUBDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal - Desired;
+    };
+
+    auto ANDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal & Desired;
+    };
+
+    auto ORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal | Desired;
+    };
+
+    auto EORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal ^ Desired;
+    };
+
+    auto NEGDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return -SrcVal;
+    };
+
+    auto SWAPDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return Desired;
+    };
+
+    CASDesiredFn<AtomicType> DesiredFunction{};
+
+    switch (AtomicOp) {
+      case ExclusiveAtomicPairType::TYPE_SWAP:
+        DesiredFunction = SWAPDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_ADD:
+        DesiredFunction = ADDDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_SUB:
+        DesiredFunction = SUBDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_AND:
+        DesiredFunction = ANDDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_OR:
+        DesiredFunction = ORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_EOR:
+        DesiredFunction = EORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_NEG:
+        DesiredFunction = NEGDesired;
+        break;
+      default:
+        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", AtomicOp);
+        return false;
+        break;
+    }
+
+    auto Res = DoCAS32<DoRetry>(
+      mcontext->regs[DataSourceReg],
+      0, // Unused
+      Addr,
+      NOPExpected,
+      DesiredFunction);
+
+    if (AtomicFetch && ResultReg != 31) {
+      // On atomic fetch then we store the resulting value back in to the loadacquire destination register
+      // We want the memory value BEFORE the ALU op
+      mcontext->regs[ResultReg] = Res;
+    }
+  }
+  else if (Size == 8) {
+    using AtomicType = uint64_t;
+    auto NOPExpected = [](AtomicType SrcVal, AtomicType) -> AtomicType {
+      return SrcVal;
+    };
+
+    auto ADDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal + Desired;
+    };
+
+    auto SUBDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal - Desired;
+    };
+
+    auto ANDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal & Desired;
+    };
+
+    auto ORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal | Desired;
+    };
+
+    auto EORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return SrcVal ^ Desired;
+    };
+
+    auto NEGDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return -SrcVal;
+    };
+
+    auto SWAPDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+      return Desired;
+    };
+
+    CASDesiredFn<AtomicType> DesiredFunction{};
+
+    switch (AtomicOp) {
+      case ExclusiveAtomicPairType::TYPE_SWAP:
+        DesiredFunction = SWAPDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_ADD:
+        DesiredFunction = ADDDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_SUB:
+        DesiredFunction = SUBDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_AND:
+        DesiredFunction = ANDDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_OR:
+        DesiredFunction = ORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_EOR:
+        DesiredFunction = EORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_NEG:
+        DesiredFunction = NEGDesired;
+        break;
+      default:
+        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", AtomicOp);
+        return false;
+        break;
+    }
+
+    auto Res = DoCAS64<DoRetry>(
+      mcontext->regs[DataSourceReg],
+      0, // Unused
+      Addr,
+      NOPExpected,
+      DesiredFunction);
+    if (AtomicFetch && ResultReg != 31) {
+      // On atomic fetch then we store the resulting value back in to the loadacquire destination register
+      // We want the memory value BEFORE the ALU op
+      mcontext->regs[ResultReg] = Res;
+    }
+  }
+
+  // Multiply by 4 for number of bytes to skip
+  return NumInstructionsToSkip * 4;
 }
 
 }
