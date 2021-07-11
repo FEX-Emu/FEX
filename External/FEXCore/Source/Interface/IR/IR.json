@@ -1462,6 +1462,24 @@
       ]
     },
 
+    "AtomicFetchNeg": {
+      "HasSideEffects": true,
+      "Desc": ["Atomic integer fetch and two's complement negate",
+               "Dest is the value prior to operating on the value in memory"
+              ],
+      "OpClass": "Atomic",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "Size",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Addr"
+      ],
+      "Args": [
+        "uint8_t", "Size"
+      ]
+    },
+
     "VExtractToGPR": {
       "Desc": ["Extracts an element from a vector and places it in a GPR",
                "The element that is extracted from the vector is zero extended to the GPR size"
