@@ -362,12 +362,25 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
           return DataSpace + DataSpaceSize;
         }
 
-        uint64_t NewBRK = (uint64_t)FEXCore::Allocator::mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        uint64_t NewBRK{};
+        if (Is64BitMode()) {
+          NewBRK = (uint64_t)FEXCore::Allocator::mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        }
+        else {
+          NewBRK = (uint64_t)static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
+            mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        }
 
         if (NewBRK != ~0ULL && NewBRK != (DataSpace + DataSpaceMaxSize)) {
           // Couldn't allocate that the region we wanted
           // Can happen if MAP_FIXED_NOREPLACE isn't understood by the kernel
-          FEXCore::Allocator::munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
+          if (Is64BitMode()) {
+            FEXCore::Allocator::munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
+          }
+          else {
+            static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
+              munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
+          }
           NewBRK = ~0ULL;
         }
 
