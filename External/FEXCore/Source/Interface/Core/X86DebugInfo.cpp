@@ -114,8 +114,6 @@ void InstallDebugInfo() {
   GenerateDebugTable(PrimaryInstGroupOps, PrimaryGroupOpTable);
 
   GenerateDebugTable(SecondInstGroupOps, SecondaryExtensionOpTable);
-
-  LogMan::Msg::D("Installing debug info");
 }
 }
 #endif

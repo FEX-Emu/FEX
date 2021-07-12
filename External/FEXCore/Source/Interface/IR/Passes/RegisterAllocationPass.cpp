@@ -206,7 +206,7 @@ namespace {
   struct RegisterGraph {
     std::unique_ptr<FEXCore::IR::RegisterAllocationData, FEXCore::IR::RegisterAllocationDataDeleter> AllocData;
     RegisterSet Set;
-    RegisterNode *Nodes{};
+    std::vector<RegisterNode> Nodes{};
     uint32_t NodeCount{};
     std::vector<SpillStackUnit> SpillStack;
     std::unordered_map<uint32_t, std::unordered_set<uint32_t>> BlockPredecessors;
@@ -256,27 +256,21 @@ namespace {
   }
 
   void FreeRegisterGraph(RegisterGraph *Graph) {
-    if (Graph->Nodes) {
-      ::munmap(Graph->Nodes, Graph->NodeCount * sizeof(RegisterNode));
-    }
     delete Graph;
   }
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount) {
     NodeCount = AlignUp(NodeCount, REGISTER_NODES_PER_PAGE);
     if (Graph->NodeCount < NodeCount) {
-      if (Graph->Nodes) {
-        // If the needed node count is smaller than what we currently have allocated
-        // then unmap it so we can remap a larger memory space
-        ::munmap(Graph->Nodes, Graph->NodeCount * sizeof(RegisterNode));
-      }
-
-      // We don't have a mapping, allocate a space that gives us a default zero mapping
-      Graph->Nodes = reinterpret_cast<RegisterNode *>(::mmap(0, NodeCount * sizeof(RegisterNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+      // If the needed node count is smaller than what we currently have allocated
+      // Then resize it so we have enough space
+      Graph->Nodes.clear(); // Clear to allow resize to happen more efficiently
+      // Values are default initialized (Which will be zero for us)
+      Graph->Nodes.resize(NodeCount);
     }
     else {
-      // If we already have an allocation then zero out how many nodes we need
-      memset(Graph->Nodes, 0, NodeCount * sizeof(RegisterNode));
+      // Ensure that the nodes we need are zerod out
+      memset(Graph->Nodes.data(), 0, NodeCount * sizeof(RegisterNode));
     }
 
     Graph->VisitedNodePredecessors.clear();

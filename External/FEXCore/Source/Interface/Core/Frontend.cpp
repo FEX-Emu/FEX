@@ -127,12 +127,12 @@ Decoder::Decoder(FEXCore::Context::Context *ctx)
   // Take advantage of page faulting to reduce startup time for minimal runtime cost
   DecodedBuffer =
     reinterpret_cast<FEXCore::X86Tables::DecodedInst *>(
-      ::mmap(0, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize,
+      FEXCore::Allocator::mmap(0, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize,
       PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 }
 
 Decoder::~Decoder() {
-  ::munmap(DecodedBuffer, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize);
+  FEXCore::Allocator::munmap(DecodedBuffer, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize);
 }
 
 uint8_t Decoder::ReadByte() {

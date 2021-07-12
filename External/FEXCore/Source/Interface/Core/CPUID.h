@@ -28,9 +28,6 @@ public:
     auto Handler = FunctionHandlers.find(Function);
 
     if (Handler == FunctionHandlers.end()) {
-      #ifndef NDEBUG
-        LogMan::Msg::E("Unhandled CPU ID function, 0x%x-0x%x", Function, Leaf);
-      #endif
       return Function_Reserved(Leaf);
     }
 
