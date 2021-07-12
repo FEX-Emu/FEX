@@ -122,7 +122,9 @@ namespace Alloc::OSAllocator {
         size_t SizeOfLiveRegion = AlignUp(LiveVMARegion::GetSizeWithFlexSet(ReservedRegion->RegionSize), PAGE_SIZE);
         size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
 
-        mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
+        [[maybe_unused]] auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
+
+        LOGMAN_THROW_A(Res == 0, "Couldn't mprotect region: %d '%s' Likely occurs when running out of memory or Maximum VMAs", errno, strerror(errno));
 
         LiveVMARegion *LiveRange = new (reinterpret_cast<void*>(ReservedRegion->Base)) LiveVMARegion();
 
@@ -264,15 +266,17 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
         (StartingPosition - Region->SlabInfo->Base) >> PAGE_SHIFT
         : Region->LastPageAllocation;
       size_t RegionNumberOfPages = Region->SlabInfo->RegionSize >> PAGE_SHIFT;
-      try_again:
-      for (size_t CurrentPage = LastAllocation;
-           CurrentPage < (RegionNumberOfPages - NumberOfPages);) {
-        // If we have enough free space, check if we have enough free pages that are contiguous
-        size_t Remaining = NumberOfPages;
 
-        assert((CurrentPage + Remaining - 1) < RegionNumberOfPages);
+      // Backward scan
+      // We need to do a backward scan first to fill any holes
+      // Otherwise we will very quickly run out of VMA regions (65k maximum)
+      for (size_t CurrentPage = LastAllocation;
+           CurrentPage >= NumberOfPages;) {
+        size_t Remaining = NumberOfPages;
+        assert(Remaining <= CurrentPage);
+
         while (Remaining) {
-          if (Region->UsedPages[CurrentPage + Remaining - 1]) {
+          if (Region->UsedPages[CurrentPage - Remaining]) {
             // Has an intersecting range
             break;
           }
@@ -281,20 +285,51 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
 
         if (Remaining) {
           // Didn't find a slab range
-          CurrentPage += Remaining;
+          CurrentPage -= Remaining;
         }
         else {
           // We have a slab range
+          CurrentPage -= NumberOfPages;
+
+          // Keep scanning backwards to not introduce ANOTHER gap
+          while (CurrentPage >= 1) {
+            if (Region->UsedPages[CurrentPage - 1]) {
+              // Found a used page, we can leave now
+              break;
+            }
+            --CurrentPage;
+          }
           AllocatedPage = CurrentPage;
           break;
         }
       }
 
-      if (!AllocatedPage && LastAllocation != 0) {
-        // Try again but starting from the beginning
-        LastAllocation = 0;
-        // Using goto so we don't have recursive mutex shenanigans
-        goto try_again;
+      // Foward Scan
+      if (AllocatedPage == 0) {
+        for (size_t CurrentPage = LastAllocation;
+             CurrentPage < (RegionNumberOfPages - NumberOfPages);) {
+          // If we have enough free space, check if we have enough free pages that are contiguous
+          size_t Remaining = NumberOfPages;
+
+          assert((CurrentPage + Remaining - 1) < RegionNumberOfPages);
+          while (Remaining) {
+            if (Region->UsedPages[CurrentPage + Remaining - 1]) {
+              // Has an intersecting range
+              break;
+            }
+            --Remaining;
+          }
+
+          if (Remaining) {
+            // Didn't find a slab range
+            CurrentPage += Remaining;
+          }
+          else {
+            // We have a slab range
+            AllocatedPage = CurrentPage;
+            break;
+          }
+        }
       }
 
       if (AllocatedPage) {
@@ -457,7 +492,7 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
       // Live region fully encompasses slab range
 
       uint64_t FreedPages{};
-      uint64_t SlabPageBegin = (PtrBegin - RegionBegin) >> PAGE_SHIFT;
+      uint32_t SlabPageBegin = (PtrBegin - RegionBegin) >> PAGE_SHIFT;
       uint64_t PagesToFree = length >> PAGE_SHIFT;
 
       for (size_t i = 0; i < PagesToFree; ++i) {
@@ -475,6 +510,10 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
       }
 
       (*it)->FreeSpace += FreedPages * 4096;
+
+      // Set the last allocated page to the minimum of last page allocation or this slab
+      // This will let us more quickly fill holes
+      (*it)->LastPageAllocation = std::min((*it)->LastPageAllocation, SlabPageBegin);
 
       // XXX: Move region back to reserved list
       return 0;
@@ -542,7 +581,7 @@ OSAllocator_64Bit::PtrCache *OSAllocator_64Bit::Steal32BitIfOldKernel() {
     // If we managed to allocate and not get the address we want then unmap it
     // This happens with kernels older than 4.17
     if (reinterpret_cast<uintptr_t>(Ptr) + AllocationSize > UPPER_BOUND_32) {
-      munmap(Ptr, AllocationSize);
+      ::munmap(Ptr, AllocationSize);
       Ptr = reinterpret_cast<void*>(~0ULL);
     }
 
@@ -594,7 +633,7 @@ void OSAllocator_64Bit::Clear32BitOnOldKernel(OSAllocator_64Bit::PtrCache *Base)
   for (size_t i = 0;; ++i) {
     void *Ptr = reinterpret_cast<void*>(Base[i].Ptr);
     size_t Size = Base[i].Size;
-    munmap(Ptr, Size);
+    ::munmap(Ptr, Size);
     if (Ptr == Base) {
       break;
     }
@@ -602,7 +641,6 @@ void OSAllocator_64Bit::Clear32BitOnOldKernel(OSAllocator_64Bit::PtrCache *Base)
 }
 
 OSAllocator_64Bit::OSAllocator_64Bit() {
-  malloc_trim(0);
   DetermineVASize();
   auto ArrayPtr = Steal32BitIfOldKernel();
 
@@ -641,7 +679,7 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
     // This happens with kernels older than 4.17
     if (reinterpret_cast<uintptr_t>(Ptr) != MemoryOffset &&
         reinterpret_cast<uintptr_t>(Ptr) < LOWER_BOUND) {
-      munmap(Ptr, AllocationSize);
+      ::munmap(Ptr, AllocationSize);
       Ptr = reinterpret_cast<void*>(~0ULL);
     }
 
@@ -659,8 +697,7 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
       if (!ObjectAlloc) {
         // Steal the first allocation for an intrusive allocator
         // Will be mprotected correctly already
-        int Result = mprotect(Ptr, AllocationSize, PROT_READ | PROT_WRITE);
-        LogMan::Throw::A(Result == 0, "mprotect(%p, 0x%lx) -> %d (%s)", Ptr, AllocationSize, Result, strerror(errno));
+        mprotect(Ptr, AllocationSize, PROT_READ | PROT_WRITE);
         ObjectAlloc = new (Ptr) Alloc::ForwardOnlyIntrusiveArenaAllocator(Ptr, AllocationSize);
         ReservedRegions = ObjectAlloc->new_construct(ReservedRegions, ObjectAlloc);
         LiveRegions = ObjectAlloc->new_construct(LiveRegions, ObjectAlloc);
