@@ -108,7 +108,6 @@ void InitializeInfoTables(Context::OperatingMode Mode) {
 
 #ifndef NDEBUG
   X86InstDebugInfo::InstallDebugInfo();
-  LogMan::Msg::D("X86Tables had %ld total insts, and %ld labeled as understood", Total, NumInsts);
 #endif
 }
 
