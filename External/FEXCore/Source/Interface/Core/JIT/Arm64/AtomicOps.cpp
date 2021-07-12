@@ -44,11 +44,15 @@ DEF_OP(CASPair) {
         aarch64::Label LoopNotExpected;
         aarch64::Label LoopExpected;
         bind(&LoopTop);
+        nop();
         ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc));
+        nop();
         cmp(TMP2.W(), Expected.first.W());
         ccmp(TMP3.W(), Expected.second.W(), NoFlag, Condition::eq);
         b(&LoopNotExpected, Condition::ne);
+        nop();
         stlxp(TMP2.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
+        nop();
         cbnz(TMP2.W(), &LoopTop);
         mov(Dst.first.W(), Expected.first.W());
         mov(Dst.second.W(), Expected.second.W());
@@ -69,11 +73,15 @@ DEF_OP(CASPair) {
         aarch64::Label LoopNotExpected;
         aarch64::Label LoopExpected;
         bind(&LoopTop);
+        nop();
         ldaxp(TMP2.X(), TMP3.X(), MemOperand(MemSrc));
+        nop();
         cmp(TMP2.X(), Expected.first.X());
         ccmp(TMP3.X(), Expected.second.X(), NoFlag, Condition::eq);
         b(&LoopNotExpected, Condition::ne);
+        nop();
         stlxp(TMP2.X(), Desired.first.X(), Desired.second.X(), MemOperand(MemSrc));
+        nop();
         cbnz(TMP2.X(), &LoopTop);
         mov(Dst.first.X(), Expected.first.X());
         mov(Dst.second.X(), Expected.second.X());
@@ -520,31 +528,30 @@ DEF_OP(AtomicSwap) {
   }
   else {
     // TMP2-TMP3
-    mov(TMP3, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (Op->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+        stlxrb(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
-        uxtb(GetReg<RA_64>(Node), TMP2.W());
+        uxtb(GetReg<RA_32>(Node), TMP2.W());
         break;
       }
       case 2: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+        stlxrh(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
-        uxtw(GetReg<RA_64>(Node), TMP2.W());
+        uxtw(GetReg<RA_32>(Node), TMP2.W());
         break;
       }
       case 4: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+        stlxr(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
         break;
@@ -553,7 +560,7 @@ DEF_OP(AtomicSwap) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        stlxr(TMP4, TMP3.X(), MemOperand(MemSrc));
+        stlxr(TMP4, GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
         cbnz(TMP4, &LoopTop);
         mov(GetReg<RA_64>(Node), TMP2.X());
         break;
@@ -870,6 +877,56 @@ DEF_OP(AtomicFetchXor) {
   }
 }
 
+DEF_OP(AtomicFetchNeg) {
+  auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
+  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+
+  // TMP2-TMP3
+  switch (Op->Size) {
+    case 1: {
+      aarch64::Label LoopTop;
+      bind(&LoopTop);
+      ldaxrb(TMP2.W(), MemOperand(MemSrc));
+      neg(TMP3.W(), TMP2.W());
+      stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+      cbnz(TMP4.W(), &LoopTop);
+      mov(GetReg<RA_32>(Node), TMP2.W());
+      break;
+    }
+    case 2: {
+      aarch64::Label LoopTop;
+      bind(&LoopTop);
+      ldaxrh(TMP2.W(), MemOperand(MemSrc));
+      neg(TMP3.W(), TMP2.W());
+      stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+      cbnz(TMP4.W(), &LoopTop);
+      mov(GetReg<RA_32>(Node), TMP2.W());
+      break;
+    }
+    case 4: {
+      aarch64::Label LoopTop;
+      bind(&LoopTop);
+      ldaxr(TMP2.W(), MemOperand(MemSrc));
+      neg(TMP3.W(), TMP2.W());
+      stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
+      cbnz(TMP4.W(), &LoopTop);
+      mov(GetReg<RA_32>(Node), TMP2.W());
+      break;
+    }
+    case 8: {
+      aarch64::Label LoopTop;
+      bind(&LoopTop);
+      ldaxr(TMP2, MemOperand(MemSrc));
+      neg(TMP3, TMP2);
+      stlxr(TMP4, TMP3, MemOperand(MemSrc));
+      cbnz(TMP4, &LoopTop);
+      mov(GetReg<RA_64>(Node), TMP2);
+      break;
+    }
+    default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
+  }
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterAtomicHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -886,6 +943,7 @@ void Arm64JITCore::RegisterAtomicHandlers() {
   REGISTER_OP(ATOMICFETCHAND, AtomicFetchAnd);
   REGISTER_OP(ATOMICFETCHOR,  AtomicFetchOr);
   REGISTER_OP(ATOMICFETCHXOR, AtomicFetchXor);
+  REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);
 #undef REGISTER_OP
 }
 }

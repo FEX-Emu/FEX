@@ -54,6 +54,7 @@ void Dispatcher::StoreThreadState(int Signal, void *ucontext) {
 }
 
 void Dispatcher::RestoreThreadState(void *ucontext) {
+  LOGMAN_THROW_A(!SignalFrames.empty(), "Trying to restore a signal frame when we don't have any");
   uint64_t OldSP = SignalFrames.top();
   SignalFrames.pop();
   uintptr_t NewSP = OldSP;

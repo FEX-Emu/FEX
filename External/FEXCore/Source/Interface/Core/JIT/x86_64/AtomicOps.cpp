@@ -552,6 +552,82 @@ DEF_OP(AtomicFetchXor) {
   }
 }
 
+DEF_OP(AtomicFetchNeg) {
+  auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
+
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  switch (Op->Size) {
+    case 1: {
+      mov(TMP1.cvt8(), byte [MemReg]);
+
+      Label Loop;
+      L(Loop);
+      mov(TMP2.cvt8(), TMP1.cvt8());
+      mov(TMP3.cvt8(), TMP1.cvt8());
+      neg(TMP2.cvt8());
+
+      // Updates RAX with the value from memory
+      lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
+      jne(Loop);
+      // Result is the previous value from memory, which is currently in TMP3
+      movzx(GetDst<RA_64>(Node), TMP3.cvt8());
+      break;
+    }
+    case 2: {
+      mov(TMP1.cvt16(), word [MemReg]);
+
+      Label Loop;
+      L(Loop);
+      mov(TMP2.cvt16(), TMP1.cvt16());
+      mov(TMP3.cvt16(), TMP1.cvt16());
+      neg(TMP2.cvt16());
+
+      // Updates RAX with the value from memory
+      lock(); cmpxchg(word [MemReg], TMP2.cvt16());
+      jne(Loop);
+
+      // Result is the previous value from memory, which is currently in TMP3
+      movzx(GetDst<RA_64>(Node), TMP3.cvt16());
+      break;
+    }
+    case 4: {
+      mov(TMP1.cvt32(), dword [MemReg]);
+
+      Label Loop;
+      L(Loop);
+      mov(TMP2.cvt32(), TMP1.cvt32());
+      mov(TMP3.cvt32(), TMP1.cvt32());
+      neg(TMP2.cvt32());
+
+      // Updates RAX with the value from memory
+      lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
+      jne(Loop);
+
+      // Result is the previous value from memory, which is currently in TMP3
+      mov(GetDst<RA_32>(Node), TMP3.cvt32());
+      break;
+    }
+    case 8: {
+      mov(TMP1.cvt64(), qword [MemReg]);
+
+      Label Loop;
+      L(Loop);
+      mov(TMP2.cvt64(), TMP1.cvt64());
+      mov(TMP3.cvt64(), TMP1.cvt64());
+      neg(TMP2.cvt64());
+
+      // Updates RAX with the value from memory
+      lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
+      jne(Loop);
+
+      // Result is the previous value from memory, which is currently in TMP3
+      mov(GetDst<RA_64>(Node), TMP3.cvt64());
+      break;
+    }
+    default:  LOGMAN_MSG_A("Unhandled AtomicFetchAdd size: %d", Op->Size);
+  }
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterAtomicHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -568,6 +644,7 @@ void X86JITCore::RegisterAtomicHandlers() {
   REGISTER_OP(ATOMICFETCHAND, AtomicFetchAnd);
   REGISTER_OP(ATOMICFETCHOR,  AtomicFetchOr);
   REGISTER_OP(ATOMICFETCHXOR, AtomicFetchXor);
+  REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);
 #undef REGISTER_OP
 }
 }

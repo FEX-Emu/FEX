@@ -44,6 +44,150 @@ static inline void CacheLineFlush(char *Addr) {
 #endif
 }
 
+#ifdef _M_X86_64
+static uint8_t AtomicFetchNeg(uint8_t *Addr) {
+  using Type = uint8_t;
+  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(Addr);
+  Type Expected = Data->load();
+  Type Desired = -Expected;
+  do {
+    Desired = -Expected;
+  } while (!Data->compare_exchange_strong(Expected, Desired, std::memory_order_seq_cst));
+
+  return Expected;
+}
+
+static uint16_t AtomicFetchNeg(uint16_t *Addr) {
+  using Type = uint16_t;
+  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(Addr);
+  Type Expected = Data->load();
+  Type Desired = -Expected;
+  do {
+    Desired = -Expected;
+  } while (!Data->compare_exchange_strong(Expected, Desired, std::memory_order_seq_cst));
+
+  return Expected;
+}
+
+static uint32_t AtomicFetchNeg(uint32_t *Addr) {
+  using Type = uint32_t;
+  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(Addr);
+  Type Expected = Data->load();
+  Type Desired = -Expected;
+  do {
+    Desired = -Expected;
+  } while (!Data->compare_exchange_strong(Expected, Desired, std::memory_order_seq_cst));
+
+  return Expected;
+}
+
+static uint64_t AtomicFetchNeg(uint64_t *Addr) {
+  using Type = uint64_t;
+  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(Addr);
+  Type Expected = Data->load();
+  Type Desired = -Expected;
+  do {
+    Desired = -Expected;
+  } while (!Data->compare_exchange_strong(Expected, Desired, std::memory_order_seq_cst));
+
+  return Expected;
+}
+#else
+// Needs to match what the AArch64 JIT and unaligned signal handler expects
+uint8_t AtomicFetchNeg(uint8_t *Addr) {
+  using Type = uint8_t;
+  Type Result{};
+  Type Tmp{};
+  Type TmpStatus{};
+
+  __asm__ volatile(
+  R"(
+  1:
+    ldaxrb %w[Result], [%[Memory]];
+    neg %w[Tmp], %w[Result];
+    stlxrb %w[TmpStatus], %w[Tmp], [%[Memory]];
+    cbnz %w[TmpStatus], 1b;
+  )"
+  : [Result] "=r" (Result)
+  , [Tmp] "=r" (Tmp)
+  , [TmpStatus] "=r" (TmpStatus)
+  , [Memory] "+r" (Addr)
+  :: "memory"
+  );
+  return Result;
+}
+
+uint16_t AtomicFetchNeg(uint16_t *Addr) {
+  using Type = uint16_t;
+  Type Result{};
+  Type Tmp{};
+  Type TmpStatus{};
+
+  __asm__ volatile(
+  R"(
+  1:
+    ldaxrh %w[Result], [%[Memory]];
+    neg %w[Tmp], %w[Result];
+    stlxrh %w[TmpStatus], %w[Tmp], [%[Memory]];
+    cbnz %w[TmpStatus], 1b;
+  )"
+  : [Result] "=r" (Result)
+  , [Tmp] "=r" (Tmp)
+  , [TmpStatus] "=r" (TmpStatus)
+  , [Memory] "+r" (Addr)
+  :: "memory"
+  );
+  return Result;
+}
+
+uint32_t AtomicFetchNeg(uint32_t *Addr) {
+  using Type = uint32_t;
+  Type Result{};
+  Type Tmp{};
+  Type TmpStatus{};
+
+  __asm__ volatile(
+  R"(
+  1:
+    ldaxr %w[Result], [%[Memory]];
+    neg %w[Tmp], %w[Result];
+    stlxr %w[TmpStatus], %w[Tmp], [%[Memory]];
+    cbnz %w[TmpStatus], 1b;
+  )"
+  : [Result] "=r" (Result)
+  , [Tmp] "=r" (Tmp)
+  , [TmpStatus] "=r" (TmpStatus)
+  , [Memory] "+r" (Addr)
+  :: "memory"
+  );
+  return Result;
+}
+
+uint64_t AtomicFetchNeg(uint64_t *Addr) {
+  using Type = uint64_t;
+  Type Result{};
+  Type Tmp{};
+  Type TmpStatus{};
+
+  __asm__ volatile(
+  R"(
+  1:
+    ldaxr %[Result], [%[Memory]];
+    neg %[Tmp], %[Result];
+    stlxr %w[TmpStatus], %[Tmp], [%[Memory]];
+    cbnz %w[TmpStatus], 1b;
+  )"
+  : [Result] "=r" (Result)
+  , [Tmp] "=r" (Tmp)
+  , [TmpStatus] "=r" (TmpStatus)
+  , [Memory] "+r" (Addr)
+  :: "memory"
+  );
+  return Result;
+}
+
+#endif
+
 namespace AES {
   static __uint128_t InvShiftRows(uint8_t *State) {
     uint8_t Shifted[16] = {
@@ -2459,6 +2603,33 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 uint64_t Src = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
                 uint64_t Previous = Data->fetch_xor(Src);
                 GD = Previous;
+                break;
+              }
+              default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
+            }
+            break;
+          }
+          case IR::OP_ATOMICFETCHNEG: {
+            auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
+            switch (Op->Size) {
+              case 1: {
+                using Type = uint8_t;
+                GD = AtomicFetchNeg(*GetSrc<Type**>(SSAData, Op->Header.Args[0]));
+                break;
+              }
+              case 2: {
+                using Type = uint16_t;
+                GD = AtomicFetchNeg(*GetSrc<Type**>(SSAData, Op->Header.Args[0]));
+                break;
+              }
+              case 4: {
+                using Type = uint32_t;
+                GD = AtomicFetchNeg(*GetSrc<Type**>(SSAData, Op->Header.Args[0]));
+                break;
+              }
+              case 8: {
+                using Type = uint64_t;
+                GD = AtomicFetchNeg(*GetSrc<Type**>(SSAData, Op->Header.Args[0]));
                 break;
               }
               default:  LOGMAN_MSG_A("Unhandled Atomic size: %d", Op->Size);
