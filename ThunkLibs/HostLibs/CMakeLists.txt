@@ -46,7 +46,9 @@ add_host_lib(EGL)
 
 generate(libGL function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(GL)
-target_link_libraries(GL-host PRIVATE GL)
+
+find_package(OpenGL REQUIRED)
+target_link_libraries(GL-host PRIVATE OpenGL::GL)
 
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)
