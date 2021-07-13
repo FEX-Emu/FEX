@@ -98,13 +98,18 @@ def print_man_option(short, long, desc, default):
     output_man.write("\\fBdefault:\\fR {0}\n".format(default))
     output_man.write(".Pp\n\n")
 
-def print_man_env_option(name, desc, default):
-    output_man.write("\\fBFEX_{0}\\fR\n".format(name))
+def print_man_env_option(name, desc, default, no_json_key):
+    output_man.write("\\fBFEX_{0}\\fR\n".format(name.upper()))
 
     # Print description
     for line in desc:
         output_man.write(".Pp\n")
         output_man.write("{0}\n".format(line))
+
+    if (not no_json_key):
+        output_man.write(".Pp\n")
+        output_man.write("\\fBJSON key:\\fR '{0}'\n".format(name))
+        output_man.write(".Pp\n\n")
 
     output_man.write(".Pp\n")
     output_man.write("\\fBdefault:\\fR {0}\n".format(default))
@@ -154,9 +159,10 @@ def print_man_environment(options):
                 # Wrap the string argument in quotes
                 default = "'" + default + "'"
             print_man_env_option(
-                op_key.upper(),
+                op_key,
                 op_vals["Desc"],
-                default
+                default,
+                False
             )
 
     print_man_environment_tail()
@@ -172,7 +178,7 @@ def print_man_environment_tail():
     "By default FEX will look in {$HOME, $XDG_CONFIG_HOME}/.fex-emu/",
     "This will override the full path",
     ],
-    "''")
+    "''", True)
 
     print_man_env_option(
     "FEX_APP_CONFIG",
@@ -183,7 +189,7 @@ def print_man_environment_tail():
     "One must be careful with this option as it will override any applications that load with execve as well"
     "If you need to support applications that execve then use FEX_APP_CONFIG_LOCATION instead"
     ],
-    "''")
+    "''", True)
 
     print_man_env_option(
     "FEX_APP_DATA_LOCATION",
@@ -193,7 +199,7 @@ def print_man_environment_tail():
     "This will override the full path",
     "This is the folder where FEX stores generated files like IR cache"
     ],
-    "''")
+    "''", True)
 
 def print_man_header():
     header ='''.Dd {0}
