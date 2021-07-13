@@ -324,7 +324,18 @@ namespace FEXCore::Config {
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKCONFIG)) {
       FEX_CONFIG_OPT(PathName, THUNKCONFIG);
-      ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKCONFIG, PathName());
+      auto ExpandedString = ExpandPath(PathName());
+      if (!ExpandedString.empty()) {
+        // Adjust the path if it ended up being relative
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, ExpandedString);
+      }
+      else if (!PathName().empty()) {
+        // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
+        std::string NamedConfig = GetDataDirectory() + "ThunkConfigs/" + PathName();
+        if (std::filesystem::exists(NamedConfig)) {
+          FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
+        }
+      }
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_OUTPUTLOG)) {
       FEX_CONFIG_OPT(PathName, OUTPUTLOG);
