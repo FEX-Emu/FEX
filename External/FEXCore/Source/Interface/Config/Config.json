@@ -77,7 +77,14 @@
         "Default": "",
         "ShortArg": "k",
         "Desc": [
-          "A json file specifying where to overlay the thunks."
+          "A json file specifying where to overlay the thunks.",
+          "This can be a filesystem path",
+          "\teg: ~/MyThunkConfig.json",
+          "Or this can be a named of a Thunk config file",
+          "If the named config file exists in the FEX data folder folder the it will use that one",
+          "\teg: $HOME/.fex-emu/ThunkConfigs/<ThunkConfig name>",
+          "Or if you have XDG_DATA_HOME the config will search in that directory",
+          "\teg: $XDG_DATA_HOME/.fex-emu/ThunkConfigs/<ThunkConfig name>"
         ]
       },
       "Env": {
