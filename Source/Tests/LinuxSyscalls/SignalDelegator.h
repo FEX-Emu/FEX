@@ -101,7 +101,7 @@ namespace FEX::HLE {
 
     struct SignalHandler {
       std::atomic<bool> Installed{};
-      bool Required{};
+      std::atomic<bool> Required{};
       struct sigaction HostAction{};
       struct sigaction OldAction{};
       FEXCore::HostSignalDelegatorFunction Handler{};
