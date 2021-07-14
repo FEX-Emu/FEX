@@ -14,6 +14,7 @@ option(ENABLE_ASSERTIONS "Enables assertions in build" FALSE)
 option(ENABLE_VISUAL_DEBUGGER "Enables the visual debugger for compiling" FALSE)
 option(ENABLE_STRICT_WERROR "Enables stricter -Werror for CI" FALSE)
 option(ENABLE_WERROR "Enables -Werror" FALSE)
+option(ENABLE_STATIC_PIE "Enables static-pie build" FALSE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
@@ -56,7 +57,76 @@ if (ENABLE_XRAY)
 endif()
 
 if (ENABLE_LLD)
-  link_libraries(-fuse-ld=lld)
+  set (LD_OVERRIDE "-fuse-ld=lld")
+  link_libraries(${LD_OVERRIDE})
+endif()
+
+if (ENABLE_STATIC_PIE)
+  file(WRITE ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt.c
+    "int main(int argc, char* argv[])
+      {
+        return 0;
+      }")
+
+  # Compile the test application with our LD_OVERRIDE and static-pie options
+  try_compile(
+    COMPILE_RESULT
+    ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp
+    ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt.c
+    COMPILE_DEFINITIONS "-fPIE ${LD_OVERRIDE}"
+    LINK_LIBRARIES "-static-pie ${LD_OVERRIDE}"
+    COPY_FILE ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt
+  )
+
+  if (${COMPILE_RESULT})
+    # Read the symbols from the elf
+    execute_process(COMMAND
+      readelf -s ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt
+      OUTPUT_FILE ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/plt_out.txt
+      OUTPUT_VARIABLE PLT_SYMBOLS)
+
+    # Pull out the __rela_iplt_{start,end} symbols if they exist
+    execute_process(COMMAND
+      "grep" "__rela_iplt" ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/plt_out.txt
+      OUTPUT_VARIABLE PLT_SYMBOLS)
+
+    set (SYMBOLS_FINE TRUE)
+    set (HAS_IPLT -1)
+    # Check if we have any symbols in our grep output
+    # The symbols must either not exist at all OR the symbols are zero
+    if (PLT_SYMBOLS)
+      string(FIND ${PLT_SYMBOLS} "__rela_iplt_start" HAS_IPLT)
+    endif()
+
+    if (NOT HAS_IPLT EQUAL -1)
+      # We have some symbols from readelf. Let's parse the results to check if they are zero
+      # Format: '35: 0000000000000000     0 NOTYPE  LOCAL  HIDDEN   UND __rela_iplt_start'
+      string(REPLACE "\n" ";" SYMBOL_LIST ${PLT_SYMBOLS})
+      foreach (SYMBOL ${SYMBOL_LIST})
+        # strip any leading and trailing whitespace
+        string (STRIP ${SYMBOL} SYMBOL)
+        # Convert string to a list
+        string(REPLACE " " ";" SYMBOL_VALUES ${SYMBOL}})
+        # Pull out the address argument
+        list(GET SYMBOL_VALUES 1 OFFSET)
+
+        # Check against integer zero
+        if (NOT ${OFFSET} EQUAL 0)
+          # Symbol wasn't zero, this now fails
+          set (SYMBOLS_FINE FALSE)
+        endif()
+      endforeach()
+    endif()
+
+    if (SYMBOLS_FINE)
+      # We can now exnable static-pie
+      set (STATIC_PIE_OPTIONS "-static-pie")
+    else()
+      message (FATAL_ERROR "Application has __rela_iplt_{start,end} symbols. Which means static-pie can't be enabled")
+    endif()
+  else()
+    message (FATAL_ERROR "Couldn't compile static-pie test. Static-pie can't be enabled!")
+  endif()
 endif()
 
 if (ENABLE_ASAN)
