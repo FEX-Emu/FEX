@@ -417,7 +417,7 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalD
 }
 
 SyscallHandler::~SyscallHandler() {
-  FEXCore::Allocator::munmap(reinterpret_cast<void*>(DataSpace + DataSpaceStartingSize), DataSpaceMaxSize - DataSpaceStartingSize);
+  FEXCore::Allocator::munmap(reinterpret_cast<void*>(DataSpace), DataSpaceMaxSize);
 }
 
 uint32_t SyscallHandler::CalculateHostKernelVersion() {
