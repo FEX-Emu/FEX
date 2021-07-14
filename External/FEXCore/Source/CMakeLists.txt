@@ -133,7 +133,7 @@ if(_M_ARM_64)
     Interface/Core/ArchHelpers/Arm64.cpp)
 endif()
 
-set(DEFINES )
+set(DEFINES -DTHREAD_LOCAL=_Thread_local)
 
 if (_M_X86_64)
   list(APPEND DEFINES -D_M_X86_64=1)
