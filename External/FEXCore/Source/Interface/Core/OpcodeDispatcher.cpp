@@ -271,11 +271,6 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     IROp = FEXCore::IR::IROps::OP_SUB;
     RequiresMask = true;
   break;
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 5):
-  case OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 5):
-    IROp = FEXCore::IR::IROps::OP_MUL;
-    RequiresMask = true;
-  break;
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 6):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 6):
   case OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 6):
@@ -332,15 +327,14 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     // Overwrite our IR's op type
     ALUOp.first->Header.Op = IROp;
 
-
     Result = ALUOp;
 
     StoreResult(GPRClass, Op, Result, -1);
+  }
 
-    // Store result masks, but we need to
-    if (RequiresMask && Size < 4) {
-      Result = _Bfe(Size, Size * 8, 0, ALUOp);
-    }
+  // Store result masks, but we need to
+  if (RequiresMask && Size < 4) {
+    Result = _Bfe(Size, Size * 8, 0, Result);
   }
 
   // Flags set
@@ -351,9 +345,6 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
     break;
     case FEXCore::IR::IROps::OP_SUB:
       GenerateFlags_SUB(Op, Result, Dest, Src);
-    break;
-    case FEXCore::IR::IROps::OP_MUL:
-      GenerateFlags_MUL(Op, Result, _MulH(Dest, Src));
     break;
     case FEXCore::IR::IROps::OP_AND:
     case FEXCore::IR::IROps::OP_XOR:
@@ -5954,10 +5945,10 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
 
     Result = ALUOp;
     StoreResult(GPRClass, Op, Result, -1);
+  }
 
-    if (RequiresMask && Size < 4) {
-      Result = _Bfe(Size, Size * 8, 0, Result);
-    }
+  if (RequiresMask && Size < 4) {
+    Result = _Bfe(Size, Size * 8, 0, Result);
   }
 
   // Flags set
