@@ -82,7 +82,7 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
   if (insertAfter) {
     LinkCodeBlocks(insertAfter, CodeNode);
   } else {
-    LOGMAN_THROW_A(CurrentCodeBlock != nullptr, "CurrentCodeBlock must not be null here");
+    LOGMAN_THROW_A_FMT(CurrentCodeBlock != nullptr, "CurrentCodeBlock must not be null here");
 
     // Find last block
     auto LastBlock = CurrentCodeBlock;
@@ -101,7 +101,7 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
 
 void IREmitter::SetCurrentCodeBlock(OrderedNode *Node) {
   CurrentCodeBlock = Node;
-  LOGMAN_THROW_A(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '%s'", std::string(IR::GetName(Node->Op(DualListData.DataBegin())->Op)).c_str());
+  LOGMAN_THROW_A_FMT(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '{}'", IR::GetName(Node->Op(DualListData.DataBegin())->Op));
   SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
 }
 

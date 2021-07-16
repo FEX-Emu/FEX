@@ -489,7 +489,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) &&
           IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-        LOGMAN_MSG_A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
+        LOGMAN_MSG_A_FMT("Could const prop op: {}", IR::GetName(IROp->Op));
       }
     break;
     }
@@ -505,7 +505,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       uint64_t Constant1;
 
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
-        LOGMAN_MSG_A("Could const prop op: %s", std::string(IR::GetName(IROp->Op)).c_str());
+        LOGMAN_MSG_A_FMT("Could const prop op: {}", IR::GetName(IROp->Op));
       }
     break;
     }
