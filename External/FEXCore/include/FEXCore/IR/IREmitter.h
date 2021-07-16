@@ -398,50 +398,50 @@ friend class FEXCore::IR::PassManager;
   }
 
   void SetJumpTarget(IR::IROp_Jump *Op, OrderedNode *Target) {
-    LOGMAN_THROW_A(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting Jump target to %%ssa%d %s",
+    LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
+        "Tried setting Jump target to %ssa{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
-        std::string(IR::GetName(Target->Op(DualListData.DataBegin())->Op)).c_str());
+        IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
     Op->Header.Args[0].NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
   void SetTrueJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
-    LOGMAN_THROW_A(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting CondJump target to %%ssa%d %s",
+    LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
+        "Tried setting CondJump target to %ssa{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
-        std::string(IR::GetName(Target->Op(DualListData.DataBegin())->Op)).c_str());
+        IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
     Op->TrueBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
   void SetFalseJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
-    LOGMAN_THROW_A(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting CondJump target to %%ssa%d %s",
+    LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
+        "Tried setting CondJump target to %ssa{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
-        std::string(IR::GetName(Target->Op(DualListData.DataBegin())->Op)).c_str());
+        IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
     Op->FalseBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
 
   void SetJumpTarget(IRPair<IROp_Jump> Op, OrderedNode *Target) {
-    LOGMAN_THROW_A(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting Jump target to %%ssa%d %s",
+    LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
+        "Tried setting Jump target to %ssa{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
-        std::string(IR::GetName(Target->Op(DualListData.DataBegin())->Op)).c_str());
+        IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
     Op.first->Header.Args[0].NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
   void SetTrueJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
-    LOGMAN_THROW_A(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting CondJump target to %%ssa%d %s",
+    LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
+        "Tried setting CondJump target to %ssa{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
-        std::string(IR::GetName(Target->Op(DualListData.DataBegin())->Op)).c_str());
+        IR::GetName(Target->Op(DualListData.DataBegin())->Op));
     Op.first->TrueBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
   void SetFalseJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
-    LOGMAN_THROW_A(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting CondJump target to %%ssa%d %s",
+    LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
+        "Tried setting CondJump target to %ssa{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
-        std::string(IR::GetName(Target->Op(DualListData.DataBegin())->Op)).c_str());
+        IR::GetName(Target->Op(DualListData.DataBegin())->Op));
     Op.first->FalseBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
 
@@ -507,7 +507,7 @@ friend class FEXCore::IR::PassManager;
 
     ReplaceUsesWithAfter(Node, NewNode, Start);
 
-    LOGMAN_THROW_A(Node->NumUses == 0, "Node still used");
+    LOGMAN_THROW_A_FMT(Node->NumUses == 0, "Node still used");
 
     // Since we have deleted ALL uses, we can safely delete the node.
     Remove(Node);
@@ -521,8 +521,8 @@ friend class FEXCore::IR::PassManager;
   OrderedNode *GetPackedRFLAG(bool Lower8);
 
   void CopyData(IREmitter const &rhs) {
-    LOGMAN_THROW_A(rhs.DualListData.DataBackingSize() <= DualListData.DataBackingSize(), "Trying to take ownership of data that is too large");
-    LOGMAN_THROW_A(rhs.DualListData.ListBackingSize() <= DualListData.ListBackingSize(), "Trying to take ownership of data that is too large");
+    LOGMAN_THROW_A_FMT(rhs.DualListData.DataBackingSize() <= DualListData.DataBackingSize(), "Trying to take ownership of data that is too large");
+    LOGMAN_THROW_A_FMT(rhs.DualListData.ListBackingSize() <= DualListData.ListBackingSize(), "Trying to take ownership of data that is too large");
     DualListData.CopyData(rhs.DualListData);
     InvalidNode = rhs.InvalidNode->Wrapped(rhs.DualListData.ListBegin()).GetNode(DualListData.ListBegin());
     CurrentWriteCursor = rhs.CurrentWriteCursor;
@@ -588,7 +588,7 @@ friend class FEXCore::IR::PassManager;
 #endif
     CodeNode->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_CodeBlock>();
 
-    LOGMAN_THROW_A(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
+    LOGMAN_THROW_A_FMT(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
 
     CodeNode->append(DualListData.ListBegin(), Next);
   }

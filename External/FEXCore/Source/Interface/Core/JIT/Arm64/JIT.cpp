@@ -45,8 +45,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-    auto Name = FEXCore::IR::GetName(IROp->Op);
-    LOGMAN_MSG_A("Unhandled IR Op: %s", std::string(Name).c_str());
+    LOGMAN_MSG_A_FMT("Unhandled IR Op: {}", FEXCore::IR::GetName(IROp->Op));
 #endif
   } else {
     switch(Info.ABI) {
@@ -295,8 +294,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
       case FABI_UNKNOWN:
       default:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-        auto Name = FEXCore::IR::GetName(IROp->Op);
-        LOGMAN_MSG_A("Unhandled IR Fallback abi: %s %d", std::string(Name).c_str(), Info.ABI);
+        LOGMAN_MSG_A_FMT("Unhandled IR Fallback ABI: {} {}", FEXCore::IR::GetName(IROp->Op), Info.ABI);
 #endif
       break;
     }
@@ -315,7 +313,7 @@ Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
                     PROT_READ | PROT_WRITE | PROT_EXEC,
                     MAP_PRIVATE | MAP_ANONYMOUS,
                     -1, 0));
-  LOGMAN_THROW_A(!!Buffer.Ptr, "Couldn't allocate code buffer");
+  LOGMAN_THROW_A_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
   Dispatcher->RegisterCodeBuffer(Buffer.Ptr, Buffer.Size);
   return Buffer;
 }
@@ -352,7 +350,7 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
         return true;
       }
       else {
-        LogMan::Msg::E("Unhandled JIT SIGBUS LDAR*: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
         return false;
       }
     }
@@ -376,7 +374,7 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
         return true;
       }
       else {
-        LogMan::Msg::E("Unhandled JIT SIGBUS STLR*: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
         return false;
       }
     }
@@ -427,7 +425,7 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
       return true;
     }
     else {
-      LogMan::Msg::E("Unhandled JIT SIGBUS CASPAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
       return false;
     }
   }
@@ -438,7 +436,7 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
       return true;
     }
     else {
-      LogMan::Msg::E("Unhandled JIT SIGBUS CASAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
       return false;
     }
   }
@@ -450,7 +448,7 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
     }
     else {
       uint8_t Op = (PC[0] >> 12) & 0xF;
-      LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x: PC: %p Instruction: 0x%08x\n", Op, PC, PC[0]);
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: {} Instruction: 0x{:08x}\n", Op, fmt::ptr(PC), PC[0]);
       return false;
     }
   }
@@ -462,12 +460,12 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
       return true;
     }
     else {
-      LogMan::Msg::E("Unhandled JIT SIGBUS LDAXR: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXR: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
       return false;
     }
   }
   else {
-    LogMan::Msg::E("Unhandled JIT SIGBUS: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
+    LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
     return false;
   }
 
@@ -622,7 +620,7 @@ Arm64JITCore::~Arm64JITCore() {
 IR::PhysicalRegister Arm64JITCore::GetPhys(uint32_t Node) const {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
-  LOGMAN_THROW_A(!PhyReg.IsInvalid(), "Couldn't Allocate register for node: ssa%d. Class: %d", Node, PhyReg.Class);
+  LOGMAN_THROW_A_FMT(!PhyReg.IsInvalid(), "Couldn't Allocate register for node: ssa{}. Class: {}", Node, PhyReg.Class);
 
   return PhyReg;
 }
@@ -636,7 +634,7 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_32>(uint32_t Node) const
   } else if (Reg.Class == IR::GPRClass.Val) {
     return RA64[Reg.Reg].W();
   } else {
-    LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
+    LOGMAN_THROW_A_FMT(false, "Unexpected Class: {}", Reg.Class);
   }
 
   FEX_UNREACHABLE;
@@ -651,7 +649,7 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(uint32_t Node) const
   } else if (Reg.Class == IR::GPRClass.Val) {
     return RA64[Reg.Reg];
   } else {
-    LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
+    LOGMAN_THROW_A_FMT(false, "Unexpected Class: {}", Reg.Class);
   }
 
   FEX_UNREACHABLE;
@@ -677,7 +675,7 @@ aarch64::VRegister Arm64JITCore::GetSrc(uint32_t Node) const {
   } else if (Reg.Class == IR::FPRClass.Val) {
     return RAFPR[Reg.Reg];
   } else {
-    LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
+    LOGMAN_THROW_A_FMT(false, "Unexpected Class: {}", Reg.Class);
   }
 
   FEX_UNREACHABLE;
@@ -691,7 +689,7 @@ aarch64::VRegister Arm64JITCore::GetDst(uint32_t Node) const {
   } else if (Reg.Class == IR::FPRClass.Val) {
     return RAFPR[Reg.Reg];
   } else {
-    LOGMAN_THROW_A(false, "Unexpected Class: %d", Reg.Class);
+    LOGMAN_THROW_A_FMT(false, "Unexpected Class: {}", Reg.Class);
   }
 
   FEX_UNREACHABLE;
@@ -829,7 +827,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     using namespace FEXCore::IR;
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LOGMAN_THROW_A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+    LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
     {
@@ -894,7 +892,7 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
   auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
 
   if (!HostCode) {
-    //printf("ExitFunctionLink: Aborting, %lX not in cache\n", GuestRip);
+    //fmt::print("ExitFunctionLink: Aborting, {:X} not in cache\n", GuestRip);
     Frame->State.rip = GuestRip;
     return core->ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress;
   }
