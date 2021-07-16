@@ -52,16 +52,12 @@ bool PhiValidation::Run(IREmitter *IREmit) {
     }
   }
 
-  std::stringstream Out;
-
   if (HadError) {
+    std::stringstream Out;
     FEXCore::IR::Dump(&Out, &CurrentIR, nullptr);
-
     Out << "Errors:" << std::endl << Errors.str() << std::endl;
-
     LogMan::Msg::EFmt("{}", Out.str());
   }
-
 
   return false;
 }
