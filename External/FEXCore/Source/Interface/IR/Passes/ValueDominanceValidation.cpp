@@ -28,12 +28,9 @@ public:
 
 bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
-  bool HadWarning = false;
   auto CurrentIR = IREmit->ViewIR();
 
   std::ostringstream Errors;
-  std::ostringstream Warnings;
-
   std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -193,19 +190,10 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
     }
   }
 
-  std::stringstream Out;
-
-  if (HadError || HadWarning) {
+  if (HadError) {
+    std::stringstream Out;
     FEXCore::IR::Dump(&Out, &CurrentIR, nullptr);
-
-    if (HadError) {
-      Out << "Errors:" << std::endl << Errors.str() << std::endl;
-    }
-
-    if (HadWarning) {
-      Out << "Warnings:" << std::endl << Warnings.str() << std::endl;
-    }
-
+    Out << "Errors:" << std::endl << Errors.str() << std::endl;
     LogMan::Msg::EFmt("{}", Out.str());
   }
 
