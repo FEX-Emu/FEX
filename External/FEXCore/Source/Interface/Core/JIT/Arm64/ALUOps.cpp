@@ -46,7 +46,7 @@ DEF_OP(TruncElementPair) {
       mov(Dst.second, Src.second);
       break;
     }
-    default: LOGMAN_MSG_A("Unhandled Truncation size: %d", Op->Size); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", Op->Size); break;
   }
 }
 
@@ -95,7 +95,7 @@ DEF_OP(Add) {
       case 8:
         add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), Const);
         break;
-      default: LOGMAN_MSG_A("Unsupported Add size: %d", OpSize);
+      default: LOGMAN_MSG_A_FMT("Unsupported Add size: {}", OpSize);
     }
   } else {
     switch (OpSize) {
@@ -105,7 +105,7 @@ DEF_OP(Add) {
       case 8:
         add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
         break;
-      default: LOGMAN_MSG_A("Unsupported Add size: %d", OpSize);
+      default: LOGMAN_MSG_A_FMT("Unsupported Add size: {}", OpSize);
     }
   }
 }
@@ -121,7 +121,7 @@ DEF_OP(Sub) {
       case 8:
         sub(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
         break;
-      default: LOGMAN_MSG_A("Unsupported Sub size: %d", OpSize);
+      default: LOGMAN_MSG_A_FMT("Unsupported Sub size: {}", OpSize);
     }
   } else {
     switch (OpSize) {
@@ -131,7 +131,7 @@ DEF_OP(Sub) {
       case 8:
         sub(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
         break;
-      default: LOGMAN_MSG_A("Unsupported Sub size: %d", OpSize);
+      default: LOGMAN_MSG_A_FMT("Unsupported Sub size: {}", OpSize);
     }
   }
 
@@ -147,7 +147,7 @@ DEF_OP(Neg) {
     case 8:
       neg(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
       break;
-    default: LOGMAN_MSG_A("Unsupported Not size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported Neg size: {}", OpSize);
   }
 }
 
@@ -163,7 +163,7 @@ DEF_OP(Mul) {
     case 8:
       mul(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown Sext size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Mul size: %d", OpSize);
   }
 }
 
@@ -179,7 +179,7 @@ DEF_OP(UMul) {
     case 8:
       mul(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown Sext size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unknown UMul size: {}", OpSize);
   }
 }
 
@@ -216,7 +216,7 @@ DEF_OP(Div) {
       sdiv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
     break;
     }
-    default: LOGMAN_MSG_A("Unknown DIV Size: %d", Size); break;
+    default: LOGMAN_MSG_A_FMT("Unknown DIV Size: {}", Size); break;
   }
 }
 
@@ -243,7 +243,7 @@ DEF_OP(UDiv) {
       udiv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown UDIV Size: %d", Size); break;
+    default: LOGMAN_MSG_A_FMT("Unknown UDIV Size: {}", Size); break;
   }
 }
 
@@ -290,7 +290,7 @@ DEF_OP(Rem) {
       msub(GetReg<RA_64>(Node), TMP1, Divisor, Dividend);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown REM Size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown REM Size: {}", OpSize); break;
   }
 }
 
@@ -332,7 +332,7 @@ DEF_OP(URem) {
       msub(GetReg<RA_64>(Node), TMP1, Divisor, Dividend);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown UREM Size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown UREM Size: {}", OpSize); break;
   }
 }
 
@@ -349,7 +349,7 @@ DEF_OP(MulH) {
     case 8:
       smulh(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown Sext size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Sext size: {}", OpSize);
   }
 }
 
@@ -366,7 +366,7 @@ DEF_OP(UMulH) {
     case 8:
       umulh(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown Sext size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Sext size: {}", OpSize);
   }
 }
 
@@ -462,7 +462,7 @@ DEF_OP(Ror) {
       break;
       }
 
-      default: LOGMAN_MSG_A("Unhandled ROR size: %d", OpSize);
+      default: LOGMAN_MSG_A_FMT("Unhandled ROR size: {}", OpSize);
     }
   } else {
     switch (OpSize) {
@@ -475,7 +475,7 @@ DEF_OP(Ror) {
       break;
       }
 
-      default: LOGMAN_MSG_A("Unhandled ROR size: %d", OpSize);
+      default: LOGMAN_MSG_A_FMT("Unhandled ROR size: {}", OpSize);
     }
   }
 }
@@ -494,7 +494,7 @@ DEF_OP(Extr) {
     break;
     }
 
-    default: LOGMAN_MSG_A("Unhandled EXTR size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unhandled EXTR size: {}", OpSize);
   }
 }
 
@@ -539,7 +539,7 @@ DEF_OP(LDiv) {
       mov(GetReg<RA_64>(Node), x0);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown LDIV Size: %d", Size); break;
+    default: LOGMAN_MSG_A_FMT("Unknown LDIV Size: {}", Size); break;
   }
 }
 
@@ -582,7 +582,7 @@ DEF_OP(LUDiv) {
       mov(GetReg<RA_64>(Node), x0);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown LUDIV Size: %d", Size); break;
+    default: LOGMAN_MSG_A_FMT("Unknown LUDIV Size: {}", Size); break;
   }
 }
 
@@ -635,7 +635,7 @@ DEF_OP(LRem) {
       mov(GetReg<RA_64>(Node), x0);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown LREM Size: %d", Size); break;
+    default: LOGMAN_MSG_A_FMT("Unknown LREM Size: {}", Size); break;
   }
 }
 
@@ -685,7 +685,7 @@ DEF_OP(LURem) {
       mov(GetReg<RA_64>(Node), x0);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown LUREM Size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown LUREM Size: {}", OpSize); break;
   }
 }
 
@@ -699,7 +699,7 @@ DEF_OP(Not) {
     case 8:
       mvn(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
       break;
-    default: LOGMAN_MSG_A("Unsupported Not size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported Not size: {}", OpSize);
   }
 }
 
@@ -730,7 +730,7 @@ DEF_OP(Popcount) {
       // fmov has zero extended, unused bytes are zero
       addv(VTMP1.B(), VTMP1.V8B());
       break;
-    default: LOGMAN_MSG_A("Unsupported Popcount size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported Popcount size: {}", OpSize);
   }
 
   auto Dst = GetReg<RA_32>(Node);
@@ -779,7 +779,7 @@ DEF_OP(FindMSB) {
       clz(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()));
       sub(Dst, TMP1, Dst);
       break;
-    default: LOGMAN_MSG_A("Unknown REV size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown FindMSB size: {}", OpSize); break;
   }
 }
 
@@ -800,7 +800,7 @@ DEF_OP(FindTrailingZeros) {
       rbit(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
       clz(GetReg<RA_64>(Node), GetReg<RA_64>(Node));
       break;
-    default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown FindTrailingZeros size: {}", OpSize); break;
   }
 }
 
@@ -819,7 +819,7 @@ DEF_OP(CountLeadingZeroes) {
     case 8:
       clz(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
       break;
-    default: LOGMAN_MSG_A("Unknown size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown CountLeadingZeroes size: {}", OpSize); break;
   }
 }
 
@@ -837,7 +837,7 @@ DEF_OP(Rev) {
     case 8:
       rev(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
       break;
-    default: LOGMAN_MSG_A("Unknown REV size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown REV size: {}", OpSize); break;
   }
 }
 
@@ -859,14 +859,14 @@ DEF_OP(Bfi) {
       bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), Op->lsb, Op->Width);
       mov(GetReg<RA_64>(Node), TMP1);
       break;
-    default: LOGMAN_MSG_A("Unknown BFI size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown BFI size: {}", OpSize); break;
   }
 }
 
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
-  LOGMAN_THROW_A(IROp->Size <= 8, "OpSize is too large for BFE: %d", IROp->Size);
-  LOGMAN_THROW_A(Op->Width != 0, "Invalid BFE width of 0");
+  LOGMAN_THROW_A_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
+  LOGMAN_THROW_A_FMT(Op->Width != 0, "Invalid BFE width of 0");
 
   auto Dst = GetReg<RA_64>(Node);
   ubfx(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), Op->lsb, Op->Width);
@@ -880,7 +880,7 @@ DEF_OP(Sbfe) {
   if (OpSize == 8) {
     sbfx(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), Op->lsb, Op->Width);
   } else {
-    LogMan::Msg::D("Unimplemented Sbfe size");
+    LogMan::Msg::DFmt("Unimplemented Sbfe size");
   }
 }
 
@@ -911,7 +911,7 @@ Condition MapSelectCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_MI:
   case FEXCore::IR::COND_PL:
   default:
-  LOGMAN_MSG_A("Unsupported compare type");
+  LOGMAN_MSG_A_FMT("Unsupported compare type");
   return Condition::nv;
   }
 }
@@ -929,7 +929,7 @@ DEF_OP(Select) {
   } else if (IsFPR(Op->Cmp1.ID())) {
     fcmp(GRFCMP(Op->Cmp1.ID()), GRFCMP(Op->Cmp2.ID()));
   } else {
-    LOGMAN_MSG_A("Select: Expected GPR or FPR");
+    LOGMAN_MSG_A_FMT("Select: Expected GPR or FPR");
   }
 
   auto cc = MapSelectCC(Op->Cond);
@@ -940,7 +940,7 @@ DEF_OP(Select) {
 
   if (is_const_true || is_const_false) {
     if (is_const_false != true || is_const_true != true || const_true != 1 || const_false != 0) {
-      LOGMAN_MSG_A("Select: Unsupported compare inline parameters");
+      LOGMAN_MSG_A_FMT("Select: Unsupported compare inline parameters");
     }
     cset(GRS(Node), cc);
   } else {
@@ -964,7 +964,7 @@ DEF_OP(VExtractToGPR) {
     case 8:
       umov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->Idx);
     break;
-    default:  LOGMAN_MSG_A("Unhandled ExtractElementSize: %d", OpSize);
+    default:  LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", OpSize);
   }
 }
 
@@ -1027,7 +1027,7 @@ DEF_OP(FCmp) {
   bool set = false;
 
   if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
-    LOGMAN_THROW_A(IR::FCMP_FLAG_EQ == 0, "IR::FCMP_FLAG_EQ must equal 0");
+    LOGMAN_THROW_A_FMT(IR::FCMP_FLAG_EQ == 0, "IR::FCMP_FLAG_EQ must equal 0");
     // EQ or unordered
     cset(Dst, Condition::eq); // Z = 1
     csinc(Dst, Dst, xzr, Condition::vc); // IF !V ? Z : 1

@@ -62,24 +62,24 @@ DEF_OP(VectorImm) {
 }
 
 DEF_OP(CreateVector2) {
-  LOGMAN_MSG_A("Unimplemented");
+  LOGMAN_MSG_A_FMT("Unimplemented");
 }
 
 DEF_OP(CreateVector4) {
-  LOGMAN_MSG_A("Unimplemented");
+  LOGMAN_MSG_A_FMT("Unimplemented");
 }
 
 DEF_OP(SplatVector) {
   auto Op = IROp->C<IR::IROp_SplatVector2>();
   uint8_t OpSize = IROp->Size;
 
-  LOGMAN_THROW_A(OpSize <= 16, "Can't handle a vector of size: %d", OpSize);
+  LOGMAN_THROW_A_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
   uint8_t Elements = 0;
 
   switch (Op->Header.Op) {
     case IR::OP_SPLATVECTOR4: Elements = 4; break;
     case IR::OP_SPLATVECTOR2: Elements = 2; break;
-    default: LOGMAN_MSG_A("Uknown Splat size"); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Splat size"); break;
   }
 
   uint8_t ElementSize = OpSize / Elements;
@@ -92,7 +92,7 @@ DEF_OP(SplatVector) {
     case 8:
       movddup(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.Size); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.Size); break;
   }
 }
 
@@ -130,7 +130,7 @@ DEF_OP(VMov) {
       movaps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", OpSize); break;
   }
 }
 
@@ -176,7 +176,7 @@ DEF_OP(VAdd) {
       vpaddq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -199,7 +199,7 @@ DEF_OP(VSub) {
       vpsubq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -214,7 +214,7 @@ DEF_OP(VUQAdd) {
       vpaddusw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -229,7 +229,7 @@ DEF_OP(VUQSub) {
       vpsubusw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -244,7 +244,7 @@ DEF_OP(VSQAdd) {
       vpaddsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -259,7 +259,7 @@ DEF_OP(VSQSub) {
       vpsubsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -296,7 +296,7 @@ DEF_OP(VAddP) {
       case 4:
         vphaddd(GetDst(Node), xmm15, xmm14);
         break;
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -325,7 +325,7 @@ DEF_OP(VAddP) {
       case 4:
         vphaddd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
         break;
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -357,7 +357,7 @@ DEF_OP(VAddV) {
       pinsrd(xmm15, eax, 0);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 
   movaps(Dest, xmm15);
@@ -376,7 +376,7 @@ DEF_OP(VUMinV) {
       pinsrw(Dest, eax, 1);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -391,7 +391,7 @@ DEF_OP(VURAvg) {
       vpavgw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -414,7 +414,7 @@ DEF_OP(VAbs) {
       vpabsq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -438,7 +438,7 @@ DEF_OP(VPopcount) {
       }
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 
   movaps(Dest, xmm15);
@@ -459,7 +459,7 @@ DEF_OP(VFAdd) {
         vaddsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -473,7 +473,7 @@ DEF_OP(VFAdd) {
         vaddpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -487,7 +487,7 @@ DEF_OP(VFAddP) {
     case 8:
       vhaddpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -506,7 +506,7 @@ DEF_OP(VFSub) {
         vsubsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -520,7 +520,7 @@ DEF_OP(VFSub) {
         vsubpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -540,7 +540,7 @@ DEF_OP(VFMul) {
         vmulsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -554,7 +554,7 @@ DEF_OP(VFMul) {
         vmulpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -574,7 +574,7 @@ DEF_OP(VFDiv) {
         vdivsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -588,7 +588,7 @@ DEF_OP(VFDiv) {
         vdivpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -608,7 +608,7 @@ DEF_OP(VFMin) {
         vminsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -622,7 +622,7 @@ DEF_OP(VFMin) {
         vminpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -642,7 +642,7 @@ DEF_OP(VFMax) {
         vmaxsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -656,7 +656,7 @@ DEF_OP(VFMax) {
         vmaxpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -674,7 +674,7 @@ DEF_OP(VFRecp) {
         vdivss(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -687,7 +687,7 @@ DEF_OP(VFRecp) {
         vdivps(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -707,7 +707,7 @@ DEF_OP(VFSqrt) {
         vsqrtsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -721,7 +721,7 @@ DEF_OP(VFSqrt) {
         vsqrtpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -747,7 +747,7 @@ DEF_OP(VFRSqrt) {
         divsd(GetDst(Node), xmm15);
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -761,7 +761,7 @@ DEF_OP(VFRSqrt) {
         divps(GetDst(Node), xmm15);
       break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -786,7 +786,7 @@ DEF_OP(VNeg) {
       vpsubq(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -807,7 +807,7 @@ DEF_OP(VFNeg) {
       vxorpd(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -830,7 +830,7 @@ DEF_OP(VUMin) {
         pinsrq(GetDst(Node), TMP2, 0);
         break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -847,7 +847,7 @@ DEF_OP(VUMin) {
         vpminud(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
         break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -867,7 +867,7 @@ DEF_OP(VSMin) {
       vpminsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -886,7 +886,7 @@ DEF_OP(VUMax) {
       vpmaxud(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -905,7 +905,7 @@ DEF_OP(VSMax) {
       vpmaxsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -930,7 +930,7 @@ DEF_OP(VZip) {
       punpcklqdq(xmm15, GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
   movapd(GetDst(Node), xmm15);
 }
@@ -957,7 +957,7 @@ DEF_OP(VZip2) {
       vpunpckhdq(GetDst(Node), xmm15, xmm14);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
   else {
@@ -978,7 +978,7 @@ DEF_OP(VZip2) {
       punpckhqdq(xmm15, GetSrc(Op->Header.Args[1].ID()));
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
     movapd(GetDst(Node), xmm15);
   }
@@ -989,7 +989,7 @@ DEF_OP(VUnZip) {
   uint8_t OpSize = IROp->Size;
 
   if (OpSize == 8) {
-    LOGMAN_MSG_A("Unsupported registersize on VunZip");
+    LOGMAN_MSG_A_FMT("Unsupported register size on VUnZip");
   }
   else {
     switch (Op->Header.ElementSize) {
@@ -1031,7 +1031,7 @@ DEF_OP(VUnZip) {
           0b0'0);
         break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -1042,7 +1042,7 @@ DEF_OP(VUnZip2) {
 
 
   if (OpSize == 8) {
-    LOGMAN_MSG_A("Unsupported registersize on VunZip");
+    LOGMAN_MSG_A_FMT("Unsupported register size on VUnZip2");
   }
   else {
     switch (Op->Header.ElementSize) {
@@ -1084,7 +1084,7 @@ DEF_OP(VUnZip2) {
           0b1'1);
         break;
       }
-      default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
@@ -1113,7 +1113,7 @@ DEF_OP(VCMPEQ) {
     case 8:
       vpcmpeqq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1134,7 +1134,7 @@ DEF_OP(VCMPEQZ) {
     case 8:
       vpcmpeqq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
       break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1154,7 +1154,7 @@ DEF_OP(VCMPGT) {
     case 8:
       vpcmpgtq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1175,7 +1175,7 @@ DEF_OP(VCMPGTZ) {
     case 8:
       vpcmpgtq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
       break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1196,7 +1196,7 @@ DEF_OP(VCMPLTZ) {
     case 8:
       vpcmpgtq(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
       break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1212,7 +1212,7 @@ DEF_OP(VFCMPEQ) {
     case 8:
       vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
   else {
@@ -1223,7 +1223,7 @@ DEF_OP(VFCMPEQ) {
     case 8:
       vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
 }
@@ -1240,7 +1240,7 @@ DEF_OP(VFCMPNEQ) {
     case 8:
       vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
 
   }
@@ -1252,7 +1252,7 @@ DEF_OP(VFCMPNEQ) {
     case 8:
       vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
 }
@@ -1269,7 +1269,7 @@ DEF_OP(VFCMPLT) {
     case 8:
       vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
   else {
@@ -1280,7 +1280,7 @@ DEF_OP(VFCMPLT) {
     case 8:
       vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
 }
@@ -1297,7 +1297,7 @@ DEF_OP(VFCMPGT) {
     case 8:
       vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
   else {
@@ -1308,7 +1308,7 @@ DEF_OP(VFCMPGT) {
     case 8:
       vcmppd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
 }
@@ -1325,7 +1325,7 @@ DEF_OP(VFCMPLE) {
     case 8:
       vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
   else {
@@ -1336,7 +1336,7 @@ DEF_OP(VFCMPLE) {
     case 8:
       vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
 }
@@ -1353,7 +1353,7 @@ DEF_OP(VFCMPORD) {
     case 8:
       vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 7);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
   else {
@@ -1364,7 +1364,7 @@ DEF_OP(VFCMPORD) {
     case 8:
       vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 7);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
 }
@@ -1381,7 +1381,7 @@ DEF_OP(VFCMPUNO) {
     case 8:
       vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 3);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
   else {
@@ -1392,21 +1392,21 @@ DEF_OP(VFCMPUNO) {
     case 8:
       vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 3);
     break;
-    default: LOGMAN_MSG_A("Unsupported elementSize: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
   }
 }
 
 DEF_OP(VUShl) {
-  LOGMAN_MSG_A("Unimplemented");
+  LOGMAN_MSG_A_FMT("Unimplemented");
 }
 
 DEF_OP(VUShr) {
-  LOGMAN_MSG_A("Unimplemented");
+  LOGMAN_MSG_A_FMT("Unimplemented");
 }
 
 DEF_OP(VSShr) {
-  LOGMAN_MSG_A("Unimplemented");
+  LOGMAN_MSG_A_FMT("Unimplemented");
 }
 
 DEF_OP(VUShlS) {
@@ -1425,7 +1425,7 @@ DEF_OP(VUShlS) {
       vpsllq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1445,7 +1445,7 @@ DEF_OP(VUShrS) {
       vpsrlq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1462,7 +1462,7 @@ DEF_OP(VSShrS) {
       break;
     }
     case 8: // Doesn't exist on x86
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1495,7 +1495,7 @@ DEF_OP(VInsElement) {
     pinsrq(xmm15, rax, Op->DestIdx);
   break;
   }
-  default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+  default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 
   movapd(GetDst(Node), xmm15);
@@ -1530,7 +1530,7 @@ DEF_OP(VInsScalarElement) {
     pinsrq(xmm15, rax, Op->DestIdx);
   break;
   }
-  default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+  default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 
   movapd(GetDst(Node), xmm15);
@@ -1560,7 +1560,7 @@ DEF_OP(VExtractElement) {
       pinsrq(GetDst(Node), rax, 0);
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1613,7 +1613,7 @@ DEF_OP(VDupElement) {
         (Op->Index << 1));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1666,7 +1666,7 @@ DEF_OP(VUShrI) {
       psrlq(GetDst(Node), Op->BitShift);
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1704,7 +1704,7 @@ DEF_OP(VSShrI) {
       }
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1724,7 +1724,7 @@ DEF_OP(VShlI) {
       psllq(GetDst(Node), Op->BitShift);
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1754,7 +1754,7 @@ DEF_OP(VUShrNI) {
       mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 
   vmovq(xmm15, rax);
@@ -1790,7 +1790,7 @@ DEF_OP(VUShrNI2) {
       mov(rcx, 0x0B'0A'09'08'03'02'01'00); // Upper
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 
   vmovq(xmm15, rax);
@@ -1817,7 +1817,7 @@ DEF_OP(VSXTL) {
     case 8:
       pmovsxdq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1836,7 +1836,7 @@ DEF_OP(VSXTL2) {
     case 8:
       pmovsxdq(GetDst(Node), GetDst(Node));
     break;
-    default: LOGMAN_MSG_A("Unknown element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1852,7 +1852,7 @@ DEF_OP(VUXTL) {
     case 8:
       pmovzxdq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1871,7 +1871,7 @@ DEF_OP(VUXTL2) {
     case 8:
       pmovzxdq(GetDst(Node), GetDst(Node));
     break;
-    default: LOGMAN_MSG_A("Unknown element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
 }
 
@@ -1884,7 +1884,7 @@ DEF_OP(VSQXTN) {
     case 2:
       packssdw(xmm15, GetSrc(Op->Header.Args[0].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
   psrldq(xmm15, 8);
   movaps(GetDst(Node), xmm15);
@@ -1903,7 +1903,7 @@ DEF_OP(VSQXTN2) {
     case 2:
       packssdw(xmm15, GetSrc(Op->Header.Args[1].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
 
   if (OpSize == 8) {
@@ -1921,7 +1921,7 @@ DEF_OP(VSQXTUN) {
     case 2:
       packusdw(xmm15, GetSrc(Op->Header.Args[0].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
   psrldq(xmm15, 8);
   movaps(GetDst(Node), xmm15);
@@ -1940,7 +1940,7 @@ DEF_OP(VSQXTUN2) {
     case 2:
       packusdw(xmm15, GetSrc(Op->Header.Args[1].ID()));
     break;
-    default: LOGMAN_MSG_A("Unknown element size: %d", Op->Header.ElementSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
   if (OpSize == 8) {
     psrldq(xmm15, OpSize / 2);
@@ -1960,7 +1960,7 @@ DEF_OP(VMul) {
       vpmulld(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -1991,7 +1991,7 @@ DEF_OP(VUMull) {
       vpmuludq(GetDst(Node), xmm14, xmm15);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -2026,7 +2026,7 @@ DEF_OP(VSMull) {
       vpmuldq(GetDst(Node), xmm14, xmm15);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -2062,7 +2062,7 @@ DEF_OP(VUMull2) {
       vpmuludq(GetDst(Node), xmm14, xmm15);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -2102,7 +2102,7 @@ DEF_OP(VSMull2) {
       vpmuldq(GetDst(Node), xmm14, xmm15);
     break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -2123,7 +2123,7 @@ DEF_OP(VUABDL) {
       vpabsd(GetDst(Node), GetDst(Node));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Element Size: %d", Op->Header.ElementSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
@@ -2141,7 +2141,7 @@ DEF_OP(VTBL1) {
       vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
       break;
     }
-    default: LOGMAN_MSG_A("Unknown OpSize: %d", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize); break;
   }
 }
 

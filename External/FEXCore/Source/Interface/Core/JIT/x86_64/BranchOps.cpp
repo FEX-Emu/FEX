@@ -14,15 +14,15 @@ $end_info$
 namespace FEXCore::CPU {
 #define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(GuestCallDirect) {
-  LogMan::Msg::D("Unimplemented");
+  LogMan::Msg::DFmt("Unimplemented");
 }
 
 DEF_OP(GuestCallIndirect) {
-  LogMan::Msg::D("Unimplemented");
+  LogMan::Msg::DFmt("Unimplemented");
 }
 
 DEF_OP(GuestReturn) {
-  LogMan::Msg::D("Unimplemented");
+  LogMan::Msg::DFmt("Unimplemented");
 }
 
 DEF_OP(SignalReturn) {

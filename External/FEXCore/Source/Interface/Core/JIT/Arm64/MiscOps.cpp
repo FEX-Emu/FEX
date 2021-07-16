@@ -8,11 +8,11 @@ $end_info$
 
 namespace FEXCore::CPU {
 static void PrintValue(uint64_t Value) {
-  LogMan::Msg::D("Value: 0x%lx", Value);
+  LogMan::Msg::DFmt("Value: 0x{:x}", Value);
 }
 
 static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
-  LogMan::Msg::D("Value: 0x%016lx'%016lx", ValueUpper, Value);
+  LogMan::Msg::DFmt("Value: 0x{:016x}'{:016x}", ValueUpper, Value);
 }
 
 using namespace vixl;
@@ -31,7 +31,7 @@ DEF_OP(Fence) {
     case IR::Fence_Store.Val:
       dmb(FullSystem, BarrierWrites);
       break;
-    default: LOGMAN_MSG_A("Unknown Fence: %d", Op->Fence); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Fence: {}", Op->Fence); break;
   }
 }
 
@@ -69,7 +69,7 @@ DEF_OP(Break) {
       br(TMP1);
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Break reason: %d", Op->Reason);
+    default: LOGMAN_MSG_A_FMT("Unknown Break reason: {}", Op->Reason);
   }
 }
 

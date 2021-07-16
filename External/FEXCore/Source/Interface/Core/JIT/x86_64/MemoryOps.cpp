@@ -36,10 +36,10 @@ DEF_OP(LoadContext) {
     }
     break;
     case 16: {
-      LOGMAN_MSG_A("Invalid GPR load of size 16");
+      LOGMAN_MSG_A_FMT("Invalid GPR load of size 16");
     }
     break;
-    default:  LOGMAN_MSG_A("Unhandled LoadContext size: %d", OpSize);
+    default:  LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
     }
   }
   else {
@@ -69,7 +69,7 @@ DEF_OP(LoadContext) {
         movups(GetDst(Node), xword [STATE + Op->Offset]);
     }
     break;
-    default:  LOGMAN_MSG_A("Unhandled LoadContext size: %d", OpSize);
+    default:  LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
     }
   }
 }
@@ -98,9 +98,9 @@ DEF_OP(StoreContext) {
     }
     break;
     case 16:
-      LogMan::Msg::D("Invalid store size of 16");
+      LogMan::Msg::DFmt("Invalid store size of 16");
     break;
-    default:  LOGMAN_MSG_A("Unhandled StoreContext size: %d", OpSize);
+    default:  LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
     }
   }
   else {
@@ -129,7 +129,7 @@ DEF_OP(StoreContext) {
         movups(xword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
     }
     break;
-    default:  LOGMAN_MSG_A("Unhandled StoreContext size: %d", OpSize);
+    default:  LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
     }
   }
 }
@@ -160,17 +160,18 @@ DEF_OP(LoadContextIndexed) {
         mov(GetDst<RA_64>(Node),  qword [rax + index * Op->Stride]);
         break;
       default:
-        LOGMAN_MSG_A("Unhandled LoadContextIndexed size: %d", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+        break;
       }
       break;
     }
     case 16:
-      LOGMAN_MSG_A("Invalid Class load of size 16");
+      LOGMAN_MSG_A_FMT("Invalid Class load of size 16");
       break;
     default:
-      LOGMAN_MSG_A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+      LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed stride: {}", Op->Stride);
+      break;
     }
-
   }
   else {
     switch (Op->Stride) {
@@ -195,7 +196,8 @@ DEF_OP(LoadContextIndexed) {
         vmovq(GetDst(Node),  qword [rax + index * Op->Stride]);
         break;
       default:
-        LOGMAN_MSG_A("Unhandled LoadContextIndexed size: %d", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+        break;
       }
       break;
     }
@@ -223,12 +225,14 @@ DEF_OP(LoadContextIndexed) {
           movups(GetDst(Node), xword [STATE + rax]);
         break;
       default:
-        LOGMAN_MSG_A("Unhandled LoadContextIndexed size: %d", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+        break;
       }
       break;
     }
     default:
-      LOGMAN_MSG_A("Unhandled LoadContextIndexed stride: %d", Op->Stride);
+      LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed stride: {}", Op->Stride);
+      break;
     }
   }
 }
@@ -248,13 +252,14 @@ DEF_OP(StoreContextIndexed) {
     case 4:
     case 8: {
       if (!(size == 1 || size == 2 || size == 4 || size == 8)) {
-        LOGMAN_MSG_A("Unhandled StoreContextIndexed size: %d", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", Op->Size);
       }
       mov(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
       break;
     }
     default:
-      LOGMAN_MSG_A("Unhandled StoreContextIndexed stride: %d", Op->Stride);
+      LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed stride: {}", Op->Stride);
+      break;
     }
   }
   else {
@@ -279,7 +284,8 @@ DEF_OP(StoreContextIndexed) {
         vmovq(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
         break;
       default:
-        LOGMAN_MSG_A("Unhandled StoreContextIndexed size: %d", size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", size);
+        break;
       }
       break;
     }
@@ -307,12 +313,14 @@ DEF_OP(StoreContextIndexed) {
           movups(xword [STATE + rax], value);
         break;
       default:
-        LOGMAN_MSG_A("Unhandled StoreContextIndexed size: %d", size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", size);
+        break;
       }
       break;
     }
     default:
-      LOGMAN_MSG_A("Unhandled StoreContextIndexed stride: %d", Op->Stride);
+      LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed stride: {}", Op->Stride);
+      break;
     }
   }
 }
@@ -340,7 +348,7 @@ DEF_OP(SpillRegister) {
         mov(qword [rsp + SlotOffset], GetSrc<RA_64>(Op->Header.Args[0].ID()));
         break;
       }
-      default:  LOGMAN_MSG_A("Unhandled SpillRegister size: %d", OpSize);
+      default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
     switch (OpSize) {
@@ -356,10 +364,10 @@ DEF_OP(SpillRegister) {
         movaps(xword [rsp + SlotOffset], GetSrc(Op->Header.Args[0].ID()));
         break;
       }
-      default:  LOGMAN_MSG_A("Unhandled SpillRegister size: %d", OpSize);
+      default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
     }
   } else {
-    LOGMAN_MSG_A("Unhandled SpillRegister class: %d", Op->Class.Val);
+    LOGMAN_MSG_A_FMT("Unhandled SpillRegister class: {}", Op->Class.Val);
   }
 
 
@@ -388,7 +396,7 @@ DEF_OP(FillRegister) {
         mov(GetDst<RA_64>(Node), qword [rsp + SlotOffset]);
         break;
       }
-      default:  LOGMAN_MSG_A("Unhandled FillRegister size: %d", OpSize);
+      default:  LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
     switch (OpSize) {
@@ -404,10 +412,10 @@ DEF_OP(FillRegister) {
         movaps(GetDst(Node), xword [rsp + SlotOffset]);
         break;
       }
-      default:  LOGMAN_MSG_A("Unhandled FillRegister size: %d", OpSize);
+      default:  LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
     }
   } else {
-    LOGMAN_MSG_A("Unhandled FillRegister class: %d", Op->Class.Val);
+    LOGMAN_MSG_A_FMT("Unhandled FillRegister class: {}", Op->Class.Val);
   }
 }
 
@@ -430,11 +438,11 @@ Xbyak::RegExp X86JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper 
     return Base;
   } else {
     if (OffsetScale != 1 && OffsetScale != 2 && OffsetScale != 4 && OffsetScale != 8) {
-      LOGMAN_MSG_A("Unhandled GenerateModRM OffsetScale: %d", OffsetScale);
+      LOGMAN_MSG_A_FMT("Unhandled GenerateModRM OffsetScale: {}", OffsetScale);
     }
 
     if (OffsetType != IR::MEM_OFFSET_SXTX) {
-      LOGMAN_MSG_A("Unhandled GenerateModRM OffsetType: %d", OffsetType.Val);
+      LOGMAN_MSG_A_FMT("Unhandled GenerateModRM OffsetType: {}", OffsetType.Val);
     }
 
     uint64_t Const;
@@ -475,7 +483,7 @@ DEF_OP(LoadMem) {
         mov(Dst, qword [MemPtr]);
       }
       break;
-      default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", Op->Size);
     }
   }
   else
@@ -511,7 +519,7 @@ DEF_OP(LoadMem) {
          }
        }
        break;
-      default:  LOGMAN_MSG_A("Unhandled LoadMem size: %d", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", Op->Size);
     }
   }
 }
@@ -537,7 +545,7 @@ DEF_OP(StoreMem) {
     case 8:
       mov(qword [MemPtr], GetSrc<RA_64>(Op->Header.Args[1].ID()));
     break;
-    default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", Op->Size);
     }
   }
   else {
@@ -560,17 +568,17 @@ DEF_OP(StoreMem) {
       else
         movups(xword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
     break;
-    default:  LOGMAN_MSG_A("Unhandled StoreMem size: %d", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", Op->Size);
     }
   }
 }
 
 DEF_OP(VLoadMemElement) {
-  LOGMAN_MSG_A("Unimplemented");
+  LOGMAN_MSG_A_FMT("Unimplemented");
 }
 
 DEF_OP(VStoreMemElement) {
-  LOGMAN_MSG_A("Unimplemented");
+  LOGMAN_MSG_A_FMT("Unimplemented");
 }
 
 DEF_OP(CacheLineClear) {

@@ -25,7 +25,7 @@ DEF_OP(ExtractElementPair) {
       mov (GetDst<RA_64>(Node), Regs[Op->Element]);
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Size"); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Size"); break;
   }
 }
 
@@ -51,7 +51,7 @@ DEF_OP(CreateElementPair) {
       RegTmp = rax;
       break;
     }
-    default: LOGMAN_MSG_A("Unknown Size"); break;
+    default: LOGMAN_MSG_A_FMT("Unknown Size"); break;
   }
 
   if (Dst.first != RegSecond) {
