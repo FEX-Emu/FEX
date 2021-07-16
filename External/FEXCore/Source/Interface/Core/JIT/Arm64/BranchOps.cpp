@@ -16,15 +16,15 @@ using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(GuestCallDirect) {
-  LogMan::Msg::D("Unimplemented");
+  LogMan::Msg::DFmt("Unimplemented");
 }
 
 DEF_OP(GuestCallIndirect) {
-  LogMan::Msg::D("Unimplemented");
+  LogMan::Msg::DFmt("Unimplemented");
 }
 
 DEF_OP(GuestReturn) {
-  LogMan::Msg::D("Unimplemented");
+  LogMan::Msg::DFmt("Unimplemented");
 }
 
 DEF_OP(SignalReturn) {
@@ -142,7 +142,7 @@ Condition MapBranchCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_MI:
   case FEXCore::IR::COND_PL:
   default:
-  LOGMAN_MSG_A("Unsupported compare type");
+  LOGMAN_MSG_A_FMT("Unsupported compare type");
   return Condition::nv;
   }
 }
@@ -169,10 +169,10 @@ DEF_OP(CondJump) {
   bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
   if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_EQ) {
-    LOGMAN_THROW_A(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
+    LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
   } else if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_NEQ) {
-    LOGMAN_THROW_A(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
+    LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     cbnz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
   } else {
     if (IsGPR(Op->Cmp1.ID())) {
@@ -183,7 +183,7 @@ DEF_OP(CondJump) {
     } else if (IsFPR(Op->Cmp1.ID())) {
       fcmp(GRFCMP(Op->Cmp1.ID()), GRFCMP(Op->Cmp2.ID()));
     } else {
-      LOGMAN_MSG_A("CondJump: Expected GPR or FPR");
+      LOGMAN_MSG_A_FMT("CondJump: Expected GPR or FPR");
     }
 
     b(TrueTargetLabel, MapBranchCC(Op->Cond));
