@@ -267,10 +267,9 @@ bool IRValidation::Run(IREmitter *IREmit) {
     }
   }
 
-  std::stringstream Out;
-
   HadWarning = false;
   if (HadError || HadWarning) {
+    std::stringstream Out;
     FEXCore::IR::Dump(&Out, &CurrentIR, RAData);
 
     if (HadError) {
