@@ -40,7 +40,7 @@ install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXUpdateAOTIRCache.sh" DESTINAT
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   add_custom_target(binfmt_misc_32
     echo "Attempting to install FEX-x86 misc now."
-    COMMAND "update-binfmts" "--import" "FEX-x86"
+    COMMAND "update-binfmts" "--importdir=${CMAKE_INSTALL_PREFIX}/share/binfmts/" "--import" "FEX-x86"
     COMMAND ${CMAKE_COMMAND} -E
     echo "binfmt_misc FEX-x86 installed"
   )
@@ -48,7 +48,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   add_custom_target(binfmt_misc_64
     COMMAND ${CMAKE_COMMAND} -E
     echo "Attempting to install FEX-x86_64 misc now."
-    COMMAND "update-binfmts" "--import" "FEX-x86_64"
+    COMMAND "update-binfmts" "--importdir=${CMAKE_INSTALL_PREFIX}/share/binfmts/" "--import" "FEX-x86_64"
     COMMAND ${CMAKE_COMMAND} -E
     echo "binfmt_misc FEX-x86_64 installed"
   )
