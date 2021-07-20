@@ -2,6 +2,7 @@
 
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
+#include "FEXCore/Config/Config.h"
 
 namespace FEXCore::CPU {
 using namespace vixl;
@@ -72,6 +73,8 @@ protected:
 
   uint32_t DCacheLineSize{};
   uint32_t ICacheLineSize{};
+
+  FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
 };
 
 }
