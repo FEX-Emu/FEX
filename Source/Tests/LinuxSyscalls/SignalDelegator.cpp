@@ -218,7 +218,7 @@ namespace FEX::HLE {
     // Default flags for us
     SignalHandler.HostAction.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
 
-    if (HostHandlers[Signal].Required == false &&
+    if (HostHandlers[Signal].Required.load(std::memory_order_relaxed) == false &&
         (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL ||
          SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN)) {
       // If getting set to DFL or IGN on first install then just install to those
@@ -240,7 +240,7 @@ namespace FEX::HLE {
     // If the guest has masked some signals then we need to also mask those signals
     sigemptyset(&SignalHandler.HostAction.sa_mask);
     for (size_t i = 1; i < HostHandlers.size(); ++i) {
-      if (HostHandlers[i].Required) {
+      if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
         sigdelset(&SignalHandler.HostAction.sa_mask, i);
       }
       else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
@@ -275,7 +275,7 @@ namespace FEX::HLE {
       SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_RESTART;
     }
 
-    if (HostHandlers[Signal].Required == false &&
+    if (HostHandlers[Signal].Required.load(std::memory_order_relaxed) == false &&
         (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL ||
          SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN)) {
       // If we are changing a none required signal back to DFL or IGN then we can allow this
@@ -290,7 +290,7 @@ namespace FEX::HLE {
     // This'll likely be SIGILL, SIGBUS, SIG63
     sigemptyset(&SignalHandler.HostAction.sa_mask);
     for (size_t i = 1; i < HostHandlers.size(); ++i) {
-      if (HostHandlers[i].Required) {
+      if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
         sigdelset(&SignalHandler.HostAction.sa_mask, i);
       }
       else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
@@ -594,7 +594,7 @@ namespace FEX::HLE {
       sigemptyset(&HostSet);
 
       for (size_t i = 0; i < MAX_SIGNALS; ++i) {
-        if (HostHandlers[i + 1].Required) {
+        if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
           // If it is a required host signal then we can't mask it
           continue;
         }
@@ -699,7 +699,7 @@ namespace FEX::HLE {
     sigemptyset(&HostSet);
 
     for (size_t i = 0; i < MAX_SIGNALS; ++i) {
-      if (HostHandlers[i + 1].Required) {
+      if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
         // For now skip our internal signals
         continue;
       }

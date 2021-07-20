@@ -12,7 +12,9 @@ static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
 X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
   : Dispatcher(ctx, Thread)
-  , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE, nullptr, this) {
+  , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE,
+      FEXCore::Allocator::mmap(nullptr, MAX_DISPATCHER_CODE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+      nullptr) {
 
   using namespace Xbyak;
   using namespace Xbyak::util;
@@ -298,7 +300,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 }
 
 X86Dispatcher::~X86Dispatcher() {
-
+  FEXCore::Allocator::munmap(top_, MAX_DISPATCHER_CODE_SIZE);
 }
 
 #ifdef _M_X86_64
