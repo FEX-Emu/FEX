@@ -11,6 +11,7 @@ $end_info$
 */
 
 #include "Interface/Context/Context.h"
+#include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/ArchHelpers/Arm64.h"
 #include "Interface/Core/ArchHelpers/MContext.h"

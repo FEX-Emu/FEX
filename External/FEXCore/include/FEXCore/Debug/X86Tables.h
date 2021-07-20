@@ -1,6 +1,5 @@
 #pragma once
 
-#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <cstdint>
@@ -500,6 +499,4 @@ extern FEX_DEFAULT_VISIBILITY X86InstInfo XOPTableGroupOps[MAX_XOP_GROUP_TABLE_S
 
 // EVEX
 extern FEX_DEFAULT_VISIBILITY X86InstInfo EVEXTableOps[MAX_EVEX_TABLE_SIZE];
-
-FEX_DEFAULT_VISIBILITY void InitializeInfoTables(Context::OperatingMode Mode);
 }

@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Context/Context.h"
+#include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"

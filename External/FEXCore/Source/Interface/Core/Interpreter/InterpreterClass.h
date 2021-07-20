@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Interface/Core/LookupCache.h"
 #include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 

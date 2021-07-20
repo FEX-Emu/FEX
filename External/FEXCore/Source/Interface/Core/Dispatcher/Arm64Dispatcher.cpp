@@ -1,3 +1,5 @@
+#include "Interface/Core/LookupCache.h"
+
 #include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 

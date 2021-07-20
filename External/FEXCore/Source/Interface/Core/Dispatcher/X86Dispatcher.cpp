@@ -1,3 +1,5 @@
+#include "Interface/Core/LookupCache.h"
+
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
 
 #include "Interface/Core/Interpreter/InterpreterClass.h"

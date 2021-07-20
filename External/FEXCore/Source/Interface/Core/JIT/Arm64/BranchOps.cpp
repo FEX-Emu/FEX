@@ -4,6 +4,8 @@ tags: backend|arm64
 $end_info$
 */
 
+#include "Interface/Core/LookupCache.h"
+
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/Core/InternalThreadState.h"
 
