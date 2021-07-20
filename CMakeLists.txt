@@ -56,12 +56,17 @@ if (ENABLE_XRAY)
   link_libraries(-fxray-instrument)
 endif()
 
+set (PTHREAD_LIB pthread)
 if (ENABLE_LLD)
   set (LD_OVERRIDE "-fuse-ld=lld")
   link_libraries(${LD_OVERRIDE})
 endif()
 
 if (ENABLE_STATIC_PIE)
+  if (NOT ENABLE_LLD)
+    message (FATAL_ERROR "static-pie requires linking with lld")
+  endif()
+
   file(WRITE ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt.c
     "int main(int argc, char* argv[])
       {
@@ -121,6 +126,9 @@ if (ENABLE_STATIC_PIE)
     if (SYMBOLS_FINE)
       # We can now exnable static-pie
       set (STATIC_PIE_OPTIONS "-static-pie")
+      # Pthreads has an issue with exposing symbols
+      # We need to make some concessions to the pthread gods
+      set (PTHREAD_LIB -Wl,--undefined-glob=pthread_* pthread)
     else()
       message (FATAL_ERROR "Application has __rela_iplt_{start,end} symbols. Which means static-pie can't be enabled")
     endif()

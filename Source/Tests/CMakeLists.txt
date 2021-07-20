@@ -6,7 +6,7 @@ add_executable(FEXLoader FEXLoader.cpp)
 target_include_directories(FEXLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_include_directories(FEXLoader PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
-target_link_libraries(FEXLoader ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS})
+target_link_libraries(FEXLoader ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(FEXLoader
@@ -63,7 +63,7 @@ add_executable(FEXBash FEXBash.cpp)
 target_include_directories(FEXBash PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_include_directories(FEXBash PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
-target_link_libraries(FEXBash ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS})
+target_link_libraries(FEXBash ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(FEXBash
@@ -83,12 +83,12 @@ add_executable(TestHarnessRunner TestHarnessRunner.cpp)
 target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
-target_link_libraries(TestHarnessRunner ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS})
+target_link_libraries(TestHarnessRunner ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
 
 add_executable(UnitTestGenerator UnitTestGenerator.cpp)
 target_include_directories(UnitTestGenerator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
-target_link_libraries(UnitTestGenerator ${LIBS} ${STATIC_PIE_OPTIONS})
+target_link_libraries(UnitTestGenerator ${LIBS} ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
 
 add_executable(IRLoader
   IRLoader.cpp
@@ -97,5 +97,5 @@ add_executable(IRLoader
 target_include_directories(IRLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_include_directories(IRLoader PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
-target_link_libraries(IRLoader ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS})
+target_link_libraries(IRLoader ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
 
