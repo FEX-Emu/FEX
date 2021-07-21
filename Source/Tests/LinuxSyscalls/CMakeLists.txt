@@ -57,7 +57,7 @@ add_library(LinuxEmulation STATIC
     Syscalls/Stubs.cpp
 )
 
-target_link_libraries(LinuxEmulation FEXCore pthread FEX_Utils)
+target_link_libraries(LinuxEmulation FEXCore FEX_Utils)
 target_include_directories(LinuxEmulation PRIVATE ${CMAKE_BINARY_DIR}/generated)
 target_include_directories(LinuxEmulation PRIVATE ${PROJECT_SOURCE_DIR}/External/drm-headers/include/)
 
