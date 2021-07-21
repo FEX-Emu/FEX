@@ -2,6 +2,7 @@
 #pragma once
 #include "Common/Config.h"
 #include "Common/MathUtils.h"
+#include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 
@@ -213,8 +214,43 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
-    if (!MainElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !MainElf.ReadElf(Filename)) {
-      return;
+    bool LoadedWithFD = false;
+    int FD = getauxval(AT_EXECFD);
+
+    // If we are provided an EXECFD then attempt to execute that first
+    // This happens in the case of binfmt_misc usage
+    if (FD != 0) {
+      if (!MainElf.ReadElf(FD)) {
+        return;
+      }
+      LoadedWithFD = true;
+    }
+    else {
+      if (!MainElf.ReadElf(ResolveRootfsFile(Filename, RootFS)) && !MainElf.ReadElf(Filename)) {
+        return;
+      }
+    }
+
+    // If we have loaded with EXECFD then we have binfmt_misc preserve argv[0] also set
+    // This adds an additional argument to our argument list that we need to ignore
+    // argv[0] = FEXInterpreter
+    // argv[1] = <Path to binary>
+    // argv[2] = <original user typed path to binary>
+    // If our kernel if v5.12 or higher then
+    // We can check if this exists by checking auxv[AT_FLAGS] for AT_FLAGS_PRESERVE_ARGV0
+    // Else we need to make an assumption that if we were loaded with FD that we have preserve enabled
+
+    uint64_t AtFlags = getauxval(AT_FLAGS);
+#ifndef AT_FLAGS_PRESERVE_ARGV0
+#define AT_FLAGS_PRESERVE_ARGV0 1
+#endif
+    uint32_t HostKernel = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
+    if ((HostKernel >= FEX::HLE::SyscallHandler::KernelVersion(5, 12, 0) &&
+         (AtFlags & AT_FLAGS_PRESERVE_ARGV0)) ||
+       LoadedWithFD){
+
+      // Erase the initial argument from the list in this case
+      Args.erase(Args.begin());
     }
 
     if (!MainElf.InterpreterElf.empty()) {
