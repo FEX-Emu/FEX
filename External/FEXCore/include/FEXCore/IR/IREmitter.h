@@ -595,7 +595,39 @@ friend class FEXCore::IR::PassManager;
 
   IRPair<IROp_CodeBlock> CreateNewCodeBlockAtEnd() { return CreateNewCodeBlockAfter(nullptr); }
   IRPair<IROp_CodeBlock> CreateNewCodeBlockAfter(OrderedNode* insertAfter);
-  void SetCurrentCodeBlock(OrderedNode *Node);
+
+  void SetCurrentCodeBlock(OrderedNode *Node) {
+    CurrentCodeBlock = Node;
+    LOGMAN_THROW_A_FMT(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '{}'", IR::GetName(Node->Op(DualListData.DataBegin())->Op));
+    SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
+
+    // Clear our const pool which is per block
+    ClearConstPool();
+  }
+
+  OrderedNode* ConstructConst(uint8_t Size, uint64_t Constant) {
+    auto Iter = ConstPool.find(Constant);
+    if (Iter == ConstPool.end()) {
+      auto NewIter = ConstPool.try_emplace(Constant, _Constant(Size, Constant));
+      return NewIter.first->second;
+    }
+
+    return Iter->second;
+  }
+
+  OrderedNode* ConstructConst(uint64_t Constant) {
+    auto Iter = ConstPool.find(Constant);
+    if (Iter == ConstPool.end()) {
+      auto NewIter = ConstPool.try_emplace(Constant, _Constant(Constant));
+      return NewIter.first->second;
+    }
+
+    return Iter->second;
+  }
+
+  void ClearConstPool() {
+    ConstPool.clear();
+  }
 
   protected:
     void RemoveArgUses(OrderedNode *Node);
@@ -636,6 +668,10 @@ friend class FEXCore::IR::PassManager;
     OrderedNode *CurrentCodeBlock{};
     std::vector<OrderedNode*> CodeBlocks;
     uint64_t Entry;
+
+    // Per block const pool
+    // Will usually end up being only a couple members in size
+    std::unordered_map<uint64_t, OrderedNode*> ConstPool;
 };
 
 }
