@@ -225,12 +225,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(setuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t uid) -> uint64_t {
-      uint64_t Result = ::setuid(uid);
+      uint64_t Result = ::syscall(SYS_setuid, uid);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(setgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t gid) -> uint64_t {
-      uint64_t Result = ::setgid(gid);
+      uint64_t Result = ::syscall(SYS_setgid, gid);
       SYSCALL_ERRNO();
     });
 
@@ -260,12 +260,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(setreuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid) -> uint64_t {
-      uint64_t Result = ::setreuid(ruid, euid);
+      uint64_t Result = ::syscall(SYS_setreuid, ruid, euid);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(setregid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid) -> uint64_t {
-      uint64_t Result = ::setregid(rgid, egid);
+      uint64_t Result = ::syscall(SYS_setregid, rgid, egid);
       SYSCALL_ERRNO();
     });
 
@@ -275,12 +275,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(setgroups, [](FEXCore::Core::CpuStateFrame *Frame, size_t size, const gid_t *list) -> uint64_t {
-      uint64_t Result = ::setgroups(size, list);
+      uint64_t Result = ::syscall(SYS_setgroups, size, list);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL(setresuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid, uid_t suid) -> uint64_t {
-      uint64_t Result = ::setresuid(ruid, euid, suid);
+      uint64_t Result = ::syscall(SYS_setresuid, ruid, euid, suid);
       SYSCALL_ERRNO();
     });
 
@@ -290,7 +290,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(setresgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid, gid_t sgid) -> uint64_t {
-      uint64_t Result = ::setresgid(rgid, egid, sgid);
+      uint64_t Result = ::syscall(SYS_setresgid, rgid, egid, sgid);
       SYSCALL_ERRNO();
     });
 
