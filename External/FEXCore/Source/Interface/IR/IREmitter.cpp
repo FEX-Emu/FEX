@@ -99,12 +99,6 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
   return CodeNode;
 }
 
-void IREmitter::SetCurrentCodeBlock(OrderedNode *Node) {
-  CurrentCodeBlock = Node;
-  LOGMAN_THROW_A_FMT(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '{}'", IR::GetName(Node->Op(DualListData.DataBegin())->Op));
-  SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
-}
-
 void IREmitter::ReplaceWithConstant(OrderedNode *Node, uint64_t Value) {
     auto Header = Node->Op(DualListData.DataBegin());
 
