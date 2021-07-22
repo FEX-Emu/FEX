@@ -1,6 +1,8 @@
 #pragma once
 
 #include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/HLE/SyscallHandler.h>
+
 #include <array>
 #include <cstdint>
 #include <utility>
@@ -38,6 +40,7 @@ public:
   void SetExternalBranches(std::set<uint64_t> *v) { ExternalBranches = v; }
 private:
   FEXCore::Context::Context *CTX;
+  const FEXCore::HLE::SyscallOSABI OSABI{};
 
   bool DecodeInstruction(uint64_t PC);
 
@@ -84,5 +87,7 @@ private:
     &FEXCore::Frontend::Decoder::DecodeModRM_64,
     &FEXCore::Frontend::Decoder::DecodeModRM_16,
   };
+
+  const uint8_t *AdjustAddrForSpecialRegion(uint8_t const* _InstStream, uint64_t EntryPoint, uint64_t RIP);
 };
 }
