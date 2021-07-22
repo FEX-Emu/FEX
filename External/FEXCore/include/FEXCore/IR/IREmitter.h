@@ -362,11 +362,11 @@ friend class FEXCore::IR::PassManager;
   }
 
   IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, CondClassType cond = {COND_NEQ}) {
-    return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
+    return _CondJump(ssa0, ConstructConst(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
   }
 
   IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, CondClassType cond = {COND_NEQ}) {
-    return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
+    return _CondJump(ssa0, ConstructConst(0), ssa1, ssa2, cond, GetOpSize(ssa0));
   }
 
   IRPair<IROp_Phi> _Phi() {
@@ -606,9 +606,10 @@ friend class FEXCore::IR::PassManager;
   }
 
   OrderedNode* ConstructConst(uint8_t Size, uint64_t Constant) {
-    auto Iter = ConstPool.find(Constant);
+    auto Pair = std::make_pair(Constant, Size);
+    auto Iter = ConstPool.find(Pair);
     if (Iter == ConstPool.end()) {
-      auto NewIter = ConstPool.try_emplace(Constant, _Constant(Size, Constant));
+      auto NewIter = ConstPool.try_emplace(Pair, _Constant(Size, Constant));
       return NewIter.first->second;
     }
 
@@ -616,9 +617,10 @@ friend class FEXCore::IR::PassManager;
   }
 
   OrderedNode* ConstructConst(uint64_t Constant) {
-    auto Iter = ConstPool.find(Constant);
+    auto Pair = std::make_pair(Constant, 8);
+    auto Iter = ConstPool.find(Pair);
     if (Iter == ConstPool.end()) {
-      auto NewIter = ConstPool.try_emplace(Constant, _Constant(Constant));
+      auto NewIter = ConstPool.try_emplace(Pair, _Constant(Constant));
       return NewIter.first->second;
     }
 
@@ -671,7 +673,12 @@ friend class FEXCore::IR::PassManager;
 
     // Per block const pool
     // Will usually end up being only a couple members in size
-    std::unordered_map<uint64_t, OrderedNode*> ConstPool;
+    struct PairHash {
+      size_t operator() (const std::pair<uint64_t, uint8_t> &Pair) const {
+        return std::hash<uint64_t>()(Pair.first) ^ std::hash<uint8_t>()(Pair.second);
+      }
+    };
+    std::unordered_map<std::pair<uint64_t, uint8_t>, OrderedNode*, PairHash> ConstPool;
 };
 
 }
