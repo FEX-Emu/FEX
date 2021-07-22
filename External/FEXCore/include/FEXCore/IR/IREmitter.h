@@ -362,11 +362,11 @@ friend class FEXCore::IR::PassManager;
   }
 
   IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, CondClassType cond = {COND_NEQ}) {
-    return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
+    return _CondJump(ssa0, ConstructConst(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
   }
 
   IRPair<IROp_CondJump> _CondJump(OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, CondClassType cond = {COND_NEQ}) {
-    return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
+    return _CondJump(ssa0, ConstructConst(0), ssa1, ssa2, cond, GetOpSize(ssa0));
   }
 
   IRPair<IROp_Phi> _Phi() {
