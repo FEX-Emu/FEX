@@ -161,7 +161,6 @@ public:
   bool InlineConstants;
 
 private:
-  bool HandleConstantPools(IREmitter *IREmit, const IRListView& CurrentIR);
   void CodeMotionAroundSelects(IREmitter *IREmit, const IRListView& CurrentIR);
   void FCMPOptimization(IREmitter *IREmit, const IRListView& CurrentIR);
   void LoadMemStoreMemImmediatePooling(IREmitter *IREmit, const IRListView& CurrentIR);
@@ -174,28 +173,6 @@ private:
   std::unordered_map<uint64_t, OrderedNode*> ConstPool;
   std::map<OrderedNode*, uint64_t> AddressgenConsts;
 };
-
-bool ConstProp::HandleConstantPools(IREmitter *IREmit, const IRListView& CurrentIR) {
-  bool Changed = false;
-
-  // constants are pooled per block
-  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-      if (IROp->Op == OP_CONSTANT) {
-        auto Op = IROp->C<IR::IROp_Constant>();
-        if (ConstPool.count(Op->Constant)) {
-          IREmit->ReplaceAllUsesWith(CodeNode, ConstPool[Op->Constant]);
-          Changed = true;
-        } else {
-          ConstPool[Op->Constant] = CodeNode;
-        }
-      }
-    }
-    ConstPool.clear();
-  }
-
-  return Changed;
-}
 
 // Code motion around selects
 // Moves unary ops that depend on a select before the select, if both inputs are constants
@@ -968,10 +945,6 @@ bool ConstProp::Run(IREmitter *IREmit) {
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
   auto OriginalWriteCursor = IREmit->GetWriteCursor();
-
-  if (HandleConstantPools(IREmit, CurrentIR)) {
-    Changed = true;
-  }
 
   CodeMotionAroundSelects(IREmit, CurrentIR);
   FCMPOptimization(IREmit, CurrentIR);
