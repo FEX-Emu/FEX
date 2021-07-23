@@ -261,17 +261,11 @@ namespace {
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount) {
     NodeCount = AlignUp(NodeCount, REGISTER_NODES_PER_PAGE);
-    if (Graph->NodeCount < NodeCount) {
-      // If the needed node count is smaller than what we currently have allocated
-      // Then resize it so we have enough space
-      Graph->Nodes.clear(); // Clear to allow resize to happen more efficiently
-      // Values are default initialized (Which will be zero for us)
-      Graph->Nodes.resize(NodeCount);
-    }
-    else {
-      // Ensure that the nodes we need are zerod out
-      memset(Graph->Nodes.data(), 0, NodeCount * sizeof(RegisterNode));
-    }
+
+    // Clear to free the Bucketlists which have unique_ptrs
+    // Resize to our correct size
+    Graph->Nodes.clear();
+    Graph->Nodes.resize(NodeCount);
 
     Graph->VisitedNodePredecessors.clear();
     Graph->AllocData.reset((FEXCore::IR::RegisterAllocationData*)FEXCore::Allocator::malloc(FEXCore::IR::RegisterAllocationData::Size(NodeCount)));
