@@ -99,11 +99,24 @@ namespace FEX::HLE {
       DEFAULT_IGNORE,
     };
 
+    struct kernel_sigaction {
+      union {
+        void (*handler)(int);
+        void (*sigaction)(int, siginfo_t*, void*);
+      };
+
+      uint64_t sa_flags;
+#ifdef __ARCH_HAS_SA_RESTORER
+      void (*restorer)();
+#endif
+      uint64_t sa_mask;
+    };
+
     struct SignalHandler {
       std::atomic<bool> Installed{};
       std::atomic<bool> Required{};
-      struct sigaction HostAction{};
-      struct sigaction OldAction{};
+      kernel_sigaction HostAction{};
+      kernel_sigaction OldAction{};
       FEXCore::HostSignalDelegatorFunction Handler{};
       FEXCore::HostSignalDelegatorFunction FrontendHandler{};
       FEXCore::HostSignalDelegatorFunctionForGuest GuestHandler{};
