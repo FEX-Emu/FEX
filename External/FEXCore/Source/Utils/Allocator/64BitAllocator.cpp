@@ -149,7 +149,7 @@ namespace Alloc::OSAllocator {
   };
 
 void OSAllocator_64Bit::DetermineVASize() {
-  const std::vector<uintptr_t> TLBSizes = {{
+  static constexpr std::array<uintptr_t, 7> TLBSizes = {
     1ULL << 57,
     1ULL << 52,
     1ULL << 48,
@@ -157,7 +157,7 @@ void OSAllocator_64Bit::DetermineVASize() {
     1ULL << 42,
     1ULL << 39,
     1ULL << 36,
-  }};
+  };
 
   for (auto Size : TLBSizes) {
     // Just try allocating
