@@ -14,18 +14,18 @@ struct FlexBitSet final {
 
   T Memory[];
 
-  bool Get(T Element) {
+  bool Get(size_t Element) const {
     return (Memory[Element / MinimumSizeBits] & (1ULL << (Element % MinimumSizeBits))) != 0;
   }
-  bool TestAndClear(T Element) {
+  bool TestAndClear(size_t Element) {
     bool Value = Get(Element);
     Memory[Element / MinimumSizeBits] &= ~(1ULL << (Element % MinimumSizeBits));
     return Value;
   }
-  void Set(T Element) {
+  void Set(size_t Element) {
     Memory[Element / MinimumSizeBits] |= (1ULL << (Element % MinimumSizeBits));
   }
-  void Clear(T Element) {
+  void Clear(size_t Element) {
     Memory[Element / MinimumSizeBits] &= ~(1ULL << (Element % MinimumSizeBits));
   }
   void MemClear(size_t Elements) {
@@ -37,14 +37,14 @@ struct FlexBitSet final {
 
   // This very explicitly doesn't let you take an address
   // Is only a getter
-  bool operator[](T Element) {
+  bool operator[](size_t Element) const {
     return Get(Element);
   }
 
-  static size_t Size(T Elements) {
+  static size_t Size(uint64_t Elements) {
     return Alloc::AlignUp(Elements / MinimumSizeBits, MinimumSizeBits);
   }
 };
 
 static_assert(sizeof(FlexBitSet<uint64_t>) == 0, "This needs to be a flex member");
-static_assert(std::is_trivially_copyable<FlexBitSet<uint64_t>>::value, "Needsto be trivially copyable");
+static_assert(std::is_trivially_copyable_v<FlexBitSet<uint64_t>>, "Needs to be trivially copyable");
