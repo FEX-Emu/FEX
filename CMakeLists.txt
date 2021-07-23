@@ -15,6 +15,7 @@ option(ENABLE_VISUAL_DEBUGGER "Enables the visual debugger for compiling" FALSE)
 option(ENABLE_STRICT_WERROR "Enables stricter -Werror for CI" FALSE)
 option(ENABLE_WERROR "Enables -Werror" FALSE)
 option(ENABLE_STATIC_PIE "Enables static-pie build" FALSE)
+option(ENABLE_JEMALLOC "Enables jemalloc allocator" TRUE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
@@ -146,6 +147,16 @@ endif()
 if (ENABLE_TSAN)
   add_compile_options(-fno-omit-frame-pointer -fsanitize=thread)
   link_libraries(-fno-omit-frame-pointer -fsanitize=thread)
+endif()
+
+if (ENABLE_JEMALLOC)
+  add_definitions(-DENABLE_JEMALLOC=1)
+else()
+  message (STATUS
+    " jemalloc disabled!\n"
+    " This is not a recommended configuration!\n"
+    " This will very explicitly break 32-bit application execution!\n"
+    " Use at your own risk!")
 endif()
 
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")

@@ -1,7 +1,9 @@
 #include "Utils/Allocator/HostAllocator.h"
 #include <FEXCore/Utils/Allocator.h>
 #include <sys/mman.h>
+#ifdef ENABLE_JEMALLOC
 #include <jemalloc/jemalloc.h>
+#endif
 #include <memory>
 #include <malloc.h>
 
@@ -11,16 +13,24 @@ extern "C" {
             int fd, off_t offset);
   typedef int (*munmap_hook_type)(void *addr, size_t length);
 
+#ifdef ENABLE_JEMALLOC
   extern mmap_hook_type __mmap_hook;
   extern munmap_hook_type __munmap_hook;
+#endif
 }
 
 namespace FEXCore::Allocator {
   MMAP_Hook mmap {::mmap};
   MUNMAP_Hook munmap {::munmap};
+#ifdef ENABLE_JEMALLOC
   MALLOC_Hook malloc {::je_malloc};
   REALLOC_Hook realloc {::je_realloc};
   FREE_Hook free {::je_free};
+#else
+  MALLOC_Hook malloc {::malloc};
+  REALLOC_Hook realloc {::realloc};
+  FREE_Hook free {::free};
+#endif
 
   using GLIBC_MALLOC_Hook = void*(*)(size_t, const void *caller);
   using GLIBC_REALLOC_Hook = void*(*)(void*, size_t, const void *caller);
@@ -46,37 +56,26 @@ namespace FEXCore::Allocator {
     return Result;
   }
 
-  void *FEX_malloc_hook(size_t size, const void *caller) {
-    return ::je_malloc(size);
-  }
-
-  void *FEX_realloc_hook(void *ptr, size_t size, const void *caller) {
-    return ::je_realloc(ptr, size);
-  }
-
-  void FEX_free_hook(void *ptr, const void *caller) {
-    return ::je_free(ptr);
-  }
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void SetupHooks() {
     Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+#ifdef ENABLE_JEMALLOC
     __mmap_hook   = FEX_mmap;
     __munmap_hook = FEX_munmap;
+#endif
     FEXCore::Allocator::mmap = FEX_mmap;
     FEXCore::Allocator::munmap = FEX_munmap;
   }
 
   void ClearHooks() {
+#ifdef ENABLE_JEMALLOC
     __mmap_hook   = ::mmap;
     __munmap_hook = ::munmap;
+#endif
     FEXCore::Allocator::mmap = ::mmap;
     FEXCore::Allocator::munmap = ::munmap;
   }
 #pragma GCC diagnostic pop
 
-}
-
-extern "C" {
 }
