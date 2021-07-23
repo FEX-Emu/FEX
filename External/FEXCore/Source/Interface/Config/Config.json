@@ -214,6 +214,14 @@
           "Makes TSO operations even more strict.",
           "Forces vector loadstores to also become atomic."
         ]
+      },
+      "StallProcess": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Forces a process to stall out on initialization",
+          "Useful for a process that keeps restarting and doesn't work"
+        ]
       }
     },
     "Misc": {
