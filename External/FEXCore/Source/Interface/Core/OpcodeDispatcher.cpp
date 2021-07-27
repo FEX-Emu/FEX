@@ -4886,7 +4886,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable = {
     // Instructions
     {0x0B, 1, &OpDispatchBuilder::INTOp},
-    {0x0E, 1, &OpDispatchBuilder::NOPOp},
+    {0x0E, 1, &OpDispatchBuilder::X87EMMS},
 
     {0x19, 7, &OpDispatchBuilder::NOPOp}, // NOP with ModRM
 
@@ -4971,7 +4971,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x74, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 1>},
     {0x75, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 2>},
     {0x76, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 4>},
-    {0x77, 1, &OpDispatchBuilder::NOPOp},
+    {0x77, 1, &OpDispatchBuilder::X87EMMS},
 
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4, false>},
     {0xC6, 1, &OpDispatchBuilder::SHUFOp<4>},
@@ -5593,7 +5593,7 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
 
-      {OPD(0xDD, 0xC0), 8, &OpDispatchBuilder::NOPOp}, // stubbed FFREE
+      {OPD(0xDD, 0xC0), 8, &OpDispatchBuilder::X87FFREE},
       {OPD(0xDD, 0xD0), 8, &OpDispatchBuilder::FST},
       {OPD(0xDD, 0xD8), 8, &OpDispatchBuilder::FST},
 
