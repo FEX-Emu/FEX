@@ -95,6 +95,34 @@ namespace FEXCore {
   }
 
   namespace x86 {
+    // uc_flags flags
+    ///< Has extended FP state
+    constexpr uint64_t UC_FP_XSTATE         = (1ULL << 0);
+
+    ///< The order of these must match the GNU ordering
+    enum ContextRegs {
+      FEX_REG_GS = 0,
+      FEX_REG_FS,
+      FEX_REG_ES,
+      FEX_REG_DS,
+      FEX_REG_RDI,
+      FEX_REG_RSI,
+      FEX_REG_RBP,
+      FEX_REG_RSP,
+      FEX_REG_RBX,
+      FEX_REG_RDX,
+      FEX_REG_RCX,
+      FEX_REG_RAX,
+      FEX_REG_TRAPNO,
+      FEX_REG_ERR,
+      FEX_REG_EIP,
+      FEX_REG_CS,
+      FEX_REG_EFL,
+      FEX_REG_UESP,
+      FEX_REG_SS
+    };
+    static_assert(FEX_REG_SS == 18, "Oops");
+
     struct FEX_PACKED siginfo_t {
       int si_signo;
       int si_errno;
@@ -117,8 +145,55 @@ namespace FEXCore {
     };
     static_assert(sizeof(FEXCore::x86::siginfo_t) == 128, "This needs to be the right size");
 
+    struct FEX_PACKED stack_t {
+      uint32_t ss_sp; // XXX: should be compat_ptr<void>
+      int ss_flags;
+      uint32_t ss_size;
+    };
+
+    static_assert(sizeof(FEXCore::x86::stack_t) == 12, "This needs to be the right size");
+
+    struct FEX_PACKED mcontext_t {
+      uint32_t gregs[19];
+      uint32_t fpregs; // XXX: should be compat_ptr<FEXCore::x86::_libc_fpstate>
+      uint32_t oldmask;
+      uint32_t cr2;
+    };
+    static_assert(sizeof(FEXCore::x86::mcontext_t) == 88, "This needs to be the right size");
+
+    struct _libc_fpreg {
+      uint16_t significand[4];
+      uint16_t exponent;
+    };
+    static_assert(sizeof(FEXCore::x86::_libc_fpreg) == 10, "This needs to be the right size");
+
+    enum fpstate_magic {
+      // Legacy fpstate
+      MAGIC_FPU = 0xFFFF'0000,
+      // Contains extended state information
+      MAGIC_XFPSTATE = 0x0,
+    };
+    struct FEX_PACKED _libc_fpstate {
+      uint32_t fcw;
+      uint32_t fsw;
+      uint32_t ftw;
+      uint32_t fop;
+      uint32_t cssel;
+      uint32_t dataoff;
+      uint32_t datasel;
+      FEXCore::x86::_libc_fpreg _st[8];
+      uint32_t status;
+    };
+    static_assert(sizeof(FEXCore::x86::_libc_fpstate) == 112, "This needs to be the right size");
+
     struct FEX_PACKED ucontext_t {
-      uint32_t pad[91];
+      uint32_t uc_flags;
+      uint32_t uc_link; // XXX: should be a compat_ptr<FEXCore::x86::ucontext_t>
+      FEXCore::x86::stack_t uc_stack;
+      FEXCore::x86::mcontext_t uc_mcontext;
+      FEXCore::x86_64::sigset_t uc_sigmask; // This matches across architectures
+      FEXCore::x86::_libc_fpstate __fpregs_mem;
+      uint32_t __ssp[4];
     };
     static_assert(sizeof(FEXCore::x86::ucontext_t) == 364, "This needs to be the right size");
 
