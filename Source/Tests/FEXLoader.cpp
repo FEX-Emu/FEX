@@ -322,7 +322,9 @@ int main(int argc, char **argv, char **const envp) {
 
 #if !(defined(ENABLE_ASAN) && ENABLE_ASAN)
   // LLVM ASAN maps things to the lower 32bits
-  if (!CheckMemMapping()) {
+  // Valgrind also places us in the lower 32-bits
+  if (!getenv("VALGRIND_LAUNCHER") &&
+      !CheckMemMapping()) {
     LogMan::Msg::E("[Unsupported] FEX mapped to lower 32bits! Exiting!");
     return -1;
   }
