@@ -354,13 +354,24 @@ int main(int argc, char **argv, char **const envp) {
   std::string Program = Args[0];
 
   // These layers load on initialization
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(std::filesystem::path(Program).filename(), true));
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(std::filesystem::path(Program).filename(), false));
+  auto ProgramName = std::filesystem::path(Program).filename();
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(ProgramName, true));
+  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(ProgramName, false));
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, IsInterpreterInstalled() ? "1" : "0");
+
+  // Early check for process stall
+  // Doesn't use CONFIG_ROOTFS and we don't want it to spin up a squashfs instance
+  FEX_CONFIG_OPT(StallProcess, STALLPROCESS);
+  if (StallProcess) {
+    while (1) {
+      // Stall this process out forever
+      select(0, nullptr, nullptr, nullptr, nullptr);
+    }
+  }
 
   // Ensure RootFS is setup before config options try to pull CONFIG_ROOTFS
   if (!FEX::RootFS::Setup(envp)) {
