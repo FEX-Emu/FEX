@@ -448,8 +448,10 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
       } else if (IROp->Size == sourceHeader->Size) {
         // VMOV of same size
+        // XXX: This is unsafe of an optimization since in some cases we can't see through garbage data in the upper bits of a vector
+        // RCLSE generates VMOV instructions which are being used as a zero extension
         //printf("printf vmov of same size?!\n");
-        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
+        //IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
       }
       break;
     }

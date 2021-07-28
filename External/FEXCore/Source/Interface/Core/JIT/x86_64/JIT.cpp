@@ -55,9 +55,9 @@ void X86JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
 }
 
 void X86JITCore::PushRegs() {
-  for (auto &Xmm : RAXMM_x) {
-    sub(rsp, 16);
-    movaps(ptr[rsp], Xmm);
+  sub(rsp, 16 * RAXMM_x.size());
+  for (size_t i = 0; i < RAXMM_x.size(); ++i) {
+    movaps(ptr[rsp + i * 16], RAXMM_x[i]);
   }
 
   for (auto &Reg : RA64)
@@ -76,10 +76,11 @@ void X86JITCore::PopRegs() {
   for (uint32_t i = RA64.size(); i > 0; --i)
     pop(RA64[i - 1]);
 
-  for (uint32_t i = RAXMM_x.size(); i > 0; --i) {
-    movaps(RAXMM_x[i - 1], ptr[rsp]);
-    add(rsp, 16);
+  for (size_t i = 0; i < RAXMM_x.size(); ++i) {
+    movaps(RAXMM_x[i], ptr[rsp + i * 16]);
   }
+
+  add(rsp, 16 * RAXMM_x.size());
 }
 
 void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
