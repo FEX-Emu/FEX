@@ -23,6 +23,15 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
+#ifdef _M_X86_64
+  __attribute__((naked))
+  static void sigrestore() {
+    __asm volatile("syscall;"
+        :: "a" (0xF)
+        : "memory");
+  }
+#endif
+
   constexpr static uint32_t SS_AUTODISARM = (1U << 31);
   constexpr static uint32_t X86_MINSIGSTKSZ  = 0x2000U;
 
@@ -190,21 +199,21 @@ namespace FEX::HLE {
     // Unhandled crash
     // Call back in to the previous handler
     if (Handler.OldAction.sa_flags & SA_SIGINFO) {
-      Handler.OldAction.sa_sigaction(Signal, static_cast<siginfo_t*>(Info), UContext);
+      Handler.OldAction.sigaction(Signal, static_cast<siginfo_t*>(Info), UContext);
     }
-    else if (Handler.OldAction.sa_handler == SIG_IGN ||
-      (Handler.OldAction.sa_handler == SIG_DFL &&
+    else if (Handler.OldAction.handler == SIG_IGN ||
+      (Handler.OldAction.handler == SIG_DFL &&
        Handler.DefaultBehaviour == DEFAULT_IGNORE)) {
       // Do nothing
     }
-    else if (Handler.OldAction.sa_handler == SIG_DFL &&
+    else if (Handler.OldAction.handler == SIG_DFL &&
       (Handler.DefaultBehaviour == DEFAULT_COREDUMP ||
        Handler.DefaultBehaviour == DEFAULT_TERM)) {
       // Reassign back to DFL and crash
       signal(Signal, SIG_DFL);
     }
     else {
-      Handler.OldAction.sa_handler(Signal);
+      Handler.OldAction.handler(Signal);
     }
   }
 
@@ -216,95 +225,59 @@ namespace FEX::HLE {
     }
 
     // Default flags for us
-    SignalHandler.HostAction.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
+    SignalHandler.HostAction.sa_flags = SA_SIGINFO | SA_ONSTACK;
 
-    if (HostHandlers[Signal].Required.load(std::memory_order_relaxed) == false &&
-        (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL ||
-         SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN)) {
-      // If getting set to DFL or IGN on first install then just install to those
-      SignalHandler.HostAction.sa_handler = SignalHandler.GuestAction.sigaction_handler.handler;
-    }
-    else {
-      // Now install the thunk handler
-      SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
-    }
+    bool Result = UpdateHostThunk(Signal);
+
+    SignalHandler.Installed = Result;
+    return Result;
+  }
+
+  bool SignalDelegator::UpdateHostThunk(int Signal) {
+    SignalHandler &SignalHandler = HostHandlers[Signal];
+
+    // Now install the thunk handler
+    SignalHandler.HostAction.sigaction = SignalHandlerThunk;
 
     if (SignalHandler.GuestAction.sa_flags & SA_NODEFER) {
       // If the guest is using NODEFER then make sure to set it for the host as well
       SignalHandler.HostAction.sa_flags |= SA_NODEFER;
     }
 
+    if ((SignalHandler.HostAction.sa_flags ^ SignalHandler.GuestAction.sa_flags) & SA_RESTART) {
+      // If the guest is using SA_RESTART then make sure to set it for the host as well
+      SignalHandler.HostAction.sa_flags &= ~SA_RESTART;
+      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_RESTART;
+    }
+
+#ifdef _M_X86_64
+#define SA_RESTORER 0x04000000
+    SignalHandler.HostAction.sa_flags |= SA_RESTORER;
+    SignalHandler.HostAction.restorer = sigrestore;
+#endif
+
     // Walk the signals we have that are required and make sure to remove it from the mask
     // This'll likely be SIGILL, SIGBUS, SIG63
 
     // If the guest has masked some signals then we need to also mask those signals
-    sigemptyset(&SignalHandler.HostAction.sa_mask);
     for (size_t i = 1; i < HostHandlers.size(); ++i) {
       if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
-        sigdelset(&SignalHandler.HostAction.sa_mask, i);
+        SignalHandler.HostAction.sa_mask &= ~(1ULL << (i - 1));
       }
       else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
-        sigaddset(&SignalHandler.HostAction.sa_mask, i);
+        SignalHandler.HostAction.sa_mask |= (1ULL << (i - 1));
       }
     }
 
-    // We don't care about the previous handler in this case
-    int Result = sigaction(Signal, &SignalHandler.HostAction, &SignalHandler.OldAction);
-    if (Result < 0 &&
-        !(Signal == 32 || Signal == 33)) {
+    // Only update the old action if we haven't ever been installed
+    int Result = ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.HostAction, SignalHandler.Installed ? nullptr : &SignalHandler.OldAction, 8);
+    if (Result < 0) {
       // Signal 32 and 33 are consumed by glibc. We don't handle this atm
-      LogMan::Msg::E("Failed to install host signal thunk for signal %d: %s", Signal, strerror(errno));
+      LogMan::Msg::A("Failed to install host signal thunk for signal %d: %s", Signal, strerror(errno));
       return false;
     }
 
-    SignalHandler.Installed = true;
     return true;
-  }
-
-  void SignalDelegator::UpdateHostThunk(int Signal) {
-    SignalHandler &SignalHandler = HostHandlers[Signal];
-
-    // This only gets called if a guest thunk was already installed and we need to check if we need to update the flags or signal mask
-    if ((SignalHandler.GuestAction.sa_flags ^ SignalHandler.HostAction.sa_flags) & SA_NODEFER) {
-      // NODEFER changed, we need to update this
-      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_NODEFER;
-    }
-
-    if ((SignalHandler.GuestAction.sa_flags ^ SignalHandler.HostAction.sa_flags) & SA_RESTART) {
-      // RESTART changed, we need to update this
-      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_RESTART;
-    }
-
-    if (HostHandlers[Signal].Required.load(std::memory_order_relaxed) == false &&
-        (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL ||
-         SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN)) {
-      // If we are changing a none required signal back to DFL or IGN then we can allow this
-      SignalHandler.HostAction.sa_handler = SignalHandler.GuestAction.sigaction_handler.handler;
-    }
-    else {
-      // Set the handler to host handler
-      SignalHandler.HostAction.sa_sigaction = &SignalHandlerThunk;
-    }
-
-    // Walk the signals we have that are required and make sure to remove it from the mask
-    // This'll likely be SIGILL, SIGBUS, SIG63
-    sigemptyset(&SignalHandler.HostAction.sa_mask);
-    for (size_t i = 1; i < HostHandlers.size(); ++i) {
-      if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
-        sigdelset(&SignalHandler.HostAction.sa_mask, i);
-      }
-      else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
-        sigaddset(&SignalHandler.HostAction.sa_mask, i);
-      }
-    }
-
-    // Only update our host signal here
-    int Result = sigaction(Signal, &SignalHandler.HostAction, nullptr);
-    if (Result < 0 &&
-        !(Signal == 32 || Signal == 33)) {
-      // Signal 32 and 33 are consumed by glibc. We don't handle this atm
-      LogMan::Msg::E("Failed to update host signal thunk for signal %d: %s", Signal, strerror(errno));
-    }
   }
 
   SignalDelegator::SignalDelegator() {
@@ -317,13 +290,6 @@ namespace FEX::HLE {
     // We can't capture SIGKILL or SIGSTOP
     HostHandlers[SIGKILL].Installed = true;
     HostHandlers[SIGSTOP].Installed = true;
-
-    // glibc reserves these two signals internally
-    // __SIGRTMIN(32) is used for a "cancellation" signal
-    // __SIGRTMIN+1 is used for setuid handling
-    // "Userspace" SIGRTMIN starts at 34 because of this
-    HostHandlers[__SIGRTMIN].Installed   = true;
-    HostHandlers[__SIGRTMIN+1].Installed = true;
 
     // Most signals default to termination
     // These ones are slightly different
@@ -358,7 +324,7 @@ namespace FEX::HLE {
           ) {
         continue;
       }
-      sigaction(i, &HostHandlers[i].OldAction, nullptr);
+      ::syscall(SYS_rt_sigaction, i, &HostHandlers[i].OldAction, nullptr, 8);
       HostHandlers[i].Installed = false;
     }
     GlobalDelegator = nullptr;
@@ -381,6 +347,9 @@ namespace FEX::HLE {
     if (Result == -1) {
       LogMan::Msg::E("Failed to install alternative signal stack %s", strerror(errno));
     }
+
+    // Get the current host signal mask
+    ::syscall(SYS_rt_sigprocmask, 0, nullptr, &ThreadData.CurrentSignalMask.Val, 8);
   }
 
   void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) {
@@ -588,23 +557,17 @@ namespace FEX::HLE {
         return -EINVAL;
       }
 
+      uint64_t HostMask = ThreadData.CurrentSignalMask.Val;
       // Now actually set the host mask
       // This will hide from the guest that we are not actually setting all of the masks it wants
-      sigset_t HostSet{};
-      sigemptyset(&HostSet);
-
       for (size_t i = 0; i < MAX_SIGNALS; ++i) {
         if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
           // If it is a required host signal then we can't mask it
-          continue;
-        }
-
-        if (ThreadData.CurrentSignalMask.Val & (1ULL << i)) {
-          sigaddset(&HostSet, i + 1);
+          HostMask &= ~(1ULL << i);
         }
       }
 
-      pthread_sigmask(SIG_SETMASK, &HostSet, nullptr);
+      ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &HostMask, nullptr, 8);
     }
 
     CheckForPendingSignals();

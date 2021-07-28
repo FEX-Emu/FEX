@@ -281,9 +281,8 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
           guest_siginfo->_sifields._sigchld.stime = HostSigInfo->si_stime;
           break;
       default:
-        LogMan::Msg::D("Unhandled siginfo_t signal: %d", Signal);
         // Hope for the best, most things just copy over
-        memcpy(guest_siginfo, info, sizeof(siginfo_t));
+        memcpy(&guest_siginfo->_sifields, &HostSigInfo->_sifields, sizeof(siginfo_t));
         break;
       }
 
