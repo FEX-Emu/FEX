@@ -27,6 +27,7 @@ namespace FEXCore::HLE {
   };
 
   enum class SyscallOSABI {
+    OS_UNKNOWN,
     OS_LINUX64,
     OS_LINUX32,
     OS_WIN64,

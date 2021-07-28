@@ -19,6 +19,8 @@ $end_info$
 #include <sys/mman.h>
 
 namespace FEXCore::Frontend {
+#include "Interface/Core/VSyscall/VSyscall.inc"
+
 using namespace FEXCore::X86Tables;
 
 static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool HasREX, bool HasXMM, bool HasMM, uint8_t InvalidOffset = 16) {
@@ -122,7 +124,8 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
 }
 
 Decoder::Decoder(FEXCore::Context::Context *ctx)
-  : CTX {ctx} {
+  : CTX {ctx}
+  , OSABI { ctx->SyscallHandler ? ctx->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN } {
   // Using mmap is a start-up time optimization
   // Take advantage of page faulting to reduce startup time for minimal runtime cost
   DecodedBuffer =
@@ -1014,6 +1017,25 @@ void Decoder::BranchTargetInMultiblockRange() {
   }
 }
 
+const uint8_t *Decoder::AdjustAddrForSpecialRegion(uint8_t const* _InstStream, uint64_t EntryPoint, uint64_t RIP) {
+  constexpr uint64_t VSyscall_Base = 0xFFFF'FFFF'FF60'0000ULL;
+  constexpr uint64_t VSyscall_End = VSyscall_Base + 0x1000;
+
+  if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX64 &&
+      RIP >= VSyscall_Base &&
+      RIP < VSyscall_End) {
+    // VSyscall
+    // This doesn't exist on AArch64 and on x86_64 hosts this is emulated with faults to a region mapped with --xp permissions
+    // Offset     0: vgettimeofday
+    // Offset 0x400: vtime
+    // Offset 0x800: vgetcpu
+    uint64_t Offset = RIP - VSyscall_Base;
+    return VSyscallData + Offset;
+  }
+
+  return _InstStream - EntryPoint + RIP;
+}
+
 bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC) {
   Blocks.clear();
   BlocksToDecode.clear();
@@ -1057,7 +1079,7 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
     uint64_t BlockStartOffset = DecodedSize;
 
     // Do a bit of pointer math to figure out where we are in code
-    InstStream = _InstStream - EntryPoint + RIPToDecode;
+    InstStream = AdjustAddrForSpecialRegion(_InstStream, EntryPoint, RIPToDecode);
 
     while (1) {
       ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
