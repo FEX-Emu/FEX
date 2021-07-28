@@ -216,6 +216,7 @@ namespace FEXCore::Context {
     NewThreadState.flags[1] = 1;
     NewThreadState.flags[9] = 1;
     NewThreadState.FCW = 0x37F;
+    NewThreadState.FTW = 0xFFFF;
 
     FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
 

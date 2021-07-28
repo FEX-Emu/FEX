@@ -18,6 +18,31 @@ OrderedNode *OpDispatchBuilder::GetX87Top() {
   return _LoadContext(1, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC, GPRClass);
 }
 
+void OpDispatchBuilder::SetX87TopTag(OrderedNode *Value, uint32_t Tag) {
+  // if we are popping then we must first mark this location as empty
+  auto FTW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FTW), GPRClass);
+  OrderedNode *Mask = _Constant(0b11);
+  auto TopOffset = _Lshl(Value, _Constant(1));
+  Mask = _Lshl(Mask, TopOffset);
+  // XXX: This Neg can be removed if we support BIC
+  Mask = _Not(Mask);
+  OrderedNode *NewFTW = _And(FTW, Mask);
+  if (Tag != 0) {
+    auto TagVal = _Lshl(_Constant(Tag), TopOffset);
+    NewFTW = _Or(NewFTW, TagVal);
+  }
+
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FTW), NewFTW);
+}
+
+OrderedNode *OpDispatchBuilder::GetX87FTW(OrderedNode *Value) {
+  auto FTW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FTW), GPRClass);
+  OrderedNode *Mask = _Constant(0b11);
+  auto TopOffset = _Lshl(Value, _Constant(1));
+  auto NewFTW = _Lshr(FTW, TopOffset);
+  return _And(NewFTW, Mask);
+}
+
 void OpDispatchBuilder::SetX87Top(OrderedNode *Value) {
   _StoreContext(GPRClass, 1, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC, Value);
 }
@@ -46,10 +71,11 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
 
   // Convert to 80bit float
   if constexpr (width == 32 || width == 64) {
-      converted = _F80CVTTo(data, width / 8);
+    converted = _F80CVTTo(data, width / 8);
   }
 
   auto top = _And(_Sub(orig_top, _Constant(1)), mask);
+  SetX87TopTag(top, TAG_VALID);
   SetX87Top(top);
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -68,6 +94,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto mask = _Constant(7);
   auto top = _And(_Sub(orig_top, _Constant(1)), mask);
+  SetX87TopTag(top, TAG_VALID);
   SetX87Top(top);
 
   // Read from memory
@@ -82,10 +109,12 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
 
   OrderedNode *converted = _F80BCDStore(data);
 
-	StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
 
-	auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
-	SetX87Top(top);
+  // if we are popping then we must first mark this location as empty
+  SetX87TopTag(orig_top, TAG_EMPTY);
+  auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
+  SetX87Top(top);
 }
 
 template<uint64_t Lower, uint32_t Upper>
@@ -93,6 +122,7 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87TopTag(top, TAG_VALID);
   SetX87Top(top);
 
   auto low = _Constant(Lower);
@@ -122,6 +152,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87TopTag(top, TAG_VALID);
   SetX87Top(top);
 
   size_t read_width = GetSrcSize(Op);
@@ -168,6 +199,9 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
   }
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(orig_top, TAG_EMPTY);
+    // Set the new top now
     auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
@@ -191,6 +225,9 @@ void OpDispatchBuilder::FIST(OpcodeArgs) {
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, 1);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(orig_top, TAG_EMPTY);
+    // Set the new top now
     auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
@@ -237,6 +274,9 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
   auto result = _F80Add(a, b);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(top, TAG_EMPTY);
+    // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
@@ -297,6 +337,9 @@ void OpDispatchBuilder::FMUL(OpcodeArgs) {
   auto result = _F80Mul(a, b);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(top, TAG_EMPTY);
+    // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
@@ -363,6 +406,9 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
   }
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(top, TAG_EMPTY);
+    // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
@@ -444,6 +490,10 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
   }
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(top, TAG_EMPTY);
+    // Set the new top now
+
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
@@ -549,6 +599,7 @@ void OpDispatchBuilder::FRNDINT(OpcodeArgs) {
 void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87TopTag(top, TAG_VALID);
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -575,7 +626,8 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Constant(0));
 
-  // XXX: Add FTW support
+  // Tags all get set to 0b11
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FTW), _Constant(0xFFFF));
 }
 
 template<size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice>
@@ -632,10 +684,18 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
 
 
   if constexpr (poptwice) {
-    top = _And(_Add(top, _Constant(2)), mask);
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(top, TAG_EMPTY);
+    top = _And(_Add(top, _Constant(1)), mask);
+    SetX87TopTag(top, TAG_EMPTY);
+    // Set the new top now
+    top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
   else if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(top, TAG_EMPTY);
+    // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
@@ -695,6 +755,8 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
   _StoreContextIndexed(a, arg, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
+    // if we are popping then we must first mark this location as empty
+    SetX87TopTag(top, TAG_EMPTY);
     top = _And(_Add(top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
@@ -773,6 +835,7 @@ void OpDispatchBuilder::X87ModifySTP<true>(OpcodeArgs);
 void OpDispatchBuilder::X87SinCos(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87TopTag(top, TAG_VALID);
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -789,6 +852,8 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
   bool Plus1 = Op->OP == 0x01F9; // FYL2XP
 
   auto orig_top = GetX87Top();
+  // if we are popping then we must first mark this location as empty
+  SetX87TopTag(orig_top, TAG_EMPTY);
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
@@ -812,6 +877,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
 void OpDispatchBuilder::X87TAN(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
+  SetX87TopTag(top, TAG_VALID);
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -830,6 +896,8 @@ void OpDispatchBuilder::X87TAN(OpcodeArgs) {
 
 void OpDispatchBuilder::X87ATAN(OpcodeArgs) {
   auto orig_top = GetX87Top();
+  // if we are popping then we must first mark this location as empty
+  SetX87TopTag(orig_top, TAG_EMPTY);
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
@@ -867,87 +935,95 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+
+  {
+    // FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
+    auto NewFTW = _LoadMem(GPRClass, Size, MemLocation, Size);
+    _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FTW), NewFTW);
+  }
 }
 
 void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
-	// 14 bytes for 16bit
-	// 2 Bytes : FCW
-	// 2 Bytes : FSW
-	// 2 bytes : FTW
-	// 2 bytes : Instruction offset
-	// 2 bytes : Instruction CS selector
-	// 2 bytes : Data offset
-	// 2 bytes : Data selector
+  // 14 bytes for 16bit
+  // 2 Bytes : FCW
+  // 2 Bytes : FSW
+  // 2 bytes : FTW
+  // 2 bytes : Instruction offset
+  // 2 bytes : Instruction CS selector
+  // 2 bytes : Data offset
+  // 2 bytes : Data selector
 
-	// 28 bytes for 32bit
-	// 4 bytes : FCW
-	// 4 bytes : FSW
-	// 4 bytes : FTW
-	// 4 bytes : Instruction pointer
-	// 2 bytes : instruction pointer selector
-	// 2 bytes : Opcode
-	// 4 bytes : data pointer offset
-	// 4 bytes : data pointer selector
+  // 28 bytes for 32bit
+  // 4 bytes : FCW
+  // 4 bytes : FSW
+  // 4 bytes : FTW
+  // 4 bytes : Instruction pointer
+  // 2 bytes : instruction pointer selector
+  // 2 bytes : Opcode
+  // 4 bytes : data pointer offset
+  // 4 bytes : data pointer selector
 
   auto Size = GetDstSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
-	{
+  {
     auto FCW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FCW), GPRClass);
-		_StoreMem(GPRClass, Size, Mem, FCW, Size);
-	}
+    _StoreMem(GPRClass, Size, Mem, FCW, Size);
+  }
 
-	{
+  {
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
-		// We must construct the FSW from our various bits
-		OrderedNode *FSW = _Constant(0);
-		auto Top = GetX87Top();
-		FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+    // We must construct the FSW from our various bits
+    OrderedNode *FSW = _Constant(0);
+    auto Top = GetX87Top();
+    FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
 
-		auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
-		auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
-		auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
-		auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
+    auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
+    auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
+    auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
+    auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-		FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
-		FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
-		FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
-		FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+    FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
+    FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
+    FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
+    FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
     _StoreMem(GPRClass, Size, MemLocation, FSW, Size);
-	}
+  }
 
-	auto ZeroConst = _Constant(0);
+  auto ZeroConst = _Constant(0);
 
-	{
-		// FTW
+  {
+    // FTW
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
-    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+    auto FTW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FTW), GPRClass);
+    _StoreMem(GPRClass, Size, MemLocation, FTW, Size);
+  }
 
-	{
-		// Instruction Offset
+  {
+    // Instruction Offset
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 3));
     _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+  }
 
-	{
-		// Instruction CS selector (+ Opcode)
+  {
+    // Instruction CS selector (+ Opcode)
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 4));
     _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+  }
 
-	{
-		// Data pointer offset
+  {
+    // Data pointer offset
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 5));
     _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+  }
 
-	{
-		// Data pointer selector
+  {
+    // Data pointer selector
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 6));
     _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+  }
 }
 
 void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
@@ -999,84 +1075,85 @@ void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
-	// 14 bytes for 16bit
-	// 2 Bytes : FCW
-	// 2 Bytes : FSW
-	// 2 bytes : FTW
-	// 2 bytes : Instruction offset
-	// 2 bytes : Instruction CS selector
-	// 2 bytes : Data offset
-	// 2 bytes : Data selector
+  // 14 bytes for 16bit
+  // 2 Bytes : FCW
+  // 2 Bytes : FSW
+  // 2 bytes : FTW
+  // 2 bytes : Instruction offset
+  // 2 bytes : Instruction CS selector
+  // 2 bytes : Data offset
+  // 2 bytes : Data selector
 
-	// 28 bytes for 32bit
-	// 4 bytes : FCW
-	// 4 bytes : FSW
-	// 4 bytes : FTW
-	// 4 bytes : Instruction pointer
-	// 2 bytes : instruction pointer selector
-	// 2 bytes : Opcode
-	// 4 bytes : data pointer offset
-	// 4 bytes : data pointer selector
+  // 28 bytes for 32bit
+  // 4 bytes : FCW
+  // 4 bytes : FSW
+  // 4 bytes : FTW
+  // 4 bytes : Instruction pointer
+  // 2 bytes : instruction pointer selector
+  // 2 bytes : Opcode
+  // 4 bytes : data pointer offset
+  // 4 bytes : data pointer selector
 
   auto Size = GetDstSize(Op);
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   OrderedNode *Top = GetX87Top();
-	{
+  {
     auto FCW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FCW), GPRClass);
-		_StoreMem(GPRClass, Size, Mem, FCW, Size);
-	}
+    _StoreMem(GPRClass, Size, Mem, FCW, Size);
+  }
 
-	{
+  {
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
-		// We must construct the FSW from our various bits
-		OrderedNode *FSW = _Constant(0);
-		FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+    // We must construct the FSW from our various bits
+    OrderedNode *FSW = _Constant(0);
+    FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
 
-		auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
-		auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
-		auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
-		auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
+    auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
+    auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
+    auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
+    auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-		FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
-		FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
-		FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
-		FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+    FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
+    FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
+    FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
+    FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
     _StoreMem(GPRClass, Size, MemLocation, FSW, Size);
-	}
+  }
 
-	auto ZeroConst = _Constant(0);
+  auto ZeroConst = _Constant(0);
 
-	{
-		// FTW
+  {
+    // FTW
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
-    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+    auto FTW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FTW), GPRClass);
+    _StoreMem(GPRClass, Size, MemLocation, FTW, Size);
+  }
 
-	{
-		// Instruction Offset
+  {
+    // Instruction Offset
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 3));
     _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+  }
 
-	{
-		// Instruction CS selector (+ Opcode)
+  {
+    // Instruction CS selector (+ Opcode)
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 4));
     _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+  }
 
-	{
-		// Data pointer offset
+  {
+    // Data pointer offset
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 5));
     _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+  }
 
-	{
-		// Data pointer selector
+  {
+    // Data pointer selector
     OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 6));
     _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
-	}
+  }
 
   OrderedNode *ST0Location = _Add(Mem, _Constant(Size * 7));
 
@@ -1130,6 +1207,13 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
 
+  {
+    // FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
+    auto NewFTW = _LoadMem(GPRClass, Size, MemLocation, Size);
+    _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FTW), NewFTW);
+  }
+
   OrderedNode *ST0Location = _Add(Mem, _Constant(Size * 7));
 
   auto OneConst = _Constant(1);
@@ -1175,11 +1259,24 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
 
   // Claim this is a normal number
   // We don't support anything else
+  auto FTW = GetX87FTW(top);
+  auto X87Zero = _Constant(0b11);
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(ZeroConst);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(OneConst);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(ZeroConst);
+
+  // In the case of Zero 0b11 then C3:C2:C0 is 0b101
+  auto C3 = _Select(FEXCore::IR::COND_EQ,
+    FTW, X87Zero,
+    OneConst, ZeroConst);
+
+  auto C2 = _Select(FEXCore::IR::COND_EQ,
+    FTW, X87Zero,
+    ZeroConst, OneConst);
+
+  auto C0 = C3; // Mirror C3 until something other than zero is supported
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
 }
 
 void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
@@ -1271,6 +1368,23 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
 
   // Write to ST[TOP]
   _StoreContextIndexed(Result, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
+}
+
+void OpDispatchBuilder::X87EMMS(OpcodeArgs) {
+  // Tags all get set to 0b11
+  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FTW), _Constant(0xFFFF));
+}
+
+void OpDispatchBuilder::X87FFREE(OpcodeArgs) {
+  // Only sets the selected stack register's tag bits to EMPTY
+  OrderedNode *top = GetX87Top();
+
+  // Implicit arg
+  auto offset = _Constant(Op->OP & 7);
+  top = _And(_Add(top, offset), _Constant(7));
+
+  // Set this argument's tag as empty now
+  SetX87TopTag(top, TAG_EMPTY);
 }
 
 }

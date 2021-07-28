@@ -123,7 +123,6 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
     // Setup ucontext a bit
     if (CTX->Config.Is64BitMode) {
-
       NewGuestSP -= sizeof(FEXCore::x86_64::ucontext_t);
       uint64_t UContextLocation = NewGuestSP;
 
@@ -138,6 +137,14 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
       // Pointer to where the fpreg memory is
       guest_uctx->uc_mcontext.fpregs = &guest_uctx->__fpregs_mem;
+
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = Frame->State.rip;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = Signal;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_OLDMASK] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CR2] = 0;
 
 #define COPY_REG(x) \
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_##x] = Frame->State.gregs[X86State::REG_##x];
@@ -165,6 +172,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
       // FCW store default
       guest_uctx->__fpregs_mem.fcw = Frame->State.FCW;
+      guest_uctx->__fpregs_mem.ftw = Frame->State.FTW;
 
       // Reconstruct FSW
       guest_uctx->__fpregs_mem.fsw =
@@ -190,11 +198,68 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
     else {
       // XXX: 32bit Support
       NewGuestSP -= sizeof(FEXCore::x86::ucontext_t);
-      uint64_t UContextLocation = 0; // NewGuestSP;
+      uint64_t UContextLocation = NewGuestSP;
       NewGuestSP -= sizeof(FEXCore::x86::siginfo_t);
       uint64_t SigInfoLocation = NewGuestSP;
 
+      FEXCore::x86::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86::ucontext_t*>(UContextLocation);
       FEXCore::x86::siginfo_t *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(SigInfoLocation);
+
+      // We have extended float information
+      guest_uctx->uc_flags |= FEXCore::x86::UC_FP_XSTATE;
+
+      // Pointer to where the fpreg memory is
+      guest_uctx->uc_mcontext.fpregs = static_cast<uint32_t>(reinterpret_cast<uint64_t>(&guest_uctx->__fpregs_mem));
+
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS] = Frame->State.gs;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS] = Frame->State.fs;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES] = Frame->State.es;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS] = Frame->State.ds;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = Signal;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS] = Frame->State.cs;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_UESP] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_SS] = Frame->State.ss;
+
+#define COPY_REG(x) \
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_##x] = Frame->State.gregs[X86State::REG_##x];
+      COPY_REG(RDI);
+      COPY_REG(RSI);
+      COPY_REG(RBP);
+      COPY_REG(RBX);
+      COPY_REG(RDX);
+      COPY_REG(RAX);
+      COPY_REG(RCX);
+      COPY_REG(RSP);
+#undef COPY_REG
+
+      // Copy float registers
+      memcpy(guest_uctx->__fpregs_mem._st, Frame->State.mm, sizeof(Frame->State.mm));
+      if (0) {
+        // XXX: Handle XMM
+        // memcpy(guest_uctx->__fpregs_mem._xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
+        guest_uctx->__fpregs_mem.status = FEXCore::x86::fpstate_magic::MAGIC_XFPSTATE;
+      }
+      else {
+        guest_uctx->__fpregs_mem.status = FEXCore::x86::fpstate_magic::MAGIC_FPU;
+      }
+      // FCW store default
+      guest_uctx->__fpregs_mem.fcw = Frame->State.FCW;
+      guest_uctx->__fpregs_mem.ftw = Frame->State.FTW;
+      // Reconstruct FSW
+      guest_uctx->__fpregs_mem.fsw =
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
+        (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
+
+      // Copy over signal stack information
+      guest_uctx->uc_stack.ss_flags = GuestStack->ss_flags;
+      guest_uctx->uc_stack.ss_sp = static_cast<uint32_t>(reinterpret_cast<uint64_t>(GuestStack->ss_sp));
+      guest_uctx->uc_stack.ss_size = GuestStack->ss_size;
 
       // These three elements are in every siginfo
       guest_siginfo->si_signo = HostSigInfo->si_signo;
@@ -226,11 +291,18 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       *(uint32_t*)NewGuestSP = UContextLocation;
       NewGuestSP -= 4;
       *(uint32_t*)NewGuestSP = SigInfoLocation;
+      NewGuestSP -= 4;
+      *(uint32_t*)NewGuestSP = Signal;
     }
 
     Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   }
   else {
+    if (!CTX->Config.Is64BitMode) {
+      NewGuestSP -= 4;
+      *(uint32_t*)NewGuestSP = Signal;
+    }
+
     Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
   }
 

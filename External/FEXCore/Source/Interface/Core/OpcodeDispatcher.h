@@ -380,6 +380,8 @@ public:
   void X87FRSTOR(OpcodeArgs);
   void X87FXAM(OpcodeArgs);
   void X87FCMOV(OpcodeArgs);
+  void X87EMMS(OpcodeArgs);
+  void X87FFREE(OpcodeArgs);
 
   void FXCH(OpcodeArgs);
 
@@ -536,6 +538,14 @@ private:
   void GenerateFlags_RotateLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
 
   OrderedNode * GetX87Top();
+  enum X87Tag {
+    TAG_VALID   = 0b00,
+    TAG_ZERO    = 0b01,
+    TAG_SPECIAL = 0b10,
+    TAG_EMPTY   = 0b11
+  };
+  void SetX87TopTag(OrderedNode *Value, uint32_t Tag);
+  OrderedNode *GetX87FTW(OrderedNode *Value);
   void SetX87Top(OrderedNode *Value);
 
   bool DestIsLockedMem(FEXCore::X86Tables::DecodedOp Op) const {
