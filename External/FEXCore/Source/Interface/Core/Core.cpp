@@ -586,6 +586,12 @@ namespace FEXCore::Context {
 
     // Clean up dead stacks
     FEXCore::Threads::Thread::CleanupAfterFork();
+
+    if (LiveThread->CompileService) {
+      // If this live thread had a compile service then it no longer exists
+      // Erase the shared_ptr
+      LiveThread->CompileService.reset();
+    }
   }
 
   void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length) {
