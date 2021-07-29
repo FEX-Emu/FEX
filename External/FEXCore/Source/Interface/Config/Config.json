@@ -130,6 +130,13 @@
           "Disables optimizations passes for debugging."
         ]
       },
+      "SRA": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Set to false to disable Static Register Allocation"
+        ]
+      },
       "Force32BitAllocator": {
         "Type": "bool",
         "Default": "false",

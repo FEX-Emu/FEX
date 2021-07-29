@@ -471,7 +471,7 @@ namespace FEXCore::Context {
     });
 
     #if _M_ARM_64
-    bool DoSRA = true;
+    bool DoSRA = State->CTX->Config.StaticRegisterAllocation;
     #else
     bool DoSRA = false;
     #endif

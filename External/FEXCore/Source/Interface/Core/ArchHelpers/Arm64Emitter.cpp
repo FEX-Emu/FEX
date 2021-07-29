@@ -143,22 +143,26 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
 
 
 void Arm64Emitter::SpillStaticRegs() {
-  for (size_t i = 0; i < SRA64.size(); i+=2) {
-      stp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
-  }
+  if (StaticRegisterAllocation()) {
+    for (size_t i = 0; i < SRA64.size(); i+=2) {
+        stp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
+    }
 
-  for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-    stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+    for (size_t i = 0; i < SRAFPR.size(); i+=2) {
+      stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+    }
   }
 }
 
 void Arm64Emitter::FillStaticRegs() {
-  for (size_t i = 0; i < SRA64.size(); i+=2) {
-    ldp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
-  }
+  if (StaticRegisterAllocation()) {
+    for (size_t i = 0; i < SRA64.size(); i+=2) {
+      ldp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
+    }
 
-  for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-    ldp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+    for (size_t i = 0; i < SRAFPR.size(); i+=2) {
+      ldp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+    }
   }
 }
 
