@@ -571,6 +571,8 @@ int main(int argc, char **argv, char **const envp) {
 
   Loader.FreeSections();
 
+  FEX::RootFS::Shutdown();
+
   FEXCore::Config::Shutdown();
 
   LogMan::Throw::UnInstallHandlers();
@@ -578,6 +580,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Allocator::ClearHooks();
   // Allocator is now original system allocator
+
 
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
