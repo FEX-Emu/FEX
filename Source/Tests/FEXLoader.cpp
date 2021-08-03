@@ -39,6 +39,7 @@ $end_info$
 namespace {
 static bool SilentLog;
 static int OutputFD {STDERR_FILENO};
+static bool ExecutedWithFD {false};
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   const char *CharLevel{nullptr};
@@ -163,8 +164,10 @@ bool RanAsInterpreter(char *Program) {
 
 bool IsInterpreterInstalled() {
   // The interpreter is installed if both the binfmt_misc handlers are available
-  return std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86") &&
-         std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64");
+  // Or if we were originally executed with FD. Which means the interpreter is installed
+  return ExecutedWithFD ||
+         (std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86") &&
+         std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64"));
 }
 
 void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection &Section) {
@@ -317,6 +320,9 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
 
 int main(int argc, char **argv, char **const envp) {
   bool IsInterpreter = RanAsInterpreter(argv[0]);
+
+  ExecutedWithFD = getauxval(AT_EXECFD) != 0;
+
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
