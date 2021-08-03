@@ -295,6 +295,13 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
     uint64_t Result = ::readlink(Path.c_str(), buf, bufsiz);
     if (Result != -1)
       return Result;
+
+    if (Result == -1 &&
+        errno == EINVAL) {
+      // This means that the file wasn't a symlink
+      // This is expected behaviour
+      return -errno;
+    }
   }
 
   return ::readlink(pathname, buf, bufsiz);
@@ -315,17 +322,38 @@ uint64_t FileManager::Chmod(const char *pathname, mode_t mode) {
 }
 
 uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz) {
-  auto NewPath = GetSelf(pathname);
-  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+  // calculate the non-self link to exe
+  // Some executables do getpid, stat("/proc/$pid/exe")
+  // Can't use `GetSelf` directly here since readlink{at,} returns EINVAL if it isn't a symlink
+  // Self is always a symlink and isn't expected to fail
+  int pid = getpid();
 
-  auto Path = GetEmulatedPath(SelfPath);
+  char PidSelfPath[50];
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+
+  if (strcmp(pathname, "/proc/self/exe") == 0 ||
+      strcmp(pathname, "/proc/thread-self/exe") == 0 ||
+      strcmp(pathname, PidSelfPath) == 0) {
+    auto App = Filename();
+    strncpy(buf, App.c_str(), bufsiz);
+    return std::min(bufsiz, App.size());
+  }
+
+  auto Path = GetEmulatedPath(pathname);
   if (!Path.empty()) {
     uint64_t Result = ::readlinkat(dirfd, Path.c_str(), buf, bufsiz);
     if (Result != -1)
       return Result;
+
+    if (Result == -1 &&
+        errno == EINVAL) {
+      // This means that the file wasn't a symlink
+      // This is expected behaviour
+      return -errno;
+    }
   }
 
-  return ::readlinkat(dirfd, SelfPath, buf, bufsiz);
+  return ::readlinkat(dirfd, pathname, buf, bufsiz);
 }
 
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, int flags, uint32_t mode) {
