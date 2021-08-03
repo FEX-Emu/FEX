@@ -77,7 +77,8 @@ namespace {
   }
 
   bool OpenFile(std::string Filename,  bool LoadDefault = false) {
-    if (!std::filesystem::exists(Filename)) {
+    std::error_code ec{};
+    if (!std::filesystem::exists(Filename, ec)) {
       if (LoadDefault) {
         LoadDefaultSettings();
         ConfigFilename = Filename;
@@ -98,9 +99,10 @@ namespace {
     std::scoped_lock<std::mutex> lk{NamedRootFSUpdator};
     NamedRootFS.clear();
     std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
-    if (!std::filesystem::exists(RootFS)) {
+    std::error_code ec{};
+    if (!std::filesystem::exists(RootFS, ec)) {
       // Doesn't exist, create the the folder as a user convenience
-      if (!std::filesystem::create_directories(RootFS)) {
+      if (!std::filesystem::create_directories(RootFS, ec)) {
         // Well I guess we failed
         return;
       }

@@ -46,6 +46,25 @@ else()
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
 endif()
 
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+  option(ENABLE_X86_HOST_DEBUG "Enables compiling on x86_64 host" FALSE)
+  if (NOT ENABLE_X86_HOST_DEBUG)
+    message(FATAL_ERROR
+      " Be warned: FEX isn't optimized for x86_64 hosts!\n"
+      " Support for x86_64 hosts is only for debugging and convenience!\n"
+      " Don't expect amazing performance or optimal code generation!\n"
+      " Pass -DENABLE_X86_HOST_DEBUG=True to bypass this message!")
+  endif()
+  set(_M_X86_64 1)
+  add_definitions(-D_M_X86_64=1)
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
+endif()
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  set(_M_ARM_64 1)
+  add_definitions(-D_M_ARM_64=1)
+endif()
+
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
   message(STATUS "CCache enabled")
@@ -64,8 +83,8 @@ if (ENABLE_LLD)
 endif()
 
 if (ENABLE_STATIC_PIE)
-  if (NOT ENABLE_LLD)
-    message (FATAL_ERROR "static-pie requires linking with lld")
+  if (_M_ARM_64 AND ENABLE_LLD)
+    message (FATAL_ERROR "Static linking does not currently work with AArch64+LLD. Use GNU ld for now.")
   endif()
 
   file(WRITE ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt.c
@@ -129,7 +148,56 @@ if (ENABLE_STATIC_PIE)
       set (STATIC_PIE_OPTIONS "-static-pie")
       # Pthreads has an issue with exposing symbols
       # We need to make some concessions to the pthread gods
-      set (PTHREAD_LIB -Wl,--undefined-glob=pthread_* pthread)
+      if (ENABLE_LLD)
+        set (PTHREAD_LIB
+          -Wl,--undefined-glob=pthread_*
+          -Wl,--undefined=__cxa_finalize
+          -Wl,--undefined=_pthread_cleanup_push_defer
+          -Wl,--undefined=_pthread_cleanup_pop_restore
+          -Wl,--undefined=__pthread_cleanup_upto
+          pthread)
+      else()
+        set (PTHREAD_LIB
+          -Wl,--undefined=pthread_join
+          -Wl,--undefined=pthread_attr_getdetachstate
+          -Wl,--undefined=pthread_sigmask
+          -Wl,--undefined=pthread_mutex_lock
+          -Wl,--undefined=pthread_cond_init
+          -Wl,--undefined=pthread_attr_init
+          -Wl,--undefined=pthread_mutex_unlock
+          -Wl,--undefined=pthread_mutexattr_destroy
+          -Wl,--undefined=pthread_detach
+          -Wl,--undefined=pthread_mutex_init
+          -Wl,--undefined=pthread_getattr_np
+          -Wl,--undefined=pthread_cond_timedwait
+          -Wl,--undefined=pthread_attr_destroy
+          -Wl,--undefined=pthread_mutexattr_settype
+          -Wl,--undefined=pthread_rwlock_unlock
+          -Wl,--undefined=pthread_rwlock_wrlock
+          -Wl,--undefined=pthread_setspecific
+          -Wl,--undefined=pthread_create
+          -Wl,--undefined=pthread_cond_clockwait
+          -Wl,--undefined=pthread_key_create
+          -Wl,--undefined=pthread_rwlock_rdlock
+          -Wl,--undefined=pthread_setname_np
+          -Wl,--undefined=pthread_cond_signal
+          -Wl,--undefined=pthread_mutexattr_init
+          -Wl,--undefined=pthread_attr_setstack
+          -Wl,--undefined=pthread_self
+          -Wl,--undefined=pthread_getaffinity_np
+          -Wl,--undefined=pthread_cond_wait
+          -Wl,--undefined=pthread_mutex_trylock
+          -Wl,--undefined=pthread_cond_broadcast
+          -Wl,--undefined=pthread_cond_destroy
+          -Wl,--undefined=pthread_getspecific
+          -Wl,--undefined=pthread_key_delete
+          -Wl,--undefined=pthread_once
+          -Wl,--undefined=__cxa_finalize
+          -Wl,--undefined=_pthread_cleanup_push_defer
+          -Wl,--undefined=_pthread_cleanup_pop_restore
+          -Wl,--undefined=__pthread_cleanup_upto
+          pthread)
+      endif()
     else()
       message (FATAL_ERROR "Application has __rela_iplt_{start,end} symbols. Which means static-pie can't be enabled")
     endif()
@@ -164,25 +232,6 @@ set (CMAKE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_LINKER_FLAGS_RELWITHDEBINFO} -fn
 
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer")
 set (CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-pointer")
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-  option(ENABLE_X86_HOST_DEBUG "Enables compiling on x86_64 host" FALSE)
-  if (NOT ENABLE_X86_HOST_DEBUG)
-    message(FATAL_ERROR
-      " Be warned: FEX isn't optimized for x86_64 hosts!\n"
-      " Support for x86_64 hosts is only for debugging and convenience!\n"
-      " Don't expect amazing performance or optimal code generation!\n"
-      " Pass -DENABLE_X86_HOST_DEBUG=True to bypass this message!")
-  endif()
-  set(_M_X86_64 1)
-  add_definitions(-D_M_X86_64=1)
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
-endif()
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  set(_M_ARM_64 1)
-  add_definitions(-D_M_ARM_64=1)
-endif()
 
 add_subdirectory(External/vixl/)
 include_directories(External/vixl/src/)

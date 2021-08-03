@@ -21,7 +21,8 @@ static std::fstream SquashFSLock{};
 bool SanityCheckPath(std::string const &LDPath) {
 // Check if we have an directory inside our temp folder
   std::string PathUser = LDPath + "/usr";
-  if (!std::filesystem::exists(PathUser)) {
+  std::error_code ec{};
+  if (!std::filesystem::exists(PathUser, ec)) {
     LogMan::Msg::D("Child couldn't mount rootfs, /usr doesn't exist");
     rmdir(LDPath.c_str());
     return false;
@@ -33,7 +34,8 @@ bool SanityCheckPath(std::string const &LDPath) {
 bool CheckLockExists(std::string const LockPath) {
   // If the lock file for a squashfs path exists the we can try
   // to open it and ref counting will keep it alive
-  if (std::filesystem::exists(LockPath)) {
+  std::error_code ec{};
+  if (std::filesystem::exists(LockPath, ec)) {
     SquashFSLock.open(LockPath, std::ios_base::in | std::ios_base::binary);
     if (SquashFSLock.is_open()) {
       // We managed to open the file. Which means the mount application has now refcounted our interaction with it

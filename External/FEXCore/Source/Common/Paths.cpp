@@ -36,9 +36,10 @@ namespace FEXCore::Paths {
     *CachePath += "/.fex-emu/";
     *EntryCache = *CachePath + "/EntryCache/";
 
+    std::error_code ec{};
     // Ensure the folder structure is created for our Data
-    if (!std::filesystem::exists(*EntryCache) &&
-        !std::filesystem::create_directories(*EntryCache)) {
+    if (!std::filesystem::exists(*EntryCache, ec) &&
+        !std::filesystem::create_directories(*EntryCache, ec)) {
       LogMan::Msg::D("Couldn't create EntryCache directory: '%s'", EntryCache->c_str());
     }
   }

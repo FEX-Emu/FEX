@@ -95,11 +95,12 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
       RawString = &RawFile.at(InterpreterHeader._64->p_offset);
     }
     std::string RootFSLink = RootFS + RawString;
-    while (std::filesystem::is_symlink(RootFSLink)) {
+    std::error_code ec{};
+    while (std::filesystem::is_symlink(RootFSLink, ec)) {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
       // Resolve this around back to the rootfs
-      auto SymlinkTarget = std::filesystem::read_symlink(RootFSLink);
+      auto SymlinkTarget = std::filesystem::read_symlink(RootFSLink, ec);
       if (SymlinkTarget.is_absolute()) {
         RootFSLink = RootFS + SymlinkTarget.string();
       }
