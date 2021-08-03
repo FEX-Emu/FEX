@@ -1,4 +1,4 @@
-# FEX-2107
+# FEX-2108
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -71,6 +71,10 @@ Metadata that drives the frontend x86/64 decoding
 - [X86Tables.cpp](../External/FEXCore/Source/Interface/Core/X86Tables.cpp)
 
 #### x86-to-ir
+- [Crypto.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Crypto.cpp): Handles x86/64 Crypto instructions to IR
+- [Flags.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
+- [Vector.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
+- [X87.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
 - [OpcodeDispatcher.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
 
 
@@ -144,6 +148,10 @@ Text -> IR
 - [CPUID.cpp](../External/FEXCore/Source/Interface/Core/CPUID.cpp): Handles presented capability bits for guest cpu
 
 #### dispatcher-implementations
+- [Crypto.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Crypto.cpp): Handles x86/64 Crypto instructions to IR
+- [Flags.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
+- [Vector.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
+- [X87.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
 - [OpcodeDispatcher.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
 
 ## ThunkLibs
@@ -159,10 +167,6 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### GL
 - [libGL_Guest.cpp](../ThunkLibs/libGL/libGL_Guest.cpp): Handles glXGetProcAddress
 - [libGL_Host.cpp](../ThunkLibs/libGL/libGL_Host.cpp): Uses glXGetProcAddress instead of dlsym
-
-#### GLESv2
-- [libGLESv2_Guest.cpp](../ThunkLibs/libGLESv2/libGLESv2_Guest.cpp)
-- [libGLESv2_Host.cpp](../ThunkLibs/libGLESv2/libGLESv2_Host.cpp): Uses eglGetProcAddress instead of dlsym
 
 #### SDL2
 - [libSDL2_Guest.cpp](../ThunkLibs/libSDL2/libSDL2_Guest.cpp): Handles sdlglproc, dload, stubs a few log fns
@@ -282,7 +286,6 @@ x86-64 specific syscall implementations
 - [Thread.cpp](../Source/Tests/LinuxSyscalls/x64/Thread.cpp)
 - [Thread.h](../Source/Tests/LinuxSyscalls/x64/Thread.h)
 - [Time.cpp](../Source/Tests/LinuxSyscalls/x64/Time.cpp)
-- [Types.h](../Source/Tests/LinuxSyscalls/x64/Types.h)
 
 ## unittests
 See [unittests/Readme.md](../unittests/Readme.md) for more details
