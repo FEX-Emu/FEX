@@ -59,9 +59,9 @@ namespace FEXCore::Config {
       }
 
       // Ensure the folder structure is created for our configuration
+      std::error_code ec{};
       if (!std::filesystem::exists(ConfigDir) &&
-          !std::filesystem::create_directories(ConfigDir)) {
-        LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigDir.c_str());
+          !std::filesystem::create_directories(ConfigDir, ec)) {
         // Let's go local in this case
         return "./";
       }
@@ -85,9 +85,11 @@ namespace FEXCore::Config {
 
   std::string GetApplicationConfig(const std::string &Filename, bool Global) {
     std::string ConfigFile = GetConfigDirectory(Global);
+
+    std::error_code ec{};
     if (!Global &&
         !std::filesystem::exists(ConfigFile) &&
-        !std::filesystem::create_directories(ConfigFile)) {
+        !std::filesystem::create_directories(ConfigFile, ec)) {
       LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigFile.c_str());
       // Let's go local in this case
       return "./" + Filename + ".json";
@@ -98,8 +100,7 @@ namespace FEXCore::Config {
     // Attempt to create the local folder if it doesn't exist
     if (!Global &&
         !std::filesystem::exists(ConfigFile) &&
-        !std::filesystem::create_directories(ConfigFile)) {
-      LogMan::Msg::D("Couldn't create AppConfig directory: '%s'", ConfigFile.c_str());
+        !std::filesystem::create_directories(ConfigFile, ec)) {
       // Let's go local in this case
       return "./" + Filename + ".json";
     }

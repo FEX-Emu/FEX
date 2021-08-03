@@ -542,16 +542,17 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::RunUntilExit(CTX);
   }
 
-  std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir");
-
-  FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
-    int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
-    if (fd != -1) {
-      write(fd, filename.c_str(), filename.size());
-      close(fd);
-    }
-  });
+  std::error_code ec{};
+  if (std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec)) {
+    FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
+      int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
+      if (fd != -1) {
+        write(fd, filename.c_str(), filename.size());
+        close(fd);
+      }
+    });
+  }
 
   if (AOTIRCapture() || AOTIRGenerate()) {
 
