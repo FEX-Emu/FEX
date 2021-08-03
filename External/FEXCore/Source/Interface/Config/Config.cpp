@@ -60,7 +60,7 @@ namespace FEXCore::Config {
 
       // Ensure the folder structure is created for our configuration
       std::error_code ec{};
-      if (!std::filesystem::exists(ConfigDir) &&
+      if (!std::filesystem::exists(ConfigDir, ec) &&
           !std::filesystem::create_directories(ConfigDir, ec)) {
         // Let's go local in this case
         return "./";
@@ -88,7 +88,7 @@ namespace FEXCore::Config {
 
     std::error_code ec{};
     if (!Global &&
-        !std::filesystem::exists(ConfigFile) &&
+        !std::filesystem::exists(ConfigFile, ec) &&
         !std::filesystem::create_directories(ConfigFile, ec)) {
       LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigFile.c_str());
       // Let's go local in this case
@@ -99,7 +99,7 @@ namespace FEXCore::Config {
 
     // Attempt to create the local folder if it doesn't exist
     if (!Global &&
-        !std::filesystem::exists(ConfigFile) &&
+        !std::filesystem::exists(ConfigFile, ec) &&
         !std::filesystem::create_directories(ConfigFile, ec)) {
       // Let's go local in this case
       return "./" + Filename + ".json";
@@ -274,7 +274,8 @@ namespace FEXCore::Config {
       Path = std::filesystem::absolute(Path);
 
       // Only return if it exists
-      if (std::filesystem::exists(Path)) {
+      std::error_code ec{};
+      if (std::filesystem::exists(Path, ec)) {
         return Path;
       }
     }
@@ -310,7 +311,8 @@ namespace FEXCore::Config {
       else if (!PathName().empty()) {
         // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
         std::string NamedRootFS = GetDataDirectory() + "RootFS/" + PathName();
-        if (std::filesystem::exists(NamedRootFS)) {
+        std::error_code ec{};
+        if (std::filesystem::exists(NamedRootFS, ec)) {
           FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
         }
       }
@@ -333,7 +335,8 @@ namespace FEXCore::Config {
       else if (!PathName().empty()) {
         // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
         std::string NamedConfig = GetDataDirectory() + "ThunkConfigs/" + PathName();
-        if (std::filesystem::exists(NamedConfig)) {
+        std::error_code ec{};
+        if (std::filesystem::exists(NamedConfig, ec)) {
           FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
         }
       }

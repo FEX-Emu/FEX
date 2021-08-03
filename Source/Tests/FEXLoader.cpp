@@ -165,9 +165,11 @@ bool RanAsInterpreter(char *Program) {
 bool IsInterpreterInstalled() {
   // The interpreter is installed if both the binfmt_misc handlers are available
   // Or if we were originally executed with FD. Which means the interpreter is installed
+
+  std::error_code ec{};
   return ExecutedWithFD ||
-         (std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86") &&
-         std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64"));
+         (std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86", ec) &&
+         std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64", ec));
 }
 
 void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection &Section) {
@@ -409,7 +411,8 @@ int main(int argc, char **argv, char **const envp) {
 
   InterpreterHandler(&Program, LDPath(), &Args);
 
-  if (!std::filesystem::exists(Program)) {
+  std::error_code ec{};
+  if (!std::filesystem::exists(Program, ec)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
     fprintf(stderr, "%s: command not found\n", Program.c_str());
@@ -548,7 +551,6 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::RunUntilExit(CTX);
   }
 
-  std::error_code ec{};
   if (std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec)) {
     FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
       auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
