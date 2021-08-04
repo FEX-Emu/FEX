@@ -229,5 +229,10 @@ namespace FEX::HLE {
       uint64_t Result = ::fanotify_mark(fanotify_fd, flags, mask, dirfd, pathname);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL(pivot_root, [](FEXCore::Core::CpuStateFrame *Frame, const char *new_root, const char *put_old) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_pivot_root, new_root, put_old);
+      SYSCALL_ERRNO();
+    });
   }
 }
