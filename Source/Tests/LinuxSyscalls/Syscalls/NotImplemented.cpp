@@ -41,7 +41,6 @@ namespace FEX::HLE {
       REGISTER_SYSCALL_NOT_IMPL(_sysctl); // Was removed in Linux 5.5
 
       REGISTER_SYSCALL_NO_PERM(vhangup);
-      REGISTER_SYSCALL_NO_PERM(pivot_root);
       REGISTER_SYSCALL_NO_PERM(reboot)
       REGISTER_SYSCALL_NO_PERM(sethostname);
       REGISTER_SYSCALL_NO_PERM(setdomainname);
