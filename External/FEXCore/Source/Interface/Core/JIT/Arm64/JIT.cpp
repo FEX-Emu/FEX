@@ -482,7 +482,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     DispatcherConfig config;
     config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
     config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
-    config.StaticRegisterAssignment = true;
+    config.StaticRegisterAssignment = ctx->Config.StaticRegisterAllocation;
 
     Dispatcher = std::make_unique<Arm64Dispatcher>(CTX, ThreadState, config);
     DispatchPtr = Dispatcher->DispatchPtr;

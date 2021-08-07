@@ -471,8 +471,10 @@ namespace FEXCore::Context {
         Stop(false /* Ignore current thread */);
     });
 
+    State->CTX = this;
+
     #if _M_ARM_64
-    bool DoSRA = true;
+    bool DoSRA = State->CTX->Config.StaticRegisterAllocation;
     #else
     bool DoSRA = false;
     #endif
@@ -481,8 +483,6 @@ namespace FEXCore::Context {
     State->PassManager->AddDefaultValidationPasses();
 
     State->PassManager->RegisterSyscallHandler(SyscallHandler);
-
-    State->CTX = this;
 
     // Create CPU backend
     switch (Config.Core) {
