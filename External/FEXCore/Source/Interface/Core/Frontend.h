@@ -2,6 +2,7 @@
 
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/Telemetry.h>
 
 #include <array>
 #include <cstdint>
@@ -89,5 +90,8 @@ private:
   };
 
   const uint8_t *AdjustAddrForSpecialRegion(uint8_t const* _InstStream, uint64_t EntryPoint, uint64_t RIP);
+
+  FEXCORE_TELEMETRY_INIT(VEXOpTelem, TYPE_USES_VEX_OPS);
+  FEXCORE_TELEMETRY_INIT(EVEXOpTelem, TYPE_USES_EVEX_OPS);
 };
 }

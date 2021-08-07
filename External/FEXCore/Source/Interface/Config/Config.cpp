@@ -1,43 +1,30 @@
 #include "Common/StringConv.h"
+#include "Common/Paths.h"
 
 #include <FEXCore/Utils/LogManager.h>
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Config/Config.h>
 #include <filesystem>
-#include <pwd.h>
 #include <map>
 #include <sys/sysinfo.h>
-#include <unistd.h>
 
 namespace FEXCore::Config {
-  char const* FindUserHomeThroughUID() {
-    auto passwd = getpwuid(geteuid());
-    if (passwd) {
-      return passwd->pw_dir;
+  std::string GetDataDirectory() {
+    std::string DataDir{};
+
+    char const *HomeDir = Paths::GetHomeDirectory();
+    char const *DataXDG = getenv("XDG_DATA_HOME");
+    char const *DataOverride = getenv("FEX_APP_DATA_LOCATION");
+    if (DataOverride) {
+      // Data override will override the complete directory
+      DataDir = DataOverride;
     }
-    return nullptr;
-  }
-
-  const char *GetHomeDirectory() {
-    char const *HomeDir = getenv("HOME");
-
-    // Try to get home directory from uid
-    if (!HomeDir) {
-      HomeDir = FindUserHomeThroughUID();
+    else {
+      DataDir = DataXDG ?: HomeDir;
+      DataDir += "/.fex-emu/";
     }
-
-    // try the PWD
-    if (!HomeDir) {
-      HomeDir = getenv("PWD");
-    }
-
-    // Still doesn't exit? You get local
-    if (!HomeDir) {
-      HomeDir = ".";
-    }
-
-    return HomeDir;
+    return DataDir;
   }
 
   std::string GetConfigDirectory(bool Global) {
@@ -46,7 +33,7 @@ namespace FEXCore::Config {
       ConfigDir = GLOBAL_DATA_DIRECTORY;
     }
     else {
-      char const *HomeDir = GetHomeDirectory();
+      char const *HomeDir = Paths::GetHomeDirectory();
       char const *ConfigXDG = getenv("XDG_CONFIG_HOME");
       char const *ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
       if (ConfigOverride) {
@@ -107,23 +94,6 @@ namespace FEXCore::Config {
 
     ConfigFile += Filename + ".json";
     return ConfigFile;
-  }
-
-  std::string GetDataDirectory() {
-    std::string DataDir{};
-
-    char const *HomeDir = GetHomeDirectory();
-    char const *DataXDG = getenv("XDG_DATA_HOME");
-    char const *DataOverride = getenv("FEX_APP_DATA_LOCATION");
-    if (DataOverride) {
-      // Data override will override the complete directory
-      DataDir = DataOverride;
-    }
-    else {
-      DataDir = DataXDG ?: HomeDir;
-      DataDir += "/.fex-emu/";
-    }
-    return DataDir;
   }
 
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config) {

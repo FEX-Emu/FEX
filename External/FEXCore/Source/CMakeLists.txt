@@ -129,6 +129,7 @@ set (SRCS
   Utils/Allocator.cpp
   Utils/Allocator/64BitAllocator.cpp
   Utils/LogManager.cpp
+  Utils/Telemetry.cpp
   Utils/Threads.cpp
   )
 

@@ -21,6 +21,7 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Telemetry.h>
 
 #include <cstdint>
 #include <filesystem>
@@ -409,6 +410,7 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
+  FEXCore::Telemetry::Initialize();
   InterpreterHandler(&Program, LDPath(), &Args);
 
   std::error_code ec{};
@@ -590,7 +592,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Allocator::ClearHooks();
   // Allocator is now original system allocator
 
-
+  FEXCore::Telemetry::Shutdown(ProgramName);
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
   }

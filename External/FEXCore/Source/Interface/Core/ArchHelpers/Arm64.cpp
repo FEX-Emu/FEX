@@ -2,6 +2,7 @@
 #include "Interface/Core/ArchHelpers/MContext.h"
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Telemetry.h>
 
 #include <atomic>
 #include <stdint.h>
@@ -9,6 +10,9 @@
 #include <signal.h>
 
 namespace FEXCore::ArchHelpers::Arm64 {
+FEXCORE_TELEMETRY_STATIC_INIT(SplitLock, TYPE_HAS_SPLIT_LOCKS);
+FEXCORE_TELEMETRY_STATIC_INIT(SplitLock16B, TYPE_16BYTE_SPLIT);
+
 static __uint128_t LoadAcquire128(uint64_t Addr) {
   __uint128_t Result{};
   uint64_t Lower;
@@ -94,8 +98,15 @@ bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
     // Both cross-cacheline and cross 16byte both need dual CAS loops that can tear
     // ARMv8.4 LSE2 solves all atomic issues except cross-cacheline
 
+    // Check for Split lock across a cacheline
+    if ((Addr & 63) > 56) {
+      FEXCORE_TELEMETRY_SET(SplitLock, 1);
+    }
+
     uint64_t AlignmentMask = 0b1111;
     if ((Addr & AlignmentMask) > 8) {
+      FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+
       uint64_t Alignment = Addr & 0b111;
       Addr &= ~0b111ULL;
       uint64_t AddrUpper = Addr + 8;
@@ -430,9 +441,16 @@ uint16_t DoCAS16(
   uint64_t Addr,
   CASExpectedFn<uint16_t> ExpectedFunction,
   CASDesiredFn<uint16_t> DesiredFunction) {
+
+  if ((Addr & 63) == 63) {
+    FEXCORE_TELEMETRY_SET(SplitLock, 1);
+  }
+
   // 16 bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) == 15) {
+    FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+
     // Address crosses over 16byte or 64byte threshold
     // Need a dual 8bit CAS loop
     uint64_t AddrUpper = Addr + 1;
@@ -706,9 +724,16 @@ uint32_t DoCAS32(
   uint64_t Addr,
   CASExpectedFn<uint32_t> ExpectedFunction,
   CASDesiredFn<uint32_t> DesiredFunction) {
+
+  if ((Addr & 63) > 60) {
+    FEXCORE_TELEMETRY_SET(SplitLock, 1);
+  }
+
   // 32 bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 12) {
+    FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+
     // Address crosses over 16byte threshold
     // Needs dual 4 byte CAS loop
     uint64_t Alignment = Addr & 0b11;
@@ -936,9 +961,16 @@ uint64_t DoCAS64(
   uint64_t Addr,
   CASExpectedFn<uint64_t> ExpectedFunction,
   CASDesiredFn<uint64_t> DesiredFunction) {
+
+  if ((Addr & 63) > 56) {
+    FEXCORE_TELEMETRY_SET(SplitLock, 1);
+  }
+
   // 64bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 8) {
+    FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+
     uint64_t Alignment = Addr & 0b111;
     Addr &= ~0b111ULL;
     uint64_t AddrUpper = Addr + 8;
