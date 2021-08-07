@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Telemetry.h>
 #include <set>
 #include <sys/mman.h>
 
@@ -696,6 +697,7 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     return NormalOp(&X87Ops[X87Op], X87Op);
   }
   else if (Info->Type == FEXCore::X86Tables::TYPE_VEX_TABLE_PREFIX) {
+    FEXCORE_TELEMETRY_SET(VEXOpTelem, 1);
     uint16_t map_select = 1;
     uint16_t pp = 0;
 
@@ -723,6 +725,7 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
 
     if (LocalInfo->Type >= FEXCore::X86Tables::TYPE_VEX_GROUP_12 &&
         LocalInfo->Type <= FEXCore::X86Tables::TYPE_VEX_GROUP_17) {
+    FEXCORE_TELEMETRY_SET(VEXOpTelem, 1);
     // We have ModRM
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
@@ -740,6 +743,8 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
       return NormalOp(LocalInfo, Op);
   }
   else if (Info->Type == FEXCore::X86Tables::TYPE_GROUP_EVEX) {
+    FEXCORE_TELEMETRY_SET(EVEXOpTelem, 1);
+
     /* uint8_t P1 = */ ReadByte();
     /* uint8_t P2 = */ ReadByte();
     /* uint8_t P3 = */ ReadByte();

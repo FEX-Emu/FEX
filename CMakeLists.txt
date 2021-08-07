@@ -16,6 +16,7 @@ option(ENABLE_STRICT_WERROR "Enables stricter -Werror for CI" FALSE)
 option(ENABLE_WERROR "Enables -Werror" FALSE)
 option(ENABLE_STATIC_PIE "Enables static-pie build" FALSE)
 option(ENABLE_JEMALLOC "Enables jemalloc allocator" TRUE)
+option(ENABLE_OFFLINE_TELEMETRY "Enables FEX offline telemetry" TRUE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
@@ -80,6 +81,11 @@ set (PTHREAD_LIB pthread)
 if (ENABLE_LLD)
   set (LD_OVERRIDE "-fuse-ld=lld")
   link_libraries(${LD_OVERRIDE})
+endif()
+
+if (NOT ENABLE_OFFLINE_TELEMETRY)
+  # Disable FEX offline telemetry entirely if asked
+  add_definitions(-DFEX_DISABLE_TELEMETRY=1)
 endif()
 
 if (ENABLE_STATIC_PIE)

@@ -3,11 +3,42 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <pwd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 namespace FEXCore::Paths {
   std::unique_ptr<std::string> CachePath;
   std::unique_ptr<std::string> EntryCache;
+
+  char const* FindUserHomeThroughUID() {
+    auto passwd = getpwuid(geteuid());
+    if (passwd) {
+      return passwd->pw_dir;
+    }
+    return nullptr;
+  }
+
+  const char *GetHomeDirectory() {
+    char const *HomeDir = getenv("HOME");
+
+    // Try to get home directory from uid
+    if (!HomeDir) {
+      HomeDir = FindUserHomeThroughUID();
+    }
+
+    // try the PWD
+    if (!HomeDir) {
+      HomeDir = getenv("PWD");
+    }
+
+    // Still doesn't exit? You get local
+    if (!HomeDir) {
+      HomeDir = ".";
+    }
+
+    return HomeDir;
+  }
 
   void InitializePaths() {
     CachePath = std::make_unique<std::string>();

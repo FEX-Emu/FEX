@@ -1091,7 +1091,9 @@ namespace FEXCore::Context {
 
     if (NewBlock == 0) {
       LogMan::Msg::E("CompileBlockJit: Failed to compile code %lX - aborting process", GuestRIP);
-      abort();
+      // Return similar behaviour of SIGILL abort
+      Frame->Thread->StatusCode = 128 + SIGILL;
+      Stop(false /* Ignore current thread */);
     }
   }
 
