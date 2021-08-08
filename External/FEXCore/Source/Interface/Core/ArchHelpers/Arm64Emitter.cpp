@@ -226,7 +226,7 @@ void Arm64Emitter::ResetStack() {
 }
 
 void Arm64Emitter::Align16B() {
-  uint64_t CurrentOffset = GetBuffer()->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  uint64_t CurrentOffset = GetCursorAddress<uint64_t>();
   for (uint64_t i = (16 - (CurrentOffset & 0xF)); i != 0; i -= 4) {
       nop();
   }

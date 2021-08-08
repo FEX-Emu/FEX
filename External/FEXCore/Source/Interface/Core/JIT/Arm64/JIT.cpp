@@ -781,8 +781,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   // X1-X3 = Temp
   // X4-r18 = RA
 
-  auto Buffer = GetBuffer();
-  auto GuestEntry = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  auto GuestEntry = GetCursorAddress<uint64_t>();
 
  if (CTX->GetGdbServerStatus()) {
     aarch64::Label RunBlock;
@@ -849,7 +848,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     }
 
     if (DebugData) {
-      DebugData->Subblocks.push_back({Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()), 0, IR->GetID(BlockNode)});
+      DebugData->Subblocks.push_back({GetCursorAddress<uintptr_t>(), 0, IR->GetID(BlockNode)});
     }
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
@@ -861,7 +860,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     }
 
     if (DebugData) {
-      DebugData->Subblocks.back().HostCodeSize = Buffer->GetOffsetAddress<uintptr_t>(GetCursorOffset()) - DebugData->Subblocks.back().HostCodeStart;
+      DebugData->Subblocks.back().HostCodeSize = GetCursorAddress<uintptr_t>() - DebugData->Subblocks.back().HostCodeStart;
     }
   }
 
@@ -874,7 +873,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
 
   FinalizeCode();
 
-  auto CodeEnd = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  auto CodeEnd = GetCursorAddress<uint64_t>();
   CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(GuestEntry), CodeEnd - reinterpret_cast<uint64_t>(GuestEntry));
 
   if (DebugData) {

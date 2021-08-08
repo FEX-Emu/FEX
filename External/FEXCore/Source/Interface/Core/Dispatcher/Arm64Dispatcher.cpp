@@ -27,8 +27,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   SRAEnabled = config.StaticRegisterAssignment;
   SetAllowAssembler(true);
 
-  auto Buffer = GetBuffer();
-  DispatchPtr = Buffer->GetOffsetAddress<CPUBackend::AsmDispatch>(GetCursorOffset());
+  DispatchPtr = GetCursorAddress<CPUBackend::AsmDispatch>();
 
   // while (true) {
   //    Ptr = FindBlock(RIP)
@@ -61,7 +60,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   add(x0, sp, 0);
   str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)));
 
-  AbsoluteLoopTopAddressFillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  AbsoluteLoopTopAddressFillSRA = GetCursorAddress<uint64_t>();
 
   if (SRAEnabled) {
     FillStaticRegs();
@@ -180,11 +179,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
   {
     bind(&ExitSpillSRA);
-    ThreadStopHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    ThreadStopHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
     if (SRAEnabled)
       SpillStaticRegs();
 
-    ThreadStopHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    ThreadStopHandlerAddress = GetCursorAddress<uint64_t>();
 
     PopCalleeSavedRegisters();
 
@@ -194,7 +193,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
-    ExitFunctionLinkerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
     if (SRAEnabled)
       SpillStaticRegs();
 
@@ -231,7 +230,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
-    SignalHandlerReturnAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    SignalHandlerReturnAddress = GetCursorAddress<uint64_t>();
 
     // Now to get back to our old location we need to do a fault dance
     // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
@@ -239,12 +238,12 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
-    ThreadPauseHandlerAddressSpillSRA = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    ThreadPauseHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
     if (SRAEnabled)
       SpillStaticRegs();
 
     bind(&ThreadPauseHandler);
-    ThreadPauseHandlerAddress = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    ThreadPauseHandlerAddress = GetCursorAddress<uint64_t>();
     // We are pausing, this means the frontend should be waiting for this thread to idle
     // We will have faulted and jumped to this location at this point
 
@@ -254,7 +253,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     ldr(x2, &l_Sleep);
     blr(x2);
 
-    PauseReturnInstruction = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+    PauseReturnInstruction = GetCursorAddress<uint64_t>();
     // Fault to start running again
     hlt(0);
   }
@@ -275,7 +274,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     // On return to the thunk, the thunk can get whatever its return value is from the thread context depending on ABI handling on its end
     // When the thunk itself returns, it'll do its regular return logic there
     // void ReentrantCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
-    CallbackPtr = Buffer->GetOffsetAddress<CPUBackend::JITCallback>(GetCursorOffset());
+    CallbackPtr = GetCursorAddress<CPUBackend::JITCallback>();
 
     // We expect the thunk to have previously pushed the registers it was using
     PushCalleeSavedRegisters();
@@ -324,7 +323,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
   FinalizeCode();
   Start = reinterpret_cast<uint64_t>(DispatchPtr);
-  End = Buffer->GetOffsetAddress<uint64_t>(GetCursorOffset());
+  End = GetCursorAddress<uint64_t>();
   vixl::aarch64::CPU::EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
   GetBuffer()->SetExecutable();
 
