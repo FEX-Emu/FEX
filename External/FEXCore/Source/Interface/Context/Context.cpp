@@ -117,6 +117,10 @@ namespace FEXCore::Context {
     return CTX->CreateThread(NewThreadState, ParentTID);
   }
 
+  void ExecutionThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    return CTX->ExecutionThread(Thread);
+  }
+
   void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
     return CTX->InitializeThread(Thread);
   }

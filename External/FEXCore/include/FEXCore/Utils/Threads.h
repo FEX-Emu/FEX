@@ -32,9 +32,14 @@ namespace FEXCore::Threads {
       void* Arg);
 
     static void CleanupAfterFork();
+
     /**  @} */
 
     // Set API functions
     static void SetInternalPointers(Pointers const &_Ptrs);
   };
+
+  void *AllocateStackObject(size_t Size);
+  void DeallocateStackObject(void *Ptr, size_t Size);
+  void Shutdown();
 }

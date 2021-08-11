@@ -35,17 +35,20 @@ namespace FEX::HLE::x64 {
   void RegisterThread() {
     REGISTER_SYSCALL_IMPL_X64(clone, ([](FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) -> uint64_t {
       FEX::HLE::clone3_args args {
-        .flags = flags & ~CSIGNAL, // This no longer contains CSIGNAL
-        .pidfd = reinterpret_cast<uint64_t>(parent_tid), // For clone, pidfd is duplicated here
-        .child_tid = reinterpret_cast<uint64_t>(child_tid),
-        .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
-        .exit_signal = flags & CSIGNAL,
-        .stack = reinterpret_cast<uint64_t>(stack),
-        .stack_size = ~0ULL, // This syscall isn't able to see the stack size
-        .tls = reinterpret_cast<uint64_t>(tls),
-        .set_tid = 0, // This syscall isn't able to select TIDs
-        .set_tid_size = 0,
-        .cgroup = 0, // This syscall can't select cgroups
+        .Type = TypeOfClone::TYPE_CLONE2,
+        .args = {
+          .flags = flags, // CSIGNAL is contained in here
+          .pidfd = 0, // For clone, pidfd is duplicated here
+          .child_tid = reinterpret_cast<uint64_t>(child_tid),
+          .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
+          .exit_signal = flags & CSIGNAL,
+          .stack = reinterpret_cast<uint64_t>(stack),
+          .stack_size = ~0ULL, // This syscall isn't able to see the stack size
+          .tls = reinterpret_cast<uint64_t>(tls),
+          .set_tid = 0, // This syscall isn't able to select TIDs
+          .set_tid_size = 0,
+          .cgroup = 0, // This syscall can't select cgroups
+        },
       };
       return CloneHandler(Frame, &args);
     }));
@@ -123,7 +126,7 @@ namespace FEX::HLE::x64 {
     }));
 
     REGISTER_SYSCALL_IMPL_X64(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
-      uint64_t Result = ::wait4(pid, wstatus, options, rusage);
+      uint64_t Result = ::syscall(SYS_wait4, pid, wstatus, options, rusage);
       SYSCALL_ERRNO();
     });
   }
