@@ -87,3 +87,7 @@ pause_test
 
 # ARMv8.4 periodically flakes on this one
 rtsignal_test
+
+# This takes advantage of CLONE_VM in a way that breaks FEX's TLS usage
+# Need to workaround this somehow
+aio_test
