@@ -173,3 +173,7 @@ pause_test
 
 # ARMv8.4 periodically flakes on this one
 rtsignal_test
+
+# The Solidrun CI board isn't running a kernel with namespaces enabled
+# gvisor doesn't error check correctly in this case and returns hard failure instead of correctly exiting
+proc_pid_uid_gid_map_test
