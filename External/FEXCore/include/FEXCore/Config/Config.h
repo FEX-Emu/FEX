@@ -39,8 +39,8 @@ namespace FEXCore::Config {
 
 namespace DefaultValues {
 #define P(x) x
-#define OPT_BASE(type, group, enum, json, default) constexpr P(type) P(enum) = P(default);
-#define OPT_STR(group, enum, json, default) const std::string P(enum) = P(default);
+#define OPT_BASE(type, group, enum, json, default) extern const P(type) P(enum);
+#define OPT_STR(group, enum, json, default) extern const std::string_view P(enum);
 #define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
 #include <FEXCore/Config/ConfigValues.inl>
 
@@ -135,23 +135,27 @@ namespace Type {
   template<typename T>
   class FEX_DEFAULT_VISIBILITY Value {
   public:
-    template <typename TT = T,
-      typename std::enable_if<!std::is_same<TT, std::string>::value, int>::type = 0>
-    Value(FEXCore::Config::ConfigOption _Option, T Default)
+    template <typename TT = T> requires (!std::is_same_v<TT, std::string>)
+    Value(FEXCore::Config::ConfigOption _Option, TT Default)
       : Option {_Option} {
       ValueData = GetIfExists(Option, Default);
     }
 
-    template <typename TT = T,
-      typename std::enable_if<std::is_same<TT, std::string>::value, int>::type = 0>
-    Value(FEXCore::Config::ConfigOption _Option, T Default)
+    template <typename TT = T> requires (std::is_same_v<TT, std::string>)
+    Value(FEXCore::Config::ConfigOption _Option, TT Default)
       : Option {_Option} {
       ValueData = GetIfExists(Option, Default);
       GetListIfExists(Option, &AppendList);
     }
 
-    template <typename TT = T,
-      typename std::enable_if<!std::is_same<TT, std::string>::value, int>::type = 0>
+    template <typename TT = T> requires (std::is_same_v<TT, std::string>)
+    Value(FEXCore::Config::ConfigOption _Option, std::string_view Default)
+      : Option {_Option} {
+      ValueData = GetIfExists(Option, Default);
+      GetListIfExists(Option, &AppendList);
+    }
+
+    template <typename TT = T> requires (!std::is_same_v<TT, std::string>)
     Value(FEXCore::Config::ConfigOption _Option)
       : Option {_Option} {
       if (!FEXCore::Config::Exists(Option)) {
@@ -161,8 +165,7 @@ namespace Type {
       ValueData = Get(Option);
     }
 
-    template <typename TT = T,
-      typename std::enable_if<std::is_same<TT, std::string>::value, int>::type = 0>
+    template <typename TT = T> requires (std::is_same_v<TT, std::string>)
     Value(FEXCore::Config::ConfigOption _Option)
       : Option {_Option} {
       if (!FEXCore::Config::Exists(Option)) {
@@ -185,6 +188,8 @@ namespace Type {
 
     static T Get(FEXCore::Config::ConfigOption Option);
     static T GetIfExists(FEXCore::Config::ConfigOption Option, T Default);
+    static T GetIfExists(FEXCore::Config::ConfigOption Option, std::string_view Default);
+
     static void GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List);
   };
 }

@@ -272,7 +272,7 @@ struct open_how {
   uint64_t resolve;
 };
 
-struct clone3_args {
+struct kernel_clone3_args {
   uint64_t flags;
   uint64_t pidfd;
   uint64_t child_tid;
@@ -285,6 +285,17 @@ struct clone3_args {
   uint64_t set_tid_size;
   uint64_t cgroup;
 };
+
+enum TypeOfClone {
+  TYPE_CLONE2,
+  TYPE_CLONE3,
+};
+
+struct clone3_args {
+  TypeOfClone Type;
+  kernel_clone3_args args;
+};
+
 uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args);
 
   inline static int RemapFromX86Flags(int flags) {

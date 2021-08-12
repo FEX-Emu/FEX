@@ -22,6 +22,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/Utils/Threads.h>
 
 #include <cstdint>
 #include <filesystem>
@@ -579,6 +580,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::DestroyContext(CTX);
 
   FEXCore::Context::ShutdownStaticTables();
+  FEXCore::Threads::Shutdown();
 
   Loader.FreeSections();
 

@@ -33,7 +33,7 @@ $end_info$
 ARG_TO_STR(idtype_t, "%u")
 
 namespace FEX::HLE {
-  FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context:: Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
+  FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context:: Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *args) {
     uint64_t flags = args->flags;
     FEXCore::Core::CPUState NewThreadState{};
     // Clone copies the parent thread's state
@@ -95,6 +95,74 @@ namespace FEX::HLE {
     }
 
     return NewThread;
+  }
+
+  uint64_t HandleNewClone(FEXCore::Core::InternalThreadState *Thread, FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *GuestArgs) {
+    uint64_t flags = GuestArgs->flags;
+    auto NewThread = Thread;
+    if (flags & CLONE_THREAD) {
+      FEXCore::Core::CPUState NewThreadState{};
+      // Clone copies the parent thread's state
+      memcpy(&NewThreadState, Frame, sizeof(FEXCore::Core::CPUState));
+
+      NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
+      NewThreadState.gregs[FEXCore::X86State::REG_RBX] = 0;
+      NewThreadState.gregs[FEXCore::X86State::REG_RBP] = 0;
+      if (GuestArgs->stack == 0) {
+        // Copies in the original thread's stack
+      }
+      else {
+        NewThreadState.gregs[FEXCore::X86State::REG_RSP] = GuestArgs->stack;
+      }
+
+      // Overwrite thread
+      NewThread = FEXCore::Context::CreateThread(CTX, &NewThreadState, GuestArgs->parent_tid);
+
+      // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
+      // Call execution thread directly since we already are on the new thread
+      NewThread->StartRunning.NotifyAll(); // Clear the start running flag
+    }
+    else{
+      // If we don't have CLONE_THREAD then we are effectively a fork
+      // Clear all the other threads that are being tracked
+      // Frame->Thread is /ONLY/ safe to access when CLONE_THREAD flag is not set
+      FEXCore::Context::CleanupAfterFork(CTX, Frame->Thread);
+
+      Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
+      Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBX] = 0;
+      Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBP] = 0;
+      if (GuestArgs->stack == 0) {
+        // Copies in the original thread's stack
+      }
+      else {
+        Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = GuestArgs->stack;
+      }
+    }
+
+    if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
+      if (flags & CLONE_SETTLS) {
+        x64::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(GuestArgs->tls));
+      }
+      // Set us to start just after the syscall instruction
+      x64::AdjustRipForNewThread(NewThread->CurrentFrame);
+    }
+    else {
+      if (flags & CLONE_SETTLS) {
+        x32::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(GuestArgs->tls));
+      }
+      x32::AdjustRipForNewThread(NewThread->CurrentFrame);
+    }
+
+    // Depending on clone settings, our TID and PID could have changed
+    Thread->ThreadManager.TID = ::gettid();
+    Thread->ThreadManager.PID = ::getpid();
+
+    // Start exuting the thread directly
+    // Our host clone starts in a new stack space, so it can't return back to the JIT space
+    FEXCore::Context::ExecutionThread(CTX, Thread);
+
+    // The rest of the context remains as is and the thread will continue executing
+    return Thread->StatusCode;
   }
 
   uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
@@ -173,9 +241,10 @@ namespace FEX::HLE {
       return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0);
     });
 
-    REGISTER_SYSCALL_IMPL(clone3, ([](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *cl_args, size_t size) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(clone3, ([](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *cl_args, size_t size) -> uint64_t {
       FEX::HLE::clone3_args args{};
-      memcpy(&args, cl_args, std::min(sizeof(FEX::HLE::clone3_args), size));
+      args.Type = TypeOfClone::TYPE_CLONE3;
+      memcpy(&args.args, cl_args, std::min(sizeof(FEX::HLE::kernel_clone3_args), size));
       return CloneHandler(Frame, &args);
     }));
 

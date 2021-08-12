@@ -12,7 +12,7 @@
 namespace FEXCore::Telemetry {
 #ifndef FEX_DISABLE_TELEMETRY
   static std::array<Value, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryValues = {{ }};
-  const std::array<std::string, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryNames {
+  const std::array<std::string_view, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryNames {
     "64byte Split Locks",
     "16Byte Split atomics",
     "VEX instructions (AVX)",

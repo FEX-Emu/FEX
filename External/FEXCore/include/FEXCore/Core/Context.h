@@ -223,6 +223,7 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required);
 
   FEX_DEFAULT_VISIBILITY FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
+  FEX_DEFAULT_VISIBILITY void ExecutionThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);

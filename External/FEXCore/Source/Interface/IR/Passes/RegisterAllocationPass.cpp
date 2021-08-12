@@ -26,8 +26,6 @@ namespace {
   constexpr uint32_t DEFAULT_INTERFERENCE_SPAN_COUNT = 30;
   constexpr uint32_t DEFAULT_NODE_COUNT = 8192;
 
-  const PhysicalRegister INVALID_REGCLASS = PhysicalRegister::Invalid();
-
   // BucketList is an optimized container, it includes an inline array of Size
   // and can overflow to a linked list of further buckets
   //
@@ -191,7 +189,7 @@ namespace {
     uint32_t End{~0U};
     uint32_t RematCost{0};
     uint32_t PreWritten{0};
-    PhysicalRegister PrefferedRegister{INVALID_REGCLASS};
+    PhysicalRegister PrefferedRegister{PhysicalRegister::Invalid()};
     bool Written{false};
     bool Global{false};
   };
@@ -269,7 +267,7 @@ namespace {
 
     Graph->VisitedNodePredecessors.clear();
     Graph->AllocData.reset((FEXCore::IR::RegisterAllocationData*)FEXCore::Allocator::malloc(FEXCore::IR::RegisterAllocationData::Size(NodeCount)));
-    memset(&Graph->AllocData->Map[0], INVALID_REGCLASS.Raw, NodeCount);
+    memset(&Graph->AllocData->Map[0], PhysicalRegister::Invalid().Raw, NodeCount);
     Graph->AllocData->MapCount = NodeCount;
     Graph->AllocData->IsShared = false; // not shared by default
     Graph->NodeCount = NodeCount;
@@ -639,7 +637,7 @@ namespace FEXCore::IR {
           return PhysicalRegister(FPRFixedClass, reg);
         } else {
           LOGMAN_THROW_A(false, "Unexpected Offset %d", Offset);
-          return INVALID_REGCLASS;
+          return PhysicalRegister::Invalid();
         }
     };
 
@@ -722,7 +720,7 @@ namespace FEXCore::IR {
           // ACCESSED after write, let's not SRA this one
           if (LiveRanges[ArgNode].Written) {
             SRA_DEBUG("Demoting ssa%d because accessed after write in ssa%d\n", ArgNode, Node);
-            LiveRanges[ArgNode].PrefferedRegister = INVALID_REGCLASS;
+            LiveRanges[ArgNode].PrefferedRegister = PhysicalRegister::Invalid();
             auto ArgNodeNode = IR->GetNode(IROp->Args[i]);
             SetNodeClass(Graph, ArgNode, GetRegClassFromNode(IR, ArgNodeNode->Op(IR->GetData())));
           }
@@ -756,7 +754,7 @@ namespace FEXCore::IR {
               uint32_t ID = (*StaticMap) - &LiveRanges[0];
 
               SRA_DEBUG("ssa%d cannot be a pre-write because ssa%d reads from sra%d before storereg", ID, Node, -1 /*vreg*/);
-              (*StaticMap)->PrefferedRegister = INVALID_REGCLASS;
+              (*StaticMap)->PrefferedRegister = PhysicalRegister::Invalid();
               (*StaticMap)->PreWritten = 0;
               SetNodeClass(Graph, ID, Op->Class);
             }
@@ -953,13 +951,13 @@ namespace FEXCore::IR {
     for (uint32_t i = 0; i < Graph->NodeCount; ++i) {
       RegisterNode *CurrentNode = &Graph->Nodes[i];
       auto &CurrentRegAndClass = Graph->AllocData->Map[i];
-      if (CurrentRegAndClass == INVALID_REGCLASS)
+      if (CurrentRegAndClass == PhysicalRegister::Invalid())
         continue;
 
       auto LiveRange = &LiveRanges[i];
 
       FEXCore::IR::RegisterClassType RegClass = FEXCore::IR::RegisterClassType{CurrentRegAndClass.Class};
-      auto RegAndClass = INVALID_REGCLASS;
+      auto RegAndClass = PhysicalRegister::Invalid();
       RegisterClass *RAClass = &Graph->Set.Classes[RegClass];
 
       if (CurrentNode->Head.PhiPartner) {

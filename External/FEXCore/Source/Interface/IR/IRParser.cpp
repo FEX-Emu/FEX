@@ -70,8 +70,6 @@ std::string DecodeErrorToString(DecodeFailure Failure) {
   return "Unknown Error";
 }
 
-std::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
-
 class IRParser: public FEXCore::IR::IREmitter {
   public:
   template<typename Type>
@@ -299,9 +297,10 @@ class IRParser: public FEXCore::IR::IREmitter {
   std::unordered_map<std::string, OrderedNode*> SSANameMapper;
   std::vector<LineDefinition> Defs;
   LineDefinition *CurrentDef{};
+  std::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
 
   IRParser(std::istream *text) {
-    InitializeStaticTables();
+    InitializeNameMap();
 
     std::string TmpLine;
     while (!text->eof()) {
@@ -630,7 +629,7 @@ class IRParser: public FEXCore::IR::IREmitter {
 		return true;
 	}
 
-  void InitializeStaticTables() {
+  void InitializeNameMap() {
     if (NameToOpMap.empty()) {
       for (FEXCore::IR::IROps Op = FEXCore::IR::IROps::OP_DUMMY;
          Op <= FEXCore::IR::IROps::OP_LAST;

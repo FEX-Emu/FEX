@@ -75,6 +75,11 @@ namespace FEXCore::Allocator {
 #endif
     FEXCore::Allocator::mmap = ::mmap;
     FEXCore::Allocator::munmap = ::munmap;
+
+    // XXX: This is currently a leak.
+    // We can't work around this yet until static initializers that allocate memory are completely removed from our codebase
+    // Luckily we only remove this on process shutdown, so the kernel will do the cleanup for us
+    Alloc64.release();
   }
 #pragma GCC diagnostic pop
 

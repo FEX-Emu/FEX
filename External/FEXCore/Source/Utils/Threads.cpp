@@ -17,8 +17,8 @@ namespace FEXCore::Threads {
   std::mutex DeadStackPoolMutex{};
   std::mutex LiveStackPoolMutex{};
 
-  std::deque<StackPoolItem> DeadStackPool;
-  std::deque<StackPoolItem> LiveStackPool;
+  static std::deque<StackPoolItem> DeadStackPool{};
+  static std::deque<StackPoolItem> LiveStackPool{};
 
   void *AllocateStackObject(size_t Size) {
     std::lock_guard lk{DeadStackPoolMutex};
@@ -56,6 +56,29 @@ namespace FEXCore::Threads {
         return;
       }
     }
+  }
+
+  void DeallocateStackObject(void *Ptr, size_t Size) {
+    RemoveStackFromLivePool(Ptr);
+    AddStackToDeadPool(Ptr, Size);
+  }
+
+  void Shutdown() {
+    std::lock_guard lk{DeadStackPoolMutex};
+    std::lock_guard lk2{LiveStackPoolMutex};
+    // Erase all the dead stack pools
+    for (auto &Item : DeadStackPool) {
+      FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
+    }
+
+    // Now clean up any that are considered to still be live
+    // We are in shutdown phase, everything in the process is dead
+    for (auto &Item : LiveStackPool) {
+      FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
+    }
+
+    DeadStackPool.clear();
+    LiveStackPool.clear();
   }
 
   void *InitializeThread(void *Ptr);
@@ -106,8 +129,7 @@ namespace FEXCore::Threads {
     }
 
     void FreeStack() {
-      RemoveStackFromLivePool(Stack);
-      AddStackToDeadPool(Stack, STACK_SIZE);
+      DeallocateStackObject(Stack, STACK_SIZE);
     }
 
     private:

@@ -10,6 +10,14 @@
 #include <sys/sysinfo.h>
 
 namespace FEXCore::Config {
+namespace DefaultValues {
+#define P(x) x
+#define OPT_BASE(type, group, enum, json, default) const P(type) P(enum) = P(default);
+#define OPT_STR(group, enum, json, default) const std::string_view P(enum) = P(default);
+#define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
+#include <FEXCore/Config/ConfigValues.inl>
+}
+
   std::string GetDataDirectory() {
     std::string DataDir{};
 
@@ -384,6 +392,17 @@ namespace FEXCore::Config {
     }
     else {
       return Default;
+    }
+  }
+
+  template<>
+  std::string Value<std::string>::GetIfExists(FEXCore::Config::ConfigOption Option, std::string_view Default) {
+    auto Value = FEXCore::Config::Get(Option);
+    if (Value) {
+      return **Value;
+    }
+    else {
+      return std::string(Default);
     }
   }
 
