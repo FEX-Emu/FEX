@@ -19,7 +19,7 @@ namespace FEX::RootFS {
 
 static std::fstream SquashFSLock{};
 bool SanityCheckPath(std::string const &LDPath) {
-// Check if we have an directory inside our temp folder
+  // Check if we have an directory inside our temp folder
   std::string PathUser = LDPath + "/usr";
   std::error_code ec{};
   if (!std::filesystem::exists(PathUser, ec)) {
@@ -31,7 +31,7 @@ bool SanityCheckPath(std::string const &LDPath) {
   return true;
 }
 
-bool CheckLockExists(std::string const LockPath) {
+bool CheckLockExists(std::string const &LockPath) {
   // If the lock file for a squashfs path exists the we can try
   // to open it and ref counting will keep it alive
   std::error_code ec{};
@@ -68,6 +68,43 @@ void OpenLock(std::string const LockPath) {
   SquashFSLock.open(LockPath, std::ios_base::in | std::ios_base::binary);
 }
 
+bool UpdateRootFSPath() {
+  // This value may become outdated if squashfs does exist
+  FEX_CONFIG_OPT(LDPath, ROOTFS);
+
+  if (FEX::FormatCheck::IsSquashFS(LDPath())) {
+    struct utsname uts{};
+    uname (&uts);
+    std::string LockPath = "/tmp/.FEX-";
+    LockPath += std::filesystem::path(LDPath()).filename();
+    LockPath += ".lock.";
+    LockPath += uts.nodename;
+
+    if (CheckLockExists(LockPath)) {
+      // RootFS already exists. Nothing to do
+      return true;
+    }
+
+    // Is a squashfs but not mounted
+    return false;
+  }
+
+  // Nothing needing to be done
+  return true;
+}
+
+std::string GetRootFSLockFile() {
+  // FEX_ROOTFS needs to be the path to the squashfs, not the mount
+  FEX_CONFIG_OPT(LDPath, ROOTFS);
+  struct utsname uts{};
+  uname (&uts);
+  std::string LockPath = "/tmp/.FEX-";
+  LockPath += std::filesystem::path(LDPath()).filename();
+  LockPath += ".lock.";
+  LockPath += uts.nodename;
+  return LockPath;
+}
+
 bool Setup(char **const envp) {
   // We need to setup the rootfs here
   // If the configuration is set to use a folder then there is nothing to do
@@ -78,12 +115,7 @@ bool Setup(char **const envp) {
     // Check if the rootfs is already mounted
     // We can do this by checking the lock file if it exists
 
-    struct utsname uts{};
-    uname (&uts);
-    std::string LockPath = "/tmp/.FEX-";
-    LockPath += std::filesystem::path(LDPath()).filename();
-    LockPath += ".lock.";
-    LockPath += uts.nodename;
+    std::string LockPath = GetRootFSLockFile();
 
     if (CheckLockExists(LockPath)) {
       // RootFS already exists. Nothing to do
