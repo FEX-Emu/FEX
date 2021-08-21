@@ -208,16 +208,20 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   //eflags (lower 16 used)
   auto eflags = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
   SetPackedRFLAG(false, eflags);
+  SP = _Add(SP, Constant);
 
   if (CTX->Config.Is64BitMode) {
     // RSP and SS only happen in 64-bit mode or if this is a CPL mode jump!
-    SP = _Add(SP, Constant);
-    // RSP
+    // FEX doesn't support a CPL mode switch, so don't need to worry about this on 32-bit
     _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
     SP = _Add(SP, Constant);
     //ss
     _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), _LoadMem(GPRClass, GPRSize, SP, GPRSize));
     SP = _Add(SP, Constant);
+  }
+  else {
+    // Store the stack in 32-bit mode
+    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSP]), SP);
   }
 
   _ExitFunction(NewRIP);
