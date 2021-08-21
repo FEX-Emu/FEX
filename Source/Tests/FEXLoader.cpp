@@ -161,7 +161,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
 }
 
 bool RanAsInterpreter(char *Program) {
-  return strstr(Program, "FEXInterpreter") != nullptr;
+  return ExecutedWithFD || strstr(Program, "FEXInterpreter") != nullptr;
 }
 
 bool IsInterpreterInstalled() {
