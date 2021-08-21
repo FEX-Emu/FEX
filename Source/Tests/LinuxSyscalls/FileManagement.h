@@ -57,6 +57,8 @@ public:
 
   std::optional<std::string> GetSelf(const char *Pathname);
 
+  void UpdatePID(uint32_t PID) { CurrentPID = PID; }
+
 private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
@@ -70,5 +72,6 @@ private:
   FEX_CONFIG_OPT(ThunkHostLibs, THUNKHOSTLIBS);
   FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
   FEX_CONFIG_OPT(ThunkConfig, THUNKCONFIG);
+  uint32_t CurrentPID{};
 };
 }
