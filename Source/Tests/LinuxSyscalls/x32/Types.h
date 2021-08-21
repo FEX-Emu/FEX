@@ -242,23 +242,23 @@ FEX_ANNOTATE("alias-x86_32-stack_t")
 FEX_ANNOTATE("fex-match")
 stack_t32 {
   compat_ptr<void> ss_sp;
-  compat_size_t ss_size;
   int32_t ss_flags;
+  compat_size_t ss_size;
 
   stack_t32() = delete;
 
   operator stack_t() const {
     stack_t ss{};
     ss.ss_sp    = ss_sp;
-    ss.ss_size  = ss_size;
     ss.ss_flags = ss_flags;
+    ss.ss_size  = ss_size;
     return ss;
   }
 
   stack_t32(stack_t ss)
     : ss_sp {ss.ss_sp} {
-    ss_size  = ss.ss_size;
     ss_flags = ss.ss_flags;
+    ss_size  = ss.ss_size;
   }
 };
 
