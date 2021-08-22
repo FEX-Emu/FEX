@@ -1303,14 +1303,14 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   //  240 | XMM5
   //  256 | XMM6
   //  272 | XMM7
-  //  288 | XMM8
-  //  304 | XMM9
-  //  320 | XMM10
-  //  336 | XMM11
-  //  352 | XMM12
-  //  368 | XMM13
-  //  384 | XMM14
-  //  400 | XMM15
+  //  288 | 64BitMode ? <R> : XMM8
+  //  304 | 64BitMode ? <R> : XMM9
+  //  320 | 64BitMode ? <R> : XMM10
+  //  336 | 64BitMode ? <R> : XMM11
+  //  352 | 64BitMode ? <R> : XMM12
+  //  368 | 64BitMode ? <R> : XMM13
+  //  384 | 64BitMode ? <R> : XMM14
+  //  400 | 64BitMode ? <R> : XMM15
   //  416 | <R>
   //  432 | <R>
   //  448 | <R>
@@ -1335,7 +1335,9 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
 
     _StoreMem(FPRClass, 16, MemLocation, MMReg, 16);
   }
-  for (unsigned i = 0; i < 16; ++i) {
+  unsigned NumRegs = CTX->Config.Is64BitMode ? 16 : 8;
+
+  for (unsigned i = 0; i < NumRegs; ++i) {
     OrderedNode *XMMReg = _LoadContext(16, offsetof(FEXCore::Core::CPUState, xmm[i]), FPRClass);
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
 
@@ -1382,7 +1384,9 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
     auto MMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
     _StoreContext(FPRClass, 16, offsetof(FEXCore::Core::CPUState, mm[i]), MMReg);
   }
-  for (unsigned i = 0; i < 16; ++i) {
+  unsigned NumRegs = CTX->Config.Is64BitMode ? 16 : 8;
+
+  for (unsigned i = 0; i < NumRegs; ++i) {
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
     auto XMMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
     _StoreContext(FPRClass, 16, offsetof(FEXCore::Core::CPUState, xmm[i]), XMMReg);
