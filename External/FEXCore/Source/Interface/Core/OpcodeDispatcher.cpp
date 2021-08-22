@@ -1549,7 +1549,14 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         DecodeFailure = true;
         return;
     }
-    StoreResult(GPRClass, Op, Segment, -1);
+    if (DestIsMem(Op)) {
+      // If the destination is memory then we always store 16-bits only
+      StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Segment, 2, -1);
+    }
+    else {
+      // If the destination is a GPR then we follow register storing rules
+      StoreResult(GPRClass, Op, Segment, -1);
+    }
   }
 }
 
