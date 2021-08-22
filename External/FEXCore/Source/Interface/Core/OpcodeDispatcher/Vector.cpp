@@ -1278,6 +1278,13 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
     _StoreMem(GPRClass, 2, MemLocation, FSW, 2);
   }
 
+  {
+    // FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(4));
+    auto FTW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FTW), GPRClass);
+    _StoreMem(GPRClass, 2, MemLocation, FTW, 2);
+  }
+
   // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
   // ------------------------------------------
   //   32 | ST0/MM0                             | <R>
@@ -1361,6 +1368,13 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
     SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
     SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+  }
+
+  {
+    // FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(4));
+    auto NewFTW = _LoadMem(GPRClass, 2, MemLocation, 2);
+    _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FTW), NewFTW);
   }
 
   for (unsigned i = 0; i < 8; ++i) {

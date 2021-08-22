@@ -114,6 +114,8 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
       }
     }
   }
+
+  UpdatePID(::getpid());
 }
 
 FileManager::~FileManager() {
@@ -154,10 +156,8 @@ std::optional<std::string> FileManager::GetSelf(const char *Pathname) {
     return std::nullopt;
   }
 
-  int pid = getpid();
-
   char PidSelfPath[50];
-  snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
   if (strcmp(Pathname, "/proc/self/exe") == 0 ||
       strcmp(Pathname, "/proc/thread-self/exe") == 0 ||
@@ -277,10 +277,8 @@ uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int 
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
   // calculate the non-self link to exe
   // Some executables do getpid, stat("/proc/$pid/exe")
-  int pid = getpid();
-
   char PidSelfPath[50];
-  snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
   if (strcmp(pathname, "/proc/self/exe") == 0 ||
       strcmp(pathname, "/proc/thread-self/exe") == 0 ||
@@ -326,10 +324,9 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
   // Some executables do getpid, stat("/proc/$pid/exe")
   // Can't use `GetSelf` directly here since readlink{at,} returns EINVAL if it isn't a symlink
   // Self is always a symlink and isn't expected to fail
-  int pid = getpid();
 
   char PidSelfPath[50];
-  snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
   if (strcmp(pathname, "/proc/self/exe") == 0 ||
       strcmp(pathname, "/proc/thread-self/exe") == 0 ||

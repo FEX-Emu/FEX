@@ -224,7 +224,7 @@ namespace FEX::HLE::x32 {
       stack_t *ss64_ptr{};
       stack_t *old64_ptr{};
 
-      if (ss64_ptr) {
+      if (ss) {
         ss64 = *ss;
         ss64_ptr = &ss64;
       }

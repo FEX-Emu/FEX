@@ -156,6 +156,7 @@ namespace FEX::HLE {
     // Depending on clone settings, our TID and PID could have changed
     Thread->ThreadManager.TID = ::gettid();
     Thread->ThreadManager.PID = ::getpid();
+    FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadManager.PID);
 
     // Start exuting the thread directly
     // Our host clone starts in a new stack space, so it can't return back to the JIT space
@@ -173,6 +174,7 @@ namespace FEX::HLE {
       // update the internal TID
       Thread->ThreadManager.TID = ::gettid();
       Thread->ThreadManager.PID = ::getpid();
+      FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadManager.PID);
       Thread->ThreadManager.clear_child_tid = nullptr;
 
       // Clear all the other threads that are being tracked

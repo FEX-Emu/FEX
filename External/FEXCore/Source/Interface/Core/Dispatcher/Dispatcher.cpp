@@ -84,27 +84,32 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   // Set our state register to point to our guest thread data
   ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
-
   uint64_t OldGuestSP = Frame->State.gregs[X86State::REG_RSP];
   uint64_t NewGuestSP = OldGuestSP;
 
-  if (!(GuestStack->ss_flags & SS_DISABLE)) {
-    // If our guest is already inside of the alternative stack
-    // Then that means we are hitting recursive signals and we need to walk back the stack correctly
-    uint64_t AltStackBase = reinterpret_cast<uint64_t>(GuestStack->ss_sp);
-    uint64_t AltStackEnd = AltStackBase + GuestStack->ss_size;
-    if (OldGuestSP >= AltStackBase &&
-        OldGuestSP <= AltStackEnd) {
-      // We are already in the alt stack, the rest of the code will handle adjusting this
-    }
-    else {
-      NewGuestSP = AltStackEnd;
+  // altstack is only used if the signal handler was setup with SA_ONSTACK
+  if (GuestAction->sa_flags & SA_ONSTACK) {
+    // Additionally the altstack is only used if the enabled (SS_DISABLE flag is not set)
+    if (!(GuestStack->ss_flags & SS_DISABLE)) {
+      // If our guest is already inside of the alternative stack
+      // Then that means we are hitting recursive signals and we need to walk back the stack correctly
+      uint64_t AltStackBase = reinterpret_cast<uint64_t>(GuestStack->ss_sp);
+      uint64_t AltStackEnd = AltStackBase + GuestStack->ss_size;
+      if (OldGuestSP >= AltStackBase &&
+          OldGuestSP <= AltStackEnd) {
+        // We are already in the alt stack, the rest of the code will handle adjusting this
+      }
+      else {
+        NewGuestSP = AltStackEnd;
+      }
     }
   }
 
-  // Back up past the redzone, which is 128bytes
-  // Don't need this offset if we aren't going to be putting siginfo in to it
-  NewGuestSP -= 128;
+  if (CTX->Config.Is64BitMode) {
+    // Back up past the redzone, which is 128bytes
+    // 32-bit doesn't have a redzone
+    NewGuestSP -= 128;
+  }
 
   // siginfo_t
   siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
