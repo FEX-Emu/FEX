@@ -3117,11 +3117,6 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
-    LogMan::Msg::E("Invalid REPNE on STOS");
-    DecodeFailure = true;
-    return;
-  }
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
     LogMan::Msg::E("Can't handle adddress size");
     DecodeFailure = true;
@@ -3130,7 +3125,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
   const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
-  const bool Repeat = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) != 0;
+  const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) != 0;
 
   if (!Repeat) {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -3225,11 +3220,6 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
-    LogMan::Msg::E("Invalid REPNE on MOVS");
-    DecodeFailure = true;
-    return;
-  }
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
     LogMan::Msg::E("Can't handle adddress size");
     DecodeFailure = true;
@@ -3246,7 +3236,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
   auto PtrDir = _Select(FEXCore::IR::COND_EQ, DF,  _Constant(0), SizeConst, NegSizeConst);
 
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
+  if (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) {
     // Create all our blocks
     auto LoopHead = CreateNewCodeBlockAfter(GetCurrentBlock());
     auto LoopTail = CreateNewCodeBlockAfter(LoopHead);
@@ -3441,11 +3431,6 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LODSOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX) {
-    LogMan::Msg::E("Invalid REPNE on LODS");
-    DecodeFailure = true;
-    return;
-  }
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
     LogMan::Msg::E("Can't handle adddress size");
     DecodeFailure = true;
@@ -3454,7 +3439,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
   const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
-  const bool Repeat = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) != 0;
+  const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) != 0;
 
   if (!Repeat) {
     OrderedNode *Dest_RSI = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RSI]), GPRClass);
