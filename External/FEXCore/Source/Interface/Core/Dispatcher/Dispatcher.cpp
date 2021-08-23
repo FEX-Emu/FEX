@@ -79,6 +79,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   // We use this to track if it is safe to clear cache
   ++SignalHandlerRefCounter;
 
+  uint64_t OldPC = ArchHelpers::Context::GetPc(ucontext);
   // Set the new PC
   ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddressFillSRA);
   // Set our state register to point to our guest thread data
@@ -118,11 +119,11 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       !(HostSigInfo->si_code == SI_QUEUE || // If the siginfo comes from sigqueue or user then we don't need to check
         HostSigInfo->si_code == SI_USER)) {
     if (SRAEnabled) {
-      if (!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), false)) {
-        LOGMAN_THROW_A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
-      } else {
+      if (IsAddressInJITCode(OldPC, false)) {
         // We are in jit, SRA must be spilled
         SpillSRA(ucontext);
+      } else {
+        LOGMAN_THROW_A(!IsAddressInJITCode(OldPC, true), "Signals in dispatcher have unsynchronized context");
       }
     }
 
@@ -369,9 +370,6 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
     }
-
-    // Set the new PC
-    ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
 
     // Set our state register to point to our guest thread data
     ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
