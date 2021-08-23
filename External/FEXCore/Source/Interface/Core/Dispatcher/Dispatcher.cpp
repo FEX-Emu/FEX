@@ -275,6 +275,12 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
         case SIGSEGV:
         case SIGBUS:
           // Macro expansion to get the si_addr
+          // This is the address trying to be accessed, not the RIP
+          guest_siginfo->_sifields._sigfault.addr = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(HostSigInfo->si_addr));
+          break;
+        case SIGFPE:
+        case SIGILL:
+          // Macro expansion to get the si_addr
           // Can't really give a real result here. Pull from the context for now
           guest_siginfo->_sifields._sigfault.addr = Frame->State.rip;
           break;
