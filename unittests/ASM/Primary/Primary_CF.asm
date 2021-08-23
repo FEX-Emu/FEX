@@ -9,7 +9,7 @@
 
 mov esp, 0xe0000030
 
-lea rbx, qword [rel .end]
+lea rbx, [rel .end]
 mov rcx, 0x33
 mov rdx, rsp
 
