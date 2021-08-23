@@ -10,7 +10,7 @@
 
 mov esp, 0xe0000010
 
-lea ebx, dword [rel .end]
+lea ebx, [rel .end]
 
 mov eax, 0x202
 push eax ; RFLAGS
