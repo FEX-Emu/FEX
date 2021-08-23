@@ -66,16 +66,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(pread64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
-      uint64_t Result = ::pread64(fd, buf, count, offset);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(pwrite64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
-      uint64_t Result = ::pwrite64(fd, buf, count, offset);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(access, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, int mode) -> uint64_t {
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.Access(pathname, mode);
       SYSCALL_ERRNO();
@@ -112,18 +102,8 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(fallocate, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int mode, off_t offset, off_t len) -> uint64_t {
-      uint64_t Result = ::fallocate(fd, mode, offset, len);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(fchmod, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int mode) -> uint64_t {
       uint64_t Result = ::fchmod(fd, mode);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(readahead, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, size_t count) -> uint64_t {
-      uint64_t Result = ::readahead(fd, offset, count);
       SYSCALL_ERRNO();
     });
 
@@ -246,12 +226,6 @@ namespace FEX::HLE {
     REGISTER_SYSCALL_IMPL(tee, [](FEXCore::Core::CpuStateFrame *Frame, int fd_in, int fd_out, size_t len, unsigned int flags) -> uint64_t {
       // Flags don't need remapped
       uint64_t Result = ::tee(fd_in, fd_out, len, flags);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(sync_file_range, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, off64_t nbytes, unsigned int flags) -> uint64_t {
-      // Flags don't need remapped
-      uint64_t Result = ::sync_file_range(fd, offset, nbytes, flags);
       SYSCALL_ERRNO();
     });
 
