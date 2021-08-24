@@ -150,6 +150,11 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X64(readahead, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, size_t count) -> uint64_t {
+      uint64_t Result = ::readahead(fd, offset, count);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X64(newfstatat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, guest_stat *buf, int flag) -> uint64_t {
       struct stat host_stat;
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.NewFSStatAt(dirfd, pathname, &host_stat, flag);
@@ -181,6 +186,16 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(pwritev2, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags) -> uint64_t {
       uint64_t Result = ::pwritev2(fd, iov, iovcnt, offset, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(pread64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
+      uint64_t Result = ::pread64(fd, buf, count, offset);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(pwrite64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
+      uint64_t Result = ::pwrite64(fd, buf, count, offset);
       SYSCALL_ERRNO();
     });
 
@@ -243,6 +258,17 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(fstatfs, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct statfs *buf) -> uint64_t {
       uint64_t Result = ::fstatfs(fd, buf);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(sync_file_range, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, off64_t nbytes, unsigned int flags) -> uint64_t {
+      // Flags don't need remapped
+      uint64_t Result = ::sync_file_range(fd, offset, nbytes, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(fallocate, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int mode, off_t offset, off_t len) -> uint64_t {
+      uint64_t Result = ::fallocate(fd, mode, offset, len);
       SYSCALL_ERRNO();
     });
   }

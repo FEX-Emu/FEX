@@ -802,25 +802,91 @@ namespace FEX::HLE::x32 {
 
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(sendfile, [](FEXCore::Core::CpuStateFrame *Frame, int out_fd, int in_fd, compat_off_t *offset, size_t count) -> uint64_t {
+      off_t Local{};
+      off_t *Local_p{};
+      if (offset) {
+        Local_p = &Local;
+        Local = *offset;
+      }
+      uint64_t Result = ::sendfile(out_fd, in_fd, Local_p, count);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(sendfile64, [](FEXCore::Core::CpuStateFrame *Frame, int out_fd, int in_fd, off_t *offset, compat_size_t count) -> uint64_t {
+      // Linux definition for this is a bit confusing
+      // Defines offset as compat_loff_t* but loads loff_t worth of data
+      // count is defined as compat_size_t still
+      uint64_t Result = ::sendfile(out_fd, in_fd, offset, count);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(pread64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, uint32_t count, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
+      uint64_t Offset = offset_high;
+      Offset <<= 32;
+      Offset |= offset_low;
+
+      uint64_t Result = ::pread64(fd, buf, count, Offset);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(pwrite64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, uint32_t count, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
+      uint64_t Offset = offset_high;
+      Offset <<= 32;
+      Offset |= offset_low;
+
+      uint64_t Result = ::pwrite64(fd, buf, count, Offset);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(readahead, [](FEXCore::Core::CpuStateFrame *Frame, int fd, uint32_t offset_low, uint64_t offset_high, size_t count) -> uint64_t {
+      uint64_t Offset = offset_high;
+      Offset <<= 32;
+      Offset |= offset_low;
+
+      uint64_t Result = ::readahead(fd, Offset, count);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(sync_file_range, [](FEXCore::Core::CpuStateFrame *Frame,
+      int fd,
+      uint32_t offset_low,
+      uint32_t offset_high,
+      uint32_t len_low,
+      uint32_t len_high,
+      unsigned int flags) -> uint64_t {
+      // Flags don't need remapped
+      uint64_t Offset = offset_high;
+      Offset <<= 32;
+      Offset |= offset_low;
+
+      uint64_t Len = len_high;
+      Len <<= 32;
+      Len |= len_low;
+
+      uint64_t Result = ::sync_file_range(fd, Offset, Len, flags);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(fallocate, [](FEXCore::Core::CpuStateFrame *Frame,
+      int fd,
+      int mode,
+      uint32_t offset_low,
+      uint32_t offset_high,
+      uint32_t len_low,
+      uint32_t len_high) -> uint64_t {
+      uint64_t Offset = offset_high;
+      Offset <<= 32;
+      Offset |= offset_low;
+
+      uint64_t Len = len_high;
+      Len <<= 32;
+      Len |= len_low;
+
+      uint64_t Result = ::fallocate(fd, mode, Offset, Len);
+      SYSCALL_ERRNO();
+    });
   }
 
-  REGISTER_SYSCALL_IMPL_X32(sendfile, [](FEXCore::Core::CpuStateFrame *Frame, int out_fd, int in_fd, compat_off_t *offset, size_t count) -> uint64_t {
-    off_t Local{};
-    off_t *Local_p{};
-    if (offset) {
-      Local_p = &Local;
-      Local = *offset;
-    }
-    uint64_t Result = ::sendfile(out_fd, in_fd, Local_p, count);
-    SYSCALL_ERRNO();
-  });
-
-
-  REGISTER_SYSCALL_IMPL_X32(sendfile64, [](FEXCore::Core::CpuStateFrame *Frame, int out_fd, int in_fd, off_t *offset, compat_size_t count) -> uint64_t {
-    // Linux definition for this is a bit confusing
-    // Defines offset as compat_loff_t* but loads loff_t worth of data
-    // count is defined as compat_size_t still
-    uint64_t Result = ::sendfile(out_fd, in_fd, offset, count);
-    SYSCALL_ERRNO();
-  });
 }
