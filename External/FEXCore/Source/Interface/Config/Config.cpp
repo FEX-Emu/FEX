@@ -6,8 +6,10 @@
 
 #include <FEXCore/Config/Config.h>
 #include <filesystem>
+#include <fstream>
 #include <map>
 #include <sys/sysinfo.h>
+#include <tiny-json.h>
 
 namespace FEXCore::Config {
 namespace DefaultValues {
@@ -16,6 +18,110 @@ namespace DefaultValues {
 #define OPT_STR(group, enum, json, default) const std::string_view P(enum) = P(default);
 #define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
 #include <FEXCore/Config/ConfigValues.inl>
+}
+
+namespace JSON {
+  static bool LoadConfigFile(std::vector<char> &Data, const std::string &Config) {
+    std::fstream ConfigFile;
+    ConfigFile.open(Config, std::ios::in);
+
+    if (!ConfigFile.is_open()) {
+      return false;
+    }
+
+    if (!ConfigFile.seekg(0, std::fstream::end)) {
+      LogMan::Msg::D("Couldn't load configuration file: Seek end");
+      return false;
+    }
+
+    auto FileSize = ConfigFile.tellg();
+    if (ConfigFile.fail()) {
+      LogMan::Msg::D("Couldn't load configuration file: tellg");
+      return false;
+    }
+
+    if (!ConfigFile.seekg(0, std::fstream::beg)) {
+      LogMan::Msg::D("Couldn't load configuration file: Seek beginning");
+      return false;
+    }
+
+    if (FileSize > 0) {
+      Data.resize(FileSize);
+      if (!ConfigFile.read(&Data.at(0), FileSize)) {
+        // Probably means permissions aren't set. Just early exit
+        return false;
+      }
+      ConfigFile.close();
+    }
+    else {
+      return false;
+    }
+
+    return true;
+  }
+
+  struct JsonAllocator {
+    jsonPool_t PoolObject;
+    std::unique_ptr<std::list<json_t>> json_objects;
+  };
+  static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
+
+  json_t* PoolInit(jsonPool_t* Pool) {
+    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+    alloc->json_objects = std::make_unique<std::list<json_t>>();
+    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  }
+
+  json_t* PoolAlloc(jsonPool_t* Pool) {
+    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  }
+
+  static void LoadJSonConfig(const std::string &Config, std::function<void(const char *Name, const char *ConfigSring)> Func) {
+    std::vector<char> Data;
+    if (!LoadConfigFile(Data, Config)) {
+      return;
+    }
+
+    JsonAllocator Pool {
+      .PoolObject = {
+        .init = PoolInit,
+        .alloc = PoolAlloc,
+      },
+    };
+
+    json_t const *json = json_createWithPool(&Data.at(0), &Pool.PoolObject);
+    if (!json) {
+      LogMan::Msg::E("Couldn't create json");
+      return;
+    }
+
+    json_t const* ConfigList = json_getProperty(json, "Config");
+
+    if (!ConfigList) {
+      LogMan::Msg::E("Couldn't get config list");
+      return;
+    }
+
+    for (json_t const* ConfigItem = json_getChild(ConfigList);
+      ConfigItem != nullptr;
+      ConfigItem = json_getSibling(ConfigItem)) {
+      const char* ConfigName = json_getName(ConfigItem);
+      const char* ConfigString = json_getValue(ConfigItem);
+
+      if (!ConfigName) {
+        LogMan::Msg::E("Couldn't get config name");
+        return;
+      }
+
+      if (!ConfigString) {
+        LogMan::Msg::E("Couldn't get ConfigString for '%s'", ConfigName);
+        return;
+      }
+
+      Func(ConfigName, ConfigString);
+    }
+  }
 }
 
   std::string GetDataDirectory() {
@@ -431,5 +537,143 @@ namespace DefaultValues {
     }
   }
   template void Value<std::string>::GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List);
+
+  // Application loaders
+  class MainLoader final : public FEXCore::Config::OptionMapper {
+  public:
+    explicit MainLoader();
+    explicit MainLoader(std::string ConfigFile);
+    void Load() override;
+
+  private:
+    std::string Config;
+  };
+
+  class AppLoader final : public FEXCore::Config::OptionMapper {
+  public:
+    explicit AppLoader(const std::string& Filename, bool Global);
+    void Load();
+
+  private:
+    std::string Config;
+  };
+
+  class EnvLoader final : public FEXCore::Config::Layer {
+  public:
+    explicit EnvLoader(char *const _envp[]);
+    void Load() override;
+
+  private:
+    char *const *envp;
+  };
+
+  static const std::map<std::string, FEXCore::Config::ConfigOption, std::less<>> ConfigLookup = {{
+#define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
+#include <FEXCore/Config/ConfigValues.inl>
+  }};
+  static const std::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
+#define OPT_BASE(type, group, enum, json, default) {"FEX_" #enum, FEXCore::Config::ConfigOption::CONFIG_##enum},
+#include <FEXCore/Config/ConfigValues.inl>
+  }};
+
+  OptionMapper::OptionMapper(FEXCore::Config::LayerType Layer)
+    : FEXCore::Config::Layer(Layer) {
+  }
+
+  void OptionMapper::MapNameToOption(const char *ConfigName, const char *ConfigString) {
+    auto it = ConfigLookup.find(ConfigName);
+    if (it != ConfigLookup.end()) {
+      Set(it->second, ConfigString);
+    }
+  }
+
+  MainLoader::MainLoader()
+    : FEXCore::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
+    , Config{FEXCore::Config::GetConfigFileLocation()} {
+  }
+
+  MainLoader::MainLoader(std::string ConfigFile)
+    : FEXCore::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
+    , Config{std::move(ConfigFile)} {
+  }
+
+  void MainLoader::Load() {
+    JSON::LoadJSonConfig(Config, [this](const char *Name, const char *ConfigString) {
+      MapNameToOption(Name, ConfigString);
+    });
+  }
+
+  AppLoader::AppLoader(const std::string& Filename, bool Global)
+    : FEXCore::Config::OptionMapper(Global ? FEXCore::Config::LayerType::LAYER_GLOBAL_APP : FEXCore::Config::LayerType::LAYER_LOCAL_APP) {
+    Config = FEXCore::Config::GetApplicationConfig(Filename, Global);
+
+    // Immediately load so we can reload the meta layer
+    Load();
+  }
+
+  void AppLoader::Load() {
+    JSON::LoadJSonConfig(Config, [this](const char *Name, const char *ConfigString) {
+      MapNameToOption(Name, ConfigString);
+    });
+  }
+
+  EnvLoader::EnvLoader(char *const _envp[])
+    : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_ENVIRONMENT)
+    , envp {_envp} {
+  }
+
+  void EnvLoader::Load() {
+    std::unordered_map<std::string_view, std::string_view> EnvMap;
+
+    for(const char *const *pvar=envp; pvar && *pvar; pvar++) {
+      std::string_view Var(*pvar);
+      size_t pos = Var.rfind('=');
+      if (std::string::npos == pos)
+        continue;
+
+      std::string_view Ident = Var.substr(0,pos);
+      std::string_view Value = Var.substr(pos+1);
+      EnvMap[Ident]=Value;
+    }
+
+    std::function GetVar = [=](const std::string_view id)  -> std::optional<std::string_view> {
+      if (EnvMap.find(id) != EnvMap.end())
+        return EnvMap.at(id);
+
+      // If envp[] was empty, search using std::getenv()
+      const char* vs = std::getenv(id.data());
+      if (vs) {
+        return vs;
+      }
+      else {
+        return std::nullopt;
+      }
+    };
+
+    std::optional<std::string_view> Value;
+
+    for (auto &it : EnvConfigLookup) {
+      if ((Value = GetVar(it.first)).has_value()) {
+        Set(it.second, std::string(*Value));
+      }
+    }
+  }
+
+  std::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(std::string const *File) {
+    if (File) {
+      return std::make_unique<FEXCore::Config::MainLoader>(*File);
+    }
+    else {
+      return std::make_unique<FEXCore::Config::MainLoader>();
+    }
+  }
+
+  std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const std::string& Filename, bool Global) {
+    return std::make_unique<FEXCore::Config::AppLoader>(Filename, Global);
+  }
+
+  std::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]) {
+    return std::make_unique<FEXCore::Config::EnvLoader>(_envp);
+  }
 }
 

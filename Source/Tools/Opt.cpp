@@ -13,9 +13,9 @@ $end_info$
 
 int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
   FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
 }

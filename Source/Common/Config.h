@@ -20,41 +20,5 @@ namespace FEX::Config {
   protected:
   };
 
-  class OptionMapper : public FEXCore::Config::Layer {
-  public:
-    explicit OptionMapper(FEXCore::Config::LayerType Layer);
-
-  protected:
-    void MapNameToOption(const char *ConfigName, const char *ConfigString);
-  };
-
-  class MainLoader final : public FEX::Config::OptionMapper {
-  public:
-    explicit MainLoader();
-    explicit MainLoader(std::string ConfigFile);
-    void Load() override;
-
-  private:
-    std::string Config;
-  };
-
-  class AppLoader final : public FEX::Config::OptionMapper {
-  public:
-    explicit AppLoader(const std::string& Filename, bool Global);
-    void Load();
-
-  private:
-    std::string Config;
-  };
-
-  class EnvLoader final : public FEXCore::Config::Layer {
-  public:
-    explicit EnvLoader(char *const _envp[]);
-    void Load() override;
-
-  private:
-    char *const *envp;
-  };
-
   void SaveLayerToJSON(const std::string& Filename, FEXCore::Config::Layer *const Layer);
 }

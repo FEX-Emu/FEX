@@ -9,9 +9,9 @@
 
 int main(int argc, char **argv, char **envp) {
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
   // No FEX arguments passed through command line
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
   // Load the arguments
@@ -42,8 +42,8 @@ int main(int argc, char **argv, char **envp) {
   if (Options.is_set_by_user("app")) {
     // Load the application config if one was provided
     auto ProgramName = std::filesystem::path(Options["app"]).filename();
-    FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(ProgramName, true));
-    FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(ProgramName, false));
+    FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, true));
+    FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, false));
   }
 
   // Reload the meta layer

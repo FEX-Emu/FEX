@@ -192,4 +192,43 @@ namespace Type {
 
     static void GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List);
   };
+
+  // Application loaders
+  class FEX_DEFAULT_VISIBILITY OptionMapper : public FEXCore::Config::Layer {
+  public:
+    explicit OptionMapper(FEXCore::Config::LayerType Layer);
+
+  protected:
+    void MapNameToOption(const char *ConfigName, const char *ConfigString);
+  };
+
+  /**
+   * @brief Loads the main application config
+   *
+   * @param File Optional override to load a specific config file in to the main layer
+   * Shouldn't be commonly used
+   *
+   * @return unique_ptr for that layer
+   */
+  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(std::string const *File = nullptr);
+
+  /**
+   * @brief Create an application configuration loader
+   *
+   * @param Filename Application filename component
+   * @param Global Load the global configuration or user accessible file
+   *
+   * @return unique_ptr for that layer
+   */
+  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const std::string& Filename, bool Global);
+
+  /**
+   * @brief iCreate an environment configuration loader
+   *
+   * @param _envp[] The environment array from main
+   *
+   * @return unique_ptr for that layer
+   */
+  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]);
+
 }
