@@ -1,4 +1,7 @@
 #pragma once
+
+#include <FEXCore/Utils/CompilerDefs.h>
+
 #include <atomic>
 #include <stdint.h>
 #include <type_traits>
@@ -34,8 +37,8 @@ namespace FEXCore::Telemetry {
 
   Value &GetObject(TelemetryType Type);
 
-  void Initialize();
-  void Shutdown(std::filesystem::path &ApplicationName);
+  FEX_DEFAULT_VISIBILITY void Initialize();
+  FEX_DEFAULT_VISIBILITY void Shutdown(std::filesystem::path &ApplicationName);
 
 // Telemetry object declaration
 // This returns the internal structure to the telemetry data structures
