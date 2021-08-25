@@ -184,7 +184,7 @@ namespace FEXCore::Context {
     Context();
     ~Context();
 
-    bool InitCore(FEXCore::CodeLoader *Loader);
+    FEXCore::Core::InternalThreadState* InitCore(FEXCore::CodeLoader *Loader);
     FEXCore::Context::ExitReason RunUntilExit();
     int GetProgramStatus() const;
     bool IsPaused() const { return !Running; }

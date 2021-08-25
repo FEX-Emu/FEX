@@ -34,7 +34,7 @@ namespace FEXCore::Context {
     delete CTX;
   }
 
-  bool InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader) {
+  FEXCore::Core::InternalThreadState* InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader) {
     return CTX->InitCore(Loader);
   }
 

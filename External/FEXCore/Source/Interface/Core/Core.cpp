@@ -195,7 +195,7 @@ namespace FEXCore::Context {
     }
   }
 
-  bool Context::InitCore(FEXCore::CodeLoader *Loader) {
+  FEXCore::Core::InternalThreadState* Context::InitCore(FEXCore::CodeLoader *Loader) {
     ThunkHandler.reset(FEXCore::ThunkHandler::Create());
 
     LocalLoader = Loader;
@@ -228,8 +228,7 @@ namespace FEXCore::Context {
     Thread->CurrentFrame->State.rip = StartingRIP = Loader->DefaultRIP();
 
     InitializeThreadData(Thread);
-
-    return true;
+    return Thread;
   }
 
   void Context::StartGdbServer() {
