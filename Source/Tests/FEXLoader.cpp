@@ -341,7 +341,7 @@ int main(int argc, char **argv, char **const envp) {
 #endif
 
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
 
   if (IsInterpreter) {
     FEX::ArgLoader::LoadWithoutArguments(argc, argv);
@@ -350,7 +350,7 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
   }
 
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
   auto Args = FEX::ArgLoader::Get();
@@ -365,8 +365,8 @@ int main(int argc, char **argv, char **const envp) {
 
   // These layers load on initialization
   auto ProgramName = std::filesystem::path(Program).filename();
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(ProgramName, true));
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::AppLoader>(ProgramName, false));
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, true));
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, false));
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();

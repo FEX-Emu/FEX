@@ -90,7 +90,7 @@ namespace {
     }
     ConfigOpen = true;
     ConfigFilename = Filename;
-    LoadedConfig = std::make_unique<FEX::Config::MainLoader>(Filename);
+    LoadedConfig = FEXCore::Config::CreateMainLayer(&Filename);
     LoadedConfig->Load();
     return true;
   }

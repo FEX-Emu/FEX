@@ -8,6 +8,7 @@ $end_info$
 #include "Common/ArgumentLoader.h"
 #include "Common/EnvironmentLoader.h"
 #include "Common/Config.h"
+#include "FEXCore/Config/Config.h"
 
 #include <cstdio>
 #include <limits>
@@ -2398,9 +2399,9 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::InstallHandler(MsgHandler);
 
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::MainLoader>());
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
   FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
-  FEXCore::Config::AddLayer(std::make_unique<FEX::Config::EnvLoader>(envp));
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
   auto Args = FEX::ArgLoader::Get();
