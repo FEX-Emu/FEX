@@ -200,7 +200,7 @@ namespace FEXCore::Context {
     bool GetGdbServerStatus() const { return DebugServer != nullptr; }
     void StartGdbServer();
     void StopGdbServer();
-    void HandleCallback(uint64_t RIP);
+    void HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
     void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
     void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
 
