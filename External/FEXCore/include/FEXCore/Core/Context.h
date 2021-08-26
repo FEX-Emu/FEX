@@ -91,7 +91,7 @@ namespace FEXCore::Context {
    *
    * @return true if we loaded code
    */
-  FEX_DEFAULT_VISIBILITY bool InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
+  FEX_DEFAULT_VISIBILITY FEXCore::Core::InternalThreadState* InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
 
   FEX_DEFAULT_VISIBILITY void SetExitHandler(FEXCore::Context::Context *CTX, ExitHandler handler);
   FEX_DEFAULT_VISIBILITY ExitHandler GetExitHandler(FEXCore::Context::Context *CTX);
