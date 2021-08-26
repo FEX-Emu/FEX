@@ -1,9 +1,5 @@
 add_subdirectory(LinuxSyscalls)
 
-if (ENABLE_JEMALLOC)
-  set (LIBS FEX_jemalloc)
-endif()
-
 list(APPEND LIBS FEXCore Common CommonCore)
 
 add_executable(FEXLoader FEXLoader.cpp)

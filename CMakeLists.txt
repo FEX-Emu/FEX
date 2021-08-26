@@ -225,6 +225,8 @@ endif()
 
 if (ENABLE_JEMALLOC)
   add_definitions(-DENABLE_JEMALLOC=1)
+  add_subdirectory(External/jemalloc/)
+  include_directories(External/jemalloc/pregen/include/)
 else()
   message (STATUS
     " jemalloc disabled!\n"
@@ -259,9 +261,6 @@ endif()
 
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
-
-add_subdirectory(External/jemalloc/)
-include_directories(External/jemalloc/pregen/include/)
 
 add_subdirectory(External/cpp-optparse/)
 include_directories(External/cpp-optparse/)
