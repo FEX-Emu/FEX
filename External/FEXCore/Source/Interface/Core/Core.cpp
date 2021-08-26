@@ -242,8 +242,7 @@ namespace FEXCore::Context {
     DebugServer.reset();
   }
 
-  void Context::HandleCallback(uint64_t RIP) {
-    auto Thread = Core::ThreadData.Thread;
+  void Context::HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
     Thread->CPUBackend->CallbackPtr(Thread->CurrentFrame, RIP);
   }
 

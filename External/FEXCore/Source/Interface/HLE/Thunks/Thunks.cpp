@@ -51,7 +51,7 @@ namespace FEXCore {
             Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
             Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
 
-            Thread->CTX->HandleCallback((uintptr_t)callback);
+            Thread->CTX->HandleCallback(Thread, (uintptr_t)callback);
         }
 
         static void LoadLib(void *ArgsV) {

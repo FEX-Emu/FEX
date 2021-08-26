@@ -217,7 +217,7 @@ namespace FEXCore::Context {
    */
   FEX_DEFAULT_VISIBILITY void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, uint64_t Syscall, FEXCore::HLE::SyscallVisitor *Visitor);
 
-  FEX_DEFAULT_VISIBILITY void HandleCallback(FEXCore::Context::Context *CTX, uint64_t RIP);
+  FEX_DEFAULT_VISIBILITY void HandleCallback(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
 
   FEX_DEFAULT_VISIBILITY void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required);
   FEX_DEFAULT_VISIBILITY void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required);

@@ -101,8 +101,8 @@ namespace FEXCore::Context {
   void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t Syscall, [[maybe_unused]] FEXCore::HLE::SyscallVisitor *Visitor) {
   }
 
-  void HandleCallback(FEXCore::Context::Context *CTX, uint64_t RIP) {
-    CTX->HandleCallback(RIP);
+  void HandleCallback(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
+    CTX->HandleCallback(Thread, RIP);
   }
 
   void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required) {
