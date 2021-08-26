@@ -32,6 +32,7 @@ namespace FEXCore::HLE {
     OS_LINUX32,
     OS_WIN64,
     OS_WIN32,
+    OS_HANGOVER,
   };
 
   class SyscallHandler {

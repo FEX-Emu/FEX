@@ -75,12 +75,24 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   };
   static_assert(GPRIndexes_64.size() == GPRIndexes_32.size());
 
+  static std::array<uint64_t, SyscallArgs> GPRIndexes_Hangover = {
+    FEXCore::X86State::REG_RCX,
+  };
+
+  size_t NumArguments{};
+
   const auto OSABI = CTX->SyscallHandler->GetOSABI();
   if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX64) {
+    NumArguments = GPRIndexes_64.size();
     GPRIndexes = &GPRIndexes_64;
   }
   else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX32) {
+    NumArguments = GPRIndexes_64.size();
     GPRIndexes = &GPRIndexes_32;
+  }
+  else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_HANGOVER) {
+    NumArguments = 1;
+    GPRIndexes = &GPRIndexes_Hangover;
   }
   else {
     LogMan::Msg::D("Unhandled OSABI syscall");
@@ -91,16 +103,34 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
 
   const auto& GPRIndicesRef = *GPRIndexes;
-  auto SyscallOp = _Syscall(
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[0] * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[1] * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[2] * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[3] * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[4] * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[5] * 8, GPRClass),
-    _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[6] * 8, GPRClass));
 
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), SyscallOp);
+  OrderedNode *Arguments[SyscallArgs] {
+    InvalidNode,
+    InvalidNode,
+    InvalidNode,
+    InvalidNode,
+    InvalidNode,
+    InvalidNode,
+    InvalidNode,
+  };
+  for (size_t i = 0; i < NumArguments; ++i) {
+    Arguments[i] = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[i] * 8, GPRClass);
+  }
+
+  auto SyscallOp = _Syscall(
+    Arguments[0],
+    Arguments[1],
+    Arguments[2],
+    Arguments[3],
+    Arguments[4],
+    Arguments[5],
+    Arguments[6]);
+
+  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER) {
+    // Hangover doesn't want us returning a result here
+    // syscall is being abused as a thunk for now.
+    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), SyscallOp);
+  }
 }
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
