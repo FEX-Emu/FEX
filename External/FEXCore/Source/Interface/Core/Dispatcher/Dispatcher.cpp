@@ -88,6 +88,18 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   uint64_t OldGuestSP = Frame->State.gregs[X86State::REG_RSP];
   uint64_t NewGuestSP = OldGuestSP;
 
+  // Spill the SRA regardless of signal handler type
+  // We are going to be returning to the top of the dispatcher which will fill again
+  // Otherwise we might load garbage
+  if (SRAEnabled) {
+    if (IsAddressInJITCode(OldPC, false)) {
+      // We are in jit, SRA must be spilled
+      SpillSRA(ucontext);
+    } else {
+      LOGMAN_THROW_A(!IsAddressInJITCode(OldPC, true), "Signals in dispatcher have unsynchronized context");
+    }
+  }
+
   // altstack is only used if the signal handler was setup with SA_ONSTACK
   if (GuestAction->sa_flags & SA_ONSTACK) {
     // Additionally the altstack is only used if the enabled (SS_DISABLE flag is not set)
