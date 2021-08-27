@@ -39,7 +39,6 @@ namespace FEX::HLE {
   static SignalDelegator *GlobalDelegator{};
 
   struct ThreadState {
-    FEXCore::Core::InternalThreadState *Thread{};
     void *AltStackPtr{};
     stack_t GuestAltStack {
       .ss_sp = nullptr,
@@ -54,7 +53,6 @@ namespace FEX::HLE {
     // The mask prior to a suspend
     FEXCore::GuestSAMask PreviousSuspendMask{};
 
-    uint32_t CurrentSignal{};
     uint64_t PendingSignals{};
     bool Suspended {false};
   };
@@ -63,19 +61,6 @@ namespace FEX::HLE {
 
   static void SignalHandlerThunk(int Signal, siginfo_t *Info, void *UContext) {
     GlobalDelegator->HandleSignal(Signal, Info, UContext);
-  }
-
-  static bool IsSynchronous(int Signal) {
-    switch (Signal) {
-    case SIGBUS:
-    case SIGFPE:
-    case SIGILL:
-    case SIGSEGV:
-    case SIGTRAP:
-      return true;
-    default: break;
-    };
-    return false;
   }
 
   uint64_t SigIsMember(FEXCore::GuestSAMask *Set, int Signal) {
@@ -90,110 +75,87 @@ namespace FEX::HLE {
     return Set->Val | (1ULL << Signal);
   }
 
-  void SignalDelegator::SetCurrentSignal(uint32_t Signal) {
-    ThreadData.CurrentSignal = Signal;
-  }
-
-  void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
+  void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
     siginfo_t *SigInfo = static_cast<siginfo_t*>(Info);
-    auto Thread = ThreadData.Thread;
     SignalHandler &Handler = HostHandlers[Signal];
 
-    if (!Thread) {
-      LogMan::Msg::E("[%d] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", gettid());
+    if (Signal == SIGCHLD) {
+      bool StopOrResume = SigInfo->si_code == CLD_STOPPED || SigInfo->si_code == CLD_CONTINUED || SigInfo->si_code == CLD_TRAPPED;
+
+      // Do some special handling around this signal
+      // If the guest has a signal handler installed with SA_NOCLDSTOP or SA_NOCHLDWAIT then
+      // handle carefully
+      if (Handler.GuestAction.sa_flags & SA_NOCLDSTOP &&
+          StopOrResume) {
+        // SA_NOCLDSTOP blocks SIGCHLD when si_code is CLD_STOPPED/CLD_CONTINUED/CLD_TRAPPED
+        // in that case, drop the signal
+        return;
+      }
+
+      if (Handler.GuestAction.sa_flags & SA_NOCLDWAIT) {
+        // Linux will still generate a signal for this
+        // POSIX leaves it unspecific
+        // "do not transform children in to zombies when they terminate"
+        // XXX: Handle this
+      }
+    }
+
+    // Check the thread's current signal mask
+    if (SigIsMember(&ThreadData.CurrentSignalMask, Signal) != ThreadData.Suspended) {
+      ThreadData.PendingSignals |= 1ULL << (Signal - 1);
+      return;
+    }
+
+    if (ThreadData.Suspended) {
+      // If we were suspended then swap the mask back to the original
+      ThreadData.CurrentSignalMask = ThreadData.PreviousSuspendMask;
+      ThreadData.PreviousSuspendMask.Val = 0;
+      ThreadData.Suspended = false;
+    }
+
+    // OR in the sa_mask
+    ThreadData.CurrentSignalMask.Val |= ThreadData.Guest_sa_mask[Signal].Val;
+
+    // If NODEFER isn't set then also mask the current signal
+    if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
+      SetSignal(&ThreadData.CurrentSignalMask, Signal);
+    }
+
+    // Remove the pending signal
+    ThreadData.PendingSignals &= ~(1ULL << (Signal - 1));
+
+    // We have an emulation thread pointer, we can now modify its state
+    if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
+      if (Handler.DefaultBehaviour == DEFAULT_TERM) {
+        if (Thread->ThreadManager.clear_child_tid) {
+          std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
+          Addr->store(0);
+          syscall(SYS_futex,
+              Thread->ThreadManager.clear_child_tid,
+              FUTEX_WAKE,
+              ~0ULL,
+              0,
+              0,
+              0);
+        }
+
+        Thread->StatusCode = -Signal;
+
+        // Doesn't return
+        FEXCore::Context::StopThread(Thread->CTX, Thread);
+        std::terminate();
+      }
+    }
+    else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
+      return;
     }
     else {
-      if (Handler.Handler &&
-          Handler.Handler(Thread, Signal, Info, UContext)) {
-        // If the host handler handled the fault then we can continue now
+      if (Handler.GuestHandler &&
+          Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
         return;
       }
-
-      if (Handler.FrontendHandler &&
-          Handler.FrontendHandler(Thread, Signal, Info, UContext)) {
-        return;
-      }
-
-      if (Signal == SIGCHLD) {
-        bool StopOrResume = SigInfo->si_code == CLD_STOPPED || SigInfo->si_code == CLD_CONTINUED || SigInfo->si_code == CLD_TRAPPED;
-
-        // Do some special handling around this signal
-        // If the guest has a signal handler installed with SA_NOCLDSTOP or SA_NOCHLDWAIT then
-        // handle carefully
-        if (Handler.GuestAction.sa_flags & SA_NOCLDSTOP &&
-            StopOrResume) {
-          // SA_NOCLDSTOP blocks SIGCHLD when si_code is CLD_STOPPED/CLD_CONTINUED/CLD_TRAPPED
-          // in that case, drop the signal
-          return;
-        }
-
-        if (Handler.GuestAction.sa_flags & SA_NOCLDWAIT) {
-          // Linux will still generate a signal for this
-          // POSIX leaves it unspecific
-          // "do not transform children in to zombies when they terminate"
-          // XXX: Handle this
-        }
-      }
-
-      // Check the thread's current signal mask
-      if (SigIsMember(&ThreadData.CurrentSignalMask, Signal) != ThreadData.Suspended) {
-        ThreadData.PendingSignals |= 1ULL << (Signal - 1);
-        return;
-      }
-
-      if (ThreadData.Suspended) {
-        // If we were suspended then swap the mask back to the original
-        ThreadData.CurrentSignalMask = ThreadData.PreviousSuspendMask;
-        ThreadData.PreviousSuspendMask.Val = 0;
-        ThreadData.Suspended = false;
-      }
-
-      // OR in the sa_mask
-      ThreadData.CurrentSignalMask.Val |= ThreadData.Guest_sa_mask[Signal].Val;
-
-      // If NODEFER isn't set then also mask the current signal
-      if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
-        SetSignal(&ThreadData.CurrentSignalMask, Signal);
-      }
-
-      ThreadData.CurrentSignal = Signal;
-
-      // Remove the pending signal
-      ThreadData.PendingSignals &= ~(1ULL << (Signal - 1));
-
-      // We have an emulation thread pointer, we can now modify its state
-      if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
-        if (Handler.DefaultBehaviour == DEFAULT_TERM) {
-          if (Thread->ThreadManager.clear_child_tid) {
-            std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
-            Addr->store(0);
-            syscall(SYS_futex,
-                Thread->ThreadManager.clear_child_tid,
-                FUTEX_WAKE,
-                ~0ULL,
-                0,
-                0,
-                0);
-          }
-
-          Thread->StatusCode = -Signal;
-
-          // Doesn't return
-          FEXCore::Context::StopThread(Thread->CTX, Thread);
-          std::terminate();
-        }
-      }
-      else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
-        return;
-      }
-      else {
-        if (Handler.GuestHandler &&
-            Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
-          return;
-        }
-        ERROR_AND_DIE("Unhandled guest exception");
-      }
+      ERROR_AND_DIE("Unhandled guest exception");
     }
 
     // Unhandled crash
@@ -330,9 +292,7 @@ namespace FEX::HLE {
     GlobalDelegator = nullptr;
   }
 
-  void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
-    ThreadData.Thread = Thread;
-
+  void SignalDelegator::RegisterFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) {
     // Set up our signal alternative stack
     // This is per thread rather than per signal
     ThreadData.AltStackPtr = FEXCore::Allocator::mmap(nullptr, SIGSTKSZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -352,10 +312,9 @@ namespace FEX::HLE {
     ::syscall(SYS_rt_sigprocmask, 0, nullptr, &ThreadData.CurrentSignalMask.Val, 8);
   }
 
-  void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) {
+  void SignalDelegator::UninstallFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) {
     FEXCore::Allocator::munmap(ThreadData.AltStackPtr, SIGSTKSZ);
 
-    ThreadData.Thread = nullptr;
     ThreadData.AltStackPtr = nullptr;
 
     stack_t altstack{};
@@ -368,65 +327,18 @@ namespace FEX::HLE {
     }
   }
 
-  void SignalDelegator::MaskSignals(int how, int Signal) {
-    // If we have a helper thread, we need to mask a significant amount of signals so the an errant thread doesn't receive a signal that it shouldn't
-    sigset_t SignalSet{};
-    sigemptyset(&SignalSet);
-
-    if (Signal == -1) {
-      for (int i = 0; i < MAX_SIGNALS; ++i) {
-        // If it is a synchronous signal then don't ignore it
-        if (IsSynchronous(i)) {
-          continue;
-        }
-
-        // Add this signal to the ignore list
-        sigaddset(&SignalSet, i);
-      }
-    }
-    else {
-      sigaddset(&SignalSet, Signal);
-    }
-
-    // Be warned, a thread will inherit the signal mask if created from this thread
-    int Result = pthread_sigmask(how, &SignalSet, nullptr);
-    if (Result != 0) {
-      LogMan::Msg::E("Couldn't register thread to mask signals");
-    }
-  }
-
-  void SignalDelegator::MaskThreadSignals() {
-    MaskSignals(SIG_BLOCK);
-  }
-
-  void SignalDelegator::ResetThreadSignalMask() {
-    MaskSignals(SIG_UNBLOCK);
-  }
-
-  bool SignalDelegator::BlockSignal(int Signal) {
-    MaskSignals(SIG_BLOCK, Signal);
-    return true;
-  }
-
-  bool SignalDelegator::UnblockSignal(int Signal) {
-    MaskSignals(SIG_UNBLOCK, Signal);
-    return true;
-  }
-
-  void SignalDelegator::RegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
+  void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
-    HostHandlers[Signal].Handler = std::move(Func);
     HostHandlers[Signal].Required = Required;
     InstallHostThunk(Signal);
   }
 
-  void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
+  void SignalDelegator::FrontendRegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
-    HostHandlers[Signal].FrontendHandler = std::move(Func);
     HostHandlers[Signal].Required = Required;
     InstallHostThunk(Signal);
   }
@@ -468,10 +380,11 @@ namespace FEX::HLE {
   }
 
   uint64_t SignalDelegator::RegisterGuestSigAltStack(const stack_t *ss, stack_t *old_ss) {
+    auto Thread = GetTLSThread();
     bool UsingAltStack{};
     uint64_t AltStackBase = reinterpret_cast<uint64_t>(ThreadData.GuestAltStack.ss_sp);
     uint64_t AltStackEnd = AltStackBase + ThreadData.GuestAltStack.ss_size;
-    uint64_t GuestSP = ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP];
+    uint64_t GuestSP = Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP];
 
     if (!(ThreadData.GuestAltStack.ss_flags & SS_DISABLE) &&
         GuestSP >= AltStackBase &&
@@ -524,13 +437,13 @@ namespace FEX::HLE {
     return 0;
   }
 
-  static void CheckForPendingSignals() {
+  static void CheckForPendingSignals(FEXCore::Core::InternalThreadState *Thread) {
     // Do we have any pending signals that became unmasked?
     uint64_t PendingSignals = ~ThreadData.CurrentSignalMask.Val & ThreadData.PendingSignals;
     if (PendingSignals != 0) {
       for (int i = 0; i < 64; ++i) {
         if (PendingSignals & (1ULL << i)) {
-          tgkill(ThreadData.Thread->ThreadManager.PID, ThreadData.Thread->ThreadManager.TID, i + 1);
+          tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, i + 1);
           // We might not even return here which is spooky
         }
       }
@@ -570,7 +483,7 @@ namespace FEX::HLE {
       ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &HostMask, nullptr, 8);
     }
 
-    CheckForPendingSignals();
+    CheckForPendingSignals(GetTLSThread());
 
     return 0;
   }
@@ -628,7 +541,7 @@ namespace FEX::HLE {
     // This can happen in the case that the guest has sent signal that we can't block
     uint64_t Result = sigsuspend(&HostSet);
 
-    CheckForPendingSignals();
+    CheckForPendingSignals(GetTLSThread());
 
     return Result == -1 ? -errno : Result;
 
