@@ -65,10 +65,38 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
 
   // Now restore host state
   ArchHelpers::Context::RestoreContext(ucontext, Context);
+}
 
-  // Restore the previous signal state
-  // This allows recursive signals to properly handle signal masking as we are walking back up the list of signals
-  CTX->SignalDelegation->SetCurrentSignal(Context->Signal);
+static uint32_t ConvertSignalToTrapNo(int Signal, siginfo_t *HostSigInfo) {
+  switch (Signal) {
+    case SIGSEGV:
+      if (HostSigInfo->si_code == SEGV_MAPERR ||
+          HostSigInfo->si_code == SEGV_ACCERR) {
+        // Protection fault
+        return X86State::X86_TRAPNO_PF;
+      }
+      break;
+  }
+
+  // Unknown mapping, fall back to old behaviour and just pass signal
+  return Signal;
+}
+
+static uint32_t ConvertSignalToError(int Signal, siginfo_t *HostSigInfo) {
+  switch (Signal) {
+    case SIGSEGV:
+      if (HostSigInfo->si_code == SEGV_MAPERR ||
+          HostSigInfo->si_code == SEGV_ACCERR) {
+        // Protection fault
+        // Always a user fault for us
+        // XXX: PF_PROT and PF_WRITE
+        return X86State::X86_PF_USER;
+      }
+      break;
+  }
+
+  // Not a page fault issue
+  return 0;
 }
 
 bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
@@ -87,6 +115,10 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
   uint64_t OldGuestSP = Frame->State.gregs[X86State::REG_RSP];
   uint64_t NewGuestSP = OldGuestSP;
+
+  // Pulling from context here
+  bool Is64BitMode = CTX->Config.Is64BitMode;
+  uint64_t SignalReturn = CTX->X86CodeGen.SignalReturn;
 
   // Spill the SRA regardless of signal handler type
   // We are going to be returning to the top of the dispatcher which will fill again
@@ -118,7 +150,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
     }
   }
 
-  if (CTX->Config.Is64BitMode) {
+  if (Is64BitMode) {
     // Back up past the redzone, which is 128bytes
     // 32-bit doesn't have a redzone
     NewGuestSP -= 128;
@@ -130,17 +162,9 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   if (GuestAction->sa_flags & SA_SIGINFO &&
       !(HostSigInfo->si_code == SI_QUEUE || // If the siginfo comes from sigqueue or user then we don't need to check
         HostSigInfo->si_code == SI_USER)) {
-    if (SRAEnabled) {
-      if (IsAddressInJITCode(OldPC, false)) {
-        // We are in jit, SRA must be spilled
-        SpillSRA(ucontext);
-      } else {
-        LOGMAN_THROW_A(!IsAddressInJITCode(OldPC, true), "Signals in dispatcher have unsynchronized context");
-      }
-    }
 
     // Setup ucontext a bit
-    if (CTX->Config.Is64BitMode) {
+    if (Is64BitMode) {
       NewGuestSP -= sizeof(FEXCore::x86_64::ucontext_t);
       uint64_t UContextLocation = NewGuestSP;
 
@@ -159,8 +183,8 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = Frame->State.rip;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = 0;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] = 0;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = 0;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = Signal;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_OLDMASK] = 0;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CR2] = 0;
 
@@ -233,8 +257,8 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS] = Frame->State.fs;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES] = Frame->State.es;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS] = Frame->State.ds;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = Signal;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS] = Frame->State.cs;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = 0;
@@ -304,10 +328,10 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
           guest_siginfo->_sifields._sigchld.utime = HostSigInfo->si_utime;
           guest_siginfo->_sifields._sigchld.stime = HostSigInfo->si_stime;
           break;
-      default:
-        // Hope for the best, most things just copy over
-        memcpy(&guest_siginfo->_sifields, &HostSigInfo->_sifields, sizeof(siginfo_t));
-        break;
+        default:
+          // Hope for the best, most things just copy over
+          memcpy(&guest_siginfo->_sifields, &HostSigInfo->_sifields, sizeof(siginfo_t));
+          break;
       }
 
       NewGuestSP -= 4;
@@ -321,7 +345,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
     Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   }
   else {
-    if (!CTX->Config.Is64BitMode) {
+    if (!Is64BitMode) {
       NewGuestSP -= 4;
       *(uint32_t*)NewGuestSP = Signal;
     }
@@ -329,18 +353,18 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
     Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.handler);
   }
 
-  if (CTX->Config.Is64BitMode) {
+  if (Is64BitMode) {
     Frame->State.gregs[X86State::REG_RDI] = Signal;
 
     // Set up the new SP for stack handling
     NewGuestSP -= 8;
-    *(uint64_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
+    *(uint64_t*)NewGuestSP = SignalReturn;
     Frame->State.gregs[X86State::REG_RSP] = NewGuestSP;
   }
   else {
     NewGuestSP -= 4;
-    *(uint32_t*)NewGuestSP = CTX->X86CodeGen.SignalReturn;
-    LOGMAN_THROW_A(CTX->X86CodeGen.SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
+    *(uint32_t*)NewGuestSP = SignalReturn;
+    LOGMAN_THROW_A(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
     Frame->State.gregs[X86State::REG_RSP] = NewGuestSP;
   }
 
