@@ -400,11 +400,18 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!::SilentLog) {
     auto LogFile = OutputLog();
+    // If stderr or stdout then we need to dup the FD
+    // In some cases some applications will close stderr and stdout
+    // then redirect the FD to either a log OR some cases just not use
+    // stderr/stdout and the FD will be reused for regular FD ops.
+    //
+    // We want to maintain the original output location otherwise we
+    // can run in to problems of writing to some file
     if (LogFile == "stderr") {
-      OutputFD = STDERR_FILENO;
+      OutputFD = dup(STDERR_FILENO);
     }
     else if (LogFile == "stdout") {
-      OutputFD = STDOUT_FILENO;
+      OutputFD = dup(STDOUT_FILENO);
     }
     else if (!LogFile.empty()) {
       OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
