@@ -128,7 +128,13 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       // We are in jit, SRA must be spilled
       SpillSRA(ucontext);
     } else {
-      LOGMAN_THROW_A(!IsAddressInJITCode(OldPC, true), "Signals in dispatcher have unsynchronized context");
+      if (!IsAddressInJITCode(OldPC, true)) {
+        // This is likely to cause issues but in some cases it isn't fatal
+        // This can also happen if we have put a signal on hold, then we just reenabled the signal
+        // So we are in the syscall handler
+        // Only throw a log message in this case
+        LogMan::Msg::E("Signals in dispatcher have unsynchronized context");
+      }
     }
   }
 
