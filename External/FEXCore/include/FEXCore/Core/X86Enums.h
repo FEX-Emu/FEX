@@ -86,7 +86,40 @@ constexpr unsigned X87FLAG_TOP_LOC = 43; // 3 Bits wide
 constexpr unsigned X87FLAG_C3_LOC = 46;
 constexpr unsigned X87FLAG_B_LOC = 47;
 
+// X86 trap number definitions
+constexpr unsigned X86_TRAPNO_DE      = 0; // Divide-by-zero
+constexpr unsigned X86_TRAPNO_DB      = 1; // Debug
+constexpr unsigned X86_TRAPNO_NMI     = 2; // Non-maskable interrupt
+constexpr unsigned X86_TRAPNO_BP      = 3; // Breakpoint
+constexpr unsigned X86_TRAPNO_OF      = 4; // Overflow
+constexpr unsigned X86_TRAPNO_BR      = 5; // Bound range exceeded
+constexpr unsigned X86_TRAPNO_UD      = 6; // Invalid opcode
+constexpr unsigned X86_TRAPNO_NM      = 7; // Device not available
+constexpr unsigned X86_TRAPNO_DF      = 8; // Double fault
+constexpr unsigned X86_TRAPNO_OLD_MF  = 9; // Coprocessor segment overrun
+constexpr unsigned X86_TRAPNO_TS      = 10; // Invalid TSS
+constexpr unsigned X86_TRAPNO_NP      = 11; // Segment not present
+constexpr unsigned X86_TRAPNO_SS      = 12; // Stack segmentation fault
+constexpr unsigned X86_TRAPNO_GP      = 13; // General Protection fault
+constexpr unsigned X86_TRAPNO_PF      = 14; // Page fault
+constexpr unsigned X86_TRAPNO_SPURIOUS = 15; // Spurious interrupt
+constexpr unsigned X86_TRAPNO_MF       = 16; // X87 float exception
+constexpr unsigned X86_TRAPNO_AC       = 17; // Alignment check
+constexpr unsigned X86_TRAPNO_MC       = 18; // Machine check
+constexpr unsigned X86_TRAPNO_XF       = 19; // SIMD floating point exception
+constexpr unsigned X86_TRAPNO_VE       = 20; // Virtualization exception
+constexpr unsigned X86_TRAPNO_CP       = 21; // Control protection exception
+constexpr unsigned X86_TRAPNO_VC       = 29; // VMM communication exception
+constexpr unsigned X86_TRAPNO_IRET     = 32; // IRET exception
 
-
+// X86 page fault error code bits
+// Populates siginfo gregs[REG_ERR]
+constexpr unsigned X86_PF_PROT  = (1 << 0); // 0: No page found 1: protection fault
+constexpr unsigned X86_PF_WRITE = (1 << 1); // 0: Access was read 1: Access was write
+constexpr unsigned X86_PF_USER  = (1 << 2); // 0: Kernel mode access 1: user-mode access
+constexpr unsigned X86_PF_RSV   = (1 << 3); // 1: Reserved bit?
+constexpr unsigned X86_PF_INSTR = (1 << 4); // 1: Fault from instruction fetch
+constexpr unsigned X86_PF_PK    = (1 << 5); // 1: Protection keys block access
+constexpr unsigned X86_PF_SGX   = (1 << 6); // 1: SGX MMU fault
 
 }
