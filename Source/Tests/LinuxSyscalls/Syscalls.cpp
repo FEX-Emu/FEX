@@ -147,9 +147,16 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
     Filename = FEX::HLE::_SyscallHandler->Filename();
   }
 
+  // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
+  // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
+  // Kernel does its own checks for file format support for this
+  ELFLoader::ELFContainer::ELFType Type = ELFLoader::ELFContainer::GetELFType(Filename);
   uint64_t Result{};
-  if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled()) {
-    // If the FEX interpreter is installed then just execve the thing
+  if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() &&
+      (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 ||
+       Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64)) {
+    // If the FEX interpreter is installed then just execve the ELF file
+    // This will stay inside of our emulated environment since binfmt_misc will capture it
     if (Args) {
       Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)), Args->flags);
     }
@@ -159,10 +166,6 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
     SYSCALL_ERRNO();
   }
 
-  // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
-  // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
-  // Kernel does its own checks for file format support for this
-  ELFLoader::ELFContainer::ELFType Type = ELFLoader::ELFContainer::GetELFType(Filename);
   if (!IsSupportedByInterpreter(Filename) && Type == ELFLoader::ELFContainer::ELFType::TYPE_NONE) {
     // If our interpeter doesn't support this file format AND ELF format is NONE then ENOEXEC
     // binfmt_misc could end up handling this case but we can't know that without parsing binfmt_misc ourselves
@@ -183,7 +186,7 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
     SYSCALL_ERRNO();
   }
 
-  // We don't have an interpreter installed
+  // We don't have an interpreter installed or we are executing a non-ELF executable
   // We now need to munge the arguments
   std::vector<const char *> ExecveArgs{};
   FEX::HLE::_SyscallHandler->GetCodeLoader()->GetExecveArguments(&ExecveArgs);
