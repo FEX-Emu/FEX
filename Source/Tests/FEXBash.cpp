@@ -32,20 +32,17 @@ int main(int argc, char **argv, char **const envp) {
 
   auto Args = FEX::ArgLoader::Get();
 
-  if (Args.empty()) {
-    // Early exit if we weren't passed an argument
-    return 0;
-  }
-
   // Ensure RootFS is setup before config options try to pull CONFIG_ROOTFS
   if (!FEX::RootFS::Setup(envp)) {
-    LogMan::Msg::E("RootFS failure");
+    fprintf(stderr, "RootFS configuration failed.");
     return -1;
   }
 
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
   std::vector<const char*> Argv;
   std::string BinShPath = RootFSPath() + "/bin/sh";
+  std::string BinBashPath = RootFSPath() + "/bin/bash";
+
   std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "FEXInterpreter";
   // Check if a local FEXInterpreter to FEXBash exists
   // If it does then it takes priority over the installed one
@@ -54,10 +51,13 @@ int main(int argc, char **argv, char **const envp) {
   }
   const char *FEXArgs[] = {
     FEXInterpreterPath.c_str(),
-    BinShPath.c_str(),
+    Args.empty() ? BinBashPath.c_str() : BinShPath.c_str(),
     "-c",
   };
-  constexpr size_t FEXArgsCount = std::size(FEXArgs);
+
+  // Remove -c argument if arguments are empty
+  // Lets us start an emulated bash instance
+  const size_t FEXArgsCount = std::size(FEXArgs) - (Args.empty() ? 1 : 0);
 
   Argv.resize(Args.size() + FEXArgsCount + 1);
 
