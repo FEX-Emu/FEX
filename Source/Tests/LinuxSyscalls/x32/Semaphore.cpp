@@ -6,14 +6,25 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Utils/LogManager.h>
 
+#include <cstdint>
+#include <errno.h>
+#include <limits>
+#include <string.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
-#include <sys/types.h>
+#include <time.h>
+#include <type_traits>
+#include <vector>
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x32 {
   // Define the IPC ops

@@ -1,6 +1,7 @@
 #pragma once
+
+#include <cstdint>
 #include <unordered_map>
-#include <stdint.h>
 
 namespace FEXCore {
 class BlockSamplingData {

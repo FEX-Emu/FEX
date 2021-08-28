@@ -1,23 +1,15 @@
-#include <FEXCore/Config/Config.h>
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 
-#include <ucontext.h>
-#include <cassert>
-#include <iostream>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/ptrace.h>
-#include <errno.h>
-#include <sys/user.h>
+#include <memory>
+#include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+#include <string>
+#include <ucontext.h>
 
 #include <signal.h>
 #include <xbyak/xbyak.h>

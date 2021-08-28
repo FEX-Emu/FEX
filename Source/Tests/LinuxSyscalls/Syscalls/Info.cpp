@@ -24,6 +24,8 @@ $end_info$
 #include <sys/klog.h>
 #include <unistd.h>
 
+#include <git_version.h>
+
 namespace FEX::HLE {
   using cap_user_header_t = void*;
   using cap_user_data_t = void*;

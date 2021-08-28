@@ -2,9 +2,10 @@
 #include <FEXCore/Utils/LogManager.h>
 
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/IR/IREmitter.h>
 
 #include <fstream>
+#include <stdio.h>
 
 namespace FEX::IRLoader {
   Loader::Loader(std::string const &Filename, std::string const &ConfigFilename) {

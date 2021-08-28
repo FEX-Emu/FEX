@@ -2,9 +2,13 @@
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <array>
+#include <bits/types/siginfo_t.h>
+#include <bits/types/stack_t.h>
 #include <cstdint>
 #include <functional>
-#include <signal.h>
+#include <utility>
+#include <stddef.h>
 
 namespace FEXCore {
 namespace Core {

@@ -2,7 +2,12 @@
 
 #include "Linux/Utils/ELFContainer.h"
 
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace ELFLoader {

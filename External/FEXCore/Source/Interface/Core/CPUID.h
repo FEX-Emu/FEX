@@ -4,7 +4,9 @@
 
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Utils/LogManager.h>
+
+#include <cstdint>
+#include <utility>
 
 namespace FEXCore {
 namespace Context {

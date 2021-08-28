@@ -8,11 +8,14 @@ $end_info$
 #include "Common/MathUtils.h"
 #include "Linux/Utils/ELFContainer.h"
 #include <FEXCore/Utils/LogManager.h>
+
+#include <algorithm>
 #include <cstring>
 #include <elf.h>
 #include <filesystem>
 #include <fstream>
-#include <stdint.h>
+#include <memory>
+#include <system_error>
 #include <vector>
 
 namespace ELFLoader {

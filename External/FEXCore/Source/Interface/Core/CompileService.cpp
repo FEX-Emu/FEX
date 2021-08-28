@@ -1,8 +1,21 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CompileService.h"
-#include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/OpcodeDispatcher.h"
+#include "FEXCore/Debug/InternalThreadState.h"
+#include "FEXCore/HLE/Linux/ThreadManagement.h"
+#include "Interface/IR/PassManager.h"
+
+#include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Utils/Event.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Threads.h>
+
+#include <memory>
+#include <pthread.h>
+#include <stdio.h>
 
 namespace FEXCore {
   static void* ThreadHandler(void *Arg) {

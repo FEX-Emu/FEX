@@ -4,8 +4,10 @@
 #ifdef ENABLE_JEMALLOC
 #include <jemalloc/jemalloc.h>
 #endif
+#include <errno.h>
 #include <memory>
-#include <malloc.h>
+#include <stddef.h>
+#include <stdint.h>
 
 extern "C" {
   typedef void* (*mmap_hook_type)(

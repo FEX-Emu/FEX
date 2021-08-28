@@ -5,10 +5,13 @@ $end_info$
 */
 
 #pragma once
-#include <FEXCore/IR/IR.h>
 
 namespace FEXCore::Core {
   struct InternalThreadState;
+}
+
+namespace FEXCore::IR {
+  struct SHA256Sum;
 }
 
 namespace FEXCore {

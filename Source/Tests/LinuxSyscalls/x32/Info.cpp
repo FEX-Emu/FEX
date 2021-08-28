@@ -6,10 +6,20 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
+#include <algorithm>
+#include <asm/posix_types.h>
+#include <bits/types/struct_rusage.h>
+#include <limits>
+#include <linux/sysinfo.h>
+#include <stdint.h>
 #include <sys/resource.h>
-#include <sys/utsname.h>
 #include <sys/sysinfo.h>
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x32 {
   struct rlimit32 {

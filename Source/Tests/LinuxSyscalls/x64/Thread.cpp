@@ -4,23 +4,23 @@ tags: LinuxSyscalls|syscalls-x86-64
 $end_info$
 */
 
+#include "Tests/LinuxSyscalls/SignalDelegator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Thread.h"
-#include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 
-#include <FEXCore/Core/Context.h>
 
-#include <FEXCore/Core/CodeLoader.h>
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/HLE/Linux/ThreadManagement.h>
 
+#include <bits/types/stack_t.h>
+#include <sched.h>
+#include <stddef.h>
+#include <syscall.h>
 #include <stdint.h>
-#include <linux/futex.h>
-#include <sys/syscall.h>
-#include <sys/wait.h>
 #include <unistd.h>
-#include <filesystem>
+#include <vector>
 
 namespace FEX::HLE::x64 {
   uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls) {

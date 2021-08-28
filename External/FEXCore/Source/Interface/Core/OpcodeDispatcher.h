@@ -3,7 +3,8 @@
 #include "Interface/Core/Frontend.h"
 #include "Interface/Context/Context.h"
 
-#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
@@ -12,9 +13,10 @@
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
-#include <functional>
 #include <map>
-#include <set>
+#include <stddef.h>
+#include <utility>
+#include <vector>
 
 namespace FEXCore::IR {
 class Pass;

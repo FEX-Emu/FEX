@@ -5,19 +5,21 @@ tags: LinuxSyscalls|syscalls-x86-64
 $end_info$
 */
 
-#include "Common/MathUtils.h"
-
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/Utils/LogManager.h>
 
 #include <algorithm>
 #include <cstdint>
+#include <stddef.h>
 #include <sys/epoll.h>
-#include <sys/syscall.h>
+#include <syscall.h>
 #include <unistd.h>
 #include <vector>
+
+struct timespec;
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x64 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler) {

@@ -4,18 +4,24 @@ tags: LinuxSyscalls|syscalls-x86-64
 $end_info$
 */
 
+#include "Tests/LinuxSyscalls/FileManagement.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
-#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <asm/posix_types.h>
 #include <fcntl.h>
+#include <poll.h>
+#include <stdint.h>
+#include <sys/select.h>
+#include <sys/stat.h>
+#include <sys/statfs.h>
 #include <sys/time.h>
 #include <sys/uio.h>
 #include <sys/sendfile.h>
-#include <sys/syscall.h>
-#include <sys/vfs.h>
+#include <syscall.h>
+#include <time.h>
 #include <unistd.h>
 
 namespace FEX::HLE::x64 {

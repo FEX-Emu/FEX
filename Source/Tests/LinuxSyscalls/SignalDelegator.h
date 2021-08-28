@@ -9,16 +9,15 @@ $end_info$
 
 #include <array>
 #include <atomic>
-#include <functional>
+#include <bits/types/siginfo_t.h>
+#include <bits/types/stack_t.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <mutex>
-#include <signal.h>
 
 #include <FEXCore/Core/SignalDelegator.h>
 
 namespace FEXCore {
-namespace Context {
-  struct Context;
-}
 namespace Core {
   struct InternalThreadState;
 }

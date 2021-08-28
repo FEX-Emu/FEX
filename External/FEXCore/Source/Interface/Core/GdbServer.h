@@ -5,17 +5,20 @@ $end_info$
 */
 #pragma once
 
-#include <mutex>
-#include <thread>
-
-#include "Interface/Context/Context.h"
-#include "Common/NetStream.h"
-
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Threads.h>
 
+#include <istream>
+#include <memory>
 #include <mutex>
+#include <stdint.h>
+#include <string>
 
 namespace FEXCore {
+
+namespace Context {
+  struct Context;
+}
 
 class GdbServer {
 public:

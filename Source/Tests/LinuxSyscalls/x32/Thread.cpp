@@ -4,23 +4,28 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
+#include "Tests/LinuxSyscalls/SignalDelegator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Thread.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
-#include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/HLE/Linux/ThreadManagement.h>
 
-#include <cstdint>
-#include <filesystem>
-
+#include <bits/types/stack_t.h>
+#include <bits/types/struct_rusage.h>
+#include <errno.h>
 #include <grp.h>
 #include <linux/futex.h>
+#include <sched.h>
 #include <sys/fsuid.h>
-#include <sys/syscall.h>
 #include <sys/wait.h>
+#include <syscall.h>
+#include <time.h>
 #include <unistd.h>
+#include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::stack_t32>, "%x")
 

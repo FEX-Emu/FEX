@@ -1,11 +1,7 @@
 #include "NetStream.h"
 
-#include <cstring>
-
-#include <sys/types.h>
 #include <sys/socket.h>
 
-#include <stdio.h>
 #include <unistd.h>
 
 int NetStream::NetBuf::flushBuffer(const char *buffer, size_t size) {
@@ -29,7 +25,7 @@ std::streamsize NetStream::NetBuf::xsputn(const char* buffer, std::streamsize si
 
     // Check if the string fits neatly in our buffer
     if (size <= buf_remaining) {
-        std::memcpy(pptr(), buffer, size);
+        ::memcpy(pptr(), buffer, size);
         pbump(size);
         return size;
     }

@@ -5,8 +5,13 @@ desc: This is not used right now, possibly broken
 $end_info$
 */
 
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
 #include "Interface/IR/PassManager.h"
-#include "Interface/Core/OpcodeDispatcher.h"
+
+#include <array>
+#include <memory>
 
 namespace FEXCore::IR {
 

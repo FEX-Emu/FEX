@@ -6,18 +6,22 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
-#include <stddef.h>
+#include <bits/types/clockid_t.h>
 #include <stdint.h>
-#include <time.h>
-#include <sys/syscall.h>
+#include <syscall.h>
+#include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/times.h>
-#include <sys/timex.h>
+#include <time.h>
 #include <unistd.h>
-#include <utime.h>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::timespec32>, "%lx")
+
+struct timespec;
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x32 {
   void RegisterTime() {

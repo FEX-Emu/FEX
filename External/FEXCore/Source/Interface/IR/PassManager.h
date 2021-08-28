@@ -7,11 +7,10 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
-#include <FEXCore/IR/IREmitter.h>
 
 #include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace FEXCore::HLE {
@@ -19,8 +18,9 @@ class SyscallHandler;
 }
 
 namespace FEXCore::IR {
-class OpDispatchBuilder;
-class SyscallOptimization;
+class PassManager;
+class IREmitter;
+class RegisterAllocationPass;
 
 using ShouldExitHandler = std::function<void(void)>;
 

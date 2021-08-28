@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 
 namespace FEXCore::IR {
+class IREmitter;
 
 void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllocation) {
   FEX_CONFIG_OPT(DisablePasses, O0);

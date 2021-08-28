@@ -4,8 +4,18 @@ tags: backend|x86-64
 $end_info$
 */
 
+#include "Interface/Context/Context.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"
-#include "Interface/IR/Passes/RegisterAllocationPass.h"
+
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/IR/IR.h>
+
+#include <array>
+#include <stddef.h>
+#include <stdint.h>
+#include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
 static void PrintValue(uint64_t Value) {

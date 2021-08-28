@@ -2,6 +2,7 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <cstring>
 #include <fstream>
+#include <utility>
 
 namespace FEXCore {
   void BlockSamplingData::DumpBlockData() {

@@ -1,15 +1,35 @@
 #include "Common/StringConv.h"
 #include "Common/Paths.h"
 
-#include <FEXCore/Utils/LogManager.h>
-#include "Interface/Context/Context.h"
-
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <array>
+#include <assert.h>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <map>
+#include <memory>
+#include <list>
+#include <optional>
+#include <stddef.h>
+#include <stdint.h>
+#include <string>
+#include <string_view>
 #include <sys/sysinfo.h>
+#include <system_error>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include <tiny-json.h>
+
+namespace FEXCore::Context {
+  struct Context;
+}
 
 namespace FEXCore::Config {
 namespace DefaultValues {

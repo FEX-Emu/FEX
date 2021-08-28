@@ -1,6 +1,3 @@
-
-#include "Common/Paths.h"
-
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
@@ -8,6 +5,10 @@
 #include <array>
 #include <filesystem>
 #include <fstream>
+#include <stddef.h>
+#include <string>
+#include <string_view>
+#include <system_error>
 
 namespace FEXCore::Telemetry {
 #ifndef FEX_DISABLE_TELEMETRY

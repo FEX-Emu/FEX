@@ -6,9 +6,14 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include <FEXCore/Core/Context.h>
 
+#include <stddef.h>
+#include <stdint.h>
 #include <sys/sem.h>
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x64 {
   void RegisterSemaphore() {

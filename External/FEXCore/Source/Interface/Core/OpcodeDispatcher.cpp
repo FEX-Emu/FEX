@@ -7,16 +7,22 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
-#include "Interface/HLE/Thunks/Thunks.h"
 
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
-#include <bit>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <tuple>
 
 namespace FEXCore::IR {
 

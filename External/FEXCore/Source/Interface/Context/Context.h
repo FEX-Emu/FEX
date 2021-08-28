@@ -1,48 +1,47 @@
 #pragma once
 
-#include "Common/JitSymbols.h"
 #include "Interface/Core/CPUID.h"
-#include "Interface/Core/Frontend.h"
 #include "Interface/Core/HostFeatures.h"
-#include "Interface/Core/InternalThreadState.h"
 #include "Interface/Core/X86HelperGen.h"
-#include "Interface/IR/PassManager.h"
-#include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
 #include <stdint.h>
 
+#include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <istream>
 #include <map>
 #include <memory>
 #include <mutex>
-#include <optional>
-#include <ostream>
-#include <set>
 #include <shared_mutex>
+#include <stddef.h>
+#include <string>
 #include <unordered_map>
 #include <queue>
+#include <vector>
 
 namespace FEXCore {
+class CodeLoader;
 class ThunkHandler;
-class BlockSamplingData;
 class GdbServer;
-class SiganlDelegator;
 
 namespace CPU {
   class Arm64JITCore;
   class X86JITCore;
 }
 namespace HLE {
+struct SyscallArguments;
 class SyscallHandler;
 }
 }
 
 namespace FEXCore::IR {
-  class RegisterAllocationPass;
   class RegisterAllocationData;
   class IRListView;
 namespace Validation {

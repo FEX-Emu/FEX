@@ -7,15 +7,14 @@ $end_info$
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
-#include <stddef.h>
+#include <bits/types/timer_t.h>
 #include <stdint.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/times.h>
-#include <sys/timex.h>
+#include <syscall.h>
 #include <unistd.h>
-#include <sys/syscall.h>
-#include <utime.h>
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x32 {
   void RegisterTimer() {

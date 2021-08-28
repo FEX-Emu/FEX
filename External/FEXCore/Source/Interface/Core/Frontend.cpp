@@ -7,13 +7,16 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Frontend.h"
-#include "Interface/Core/InternalThreadState.h"
 
 #include <array>
+#include <assert.h>
 #include <algorithm>
 #include <cstring>
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <set>

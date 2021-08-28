@@ -2,6 +2,7 @@
 
 #include <array>
 #include <iostream>
+#include <iterator>
 #include <string.h>
 
 class NetStream : public std::iostream {

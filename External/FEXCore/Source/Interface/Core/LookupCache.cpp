@@ -5,10 +5,11 @@ desc: Stores information about blocks, and provides C++ implementations to looku
 $end_info$
 */
 
-#include "Interface/Context/Context.h"
-#include "Interface/Core/Core.h"
-#include "Interface/Core/LookupCache.h"
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include "Interface/Context/Context.h"
+#include "Interface/Core/LookupCache.h"
 
 #include <sys/mman.h>
 

@@ -4,15 +4,27 @@ tags: ir|opts
 $end_info$
 */
 
-#include "Common/BitSet.h"
+#include "Common/MathUtils.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
-#include "Interface/Core/OpcodeDispatcher.h"
-#include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/IR/RegisterAllocationData.h>
+#include <FEXCore/Utils/LogManager.h>
 
-#include <iterator>
+#include <algorithm>
+#include <cstdint>
+#include <set>
+#include <stddef.h>
+#include <string.h>
+#include <strings.h>
+#include <unordered_map>
 #include <unordered_set>
-#include <sys/mman.h>
+#include <utility>
+#include <vector>
 
 #define SRA_DEBUG(...) // printf(__VA_ARGS__)
 

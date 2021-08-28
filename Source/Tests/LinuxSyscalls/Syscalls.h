@@ -8,29 +8,34 @@ $end_info$
 #pragma once
 
 #include "Tests/LinuxSyscalls/FileManagement.h"
-#include "Tests/LinuxSyscalls/SignalDelegator.h"
-#include "git_version.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
-#include <atomic>
-#include <condition_variable>
 #include <mutex>
-#include <unordered_map>
 
+#include <errno.h>
+#include <stdint.h>
 #include <sys/epoll.h>
-#include <fcntl.h>
+#include <type_traits>
+#include <vector>
 
 // #define DEBUG_STRACE
 
-namespace FEXCore::Core {
-struct CpuStateFrame;
+namespace FEXCore {
+  class CodeLoader;
+  namespace Context {
+    struct Context;
+  }
+  namespace Core {
+    struct CpuStateFrame;
+  }
 }
 
 namespace FEX::HLE {
 class SyscallHandler;
+class SignalDelegator;
   void RegisterEpoll();
   void RegisterFD(FEX::HLE::SyscallHandler *const Handler);
   void RegisterFS();

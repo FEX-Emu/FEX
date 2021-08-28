@@ -3,23 +3,22 @@
 #include "Utils/Allocator/IntrusiveArenaAllocator.h"
 #include <FEXCore/Utils/LogManager.h>
 
+#include <algorithm>
 #include <array>
-#include <bit>
-#include <bitset>
 #include <cassert>
-#include <cmath>
 #include <cstdint>
-#include <cstring>
+#include <errno.h>
 #include <list>
-#include <malloc.h>
+#include <memory>
 #include <mutex>
-#include <stdio.h>
-#include <set>
+#include <new>
+#include <stddef.h>
+#include <sstream>
 #include <sys/mman.h>
+#include <bits/mman-map-flags-generic.h>
 #include <sys/utsname.h>
-#include <sys/resource.h>
-#include <syscall.h>
-#include <vector>
+#include <type_traits>
+#include <utility>
 
 static constexpr uint64_t PAGE_SHIFT = 12;
 static constexpr uint64_t PAGE_MASK = (1 << PAGE_SHIFT) - 1;

@@ -4,19 +4,19 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
+#include "Tests/LinuxSyscalls/SignalDelegator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
-#include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/SignalDelegator.h>
+#include <errno.h>
+#include <bits/types/siginfo_t.h>
+#include <stdint.h>
+#include <time.h>
 
-#include <signal.h>
-#include <sys/syscall.h>
-#include <unistd.h>
-
-namespace SignalDelegator {
-  struct GuestSigAction;
+namespace FEXCore::Core {
+  struct CpuStateFrame;
 }
 
 namespace FEX::HLE::x32 {

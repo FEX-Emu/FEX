@@ -1,10 +1,18 @@
 #pragma once
-#include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
 
+#include <cstdint>
+#include <functional>
 #include <map>
+#include <stddef.h>
+#include <utility>
+#include <vector>
 
 namespace FEXCore {
+namespace Context {
+  struct Context;
+}
+
 class LookupCache {
 public:
 

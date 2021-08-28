@@ -4,14 +4,28 @@ tags: backend|x86-64
 $end_info$
 */
 
+#include "Interface/Context/Context.h"
+#include "Interface/Core/CPUID.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/LookupCache.h"
-
 #include "Interface/Core/JIT/x86_64/JITClass.h"
-#include "Interface/IR/Passes/RegisterAllocationPass.h"
+#include "Interface/HLE/Thunks/Thunks.h"
 
+#include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
-#include <Interface/HLE/Thunks/Thunks.h>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <array>
+#include <memory>
+#include <stddef.h>
+#include <stdint.h>
+#include <unordered_map>
+#include <utility>
+#include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)

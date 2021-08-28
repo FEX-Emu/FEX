@@ -5,14 +5,8 @@ tags: frontend|x86-tables
 $end_info$
 */
 
-#include <FEXCore/Utils/LogManager.h>
-
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/X86Tables.h>
-#include <array>
-#include <cstdint>
-#include <tuple>
-#include <vector>
 
 namespace FEXCore::X86Tables {
 

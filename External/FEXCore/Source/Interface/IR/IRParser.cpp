@@ -5,16 +5,24 @@ tags: ir|parser
 $end_info$
 */
 
-#include <string>
-#include <vector>
-#include <istream>
-#include <unordered_map>
-
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/Utils/LogManager.h>
 
-
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <errno.h>
+#include <memory>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+#include <istream>
+#include <unordered_map>
 
 namespace FEXCore::IR {
 namespace {

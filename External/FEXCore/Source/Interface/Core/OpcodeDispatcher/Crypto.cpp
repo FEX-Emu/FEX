@@ -5,11 +5,16 @@ desc: Handles x86/64 Crypto instructions to IR
 $end_info$
 */
 
+#include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/Utils/LogManager.h>
 #include "Interface/Core/OpcodeDispatcher.h"
 
-#include <FEXCore/Core/X86Enums.h>
+#include <stdint.h>
 
 namespace FEXCore::IR {
+class OrderedNode;
+
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {

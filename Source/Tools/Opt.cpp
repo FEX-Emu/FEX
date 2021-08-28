@@ -5,11 +5,10 @@ desc: Unused
 $end_info$
 */
 
+#include <FEXCore/Config/Config.h>
 #include "Common/ArgumentLoader.h"
-#include "Common/EnvironmentLoader.h"
-#include "Common/Config.h"
 
-#include <FEXCore/IR/IntrusiveIRList.h>
+#include <memory>
 
 int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Initialize();

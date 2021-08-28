@@ -5,8 +5,14 @@ $end_info$
 */
 
 #include <FEXCore/Utils/LogManager.h>
-#include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
+
+#include <errno.h>
+#include <stdint.h>
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x64 {
 #define REGISTER_SYSCALL_NOT_IMPL_X64(name) REGISTER_SYSCALL_IMPL_X64(name, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t { \

@@ -5,10 +5,16 @@ desc: Sanity checking pass
 $end_info$
 */
 
-#include "Interface/IR/PassManager.h"
-#include "Interface/Core/OpcodeDispatcher.h"
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/LogManager.h>
 
+#include "Interface/IR/PassManager.h"
+
+#include <memory>
 #include <sstream>
+#include <string>
 
 namespace FEXCore::IR::Validation {
 

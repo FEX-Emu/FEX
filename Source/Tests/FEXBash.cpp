@@ -7,14 +7,18 @@ $end_info$
 
 #include "ConfigDefines.h"
 #include "Common/ArgumentLoader.h"
-#include "Common/EnvironmentLoader.h"
-#include "Common/Config.h"
 #include "Common/RootFSSetup.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/LogManager.h>
+
 #include <filesystem>
+#include <iterator>
+#include <memory>
+#include <stddef.h>
 #include <string>
 #include <unistd.h>
+#include <vector>
 
 int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Initialize();

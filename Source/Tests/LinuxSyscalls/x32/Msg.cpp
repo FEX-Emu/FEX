@@ -6,10 +6,13 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
 #include <mqueue.h>
+#include <stdint.h>
+#include <syscall.h>
+#include <time.h>
 #include <unistd.h>
-#include <sys/syscall.h>
 
 namespace FEX::HLE::x32 {
   void RegisterMsg() {

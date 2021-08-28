@@ -6,29 +6,36 @@ $end_info$
 */
 
 #include "Tests/LinuxSyscalls/FileManagement.h"
+#include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
+
+#include <algorithm>
+#include <bits/statx-generic.h>
+#include <errno.h>
 #include <cstring>
 #include <fcntl.h>
-#include <sys/epoll.h>
-#include <sys/eventfd.h>
-#include <sys/mman.h>
+#include <filesystem>
+#include <fstream>
+#include <stdio.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
-#include <sys/ioctl.h>
-#include <sys/timerfd.h>
-#include <sys/uio.h>
-#include <sys/vfs.h>
+#include <sys/statfs.h>
+#include <syscall.h>
+#include <system_error>
 #include <unistd.h>
-#include <sys/syscall.h>
+#include <utility>
+#include <vector>
 
 #include <tiny-json.h>
 
-#include <fstream>
-#include <filesystem>
+
+namespace FEXCore::Context {
+  struct Context;
+}
 
 namespace FEX::HLE {
+  struct open_how;
 
 static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
   std::fstream File(Filename, std::ios::in);

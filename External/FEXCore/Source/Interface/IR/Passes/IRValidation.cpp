@@ -7,11 +7,22 @@ $end_info$
 
 #include "Interface/IR/PassManager.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
-#include "Interface/Context/Context.h"
-#include "Interface/Core/OpcodeDispatcher.h"
 #include "Common/BitSet.h"
 
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/IR/RegisterAllocationData.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <cstdint>
+#include <memory>
+#include <stddef.h>
+#include <string>
 #include <sstream>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace {
   struct BlockInfo {

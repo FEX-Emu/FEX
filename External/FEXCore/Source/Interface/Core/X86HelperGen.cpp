@@ -6,12 +6,15 @@ $end_info$
 */
 
 #include "Interface/Core/X86HelperGen.h"
+
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
 
+#include <cstdint>
 #include <cstring>
-#include <stdlib.h>
 #include <vector>
 #include <sys/mman.h>
+#include <bits/mman-map-flags-generic.h>
 
 namespace FEXCore {
 constexpr size_t CODE_SIZE = 0x1000;

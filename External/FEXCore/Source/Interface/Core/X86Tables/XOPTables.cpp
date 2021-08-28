@@ -6,6 +6,11 @@ $end_info$
 
 #include "Interface/Core/X86Tables/X86Tables.h"
 
+#include <FEXCore/Debug/X86Tables.h>
+
+#include <iterator>
+#include <stdint.h>
+
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
 

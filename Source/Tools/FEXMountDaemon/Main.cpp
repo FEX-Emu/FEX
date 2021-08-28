@@ -1,20 +1,22 @@
 #include <atomic>
+#include <bits/types/siginfo_t.h>
 #include <cstdlib>
 #include <cstdint>
 #include <errno.h>
 #include <fcntl.h>
 #include <filesystem>
+#include <limits.h>
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
 #include <string>
 #include <unistd.h>
 #include <signal.h>
-#include <linux/limits.h>
 #include <sys/prctl.h>
 #include <sys/wait.h>
-#include <sys/signal.h>
 #include <sys/inotify.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include <sys/utsname.h>
 
 namespace {

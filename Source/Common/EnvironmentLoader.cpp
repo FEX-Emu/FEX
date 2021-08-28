@@ -1,9 +1,5 @@
-#include <functional>
-#include <filesystem>
+#include <string>
 #include <string_view>
-#include <unordered_map>
-#include "Common/Config.h"
-#include <FEXCore/Utils/LogManager.h>
 
 namespace FEX::EnvLoader {
 

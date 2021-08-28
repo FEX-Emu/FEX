@@ -1,8 +1,23 @@
-#include "Interface/Core/Dispatcher/Dispatcher.h"
 
 #include "Common/MathUtils.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
+#include "Interface/Core/X86HelperGen.h"
+
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Core/UContext.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/Utils/Event.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <atomic>
+#include <condition_variable>
+#include <bits/types/siginfo_t.h>
+#include <signal.h>
+#include <string.h>
 
 namespace FEXCore::CPU {
 
@@ -360,18 +375,18 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   }
 
   if (Is64BitMode) {
-    Frame->State.gregs[X86State::REG_RDI] = Signal;
+    Frame->State.gregs[FEXCore::X86State::REG_RDI] = Signal;
 
     // Set up the new SP for stack handling
     NewGuestSP -= 8;
     *(uint64_t*)NewGuestSP = SignalReturn;
-    Frame->State.gregs[X86State::REG_RSP] = NewGuestSP;
+    Frame->State.gregs[FEXCore::X86State::REG_RSP] = NewGuestSP;
   }
   else {
     NewGuestSP -= 4;
     *(uint32_t*)NewGuestSP = SignalReturn;
     LOGMAN_THROW_A(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
-    Frame->State.gregs[X86State::REG_RSP] = NewGuestSP;
+    Frame->State.gregs[FEXCore::X86State::REG_RSP] = NewGuestSP;
   }
 
   return true;

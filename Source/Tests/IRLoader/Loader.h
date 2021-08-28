@@ -1,15 +1,16 @@
 #pragma once
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IREmitter.h>
 
 #include "HarnessHelpers.h"
 
 #include <FEXCore/Utils/Allocator.h>
-#include <FEXCore/Utils/LogManager.h>
 
+#include <map>
+#include <memory>
+#include <stdint.h>
 #include <string>
-#include <vector>
+#include <sys/mman.h>
 
 using namespace FEXCore::IR;
 
