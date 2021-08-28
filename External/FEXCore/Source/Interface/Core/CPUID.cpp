@@ -5,8 +5,11 @@ desc: Handles presented capability bits for guest cpu
 $end_info$
 */
 
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/CPUID.h>
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
+#include "Interface/Core/HostFeatures.h"
 #include "git_version.h"
 
 #include <cstring>

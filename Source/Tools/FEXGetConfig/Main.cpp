@@ -1,11 +1,12 @@
 #include "ConfigDefines.h"
 #include "OptionParser.h"
-#include "Common/Config.h"
 #include "Common/RootFSSetup.h"
 #include "git_version.h"
 #include <FEXCore/Config/Config.h>
 
 #include <filesystem>
+#include <stdio.h>
+#include <string>
 
 int main(int argc, char **argv, char **envp) {
   FEXCore::Config::Initialize();

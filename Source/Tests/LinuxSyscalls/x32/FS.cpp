@@ -6,7 +6,10 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/SignalDelegator.h"
 
+#include <stddef.h>
+#include <stdint.h>
 #include <sys/mount.h>
 #include <unistd.h>
 

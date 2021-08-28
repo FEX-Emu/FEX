@@ -5,7 +5,15 @@ tags: ir|emitter
 $end_info$
 */
 
+#include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <array>
+#include <stdint.h>
+#include <string.h>
+#include <vector>
 
 namespace FEXCore::IR {
 void IREmitter::ResetWorkingList() {

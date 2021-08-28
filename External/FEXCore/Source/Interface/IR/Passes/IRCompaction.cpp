@@ -9,7 +9,16 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
-#include <map>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <algorithm>
+#include <memory>
+#include <stdint.h>
+#include <string.h>
+#include <vector>
 
 namespace FEXCore::IR {
 

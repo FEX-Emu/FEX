@@ -6,28 +6,32 @@ $end_info$
 */
 
 #include "Common/ArgumentLoader.h"
-#include "Common/EnvironmentLoader.h"
 #include "CommonCore/HostFactory.h"
 #include "HarnessHelpers.h"
+#include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
-#include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/HLE/SyscallHandler.h>
-#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
-#include <cassert>
 #include <cstdint>
-#include <string>
+#include <errno.h>
+#include <memory>
+#include <signal.h>
+#include <stdio.h>
+#include <sys/types.h>
 #include <vector>
+#include <utility>
+
+namespace FEXCore::Core {
+  struct InternalThreadState;
+}
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   const char *CharLevel{nullptr};

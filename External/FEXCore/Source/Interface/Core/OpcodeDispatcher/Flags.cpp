@@ -5,9 +5,17 @@ desc: Handles x86/64 flag generation
 $end_info$
 */
 
+#include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/IR/IR.h>
+
+#include <array>
+#include <cstdint>
 
 namespace FEXCore::IR {
 constexpr std::array<uint32_t, 17> FlagOffsets = {

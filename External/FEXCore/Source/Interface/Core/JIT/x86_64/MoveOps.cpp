@@ -5,7 +5,13 @@ $end_info$
 */
 
 #include "Interface/Core/JIT/x86_64/JITClass.h"
-#include "Interface/IR/Passes/RegisterAllocationPass.h"
+
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/IR/IR.h>
+
+#include <array>
+#include <stdint.h>
+#include <utility>
 
 namespace FEXCore::CPU {
 

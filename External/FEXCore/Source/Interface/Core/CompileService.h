@@ -1,23 +1,22 @@
 #pragma once
 
-#include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
 
+#include <atomic>
 #include <memory>
-#include <thread>
-#include <unordered_map>
+#include <mutex>
 #include <queue>
+#include <stdint.h>
+#include <vector>
 
 namespace FEXCore {
 namespace Context {
   struct Context;
 }
-namespace Core {
-  struct InternalThreadState;
-}
-
 namespace IR {
+  class IRListView;
   class RegisterAllocationData;
 };
 class CompileService final {

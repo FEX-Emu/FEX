@@ -1,11 +1,14 @@
 #pragma once
 
+#include <cstdint>
 #include <elf.h>
 #include <functional>
 #include <map>
+#include <stddef.h>
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 // Add macros which are missing in some versions of <elf.h>

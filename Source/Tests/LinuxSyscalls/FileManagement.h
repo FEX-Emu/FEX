@@ -5,15 +5,18 @@ $end_info$
 */
 
 #pragma once
+#include <FEXCore/Config/Config.h>
+
 #include <cstdint>
-#include <unordered_map>
-#include <vector>
-#include <string>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <poll.h>
+#include <functional>
 #include <map>
 #include <mutex>
+#include <optional>
+#include <stddef.h>
+#include <string>
+#include <sys/stat.h>
+
+#include <unordered_map>
 
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 

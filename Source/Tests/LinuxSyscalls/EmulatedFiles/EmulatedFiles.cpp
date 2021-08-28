@@ -5,16 +5,26 @@ desc: Emulated /proc/cpuinfo, version, osrelease, etc
 $end_info$
 */
 
-#include <cstring>
-#include <filesystem>
-#include <unistd.h>
-#include <FEXCore/Utils/LogManager.h>
-#include "FEXCore/Core/CodeLoader.h"
-
-#include <FEXCore/Core/Context.h>
 #include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/FileManagement.h"
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
+
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/CodeLoader.h>
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <git_version.h>
+
+#include <cstring>
+#include <fcntl.h>
+#include <filesystem>
+#include <ostream>
+#include <stdio.h>
+#include <system_error>
+#include <unistd.h>
+#include <utility>
+#include <vector>
 
 using string = std::string;
 

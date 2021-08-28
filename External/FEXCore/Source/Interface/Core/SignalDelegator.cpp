@@ -2,6 +2,7 @@
 #include <FEXCore/Utils/LogManager.h>
 
 #include <unistd.h>
+#include <signal.h>
 
 namespace FEXCore {
   struct ThreadState {

@@ -6,12 +6,18 @@ $end_info$
 */
 
 #include "Common/ArgumentLoader.h"
-#include "Common/EnvironmentLoader.h"
-#include "Common/Config.h"
-#include "FEXCore/Config/Config.h"
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/Context.h>
 
+#include <array>
 #include <cstdio>
-#include <limits>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/X86Tables.h>

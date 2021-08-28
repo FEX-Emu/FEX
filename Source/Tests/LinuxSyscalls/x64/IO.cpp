@@ -8,8 +8,13 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <linux/aio_abi.h>
-#include <sys/syscall.h>
+#include <stdint.h>
+#include <syscall.h>
 #include <unistd.h>
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x64 {
   void RegisterIO() {

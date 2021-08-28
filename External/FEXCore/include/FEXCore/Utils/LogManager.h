@@ -2,9 +2,7 @@
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
-#include <functional>
 #include <cstdarg>
-#include <sstream>
 
 #include <fmt/format.h>
 

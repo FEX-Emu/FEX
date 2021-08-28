@@ -1,18 +1,19 @@
 #include "ConfigDefines.h"
-#include "Common/Config.h"
 #include "Common/FileFormatCheck.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <filesystem>
 #include <fstream>
 
 #include <poll.h>
 #include <unistd.h>
-#include <sys/eventfd.h>
-#include <sys/prctl.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string>
+#include <system_error>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <sys/utsname.h>
 
 namespace FEX::RootFS {

@@ -6,14 +6,14 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include <FEXCore/Core/Context.h>
 
 #include <stdint.h>
 #include <sched.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/syscall.h>
 #include <unistd.h>
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x64 {
   void RegisterSched() {

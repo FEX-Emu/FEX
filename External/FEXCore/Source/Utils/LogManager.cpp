@@ -4,9 +4,14 @@ tags: glue|log-manager
 $end_info$
 */
 
-
+#include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
-#include <sstream>
+
+#include <alloca.h>
+#include <fmt/format.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string>
 #include <vector>
 
 namespace LogMan {

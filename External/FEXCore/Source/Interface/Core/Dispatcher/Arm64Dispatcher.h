@@ -3,7 +3,13 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
-#include "aarch64/assembler-aarch64.h"
+namespace FEXCore::Context {
+struct Context;
+}
+
+namespace FEXCore::Core {
+struct InternalThreadState;
+}
 
 namespace FEXCore::CPU {
 

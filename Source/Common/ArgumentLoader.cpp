@@ -1,8 +1,9 @@
 #include "Common/ArgumentLoader.h"
-#include "Common/Config.h"
 
 #include "OptionParser.h"
 #include "git_version.h"
+
+#include <stdint.h>
 
 namespace FEX::Handler {
   std::string CoreHandler(std::string &Value) {

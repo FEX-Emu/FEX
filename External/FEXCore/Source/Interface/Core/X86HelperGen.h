@@ -5,8 +5,8 @@ $end_info$
 */
 
 #pragma once
-#include <FEXCore/Config/Config.h>
 
+#include <stddef.h>
 #include <stdint.h>
 
 namespace FEXCore {

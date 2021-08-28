@@ -13,11 +13,13 @@ $end_info$
 
 #include <cstring>
 #include <elf.h>
-#include <filesystem>
 #include <set>
+#include <sstream>
+#include <stdlib.h>
 #include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <tuple>
 
 namespace ELFLoader {
 void ELFSymbolDatabase::FillLibrarySearchPaths() {

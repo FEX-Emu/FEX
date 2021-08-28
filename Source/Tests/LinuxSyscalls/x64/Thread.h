@@ -8,7 +8,6 @@ $end_info$
 #include <stdint.h>
 
 namespace FEXCore::Core {
-struct InternalThreadState;
 struct CpuStateFrame;
 }
 

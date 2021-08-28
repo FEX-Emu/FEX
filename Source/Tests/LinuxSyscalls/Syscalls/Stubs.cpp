@@ -7,26 +7,18 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
-#include <sys/time.h>
-
+#include <errno.h>
+#include <stdint.h>
 #include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/ptrace.h>
-#include <grp.h>
-#include <sys/fsuid.h>
-#include <utime.h>
-#include <signal.h>
-#include <unistd.h>
-#include <sys/timex.h>
-#include <sys/resource.h>
-#include <linux/aio_abi.h>
-#include <mqueue.h>
 
 #define SYSCALL_STUB(name) do { ERROR_AND_DIE("Syscall: " #name " stub!"); return -ENOSYS; } while(0)
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE {
   void RegisterStubs() {

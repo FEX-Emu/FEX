@@ -5,22 +5,24 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "Common/MathUtils.h"
-
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/Utils/LogManager.h>
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
 #include <algorithm>
 #include <cstdint>
 #include <sys/epoll.h>
-#include <sys/syscall.h>
+#include <syscall.h>
+#include <time.h>
 #include <unistd.h>
 #include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::epoll_event_x86>, "%lx")
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::timespec32>, "%lx")
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x32 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler) {

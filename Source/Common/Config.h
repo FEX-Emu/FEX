@@ -1,10 +1,7 @@
 #pragma once
 #include <FEXCore/Config/Config.h>
 
-#include <cassert>
-#include <list>
 #include <string>
-#include <string_view>
 
 /**
  * @brief This is a singleton for storing global configuration state

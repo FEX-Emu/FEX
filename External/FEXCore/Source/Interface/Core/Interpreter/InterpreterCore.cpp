@@ -1,30 +1,31 @@
-#include "Common/MathUtils.h"
-#include "Common/SoftFloat.h"
 #include "Interface/Context/Context.h"
 
 #include "Interface/Core/ArchHelpers/Arm64.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
-#include "Interface/Core/LookupCache.h"
-#include "Interface/Core/DebugData.h"
-#include "Interface/Core/InternalThreadState.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 
-#include <FEXCore/Core/CPUBackend.h>
-#include <FEXCore/HLE/SyscallHandler.h>
-#include <FEXCore/IR/IR.h>
-#include <FEXCore/IR/IntrusiveIRList.h>
-
-#include "Interface/HLE/Thunks/Thunks.h"
-
-#include <atomic>
-#include <cmath>
-#include <limits>
-#include <vector>
+#include <memory>
+#include <bits/types/stack_t.h>
+#include <signal.h>
+#include <stdint.h>
+#include <unordered_map>
+#include <utility>
 
 #include "InterpreterOps.h"
 
+namespace FEXCore::IR {
+  class IRListView;
+  class RegisterAllocationData;
+}
+
 namespace FEXCore::CPU {
+class CPUBackend;
 
 static void InterpreterExecution(FEXCore::Core::CpuStateFrame *Frame) {
   auto Thread = Frame->Thread;

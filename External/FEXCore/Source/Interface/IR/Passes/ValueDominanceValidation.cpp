@@ -6,12 +6,21 @@ $end_info$
 */
 
 #include "Interface/IR/PassManager.h"
-#include "Interface/Core/OpcodeDispatcher.h"
 
-#include <map>
-#include <list>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/LogManager.h>
+
+#include <functional>
+#include <memory>
+#include <set>
+#include <stdint.h>
+#include <string>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace {
   struct BlockInfo {

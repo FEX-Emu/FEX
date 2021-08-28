@@ -7,24 +7,23 @@ $end_info$
 #pragma once
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/FileManagement.h"
-#include <FEXCore/HLE/SyscallHandler.h>
-#include "Tests/LinuxSyscalls/x32/Types.h"
 
-#include <atomic>
-#include <bitset>
-#include <condition_variable>
-#include <map>
 #include <memory>
-#include <mutex>
-#include <unordered_map>
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+
+namespace FEXCore {
+  namespace Context {
+    struct Context;
+  }
+  namespace Core {
+    struct CpuStateFrame;
+  }
+}
 
 namespace FEX::HLE {
 class SignalDelegator;
-}
-
-namespace FEXCore::Core {
-struct InternalThreadState;
 }
 
 namespace FEX::HLE::x32 {

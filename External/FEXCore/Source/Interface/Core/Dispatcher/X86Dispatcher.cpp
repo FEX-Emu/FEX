@@ -3,10 +3,21 @@
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
 
 #include "Interface/Core/Interpreter/InterpreterClass.h"
+#include "Interface/Core/X86HelperGen.h"
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/Utils/Allocator.h>
+
 #include <cmath>
+#include <memory>
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/mman.h>
+#include "xbyak/xbyak.h"
 
 namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;

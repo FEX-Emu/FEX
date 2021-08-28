@@ -6,9 +6,8 @@
 
 #include <array>
 #include <cstdint>
-#include <utility>
 #include <set>
-#include <stack>
+#include <stddef.h>
 #include <vector>
 
 namespace FEXCore::Context {

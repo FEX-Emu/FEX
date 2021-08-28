@@ -9,28 +9,39 @@ $end_info$
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/IoctlEmulation.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/SyscallsEnum.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <algorithm>
-#include <dirent.h>
+#include <bits/types/struct_iovec.h>
+#include <cstdint>
 #include <fcntl.h>
+#include <poll.h>
 #include <signal.h>
-#include <stdint.h>
-#include <sys/file.h>
-#include <sys/eventfd.h>
-#include <sys/inotify.h>
-#include <sys/mman.h>
+#include <stddef.h>
+#include <string.h>
+#include <sys/select.h>
 #include <sys/sendfile.h>
+#include <sys/stat.h>
 #include <sys/statfs.h>
-#include <sys/syscall.h>
+#include <sys/time.h>
 #include <sys/timerfd.h>
+#include <sys/types.h>
 #include <sys/uio.h>
-#include <sys/vfs.h>
+#include <syscall.h>
+#include <time.h>
+#include <type_traits>
 #include <unistd.h>
+#include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigset_argpack32>, "%lx")
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x32 {
   // Used to ensure no bogus values are passed into readv/writev family syscalls.

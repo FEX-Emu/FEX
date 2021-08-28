@@ -2,10 +2,15 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 
+#include <alloca.h>
 #include <cstring>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <pthread.h>
+#include <stdint.h>
 #include <sys/mman.h>
+#include <bits/mman-map-flags-generic.h>
 #include <deque>
 
 namespace FEXCore::Threads {

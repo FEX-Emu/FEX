@@ -4,9 +4,18 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 
-#include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Core/SignalDelegator.h>
+#include "FEXCore/Debug/InternalThreadState.h"
+
+#include <string.h>
+#include <utility>
+
+namespace FEXCore::HLE {
+  class SyscallVisitor;
+}
 
 namespace FEXCore::Context {
   void InitializeStaticTables(OperatingMode Mode) {

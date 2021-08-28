@@ -6,15 +6,24 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Utils/LogManager.h>
 
+#include <alloca.h>
+#include <bits/types/struct_iovec.h>
+#include <cstdint>
 #include <cstring>
+#include <memory>
 #include <stddef.h>
-#include <stdint.h>
 #include <sys/socket.h>
+#include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::mmsghdr_32>, "%lx")
+
+namespace FEXCore::Core {
+  struct CpuStateFrame;
+}
 
 namespace FEX::HLE::x32 {
   enum SockOp {

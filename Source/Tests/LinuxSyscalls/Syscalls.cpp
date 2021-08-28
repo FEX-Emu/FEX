@@ -6,37 +6,49 @@ desc: Glue logic, brk allocations
 $end_info$
 */
 
-#include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/Utils/Threads.h>
-
 #include "Common/MathUtils.h"
 #include "Linux/Utils/ELFContainer.h"
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/Syscalls/Thread.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
-#include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/HLE/Linux/ThreadManagement.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Allocator.h>
-#include <fcntl.h>
+#include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Threads.h>
+
+#include <algorithm>
+#include <alloca.h>
+#include <functional>
 #include <filesystem>
 #include <fstream>
-#include <limits.h>
-#include <linux/futex.h>
-#include <poll.h>
+#include <memory>
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string.h>
+#include <system_error>
+#include <syscall.h>
 #include <sys/mman.h>
-#include <sys/time.h>
-#include <sys/random.h>
-#include <sys/sysinfo.h>
 #include <sys/utsname.h>
-#include <sys/shm.h>
-#include <sys/syscall.h>
 #include <unistd.h>
 
+namespace FEXCore::Context {
+  struct Context;
+}
+
 namespace FEX::HLE {
+class SignalDelegator;
 SyscallHandler *_SyscallHandler{};
 
 static bool IsSupportedByInterpreter(std::string const &Filename) {

@@ -2,17 +2,28 @@
 
 #include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
-
 #include "Interface/Core/Interpreter/InterpreterClass.h"
-#include "Interface/Context/Context.h"
 
+#include "Interface/Context/Context.h"
+#include "Interface/Core/X86HelperGen.h"
+
+#include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Debug/InternalThreadState.h>
+#include <array>
 #include <bit>
 #include <cmath>
+#include <cstdint>
+#include <memory>
+#include <stddef.h>
 
 #include "aarch64/assembler-aarch64.h"
+#include "aarch64/constants-aarch64.h"
+#include "aarch64/operands-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
-#include "aarch64/disasm-aarch64.h"
+#include "code-buffer-vixl.h"
+#include "platform-vixl.h"
 
 namespace FEXCore::CPU {
 

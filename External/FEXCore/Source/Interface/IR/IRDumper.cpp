@@ -7,9 +7,14 @@ $end_info$
 
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
-#include <FEXCore/Utils/LogManager.h>
-#include "Interface/IR/Passes/RegisterAllocationPass.h"
+#include <FEXCore/IR/RegisterAllocationData.h>
 
+#include <algorithm>
+#include <array>
+#include <ostream>
+#include <stdint.h>
+#include <string>
+#include <string_view>
 #include  <iomanip>
 
 namespace FEXCore::IR {

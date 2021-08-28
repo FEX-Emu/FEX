@@ -8,19 +8,30 @@ $end_info$
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/IoctlEmulation.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/SyscallsEnum.h"
 
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 
-#include <fcntl.h>
+#include <bitset>
+#include <cstdint>
+#include <errno.h>
+#include <limits>
 #include <map>
+#include <mutex>
+#include <sys/ipc.h>
 #include <sys/mman.h>
 #include <sys/shm.h>
-#include <sys/stat.h>
+#include <utility>
+#include <vector>
 
 #ifndef MREMAP_DONTUNMAP
 #define MREMAP_DONTUNMAP 4
 #endif
+
+namespace FEXCore::Context {
+  struct Context;
+}
 
 namespace FEX::HLE::x32 {
 class MemAllocator32Bit final : public MemAllocator {

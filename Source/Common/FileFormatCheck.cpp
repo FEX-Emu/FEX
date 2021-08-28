@@ -1,4 +1,5 @@
 #include <fstream>
+#include <stdint.h>
 #include <string>
 
 namespace FEX::FormatCheck {

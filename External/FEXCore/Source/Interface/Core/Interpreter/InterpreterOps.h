@@ -1,9 +1,13 @@
+#pragma once
+#include <stdint.h>
+
 namespace FEXCore::Core {
   struct InternalThreadState;
 }
 
 namespace FEXCore::IR {
     class IRListView;
+    struct IROp_Header;
 }
 
 namespace FEXCore::Core{
@@ -32,7 +36,7 @@ namespace FEXCore::CPU {
     FallbackABI ABI;
     void *fn;
   };
-  
+
   class InterpreterOps {
 
     public:

@@ -2,10 +2,16 @@
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
-#include <FEXCore/Utils/Allocator.h>
-
 #define XBYAK64
 #include <xbyak/xbyak.h>
+
+namespace FEXCore::Context {
+  struct Context;
+}
+
+namespace FEXCore::Core {
+  struct InternalThreadState;
+}
 
 namespace FEXCore::CPU {
 

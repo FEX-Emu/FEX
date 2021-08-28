@@ -6,17 +6,16 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 
-#include <bitset>
-#include <map>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/mman.h>
-#include <sys/ipc.h>
-#include <unistd.h>
+#include <system_error>
 #include <filesystem>
-#include <sys/shm.h>
 
 static std::string get_fdpath(int fd)
 {

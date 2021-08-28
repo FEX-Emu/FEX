@@ -7,42 +7,70 @@ desc: Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispa
 $end_info$
 */
 
-#include "Common/MathUtils.h"
-#include "Common/Paths.h"
-
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
-#include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/CompileService.h"
 #include "Interface/Core/Core.h"
-#include "Interface/Core/DebugData.h"
+#include "Interface/Core/CPUID.h"
+#include "Interface/Core/Frontend.h"
+#include "Interface/Core/GdbServer.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterCore.h"
 #include "Interface/Core/JIT/JITCore.h"
+#include "Interface/HLE/Thunks/Thunks.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
+#include "Interface/IR/PassManager.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/HLE/Linux/ThreadManagement.h>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/Event.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Threads.h>
 
-#include "Interface/HLE/Thunks/Thunks.h"
-#include "FEXCore/Utils/Allocator.h"
-
-#include <xxhash.h>
-#include <fstream>
-#include <unistd.h>
-#include <filesystem>
 #include <algorithm>
+#include <array>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <set>
+#include <shared_mutex>
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
+#include <string>
+#include <string_view>
+#include <sstream>
 #include <sys/mman.h>
-#include <unistd.h>
 #include <sys/stat.h>
-
-#include "Interface/Core/GdbServer.h"
+#include <sys/syscall.h>
+#include <type_traits>
+#include <unistd.h>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include <xxhash.h>
 
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {

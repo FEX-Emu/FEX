@@ -1,11 +1,24 @@
 #pragma once
 
 #include <FEXCore/Core/CPUBackend.h>
-#include <FEXCore/Core/SignalDelegator.h>
 
 #include "Interface/Context/Context.h"
 
+#include <bits/types/stack_t.h>
+#include <cstdint>
+#include <stddef.h>
 #include <stack>
+#include <tuple>
+#include <vector>
+
+namespace FEXCore {
+struct GuestSigAction;
+}
+
+namespace FEXCore::Core {
+struct CpuStateFrame;
+struct InternalThreadState;
+}
 
 namespace FEXCore::CPU {
 

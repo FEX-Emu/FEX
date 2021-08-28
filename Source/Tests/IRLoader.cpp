@@ -6,18 +6,26 @@ $end_info$
 */
 
 #include "Common/ArgumentLoader.h"
-#include "Common/EnvironmentLoader.h"
-#include "Common/Config.h"
-#include "HarnessHelpers.h"
 #include "IRLoader/Loader.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+
+#include <functional>
+#include <memory>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <vector>
+
+namespace FEXCore::Context {
+  struct Context;
+}
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message)
 {

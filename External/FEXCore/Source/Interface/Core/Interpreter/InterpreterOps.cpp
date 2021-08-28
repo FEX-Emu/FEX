@@ -1,17 +1,16 @@
-#include "Common/MathUtils.h"
 #include "Common/SoftFloat.h"
+#include "Common/SoftFloat-3e/softfloat.h"
 #include "Interface/Context/Context.h"
+#include "Interface/Core/CPUID.h"
 #include "InterpreterOps.h"
 
 #ifdef _M_ARM_64
 #include "Interface/Core/ArchHelpers/Arm64.h"
 #endif
-#include "Interface/Core/LookupCache.h"
-#include "Interface/Core/DebugData.h"
-#include "Interface/Core/InternalThreadState.h"
-#include "Interface/Core/Interpreter/InterpreterClass.h"
 
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
@@ -21,15 +20,18 @@
 
 #include "Interface/HLE/Thunks/Thunks.h"
 
+#include <alloca.h>
 #include <algorithm>
 #include <atomic>
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <limits>
-#include <vector>
-#ifdef _M_X86_64
-#include <xmmintrin.h>
-#endif
-#include <unistd.h>
+#include <memory>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 namespace FEXCore::CPU {
 

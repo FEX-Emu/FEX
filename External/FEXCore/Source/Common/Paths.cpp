@@ -3,8 +3,9 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <memory>
 #include <pwd.h>
-#include <sys/stat.h>
+#include <system_error>
 #include <unistd.h>
 
 namespace FEXCore::Paths {

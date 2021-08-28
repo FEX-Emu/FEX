@@ -9,18 +9,26 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <string.h>
 
+#include <errno.h>
+#include <exception>
+#include <functional>
 #include <linux/futex.h>
 #include <bits/types/stack_t.h>
+#include <signal.h>
+#include <syscall.h>
 #include <sys/mman.h>
-#include <sys/syscall.h>
 #include <sys/signalfd.h>
 #include <unistd.h>
+#include <utility>
 
 namespace FEX::HLE {
 #ifdef _M_X86_64

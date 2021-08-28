@@ -5,12 +5,15 @@ desc: Removes unused arguments if known syscall number
 $end_info$
 */
 
-#include "Interface/Context/Context.h"
 #include "Interface/IR/PassManager.h"
-#include "Interface/Core/OpcodeDispatcher.h"
 
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/HLE/SyscallHandler.h>
-#include <FEXCore/Utils/LogManager.h>
+
+#include <memory>
+#include <stdint.h>
 
 namespace FEXCore::IR {
 

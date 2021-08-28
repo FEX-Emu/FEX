@@ -5,6 +5,10 @@
 #include <FEXCore/Utils/LogManager.h>
 
 #include <algorithm>
+#include <new>
+#include <stdint.h>
+#include <string.h>
+#include <vector>
 
 namespace FEXCore::IR {
 class Pass;

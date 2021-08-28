@@ -7,9 +7,18 @@ $end_info$
 
 #include "Interface/Core/OpcodeDispatcher.h"
 
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/IR/IREmitter.h>
+
+#include <stddef.h>
+#include <stdint.h>
 
 namespace FEXCore::IR {
+class OrderedNode;
+
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
 OrderedNode *OpDispatchBuilder::GetX87Top() {

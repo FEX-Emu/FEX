@@ -6,11 +6,14 @@ $end_info$
 
 #pragma once
 #include "Interface/IR/PassManager.h"
-#include <FEXCore/IR/RegisterAllocationData.h>
-#include <vector>
+
+#include <memory>
+#include <stdint.h>
 
 namespace FEXCore::IR {
-class IRListView;
+class RegisterAllocationData;
+struct RegisterAllocationDataDeleter;
+struct RegisterClassType;
 
 class RegisterAllocationPass : public FEXCore::IR::Pass {
   public:

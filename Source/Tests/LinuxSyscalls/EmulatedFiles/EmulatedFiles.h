@@ -10,12 +10,9 @@ $end_info$
 #include <cstdint>
 #include <functional>
 #include <unordered_map>
-#include <unordered_set>
 #include <string>
+#include <sys/types.h>
 
-namespace FEXCore {
-  class FD;
-}
 namespace FEXCore::Context {
   struct Context;
 }

@@ -8,20 +8,36 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
+#include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"
-#include "Interface/Core/InternalThreadState.h"
-
+#include "Interface/IR/PassManager.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
-#include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Core/UContext.h>
+#include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/LogManager.h>
 
-#include <cmath>
+#include <algorithm>
+#include <array>
+#include <bits/types/stack_t.h>
+#include <memory>
+#include <stddef.h>
+#include <stdint.h>
 #include <signal.h>
-
-#include "Interface/Core/Interpreter/InterpreterOps.h"
+#include <sys/mman.h>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include <xbyak/xbyak.h>
 
 // #define DEBUG_RA 1
 // #define DEBUG_CYCLES
