@@ -1,8 +1,16 @@
 #pragma once
 
 #include "aarch64/assembler-aarch64.h"
+#include "aarch64/constants-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
+#include "aarch64/operands-aarch64.h"
+#include "platform-vixl.h"
 #include "FEXCore/Config/Config.h"
+
+#include <array>
+#include <stddef.h>
+#include <stdint.h>
+#include <utility>
 
 namespace FEXCore::CPU {
 using namespace vixl;
