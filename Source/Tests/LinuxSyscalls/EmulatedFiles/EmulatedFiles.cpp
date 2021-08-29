@@ -707,16 +707,37 @@ namespace FEX::EmulatedFile {
   }
 
   int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
-    if (!pathname || strlen(pathname) == 0) {
-      return -1;
+    std::string Path{};
+    if (dirfs != AT_FDCWD) {
+      auto get_fdpath = [](int fd) -> std::string {
+        std::error_code ec;
+        return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
+      };
+      // Passed in a dirfd that isn't magic FDCWD
+      // We need to get the path from the fd now
+      Path = get_fdpath(dirfs);
+
+      if (pathname) {
+        if (!Path.empty()) {
+          // If the path returned empty then we don't need a separator
+          Path += "/";
+        }
+        Path += pathname;
+      }
     }
+    else {
+      if (!pathname || strlen(pathname) == 0) {
+        return -1;
+      }
+    }
+
     std::error_code ec;
-    bool exists = std::filesystem::exists(pathname, ec);
+    bool exists = std::filesystem::exists(Path, ec);
     if (ec) {
       return -1;
     }
-    string cpath = exists ? std::filesystem::canonical(pathname, ec)
-      : std::filesystem::path(pathname).lexically_normal(); // *Note: this doesn't transform to absolute
+    string cpath = exists ? std::filesystem::canonical(Path, ec)
+      : std::filesystem::path(Path).lexically_normal(); // *Note: this doesn't transform to absolute
 
     if (ec) {
       return -1;
@@ -726,7 +747,7 @@ namespace FEX::EmulatedFile {
       return -1;
     }
 
-    return Creator->second(CTX, dirfs, pathname, flags, mode);
+    return Creator->second(CTX, dirfs, Path.c_str(), flags, mode);
   }
 
   int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode)
