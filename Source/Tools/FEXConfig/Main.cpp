@@ -9,6 +9,7 @@
 #include <epoxy/gl.h>
 #include <SDL.h>
 #include <SDL_scancode.h>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <filesystem>
@@ -32,6 +33,7 @@ namespace {
 
   static const char EnvironmentPopupName[] = "#New Environment Variable";
   static const char SavedPopupAppName[] = "#SavedApp";
+  static const char OpenedPopupAppName[] = "#OpenedApp";
 
   static bool OpenMsgPopup{};
   static std::string MsgMessage{};
@@ -498,12 +500,127 @@ namespace {
     }
   }
 
+  static const std::map<FEXCore::Config::ConfigOption, std::string> ConfigToNameLookup = {{
+#define OPT_BASE(type, group, enum, json, default) {FEXCore::Config::ConfigOption::CONFIG_##enum, #json},
+#include <FEXCore/Config/ConfigValues.inl>
+  }};
+
+  struct TmpString {
+    char Str[256];
+    std::string Name;
+  };
+  static std::vector<std::vector<TmpString>> AdvancedOptions{};
+
+  void UpdateAdvancedOptionsVector() {
+    AdvancedOptions.clear();
+    // Push everything in to our vector table that we can modify instead of the map
+    auto Options = LoadedConfig->GetOptionMap();
+    AdvancedOptions.resize(Options.size());
+
+    size_t i = 0;
+    for (auto &Option : Options) {
+      auto ConfigName = ConfigToNameLookup.find(Option.first);
+      auto &AdvancedOption  = AdvancedOptions.at(i);
+      AdvancedOption.resize(Option.second.size());
+      size_t j = 0;
+      for (auto &OptionList : Option.second) {
+        strcpy(AdvancedOption[j].Str, OptionList.c_str());
+        AdvancedOption[j].Name = ConfigName->second;
+        if (Option.second.size() > 1) {
+          AdvancedOption[j].Name += " " + std::to_string(j);
+        }
+        ++j;
+      }
+      ++i;
+    }
+  }
+
+  void FillAdvancedConfig() {
+    if (ImGui::BeginTabItem("Advanced")) {
+      auto Options = LoadedConfig->GetOptionMap();
+
+      if (ImGui::SmallButton("Refresh") || AdvancedOptions.size() != Options.size()) {
+        UpdateAdvancedOptionsVector();
+      }
+
+      if (Options.size()) {
+        ImGui::Columns(2);
+        size_t i = 0;
+        for (auto &Option : Options) {
+          auto ConfigName = ConfigToNameLookup.find(Option.first);
+          ImGui::Text("%s", ConfigName->second.c_str());
+          ImGui::NextColumn();
+
+          auto &AdvancedOption = AdvancedOptions.at(i);
+          size_t j = 0;
+
+          bool Stop = false;
+          for (auto &OptionList : AdvancedOption) {
+            //ImGui::Text("%s", OptionList.Str);
+            if (ImGui::InputText(OptionList.Name.c_str(), OptionList.Str, sizeof(TmpString), ImGuiInputTextFlags_EnterReturnsTrue)) {
+              if (Option.second.size() == 1) {
+                LoadedConfig->EraseSet(Option.first, OptionList.Str);
+              }
+              else {
+                auto &All = Option.second;
+                auto Iter = All.begin();
+                std::advance(Iter, j);
+                *Iter = OptionList.Str;
+
+                LoadedConfig->Erase(Option.first);
+                for (auto &Value : All) {
+                  LoadedConfig->Set(Option.first, Value);
+                }
+
+              }
+              ConfigChanged = true;
+            }
+
+            ImGui::SameLine();
+
+            ImGui::PushID(OptionList.Name.c_str());
+            if (ImGui::SmallButton("-")) {
+              if (Option.second.size() == 1) {
+                LoadedConfig->Erase(Option.first);
+              }
+              else {
+                auto &All = Option.second;
+                auto Iter = All.begin();
+                std::advance(Iter, j);
+                All.erase(Iter);
+
+                LoadedConfig->Erase(Option.first);
+                for (auto &Value : All) {
+                  LoadedConfig->Set(Option.first, Value);
+                }
+              }
+              Stop = true;
+              ConfigChanged = true;
+              UpdateAdvancedOptionsVector();
+            }
+            ImGui::PopID();
+
+            ++j;
+          }
+
+          ImGui::NextColumn();
+          ++i;
+          if (Stop) {
+            break;
+          }
+        }
+      }
+      ImGui::EndTabItem();
+    }
+  }
+
   void FillConfigWindow() {
     ImGui::BeginTabBar("Config");
     FillCPUConfig();
     FillEmulationConfig();
     FillLoggingConfig();
     FillHackConfig();
+    FillAdvancedConfig();
     ImGui::EndTabBar();
   }
 
@@ -537,6 +654,7 @@ namespace {
     struct {
       bool Open{};
       bool OpenDefault{};
+      bool OpenAppProfile{};
       bool LoadDefault{};
       bool Save{};
       bool SaveAs{};
@@ -550,6 +668,7 @@ namespace {
       if (ImGui::BeginMenu("File")) {
         ImGui::MenuItem("Open", "CTRL+O", &Selected.Open, true);
         ImGui::MenuItem("Open Default", "CTRL+SHIFT+O", &Selected.OpenDefault, true);
+        ImGui::MenuItem("Open App profile", "CTRL+A", &Selected.OpenAppProfile, true);
         ImGui::MenuItem("Load Default Options", "CTRL+SHIFT+D", &Selected.LoadDefault, true);
 
         ImGui::MenuItem("Save", "CTRL+S", &Selected.Save, true);
@@ -590,12 +709,13 @@ namespace {
         FillConfigWindow();
       }
 
-      if (ImGui::IsKeyPressed(SDL_SCANCODE_E) && io.KeyCtrl) {
+      if (ImGui::IsKeyPressed(SDL_SCANCODE_E) && io.KeyCtrl && !io.KeyShift) {
         ImGui::OpenPopup(SavedPopupAppName);
       }
 
       ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + viewport->Size.x / 2, viewport->Pos.y + viewport->Size.y / 2), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
       if (ImGui::BeginPopupModal(SavedPopupAppName)) {
+        ImGui::SetKeyboardFocusHere();
         if (ImGui::InputText("App name", AppName, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
           std::string AppNameString = AppName;
           std::string Filename = FEXCore::Config::GetApplicationConfig(AppNameString, false);
@@ -618,12 +738,34 @@ namespace {
       OpenMsgPopup = false;
     }
 
+    if (Selected.OpenAppProfile ||
+        (ImGui::IsKeyPressed(SDL_SCANCODE_A) && io.KeyCtrl && !io.KeyShift)) {
+      ImGui::OpenPopup(OpenedPopupAppName);
+    }
+
     // Center the saved popup in the center of the window
     ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + viewport->Size.x / 2, viewport->Pos.y + viewport->Size.y / 2), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
     if (ImGui::BeginPopup(MsgPopupName)) {
       ImGui::Text("%s", MsgMessage.c_str());
       if ((std::chrono::high_resolution_clock::now() - MsgTimerStart) >= std::chrono::seconds(2)) {
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::EndPopup();
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + viewport->Size.x / 2, viewport->Pos.y + viewport->Size.y / 2), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal(OpenedPopupAppName)) {
+
+      ImGui::SetKeyboardFocusHere();
+      if (ImGui::InputText("App name", AppName, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        std::string AppNameString = AppName;
+        std::string Filename = FEXCore::Config::GetApplicationConfig(AppNameString, false);
+        OpenFile(Filename, false);
+        ImGui::CloseCurrentPopup();
+      }
+
+      if (ImGui::IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndPopup();
