@@ -678,7 +678,7 @@ namespace FEX::EmulatedFile {
       auto Args = CodeLoader->GetApplicationArguments();
       char NullChar{};
       // cmdline is an array of null terminated arguments
-      for (size_t i = 1; i < Args->size(); ++i) {
+      for (size_t i = 0; i < Args->size(); ++i) {
         auto &Arg = Args->at(i);
         write(FD, Arg.c_str(), Arg.size());
         // Finish off with a null terminator
@@ -686,7 +686,6 @@ namespace FEX::EmulatedFile {
       }
 
       // One additional null terminator to finish the list
-      write(FD, &NullChar, sizeof(uint8_t));
       lseek(FD, 0, SEEK_SET);
       return FD;
     };
