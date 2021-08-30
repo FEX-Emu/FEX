@@ -460,7 +460,6 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   if (!(flags & CLONE_THREAD)) {
     if (flags & CLONE_VFORK) {
       PrintFlags(flags);
-      flags &= ~CLONE_VFORK;
       flags &= ~CLONE_VM;
       LogMan::Msg::D("clone: WARNING: CLONE_VFORK w/o CLONE_THREAD");
     }

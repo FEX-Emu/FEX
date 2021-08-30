@@ -167,7 +167,15 @@ namespace FEX::HLE {
   }
 
   uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
-    pid_t Result = fork();
+    pid_t Result{};
+    if (flags & CLONE_VFORK) {
+      // XXX: We don't currently support a vfork as it causes problems.
+      // Currently behaves like a fork, which isn't correct. Need to find where the problem is
+      Result = fork();
+    }
+    else {
+      Result = fork();
+    }
 
     if (Result == 0) {
       // Child
@@ -240,7 +248,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(vfork, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0);
+      return ForkGuest(Frame->Thread, Frame, CLONE_VFORK, 0, 0, 0, 0);
     });
 
     REGISTER_SYSCALL_IMPL(clone3, ([](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *cl_args, size_t size) -> uint64_t {
