@@ -41,7 +41,8 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(rseq, [](FEXCore::Core::CpuStateFrame *Frame,  struct rseq  *rseq, uint32_t rseq_len, int flags, uint32_t sig) -> uint64_t {
-      SYSCALL_STUB(rseq);
+      // We don't support this
+      return -ENOSYS;
     });
   }
 }
