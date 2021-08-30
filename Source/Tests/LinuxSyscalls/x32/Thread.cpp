@@ -252,41 +252,49 @@ namespace FEX::HLE::x32 {
       std::vector<const char*> Args;
       std::vector<const char*> Envp;
 
-      for (int i = 0; argv[i]; i++) {
-        Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
+      if (argv) {
+        for (int i = 0; argv[i]; i++) {
+          Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
+        }
+
+        Args.push_back(nullptr);
       }
 
-      Args.push_back(nullptr);
-
-      for (int i = 0; envp[i]; i++) {
-        Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
+      if (envp) {
+        for (int i = 0; envp[i]; i++) {
+          Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
+        }
+        Envp.push_back(nullptr);
       }
-      Envp.push_back(nullptr);
 
-      return FEX::HLE::ExecveHandler(pathname, Args, Envp, nullptr);
+      return FEX::HLE::ExecveHandler(pathname, argv ? const_cast<char* const*>(&Args.at(0)) : nullptr, envp ? const_cast<char* const*>(&Envp.at(0)) : nullptr, nullptr);
     });
 
     REGISTER_SYSCALL_IMPL_X32(execveat, ([](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, uint32_t *argv, uint32_t *envp, int flags) -> uint64_t {
       std::vector<const char*> Args;
       std::vector<const char*> Envp;
 
-      for (int i = 0; argv[i]; i++) {
-        Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
+      if (argv) {
+        for (int i = 0; argv[i]; i++) {
+          Args.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(argv[i])));
+        }
+
+        Args.push_back(nullptr);
       }
 
-      Args.push_back(nullptr);
-
-      for (int i = 0; envp[i]; i++) {
-        Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
+      if (envp) {
+        for (int i = 0; envp[i]; i++) {
+          Envp.push_back(reinterpret_cast<const char*>(static_cast<uintptr_t>(envp[i])));
+        }
+        Envp.push_back(nullptr);
       }
-      Envp.push_back(nullptr);
 
       FEX::HLE::ExecveAtArgs AtArgs {
         .dirfd = dirfd,
         .flags = flags,
       };
 
-      return FEX::HLE::ExecveHandler(pathname, Args, Envp, &AtArgs);
+      return FEX::HLE::ExecveHandler(pathname, argv ? const_cast<char* const*>(&Args.at(0)) : nullptr, envp ? const_cast<char * const*>(&Envp.at(0)) : nullptr, &AtArgs);
     }));
 
     REGISTER_SYSCALL_IMPL_X32(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage_32 *rusage) -> uint64_t {
