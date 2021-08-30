@@ -707,7 +707,9 @@ namespace FEX::EmulatedFile {
 
   int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
     std::string Path{};
-    if (dirfs != AT_FDCWD) {
+    if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
+        !pathname) &&
+        dirfs != AT_FDCWD) {
       auto get_fdpath = [](int fd) -> std::string {
         std::error_code ec;
         return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
@@ -727,6 +729,9 @@ namespace FEX::EmulatedFile {
     else {
       if (!pathname || strlen(pathname) == 0) {
         return -1;
+      }
+      else if (pathname) {
+        Path = pathname;
       }
     }
 
