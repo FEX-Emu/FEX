@@ -389,6 +389,14 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
     Frame->State.gregs[FEXCore::X86State::REG_RSP] = NewGuestSP;
   }
 
+  // The guest starts its signal frame with a zero initialized FPU
+  // Set that up now. Little bit costly but it's a requirement
+  // This state will be restored on rt_sigreturn
+  memset(Frame->State.xmm, 0, sizeof(Frame->State.xmm));
+  memset(Frame->State.mm, 0, sizeof(Frame->State.mm));
+  Frame->State.FCW = 0x37F;
+  Frame->State.FTW = 0xFFFF;
+
   return true;
 }
 
