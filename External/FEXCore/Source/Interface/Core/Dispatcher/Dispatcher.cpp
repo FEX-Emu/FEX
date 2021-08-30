@@ -180,9 +180,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   // siginfo_t
   siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
 
-  if (GuestAction->sa_flags & SA_SIGINFO &&
-      !(HostSigInfo->si_code == SI_QUEUE || // If the siginfo comes from sigqueue or user then we don't need to check
-        HostSigInfo->si_code == SI_USER)) {
+  if (GuestAction->sa_flags & SA_SIGINFO) {
 
     // Setup ucontext a bit
     if (Is64BitMode) {
