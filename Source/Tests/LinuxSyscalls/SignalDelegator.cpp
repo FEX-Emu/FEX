@@ -588,7 +588,7 @@ namespace FEX::HLE {
         continue;
       }
 
-      if (ThreadData.CurrentSignalMask.Val & (1ULL << i)) {
+      if (*set & (1ULL << i)) {
         sigaddset(&HostSet, i + 1);
       }
     }
