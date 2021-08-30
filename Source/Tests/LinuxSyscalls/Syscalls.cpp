@@ -444,6 +444,12 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     }
   }
 
+  constexpr uint64_t TASK_MAX = (1ULL << 48); // 48-bits until we can query the host side VA sanely. AArch64 doesn't expose this in cpuinfo
+  if (args->args.tls &&
+      args->args.tls >= TASK_MAX) {
+    return -EPERM;
+  }
+
   auto Thread = Frame->Thread;
 
   if (AnyFlagsSet(flags, CLONE_PTRACE)) {
