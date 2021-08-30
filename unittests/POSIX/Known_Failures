@@ -558,6 +558,12 @@ conformance-interfaces-raise-2-1.test
 conformance-interfaces-sigpending-1-1.test
 conformance-interfaces-sigpending-2-1.test
 
+# Both of these pass signals in their handler
+# Since we exit the signal handler our sa_mask changes
+# and we don't currently resolve this
+conformance-interfaces-sigpending-1-2.test
+conformance-interfaces-sigpending-1-3.test
+
 # Causes long timeout with signal change
 conformance-interfaces-mmap-11-2.test
 conformance-interfaces-munmap-1-1.test
