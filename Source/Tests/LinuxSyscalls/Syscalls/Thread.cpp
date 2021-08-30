@@ -276,7 +276,8 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL(tkill, [](FEXCore::Core::CpuStateFrame *Frame, int tid, int sig) -> uint64_t {
-      uint64_t Result = ::tgkill(-1, tid, sig);
+      // Can't actually use tgkill here, kernel rejects tgkill of tgid == 0
+      uint64_t Result = ::syscall(SYS_tkill, tid, sig);
       SYSCALL_ERRNO();
     });
 
