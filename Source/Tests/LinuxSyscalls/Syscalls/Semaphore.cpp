@@ -19,9 +19,5 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(semctl, [](FEXCore::Core::CpuStateFrame *Frame, int semid, int semnum, int cmd, void* semun) -> uint64_t {
-      uint64_t Result = ::semctl(semid, semnum, cmd, semun);
-      SYSCALL_ERRNO();
-    });
   }
 }

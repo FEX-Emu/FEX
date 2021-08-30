@@ -829,5 +829,78 @@ namespace FEX::HLE::x32 {
       uint64_t Result = ::semtimedop(semid, sops, nsops, timeout);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(semctl, [](FEXCore::Core::CpuStateFrame *Frame, int semid, int semnum, int cmd, semun_32 *semun) -> uint64_t {
+      uint64_t Result{};
+      bool IPC64 = cmd & 0x100;
+
+      switch (cmd) {
+        case IPC_SET: {
+          struct semid_ds buf{};
+          if (IPC64) {
+            buf = *semun->buf64;
+          }
+          else {
+            buf = *semun->buf32;
+          }
+          Result = ::semctl(semid, semnum, cmd, &buf);
+          if (Result != -1) {
+            if (IPC64) {
+              *semun->buf64 = buf;
+            }
+            else {
+              *semun->buf32 = buf;
+            }
+          }
+          break;
+        }
+        case SEM_STAT:
+        case SEM_STAT_ANY:
+        case IPC_STAT: {
+          struct semid_ds buf{};
+          Result = ::semctl(semid, semnum, cmd, &buf);
+          if (Result != -1) {
+            if (IPC64) {
+              *semun->buf64 = buf;
+            }
+            else {
+              *semun->buf32 = buf;
+            }
+          }
+          break;
+        }
+        case SEM_INFO:
+        case IPC_INFO: {
+          struct seminfo si{};
+          Result = ::semctl(semid, semnum, cmd, &si);
+          if (Result != -1) {
+            memcpy(semun->__buf, &si, sizeof(si));
+          }
+          break;
+        }
+        case GETALL:
+        case SETALL: {
+          // ptr is just a int32_t* in this case
+          Result = ::semctl(semid, semnum, cmd, semun->array);
+          break;
+        }
+        case SETVAL: {
+          // ptr is just a int32_t in this case
+          Result = ::semctl(semid, semnum, cmd, semun->val);
+          break;
+        }
+        case IPC_RMID:
+        case GETPID:
+        case GETNCNT:
+        case GETZCNT:
+        case GETVAL:
+          Result = ::semctl(semid, semnum, cmd, semun);
+          break;
+        default: LOGMAN_MSG_A("Unhandled semctl cmd: %d", cmd); return -EINVAL; break;
+
+      }
+      SYSCALL_ERRNO();
+    });
+
   }
 }
