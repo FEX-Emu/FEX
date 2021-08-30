@@ -484,11 +484,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(waitid, [](FEXCore::Core::CpuStateFrame *Frame, idtype_t idtype, id_t id, siginfo_t *infop, int options) -> uint64_t {
-      uint64_t Result = ::waitid(idtype, id, infop, options);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(unshare, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
       uint64_t Result = ::unshare(flags);
       SYSCALL_ERRNO();

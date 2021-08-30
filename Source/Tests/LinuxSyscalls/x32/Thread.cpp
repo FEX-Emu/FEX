@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 
+#include <bits/types/siginfo_t.h>
 #include <bits/types/stack_t.h>
 #include <bits/types/struct_rusage.h>
 #include <errno.h>
@@ -311,6 +312,25 @@ namespace FEX::HLE::x32 {
       }
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, siginfo_t *infop, int options, struct rusage_32 *rusage) -> uint64_t {
+      struct rusage usage64{};
+      struct rusage *usage64_p{};
+
+      if (rusage) {
+        usage64 = *rusage;
+        usage64_p = &usage64;
+      }
+
+      uint64_t Result = ::syscall(SYS_waitid, which, upid, infop, options, usage64_p);
+
+      if (rusage) {
+        *rusage = usage64;
+      }
+
+      SYSCALL_ERRNO();
+    });
+
 
     REGISTER_SYSCALL_IMPL_X32(futex_time64, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
       uint64_t Result = syscall(SYS_futex,

@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 
+#include <bits/types/siginfo_t.h>
 #include <bits/types/stack_t.h>
 #include <sched.h>
 #include <stddef.h>
@@ -135,6 +136,11 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
       uint64_t Result = ::syscall(SYS_wait4, pid, wstatus, options, rusage);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, siginfo_t *infop, int options, struct rusage *rusage) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_waitid, which, upid, infop, options, rusage);
       SYSCALL_ERRNO();
     });
   }
