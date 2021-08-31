@@ -111,7 +111,7 @@ static bool IsSupportedByInterpreter(std::string const &Filename) {
   return false;
 }
 
-uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std::vector<const char*> &envp, ExecveAtArgs *Args) {
+uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args) {
   std::string Filename{};
 
   std::error_code ec;
@@ -158,10 +158,10 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
     // If the FEX interpreter is installed then just execve the ELF file
     // This will stay inside of our emulated environment since binfmt_misc will capture it
     if (Args) {
-      Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)), Args->flags);
+      Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), argv, envp, Args->flags);
     }
     else {
-      Result = execve(Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)));
+      Result = execve(Filename.c_str(), argv, envp);
     }
     SYSCALL_ERRNO();
   }
@@ -178,10 +178,10 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
     // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
     // Just execve it and let the kernel handle the process
     if (Args) {
-      Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)), Args->flags);
+      Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), argv, envp, Args->flags);
     }
     else {
-      Result = execve(Filename.c_str(), const_cast<char *const *>(&argv.at(0)), const_cast<char *const *>(&envp.at(0)));
+      Result = execve(Filename.c_str(), argv, envp);
     }
     SYSCALL_ERRNO();
   }
@@ -195,17 +195,29 @@ uint64_t ExecveHandler(const char *pathname, std::vector<const char*> &argv, std
     ExecveArgs.emplace_back("--");
   }
 
-  // Overwrite the filename with the new one we are redirecting to
-  argv[0] = Filename.c_str();
+  if (argv) {
+    // Overwrite the filename with the new one we are redirecting to
+    ExecveArgs.emplace_back(Filename.c_str());
 
-  // Append the arguments together
-  ExecveArgs.insert(ExecveArgs.end(), argv.begin(), argv.end());
+    auto OldArgv = argv;
+
+    // Skip filename argument
+    ++OldArgv;
+    while (*OldArgv) {
+      // Append the arguments together
+      ExecveArgs.emplace_back(*OldArgv);
+      ++OldArgv;
+    }
+
+    // Emplace nullptr at the end to stop
+    ExecveArgs.emplace_back(nullptr);
+  }
 
   if (Args) {
-    Result = ::syscall(SYS_execveat, Args->dirfd, "/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), const_cast<char *const *>(&envp.at(0)), Args->flags);
+    Result = ::syscall(SYS_execveat, Args->dirfd, "/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), envp, Args->flags);
   }
   else {
-    Result = execve("/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), const_cast<char *const *>(&envp.at(0)));
+    Result = execve("/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), envp);
   }
 
   SYSCALL_ERRNO();
@@ -432,6 +444,12 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     }
   }
 
+  constexpr uint64_t TASK_MAX = (1ULL << 48); // 48-bits until we can query the host side VA sanely. AArch64 doesn't expose this in cpuinfo
+  if (args->args.tls &&
+      args->args.tls >= TASK_MAX) {
+    return -EPERM;
+  }
+
   auto Thread = Frame->Thread;
 
   if (AnyFlagsSet(flags, CLONE_PTRACE)) {
@@ -442,7 +460,6 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   if (!(flags & CLONE_THREAD)) {
     if (flags & CLONE_VFORK) {
       PrintFlags(flags);
-      flags &= ~CLONE_VFORK;
       flags &= ~CLONE_VM;
       LogMan::Msg::D("clone: WARNING: CLONE_VFORK w/o CLONE_THREAD");
     }

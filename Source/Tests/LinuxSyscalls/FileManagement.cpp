@@ -332,18 +332,47 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
   // Can't use `GetSelf` directly here since readlink{at,} returns EINVAL if it isn't a symlink
   // Self is always a symlink and isn't expected to fail
 
+  std::string Path{};
+  if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
+        !pathname) &&
+        dirfd != AT_FDCWD) {
+    auto get_fdpath = [](int fd) -> std::string {
+      std::error_code ec;
+      return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
+    };
+    // Passed in a dirfd that isn't magic FDCWD
+    // We need to get the path from the fd now
+    Path = get_fdpath(dirfd);
+
+    if (pathname) {
+      if (!Path.empty()) {
+        // If the path returned empty then we don't need a separator
+        Path += "/";
+      }
+      Path += pathname;
+    }
+  }
+  else {
+    if (!pathname || strlen(pathname) == 0) {
+      return -1;
+    }
+    else if (pathname) {
+      Path = pathname;
+    }
+  }
+
   char PidSelfPath[50];
   snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
-  if (strcmp(pathname, "/proc/self/exe") == 0 ||
-      strcmp(pathname, "/proc/thread-self/exe") == 0 ||
-      strcmp(pathname, PidSelfPath) == 0) {
+  if (Path == "/proc/self/exe" ||
+      Path == "/proc/thread-self/exe" ||
+      Path == PidSelfPath) {
     auto App = Filename();
     strncpy(buf, App.c_str(), bufsiz);
     return std::min(bufsiz, App.size());
   }
 
-  auto Path = GetEmulatedPath(pathname);
+  Path = GetEmulatedPath(pathname);
   if (!Path.empty()) {
     uint64_t Result = ::readlinkat(dirfd, Path.c_str(), buf, bufsiz);
     if (Result != -1)

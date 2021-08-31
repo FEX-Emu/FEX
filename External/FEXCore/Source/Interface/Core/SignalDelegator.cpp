@@ -36,7 +36,7 @@ namespace FEXCore {
     sigemptyset(&SignalSet);
 
     if (Signal == -1) {
-      for (int i = 0; i < SignalDelegator::MAX_SIGNALS; ++i) {
+      for (int i = 0; i <= SignalDelegator::MAX_SIGNALS; ++i) {
         // If it is a synchronous signal then don't ignore it
         if (IsSynchronous(i)) {
           continue;

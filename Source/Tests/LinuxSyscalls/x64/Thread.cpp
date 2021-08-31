@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 
+#include <bits/types/siginfo_t.h>
 #include <bits/types/stack_t.h>
 #include <sched.h>
 #include <stddef.h>
@@ -86,47 +87,60 @@ namespace FEX::HLE::x64 {
       std::vector<const char*> Args;
       std::vector<const char*> Envp;
 
-      for (int i = 0; argv[i]; i++) {
-        Args.push_back(argv[i]);
+      if (argv) {
+        for (int i = 0; argv[i]; i++) {
+          Args.push_back(argv[i]);
+        }
+
+        Args.push_back(nullptr);
       }
 
-      Args.push_back(nullptr);
+      if (envp) {
+        for (int i = 0; envp[i]; i++) {
+          Envp.push_back(envp[i]);
+        }
 
-      for (int i = 0; envp[i]; i++) {
-        Envp.push_back(envp[i]);
+        Envp.push_back(nullptr);
       }
 
-      Envp.push_back(nullptr);
-
-      return FEX::HLE::ExecveHandler(pathname, Args, Envp, nullptr);
+      return FEX::HLE::ExecveHandler(pathname, argv ? const_cast<char* const*>(&Args.at(0)) : nullptr, envp ? const_cast<char* const*>(&Envp.at(0)) : nullptr, nullptr);
     });
 
     REGISTER_SYSCALL_IMPL_X64(execveat, ([](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags) -> uint64_t {
       std::vector<const char*> Args;
       std::vector<const char*> Envp;
 
-      for (int i = 0; argv[i]; i++) {
-        Args.push_back(argv[i]);
+      if (argv) {
+        for (int i = 0; argv[i]; i++) {
+          Args.push_back(argv[i]);
+        }
+
+        Args.push_back(nullptr);
       }
 
-      Args.push_back(nullptr);
+      if (envp) {
+        for (int i = 0; envp[i]; i++) {
+          Envp.push_back(envp[i]);
+        }
 
-      for (int i = 0; envp[i]; i++) {
-        Envp.push_back(envp[i]);
+        Envp.push_back(nullptr);
       }
-
-      Envp.push_back(nullptr);
 
       FEX::HLE::ExecveAtArgs AtArgs {
         .dirfd = dirfd,
         .flags = flags,
       };
 
-      return FEX::HLE::ExecveHandler(pathname, Args, Envp, &AtArgs);
+      return FEX::HLE::ExecveHandler(pathname, argv ? const_cast<char* const*>(&Args.at(0)) : nullptr, envp ? const_cast<char * const*>(&Envp.at(0)) : nullptr, &AtArgs);
     }));
 
     REGISTER_SYSCALL_IMPL_X64(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
       uint64_t Result = ::syscall(SYS_wait4, pid, wstatus, options, rusage);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, siginfo_t *infop, int options, struct rusage *rusage) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_waitid, which, upid, infop, options, rusage);
       SYSCALL_ERRNO();
     });
   }

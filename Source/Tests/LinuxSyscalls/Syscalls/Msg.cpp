@@ -32,6 +32,7 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
+    // XXX: msqid_ds is definitely not correct for 32-bit
     REGISTER_SYSCALL_IMPL(msgctl, [](FEXCore::Core::CpuStateFrame *Frame, int msqid, int cmd, struct msqid_ds *buf) -> uint64_t {
       uint64_t Result = ::msgctl(msqid, cmd, buf);
       SYSCALL_ERRNO();

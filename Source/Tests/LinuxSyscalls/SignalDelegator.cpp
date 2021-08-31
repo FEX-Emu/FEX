@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
+#include <atomic>
 #include <string.h>
 
 #include <errno.h>
@@ -62,7 +63,6 @@ namespace FEX::HLE {
     FEXCore::GuestSAMask PreviousSuspendMask{};
 
     uint64_t PendingSignals{};
-    bool Suspended {false};
   };
 
   thread_local ThreadState ThreadData{};
@@ -109,50 +109,15 @@ namespace FEX::HLE {
       }
     }
 
-    // Check the thread's current signal mask
-    if (SigIsMember(&ThreadData.CurrentSignalMask, Signal) != ThreadData.Suspended) {
-      ThreadData.PendingSignals |= 1ULL << (Signal - 1);
-      return;
-    }
-
-    if (ThreadData.Suspended) {
-      // If we were suspended then swap the mask back to the original
-      ThreadData.CurrentSignalMask = ThreadData.PreviousSuspendMask;
-      ThreadData.PreviousSuspendMask.Val = 0;
-      ThreadData.Suspended = false;
-    }
-
-    // OR in the sa_mask
-    ThreadData.CurrentSignalMask.Val |= ThreadData.Guest_sa_mask[Signal].Val;
-
-    // If NODEFER isn't set then also mask the current signal
-    if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
-      SetSignal(&ThreadData.CurrentSignalMask, Signal);
-    }
-
     // Remove the pending signal
     ThreadData.PendingSignals &= ~(1ULL << (Signal - 1));
 
     // We have an emulation thread pointer, we can now modify its state
     if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
-      if (Handler.DefaultBehaviour == DEFAULT_TERM) {
-        if (Thread->ThreadManager.clear_child_tid) {
-          std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
-          Addr->store(0);
-          syscall(SYS_futex,
-              Thread->ThreadManager.clear_child_tid,
-              FUTEX_WAKE,
-              ~0ULL,
-              0,
-              0,
-              0);
-        }
-
-        Thread->StatusCode = -Signal;
-
-        // Doesn't return
-        FEXCore::Context::StopThread(Thread->CTX, Thread);
-        std::terminate();
+      if (Handler.DefaultBehaviour == DEFAULT_TERM ||
+          Handler.DefaultBehaviour == DEFAULT_COREDUMP) {
+        // Let the signal fall through to the unhandled path
+        // This way the parent process can know it died correctly
       }
     }
     else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
@@ -237,6 +202,22 @@ namespace FEX::HLE {
       else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
         SignalHandler.HostAction.sa_mask |= (1ULL << (i - 1));
       }
+    }
+
+    // Check for SIG_IGN
+    if (SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN &&
+        HostHandlers[Signal].Required.load(std::memory_order_relaxed) == false) {
+      // We are ignoring this signal on the guest
+      // Which means we need to ignore it on the host as well
+      SignalHandler.HostAction.handler = SIG_IGN;
+    }
+
+    // Check for SIG_DFL
+    if (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL &&
+        HostHandlers[Signal].Required.load(std::memory_order_relaxed) == false) {
+      // Default handler on guest and default handler on host
+      // With coredump and terminate then expect fireworks, but that is what the guest wants
+      SignalHandler.HostAction.handler = SIG_DFL;
     }
 
     // Only update the old action if we haven't ever been installed
@@ -529,7 +510,6 @@ namespace FEX::HLE {
     ThreadData.PreviousSuspendMask = ThreadData.CurrentSignalMask;
     // Set the new mask
     ThreadData.CurrentSignalMask.Val = *set & IgnoredSignalsMask;
-    ThreadData.Suspended = true;
     sigset_t HostSet{};
 
     sigemptyset(&HostSet);
@@ -588,7 +568,7 @@ namespace FEX::HLE {
         continue;
       }
 
-      if (ThreadData.CurrentSignalMask.Val & (1ULL << i)) {
+      if (*set & (1ULL << i)) {
         sigaddset(&HostSet, i + 1);
       }
     }

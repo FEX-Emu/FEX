@@ -1,132 +1,5 @@
 # these fail on x86 CI
-getdents_test
-mlock_test
-mount_test
-proc_net_test
 proc_pid_oomscore_test
-read_test
-readv_test
-socket_inet_loopback_nogotsan_test
-socket_ipv4_udp_unbound_loopback_nogotsan_test
-socket_ipv6_udp_unbound_external_networking_test
-unlink_test
-inotify_test
-pread64_test
-syslog_test
-
-# these fail on x86 CI
-eventfd_test
-fault_test
-fpsig_fork_test
-mount_test
-partial_bad_buffer_test
-proc_net_test
-socket_inet_loopback_nogotsan_test
-socket_ipv4_udp_unbound_loopback_nogotsan_test
-socket_ipv6_udp_unbound_external_networking_test
-
-# these fail on arm CI
-fault_test
-fork_test
-fpsig_fork_test
-fpsig_nested_test
-mount_test
-proc_net_test
-sigiret_test
-socket_inet_loopback_nogotsan_test
-socket_ip_udp_loopback_test
-socket_ipv4_udp_unbound_loopback_nogotsan_test
-socket_ipv6_udp_unbound_external_networking_test
-
-# fail on arm64-8,2
-uname_test
-mempolicy_test
-
-# These fail in ARM64 CI
-eventfd_test
-fault_test
-fpsig_fork_test
-getdents_test
-mlock_test
-mount_test
-partial_bad_buffer_test
-proc_net_test
-proc_pid_oomscore_test
-read_test
-readv_test
-socket_inet_loopback_nogotsan_test
-socket_ipv4_udp_unbound_loopback_nogotsan_test
-socket_ipv6_udp_unbound_external_networking_test
-pread64_test
-syslog_test
-
-# these fail
-32bit_test
-access_test
-affinity_test
-aio_test
-alarm_test
-concurrency_test
-connect_external_test
-epoll_test
-exceptions_test
-exec_binary_test
-exec_test
-fcntl_test
-flock_test
-fork_test
-fpsig_nested_test
-futex_test
-getrusage_test
-inotify_test
-itimer_test
-mmap_test
-mount_test
-mremap_test
-open_create_test
-open_test
-pipe_test
-ppoll_test
-prctl_setuid_test
-prctl_test
-preadv2_test
-proc_net_test
-proc_test
-pselect_test
-ptrace_test
-pty_test
-pwritev2_test
-rseq_test
-rtsignal_test
-seccomp_test
-select_test
-semaphore_test
-sendfile_test
-sigaltstack_test
-sigiret_test
-signalfd_test
-sigprocmask_test
-sigstop_test
-sigtimedwait_test
-socket_bind_to_device_distribution_test
-socket_bind_to_device_sequence_test
-socket_bind_to_device_test
-socket_inet_loopback_nogotsan_test
-socket_inet_loopback_test
-socket_ip_tcp_generic_loopback_test
-socket_ipv4_udp_unbound_loopback_nogotsan_test
-socket_ipv4_udp_unbound_loopback_test
-socket_netlink_route_test
-socket_stress_test
-splice_test
-stat_test
-sysret_test
-tcp_socket_test
-timers_test
-tkill_test
-vfork_test
-wait_test
-xatttr_test
 
 # The behaviour of this is different between x86 and ARM
 # SIGSEGV kills a thread successfully on ARM but not on x86
@@ -138,42 +11,191 @@ kill_test
 
 # erratic test results
 xattr_test
-
-# these take a long time
-tcp_socket_test
-ppoll_test
-pipe_test
-socket_ipv4_udp_unbound_loopback_test
-pty_test
-flock_test
-futex_test
-socket_ip_tcp_generic_loopback_test
-
-# these timeout
-socket_inet_loopback_test
-epoll_test
-alarm_test
-concurrency_test
-socket_stress_test
-sigaltstack_test
-fcntl_test
+mlock_test
 
 # These used to crash and fail its test, now hang
-mmap_test
-mremap_test
-semaphore_test
+#mremap_test
 
 # these are flaky on x86
-itimer_test
 stat_times_test
 
-# The behaviour of this changes depending on if you have asserts enabled or not
-# siginfo_t with unsynchronized context
+# Spins forever
+ptrace_test
+
+# The behaviour of this test changes depending on if running inside the test harness or not
+# Works outside of the test harness but fails inside of it
 pause_test
 
-# ARMv8.4 periodically flakes on this one
-rtsignal_test
+# This takes advantage of CLONE_VM in a way that breaks FEX's TLS usage
+# Need to workaround this somehow
+aio_test
 
 # The Solidrun CI board isn't running a kernel with namespaces enabled
 # gvisor doesn't error check correctly in this case and returns hard failure instead of correctly exiting
 proc_pid_uid_gid_map_test
+
+# This test is expecting the kernel to update the timeout variable but by default the kernel keeps time outs "sticky"
+# See personality flag STICKY_TIMEOUTS
+select_test
+
+# This test uses syscalls that a userspace process doesn't have access to
+syslog_test
+
+# This very specifically is testing bad pointers passed in to the kernel to test EFAULT
+access_test
+sigprocmask_test
+
+# Relies on some utility executables to be installed
+exec_test
+
+# This relies on splice behaviour that doesn't work even on x86 host
+eventfd_test
+
+# Relies on tricky behaviour
+# MMapDeathTest.TruncateAfterCOWBreak : Needs to capture SIGBUS. Test fails, handwritten test works
+# MMapTest.ProtNoneDeath : Needs to capture SIGBUS. Test fails, handwritten test works
+# MMapTest.NoProtExecDeath : Needs to support SIGSEGV from memory mapped without PROT_EXEC but WITH READ + WRITE
+# NoExceedLimitData : Requires brk to respect RLIMIT_DATA
+mmap_test
+
+# Fails even on host x86 device
+# Expects the tmp folder to be empty and cleaned up between CI runs by a system process
+# Does tests that removes user priveleges to touch those files
+open_create_test
+
+# Fails even on host x86 device
+# Expects the /tmp folder to be cleaned up between INDIVIDUAL tests
+# OpenTest.OTrunc creates /tmp/truncd
+# OpenTest.OTruncAndReadOnlyDir attempts to create the same directory just afterwards
+# Neither clean up after themselves
+open_test
+
+# This test doesn't correctly check to see if seccomp is enabled
+# Attempts using regardless of enabled or not
+seccomp_test
+
+# Relies on ptrace to execute very simple binaries
+exec_binary_test
+
+# Relies on ptrace to send the parent process a signal
+prctl_test
+
+# Doesn't event pass on real x86 host
+# GetrusageTest.IgnoreSIGCHLD is expecting memory usage to be zero, but it isn't
+getrusage_test
+
+# Doesn't even pass on real x86 host
+sendfile_test
+
+# Does a couple of things we don't support currently
+# ForkTest.SigAltStack : Fork should inherit altstack
+# ForkTest.Affinity : Affinity masks should be inherited
+# CloneTest.NonCanonicalTLS : Non-Canonical TLS addresses should be rejecte with -EPERM
+fork_test
+
+# Requires accurate exit status from vfork
+# Which we currently don't achieve
+vfork_test
+
+# Doesn't even pass on real x86 host
+# ProcSelfFd.GetdentsDuplicates : Expects fcntl F_DUPFD, 1024 to work. Returns -1
+# ProcSelfFdInfo.GetdentsDuplicates : Same as above
+# ProcSelfAuxv.EntryPresence expects AT_SYSINFO_EHDR to exist. We don't support VDSO atm
+# ProcPidCmdline.SubprocessForkSameCmdline expects to read parent pid's /proc/{pid}/cmdline and get executable name. Expecting a match.
+# ProcPidExe.Subprocess : Same as above
+# ProcPidEnviron.MatchesEnviron Doesn't expect us injecting environment variables in to its container space
+proc_test
+
+# Doesn't even pass on real x86 host
+# Takes a long time to run as well
+pty_test
+
+# This syscall isn't implemented on ARM64
+mempolicy_test
+
+# Relies on namespaces to exist on the host (and user accessible) and isn't guaranteed by our CI
+prctl_setuid_test
+
+# This does 32-bit syscalls from a 64-bit process. Which we don't support yet
+32bit_test
+
+# We are lying to the guest application about true affinity. Missing some edges here
+affinity_test
+
+# Doesn't even pass on real x86 host
+# Uses some private sandbox socket system?
+# Seems like it needs some environment variables set that is google specific
+connect_external_test
+
+# Tests a bunch of different exception exits and we don't support them all
+exceptions_test
+
+# These search for folders in /
+# Sadly it finds the rootfs folders instead of the true rootfs and fails
+# Might need to rbind some folders to make it happy
+getdents_test
+
+# Doesn't even pass on real x86 host
+# Needs some helper executable to work
+sigaltstack_test
+
+# Sets up an alarm to fire every 500ms
+# Sets up rcx and r11 to a known good value
+# sets a boolean in memory and spins until the signal handler sets another boolean
+# Stores the resulting values to a memory address
+# Then checks to ensure the signal handler picked up the correct context values
+# Seems like FEX currently doesn't?
+sigiret_test
+
+# Doesn't even pass on real x86 host
+# This relies on splice behaviour that doesn't work even on x86 host
+# Hangs after failing
+splice_test
+
+# Relies on ptrace to run
+wait_test
+sysret_test
+
+# Has race conditions in the code and takes a long time to run
+tcp_socket_test
+
+# Doesn't even pass on real x86 host
+socket_bind_to_device_test
+socket_netlink_route_test
+socket_bind_to_device_distribution_test
+socket_bind_to_device_sequence_test
+socket_inet_loopback_nogotsan_test
+socket_ipv4_udp_unbound_loopback_nogotsan_test
+socket_ipv4_udp_unbound_loopback_test
+
+# This takes forever even on x86 host
+socket_inet_loopback_test
+socket_ip_tcp_generic_loopback_test
+socket_stress_test
+alarm_test
+itimer_test
+futex_test
+fcntl_test
+
+# these take a long time
+ppoll_test
+flock_test
+pipe_test
+epoll_test
+concurrency_test
+
+# This requires partial read support in the kernel
+# Tries reading a page's worth of bytes from an FD across a page with no permissions
+# Expecting a partial read to succeed
+# Arm64 devices don't have this
+partial_bad_buffer_test
+
+# Depending on board can work or not, depending on kernel configuration
+# IPv6 maybe?
+socket_ipv6_udp_unbound_external_networking_test
+
+# This test is flaky
+proc_net_test
+rtsignal_test
+sigstop_test
+stat_test

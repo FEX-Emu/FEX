@@ -180,9 +180,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   // siginfo_t
   siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
 
-  if (GuestAction->sa_flags & SA_SIGINFO &&
-      !(HostSigInfo->si_code == SI_QUEUE || // If the siginfo comes from sigqueue or user then we don't need to check
-        HostSigInfo->si_code == SI_USER)) {
+  if (GuestAction->sa_flags & SA_SIGINFO) {
 
     // Setup ucontext a bit
     if (Is64BitMode) {
@@ -388,6 +386,14 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
     LOGMAN_THROW_A(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
     Frame->State.gregs[FEXCore::X86State::REG_RSP] = NewGuestSP;
   }
+
+  // The guest starts its signal frame with a zero initialized FPU
+  // Set that up now. Little bit costly but it's a requirement
+  // This state will be restored on rt_sigreturn
+  memset(Frame->State.xmm, 0, sizeof(Frame->State.xmm));
+  memset(Frame->State.mm, 0, sizeof(Frame->State.mm));
+  Frame->State.FCW = 0x37F;
+  Frame->State.FTW = 0xFFFF;
 
   return true;
 }
