@@ -794,6 +794,9 @@ namespace FEXCore::IR {
         return (uint32_t)PhyReg.Class;
     };
 
+    // SpanStart/SpanEnd assume SSA id will fit in 24bits
+    LOGMAN_THROW_A(NodeCount <= 0xff'ffff, "Block too large for Spans");
+
     SpanStart.resize(NodeCount);
     SpanEnd.resize(NodeCount);
     for (uint32_t i = 0; i < NodeCount; ++i) {
