@@ -25,9 +25,12 @@ endforeach()
 
 execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
 string(STRIP ${CORES} CORES)
+set(RM_DIR_COMMAND "rm $ENV{ROOTFS}/tmp 2> /dev/null || true")
 
 add_custom_target(
   gvisor_tests
+  VERBATIM
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
+  COMMAND "sh" "-c" "${RM_DIR_COMMAND}"
   COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "\.*.gvisor$$")
