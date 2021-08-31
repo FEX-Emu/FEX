@@ -337,6 +337,56 @@ namespace FEX::HLE::x32 {
       return -EPERM;
     }
 
+    uint32_t VC4_Handler(int fd, uint32_t cmd, uint32_t args) {
+      switch (_IOC_NR(cmd)) {
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+      // DRM
+#include "Tests/LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
+        {
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
+          break;
+        }
+        default:
+          UnhandledIoctl("VC4", fd, cmd, args);
+          return -EPERM;
+          break;
+      }
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+      return -EPERM;
+    }
+
+    uint32_t V3D_Handler(int fd, uint32_t cmd, uint32_t args) {
+      switch (_IOC_NR(cmd)) {
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+      // DRM
+#include "Tests/LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
+        {
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
+          break;
+        }
+        default:
+          UnhandledIoctl("V3D", fd, cmd, args);
+          return -EPERM;
+          break;
+      }
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+      return -EPERM;
+    }
+
     void AssignDeviceTypeToFD(int fd, drm_version const &Version) {
       if (Version.name) {
         if (strcmp(Version.name, "amdgpu") == 0) {
@@ -356,6 +406,12 @@ namespace FEX::HLE::x32 {
         }
         else if (strcmp(Version.name, "lima") == 0) {
           FDToHandler.SetFDHandler(fd, Lima_Handler);
+        }
+        else if (strcmp(Version.name, "vc4") == 0) {
+          FDToHandler.SetFDHandler(fd, VC4_Handler);
+        }
+        else if (strcmp(Version.name, "v3d") == 0) {
+          FDToHandler.SetFDHandler(fd, V3D_Handler);
         }
         else {
           LogMan::Msg::E("Unknown DRM device: '%s'", Version.name);
@@ -509,6 +565,8 @@ namespace FEX::HLE::x32 {
 #include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
+#include "Tests/LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
+#include "Tests/LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
 
 #undef _BASIC_META
 #undef _BASIC_META_VAR

@@ -14,6 +14,8 @@
 #include <drm/panfrost_drm.h>
 #include <drm/msm_drm.h>
 #include <drm/nouveau_drm.h>
+#include <drm/vc4_drm.h>
+#include <drm/v3d_drm.h>
 #include <sys/ioctl.h>
 
 #define CPYT(x) val.x = x
@@ -923,6 +925,8 @@ struct drm_i915_gem_mmap_offset {
 #include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
+#include "Tests/LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
+#include "Tests/LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
 
 }
 #undef CPYT
