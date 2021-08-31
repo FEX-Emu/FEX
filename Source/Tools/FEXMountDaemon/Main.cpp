@@ -236,6 +236,14 @@ int main(int argc, char **argv, char **envp) {
     return -1;
   }
 
+  pid_t pid = fork();
+  if (pid != 0) {
+    // Parent is leaving to force this process to deparent itself
+    // This lets this process become the child of whatever the reaper parent is
+    // Do this up front so a FEXInterptreter instance doesn't erroneously pick up a SIGCHLD
+    return 0;
+  }
+
   const char *SquashFSPath = argv[1];
   const char *MountPath = argv[2];
   ParentPIDProcess = std::atoi(argv[3]);
@@ -276,7 +284,7 @@ int main(int argc, char **argv, char **envp) {
     return 0;
   }
 
-  pid_t pid = fork();
+  pid = fork();
   if (pid == 0) {
     // Child
     close(localfds[0]); // Close read side
