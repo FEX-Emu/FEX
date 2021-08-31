@@ -918,6 +918,70 @@ struct drm_i915_gem_mmap_offset {
 #endif
 }
 
+namespace VC4 {
+struct
+FEX_ANNOTATE("alias-x86_32-drm_vc4_perfmon_get_values")
+FEX_ANNOTATE("fex-match")
+fex_drm_vc4_perfmon_get_values {
+  uint32_t id;
+  compat_uint64_t values_ptr;
+
+  fex_drm_vc4_perfmon_get_values() = delete;
+
+  operator drm_vc4_perfmon_get_values() const {
+    drm_vc4_perfmon_get_values val{};
+    val.id = id;
+    val.values_ptr = values_ptr;
+    return val;
+  }
+  fex_drm_vc4_perfmon_get_values(drm_vc4_perfmon_get_values val) {
+    id = val.id;
+    values_ptr = val.values_ptr;
+  }
+};
+
+}
+
+namespace V3D {
+struct
+FEX_ANNOTATE("alias-x86_32-drm_v3d_submit_csd")
+FEX_ANNOTATE("fex-match")
+fex_drm_v3d_submit_csd {
+  uint32_t cfg[7];
+  uint32_t coef[4];
+
+  compat_uint64_t bo_handles;
+
+  uint32_t bo_handle_count;
+
+  uint32_t in_sync;
+
+  uint32_t out_sync;
+
+  fex_drm_v3d_submit_csd() = delete;
+
+  operator drm_v3d_submit_csd() const {
+    drm_v3d_submit_csd val{};
+    memcpy(val.cfg, cfg, sizeof(cfg));
+    memcpy(val.coef, coef, sizeof(coef));
+    val.bo_handles = bo_handles;
+    val.bo_handle_count = bo_handle_count;
+    val.in_sync = in_sync;
+    val.out_sync = out_sync;
+    return val;
+  }
+  fex_drm_v3d_submit_csd(drm_v3d_submit_csd val) {
+    memcpy(cfg, val.cfg, sizeof(cfg));
+    memcpy(coef, val.coef, sizeof(coef));
+    bo_handles = val.bo_handles;
+    bo_handle_count = val.bo_handle_count;
+    in_sync = val.in_sync;
+    out_sync = val.out_sync;
+  }
+};
+
+}
+
 #include "Tests/LinuxSyscalls/x32/Ioctl/drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/msm_drm.inl"

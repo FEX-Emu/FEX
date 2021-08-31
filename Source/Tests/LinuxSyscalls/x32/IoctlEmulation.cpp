@@ -339,6 +339,17 @@ namespace FEX::HLE::x32 {
 
     uint32_t VC4_Handler(int fd, uint32_t cmd, uint32_t args) {
       switch (_IOC_NR(cmd)) {
+        case _IOC_NR(FEX_DRM_IOCTL_VC4_PERFMON_GET_VALUES): {
+          FEX::HLE::x32::VC4::fex_drm_vc4_perfmon_get_values *val = reinterpret_cast<FEX::HLE::x32::VC4::fex_drm_vc4_perfmon_get_values*>(args);
+          drm_vc4_perfmon_get_values Host_val = *val;
+          uint64_t Result = ::ioctl(fd, DRM_IOCTL_VC4_PERFMON_GET_VALUES, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+
 #define _BASIC_META(x) case _IOC_NR(x):
 #define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
 #define _CUSTOM_META(name, ioctl_num)
@@ -364,6 +375,17 @@ namespace FEX::HLE::x32 {
 
     uint32_t V3D_Handler(int fd, uint32_t cmd, uint32_t args) {
       switch (_IOC_NR(cmd)) {
+        case _IOC_NR(FEX_DRM_IOCTL_V3D_SUBMIT_CSD): {
+          FEX::HLE::x32::V3D::fex_drm_v3d_submit_csd *val = reinterpret_cast<FEX::HLE::x32::V3D::fex_drm_v3d_submit_csd*>(args);
+          drm_v3d_submit_csd Host_val = *val;
+          uint64_t Result = ::ioctl(fd, DRM_IOCTL_V3D_SUBMIT_CSD, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+
 #define _BASIC_META(x) case _IOC_NR(x):
 #define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
 #define _CUSTOM_META(name, ioctl_num)
