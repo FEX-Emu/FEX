@@ -98,7 +98,7 @@ static uint64_t AtomicFetchNeg(uint64_t *Addr) {
 static uint8_t AtomicCompareAndSwap8(uint8_t expected, uint8_t desired, uint8_t *addr)
 {
   using Type = uint8_t;
-  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(Addr);
+  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(addr);
 
   Type Src1 = expected;
   Type Src2 = desired;
@@ -112,7 +112,7 @@ static uint8_t AtomicCompareAndSwap8(uint8_t expected, uint8_t desired, uint8_t 
 static uint16_t AtomicCompareAndSwap16(uint16_t expected, uint16_t desired, uint16_t *addr)
 {
   using Type = uint16_t;
-  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(Addr);
+  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(addr);
 
   Type Src1 = expected;
   Type Src2 = desired;
@@ -126,7 +126,7 @@ static uint16_t AtomicCompareAndSwap16(uint16_t expected, uint16_t desired, uint
 static uint32_t AtomicCompareAndSwap32(uint32_t expected, uint32_t desired, uint32_t *addr)
 {
   using Type = uint32_t;
-  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(Addr);
+  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(addr);
 
   Type Src1 = expected;
   Type Src2 = desired;
@@ -140,7 +140,7 @@ static uint32_t AtomicCompareAndSwap32(uint32_t expected, uint32_t desired, uint
 static uint64_t AtomicCompareAndSwap64(uint64_t expected, uint64_t desired, uint64_t *addr)
 {
   using Type = uint64_t;
-  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(Addr);
+  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(addr);
 
   Type Src1 = expected;
   Type Src2 = desired;
