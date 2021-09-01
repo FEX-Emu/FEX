@@ -95,57 +95,15 @@ static uint64_t AtomicFetchNeg(uint64_t *Addr) {
   return Expected;
 }
 
-static uint8_t AtomicCompareAndSwap8(uint8_t expected, uint8_t desired, uint8_t *addr)
+template<typename T>
+static T AtomicCompareAndSwap(T expected, T desired, T *addr)
 {
-  using Type = uint8_t;
-  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(addr);
+  std::atomic<T> *Data = reinterpret_cast<std::atomic<T>*>(addr);
 
-  Type Src1 = expected;
-  Type Src2 = desired;
+  T Src1 = expected;
+  T Src2 = desired;
 
-  Type Expected = Src1;
-  bool Result = Data->compare_exchange_strong(Expected, Src2);
-  
-  return Result ? Src1 : Expected;
-}
-
-static uint16_t AtomicCompareAndSwap16(uint16_t expected, uint16_t desired, uint16_t *addr)
-{
-  using Type = uint16_t;
-  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(addr);
-
-  Type Src1 = expected;
-  Type Src2 = desired;
-
-  Type Expected = Src1;
-  bool Result = Data->compare_exchange_strong(Expected, Src2);
-  
-  return Result ? Src1 : Expected;
-}
-
-static uint32_t AtomicCompareAndSwap32(uint32_t expected, uint32_t desired, uint32_t *addr)
-{
-  using Type = uint32_t;
-  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(addr);
-
-  Type Src1 = expected;
-  Type Src2 = desired;
-
-  Type Expected = Src1;
-  bool Result = Data->compare_exchange_strong(Expected, Src2);
-  
-  return Result ? Src1 : Expected;
-}
-
-static uint64_t AtomicCompareAndSwap64(uint64_t expected, uint64_t desired, uint64_t *addr)
-{
-  using Type = uint64_t;
-  std::atomic<Type> *Data = reinterpret_cast<std::atomic<Type>*>(addr);
-
-  Type Src1 = expected;
-  Type Src2 = desired;
-
-  Type Expected = Src1;
+  T Expected = Src1;
   bool Result = Data->compare_exchange_strong(Expected, Src2);
   
   return Result ? Src1 : Expected;
@@ -244,7 +202,11 @@ uint64_t AtomicFetchNeg(uint64_t *Addr) {
   return Result;
 }
 
-uint8_t AtomicCompareAndSwap8(uint8_t expected, uint8_t desired, uint8_t *addr) {
+template<typename T>
+static T AtomicCompareAndSwap(T expected, T desired, T *addr);
+
+template<>
+uint8_t AtomicCompareAndSwap(uint8_t expected, uint8_t desired, uint8_t *addr) {
   using Type = uint8_t;
   //force Result to r9 (scratch register) or clang spills to stack
   register Type Result asm("r9"){};
@@ -276,7 +238,8 @@ uint8_t AtomicCompareAndSwap8(uint8_t expected, uint8_t desired, uint8_t *addr) 
   return Result;
 }
 
-uint16_t AtomicCompareAndSwap16(uint16_t expected, uint16_t desired, uint16_t *addr) {
+template<>
+uint16_t AtomicCompareAndSwap(uint16_t expected, uint16_t desired, uint16_t *addr) {
   using Type = uint16_t;
   //force Result to r9 (scratch register) or clang spills to stack
   register Type Result asm("r9"){};
@@ -308,7 +271,8 @@ uint16_t AtomicCompareAndSwap16(uint16_t expected, uint16_t desired, uint16_t *a
   return Result;
 }
 
-uint32_t AtomicCompareAndSwap32(uint32_t expected, uint32_t desired, uint32_t *addr) {
+template<>
+uint32_t AtomicCompareAndSwap(uint32_t expected, uint32_t desired, uint32_t *addr) {
   using Type = uint32_t;
   //force Result to r9 (scratch register) or clang spills to stack
   register Type Result asm("r9"){};
@@ -340,7 +304,8 @@ uint32_t AtomicCompareAndSwap32(uint32_t expected, uint32_t desired, uint32_t *a
   return Result;
 }
 
-uint64_t AtomicCompareAndSwap64(uint64_t expected, uint64_t desired, uint64_t *addr) {
+template<>
+uint64_t AtomicCompareAndSwap(uint64_t expected, uint64_t desired, uint64_t *addr) {
   using Type = uint64_t;
   //force Result to r9 (scratch register) or clang spills to stack
   register Type Result asm("r9"){};
@@ -2384,7 +2349,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             auto Size = OpSize;
             switch (Size) {
               case 1: {
-                GD = AtomicCompareAndSwap8(
+                GD = AtomicCompareAndSwap(
                   *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]), 
                   *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]),
                   *GetSrc<uint8_t**>(SSAData, Op->Header.Args[2])
@@ -2392,7 +2357,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 break;
               }
               case 2: {
-                GD = AtomicCompareAndSwap16(
+                GD = AtomicCompareAndSwap(
                   *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]), 
                   *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]),
                   *GetSrc<uint16_t**>(SSAData, Op->Header.Args[2])
@@ -2400,7 +2365,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 break;
               }
               case 4: {
-                GD = AtomicCompareAndSwap32(
+                GD = AtomicCompareAndSwap(
                   *GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]), 
                   *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]),
                   *GetSrc<uint32_t**>(SSAData, Op->Header.Args[2])
@@ -2408,7 +2373,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 break;
               }
               case 8: {
-                GD = AtomicCompareAndSwap64(
+                GD = AtomicCompareAndSwap(
                   *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]), 
                   *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]),
                   *GetSrc<uint64_t**>(SSAData, Op->Header.Args[2])
