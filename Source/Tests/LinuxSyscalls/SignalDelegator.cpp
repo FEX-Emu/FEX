@@ -405,7 +405,8 @@ namespace FEX::HLE {
 
       // We need to check for invalid flags
       // The only flag that can be passed is SS_AUTODISARM and SS_DISABLE
-      if (ss->ss_flags & ~(SS_AUTODISARM | SS_DISABLE)) {
+      if ((ss->ss_flags & ~SS_ONSTACK) & // SS_ONSTACK is ignored
+          ~(SS_AUTODISARM | SS_DISABLE)) {
         // A flag remained that isn't one of the supported ones?
         return -EINVAL;
       }
