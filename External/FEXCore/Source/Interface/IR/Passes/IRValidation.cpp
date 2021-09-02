@@ -6,8 +6,8 @@ $end_info$
 */
 
 #include "Interface/IR/PassManager.h"
+#include "Interface/IR/Passes/IRValidation.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
-#include "Common/BitSet.h"
 
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
@@ -24,26 +24,8 @@ $end_info$
 #include <utility>
 #include <vector>
 
-namespace {
-  struct BlockInfo {
-    bool HasExit;
-
-    std::vector<FEXCore::IR::OrderedNode const*> Predecessors;
-    std::vector<FEXCore::IR::OrderedNode const*> Successors;
-  };
-}
-
 namespace FEXCore::IR::Validation {
 
-class IRValidation final : public FEXCore::IR::Pass {
-public:
-  ~IRValidation();
-  bool Run(IREmitter *IREmit) override;
-
-private:
-  BitSet<uint64_t> NodeIsLive;
-  size_t MaxNodes{};
-};
 
 IRValidation::~IRValidation() {
   NodeIsLive.Free();
@@ -53,11 +35,13 @@ bool IRValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   bool HadWarning = false;
 
-  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
-  auto CurrentIR = IREmit->ViewIR();
-
   std::ostringstream Errors;
   std::ostringstream Warnings;
+
+  auto CurrentIR = IREmit->ViewIR();
+
+  OffsetToBlockMap.clear();
+  EntryBlock = nullptr;
 
   if (CurrentIR.GetSSACount() > MaxNodes) {
     NodeIsLive.Realloc(CurrentIR.GetSSACount());
@@ -81,9 +65,14 @@ bool IRValidation::Run(IREmitter *IREmit) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
+    if (!EntryBlock) {
+      EntryBlock = BlockNode;
+    }
+
     uint32_t BlockID = CurrentIR.GetID(BlockNode);
 
     BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockID).first->second;
+
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       uint32_t ID = CurrentIR.GetID(CodeNode);
@@ -292,6 +281,11 @@ bool IRValidation::Run(IREmitter *IREmit) {
     }
 
     LogMan::Msg::EFmt("{}", Out.str());
+
+    LOGMAN_MSG_A("Encountered IR validation Error");
+
+    Errors.clear();
+    Warnings.clear();
   }
 
   return false;

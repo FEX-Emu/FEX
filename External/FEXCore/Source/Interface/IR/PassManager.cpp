@@ -54,7 +54,8 @@ void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllo
 void PassManager::AddDefaultValidationPasses() {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   InsertValidationPass(Validation::CreatePhiValidation());
-  InsertValidationPass(Validation::CreateIRValidation());
+  InsertValidationPass(Validation::CreateIRValidation(), "IRValidation");
+  InsertValidationPass(Validation::CreateRAValidation());
   InsertValidationPass(Validation::CreateValueDominanceValidation());
 #endif
 }
