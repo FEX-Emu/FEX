@@ -184,20 +184,27 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
     // Setup ucontext a bit
     if (Is64BitMode) {
+      NewGuestSP -= sizeof(FEXCore::x86_64::_libc_fpstate);
+      NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86_64::_libc_fpstate));
+      uint64_t FPStateLocation = NewGuestSP;
+
       NewGuestSP -= sizeof(FEXCore::x86_64::ucontext_t);
+      NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86_64::ucontext_t));
       uint64_t UContextLocation = NewGuestSP;
 
       NewGuestSP -= sizeof(siginfo_t);
+      NewGuestSP = AlignDown(NewGuestSP, alignof(siginfo_t));
       uint64_t SigInfoLocation = NewGuestSP;
 
       FEXCore::x86_64::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(UContextLocation);
       siginfo_t *guest_siginfo = reinterpret_cast<siginfo_t*>(SigInfoLocation);
 
       // We have extended float information
-      guest_uctx->uc_flags |= FEXCore::x86_64::UC_FP_XSTATE;
+      guest_uctx->uc_flags = FEXCore::x86_64::UC_FP_XSTATE;
 
       // Pointer to where the fpreg memory is
-      guest_uctx->uc_mcontext.fpregs = &guest_uctx->__fpregs_mem;
+      guest_uctx->uc_mcontext.fpregs = reinterpret_cast<FEXCore::x86_64::_libc_fpstate*>(FPStateLocation);
+      FEXCore::x86_64::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86_64::_libc_fpstate*>(FPStateLocation);
 
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = Frame->State.rip;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = 0;
@@ -228,15 +235,15 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 #undef COPY_REG
 
       // Copy float registers
-      memcpy(guest_uctx->__fpregs_mem._st, Frame->State.mm, sizeof(Frame->State.mm));
-      memcpy(guest_uctx->__fpregs_mem._xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
+      memcpy(fpstate->_st, Frame->State.mm, sizeof(Frame->State.mm));
+      memcpy(fpstate->_xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
 
       // FCW store default
-      guest_uctx->__fpregs_mem.fcw = Frame->State.FCW;
-      guest_uctx->__fpregs_mem.ftw = Frame->State.FTW;
+      fpstate->fcw = Frame->State.FCW;
+      fpstate->ftw = Frame->State.FTW;
 
       // Reconstruct FSW
-      guest_uctx->__fpregs_mem.fsw =
+      fpstate->fsw =
         (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
         (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
         (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
@@ -257,20 +264,27 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       Frame->State.gregs[X86State::REG_RDX] = UContextLocation;
     }
     else {
-      // XXX: 32bit Support
+      NewGuestSP -= sizeof(FEXCore::x86::_libc_fpstate);
+      NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86::_libc_fpstate));
+      uint64_t FPStateLocation = NewGuestSP;
+
       NewGuestSP -= sizeof(FEXCore::x86::ucontext_t);
+      NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86::ucontext_t));
       uint64_t UContextLocation = NewGuestSP;
+
       NewGuestSP -= sizeof(FEXCore::x86::siginfo_t);
+      NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86::siginfo_t));
       uint64_t SigInfoLocation = NewGuestSP;
 
       FEXCore::x86::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86::ucontext_t*>(UContextLocation);
       FEXCore::x86::siginfo_t *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(SigInfoLocation);
 
       // We have extended float information
-      guest_uctx->uc_flags |= FEXCore::x86::UC_FP_XSTATE;
+      guest_uctx->uc_flags = FEXCore::x86::UC_FP_XSTATE;
 
       // Pointer to where the fpreg memory is
-      guest_uctx->uc_mcontext.fpregs = static_cast<uint32_t>(reinterpret_cast<uint64_t>(&guest_uctx->__fpregs_mem));
+      guest_uctx->uc_mcontext.fpregs = static_cast<uint32_t>(FPStateLocation);
+      FEXCore::x86::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86::_libc_fpstate*>(FPStateLocation);
 
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS] = Frame->State.gs;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS] = Frame->State.fs;
@@ -297,20 +311,20 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 #undef COPY_REG
 
       // Copy float registers
-      memcpy(guest_uctx->__fpregs_mem._st, Frame->State.mm, sizeof(Frame->State.mm));
-      if (0) {
-        // XXX: Handle XMM
-        // memcpy(guest_uctx->__fpregs_mem._xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
-        guest_uctx->__fpregs_mem.status = FEXCore::x86::fpstate_magic::MAGIC_XFPSTATE;
+      for (size_t i = 0; i < 8; ++i) {
+        // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
+        memcpy(&fpstate->_st[i], &Frame->State.mm[i], 10);
       }
-      else {
-        guest_uctx->__fpregs_mem.status = FEXCore::x86::fpstate_magic::MAGIC_FPU;
-      }
+
+      // Extended XMM state
+      fpstate->status = FEXCore::x86::fpstate_magic::MAGIC_XFPSTATE;
+      memcpy(fpstate->_xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
+
       // FCW store default
-      guest_uctx->__fpregs_mem.fcw = Frame->State.FCW;
-      guest_uctx->__fpregs_mem.ftw = Frame->State.FTW;
+      fpstate->fcw = Frame->State.FCW;
+      fpstate->ftw = Frame->State.FTW;
       // Reconstruct FSW
-      guest_uctx->__fpregs_mem.fsw =
+      fpstate->fsw =
         (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
         (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
         (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
@@ -347,9 +361,14 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
           guest_siginfo->_sifields._sigchld.utime = HostSigInfo->si_utime;
           guest_siginfo->_sifields._sigchld.stime = HostSigInfo->si_stime;
           break;
+        case SIGALRM:
+        case SIGVTALRM:
+          guest_siginfo->_sifields._timer.tid = HostSigInfo->si_timerid;
+          guest_siginfo->_sifields._timer.overrun = HostSigInfo->si_overrun;
+          guest_siginfo->_sifields._timer.sigval.sival_int = HostSigInfo->si_int;
+          break;
         default:
-          // Hope for the best, most things just copy over
-          memcpy(&guest_siginfo->_sifields, &HostSigInfo->_sifields, sizeof(siginfo_t));
+          LogMan::Msg::E("Unhandled siginfo_t for signal: %d\n", Signal);
           break;
       }
 

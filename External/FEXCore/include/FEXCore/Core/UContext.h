@@ -86,12 +86,10 @@ namespace FEXCore {
       FEXCore::x86_64::stack_t uc_stack;
       FEXCore::x86_64::mcontext_t uc_mcontext;
       FEXCore::x86_64::sigset_t uc_sigmask;
-      FEXCore::x86_64::_libc_fpstate __fpregs_mem;
-      uint64_t __ssp[4];
     };
     static_assert(offsetof(FEXCore::x86_64::ucontext_t, uc_mcontext) == 40, "Needs to be correct");
 
-    static_assert(sizeof(FEXCore::x86_64::ucontext_t) == 968, "This needs to be the right size");
+    static_assert(sizeof(FEXCore::x86_64::ucontext_t) == 424, "This needs to be the right size");
   }
 
   namespace x86 {
@@ -123,6 +121,11 @@ namespace FEXCore {
     };
     static_assert(FEX_REG_SS == 18, "Oops");
 
+    union sigval_t {
+      int sival_int;
+      uint32_t sival_ptr; // XXX: Should be compat_ptr<void>
+    };
+
     struct FEX_PACKED siginfo_t {
       int si_signo;
       int si_errno;
@@ -141,6 +144,12 @@ namespace FEXCore {
           int32_t utime;
           int32_t stime;
         } _sigchld;
+        /* SIGALRM, SIGVTALRM */
+        struct {
+          int tid;
+          int overrun;
+          FEXCore::x86::sigval_t sigval;
+        } _timer;
       } _sifields;
     };
     static_assert(sizeof(FEXCore::x86::siginfo_t) == 128, "This needs to be the right size");
@@ -183,8 +192,17 @@ namespace FEXCore {
       uint32_t datasel;
       FEXCore::x86::_libc_fpreg _st[8];
       uint32_t status;
+
+      // Extended FPU data
+      uint32_t pad[6]; // Ignored FXSR data
+      uint32_t mxcsr;
+      uint32_t reserved;
+      __uint128_t _st_pad[8]; // Ignored st data
+      __uint128_t _xmm[8]; // First 8 XMM registers
+      uint32_t pad2[44]; // Second 8 XMM registers plus padding
+      uint32_t pad3[12]; // extended state encoding
     };
-    static_assert(sizeof(FEXCore::x86::_libc_fpstate) == 112, "This needs to be the right size");
+    static_assert(sizeof(FEXCore::x86::_libc_fpstate) == 624, "This needs to be the right size");
 
     struct FEX_PACKED ucontext_t {
       uint32_t uc_flags;
@@ -192,10 +210,8 @@ namespace FEXCore {
       FEXCore::x86::stack_t uc_stack;
       FEXCore::x86::mcontext_t uc_mcontext;
       FEXCore::x86_64::sigset_t uc_sigmask; // This matches across architectures
-      FEXCore::x86::_libc_fpstate __fpregs_mem;
-      uint32_t __ssp[4];
     };
-    static_assert(sizeof(FEXCore::x86::ucontext_t) == 364, "This needs to be the right size");
+    static_assert(sizeof(FEXCore::x86::ucontext_t) == 236, "This needs to be the right size");
 
   }
 }
