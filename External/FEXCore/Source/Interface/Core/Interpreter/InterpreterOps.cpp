@@ -94,6 +94,20 @@ static uint64_t AtomicFetchNeg(uint64_t *Addr) {
 
   return Expected;
 }
+
+template<typename T>
+static T AtomicCompareAndSwap(T expected, T desired, T *addr)
+{
+  std::atomic<T> *Data = reinterpret_cast<std::atomic<T>*>(addr);
+
+  T Src1 = expected;
+  T Src2 = desired;
+
+  T Expected = Src1;
+  bool Result = Data->compare_exchange_strong(Expected, Src2);
+  
+  return Result ? Src1 : Expected;
+}
 #else
 // Needs to match what the AArch64 JIT and unaligned signal handler expects
 uint8_t AtomicFetchNeg(uint8_t *Addr) {
@@ -183,6 +197,141 @@ uint64_t AtomicFetchNeg(uint64_t *Addr) {
   , [Tmp] "=r" (Tmp)
   , [TmpStatus] "=r" (TmpStatus)
   , [Memory] "+r" (Addr)
+  :: "memory"
+  );
+  return Result;
+}
+
+template<typename T>
+static T AtomicCompareAndSwap(T expected, T desired, T *addr);
+
+template<>
+uint8_t AtomicCompareAndSwap(uint8_t expected, uint8_t desired, uint8_t *addr) {
+  using Type = uint8_t;
+  //force Result to r9 (scratch register) or clang spills to stack
+  register Type Result asm("r9"){};
+  Type Tmp{};
+  Type Tmp2{};
+  __asm__ volatile(
+  R"(
+  1:
+    ldaxrb %w[Tmp], [%[Memory]];
+    cmp %w[Tmp], %w[Expected], uxtb;
+    b.ne 2f;
+    stlxrb %w[Tmp2], %w[Desired], [%[Memory]];
+    cbnz %w[Tmp2], 1b;
+    mov %w[Result], %w[Expected];
+    b 3f;
+  2:
+    mov %w[Result], %w[Tmp];
+    clrex;
+  3:
+  )"
+  : [Tmp] "=r" (Tmp)
+  , [Tmp2] "=r" (Tmp2)
+  , [Desired] "+r" (desired)
+  , [Expected] "+r" (expected)
+  , [Result] "=r" (Result)
+  , [Memory] "+r" (addr)
+  :: "memory"
+  );
+  return Result;
+}
+
+template<>
+uint16_t AtomicCompareAndSwap(uint16_t expected, uint16_t desired, uint16_t *addr) {
+  using Type = uint16_t;
+  //force Result to r9 (scratch register) or clang spills to stack
+  register Type Result asm("r9"){};
+  Type Tmp{};
+  Type Tmp2{};
+  __asm__ volatile(
+  R"(
+  1:
+    ldaxrh %w[Tmp], [%[Memory]];
+    cmp %w[Tmp], %w[Expected], uxth;
+    b.ne 2f;
+    stlxrh %w[Tmp2], %w[Desired], [%[Memory]];
+    cbnz %w[Tmp2], 1b;
+    mov %w[Result], %w[Expected];
+    b 3f;
+  2:
+    mov %w[Result], %w[Tmp];
+    clrex;
+  3:
+  )"
+  : [Tmp] "=r" (Tmp)
+  , [Tmp2] "=r" (Tmp2)
+  , [Desired] "+r" (desired)
+  , [Expected] "+r" (expected)
+  , [Result] "=r" (Result)
+  , [Memory] "+r" (addr)
+  :: "memory"
+  );
+  return Result;
+}
+
+template<>
+uint32_t AtomicCompareAndSwap(uint32_t expected, uint32_t desired, uint32_t *addr) {
+  using Type = uint32_t;
+  //force Result to r9 (scratch register) or clang spills to stack
+  register Type Result asm("r9"){};
+  Type Tmp{};
+  Type Tmp2{};
+  __asm__ volatile(
+  R"(
+  1:
+    ldaxr %w[Tmp], [%[Memory]];
+    cmp %w[Tmp], %w[Expected];
+    b.ne 2f;
+    stlxr %w[Tmp2], %w[Desired], [%[Memory]];
+    cbnz %w[Tmp2], 1b;
+    mov %w[Result], %w[Expected];
+    b 3f;
+  2:
+    mov %w[Result], %w[Tmp];
+    clrex;
+  3:
+  )"
+  : [Tmp] "=r" (Tmp)
+  , [Tmp2] "=r" (Tmp2)
+  , [Desired] "+r" (desired)
+  , [Expected] "+r" (expected)
+  , [Result] "=r" (Result)
+  , [Memory] "+r" (addr)
+  :: "memory"
+  );
+  return Result;
+}
+
+template<>
+uint64_t AtomicCompareAndSwap(uint64_t expected, uint64_t desired, uint64_t *addr) {
+  using Type = uint64_t;
+  //force Result to r9 (scratch register) or clang spills to stack
+  register Type Result asm("r9"){};
+  Type Tmp{};
+  Type Tmp2{};
+  __asm__ volatile(
+  R"(
+  1:
+    ldaxr %[Tmp], [%[Memory]];
+    cmp %[Tmp], %[Expected];
+    b.ne 2f;
+    stlxr %w[Tmp2], %[Desired], [%[Memory]];
+    cbnz %w[Tmp2], 1b;
+    mov %[Result], %[Expected];
+    b 3f;
+  2:
+    mov %[Result], %[Tmp];
+    clrex;
+  3:
+  )"
+  : [Tmp] "=r" (Tmp)
+  , [Tmp2] "=r" (Tmp2)
+  , [Desired] "+r" (desired)
+  , [Expected] "+r" (expected)
+  , [Result] "=r" (Result)
+  , [Memory] "+r" (addr)
   :: "memory"
   );
   return Result;
@@ -2200,46 +2349,35 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             auto Size = OpSize;
             switch (Size) {
               case 1: {
-                std::atomic<uint8_t> *Data = *GetSrc<std::atomic<uint8_t> **>(SSAData, Op->Header.Args[2]);
-
-                uint8_t Src1 = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]);
-                uint8_t Src2 = *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]);
-
-                uint8_t Expected = Src1;
-                bool Result = Data->compare_exchange_strong(Expected, Src2);
-                GD = Result ? Src1 : Expected;
+                GD = AtomicCompareAndSwap(
+                  *GetSrc<uint8_t*>(SSAData, Op->Header.Args[0]), 
+                  *GetSrc<uint8_t*>(SSAData, Op->Header.Args[1]),
+                  *GetSrc<uint8_t**>(SSAData, Op->Header.Args[2])
+                );
                 break;
               }
               case 2: {
-                std::atomic<uint16_t> *Data = *GetSrc<std::atomic<uint16_t> **>(SSAData, Op->Header.Args[2]);
-                uint16_t Src1 = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]);
-                uint16_t Src2 = *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]);
-
-                uint16_t Expected = Src1;
-                bool Result = Data->compare_exchange_strong(Expected, Src2);
-                GD = Result ? Src1 : Expected;
+                GD = AtomicCompareAndSwap(
+                  *GetSrc<uint16_t*>(SSAData, Op->Header.Args[0]), 
+                  *GetSrc<uint16_t*>(SSAData, Op->Header.Args[1]),
+                  *GetSrc<uint16_t**>(SSAData, Op->Header.Args[2])
+                );
                 break;
               }
               case 4: {
-                std::atomic<uint32_t> *Data = *GetSrc<std::atomic<uint32_t> **>(SSAData, Op->Header.Args[2]);
-
-                uint32_t Src1 = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]);
-                uint32_t Src2 = *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]);
-
-                uint32_t Expected = Src1;
-                bool Result = Data->compare_exchange_strong(Expected, Src2);
-                GD = Result ? Src1 : Expected;
+                GD = AtomicCompareAndSwap(
+                  *GetSrc<uint32_t*>(SSAData, Op->Header.Args[0]), 
+                  *GetSrc<uint32_t*>(SSAData, Op->Header.Args[1]),
+                  *GetSrc<uint32_t**>(SSAData, Op->Header.Args[2])
+                );
                 break;
               }
               case 8: {
-                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[2]);
-
-                uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-                uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
-
-                uint64_t Expected = Src1;
-                bool Result = Data->compare_exchange_strong(Expected, Src2);
-                GD = Result ? Src1 : Expected;
+                GD = AtomicCompareAndSwap(
+                  *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]), 
+                  *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]),
+                  *GetSrc<uint64_t**>(SSAData, Op->Header.Args[2])
+                );
                 break;
               }
               default: LOGMAN_MSG_A_FMT("Unknown CAS size: {}", Size); break;

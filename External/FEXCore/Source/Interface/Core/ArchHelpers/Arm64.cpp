@@ -1123,20 +1123,9 @@ uint64_t DoCAS64(
   }
 }
 
-bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
+static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg) {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return false;
-  }
-
-  uint32_t Size = 1 << (Instr >> 30);
-
-  uint32_t DesiredReg = Instr & 0b11111;
-  uint32_t ExpectedReg = (Instr >> 16) & 0b11111;
-  uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
   uint64_t Addr = mcontext->regs[AddressReg];
 
@@ -1215,6 +1204,23 @@ bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
   }
 
   return false;
+}
+
+bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+
+  if (info->si_code != BUS_ADRALN) {
+    // This only handles alignment problems
+    return false;
+  }
+
+  uint32_t Size = 1 << (Instr >> 30);
+
+  uint32_t DesiredReg = Instr & 0b11111;
+  uint32_t ExpectedReg = (Instr >> 16) & 0b11111;
+  uint32_t AddressReg = (Instr >> 5) & 0b11111;
+  return RunCASAL(_ucontext, _info, Size, DesiredReg, ExpectedReg, AddressReg);
 }
 
 bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
@@ -1559,6 +1565,53 @@ bool HandleAtomicLoad128(void *_ucontext, void *_info, uint32_t Instr) {
   return true;
 }
 
+static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
+{
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+  
+  // ARMv8.0 CAS
+  // [1] ldaxrb(TMP2.W(), MemOperand(MemSrc))
+  // [2] cmp (TMP2.W(), Expected.W())
+  // [3] b
+  // [4] stlxrb(TMP3.W(), Desired.W(), MemOperand(MemSrc)
+  // [5] cbnz
+  // [6] mov
+  // [7] b
+  // [8] mov (.., TMP2.W());
+  // [9] clrex
+  
+  uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
+  uint32_t Instr = PC[0];
+  uint32_t Size = 1 << (Instr >> 30);
+  uint32_t AddressReg = GetRnReg(Instr);
+  uint32_t ResultReg = GetRdReg(Instr); //TMP2 
+  uint32_t DesiredReg = 0;
+  uint32_t ExpectedReg = 0;
+  for (size_t i = 1; i < 6; ++i) {
+     uint32_t NextInstr = PC[i];
+     if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXR_MASK) == FEXCore::ArchHelpers::Arm64::STLXR_INST) {
+       #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+       // Just double check that the memory destination matches
+       uint32_t StoreAddressReg = GetRnReg(NextInstr);
+       LOGMAN_THROW_A(StoreAddressReg == AddressReg, "StoreExclusive memory register didn't match the store exclusive register");
+       #endif
+       DesiredReg = GetRdReg(NextInstr);
+     }
+     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST) {
+       ExpectedReg = GetRmReg(NextInstr);
+     }
+  }
+  //set up CASAL by doing mov(TMP2, Expected)
+  mcontext->regs[ResultReg] = mcontext->regs[ExpectedReg];
+  
+  if(RunCASAL(_ucontext, _info, Size, DesiredReg, ResultReg, AddressReg)) {
+    return 7 * sizeof(uint32_t); //jump to mov to allocated register
+  } else {
+    return 0;
+  }
+}
+
 uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
@@ -1642,6 +1695,9 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         AtomicOp = ExclusiveAtomicPairType::TYPE_SUB;
       }
       DataSourceReg = GetRmReg(NextInstr);
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST) {
+    	return HandleCAS_NoAtomics(_ucontext, _info); //ARMv8.0 CAS
     }
     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::AND_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_AND;

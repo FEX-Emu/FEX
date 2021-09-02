@@ -30,6 +30,7 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t ALU_OP_MASK = 0x7F'00'00'00;
   constexpr uint32_t ADD_INST    = 0x0B'00'00'00;
   constexpr uint32_t SUB_INST    = 0x4B'00'00'00;
+  constexpr uint32_t CMP_INST    = 0x6B'00'00'00;
   constexpr uint32_t AND_INST    = 0x0A'00'00'00;
   constexpr uint32_t OR_INST     = 0x2A'00'00'00;
   constexpr uint32_t EOR_INST    = 0x4A'00'00'00;
