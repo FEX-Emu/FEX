@@ -174,9 +174,10 @@ namespace FEX::HLE {
     // Now install the thunk handler
     SignalHandler.HostAction.sigaction = SignalHandlerThunk;
 
-    if (SignalHandler.GuestAction.sa_flags & SA_NODEFER) {
-      // If the guest is using NODEFER then make sure to set it for the host as well
-      SignalHandler.HostAction.sa_flags |= SA_NODEFER;
+    if ((SignalHandler.HostAction.sa_flags ^ SignalHandler.GuestAction.sa_flags) & SA_NODEFER) {
+      // If the guest is using SA_NODEFER then make sure to set it for the host as well
+      SignalHandler.HostAction.sa_flags &= ~SA_NODEFER;
+      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_NODEFER;
     }
 
     if ((SignalHandler.HostAction.sa_flags ^ SignalHandler.GuestAction.sa_flags) & SA_RESTART) {
