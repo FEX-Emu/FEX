@@ -17,6 +17,7 @@ $end_info$
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
+#include <sys/time.h>
 #include <sys/uio.h>
 #include <time.h>
 #include <type_traits>
@@ -161,6 +162,39 @@ timeval32 {
 
 static_assert(std::is_trivial<timeval32>::value, "Needs to be trivial");
 static_assert(sizeof(timeval32) == 8, "Incorrect size");
+
+/**
+ * @name itimerval32
+ *
+ * This is a itimerval implementation that matches 32bit linux implementation
+ * Provides conversation operators for the host version
+ * @{ */
+
+struct
+FEX_ANNOTATE("alias-x86_32-itimerval")
+FEX_ANNOTATE("fex-match")
+itimerval32 {
+  FEX::HLE::x32::timeval32 it_interval;
+  FEX::HLE::x32::timeval32 it_value;
+
+  itimerval32() = delete;
+
+  operator itimerval() const {
+    itimerval spec{};
+    spec.it_interval = it_interval;
+    spec.it_value = it_value;
+    return spec;
+  }
+
+  itimerval32(struct itimerval spec)
+    : it_interval { spec.it_interval }
+    , it_value { spec.it_value } {
+  }
+};
+/**  @} */
+
+static_assert(std::is_trivial<itimerval32>::value, "Needs to be trivial");
+static_assert(sizeof(itimerval32) == 16, "Incorrect size");
 
 /**
  * @name iovec32

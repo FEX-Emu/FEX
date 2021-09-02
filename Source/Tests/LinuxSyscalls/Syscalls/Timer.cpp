@@ -48,15 +48,5 @@ namespace FEX::HLE {
       uint64_t Result = ::syscall(SYS_timer_delete, timerid);
       SYSCALL_ERRNO();
     });
-
-    REGISTER_SYSCALL_IMPL(getitimer, [](FEXCore::Core::CpuStateFrame *Frame, int which, struct itimerval *curr_value) -> uint64_t {
-      uint64_t Result = ::getitimer(which, curr_value);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(setitimer, [](FEXCore::Core::CpuStateFrame *Frame, int which, const struct itimerval *new_value, struct itimerval *old_value) -> uint64_t {
-      uint64_t Result = ::setitimer(which, new_value, old_value);
-      SYSCALL_ERRNO();
-    });
   }
 }
