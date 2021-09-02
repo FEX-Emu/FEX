@@ -23,19 +23,25 @@ namespace {
 static std::atomic<bool> ForceShutdown{};
 static std::atomic<bool> ParentShuttingDown{};
 static int ParentPIDProcess{};
+static int pipe_wr{};
 
 void ActionHandler(int sig, siginfo_t *info, void *context) {
-  if (sig == SIGUSR1 &&
-      info->si_pid == ParentPIDProcess) {
-    // Begin shutdown sequence
-    ParentShuttingDown = true;
-  }
-  else if (sig == SIGCHLD) {
+  if (sig == SIGCHLD) {
     if (!ParentShuttingDown.load()) {
-      // If our child process shutdown while our parent is still running
-      // Then the parent loses its rootfs and problems occur
-      fprintf(stderr, "FEXMountDaemon child process from squashfuse has closed\n");
-      fprintf(stderr, "Expect errors!\n");
+      // Check the pipe to see if it is closed
+
+      uint64_t c = 0;
+      if (write(pipe_wr, &c, sizeof(c)) == -1 &&
+          errno == EPIPE) {
+        // The pipe is closed, which means the parent no longer exists. Otherwise the pipe would have still been open
+        // No need to throw an error message this time
+      }
+      else {
+        // If our child process shutdown while our parent is still running
+        // Then the parent loses its rootfs and problems occur
+        fprintf(stderr, "FEXMountDaemon child process from squashfuse has closed\n");
+        fprintf(stderr, "Expect errors!\n");
+      }
       ParentShuttingDown = true;
     }
   }
@@ -247,7 +253,7 @@ int main(int argc, char **argv, char **envp) {
   const char *SquashFSPath = argv[1];
   const char *MountPath = argv[2];
   ParentPIDProcess = std::atoi(argv[3]);
-  int pipe_wr = std::atoi(argv[4]);
+  pipe_wr = std::atoi(argv[4]);
 
   // Switch this process over to a new session id
   // Probably not required but allows this to become the process group leader of its session
@@ -257,7 +263,6 @@ int main(int argc, char **argv, char **envp) {
   int localfds[2];
   pipe2(localfds, 0);
 
-  ::prctl(PR_SET_PDEATHSIG, SIGUSR1);
   ::prctl(PR_SET_CHILD_SUBREAPER, 1);
 
   struct utsname uts{};
@@ -311,7 +316,6 @@ int main(int argc, char **argv, char **envp) {
   }
   else {
     // Parent
-
     close(localfds[1]); // Close the write side
     // Wait for the child to exit
     // This will happen with execve of squashmount or exit on failure
@@ -322,12 +326,12 @@ int main(int argc, char **argv, char **envp) {
     act.sa_sigaction = ActionHandler;
     act.sa_flags = SA_SIGINFO;
 
-    // SIGUSR1 when FEX exits
-    sigaction(SIGUSR1, &act, nullptr);
     // SIGCHLD if squashfuse exits early
     sigaction(SIGCHLD, &act, nullptr);
     // SIGTERM if something is trying to terminate us
     sigaction(SIGTERM, &act, nullptr);
+    // Ignore SIGPIPE, we will be checking for pipe closure which could send this signal
+    signal(SIGPIPE, SIG_IGN);
 
     // Check the child pipe for messages
     pollfd PollFD;
