@@ -54,9 +54,6 @@ namespace FEX::HLE {
       .ss_flags = SS_DISABLE, // By default the guest alt stack is disabled
       .ss_size = 0,
     };
-    // Guest signal sa_mask is per thread!
-    // This is the sa_mask from sigaction which is orr'd to the current signal mask
-    FEXCore::GuestSAMask Guest_sa_mask[SignalDelegator::MAX_SIGNALS]{};
     // This is the thread's current signal mask
     FEXCore::GuestSAMask CurrentSignalMask{};
     // The mask prior to a suspend
@@ -109,6 +106,8 @@ namespace FEX::HLE {
       }
     }
 
+    ucontext_t* _context = (ucontext_t*)UContext;
+
     // Remove the pending signal
     ThreadData.PendingSignals &= ~(1ULL << (Signal - 1));
 
@@ -126,6 +125,28 @@ namespace FEX::HLE {
     else {
       if (Handler.GuestHandler &&
           Handler.GuestHandler(Thread, Signal, Info, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
+
+        // Set up a new mask based on this signals signal mask
+        uint64_t NewMask = Handler.GuestAction.sa_mask.Val;
+
+        // If NODEFER then the new signal mask includes this signal
+        if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
+          NewMask |= (1ULL << (Signal - 1));
+        }
+
+        // Walk our required signals and stop masking them if requested
+        for (size_t i = 0; i < MAX_SIGNALS; ++i) {
+          if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
+            // Never mask our required signals
+            NewMask &= ~(1ULL << i);
+          }
+        }
+
+        // Update our host signal mask so we don't hit race conditions with signals
+        // This allows us to maintain the expected signal mask through the guest signal handling and then all the way back again
+        memcpy(&_context->uc_sigmask, &NewMask, sizeof(uint64_t));
+
+        // We handled this signal, continue running
         return;
       }
       ERROR_AND_DIE("Unhandled guest exception");
@@ -174,17 +195,27 @@ namespace FEX::HLE {
     // Now install the thunk handler
     SignalHandler.HostAction.sigaction = SignalHandlerThunk;
 
-    if ((SignalHandler.HostAction.sa_flags ^ SignalHandler.GuestAction.sa_flags) & SA_NODEFER) {
-      // If the guest is using SA_NODEFER then make sure to set it for the host as well
-      SignalHandler.HostAction.sa_flags &= ~SA_NODEFER;
-      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_NODEFER;
-    }
+    auto CheckAndAddFlags = [](uint64_t HostFlags, uint64_t GuestFlags, uint64_t Flags) {
+      // If any of the flags don't match then update to the newest set
+      if ((HostFlags ^ GuestFlags) & Flags) {
+        // Remove all the flags from the host that we are testing for
+        HostFlags &= ~Flags;
+        // Copy over the guest flags being set
+        HostFlags |= GuestFlags & Flags;
+      }
 
-    if ((SignalHandler.HostAction.sa_flags ^ SignalHandler.GuestAction.sa_flags) & SA_RESTART) {
-      // If the guest is using SA_RESTART then make sure to set it for the host as well
-      SignalHandler.HostAction.sa_flags &= ~SA_RESTART;
-      SignalHandler.HostAction.sa_flags |= SignalHandler.GuestAction.sa_flags & SA_RESTART;
-    }
+      return HostFlags;
+    };
+
+    // Don't allow the guest to override flags for
+    // SA_SIGINFO : Host always needs SA_SIGINFO
+    // SA_ONSTACK : Host always needs the altstack
+    // SA_RESETHAND : We don't support one shot handlers
+    // SA_RESTORER : We always need our host side restorer on x86-64, Couldn't use guest restorer anyway
+    SignalHandler.HostAction.sa_flags = CheckAndAddFlags(
+      SignalHandler.HostAction.sa_flags,
+      SignalHandler.GuestAction.sa_flags,
+      SA_NOCLDSTOP | SA_NOCLDWAIT | SA_NODEFER | SA_RESTART);
 
 #ifdef _M_X86_64
 #define SA_RESTORER 0x04000000
@@ -359,7 +390,6 @@ namespace FEX::HLE {
       }
 
       HostHandlers[Signal].GuestAction = *Action;
-      ThreadData.Guest_sa_mask[Signal] = Action->sa_mask;
       // Only attempt to install a new thunk handler if we were installing a new guest action
       if (!InstallHostThunk(Signal)) {
         UpdateHostThunk(Signal);
