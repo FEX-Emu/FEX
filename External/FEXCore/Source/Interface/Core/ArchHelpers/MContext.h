@@ -18,6 +18,7 @@ struct X86ContextBackup {
   // RIP and RSP is stored in GPRs here
   uint64_t GPRs[23];
   FEXCore::x86_64::_libc_fpstate FPRState;
+  uint64_t sa_mask;
 
   // Guest state
   int Signal;
@@ -35,6 +36,7 @@ struct ArmContextBackup {
   uint32_t FPSR;
   uint32_t FPCR;
   __uint128_t FPRs[32];
+  uint64_t sa_mask;
 
   // Guest state
   int Signal;
@@ -43,6 +45,11 @@ struct ArmContextBackup {
   // Arm64 doesn't have a red zone
   static constexpr int RedZoneSize = 0;
 };
+
+static inline ucontext_t* GetUContext(void* ucontext) {
+  ucontext_t* _context = (ucontext_t*)ucontext;
+  return _context;
+}
 
 static inline mcontext_t* GetMContext(void* ucontext) {
   ucontext_t* _context = (ucontext_t*)ucontext;
@@ -102,6 +109,7 @@ using ContextBackup = ArmContextBackup;
 template <typename T>
 static inline void BackupContext(void* ucontext, T *Backup) {
   if constexpr (std::is_same<T, ArmContextBackup>::value) {
+    auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
 
     memcpy(&Backup->GPRs[0], &_mcontext->regs[0], 31 * sizeof(uint64_t));
@@ -115,6 +123,9 @@ static inline void BackupContext(void* ucontext, T *Backup) {
     Backup->FPSR = HostState->FPSR;
     Backup->FPCR = HostState->FPCR;
     memcpy(&Backup->FPRs[0], &HostState->FPRs[0], 32 * sizeof(__uint128_t));
+
+    // Save the signal mask so we can restore it
+    memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
   } else {
       ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
   }
@@ -123,6 +134,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 template <typename T>
 static inline void RestoreContext(void* ucontext, T *Backup) {
   if constexpr (std::is_same<T, ArmContextBackup>::value) {
+    auto _ucontext = GetUContext(ucontext);
    auto _mcontext = GetMContext(ucontext);
 
     HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
@@ -136,6 +148,9 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
     ArchHelpers::Context::SetPc(ucontext, Backup->PrevPC);
     ArchHelpers::Context::SetSp(ucontext, Backup->PrevSP);
     memcpy(&_mcontext->regs[0], &Backup->GPRs[0], 31 * sizeof(uint64_t));
+
+    // Restore the signal mask now
+    memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
   } else {
       ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
   }
@@ -181,6 +196,7 @@ using ContextBackup = X86ContextBackup;
 template <typename T>
 static inline void BackupContext(void* ucontext, T *Backup) {
   if constexpr (std::is_same<T, X86ContextBackup>::value) {
+    auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
 
     // Copy the GPRs
@@ -188,6 +204,9 @@ static inline void BackupContext(void* ucontext, T *Backup) {
     // Copy the FPRState
     memcpy(&Backup->FPRState, _mcontext->fpregs, sizeof(X86ContextBackup::FPRState));
     // XXX: Save 256bit and 512bit AVX register state
+
+    // Save the signal mask so we can restore it
+    memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
   } else {
     ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
   }
@@ -196,12 +215,16 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 template <typename T>
 static inline void RestoreContext(void* ucontext, T *Backup) {
   if constexpr (std::is_same<T, X86ContextBackup>::value) {
+    auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
 
     // Copy the GPRs
     memcpy(&_mcontext->gregs[0], &Backup->GPRs[0], sizeof(X86ContextBackup::GPRs));
     // Copy the FPRState
     memcpy(_mcontext->fpregs, &Backup->FPRState, sizeof(X86ContextBackup::FPRState));
+
+    // Restore the signal mask now
+    memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
   } else {
     ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
   }
