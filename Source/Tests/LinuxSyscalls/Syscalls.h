@@ -17,7 +17,6 @@ $end_info$
 
 #include <errno.h>
 #include <stdint.h>
-#include <sys/epoll.h>
 #include <type_traits>
 #include <vector>
 
@@ -249,27 +248,6 @@ struct FunctionToLambda<R(*)(Args...) noexcept> {
 		return fn;
 	}
 };
-
-struct FEX_PACKED epoll_event_x86 {
-  uint32_t events;
-  epoll_data_t data;
-
-  epoll_event_x86() = delete;
-
-  operator struct epoll_event() const {
-    epoll_event event{};
-    event.events = events;
-    event.data = data;
-    return event;
-  }
-
-  epoll_event_x86(struct epoll_event event) {
-    events = event.events;
-    data = event.data;
-  }
-};
-static_assert(std::is_trivial<epoll_event_x86>::value, "Needs to be trivial");
-static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
 
 struct open_how {
   uint64_t flags;

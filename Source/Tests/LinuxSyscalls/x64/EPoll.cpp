@@ -6,7 +6,9 @@ $end_info$
 */
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/Types.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Types.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -23,7 +25,7 @@ namespace FEXCore::Core {
 
 namespace FEX::HLE::x64 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler) {
-    REGISTER_SYSCALL_IMPL_X64(epoll_wait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, epoll_event_x86 *events, int maxevents, int timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(epoll_wait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevents, int timeout) -> uint64_t {
       std::vector<struct epoll_event> Events(std::max(0, maxevents));
       uint64_t Result = ::syscall(SYS_epoll_pwait, epfd, Events.data(), maxevents, timeout, nullptr, 8);
 
@@ -35,7 +37,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(epoll_ctl, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, int op, int fd, epoll_event_x86 *event) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(epoll_ctl, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, int op, int fd, FEX::HLE::epoll_event_x86 *event) -> uint64_t {
       struct epoll_event Event;
       struct epoll_event *EventPtr{};
       if (event) {
@@ -49,7 +51,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(epoll_pwait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, epoll_event_x86 *events, int maxevent, int timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(epoll_pwait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevent, int timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
       std::vector<struct epoll_event> Events(std::max(0, maxevent));
 
       uint64_t Result = ::syscall(SYS_epoll_pwait,
@@ -73,7 +75,7 @@ namespace FEX::HLE::x64 {
 #ifndef SYS_epoll_pwait2
 #define SYS_epoll_pwait2 354
 #endif
-      REGISTER_SYSCALL_IMPL_X64(epoll_pwait2, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, epoll_event_x86 *events, int maxevent, timespec *timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_X64(epoll_pwait2, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevent, timespec *timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
         std::vector<struct epoll_event> Events(std::max(0, maxevent));
 
         uint64_t Result = ::syscall(SYS_epoll_pwait2,
