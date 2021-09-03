@@ -5,6 +5,7 @@ $end_info$
 */
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/Types.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Types.h"
 
@@ -20,12 +21,42 @@ namespace FEXCore::Core {
 
 namespace FEX::HLE::x32 {
   void RegisterTimer() {
-    REGISTER_SYSCALL_IMPL_X32(timer_settime64, [](FEXCore::Core::CpuStateFrame *Frame, timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(timer_settime, [](FEXCore::Core::CpuStateFrame *Frame,
+      kernel_timer_t timerid,
+      int flags,
+      const FEX::HLE::x32::old_itimerspec32 *new_value,
+      FEX::HLE::x32::old_itimerspec32 *old_value) -> uint64_t {
+      itimerspec new_value_host{};
+      itimerspec old_value_host{};
+      itimerspec *old_value_host_p{};
+
+      new_value_host = *new_value;
+      if (old_value) {
+        old_value_host_p = &old_value_host;
+      }
+      uint64_t Result = ::syscall(SYS_timer_settime, timerid, flags, &new_value_host, old_value_host_p);
+      if (Result != -1 && old_value) {
+        *old_value = old_value_host;
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(timer_gettime, [](FEXCore::Core::CpuStateFrame *Frame,
+      kernel_timer_t timerid,
+      FEX::HLE::x32::old_itimerspec32 *curr_value) -> uint64_t {
+      itimerspec curr_value_host{};
+      uint64_t Result = ::syscall(SYS_timer_gettime, timerid, curr_value_host);
+      *curr_value = curr_value_host;
+      SYSCALL_ERRNO();
+    });
+
+
+    REGISTER_SYSCALL_IMPL_X32(timer_settime64, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_settime, timerid, flags, new_value, old_value);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(timer_gettime64, [](FEXCore::Core::CpuStateFrame *Frame, timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(timer_gettime64, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_gettime, timerid, curr_value);
       SYSCALL_ERRNO();
     });

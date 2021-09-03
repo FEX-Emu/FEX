@@ -736,6 +736,41 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
+    REGISTER_SYSCALL_IMPL_X32(timerfd_settime, [](FEXCore::Core::CpuStateFrame *Frame,
+      int fd,
+      int flags,
+      const FEX::HLE::x32::old_itimerspec32 *new_value,
+      FEX::HLE::x32::old_itimerspec32 *old_value) -> uint64_t {
+      struct itimerspec new_value_host{};
+      struct itimerspec old_value_host{};
+      struct itimerspec *old_value_host_p{};
+
+      new_value_host = *new_value;
+      if (old_value) {
+        old_value_host_p = &old_value_host;
+      }
+
+      // Flags don't need remapped
+      uint64_t Result = ::timerfd_settime(fd, flags, &new_value_host, old_value_host_p);
+
+      if (Result != -1 && old_value) {
+        *old_value = old_value_host;
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(timerfd_gettime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, FEX::HLE::x32::old_itimerspec32 *curr_value) -> uint64_t {
+      struct itimerspec Host{};
+
+      uint64_t Result = ::timerfd_gettime(fd, &Host);
+
+      if (Result != -1) {
+        *curr_value = Host;
+      }
+
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X32(pselect6_time64, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set32 *readfds, fd_set32 *writefds, fd_set32 *exceptfds, struct timespec *timeout, compat_ptr<sigset_argpack32> sigmaskpack) -> uint64_t {
       fd_set Host_readfds;
       fd_set Host_writefds;

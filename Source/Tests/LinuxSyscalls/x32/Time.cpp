@@ -15,6 +15,7 @@ $end_info$
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+#include <utime.h>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::timespec32>, "%lx")
 
@@ -25,6 +26,39 @@ namespace FEXCore::Core {
 
 namespace FEX::HLE::x32 {
   void RegisterTime() {
+
+    REGISTER_SYSCALL_IMPL_X32(time, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::x32::old_time32_t *tloc) -> uint64_t {
+      time_t Host{};
+      uint64_t Result = ::time(&Host);
+
+      if (tloc) {
+        // On 32-bit this truncates
+        *tloc = (FEX::HLE::x32::old_time32_t)Host;
+      }
+
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(times, [](FEXCore::Core::CpuStateFrame *Frame, struct FEX::HLE::x32::compat_tms *buf) -> uint64_t {
+      struct tms Host{};
+      uint64_t Result = ::times(&Host);
+      if (buf) {
+        *buf = Host;
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(utime, [](FEXCore::Core::CpuStateFrame *Frame, char* filename, const FEX::HLE::x32::old_utimbuf32* times) -> uint64_t {
+      struct utimbuf Host{};
+      struct utimbuf *Host_p{};
+      if (times) {
+        Host = *times;
+        Host_p = &Host;
+      }
+      uint64_t Result = ::utime(filename, Host_p);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X32(gettimeofday, [](FEXCore::Core::CpuStateFrame *Frame, timeval32 *tv, struct timezone *tz) -> uint64_t {
       struct timeval tv64{};
       struct timeval *tv_ptr{};

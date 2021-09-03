@@ -6,8 +6,12 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/Utils/CompilerDefs.h>
+
+#include <asm/posix_types.h>
 #include <cstdint>
 #include <sys/sem.h>
+#include <sys/stat.h>
 #include <type_traits>
 
 namespace FEX::HLE::x64 {
@@ -112,4 +116,89 @@ using __time_t = time_t;
 
   static_assert(std::is_trivial<FEX::HLE::x64::semun>::value, "Needs to be trivial");
   static_assert(sizeof(FEX::HLE::x64::semun) == 8, "Incorrect size");
+
+  struct
+  FEX_ANNOTATE("fex-match")
+  FEX_PACKED
+  guest_stat {
+    __kernel_ulong_t  st_dev;
+    __kernel_ulong_t  st_ino;
+    __kernel_ulong_t  st_nlink;
+
+    unsigned int    st_mode;
+    unsigned int    st_uid;
+    unsigned int    st_gid;
+    unsigned int    __pad0;
+    __kernel_ulong_t  st_rdev;
+    __kernel_long_t   st_size;
+    __kernel_long_t   st_blksize;
+    __kernel_long_t   st_blocks;  /* Number 512-byte blocks allocated. */
+
+    __kernel_ulong_t  st_atime_;
+    __kernel_ulong_t  st_atime_nsec;
+    __kernel_ulong_t  st_mtime_;
+    __kernel_ulong_t  st_mtime_nsec;
+    __kernel_ulong_t  st_ctime_;
+    __kernel_ulong_t  st_ctime_nsec;
+    __kernel_long_t   __unused[3];
+
+    guest_stat() = delete;
+    operator struct stat() const {
+      struct stat val{};
+#define COPY(x) val.x = x
+    COPY(st_dev);
+    COPY(st_ino);
+    COPY(st_nlink);
+
+    COPY(st_mode);
+    COPY(st_uid);
+    COPY(st_gid);
+
+    COPY(st_rdev);
+    COPY(st_size);
+    COPY(st_blksize);
+    COPY(st_blocks);
+
+    val.st_atim.tv_sec = st_atime_;
+    val.st_atim.tv_nsec = st_atime_nsec;
+
+    val.st_mtim.tv_sec = st_mtime_;
+    val.st_mtim.tv_nsec = st_mtime_nsec;
+
+    val.st_ctim.tv_sec = st_ctime_;
+    val.st_ctim.tv_nsec= st_ctime_nsec;
+#undef COPY
+      return val;
+    }
+
+    guest_stat(struct stat val) {
+#define COPY(x) x = val.x
+    COPY(st_dev);
+    COPY(st_ino);
+    COPY(st_nlink);
+
+    COPY(st_mode);
+    COPY(st_uid);
+    COPY(st_gid);
+
+    COPY(st_rdev);
+    COPY(st_size);
+    COPY(st_blksize);
+    COPY(st_blocks);
+
+    st_atime_ = val.st_atim.tv_sec;
+    st_atime_nsec = val.st_atim.tv_nsec;
+
+    st_mtime_ = val.st_mtime;
+    st_mtime_nsec = val.st_mtim.tv_nsec;
+
+    st_ctime_ = val.st_ctime;
+    st_ctime_nsec = val.st_ctim.tv_nsec;
+#undef COPY
+    }
+  };
+
+  // Original definition in `arch/x86/include/uapi/asm/stat.h` for future excavation
+  static_assert(std::is_trivial<FEX::HLE::x64::guest_stat>::value, "Needs to be trivial");
+  static_assert(sizeof(FEX::HLE::x64::guest_stat) == 144, "Incorrect size");
 }

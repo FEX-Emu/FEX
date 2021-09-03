@@ -7,10 +7,10 @@ $end_info$
 #include "Tests/LinuxSyscalls/FileManagement.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Types.h"
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
-#include <asm/posix_types.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <stdint.h>
@@ -20,60 +20,12 @@ $end_info$
 #include <sys/time.h>
 #include <sys/uio.h>
 #include <sys/sendfile.h>
+#include <sys/timerfd.h>
 #include <syscall.h>
 #include <time.h>
 #include <unistd.h>
 
 namespace FEX::HLE::x64 {
-  struct FEX_PACKED guest_stat {
-    __kernel_ulong_t  st_dev;
-    __kernel_ulong_t  st_ino;
-    __kernel_ulong_t  st_nlink;
-
-    unsigned int    st_mode;
-    unsigned int    st_uid;
-    unsigned int    st_gid;
-    unsigned int    __pad0;
-    __kernel_ulong_t  st_rdev;
-    __kernel_long_t   st_size;
-    __kernel_long_t   st_blksize;
-    __kernel_long_t   st_blocks;  /* Number 512-byte blocks allocated. */
-
-    __kernel_ulong_t  st_atime_;
-    __kernel_ulong_t  st_atime_nsec;
-    __kernel_ulong_t  st_mtime_;
-    __kernel_ulong_t  st_mtime_nsec;
-    __kernel_ulong_t  st_ctime_;
-    __kernel_ulong_t  st_ctime_nsec;
-    __kernel_long_t   __unused[3];
-  };
-
-  static void CopyStat(guest_stat *guest, struct stat *host) {
-#define COPY(x) guest->x = host->x
-    COPY(st_dev);
-    COPY(st_ino);
-    COPY(st_nlink);
-
-    COPY(st_mode);
-    COPY(st_uid);
-    COPY(st_gid);
-
-    COPY(st_rdev);
-    COPY(st_size);
-    COPY(st_blksize);
-    COPY(st_blocks);
-
-    guest->st_atime_ = host->st_atim.tv_sec;
-    guest->st_atime_nsec = host->st_atim.tv_nsec;
-
-    guest->st_mtime_ = host->st_mtime;
-    guest->st_mtime_nsec = host->st_mtim.tv_nsec;
-
-    guest->st_ctime_ = host->st_ctime;
-    guest->st_ctime_nsec = host->st_ctim.tv_nsec;
-#undef COPY
-  }
-
   void RegisterFD() {
     REGISTER_SYSCALL_IMPL_X64(poll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
       uint64_t Result = ::poll(fds, nfds, timeout);
@@ -119,29 +71,29 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(stat, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, guest_stat *buf) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(stat, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, FEX::HLE::x64::guest_stat *buf) -> uint64_t {
       struct stat host_stat;
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.Stat(pathname, &host_stat);
       if (Result != -1) {
-        CopyStat(buf, &host_stat);
+        *buf = host_stat;
       }
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(fstat, [](FEXCore::Core::CpuStateFrame *Frame, int fd, guest_stat *buf) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(fstat, [](FEXCore::Core::CpuStateFrame *Frame, int fd, FEX::HLE::x64::guest_stat *buf) -> uint64_t {
       struct stat host_stat;
       uint64_t Result = ::fstat(fd, &host_stat);
       if (Result != -1) {
-        CopyStat(buf, &host_stat);
+        *buf = host_stat;
       }
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(lstat, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, guest_stat *buf) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(lstat, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, FEX::HLE::x64::guest_stat *buf) -> uint64_t {
       struct stat host_stat;
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.Lstat(path, &host_stat);
       if (Result != -1) {
-        CopyStat(buf, &host_stat);
+        *buf = host_stat;
       }
       SYSCALL_ERRNO();
     });
@@ -161,11 +113,11 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(newfstatat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, guest_stat *buf, int flag) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64(newfstatat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, FEX::HLE::x64::guest_stat *buf, int flag) -> uint64_t {
       struct stat host_stat;
       uint64_t Result = FEX::HLE::_SyscallHandler->FM.NewFSStatAt(dirfd, pathname, &host_stat, flag);
       if (Result != -1) {
-        CopyStat(buf, &host_stat);
+        *buf = host_stat;
       }
       SYSCALL_ERRNO();
     });
@@ -297,6 +249,17 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(fallocate, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int mode, off_t offset, off_t len) -> uint64_t {
       uint64_t Result = ::fallocate(fd, mode, offset, len);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(timerfd_settime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
+      // Flags don't need remapped
+      uint64_t Result = ::timerfd_settime(fd, flags, new_value, old_value);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(timerfd_gettime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct itimerspec *curr_value) -> uint64_t {
+      uint64_t Result = ::timerfd_gettime(fd, curr_value);
       SYSCALL_ERRNO();
     });
   }

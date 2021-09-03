@@ -235,17 +235,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(timerfd_settime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
-      // Flags don't need remapped
-      uint64_t Result = ::timerfd_settime(fd, flags, new_value, old_value);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(timerfd_gettime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct itimerspec *curr_value) -> uint64_t {
-      uint64_t Result = ::timerfd_gettime(fd, curr_value);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(eventfd, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t count) -> uint64_t {
       uint64_t Result = ::syscall(SYS_eventfd2, count, 0);
       SYSCALL_ERRNO();
