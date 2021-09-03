@@ -651,6 +651,7 @@ def main():
         "-I/usr/x86_64-linux-gnu/include/",
         "-O2",
         "--target=x86_64-linux-unknown",
+        "-D_M_X86_64",
     ]
 
     args_aarch64 = [
@@ -658,6 +659,7 @@ def main():
         "-I/usr/aarch64-linux-gnu/include/",
         "-O2",
         "--target=aarch64-linux-unknown",
+        "-D_M_ARM_64",
     ]
 
     args_x86_win32 = [
@@ -686,11 +688,13 @@ def main():
     args_x86_32 = FindClangArguments(args_x86_32)
     args_x86_64 = FindClangArguments(args_x86_64)
     args_aarch64 = FindClangArguments(args_aarch64)
+
     args_x86_win32 = FindClangArguments(args_x86_win32)
     args_x86_win64 = FindClangArguments(args_x86_win64)
 
     Arch_x86_32 = ArchDB("x86_32")
     Arch_x86_64 = ArchDB("x86_64")
+
     Arch_aarch64 = ArchDB("aarch64")
     Arch_x86_win32 = ArchDB("win32")
     Arch_x86_win64 = ArchDB("win64")
