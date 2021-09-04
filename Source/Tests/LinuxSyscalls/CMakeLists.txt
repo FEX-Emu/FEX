@@ -45,6 +45,7 @@ add_library(LinuxEmulation STATIC
     Syscalls/Key.cpp
     Syscalls/Memory.cpp
     Syscalls/Msg.cpp
+    Syscalls/Namespace.cpp
     Syscalls/Sched.cpp
     Syscalls/Semaphore.cpp
     Syscalls/SHM.cpp

@@ -44,6 +44,7 @@ class SignalDelegator;
   void RegisterKey();
   void RegisterMemory();
   void RegisterMsg();
+  void RegisterNamespace(FEX::HLE::SyscallHandler *const Handler);
   void RegisterNuma();
   void RegisterSched();
   void RegisterSemaphore();
