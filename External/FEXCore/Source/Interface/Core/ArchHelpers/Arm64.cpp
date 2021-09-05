@@ -277,22 +277,18 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
     return 0;
   }
   // caspair
-  // [0] (not reached) nop
   // [1] ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc)); <-- DataReg & AddrReg
-  // [2] nop
-  // [3] cmp(TMP2.W(), Expected.first.W()); <-- ExpectedReg1
-  // [4] ccmp(TMP3.W(), Expected.second.W(), NoFlag, Condition::eq); <-- ExpectedREg2
-  // [5] b(&LoopNotExpected, Condition::ne);
-  // [6] nop
-  // [7] stlxp(TMP2.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc)); <-- DesiredReg
-  // [8] nop();
-  // [9] cbnz(TMP2.W(), &LoopTop);
-  // [10] mov(Dst.first.W(), Expected.first.W());
-  // [11] mov(Dst.second.W(), Expected.second.W());
-  // [12] b(&LoopExpected);
-  // [13] mov(Dst.first.W(), TMP2.W());
-  // [14] mov(Dst.second.W(), TMP3.W());
-  // [15] clrex();
+  // [2] cmp(TMP2.W(), Expected.first.W()); <-- ExpectedReg1
+  // [3] ccmp(TMP3.W(), Expected.second.W(), NoFlag, Condition::eq); <-- ExpectedREg2
+  // [4] b(&LoopNotExpected, Condition::ne);
+  // [5] stlxp(TMP2.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc)); <-- DesiredReg
+  // [6] cbnz(TMP2.W(), &LoopTop);
+  // [7] mov(Dst.first.W(), Expected.first.W());
+  // [8] mov(Dst.second.W(), Expected.second.W());
+  // [9] b(&LoopExpected);
+  // [10] mov(Dst.first.W(), TMP2.W());
+  // [11] mov(Dst.second.W(), TMP3.W());
+  // [12] clrex();
 
   uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
   
@@ -328,7 +324,7 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
   mcontext->regs[DataReg2] = mcontext->regs[ExpectedReg2];
   
   if(RunCASPAL(_ucontext, _info, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg)) {
-    return 12 * sizeof(uint32_t); // skip to mov + clrex
+    return 9 * sizeof(uint32_t); // skip to mov + clrex
   } else {
     return 0;
   }
