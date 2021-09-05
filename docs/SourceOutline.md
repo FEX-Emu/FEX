@@ -1,4 +1,4 @@
-# FEX-2108
+# FEX-2109
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -286,6 +286,7 @@ x86-64 specific syscall implementations
 - [Thread.cpp](../Source/Tests/LinuxSyscalls/x64/Thread.cpp)
 - [Thread.h](../Source/Tests/LinuxSyscalls/x64/Thread.h)
 - [Time.cpp](../Source/Tests/LinuxSyscalls/x64/Time.cpp)
+- [Types.h](../Source/Tests/LinuxSyscalls/x64/Types.h)
 
 ## unittests
 See [unittests/Readme.md](../unittests/Readme.md) for more details
