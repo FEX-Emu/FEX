@@ -5,6 +5,7 @@ $end_info$
 */
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/Types.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <stddef.h>
@@ -19,6 +20,21 @@ $end_info$
 
 namespace FEX::HLE::x64 {
   void RegisterTime() {
+    REGISTER_SYSCALL_IMPL_X64(time, [](FEXCore::Core::CpuStateFrame *Frame, time_t *tloc) -> uint64_t {
+      uint64_t Result = ::time(tloc);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(times, [](FEXCore::Core::CpuStateFrame *Frame, struct tms *buf) -> uint64_t {
+      uint64_t Result = ::times(buf);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(utime, [](FEXCore::Core::CpuStateFrame *Frame, char* filename, const struct utimbuf* times) -> uint64_t {
+      uint64_t Result = ::utime(filename, times);
+      SYSCALL_ERRNO();
+    });
+
     REGISTER_SYSCALL_IMPL_X64(gettimeofday, [](FEXCore::Core::CpuStateFrame *Frame, struct timeval *tv, struct timezone *tz) -> uint64_t {
       uint64_t Result = ::gettimeofday(tv, tz);
       SYSCALL_ERRNO();
@@ -66,6 +82,16 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(setitimer, [](FEXCore::Core::CpuStateFrame *Frame, int which, const struct itimerval *new_value, struct itimerval *old_value) -> uint64_t {
       uint64_t Result = ::setitimer(which, new_value, old_value);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(timer_settime, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_timer_settime, timerid, flags, new_value, old_value);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(timer_gettime, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_timer_gettime, timerid, curr_value);
       SYSCALL_ERRNO();
     });
   }

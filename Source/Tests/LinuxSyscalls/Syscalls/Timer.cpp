@@ -5,6 +5,7 @@ $end_info$
 */
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/Types.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
@@ -24,27 +25,17 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(timer_create, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, struct sigevent *sevp, timer_t *timerid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(timer_create, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, struct sigevent *sevp, kernel_timer_t *timerid) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_create, clockid, sevp, timerid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(timer_settime, [](FEXCore::Core::CpuStateFrame *Frame, timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_timer_settime, timerid, flags, new_value, old_value);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(timer_gettime, [](FEXCore::Core::CpuStateFrame *Frame, timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_timer_gettime, timerid, curr_value);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(timer_getoverrun, [](FEXCore::Core::CpuStateFrame *Frame, timer_t timerid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(timer_getoverrun, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_getoverrun, timerid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(timer_delete, [](FEXCore::Core::CpuStateFrame *Frame, timer_t timerid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(timer_delete, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_delete, timerid);
       SYSCALL_ERRNO();
     });

@@ -18,9 +18,13 @@ $end_info$
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <sys/time.h>
+#include <sys/times.h>
 #include <sys/uio.h>
 #include <time.h>
 #include <type_traits>
+#include <utime.h>
+
+#include "Tests/LinuxSyscalls/Types.h"
 
 namespace FEX::HLE::x32 {
 
@@ -39,6 +43,8 @@ using compat_nlink_t = uint16_t;
 using compat_uid_t = uint16_t;
 using compat_gid_t = uint16_t;
 using compat_old_sigset_t = uint32_t;
+using old_time32_t = int32_t;
+using compat_clock_t = int32_t;
 
 // Can't use using with aligned attributes, clang doesn't honour it
 typedef FEX_ALIGNED(4) uint64_t compat_uint64_t;
@@ -831,5 +837,82 @@ GuestSigAction_32 {
 
 static_assert(std::is_trivial<GuestSigAction_32>::value, "Needs to be trivial");
 static_assert(sizeof(GuestSigAction_32) == 20, "Incorrect size");
+
+struct
+FEX_ANNOTATE("alias-x86_32-tms")
+FEX_ANNOTATE("fex-match")
+compat_tms {
+  compat_clock_t tms_utime;
+  compat_clock_t tms_stime;
+  compat_clock_t tms_cutime;
+  compat_clock_t tms_cstime;
+
+  compat_tms() = delete;
+  operator tms() const {
+    tms val{};
+    val.tms_utime = tms_utime;
+    val.tms_stime = tms_stime;
+    val.tms_cutime = tms_cutime;
+    val.tms_cstime = tms_cstime;
+    return val;
+  }
+  compat_tms(struct tms val) {
+    tms_utime = val.tms_utime;
+    tms_stime = val.tms_stime;
+    tms_cutime = val.tms_cutime;
+    tms_cstime = val.tms_cstime;
+  }
+};
+
+static_assert(std::is_trivial<compat_tms>::value, "Needs to be trivial");
+static_assert(sizeof(compat_tms) == 16, "Incorrect size");
+
+struct
+FEX_ANNOTATE("alias-x86_32-utimbuf")
+FEX_ANNOTATE("fex-match")
+old_utimbuf32 {
+  old_time32_t actime;
+  old_time32_t modtime;
+
+  old_utimbuf32() = delete;
+  operator utimbuf() const {
+    utimbuf val{};
+    val.actime = actime;
+    val.modtime = modtime;
+    return val;
+  }
+
+  old_utimbuf32(struct utimbuf val) {
+    actime = val.actime;
+    modtime = val.modtime;
+  }
+};
+
+static_assert(std::is_trivial<old_utimbuf32>::value, "Needs to be trivial");
+static_assert(sizeof(old_utimbuf32) == 8, "Incorrect size");
+
+struct
+FEX_ANNOTATE("alias-x86_32-itimerspec")
+FEX_ANNOTATE("fex-match")
+old_itimerspec32 {
+  timespec32 it_interval;
+  timespec32 it_value;
+
+  old_itimerspec32() = delete;
+  operator itimerspec() const {
+    itimerspec val{};
+    val.it_interval = it_interval;
+    val.it_value = it_value;
+    return val;
+  }
+
+  old_itimerspec32(struct itimerspec val)
+    : it_interval { val.it_interval }
+    , it_value { val.it_value } {
+  }
+};
+
+static_assert(std::is_trivial<old_itimerspec32>::value, "Needs to be trivial");
+static_assert(sizeof(old_itimerspec32) == 16, "Incorrect size");
 
 }

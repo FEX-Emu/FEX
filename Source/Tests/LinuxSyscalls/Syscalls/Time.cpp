@@ -24,21 +24,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(time, [](FEXCore::Core::CpuStateFrame *Frame, time_t *tloc) -> uint64_t {
-      uint64_t Result = ::time(tloc);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(times, [](FEXCore::Core::CpuStateFrame *Frame, struct tms *buf) -> uint64_t {
-      uint64_t Result = ::times(buf);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(utime, [](FEXCore::Core::CpuStateFrame *Frame, char* filename, const struct utimbuf* times) -> uint64_t {
-      uint64_t Result = ::utime(filename, times);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(adjtimex, [](FEXCore::Core::CpuStateFrame *Frame, struct timex *buf) -> uint64_t {
       uint64_t Result = ::adjtimex(buf);
       SYSCALL_ERRNO();

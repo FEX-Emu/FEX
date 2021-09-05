@@ -45,6 +45,7 @@ add_library(LinuxEmulation STATIC
     Syscalls/Key.cpp
     Syscalls/Memory.cpp
     Syscalls/Msg.cpp
+    Syscalls/Namespace.cpp
     Syscalls/Sched.cpp
     Syscalls/Semaphore.cpp
     Syscalls/SHM.cpp
@@ -70,6 +71,7 @@ set(HEADERS_TO_VERIFY
   x32/Ioctl/input.h x86_32 # This needs to match structs to 32bit structs
   x32/Ioctl/sockios.h x86_32 # This needs to match structs to 32bit structs
   x32/Ioctl/joystick.h x86_32 # This needs to match structs to 32bit structs
+  x64/Types.h x86_64 # This needs to match structs to 64bit structs
 )
 
 list(LENGTH HEADERS_TO_VERIFY ARG_COUNT)

@@ -107,6 +107,7 @@ namespace FEX::HLE::x64 {
     FEX::HLE::RegisterKey();
     FEX::HLE::RegisterMemory();
     FEX::HLE::RegisterMsg();
+    FEX::HLE::RegisterNamespace(this);
     FEX::HLE::RegisterSched();
     FEX::HLE::RegisterSemaphore();
     FEX::HLE::RegisterSHM();

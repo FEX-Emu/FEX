@@ -5,6 +5,7 @@ $end_info$
 */
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/Types.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
@@ -14,12 +15,12 @@ $end_info$
 
 namespace FEX::HLE {
   void RegisterKey() {
-    REGISTER_SYSCALL_IMPL(add_key, [](FEXCore::Core::CpuStateFrame *Frame, const char *type, const char *description, const void *payload, size_t plen, int32_t /*key_serial_t*/ keyring) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(add_key, [](FEXCore::Core::CpuStateFrame *Frame, const char *type, const char *description, const void *payload, size_t plen, key_serial_t keyring) -> uint64_t {
       uint64_t Result = syscall(SYS_add_key, type, description, payload, plen, keyring);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(request_key, [](FEXCore::Core::CpuStateFrame *Frame, const char *type, const char *description, const char *callout_info, int32_t /*key_serial_t*/ dest_keyring) -> uint64_t {
+    REGISTER_SYSCALL_IMPL(request_key, [](FEXCore::Core::CpuStateFrame *Frame, const char *type, const char *description, const char *callout_info, key_serial_t dest_keyring) -> uint64_t {
       uint64_t Result = syscall(SYS_request_key, type, description, callout_info, dest_keyring);
       SYSCALL_ERRNO();
     });
