@@ -13,8 +13,10 @@
 #include <stdlib.h>
 #include <string>
 #include <system_error>
-#include <sys/stat.h>
 #include <sys/utsname.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 namespace FEX::RootFS {
 
@@ -65,6 +67,83 @@ bool CheckLockExists(std::string const &LockPath) {
   return false;
 }
 
+bool SendSocketPipe(std::string const &SocketPath) {
+  // Open pipes so we can send the daemon one
+  int fds[2]{};
+  if (pipe2(fds, 0) != 0) {
+    LogMan::Msg::E("Couldn't open pipe");
+    return false;
+  }
+
+  // Setup our msg header
+  struct msghdr msg{};
+  struct iovec iov{};
+  char iov_data{};
+
+  constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
+  union AncillaryBuffer {
+    struct cmsghdr Header;
+    uint8_t Buffer[CMSG_SIZE];
+  };
+  AncillaryBuffer AncBuf{};
+
+  // Set up message header
+  msg.msg_name = nullptr;
+  msg.msg_namelen = 0;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+
+  // We need to send some data in addition to the ancillary data, doesn't matter what
+  iov.iov_base = &iov_data;
+  iov.iov_len = sizeof(iov_data);
+
+  // Now link to our ancilllary buffer
+  msg.msg_control = AncBuf.Buffer;
+  msg.msg_controllen = CMSG_SIZE;
+
+  // Now we need to setup the ancillary buffer data. We are only sending an FD
+  struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+  cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+  cmsg->cmsg_level = SOL_SOCKET;
+  cmsg->cmsg_type = SCM_RIGHTS;
+
+  // We are giving the daemon the write side of the pipe
+  memcpy(CMSG_DATA(cmsg), &fds[1], sizeof(int));
+
+  // Time to open up the actual socket and send the FD over to the daemon
+  // Create the initial unix socket
+  int socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+  if (socket_fd == -1) {
+    LogMan::Msg::D("Couldn't open AF_UNIX socket: %d %s", errno, strerror(errno));
+    return false;
+  }
+
+  struct sockaddr_un addr{};
+  addr.sun_family = AF_UNIX;
+  strncpy(addr.sun_path, SocketPath.data(), sizeof(addr.sun_path));
+
+  if (connect(socket_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == -1) {
+    LogMan::Msg::D("Couldn't connect to AF_UNIX socket: %d %s", errno, strerror(errno));
+    close(socket_fd);
+    return false;
+  }
+
+  ssize_t ResultSend = sendmsg(socket_fd, &msg, 0);
+  if (ResultSend == -1) {
+    LogMan::Msg::D("Couldn't sendmsg");
+    close(socket_fd);
+    return false;
+  }
+
+  // We've sent the message which means we're done with the socket
+  close(socket_fd);
+
+  // Close the write side of the pipe, leave read side open
+  // Daemon now has a copy of the fd
+  close(fds[1]);
+  return true;
+}
+
 void OpenLock(std::string const LockPath) {
   SquashFSLock.open(LockPath, std::ios_base::in | std::ios_base::binary);
 }
@@ -106,6 +185,18 @@ std::string GetRootFSLockFile() {
   return LockPath;
 }
 
+std::string GetRootFSSocketFile() {
+  // FEX_ROOTFS needs to be the path to the squashfs, not the mount
+  FEX_CONFIG_OPT(LDPath, ROOTFS);
+  struct utsname uts{};
+  uname (&uts);
+  std::string SocketPath = "/tmp/.FEX-";
+  SocketPath += std::filesystem::path(LDPath()).filename();
+  SocketPath += ".socket.";
+  SocketPath += uts.nodename;
+  return SocketPath;
+}
+
 bool Setup(char **const envp) {
   // We need to setup the rootfs here
   // If the configuration is set to use a folder then there is nothing to do
@@ -117,11 +208,14 @@ bool Setup(char **const envp) {
     // We can do this by checking the lock file if it exists
 
     std::string LockPath = GetRootFSLockFile();
+    std::string SocketFile = GetRootFSSocketFile();
 
-    if (CheckLockExists(LockPath)) {
-      // RootFS already exists. Nothing to do
+    // If the lock file exists and we can send the process a pipe then nothing to do
+    // Otherwise we need to spin up a new mount daemon
+    if (CheckLockExists(LockPath) && SendSocketPipe(SocketFile)) {
       return true;
     }
+
     pid_t ParentTID = ::getpid();
     std::string ParentTIDString = std::to_string(ParentTID);
     std::string Tmp = "/tmp/.FEXMount" + ParentTIDString + "-XXXXXX";
@@ -155,13 +249,12 @@ bool Setup(char **const envp) {
     if (pid == 0) {
       // Child
       close(fds[0]); // Close read end of pipe
-      const char *argv[6];
+      const char *argv[5];
       argv[0] = FEX_INSTALL_PREFIX "/bin/FEXMountDaemon";
       argv[1] = LDPath().c_str();
       argv[2] = TempFolder;
-      argv[3] = ParentTIDString.c_str();
-      argv[4] = PipeString.c_str();
-      argv[5] = nullptr;
+      argv[3] = PipeString.c_str();
+      argv[4] = nullptr;
 
       if (execve(argv[0], (char * const*)argv, envp) == -1) {
         // Let the parent know that we couldn't execute for some reason
@@ -211,6 +304,9 @@ bool Setup(char **const envp) {
       if (!SanityCheckPath(TempFolder)) {
         return false;
       }
+
+      // Send the new FEXMountDaemon a pipe to listen to
+      SendSocketPipe(SocketFile);
 
       // If everything has passed then we can now update the rootfs path
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, TempFolder);
