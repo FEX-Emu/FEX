@@ -34,6 +34,10 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t AND_INST    = 0x0A'00'00'00;
   constexpr uint32_t OR_INST     = 0x2A'00'00'00;
   constexpr uint32_t EOR_INST    = 0x4A'00'00'00;
+  
+  constexpr uint32_t CCMP_MASK   = 0x7F'E0'0C'10;
+  constexpr uint32_t CCMP_INST   = 0x7A'40'00'00;
+  
   enum ExclusiveAtomicPairType {
     TYPE_SWAP,
     TYPE_ADD,
@@ -78,6 +82,7 @@ namespace FEXCore::ArchHelpers::Arm64 {
   bool HandleAtomicLoad128(void *_ucontext, void *_info, uint32_t Instr);
   uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info);
   bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr);
+  uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr);
   bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr);
   bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr);
 }

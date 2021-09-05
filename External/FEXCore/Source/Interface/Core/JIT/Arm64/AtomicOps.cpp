@@ -44,15 +44,12 @@ DEF_OP(CASPair) {
         aarch64::Label LoopNotExpected;
         aarch64::Label LoopExpected;
         bind(&LoopTop);
-        nop();
+
         ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc));
-        nop();
         cmp(TMP2.W(), Expected.first.W());
         ccmp(TMP3.W(), Expected.second.W(), NoFlag, Condition::eq);
         b(&LoopNotExpected, Condition::ne);
-        nop();
         stlxp(TMP2.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
-        nop();
         cbnz(TMP2.W(), &LoopTop);
         mov(Dst.first.W(), Expected.first.W());
         mov(Dst.second.W(), Expected.second.W());
@@ -73,15 +70,12 @@ DEF_OP(CASPair) {
         aarch64::Label LoopNotExpected;
         aarch64::Label LoopExpected;
         bind(&LoopTop);
-        nop();
+
         ldaxp(TMP2.X(), TMP3.X(), MemOperand(MemSrc));
-        nop();
         cmp(TMP2.X(), Expected.first.X());
         ccmp(TMP3.X(), Expected.second.X(), NoFlag, Condition::eq);
         b(&LoopNotExpected, Condition::ne);
-        nop();
         stlxp(TMP2.X(), Desired.first.X(), Desired.second.X(), MemOperand(MemSrc));
-        nop();
         cbnz(TMP2.X(), &LoopTop);
         mov(Dst.first.X(), Expected.first.X());
         mov(Dst.second.X(), Expected.second.X());

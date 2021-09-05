@@ -64,22 +64,12 @@ static bool StoreCAS8(uint8_t &Expected, uint8_t Val, uint64_t Addr) {
   return Atom->compare_exchange_strong(Expected, Val);
 }
 
-bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
+
+
+static bool RunCASPAL(void *_ucontext, void *_info, uint32_t Size, uint32_t DesiredReg1, uint32_t DesiredReg2, uint32_t ExpectedReg1, uint32_t ExpectedReg2, uint32_t AddressReg) {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return false;
-  }
-
-  uint32_t Size = (Instr >> 30) & 1;
-
-  uint32_t DesiredReg1 = Instr & 0b11111;
-  uint32_t DesiredReg2 = DesiredReg1 + 1;
-  uint32_t ExpectedReg1 = (Instr >> 16) & 0b11111;
-  uint32_t ExpectedReg2 = ExpectedReg1 + 1;
-  uint32_t AddressReg = (Instr >> 5) & 0b11111;
+  
+  //Bus_ADRALN check happens in HandleCASPAL and HandleCASPAL_ARMv8
 
   if (Size == 0) {
     // 32bit
@@ -257,6 +247,87 @@ bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
     }
   }
   return false;
+}
+
+bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+
+  if (info->si_code != BUS_ADRALN) {
+    // This only handles alignment problems
+    return false;
+  }
+
+  uint32_t Size = (Instr >> 30) & 1;
+
+  uint32_t DesiredReg1 = Instr & 0b11111;
+  uint32_t DesiredReg2 = DesiredReg1 + 1;
+  uint32_t ExpectedReg1 = (Instr >> 16) & 0b11111;
+  uint32_t ExpectedReg2 = ExpectedReg1 + 1;
+  uint32_t AddressReg = (Instr >> 5) & 0b11111;
+  
+  return RunCASPAL(_ucontext, _info, Size, DesiredReg1, DesiredReg2, ExpectedReg1, ExpectedReg2, AddressReg);
+}
+
+uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+
+  if (info->si_code != BUS_ADRALN) {
+    // This only handles alignment problems
+    return 0;
+  }
+  // caspair
+  // [1] ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc)); <-- DataReg & AddrReg
+  // [2] cmp(TMP2.W(), Expected.first.W()); <-- ExpectedReg1
+  // [3] ccmp(TMP3.W(), Expected.second.W(), NoFlag, Condition::eq); <-- ExpectedREg2
+  // [4] b(&LoopNotExpected, Condition::ne);
+  // [5] stlxp(TMP2.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc)); <-- DesiredReg
+  // [6] cbnz(TMP2.W(), &LoopTop);
+  // [7] mov(Dst.first.W(), Expected.first.W());
+  // [8] mov(Dst.second.W(), Expected.second.W());
+  // [9] b(&LoopExpected);
+  // [10] mov(Dst.first.W(), TMP2.W());
+  // [11] mov(Dst.second.W(), TMP3.W());
+  // [12] clrex();
+
+  uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
+  
+  uint32_t Size = (Instr >> 30) & 1;
+  uint32_t AddrReg = (Instr >> 5) & 0x1F;
+  uint32_t DataReg = Instr & 0x1F;
+  uint32_t DataReg2 = (Instr >> 10) & 0x1F;
+  
+  uint32_t ExpectedReg1{};
+  uint32_t ExpectedReg2{};
+  
+  uint32_t DesiredReg1{};
+  uint32_t DesiredReg2{};
+  
+  if(Size != 0) { //Only 32-bit pairs
+    return 0; 
+  }
+  
+  for(int i = 1; i < 10; i++) {
+    uint32_t NextInstr = PC[i];
+    if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST) {
+       ExpectedReg1 = GetRmReg(NextInstr);
+    } else if ((NextInstr & FEXCore::ArchHelpers::Arm64::CCMP_MASK) == FEXCore::ArchHelpers::Arm64::CCMP_INST) {
+       ExpectedReg2 = GetRmReg(NextInstr);
+    } else if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXP_MASK) == FEXCore::ArchHelpers::Arm64::STLXP_INST) {
+       DesiredReg1 = (NextInstr & 0x1F);
+       DesiredReg2 = (NextInstr >> 10) & 0x1F;
+    }
+  }
+  
+  //mov expected into the temp registers used by JIT
+  mcontext->regs[DataReg] = mcontext->regs[ExpectedReg1];
+  mcontext->regs[DataReg2] = mcontext->regs[ExpectedReg2];
+  
+  if(RunCASPAL(_ucontext, _info, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg)) {
+    return 9 * sizeof(uint32_t); // skip to mov + clrex
+  } else {
+    return 0;
+  }
 }
 
 uint16_t DoLoad16(uint64_t Addr) {

@@ -1666,14 +1666,11 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
             // Size is the size of each pair element
             switch (Size) {
               case 4: {
-                std::atomic<uint64_t> *Data = *GetSrc<std::atomic<uint64_t> **>(SSAData, Op->Header.Args[2]);
-
-                uint64_t Src1 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]);
-                uint64_t Src2 = *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]);
-
-                uint64_t Expected = Src1;
-                bool Result = Data->compare_exchange_strong(Expected, Src2);
-                GD = Result ? Src1 : Expected;
+                GD = AtomicCompareAndSwap(
+                  *GetSrc<uint64_t*>(SSAData, Op->Header.Args[0]), 
+                  *GetSrc<uint64_t*>(SSAData, Op->Header.Args[1]),
+                  *GetSrc<uint64_t**>(SSAData, Op->Header.Args[2])
+                );
                 break;
               }
               case 8: {

@@ -1,11 +1,3 @@
-# Doesn't support unaligned on armv8.0
-Test_Secondary/09_XX_01_7.asm
-Test_Secondary/09_XX_01_8.asm
-Test_Secondary/09_XX_01_9.asm
-Test_Secondary/09_XX_01_11.asm
-Test_Secondary/09_XX_01_12.asm
-Test_Secondary/09_XX_01_13.asm
-
 # Doesn't support unaligned atomic memory ops on armv8.0
 Test_Primary/Primary_01_Atomic16.asm
 Test_Primary/Primary_01_Atomic32.asm
