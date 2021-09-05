@@ -392,32 +392,22 @@ bool Arm64JITCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
     }
   }
   else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXP_MASK) == FEXCore::ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
-    uint32_t DataReg2 = (Instr >> 10) & 0x1F;
-    // Convert to LDP
-    uint32_t LDP = 0b0010'1001'0100'0000'0000'0000'0000'0000;
-    LDP |= Size << 31;
-    LDP |= DataReg2 << 10;
-    LDP |= AddrReg << 5;
-    LDP |= DataReg;
-    PC[-1] = DMB;
-    PC[0] = LDP;
-    PC[1] = DMB;
-    // Back up one instruction and have another go
-    ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+    //Should be compare and swap pair only. LDAXP not used elsewhere
+    uint64_t BytesToSkip = FEXCore::ArchHelpers::Arm64::HandleCASPAL_ARMv8(ucontext, info, Instr);
+    if (BytesToSkip) {
+      // Skip this instruction now
+      ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
+      return true;
+    }
+    else {
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+      return false;
+    }
   }
   else if ((Instr & FEXCore::ArchHelpers::Arm64::STLXP_MASK) == FEXCore::ArchHelpers::Arm64::STLXP_INST) { // STLXP
-    uint32_t DataReg2 = (Instr >> 10) & 0x1F;
-    // Convert to STP
-    uint32_t STP = 0b0010'1001'0000'0000'0000'0000'0000'0000;
-    STP |= Size << 31;
-    STP |= DataReg2 << 10;
-    STP |= AddrReg << 5;
-    STP |= DataReg;
-    PC[-1] = DMB;
-    PC[0] = STP;
-    PC[1] = DMB;
-    // Back up one instruction and have another go
-    ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+    //Should not trigger - middle of an LDAXP/STAXP pair.
+    LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+    return false;
   }
   else if ((Instr & FEXCore::ArchHelpers::Arm64::CASPAL_MASK) == FEXCore::ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
     if (FEXCore::ArchHelpers::Arm64::HandleCASPAL(ucontext, info, Instr)) {
