@@ -320,7 +320,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 {
   CurrentCodeBuffer = &InitialCodeBuffer;
 
-  RAPass = Thread->PassManager->GetRAPass();
+  RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
   RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
   RAPass->AddRegisters(FEXCore::IR::GPRClass, NumGPRs);

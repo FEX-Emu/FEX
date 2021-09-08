@@ -71,8 +71,8 @@ bool IRValidation::Run(IREmitter *IREmit) {
 #endif
 
   IR::RegisterAllocationData * RAData{};
-  if (Manager->HasRAPass()) {
-    RAData = Manager->GetRAPass() ? Manager->GetRAPass()->GetAllocationData() : nullptr;
+  if (Manager->HasPass("RA")) {
+    RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
   }
 
   NodeIsLive.Set(1); // IRHEADER
