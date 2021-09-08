@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <limits.h>
+#include <linux/in.h>
 #include <mutex>
 #include <poll.h>
 #include <stdio.h>
@@ -27,11 +28,13 @@
 #include <thread>
 
 namespace {
+std::atomic<bool> ShuttingDown{};
 
 void SignalShutdown();
 namespace EPollWatcher {
   static int epoll_fd{};
   static std::thread EPollThread{};
+  static std::atomic<pid_t> EPollThreadTID{};
   std::atomic<uint64_t> NumPipesWatched{};
   std::atomic<bool> EPollWatcherShutdown {false};
   std::chrono::time_point<std::chrono::system_clock> TimeWhileZeroFDs{};
@@ -71,9 +74,14 @@ namespace EPollWatcher {
   }
 
   void EPollWatch() {
+    pthread_setname_np(pthread_self(), "EPollWatcher");
+    EPollThreadTID = ::gettid();
     constexpr size_t MAX_EVENTS = 16;
     struct epoll_event Events[MAX_EVENTS]{};
-    while (!EPollWatcherShutdown.load()) {
+
+    // Spin while we are not shutting down
+    // Also spin while we have pipes to watch
+    while (!EPollWatcherShutdown.load() || NumPipesRemaining() != 0) {
       // Loop every ten seconds
       // epoll_pwait2 only available since kernel 5.11...
       int Result = epoll_pwait(epoll_fd, Events, MAX_EVENTS, 10 * 1000, nullptr);
@@ -101,6 +109,9 @@ namespace EPollWatcher {
         }
       }
     }
+
+    // Close the poll_fd
+    close(epoll_fd);
   }
 
   void SetupEPoll() {
@@ -110,11 +121,12 @@ namespace EPollWatcher {
 
   void SignalShutdown() {
     EPollWatcherShutdown = true;
+    // Send a signal to wake up epoll immediately
+    tgkill(::getpid(), EPollThreadTID, SIGUSR1);
   }
 
   void ShutdownEPoll() {
     SignalShutdown();
-    close(epoll_fd);
     EPollThread.join();
   }
 }
@@ -122,11 +134,17 @@ namespace EPollWatcher {
 namespace SocketWatcher {
   static int socket_fd{};
   static std::thread SocketThread{};
+  static std::atomic<pid_t> SocketThreadTID{};
+  const std::string *SocketWatcherPath{};
   std::atomic<bool> SocketShutdown {false};
 
   void SocketFunction() {
+    pthread_setname_np(pthread_self(), "SocketWatcher");
+    SocketThreadTID = ::gettid();
+    listen(socket_fd, 16);
     while (!SocketShutdown.load()) {
-      // Wait for data coming in
+      // Listen for connections
+      // Wait for new clients coming in
       struct pollfd pfd{};
       pfd.fd = socket_fd;
       pfd.events = POLLIN;
@@ -136,62 +154,90 @@ namespace SocketWatcher {
       ts.tv_sec = 10;
 
       int Result = ppoll(&pfd, 1, &ts, nullptr);
-      if (Result == -1) {
-        // EINTR is common here
-      }
-      else if (Result > 0) {
-        // We got data to grab
-        struct msghdr msg{};
-        struct iovec iov{};
-        char iov_data{};
 
-        // Setup the ancillary buffer. This is where we will be getting pipe FDs
-        // We only need 4 bytes for the FD
-        constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
-        union AncillaryBuffer {
-          struct cmsghdr Header;
-          uint8_t Buffer[CMSG_SIZE];
-        };
-        AncillaryBuffer AncBuf{};
+      if (Result > 0) {
+        struct sockaddr_in from{};
+        socklen_t addrlen = sizeof(from);
+        int new_client = accept(socket_fd, reinterpret_cast<struct sockaddr *>(&from), &addrlen);
 
-        // Set up message header
-        msg.msg_name = nullptr;
-        msg.msg_namelen = 0;
-        msg.msg_iov = &iov;
-        msg.msg_iovlen = 1;
+        // Wait for data coming in
+        struct pollfd pfd{};
+        pfd.fd = new_client;
+        pfd.events = POLLIN;
 
-        // Setup iov. We won't be receiving any real data here
-        iov.iov_base = &iov_data;
-        iov.iov_len = sizeof(iov_data);
+        // Wait for ten seconds
+        struct timespec ts{};
+        ts.tv_sec = 10;
 
-        // Now link to our ancilllary buffer
-        msg.msg_control = AncBuf.Buffer;
-        msg.msg_controllen = CMSG_SIZE;
-
-        ssize_t DataResult = recvmsg(socket_fd, &msg, 0);
-        if (DataResult == -1) {
-          // Sometimes get a spurious read?
+        int Result = ppoll(&pfd, 1, &ts, nullptr);
+        if (Result == -1) {
+          // EINTR is common here
         }
-        else {
-          // Now that we have the data, we can extract the FD from the ancillary buffer
-          struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+        else if (Result > 0) {
+          // We got data to grab
+          struct msghdr msg{};
+          struct iovec iov{};
+          char iov_data{};
 
-          // Do some error checking
-          if (cmsg == nullptr ||
-              cmsg->cmsg_len != CMSG_LEN(sizeof(int)) ||
-              cmsg->cmsg_level != SOL_SOCKET ||
-              cmsg->cmsg_type != SCM_RIGHTS) {
-            fprintf(stderr, "[FEXMountDaemon:SocketWatcher] cmsg data was incorrect\n");
+          // Setup the ancillary buffer. This is where we will be getting pipe FDs
+          // We only need 4 bytes for the FD
+          constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
+          union AncillaryBuffer {
+            struct cmsghdr Header;
+            uint8_t Buffer[CMSG_SIZE];
+          };
+          AncillaryBuffer AncBuf{};
+
+          // Set up message header
+          msg.msg_name = nullptr;
+          msg.msg_namelen = 0;
+          msg.msg_iov = &iov;
+          msg.msg_iovlen = 1;
+
+          // Setup iov. We won't be receiving any real data here
+          iov.iov_base = &iov_data;
+          iov.iov_len = sizeof(iov_data);
+
+          // Now link to our ancilllary buffer
+          msg.msg_control = AncBuf.Buffer;
+          msg.msg_controllen = CMSG_SIZE;
+
+          ssize_t DataResult = recvmsg(new_client, &msg, 0);
+          if (DataResult == -1) {
+            // Sometimes get a spurious read?
           }
           else {
-            // Now that we know the cmsg is sane, read the FD
-            int NewFD{};
-            memcpy(&NewFD, CMSG_DATA(cmsg), sizeof(NewFD));
+            // Now that we have the data, we can extract the FD from the ancillary buffer
+            struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
 
-            // Add to to the epoll watcher
-            EPollWatcher::AddPipeToWatch(NewFD);
+            // Do some error checking
+            if (cmsg == nullptr ||
+                cmsg->cmsg_len != CMSG_LEN(sizeof(int)) ||
+                cmsg->cmsg_level != SOL_SOCKET ||
+                cmsg->cmsg_type != SCM_RIGHTS) {
+              fprintf(stderr, "[FEXMountDaemon:SocketWatcher] cmsg data was incorrect\n");
+            }
+            else {
+              // Now that we know the cmsg is sane, read the FD
+              int NewFD{};
+              memcpy(&NewFD, CMSG_DATA(cmsg), sizeof(NewFD));
+
+              // Add to to the epoll watcher
+              EPollWatcher::AddPipeToWatch(NewFD);
+              // If we received an event while in the process of shutting down then we have raced
+
+              // Send back an ack message
+              uint8_t c = 0;
+              send(new_client, &c, sizeof(c), 0);
+            }
           }
         }
+
+        // Now that we have received data on this socket we don't need to keep it around
+        close(new_client);
+      }
+      else {
+        // EINTR common here
       }
     }
   }
@@ -203,7 +249,7 @@ namespace SocketWatcher {
     remove(SocketPath.c_str());
 
     // Create the initial unix socket
-    socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (socket_fd == -1) {
       fprintf(stderr, "[FEXMountDaemon:SocketWatcher] Couldn't create AF_UNIX socket: %d %s\n", errno, strerror(errno));
       return false;
@@ -216,7 +262,7 @@ namespace SocketWatcher {
     // Bind the socket to the path
     int Result = bind(socket_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
     if (Result == -1) {
-      fprintf(stderr, "[FEXMountDaemon:SocketWatcher] Couldn't bind AF_UNIX socket: %d %s\n", errno, strerror(errno));
+      fprintf(stderr, "[FEXMountDaemon:SocketWatcher] Couldn't bind AF_UNIX socket '%s': %d %s\n", addr.sun_path, errno, strerror(errno));
       return false;
     }
 
@@ -224,6 +270,7 @@ namespace SocketWatcher {
   }
 
   bool SetupSocketWatcher(std::string &SocketPath) {
+    SocketWatcherPath = &SocketPath;
     if (!CreateServerSocket(SocketPath)) {
       return false;
     }
@@ -234,14 +281,17 @@ namespace SocketWatcher {
 
   void SignalShutdown() {
     SocketShutdown = true;
+    // Send a signal to wake up ppoll immediately
+    tgkill(::getpid(), SocketThreadTID, SIGUSR1);
   }
 
-  void ShutdownSocketWatcher(std::string &SocketPath) {
+  void ShutdownSocketWatcher() {
     SignalShutdown();
-    close(socket_fd);
     SocketThread.join();
 
-    remove(SocketPath.c_str());
+    // Close the socket and delete the socket file
+    close(socket_fd);
+    remove(SocketWatcherPath->c_str());
   }
 }
 
@@ -250,6 +300,7 @@ namespace INotifyWatcher {
   static std::condition_variable WaitCV{};
   static std::mutex WaitMutex{};
   static std::atomic<bool> INotifyShutdown {false};
+  const std::string *INotifyLockPath{};
   enum LockFailure {
     LOCK_FAIL_FATAL,
     LOCK_FAIL_EXISTS,
@@ -259,7 +310,10 @@ namespace INotifyWatcher {
 
   constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
 
-  LockFailure CreateINotifyLock(std::string LockPath, const char *MountPath) {
+  void RemoveLock();
+
+  LockFailure CreateINotifyLock(const std::string &LockPath, const char *MountPath) {
+    INotifyLockPath = &LockPath;
     lock_fd = open(LockPath.c_str(), O_RDONLY, USER_PERMS);
     if (lock_fd != -1) {
       // LockFD already existed!
@@ -329,23 +383,40 @@ namespace INotifyWatcher {
   }
 
   void WatchLock() {
+    pthread_setname_np(pthread_self(), "INotifyWatcher");
+
     // Let go of the file lease file to allow FEX to continue
     fcntl(lock_fd, F_SETLEASE, F_UNLCK);
 
     // Wait in a mutex to shutdown
     std::unique_lock<std::mutex> lk (WaitMutex);
     WaitCV.wait(lk, [] { return INotifyShutdown.load(); });
+
+    // Remove the locks immediately after shutdown
+    INotifyWatcher::RemoveLock();
   }
 
-  void RemoveLock(std::string LockPath) {
-    // Remove the lock file itself
-    unlink(LockPath.c_str());
+  void RemoveLock() {
+    if (lock_fd != -1) {
+      // Grab the file lock so FEX can't open it
+      int Res = fcntl(lock_fd, F_SETLEASE, F_WRLCK);
+      if (Res == -1) {
+        fprintf(stderr, "Couldn't lock lock file: %d %s\n", errno, strerror(errno));
+      }
 
-    // Clear the lease on it since we are shutting down
-    fcntl(lock_fd, F_SETLEASE, F_UNLCK);
+      // remove the contents in case any client is in the process of opening this
+      ftruncate(lock_fd, 0);
 
-    // Close the lock fd
-    close(lock_fd);
+      // Remove the lock file itself
+      unlink(INotifyLockPath->c_str());
+
+      // Clear the lease on it since we are shutting down
+      fcntl(lock_fd, F_SETLEASE, F_UNLCK);
+
+      // Close the lock fd
+      close(lock_fd);
+      lock_fd = -1;
+    }
   }
 
   void SignalShutdown() {
@@ -364,6 +435,9 @@ void ActionHandler(int sig, siginfo_t *info, void *context) {
       fprintf(stderr, "Expect errors!\n");
     }
   }
+  else if (sig == SIGUSR1) {
+    // Ignore
+  }
   else {
     // Signal sent directly to process
     // Force a shutdown
@@ -373,10 +447,31 @@ void ActionHandler(int sig, siginfo_t *info, void *context) {
   }
 }
 
-
 void SignalShutdown() {
+  ::ShuttingDown = true;
+  // We need to very carefully deconstruct our state to ensure we don't have a race condition
+  // First thing to do is to shutdown the lock thread
+  // Race here where the application opens the lock file, reads the mount directory while the file is getting deleted
+  // Nothing we can really do on our side
   INotifyWatcher::SignalShutdown();
+
+  // Now that we have shutdown the lock file. No more NEW clients of FEX will find this daemon
+  // Next race is that any clients that managed to read the lock file before it was erased can find the socket
+  // for this rootfs daemon
+  // Depending on when the socket closes either the client will fail to send an FD to us OR
+  // we receive the FD and start watching it
+  //
+  // On failure to send FD, the client needs to retry FEXMountDaemon mounting
   SocketWatcher::SignalShutdown();
+
+  // Time to handle the tail end of the last race condition
+  // In the case of FEX sending an FD while SocketWatcher is shutting down
+  //
+  // Shutdown()
+  // -> INotifyWatcher::Shutdown()
+  // -> SocketWatcher:: Receives FD
+  // -> EPollWatcher::SignalShutdown
+  // -> EPollWatcher::EPollWatch keeps running until all FDs leave
   EPollWatcher::SignalShutdown();
 }
 
@@ -400,6 +495,21 @@ int main(int argc, char **argv, char **envp) {
   const char *MountPath = argv[2];
   int pipe_wr = std::atoi(argv[3]);
 
+  // Setup our signal handlers now so we can capture some events
+  struct sigaction act{};
+  act.sa_sigaction = ActionHandler;
+  act.sa_flags = SA_SIGINFO;
+
+  // SIGCHLD if squashfuse exits early
+  sigaction(SIGCHLD, &act, nullptr);
+  // SIGTERM if something is trying to terminate us
+  sigaction(SIGTERM, &act, nullptr);
+  // SIGUSR1 just to interrupt syscalls
+  sigaction(SIGUSR1, &act, nullptr);
+
+  // Ignore SIGPIPE, we will be checking for pipe closure which could send this signal
+  signal(SIGPIPE, SIG_IGN);
+
   // Start the epoll watcher
   EPollWatcher::SetupEPoll();
 
@@ -421,25 +531,29 @@ int main(int argc, char **argv, char **envp) {
   LockPath += ".lock.";
   LockPath += uts.nodename;
 
-  std::string SocketPath = "/tmp/.FEX-";
-  SocketPath += std::filesystem::path(SquashFSPath).filename();
-  SocketPath += ".socket.";
-  SocketPath += uts.nodename;
+  std::string SocketPath = MountPath;
+  SocketPath += ".socket";
 
   if (!SocketWatcher::SetupSocketWatcher(SocketPath)) {
-    fprintf(stderr, "[FEXMountDaemon] Failed to setup socket watcher\n");
+    EPollWatcher::ShutdownEPoll();
     return -1;
   }
 
   // Use lock files to ensure we aren't racing to mount multiple FSes
   auto Failure = INotifyWatcher::CreateINotifyLock(LockPath, MountPath);
   if (Failure == INotifyWatcher::LOCK_FAIL_FATAL) {
-    fprintf(stderr, "[FEXMountDaemon] Failed to setup inotify lock\n");
+    EPollWatcher::ShutdownEPoll();
+    // Shutdown the signal watcher
+    SocketWatcher::ShutdownSocketWatcher();
     return -1;
   }
 
   if (Failure == INotifyWatcher::LOCK_FAIL_EXISTS ||
       Failure == INotifyWatcher::LOCK_FAIL_CREATION_RACE) {
+    EPollWatcher::ShutdownEPoll();
+    // Shutdown the signal watcher
+    SocketWatcher::ShutdownSocketWatcher();
+
     // If the lock already exists
     // Then we don't need to spin up the mounts at all
     // Cleanly exit early and let FEX know it can continue
@@ -480,18 +594,6 @@ int main(int argc, char **argv, char **envp) {
     // This will happen with execve of squashmount or exit on failure
     waitpid(pid, nullptr, 0);
 
-    // Setup our signal handlers now so we can capture some events
-    struct sigaction act{};
-    act.sa_sigaction = ActionHandler;
-    act.sa_flags = SA_SIGINFO;
-
-    // SIGCHLD if squashfuse exits early
-    sigaction(SIGCHLD, &act, nullptr);
-    // SIGTERM if something is trying to terminate us
-    sigaction(SIGTERM, &act, nullptr);
-    // Ignore SIGPIPE, we will be checking for pipe closure which could send this signal
-    signal(SIGPIPE, SIG_IGN);
-
     // Check the child pipe for messages
     pollfd PollFD;
     PollFD.fd = localfds[0];
@@ -519,10 +621,16 @@ int main(int argc, char **argv, char **envp) {
     write(pipe_wr, &c, sizeof(c));
 
     // Watch our lock file now for users
+    // Blocks here until no more users
     INotifyWatcher::WatchLock();
 
-    INotifyWatcher::RemoveLock(LockPath);
+    // Shutdown the socket watcher fully if it still hasn't
+    SocketWatcher::ShutdownSocketWatcher();
 
+    // Shutdown and spin on any epoll FDs remaining
+    EPollWatcher::ShutdownEPoll();
+
+    // Handle final mount removal
     // fusermount for unmounting the mountpoint, then the squashfuse will exit automatically
     pid = fork();
 
@@ -552,9 +660,6 @@ int main(int argc, char **argv, char **envp) {
       rmdir(MountPath);
     }
   }
-
-  EPollWatcher::ShutdownEPoll();
-  SocketWatcher::ShutdownSocketWatcher(SocketPath);
 
   return 0;
 }

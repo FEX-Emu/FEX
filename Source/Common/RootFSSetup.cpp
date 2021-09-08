@@ -1,5 +1,6 @@
 #include "ConfigDefines.h"
 #include "Common/FileFormatCheck.h"
+#include "Common/RootFSSetup.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -34,7 +35,7 @@ bool SanityCheckPath(std::string const &LDPath) {
   return true;
 }
 
-bool CheckLockExists(std::string const &LockPath) {
+bool CheckLockExists(std::string const &LockPath, std::string *MountPath) {
   // If the lock file for a squashfs path exists the we can try
   // to open it and ref counting will keep it alive
   std::error_code ec{};
@@ -61,13 +62,20 @@ bool CheckLockExists(std::string const &LockPath) {
         return false;
       }
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NewPath);
+      if (MountPath) {
+        *MountPath = NewPath;
+      }
       return true;
     }
   }
   return false;
 }
 
-bool SendSocketPipe(std::string const &SocketPath) {
+std::string GetRootFSSocketFile(std::string const &MountPath) {
+  return MountPath + ".socket";
+}
+
+bool SendSocketPipe(std::string const &MountPath) {
   // Open pipes so we can send the daemon one
   int fds[2]{};
   if (pipe2(fds, 0) != 0) {
@@ -112,12 +120,13 @@ bool SendSocketPipe(std::string const &SocketPath) {
 
   // Time to open up the actual socket and send the FD over to the daemon
   // Create the initial unix socket
-  int socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+  int socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
   if (socket_fd == -1) {
     LogMan::Msg::D("Couldn't open AF_UNIX socket: %d %s", errno, strerror(errno));
     return false;
   }
 
+  std::string SocketPath = GetRootFSSocketFile(MountPath);
   struct sockaddr_un addr{};
   addr.sun_family = AF_UNIX;
   strncpy(addr.sun_path, SocketPath.data(), sizeof(addr.sun_path));
@@ -131,6 +140,27 @@ bool SendSocketPipe(std::string const &SocketPath) {
   ssize_t ResultSend = sendmsg(socket_fd, &msg, 0);
   if (ResultSend == -1) {
     LogMan::Msg::D("Couldn't sendmsg");
+    close(socket_fd);
+    return false;
+  }
+
+  struct pollfd pfd{};
+  pfd.fd = socket_fd;
+  pfd.events = POLLIN;
+
+  // Wait for two seconds
+  struct timespec ts{};
+  ts.tv_sec = 2;
+
+  int Result = ppoll(&pfd, 1, &ts, nullptr);
+  if (Result == -1 || Result == 0) {
+    // didn't get ack back in time
+    // Close our read pipe
+    close(fds[0]);
+    // close our write pipe
+    close(fds[1]);
+
+    // close socket
     close(socket_fd);
     return false;
   }
@@ -185,18 +215,6 @@ std::string GetRootFSLockFile() {
   return LockPath;
 }
 
-std::string GetRootFSSocketFile() {
-  // FEX_ROOTFS needs to be the path to the squashfs, not the mount
-  FEX_CONFIG_OPT(LDPath, ROOTFS);
-  struct utsname uts{};
-  uname (&uts);
-  std::string SocketPath = "/tmp/.FEX-";
-  SocketPath += std::filesystem::path(LDPath()).filename();
-  SocketPath += ".socket.";
-  SocketPath += uts.nodename;
-  return SocketPath;
-}
-
 bool Setup(char **const envp) {
   // We need to setup the rootfs here
   // If the configuration is set to use a folder then there is nothing to do
@@ -208,11 +226,11 @@ bool Setup(char **const envp) {
     // We can do this by checking the lock file if it exists
 
     std::string LockPath = GetRootFSLockFile();
-    std::string SocketFile = GetRootFSSocketFile();
 
     // If the lock file exists and we can send the process a pipe then nothing to do
     // Otherwise we need to spin up a new mount daemon
-    if (CheckLockExists(LockPath) && SendSocketPipe(SocketFile)) {
+    std::string MountPath{};
+    if (CheckLockExists(LockPath, &MountPath) && SendSocketPipe(MountPath)) {
       return true;
     }
 
@@ -306,7 +324,7 @@ bool Setup(char **const envp) {
       }
 
       // Send the new FEXMountDaemon a pipe to listen to
-      SendSocketPipe(SocketFile);
+      SendSocketPipe(TempFolder);
 
       // If everything has passed then we can now update the rootfs path
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, TempFolder);

@@ -8,8 +8,10 @@ namespace FEX::RootFS {
   bool UpdateRootFSPath();
   // Returns where the rootfs lock file lives even if the squashfs isn't mounted
   std::string GetRootFSLockFile();
+  // Returns the socket file for a mount path
+  std::string GetRootFSSocketFile(std::string const &MountPath);
   // Checks if the rootfs lock exists
-  bool CheckLockExists(std::string const &LockPath);
+  bool CheckLockExists(std::string const &LockPath, std::string *MountPath = nullptr);
   bool Setup(char **const envp);
   void Shutdown();
 }
