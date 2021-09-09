@@ -88,6 +88,20 @@ struct RegState {
     return InvalidReg;
   }
 
+
+  void Spill(uint32_t SpillSlot, uint32_t ssa) {
+    Spills[SpillSlot] = ssa;
+  }
+
+  uint32_t Unspill(uint32_t SpillSlot) {
+    if (Spills.contains(SpillSlot)) {
+      uint32_t Value = Spills[SpillSlot];
+      Spills.erase(SpillSlot);
+      return Value;
+    }
+    return UninitializedValue;
+  }
+
   void Intersect(RegState& other) {
     for (size_t i = 0; i < GPRs.size(); i++) {
       if (GPRs[i] != other.GPRs[i]) {
@@ -98,6 +112,15 @@ struct RegState {
     for (size_t i = 0; i < FPRs.size(); i++) {
       if (FPRs[i] != other.FPRs[i]) {
         FPRs[i] = ClobberedValue;
+      }
+    }
+
+    for (auto it = Spills.begin(); it != Spills.end(); it++) {
+      auto& [SlotID, Value] = *it;
+      if (!other.Spills.contains(SlotID)) {
+        Spills.erase(it);
+      } else if (Value != other.Spills[SlotID]) {
+        Value = ClobberedValue;
       }
     }
   }
@@ -114,11 +137,20 @@ struct RegState {
         fpr = ClobberedValue;
       }
     }
+
+    for (auto it = Spills.begin(); it != Spills.end(); it++) {
+      auto& [SlotID, Value] = *it;
+      if (Value > MaxSSA) {
+        Spills.erase(it);
+      }
+    }
   }
 
 private:
   std::array<uint32_t, 32> GPRs = {};
   std::array<uint32_t, 32> FPRs = {};
+
+  std::unordered_map<uint32_t, uint32_t> Spills;
 
 public:
   uint32_t Version{};
@@ -230,15 +262,11 @@ bool RAValidation::Run(IREmitter *IREmit) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       uint32_t ID = CurrentIR.GetID(CodeNode);
 
-      // And check that all args point at the correct SSA
-      uint8_t NumArgs = IR::GetArgs(IROp->Op);
-      for (uint32_t i = 0; i < NumArgs; ++i) {
-        OrderedNodeWrapper Arg = IROp->Args[i];
-
+      auto CheckArg = [&] (uint32_t i, OrderedNodeWrapper Arg) {
         const auto PhyReg = RAData->GetNodeRegister(Arg.ID());
 
         if (PhyReg.IsInvalid())
-          continue;
+          return;
 
         auto CurrentSSAAtReg = BlockRegState.Get(PhyReg);
         if (CurrentSSAAtReg == RegState::InvalidReg) {
@@ -267,6 +295,45 @@ bool RAValidation::Run(IREmitter *IREmit) {
           Errors << fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it actually contains %ssa{}\n",
                                 ID, i, PhyReg.Reg, Arg.ID(), CurrentSSAAtReg);
         }
+      };
+
+      switch (IROp->Op)
+      {
+      case OP_SPILLREGISTER: {
+        auto SpillRegister = IROp->C<IROp_SpillRegister>();
+        CheckArg(0, SpillRegister->Value);
+
+        BlockRegState.Spill(SpillRegister->Slot, SpillRegister->Value.ID());
+        break;
+      }
+
+      case OP_FILLREGISTER: {
+        auto FillRegister = IROp->C<IROp_FillRegister>();
+        uint32_t value = BlockRegState.Unspill(FillRegister->Slot);
+
+        // TODO: This only proves that the Spill has a consistent SSA value
+        //       In the future we need to prove it contains the correct SSA value
+
+        if (value == RegState::UninitializedValue) {
+          HadError |= true;
+          Errors << fmt::format("%ssa{}: FillRegister; Spill Slot {} was undefined in at least one control flow path\n",
+                                ID, FillRegister->Slot);
+        } else if (value == RegState::ClobberedValue) {
+          HadError |= true;
+          Errors << fmt::format("%ssa{}: FillRegister; Spill Slot {} contents vary depending on control flow\n",
+                                ID, FillRegister->Slot);
+        }
+        break;
+      }
+
+      default: {
+        // And check that all args point at the correct SSA
+        uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        for (uint32_t i = 0; i < NumArgs; ++i) {
+          CheckArg(i, IROp->Args[i]);
+        }
+        break;
+      }
       }
 
       // Update BlockState map
