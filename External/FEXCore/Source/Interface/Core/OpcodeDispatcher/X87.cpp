@@ -143,17 +143,17 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
 }
 
 template
-void OpDispatchBuilder::FLD_Const<0x8000'0000'0000'0000, 0b0'011'1111'1111'1111>(OpcodeArgs); // 1.0
+void OpDispatchBuilder::FLD_Const<0x8000'0000'0000'0000ULL, 0b0'011'1111'1111'1111ULL>(OpcodeArgs); // 1.0
 template
-void OpDispatchBuilder::FLD_Const<0xD49A'784B'CD1B'8AFE, 0x4000>(OpcodeArgs); // log2l(10)
+void OpDispatchBuilder::FLD_Const<0xD49A'784B'CD1B'8AFEULL, 0x4000ULL>(OpcodeArgs); // log2l(10)
 template
-void OpDispatchBuilder::FLD_Const<0xB8AA'3B29'5C17'F0BC, 0x3FFF>(OpcodeArgs); // log2l(e)
+void OpDispatchBuilder::FLD_Const<0xB8AA'3B29'5C17'F0BCULL, 0x3FFFULL>(OpcodeArgs); // log2l(e)
 template
-void OpDispatchBuilder::FLD_Const<0xC90F'DAA2'2168'C235, 0x4000>(OpcodeArgs); // pi
+void OpDispatchBuilder::FLD_Const<0xC90F'DAA2'2168'C235ULL, 0x4000ULL>(OpcodeArgs); // pi
 template
-void OpDispatchBuilder::FLD_Const<0x9A20'9A84'FBCF'F799, 0x3FFD>(OpcodeArgs); // log10l(2)
+void OpDispatchBuilder::FLD_Const<0x9A20'9A84'FBCF'F799ULL, 0x3FFDULL>(OpcodeArgs); // log10l(2)
 template
-void OpDispatchBuilder::FLD_Const<0xB172'17F7'D1CF'79AC, 0x3FFE>(OpcodeArgs); // log(2)
+void OpDispatchBuilder::FLD_Const<0xB172'17F7'D1CF'79ACULL, 0x3FFEULL>(OpcodeArgs); // log(2)
 template
 void OpDispatchBuilder::FLD_Const<0, 0>(OpcodeArgs); // 0.0
 
@@ -546,7 +546,7 @@ void OpDispatchBuilder::FCHS(OpcodeArgs) {
   auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 
   auto low = _Constant(0);
-  auto high = _Constant(0b1'000'0000'0000'0000);
+  auto high = _Constant(0b1'000'0000'0000'0000ULL);
   OrderedNode *data = _VCastFromGPR(16, 8, low);
   data = _VInsGPR(16, 8, data, high, 1);
 
@@ -561,7 +561,7 @@ void OpDispatchBuilder::FABS(OpcodeArgs) {
   auto a = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 
   auto low = _Constant(~0ULL);
-  auto high = _Constant(0b0'111'1111'1111'1111);
+  auto high = _Constant(0b0'111'1111'1111'1111ULL);
   OrderedNode *data = _VCastFromGPR(16, 8, low);
   data = _VInsGPR(16, 8, data, high, 1);
 
@@ -870,7 +870,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
   OrderedNode *st1 = _LoadContextIndexed(top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
 
   if (Plus1) {
-    auto low = _Constant(0x8000'0000'0000'0000);
+    auto low = _Constant(0x8000'0000'0000'0000ULL);
     auto high = _Constant(0b0'011'1111'1111'1111);
     OrderedNode *data = _VCastFromGPR(16, 8, low);
     data = _VInsGPR(16, 8, data, high, 1);
@@ -893,8 +893,8 @@ void OpDispatchBuilder::X87TAN(OpcodeArgs) {
 
   auto result = _F80TAN(a);
 
-  auto low = _Constant(0x8000'0000'0000'0000);
-  auto high = _Constant(0b0'011'1111'1111'1111);
+  auto low = _Constant(0x8000'0000'0000'0000ULL);
+  auto high = _Constant(0b0'011'1111'1111'1111ULL);
   OrderedNode *data = _VCastFromGPR(16, 8, low);
   data = _VInsGPR(16, 8, data, high, 1);
 
