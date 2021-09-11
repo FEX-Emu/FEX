@@ -168,3 +168,9 @@ proc_net_test
 rtsignal_test
 sigstop_test
 stat_test
+
+# These search for folders in /
+# Might need to rbind some folders to make it happy
+# This currently passes on x86-64 hosts
+# This fails on AArch64 because getdents isn't emulated
+getdents_test
