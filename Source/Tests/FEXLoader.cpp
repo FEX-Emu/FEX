@@ -87,6 +87,7 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     std::ostringstream Output;
     Output << "[" << CharLevel << "] " << Message << std::endl;
     write(OutputFD, Output.str().c_str(), Output.str().size());
+    fsync(OutputFD);
   }
 }
 
@@ -95,6 +96,7 @@ void AssertHandler(char const *Message) {
     std::ostringstream Output;
     Output << "[ASSERT] " << Message << std::endl;
     write(OutputFD, Output.str().c_str(), Output.str().size());
+    fsync(OutputFD);
   }
 }
 
