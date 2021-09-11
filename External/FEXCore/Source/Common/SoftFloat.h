@@ -16,9 +16,19 @@ extern "C" {
 
 struct X80SoftFloat {
 #ifdef _M_X86_64
+// Define this to push some operations to x87
+// Only useful to see if precision loss is killing something
+// #define DEBUG_X86_FLOAT
+#ifdef DEBUG_X86_FLOAT
+#define BIGFLOAT long double
+#define BIGFLOATSIZE 10
+#else
 #define BIGFLOAT __float128
+#define BIGFLOATSIZE 16
+#endif
 #elif defined(_M_ARM_64)
 #define BIGFLOAT long double
+#define BIGFLOATSIZE 16
 #else
 #error No 128bit float for this target!
 #endif
@@ -170,8 +180,14 @@ struct X80SoftFloat {
   }
 
   operator BIGFLOAT() const {
+#if BIGFLOATSIZE == 16
     const float128_t Result = extF80_to_f128(*this);
     return FEXCore::BitCast<BIGFLOAT>(Result);
+#else
+    BIGFLOAT result{};
+    memcpy(&result, this, sizeof(result));
+    return result;
+#endif
   }
 
   operator int16_t() const {
@@ -217,6 +233,12 @@ struct X80SoftFloat {
     *this = ui64_to_extF80(rhs);
   }
 
+#if BIGFLOATSIZE == 10
+  void operator=(const long double rhs) {
+    memcpy(this, &rhs, sizeof(rhs));
+  }
+#endif
+
   operator void*() {
     return reinterpret_cast<void*>(this);
   }
@@ -236,7 +258,11 @@ struct X80SoftFloat {
   }
 
   X80SoftFloat(BIGFLOAT rhs) {
+#if BIGFLOATSIZE == 16
     *this = f128_to_extF80(FEXCore::BitCast<float128_t>(rhs));
+#else
+    *this = FEXCore::BitCast<long double>(rhs);
+#endif
   }
 
   X80SoftFloat(const int16_t rhs) {
