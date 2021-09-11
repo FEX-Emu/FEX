@@ -190,6 +190,11 @@ if (ENABLE_JEMALLOC)
   list (APPEND LIBS FEX_jemalloc)
 endif()
 
+# Generate config
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json.in
+  ${CMAKE_BINARY_DIR}/generated/Config/Config.json)
+
 # Generate IR include file
 set(OUTPUT_IR_FOLDER "${CMAKE_BINARY_DIR}/include/FEXCore/IR")
 set(OUTPUT_NAME "${OUTPUT_IR_FOLDER}/IRDefines.inc")
@@ -232,7 +237,7 @@ add_custom_target(IR_INC
 set(OUTPUT_CONFIG_FOLDER "${CMAKE_BINARY_DIR}/include/FEXCore/Config")
 set(OUTPUT_CONFIG_NAME "${OUTPUT_CONFIG_FOLDER}/ConfigValues.inl")
 set(OUTPUT_CONFIG_OPTION_NAME "${OUTPUT_CONFIG_FOLDER}/ConfigOptions.inl")
-set(INPUT_CONFIG_NAME "${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json")
+set(INPUT_CONFIG_NAME "${CMAKE_BINARY_DIR}/generated/Config/Config.json")
 set(OUTPUT_MAN_NAME "${CMAKE_BINARY_DIR}/generated/FEX.1")
 
 add_custom_target(CREATE_CONFIG_FOLDER ALL
