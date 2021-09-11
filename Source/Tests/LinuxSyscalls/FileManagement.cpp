@@ -130,9 +130,10 @@ FileManager::~FileManager() {
 
 std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
   auto RootFSPath = LDPath();
-  if (!pathname ||
-      pathname[0] != '/' ||
-      RootFSPath.empty()) {
+  if (!pathname || // If no pathname
+      pathname[0] != '/' || // If relative
+      RootFSPath.empty() || // If RootFS doesn't exist
+      strcmp(pathname, "/") == 0) { // If we are getting root
     return {};
   }
 
