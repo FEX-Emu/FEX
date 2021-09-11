@@ -24,5 +24,15 @@ namespace FEX::HLE::x64 {
       uint64_t Result = ::getrusage(who, usage);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X64(getrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, struct rlimit *rlim) -> uint64_t {
+      uint64_t Result = ::getrlimit(resource, rlim);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(setrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, const struct rlimit *rlim) -> uint64_t {
+      uint64_t Result = ::setrlimit(resource, rlim);
+      SYSCALL_ERRNO();
+    });
   }
 }

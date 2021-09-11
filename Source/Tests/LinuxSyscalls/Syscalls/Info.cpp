@@ -58,16 +58,6 @@ namespace FEX::HLE {
       return 0;
     });
 
-    REGISTER_SYSCALL_IMPL(getrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, struct rlimit *rlim) -> uint64_t {
-      uint64_t Result = ::getrlimit(resource, rlim);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL(setrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, const struct rlimit *rlim) -> uint64_t {
-      uint64_t Result = ::setrlimit(resource, rlim);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(syslog, [](FEXCore::Core::CpuStateFrame *Frame, int type, char *bufp, int len) -> uint64_t {
       uint64_t Result = ::klogctl(type, bufp, len);
       SYSCALL_ERRNO();
