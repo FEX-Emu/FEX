@@ -121,6 +121,7 @@ namespace Type {
 
   FEX_DEFAULT_VISIBILITY void Load();
   FEX_DEFAULT_VISIBILITY void ReloadMetaLayer();
+  FEX_DEFAULT_VISIBILITY std::string FindContainerPrefix();
 
   FEX_DEFAULT_VISIBILITY void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer);
 
