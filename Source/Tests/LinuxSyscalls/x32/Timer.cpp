@@ -96,5 +96,11 @@ namespace FEX::HLE::x32 {
       }
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(timer_create, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, compat_ptr<FEX::HLE::x32::sigevent32> sevp, kernel_timer_t *timerid) -> uint64_t {
+      sigevent Host = *sevp;
+      uint64_t Result = ::syscall(SYS_timer_create, clockid, &Host, timerid);
+      SYSCALL_ERRNO();
+    });
   }
 }

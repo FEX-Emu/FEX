@@ -572,16 +572,7 @@ namespace FEX::HLE {
       return -EINVAL;
     }
 
-    sigset_t HostSet{};
-    sigemptyset(&HostSet);
-
-    for (int32_t i = 0; i < MAX_SIGNALS; ++i) {
-      if (*set & (1ULL << i)) {
-        sigaddset(&HostSet, i + 1);
-      }
-    }
-
-    uint64_t Result = sigtimedwait(&HostSet, info, timeout);
+    uint64_t Result = ::syscall(SYS_rt_sigtimedwait, set, info, timeout);
 
     return Result == -1 ? -errno : Result;
   }

@@ -13,6 +13,7 @@ $end_info$
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
+#include <signal.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -962,7 +963,6 @@ rlimit32 {
 static_assert(std::is_trivial<rlimit32<true>>::value, "Needs to be trivial");
 static_assert(sizeof(rlimit32<true>) == 8, "Incorrect size");
 
-
 struct
 FEX_ANNOTATE("alias-x86_32-timex")
 FEX_ANNOTATE("fex-match")
@@ -1048,4 +1048,80 @@ timex32 {
 static_assert(std::is_trivial<timex32>::value, "Needs to be trivial");
 static_assert(sizeof(timex32) == 128, "Incorrect size");
 
+union
+FEX_ANNOTATE("alias-x86_32-sigval")
+FEX_ANNOTATE("fex-match")
+sigval32 {
+  int sival_int;
+  compat_ptr<void> sival_ptr;
+
+  sigval32() = delete;
+
+  operator sigval() const {
+    sigval val{};
+    val.sival_ptr = sival_ptr;
+    return val;
+  }
+
+  sigval32(sigval val) {
+    sival_ptr = val.sival_ptr;
+  }
+};
+
+static_assert(std::is_trivial<sigval32>::value, "Needs to be trivial");
+static_assert(sizeof(sigval32) == 4, "Incorrect size");
+
+constexpr size_t SIGEV_MAX_SIZE = 64;
+constexpr size_t SIGEV_PAD_SIZE = (SIGEV_MAX_SIZE - (sizeof(int32_t) * 2 + sizeof(sigval32))) / sizeof(int32_t);
+
+struct
+FEX_ANNOTATE("fex-match")
+sigevent32 {
+  FEX::HLE::x32::sigval32 sigev_value;
+  int sigev_signo;
+  int sigev_notify;
+  union {
+    int _pad[SIGEV_PAD_SIZE];
+    int _tid;
+    struct {
+      uint32_t _function;
+      uint32_t _attribute;
+    } _sigev_thread;
+  } _sigev_un;
+
+  sigevent32() = delete;
+
+  operator sigevent() const {
+    sigevent val{};
+    val.sigev_value  = sigev_value;
+    val.sigev_signo  = sigev_signo;
+    val.sigev_notify = sigev_notify;
+
+    if (sigev_notify == SIGEV_THREAD_ID) {
+      val._sigev_un._tid = _sigev_un._tid;
+    }
+    else if (sigev_notify == SIGEV_THREAD) {
+      val.sigev_notify_function   = reinterpret_cast<void(*)(sigval)>(_sigev_un._sigev_thread._function);
+      val.sigev_notify_attributes = reinterpret_cast<pthread_attr_t*>(_sigev_un._sigev_thread._attribute);
+    }
+    return val;
+  }
+
+  sigevent32(sigevent val)
+    : sigev_value { val.sigev_value } {
+    sigev_signo  = val.sigev_signo;
+    sigev_notify = val.sigev_notify;
+
+    if (sigev_notify == SIGEV_THREAD_ID) {
+      _sigev_un._tid = val._sigev_un._tid;
+    }
+    else if (sigev_notify == SIGEV_THREAD) {
+      sigev_notify_function   = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val._sigev_un._sigev_thread._function));
+      sigev_notify_attributes = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val._sigev_un._sigev_thread._attribute));
+    }
+  }
+};
+
+static_assert(std::is_trivial<sigval32>::value, "Needs to be trivial");
+static_assert(sizeof(sigval32) == 4, "Incorrect size");
 }

@@ -10,6 +10,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Core/UContext.h>
 #include <errno.h>
 #include <bits/types/siginfo_t.h>
 #include <stdint.h>
@@ -20,6 +21,53 @@ namespace FEXCore::Core {
 }
 
 namespace FEX::HLE::x32 {
+  void CopySigInfo(FEXCore::x86::siginfo_t *Info, siginfo_t const &Host) {
+    // Copy the basic things first
+    Info->si_signo = Host.si_signo;
+    Info->si_errno = Host.si_errno;
+    Info->si_code = Host.si_code;
+
+    // Check si_code to determine how we need to interpret this
+    if (Info->si_code == SI_TIMER) {
+      // SI_TIMER means pid, uid, value
+      Info->_sifields._timer.tid     = Host.si_timerid;
+      Info->_sifields._timer.overrun = Host.si_overrun;
+      Info->_sifields._timer.sigval.sival_int = Host.si_value.sival_int;
+    }
+    else {
+      // Now we need to copy over the more complex things
+      switch (Info->si_signo) {
+        case SIGSEGV:
+        case SIGBUS:
+          // This is the address trying to be accessed, not the RIP
+          Info->_sifields._sigfault.addr = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(Host.si_addr));
+          break;
+        case SIGFPE:
+        case SIGILL:
+          // Can't really give a real result here. This is the RIP causing a sigill or sigfpe
+          // Claim at RIP 0 for now
+          Info->_sifields._sigfault.addr = 0;
+          break;
+        case SIGCHLD:
+          Info->_sifields._sigchld.pid    = Host.si_pid;
+          Info->_sifields._sigchld.uid    = Host.si_uid;
+          Info->_sifields._sigchld.status = Host.si_status;
+          Info->_sifields._sigchld.utime  = Host.si_utime;
+          Info->_sifields._sigchld.stime  = Host.si_stime;
+          break;
+        case SIGALRM:
+        case SIGVTALRM:
+          Info->_sifields._timer.tid              = Host.si_timerid;
+          Info->_sifields._timer.overrun          = Host.si_overrun;
+          Info->_sifields._timer.sigval.sival_int = Host.si_int;
+          break;
+        default:
+          LogMan::Msg::E("Unhandled siginfo_t for sigtimedwait: %d", Info->si_signo);
+          break;
+      }
+    }
+  }
+
   void RegisterSignals() {
     REGISTER_SYSCALL_IMPL_X32(sigpending, [](FEXCore::Core::CpuStateFrame *Frame, compat_old_sigset_t *set) -> uint64_t {
       uint64_t HostSet{};
@@ -66,7 +114,7 @@ namespace FEX::HLE::x32 {
       return Result;
     });
 
-    REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, siginfo_t *info, const struct timespec32* timeout, size_t sigsetsize) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, compat_ptr<FEXCore::x86::siginfo_t> info, const struct timespec32* timeout, size_t sigsetsize) -> uint64_t {
       struct timespec* timeout_ptr{};
       struct timespec tp64{};
       if (timeout) {
@@ -74,7 +122,24 @@ namespace FEX::HLE::x32 {
         timeout_ptr = &tp64;
       }
 
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, info, timeout_ptr, sigsetsize);
+      siginfo_t HostInfo{};
+      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout_ptr, sigsetsize);
+      if (Result != -1) {
+        // We need to translate the 64-bit siginfo_t to 32-bit siginfo_t
+        CopySigInfo(info, HostInfo);
+      }
+      return Result;
+    });
+
+
+    REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait_time64, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, compat_ptr<FEXCore::x86::siginfo_t> info, const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
+      siginfo_t HostInfo{};
+      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout, sigsetsize);
+      if (Result != -1) {
+        // We need to translate the 64-bit siginfo_t to 32-bit siginfo_t
+        CopySigInfo(info, HostInfo);
+      }
+      return Result;
     });
 
   }

@@ -94,6 +94,7 @@ namespace FEX::HLE::x64 {
       uint64_t Result = ::syscall(SYS_timer_gettime, timerid, curr_value);
       SYSCALL_ERRNO();
     });
+
     REGISTER_SYSCALL_IMPL_X64(adjtimex, [](FEXCore::Core::CpuStateFrame *Frame, struct timex *buf) -> uint64_t {
       uint64_t Result = ::adjtimex(buf);
       SYSCALL_ERRNO();
@@ -101,6 +102,11 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64(clock_adjtime, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clk_id, struct timex *buf) -> uint64_t {
       uint64_t Result = ::clock_adjtime(clk_id, buf);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(timer_create, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, struct sigevent *sevp, kernel_timer_t *timerid) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_timer_create, clockid, sevp, timerid);
       SYSCALL_ERRNO();
     });
   }
