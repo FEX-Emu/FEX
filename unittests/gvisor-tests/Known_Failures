@@ -131,8 +131,9 @@ connect_external_test
 exceptions_test
 
 # These search for folders in /
-# Sadly it finds the rootfs folders instead of the true rootfs and fails
 # Might need to rbind some folders to make it happy
+# This currently passes on x86-64 hosts
+# This fails on AArch64 because getdents isn't emulated
 getdents_test
 
 # Doesn't even pass on real x86 host
