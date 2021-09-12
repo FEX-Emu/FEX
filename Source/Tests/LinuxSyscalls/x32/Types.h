@@ -915,4 +915,51 @@ old_itimerspec32 {
 static_assert(std::is_trivial<old_itimerspec32>::value, "Needs to be trivial");
 static_assert(sizeof(old_itimerspec32) == 16, "Incorrect size");
 
+template<bool Signed>
+struct
+FEX_ANNOTATE("alias-x86_32-rlimit")
+FEX_ANNOTATE("fex-match")
+rlimit32 {
+  uint32_t rlim_cur;
+  uint32_t rlim_max;
+  rlimit32() = delete;
+
+  operator rlimit() const {
+    static_assert(Signed == false, "Signed variant doesn't exist");
+    rlimit val{};
+
+    val.rlim_cur = rlim_cur;
+    val.rlim_max = rlim_max;
+
+    if (val.rlim_cur == ~0U) {
+      val.rlim_cur = ~0ULL;
+    }
+    if (val.rlim_max == ~0U) {
+      val.rlim_max = ~0ULL;
+    }
+
+    return val;
+  }
+
+  rlimit32(struct rlimit val) {
+    constexpr uint32_t Limit = Signed ? 0x7FFF'FFFF : 0xFFFF'FFFF;
+    if (val.rlim_cur > Limit) {
+      rlim_cur = Limit;
+    }
+    else {
+      rlim_cur = val.rlim_cur;
+    }
+
+    if (val.rlim_max > Limit) {
+      rlim_max = Limit;
+    }
+    else {
+      rlim_max = val.rlim_max;
+    }
+  }
+};
+
+static_assert(std::is_trivial<rlimit32<true>>::value, "Needs to be trivial");
+static_assert(sizeof(rlimit32<true>) == 8, "Incorrect size");
+
 }

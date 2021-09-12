@@ -22,11 +22,6 @@ namespace FEXCore::Core {
 }
 
 namespace FEX::HLE::x32 {
-  struct rlimit32 {
-    uint32_t rlim_cur;
-    uint32_t rlim_max;
-  };
-
   struct sysinfo32 {
     int32_t uptime;
     uint32_t loads[3];
@@ -46,11 +41,24 @@ namespace FEX::HLE::x32 {
   static_assert(sizeof(sysinfo32) == 64, "Needs to be 64bytes");
 
   void RegisterInfo() {
-    REGISTER_SYSCALL_IMPL_X32(ugetrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, rlimit32 *rlim) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(getrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<true>> rlim) -> uint64_t {
       struct rlimit rlim64{};
       uint64_t Result = ::getrlimit(resource, &rlim64);
-      rlim->rlim_cur = rlim64.rlim_cur;
-      rlim->rlim_max = rlim64.rlim_max;
+      *rlim = rlim64;
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(ugetrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
+      struct rlimit rlim64{};
+      uint64_t Result = ::getrlimit(resource, &rlim64);
+      *rlim = rlim64;
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(setrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, const compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
+      struct rlimit rlim64{};
+      rlim64 = *rlim;
+      uint64_t Result = ::setrlimit(resource, &rlim64);
       SYSCALL_ERRNO();
     });
 
