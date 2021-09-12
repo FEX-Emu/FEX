@@ -668,7 +668,7 @@ namespace {
       if (ImGui::BeginMenu("File")) {
         ImGui::MenuItem("Open", "CTRL+O", &Selected.Open, true);
         ImGui::MenuItem("Open Default", "CTRL+SHIFT+O", &Selected.OpenDefault, true);
-        ImGui::MenuItem("Open App profile", "CTRL+A", &Selected.OpenAppProfile, true);
+        ImGui::MenuItem("Open App profile", "CTRL+I", &Selected.OpenAppProfile, true);
         ImGui::MenuItem("Load Default Options", "CTRL+SHIFT+D", &Selected.LoadDefault, true);
 
         ImGui::MenuItem("Save", "CTRL+S", &Selected.Save, true);
@@ -739,7 +739,7 @@ namespace {
     }
 
     if (Selected.OpenAppProfile ||
-        (ImGui::IsKeyPressed(SDL_SCANCODE_A) && io.KeyCtrl && !io.KeyShift)) {
+        (ImGui::IsKeyPressed(SDL_SCANCODE_I) && io.KeyCtrl && !io.KeyShift)) {
       ImGui::OpenPopup(OpenedPopupAppName);
     }
 
