@@ -49,5 +49,49 @@ namespace FEX::HLE::x32 {
       uint64_t Result = ::syscall(SYS_mq_timedreceive, mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X32(mq_open, [](FEXCore::Core::CpuStateFrame *Frame, const char *name, int oflag, mode_t mode, compat_ptr<FEX::HLE::x32::mq_attr32> attr) -> uint64_t {
+      mq_attr HostAttr{};
+      mq_attr *HostAttr_p{};
+      if ((oflag & O_CREAT) && attr) {
+        // attr is optional unless O_CREAT is set
+        // Then attr can be valid or nullptr
+        HostAttr = *attr;
+        HostAttr_p = &HostAttr;
+      }
+      uint64_t Result = ::syscall(SYS_mq_open, name, oflag, mode, HostAttr_p);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(mq_notify, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, const compat_ptr<FEX::HLE::x32::sigevent32> sevp) -> uint64_t {
+      sigevent Host = *sevp;
+      uint64_t Result = ::syscall(SYS_mq_notify, mqdes, &Host);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(mq_getsetattr, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, compat_ptr<FEX::HLE::x32::mq_attr32> newattr, compat_ptr<FEX::HLE::x32::mq_attr32> oldattr) -> uint64_t {
+      mq_attr HostNew{};
+      mq_attr *HostNew_p{};
+
+      mq_attr HostOld{};
+      mq_attr *HostOld_p{};
+
+      if (newattr) {
+        HostNew = *newattr;
+        HostNew_p = &HostNew;
+      }
+
+      if (oldattr) {
+        HostOld_p = &HostOld;
+      }
+
+      uint64_t Result = ::syscall(SYS_mq_getsetattr, mqdes, HostNew_p, HostOld_p);
+
+      if (Result != 1 && oldattr) {
+        *oldattr = HostOld;
+      }
+
+      SYSCALL_ERRNO();
+    });
   }
 }

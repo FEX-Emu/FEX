@@ -28,5 +28,20 @@ namespace FEX::HLE::x64 {
       uint64_t Result = ::syscall(SYS_mq_timedreceive, mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
       SYSCALL_ERRNO();
     });
+
+    REGISTER_SYSCALL_IMPL_X64(mq_open, [](FEXCore::Core::CpuStateFrame *Frame, const char *name, int oflag, mode_t mode, struct mq_attr *attr) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_mq_open, name, oflag, mode, attr);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(mq_notify, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, const struct sigevent *sevp) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_mq_notify, mqdes, sevp);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(mq_getsetattr, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, struct mq_attr *newattr, struct mq_attr *oldattr) -> uint64_t {
+      uint64_t Result = ::syscall(SYS_mq_getsetattr, mqdes, newattr, oldattr);
+      SYSCALL_ERRNO();
+    });
   }
 }

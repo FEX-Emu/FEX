@@ -13,6 +13,7 @@ $end_info$
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
+#include <mqueue.h>
 #include <signal.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
@@ -1124,4 +1125,35 @@ sigevent32 {
 
 static_assert(std::is_trivial<sigval32>::value, "Needs to be trivial");
 static_assert(sizeof(sigval32) == 4, "Incorrect size");
+
+struct
+FEX_ANNOTATE("alias-x86_32-mq_attr")
+FEX_ANNOTATE("fex-match")
+mq_attr32 {
+  compat_long_t mq_flags;
+  compat_long_t mq_maxmsg;
+  compat_long_t mq_msgsize;
+  compat_long_t mq_curmsgs;
+  compat_long_t __pad[4];
+  mq_attr32() = delete;
+
+  operator mq_attr() const {
+    struct mq_attr val{};
+    val.mq_flags   = mq_flags;
+    val.mq_maxmsg  = mq_maxmsg;
+    val.mq_msgsize = mq_msgsize;
+    val.mq_curmsgs = mq_curmsgs;
+    return val;
+  }
+
+  mq_attr32(struct mq_attr val) {
+    mq_flags   = val.mq_flags;
+    mq_maxmsg  = val.mq_maxmsg;
+    mq_msgsize = val.mq_msgsize;
+    mq_curmsgs = val.mq_curmsgs;
+  }
+};
+
+static_assert(std::is_trivial<mq_attr32>::value, "Needs to be trivial");
+static_assert(sizeof(mq_attr32) == 32, "Incorrect size");
 }
