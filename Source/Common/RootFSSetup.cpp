@@ -221,6 +221,14 @@ bool Setup(char **const envp) {
   // If it is setup to use a squashfs then we need to do something more complex
 
   FEX_CONFIG_OPT(LDPath, ROOTFS);
+  auto ContainerPrefix = FEXCore::Config::FindContainerPrefix();
+  if (!ContainerPrefix.empty()) {
+    // If we are inside of a rootfs/container then drop the rootfs path
+    // Root is already our rootfs
+    FEXCore::Config::Erase(FEXCore::Config::CONFIG_ROOTFS);
+    return true;
+  }
+
   if (FEX::FormatCheck::IsSquashFS(LDPath())) {
     // Check if the rootfs is already mounted
     // We can do this by checking the lock file if it exists

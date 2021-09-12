@@ -47,7 +47,7 @@ int main(int argc, char **argv, char **const envp) {
   // Check if a local FEXInterpreter to FEXBash exists
   // If it does then it takes priority over the installed one
   if (!std::filesystem::exists(FEXInterpreterPath)) {
-    FEXInterpreterPath = FEXINTERPRETER_PATH;
+    FEXInterpreterPath = FEXCore::Config::FindContainerPrefix() + FEXINTERPRETER_PATH;
   }
   const char *FEXArgs[] = {
     FEXInterpreterPath.c_str(),

@@ -40,46 +40,46 @@ namespace DefaultValues {
 #include <FEXCore/Config/ConfigValues.inl>
 }
 
-namespace JSON {
-  static bool LoadConfigFile(std::vector<char> &Data, const std::string &Config) {
-    std::fstream ConfigFile;
-    ConfigFile.open(Config, std::ios::in);
+static bool LoadConfigFile(std::vector<char> &Data, const std::string &Config) {
+  std::fstream ConfigFile;
+  ConfigFile.open(Config, std::ios::in);
 
-    if (!ConfigFile.is_open()) {
-      return false;
-    }
-
-    if (!ConfigFile.seekg(0, std::fstream::end)) {
-      LogMan::Msg::D("Couldn't load configuration file: Seek end");
-      return false;
-    }
-
-    auto FileSize = ConfigFile.tellg();
-    if (ConfigFile.fail()) {
-      LogMan::Msg::D("Couldn't load configuration file: tellg");
-      return false;
-    }
-
-    if (!ConfigFile.seekg(0, std::fstream::beg)) {
-      LogMan::Msg::D("Couldn't load configuration file: Seek beginning");
-      return false;
-    }
-
-    if (FileSize > 0) {
-      Data.resize(FileSize);
-      if (!ConfigFile.read(&Data.at(0), FileSize)) {
-        // Probably means permissions aren't set. Just early exit
-        return false;
-      }
-      ConfigFile.close();
-    }
-    else {
-      return false;
-    }
-
-    return true;
+  if (!ConfigFile.is_open()) {
+    return false;
   }
 
+  if (!ConfigFile.seekg(0, std::fstream::end)) {
+    LogMan::Msg::D("Couldn't load configuration file: Seek end");
+    return false;
+  }
+
+  auto FileSize = ConfigFile.tellg();
+  if (ConfigFile.fail()) {
+    LogMan::Msg::D("Couldn't load configuration file: tellg");
+    return false;
+  }
+
+  if (!ConfigFile.seekg(0, std::fstream::beg)) {
+    LogMan::Msg::D("Couldn't load configuration file: Seek beginning");
+    return false;
+  }
+
+  if (FileSize > 0) {
+    Data.resize(FileSize);
+    if (!ConfigFile.read(&Data.at(0), FileSize)) {
+      // Probably means permissions aren't set. Just early exit
+      return false;
+    }
+    ConfigFile.close();
+  }
+  else {
+    return false;
+  }
+
+  return true;
+}
+
+namespace JSON {
   struct JsonAllocator {
     jsonPool_t PoolObject;
     std::unique_ptr<std::list<json_t>> json_objects;
@@ -357,7 +357,7 @@ namespace JSON {
     }
   }
 
-  std::string ExpandPath(std::string PathName) {
+  std::string ExpandPath(std::string const &ContainerPrefix, std::string PathName) {
     if (PathName.empty()) {
       return {};
     }
@@ -383,6 +383,69 @@ namespace JSON {
         return Path;
       }
     }
+    else {
+      // If the containerprefix and pathname isn't empty
+      // Then we check if the pathname exists in our current namespace
+      // If the path DOESN'T exist but DOES exist with the prefix applied
+      // then redirect to the prefix
+      //
+      // This might not be expected behaviour for some edge cases but since
+      // all paths aren't mounted inside the container, then it'll be fine
+      //
+      // Main catch case for this is the default thunk install folders
+      // HostThunks: $CMAKE_INSTALL_PREFIX/lib/fex-emu/HostThunks/
+      // GuestThunks: $CMAKE_INSTALL_PREFIX/share/fex-emu/GuestThunks/
+      if (!ContainerPrefix.empty() && !PathName.empty()) {
+        if (!std::filesystem::exists(PathName)) {
+          auto ContainerPath = ContainerPrefix + PathName;
+          if (std::filesystem::exists(ContainerPath)) {
+            return ContainerPath;
+          }
+        }
+      }
+    }
+    return {};
+  }
+
+  std::string ltrim(std::string String) {
+    size_t pos = std::string::npos;
+    if ((pos = String.find_first_not_of(" \t\n\r")) != std::string::npos) {
+      String.erase(0, pos);
+    }
+
+    return String;
+  }
+
+  std::string rtrim(std::string String) {
+    size_t pos = std::string::npos;
+    if ((pos = String.find_last_not_of(" \t\n\r")) != std::string::npos) {
+      String.erase(String.begin() + pos + 1, String.end());
+    }
+
+    return String;
+  }
+
+  std::string trim(std::string String) {
+    return rtrim(ltrim(String));
+  }
+
+
+  std::string FindContainerPrefix() {
+    // We only support pressure-vessel at the moment
+    const static std::string ContainerManager = "/run/host/container-manager";
+    if (std::filesystem::exists(ContainerManager)) {
+      std::vector<char> Manager{};
+      if (LoadConfigFile(Manager, ContainerManager)) {
+        // Trim the whitespace, may contain a newline
+        std::string ManagerStr = Manager.data();
+        ManagerStr = trim(ManagerStr);
+        if (strncmp(ManagerStr.data(), "pressure-vessel", Manager.size()) == 0) {
+          // We are running inside of pressure vessel
+          // Our $CMAKE_INSTALL_PREFIX paths are now inside of /run/host/$CMAKE_INSTALL_PREFIX
+          return "/run/host/";
+        }
+      }
+    }
     return {};
   }
 
@@ -398,8 +461,9 @@ namespace JSON {
       }
     }
 
-    auto ExpandPathIfExists = [](FEXCore::Config::ConfigOption Config, std::string PathName) {
-      auto NewPath = ExpandPath(PathName);
+    std::string ContainerPrefix { FindContainerPrefix() };
+    auto ExpandPathIfExists = [&ContainerPrefix](FEXCore::Config::ConfigOption Config, std::string PathName) {
+      auto NewPath = ExpandPath(ContainerPrefix, PathName);
       if (!NewPath.empty()) {
         FEXCore::Config::EraseSet(Config, NewPath);
       }
@@ -407,7 +471,7 @@ namespace JSON {
 
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFS)) {
       FEX_CONFIG_OPT(PathName, ROOTFS);
-      auto ExpandedString = ExpandPath(PathName());
+      auto ExpandedString = ExpandPath(ContainerPrefix, PathName());
       if (!ExpandedString.empty()) {
         // Adjust the path if it ended up being relative
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
@@ -431,7 +495,7 @@ namespace JSON {
     }
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKCONFIG)) {
       FEX_CONFIG_OPT(PathName, THUNKCONFIG);
-      auto ExpandedString = ExpandPath(PathName());
+      auto ExpandedString = ExpandPath(ContainerPrefix, PathName());
       if (!ExpandedString.empty()) {
         // Adjust the path if it ended up being relative
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, ExpandedString);
