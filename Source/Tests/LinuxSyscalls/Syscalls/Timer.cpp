@@ -25,11 +25,6 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(timer_create, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, struct sigevent *sevp, kernel_timer_t *timerid) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_timer_create, clockid, sevp, timerid);
-      SYSCALL_ERRNO();
-    });
-
     REGISTER_SYSCALL_IMPL(timer_getoverrun, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_getoverrun, timerid);
       SYSCALL_ERRNO();
