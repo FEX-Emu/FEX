@@ -1218,8 +1218,6 @@ namespace FEXCore::Context {
                 AotFile->Stream->write((char*)&tag, sizeof(tag));
               }
               AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRList, RAData);
-              delete IRList;
-              FEXCore::Allocator::free(RAData);
             });
           }
         }
