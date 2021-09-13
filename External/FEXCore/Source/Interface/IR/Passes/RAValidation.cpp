@@ -309,19 +309,24 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
       case OP_FILLREGISTER: {
         auto FillRegister = IROp->C<IROp_FillRegister>();
-        uint32_t value = BlockRegState.Unspill(FillRegister->Slot);
+        uint32_t ExpectedValue = FillRegister->OriginalValue.ID();
+        uint32_t Value = BlockRegState.Unspill(FillRegister->Slot);
 
         // TODO: This only proves that the Spill has a consistent SSA value
         //       In the future we need to prove it contains the correct SSA value
 
-        if (value == RegState::UninitializedValue) {
+        if (Value == RegState::UninitializedValue) {
           HadError |= true;
-          Errors << fmt::format("%ssa{}: FillRegister; Spill Slot {} was undefined in at least one control flow path\n",
-                                ID, FillRegister->Slot);
-        } else if (value == RegState::ClobberedValue) {
+          Errors << fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but was undefined in at least one control flow path\n",
+                                ID, ExpectedValue, FillRegister->Slot);
+        } else if (Value == RegState::ClobberedValue) {
           HadError |= true;
-          Errors << fmt::format("%ssa{}: FillRegister; Spill Slot {} contents vary depending on control flow\n",
-                                ID, FillRegister->Slot);
+          Errors << fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but contents vary depending on control flow\n",
+                                ID, ExpectedValue, FillRegister->Slot);
+        } else if (Value != ExpectedValue) {
+          HadError |= true;
+          Errors << fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but it actually contains %ssa{}\n",
+                                ID, ExpectedValue, FillRegister->Slot, Value);
         }
         break;
       }

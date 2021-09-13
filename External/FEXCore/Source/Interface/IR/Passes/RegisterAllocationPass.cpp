@@ -427,6 +427,10 @@ namespace FEXCore::IR {
         // Set this node's block ID
         Graph->Nodes[Node].Head.BlockID = BlockNodeID;
 
+        // FillRegister's SSA arg is only there for verification, and we don't want it
+        // to impact the live range.
+        if (IROp->Op == OP_FILLREGISTER) continue;
+
         uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
@@ -1336,10 +1340,10 @@ namespace FEXCore::IR {
 
               IREmit->SetWriteCursor(FirstUseOrderedNode);
 
-              auto FilledInterference = IREmit->_FillRegister(SpillSlot, InterferenceRegClass);
+              auto FilledInterference = IREmit->_FillRegister(InterferenceOrderedNode, SpillSlot, InterferenceRegClass);
               FilledInterference.first->Header.Size = InterferenceIROp->Size;
               FilledInterference.first->Header.ElementSize = InterferenceIROp->ElementSize;
-              IREmit->ReplaceUsesWithAfter(InterferenceOrderedNode, FilledInterference, FirstUseLocation);
+              IREmit->ReplaceUsesWithAfter(InterferenceOrderedNode, FilledInterference, FilledInterference);
               Spilled = true;
             }
           }
