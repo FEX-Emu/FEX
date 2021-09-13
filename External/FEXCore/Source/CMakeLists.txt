@@ -119,6 +119,7 @@ set (SRCS
   Interface/IR/Passes/DeadContextStoreElimination.cpp
   Interface/IR/Passes/IRCompaction.cpp
   Interface/IR/Passes/IRValidation.cpp
+  Interface/IR/Passes/RAValidation.cpp
   Interface/IR/Passes/LongDivideRemovalPass.cpp
   Interface/IR/Passes/ValueDominanceValidation.cpp
   Interface/IR/Passes/PhiValidation.cpp

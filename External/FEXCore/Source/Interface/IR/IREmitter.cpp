@@ -26,12 +26,12 @@ void IREmitter::ResetWorkingList() {
   CurrentCodeBlock = nullptr;
 }
 
-void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After, AllNodesIterator End) {
+void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator Begin, AllNodesIterator End) {
   uintptr_t ListBegin = DualListData.ListBegin();
   auto NodeId = Node->Wrapped(ListBegin).ID();
 
-  while (After != End) {
-    auto [RealNode, IROp] = After();
+  while (Begin != End) {
+    auto [RealNode, IROp] = Begin();
 
     uint8_t NumArgs = IR::GetArgs(IROp->Op);
     for (uint8_t i = 0; i < NumArgs; ++i) {
@@ -47,7 +47,7 @@ void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode,
       }
     }
 
-    ++After;
+    ++Begin;
   }
 }
 

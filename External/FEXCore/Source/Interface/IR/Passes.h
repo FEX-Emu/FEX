@@ -20,6 +20,7 @@ std::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
 
 namespace Validation {
 std::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();
+std::unique_ptr<FEXCore::IR::Pass> CreateRAValidation();
 std::unique_ptr<FEXCore::IR::Pass> CreatePhiValidation();
 std::unique_ptr<FEXCore::IR::Pass> CreateValueDominanceValidation();
 }

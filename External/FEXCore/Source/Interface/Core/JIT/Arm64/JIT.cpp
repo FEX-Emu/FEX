@@ -486,7 +486,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
   CurrentCodeBuffer = &InitialCodeBuffer;
 
-  RAPass = Thread->PassManager->GetRAPass();
+  RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
 #if DEBUG
   Decoder.AppendVisitor(&Disasm)

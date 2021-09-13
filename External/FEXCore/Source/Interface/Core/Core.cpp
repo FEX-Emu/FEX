@@ -451,7 +451,13 @@ namespace FEXCore::Context {
     auto IRHandler = [Thread](uint64_t Addr, IR::IREmitter *IR) -> void {
       // Run the passmanager over the IR from the dispatcher
       Thread->PassManager->Run(IR);
-      Core::LocalIREntry Entry = {Addr, 0ULL, decltype(Entry.IR)(IR->CreateIRCopy()), decltype(Entry.RAData)(Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr), decltype(Entry.DebugData)(new Core::DebugData())};
+      Core::LocalIREntry Entry = {Addr, 0ULL,
+        decltype(Entry.IR)(IR->CreateIRCopy()),
+        decltype(Entry.RAData)(Thread->PassManager->HasPass("RA")
+          ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData()
+          : nullptr),
+        decltype(Entry.DebugData)(new Core::DebugData())
+      };
       Thread->LocalIRCache.insert({Addr, std::move(Entry)});
     };
 
@@ -810,17 +816,17 @@ namespace FEXCore::Context {
     Thread->PassManager->Run(Thread->OpDispatcher.get());
 
     if (Thread->CTX->Config.DumpIR() != "no") {
-      IRDumper(Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
+      IRDumper(Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
     }
 
     if (Thread->OpDispatcher->ShouldDump) {
       std::stringstream out;
       auto NewIR = Thread->OpDispatcher->ViewIR();
-      FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->GetAllocationData() : nullptr);
+      FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
       LogMan::Msg::I("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
     }
 
-    auto RAData = Thread->PassManager->GetRAPass() ? Thread->PassManager->GetRAPass()->PullAllocationData() : nullptr;
+    auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData() : nullptr;
     auto IRList = Thread->OpDispatcher->CreateIRCopy();
 
     Thread->OpDispatcher->ResetWorkingList();

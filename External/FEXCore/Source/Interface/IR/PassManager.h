@@ -20,7 +20,6 @@ class SyscallHandler;
 namespace FEXCore::IR {
 class PassManager;
 class IREmitter;
-class RegisterAllocationPass;
 
 using ShouldExitHandler = std::function<void(void)>;
 
@@ -42,9 +41,14 @@ class PassManager final {
 public:
   void AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllocation);
   void AddDefaultValidationPasses();
-  Pass* InsertPass(std::unique_ptr<Pass> Pass) {
+  Pass* InsertPass(std::unique_ptr<Pass> Pass, std::string Name = "") {
     Pass->RegisterPassManager(this);
-    return Passes.emplace_back(std::move(Pass)).get();
+    auto PassPtr = Passes.emplace_back(std::move(Pass)).get();
+
+    if (!Name.empty()) {
+      NameToPassMaping[Name] = PassPtr;
+    }
+    return PassPtr;
   }
 
   void InsertRegisterAllocationPass(bool OptimizeSRA);
@@ -55,12 +59,17 @@ public:
     ExitHandler = std::move(Handler);
   }
 
-  bool HasRAPass() const {
-    return RAPass != nullptr;
+  bool HasPass(std::string Name) const {
+    return NameToPassMaping.contains(Name);
   }
 
-  IR::RegisterAllocationPass *GetRAPass() {
-    return reinterpret_cast<IR::RegisterAllocationPass*>(RAPass);
+  template<typename T>
+  T* GetPass(std::string Name) {
+    return dynamic_cast<T*>(NameToPassMaping[Name]);
+  }
+
+  Pass* GetPass(std::string Name) {
+    return NameToPassMaping[Name];
   }
 
   void RegisterSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) {
@@ -72,16 +81,18 @@ protected:
   FEXCore::HLE::SyscallHandler *SyscallHandler;
 
 private:
-  Pass *RAPass{};
-  Pass *CompactionPass{};
-
   std::vector<std::unique_ptr<Pass>> Passes;
+  std::unordered_map<std::string, Pass*> NameToPassMaping;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   std::vector<std::unique_ptr<Pass>> ValidationPasses;
-  void InsertValidationPass(std::unique_ptr<Pass> Pass) {
+  void InsertValidationPass(std::unique_ptr<Pass> Pass, std::string Name = "") {
     Pass->RegisterPassManager(this);
-    ValidationPasses.emplace_back(std::move(Pass));
+    auto PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
+
+    if (!Name.empty()) {
+      NameToPassMaping[Name] = PassPtr;
+    }
   }
 #endif
 
