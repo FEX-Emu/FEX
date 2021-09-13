@@ -962,4 +962,90 @@ rlimit32 {
 static_assert(std::is_trivial<rlimit32<true>>::value, "Needs to be trivial");
 static_assert(sizeof(rlimit32<true>) == 8, "Incorrect size");
 
+
+struct
+FEX_ANNOTATE("alias-x86_32-timex")
+FEX_ANNOTATE("fex-match")
+timex32 {
+  uint32_t modes;
+  compat_long_t offset;
+  compat_long_t freq;
+  compat_long_t maxerror;
+  compat_long_t esterror;
+  int32_t status;
+  compat_long_t constant;
+  compat_long_t precision;
+  compat_long_t tolerance;
+  timeval32 time;
+  compat_long_t tick;
+  compat_long_t ppsfreq;
+  compat_long_t jitter;
+  int32_t shift;
+  compat_long_t stabil;
+  compat_long_t jitcnt;
+  compat_long_t calcnt;
+  compat_long_t errcnt;
+  compat_long_t stbcnt;
+
+  int32_t tai;
+
+  // Padding
+  int32_t  :32; int32_t  :32; int32_t  :32; int32_t  :32;
+  int32_t  :32; int32_t  :32; int32_t  :32; int32_t  :32;
+  int32_t  :32; int32_t  :32; int32_t  :32;
+
+  timex32() = delete;
+
+  operator timex() const {
+    timex val{};
+    val.modes     = modes;
+    val.offset    = offset;
+    val.freq      = freq;
+    val.maxerror  = maxerror;
+    val.esterror  = esterror;
+    val.status    = status;
+    val.constant  = constant;
+    val.precision = precision;
+    val.tolerance = tolerance;
+    val.time      = time;
+    val.tick      = tick;
+    val.ppsfreq   = ppsfreq;
+    val.jitter    = jitter;
+    val.shift     = shift;
+    val.stabil    = stabil;
+    val.jitcnt    = jitcnt;
+    val.calcnt    = calcnt;
+    val.errcnt    = errcnt;
+    val.stbcnt    = stbcnt;
+    val.tai       = tai;
+    return val;
+  }
+
+  timex32(struct timex val)
+    : time { val.time } {
+    modes     = val.modes;
+    offset    = val.offset;
+    freq      = val.freq;
+    maxerror  = val.maxerror;
+    esterror  = val.esterror;
+    status    = val.status;
+    constant  = val.constant;
+    precision = val.precision;
+    tolerance = val.tolerance;
+    tick      = val.tick;
+    ppsfreq   = val.ppsfreq;
+    jitter    = val.jitter;
+    shift     = val.shift;
+    stabil    = val.stabil;
+    jitcnt    = val.jitcnt;
+    calcnt    = val.calcnt;
+    errcnt    = val.errcnt;
+    stbcnt    = val.stbcnt;
+    tai       = val.tai;
+  }
+};
+
+static_assert(std::is_trivial<timex32>::value, "Needs to be trivial");
+static_assert(sizeof(timex32) == 128, "Incorrect size");
+
 }

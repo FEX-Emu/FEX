@@ -13,6 +13,7 @@ $end_info$
 #include <syscall.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/timex.h>
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
@@ -226,6 +227,26 @@ namespace FEX::HLE::x32 {
         Result = ::utimes(filename, times64);
       } else {
         Result = ::utimes(filename, nullptr);
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(adjtimex, [](FEXCore::Core::CpuStateFrame *Frame, compat_ptr<FEX::HLE::x32::timex32> buf) -> uint64_t {
+      struct timex Host{};
+      Host = *buf;
+      uint64_t Result = ::adjtimex(&Host);
+      if (Result != -1) {
+        *buf = Host;
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(clock_adjtime, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clk_id, compat_ptr<FEX::HLE::x32::timex32> buf) -> uint64_t {
+      struct timex Host{};
+      Host = *buf;
+      uint64_t Result = ::clock_adjtime(clk_id, &Host);
+      if (Result != -1) {
+        *buf = Host;
       }
       SYSCALL_ERRNO();
     });
