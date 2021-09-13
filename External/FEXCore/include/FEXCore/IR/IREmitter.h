@@ -493,14 +493,15 @@ friend class FEXCore::IR::PassManager;
   // Because we are overwriting the node, we don't have to worry about update all the arguments which use it
   void ReplaceWithConstant(OrderedNode *Node, uint64_t Value);
 
-  void ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After, AllNodesIterator End);
+  void ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator Begin, AllNodesIterator End);
 
   void ReplaceUsesWithAfter(OrderedNode *Node, OrderedNode *NewNode, AllNodesIterator After) {
+    ++After;
     ReplaceAllUsesWithRange(Node, NewNode, After, AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin()));
   }
 
   void ReplaceUsesWithAfter(OrderedNode *Node, OrderedNode *NewNode, OrderedNode *After) {
-    auto Wrapped = Node->Wrapped(DualListData.ListBegin());
+    auto Wrapped = After->Wrapped(DualListData.ListBegin());
     AllNodesIterator It = AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin(), Wrapped);
 
     ReplaceUsesWithAfter(Node, NewNode, It);
@@ -509,7 +510,7 @@ friend class FEXCore::IR::PassManager;
   void ReplaceAllUsesWith(OrderedNode *Node, OrderedNode *NewNode) {
     auto Start = AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin(), Node->Wrapped(DualListData.ListBegin()));
 
-    ReplaceUsesWithAfter(Node, NewNode, Start);
+    ReplaceAllUsesWithRange(Node, NewNode, Start, AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin()));
 
     LOGMAN_THROW_A_FMT(Node->NumUses == 0, "Node still used");
 
