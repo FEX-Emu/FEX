@@ -14,6 +14,7 @@
 
 namespace FEXCore::IR::Validation {
 
+// Hold the mapping of physical registers to the SSA id it holds at any given point in the IR
 struct RegState {
   static constexpr uint32_t UninitializedValue = 0;
   static constexpr uint32_t InvalidReg         = 0xffff'ffff;
@@ -29,9 +30,12 @@ struct RegState {
 
   // These assumptions were all true for the state of the arm64 and x86 jits at the time this was written
 
+  // Mark a physical register as containing a SSA id
   bool Set(PhysicalRegister Reg, uint32_t ssa) {
     LOGMAN_THROW_A(ssa != 0, "RegState assumes ssa0 will be the block header and never assigned to a register");
 
+    // PhyscialRegisters aren't fully mapped until assembly emission
+    // We need to apply a generic mapping here to catch any aliasing
     switch (Reg.Class) {
     case GPRClass:
       GPRs[Reg.Reg] = ssa;
@@ -59,6 +63,8 @@ struct RegState {
     return false;
   }
 
+  // Get the current SSA id
+  // Or an error value there isn't a (sane) SSA id
   uint32_t Get(PhysicalRegister Reg) {
     switch (Reg.Class) {
     case GPRClass:
@@ -89,10 +95,12 @@ struct RegState {
   }
 
 
+  // Mark a spill slot as containing a SSA id
   void Spill(uint32_t SpillSlot, uint32_t ssa) {
     Spills[SpillSlot] = ssa;
   }
 
+  // Consume (and return) the SSA id currently in a spill slot
   uint32_t Unspill(uint32_t SpillSlot) {
     if (Spills.contains(SpillSlot)) {
       uint32_t Value = Spills[SpillSlot];
@@ -102,6 +110,13 @@ struct RegState {
     return UninitializedValue;
   }
 
+  // Intersect another regstate with this one
+  // Any registers/slots which contain the same SSA id will be persevered
+  // Anything else will be marked as Clobbered
+  //
+  // Useful for merging two branches of control flow.
+  // Any register that differs depending on control flow shouldn't be consumed by
+  // code that follows
   void Intersect(RegState& other) {
     for (size_t i = 0; i < GPRs.size(); i++) {
       if (GPRs[i] != other.GPRs[i]) {
@@ -125,6 +140,9 @@ struct RegState {
     }
   }
 
+  // Filter out all registers/slots containing an SSA id larger than MaxSSA
+  // Mark them as Clobbered.
+  // Useful for backwards edges, where using an SSA from before the
   void Filter(uint32_t MaxSSA) {
     for (auto &gpr : GPRs) {
       if (gpr > MaxSSA) {
@@ -153,7 +171,7 @@ private:
   std::unordered_map<uint32_t, uint32_t> Spills;
 
 public:
-  uint32_t Version{};
+  uint32_t Version{}; // Used to force regeneration of RegStates after following backward edges
 };
 
 class RAValidation final : public FEXCore::IR::Pass {
@@ -162,7 +180,10 @@ public:
   bool Run(IREmitter *IREmit) override;
 
 private:
+  // Holds the calculated RegState at the exit of each block
   std::unordered_map<uint32_t, RegState> BlockExitState;
+
+  // A queue of blocks we need to visit (or revisit)
   std::deque<OrderedNode*> BlocksToVisit;
 };
 
@@ -172,6 +193,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
   IR::RegisterAllocationData* RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
   BlockExitState.clear();
+  // BlocksToVisit will already be empty
 
   // Get the control flow graph from the validation pass
   auto ValidationPass = Manager->GetPass<IRValidation>("IRValidation");
@@ -195,14 +217,12 @@ bool RAValidation::Run(IREmitter *IREmit) {
     auto& BlockInfo = OffsetToBlockMap[BlockID];
 
     auto IsFowardsEdge = [&] (uint32_t PredecessorID) {
-      // TODO: This isn't the best definition of fowards/backwards edges. It's possible for
-      //       Blocks to be out of order. Will need a proper CFG analysis pass.
-      //
-      // But I don't think we currently generate Backwards branches that don't follow this rule
+      // Blocks are sorted in FEXes IR, so backwards edges always go to a lower (or equal) Block ID
       return PredecessorID < BlockID;
     };
 
-    // First, make sure we have the exit state data for all Predecessor
+    // First, make sure we have the exit state for all Predecessors that
+    // get here via a forwards branch.
     bool MissingPredecessor = false;
 
     for (auto Predecessor : BlockInfo.Predecessors) {
@@ -224,7 +244,8 @@ bool RAValidation::Run(IREmitter *IREmit) {
       continue;
     }
 
-    // Remove block from queue
+    // We have committed to processing this block
+    // Remove from queue
     BlocksToVisit.pop_front();
 
     bool FirstVisit = !BlockExitState.contains(BlockID);
@@ -349,10 +370,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
     for (auto Successor : BlockInfo.Successors) {
       auto SuccessorID = CurrentIR.GetID(Successor);
 
-      // TODO: This isn't the best definition of fowards/backwards edges. It's possible for
-      //       Blocks to be out of order. Will need a proper CFG analysis pass.
-      //
-      // But I don't think we currently generate Backwards branches that don't follow this rule
+      // Blocks are sorted in FEXes IR, so backwards edges always go to a lower (or equal) Block ID
       bool FowardsEdge = SuccessorID > BlockID;
 
       if (FowardsEdge) {
