@@ -1740,7 +1740,32 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
               }
             }
             memset(GDP, 0, 16);
-            memcpy(GDP, Data, Op->Size);
+            switch (OpSize) {
+              case 1: {
+                const uint8_t *D = (const uint8_t*)Data;
+                GD = *D;
+                break;
+              }
+              case 2: {
+                const uint16_t *D = (const uint16_t*)Data;
+                GD = *D;
+                break;
+              }
+              case 4: {
+                const uint32_t *D = (const uint32_t*)Data;
+                GD = *D;
+                break;
+              }
+              case 8: {
+                const uint64_t *D = (const uint64_t*)Data;
+                GD = *D;
+                break;
+              }
+
+              default:
+                memcpy(GDP, Data, Op->Size);
+                break;
+            }
             break;
           }
           case IR::OP_VLOADMEMELEMENT: {
@@ -1767,7 +1792,29 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
                 case MEM_OFFSET_SXTW.Val: Data += (int32_t)Offset; break;
               }
             }
-            memcpy(Data, GetSrc<void*>(SSAData, Op->Value), Op->Size);
+            switch (OpSize) {
+              case 1: {
+                *reinterpret_cast<uint8_t*>(Data) = *GetSrc<uint8_t*>(SSAData, Op->Value);
+                break;
+              }
+              case 2: {
+                *reinterpret_cast<uint16_t*>(Data) = *GetSrc<uint16_t*>(SSAData, Op->Value);
+                break;
+              }
+              case 4: {
+                *reinterpret_cast<uint32_t*>(Data) = *GetSrc<uint32_t*>(SSAData, Op->Value);
+                break;
+              }
+              case 8: {
+                *reinterpret_cast<uint64_t*>(Data) = *GetSrc<uint64_t*>(SSAData, Op->Value);
+                break;
+              }
+
+              default:
+                memcpy(Data, GetSrc<void*>(SSAData, Op->Value), Op->Size);
+                break;
+            }
+
             break;
           }
           case IR::OP_VSTOREMEMELEMENT: {
