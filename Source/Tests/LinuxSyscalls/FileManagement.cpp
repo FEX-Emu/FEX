@@ -91,6 +91,65 @@ static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
   return true;
 }
 
+void FileManager::LoadThunkDatabase(bool Global) {
+  auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
+  std::vector<char> FileData;
+  if (LoadFile(FileData, ThunkDBPath)) {
+    FileData.push_back(0);
+
+    JSON::JsonAllocator Pool {
+      .PoolObject = {
+        .init = JSON::PoolInit,
+        .alloc = JSON::PoolAlloc,
+      },
+    };
+
+    json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
+
+    json_t const* DB = json_getProperty( json, "DB" );
+    if ( !DB || JSON_OBJ != json_getType( DB ) ) {
+      return;
+    }
+    for( json_t const* Library = json_getChild( DB ); Library != nullptr; Library = json_getSibling( Library )) {
+      // Get the user defined name for the library
+      const char* LibraryName = json_getName(Library);
+      auto DBObject = ThunkDB.insert_or_assign(LibraryName, ThunkDBObject{}).first;
+
+      // Walk the libraries items to get the data
+      for (json_t const* LibraryItem = json_getChild(Library); LibraryItem != nullptr; LibraryItem = json_getSibling(LibraryItem)) {
+        const char* ItemName = json_getName(LibraryItem);
+
+        if (strcmp(ItemName, "Library") == 0) {
+          // "Library": "libGL-guest.so"
+          DBObject->second.LibraryName = json_getValue(LibraryItem);
+        }
+        else if (strcmp(ItemName, "Depends") == 0) {
+          jsonType_t PropertyType = json_getType(LibraryItem);
+          if (PropertyType == JSON_TEXT) {
+            DBObject->second.Depends.insert(json_getValue(LibraryItem));
+          }
+          else if (PropertyType == JSON_ARRAY) {
+            for (json_t const* Depend = json_getChild(LibraryItem); Depend != nullptr; Depend = json_getSibling(Depend)) {
+              DBObject->second.Depends.insert(json_getValue(Depend));
+            }
+          }
+        }
+        else if (strcmp(ItemName, "Overlay") == 0) {
+          jsonType_t PropertyType = json_getType(LibraryItem);
+          if (PropertyType == JSON_TEXT) {
+            DBObject->second.Overlays.emplace_back(json_getValue(LibraryItem));
+          }
+          else if (PropertyType == JSON_ARRAY) {
+            for (json_t const* Overlay = json_getChild(LibraryItem); Overlay != nullptr; Overlay = json_getSibling(Overlay)) {
+              DBObject->second.Overlays.emplace_back(json_getValue(Overlay));
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
 
@@ -114,33 +173,89 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
       json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
 
       json_t const* thunks = json_getProperty( json, "thunks" );
-      if ( !thunks || JSON_OBJ != json_getType( thunks ) ) {
-        return;
-      }
+      if (thunks && json_getType(thunks) == JSON_OBJ) {
+        json_t const* thunk;
+        for( thunk = json_getChild( thunks ); thunk != 0; thunk = json_getSibling( thunk )) {
+          char const* GuestThunk = json_getName( thunk );
+          jsonType_t propertyType = json_getType( thunk );
 
-      json_t const* thunk;
-      for( thunk = json_getChild( thunks ); thunk != 0; thunk = json_getSibling( thunk )) {
-        char const* GuestThunk = json_getName( thunk );
-        jsonType_t propertyType = json_getType( thunk );
-
-        if (propertyType == JSON_TEXT) {
-          char const* RootFSLib = json_getValue( thunk );
-          auto ThunkPath = ThunkGuestPath / GuestThunk;
-          if (std::filesystem::exists(ThunkPath)) {
-            ThunkOverlays.emplace(RootFSLib, ThunkPath);
-          }
-        } else if (propertyType == JSON_ARRAY) {
-          json_t const* child;
-          for( child = json_getChild( thunk ); child != 0; child = json_getSibling( child ) ) {
-            if (json_getType( child ) == JSON_TEXT) {
-              char const* RootFSLib = json_getValue( child );
-              auto ThunkPath = ThunkGuestPath / GuestThunk;
-              if (std::filesystem::exists(ThunkPath)) {
-                ThunkOverlays.emplace(RootFSLib, ThunkPath);
+          if (propertyType == JSON_TEXT) {
+            char const* RootFSLib = json_getValue( thunk );
+            auto ThunkPath = ThunkGuestPath / GuestThunk;
+            if (std::filesystem::exists(ThunkPath)) {
+              ThunkOverlays.emplace(RootFSLib, ThunkPath);
+            }
+          } else if (propertyType == JSON_ARRAY) {
+            json_t const* child;
+            for( child = json_getChild( thunk ); child != 0; child = json_getSibling( child ) ) {
+              if (json_getType( child ) == JSON_TEXT) {
+                char const* RootFSLib = json_getValue( child );
+                auto ThunkPath = ThunkGuestPath / GuestThunk;
+                if (std::filesystem::exists(ThunkPath)) {
+                  ThunkOverlays.emplace(RootFSLib, ThunkPath);
+                }
               }
             }
           }
         }
+      }
+
+      json_t const* ThunksDB = json_getProperty( json, "ThunksDB" );
+      if (ThunksDB) {
+        // If a thunks DB property exists then we pull in data from the thunks database
+        // Load the initial thunks database
+        LoadThunkDatabase(true);
+        LoadThunkDatabase(false);
+
+        // Now load this property
+        for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
+          const char *LibraryName = json_getName(Item);
+          int64_t LibraryEnabled = json_getInteger(Item);
+          if (LibraryEnabled != 0) {
+            // If the library is enabled then find it in the DB
+            // Enable the overlay and all the dependencies in one go
+            auto DBObject = ThunkDB.find(LibraryName);
+            if (DBObject != ThunkDB.end() &&
+                DBObject->second.Enabled == false) {
+
+              auto ThunkPath = ThunkGuestPath / DBObject->second.LibraryName;
+              if (std::filesystem::exists(ThunkPath)) {
+                for (auto Overlay : DBObject->second.Overlays) {
+                  // Direct full path in guest RootFS to our overlay file
+                  ThunkOverlays.emplace(Overlay, ThunkPath);
+                }
+              }
+              DBObject->second.Enabled = true;
+              // Now walk the dependencies and set them up as well
+              // Make sure to enable each one as we go to remove circular dependencies
+              std::function<void(std::unordered_set<std::string> &Depends)> InsertDependencies
+                = [this, &ThunkGuestPath, &InsertDependencies](std::unordered_set<std::string> &Depends) -> void {
+                for (auto &Depend : Depends) {
+                  auto DBDepend = ThunkDB.find(Depend);
+                  if (DBDepend != ThunkDB.end() &&
+                      DBDepend->second.Enabled == false) {
+
+                    auto ThunkPath = ThunkGuestPath / DBDepend->second.LibraryName;
+                    if (std::filesystem::exists(ThunkPath)) {
+                      for (auto Overlay : DBDepend->second.Overlays) {
+                        // Direct full path in guest RootFS to our overlay file
+                        ThunkOverlays.emplace(Overlay, ThunkPath);
+                      }
+                    }
+
+                    // Enabled, now walk this dependencies
+                    DBDepend->second.Enabled = true;
+                    InsertDependencies(DBDepend->second.Depends);
+                  }
+                }
+              };
+              InsertDependencies(DBObject->second.Depends);
+            }
+          }
+        }
+
+        // Now clear the thunk database since we're loaded
+        ThunkDB.clear();
       }
     }
 
