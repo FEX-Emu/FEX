@@ -15,3 +15,10 @@ static fex_call_callback_t* call_guest;
 
 #define EXPORTS(name) extern "C" { ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { call_guest = (fex_call_callback_t*)a0; fexldr_init_##name(); return exports; } }
 #define EXPORTS_WITH_CALLBACKS(name) extern "C" { ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { call_guest = (fex_call_callback_t*)a0; (uintptr_t&)callback_unpacks = a1; fexldr_init_##name(); return exports; } }
+
+#define LOAD_LIB_INIT(init_fn) \
+  __attribute__((constructor)) static void loadlib() \
+  { \
+    init_fn (); \
+  }
+
