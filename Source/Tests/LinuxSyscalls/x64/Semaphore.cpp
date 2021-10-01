@@ -16,6 +16,8 @@ namespace FEXCore::Core {
   struct CpuStateFrame;
 }
 
+ARG_TO_STR(FEX::HLE::x64::semun, "%lx")
+
 namespace FEX::HLE::x64 {
   void RegisterSemaphore() {
    REGISTER_SYSCALL_IMPL_X64(semop, [](FEXCore::Core::CpuStateFrame *Frame, int semid, struct sembuf *sops, size_t nsops) -> uint64_t {

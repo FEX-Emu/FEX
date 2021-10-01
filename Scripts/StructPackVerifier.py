@@ -244,7 +244,7 @@ def HandleVarDeclElements(Arch, VarDecl, Cursor):
                     logging.critical ("Can't handle alias type '{0}'".format(Child.spelling))
                     Arch.Parsed = False
             elif (Child.spelling == "fex-match"):
-                VarDecl.ExpectedFEXMatch = True
+                VarDecl.ExpectFEXMatch = True
             else:
                 # Unknown annotation
                 pass
@@ -317,7 +317,7 @@ def HandleStructElements(Arch, Struct, Cursor):
                     Arch.Parsed = False
 
             elif (Child.spelling == "fex-match"):
-                Struct.ExpectedFEXMatch = True
+                Struct.ExpectFEXMatch = True
             else:
                 # Unknown annotation
                 pass

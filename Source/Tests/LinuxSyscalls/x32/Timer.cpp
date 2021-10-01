@@ -19,6 +19,8 @@ namespace FEXCore::Core {
   struct CpuStateFrame;
 }
 
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigevent32>, "%lx")
+
 namespace FEX::HLE::x32 {
   void RegisterTimer() {
     REGISTER_SYSCALL_IMPL_X32(timer_settime, [](FEXCore::Core::CpuStateFrame *Frame,

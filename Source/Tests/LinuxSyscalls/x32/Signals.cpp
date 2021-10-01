@@ -20,6 +20,8 @@ namespace FEXCore::Core {
   struct CpuStateFrame;
 }
 
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEXCore::x86::siginfo_t>, "%lx")
+
 namespace FEX::HLE::x32 {
   void CopySigInfo(FEXCore::x86::siginfo_t *Info, siginfo_t const &Host) {
     // Copy the basic things first

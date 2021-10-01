@@ -21,6 +21,9 @@ namespace FEXCore::Core {
   struct CpuStateFrame;
 }
 
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::rlimit32<true>>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::rlimit32<false>>, "%lx")
+
 namespace FEX::HLE::x32 {
   struct sysinfo32 {
     int32_t uptime;
