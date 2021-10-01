@@ -25,6 +25,10 @@
 #include "code-buffer-vixl.h"
 #include "platform-vixl.h"
 
+#ifdef ENABLE_JITSYMBOLS
+#include <unistd.h>
+#endif
+
 namespace FEXCore::CPU {
 
 using namespace vixl;
