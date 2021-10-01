@@ -12,6 +12,10 @@
 #include <FEXCore/Utils/Event.h>
 #include <stdint.h>
 
+#ifdef ENABLE_JITSYMBOLS
+#include <Common/JITSymbols.h>
+#endif
+
 #include <atomic>
 #include <condition_variable>
 #include <functional>
