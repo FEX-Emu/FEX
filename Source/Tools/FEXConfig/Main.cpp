@@ -26,12 +26,14 @@ namespace {
   static bool ConfigOpen{};
   static bool ConfigChanged{};
   static int EnvironmentVariableSelected{};
+  static int HostEnvironmentVariableSelected{};
   static int NamedRootFSSelected{-1};
 
   static std::string ConfigFilename{};
   static std::unique_ptr<FEXCore::Config::Layer> LoadedConfig{};
 
   static const char EnvironmentPopupName[] = "#New Environment Variable";
+  static const char HostEnvironmentPopupName[] = "#New Host Environment Variable";
   static const char SavedPopupAppName[] = "#SavedApp";
   static const char OpenedPopupAppName[] = "#OpenedApp";
 
@@ -252,9 +254,10 @@ namespace {
     }
   }
 
+  template<FEXCore::Config::ConfigOption Option>
   bool EnvironmentVariableFiller(void *data, int idx, const char** out_text) {
     static char TmpString[256];
-    auto Value = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENV);
+    auto Value = LoadedConfig->All(Option);
     if (Value.has_value()) {
       auto List = (*Value);
       auto it = List->begin();
@@ -289,8 +292,9 @@ namespace {
   }
 
 
+  template<FEXCore::Config::ConfigOption Option>
   void DeleteEnvironmentVariable(int idx) {
-    auto Value = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENV);
+    auto Value = LoadedConfig->All(Option);
     auto List = (*Value);
     auto it = List->begin();
 
@@ -305,6 +309,7 @@ namespace {
 
   void AddNewEnvironmentVariable() {
     char Environment[256]{};
+    char HostEnvironment[256]{};
 
     if (ImGui::BeginPopup(EnvironmentPopupName)) {
       if (ImGui::InputText("New Environment", Environment, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
@@ -315,6 +320,18 @@ namespace {
 
       ImGui::EndPopup();
     }
+
+    ImGui::PushID(1);
+    if (ImGui::BeginPopup(HostEnvironmentPopupName)) {
+      if (ImGui::InputText("New Environment", HostEnvironment, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_HOSTENV, HostEnvironment);
+        ImGui::CloseCurrentPopup();
+        ConfigChanged = true;
+      }
+
+      ImGui::EndPopup();
+    }
+    ImGui::PopID();
   }
 
   void FillEmulationConfig() {
@@ -324,6 +341,7 @@ namespace {
     char ThunkConfigPath[256]{};
 
     int NumEnvironmentVariables{};
+    int NumHostEnvironmentVariables{};
     int NumRootFSPaths = NamedRootFS.size();
 
     if (ImGui::BeginTabItem("Emulation")) {
@@ -372,30 +390,53 @@ namespace {
         ConfigChanged = true;
       }
 
-
       auto ValueList = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENV);
+      auto ValueHostList = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_HOSTENV);
       if (ValueList.has_value()) {
         NumEnvironmentVariables = (*ValueList)->size();
       }
 
+      if (ValueHostList.has_value()) {
+        NumHostEnvironmentVariables = (*ValueHostList)->size();
+      }
+
       ImGui::Text("Number of environment variables: %d", NumEnvironmentVariables);
 
-      ImGui::ListBox("Environment variables", &EnvironmentVariableSelected, EnvironmentVariableFiller, nullptr, NumEnvironmentVariables);
+      ImGui::ListBox("Environment variables", &EnvironmentVariableSelected, EnvironmentVariableFiller<FEXCore::Config::ConfigOption::CONFIG_ENV>, nullptr, NumEnvironmentVariables);
 
       if (ImGui::SmallButton("+")) {
         ImGui::OpenPopup(EnvironmentPopupName);
       }
 
-      // Only draws if popup is open
-      AddNewEnvironmentVariable();
-
       if (NumEnvironmentVariables) {
         ImGui::SameLine();
         if (ImGui::SmallButton("-")) {
-          DeleteEnvironmentVariable(EnvironmentVariableSelected);
+          DeleteEnvironmentVariable<FEXCore::Config::ConfigOption::CONFIG_ENV>(EnvironmentVariableSelected);
           EnvironmentVariableSelected = std::max(0, EnvironmentVariableSelected - 1);
         }
       }
+
+
+      ImGui::PushID(1);
+      ImGui::Text("Number of Host environment variables: %d", NumHostEnvironmentVariables);
+
+      ImGui::ListBox("Host Env variables", &HostEnvironmentVariableSelected, EnvironmentVariableFiller<FEXCore::Config::ConfigOption::CONFIG_HOSTENV>, nullptr, NumHostEnvironmentVariables);
+
+      if (ImGui::SmallButton("+")) {
+        ImGui::OpenPopup(HostEnvironmentPopupName);
+      }
+
+      if (NumHostEnvironmentVariables) {
+        ImGui::SameLine();
+        if (ImGui::SmallButton("-")) {
+          DeleteEnvironmentVariable<FEXCore::Config::ConfigOption::CONFIG_HOSTENV>(HostEnvironmentVariableSelected);
+          HostEnvironmentVariableSelected = std::max(0, HostEnvironmentVariableSelected - 1);
+        }
+      }
+      ImGui::PopID();
+
+      // Only draws if popup is open
+      AddNewEnvironmentVariable();
 
       ImGui::Text("Debugging:");
       Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_O0);
