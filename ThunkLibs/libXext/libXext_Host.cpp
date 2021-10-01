@@ -7,9 +7,14 @@ $end_info$
 #include <stdio.h>
 
 #include <X11/Xlib.h>
+#include <X11/Xlibint.h>
 #include <X11/Xutil.h>
+#include <X11/Xproto.h>
 #include <X11/extensions/Xext.h>
-//#include <X11/extensions/extutil.h>
+
+extern "C" {
+#include <X11/extensions/extutil.h>
+}
 #include <X11/extensions/dpms.h>
 #include <X11/extensions/agproto.h>
 #include <X11/extensions/ag.h>
