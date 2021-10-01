@@ -223,11 +223,7 @@ namespace FEXCore::Context {
     }
   }
 
-  FEXCore::Core::InternalThreadState* Context::InitCore(FEXCore::CodeLoader *Loader) {
-    ThunkHandler.reset(FEXCore::ThunkHandler::Create());
-
-    LocalLoader = Loader;
-    using namespace FEXCore::Core;
+  static FEXCore::Core::CPUState CreateDefaultCPUState() {
     FEXCore::Core::CPUState NewThreadState{};
 
     // Initialize default CPU state
@@ -245,7 +241,15 @@ namespace FEXCore::Context {
     NewThreadState.flags[9] = 1;
     NewThreadState.FCW = 0x37F;
     NewThreadState.FTW = 0xFFFF;
+    return NewThreadState;
+  }
 
+  FEXCore::Core::InternalThreadState* Context::InitCore(FEXCore::CodeLoader *Loader) {
+    ThunkHandler.reset(FEXCore::ThunkHandler::Create());
+
+    LocalLoader = Loader;
+    using namespace FEXCore::Core;
+    FEXCore::Core::CPUState NewThreadState = CreateDefaultCPUState();
     FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
 
     // We are the parent thread
@@ -486,6 +490,14 @@ namespace FEXCore::Context {
 
     // Wait for the thread to have started
     Thread->ThreadWaiting.Wait();
+  }
+
+  void Context::InitializeThreadTLSData(FEXCore::Core::InternalThreadState *Thread) {
+    // Let's do some initial bookkeeping here
+    Thread->ThreadManager.TID = ::gettid();
+    Thread->ThreadManager.PID = ::getpid();
+    SignalDelegation->RegisterTLSState(Thread);
+    ThunkHandler->RegisterTLSState(Thread);
   }
 
   void Context::RunThread(FEXCore::Core::InternalThreadState *Thread) {
@@ -1258,11 +1270,7 @@ namespace FEXCore::Context {
     Core::ThreadData.Thread = Thread;
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
-    // Let's do some initial bookkeeping here
-    Thread->ThreadManager.TID = ::gettid();
-    Thread->ThreadManager.PID = ::getpid();
-    SignalDelegation->RegisterTLSState(Thread);
-    ThunkHandler->RegisterTLSState(Thread);
+    InitializeThreadTLSData(Thread);
 
     ++IdleWaitRefCount;
 
