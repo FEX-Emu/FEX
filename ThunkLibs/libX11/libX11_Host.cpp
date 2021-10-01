@@ -33,7 +33,7 @@ _XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned long 
         case 6: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
         case 7: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
         default:
-        printf("XCreateIC_internal FAILURE\n");
+        fprintf(stderr, "XCreateIC_internal FAILURE\n");
         return nullptr;
     }
 }
@@ -51,7 +51,7 @@ char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned lo
         case 6: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
         case 7: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
         default:
-        printf("XCreateIC_internal FAILURE\n");
+        fprintf(stderr, "XCreateIC_internal FAILURE\n");
         return ErrorReply;
     }
 }
@@ -73,7 +73,7 @@ static int XIfEventCB(Display* a0, XEvent* a1, XPointer a2) {
 }
 
 int fexfn_impl_libX11_XIfEvent_internal(Display* a0, XEvent* a1, XIfEventCBFN* a2, XPointer a3) {
-    XIfEventCB_args args = { a2, a3 };
+    static XIfEventCB_args args = { a2, a3 };
 
     return fexldr_ptr_libX11_XIfEvent(a0, a1, &XIfEventCB, (XPointer)&args);
 }
@@ -81,7 +81,7 @@ int fexfn_impl_libX11_XIfEvent_internal(Display* a0, XEvent* a1, XIfEventCBFN* a
 XErrorHandler guest_handler;
 
 int XSetErrorHandlerCB(Display* a_0, XErrorEvent* a_1) {
-    XSetErrorHandlerCB_Args argsrv { a_0, a_1};
+    static XSetErrorHandlerCB_Args argsrv { a_0, a_1};
     
     call_guest(callback_unpacks->libX11_XSetErrorHandlerCB, (void*) guest_handler, &argsrv);
     

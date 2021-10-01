@@ -31,40 +31,40 @@ $end_info$
 
 extern "C" {
     char* XGetICValues(XIC ic, ...) {
-        printf("XGetICValues\n");
+        fprintf(stderr, "XGetICValues\n");
         va_list ap;
         std::vector<unsigned long> args;
-        va_start(ap, ic); 
+        va_start(ap, ic);
         for (;;) {
             auto arg = va_arg(ap, unsigned long);
             if (arg == 0)
                 break;
             args.push_back(arg);
-            printf("%016lX\n", arg);
+            fprintf(stderr, "%016lX\n", arg);
         }
-            
+
         va_end(ap);
         auto rv = XGetICValues_internal(ic, args.size(), &args[0]);
-        printf("RV: %p\n", rv);
+        fprintf(stderr, "RV: %p\n", rv);
         return rv;
     }
-    
+
     _XIC* XCreateIC(XIM im, ...) {
-        printf("XCreateIC\n");
+        fprintf(stderr, "XCreateIC\n");
         va_list ap;
         std::vector<unsigned long> args;
-        va_start(ap, im); 
+        va_start(ap, im);
         for (;;) {
             auto arg = va_arg(ap, unsigned long);
             if (arg == 0)
                 break;
             args.push_back(arg);
-            printf("%016lX\n", arg);
+            fprintf(stderr, "%016lX\n", arg);
         }
-            
+
         va_end(ap);
         auto rv = XCreateIC_internal(im, args.size(), &args[0]);
-        printf("RV: %p\n", rv);
+        fprintf(stderr, "RV: %p\n", rv);
         return rv;
     }
 
@@ -77,10 +77,22 @@ extern "C" {
     }
 
     int (*XESetCloseDisplay(Display *display, int extension, int (*proc)()))() {
-        printf("libX11: XESetCloseDisplay\n");
+        fprintf(stderr, "libX11: XESetCloseDisplay\n");
         return nullptr;
     }
-      
+
+    static void LockMutexFunction() {
+      fprintf(stderr, "libX11: LockMutex\n");
+    }
+
+    static void UnlockMutexFunction() {
+      fprintf(stderr, "libX11: LockMutex\n");
+    }
+
+  void (*_XLockMutex_fn)() = LockMutexFunction;
+  void (*_XUnlockMutex_fn)() = UnlockMutexFunction;
+  typedef struct _LockInfoRec *LockInfoPtr;
+  LockInfoPtr _Xglobal_lock = (LockInfoPtr)0x4142434445464748ULL;
 }
 
 struct {
