@@ -37,7 +37,17 @@ endfunction()
 add_custom_target(ThunkGuestsInstall)
 
 function(add_guest_lib NAME)
-  add_library(${NAME}-guest SHARED ../lib${NAME}/lib${NAME}_Guest.cpp ${GEN_lib${NAME}})
+  set (SOURCE_FILE ../lib${NAME}/lib${NAME}_Guest.cpp)
+  get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
+  if (NOT EXISTS "${SOURCE_FILE_ABS}")
+    set (SOURCE_FILE ../lib${NAME}/Guest.cpp)
+    get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
+    if (NOT EXISTS "${SOURCE_FILE_ABS}")
+      message (FATAL_ERROR "Thunk source file for Guest lib ${NAME} doesn't exist!")
+    endif()
+  endif()
+
+  add_library(${NAME}-guest SHARED ${SOURCE_FILE} ${GEN_lib${NAME}})
   target_include_directories(${NAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
   add_custom_target(${NAME}-guest-install
