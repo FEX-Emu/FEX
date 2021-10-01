@@ -29,6 +29,24 @@ $end_info$
 
 #include <tiny-json.h>
 
+namespace JSON {
+  struct JsonAllocator {
+    jsonPool_t PoolObject;
+    std::unique_ptr<std::list<json_t>> json_objects;
+  };
+  static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
+
+  json_t* PoolInit(jsonPool_t* Pool) {
+    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+    alloc->json_objects = std::make_unique<std::list<json_t>>();
+    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  }
+
+  json_t* PoolAlloc(jsonPool_t* Pool) {
+    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  }
+}
 
 namespace FEXCore::Context {
   struct Context;
@@ -75,7 +93,7 @@ static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
-  
+
   auto ThunkConfigFile = ThunkConfig();
 
   if (ThunkConfigFile.size()) {
@@ -86,8 +104,14 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     if (LoadFile(FileData, ThunkConfigFile)) {
       FileData.push_back(0);
 
-      json_t mem[128];
-      json_t const* json = json_create( &FileData.at(0), mem, sizeof mem / sizeof *mem );
+      JSON::JsonAllocator Pool {
+        .PoolObject = {
+          .init = JSON::PoolInit,
+          .alloc = JSON::PoolAlloc,
+        },
+      };
+
+      json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
 
       json_t const* thunks = json_getProperty( json, "thunks" );
       if ( !thunks || JSON_OBJ != json_getType( thunks ) ) {
@@ -101,23 +125,32 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
 
         if (propertyType == JSON_TEXT) {
           char const* RootFSLib = json_getValue( thunk );
-          ThunkOverlays.emplace(RootFSLib, ThunkGuestPath / GuestThunk);
+          auto ThunkPath = ThunkGuestPath / GuestThunk;
+          if (std::filesystem::exists(ThunkPath)) {
+            ThunkOverlays.emplace(RootFSLib, ThunkPath);
+          }
         } else if (propertyType == JSON_ARRAY) {
           json_t const* child;
           for( child = json_getChild( thunk ); child != 0; child = json_getSibling( child ) ) {
             if (json_getType( child ) == JSON_TEXT) {
               char const* RootFSLib = json_getValue( child );
-              ThunkOverlays.emplace(RootFSLib, ThunkGuestPath / GuestThunk);
+              auto ThunkPath = ThunkGuestPath / GuestThunk;
+              if (std::filesystem::exists(ThunkPath)) {
+                ThunkOverlays.emplace(RootFSLib, ThunkPath);
+              }
             }
           }
         }
       }
     }
 
-    if (ThunkOverlays.size()) {
-      LogMan::Msg::I("Thunk Overlays:");
-      for (auto &Thunk: ThunkOverlays) {
-        LogMan::Msg::I("\t%s -> %s", Thunk.first.c_str(), Thunk.second.c_str());
+    if (false) {
+      // Useful for debugging
+      if (ThunkOverlays.size()) {
+        LogMan::Msg::I("Thunk Overlays:");
+        for (auto &Thunk: ThunkOverlays) {
+          LogMan::Msg::I("\t%s -> %s", Thunk.first.c_str(), Thunk.second.c_str());
+        }
       }
     }
   }
@@ -132,7 +165,6 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
   auto RootFSPath = LDPath();
   if (!pathname || // If no pathname
       pathname[0] != '/' || // If relative
-      RootFSPath.empty() || // If RootFS doesn't exist
       strcmp(pathname, "/") == 0) { // If we are getting root
     return {};
   }
@@ -140,6 +172,10 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
   auto thunkOverlay = ThunkOverlays.find(pathname);
   if (thunkOverlay != ThunkOverlays.end()) {
     return thunkOverlay->second;
+  }
+
+  if (RootFSPath.empty()) { // If RootFS doesn't exist
+    return {};
   }
 
   std::string Path = RootFSPath + pathname;
