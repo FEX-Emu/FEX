@@ -29,8 +29,19 @@ endfunction()
 
 add_custom_target(ThunkHostsInstall)
 function(add_host_lib NAME)
-  add_library(${NAME}-host SHARED ../lib${NAME}/lib${NAME}_Host.cpp ${GEN_lib${NAME}})
+  set (SOURCE_FILE ../lib${NAME}/lib${NAME}_Host.cpp)
+    get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
+  if (NOT EXISTS "${SOURCE_FILE_ABS}")
+    set (SOURCE_FILE ../lib${NAME}/Host.cpp)
+    get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
+    if (NOT EXISTS "${SOURCE_FILE_ABS}")
+      message (FATAL_ERROR "Thunk source file for Host lib ${NAME} doesn't exist!")
+    endif()
+  endif()
+
+  add_library(${NAME}-host SHARED ${SOURCE_FILE} ${GEN_lib${NAME}})
   target_include_directories(${NAME}-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  target_link_libraries(${NAME}-host PRIVATE dl)
 
   add_custom_target(${NAME}-host-install
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DATA_DIRECTORY}/HostThunks/
