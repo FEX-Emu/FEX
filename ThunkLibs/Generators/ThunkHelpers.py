@@ -6,6 +6,7 @@ from hashlib import sha256
 Libs = { }
 CurrentLib = None
 CurrentFunction = None
+CurrentCallback = None
 
 def hash_lib_fn_asm(lib, fn):
     return "0x" + ", 0x".join(re.findall('..', sha256((lib + ":" + fn).encode('utf-8')).hexdigest()))
@@ -20,6 +21,21 @@ def lib(name):
 
     Libs[name] = {
         "name": name,
+        "filename": name,
+        "functions": { },
+        "callbacks": { }
+    }
+    CurrentLib = Libs[name]
+    CurrentFunction = None
+
+def lib_with_filename(name, filename):
+    global Libs
+    global CurrentLib
+    global CurrentFunction
+
+    Libs[name] = {
+        "name": name,
+        "filename": filename,
         "functions": { },
         "callbacks": { }
     }
@@ -79,18 +95,24 @@ def no_tab_pack():
 
 # format: "ret_type function_name(arg_type, arg_type)"
 def cb(cdecl):
-    global CurrentLib
+    global CurrentLir
+    global CurrentCallback
 
     parts = re.findall("([^(]+)\(([^)]*)\)", cdecl)[0]
     name = parts[0].replace("*", " ").split(" ")[-1]
     rv = parts[0][0:-len(name)].strip()
     args = parts[1].strip()
 
-    CurrentLib["callbacks"][name] = {
+    CurrentCallback = CurrentLib["callbacks"][name] = {
         "name" : name,
         "return": rv,
-        "args": list(filter(None, map(str.strip, args.split(','))))
+        "args": list(filter(None, map(str.strip, args.split(',')))),
+        "cb_unpack": True
     }
+
+def no_cb_unpack():
+    global CurrentCallback
+    CurrentCallback["cb_unpack"] = False
 
 def IterateLibs(libs, field, filter, Fn):
     for lib in libs.values():
@@ -109,7 +131,7 @@ def GenerateThunk_args(args):
             rv.append("...")
         else:
             rv.append(args[i] + " a_" + str(i))
-            
+
     rv.append(")")
 
     return "".join(rv)
@@ -165,9 +187,8 @@ def GenerateFunctionPack(lib, function):
             print("return args.rv;")
     else:
         print("fexthunks_" + lib["name"] + "_" + function["name"] + "(nullptr);")
-    
     print("}")
-    
+
     print("")
 
 ###
@@ -183,7 +204,7 @@ def GenerateFunctionUnpack_args(args):
             rv.append(",")
         rv.append("args->a_" + str(i))
     rv.append(")")
-    
+
     return "".join(rv)
 
 def GenerateFunctionUnpack(lib, function):
@@ -198,6 +219,7 @@ def GenerateFunctionUnpack(lib, function):
 
     print("fexldr_ptr_" + lib["name"] + "_" + function["name"])
     print(GenerateFunctionUnpack_args(function["args"]) + ";")
+
     print("}")
 
 ###
@@ -225,7 +247,7 @@ def GenerateLdr_lib(lib):
     print("static void* " + handle + ";")
 
     print("extern \"C\" bool fexldr_init_" + lib["name"] + "() {")
-    print(handle + " = dlopen(\""+ lib["name"] +".so\", RTLD_LOCAL | RTLD_LAZY);");
+    print(handle + " = dlopen(\""+ lib["filename"] +".so\", RTLD_LOCAL | RTLD_LAZY);");
     print("if (!" + handle + ") { return false; }");
     for function in lib["functions"].values():
         GenerateLdr_function_loader(lib, function, handle, function["ldr"])
@@ -258,7 +280,7 @@ def GenerateCallbackUnpack(lib, function):
 
     print("typedef " + function["return"] + " fn_t " + GenerateThunk_args(function["args"]) + ";")
     print("auto callback = reinterpret_cast<fn_t*>(cb);")
-    
+
     if GenerateThunk_has_struct(function["return"], function["args"]):
         print("struct arg_t "+ GenerateThunk_struct(function["return"], function["args"]) + ";")
         print("auto args = (arg_t*)argsv;")
@@ -297,7 +319,7 @@ def Generate():
         print('extern "C" {')
         IterateLibs(Libs, "functions", "pack", GenerateFunctionPackPublic)
         print('}')
-    
+
     if WhatToGenerate == "all" or  WhatToGenerate == "function_unpacks":
         print("// Generated: function_unpacks")
         print('extern "C" {')
@@ -327,17 +349,17 @@ def Generate():
     if WhatToGenerate == "all" or  WhatToGenerate == "callback_unpacks_header":
         print("// Generated: callback_unpacks_header")
         IterateLibs(Libs, "callbacks", False, GenerateCallbackUnpackHeader)
-    
+
     if WhatToGenerate == "all" or  WhatToGenerate == "callback_unpacks_header_init":
         print("// Generated: callback_unpacks_header_init")
         IterateLibs(Libs, "callbacks", False, GenerateCallbackUnpackHeaderInit)
 
     if WhatToGenerate == "all" or  WhatToGenerate == "callback_unpacks":
         print("// Generated: callback_unpacks")
-        IterateLibs(Libs, "callbacks", False, GenerateCallbackUnpack)
-    
+        IterateLibs(Libs, "callbacks", "cb_unpack", GenerateCallbackUnpack)
+
     if WhatToGenerate == "all" or  WhatToGenerate == "callback_typedefs":
         print("// Generated: callback_unpacks")
         IterateLibs(Libs, "callbacks", False, GenerateCallbackTypedefs)
 
-        
+
