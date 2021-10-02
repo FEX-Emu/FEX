@@ -17,6 +17,7 @@ $end_info$
 #include <sys/stat.h>
 
 #include <unordered_map>
+#include <unordered_set>
 
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
@@ -76,5 +77,14 @@ private:
   FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
   FEX_CONFIG_OPT(ThunkConfig, THUNKCONFIG);
   uint32_t CurrentPID{};
+
+  void LoadThunkDatabase(bool Global);
+  struct ThunkDBObject {
+    std::string LibraryName;
+    std::unordered_set<std::string> Depends;
+    std::vector<std::string> Overlays;
+    bool Enabled{};
+  };
+  std::unordered_map<std::string, ThunkDBObject> ThunkDB{};
 };
 }
