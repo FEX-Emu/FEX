@@ -329,7 +329,8 @@ namespace JSON {
   void MetaLayer::MergeConfigMap(const LayerOptions &Options) {
     // Insert this layer's options, overlaying previous options that exist here
     for (auto &it : Options) {
-      if (it.first == FEXCore::Config::ConfigOption::CONFIG_ENV) {
+      if (it.first == FEXCore::Config::ConfigOption::CONFIG_ENV ||
+          it.first == FEXCore::Config::ConfigOption::CONFIG_HOSTENV) {
         MergeEnvironmentVariables(it.first, it.second);
       }
       else {

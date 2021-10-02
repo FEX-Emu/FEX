@@ -94,6 +94,16 @@
         "Desc": [
           "Adds an environment variable to the emulated environment."
         ]
+      },
+      "HostEnv": {
+        "Type": "strarray",
+        "Default": "",
+        "ShortArg": "H",
+        "Desc": [
+          "Adds an environment variable to the host environment.",
+          "This can be useful for setting environment variables that thunks can pick up.",
+          "Typically isn't necessary since the guest libc isn't thunked. But is possible."
+        ]
       }
     },
     "Debug": {

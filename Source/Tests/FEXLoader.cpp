@@ -408,6 +408,7 @@ int main(int argc, char **argv, char **const envp) {
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);
+  FEX_CONFIG_OPT(HostEnvironment, HOSTENV);
   ::SilentLog = SilentLog();
 
   if (!::SilentLog) {
@@ -446,6 +447,13 @@ int main(int argc, char **argv, char **const envp) {
   if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
     // We require 4.17 minimum for MAP_FIXED_NOREPLACE
     LogMan::Msg::E("FEXLoader requires kernel 4.17 minimum. Expect problems.");
+  }
+
+  // Before we go any further, set all of our host environment variables that the config has provided
+  for (auto &HostEnv : HostEnvironment.All()) {
+    // We are going to keep these alive in memory.
+    // No need to split the string with setenv
+    putenv(HostEnv.data());
   }
 
   ELFCodeLoader2 Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
