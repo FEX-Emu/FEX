@@ -36,7 +36,6 @@ using compat_long_t = int32_t;
 using compat_uptr_t = uint32_t;
 using compat_size_t = uint32_t;
 using compat_off_t = uint32_t;
-using compat_loff_t = int64_t;
 using compat_pid_t = int32_t;
 using compat_dev_t = uint16_t;
 using compat_ino_t = uint32_t;
@@ -51,6 +50,7 @@ using compat_clock_t = int32_t;
 // Can't use using with aligned attributes, clang doesn't honour it
 typedef FEX_ALIGNED(4) uint64_t compat_uint64_t;
 typedef FEX_ALIGNED(4) int64_t compat_int64_t;
+typedef FEX_ALIGNED(4) int64_t compat_loff_t;
 
 template<typename T>
 class compat_ptr {
@@ -645,8 +645,8 @@ static_assert(sizeof(flock64_32) == 24, "Incorrect size");
 struct
 FEX_ANNOTATE("fex-match")
 linux_dirent {
-  uint64_t d_ino;
-  int64_t  d_off;
+  compat_uint64_t d_ino;
+  compat_int64_t  d_off;
   uint16_t d_reclen;
   uint8_t _pad[6];
   char d_name[];
@@ -673,8 +673,8 @@ static_assert(sizeof(linux_dirent_32) == 12, "Incorrect size");
 struct
 FEX_ANNOTATE("fex-match")
 linux_dirent_64 {
-  uint64_t d_ino;
-  uint64_t d_off;
+  compat_uint64_t d_ino;
+  compat_uint64_t d_off;
   uint16_t d_reclen;
   uint8_t  d_type;
   uint8_t _pad[5];
@@ -1156,4 +1156,40 @@ mq_attr32 {
 
 static_assert(std::is_trivial<mq_attr32>::value, "Needs to be trivial");
 static_assert(sizeof(mq_attr32) == 32, "Incorrect size");
+
+union
+FEX_ANNOTATE("alias-x86_32-epoll_data_t")
+FEX_ANNOTATE("fex-match")
+epoll_data32 {
+  compat_ptr<void> ptr;
+  int fd;
+  uint32_t u32;
+  compat_uint64_t u64;
+};
+
+struct
+FEX_PACKED
+FEX_ANNOTATE("alias-x86_32-epoll_event")
+FEX_ANNOTATE("fex-match")
+epoll_event32 {
+  uint32_t events;
+  epoll_data32 data;
+
+  epoll_event32() = delete;
+
+  operator struct epoll_event() const {
+    epoll_event event{};
+    event.events = events;
+    event.data.u64 = data.u64;
+    return event;
+  }
+
+  epoll_event32(struct epoll_event event)
+    : data { event.data.u64 }{
+    events = event.events;
+  }
+};
+static_assert(std::is_trivial<epoll_event32>::value, "Needs to be trivial");
+static_assert(sizeof(epoll_event32) == 12, "Incorrect size");
+
 }

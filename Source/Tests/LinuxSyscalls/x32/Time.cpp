@@ -19,6 +19,7 @@ $end_info$
 #include <utime.h>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::timespec32>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::timex32>, "%lx")
 
 struct timespec;
 namespace FEXCore::Core {
