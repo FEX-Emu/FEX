@@ -244,23 +244,80 @@ namespace FEXCore::Context {
     };
     [[nodiscard]] CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
-    
+
     // same as CompileBlock, but aborts on failure
     void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
     bool LoadAOTIRCache(int streamfd);
     void FinalizeAOTIRCache();
     void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer);
-    
-    // Used for thread creation from syscalls
+    /**
+     * @brief Initializes the JIT compilers for the thread
+     *
+     * @param State The internal FEX thread state object
+     * @param CompileThread Is this for the compile service or not?
+     *
+     * InitializeCompiler is called inside of CreateThread, so you likely don't need this
+     * This is exposed because the CompileService needs to initialize compilers while copying data from
+     * the paired InternalThreadState that it is compiling code for
+     */
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);
+
+    // Used for thread creation from syscalls
+    /**
+     * @brief Used to create FEX thread objects in preparation for creating a true OS thread
+     *
+     * @param NewThreadState The initial thread state to setup for our state
+     * @param ParentTID The PID that was the parent thread that created this
+     *
+     * @return The InternalThreadState object that tracks all of the emulated thread's state
+     *
+     * Usecases:
+     *  OS thread Creation:
+     *    - Thread = CreateThread(NewState, PPID);
+     *    - InitializeThread(Thread);
+     *  OS fork (New thread created with a clone of thread state):
+     *    - clone{2, 3}
+     *    - Thread = CreateThread(CopyOfThreadState, PPID);
+     *    - ExecutionThread(Thread); // Starts executing without creating another host thread
+     *  Thunk callback executing guest code from native host thread
+     *    - Thread = CreateThread(NewState, PPID);
+     *    - InitializeThreadTLSData(Thread);
+     *    - HandleCallback(Thread, RIP);
+     */
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
-    void InitializeThreadData(FEXCore::Core::InternalThreadState *Thread);
+
+    /**
+     * @brief Initializes the TLS data for a thread
+     *
+     * @param Thread The internal FEX thread state object
+     */
+    void InitializeThreadTLSData(FEXCore::Core::InternalThreadState *Thread);
+
+    /**
+     * @brief Initializes the OS thread object and prepares to start executing on that new OS thread
+     *
+     * @param Thread The internal FEX thread state object
+     *
+     * The OS thread will wait until RunThread is executed
+     */
     void InitializeThread(FEXCore::Core::InternalThreadState *Thread);
-    void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
+
+    /**
+     * @brief Starts the OS thread object to start executing guest code
+     *
+     * @param Thread The internal FEX thread state object
+     */
     void RunThread(FEXCore::Core::InternalThreadState *Thread);
 
+    /**
+     * @brief Destroys this FEX thread object and stops tracking it internally
+     *
+     * @param Thread The internal FEX thread state object
+     */
     void DestroyThread(FEXCore::Core::InternalThreadState *Thread);
+    void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
+
     void CleanupAfterFork(FEXCore::Core::InternalThreadState *ExceptForThread);
 
     std::vector<FEXCore::Core::InternalThreadState*>* GetThreads() { return &Threads; }
@@ -281,6 +338,15 @@ namespace FEXCore::Context {
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
 
   private:
+    /**
+     * @brief Does some final thread initialization
+     *
+     * @param Thread The internal FEX thread state object
+     *
+     * InitCore and CreateThread both call this to finish up thread object initialization
+     */
+    void InitializeThreadData(FEXCore::Core::InternalThreadState *Thread);
+
     void WaitForIdleWithTimeout();
 
     void NotifyPause();
