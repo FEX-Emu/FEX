@@ -4,9 +4,9 @@ tags: thunklibs|asound
 $end_info$
 */
 
+extern "C" {
 #include <alsa/asoundlib.h>
-
-
+}
 
 #include <stdio.h>
 #include <cstring>
