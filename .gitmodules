@@ -42,3 +42,7 @@
 [submodule "External/xxhash"]
 	path = External/xxhash
 	url = https://github.com/FEX-Emu/xxHash.git
+[submodule "External/Vulkan-Docs"]
+  shallow = true
+	path = External/Vulkan-Docs
+	url = https://github.com/KhronosGroup/Vulkan-Docs.git
