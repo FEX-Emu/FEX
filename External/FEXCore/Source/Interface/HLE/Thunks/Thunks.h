@@ -6,6 +6,10 @@ $end_info$
 
 #pragma once
 
+namespace FEXCore::Context {
+  struct Context;
+}
+
 namespace FEXCore::Core {
   struct InternalThreadState;
 }
@@ -23,6 +27,6 @@ namespace FEXCore {
         virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
         virtual ~ThunkHandler() { }
 
-        static ThunkHandler* Create();
+        static ThunkHandler* Create(FEXCore::Context::Context *ctx);
     };
 };

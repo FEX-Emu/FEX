@@ -245,7 +245,7 @@ namespace FEXCore::Context {
   }
 
   FEXCore::Core::InternalThreadState* Context::InitCore(FEXCore::CodeLoader *Loader) {
-    ThunkHandler.reset(FEXCore::ThunkHandler::Create());
+    ThunkHandler.reset(FEXCore::ThunkHandler::Create(this));
 
     LocalLoader = Loader;
     using namespace FEXCore::Core;
