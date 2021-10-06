@@ -59,12 +59,6 @@ function(add_host_lib_with_name NAME LIBNAME)
   target_link_libraries(${LIBNAME}-host PRIVATE dl)
   target_compile_options(${LIBNAME}-host PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
-  # Make all of the libraries rely on the host allocator library
-  # Skip linking to themselves though
-  if (NOT (NAME STREQUAL "fex_malloc" OR NAME STREQUAL "fex_malloc_symbols"))
-    target_link_libraries(${LIBNAME}-host PRIVATE fex_malloc-host)
-  endif()
-
   add_custom_target(${LIBNAME}-host-install
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DATA_DIRECTORY}/HostThunks/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-host.so ${DATA_DIRECTORY}/HostThunks/)
@@ -77,10 +71,10 @@ function(add_host_lib NAME)
   add_host_lib_with_name(${NAME} ${NAME} ${ARGV})
 endfunction()
 
-add_host_lib(fex_malloc_symbols)
+#add_host_lib(fex_malloc_symbols)
 
-generate(libfex_malloc function_unpacks tab_function_unpacks ldr ldr_ptrs)
-add_host_lib(fex_malloc)
+#generate(libfex_malloc function_unpacks tab_function_unpacks ldr ldr_ptrs)
+#add_host_lib(fex_malloc)
 
 generate(libasound function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(asound)

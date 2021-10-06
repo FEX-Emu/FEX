@@ -102,9 +102,6 @@ namespace FEXCore {
             }
         }
 
-        // Allocator symbols to make thunks work with JEMalloc
-        void *FEX_Malloc_Symbols{};
-        void *FEX_Malloc{};
         public:
 
         ThunkedFunction* LookupThunk(const IR::SHA256Sum &sha256) {
@@ -124,63 +121,14 @@ namespace FEXCore {
             ::Thread = Thread;
         }
 
-        ThunkHandler_impl(FEXCore::Context::Context *ctx) {
-          // If we are provided a thunks configuration file
-          // Then preemptively load our memory allocations libraries
-          if (!ctx->Config.ThunkConfigFile().empty()) {
-            // Set the static context so callbacks from a host thread can actually execute emulated code
-            auto SOName = ctx->Config.ThunkHostLibsPath() + "/libfex_malloc_symbols-host.so";
-
-            FEX_Malloc_Symbols = dlopen(SOName.c_str(), RTLD_GLOBAL | RTLD_NOW);
-
-            if (!FEX_Malloc_Symbols) {
-                LogMan::Msg::E("Load lib: failed to dlopen %s: %s", SOName.c_str(), dlerror());
-                return;
-            }
-
-#define GET_SET(name, ptr) \
-            do { \
-              void **sym = (void**)dlsym(FEX_Malloc_Symbols, #name); \
-              if (!sym) { \
-                LogMan::Msg::E("Load lib: Failed to dlsym '" #name "'\n"); \
-                return; \
-              } \
-              *sym = (void*)ptr; \
-            } while(0)
-            GET_SET(FEX_Malloc_Ptr, ::malloc);
-            GET_SET(FEX_Free_Ptr, ::free);
-            GET_SET(FEX_Calloc_Ptr, ::calloc);
-            GET_SET(FEX_Memalign_Ptr, ::memalign);
-            GET_SET(FEX_Realloc_Ptr, ::realloc);
-            GET_SET(FEX_Valloc_Ptr, ::valloc);
-            GET_SET(FEX_PosixMemalign_Ptr, ::posix_memalign);
-            GET_SET(FEX_AlignedAlloc_Ptr, ::aligned_alloc);
-            GET_SET(FEX_MallocUsable_Ptr, ::malloc_usable_size);
-#undef GET_SET
-
-            SOName = ctx->Config.ThunkHostLibsPath() + "/libfex_malloc-host.so";
-
-            FEX_Malloc = dlopen(SOName.c_str(), RTLD_GLOBAL | RTLD_NOW);
-
-            if (!FEX_Malloc) {
-                LogMan::Msg::E("Load lib: failed to dlopen %s: %s", SOName.c_str(), dlerror());
-                __builtin_trap();
-                return;
-            }
-          }
+        ThunkHandler_impl() {
         }
 
         ~ThunkHandler_impl() {
-          if (FEX_Malloc) {
-            dlclose(FEX_Malloc);
-          }
-          if (FEX_Malloc_Symbols) {
-            dlclose(FEX_Malloc_Symbols);
-          }
         }
     };
 
-    ThunkHandler* ThunkHandler::Create(FEXCore::Context::Context *ctx) {
-        return new ThunkHandler_impl(ctx);
+    ThunkHandler* ThunkHandler::Create() {
+        return new ThunkHandler_impl();
     }
 }

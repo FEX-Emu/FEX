@@ -27,6 +27,6 @@ namespace FEXCore {
         virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
         virtual ~ThunkHandler() { }
 
-        static ThunkHandler* Create(FEXCore::Context::Context *ctx);
+        static ThunkHandler* Create();
     };
 };

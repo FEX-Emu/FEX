@@ -70,12 +70,6 @@ function(add_guest_lib_with_name NAME LIBNAME)
   target_compile_options(${LIBNAME}-guest PRIVATE -Wno-attributes)
   target_compile_options(${LIBNAME}-guest PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
-  # Make all of our libraries rely on our allocator guest library
-  # Skip linking to themselves though
-  if (NOT NAME STREQUAL "fex_malloc")
-    target_link_libraries(${LIBNAME}-guest PRIVATE fex_malloc-guest)
-  endif()
-
   add_custom_target(${LIBNAME}-guest-install
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DATA_DIRECTORY}/GuestThunks/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-guest.so ${DATA_DIRECTORY}/GuestThunks/)
@@ -86,11 +80,11 @@ function(add_guest_lib NAME)
   add_guest_lib_with_name(${NAME} ${NAME} ${ARGV})
 endfunction()
 
-add_guest_lib(fex_malloc_loader)
-target_link_libraries(fex_malloc_loader-guest PRIVATE dl)
+#add_guest_lib(fex_malloc_loader)
+#target_link_libraries(fex_malloc_loader-guest PRIVATE dl)
 
-generate(libfex_malloc thunks function_packs function_packs_public)
-add_guest_lib(fex_malloc)
+#generate(libfex_malloc thunks function_packs function_packs_public)
+#add_guest_lib(fex_malloc)
 
 generate(libasound thunks function_packs function_packs_public)
 add_guest_lib(asound)
