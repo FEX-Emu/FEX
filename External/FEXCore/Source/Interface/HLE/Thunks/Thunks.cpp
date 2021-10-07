@@ -16,6 +16,7 @@ $end_info$
 
 #include <Interface/Context/Context.h>
 #include "FEXCore/Core/X86Enums.h"
+#include <malloc.h>
 #include <map>
 #include <memory>
 #include <shared_mutex>
@@ -32,7 +33,6 @@ static thread_local FEXCore::Core::InternalThreadState *Thread;
 
 
 namespace FEXCore {
-
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
 
     class ThunkHandler_impl final: public ThunkHandler {
@@ -50,17 +50,16 @@ namespace FEXCore {
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
         */
         static void CallCallback(void *callback, void *arg0, void* arg1) {
-            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
-            Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
+          Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
+          Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
 
-            Thread->CTX->HandleCallback(Thread, (uintptr_t)callback);
+          Thread->CTX->HandleCallback(Thread, (uintptr_t)callback);
         }
 
         static void LoadLib(void *ArgsV) {
+            auto CTX = Thread->CTX;
 
             auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
-
-            auto CTX = Thread->CTX;
 
             auto Name = Args->Name;
             auto CallbackThunks = Args->CallbackThunks;
@@ -123,7 +122,9 @@ namespace FEXCore {
         }
 
         ThunkHandler_impl() {
+        }
 
+        ~ThunkHandler_impl() {
         }
     };
 

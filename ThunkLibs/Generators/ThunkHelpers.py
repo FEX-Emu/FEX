@@ -58,8 +58,10 @@ def fn(cdecl):
         "args": list(filter(None, map(str.strip, args.split(',')))),
         "thunk": True,
         "pack": True,
+        "pack_pair": True,
         "unpack": True,
         "ldr_ptr": True,
+        "ldr_ptr_pair": True,
         "ldr": True,
         "tab_unpack": True,
         "tab_pack": True
@@ -77,9 +79,17 @@ def no_pack():
     global CurrentFunction
     CurrentFunction["pack"] = False
 
+def no_pack_pair():
+    global CurrentFunction
+    CurrentFunction["pack_pair"] = False
+
 def no_ldr_ptr():
     global CurrentFunction
     CurrentFunction["ldr_ptr"] = False
+
+def no_ldr_ptr_pair():
+    global CurrentFunction
+    CurrentFunction["ldr_ptr_pair"] = False
 
 def no_ldr():
     global CurrentFunction
@@ -191,6 +201,10 @@ def GenerateFunctionPack(lib, function):
 
     print("")
 
+def GenerateFunctionPackPair(lib, function):
+    #define T(name) { #name, (PFN_vkVoidFunction*)fexfn_pack_##name }
+    print("PAIR({0}, fexfn_pack_{0}),".format(function["name"]))
+
 ###
 ### function_unpacks
 ### Used in the Host to unpack and call the ldr_ptr
@@ -208,8 +222,9 @@ def GenerateFunctionUnpack_args(args):
     return "".join(rv)
 
 def GenerateFunctionUnpack(lib, function):
-    print("static void fexfn_unpack_" + lib["name"] + "_" + function["name"] + "(void *argsv){")
+    Name = function["name"]
 
+    print("static void fexfn_unpack_" + lib["name"] + "_" + function["name"] + "(void *argsv){")
     if GenerateThunk_has_struct(function["return"], function["args"]):
         print("struct arg_t "+ GenerateThunk_struct(function["return"], function["args"]) + ";")
         print("auto args = (arg_t*)argsv;")
@@ -231,6 +246,9 @@ def GenerateFunctionLdrPtr(lib, function):
     print("typedef " + function["return"]  + " fexldr_type_" + lib["name"] + "_" + function["name"] + GenerateThunk_args(function["args"]) + ";")
     print("static fexldr_type_" + lib["name"] + "_" + function["name"] + " *fexldr_ptr_" + lib["name"] + "_" + function["name"] + ";")
 
+def GenerateFunctionLdrPtrPair(lib, function):
+    print("PAIR({0}, &fexldr_ptr_{1}_{0}),".format(function["name"], lib["name"]))
+
 ###
 ### ldr
 ### Used in Host
@@ -245,6 +263,7 @@ def GenerateLdr_function_loader(lib, function, handle, dlsym_impl):
 def GenerateLdr_lib(lib):
     handle =  "fexldr_ptr_" + lib["name"] + "_so"
     print("static void* " + handle + ";")
+    print("#define LDR_HANDLE {0}".format(handle))
 
     print("extern \"C\" bool fexldr_init_" + lib["name"] + "() {")
     print(handle + " = dlopen(\""+ lib["filename"] +".so\", RTLD_LOCAL | RTLD_LAZY);");
@@ -306,6 +325,8 @@ def Generate():
         print("// Generated: thunks")
         print('extern "C" {')
         IterateLibs(Libs, "functions", "thunk", GenerateFunctionThunk)
+        for lib in Libs.values():
+            print('#define THUNKFUNC(name) fexthunks_{0}_##name'.format(lib["filename"]))
         print('}')
 
     if WhatToGenerate == "all" or  WhatToGenerate == "function_packs":
@@ -313,6 +334,10 @@ def Generate():
         print('extern "C" {')
         IterateLibs(Libs, "functions", "pack", GenerateFunctionPack)
         print('}')
+
+    if WhatToGenerate == "all" or  WhatToGenerate == "function_pack_pair":
+        print("// Generated: function_pack_pair")
+        IterateLibs(Libs, "functions", "pack_pair", GenerateFunctionPackPair)
 
     if WhatToGenerate == "all" or  WhatToGenerate == "function_packs_public":
         print("// Generated: function_packs_public")
@@ -324,6 +349,8 @@ def Generate():
         print("// Generated: function_unpacks")
         print('extern "C" {')
         IterateLibs(Libs, "functions", "unpack", GenerateFunctionUnpack)
+        for lib in Libs.values():
+            print('#define UNPACKFUNC(name) fexfn_unpack_{0}_##name'.format(lib["filename"]))
         print('}')
 
     if WhatToGenerate == "all" or  WhatToGenerate == "ldr":
@@ -333,6 +360,14 @@ def Generate():
     if WhatToGenerate == "all" or  WhatToGenerate == "ldr_ptrs":
         print("// Generated: ldr_ptrs")
         IterateLibs(Libs, "functions", "ldr_ptr", GenerateFunctionLdrPtr)
+        for lib in Libs.values():
+            print('#define LDR_PTR(name) fexldr_ptr_{0}_##name'.format(lib["filename"]))
+
+    if WhatToGenerate == "all" or  WhatToGenerate == "ldr_ptrs_pair":
+        print("// Generated: ldr_ptrs_pair")
+        IterateLibs(Libs, "functions", "ldr_ptr_pair", GenerateFunctionLdrPtrPair)
+        for lib in Libs.values():
+            print('#define LDR_PTR(name) fexldr_ptr_{0}_##name'.format(lib["filename"]))
 
     if WhatToGenerate == "all" or  WhatToGenerate == "tab_function_unpacks":
         print("// Generated: tab_function_unpacks")
@@ -361,5 +396,3 @@ def Generate():
     if WhatToGenerate == "all" or  WhatToGenerate == "callback_typedefs":
         print("// Generated: callback_unpacks")
         IterateLibs(Libs, "callbacks", False, GenerateCallbackTypedefs)
-
-

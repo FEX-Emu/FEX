@@ -6,6 +6,10 @@ $end_info$
 
 #pragma once
 
+namespace FEXCore::Context {
+  struct Context;
+}
+
 namespace FEXCore::Core {
   struct InternalThreadState;
 }
