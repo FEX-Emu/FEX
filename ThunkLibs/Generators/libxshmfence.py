@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libxshmfence")
+lib("libxshmfence", "1")
 fn("int xshmfence_trigger(struct xshmfence *)")
 fn("int xshmfence_await(struct xshmfence *)")
 fn("int xshmfence_query(struct xshmfence *)")

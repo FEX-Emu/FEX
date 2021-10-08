@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib_with_filename("libxcb_randr", "libxcb-randr")
+lib_with_filename("libxcb_randr", "0", "libxcb-randr")
 
 # FEX
 fn("void FEX_xcb_randr_init_extension(xcb_connection_t *, xcb_extension_t *)"); no_unpack()

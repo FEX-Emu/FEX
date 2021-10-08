@@ -14,7 +14,7 @@ def hash_lib_fn_asm(lib, fn):
 def hash_lib_fn_c(lib, fn):
     return "\\x" + "\\x".join(re.findall('..', sha256((lib + ":" + fn).encode('utf-8')).hexdigest()))
 
-def lib(name):
+def lib(name, version):
     global Libs
     global CurrentLib
     global CurrentFunction
@@ -22,13 +22,14 @@ def lib(name):
     Libs[name] = {
         "name": name,
         "filename": name,
+        "version": version,
         "functions": { },
         "callbacks": { }
     }
     CurrentLib = Libs[name]
     CurrentFunction = None
 
-def lib_with_filename(name, filename):
+def lib_with_filename(name, version, filename):
     global Libs
     global CurrentLib
     global CurrentFunction
@@ -36,6 +37,7 @@ def lib_with_filename(name, filename):
     Libs[name] = {
         "name": name,
         "filename": filename,
+        "version": version,
         "functions": { },
         "callbacks": { }
     }
@@ -266,7 +268,14 @@ def GenerateLdr_lib(lib):
     print("#define LDR_HANDLE {0}".format(handle))
 
     print("extern \"C\" bool fexldr_init_" + lib["name"] + "() {")
-    print(handle + " = dlopen(\""+ lib["filename"] +".so\", RTLD_LOCAL | RTLD_LAZY);");
+
+    version = ""
+    if (len(lib["version"]) != 0):
+        version = ".{0}".format(lib["version"])
+    library = "{0}.so{1}".format(lib["filename"], version)
+
+    print("{0} = dlopen(\"{1}\", RTLD_GLOBAL | RTLD_LAZY);".format(handle, library))
+
     print("if (!" + handle + ") { return false; }");
     for function in lib["functions"].values():
         GenerateLdr_function_loader(lib, function, handle, function["ldr"])

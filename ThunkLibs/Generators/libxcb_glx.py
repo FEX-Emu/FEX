@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib_with_filename("libxcb_glx", "libxcb-glx")
+lib_with_filename("libxcb_glx", "0", "libxcb-glx")
 # FEX
 fn("void FEX_xcb_glx_init_extension(xcb_connection_t *, xcb_extension_t *)"); no_unpack()
 fn("size_t FEX_usable_size(void*)"); no_unpack()

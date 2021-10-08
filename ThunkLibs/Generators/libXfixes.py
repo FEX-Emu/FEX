@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libXfixes")
+lib("libXfixes", "3")
 
 fn("const char* XFixesGetCursorName(Display*, Cursor, Atom*)")
 fn("int XFixesQueryExtension(Display*, int*, int*)")

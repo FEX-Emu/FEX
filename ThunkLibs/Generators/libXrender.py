@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libXrender")
+lib("libXrender", "1")
 
 fn("Cursor XRenderCreateAnimCursor(Display*, int, XAnimCursor*)")
 fn("Cursor XRenderCreateCursor(Display*, Picture, unsigned int, unsigned int)")

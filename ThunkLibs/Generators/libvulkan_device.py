@@ -504,7 +504,7 @@ for i in range(0, NumToErase):
 parse_vulkan(VulkanXML, PrintHeader)
 
 if PrintThunks:
-    lib(LibName)
+    lib(LibName, "")
 
     # Functions here
     export_vulkan()
