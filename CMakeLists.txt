@@ -416,6 +416,11 @@ add_subdirectory(Data/binfmts/)
 add_subdirectory(Source/)
 add_subdirectory(Data/AppConfig/)
 
+# Install the ThunksDB file
+install(
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/Data/ThunksDB.json
+  DESTINATION ${DATA_DIRECTORY}/)
+
 if (BUILD_TESTS)
   add_subdirectory(unittests/)
 endif()
