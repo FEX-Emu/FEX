@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libXext")
+lib("libXext", "6")
 
 # needs function pointer
 # fn("int (* XSetExtensionErrorHandler(XextErrorHandler))(Display*, const char*, const char*)")

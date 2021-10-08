@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib_with_filename("libxcb_sync", "libxcb-sync")
+lib_with_filename("libxcb_sync", "1", "libxcb-sync")
 
 # FEX
 fn("void FEX_xcb_sync_init_extension(xcb_connection_t *, xcb_extension_t *)"); no_unpack()

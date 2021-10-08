@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libEGL")
+lib("libEGL", "0")
 
 fn("EGLBoolean eglBindAPI(EGLenum)")
 fn("EGLBoolean eglChooseConfig(EGLDisplay, const EGLint*, void**, EGLint, EGLint*)")

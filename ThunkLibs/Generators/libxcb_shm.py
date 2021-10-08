@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib_with_filename("libxcb_shm", "libxcb-shm")
+lib_with_filename("libxcb_shm", "0", "libxcb-shm")
 
 # FEX
 fn("void FEX_xcb_shm_init_extension(xcb_connection_t *, xcb_extension_t *)"); no_unpack()

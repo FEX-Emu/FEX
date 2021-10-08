@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libfex_malloc")
+lib("libfex_malloc", "")
 
 # FEX
 fn("void fex_get_allocation_ptrs(AllocationPtrs *)")

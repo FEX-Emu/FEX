@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libSDL2")
+lib("libSDL2", "")
 
 # these need function pointers
 #  fn("int SDL_TLSSet(SDL_TLSID, const void*, void (*)(void*))")

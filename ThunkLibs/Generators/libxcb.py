@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libxcb")
+lib("libxcb", "1")
 
 # There is a paradigm inside of XCB of functions that return a pointer, a length, and an end
 # The application is seemingly reading directly from some internal data structures

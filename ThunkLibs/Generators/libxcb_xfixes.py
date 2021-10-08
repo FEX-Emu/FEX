@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib_with_filename("libxcb_xfixes", "libxcb-xfixes")
+lib_with_filename("libxcb_xfixes", "0", "libxcb-xfixes")
 
 # FEX
 fn("void FEX_xcb_xfixes_init_extension(xcb_connection_t *, xcb_extension_t *)"); no_unpack()

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libasound")
+lib("libasound", "2")
 
 fn("const char * snd_asoundlib_version()")
 fn("int snd_dlpath(char *, size_t, const char *)")

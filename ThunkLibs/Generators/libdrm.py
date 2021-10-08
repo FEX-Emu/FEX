@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libdrm")
+lib("libdrm", "2")
 
 # FEX
 fn("size_t FEX_usable_size(void*)"); no_unpack()

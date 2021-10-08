@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libGL")
+lib("libGL", "1")
 
 # GLX (except glXGetProcAddress that is implemented in cpp)
 fn("const char* glXQueryCurrentRendererStringMESA(int)")

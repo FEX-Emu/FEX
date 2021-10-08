@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib_with_filename("libxcb_dri3", "libxcb-dri3")
+lib_with_filename("libxcb_dri3", "0", "libxcb-dri3")
 
 # FEX
 fn("void FEX_xcb_dri3_init_extension(xcb_connection_t *, xcb_extension_t *)"); no_unpack()
