@@ -1,4 +1,4 @@
-# FEX-2109
+# FEX-2110
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -185,6 +185,64 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### asound
 - [libasound_Guest.cpp](../ThunkLibs/libasound/libasound_Guest.cpp)
 - [libasound_Host.cpp](../ThunkLibs/libasound/libasound_Host.cpp)
+
+#### drm
+- [Guest.cpp](../ThunkLibs/libdrm/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libdrm/Host.cpp)
+
+#### fex_malloc
+- [Guest.cpp](../ThunkLibs/libfex_malloc/Guest.cpp): Handles allocations between guest and host thunks
+- [Host.cpp](../ThunkLibs/libfex_malloc/Host.cpp): Handles allocations between guest and host thunks
+
+#### fex_malloc_loader
+- [Guest.cpp](../ThunkLibs/libfex_malloc_loader/Guest.cpp): Delays malloc symbol replacement until it is safe to run constructors
+
+#### fex_malloc_symbols
+- [Host.cpp](../ThunkLibs/libfex_malloc_symbols/Host.cpp): Allows FEX to export allocation symbols
+
+#### vulkan
+- [Guest.cpp](../ThunkLibs/libvulkan_device/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libvulkan_device/Host.cpp)
+
+#### xcb
+- [libxcb_Guest.cpp](../ThunkLibs/libxcb/libxcb_Guest.cpp)
+- [libxcb_Host.cpp](../ThunkLibs/libxcb/libxcb_Host.cpp)
+
+#### xcb-dri2
+- [libxcb_dri2_Guest.cpp](../ThunkLibs/libxcb_dri2/libxcb_dri2_Guest.cpp)
+- [libxcb_dri2_Host.cpp](../ThunkLibs/libxcb_dri2/libxcb_dri2_Host.cpp)
+
+#### xcb-dri3
+- [libxcb_dri3_Guest.cpp](../ThunkLibs/libxcb_dri3/libxcb_dri3_Guest.cpp)
+- [libxcb_dri3_Host.cpp](../ThunkLibs/libxcb_dri3/libxcb_dri3_Host.cpp)
+
+#### xcb-glx
+- [Guest.cpp](../ThunkLibs/libxcb_glx/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxcb_glx/Host.cpp)
+
+#### xcb-present
+- [Guest.cpp](../ThunkLibs/libxcb_present/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxcb_present/Host.cpp)
+
+#### xcb-randr
+- [Guest.cpp](../ThunkLibs/libxcb_randr/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxcb_randr/Host.cpp)
+
+#### xcb-shm
+- [libxcb_shm_Guest.cpp](../ThunkLibs/libxcb_shm/libxcb_shm_Guest.cpp)
+- [libxcb_shm_Host.cpp](../ThunkLibs/libxcb_shm/libxcb_shm_Host.cpp)
+
+#### xcb-sync
+- [Guest.cpp](../ThunkLibs/libxcb_sync/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxcb_sync/Host.cpp)
+
+#### xcb-xfixes
+- [libxcb_xfixes_Guest.cpp](../ThunkLibs/libxcb_xfixes/libxcb_xfixes_Guest.cpp)
+- [libxcb_xfixes_Host.cpp](../ThunkLibs/libxcb_xfixes/libxcb_xfixes_Host.cpp)
+
+#### xshmfence
+- [Guest.cpp](../ThunkLibs/libxshmfence/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxshmfence/Host.cpp)
 
 ## Source/Tests
 
