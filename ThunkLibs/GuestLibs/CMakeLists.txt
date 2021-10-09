@@ -71,8 +71,8 @@ function(add_guest_lib_with_name NAME LIBNAME)
   target_compile_options(${LIBNAME}-guest PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
   add_custom_target(${LIBNAME}-guest-install
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${DATA_DIRECTORY}/GuestThunks/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-guest.so ${DATA_DIRECTORY}/GuestThunks/)
+    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{DESTDIR}/${DATA_DIRECTORY}/GuestThunks/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-guest.so $ENV{DESTDIR}/${DATA_DIRECTORY}/GuestThunks/)
   add_dependencies(ThunkGuestsInstall ${LIBNAME}-guest-install)
 endfunction()
 
