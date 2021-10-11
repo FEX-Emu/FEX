@@ -60,8 +60,8 @@ function(add_host_lib_with_name NAME LIBNAME)
   target_compile_options(${LIBNAME}-host PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
   add_custom_target(${LIBNAME}-host-install
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${DATA_DIRECTORY}/HostThunks/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-host.so ${DATA_DIRECTORY}/HostThunks/)
+    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{DESTDIR}/${DATA_DIRECTORY}/HostThunks/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-host.so $ENV{DESTDIR}/${DATA_DIRECTORY}/HostThunks/)
   add_dependencies(ThunkHostsInstall ${LIBNAME}-host-install)
 endfunction()
 
