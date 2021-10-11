@@ -1225,14 +1225,16 @@ namespace FEXCore::IR {
   uint32_t ConstrainedRAPass::FindSpillSlot(uint32_t Node, FEXCore::IR::RegisterClassType RegisterClass) {
     RegisterNode *CurrentNode = &Graph->Nodes[Node];
     LiveRange *NodeLiveRange = &LiveRanges[Node];
-    for (uint32_t i = 0; i < Graph->SpillStack.size(); ++i) {
-      SpillStackUnit *SpillUnit = &Graph->SpillStack.at(i);
-      if (NodeLiveRange->Begin <= SpillUnit->SpillRange.End &&
-          SpillUnit->SpillRange.Begin <= NodeLiveRange->End) {
-        SpillUnit->SpillRange.Begin = std::min(SpillUnit->SpillRange.Begin, LiveRanges[Node].Begin);
-        SpillUnit->SpillRange.End = std::max(SpillUnit->SpillRange.End, LiveRanges[Node].End);
-        CurrentNode->Head.SpillSlot = i;
-        return i;
+    if (ReuseSpillSlots) {
+      for (uint32_t i = 0; i < Graph->SpillStack.size(); ++i) {
+        SpillStackUnit *SpillUnit = &Graph->SpillStack.at(i);
+        if (NodeLiveRange->Begin <= SpillUnit->SpillRange.End &&
+            SpillUnit->SpillRange.Begin <= NodeLiveRange->End) {
+          SpillUnit->SpillRange.Begin = std::min(SpillUnit->SpillRange.Begin, LiveRanges[Node].Begin);
+          SpillUnit->SpillRange.End = std::max(SpillUnit->SpillRange.End, LiveRanges[Node].End);
+          CurrentNode->Head.SpillSlot = i;
+          return i;
+        }
       }
     }
 
