@@ -59,6 +59,20 @@ static inline mcontext_t* GetMContext(void* ucontext) {
 
 #ifdef _M_ARM_64
 
+constexpr uint32_t FPR_MAGIC = 0x46508001U;
+
+struct HostCTXHeader {
+  uint32_t Magic;
+  uint32_t Size;
+};
+
+struct HostFPRState {
+  HostCTXHeader Head;
+  uint32_t FPSR;
+  uint32_t FPCR;
+  __uint128_t FPRs[32];
+};
+
 static inline uint64_t GetSp(void* ucontext) {
   return GetMContext(ucontext)->sp;
 }
@@ -91,19 +105,13 @@ static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
   GetMContext(ucontext)->regs[id] = val;
 }
 
-constexpr uint32_t FPR_MAGIC = 0x46508001U;
+static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
+  auto MContext = GetMContext(ucontext);
+  HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&MContext->__reserved[0]);
+  LOGMAN_THROW_A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
 
-struct HostCTXHeader {
-  uint32_t Magic;
-  uint32_t Size;
-};
-
-struct HostFPRState {
-  HostCTXHeader Head;
-  uint32_t FPSR;
-  uint32_t FPCR;
-  __uint128_t FPRs[32];
-};
+  return HostState->FPRs[id];
+}
 
 using ContextBackup = ArmContextBackup;
 template <typename T>
@@ -190,6 +198,10 @@ static inline uint64_t GetArmReg(void* ucontext, uint32_t id) {
 
 static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
   ERROR_AND_DIE("Not impelented for x86 host");
+}
+
+static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
+  ERROR_AND_DIE("Not implemented for x86 host");
 }
 
 using ContextBackup = X86ContextBackup;
