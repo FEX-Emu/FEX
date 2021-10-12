@@ -352,14 +352,11 @@ void Arm64Dispatcher::SpillSRA(void *ucontext) {
   for(int i = 0; i < SRA64.size(); i++) {
     ThreadState->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].GetCode());
   }
-  // TODO: Also recover FPRs, not sure where the neon context is
-  // This is usually not needed
-  /*
+
   for(int i = 0; i < SRAFPR.size(); i++) {
-      State->State.State.xmm[i][0] = _mcontext.neon[SRAFPR[i].GetCode()];
-      State->State.State.xmm[i][0] = _mcontext.neon[SRAFPR[i].GetCode()];
+    auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].GetCode());
+    memcpy(&ThreadState->CurrentFrame->State.xmm[i][0], &FPR, sizeof(__uint128_t));
   }
-  */
 }
 
 #ifdef _M_ARM_64
