@@ -53,6 +53,9 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
 
   protected:
     bool HasSpills {};
+    // Debug option to disable split slot reuse
+    // Can be useful for testing if there is a bug with spill slots
+    constexpr static bool ReuseSpillSlots {true};
     uint32_t SpillSlotCount {};
     bool HadFullRA {};
 };
