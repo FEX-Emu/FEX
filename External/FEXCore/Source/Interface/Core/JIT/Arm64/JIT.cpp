@@ -55,7 +55,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 
         PushDynamicRegsAndLR();
 
-        mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
+        uxtw(w0, GetReg<RA_32>(IROp->Args[0].ID()));
         LoadConstant(x1, (uintptr_t)Info.fn);
 
         blr(x1);
@@ -112,7 +112,12 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
 
         PushDynamicRegsAndLR();
 
-        mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
+        if (Info.ABI == FABI_F80_I16) {
+          uxtw(w0, GetReg<RA_32>(IROp->Args[0].ID()));
+        }
+        else {
+          mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
+        }
         LoadConstant(x1, (uintptr_t)Info.fn);
 
         blr(x1);
@@ -133,7 +138,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushDynamicRegsAndLR();
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         LoadConstant(x2, (uintptr_t)Info.fn);
 
@@ -153,7 +158,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushDynamicRegsAndLR();
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         LoadConstant(x2, (uintptr_t)Info.fn);
 
@@ -173,7 +178,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushDynamicRegsAndLR();
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         LoadConstant(x2, (uintptr_t)Info.fn);
 
@@ -192,7 +197,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushDynamicRegsAndLR();
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         LoadConstant(x2, (uintptr_t)Info.fn);
 
@@ -211,7 +216,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushDynamicRegsAndLR();
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         LoadConstant(x2, (uintptr_t)Info.fn);
 
@@ -230,10 +235,10 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushDynamicRegsAndLR();
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
-        umov(x3, GetSrc(IROp->Args[1].ID()).V2D(), 1);
+        umov(x3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
 
         LoadConstant(x4, (uintptr_t)Info.fn);
 
@@ -252,7 +257,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushDynamicRegsAndLR();
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         LoadConstant(x2, (uintptr_t)Info.fn);
 
@@ -273,10 +278,10 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
         PushDynamicRegsAndLR();
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(x1, GetSrc(IROp->Args[0].ID()).V2D(), 1);
+        umov(x1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
-        umov(x3, GetSrc(IROp->Args[1].ID()).V2D(), 1);
+        umov(x3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
 
         LoadConstant(x4, (uintptr_t)Info.fn);
 
