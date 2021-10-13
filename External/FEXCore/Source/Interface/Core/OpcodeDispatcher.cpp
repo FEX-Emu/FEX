@@ -26,33 +26,7 @@ $end_info$
 
 namespace FEXCore::IR {
 
-auto OpToIndex = [](uint8_t Op) constexpr -> uint8_t {
-  switch (Op) {
-  // Group 1
-  case 0x80: return 0;
-  case 0x81: return 1;
-  case 0x82: return 2;
-  case 0x83: return 3;
-  // Group 2
-  case 0xC0: return 0;
-  case 0xC1: return 1;
-  case 0xD0: return 2;
-  case 0xD1: return 3;
-  case 0xD2: return 4;
-  case 0xD3: return 5;
-  // Group 3
-  case 0xF6: return 0;
-  case 0xF7: return 1;
-  // Group 4
-  case 0xFE: return 0;
-  // Group 5
-  case 0xFF: return 0;
-  // Group 11
-  case 0xC6: return 0;
-  case 0xC7: return 1;
-  }
-  return 0;
-};
+using X86Tables::OpToIndex;
 
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 

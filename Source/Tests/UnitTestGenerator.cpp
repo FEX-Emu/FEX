@@ -23,6 +23,8 @@ $end_info$
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/Utils/LogManager.h>
 
+using FEXCore::X86Tables::OpToIndex;
+
 constexpr std::array<std::pair<int16_t, int16_t>, 3> Disp8Ranges = {{
   {static_cast<int16_t>(-16), 16},
   {static_cast<int16_t>(-128), static_cast<int16_t>(-112)},
@@ -77,34 +79,6 @@ uint32_t GetModRMMapping(uint32_t Register) {
   default: return Register; break; // Default mapping
   }
   return Register;
-};
-
-auto OpToIndex = [](uint8_t Op) constexpr -> uint8_t {
-  switch (Op) {
-  // Group 1
-  case 0x80: return 0;
-  case 0x81: return 1;
-  case 0x82: return 2;
-  case 0x83: return 3;
-  // Group 2
-  case 0xC0: return 0;
-  case 0xC1: return 1;
-  case 0xD0: return 2;
-  case 0xD1: return 3;
-  case 0xD2: return 4;
-  case 0xD3: return 5;
-  // Group 3
-  case 0xF6: return 0;
-  case 0xF7: return 1;
-  // Group 4
-  case 0xFE: return 0;
-  // Group 5
-  case 0xFF: return 0;
-  // Group 11
-  case 0xC6: return 0;
-  case 0xC7: return 1;
-  }
-  return 0;
 };
 
 auto PrimaryIndexToOp = [](uint16_t Op) constexpr -> uint32_t {
