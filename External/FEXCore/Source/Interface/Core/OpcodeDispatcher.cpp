@@ -2130,6 +2130,17 @@ void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
   GenerateFlags_RotateLeftImmediate(Op, ALUOp, Dest, Shift);
 }
 
+void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
+  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  // TODO: This can be replaced with a BIC IR op once it's implemented.
+  auto Dest = _And(_Not(Src1), Src2);
+
+  StoreResult(GPRClass, Op, Dest, -1);
+  GenerateFlags_Logical(Op, Dest, Src1, Src2);
+}
+
 void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto Size = GetSrcSize(Op) * 8;
@@ -5797,6 +5808,8 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(2, 0b00, 0xF2), 1, &OpDispatchBuilder::ANDNBMIOp},
   };
 #undef OPD
 
