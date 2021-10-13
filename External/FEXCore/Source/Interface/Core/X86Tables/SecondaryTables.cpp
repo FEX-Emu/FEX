@@ -15,7 +15,7 @@ namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
 void InitializeSecondaryTables(Context::OperatingMode Mode) {
-  const U8U8InfoStruct TwoByteOpTable[] = {
+  static constexpr U8U8InfoStruct TwoByteOpTable[] = {
     // Instructions
     {0x00, 1, X86InstInfo{"",           TYPE_GROUP_6, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     {0x01, 1, X86InstInfo{"",           TYPE_GROUP_7, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
@@ -266,7 +266,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x3F, 1, X86InstInfo{"ALTINST",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            0, nullptr}},
   };
 
-  const U8U8InfoStruct TwoByteOpTable_32[] = {
+  static constexpr U8U8InfoStruct TwoByteOpTable_32[] = {
     {0xA0, 1, X86InstInfo{"PUSH FS", TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
     {0xA1, 1, X86InstInfo{"POP FS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
 
@@ -274,7 +274,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0xA9, 1, X86InstInfo{"POP GS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                                               0, nullptr}},
   };
 
-  const U8U8InfoStruct TwoByteOpTable_64[] = {
+  static constexpr U8U8InfoStruct TwoByteOpTable_64[] = {
     {0xA0, 1, X86InstInfo{"PUSH FS", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                0, nullptr}},
     {0xA1, 1, X86InstInfo{"POP FS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                0, nullptr}},
 
@@ -282,7 +282,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0xA9, 1, X86InstInfo{"POP GS",  TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_64BIT) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_NO_OVERLAY,                                                0, nullptr}},
   };
 
-  const U8U8InfoStruct RepModOpTable[] = {
+  static constexpr U8U8InfoStruct RepModOpTable[] = {
     {0x0, 16, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
 
     {0x10, 1, X86InstInfo{"MOVSS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
@@ -362,7 +362,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0xFF, 1, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
   };
 
-  const U8U8InfoStruct RepNEModOpTable[] = {
+  static constexpr U8U8InfoStruct RepNEModOpTable[] = {
     {0x0, 16, X86InstInfo{"",           TYPE_COPY_OTHER, FLAGS_NONE,                                                     0, nullptr}},
 
     {0x10, 1, X86InstInfo{"MOVSD",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                  0, nullptr}},
@@ -435,7 +435,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0xF8, 8, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
   };
 
-  const U8U8InfoStruct OpSizeModOpTable[] = {
+  static constexpr U8U8InfoStruct OpSizeModOpTable[] = {
     {0x0, 16, X86InstInfo{"",           TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},
 
     {0x10, 1, X86InstInfo{"MOVUPD",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                         0, nullptr}},

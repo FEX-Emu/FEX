@@ -14,7 +14,7 @@ namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
 void InitializeSecondaryModRMTables() {
-  const U8U8InfoStruct SecondaryModRMExtensionOpTable[] = {
+  static constexpr U8U8InfoStruct SecondaryModRMExtensionOpTable[] = {
     // REG /1
     {((0 << 3) | 0), 1, X86InstInfo{"MONITOR",  TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
     {((0 << 3) | 1), 1, X86InstInfo{"MWAIT",    TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},

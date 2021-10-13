@@ -59,13 +59,15 @@ constexpr uint32_t FLAG_OPADDR_MASK = (((1 << FLAG_OPADDR_STACKSIZE) - 1) << FLA
 constexpr uint32_t FLAG_OPERAND_SIZE_LAST = 0b01;
 constexpr uint32_t FLAG_WIDENING_SIZE_LAST = 0b10;
 
-inline uint32_t GetSizeDstFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_DST_OFF) & SIZE_MASK; }
-inline uint32_t GetSizeSrcFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_SRC_OFF) & SIZE_MASK; }
+constexpr uint32_t GetSizeDstFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_DST_OFF) & SIZE_MASK; }
+constexpr uint32_t GetSizeSrcFlags(uint32_t Flags) { return (Flags >> FLAG_SIZE_SRC_OFF) & SIZE_MASK; }
 
-inline uint32_t GenSizeDstSize(uint32_t Size) { return Size << FLAG_SIZE_DST_OFF; }
-inline uint32_t GenSizeSrcSize(uint32_t Size) { return Size << FLAG_SIZE_SRC_OFF; }
+constexpr uint32_t GenSizeDstSize(uint32_t Size) { return Size << FLAG_SIZE_DST_OFF; }
+constexpr uint32_t GenSizeSrcSize(uint32_t Size) { return Size << FLAG_SIZE_SRC_OFF; }
 
-inline uint32_t GetOpAddr(uint32_t Flags, int Index) { return (((Flags & FLAG_OPADDR_MASK) >> FLAG_OPADDR_OFF) >> (Index * 2)) & ((1 << FLAG_OPADDR_FLAG_SIZE) - 1); }
+constexpr uint32_t GetOpAddr(uint32_t Flags, uint32_t Index) {
+  return (((Flags & FLAG_OPADDR_MASK) >> FLAG_OPADDR_OFF) >> (Index * 2)) & ((1 << FLAG_OPADDR_FLAG_SIZE) - 1);
+}
 
 inline void PushOpAddr(uint32_t *Flags, uint32_t Flag) {
   uint32_t TmpFlags  = *Flags;
@@ -349,14 +351,13 @@ constexpr uint32_t SIZE_128BIT   = 0b101;
 constexpr uint32_t SIZE_256BIT   = 0b110;
 constexpr uint32_t SIZE_64BITDEF = 0b111; // Default mode is 64bit instead of typical 32bit
 
-inline uint32_t GetSizeDstFlags(uint32_t Flags) { return (Flags >> FLAGS_SIZE_DST_OFF) & SIZE_MASK; }
-inline uint32_t GetSizeSrcFlags(uint32_t Flags) { return (Flags >> FLAGS_SIZE_SRC_OFF) & SIZE_MASK; }
+constexpr uint32_t GetSizeDstFlags(uint32_t Flags) { return (Flags >> FLAGS_SIZE_DST_OFF) & SIZE_MASK; }
+constexpr uint32_t GetSizeSrcFlags(uint32_t Flags) { return (Flags >> FLAGS_SIZE_SRC_OFF) & SIZE_MASK; }
 
-inline uint32_t GenFlagsDstSize(uint32_t Size) { return Size << FLAGS_SIZE_DST_OFF; }
-inline uint32_t GenFlagsSrcSize(uint32_t Size) { return Size << FLAGS_SIZE_SRC_OFF; }
-inline uint32_t GenFlagsSameSize(uint32_t Size) {return (Size << FLAGS_SIZE_DST_OFF) | (Size << FLAGS_SIZE_SRC_OFF); }
-inline uint32_t GenFlagsSizes(uint32_t Dest, uint32_t Src) {return (Dest << FLAGS_SIZE_DST_OFF) | (Src << FLAGS_SIZE_SRC_OFF); }
-
+constexpr uint32_t GenFlagsDstSize(uint32_t Size) { return Size << FLAGS_SIZE_DST_OFF; }
+constexpr uint32_t GenFlagsSrcSize(uint32_t Size) { return Size << FLAGS_SIZE_SRC_OFF; }
+constexpr uint32_t GenFlagsSameSize(uint32_t Size) { return (Size << FLAGS_SIZE_DST_OFF) | (Size << FLAGS_SIZE_SRC_OFF); }
+constexpr uint32_t GenFlagsSizes(uint32_t Dest, uint32_t Src) { return (Dest << FLAGS_SIZE_DST_OFF) | (Src << FLAGS_SIZE_SRC_OFF); }
 
 // If it has an xmm subflag
 #define HAS_XMM_SUBFLAG(x, flag) (((x) & (FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS | (flag))) == (FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS | (flag)))
@@ -365,7 +366,7 @@ inline uint32_t GenFlagsSizes(uint32_t Dest, uint32_t Src) {return (Dest << FLAG
 #define HAS_NON_XMM_SUBFLAG(x, flag) (((x) & (FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS | (flag))) == (flag))
 }
 
-auto OpToIndex = [](uint8_t Op) constexpr -> uint8_t {
+constexpr uint8_t OpToIndex(uint8_t Op) {
   switch (Op) {
   // Group 1
   case 0x80: return 0;
@@ -391,7 +392,7 @@ auto OpToIndex = [](uint8_t Op) constexpr -> uint8_t {
   case 0xC7: return 1;
   }
   return 0;
-};
+}
 
 using DecodedOp = DecodedInst const*;
 using OpDispatchPtr = void (IR::OpDispatchBuilder::*)(DecodedOp);

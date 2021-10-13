@@ -14,7 +14,7 @@ using namespace InstFlags;
 
 void InitializeVEXTables() {
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  const U16U8InfoStruct VEXTable[] = {
+  static constexpr U16U8InfoStruct VEXTable[] = {
     // Map 0 (Reserved)
     // VEX Map 1
     {OPD(1, 0b00, 0x10), 1, X86InstInfo{"VMOVUPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -486,7 +486,7 @@ void InitializeVEXTables() {
 #undef OPD
 
 #define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
-  const U8U8InfoStruct VEXGroupTable[] = {
+  static constexpr U8U8InfoStruct VEXGroupTable[] = {
     {OPD(TYPE_VEX_GROUP_12, 1, 0b010), 1, X86InstInfo{"VPSRLW",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
     {OPD(TYPE_VEX_GROUP_12, 1, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
     {OPD(TYPE_VEX_GROUP_12, 1, 0b110), 1, X86InstInfo{"VPSLLW",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},

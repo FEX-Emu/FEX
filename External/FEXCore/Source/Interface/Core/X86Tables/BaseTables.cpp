@@ -15,7 +15,7 @@ namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
 void InitializeBaseTables(Context::OperatingMode Mode) {
-  const U8U8InfoStruct BaseOpTable[] = {
+  static constexpr U8U8InfoStruct BaseOpTable[] = {
     // Prefixes
     // Operand size overide
     {0x66, 1, X86InstInfo{"",      TYPE_PREFIX, FLAGS_NONE,        0, nullptr}},
@@ -234,7 +234,7 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xC4, 2, X86InstInfo{"",   TYPE_VEX_TABLE_PREFIX, FLAGS_NONE, 0, nullptr}},
   };
 
-  const U8U8InfoStruct BaseOpTable_64[] = {
+  static constexpr U8U8InfoStruct BaseOpTable_64[] = {
     {0x06, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0, nullptr}},
     {0x0E, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0, nullptr}},
     {0x16, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0, nullptr}},
@@ -258,7 +258,7 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xEA, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                                      0, nullptr}},
   };
 
-  const U8U8InfoStruct BaseOpTable_32[] = {
+  static constexpr U8U8InfoStruct BaseOpTable_32[] = {
     {0x06, 1, X86InstInfo{"PUSH ES",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS,            0, nullptr}},
     {0x07, 1, X86InstInfo{"POP ES",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS,    0, nullptr}},
     {0x0E, 1, X86InstInfo{"PUSH CS",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS,            0, nullptr}},
