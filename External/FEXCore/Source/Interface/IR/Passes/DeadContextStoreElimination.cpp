@@ -257,19 +257,19 @@ namespace {
     size_t ClassifiedStructSize{};
     ContextClassificationInfo->Lookup.reserve(sizeof(FEXCore::Core::CPUState));
     for (auto &it : *ContextClassification) {
-      LOGMAN_THROW_A(it.Class.Offset == ContextClassificationInfo->Lookup.size(), "Offset missmatch %d %d", it.Class.Offset == ContextClassificationInfo->Lookup.size());
+      LOGMAN_THROW_A_FMT(it.Class.Offset == ContextClassificationInfo->Lookup.size(), "Offset mismatch (offset={})", it.Class.Offset);
       for (int i = 0; i < it.Class.Size; i++) {
         ContextClassificationInfo->Lookup.push_back(&it);
       }
       ClassifiedStructSize += it.Class.Size;
     }
 
-    LOGMAN_THROW_A(ClassifiedStructSize == sizeof(FEXCore::Core::CPUState),
-      "Classified CPUStruct size doesn't match real CPUState struct size! %ld != %ld",
+    LOGMAN_THROW_A_FMT(ClassifiedStructSize == sizeof(FEXCore::Core::CPUState),
+      "Classified CPUStruct size doesn't match real CPUState struct size! {} (classified) != {} (real)",
       ClassifiedStructSize, sizeof(FEXCore::Core::CPUState));
 
-    LOGMAN_THROW_A(ContextClassificationInfo->Lookup.size() == sizeof(FEXCore::Core::CPUState),
-      "Classified CPUStruct size doesn't match real CPUState struct size! %ld != %ld",
+    LOGMAN_THROW_A_FMT(ContextClassificationInfo->Lookup.size() == sizeof(FEXCore::Core::CPUState),
+      "Classified lookup size doesn't match real CPUState struct size! {} (classified) != {} (real)",
       ContextClassificationInfo->Lookup.size(), sizeof(FEXCore::Core::CPUState));
   }
 
