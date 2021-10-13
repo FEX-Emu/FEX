@@ -20,7 +20,7 @@ void InitializeXOPTables() {
   constexpr uint16_t XOP_GROUP_9 = 1;
   constexpr uint16_t XOP_GROUP_A = 2;
 
-  const U16U8InfoStruct XOPTable[] = {
+  static constexpr U16U8InfoStruct XOPTable[] = {
     // Group 8
     {OPD(XOP_GROUP_8, 0, 0x85), 1, X86InstInfo{"VPMAXSSWW",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(XOP_GROUP_8, 0, 0x86), 1, X86InstInfo{"VPMACSSWD",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -106,7 +106,7 @@ void InitializeXOPTables() {
 #undef OPD
 
 #define OPD(subgroup, opcode)  (((subgroup - 1) << 3) | (opcode))
-  const U8U8InfoStruct XOPGroupTable[] = {
+  static constexpr U8U8InfoStruct XOPGroupTable[] = {
     // Group 1
     {OPD(1, 1), 1, X86InstInfo{"BLCFILL",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 2), 1, X86InstInfo{"BLSFILL",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},

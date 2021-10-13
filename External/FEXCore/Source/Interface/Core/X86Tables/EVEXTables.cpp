@@ -14,7 +14,7 @@ namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
 void InitializeEVEXTables() {
-  const U16U8InfoStruct EVEXTable[] = {
+  static constexpr U16U8InfoStruct EVEXTable[] = {
     {0x10, 1, X86InstInfo{"VMOVUPS",         TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {0x11, 1, X86InstInfo{"VMOVUPS",         TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
     {0x18, 1, X86InstInfo{"VBROADCASTSS",    TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},

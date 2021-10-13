@@ -15,7 +15,7 @@ using namespace InstFlags;
 void InitializeX87Tables() {
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
 #define OPDReg(op, reg) (((op - 0xD8) << 8) | (reg << 3))
-  const U16U8InfoStruct X87OpTable[] = {
+  static constexpr U16U8InfoStruct X87OpTable[] = {
     // 0xD8
     {OPDReg(0xD8, 0), 1, X86InstInfo{"FADD",  TYPE_X87, FLAGS_MODRM, 0, nullptr}},
     {OPDReg(0xD8, 1), 1, X86InstInfo{"FMUL",  TYPE_X87, FLAGS_MODRM, 0, nullptr}},

@@ -21,7 +21,7 @@ void InitializeSecondaryGroupTables() {
   constexpr uint16_t PF_66   = 2;
   constexpr uint16_t PF_F2   = 3;
 
-  const U16U8InfoStruct SecondaryExtensionOpTable[] = {
+  static constexpr U16U8InfoStruct SecondaryExtensionOpTable[] = {
     // GROUP 1
     // GROUP 2
     // GROUP 3
