@@ -306,10 +306,13 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   Start = reinterpret_cast<uint64_t>(getCode());
   End = Start + getSize();
 
-  #if ENABLE_JITSYMBOLS
+  if (CTX->Config.BlockJITNaming()) {
     std::string Name = "Dispatch_" + std::to_string(::gettid());
     CTX->Symbols.Register(reinterpret_cast<void*>(Start), End-Start, Name);
-  #endif
+  }
+  if (CTX->Config.GlobalJITNaming()) {
+    CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(Start), End-Start);
+  }
 }
 
 X86Dispatcher::~X86Dispatcher() {

@@ -1200,17 +1200,17 @@ namespace FEXCore::Context {
     }
 
     // The core managed to compile the code.
-#if ENABLE_JITSYMBOLS
-    if (DebugData) {
-      if (DebugData->Subblocks.size()) {
-        for (auto& Subblock: DebugData->Subblocks) {
-          Symbols.Register((void*)Subblock.HostCodeStart, GuestRIP, Subblock.HostCodeSize);
+    if (Config.BlockJITNaming()) {
+      if (DebugData) {
+        if (DebugData->Subblocks.size()) {
+          for (auto& Subblock: DebugData->Subblocks) {
+            Symbols.Register((void*)Subblock.HostCodeStart, GuestRIP, Subblock.HostCodeSize);
+          }
+        } else {
+          Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
         }
-      } else {
-        Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
       }
     }
-#endif
 
     // Insert to caches if we generated IR
     if (GeneratedIR) {

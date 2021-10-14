@@ -41,5 +41,16 @@ namespace FEXCore {
     String << std::hex << HostAddr << " " << CodeSize << " " << Name << "_" << HostAddr << std::endl;
     fwrite(String.str().c_str(), 1, String.str().size(), fp);
   }
+
+  void JITSymbols::RegisterJITSpace(void *HostAddr, uint32_t CodeSize) {
+    if (!fp) return;
+
+    // Linux perf format is very straightforward
+    // `<HostPtr> <Size> <Name>\n`
+    std::stringstream String;
+    String << std::hex << HostAddr << " " << CodeSize << " FEXJIT" << std::endl;
+    fwrite(String.str().c_str(), 1, String.str().size(), fp);
+  }
+
 }
 
