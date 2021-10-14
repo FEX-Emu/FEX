@@ -321,6 +321,9 @@ Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
                     -1, 0));
   LOGMAN_THROW_A_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
   Dispatcher->RegisterCodeBuffer(Buffer.Ptr, Buffer.Size);
+  if (CTX->Config.GlobalJITNaming()) {
+    CTX->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
+  }
   return Buffer;
 }
 

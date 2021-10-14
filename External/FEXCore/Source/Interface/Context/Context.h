@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Common/JitSymbols.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/X86HelperGen.h"
@@ -12,9 +13,6 @@
 #include <FEXCore/Utils/Event.h>
 #include <stdint.h>
 
-#ifdef ENABLE_JITSYMBOLS
-#include <Common/JITSymbols.h>
-#endif
 
 #include <atomic>
 #include <condition_variable>
@@ -127,6 +125,8 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(ThunkConfigFile, THUNKCONFIG);
       FEX_CONFIG_OPT(DumpIR, DUMPIR);
       FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
+      FEX_CONFIG_OPT(GlobalJITNaming, GLOBALJITNAMING);
+      FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
     } Config;
 
     using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
@@ -328,9 +328,7 @@ namespace FEXCore::Context {
     void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);
     void RemoveNamedRegion(uintptr_t Base, uintptr_t Size);
 
-#if ENABLE_JITSYMBOLS
     FEXCore::JITSymbols Symbols;
-#endif
 
     // Public for threading
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);

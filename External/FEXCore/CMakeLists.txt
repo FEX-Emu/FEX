@@ -16,7 +16,6 @@ endif()
 set(ENABLE_JIT_X86_64 ${_M_X86_64} CACHE BOOL "Enable the x86_64 JIT")
 set(ENABLE_JIT_ARM64 ${_M_ARM_64} CACHE BOOL "Enable the ARM64 JIT")
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
-option(ENABLE_JITSYMBOLS "Enable visibility of JITSymbols in profiling tools" FALSE)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 cmake_policy(SET CMP0083 NEW) # Follow new PIE policy

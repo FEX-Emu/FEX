@@ -44,7 +44,7 @@ $end_info$
 
 namespace FEXCore::CPU {
 
-CodeBuffer AllocateNewCodeBuffer(size_t Size) {
+CodeBuffer AllocateNewCodeBuffer(FEXCore::Context::Context *CTX, size_t Size) {
   CodeBuffer Buffer;
   Buffer.Size = Size;
   Buffer.Ptr = static_cast<uint8_t*>(
@@ -54,6 +54,9 @@ CodeBuffer AllocateNewCodeBuffer(size_t Size) {
                     MAP_PRIVATE | MAP_ANONYMOUS,
                     -1, 0));
   LOGMAN_THROW_A_FMT(Buffer.Ptr != reinterpret_cast<uint8_t*>(~0ULL), "Couldn't allocate code buffer");
+  if (CTX->Config.GlobalJITNaming()) {
+    CTX->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
+  }
   return Buffer;
 }
 
@@ -418,7 +421,7 @@ void X86JITCore::ClearCache() {
       CurrentCodeBuffer->Size *= 1.5;
       CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MAX_CODE_SIZE);
 
-      InitialCodeBuffer = AllocateNewCodeBuffer(CurrentCodeBuffer->Size);
+      InitialCodeBuffer = AllocateNewCodeBuffer(CTX, CurrentCodeBuffer->Size);
       setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
     }
   }
@@ -426,7 +429,7 @@ void X86JITCore::ClearCache() {
     // We have signal handlers that have generated code
     // This means that we can not safely clear the code at this point in time
     // Allocate some new code buffers that we can switch over to instead
-    auto NewCodeBuffer = AllocateNewCodeBuffer(X86JITCore::INITIAL_CODE_SIZE);
+    auto NewCodeBuffer = AllocateNewCodeBuffer(CTX, X86JITCore::INITIAL_CODE_SIZE);
     EmplaceNewCodeBuffer(NewCodeBuffer);
     setNewBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
   }
@@ -788,6 +791,6 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
 }
 
 std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
-  return std::make_unique<X86JITCore>(ctx, Thread, AllocateNewCodeBuffer(CompileThread ? X86JITCore::MAX_CODE_SIZE : X86JITCore::INITIAL_CODE_SIZE), CompileThread);
+  return std::make_unique<X86JITCore>(ctx, Thread, AllocateNewCodeBuffer(ctx, CompileThread ? X86JITCore::MAX_CODE_SIZE : X86JITCore::INITIAL_CODE_SIZE), CompileThread);
 }
 }

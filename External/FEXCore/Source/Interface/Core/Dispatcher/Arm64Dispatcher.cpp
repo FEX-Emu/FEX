@@ -25,9 +25,7 @@
 #include "code-buffer-vixl.h"
 #include "platform-vixl.h"
 
-#ifdef ENABLE_JITSYMBOLS
 #include <unistd.h>
-#endif
 
 namespace FEXCore::CPU {
 
@@ -342,10 +340,13 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   vixl::aarch64::CPU::EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
   GetBuffer()->SetExecutable();
 
-#if ENABLE_JITSYMBOLS
-  std::string Name = "Dispatch_" + std::to_string(::gettid());
-  CTX->Symbols.Register(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr), Name);
-#endif
+  if (CTX->Config.BlockJITNaming()) {
+    std::string Name = "Dispatch_" + std::to_string(::gettid());
+    CTX->Symbols.Register(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr), Name);
+  }
+  if (CTX->Config.GlobalJITNaming()) {
+    CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
+  }
 }
 
 void Arm64Dispatcher::SpillSRA(void *ucontext) {

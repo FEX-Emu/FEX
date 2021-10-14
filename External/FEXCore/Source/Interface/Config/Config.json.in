@@ -163,8 +163,25 @@
           "Potentially useful for debugging memory problems",
           "32-bit allocator is always used if your host kernel is older than 4.17"
         ]
+      },
+      "GlobalJITNaming": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Uses JITSymbols to name all JIT state as one symbol",
+          "Useful for querying how much time is spent inside of the JIT",
+          "Profiling tools will show JIT time as FEXJIT"
+        ]
+      },
+      "BlockJITNaming": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Uses JITSymbols to name JIT symbols",
+          "Useful for determining hot blocks of code",
+          "Has some file writing overhead per JIT block"
+        ]
       }
-
     },
     "Logging": {
       "SilentLog": {

@@ -182,10 +182,6 @@ if (ENABLE_JIT_ARM64)
     Interface/Core/JIT/Arm64/VectorOps.cpp)
 endif()
 
-if (ENABLE_JITSYMBOLS)
-  list(APPEND DEFINES -DENABLE_JITSYMBOLS=1)
-endif()
-
 set (LIBS vixl dl fmt::fmt xxhash tiny-json)
 if (ENABLE_JEMALLOC)
   list (APPEND LIBS FEX_jemalloc)
