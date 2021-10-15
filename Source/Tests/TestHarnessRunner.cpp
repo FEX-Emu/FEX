@@ -73,7 +73,10 @@ int main(int argc, char **argv, char **const envp) {
 
   auto Args = FEX::ArgLoader::Get();
 
-  LOGMAN_THROW_A(Args.size() > 1, "Not enough arguments");
+  if (Args.empty()) {
+    LogMan::Msg::EFmt("Not enough arguments");
+    return -1;
+  }
 
   FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
