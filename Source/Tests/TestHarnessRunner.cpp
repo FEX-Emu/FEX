@@ -73,7 +73,7 @@ int main(int argc, char **argv, char **const envp) {
 
   auto Args = FEX::ArgLoader::Get();
 
-  if (Args.empty()) {
+  if (Args.size() < 2) {
     LogMan::Msg::EFmt("Not enough arguments");
     return -1;
   }
