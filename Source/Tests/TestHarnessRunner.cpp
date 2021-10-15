@@ -56,11 +56,11 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     CharLevel = "???";
     break;
   }
-  printf("[%s] %s\n", CharLevel, Message);
+  fmt::print("[{}] {}\n", CharLevel, Message);
 }
 
 void AssertHandler(char const *Message) {
-  printf("[ASSERT] %s\n", Message);
+  fmt::print("[ASSERT] {}\n", Message);
 }
 
 int main(int argc, char **argv, char **const envp) {
@@ -73,7 +73,10 @@ int main(int argc, char **argv, char **const envp) {
 
   auto Args = FEX::ArgLoader::Get();
 
-  LOGMAN_THROW_A(Args.size() > 1, "Not enough arguments");
+  if (Args.empty()) {
+    LogMan::Msg::EFmt("Not enough arguments");
+    return -1;
+  }
 
   FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
@@ -111,7 +114,7 @@ int main(int argc, char **argv, char **const envp) {
       return Allocator->munmap(addr, length);
     })) {
       // failed to map
-      LogMan::Msg::E("Failed to map 32-bit elf file.");
+      LogMan::Msg::EFmt("Failed to map 32-bit elf file.");
       return -ENOEXEC;
     }
   }
@@ -140,8 +143,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::GetCPUState(CTX, &State);
   bool Passed = !DidFault && Loader.CompareStates(&State, nullptr);
 
-  LogMan::Msg::I("Faulted? %s", DidFault ? "Yes" : "No");
-  LogMan::Msg::I("Passed? %s", Passed ? "Yes" : "No");
+  LogMan::Msg::IFmt("Faulted? {}", DidFault ? "Yes" : "No");
+  LogMan::Msg::IFmt("Passed? {}", Passed ? "Yes" : "No");
 
   SyscallHandler.reset();
   SignalDelegation.reset();
