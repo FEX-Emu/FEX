@@ -333,6 +333,8 @@ def print_types():
     print_remaining_base_types()
 
     # Structs third
+    print("#pragma GCC diagnostic push")
+    print("#pragma GCC diagnostic ignored \"-Wattributes\"") # Suppress error spam about GCC not recognizing fex-match annotations
     for i in range(0, 2):
         for StructName, Struct in StructDefs.items():
             # First walk the struct members and ensure any dependency is already emitted
@@ -342,6 +344,7 @@ def print_types():
 
             # Now print this struct
             print_struct(Struct.Name)
+    print("#pragma GCC diagnostic pop")
 
 # Walks the commands element in the XML and pulls out all functions
 # This will be used to generate the thunks that we need to hit
