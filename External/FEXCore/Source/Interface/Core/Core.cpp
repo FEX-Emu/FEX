@@ -1141,6 +1141,19 @@ namespace FEXCore::Context {
     }
   }
 
+  Context::AddrToFileMapType::iterator Context::FindAddrForFile(uint64_t Entry, uint64_t Length) {
+    // Thread safety here! We are returning an iterator to the map object
+    // This needs the AOTIRCacheLock locked prior to coming in to the function
+    auto file = AddrToFile.lower_bound(Entry);
+    if (file != AddrToFile.begin()) {
+      --file;
+      if (file->second.Start <= Entry && (file->second.Start + file->second.Len) >= (Entry + Length)) {
+        return file;
+      }
+    }
+    return AddrToFile.end();
+  }
+
   uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto Thread = Frame->Thread;
 
@@ -1212,49 +1225,56 @@ namespace FEXCore::Context {
       }
     }
 
-    // Insert to caches if we generated IR
-    if (GeneratedIR) {
-      // Add to AOT cache if aot generation is enabled
-      if ((Config.AOTIRCapture() || Config.AOTIRGenerate()) && RAData) {
-        auto hash = XXH3_64bits((void*)StartAddr, Length);
+    // Both generated ir and LibraryJITName need a named region lookup
+    if (GeneratedIR || Config.LibraryJITNaming()) {
+      std::shared_lock lk(AOTIRCacheLock);
 
-        std::shared_lock lk(AOTIRCacheLock);
+      auto file = FindAddrForFile(StartAddr, Length);
 
-        auto file = AddrToFile.lower_bound(StartAddr);
-        if (file != AddrToFile.begin()) {
-          --file;
-          if (file->second.Start <= StartAddr && (file->second.Start + file->second.Len) >= (StartAddr + Length)) {
-            auto LocalRIP = GuestRIP - file->second.Start + file->second.Offset;
-            auto LocalStartAddr = StartAddr - file->second.Start + file->second.Offset;
-            auto fileid = file->second.fileid;
-            AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRList, RAData, fileid]() {
-              auto *AotFile = &AOTIRCaptureCache[fileid];
-
-              if (!AotFile->Stream) {
-                AotFile->Stream = AOTIRWriter(fileid);
-                uint64_t tag = 0xDEADBEEFC0D30004;
-                AotFile->Stream->write((char*)&tag, sizeof(tag));
-              }
-              AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRList, RAData);
-            });
-          }
+      // Only go down this path if we actually found a library region
+      if (file != AddrToFile.end()) {
+        if (DebugData && Config.LibraryJITNaming()) {
+          Symbols.RegisterNamedRegion(CodePtr, DebugData->HostCodeSize, file->second.filename);
         }
 
-        if (Config.AOTIRGenerate()) {
-          // cleanup memory and early exit here -- we're not running the application
+        // Add to AOT cache if aot generation is enabled
+        if (GeneratedIR && RAData &&
+            (Config.AOTIRCapture() || Config.AOTIRGenerate())) {
+          auto hash = XXH3_64bits((void*)StartAddr, Length);
 
-          if (DecrementRefCount)
-            --Thread->CompileBlockReentrantRefCount;
+          auto LocalRIP = GuestRIP - file->second.Start + file->second.Offset;
+          auto LocalStartAddr = StartAddr - file->second.Start + file->second.Offset;
+          auto fileid = file->second.fileid;
+          AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRList, RAData, fileid]() {
+            auto *AotFile = &AOTIRCaptureCache[fileid];
 
-          Thread->CPUBackend->ClearCache();
+            if (!AotFile->Stream) {
+              AotFile->Stream = AOTIRWriter(fileid);
+              uint64_t tag = 0xDEADBEEFC0D30004;
+              AotFile->Stream->write((char*)&tag, sizeof(tag));
+            }
+            AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRList, RAData);
+          });
 
-          return (uintptr_t)CodePtr;
+          if (Config.AOTIRGenerate()) {
+            // cleanup memory and early exit here -- we're not running the application
+
+            if (DecrementRefCount)
+              --Thread->CompileBlockReentrantRefCount;
+
+            Thread->CPUBackend->ClearCache();
+
+            return (uintptr_t)CodePtr;
+          }
         }
       }
 
-      // Add to thread local ir cache
-      Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
-      Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
+      // Insert to caches if we generated IR
+      if (GeneratedIR) {
+        // Add to thread local ir cache
+        Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
+        Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
+      }
     }
 
     if (DecrementRefCount)
@@ -1384,7 +1404,7 @@ namespace FEXCore::Context {
     // TODO: Support overlapping maps and region splitting
     auto base_filename = std::filesystem::path(filename).filename().string();
 
-    if (base_filename.size()) {
+    if (!base_filename.empty()) {
       auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());
 
       auto fileid = base_filename + "-" + std::to_string(filename_hash) + "-";

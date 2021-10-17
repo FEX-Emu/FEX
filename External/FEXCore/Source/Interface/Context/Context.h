@@ -126,6 +126,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(DumpIR, DUMPIR);
       FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
       FEX_CONFIG_OPT(GlobalJITNaming, GLOBALJITNAMING);
+      FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
       FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
     } Config;
 
@@ -175,9 +176,11 @@ namespace FEXCore::Context {
       bool ContainsCode;
     };
 
-    std::map<uint64_t, AddrToFileEntry> AddrToFile;
+    using AddrToFileMapType = std::map<uint64_t, AddrToFileEntry>;
+    AddrToFileMapType AddrToFile;
     std::map<std::string, std::string> FilesWithCode;
 
+    AddrToFileMapType::iterator FindAddrForFile(uint64_t Entry, uint64_t Length);
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif
