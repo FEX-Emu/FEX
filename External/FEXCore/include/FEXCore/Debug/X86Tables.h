@@ -338,6 +338,9 @@ constexpr uint32_t FLAGS_POP                  = (1 << 22);
 // Only SEXT if the instruction is operating in 64bit operand size
 constexpr uint32_t FLAGS_SRC_SEXT64BIT        = (1 << 23);
 
+// Whether or not the instruction has a VEX prefix
+constexpr uint32_t FLAGS_VEX                  = (1 << 24);
+
 constexpr uint32_t FLAGS_SIZE_DST_OFF = 26;
 constexpr uint32_t FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
 

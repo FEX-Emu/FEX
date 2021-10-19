@@ -127,6 +127,54 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
   return (*GPRs)[(REX << 3) | bits];
 }
 
+static uint32_t MapVEXToReg(uint8_t vvvv, bool HasXMM) {
+  using GPRArray = std::array<uint32_t, 16>;
+
+  static constexpr GPRArray GPRIndexes = {
+    FEXCore::X86State::REG_RAX,
+    FEXCore::X86State::REG_RCX,
+    FEXCore::X86State::REG_RDX,
+    FEXCore::X86State::REG_RBX,
+    FEXCore::X86State::REG_RSP,
+    FEXCore::X86State::REG_RBP,
+    FEXCore::X86State::REG_RSI,
+    FEXCore::X86State::REG_RDI,
+    FEXCore::X86State::REG_R8,
+    FEXCore::X86State::REG_R9,
+    FEXCore::X86State::REG_R10,
+    FEXCore::X86State::REG_R11,
+    FEXCore::X86State::REG_R12,
+    FEXCore::X86State::REG_R13,
+    FEXCore::X86State::REG_R14,
+    FEXCore::X86State::REG_R15,
+  };
+
+  static constexpr GPRArray XMMIndexes = {
+    FEXCore::X86State::REG_XMM_0,
+    FEXCore::X86State::REG_XMM_1,
+    FEXCore::X86State::REG_XMM_2,
+    FEXCore::X86State::REG_XMM_3,
+    FEXCore::X86State::REG_XMM_4,
+    FEXCore::X86State::REG_XMM_5,
+    FEXCore::X86State::REG_XMM_6,
+    FEXCore::X86State::REG_XMM_7,
+    FEXCore::X86State::REG_XMM_8,
+    FEXCore::X86State::REG_XMM_9,
+    FEXCore::X86State::REG_XMM_10,
+    FEXCore::X86State::REG_XMM_11,
+    FEXCore::X86State::REG_XMM_12,
+    FEXCore::X86State::REG_XMM_13,
+    FEXCore::X86State::REG_XMM_14,
+    FEXCore::X86State::REG_XMM_15,
+  };
+
+  if (HasXMM) {
+    return XMMIndexes[vvvv];
+  } else {
+    return GPRIndexes[vvvv];
+  }
+}
+
 Decoder::Decoder(FEXCore::Context::Context *ctx)
   : CTX {ctx}
   , OSABI { ctx->SyscallHandler ? ctx->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN } {
@@ -343,7 +391,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
   }
 }
 
-bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op) {
+bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op, DecodedHeader Options) {
   DecodeInst->OP = Op;
   DecodeInst->TableInfo = Info;
 
@@ -367,8 +415,9 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
     "Group Ops should have been decoded before this!");
 
   uint8_t DestSize{};
-  bool HasWideningDisplacement = FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST;
-  bool HasNarrowingDisplacement = FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST;
+  const bool HasWideningDisplacement = (FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST) != 0 ||
+                                       Options.w;
+  const bool HasNarrowingDisplacement = (FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST) != 0;
 
   bool HasXMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
     !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
@@ -546,6 +595,13 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op)
 
   size_t CurrentSrc = 0;
 
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX) != 0) {
+    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
+    DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
+    DecodeInst->Src[CurrentSrc].Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMSrc);
+    ++CurrentSrc;
+  }
+
   if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM) {
     if (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_DST) {
       if (!ModRMOperand(DecodeInst->Src[CurrentSrc], DecodeInst->Dest, HasXMMSrc, HasXMMDst, HasMMSrc, HasMMDst, Is8BitSrc, Is8BitDest))
@@ -703,16 +759,19 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     FEXCORE_TELEMETRY_SET(VEXOpTelem, 1);
     uint16_t map_select = 1;
     uint16_t pp = 0;
-
-    uint8_t Byte1 = ReadByte();
+    const uint8_t Byte1 = ReadByte();
+    DecodedHeader options{};
 
     if (Op == 0xC5) { // Two byte VEX
       pp = Byte1 & 0b11;
+      options.vvvv = 15 - ((Byte1 & 0b01111000) >> 3);
     }
     else { // 0xC4 = Three byte VEX
-      uint8_t Byte2 = ReadByte();
+      const uint8_t Byte2 = ReadByte();
       pp = Byte2 & 0b11;
       map_select = Byte1 & 0b11111;
+      options.vvvv = 15 - ((Byte2 & 0b01111000) >> 3);
+      options.w = (Byte2 & 0b10000000) != 0;
       if (!(map_select >= 1 && map_select <= 3)) {
         LogMan::Msg::E("We don't understand a map_select of: %d", map_select);
         return false;
@@ -740,10 +799,10 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
 #define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
       Op = OPD(LocalInfo->Type, pp, ModRM.reg);
 #undef OPD
-      return NormalOp(&VEXTableGroupOps[Op], Op);
+      return NormalOp(&VEXTableGroupOps[Op], Op, options);
+    } else {
+      return NormalOp(LocalInfo, Op, options);
     }
-    else
-      return NormalOp(LocalInfo, Op);
   }
   else if (Info->Type == FEXCore::X86Tables::TYPE_GROUP_EVEX) {
     FEXCORE_TELEMETRY_SET(EVEXOpTelem, 1);
