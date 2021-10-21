@@ -95,10 +95,27 @@ bool InterpreterCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
   return false;
 }
 
+void InitializeInterpreterOpHandlers() {
+  for (uint32_t i = 0; i <= FEXCore::IR::IROps::OP_LAST; ++i) {
+    InterpreterOps::OpHandlers[i] = &InterpreterOps::Op_Unhandled;
+  }
+
+  InterpreterOps::RegisterALUHandlers();
+  InterpreterOps::RegisterAtomicHandlers();
+  InterpreterOps::RegisterBranchHandlers();
+  InterpreterOps::RegisterConversionHandlers();
+  InterpreterOps::RegisterFlagHandlers();
+  InterpreterOps::RegisterMemoryHandlers();
+  InterpreterOps::RegisterMiscHandlers();
+  InterpreterOps::RegisterMoveHandlers();
+  InterpreterOps::RegisterVectorHandlers();
+  InterpreterOps::RegisterEncryptionHandlers();
+  InterpreterOps::RegisterF80Handlers();
+}
+
 InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
   : CTX {ctx}
   , State {Thread} {
-  // Grab our space for temporary data
 
   if (!CompileThread &&
       CTX->Config.Core == FEXCore::Config::CONFIG_INTERPRETER) {

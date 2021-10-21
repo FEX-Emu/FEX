@@ -13,6 +13,7 @@ namespace FEXCore::Core {
 namespace FEXCore::CPU {
 class CPUBackend;
 
+void InitializeInterpreterOpHandlers();
 std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
 
 }

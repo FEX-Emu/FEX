@@ -97,6 +97,17 @@ set (SRCS
   Interface/Core/Dispatcher/Arm64Dispatcher.cpp
   Interface/Core/Interpreter/InterpreterCore.cpp
   Interface/Core/Interpreter/InterpreterOps.cpp
+  Interface/Core/Interpreter/ALUOps.cpp
+  Interface/Core/Interpreter/AtomicOps.cpp
+  Interface/Core/Interpreter/BranchOps.cpp
+  Interface/Core/Interpreter/ConversionOps.cpp
+  Interface/Core/Interpreter/EncryptionOps.cpp
+  Interface/Core/Interpreter/F80Ops.cpp
+  Interface/Core/Interpreter/FlagOps.cpp
+  Interface/Core/Interpreter/MemoryOps.cpp
+  Interface/Core/Interpreter/MiscOps.cpp
+  Interface/Core/Interpreter/MoveOps.cpp
+  Interface/Core/Interpreter/VectorOps.cpp
   Interface/Core/X86Tables/BaseTables.cpp
   Interface/Core/X86Tables/DDDTables.cpp
   Interface/Core/X86Tables/EVEXTables.cpp

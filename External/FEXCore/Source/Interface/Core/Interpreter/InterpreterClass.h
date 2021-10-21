@@ -32,19 +32,16 @@ public:
 
   bool HandleSIGBUS(int Signal, void *info, void *ucontext);
 
+  static void InitializeInterpreterOpHandlers();
+
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
 
   uint32_t AllocateTmpSpace(size_t Size);
 
-  template<typename Res>
-  Res GetDest(void* SSAData, IR::OrderedNodeWrapper Op);
-
-  template<typename Res>
-  Res GetSrc(void* SSAData, IR::OrderedNodeWrapper Src);
-
   std::unique_ptr<Dispatcher> Dispatcher{};
+
 };
 
 }
