@@ -60,8 +60,8 @@ with open(sys.argv[1]) as cpuinfo_file:
             current_part = int(re.findall(r'0x[0-9A-F]+', line, re.I)[0], 16)
             cpuinfo += {tuple([current_implementer, current_part])}
 
-largest_big = "native"
-largest_little = "native"
+largest_big = "cortex-a57"
+largest_little = "cortex-a53"
 
 for core in cpuinfo:
     if BigCoreIDs.get(core):
