@@ -208,7 +208,7 @@ if (ENABLE_STATIC_PIE)
       message (FATAL_ERROR "Application has __rela_iplt_{start,end} symbols. Which means static-pie can't be enabled")
     endif()
   else()
-    message (FATAL_ERROR "Couldn't compile static-pie test. Static-pie can't be enabled!")
+    message (FATAL_ERROR "Couldn't compile static-pie test. Static-pie can't be enabled! Is your glibc compiled without static-pie?")
   endif()
 endif()
 
