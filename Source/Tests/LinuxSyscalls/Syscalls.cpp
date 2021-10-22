@@ -150,9 +150,12 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
   // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
   // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
   // Kernel does its own checks for file format support for this
+  // We can only call execve directly if we both have an interpreter installed AND were ran with the interpreter
+  // If the user ran FEX through FEXLoader then we must go down the emulated path
   ELFLoader::ELFContainer::ELFType Type = ELFLoader::ELFContainer::GetELFType(Filename);
   uint64_t Result{};
   if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() &&
+      FEX::HLE::_SyscallHandler->IsInterpreter() &&
       (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 ||
        Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64)) {
     // If the FEX interpreter is installed then just execve the ELF file
