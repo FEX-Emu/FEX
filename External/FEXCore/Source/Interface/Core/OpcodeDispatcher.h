@@ -324,6 +324,9 @@ public:
   template<size_t ElementSize>
   void PSIGN(OpcodeArgs);
 
+  // BMI Ops
+  void ANDNBMIOp(OpcodeArgs);
+
   // X87 Ops
   template<size_t width>
   void FLD(OpcodeArgs);

@@ -39,6 +39,13 @@ public:
   void SetSectionMaxAddress(uint64_t v) { SectionMaxAddress = v; }
   void SetExternalBranches(std::set<uint64_t> *v) { ExternalBranches = v; }
 private:
+  // To pass any information from instruction prefixes
+  // down into the actual instruction handling machinery.
+  struct DecodedHeader {
+    uint8_t vvvv; // Encoded operand in a VEX prefix.
+    bool w;       // VEX.W bit.
+  };
+
   FEXCore::Context::Context *CTX;
   const FEXCore::HLE::SyscallOSABI OSABI{};
 
@@ -50,7 +57,8 @@ private:
   uint8_t PeekByte(uint8_t Offset) const;
   uint64_t ReadData(uint8_t Size);
   void SkipBytes(uint8_t Size) { InstructionSize += Size; }
-  bool NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op);
+
+  bool NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op, DecodedHeader Options = {});
   bool NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op);
 
   static constexpr size_t DefaultDecodedBufferSize = 0x10000;
