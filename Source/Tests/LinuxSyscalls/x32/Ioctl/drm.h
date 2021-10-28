@@ -16,6 +16,7 @@
 #include <drm/nouveau_drm.h>
 #include <drm/vc4_drm.h>
 #include <drm/v3d_drm.h>
+#include <drm/virtgpu_drm.h>
 #include <sys/ioctl.h>
 
 #define CPYT(x) val.x = x
