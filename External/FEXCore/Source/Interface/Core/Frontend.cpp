@@ -595,7 +595,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
 
   size_t CurrentSrc = 0;
 
-  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX) != 0) {
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_1ST_SRC) != 0) {
     DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
     DecodeInst->Src[CurrentSrc].Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMSrc);
@@ -611,6 +611,13 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
       if (!ModRMOperand(DecodeInst->Dest, DecodeInst->Src[CurrentSrc], HasXMMDst, HasXMMSrc, HasMMDst, HasMMSrc, Is8BitDest, Is8BitSrc))
         return false;
     }
+    ++CurrentSrc;
+  }
+
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_2ND_SRC) != 0) {
+    DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
+    DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
+    DecodeInst->Src[CurrentSrc].Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMSrc);
     ++CurrentSrc;
   }
 
