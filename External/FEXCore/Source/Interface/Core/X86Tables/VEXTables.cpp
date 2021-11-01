@@ -399,7 +399,7 @@ void InitializeVEXTables() {
 
     {OPD(2, 0b11, 0xF6), 1, X86InstInfo{"MULX", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(2, 0b00, 0xF7), 1, X86InstInfo{"BEXTR", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b00, 0xF7), 1, X86InstInfo{"BEXTR", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_2ND_SRC, 0, nullptr}},
     {OPD(2, 0b01, 0xF7), 1, X86InstInfo{"SHLX", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b10, 0xF7), 1, X86InstInfo{"SARX", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b11, 0xF7), 1, X86InstInfo{"SHRX", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
