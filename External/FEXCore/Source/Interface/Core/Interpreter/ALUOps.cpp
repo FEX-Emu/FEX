@@ -351,6 +351,26 @@ DEF_OP(And) {
   }
 }
 
+DEF_OP(Andn) {
+  auto Op = IROp->C<IR::IROp_Andn>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  constexpr auto Func = [](auto a, auto b) {
+    using Type = decltype(a);
+    return static_cast<Type>(a & static_cast<Type>(~b));
+  };
+
+  switch (OpSize) {
+    DO_OP(1, uint8_t,  Func)
+    DO_OP(2, uint16_t, Func)
+    DO_OP(4, uint32_t, Func)
+    DO_OP(8, uint64_t, Func)
+    default: LOGMAN_MSG_A_FMT("Unknown size: {}", OpSize); break;
+  }
+}
+
 DEF_OP(Xor) {
   auto Op = IROp->C<IR::IROp_Xor>();
   uint8_t OpSize = IROp->Size;
@@ -975,6 +995,7 @@ void InterpreterOps::RegisterALUHandlers() {
   REGISTER_OP(UMULH,             UMulH);
   REGISTER_OP(OR,                Or);
   REGISTER_OP(AND,               And);
+  REGISTER_OP(ANDN,              Andn);
   REGISTER_OP(XOR,               Xor);
   REGISTER_OP(LSHL,              Lshl);
   REGISTER_OP(LSHR,              Lshr);

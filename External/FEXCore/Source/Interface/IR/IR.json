@@ -948,6 +948,15 @@
       "SSAArgs": "2"
     },
 
+    "Andn": {
+      "Desc": ["Integer binary AND NOT. Performs the equivalent of Src1 & ~Src2"],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
+      "SSAArgs": "2"
+    },
+
     "Xor": {
       "Desc": ["Integer binary exclusive or"
               ],
