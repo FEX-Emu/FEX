@@ -33,9 +33,7 @@ void OpDispatchBuilder::SetX87TopTag(OrderedNode *Value, uint32_t Tag) {
   OrderedNode *Mask = _Constant(0b11);
   auto TopOffset = _Lshl(Value, _Constant(1));
   Mask = _Lshl(Mask, TopOffset);
-  // XXX: This Neg can be removed if we support BIC
-  Mask = _Not(Mask);
-  OrderedNode *NewFTW = _And(FTW, Mask);
+  OrderedNode *NewFTW = _Andn(FTW, Mask);
   if (Tag != 0) {
     auto TagVal = _Lshl(_Constant(Tag), TopOffset);
     NewFTW = _Or(NewFTW, TagVal);
