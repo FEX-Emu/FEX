@@ -163,7 +163,7 @@ DEF_OP(Mul) {
     case 8:
       mul(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
     break;
-    default: LOGMAN_MSG_A_FMT("Unknown Mul size: %d", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unknown Mul size: {}", OpSize);
   }
 }
 
