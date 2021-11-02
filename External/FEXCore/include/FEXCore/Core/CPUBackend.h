@@ -36,7 +36,7 @@ class LLVMCore;
     /**
      * @return The name of this backend
      */
-    virtual std::string GetName() = 0;
+    [[nodiscard]] virtual std::string GetName() = 0;
     /**
      * @brief Tells this CPUBackend to compile code for the provided IR and DebugData
      *
@@ -54,14 +54,17 @@ class LLVMCore;
      * @return An executable function pointer that is theoretically compiled from this point.
      * Is actually a function pointer of type `void (FEXCore::Core::ThreadState *Thread)
      */
-    virtual void *CompileCode(uint64_t Entry, FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) = 0;
+    [[nodiscard]] virtual void *CompileCode(uint64_t Entry,
+                                            FEXCore::IR::IRListView const *IR,
+                                            FEXCore::Core::DebugData *DebugData,
+                                            FEXCore::IR::RegisterAllocationData *RAData) = 0;
 
     /**
      * @brief Function for mapping memory in to the CPUBackend's visible space. Allows setting up virtual mappings if required
      *
      * @return Currently unused
      */
-    virtual void *MapRegion(void *HostPtr, uint64_t GuestPtr, uint64_t Size) = 0;
+    [[nodiscard]] virtual void *MapRegion(void *HostPtr, uint64_t GuestPtr, uint64_t Size) = 0;
 
     /**
      * @brief This is post-setup initialization that is called just before code executino
@@ -79,7 +82,7 @@ class LLVMCore;
      *
      * @return true if it needs the IR
      */
-    virtual bool NeedsOpDispatch() = 0;
+    [[nodiscard]] virtual bool NeedsOpDispatch() = 0;
 
     void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
       DispatchPtr(Frame);

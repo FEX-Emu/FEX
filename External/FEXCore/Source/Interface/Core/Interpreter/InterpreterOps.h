@@ -336,7 +336,7 @@ namespace FEXCore::CPU {
   DEF_OP(F80BCDSTORE);
 #undef DEF_OP
   template<typename unsigned_type, typename signed_type, typename float_type>
-  static bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
+  [[nodiscard]] static bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
     bool CompResult = false;
     switch (Cond) {
       case FEXCore::IR::COND_EQ:

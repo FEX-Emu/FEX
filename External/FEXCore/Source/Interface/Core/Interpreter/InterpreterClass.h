@@ -20,17 +20,24 @@ using DestMapType = std::vector<uint32_t>;
 
 class InterpreterCore final : public CPUBackend {
 public:
-  explicit InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
-  std::string GetName() override { return "Interpreter"; }
-  void *CompileCode(uint64_t Entry, FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
+  explicit InterpreterCore(FEXCore::Context::Context *ctx,
+                           FEXCore::Core::InternalThreadState *Thread,
+                           bool CompileThread);
 
-  void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
+  [[nodiscard]] std::string GetName() override { return "Interpreter"; }
 
-  bool NeedsOpDispatch() override { return true; }
+  [[nodiscard]] void *CompileCode(uint64_t Entry,
+                                  FEXCore::IR::IRListView const *IR,
+                                  FEXCore::Core::DebugData *DebugData,
+                                  FEXCore::IR::RegisterAllocationData *RAData) override;
+
+  [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
+
+  [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
   void CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
 
-  bool HandleSIGBUS(int Signal, void *info, void *ucontext);
+  [[nodiscard]] bool HandleSIGBUS(int Signal, void *info, void *ucontext);
 
   static void InitializeInterpreterOpHandlers();
 
@@ -38,10 +45,7 @@ private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;
 
-  uint32_t AllocateTmpSpace(size_t Size);
-
   std::unique_ptr<Dispatcher> Dispatcher{};
-
 };
 
-}
+} // namespace FEXCore::CPU
