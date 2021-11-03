@@ -390,6 +390,19 @@ DEF_OP(And) {
   }
 }
 
+DEF_OP(Andn) {
+  auto Op = IROp->C<IR::IROp_Andn>();
+  const auto& Lhs = Op->Header.Args[0];
+  const auto& Rhs = Op->Header.Args[1];
+  uint64_t Const{};
+
+  if (IsInlineConstant(Rhs, &Const)) {
+    bic(GRS(Node), GRS(Lhs.ID()), Const);
+  } else {
+    bic(GRS(Node), GRS(Lhs.ID()), GRS(Rhs.ID()));
+  }
+}
+
 DEF_OP(Xor) {
   auto Op = IROp->C<IR::IROp_Xor>();
   uint64_t Const;
@@ -1079,6 +1092,7 @@ void Arm64JITCore::RegisterALUHandlers() {
   REGISTER_OP(UMULH,             UMulH);
   REGISTER_OP(OR,                Or);
   REGISTER_OP(AND,               And);
+  REGISTER_OP(ANDN,              Andn);
   REGISTER_OP(XOR,               Xor);
   REGISTER_OP(LSHL,              Lshl);
   REGISTER_OP(LSHR,              Lshr);

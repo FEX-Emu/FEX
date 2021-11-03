@@ -103,6 +103,7 @@ namespace FEXCore::CPU {
   DEF_OP(UMulH);
   DEF_OP(Or);
   DEF_OP(And);
+  DEF_OP(Andn);
   DEF_OP(Xor);
   DEF_OP(Lshl);
   DEF_OP(Lshr);

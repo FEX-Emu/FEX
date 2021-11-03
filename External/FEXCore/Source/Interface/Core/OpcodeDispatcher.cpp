@@ -2134,8 +2134,7 @@ void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
   auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
 
-  // TODO: This can be replaced with a BIC IR op once it's implemented.
-  auto Dest = _And(_Not(Src1), Src2);
+  auto Dest = _Andn(Src2, Src1);
 
   StoreResult(GPRClass, Op, Dest, -1);
   GenerateFlags_Logical(Op, Dest, Src1, Src2);
@@ -2633,8 +2632,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     Result = _Lshr(Dest, BitSelect);
 
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
-    BitMask = _Not(BitMask);
-    Dest = _And(Dest, BitMask);
+    Dest = _Andn(Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
   }
   else {
@@ -2655,10 +2653,10 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     // Now add the addresses together and load the memory
     OrderedNode *MemoryLocation = _Add(Dest, Src);
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
-    BitMask = _Not(BitMask);
 
     if (DestIsLockedMem(Op)) {
       HandledLock = true;
+      BitMask = _Not(BitMask);
       // XXX: Technically this can optimize to an AArch64 ldclralb
       // We don't current support this IR op though
       Result = _AtomicFetchAnd(MemoryLocation, BitMask, 1);
@@ -2670,7 +2668,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
       // Now shift in to the correct bit location
       Result = _Lshr(Value, BitSelect);
-      Value = _And(Value, BitMask);
+      Value = _Andn(Value, BitMask);
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }

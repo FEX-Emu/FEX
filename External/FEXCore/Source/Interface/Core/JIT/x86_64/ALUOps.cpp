@@ -15,6 +15,11 @@ $end_info$
 #include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
+
+#define GRS(Node) (IROp->Size <= 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
+#define GRD(Node) (IROp->Size <= 4 ? GetDst<RA_32>(Node) : GetDst<RA_64>(Node))
+#define GRCMP(Node) (Op->CompareSize == 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
+
 #define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
 DEF_OP(TruncElementPair) {
   auto Op = IROp->C<IR::IROp_TruncElementPair>();
@@ -415,6 +420,25 @@ DEF_OP(And) {
     and_(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
   }
   mov(Dst, rax);
+}
+
+DEF_OP(Andn) {
+  auto Op = IROp->C<IR::IROp_Andn>();
+  const auto& Lhs = Op->Header.Args[0];
+  const auto& Rhs = Op->Header.Args[1];
+  auto Dst = GRD(Node);
+
+  uint64_t Const{};
+  if (IsInlineConstant(Rhs, &Const)) {
+    mov(Dst, GRS(Lhs.ID()));
+    and_(Dst, ~Const);
+  } else {
+    const auto Temp = IROp->Size <= 4 ? Xbyak::Reg{rax.cvt32()} : Xbyak::Reg{rax};
+    mov(Temp, GRS(Rhs.ID()));
+    not_(Temp);
+    and_(Temp, GRS(Lhs.ID()));
+    mov(Dst, Temp);
+  }
 }
 
 DEF_OP(Xor) {
@@ -1048,10 +1072,6 @@ DEF_OP(Sbfe) {
   }
 }
 
-#define GRS(Node) (IROp->Size <= 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
-#define GRD(Node) (IROp->Size <= 4 ? GetDst<RA_32>(Node) : GetDst<RA_64>(Node))
-#define GRCMP(Node) (Op->CompareSize == 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
-
 DEF_OP(Select) {
   auto Op = IROp->C<IR::IROp_Select>();
   auto Dst = GRD(Node);
@@ -1221,6 +1241,7 @@ void X86JITCore::RegisterALUHandlers() {
   REGISTER_OP(UMULH,             UMulH);
   REGISTER_OP(OR,                Or);
   REGISTER_OP(AND,               And);
+  REGISTER_OP(ANDN,              Andn);
   REGISTER_OP(XOR,               Xor);
   REGISTER_OP(LSHL,              Lshl);
   REGISTER_OP(LSHR,              Lshr);
