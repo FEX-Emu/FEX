@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include <signal.h>
+#include "aarch64/cpu-aarch64.h"
 
 namespace FEXCore::ArchHelpers::Arm64 {
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock, TYPE_HAS_SPLIT_LOCKS);
@@ -2053,6 +2054,149 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
 
   // Multiply by 4 for number of bytes to skip
   return NumInstructionsToSkip * 4;
+}
+
+bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
+#ifdef _M_ARM_64
+  constexpr bool is_arm64 = true;
+#else
+  constexpr bool is_arm64 = false;
+#endif
+
+  if constexpr (is_arm64) {
+    uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(ucontext);
+    uint32_t Instr = PC[0];
+
+    // 1 = 16bit
+    // 2 = 32bit
+    // 3 = 64bit
+    uint32_t Size = (Instr & 0xC000'0000) >> 30;
+    uint32_t AddrReg = (Instr >> 5) & 0x1F;
+    uint32_t DataReg = Instr & 0x1F;
+    uint32_t DMB = 0b1101'0101'0000'0011'0011'0000'1011'1111 |
+      0b1011'0000'0000; // Inner shareable all
+    if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00 || // LDAR*
+        (Instr & 0x3F'FF'FC'00) == 0x38'BF'C0'00) { // LDAPR*
+      if (ParanoidTSO) {
+        if (FEXCore::ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr)) {
+          // Skip this instruction now
+          ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+          return true;
+        }
+        else {
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+          return false;
+        }
+      }
+      else {
+        uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
+        LDR |= Size << 30;
+        LDR |= AddrReg << 5;
+        LDR |= DataReg;
+        PC[-1] = DMB;
+        PC[0] = LDR;
+        PC[1] = DMB;
+        // Back up one instruction and have another go
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+      }
+    }
+    else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
+      if (ParanoidTSO) {
+        if (FEXCore::ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr)) {
+          // Skip this instruction now
+          ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+          return true;
+        }
+        else {
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+          return false;
+        }
+      }
+      else {
+        uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
+        STR |= Size << 30;
+        STR |= AddrReg << 5;
+        STR |= DataReg;
+        PC[-1] = DMB;
+        PC[0] = STR;
+        PC[1] = DMB;
+        // Back up one instruction and have another go
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+      }
+    }
+    else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXP_MASK) == FEXCore::ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
+      //Should be compare and swap pair only. LDAXP not used elsewhere
+      uint64_t BytesToSkip = FEXCore::ArchHelpers::Arm64::HandleCASPAL_ARMv8(ucontext, info, Instr);
+      if (BytesToSkip) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
+        return true;
+      }
+      else {
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+        return false;
+      }
+    }
+    else if ((Instr & FEXCore::ArchHelpers::Arm64::STLXP_MASK) == FEXCore::ArchHelpers::Arm64::STLXP_INST) { // STLXP
+      //Should not trigger - middle of an LDAXP/STAXP pair.
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+      return false;
+    }
+    else if ((Instr & FEXCore::ArchHelpers::Arm64::CASPAL_MASK) == FEXCore::ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
+      if (FEXCore::ArchHelpers::Arm64::HandleCASPAL(ucontext, info, Instr)) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+        return true;
+      }
+      else {
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+        return false;
+      }
+    }
+    else if ((Instr & FEXCore::ArchHelpers::Arm64::CASAL_MASK) == FEXCore::ArchHelpers::Arm64::CASAL_INST) { // CASAL
+      if (FEXCore::ArchHelpers::Arm64::HandleCASAL(ucontext, info, Instr)) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+        return true;
+      }
+      else {
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+        return false;
+      }
+    }
+    else if ((Instr & FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_MASK) == FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
+      if (FEXCore::ArchHelpers::Arm64::HandleAtomicMemOp(ucontext, info, Instr)) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+        return true;
+      }
+      else {
+        uint8_t Op = (PC[0] >> 12) & 0xF;
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: {} Instruction: 0x{:08x}\n", Op, fmt::ptr(PC), PC[0]);
+        return false;
+      }
+    }
+    else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXR_MASK) == FEXCore::ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
+      uint64_t BytesToSkip = FEXCore::ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ucontext, info);
+      if (BytesToSkip) {
+        // Skip this instruction now
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
+        return true;
+      }
+      else {
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXR: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+        return false;
+      }
+    }
+    else {
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+      return false;
+    }
+
+    vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&PC[-1], 16);
+    return true;
+  }
+  return false;
 }
 
 }

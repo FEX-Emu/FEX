@@ -37,8 +37,6 @@ public:
 
   void CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
 
-  [[nodiscard]] bool HandleSIGBUS(int Signal, void *info, void *ucontext);
-
   static void InitializeInterpreterOpHandlers();
 
 private:
@@ -47,5 +45,13 @@ private:
 
   std::unique_ptr<Dispatcher> Dispatcher{};
 };
+
+template<typename T>
+T AtomicCompareAndSwap(T expected, T desired, T *addr);
+
+uint8_t AtomicFetchNeg(uint8_t *Addr);
+uint16_t AtomicFetchNeg(uint16_t *Addr);
+uint32_t AtomicFetchNeg(uint32_t *Addr);
+uint64_t AtomicFetchNeg(uint64_t *Addr);
 
 } // namespace FEXCore::CPU

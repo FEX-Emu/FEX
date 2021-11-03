@@ -35,66 +35,6 @@ static void InterpreterExecution(FEXCore::Core::CpuStateFrame *Frame) {
   InterpreterOps::InterpretIR(Thread, Thread->CurrentFrame->State.rip, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
 }
 
-bool InterpreterCore::HandleSIGBUS(int Signal, void *info, void *ucontext) {
-#ifdef _M_ARM_64
-  constexpr bool is_arm64 = true;
-#else
-  constexpr bool is_arm64 = false;
-#endif
-
-  if constexpr (is_arm64) {
-    uint32_t *PC = reinterpret_cast<uint32_t*>(ArchHelpers::Context::GetPc(ucontext));
-    uint32_t Instr = PC[0];
-    if ((Instr & FEXCore::ArchHelpers::Arm64::CASPAL_MASK) == FEXCore::ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
-      if (FEXCore::ArchHelpers::Arm64::HandleCASPAL(ucontext, info, Instr)) {
-        // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-        return true;
-      }
-      else {
-        LogMan::Msg::E("Unhandled JIT SIGBUS CASPAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
-        return false;
-      }
-    }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::CASAL_MASK) == FEXCore::ArchHelpers::Arm64::CASAL_INST) { // CASAL
-      if (FEXCore::ArchHelpers::Arm64::HandleCASAL(ucontext, info, Instr)) {
-        // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-        return true;
-      }
-      else {
-        LogMan::Msg::E("Unhandled JIT SIGBUS CASAL: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
-        return false;
-      }
-    }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_MASK) == FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
-      if (FEXCore::ArchHelpers::Arm64::HandleAtomicMemOp(ucontext, info, Instr)) {
-        // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-        return true;
-      }
-      else {
-        uint8_t Op = (PC[0] >> 12) & 0xF;
-        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x: PC: %p Instruction: 0x%08x\n", Op, PC, PC[0]);
-        return false;
-      }
-    }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXR_MASK) == FEXCore::ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
-      uint64_t BytesToSkip = FEXCore::ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ucontext, info);
-      if (BytesToSkip) {
-        // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
-        return true;
-      }
-      else {
-        LogMan::Msg::E("Unhandled JIT SIGBUS LDAXR: PC: %p Instruction: 0x%08x\n", PC, PC[0]);
-        return false;
-      }
-    }
-  }
-  return false;
-}
-
 void InitializeInterpreterOpHandlers() {
   for (uint32_t i = 0; i <= FEXCore::IR::IROps::OP_LAST; ++i) {
     InterpreterOps::OpHandlers[i] = &InterpreterOps::Op_Unhandled;
@@ -125,10 +65,12 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
       return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
     }, true);
 
+#ifdef _M_ARM_64
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
-      return Core->HandleSIGBUS(Signal, info, ucontext);
+      return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
     }, true);
+#endif
 
     auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
       InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
