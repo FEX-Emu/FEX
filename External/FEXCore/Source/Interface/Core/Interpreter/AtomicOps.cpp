@@ -380,7 +380,7 @@ DEF_OP(CAS) {
 
 DEF_OP(AtomicAdd) {
   auto Op = IROp->C<IR::IROp_AtomicAdd>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -405,13 +405,13 @@ DEF_OP(AtomicAdd) {
       *MemData += Src;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicSub) {
   auto Op = IROp->C<IR::IROp_AtomicSub>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -436,13 +436,13 @@ DEF_OP(AtomicSub) {
       *MemData -= Src;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicAnd) {
   auto Op = IROp->C<IR::IROp_AtomicAnd>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -467,13 +467,13 @@ DEF_OP(AtomicAnd) {
       *MemData &= Src;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicOr) {
   auto Op = IROp->C<IR::IROp_AtomicOr>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -498,13 +498,13 @@ DEF_OP(AtomicOr) {
       *MemData |= Src;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -529,13 +529,13 @@ DEF_OP(AtomicXor) {
       *MemData ^= Src;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -564,13 +564,13 @@ DEF_OP(AtomicSwap) {
       GD = Previous;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -599,13 +599,13 @@ DEF_OP(AtomicFetchAdd) {
       GD = Previous;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -634,13 +634,13 @@ DEF_OP(AtomicFetchSub) {
       GD = Previous;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -669,13 +669,13 @@ DEF_OP(AtomicFetchAnd) {
       GD = Previous;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -704,13 +704,13 @@ DEF_OP(AtomicFetchOr) {
       GD = Previous;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
       uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
@@ -739,13 +739,13 @@ DEF_OP(AtomicFetchXor) {
       GD = Previous;
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 
 DEF_OP(AtomicFetchNeg) {
   auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       using Type = uint8_t;
       GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Header.Args[0]));
@@ -766,7 +766,7 @@ DEF_OP(AtomicFetchNeg) {
       GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Header.Args[0]));
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 

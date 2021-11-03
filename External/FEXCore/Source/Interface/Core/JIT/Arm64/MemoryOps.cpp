@@ -261,7 +261,7 @@ DEF_OP(StoreRegister) {
 
 DEF_OP(LoadContextIndexed) {
   auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
-  size_t size = Op->Size;
+  size_t size = IROp->Size;
   auto index = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -288,7 +288,7 @@ DEF_OP(LoadContextIndexed) {
         ldr(GetReg<RA_64>(Node), MemOperand(TMP1, Op->BaseOffset));
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
         break;
       }
       break;
@@ -335,7 +335,7 @@ DEF_OP(LoadContextIndexed) {
         }
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
         break;
       }
       break;
@@ -349,7 +349,7 @@ DEF_OP(LoadContextIndexed) {
 
 DEF_OP(StoreContextIndexed) {
   auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
-  size_t size = Op->Size;
+  size_t size = IROp->Size;
   auto index = GetReg<RA_64>(Op->Header.Args[1].ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -378,7 +378,7 @@ DEF_OP(StoreContextIndexed) {
         str(value, MemOperand(TMP1, Op->BaseOffset));
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", IROp->Size);
         break;
       }
       break;
@@ -427,7 +427,7 @@ DEF_OP(StoreContextIndexed) {
         }
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", IROp->Size);
         break;
       }
       break;
@@ -571,11 +571,11 @@ DEF_OP(LoadMem) {
   auto Op = IROp->C<IR::IROp_LoadMem>();
 
   auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
-  auto MemSrc = GenerateMemOperand(Op->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     auto Dst = GetReg<RA_64>(Node);
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1:
         ldrb(Dst, MemSrc);
         break;
@@ -588,12 +588,12 @@ DEF_OP(LoadMem) {
       case 8:
         ldr(Dst, MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
     }
   }
   else {
     auto Dst = GetDst(Node);
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1:
         ldr(Dst.B(), MemSrc);
         break;
@@ -609,7 +609,7 @@ DEF_OP(LoadMem) {
       case 16:
         ldr(Dst, MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
     }
   }
 }
@@ -624,7 +624,7 @@ DEF_OP(LoadMemTSO) {
   }
 
   if (SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
-    if (Op->Size == 1) {
+    if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       auto Dst = GetReg<RA_64>(Node);
       ldaprb(Dst, MemSrc);
@@ -633,7 +633,7 @@ DEF_OP(LoadMemTSO) {
       // Aligned
       auto Dst = GetReg<RA_64>(Node);
       nop();
-      switch (Op->Size) {
+      switch (IROp->Size) {
         case 2:
           ldaprh(Dst, MemSrc);
           break;
@@ -643,13 +643,13 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldapr(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", Op->Size);
+        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
       }
       nop();
     }
   }
   else if (Op->Class == FEXCore::IR::GPRClass) {
-    if (Op->Size == 1) {
+    if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       auto Dst = GetReg<RA_64>(Node);
       ldarb(Dst, MemSrc);
@@ -658,7 +658,7 @@ DEF_OP(LoadMemTSO) {
       // Aligned
       auto Dst = GetReg<RA_64>(Node);
       nop();
-      switch (Op->Size) {
+      switch (IROp->Size) {
         case 2:
           ldarh(Dst, MemSrc);
           break;
@@ -668,7 +668,7 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldar(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", Op->Size);
+        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
       }
       nop();
     }
@@ -676,7 +676,7 @@ DEF_OP(LoadMemTSO) {
   else {
     dmb(InnerShareable, BarrierAll);
     auto Dst = GetDst(Node);
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 2:
         ldr(Dst.H(), MemSrc);
         break;
@@ -689,7 +689,7 @@ DEF_OP(LoadMemTSO) {
       case 16:
         ldr(Dst, MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
     }
     dmb(InnerShareable, BarrierAll);
   }
@@ -700,10 +700,10 @@ DEF_OP(StoreMem) {
 
   auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  auto MemSrc = GenerateMemOperand(Op->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1:
         strb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
         break;
@@ -716,12 +716,12 @@ DEF_OP(StoreMem) {
       case 8:
         str(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
     }
   }
   else {
     auto Src = GetSrc(Op->Header.Args[1].ID());
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1:
         str(Src.B(), MemSrc);
         break;
@@ -737,7 +737,7 @@ DEF_OP(StoreMem) {
       case 16:
         str(Src, MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
     }
   }
 }
@@ -751,13 +751,13 @@ DEF_OP(StoreMemTSO) {
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    if (Op->Size == 1) {
+    if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       stlrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
     }
     else {
       nop();
-      switch (Op->Size) {
+      switch (IROp->Size) {
         case 2:
           stlrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
@@ -767,7 +767,7 @@ DEF_OP(StoreMemTSO) {
         case 8:
           stlr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", Op->Size);
+        default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
       }
       nop();
     }
@@ -775,7 +775,7 @@ DEF_OP(StoreMemTSO) {
   else {
     dmb(InnerShareable, BarrierAll);
     auto Src = GetSrc(Op->Header.Args[1].ID());
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1:
         str(Src.B(), MemSrc);
         break;
@@ -791,7 +791,7 @@ DEF_OP(StoreMemTSO) {
       case 16:
         str(Src, MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
     }
     dmb(InnerShareable, BarrierAll);
   }
@@ -807,14 +807,14 @@ DEF_OP(ParanoidLoadMemTSO) {
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    if (Op->Size == 1) {
+    if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       auto Dst = GetReg<RA_64>(Node);
       ldarb(Dst, MemSrc);
     }
     else {
       auto Dst = GetReg<RA_64>(Node);
-      switch (Op->Size) {
+      switch (IROp->Size) {
         case 2:
           ldarh(Dst, MemSrc);
           break;
@@ -824,13 +824,13 @@ DEF_OP(ParanoidLoadMemTSO) {
         case 8:
           ldar(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", Op->Size);
+        default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", IROp->Size);
       }
     }
   }
   else {
     auto Dst = GetDst(Node);
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 2:
         ldarh(TMP1.W(), MemSrc);
         fmov(Dst.H(), TMP1.W());
@@ -850,7 +850,7 @@ DEF_OP(ParanoidLoadMemTSO) {
         mov(Dst.V2D(), 0, TMP1);
         mov(Dst.V2D(), 1, TMP2);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", IROp->Size);
     }
   }
 }
@@ -864,12 +864,12 @@ DEF_OP(ParanoidStoreMemTSO) {
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    if (Op->Size == 1) {
+    if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       stlrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
     }
     else {
-      switch (Op->Size) {
+      switch (IROp->Size) {
         case 2:
           stlrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
@@ -879,19 +879,19 @@ DEF_OP(ParanoidStoreMemTSO) {
         case 8:
           stlr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", Op->Size);
+        default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", IROp->Size);
       }
     }
   }
   else {
     auto Src = GetSrc(Op->Header.Args[1].ID());
-    if (Op->Size == 1) {
+    if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       mov(TMP1.W(), Src.V16B(), 0);
       stlrb(TMP1, MemSrc);
     }
     else {
-      switch (Op->Size) {
+      switch (IROp->Size) {
         case 2:
           mov(TMP1.W(), Src.V8H(), 0);
           stlrh(TMP1, MemSrc);
@@ -919,7 +919,7 @@ DEF_OP(ParanoidStoreMemTSO) {
           cbnz(TMP3, &B); // < Overwritten with DMB
           break;
         }
-        default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", Op->Size);
+        default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", IROp->Size);
       }
     }
   }

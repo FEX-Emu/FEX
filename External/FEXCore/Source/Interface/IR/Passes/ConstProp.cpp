@@ -531,7 +531,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
       if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
-        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
 
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
@@ -548,7 +548,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
 
       if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
-        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, Op->Size, AddressHeader);
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
 
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
@@ -941,7 +941,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         uint64_t Constant2{};
         if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-          if (IsImmMemory(Constant2, Op->Size)) {
+          if (IsImmMemory(Constant2, IROp->Size)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
             IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
@@ -958,7 +958,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         uint64_t Constant2{};
         if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[2], &Constant2)) {
-          if (IsImmMemory(Constant2, Op->Size)) {
+          if (IsImmMemory(Constant2, IROp->Size)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
 
             IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));

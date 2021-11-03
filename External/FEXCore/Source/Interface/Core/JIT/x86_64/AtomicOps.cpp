@@ -121,7 +121,7 @@ DEF_OP(AtomicAdd) {
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
 
   lock();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1:
       add(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
       break;
@@ -134,7 +134,7 @@ DEF_OP(AtomicAdd) {
     case 8:
       add(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
 }
 
@@ -143,7 +143,7 @@ DEF_OP(AtomicSub) {
 
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   lock();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1:
       sub(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
       break;
@@ -156,7 +156,7 @@ DEF_OP(AtomicSub) {
     case 8:
       sub(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
 }
 
@@ -165,7 +165,7 @@ DEF_OP(AtomicAnd) {
 
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   lock();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1:
       and_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
       break;
@@ -178,7 +178,7 @@ DEF_OP(AtomicAnd) {
     case 8:
       and_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
 }
 
@@ -187,7 +187,7 @@ DEF_OP(AtomicOr) {
 
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   lock();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1:
       or_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
       break;
@@ -200,7 +200,7 @@ DEF_OP(AtomicOr) {
     case 8:
       or_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
 }
 
@@ -209,7 +209,7 @@ DEF_OP(AtomicXor) {
 
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
   lock();
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1:
       xor_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
       break;
@@ -222,7 +222,7 @@ DEF_OP(AtomicXor) {
     case 8:
       xor_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
       break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
 }
 
@@ -232,7 +232,7 @@ DEF_OP(AtomicSwap) {
   Xbyak::Reg MemReg = rax;
   mov(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1:
       movzx(GetDst<RA_64>(Node), GetSrc<RA_8>(Op->Header.Args[1].ID()));
       lock();
@@ -253,7 +253,7 @@ DEF_OP(AtomicSwap) {
       lock();
       xchg(qword [MemReg], GetDst<RA_64>(Node));
       break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicSwap size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicSwap size: {}", IROp->Size);
   }
 }
 
@@ -261,7 +261,7 @@ DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
 
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1:
       movzx(rcx, GetSrc<RA_8>(Op->Header.Args[1].ID()));
       lock();
@@ -286,7 +286,7 @@ DEF_OP(AtomicFetchAdd) {
       xadd(qword [MemReg], rcx);
       mov(GetDst<RA_64>(Node), rcx);
       break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchAdd size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchAdd size: {}", IROp->Size);
   }
 }
 
@@ -294,7 +294,7 @@ DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
 
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1:
       mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
       neg(cl);
@@ -323,7 +323,7 @@ DEF_OP(AtomicFetchSub) {
       xadd(qword [MemReg], rcx);
       mov(GetDst<RA_64>(Node), rcx);
       break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchSub size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchSub size: {}", IROp->Size);
   }
 }
 
@@ -333,7 +333,7 @@ DEF_OP(AtomicFetchAnd) {
   // TMP1 = rax
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
 
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);
 
@@ -401,7 +401,7 @@ DEF_OP(AtomicFetchAnd) {
       mov(GetDst<RA_64>(Node), TMP3.cvt64());
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchAnd size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchAnd size: {}", IROp->Size);
   }
 }
 
@@ -410,7 +410,7 @@ DEF_OP(AtomicFetchOr) {
 
   // TMP1 = rax
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);
 
@@ -478,7 +478,7 @@ DEF_OP(AtomicFetchOr) {
       mov(GetDst<RA_64>(Node), TMP3.cvt64());
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchOr size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchOr size: {}", IROp->Size);
   }
 }
 
@@ -487,7 +487,7 @@ DEF_OP(AtomicFetchXor) {
 
   // TMP1 = rax
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);
 
@@ -555,7 +555,7 @@ DEF_OP(AtomicFetchXor) {
       mov(GetDst<RA_64>(Node), TMP3.cvt64());
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchXor size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchXor size: {}", IROp->Size);
   }
 }
 
@@ -563,7 +563,7 @@ DEF_OP(AtomicFetchNeg) {
   auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
 
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);
 
@@ -631,7 +631,7 @@ DEF_OP(AtomicFetchNeg) {
       mov(GetDst<RA_64>(Node), TMP3.cvt64());
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchNeg size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled AtomicFetchNeg size: {}", IROp->Size);
   }
 }
 

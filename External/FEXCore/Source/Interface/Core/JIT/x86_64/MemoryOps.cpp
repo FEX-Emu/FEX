@@ -142,7 +142,7 @@ DEF_OP(StoreContext) {
 
 DEF_OP(LoadContextIndexed) {
   auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
-  size_t size = Op->Size;
+  size_t size = IROp->Size;
   Reg index = GetSrc<RA_64>(Op->Header.Args[0].ID());
 
   if (Op->Class.Val == 0) {
@@ -166,7 +166,7 @@ DEF_OP(LoadContextIndexed) {
         mov(GetDst<RA_64>(Node),  qword [rax + index * Op->Stride]);
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
         break;
       }
       break;
@@ -202,7 +202,7 @@ DEF_OP(LoadContextIndexed) {
         vmovq(GetDst(Node),  qword [rax + index * Op->Stride]);
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
         break;
       }
       break;
@@ -231,7 +231,7 @@ DEF_OP(LoadContextIndexed) {
           movups(GetDst(Node), xword [STATE + rax]);
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
         break;
       }
       break;
@@ -246,7 +246,7 @@ DEF_OP(LoadContextIndexed) {
 DEF_OP(StoreContextIndexed) {
   auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
   Reg index = GetSrc<RA_64>(Op->Header.Args[1].ID());
-  size_t size = Op->Size;
+  size_t size = IROp->Size;
 
   if (Op->Class.Val == 0) {
     auto value = GetSrc<RA_64>(Op->Header.Args[0].ID());
@@ -258,9 +258,9 @@ DEF_OP(StoreContextIndexed) {
     case 4:
     case 8: {
       if (!(size == 1 || size == 2 || size == 4 || size == 8)) {
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", Op->Size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", IROp->Size);
       }
-      mov(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
+      mov(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value);
       break;
     }
     default:
@@ -278,16 +278,16 @@ DEF_OP(StoreContextIndexed) {
       lea(rax, dword [STATE + Op->BaseOffset]);
       switch (size) {
       case 1:
-        pextrb(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value, 0);
+        pextrb(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value, 0);
         break;
       case 2:
-        pextrw(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value, 0);
+        pextrw(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value, 0);
         break;
       case 4:
-        vmovd(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
+        vmovd(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value);
         break;
       case 8:
-        vmovq(AddressFrame(Op->Size * 8) [rax + index * Op->Stride], value);
+        vmovq(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value);
         break;
       default:
         LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", size);
@@ -301,16 +301,16 @@ DEF_OP(StoreContextIndexed) {
       lea(rax, dword [rax + Op->BaseOffset]);
       switch (size) {
       case 1:
-        pextrb(AddressFrame(Op->Size * 8) [STATE + rax], value, 0);
+        pextrb(AddressFrame(IROp->Size * 8) [STATE + rax], value, 0);
         break;
       case 2:
-        pextrw(AddressFrame(Op->Size * 8) [STATE + rax], value, 0);
+        pextrw(AddressFrame(IROp->Size * 8) [STATE + rax], value, 0);
         break;
       case 4:
-        vmovd(AddressFrame(Op->Size * 8) [STATE + rax], value);
+        vmovd(AddressFrame(IROp->Size * 8) [STATE + rax], value);
         break;
       case 8:
-        vmovq(AddressFrame(Op->Size * 8) [STATE + rax], value);
+        vmovq(AddressFrame(IROp->Size * 8) [STATE + rax], value);
         break;
       case 16:
         if (Op->BaseOffset % 16 == 0)
@@ -472,7 +472,7 @@ DEF_OP(LoadMem) {
   if (Op->Class.Val == 0) {
     auto Dst = GetDst<RA_64>(Node);
 
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         movzx (Dst, byte [MemPtr]);
       }
@@ -489,14 +489,14 @@ DEF_OP(LoadMem) {
         mov(Dst, qword [MemPtr]);
       }
       break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
     }
   }
   else
   {
     auto Dst = GetDst(Node);
 
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         movzx(eax, byte [MemPtr]);
         vmovd(Dst, eax);
@@ -516,7 +516,7 @@ DEF_OP(LoadMem) {
       }
       break;
       case 16: {
-         if (Op->Size == Op->Align)
+         if (IROp->Size == Op->Align)
            movups(GetDst(Node), xword [MemPtr]);
          else
            movups(GetDst(Node), xword [MemPtr]);
@@ -525,7 +525,7 @@ DEF_OP(LoadMem) {
          }
        }
        break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
     }
   }
 }
@@ -538,7 +538,7 @@ DEF_OP(StoreMem) {
   auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class.Val == 0) {
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1:
       mov(byte [MemPtr], GetSrc<RA_8>(Op->Header.Args[1].ID()));
     break;
@@ -551,11 +551,11 @@ DEF_OP(StoreMem) {
     case 8:
       mov(qword [MemPtr], GetSrc<RA_64>(Op->Header.Args[1].ID()));
     break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
     }
   }
   else {
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1:
       pextrb(byte [MemPtr], GetSrc(Op->Header.Args[1].ID()), 0);
     break;
@@ -569,12 +569,12 @@ DEF_OP(StoreMem) {
       vmovq(qword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
     break;
     case 16:
-      if (Op->Size == Op->Align)
+      if (IROp->Size == Op->Align)
         movups(xword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
       else
         movups(xword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
     break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
     }
   }
 }
