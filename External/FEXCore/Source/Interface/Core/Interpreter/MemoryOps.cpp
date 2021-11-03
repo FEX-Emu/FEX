@@ -160,23 +160,23 @@ DEF_OP(LoadMem) {
   memset(GDP, 0, 16);
   switch (OpSize) {
     case 1: {
-      const uint8_t *D = (const uint8_t*)MemData;
-      GD = *D;
+      auto D = reinterpret_cast<const std::atomic<uint8_t>*>(MemData);
+      GD = D->load();
       break;
     }
     case 2: {
-      const uint16_t *D = (const uint16_t*)MemData;
-      GD = *D;
+      auto D = reinterpret_cast<const std::atomic<uint16_t>*>(MemData);
+      GD = D->load();
       break;
     }
     case 4: {
-      const uint32_t *D = (const uint32_t*)MemData;
-      GD = *D;
+      auto D = reinterpret_cast<const std::atomic<uint32_t>*>(MemData);
+      GD = D->load();
       break;
     }
     case 8: {
-      const uint64_t *D = (const uint64_t*)MemData;
-      GD = *D;
+      auto D = reinterpret_cast<const std::atomic<uint64_t>*>(MemData);
+      GD = D->load();
       break;
     }
 
@@ -203,19 +203,19 @@ DEF_OP(StoreMem) {
   }
   switch (OpSize) {
     case 1: {
-      *reinterpret_cast<uint8_t*>(MemData) = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
+      reinterpret_cast<std::atomic<uint8_t>*>(MemData)->store(*GetSrc<uint8_t*>(Data->SSAData, Op->Value));
       break;
     }
     case 2: {
-      *reinterpret_cast<uint16_t*>(MemData) = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
+      reinterpret_cast<std::atomic<uint16_t>*>(MemData)->store(*GetSrc<uint16_t*>(Data->SSAData, Op->Value));
       break;
     }
     case 4: {
-      *reinterpret_cast<uint32_t*>(MemData) = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
+      reinterpret_cast<std::atomic<uint32_t>*>(MemData)->store(*GetSrc<uint32_t*>(Data->SSAData, Op->Value));
       break;
     }
     case 8: {
-      *reinterpret_cast<uint64_t*>(MemData) = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
+      reinterpret_cast<std::atomic<uint64_t>*>(MemData)->store(*GetSrc<uint64_t*>(Data->SSAData, Op->Value));
       break;
     }
 

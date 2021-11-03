@@ -128,6 +128,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(GlobalJITNaming, GLOBALJITNAMING);
       FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
       FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
+      FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
     } Config;
 
     using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);

@@ -15,7 +15,7 @@ $end_info$
 namespace FEXCore::CPU {
 
 #ifdef _M_X86_64
-static uint8_t AtomicFetchNeg(uint8_t *Addr) {
+uint8_t AtomicFetchNeg(uint8_t *Addr) {
   using Type = uint8_t;
   std::atomic<Type> *MemData = reinterpret_cast<std::atomic<Type>*>(Addr);
   Type Expected = MemData->load();
@@ -27,7 +27,7 @@ static uint8_t AtomicFetchNeg(uint8_t *Addr) {
   return Expected;
 }
 
-static uint16_t AtomicFetchNeg(uint16_t *Addr) {
+uint16_t AtomicFetchNeg(uint16_t *Addr) {
   using Type = uint16_t;
   std::atomic<Type> *MemData = reinterpret_cast<std::atomic<Type>*>(Addr);
   Type Expected = MemData->load();
@@ -39,7 +39,7 @@ static uint16_t AtomicFetchNeg(uint16_t *Addr) {
   return Expected;
 }
 
-static uint32_t AtomicFetchNeg(uint32_t *Addr) {
+uint32_t AtomicFetchNeg(uint32_t *Addr) {
   using Type = uint32_t;
   std::atomic<Type> *MemData = reinterpret_cast<std::atomic<Type>*>(Addr);
   Type Expected = MemData->load();
@@ -51,7 +51,7 @@ static uint32_t AtomicFetchNeg(uint32_t *Addr) {
   return Expected;
 }
 
-static uint64_t AtomicFetchNeg(uint64_t *Addr) {
+uint64_t AtomicFetchNeg(uint64_t *Addr) {
   using Type = uint64_t;
   std::atomic<Type> *MemData = reinterpret_cast<std::atomic<Type>*>(Addr);
   Type Expected = MemData->load();
@@ -64,7 +64,7 @@ static uint64_t AtomicFetchNeg(uint64_t *Addr) {
 }
 
 template<typename T>
-static T AtomicCompareAndSwap(T expected, T desired, T *addr)
+T AtomicCompareAndSwap(T expected, T desired, T *addr)
 {
   std::atomic<T> *MemData = reinterpret_cast<std::atomic<T>*>(addr);
 
@@ -76,6 +76,12 @@ static T AtomicCompareAndSwap(T expected, T desired, T *addr)
 
   return Result ? Src1 : Expected;
 }
+
+template uint8_t AtomicCompareAndSwap<uint8_t>(uint8_t expected, uint8_t desired, uint8_t *addr);
+template uint16_t AtomicCompareAndSwap<uint16_t>(uint16_t expected, uint16_t desired, uint16_t *addr);
+template uint32_t AtomicCompareAndSwap<uint32_t>(uint32_t expected, uint32_t desired, uint32_t *addr);
+template uint64_t AtomicCompareAndSwap<uint64_t>(uint64_t expected, uint64_t desired, uint64_t *addr);
+
 #else
 // Needs to match what the AArch64 JIT and unaligned signal handler expects
 uint8_t AtomicFetchNeg(uint8_t *Addr) {
@@ -169,9 +175,6 @@ uint64_t AtomicFetchNeg(uint64_t *Addr) {
   );
   return Result;
 }
-
-template<typename T>
-static T AtomicCompareAndSwap(T expected, T desired, T *addr);
 
 template<>
 uint8_t AtomicCompareAndSwap(uint8_t expected, uint8_t desired, uint8_t *addr) {

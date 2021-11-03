@@ -60,8 +60,6 @@ public:
 
   void ClearCache() override;
 
-  [[nodiscard]] bool HandleSIGBUS(int Signal, void *info, void *ucontext);
-
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   [[nodiscard]] CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
