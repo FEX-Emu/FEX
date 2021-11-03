@@ -2141,6 +2141,70 @@ void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
   GenerateFlags_Logical(Op, Dest, Src1, Src2);
 }
 
+void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
+  // Essentially (Src1 >> Start) & ((1 << Length) - 1)
+  // along with some edge-case handling and flag setting.
+
+  auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  const auto SrcSize = GetSrcSize(Op) * 8;
+  const auto MaxSrcBit = SrcSize - 1;
+  auto MaxSrcBitOp = _Constant(SrcSize, MaxSrcBit);
+
+  // Shift the operand down to the starting bit
+  auto Start = _Bfe(8, 0, Src2);
+  auto Shifted = _Lshr(Src1, Start);
+
+  // Shifts larger than operand size need to be set to zero.
+  auto SanitizedShifted = _Select(IR::COND_ULE,
+                                  Start, MaxSrcBitOp,
+                                  Shifted, _Constant(SrcSize, 0));
+
+  // Now handle the length specifier.
+  auto Length = _Bfe(8, 8, Src2);
+  auto SanitizedLength = _Select(IR::COND_ULE,
+                                 Length, MaxSrcBitOp,
+                                 Length, MaxSrcBitOp);
+
+  // Now build up the mask
+  // (1 << SanitizedLength) - 1
+  auto One = _Constant(SrcSize, 1);
+  auto Mask = _Sub(_Lshl(One, SanitizedLength), One);
+
+  // Now put it all together and make the result.
+  auto Dest = _And(SanitizedShifted, Mask);
+
+  // Finally store the result.
+  StoreResult(GPRClass, Op, Dest, -1);
+
+  // Handle flag setting.
+  //
+  // All that matters primarily for this instruction is
+  // that we only set the ZF flag properly.
+  //
+  // Every other flag is considered undefined after a
+  // BEXTR instruction, but we opt to reliably clear them.
+  //
+  SetRFLAG<X86State::RFLAG_AF_LOC>(_Constant(0));
+  SetRFLAG<X86State::RFLAG_SF_LOC>(_Constant(0));
+  SetRFLAG<X86State::RFLAG_CF_LOC>(_Constant(0));
+  SetRFLAG<X86State::RFLAG_OF_LOC>(_Constant(0));
+
+  // PF
+  if (CTX->Config.ABINoPF) {
+    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
+  } else {
+    SetRFLAG<X86State::RFLAG_PF_LOC>(_Constant(0));
+  }
+
+  // ZF
+  auto ZeroOp = _Select(IR::COND_EQ,
+                        Dest, _Constant(0),
+                        _Constant(1), _Constant(0));
+  SetRFLAG<X86State::RFLAG_ZF_LOC>(ZeroOp);
+}
+
 void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto Size = GetSrcSize(Op) * 8;
@@ -5810,6 +5874,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(2, 0b00, 0xF2), 1, &OpDispatchBuilder::ANDNBMIOp},
+    {OPD(2, 0b00, 0xF7), 1, &OpDispatchBuilder::BEXTRBMIOp},
   };
 #undef OPD
 
