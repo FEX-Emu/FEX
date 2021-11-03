@@ -64,10 +64,6 @@ void FreeCodeBuffer(CodeBuffer Buffer) {
   FEXCore::Allocator::munmap(Buffer.Ptr, Buffer.Size);
 }
 
-}
-
-namespace FEXCore::CPU {
-
 void X86JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
   X86JITCore *Core = reinterpret_cast<X86JITCore*>(Original);
   ThreadSharedData = Core->ThreadSharedData;

@@ -42,22 +42,28 @@ public:
     size_t Size;
   };
 
-  explicit Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread);
-
+  explicit Arm64JITCore(FEXCore::Context::Context *ctx,
+                        FEXCore::Core::InternalThreadState *Thread,
+                        bool CompileThread);
   ~Arm64JITCore() override;
-  std::string GetName() override { return "JIT"; }
-  void *CompileCode(uint64_t Entry, FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
-  void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
+  [[nodiscard]] std::string GetName() override { return "JIT"; }
 
-  bool NeedsOpDispatch() override { return true; }
+  [[nodiscard]] void *CompileCode(uint64_t Entry,
+                                  FEXCore::IR::IRListView const *IR,
+                                  FEXCore::Core::DebugData *DebugData,
+                                  FEXCore::IR::RegisterAllocationData *RAData) override;
+
+  [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
+
+  [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
   void ClearCache() override;
 
-  bool HandleSIGBUS(int Signal, void *info, void *ucontext);
+  [[nodiscard]] bool HandleSIGBUS(int Signal, void *info, void *ucontext);
 
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
-  CodeBuffer AllocateNewCodeBuffer(size_t Size);
+  [[nodiscard]] CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
@@ -95,35 +101,39 @@ private:
   constexpr static uint8_t RA_FPR = 2;
 
   template<uint8_t RAType>
-  aarch64::Register GetReg(uint32_t Node) const;
+  [[nodiscard]] aarch64::Register GetReg(uint32_t Node) const;
 
   template<>
-  aarch64::Register GetReg<RA_32>(uint32_t Node) const;
+  [[nodiscard]] aarch64::Register GetReg<RA_32>(uint32_t Node) const;
   template<>
-  aarch64::Register GetReg<RA_64>(uint32_t Node) const;
+  [[nodiscard]] aarch64::Register GetReg<RA_64>(uint32_t Node) const;
 
   template<uint8_t RAType>
-  std::pair<aarch64::Register, aarch64::Register> GetSrcPair(uint32_t Node) const;
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair(uint32_t Node) const;
 
   template<>
-  std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_32>(uint32_t Node) const;
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_32>(uint32_t Node) const;
   template<>
-  std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_64>(uint32_t Node) const;
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_64>(uint32_t Node) const;
 
-  aarch64::VRegister GetSrc(uint32_t Node) const;
-  aarch64::VRegister GetDst(uint32_t Node) const;
+  [[nodiscard]] aarch64::VRegister GetSrc(uint32_t Node) const;
+  [[nodiscard]] aarch64::VRegister GetDst(uint32_t Node) const;
 
-  FEXCore::IR::RegisterClassType GetRegClass(uint32_t Node) const;
+  [[nodiscard]] FEXCore::IR::RegisterClassType GetRegClass(uint32_t Node) const;
 
-  IR::PhysicalRegister GetPhys(uint32_t Node) const;
+  [[nodiscard]] IR::PhysicalRegister GetPhys(uint32_t Node) const;
 
-  bool IsFPR(uint32_t Node) const;
-  bool IsGPR(uint32_t Node) const;
+  [[nodiscard]] bool IsFPR(uint32_t Node) const;
+  [[nodiscard]] bool IsGPR(uint32_t Node) const;
 
-  MemOperand GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
+  [[nodiscard]] MemOperand GenerateMemOperand(uint8_t AccessSize,
+                                              aarch64::Register Base,
+                                              IR::OrderedNodeWrapper Offset,
+                                              IR::MemOffsetType OffsetType,
+                                              uint8_t OffsetScale);
 
-  bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr) const;
-  bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const;
+  [[nodiscard]] bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr) const;
+  [[nodiscard]] bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const;
 
   struct LiveRange {
     uint32_t Begin;

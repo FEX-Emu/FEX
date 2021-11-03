@@ -30,13 +30,8 @@ struct CodeBuffer {
   size_t Size;
 };
 
-CodeBuffer AllocateNewCodeBuffer(size_t Size);
+[[nodiscard]] CodeBuffer AllocateNewCodeBuffer(size_t Size);
 void FreeCodeBuffer(CodeBuffer Buffer);
-
-}
-
-namespace FEXCore::CPU {
-
 
 // Temp registers
 // rax, rcx, rdx, rsi, r8, r9,
@@ -62,14 +57,22 @@ const std::array<Xbyak::Xmm, 11> RAXMM_x = {  xmm1, xmm2, xmm3, xmm4, xmm5, xmm6
 
 class X86JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
 public:
-  explicit X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread);
+  explicit X86JITCore(FEXCore::Context::Context *ctx,
+                      FEXCore::Core::InternalThreadState *Thread,
+                      CodeBuffer Buffer,
+                      bool CompileThread);
   ~X86JITCore() override;
-  std::string GetName() override { return "JIT"; }
-  void *CompileCode(uint64_t Entry, FEXCore::IR::IRListView const *IR, FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) override;
 
-  void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
+  [[nodiscard]] std::string GetName() override { return "JIT"; }
 
-  bool NeedsOpDispatch() override { return true; }
+  [[nodiscard]] void *CompileCode(uint64_t Entry,
+                                  FEXCore::IR::IRListView const *IR,
+                                  FEXCore::Core::DebugData *DebugData,
+                                  FEXCore::IR::RegisterAllocationData *RAData) override;
+
+  [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
+
+  [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
   void ClearCache() override;
 
@@ -111,26 +114,27 @@ private:
   constexpr static uint8_t RA_64 = 3;
   constexpr static uint8_t RA_XMM = 4;
 
-  IR::PhysicalRegister GetPhys(uint32_t Node) const;
+  [[nodiscard]] IR::PhysicalRegister GetPhys(uint32_t Node) const;
 
-  bool IsFPR(uint32_t Node) const;
-  bool IsGPR(uint32_t Node) const;
-
-  template<uint8_t RAType>
-  Xbyak::Reg GetSrc(uint32_t Node) const;
-  template<uint8_t RAType>
-  std::pair<Xbyak::Reg, Xbyak::Reg> GetSrcPair(uint32_t Node) const;
+  [[nodiscard]] bool IsFPR(uint32_t Node) const;
+  [[nodiscard]] bool IsGPR(uint32_t Node) const;
 
   template<uint8_t RAType>
-  Xbyak::Reg GetDst(uint32_t Node) const;
+  [[nodiscard]] Xbyak::Reg GetSrc(uint32_t Node) const;
+  template<uint8_t RAType>
+  [[nodiscard]] std::pair<Xbyak::Reg, Xbyak::Reg> GetSrcPair(uint32_t Node) const;
 
-  Xbyak::Xmm GetSrc(uint32_t Node) const;
-  Xbyak::Xmm GetDst(uint32_t Node) const;
+  template<uint8_t RAType>
+  [[nodiscard]] Xbyak::Reg GetDst(uint32_t Node) const;
 
-  Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) const;
+  [[nodiscard]] Xbyak::Xmm GetSrc(uint32_t Node) const;
+  [[nodiscard]] Xbyak::Xmm GetDst(uint32_t Node) const;
 
-  bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr) const;
-  bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const;
+  [[nodiscard]] Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset,
+                                            IR::MemOffsetType OffsetType, uint8_t OffsetScale) const;
+
+  [[nodiscard]] bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr) const;
+  [[nodiscard]] bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const;
 
   IR::RegisterAllocationPass *RAPass;
   FEXCore::IR::RegisterAllocationData *RAData;
