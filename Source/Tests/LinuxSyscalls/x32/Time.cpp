@@ -100,9 +100,9 @@ namespace FEX::HLE::x32 {
       uint64_t Result = 0;
       if (req) {
         const struct timespec req64 = *req;
-        Result = ::nanosleep(&req64, &rem64);
+        Result = ::nanosleep(&req64, rem64_ptr);
       } else {
-        Result = ::nanosleep(nullptr, &rem64);
+        Result = ::nanosleep(nullptr, rem64_ptr);
       }
 
       if (rem) {
