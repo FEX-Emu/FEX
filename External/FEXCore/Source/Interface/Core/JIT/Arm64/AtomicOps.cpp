@@ -219,17 +219,17 @@ DEF_OP(AtomicAdd) {
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   if (SupportsAtomics) {
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: staddlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 2: staddlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 4: staddl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 8: staddl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -266,7 +266,7 @@ DEF_OP(AtomicAdd) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -278,17 +278,17 @@ DEF_OP(AtomicSub) {
 
   if (SupportsAtomics) {
     neg(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: staddlb(TMP2.W(), MemOperand(MemSrc)); break;
     case 2: staddlh(TMP2.W(), MemOperand(MemSrc)); break;
     case 4: staddl(TMP2.W(), MemOperand(MemSrc)); break;
     case 8: staddl(TMP2.X(), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -325,7 +325,7 @@ DEF_OP(AtomicSub) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -337,17 +337,17 @@ DEF_OP(AtomicAnd) {
 
   if (SupportsAtomics) {
     mvn(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: stclrlb(TMP2.W(), MemOperand(MemSrc)); break;
     case 2: stclrlh(TMP2.W(), MemOperand(MemSrc)); break;
     case 4: stclrl(TMP2.W(), MemOperand(MemSrc)); break;
     case 8: stclrl(TMP2.X(), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -384,7 +384,7 @@ DEF_OP(AtomicAnd) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -395,17 +395,17 @@ DEF_OP(AtomicOr) {
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   if (SupportsAtomics) {
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: stsetlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 2: stsetlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 4: stsetl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 8: stsetl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -442,7 +442,7 @@ DEF_OP(AtomicOr) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -453,17 +453,17 @@ DEF_OP(AtomicXor) {
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   if (SupportsAtomics) {
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: steorlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 2: steorlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 4: steorl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 8: steorl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -500,7 +500,7 @@ DEF_OP(AtomicXor) {
         cbnz(TMP2, &LoopTop);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -512,17 +512,17 @@ DEF_OP(AtomicSwap) {
 
   if (SupportsAtomics) {
     mov(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: swplb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: swplh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: swpl(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: swpl(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -559,7 +559,7 @@ DEF_OP(AtomicSwap) {
         mov(GetReg<RA_64>(Node), TMP2.X());
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -569,17 +569,17 @@ DEF_OP(AtomicFetchAdd) {
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   if (SupportsAtomics) {
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: ldaddalb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldaddalh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldaddal(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldaddal(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -620,7 +620,7 @@ DEF_OP(AtomicFetchAdd) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -631,17 +631,17 @@ DEF_OP(AtomicFetchSub) {
 
   if (SupportsAtomics) {
     neg(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: ldaddalb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldaddalh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldaddal(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldaddal(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -682,7 +682,7 @@ DEF_OP(AtomicFetchSub) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -693,17 +693,17 @@ DEF_OP(AtomicFetchAnd) {
 
   if (SupportsAtomics) {
     mvn(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: ldclralb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldclralh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldclral(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldclral(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -744,7 +744,7 @@ DEF_OP(AtomicFetchAnd) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -754,17 +754,17 @@ DEF_OP(AtomicFetchOr) {
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   if (SupportsAtomics) {
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: ldsetalb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldsetalh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldsetal(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldsetal(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -805,7 +805,7 @@ DEF_OP(AtomicFetchOr) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -815,17 +815,17 @@ DEF_OP(AtomicFetchXor) {
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   if (SupportsAtomics) {
-    switch (Op->Size) {
+    switch (IROp->Size) {
     case 1: ldeoralb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldeoralh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 4: ldeoral(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 8: ldeoral(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
   else {
     // TMP2-TMP3
-    switch (Op->Size) {
+    switch (IROp->Size) {
       case 1: {
         aarch64::Label LoopTop;
         bind(&LoopTop);
@@ -866,7 +866,7 @@ DEF_OP(AtomicFetchXor) {
         mov(GetReg<RA_64>(Node), TMP2);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
 }
@@ -876,7 +876,7 @@ DEF_OP(AtomicFetchNeg) {
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
   // TMP2-TMP3
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 1: {
       aarch64::Label LoopTop;
       bind(&LoopTop);
@@ -917,7 +917,7 @@ DEF_OP(AtomicFetchNeg) {
       mov(GetReg<RA_64>(Node), TMP2);
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
   }
 }
 

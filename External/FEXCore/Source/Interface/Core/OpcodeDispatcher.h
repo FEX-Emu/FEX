@@ -570,16 +570,16 @@ private:
 
   OrderedNode* _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Align = 1) {
     if (CTX->Config.TSOEnabled)
-    	return _StoreMemTSO(ssa0, ssa1, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
+    	return _StoreMemTSO(ssa0, ssa1, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
     else
-      return _StoreMem(ssa0, ssa1, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
+      return _StoreMem(ssa0, ssa1, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
   }
 
   OrderedNode* _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
     if (CTX->Config.TSOEnabled)
-      return _LoadMemTSO(ssa0, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
+      return _LoadMemTSO(ssa0, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
     else
-      return _LoadMem(ssa0, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
+      return _LoadMem(ssa0, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
   }
 
 

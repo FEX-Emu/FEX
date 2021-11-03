@@ -85,17 +85,17 @@ DEF_OP(LoadContextIndexed) {
       GD = *MemData; \
       break; \
     }
-  switch (Op->Size) {
+  switch (IROp->Size) {
     LOAD_CTX(1, uint8_t)
     LOAD_CTX(2, uint16_t)
     LOAD_CTX(4, uint32_t)
     LOAD_CTX(8, uint64_t)
     case 16: {
       void const *MemData = reinterpret_cast<void const*>(ContextPtr);
-      memcpy(GDP, MemData, Op->Size);
+      memcpy(GDP, MemData, IROp->Size);
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", Op->Size);
+    default:  LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
   }
   #undef LOAD_CTX
 }
@@ -110,7 +110,7 @@ DEF_OP(StoreContextIndexed) {
 
   void *MemData = reinterpret_cast<void*>(ContextPtr);
   void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  memcpy(MemData, Src, Op->Size);
+  memcpy(MemData, Src, IROp->Size);
 }
 
 DEF_OP(SpillRegister) {
@@ -181,7 +181,7 @@ DEF_OP(LoadMem) {
     }
 
     default:
-      memcpy(GDP, MemData, Op->Size);
+      memcpy(GDP, MemData, IROp->Size);
       break;
   }
 }
@@ -220,7 +220,7 @@ DEF_OP(StoreMem) {
     }
 
     default:
-      memcpy(MemData, GetSrc<void*>(Data->SSAData, Op->Value), Op->Size);
+      memcpy(MemData, GetSrc<void*>(Data->SSAData, Op->Value), IROp->Size);
       break;
   }
 }

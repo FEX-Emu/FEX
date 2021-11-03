@@ -80,22 +80,28 @@ friend class FEXCore::IR::PassManager;
     return _Bfi(ssa0, ssa1, Width, lsb, DestSize);
   }
   IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Align = 1) {
-    return _StoreMem(ssa0, ssa1, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
+    return _StoreMem(ssa0, ssa1, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
   }
   IRPair<IROp_StoreMemTSO> _StoreMemTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Align = 1) {
-    return _StoreMemTSO(ssa0, ssa1, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
+    return _StoreMemTSO(ssa0, ssa1, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
   }
   IRPair<IROp_VStoreMemElement> _VStoreMemElement(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index, uint8_t Align = 1) {
     return _VStoreMemElement(ssa0, ssa1, Index, Align, RegisterSize, ElementSize);
   }
   IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
-    return _LoadMem(ssa0, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
+    return _LoadMem(ssa0, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
   }
   IRPair<IROp_LoadMemTSO> _LoadMemTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *ssa0, uint8_t Align = 1) {
-    return _LoadMemTSO(ssa0, Invalid(), Size, Align, Class, MEM_OFFSET_SXTX, 1);
+    return _LoadMemTSO(ssa0, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
   }
   IRPair<IROp_VLoadMemElement> _VLoadMemElement(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Index, uint8_t Align = 1) {
     return _VLoadMemElement(ssa0, ssa1, Index, Align, RegisterSize, ElementSize);
+  }
+  IRPair<IROp_LoadContextIndexed> _LoadContextIndexed(OrderedNode *ssa0, uint8_t Size, uint32_t BaseOffset, uint32_t Stride, RegisterClassType Class) {
+    return _LoadContextIndexed(ssa0, BaseOffset, Stride, Class, Size);
+  }
+  IRPair<IROp_StoreContextIndexed> _StoreContextIndexed(OrderedNode *ssa0, OrderedNode *ssa1, uint8_t Size, uint32_t BaseOffset, uint32_t Stride, RegisterClassType Class) {
+    return _StoreContextIndexed(ssa0, ssa1, BaseOffset, Stride, Class, Size);
   }
   IRPair<IROp_Select> _Select(uint8_t Cond, OrderedNode *ssa0, OrderedNode *ssa1, OrderedNode *ssa2, OrderedNode *ssa3, uint8_t CompareSize = 0) {
     if (CompareSize == 0)

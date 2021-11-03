@@ -558,8 +558,10 @@
       "HasDest": true,
       "DestClass": "Complex",
       "DestSize": "Size",
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ],
       "Args": [
-        "uint8_t", "Size",
         "uint32_t", "BaseOffset",
         "uint32_t", "Stride",
         "RegisterClassType", "Class"
@@ -573,12 +575,15 @@
               ],
       "OpClass": "Memory",
       "SSAArgs": "2",
+      "DestSize": "Size",
       "SSANames": [
         "Value",
         "Index"
       ],
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ],
       "Args": [
-        "uint8_t", "Size",
         "uint32_t", "BaseOffset",
         "uint32_t", "Stride",
         "RegisterClassType", "Class"
@@ -644,6 +649,7 @@
               ],
       "OpClass": "Memory",
       "SSAArgs": "1",
+      "DestSize": "1",
       "SSANames": [
         "Value"
       ],
@@ -692,8 +698,10 @@
         "Addr",
         "Offset"
       ],
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ],
       "Args": [
-        "uint8_t", "Size",
         "uint8_t", "Align",
         "RegisterClassType", "Class",
         "MemOffsetType", "OffsetType",
@@ -709,13 +717,16 @@
       "HasSideEffects": true,
       "OpClass": "Memory",
       "SSAArgs": "3",
+      "DestSize": "Size",
       "SSANames": [
         "Addr",
         "Value",
         "Offset"
       ],
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ],
       "Args": [
-        "uint8_t", "Size",
         "uint8_t", "Align",
         "RegisterClassType", "Class",
         "MemOffsetType", "OffsetType",
@@ -735,8 +746,10 @@
         "Addr",
         "Offset"
       ],
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ],
       "Args": [
-        "uint8_t", "Size",
         "uint8_t", "Align",
         "RegisterClassType", "Class",
         "MemOffsetType", "OffsetType",
@@ -750,13 +763,16 @@
       "HasSideEffects": true,
       "OpClass": "Memory",
       "SSAArgs": "3",
+      "DestSize": "Size",
       "SSANames": [
         "Addr",
         "Value",
         "Offset"
       ],
+      "HelperArgs": [
+        "uint8_t", "Size"
+      ],
       "Args": [
-        "uint8_t", "Size",
         "uint8_t", "Align",
         "RegisterClassType", "Class",
         "MemOffsetType", "OffsetType",
@@ -1289,11 +1305,12 @@
               ],
       "OpClass": "Atomic",
       "SSAArgs": "2",
+      "DestSize": "Size",
       "SSANames": [
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1304,11 +1321,12 @@
               ],
       "OpClass": "Atomic",
       "SSAArgs": "2",
+      "DestSize": "Size",
       "SSANames": [
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1319,11 +1337,12 @@
               ],
       "OpClass": "Atomic",
       "SSAArgs": "2",
+      "DestSize": "Size",
       "SSANames": [
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1334,11 +1353,12 @@
               ],
       "OpClass": "Atomic",
       "SSAArgs": "2",
+      "DestSize": "Size",
       "SSANames": [
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1349,11 +1369,12 @@
               ],
       "OpClass": "Atomic",
       "SSAArgs": "2",
+      "DestSize": "Size",
       "SSANames": [
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1372,7 +1393,7 @@
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1392,7 +1413,7 @@
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1413,7 +1434,7 @@
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1433,7 +1454,7 @@
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1453,7 +1474,7 @@
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1473,7 +1494,7 @@
         "Addr",
         "Value"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
@@ -1491,7 +1512,7 @@
       "SSANames": [
         "Addr"
       ],
-      "Args": [
+      "HelperArgs": [
         "uint8_t", "Size"
       ]
     },
