@@ -12,6 +12,10 @@
 namespace FEXCore::ArchHelpers::Arm64 {
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock, TYPE_HAS_SPLIT_LOCKS);
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock16B, TYPE_16BYTE_SPLIT);
+FEXCORE_TELEMETRY_STATIC_INIT(Cas16Tear,  TYPE_CAS_16BIT_TEAR);
+FEXCORE_TELEMETRY_STATIC_INIT(Cas32Tear,  TYPE_CAS_32BIT_TEAR);
+FEXCORE_TELEMETRY_STATIC_INIT(Cas64Tear,  TYPE_CAS_64BIT_TEAR);
+FEXCORE_TELEMETRY_STATIC_INIT(Cas128Tear, TYPE_CAS_128BIT_TEAR);
 
 static __uint128_t LoadAcquire128(uint64_t Addr) {
   __uint128_t Result{};
@@ -149,6 +153,7 @@ static bool RunCASPAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desi
             else {
               // CAS managed to tear, we can't really solve this
               // Continue down the path to let the guest know values weren't expected
+              FEXCORE_TELEMETRY_SET(Cas128Tear, 1);
             }
           }
 
@@ -557,6 +562,7 @@ uint16_t DoCAS16(
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
+            FEXCORE_TELEMETRY_SET(Cas16Tear, 1);
           }
         }
 
@@ -850,6 +856,7 @@ uint32_t DoCAS32(
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
+            FEXCORE_TELEMETRY_SET(Cas32Tear, 1);
           }
         }
 
@@ -1089,6 +1096,7 @@ uint64_t DoCAS64(
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
+            FEXCORE_TELEMETRY_SET(Cas64Tear, 1);
           }
         }
 
