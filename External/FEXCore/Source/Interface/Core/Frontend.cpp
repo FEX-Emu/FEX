@@ -634,6 +634,12 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
     ++CurrentSrc;
   }
 
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_DST) != 0) {
+    CurrentDest->Type = DecodedOperand::OpType::GPR;
+    CurrentDest->Data.GPR.HighBits = false;
+    CurrentDest->Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMDst);
+  }
+
   if (Bytes != 0) {
     LOGMAN_THROW_A(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
 

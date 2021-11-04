@@ -345,6 +345,8 @@ constexpr InstFlagType FLAGS_SRC_SEXT64BIT        = (1ULL << 23);
 constexpr InstFlagType FLAGS_VEX_1ST_SRC          = (1ULL << 24);
 // Whether or not the instruction has a VEX prefix for the second source operand
 constexpr InstFlagType FLAGS_VEX_2ND_SRC          = (1ULL << 25);
+// Whether or not the instruction has a VEX prefix for the destination
+constexpr InstFlagType FLAGS_VEX_DST              = (1ULL << 26);
 
 constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
 constexpr InstFlagType FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
