@@ -2204,6 +2204,63 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   SetRFLAG<X86State::RFLAG_ZF_LOC>(ZeroOp);
 }
 
+void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
+  // Equivalent to performing: SRC & -SRC
+
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto NegatedSrc = _Neg(Src);
+  auto Result = _And(Src, NegatedSrc);
+
+  // ...and we're done. Painless!
+  StoreResult(GPRClass, Op, Result, -1);
+
+  // Now for the flags:
+  //
+  // Only CF, SF, ZF and OF are defined as being updated
+  // CF is cleared if Src is zero, otherwise it's set.
+  // SF is set to the value of the most significant operand bit of Result.
+  // OF is always cleared
+  // ZF is set, as usual, if Result is zero or not.
+  //
+  // AF and PF are documented as being in an undefined state after
+  // a BLSI operation, however, we choose to reliably clear them.
+
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+
+  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
+  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
+  if (CTX->Config.ABINoPF) {
+    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
+  } else {
+    SetRFLAG<X86State::RFLAG_PF_LOC>(Zero);
+  }
+
+  // ZF
+  {
+    auto ZFOp = _Select(IR::COND_EQ,
+                        Result, Zero,
+                        One, Zero);
+    SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFOp);
+  }
+
+  // CF
+  {
+    auto CFOp = _Select(IR::COND_EQ,
+                        Src, Zero,
+                        Zero, One);
+    SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
+  }
+
+  // SF
+  {
+    auto SignBit = _Constant((GetSrcSize(Op) * 8) - 1);
+    auto SFOp = _Lshr(Result, SignBit);
+
+    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
+  }
+}
+
 void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto Size = GetSrcSize(Op) * 8;
@@ -5876,6 +5933,12 @@ constexpr uint16_t PF_F2 = 3;
   };
 #undef OPD
 
+  #define OPD(group, pp, opcode) (((group - X86Tables::InstType::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
+    const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> VEXGroupTable = {
+      {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b011), 1, &OpDispatchBuilder::BLSIBMIOp},
+    };
+  #undef OPD
+
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> EVEXTable = {
     {0x10, 2, &OpDispatchBuilder::UnimplementedOp},
     {0x59, 1, &OpDispatchBuilder::UnimplementedOp},
@@ -5936,6 +5999,7 @@ constexpr uint16_t PF_F2 = 3;
   InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38Table);
   InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3ATable);
   InstallToTable(FEXCore::X86Tables::VEXTableOps, VEXTable);
+  InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEXGroupTable);
   InstallToTable(FEXCore::X86Tables::EVEXTableOps, EVEXTable);
 }
 

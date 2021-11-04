@@ -505,7 +505,7 @@ void InitializeVEXTables() {
 
     {OPD(TYPE_VEX_GROUP_17, 0, 0b001), 1, X86InstInfo{"BLSR",     TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
     {OPD(TYPE_VEX_GROUP_17, 0, 0b010), 1, X86InstInfo{"BLSMSK",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_17, 0, 0b011), 1, X86InstInfo{"BLSI",     TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_17, 0, 0b011), 1, X86InstInfo{"BLSI",     TYPE_INST, FLAGS_MODRM | FLAGS_VEX_DST, 0, nullptr}},
   };
 #undef OPD
 
