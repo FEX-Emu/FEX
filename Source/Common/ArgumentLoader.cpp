@@ -1,33 +1,10 @@
 #include "Common/ArgumentLoader.h"
+#include <FEXCore/Config/Config.h>
 
 #include "OptionParser.h"
 #include "git_version.h"
 
 #include <stdint.h>
-
-namespace FEX::Handler {
-  std::string CoreHandler(std::string &Value) {
-    if (Value == "irint")
-      return "0";
-    else if (Value == "irjit")
-      return "1";
-#ifdef _M_X86_64
-    else if (Value == "host")
-      return "2";
-#endif
-    return "1";
-  }
-
-  std::string SMCCheckHandler(std::string &Value) {
-    if (Value == "none")
-      return "0";
-    else if (Value == "mman")
-      return "1";
-    else if (Value == "full")
-      return "2";
-    return "0";
-  }
-}
 
 namespace FEX::ArgLoader {
   std::vector<std::string> RemainingArgs;
