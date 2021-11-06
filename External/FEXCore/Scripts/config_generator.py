@@ -374,7 +374,7 @@ def print_parse_argloader_options(options):
             conversion_func = "std::to_string"
             if ("ArgumentHandler" in op_vals):
                 NeedsString = True
-                conversion_func = "FEX::Handler::{0}".format(op_vals["ArgumentHandler"])
+                conversion_func = "FEXCore::Config::Handler::{0}".format(op_vals["ArgumentHandler"])
             if (value_type == "str"):
                 NeedsString = True
                 conversion_func = ""
@@ -394,6 +394,21 @@ def print_parse_argloader_options(options):
                 output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, {1}(UserValue));\n".format(op_key.upper(), conversion_func))
             output_argloader.write("}\n")
 
+    output_argloader.write("#endif\n")
+
+
+def print_parse_envloader_options(options):
+    output_argloader.write("#ifdef ENVLOADER\n")
+    output_argloader.write("#undef ENVLOADER\n")
+    output_argloader.write("if (false) {}\n")
+
+    for op_group, group_vals in options.items():
+        for op_key, op_vals in group_vals.items():
+            if ("ArgumentHandler" in op_vals):
+                conversion_func = "FEXCore::Config::Handler::{0}".format(op_vals["ArgumentHandler"])
+                output_argloader.write("else if (Key == \"FEX_{0}\") {{\n".format(op_key.upper()))
+                output_argloader.write("Value = {0}(Value);\n".format(conversion_func))
+                output_argloader.write("}\n")
     output_argloader.write("#endif\n")
 
 def check_for_duplicate_options(options):
@@ -470,4 +485,8 @@ output_man.close()
 output_argloader = open(output_argumentloader_filename, "w")
 print_argloader_options(options);
 print_parse_argloader_options(options);
+
+# Generate environment loader code
+print_parse_envloader_options(options);
+
 output_argloader.close()

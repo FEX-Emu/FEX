@@ -474,7 +474,7 @@ int main(int argc, char **argv, char **const envp) {
     return -ENOEXEC;
   }
 
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program));
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program).string());
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::x32::MemAllocator> Allocator;

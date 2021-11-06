@@ -539,7 +539,7 @@ namespace JSON {
     return Meta->Get(Option);
   }
 
-  void Set(ConfigOption Option, std::string Data) {
+  void Set(ConfigOption Option, std::string_view Data) {
     Meta->Set(Option, Data);
   }
 
@@ -547,7 +547,7 @@ namespace JSON {
     Meta->Erase(Option);
   }
 
-  void EraseSet(ConfigOption Option, std::string Data) {
+  void EraseSet(ConfigOption Option, std::string_view Data) {
     Meta->EraseSet(Option, Data);
   }
 
@@ -716,9 +716,13 @@ namespace JSON {
       if (std::string::npos == pos)
         continue;
 
-      std::string_view Ident = Var.substr(0,pos);
-      std::string_view Value = Var.substr(pos+1);
-      EnvMap[Ident]=Value;
+      std::string_view Key = Var.substr(0,pos);
+      std::string_view Value {Var.substr(pos+1)};
+
+#define ENVLOADER
+#include <FEXCore/Config/ConfigOptions.inl>
+
+      EnvMap[Key]=Value;
     }
 
     std::function GetVar = [=](const std::string_view id)  -> std::optional<std::string_view> {

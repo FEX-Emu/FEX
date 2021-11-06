@@ -11,6 +11,30 @@
 #include <unordered_map>
 
 namespace FEXCore::Config {
+namespace Handler {
+  static inline std::string_view CoreHandler(std::string_view Value) {
+    if (Value == "irint")
+      return "0";
+    else if (Value == "irjit")
+      return "1";
+#ifdef _M_X86_64
+    else if (Value == "host")
+      return "2";
+#endif
+    return "1";
+  }
+
+  static inline std::string_view SMCCheckHandler(std::string_view Value) {
+    if (Value == "none")
+      return "0";
+    else if (Value == "mman")
+      return "1";
+    else if (Value == "full")
+      return "2";
+    return "0";
+  }
+}
+
   enum ConfigOption {
 #define OPT_BASE(type, group, enum, json, default) CONFIG_##enum,
 #include <FEXCore/Config/ConfigValues.inl>
@@ -95,13 +119,13 @@ namespace Type {
       return &it->second.front();
     }
 
-    void Set(ConfigOption Option, std::string Data) {
-      OptionMap[Option].emplace_back(std::move(Data));
+    void Set(ConfigOption Option, std::string_view Data) {
+      OptionMap[Option].emplace_back(std::string(Data));
     }
 
-    void EraseSet(ConfigOption Option, std::string Data) {
+    void EraseSet(ConfigOption Option, std::string_view Data) {
       Erase(Option);
-      Set(Option, std::move(Data));
+      Set(Option, std::string(Data));
     }
 
     void Erase(ConfigOption Option) {
@@ -129,9 +153,9 @@ namespace Type {
   FEX_DEFAULT_VISIBILITY std::optional<LayerValue*> All(ConfigOption Option);
   FEX_DEFAULT_VISIBILITY std::optional<std::string*> Get(ConfigOption Option);
 
-  FEX_DEFAULT_VISIBILITY void Set(ConfigOption Option, std::string Data);
+  FEX_DEFAULT_VISIBILITY void Set(ConfigOption Option, std::string_view Data);
   FEX_DEFAULT_VISIBILITY void Erase(ConfigOption Option);
-  FEX_DEFAULT_VISIBILITY void EraseSet(ConfigOption Option, std::string Data);
+  FEX_DEFAULT_VISIBILITY void EraseSet(ConfigOption Option, std::string_view Data);
 
   template<typename T>
   class FEX_DEFAULT_VISIBILITY Value {
