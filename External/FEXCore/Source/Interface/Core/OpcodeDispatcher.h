@@ -327,6 +327,7 @@ public:
   // BMI Ops
   void ANDNBMIOp(OpcodeArgs);
   void BEXTRBMIOp(OpcodeArgs);
+  void BLSIBMIOp(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>

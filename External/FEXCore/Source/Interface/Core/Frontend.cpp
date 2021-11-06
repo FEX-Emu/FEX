@@ -450,8 +450,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   // New instruction size decoding
   {
     // Decode destinations first
-    uint32_t DstSizeFlag = FEXCore::X86Tables::InstFlags::GetSizeDstFlags(Info->Flags);
-    uint32_t SrcSizeFlag = FEXCore::X86Tables::InstFlags::GetSizeSrcFlags(Info->Flags);
+    const auto DstSizeFlag = FEXCore::X86Tables::InstFlags::GetSizeDstFlags(Info->Flags);
+    const auto SrcSizeFlag = FEXCore::X86Tables::InstFlags::GetSizeSrcFlags(Info->Flags);
 
     if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_8BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_8BIT);
@@ -632,6 +632,12 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
     DecodeInst->Src[CurrentSrc].Data.GPR.GPR = FEXCore::X86State::REG_RCX;
     ++CurrentSrc;
+  }
+
+  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_DST) != 0) {
+    CurrentDest->Type = DecodedOperand::OpType::GPR;
+    CurrentDest->Data.GPR.HighBits = false;
+    CurrentDest->Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMDst);
   }
 
   if (Bytes != 0) {
