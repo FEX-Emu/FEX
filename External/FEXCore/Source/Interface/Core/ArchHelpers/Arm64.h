@@ -38,6 +38,9 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t CCMP_MASK   = 0x7F'E0'0C'10;
   constexpr uint32_t CCMP_INST   = 0x7A'40'00'00;
 
+  constexpr uint32_t CLREX_MASK = 0xFF'FF'F0'FF;
+  constexpr uint32_t CLREX_INST = 0xD5'03'30'5F;
+
   enum ExclusiveAtomicPairType {
     TYPE_SWAP,
     TYPE_ADD,
@@ -65,6 +68,9 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t RN_OFFSET = 5;
   constexpr uint32_t RM_OFFSET = 16;
 
+  constexpr uint32_t DMB = 0b1101'0101'0000'0011'0011'0000'1011'1111 |
+    0b1011'0000'0000; // Inner shareable all
+
   inline uint32_t GetRdReg(uint32_t Instr) {
     return (Instr >> RD_OFFSET) & REGISTER_MASK;
   }
@@ -83,6 +89,7 @@ namespace FEXCore::ArchHelpers::Arm64 {
   uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info);
   bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr);
   uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr);
+  bool HandleAtomicVectorStore(void *_ucontext, void *_info, uint32_t Instr);
   bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr);
   bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr);
   [[nodiscard]] bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext);

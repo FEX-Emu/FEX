@@ -69,11 +69,178 @@ static bool StoreCAS8(uint8_t &Expected, uint8_t Val, uint64_t Addr) {
   return Atom->compare_exchange_strong(Expected, Val);
 }
 
+uint16_t DoLoad16(uint64_t Addr) {
+  uint64_t AlignmentMask = 0b1111;
+  if ((Addr & AlignmentMask) == 15) {
+    // Address crosses over 16byte or 64byte threshold
+    // Needs two loads
+    uint64_t AddrUpper = Addr + 1;
+    uint8_t ActualUpper{};
+    uint8_t ActualLower{};
+    // Careful ordering here
+    ActualUpper = LoadAcquire8(AddrUpper);
+    ActualLower = LoadAcquire8(Addr);
 
+    uint16_t Result = ActualUpper;
+    Result <<= 8;
+    Result |= ActualLower;
+    return Result;
+  }
+  else {
+    AlignmentMask = 0b111;
+    if ((Addr & AlignmentMask) == 7) {
+      // Crosses 8byte boundary
+      // Needs 128bit load
+      // Fits within a 16byte region
+      uint64_t Alignment = Addr & 0b1111;
+      Addr &= ~0b1111ULL;
+
+      __uint128_t TmpResult = LoadAcquire128(Addr);
+
+      // Zexts the result
+      uint16_t Result = TmpResult >> (Alignment * 8);
+      return Result;
+    }
+    else {
+      AlignmentMask = 0b11;
+      if ((Addr & AlignmentMask) == 3) {
+        // Crosses 4byte boundary
+        // Needs 64bit Load
+        uint64_t Alignment = Addr & AlignmentMask;
+        Addr &= ~AlignmentMask;
+
+        std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+        uint64_t TmpResult = Atomic->load();
+
+        // Zexts the result
+        uint16_t Result = TmpResult >> (Alignment * 8);
+        return Result;
+      }
+      else {
+        // Fits within 4byte boundary
+        // Only needs 32bit Load
+        // Only alignment offset will be 1 here
+        uint64_t Alignment = Addr & AlignmentMask;
+        Addr &= ~AlignmentMask;
+
+        std::atomic<uint32_t> *Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
+        uint32_t TmpResult = Atomic->load();
+
+        // Zexts the result
+        uint16_t Result = TmpResult >> (Alignment * 8);
+        return Result;
+      }
+    }
+  }
+}
+
+uint32_t DoLoad32(uint64_t Addr) {
+  uint64_t AlignmentMask = 0b1111;
+  if ((Addr & AlignmentMask) > 12) {
+    // Address crosses over 16byte threshold
+    // Needs dual 32bit load
+    uint64_t Alignment = Addr & 0b11;
+    Addr &= ~0b11ULL;
+
+    uint64_t AddrUpper = Addr + 4;
+
+    // Careful ordering here
+    uint32_t ActualUpper = LoadAcquire32(AddrUpper);
+    uint32_t ActualLower = LoadAcquire32(Addr);
+
+    uint64_t Result = ActualUpper;
+    Result <<= 32;
+    Result |= ActualLower;
+    return Result >> (Alignment * 8);
+  }
+  else {
+    AlignmentMask = 0b111;
+    if ((Addr & AlignmentMask) >= 5) {
+      // Crosses 8byte boundary
+      // Needs 128bit load
+      // Fits within a 16byte region
+      uint64_t Alignment = Addr & 0b1111;
+      Addr &= ~0b1111ULL;
+
+      __uint128_t TmpResult = LoadAcquire128(Addr);
+
+      return TmpResult >> (Alignment * 8);
+    }
+    else {
+      // Fits within 8byte boundary
+      // Only needs 64bit CAS
+      // Alignments can be [1,5)
+      uint64_t Alignment = Addr & AlignmentMask;
+      Addr &= ~AlignmentMask;
+
+      std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
+      uint64_t TmpResult = Atomic->load();
+
+      return TmpResult >> (Alignment * 8);
+    }
+  }
+}
+
+uint64_t DoLoad64(uint64_t Addr) {
+  uint64_t AlignmentMask = 0b1111;
+  if ((Addr & AlignmentMask) > 8) {
+    uint64_t Alignment = Addr & 0b111;
+    Addr &= ~0b111ULL;
+    uint64_t AddrUpper = Addr + 8;
+
+    // Crosses a 16byte boundary
+    // Needs two 8 byte loads
+    uint64_t ActualUpper{};
+    uint64_t ActualLower{};
+    // Careful ordering here
+    ActualUpper = LoadAcquire64(AddrUpper);
+    ActualLower = LoadAcquire64(Addr);
+
+    __uint128_t Result = ActualUpper;
+    Result <<= 64;
+    Result |= ActualLower;
+    return Result >> (Alignment * 8);
+  }
+  else {
+    // Fits within a 16byte region
+    uint64_t Alignment = Addr & AlignmentMask;
+    Addr &= ~AlignmentMask;
+    __uint128_t TmpResult = LoadAcquire128(Addr);
+    uint64_t Result = TmpResult >> (Alignment * 8);
+    return Result;
+  }
+}
+
+std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
+  // Any misalignment here means we cross a 16byte boundary
+  // So we need two 128bit loads
+  uint64_t Alignment = Addr & 0b1111;
+  Addr &= ~0b1111ULL;
+  uint64_t AddrUpper = Addr + 16;
+
+  union AlignedData {
+    struct {
+      __uint128_t Lower;
+      __uint128_t Upper;
+    } Large;
+    struct {
+      uint8_t Data[32];
+    } Bytes;
+  };
+
+  AlignedData *Data = reinterpret_cast<AlignedData*>(alloca(sizeof(AlignedData)));
+  Data->Large.Upper = LoadAcquire128(AddrUpper);
+  Data->Large.Lower = LoadAcquire128(Addr);
+
+  uint64_t ResultLower{}, ResultUpper{};
+  memcpy(&ResultLower, &Data->Bytes.Data[Alignment], sizeof(uint64_t));
+  memcpy(&ResultUpper, &Data->Bytes.Data[Alignment + sizeof(uint64_t)], sizeof(uint64_t));
+  return {ResultLower, ResultUpper};
+}
 
 static bool RunCASPAL(void *_ucontext, void *_info, uint32_t Size, uint32_t DesiredReg1, uint32_t DesiredReg2, uint32_t ExpectedReg1, uint32_t ExpectedReg2, uint32_t AddressReg) {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  
+
   //Bus_ADRALN check happens in HandleCASPAL and HandleCASPAL_ARMv8
 
   if (Size == 0) {
@@ -270,7 +437,7 @@ bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
   uint32_t ExpectedReg1 = (Instr >> 16) & 0b11111;
   uint32_t ExpectedReg2 = ExpectedReg1 + 1;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
-  
+
   return RunCASPAL(_ucontext, _info, Size, DesiredReg1, DesiredReg2, ExpectedReg1, ExpectedReg2, AddressReg);
 }
 
@@ -282,6 +449,7 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
     // This only handles alignment problems
     return 0;
   }
+
   // caspair
   // [1] ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc)); <-- DataReg & AddrReg
   // [2] cmp(TMP2.W(), Expected.first.W()); <-- ExpectedReg1
@@ -297,22 +465,52 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
   // [12] clrex();
 
   uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
-  
+
   uint32_t Size = (Instr >> 30) & 1;
   uint32_t AddrReg = (Instr >> 5) & 0x1F;
   uint32_t DataReg = Instr & 0x1F;
   uint32_t DataReg2 = (Instr >> 10) & 0x1F;
-  
+
   uint32_t ExpectedReg1{};
   uint32_t ExpectedReg2{};
-  
+
   uint32_t DesiredReg1{};
   uint32_t DesiredReg2{};
-  
-  if(Size != 0) { //Only 32-bit pairs
-    return 0; 
+
+  if(Size == 1) {
+    // 64-bit pair happens on paranoid vector loads
+    // [1] ldaxp(TMP1, TMP2, MemSrc);
+    // [2] clrex();
+    //
+    // 64-bit pair happens on paranoid vector stores
+    // [1] ldaxp(xzr, TMP3, MemSrc); // <- Can hit SIGBUS
+    // [2] stlxp(TMP3, TMP1, TMP2, MemSrc); // <- Can also hit SIGBUS
+    // [3] cbnz(TMP3, &B); // < Overwritten with DMB
+
+    if (DataReg == 31) {
+    }
+    else {
+      uint32_t NextInstr = PC[1];
+      if ((NextInstr & FEXCore::ArchHelpers::Arm64::CLREX_MASK) == FEXCore::ArchHelpers::Arm64::CLREX_INST) {
+        uint64_t Addr = mcontext->regs[AddrReg];
+
+        auto Res = DoLoad128(Addr);
+        // We set the result register if it isn't a zero register
+        if (DataReg != 31) {
+          mcontext->regs[DataReg] = std::get<0>(Res);
+        }
+        if (DataReg2 != 31) {
+          mcontext->regs[DataReg2] = std::get<1>(Res);
+        }
+
+        // Skip ldaxp and clrex
+        return 2 * sizeof(uint32_t);
+      }
+    }
+    return 0;
   }
-  
+
+  //Only 32-bit pairs
   for(int i = 1; i < 10; i++) {
     uint32_t NextInstr = PC[i];
     if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST) {
@@ -324,11 +522,11 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
        DesiredReg2 = (NextInstr >> 10) & 0x1F;
     }
   }
-  
+
   //mov expected into the temp registers used by JIT
   mcontext->regs[DataReg] = mcontext->regs[ExpectedReg1];
   mcontext->regs[DataReg2] = mcontext->regs[ExpectedReg2];
-  
+
   if(RunCASPAL(_ucontext, _info, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg)) {
     return 9 * sizeof(uint32_t); // skip to mov + clrex
   } else {
@@ -336,173 +534,49 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
   }
 }
 
-uint16_t DoLoad16(uint64_t Addr) {
-  uint64_t AlignmentMask = 0b1111;
-  if ((Addr & AlignmentMask) == 15) {
-    // Address crosses over 16byte or 64byte threshold
-    // Needs two loads
-    uint64_t AddrUpper = Addr + 1;
-    uint8_t ActualUpper{};
-    uint8_t ActualLower{};
-    // Careful ordering here
-    ActualUpper = LoadAcquire8(AddrUpper);
-    ActualLower = LoadAcquire8(Addr);
+bool HandleAtomicVectorStore(void *_ucontext, void *_info, uint32_t Instr) {
+  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
+  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
-    uint16_t Result = ActualUpper;
-    Result <<= 8;
-    Result |= ActualLower;
-    return Result;
+  if (info->si_code != BUS_ADRALN) {
+    // This only handles alignment problems
+    return 0;
   }
-  else {
-    AlignmentMask = 0b111;
-    if ((Addr & AlignmentMask) == 7) {
-      // Crosses 8byte boundary
-      // Needs 128bit load
-      // Fits within a 16byte region
-      uint64_t Alignment = Addr & 0b1111;
-      Addr &= ~0b1111ULL;
 
-      __uint128_t TmpResult = LoadAcquire128(Addr);
+  uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
 
-      // Zexts the result
-      uint16_t Result = TmpResult >> (Alignment * 8);
-      return Result;
-    }
-    else {
-      AlignmentMask = 0b11;
-      if ((Addr & AlignmentMask) == 3) {
-        // Crosses 4byte boundary
-        // Needs 64bit Load
-        uint64_t Alignment = Addr & AlignmentMask;
-        Addr &= ~AlignmentMask;
+  uint32_t Size = (Instr >> 30) & 1;
+  uint32_t AddrReg = (Instr >> 5) & 0x1F;
+  uint32_t DataReg = Instr & 0x1F;
+  uint32_t DataReg2 = (Instr >> 10) & 0x1F;
 
-        std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
-        uint64_t TmpResult = Atomic->load();
+  if(Size == 1) {
+    // 64-bit pair happens on paranoid vector stores
+    // [0] ldaxp(xzr, TMP3, MemSrc); // <- Can hit SIGBUS. Overwritten with DMB
+    // [1] stlxp(TMP3, TMP1, TMP2, MemSrc); // <- Can also hit SIGBUS
+    // [2] cbnz(TMP3, &B); // < Overwritten with DMB
+    if (DataReg == 31) {
+      uint32_t NextInstr = PC[1];
+      AddrReg = (NextInstr >> 5) & 0x1F;
+      DataReg = NextInstr & 0x1F;
+      DataReg2 = (NextInstr >> 10) & 0x1F;
+      uint32_t STP =
+        (0b10 << 30) |
+        (0b101001000000000 << 15) |
+        (DataReg2 << 10) |
+        (AddrReg << 5) |
+        DataReg;
 
-        // Zexts the result
-        uint16_t Result = TmpResult >> (Alignment * 8);
-        return Result;
-      }
-      else {
-        // Fits within 4byte boundary
-        // Only needs 32bit Load
-        // Only alignment offset will be 1 here
-        uint64_t Alignment = Addr & AlignmentMask;
-        Addr &= ~AlignmentMask;
-
-        std::atomic<uint32_t> *Atomic = reinterpret_cast<std::atomic<uint32_t>*>(Addr);
-        uint32_t TmpResult = Atomic->load();
-
-        // Zexts the result
-        uint16_t Result = TmpResult >> (Alignment * 8);
-        return Result;
-      }
+      PC[0] = DMB;
+      PC[1] = STP;
+      PC[2] = DMB;
+      // Back up one instruction and have another go
+      vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&PC[0], 16);
+      return true;
     }
   }
-}
 
-uint32_t DoLoad32(uint64_t Addr) {
-  uint64_t AlignmentMask = 0b1111;
-  if ((Addr & AlignmentMask) > 12) {
-    // Address crosses over 16byte threshold
-    // Needs dual 32bit load
-    uint64_t Alignment = Addr & 0b11;
-    Addr &= ~0b11ULL;
-
-    uint64_t AddrUpper = Addr + 4;
-
-    // Careful ordering here
-    uint32_t ActualUpper = LoadAcquire32(AddrUpper);
-    uint32_t ActualLower = LoadAcquire32(Addr);
-
-    uint64_t Result = ActualUpper;
-    Result <<= 32;
-    Result |= ActualLower;
-    return Result >> (Alignment * 8);
-  }
-  else {
-    AlignmentMask = 0b111;
-    if ((Addr & AlignmentMask) >= 5) {
-      // Crosses 8byte boundary
-      // Needs 128bit load
-      // Fits within a 16byte region
-      uint64_t Alignment = Addr & 0b1111;
-      Addr &= ~0b1111ULL;
-
-      __uint128_t TmpResult = LoadAcquire128(Addr);
-
-      return TmpResult >> (Alignment * 8);
-    }
-    else {
-      // Fits within 8byte boundary
-      // Only needs 64bit CAS
-      // Alignments can be [1,5)
-      uint64_t Alignment = Addr & AlignmentMask;
-      Addr &= ~AlignmentMask;
-
-      std::atomic<uint64_t> *Atomic = reinterpret_cast<std::atomic<uint64_t>*>(Addr);
-      uint64_t TmpResult = Atomic->load();
-
-      return TmpResult >> (Alignment * 8);
-    }
-  }
-}
-
-uint64_t DoLoad64(uint64_t Addr) {
-  uint64_t AlignmentMask = 0b1111;
-  if ((Addr & AlignmentMask) > 8) {
-    uint64_t Alignment = Addr & 0b111;
-    Addr &= ~0b111ULL;
-    uint64_t AddrUpper = Addr + 8;
-
-    // Crosses a 16byte boundary
-    // Needs two 8 byte loads
-    uint64_t ActualUpper{};
-    uint64_t ActualLower{};
-    // Careful ordering here
-    ActualUpper = LoadAcquire64(AddrUpper);
-    ActualLower = LoadAcquire64(Addr);
-
-    __uint128_t Result = ActualUpper;
-    Result <<= 64;
-    Result |= ActualLower;
-    return Result >> (Alignment * 8);
-  }
-  else {
-    // Fits within a 16byte region
-    uint64_t Alignment = Addr & AlignmentMask;
-    Addr &= ~AlignmentMask;
-    __uint128_t TmpResult = LoadAcquire128(Addr);
-    uint64_t Result = TmpResult >> (Alignment * 8);
-    return Result;
-  }
-}
-
-std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
-  // Any misalignment here means we cross a 16byte boundary
-  // So we need two 128bit loads
-  uint64_t Alignment = Addr & 0b1111;
-  Addr &= ~0b1111ULL;
-  uint64_t AddrUpper = Addr + 16;
-
-  union AlignedData {
-    struct {
-      __uint128_t Lower;
-      __uint128_t Upper;
-    } Large;
-    struct {
-      uint8_t Data[32];
-    } Bytes;
-  };
-
-  AlignedData *Data = reinterpret_cast<AlignedData*>(alloca(sizeof(AlignedData)));
-  Data->Large.Upper = LoadAcquire128(AddrUpper);
-  Data->Large.Lower = LoadAcquire128(Addr);
-
-  uint64_t ResultLower{}, ResultUpper{};
-  memcpy(&ResultLower, &Data->Bytes.Data[Alignment], sizeof(uint64_t));
-  memcpy(&ResultUpper, &Data->Bytes.Data[Alignment + sizeof(uint64_t)], sizeof(uint64_t));
-  return {ResultLower, ResultUpper};
+  return false;
 }
 
 template <typename T>
@@ -1205,7 +1279,6 @@ uint64_t DoCAS64(
 
 static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg) {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
   uint64_t Addr = mcontext->regs[AddressReg];
 
@@ -1287,7 +1360,6 @@ static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desir
 }
 
 bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
   if (info->si_code != BUS_ADRALN) {
@@ -1648,8 +1720,7 @@ bool HandleAtomicLoad128(void *_ucontext, void *_info, uint32_t Instr) {
 static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
 {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-  
+
   // ARMv8.0 CAS
   // [1] ldaxrb(TMP2.W(), MemOperand(MemSrc))
   // [2] cmp (TMP2.W(), Expected.W())
@@ -1660,12 +1731,12 @@ static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
   // [7] b
   // [8] mov (.., TMP2.W());
   // [9] clrex
-  
+
   uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
   uint32_t Instr = PC[0];
   uint32_t Size = 1 << (Instr >> 30);
   uint32_t AddressReg = GetRnReg(Instr);
-  uint32_t ResultReg = GetRdReg(Instr); //TMP2 
+  uint32_t ResultReg = GetRdReg(Instr); //TMP2
   uint32_t DesiredReg = 0;
   uint32_t ExpectedReg = 0;
   for (size_t i = 1; i < 6; ++i) {
@@ -1684,7 +1755,7 @@ static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
   }
   //set up CASAL by doing mov(TMP2, Expected)
   mcontext->regs[ResultReg] = mcontext->regs[ExpectedReg];
-  
+
   if(RunCASAL(_ucontext, _info, Size, DesiredReg, ResultReg, AddressReg)) {
     return 7 * sizeof(uint32_t); //jump to mov to allocated register
   } else {
@@ -2073,8 +2144,6 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
     uint32_t Size = (Instr & 0xC000'0000) >> 30;
     uint32_t AddrReg = (Instr >> 5) & 0x1F;
     uint32_t DataReg = Instr & 0x1F;
-    uint32_t DMB = 0b1101'0101'0000'0011'0011'0000'1011'1111 |
-      0b1011'0000'0000; // Inner shareable all
     if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00 || // LDAR*
         (Instr & 0x3F'FF'FC'00) == 0x38'BF'C0'00) { // LDAPR*
       if (ParanoidTSO) {
@@ -2133,8 +2202,13 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         return true;
       }
       else {
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-        return false;
+        if (FEXCore::ArchHelpers::Arm64::HandleAtomicVectorStore(ucontext, info, Instr)) {
+          return true;
+        }
+        else {
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+          return false;
+        }
       }
     }
     else if ((Instr & FEXCore::ArchHelpers::Arm64::STLXP_MASK) == FEXCore::ArchHelpers::Arm64::STLXP_INST) { // STLXP
