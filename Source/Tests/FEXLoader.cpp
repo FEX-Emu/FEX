@@ -478,8 +478,11 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::x32::MemAllocator> Allocator;
+  FEXCore::Allocator::PtrCache *Base48Bit{};
 
   if (Loader.Is64BitMode()) {
+    // Destroy the 48th bit if it exists
+    Base48Bit = FEXCore::Allocator::Steal48BitVA();
     if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset);
     }, [](void *addr, size_t length) {
@@ -619,6 +622,7 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::UnInstallHandlers();
 
   FEXCore::Allocator::ClearHooks();
+  FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
   // Allocator is now original system allocator
 
   FEXCore::Telemetry::Shutdown(ProgramName);
