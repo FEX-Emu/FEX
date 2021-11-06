@@ -7,9 +7,12 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUID.h>
+#include "Common/StringConv.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/HostFeatures.h"
+#include "Utils/FileLoading.h"
+
 #include "git_version.h"
 
 #include <cstring>
@@ -45,6 +48,63 @@ static uint32_t GetCycleCounterFrequency() {
       : [Res] "=r" (Result));
   return Result;
 }
+
+static bool GetHostHybridFlag() {
+  int MaxCPUs = 64;
+  size_t AllocSize = CPU_ALLOC_SIZE(MaxCPUs);
+  cpu_set_t *Set = CPU_ALLOC(MaxCPUs);
+  CPU_ZERO_S(AllocSize, Set);
+
+  int Result{};
+  for (;;) {
+    Result = sched_getaffinity(0, AllocSize, Set);
+    if (Result == 0 ||
+        (Result == -1 && errno != EINVAL)) {
+      break;
+    }
+
+    MaxCPUs <<= 1;
+    CPU_FREE(Set);
+    Set = CPU_ALLOC(MaxCPUs);
+    AllocSize = CPU_ALLOC_SIZE(MaxCPUs);
+    CPU_ZERO_S(AllocSize, Set);
+  }
+
+  if (Result != 0) {
+    return false;
+  }
+
+  int CPUs = CPU_COUNT_S(AllocSize, Set);
+
+  bool Hybrid = false;
+  uint64_t MIDR{};
+  for (int i = 0; i < CPUs; ++i) {
+    if (CPU_ISSET_S(i, AllocSize, Set)) {
+      std::error_code ec{};
+      std::string MIDRPath = "/sys/devices/system/cpu/cpu" + std::to_string(i) + "/regs/identification/midr_el1";
+      if (std::filesystem::exists(MIDRPath, ec)) {
+        std::vector<char> Data{};
+        // Needs to be a fixed size since depending on kernel it will try to read a full page of data and fail
+        // Only read 18 bytes for a 64bit value prefixed with 0x
+        if (FEXCore::FileLoading::LoadFile(Data, MIDRPath, 18)) {
+          uint64_t NewMIDR{};
+          if (FEXCore::StrConv::Conv(&Data.at(0), &NewMIDR)) {
+            if (MIDR != 0 && MIDR != NewMIDR) {
+              // CPU mismatch, claim hybrid
+              Hybrid = true;
+              break;
+            }
+            MIDR = NewMIDR;
+          }
+        }
+      }
+    }
+  }
+
+  CPU_FREE(Set);
+  return Hybrid;
+}
+
 #else
 static uint32_t GetCycleCounterFrequency() {
   uint32_t eax, ebx, ecx, edx;
@@ -58,6 +118,19 @@ static uint32_t GetCycleCounterFrequency() {
   }
   return 0;
 }
+
+static bool GetHostHybridFlag() {
+  uint32_t eax, ebx, ecx, edx;
+  __cpuid(0, eax, ebx, ecx, edx);
+  if (eax >= 0x7) {
+    __cpuid(0x7, eax, ebx, ecx, edx);
+    // Bit 15 of edx claims hybrid CPU
+    return (edx & (1U << 15)) != 0;
+  }
+
+  return false;
+}
+
 #endif
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) {
@@ -382,29 +455,29 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (0 <<  6) | // Reserved
       (0 <<  7) | // Reserved
       (0 <<  8) | // AVX512_VP2INTERSECT
-      (0 <<  9) | // Reserved
+      (0 <<  9) | // SRBDS_CTRL (Special Register Buffer Data Sampling Mitigations)
       (0 << 10) | // VERW clears CPU buffers
       (0 << 11) | // Reserved
       (0 << 12) | // Reserved
-      (0 << 13) | // Reserved
+      (0 << 13) | // TSX Force Abort (TSX will force abort if attempted)
       (0 << 14) | // SERIALIZE instruction
-      (0 << 15) | // Reserved
-      (0 << 16) | // Reserved
+      ((Hybrid ? 1U : 0U) << 15) | // Hybrid
+      (0 << 16) | // TSXLDTRK (TSX Suspend load address tracking) - Allows untracked memory loads inside TSX region
       (0 << 17) | // Reserved
       (0 << 18) | // Intel PCONFIG
       (0 << 19) | // Intel Architectural LBR
       (0 << 20) | // Intel CET
       (0 << 21) | // Reserved
-      (0 << 22) | // Reserved
-      (0 << 23) | // Reserved
-      (0 << 24) | // Reserved
-      (0 << 25) | // Reserved
-      (0 << 26) | // Reserved
-      (0 << 27) | // Reserved
+      (0 << 22) | // AMX-BF16 - Tile computation on bfloat16
+      (0 << 23) | // AVX512_FP16 - FP16 AVX512 instructions
+      (0 << 24) | // AMX-tile - If AMX is implemented
+      (0 << 25) | // AMX-int8 - AMX on 8-bit integers
+      (0 << 26) | // IBRS_IBPB - Speculation control
+      (0 << 27) | // STIBP - Single Thread Indirect Branch Predictor, Part of IBC
       (0 << 28) | // L1D Flush
-      (0 << 29) | // Arch capabilities
-      (0 << 30) | // Reserved
-      (0 << 31);  // Reserved
+      (0 << 29) | // Arch capabilities - Speculative side channel mitigations
+      (0 << 30) | // Arch capabilities - MSR module specific
+      (0 << 31);  // SSBD - Speculative Store Bypass Disable
   }
 
   return Res;
@@ -885,6 +958,9 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
 #endif
   // 0x8000'001E: Extended APIC ID
   // 0x8000'001F: AMD Secure Encryption
+
+  // Setup some state tracking
+  Hybrid = GetHostHybridFlag();
 }
 }
 
