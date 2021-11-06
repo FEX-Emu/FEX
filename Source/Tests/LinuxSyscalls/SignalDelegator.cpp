@@ -82,29 +82,7 @@ namespace FEX::HLE {
 
   void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
-    siginfo_t *SigInfo = static_cast<siginfo_t*>(Info);
     SignalHandler &Handler = HostHandlers[Signal];
-
-    if (Signal == SIGCHLD) {
-      bool StopOrResume = SigInfo->si_code == CLD_STOPPED || SigInfo->si_code == CLD_CONTINUED || SigInfo->si_code == CLD_TRAPPED;
-
-      // Do some special handling around this signal
-      // If the guest has a signal handler installed with SA_NOCLDSTOP or SA_NOCHLDWAIT then
-      // handle carefully
-      if (Handler.GuestAction.sa_flags & SA_NOCLDSTOP &&
-          StopOrResume) {
-        // SA_NOCLDSTOP blocks SIGCHLD when si_code is CLD_STOPPED/CLD_CONTINUED/CLD_TRAPPED
-        // in that case, drop the signal
-        return;
-      }
-
-      if (Handler.GuestAction.sa_flags & SA_NOCLDWAIT) {
-        // Linux will still generate a signal for this
-        // POSIX leaves it unspecific
-        // "do not transform children in to zombies when they terminate"
-        // XXX: Handle this
-      }
-    }
 
     ucontext_t* _context = (ucontext_t*)UContext;
 
