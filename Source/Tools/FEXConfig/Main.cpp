@@ -129,15 +129,14 @@ namespace {
     while (!INotifyShutdown) {
       constexpr size_t DATA_SIZE = (16 * (sizeof(struct inotify_event) + NAME_MAX + 1));
       char buf[DATA_SIZE];
-      struct timeval tv{};
-      // 50 ms
-      tv.tv_usec = 50000;
-
       int Ret{};
       do {
         fd_set Set{};
         FD_ZERO(&Set);
         FD_SET(INotifyFD, &Set);
+        struct timeval tv{};
+        // 50 ms
+        tv.tv_usec = 50000;
         Ret = select(INotifyFD + 1, &Set, nullptr, nullptr, &tv);
       } while (Ret == 0 && INotifyFD != -1);
 
