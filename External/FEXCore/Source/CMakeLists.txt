@@ -141,6 +141,7 @@ set (SRCS
   Interface/IR/Passes/SyscallOptimization.cpp
   Utils/Allocator.cpp
   Utils/Allocator/64BitAllocator.cpp
+  Utils/FileLoading.cpp
   Utils/LogManager.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp
