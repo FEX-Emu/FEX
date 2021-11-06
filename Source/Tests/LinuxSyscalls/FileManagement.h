@@ -63,12 +63,13 @@ public:
 
   void UpdatePID(uint32_t PID) { CurrentPID = PID; }
 
+  std::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
+
 private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
   std::mutex FDLock;
   std::unordered_map<int32_t, std::string> FDToNameMap;
-  std::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
   std::map<std::string, std::string, std::less<>> ThunkOverlays;
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
