@@ -911,10 +911,8 @@ DEF_OP(ParanoidStoreMemTSO) {
           Label B;
           bind(&B);
 
-          nop(); // < Overwritten with DMB
           // ldaxp must not have both the destination registers be the same
-          ldaxp(xzr, TMP3, MemSrc); // <- Can hit SIGBUS
-          nop(); // < Overwritten with DMB
+          ldaxp(xzr, TMP3, MemSrc); // <- Can hit SIGBUS. Overwritten with DMB
           stlxp(TMP3, TMP1, TMP2, MemSrc); // <- Can also hit SIGBUS
           cbnz(TMP3, &B); // < Overwritten with DMB
           break;
