@@ -2333,6 +2333,39 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
+  // Handles SARX, SHLX, and SHRX
+
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Shift = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  const auto OperandSize = GetSrcSize(Op) * 8;
+
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op
+  auto SanitizedShift = [&] {
+    if (OperandSize == 64) {
+      return _And(Shift, _Constant(0x3F));
+    } else {
+      return _And(Shift, _Constant(0x1F));
+    }
+  }();
+
+  auto* Result = [&]() -> OrderedNode* {
+    // SARX
+    if (Op->OP == 0x6F7) {
+      return _Ashr(Src, SanitizedShift);
+    }
+    // SHLX
+    if (Op->OP == 0x5F7) {
+      return _Lshl(Src, SanitizedShift);
+    }
+
+    // SHRX
+    return _Lshr(Src, SanitizedShift);
+  }();
+
+  StoreResult(GPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto Size = GetSrcSize(Op) * 8;
@@ -6002,6 +6035,9 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPD(2, 0b00, 0xF2), 1, &OpDispatchBuilder::ANDNBMIOp},
     {OPD(2, 0b00, 0xF7), 1, &OpDispatchBuilder::BEXTRBMIOp},
+    {OPD(2, 0b01, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
+    {OPD(2, 0b10, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
+    {OPD(2, 0b11, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
   };
 #undef OPD
 

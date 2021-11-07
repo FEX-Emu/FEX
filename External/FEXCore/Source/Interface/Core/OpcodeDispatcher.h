@@ -324,12 +324,15 @@ public:
   template<size_t ElementSize>
   void PSIGN(OpcodeArgs);
 
-  // BMI Ops
+  // BMI1 Ops
   void ANDNBMIOp(OpcodeArgs);
   void BEXTRBMIOp(OpcodeArgs);
   void BLSIBMIOp(OpcodeArgs);
   void BLSMSKBMIOp(OpcodeArgs);
   void BLSRBMIOp(OpcodeArgs);
+
+  // BMI2 Ops
+  void BMI2Shift(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>
