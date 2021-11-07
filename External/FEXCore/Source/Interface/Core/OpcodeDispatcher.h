@@ -328,6 +328,7 @@ public:
   void ANDNBMIOp(OpcodeArgs);
   void BEXTRBMIOp(OpcodeArgs);
   void BLSIBMIOp(OpcodeArgs);
+  void BLSMSKBMIOp(OpcodeArgs);
   void BLSRBMIOp(OpcodeArgs);
 
   // X87 Ops
