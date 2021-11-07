@@ -365,7 +365,8 @@ uint64_t FileManager::Stat(const char *pathname, void *buf) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  // Stat follows symlinks
+  auto Path = GetEmulatedPath(SelfPath, true);
   if (!Path.empty()) {
     uint64_t Result = ::stat(Path.c_str(), reinterpret_cast<struct stat*>(buf));
     if (Result != -1)
@@ -378,7 +379,8 @@ uint64_t FileManager::Lstat(const char *pathname, void *buf) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  // lstat does not follow symlinks
+  auto Path = GetEmulatedPath(SelfPath, false);
   if (!Path.empty()) {
     uint64_t Result = ::lstat(Path.c_str(), reinterpret_cast<struct stat*>(buf));
     if (Result != -1)
@@ -392,7 +394,8 @@ uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  // Access follows symlinks
+  auto Path = GetEmulatedPath(SelfPath, true);
   if (!Path.empty()) {
     uint64_t Result = ::access(Path.c_str(), mode);
     if (Result != -1)
