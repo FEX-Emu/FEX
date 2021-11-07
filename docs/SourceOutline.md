@@ -1,4 +1,4 @@
-# FEX-2110
+# FEX-2111
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -28,6 +28,19 @@ IR to host code generation
 - [MiscOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/MiscOps.cpp)
 - [MoveOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/MoveOps.cpp)
 - [VectorOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/VectorOps.cpp)
+
+#### interpreter
+- [ALUOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/ALUOps.cpp)
+- [AtomicOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/AtomicOps.cpp)
+- [BranchOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/BranchOps.cpp)
+- [ConversionOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/ConversionOps.cpp)
+- [EncryptionOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/EncryptionOps.cpp)
+- [F80Ops.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/F80Ops.cpp)
+- [FlagOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/FlagOps.cpp)
+- [MemoryOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/MemoryOps.cpp)
+- [MiscOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/MiscOps.cpp)
+- [MoveOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/MoveOps.cpp)
+- [VectorOps.cpp](../External/FEXCore/Source/Interface/Core/Interpreter/VectorOps.cpp)
 
 #### shared
 - [CPUBackend.h](../External/FEXCore/include/FEXCore/Core/CPUBackend.h)
