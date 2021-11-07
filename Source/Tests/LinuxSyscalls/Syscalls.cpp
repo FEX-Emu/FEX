@@ -116,12 +116,14 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
   std::error_code ec;
   std::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
+
   // Check the rootfs if it is available first
   if (pathname[0] == '/') {
-    Filename = RootFS  + pathname;
-
-    bool exists = std::filesystem::exists(Filename, ec);
-    if (ec || !exists) {
+    auto Path = FEX::HLE::_SyscallHandler->FM.GetEmulatedPath(pathname, true);
+    if (!Path.empty() && std::filesystem::exists(Path, ec)) {
+      Filename = Path;
+    }
+    else {
       Filename = pathname;
     }
   }
