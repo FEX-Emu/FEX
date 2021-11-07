@@ -2261,6 +2261,78 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
+  // Equivalent to: (Src - 1) ^ Src
+
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Result = _Xor(_Sub(Src, One), Src);
+
+  StoreResult(GPRClass, Op, Result, -1);
+
+  // Now for the flags.
+  SetRFLAG<X86State::RFLAG_ZF_LOC>(Zero);
+  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
+  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
+  if (CTX->Config.ABINoPF) {
+    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
+  } else {
+    SetRFLAG<X86State::RFLAG_PF_LOC>(Zero);
+  }
+
+  auto CFOp = _Select(IR::COND_EQ,
+                      Src, Zero,
+                      Zero, One);
+  SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
+}
+
+void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
+  // Equivalent to: (Src - 1) & Src
+
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto Result = _And(_Sub(Src, One), Src);
+
+  StoreResult(GPRClass, Op, Result, -1);
+
+  // Now for flags.
+  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
+  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
+  if (CTX->Config.ABINoPF) {
+    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
+  } else {
+    SetRFLAG<X86State::RFLAG_PF_LOC>(Zero);
+  }
+
+  // ZF
+  {
+    auto ZFOp = _Select(IR::COND_EQ,
+                        Result, Zero,
+                        One, Zero);
+    SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFOp);
+  }
+
+  // CF
+  {
+    auto CFOp = _Select(IR::COND_EQ,
+                        Src, Zero,
+                        Zero, One);
+    SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
+  }
+
+  // SF
+  {
+    auto SignBit = _Constant((GetSrcSize(Op) * 8) - 1);
+    auto SFOp = _Lshr(Result, SignBit);
+
+    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
+  }
+}
+
 void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto Size = GetSrcSize(Op) * 8;
@@ -5935,6 +6007,8 @@ constexpr uint16_t PF_F2 = 3;
 
   #define OPD(group, pp, opcode) (((group - X86Tables::InstType::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
     const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> VEXGroupTable = {
+      {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b001), 1, &OpDispatchBuilder::BLSRBMIOp},
+      {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b010), 1, &OpDispatchBuilder::BLSMSKBMIOp},
       {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b011), 1, &OpDispatchBuilder::BLSIBMIOp},
     };
   #undef OPD

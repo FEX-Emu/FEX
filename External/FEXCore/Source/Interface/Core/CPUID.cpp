@@ -381,7 +381,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (1 <<  0) | // FS/GS support
       (0 <<  1) | // TSC adjust MSR
       (0 <<  2) | // SGX
-      (0 <<  3) | // BMI1
+      (1 <<  3) | // BMI1
       (0 <<  4) | // Intel Hardware Lock Elison
       (0 <<  5) | // AVX2 support
       (1 <<  6) | // FPU data pointer updated only on exception
