@@ -1,5 +1,6 @@
 #include "Common/StringConv.h"
 #include "Common/Paths.h"
+#include "Utils/FileLoading.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -40,45 +41,6 @@ namespace DefaultValues {
 #include <FEXCore/Config/ConfigValues.inl>
 }
 
-static bool LoadConfigFile(std::vector<char> &Data, const std::string &Config) {
-  std::fstream ConfigFile;
-  ConfigFile.open(Config, std::ios::in);
-
-  if (!ConfigFile.is_open()) {
-    return false;
-  }
-
-  if (!ConfigFile.seekg(0, std::fstream::end)) {
-    LogMan::Msg::D("Couldn't load configuration file: Seek end");
-    return false;
-  }
-
-  auto FileSize = ConfigFile.tellg();
-  if (ConfigFile.fail()) {
-    LogMan::Msg::D("Couldn't load configuration file: tellg");
-    return false;
-  }
-
-  if (!ConfigFile.seekg(0, std::fstream::beg)) {
-    LogMan::Msg::D("Couldn't load configuration file: Seek beginning");
-    return false;
-  }
-
-  if (FileSize > 0) {
-    Data.resize(FileSize);
-    if (!ConfigFile.read(&Data.at(0), FileSize)) {
-      // Probably means permissions aren't set. Just early exit
-      return false;
-    }
-    ConfigFile.close();
-  }
-  else {
-    return false;
-  }
-
-  return true;
-}
-
 namespace JSON {
   struct JsonAllocator {
     jsonPool_t PoolObject;
@@ -99,7 +61,7 @@ namespace JSON {
 
   static void LoadJSonConfig(const std::string &Config, std::function<void(const char *Name, const char *ConfigSring)> Func) {
     std::vector<char> Data;
-    if (!LoadConfigFile(Data, Config)) {
+    if (!FEXCore::FileLoading::LoadFile(Data, Config)) {
       return;
     }
 
@@ -436,7 +398,7 @@ namespace JSON {
     const static std::string ContainerManager = "/run/host/container-manager";
     if (std::filesystem::exists(ContainerManager)) {
       std::vector<char> Manager{};
-      if (LoadConfigFile(Manager, ContainerManager)) {
+      if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
         std::string ManagerStr = Manager.data();
         ManagerStr = trim(ManagerStr);

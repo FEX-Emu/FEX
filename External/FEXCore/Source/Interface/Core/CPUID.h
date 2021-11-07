@@ -37,6 +37,7 @@ public:
   }
 private:
   FEXCore::Context::Context *CTX;
+  bool Hybrid{};
   FEX_CONFIG_OPT(Cores, THREADS);
 
   using FunctionHandler = std::function<FEXCore::CPUID::FunctionResults(uint32_t Leaf)>;
