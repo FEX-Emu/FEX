@@ -2366,6 +2366,40 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::ADXOp(OpcodeArgs) {
+  // Handles ADCX and ADOX
+
+  const bool IsADCX = Op->OP == 0x1F6;
+
+  auto* Flag = [&]() -> OrderedNode* {
+    if (IsADCX) {
+      return GetRFLAG(X86State::RFLAG_CF_LOC);
+    } else {
+      return GetRFLAG(X86State::RFLAG_OF_LOC);
+    }
+  }();
+
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  auto ALUOp = _Add(Src, Flag);
+  auto Result = _Add(Before, ALUOp);
+
+  StoreResult(GPRClass, Op, Result, -1);
+
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+  auto SelectOpLT = _Select(IR::COND_ULT, Result, Src, One, Zero);
+  auto SelectOpLE = _Select(IR::COND_ULE, Result, Src, One, Zero);
+  auto SelectFlag = _Select(IR::COND_EQ, Flag, One, SelectOpLE, SelectOpLT);
+
+  if (IsADCX) {
+    SetRFLAG<X86State::RFLAG_CF_LOC>(SelectFlag);
+  } else {
+    SetRFLAG<X86State::RFLAG_OF_LOC>(SelectFlag);
+  }
+}
+
 void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto Size = GetSrcSize(Op) * 8;
@@ -5895,6 +5929,8 @@ constexpr uint16_t PF_F2 = 3;
 #define OPD(prefix, opcode) ((prefix << 8) | opcode)
   constexpr uint16_t PF_38_NONE = 0;
   constexpr uint16_t PF_38_66   = 1;
+  constexpr uint16_t PF_38_F2   = 2;
+  constexpr uint16_t PF_38_F3   = 3;
 
   const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F38Table = {
     {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
@@ -5967,6 +6003,11 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
     {OPD(PF_38_66, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
 
+    {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(PF_38_66, 0xF6), 1, &OpDispatchBuilder::ADXOp},
+    {OPD(PF_38_F3, 0xF6), 1, &OpDispatchBuilder::ADXOp},
   };
 #undef OPD
 

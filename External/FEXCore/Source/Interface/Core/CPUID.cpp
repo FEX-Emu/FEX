@@ -397,7 +397,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (0 << 16) | // Reserved
       (0 << 17) | // Reserved
       (0 << 18) | // RDSEED
-      (0 << 19) | // ADCX and ADOX instructions
+      (1 << 19) | // ADCX and ADOX instructions
       (0 << 20) | // SMAP Supervisor mode access prevention and CLAC/STAC instructions
       (0 << 21) | // Reserved
       (0 << 22) | // Reserved
