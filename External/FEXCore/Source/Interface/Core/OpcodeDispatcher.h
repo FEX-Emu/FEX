@@ -334,6 +334,9 @@ public:
   // BMI2 Ops
   void BMI2Shift(OpcodeArgs);
 
+  // ADX Ops
+  void ADXOp(OpcodeArgs);
+
   // X87 Ops
   template<size_t width>
   void FLD(OpcodeArgs);
