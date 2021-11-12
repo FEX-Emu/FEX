@@ -8,6 +8,7 @@ $end_info$
 #include "Common/ArgumentLoader.h"
 #include "CommonCore/HostFactory.h"
 #include "HarnessHelpers.h"
+#include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
@@ -88,7 +89,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::InitializeContext(CTX);
 
-  std::unique_ptr<FEX::HLE::x32::MemAllocator> Allocator;
+  std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
 
   if (Loader.Is64BitMode()) {
     if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
@@ -106,7 +107,12 @@ int main(int argc, char **argv, char **const envp) {
       FEXCore::Allocator::SetupHooks();
     }
 
-    Allocator = FEX::HLE::x32::CreateAllocator(KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17));
+    if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+      Allocator = FEX::HLE::Create32BitAllocator();
+    }
+    else {
+      Allocator = FEX::HLE::CreatePassthroughAllocator();
+    }
 
     if (!Loader.MapMemory([&Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return Allocator->mmap(addr, length, prot, flags, fd, offset);

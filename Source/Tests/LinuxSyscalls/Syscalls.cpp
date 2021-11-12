@@ -9,6 +9,7 @@ $end_info$
 #include "Common/MathUtils.h"
 #include "Linux/Utils/ELFContainer.h"
 
+#include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
@@ -589,7 +590,7 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalD
   FEX::HLE::_SyscallHandler = this;
   HostKernelVersion = CalculateHostKernelVersion();
   GuestKernelVersion = CalculateGuestKernelVersion();
-
+  Alloc32Handler = FEX::HLE::Create32BitAllocator();
 }
 
 SyscallHandler::~SyscallHandler() {

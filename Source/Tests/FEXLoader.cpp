@@ -8,6 +8,7 @@ $end_info$
 #include "Common/ArgumentLoader.h"
 #include "Common/RootFSSetup.h"
 #include "ELFCodeLoader2.h"
+#include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
@@ -477,7 +478,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program).string());
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  std::unique_ptr<FEX::HLE::x32::MemAllocator> Allocator;
+  std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
   FEXCore::Allocator::PtrCache *Base48Bit{};
 
   if (Loader.Is64BitMode()) {
@@ -504,7 +505,12 @@ int main(int argc, char **argv, char **const envp) {
       FEXCore::Allocator::SetupHooks();
     }
 
-    Allocator = FEX::HLE::x32::CreateAllocator(Use32BitAllocator);
+    if (Use32BitAllocator) {
+      Allocator = FEX::HLE::Create32BitAllocator();
+    }
+    else {
+      Allocator = FEX::HLE::CreatePassthroughAllocator();
+    }
 
     if (!Loader.MapMemory([&Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
       return Allocator->mmap(addr, length, prot, flags, fd, offset);
