@@ -91,7 +91,7 @@ private:
   void DecodeModRM_16(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
   void DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);
 
-  const std::array<DecodeModRMPtr, 2> DecodeModRMs_Disp {
+  static constexpr std::array<DecodeModRMPtr, 2> DecodeModRMs_Disp{
     &FEXCore::Frontend::Decoder::DecodeModRM_64,
     &FEXCore::Frontend::Decoder::DecodeModRM_16,
   };
