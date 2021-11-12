@@ -1415,47 +1415,47 @@ void OpDispatchBuilder::LAHFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
-  enum OpType {
-    OP_CLEAR,
-    OP_SET,
-    OP_COMPLEMENT,
+  enum class OpType {
+    Clear,
+    Set,
+    Complement,
   };
   OpType Type;
   uint64_t Flag;
   switch (Op->OP) {
   case 0xF5: // CMC
     Flag= FEXCore::X86State::RFLAG_CF_LOC;
-    Type = OP_COMPLEMENT;
+    Type = OpType::Complement;
   break;
   case 0xF8: // CLC
     Flag= FEXCore::X86State::RFLAG_CF_LOC;
-    Type = OP_CLEAR;
+    Type = OpType::Clear;
   break;
   case 0xF9: // STC
     Flag= FEXCore::X86State::RFLAG_CF_LOC;
-    Type = OP_SET;
+    Type = OpType::Set;
   break;
   case 0xFC: // CLD
     Flag= FEXCore::X86State::RFLAG_DF_LOC;
-    Type = OP_CLEAR;
+    Type = OpType::Clear;
   break;
   case 0xFD: // STD
     Flag= FEXCore::X86State::RFLAG_DF_LOC;
-    Type = OP_SET;
+    Type = OpType::Set;
   break;
   }
 
   OrderedNode *Result{};
   switch (Type) {
-  case OP_CLEAR: {
+  case OpType::Clear: {
     Result = _Constant(0);
   break;
   }
-  case OP_SET: {
+  case OpType::Set: {
     Result = _Constant(1);
   break;
   }
-  case OP_COMPLEMENT: {
+  case OpType::Complement: {
     auto RFLAG = GetRFLAG(Flag);
     Result = _Xor(RFLAG, _Constant(1));
   break;
