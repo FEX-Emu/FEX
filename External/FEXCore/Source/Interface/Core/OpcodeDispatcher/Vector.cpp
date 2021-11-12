@@ -1443,7 +1443,7 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(ZeroConst);
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
 
-  flagsOp = FLAGS_OP_FCMP;
+  flagsOp = SelectionFlag::FCMP;
   flagsOpDest = Src1;
   flagsOpSrc = Src2;
   flagsOpSize = GetSrcSize(Op);

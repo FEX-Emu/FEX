@@ -886,7 +886,7 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
   }
 
   // Try folding the flags generation in the select op
-  if (flagsOp == FLAGS_OP_CMP) {
+  if (flagsOp == SelectionFlag::CMP) {
     switch(OP) {
       // SGT
       case 0xF: SrcCond = _Select(FEXCore::IR::COND_SGT, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
@@ -918,13 +918,13 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
       //default: printf("Missed Condition %04X OP_CMP\n", OP); break;
     }
   }
-  else if (flagsOp == FLAGS_OP_AND) {
+  else if (flagsOp == SelectionFlag::AND) {
     switch(OP) {
       case 0x4: SrcCond = _Select(FEXCore::IR::COND_EQ, flagsOpDest, ZeroConst, TrueValue, FalseValue, flagsOpSize); break;
       case 0x5: SrcCond = _Select(FEXCore::IR::COND_NEQ, flagsOpDest, ZeroConst, TrueValue, FalseValue, flagsOpSize); break;
       //default: printf("Missed Condition %04X OP_AND\n", OP); break;
     }
-  } else if (flagsOp == FLAGS_OP_FCMP) {
+  } else if (flagsOp == SelectionFlag::FCMP) {
     /*
       x86:ZCP
         unordered { 11 1 }
@@ -1253,13 +1253,11 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
-  if (Size >=4) {
-    flagsOp = FLAGS_OP_AND;
-    flagsOpDest = ALUOp;
+  flagsOp = SelectionFlag::AND;
+  flagsOpDest = ALUOp;
+  if (Size >= 4) {
     flagsOpSize = Size;
   } else {
-    flagsOp = FLAGS_OP_AND;
-    flagsOpDest = ALUOp;
     flagsOpSize = 4;  // assuming ZEXT semantics here
   }
 }
@@ -1325,14 +1323,13 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
 
   GenerateFlags_SUB(Op, Result, Dest, Src);
 
+  flagsOp = SelectionFlag::CMP;
   if (Size >= 4) {
     flagsOpSize = Size;
-    flagsOp = FLAGS_OP_CMP;
     flagsOpDestSigned = flagsOpDest = Dest;
     flagsOpSrcSigned = flagsOpSrc = Src;
   } else {
     flagsOpSize = 4;
-    flagsOp = FLAGS_OP_CMP;
     flagsOpDestSigned = _Sext(Size * 8, flagsOpDest = Dest);
     flagsOpSrcSigned = _Sext(Size * 8, flagsOpSrc = Src);
   }

@@ -26,18 +26,20 @@ class OpDispatchBuilder final : public IREmitter {
 friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
 
-enum {
-  FLAGS_OP_NONE,  // must rely on x86 flags
-  FLAGS_OP_CMP,   // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
-  FLAGS_OP_AND,   // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
-  FLAGS_OP_FCMP,  // flags were set by a ucomis* / comis*
+enum class SelectionFlag {
+  Nothing,  // must rely on x86 flags
+  CMP,      // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
+  AND,      // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
+  FCMP,     // flags were set by a ucomis* / comis*
 };
 
 public:
-  int flagsOp;
-  uint8_t flagsOpSize;
-  OrderedNode* flagsOpDest, *flagsOpSrc;
-  OrderedNode* flagsOpDestSigned, *flagsOpSrcSigned;
+  SelectionFlag flagsOp{};
+  uint8_t flagsOpSize{};
+  OrderedNode* flagsOpDest{};
+  OrderedNode* flagsOpSrc{};
+  OrderedNode* flagsOpDestSigned{};
+  OrderedNode* flagsOpSrcSigned{};
 
   FEXCore::Context::Context *CTX{};
   bool ShouldDump {false};
@@ -69,7 +71,7 @@ public:
   }
 
   void StartNewBlock() {
-    flagsOp = FLAGS_OP_NONE;
+    flagsOp = SelectionFlag::Nothing;
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
@@ -519,12 +521,12 @@ private:
 
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {
-    flagsOp = FLAGS_OP_NONE;
+    flagsOp = SelectionFlag::Nothing;
     _StoreFlag(_Bfe(1, 0, Value), BitOffset);
   }
 
   void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
-    flagsOp = FLAGS_OP_NONE;
+    flagsOp = SelectionFlag::Nothing;
     _StoreFlag(_Bfe(1, 0, Value), BitOffset);
   }
 
