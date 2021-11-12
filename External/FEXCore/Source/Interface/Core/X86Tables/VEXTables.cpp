@@ -479,7 +479,7 @@ void InitializeVEXTables() {
 
     {OPD(3, 0b01, 0xDF), 1, X86InstInfo{"VAESKEYGENASSIST", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(3, 0b11, 0xF0), 1, X86InstInfo{"RORX", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b11, 0xF0), 1, X86InstInfo{"RORX", TYPE_INST, FLAGS_MODRM, 1, nullptr}},
 
     // VEX Map 4 - 31 (Reserved)
   };
