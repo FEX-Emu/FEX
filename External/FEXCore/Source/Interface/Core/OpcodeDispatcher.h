@@ -515,8 +515,10 @@ private:
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align);
 
-  uint8_t GetDstSize(FEXCore::X86Tables::DecodedOp Op) const;
-  uint8_t GetSrcSize(FEXCore::X86Tables::DecodedOp Op) const;
+  uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
+  uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
+  uint8_t GetDstBitSize(X86Tables::DecodedOp Op) const;
+  uint8_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
 
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {

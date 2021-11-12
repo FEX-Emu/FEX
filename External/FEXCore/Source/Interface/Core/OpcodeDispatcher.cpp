@@ -1621,7 +1621,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   else {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
@@ -1649,25 +1649,26 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
 void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Shift &= 0x3F;
-  else
+  } else {
     Shift &= 0x1F;
+  }
 
   OrderedNode *Src = _Constant(Size, Shift);
-
   OrderedNode *Result = _Lshl(Dest, Src);
 
   StoreResult(GPRClass, Op, Result, -1);
 
-  if (Size < 32)
+  if (Size < 32) {
     Result = _Bfe(Size, 0, Result);
+  }
 
   GenerateFlags_ShiftLeftImmediate(Op, Result, Dest, Shift);
 }
@@ -1684,7 +1685,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
@@ -1708,23 +1709,22 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
 void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Shift &= 0x3F;
-  else
+  } else {
     Shift &= 0x1F;
+  }
 
   OrderedNode *Src = _Constant(Size, Shift);
-
   auto ALUOp = _Lshr(Dest, Src);
 
   StoreResult(GPRClass, Op, ALUOp, -1);
-
   GenerateFlags_ShiftRightImmediate(Op, ALUOp, Dest, Shift);
 }
 
@@ -1734,22 +1734,22 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   OrderedNode *Shift = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], 1, Op->Flags, -1);
 
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Shift = _And(Shift, _Constant(0x3F));
-  else
+  } else {
     Shift = _And(Shift, _Constant(0x1F));
+  }
 
   auto ShiftRight = _Sub(_Constant(Size), Shift);
 
-  OrderedNode *Res{};
   auto Tmp1 = _Lshl(Dest, Shift);
   Tmp1.first->Header.Size = 8;
   auto Tmp2 = _Lshr(Src, ShiftRight);
 
-  Res = _Or(Tmp1, Tmp2);
+  OrderedNode *Res = _Or(Tmp1, Tmp2);
 
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
@@ -1769,8 +1769,9 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   SetFalseJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
 
-  if (Size != 64)
+  if (Size != 64) {
     Res = _Bfe(Size, 0, Res);
+  }
   GenerateFlags_ShiftLeft(Op, Res, Dest, Shift);
 
   auto Jump = _Jump();
@@ -1785,31 +1786,33 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Shift &= 0x3F;
-  else
+  } else {
     Shift &= 0x1F;
+  }
 
   if (Shift != 0) {
     OrderedNode *ShiftLeft = _Constant(Shift);
     auto ShiftRight = _Constant(Size - Shift);
 
-    OrderedNode *Res{};
     auto Tmp1 = _Lshl(Dest, ShiftLeft);
     Tmp1.first->Header.Size = 8;
     auto Tmp2 = _Lshr(Src, ShiftRight);
-    Res = _Or(Tmp1, Tmp2);
+
+    OrderedNode *Res = _Or(Tmp1, Tmp2);
 
     StoreResult(GPRClass, Op, Res, -1);
 
-    if (Size != 64)
+    if (Size != 64) {
       Res = _Bfe(Size, 0, Res);
+    }
     GenerateFlags_ShiftLeftImmediate(Op, Res, Dest, Shift);
   }
   else if (Shift == 0 && Size == 32) {
@@ -1824,23 +1827,22 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
 
   OrderedNode *Shift = _LoadContext(1, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RCX]), GPRClass);
 
-  auto Size = GetDstSize(Op) * 8;
+  const auto Size = GetDstBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Shift = _And(Shift, _Constant(0x3F));
-  else
+  } else {
     Shift = _And(Shift, _Constant(0x1F));
-
-
-  OrderedNode *Res{};
+  }
 
   auto ShiftLeft = _Sub(_Constant(Size), Shift);
 
   auto Tmp1 = _Lshr(Dest, Shift);
   auto Tmp2 = _Lshl(Src, ShiftLeft);
   Tmp2.first->Header.Size = 8;
-  Res = _Or(Tmp1, Tmp2);
+
+  OrderedNode *Res = _Or(Tmp1, Tmp2);
 
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
@@ -1858,9 +1860,9 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   SetFalseJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
 
-  if (Size != 64)
+  if (Size != 64) {
     Res = _Bfe(Size, 0, Res);
-
+  }
   GenerateFlags_ShiftRight(Op, Res, Dest, Shift);
 
   auto Jump = _Jump();
@@ -1874,31 +1876,33 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
-    Shift = Op->Src[1].Data.Literal.Value & 0x3F;
-  else
-    Shift = Op->Src[1].Data.Literal.Value & 0x1F;
+  if (Size == 64) {
+    Shift &= 0x3F;
+  } else {
+    Shift &= 0x1F;
+  }
 
   if (Shift != 0) {
     OrderedNode *ShiftRight = _Constant(Shift);
     auto ShiftLeft = _Constant(Size - Shift);
 
-    OrderedNode *Res{};
     auto Tmp1 = _Lshr(Dest, ShiftRight);
     auto Tmp2 = _Lshl(Src, ShiftLeft);
     Tmp2.first->Header.Size = 8;
-    Res = _Or(Tmp1, Tmp2);
+
+    OrderedNode *Res = _Or(Tmp1, Tmp2);
 
     StoreResult(GPRClass, Op, Res, -1);
 
-    if (Size != 64)
+    if (Size != 64) {
       Res = _Bfe(Size, 0, Res);
+    }
     GenerateFlags_ShiftRightImmediate(Op, Res, Dest, Shift);
   }
   else if (Shift == 0 && Size == 32) {
@@ -1912,20 +1916,18 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
   OrderedNode *Src;
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   if constexpr (SHR1Bit) {
     Src = _Constant(Size, 1);
-  }
-  else {
+  } else {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
     Src = _And(Src, _Constant(Size, 0x3F));
-  }
-  else {
+  } else {
     Src = _And(Src, _Constant(Size, 0x1F));
   }
 
@@ -1938,8 +1940,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
 
   if constexpr (SHR1Bit) {
     GenerateFlags_SignShiftRightImmediate(Op, Result, Dest, 1);
-  }
-  else {
+  } else {
     GenerateFlags_SignShiftRight(Op, Result, Dest, Src);
   }
 }
@@ -1947,16 +1948,17 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
 void OpDispatchBuilder::ASHRImmediateOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Shift &= 0x3F;
-  else
+  } else {
     Shift &= 0x1F;
+  }
 
   if (Size < 32) {
     Dest = _Sbfe(Size, 0, Dest);
@@ -1975,19 +1977,17 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
   OrderedNode *Src;
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  auto Size = GetSrcSize(Op) * 8;
+  const uint32_t Size = GetSrcBitSize(Op);
   if constexpr (Is1Bit) {
-    Src = _Constant(std::max(32, Size), 1);
-  }
-  else {
+    Src = _Constant(std::max(32U, Size), 1);
+  } else {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
     Src = _And(Src, _Constant(Size, 0x3F));
-  }
-  else {
+  } else {
     Src = _And(Src, _Constant(Size, 0x1F));
   }
 
@@ -2008,8 +2008,7 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
 
   if constexpr (Is1Bit) {
     GenerateFlags_RotateRightImmediate(Op, ALUOp, Dest, 1);
-  }
-  else {
+  } else {
     GenerateFlags_RotateRight(Op, ALUOp, Dest, Src);
   }
 }
@@ -2017,18 +2016,19 @@ void OpDispatchBuilder::ROROp(OpcodeArgs) {
 void OpDispatchBuilder::RORImmediateOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  auto Size = GetSrcSize(Op) * 8;
+  const uint32_t Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Shift &= 0x3F;
-  else
+  } else {
     Shift &= 0x1F;
+  }
 
-  OrderedNode *Src = _Constant(std::max(32, Size), Shift);
+  OrderedNode *Src = _Constant(std::max(32U, Size), Shift);
 
   if (Size < 32) {
     // ARM doesn't support 8/16bit rotates. Emulate with an insert
@@ -2053,21 +2053,19 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
   OrderedNode *Src;
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  auto Size = GetSrcSize(Op) * 8;
+  const uint32_t Size = GetSrcBitSize(Op);
 
   // Need to negate the shift so we can use ROR instead
   if constexpr (Is1Bit) {
     Src = _Constant(Size, 1);
-  }
-  else {
+  } else {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
     Src = _And(Src, _Constant(Size, 0x3F));
-  }
-  else {
+  } else {
     Src = _And(Src, _Constant(Size, 0x1F));
   }
 
@@ -2082,14 +2080,13 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
     }
   }
 
-  auto ALUOp = _Ror(Dest, _Sub(_Constant(Size, std::max(32, Size)), Src));
+  auto ALUOp = _Ror(Dest, _Sub(_Constant(Size, std::max(32U, Size)), Src));
 
   StoreResult(GPRClass, Op, ALUOp, -1);
 
   if constexpr (Is1Bit) {
     GenerateFlags_RotateLeftImmediate(Op, ALUOp, Dest, 1);
-  }
-  else {
+  } else {
     GenerateFlags_RotateLeft(Op, ALUOp, Dest, Src);
   }
 }
@@ -2097,19 +2094,20 @@ void OpDispatchBuilder::ROLOp(OpcodeArgs) {
 void OpDispatchBuilder::ROLImmediateOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
-  auto Size = GetSrcSize(Op) * 8;
+  const uint32_t Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
-    Shift = Shift & 0x3F;
-  else
-    Shift = Shift & 0x1F;
+  if (Size == 64) {
+    Shift &= 0x3F;
+  } else {
+    Shift &= 0x1F;
+  }
 
   // We also negate the shift so we can emulate Rol with Ror.
-  auto NegatedShift = std::max(32, Size) - Shift;
+  const auto NegatedShift = std::max(32U, Size) - Shift;
   OrderedNode *Src = _Constant(Size, NegatedShift);
 
   if (Size < 32) {
@@ -2147,7 +2145,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
 
-  const auto SrcSize = GetSrcSize(Op) * 8;
+  const auto SrcSize = GetSrcBitSize(Op);
   const auto MaxSrcBit = SrcSize - 1;
   auto MaxSrcBitOp = _Constant(SrcSize, MaxSrcBit);
 
@@ -2254,7 +2252,7 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
 
   // SF
   {
-    auto SignBit = _Constant((GetSrcSize(Op) * 8) - 1);
+    auto SignBit = _Constant(GetSrcBitSize(Op) - 1);
     auto SFOp = _Lshr(Result, SignBit);
 
     SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
@@ -2326,7 +2324,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
 
   // SF
   {
-    auto SignBit = _Constant((GetSrcSize(Op) * 8) - 1);
+    auto SignBit = _Constant(GetSrcBitSize(Op) - 1);
     auto SFOp = _Lshr(Result, SignBit);
 
     SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
@@ -2338,7 +2336,7 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Shift = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  const auto OperandSize = GetSrcSize(Op) * 8;
+  const auto OperandSize = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   auto SanitizedShift = [&] {
@@ -2413,7 +2411,7 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
 
 void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   uint32_t Shift = 1;
@@ -2456,7 +2454,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 
 void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   uint32_t Shift = 1;
@@ -2479,7 +2477,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCROp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   if (Size == 8 || Size == 16) {
     RCRSmallerOp(Op);
@@ -2491,10 +2489,11 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Src = _And(Src, _Constant(Size, 0x3F));
-  else
+  } else {
     Src = _And(Src, _Constant(Size, 0x1F));
+  }
 
   // Res = Src >> Shift
   OrderedNode *Res = _Lshr(Dest, Src);
@@ -2551,7 +2550,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   Src = _And(Src, _Constant(Size, 0x1F));
@@ -2594,7 +2593,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
 void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   uint32_t Shift = 1;
@@ -2618,7 +2617,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCLOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   if (Size == 8 || Size == 16) {
     RCLSmallerOp(Op);
@@ -2630,10 +2629,11 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64)
+  if (Size == 64) {
     Src = _And(Src, _Constant(Size, 0x3F));
-  else
+  } else {
     Src = _And(Src, _Constant(Size, 0x1F));
+  }
 
   // Res = Src << Shift
   OrderedNode *Res = _Lshl(Dest, Src);
@@ -2692,7 +2692,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   Src = _And(Src, _Constant(Size, 0x1F));
@@ -2750,13 +2750,12 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   OrderedNode *Src{};
   bool AlreadyMasked{};
 
-  uint32_t Size = GetDstSize(Op) * 8;
-  uint32_t Mask = Size - 1;
+  const uint32_t Size = GetDstBitSize(Op);
+  const uint32_t Mask = Size - 1;
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
-  }
-  else {
+  } else {
     // Can only be an immediate
     // Masked by operand size
     Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
@@ -2769,8 +2768,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
       BitSelect = Src;
-    }
-    else {
+    } else {
       OrderedNode *SizeMask = _Constant(Mask);
 
       // Get the bit selection from the src
@@ -2778,8 +2776,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     }
 
     Result = _Lshr(Dest, BitSelect);
-  }
-  else {
+  } else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     Dest = AppendSegmentOffset(Dest, Op->Flags);
@@ -2809,13 +2806,12 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
   OrderedNode *Src{};
   bool AlreadyMasked{};
 
-  uint32_t Size = GetDstSize(Op) * 8;
-  uint32_t Mask = Size - 1;
+  const uint32_t Size = GetDstBitSize(Op);
+  const uint32_t Mask = Size - 1;
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
-  }
-  else {
+  } else {
     // Can only be an immediate
     // Masked by operand size
     Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
@@ -2828,8 +2824,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
       BitSelect = Src;
-    }
-    else {
+    } else {
       OrderedNode *SizeMask = _Constant(Mask);
 
       // Get the bit selection from the src
@@ -2841,8 +2836,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     Dest = _Andn(Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
-  }
-  else {
+  } else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     Dest = AppendSegmentOffset(Dest, Op->Flags);
@@ -2869,8 +2863,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
       Result = _AtomicFetchAnd(MemoryLocation, BitMask, 1);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
-    }
-    else {
+    } else {
       OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
 
       // Now shift in to the correct bit location
@@ -2888,13 +2881,12 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   OrderedNode *Src{};
   bool AlreadyMasked{};
 
-  uint32_t Size = GetDstSize(Op) * 8;
-  uint32_t Mask = Size - 1;
+  const uint32_t Size = GetDstBitSize(Op);
+  const uint32_t Mask = Size - 1;
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
-  }
-  else {
+  } else {
     // Can only be an immediate
     // Masked by operand size
     Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
@@ -2907,8 +2899,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
       BitSelect = Src;
-    }
-    else {
+    } else {
       OrderedNode *SizeMask = _Constant(Mask);
 
       // Get the bit selection from the src
@@ -2920,8 +2911,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     Dest = _Or(Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
-  }
-  else {
+  } else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     Dest = AppendSegmentOffset(Dest, Op->Flags);
@@ -2944,8 +2934,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
       Result = _AtomicFetchOr(MemoryLocation, BitMask, 1);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
-    }
-    else {
+    } else {
       OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
 
       // Now shift in to the correct bit location
@@ -2963,13 +2952,12 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
   OrderedNode *Src{};
   bool AlreadyMasked{};
 
-  uint32_t Size = GetDstSize(Op) * 8;
-  uint32_t Mask = Size - 1;
+  const uint32_t Size = GetDstBitSize(Op);
+  const uint32_t Mask = Size - 1;
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
-  }
-  else {
+  } else {
     // Can only be an immediate
     // Masked by operand size
     Src = _Constant(Size, Op->Src[SrcIndex].Data.Literal.Value & Mask);
@@ -2982,8 +2970,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
     OrderedNode *BitSelect{};
     if (AlreadyMasked) {
       BitSelect = Src;
-    }
-    else {
+    } else {
       OrderedNode *SizeMask = _Constant(Mask);
 
       // Get the bit selection from the src
@@ -2995,8 +2982,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
     OrderedNode *BitMask = _Lshl(_Constant(1), BitSelect);
     Dest = _Xor(Dest, BitMask);
     StoreResult(GPRClass, Op, Dest, -1);
-  }
-  else {
+  } else {
     // Load the address to the memory location
     OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     Dest = AppendSegmentOffset(Dest, Op->Flags);
@@ -3019,8 +3005,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
       Result = _AtomicFetchXor(MemoryLocation, BitMask, 1);
       // Now shift in to the correct bit location
       Result = _Lshr(Result, BitSelect);
-    }
-    else {
+    } else {
       OrderedNode *Value = _LoadMemAutoTSO(GPRClass, 1, MemoryLocation, 1);
 
       // Now shift in to the correct bit location
@@ -3205,7 +3190,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Result;
 
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
 
   if (Op->Dest.IsGPR()) {
     // If this is a GPR then we can just do an Add
@@ -3217,8 +3202,9 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     // Calculated value gets stored in dst (order is important if dst is same as src)
     StoreResult(GPRClass, Op, Result, -1);
 
-    if (Size < 32)
+    if (Size < 32) {
       Result = _Bfe(Size, 0, Result);
+    }
 
     GenerateFlags_ADD(Op, Result, Dest, Src);
   }
@@ -3229,8 +3215,9 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Op->Src[0], Before, -1);
     Result = _Add(Before, Src); // Seperate result just for flags
 
-    if (Size < 32)
+    if (Size < 32) {
       Result = _Bfe(Size, 0, Result);
+    }
 
     GenerateFlags_ADD(Op, Result, Before, Src);
   }
@@ -3346,17 +3333,17 @@ void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
 
 void OpDispatchBuilder::INCOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-    LogMan::Msg::E("Can't handle REP on this");
+    LogMan::Msg::EFmt("Can't handle REP on this");
     DecodeFailure = true;
     return;
   }
 
   OrderedNode *Dest;
   OrderedNode *Result;
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
   auto OneConst = _Constant(Size, 1);
 
-  bool IsLocked = DestIsLockedMem(Op);
+  const bool IsLocked = DestIsLockedMem(Op);
 
   if (IsLocked) {
     HandledLock = true;
@@ -3381,32 +3368,31 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
 
 void OpDispatchBuilder::DECOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-    LogMan::Msg::E("Can't handle REP on this");
+    LogMan::Msg::EFmt("Can't handle REP on this");
     DecodeFailure = true;
     return;
   }
 
   OrderedNode *Dest;
   OrderedNode *Result;
-  auto Size = GetSrcSize(Op) * 8;
+  const auto Size = GetSrcBitSize(Op);
   auto OneConst = _Constant(Size, 1);
 
-  bool IsLocked = DestIsLockedMem(Op);
+  const bool IsLocked = DestIsLockedMem(Op);
 
   if (IsLocked) {
     HandledLock = true;
     auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestAddress = AppendSegmentOffset(DestAddress, Op->Flags);
     Dest = _AtomicFetchSub(DestAddress, OneConst, GetSrcSize(Op));
-
   } else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   }
 
   Result = _Sub(Dest, OneConst);
-  if (!IsLocked)
+  if (!IsLocked) {
     StoreResult(GPRClass, Op, Result, -1);
-
+  }
   if (Size < 32) {
     Result = _Bfe(Size, 0, Result);
   }
@@ -4254,11 +4240,12 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       StoreResult(GPRClass, Op, DestResult, -1);
     }
 
-    auto Size = GetDstSize(Op) * 8;
+    const auto Size = GetDstBitSize(Op);
 
     OrderedNode *Result = _Sub(Src3Lower, CASResult);
-    if (Size < 32)
+    if (Size < 32) {
       Result = _Bfe(Size, 0, Result);
+    }
 
     GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
@@ -4298,11 +4285,12 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // RAX gets the result of the CAS op
     _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RAX]), RAXResult);
 
-    auto Size = GetDstSize(Op) * 8;
+    const auto Size = GetDstBitSize(Op);
 
     OrderedNode *Result = _Sub(Src3Lower, CASResult);
-    if (Size < 32)
+    if (Size < 32) {
       Result = _Bfe(Size, 0, Result);
+    }
 
     GenerateFlags_SUB(Op, Result, Src3Lower, CASResult);
   }
@@ -4421,7 +4409,7 @@ void OpDispatchBuilder::Finalize() {
   }
 }
 
-uint8_t OpDispatchBuilder::GetDstSize(FEXCore::X86Tables::DecodedOp Op) const {
+uint8_t OpDispatchBuilder::GetDstSize(X86Tables::DecodedOp Op) const {
   static constexpr std::array<uint8_t, 8> Sizes = {
     0, // Invalid DEF
     1,
@@ -4433,13 +4421,13 @@ uint8_t OpDispatchBuilder::GetDstSize(FEXCore::X86Tables::DecodedOp Op) const {
     0, // Invalid DEF
   };
 
-  uint32_t DstSizeFlag = FEXCore::X86Tables::DecodeFlags::GetSizeDstFlags(Op->Flags);
-  uint8_t Size = Sizes[DstSizeFlag];
-  LOGMAN_THROW_A(Size != 0, "Invalid destination size for op");
+  const uint32_t DstSizeFlag = X86Tables::DecodeFlags::GetSizeDstFlags(Op->Flags);
+  const uint8_t Size = Sizes[DstSizeFlag];
+  LOGMAN_THROW_A_FMT(Size != 0, "Invalid destination size for op");
   return Size;
 }
 
-uint8_t OpDispatchBuilder::GetSrcSize(FEXCore::X86Tables::DecodedOp Op) const {
+uint8_t OpDispatchBuilder::GetSrcSize(X86Tables::DecodedOp Op) const {
   static constexpr std::array<uint8_t, 8> Sizes = {
     0, // Invalid DEF
     1,
@@ -4451,10 +4439,18 @@ uint8_t OpDispatchBuilder::GetSrcSize(FEXCore::X86Tables::DecodedOp Op) const {
     0, // Invalid DEF
   };
 
-  uint32_t SrcSizeFlag = FEXCore::X86Tables::DecodeFlags::GetSizeSrcFlags(Op->Flags);
-  uint8_t Size = Sizes[SrcSizeFlag];
-  LOGMAN_THROW_A(Size != 0, "Invalid destination size for op");
+  const uint32_t SrcSizeFlag = X86Tables::DecodeFlags::GetSizeSrcFlags(Op->Flags);
+  const uint8_t Size = Sizes[SrcSizeFlag];
+  LOGMAN_THROW_A_FMT(Size != 0, "Invalid destination size for op");
   return Size;
+}
+
+uint8_t OpDispatchBuilder::GetSrcBitSize(X86Tables::DecodedOp Op) const {
+  return GetSrcSize(Op) * 8;
+}
+
+uint8_t OpDispatchBuilder::GetDstBitSize(X86Tables::DecodedOp Op) const {
+  return GetDstSize(Op) * 8;
 }
 
 OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
@@ -5037,7 +5033,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
   // Set flags
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, GetSrcSize(Op) * 8 - 1, Src));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, GetSrcBitSize(Op) - 1, Src));
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
