@@ -3262,7 +3262,7 @@ template<OpDispatchBuilder::Segment Seg>
 void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src{};
-  if constexpr (Seg == Segment_FS) {
+  if constexpr (Seg == Segment::FS) {
     Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, fs), GPRClass);
   }
   else {
@@ -3276,7 +3276,7 @@ template<OpDispatchBuilder::Segment Seg>
 void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  if constexpr (Seg == Segment_FS) {
+  if constexpr (Seg == Segment::FS) {
     _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, fs), Src);
   }
   else {
@@ -5665,10 +5665,10 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_LoadStore.Val>}, //MFENCE
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::StoreFenceOrCLFlush},     //SFENCE
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_FS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_GS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 2), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment_FS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 3), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment_GS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::FS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::GS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 2), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::FS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 3), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::GS>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},
 

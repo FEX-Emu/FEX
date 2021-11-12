@@ -231,9 +231,9 @@ public:
   void PopcountOp(OpcodeArgs);
   void XLATOp(OpcodeArgs);
 
-  enum Segment {
-    Segment_FS,
-    Segment_GS,
+  enum class Segment {
+    FS,
+    GS,
   };
   template<Segment Seg>
   void ReadSegmentReg(OpcodeArgs);
