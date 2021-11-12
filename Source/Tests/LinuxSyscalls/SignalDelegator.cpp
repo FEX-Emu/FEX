@@ -539,6 +539,12 @@ namespace FEX::HLE {
     // This can happen in the case that the guest has sent signal that we can't block
     uint64_t Result = sigsuspend(&HostSet);
 
+    // Restore Previous signal mask we are emulating
+    // XXX: Might be unsafe if the signal handler adjusted the thread's signal mask
+    // But since we don't support the guest adjusting the mask through the context object
+    // then this is safe-ish
+    ThreadData.CurrentSignalMask = ThreadData.PreviousSuspendMask;
+
     CheckForPendingSignals(GetTLSThread());
 
     return Result == -1 ? -errno : Result;
