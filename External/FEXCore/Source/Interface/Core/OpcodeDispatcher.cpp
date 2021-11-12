@@ -886,7 +886,7 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
   }
 
   // Try folding the flags generation in the select op
-  if (flagsOp == FLAGS_OP_CMP) {
+  if (flagsOp == SelectionFlag::CMP) {
     switch(OP) {
       // SGT
       case 0xF: SrcCond = _Select(FEXCore::IR::COND_SGT, flagsOpDestSigned, flagsOpSrcSigned, TrueValue, FalseValue, flagsOpSize); break;
@@ -918,13 +918,13 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
       //default: printf("Missed Condition %04X OP_CMP\n", OP); break;
     }
   }
-  else if (flagsOp == FLAGS_OP_AND) {
+  else if (flagsOp == SelectionFlag::AND) {
     switch(OP) {
       case 0x4: SrcCond = _Select(FEXCore::IR::COND_EQ, flagsOpDest, ZeroConst, TrueValue, FalseValue, flagsOpSize); break;
       case 0x5: SrcCond = _Select(FEXCore::IR::COND_NEQ, flagsOpDest, ZeroConst, TrueValue, FalseValue, flagsOpSize); break;
       //default: printf("Missed Condition %04X OP_AND\n", OP); break;
     }
-  } else if (flagsOp == FLAGS_OP_FCMP) {
+  } else if (flagsOp == SelectionFlag::FCMP) {
     /*
       x86:ZCP
         unordered { 11 1 }
@@ -1253,13 +1253,11 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
-  if (Size >=4) {
-    flagsOp = FLAGS_OP_AND;
-    flagsOpDest = ALUOp;
+  flagsOp = SelectionFlag::AND;
+  flagsOpDest = ALUOp;
+  if (Size >= 4) {
     flagsOpSize = Size;
   } else {
-    flagsOp = FLAGS_OP_AND;
-    flagsOpDest = ALUOp;
     flagsOpSize = 4;  // assuming ZEXT semantics here
   }
 }
@@ -1325,14 +1323,13 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs) {
 
   GenerateFlags_SUB(Op, Result, Dest, Src);
 
+  flagsOp = SelectionFlag::CMP;
   if (Size >= 4) {
     flagsOpSize = Size;
-    flagsOp = FLAGS_OP_CMP;
     flagsOpDestSigned = flagsOpDest = Dest;
     flagsOpSrcSigned = flagsOpSrc = Src;
   } else {
     flagsOpSize = 4;
-    flagsOp = FLAGS_OP_CMP;
     flagsOpDestSigned = _Sext(Size * 8, flagsOpDest = Dest);
     flagsOpSrcSigned = _Sext(Size * 8, flagsOpSrc = Src);
   }
@@ -1415,47 +1412,47 @@ void OpDispatchBuilder::LAHFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
-  enum OpType {
-    OP_CLEAR,
-    OP_SET,
-    OP_COMPLEMENT,
+  enum class OpType {
+    Clear,
+    Set,
+    Complement,
   };
   OpType Type;
   uint64_t Flag;
   switch (Op->OP) {
   case 0xF5: // CMC
     Flag= FEXCore::X86State::RFLAG_CF_LOC;
-    Type = OP_COMPLEMENT;
+    Type = OpType::Complement;
   break;
   case 0xF8: // CLC
     Flag= FEXCore::X86State::RFLAG_CF_LOC;
-    Type = OP_CLEAR;
+    Type = OpType::Clear;
   break;
   case 0xF9: // STC
     Flag= FEXCore::X86State::RFLAG_CF_LOC;
-    Type = OP_SET;
+    Type = OpType::Set;
   break;
   case 0xFC: // CLD
     Flag= FEXCore::X86State::RFLAG_DF_LOC;
-    Type = OP_CLEAR;
+    Type = OpType::Clear;
   break;
   case 0xFD: // STD
     Flag= FEXCore::X86State::RFLAG_DF_LOC;
-    Type = OP_SET;
+    Type = OpType::Set;
   break;
   }
 
   OrderedNode *Result{};
   switch (Type) {
-  case OP_CLEAR: {
+  case OpType::Clear: {
     Result = _Constant(0);
   break;
   }
-  case OP_SET: {
+  case OpType::Set: {
     Result = _Constant(1);
   break;
   }
-  case OP_COMPLEMENT: {
+  case OpType::Complement: {
     auto RFLAG = GetRFLAG(Flag);
     Result = _Xor(RFLAG, _Constant(1));
   break;
@@ -3260,7 +3257,7 @@ template<OpDispatchBuilder::Segment Seg>
 void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src{};
-  if constexpr (Seg == Segment_FS) {
+  if constexpr (Seg == Segment::FS) {
     Src = _LoadContext(Size, offsetof(FEXCore::Core::CPUState, fs), GPRClass);
   }
   else {
@@ -3274,7 +3271,7 @@ template<OpDispatchBuilder::Segment Seg>
 void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  if constexpr (Seg == Segment_FS) {
+  if constexpr (Seg == Segment::FS) {
     _StoreContext(GPRClass, Size, offsetof(FEXCore::Core::CPUState, fs), Src);
   }
   else {
@@ -5672,10 +5669,10 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_LoadStore.Val>}, //MFENCE
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::StoreFenceOrCLFlush},     //SFENCE
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_FS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment_GS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 2), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment_FS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 3), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment_GS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::FS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::GS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 2), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::FS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 3), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::GS>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},
 

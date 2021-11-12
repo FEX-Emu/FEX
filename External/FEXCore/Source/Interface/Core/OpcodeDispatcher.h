@@ -26,18 +26,20 @@ class OpDispatchBuilder final : public IREmitter {
 friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
 
-enum {
-  FLAGS_OP_NONE,  // must rely on x86 flags
-  FLAGS_OP_CMP,   // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
-  FLAGS_OP_AND,   // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
-  FLAGS_OP_FCMP,  // flags were set by a ucomis* / comis*
+enum class SelectionFlag {
+  Nothing,  // must rely on x86 flags
+  CMP,      // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
+  AND,      // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
+  FCMP,     // flags were set by a ucomis* / comis*
 };
 
 public:
-  int flagsOp;
-  uint8_t flagsOpSize;
-  OrderedNode* flagsOpDest, *flagsOpSrc;
-  OrderedNode* flagsOpDestSigned, *flagsOpSrcSigned;
+  SelectionFlag flagsOp{};
+  uint8_t flagsOpSize{};
+  OrderedNode* flagsOpDest{};
+  OrderedNode* flagsOpSrc{};
+  OrderedNode* flagsOpDestSigned{};
+  OrderedNode* flagsOpSrcSigned{};
 
   FEXCore::Context::Context *CTX{};
   bool ShouldDump {false};
@@ -69,7 +71,7 @@ public:
   }
 
   void StartNewBlock() {
-    flagsOp = FLAGS_OP_NONE;
+    flagsOp = SelectionFlag::Nothing;
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
@@ -231,9 +233,9 @@ public:
   void PopcountOp(OpcodeArgs);
   void XLATOp(OpcodeArgs);
 
-  enum Segment {
-    Segment_FS,
-    Segment_GS,
+  enum class Segment {
+    FS,
+    GS,
   };
   template<Segment Seg>
   void ReadSegmentReg(OpcodeArgs);
@@ -522,12 +524,12 @@ private:
 
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {
-    flagsOp = FLAGS_OP_NONE;
+    flagsOp = SelectionFlag::Nothing;
     _StoreFlag(_Bfe(1, 0, Value), BitOffset);
   }
 
   void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
-    flagsOp = FLAGS_OP_NONE;
+    flagsOp = SelectionFlag::Nothing;
     _StoreFlag(_Bfe(1, 0, Value), BitOffset);
   }
 
@@ -556,13 +558,13 @@ private:
   void GenerateFlags_RotateLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
 
   OrderedNode * GetX87Top();
-  enum X87Tag {
-    TAG_VALID   = 0b00,
-    TAG_ZERO    = 0b01,
-    TAG_SPECIAL = 0b10,
-    TAG_EMPTY   = 0b11
+  enum class X87Tag {
+    Valid   = 0b00,
+    Zero    = 0b01,
+    Special = 0b10,
+    Empty   = 0b11
   };
-  void SetX87TopTag(OrderedNode *Value, uint32_t Tag);
+  void SetX87TopTag(OrderedNode *Value, X87Tag Tag);
   OrderedNode *GetX87FTW(OrderedNode *Value);
   void SetX87Top(OrderedNode *Value);
 
