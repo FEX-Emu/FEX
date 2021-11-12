@@ -58,7 +58,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     if (first == headers.end())
       return 0;
 
-    return PAGE_ALIGN(last->p_vaddr + last->p_memsz) - PAGE_START(first->p_vaddr);
+    return PAGE_ALIGN(last->p_vaddr + last->p_memsz);
   }
 
   template<typename T>
@@ -113,10 +113,14 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     uintptr_t LoadBase = 0;
 
+    if (BrkBase) {
+      *BrkBase = 0;
+    }
+
     if (Elf.ehdr.e_type == ET_DYN) {
       // needs base address
       auto TotalSize  = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
-      LoadBase = (uintptr_t)Mapper(0, TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
+      LoadBase = (uintptr_t)Mapper(0, TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if ((void*)LoadBase == MAP_FAILED) {
         return {};
       }
@@ -125,10 +129,9 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
         return {};
       }
       //fprintf(stderr, "elf %d: %lx-%lx\n", Elf.fd, LoadBase, LoadBase + TotalSize);
-    }
-
-    if (BrkBase) {
-      *BrkBase = 0;
+      if (BrkBase) {
+        *BrkBase = LoadBase + (TotalSize - BRK_SIZE);
+      }
     }
 
     for(const auto &Header: Elf.phdrs) {
@@ -154,7 +157,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
         }
 
         if (BSSPageStart != BSSPageEnd) {
-          auto bss = Mapper((void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, 0, 0);
+          auto bss = Mapper((void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
           if ((void*)bss == MAP_FAILED) {
             LogMan::Msg::E("Failed to allocate BSS @ %p, %d\n", bss, errno);
             return {};
@@ -361,7 +364,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     // XXX Randomise brk?
 
-    BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, 0, 0);
+    BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
 
     if ((void*)BrkStart == MAP_FAILED) {
       LogMan::Msg::E("Failed to allocate BRK @ %lx, %d\n", BrkBase, errno);
