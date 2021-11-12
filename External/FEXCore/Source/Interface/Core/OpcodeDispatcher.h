@@ -553,13 +553,13 @@ private:
   void GenerateFlags_RotateLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
 
   OrderedNode * GetX87Top();
-  enum X87Tag {
-    TAG_VALID   = 0b00,
-    TAG_ZERO    = 0b01,
-    TAG_SPECIAL = 0b10,
-    TAG_EMPTY   = 0b11
+  enum class X87Tag {
+    Valid   = 0b00,
+    Zero    = 0b01,
+    Special = 0b10,
+    Empty   = 0b11
   };
-  void SetX87TopTag(OrderedNode *Value, uint32_t Tag);
+  void SetX87TopTag(OrderedNode *Value, X87Tag Tag);
   OrderedNode *GetX87FTW(OrderedNode *Value);
   void SetX87Top(OrderedNode *Value);
 

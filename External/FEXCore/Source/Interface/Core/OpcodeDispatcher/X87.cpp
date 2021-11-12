@@ -10,6 +10,7 @@ $end_info$
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/X86Tables.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/IR/IREmitter.h>
 
@@ -27,15 +28,15 @@ OrderedNode *OpDispatchBuilder::GetX87Top() {
   return _LoadContext(1, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC, GPRClass);
 }
 
-void OpDispatchBuilder::SetX87TopTag(OrderedNode *Value, uint32_t Tag) {
+void OpDispatchBuilder::SetX87TopTag(OrderedNode *Value, X87Tag Tag) {
   // if we are popping then we must first mark this location as empty
   auto FTW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FTW), GPRClass);
   OrderedNode *Mask = _Constant(0b11);
   auto TopOffset = _Lshl(Value, _Constant(1));
   Mask = _Lshl(Mask, TopOffset);
   OrderedNode *NewFTW = _Andn(FTW, Mask);
-  if (Tag != 0) {
-    auto TagVal = _Lshl(_Constant(Tag), TopOffset);
+  if (Tag != X87Tag::Valid) {
+    auto TagVal = _Lshl(_Constant(ToUnderlying(Tag)), TopOffset);
     NewFTW = _Or(NewFTW, TagVal);
   }
 
@@ -82,7 +83,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   }
 
   auto top = _And(_Sub(orig_top, _Constant(1)), mask);
-  SetX87TopTag(top, TAG_VALID);
+  SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -101,7 +102,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto mask = _Constant(7);
   auto top = _And(_Sub(orig_top, _Constant(1)), mask);
-  SetX87TopTag(top, TAG_VALID);
+  SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
   // Read from memory
@@ -119,7 +120,7 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
 
   // if we are popping then we must first mark this location as empty
-  SetX87TopTag(orig_top, TAG_EMPTY);
+  SetX87TopTag(orig_top, X87Tag::Empty);
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 }
@@ -129,7 +130,7 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
-  SetX87TopTag(top, TAG_VALID);
+  SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
   auto low = _Constant(Lower);
@@ -159,7 +160,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
-  SetX87TopTag(top, TAG_VALID);
+  SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
   size_t read_width = GetSrcSize(Op);
@@ -207,7 +208,7 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(orig_top, TAG_EMPTY);
+    SetX87TopTag(orig_top, X87Tag::Empty);
     // Set the new top now
     auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
@@ -233,7 +234,7 @@ void OpDispatchBuilder::FIST(OpcodeArgs) {
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(orig_top, TAG_EMPTY);
+    SetX87TopTag(orig_top, X87Tag::Empty);
     // Set the new top now
     auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
@@ -282,7 +283,7 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(top, TAG_EMPTY);
+    SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
@@ -345,7 +346,7 @@ void OpDispatchBuilder::FMUL(OpcodeArgs) {
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(top, TAG_EMPTY);
+    SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
@@ -414,7 +415,7 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(top, TAG_EMPTY);
+    SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
@@ -498,7 +499,7 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(top, TAG_EMPTY);
+    SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
 
     top = _And(_Add(top, _Constant(1)), mask);
@@ -606,7 +607,7 @@ void OpDispatchBuilder::FRNDINT(OpcodeArgs) {
 void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
-  SetX87TopTag(top, TAG_VALID);
+  SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -692,16 +693,16 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
 
   if constexpr (poptwice) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(top, TAG_EMPTY);
+    SetX87TopTag(top, X87Tag::Empty);
     top = _And(_Add(top, _Constant(1)), mask);
-    SetX87TopTag(top, TAG_EMPTY);
+    SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
   }
   else if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(top, TAG_EMPTY);
+    SetX87TopTag(top, X87Tag::Empty);
     // Set the new top now
     top = _And(_Add(top, _Constant(1)), mask);
     SetX87Top(top);
@@ -763,7 +764,7 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
-    SetX87TopTag(top, TAG_EMPTY);
+    SetX87TopTag(top, X87Tag::Empty);
     top = _And(_Add(top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
@@ -842,7 +843,7 @@ void OpDispatchBuilder::X87ModifySTP<true>(OpcodeArgs);
 void OpDispatchBuilder::X87SinCos(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
-  SetX87TopTag(top, TAG_VALID);
+  SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -860,7 +861,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
 
   auto orig_top = GetX87Top();
   // if we are popping then we must first mark this location as empty
-  SetX87TopTag(orig_top, TAG_EMPTY);
+  SetX87TopTag(orig_top, X87Tag::Empty);
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
@@ -884,7 +885,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs) {
 void OpDispatchBuilder::X87TAN(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
-  SetX87TopTag(top, TAG_VALID);
+  SetX87TopTag(top, X87Tag::Valid);
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 16, offsetof(FEXCore::Core::CPUState, mm[0][0]), 16, FPRClass);
@@ -904,7 +905,7 @@ void OpDispatchBuilder::X87TAN(OpcodeArgs) {
 void OpDispatchBuilder::X87ATAN(OpcodeArgs) {
   auto orig_top = GetX87Top();
   // if we are popping then we must first mark this location as empty
-  SetX87TopTag(orig_top, TAG_EMPTY);
+  SetX87TopTag(orig_top, X87Tag::Empty);
   auto top = _And(_Add(orig_top, _Constant(1)), _Constant(7));
   SetX87Top(top);
 
@@ -1391,7 +1392,7 @@ void OpDispatchBuilder::X87FFREE(OpcodeArgs) {
   top = _And(_Add(top, offset), _Constant(7));
 
   // Set this argument's tag as empty now
-  SetX87TopTag(top, TAG_EMPTY);
+  SetX87TopTag(top, X87Tag::Empty);
 }
 
 }
