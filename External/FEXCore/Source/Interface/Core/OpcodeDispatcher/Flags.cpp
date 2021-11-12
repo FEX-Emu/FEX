@@ -39,28 +39,30 @@ constexpr std::array<uint32_t, 17> FlagOffsets = {
 };
 
 void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
-  uint8_t NumFlags = FlagOffsets.size();
+  size_t NumFlags = FlagOffsets.size();
   if (Lower8) {
     NumFlags = 5;
   }
   auto OneConst = _Constant(1);
-  for (int i = 0; i < NumFlags; ++i) {
-    auto Tmp = _And(_Lshr(Src, _Constant(FlagOffsets[i])), OneConst);
-    SetRFLAG(Tmp, FlagOffsets[i]);
+  for (size_t i = 0; i < NumFlags; ++i) {
+    const auto FlagOffset = FlagOffsets[i];
+    auto Tmp = _And(_Lshr(Src, _Constant(FlagOffset)), OneConst);
+    SetRFLAG(Tmp, FlagOffset);
   }
 }
 
 OrderedNode *OpDispatchBuilder::GetPackedRFLAG(bool Lower8) {
   OrderedNode *Original = _Constant(2);
-  uint8_t NumFlags = FlagOffsets.size();
+  size_t NumFlags = FlagOffsets.size();
   if (Lower8) {
     NumFlags = 5;
   }
 
-  for (int i = 0; i < NumFlags; ++i) {
-    OrderedNode *Flag = _LoadFlag(FlagOffsets[i]);
+  for (size_t i = 0; i < NumFlags; ++i) {
+    const auto FlagOffset = FlagOffsets[i];
+    OrderedNode *Flag = _LoadFlag(FlagOffset);
     Flag = _Bfe(4, 32, 0, Flag);
-    Flag = _Lshl(Flag, _Constant(FlagOffsets[i]));
+    Flag = _Lshl(Flag, _Constant(FlagOffset));
     Original = _Or(Original, Flag);
   }
   return Original;
