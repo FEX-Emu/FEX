@@ -333,6 +333,7 @@ public:
 
   // BMI2 Ops
   void BMI2Shift(OpcodeArgs);
+  void RORX(OpcodeArgs);
 
   // ADX Ops
   void ADXOp(OpcodeArgs);

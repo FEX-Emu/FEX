@@ -2366,6 +2366,17 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::RORX(OpcodeArgs) {
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const uint64_t Amount = Op->Src[1].Data.Literal.Value;
+
+  auto Result = _Ror(Src, _Constant(Amount));
+
+  StoreResult(GPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::ADXOp(OpcodeArgs) {
   // Handles ADCX and ADOX
 
@@ -6079,6 +6090,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(2, 0b01, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
     {OPD(2, 0b10, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
     {OPD(2, 0b11, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
+
+    {OPD(3, 0b11, 0xF0), 1, &OpDispatchBuilder::RORX},
   };
 #undef OPD
 
