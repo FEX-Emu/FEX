@@ -13,6 +13,11 @@
 
 namespace FEXCore::ArchHelpers::Context {
 
+enum ContextFlags : uint32_t {
+  CONTEXT_FLAG_INJIT = (1U << 0),
+  CONTEXT_FLAG_32BIT = (1U << 1),
+};
+
 struct X86ContextBackup {
   // Host State
   // RIP and RSP is stored in GPRs here
@@ -22,8 +27,12 @@ struct X86ContextBackup {
 
   // Guest state
   int Signal;
+  uint32_t Flags;
+  uint64_t OriginalRIP;
+  uint64_t FPStateLocation;
+  uint64_t UContextLocation;
+  uint64_t SigInfoLocation;
   FEXCore::Core::CPUState GuestState;
-
   static constexpr int RedZoneSize = 128;
 };
 
@@ -40,6 +49,11 @@ struct ArmContextBackup {
 
   // Guest state
   int Signal;
+  uint32_t Flags;
+  uint64_t OriginalRIP;
+  uint64_t FPStateLocation;
+  uint64_t UContextLocation;
+  uint64_t SigInfoLocation;
   FEXCore::Core::CPUState GuestState;
 
   // Arm64 doesn't have a red zone

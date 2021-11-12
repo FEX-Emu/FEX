@@ -35,7 +35,7 @@ void Dispatcher::SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuS
   ctx->IdleWaitCV.notify_all();
 }
 
-void Dispatcher::StoreThreadState(int Signal, void *ucontext) {
+ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(int Signal, void *ucontext) {
   // We can end up getting a signal at any point in our host state
   // Jump to a handler that saves all state so we can safely return
   uint64_t OldSP = ArchHelpers::Context::GetSp(ucontext);
@@ -66,6 +66,7 @@ void Dispatcher::StoreThreadState(int Signal, void *ucontext) {
   ArchHelpers::Context::SetSp(ucontext, NewSP);
 
   SignalFrames.push(NewSP);
+  return Context;
 }
 
 void Dispatcher::RestoreThreadState(void *ucontext) {
@@ -80,6 +81,77 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
 
   // Now restore host state
   ArchHelpers::Context::RestoreContext(ucontext, Context);
+
+  if (Context->UContextLocation) {
+    auto Frame = ThreadState->CurrentFrame;
+
+    if (Context->Flags &ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_INJIT) {
+      // XXX: Unsupported since it needs state reconstruction
+      // If we are in the JIT then SRA might need to be restored to values from the context
+      // We can't currently support this since it might result in tearing without real state reconstruction
+    }
+
+    if (!(Context->Flags & ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT)) {
+      FEXCore::x86_64::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(Context->UContextLocation);
+      siginfo_t *guest_siginfo = reinterpret_cast<siginfo_t*>(Context->SigInfoLocation);
+
+      // If the guest modified the RIP then we need to take special precautions here
+      if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP]) {
+        // Hack! Go back to the top of the dispatcher top
+        // This is only safe inside the JIT rather than anything outside of it
+        ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddressFillSRA);
+        // Set our state register to point to our guest thread data
+        ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
+
+        Frame->State.rip = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP];
+        // XXX: Full context setting
+#define COPY_REG(x) \
+            Frame->State.gregs[X86State::REG_##x] = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_##x];
+            COPY_REG(R8);
+            COPY_REG(R9);
+            COPY_REG(R10);
+            COPY_REG(R11);
+            COPY_REG(R12);
+            COPY_REG(R13);
+            COPY_REG(R14);
+            COPY_REG(R15);
+            COPY_REG(RDI);
+            COPY_REG(RSI);
+            COPY_REG(RBP);
+            COPY_REG(RBX);
+            COPY_REG(RDX);
+            COPY_REG(RAX);
+            COPY_REG(RCX);
+            COPY_REG(RSP);
+#undef COPY_REG
+      }
+    }
+    else {
+      FEXCore::x86::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86::ucontext_t*>(Context->UContextLocation);
+      FEXCore::x86::siginfo_t *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(Context->SigInfoLocation);
+      // If the guest modified the RIP then we need to take special precautions here
+      if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP]) {
+        // Hack! Go back to the top of the dispatcher top
+        // This is only safe inside the JIT rather than anything outside of it
+        ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddressFillSRA);
+        // Set our state register to point to our guest thread data
+        ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
+
+        // XXX: Full context setting
+#define COPY_REG(x) \
+      Frame->State.gregs[X86State::REG_##x] = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_##x];
+      COPY_REG(RDI);
+      COPY_REG(RSI);
+      COPY_REG(RBP);
+      COPY_REG(RBX);
+      COPY_REG(RDX);
+      COPY_REG(RAX);
+      COPY_REG(RCX);
+      COPY_REG(RSP);
+#undef COPY_REG
+      }
+    }
+  }
 }
 
 static uint32_t ConvertSignalToTrapNo(int Signal, siginfo_t *HostSigInfo) {
@@ -115,7 +187,12 @@ static uint32_t ConvertSignalToError(int Signal, siginfo_t *HostSigInfo) {
 }
 
 bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
-  StoreThreadState(Signal, ucontext);
+  auto ContextBackup = StoreThreadState(Signal, ucontext);
+  ContextBackup->Flags = 0;
+  ContextBackup->FPStateLocation = 0;
+  ContextBackup->UContextLocation = 0;
+  ContextBackup->SigInfoLocation = 0;
+
   auto Frame = ThreadState->CurrentFrame;
 
   // Ref count our faults
@@ -142,6 +219,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
     if (IsAddressInJITCode(OldPC, false)) {
       // We are in jit, SRA must be spilled
       SpillSRA(ucontext);
+      ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_INJIT;
     } else {
       if (!IsAddressInJITCode(OldPC, true)) {
         // This is likely to cause issues but in some cases it isn't fatal
@@ -180,8 +258,10 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   // siginfo_t
   siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
 
-  if (GuestAction->sa_flags & SA_SIGINFO) {
+  // Backup where we think the RIP currently is
+  ContextBackup->OriginalRIP = Frame->State.rip;
 
+  if (GuestAction->sa_flags & SA_SIGINFO) {
     // Setup ucontext a bit
     if (Is64BitMode) {
       NewGuestSP -= sizeof(FEXCore::x86_64::_libc_fpstate);
@@ -195,6 +275,10 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       NewGuestSP -= sizeof(siginfo_t);
       NewGuestSP = AlignDown(NewGuestSP, alignof(siginfo_t));
       uint64_t SigInfoLocation = NewGuestSP;
+
+      ContextBackup->FPStateLocation = FPStateLocation;
+      ContextBackup->UContextLocation = UContextLocation;
+      ContextBackup->SigInfoLocation = SigInfoLocation;
 
       FEXCore::x86_64::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(UContextLocation);
       siginfo_t *guest_siginfo = reinterpret_cast<siginfo_t*>(SigInfoLocation);
@@ -264,6 +348,8 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       Frame->State.gregs[X86State::REG_RDX] = UContextLocation;
     }
     else {
+      ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT;
+
       NewGuestSP -= sizeof(FEXCore::x86::_libc_fpstate);
       NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86::_libc_fpstate));
       uint64_t FPStateLocation = NewGuestSP;
@@ -275,6 +361,10 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       NewGuestSP -= sizeof(FEXCore::x86::siginfo_t);
       NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86::siginfo_t));
       uint64_t SigInfoLocation = NewGuestSP;
+
+      ContextBackup->FPStateLocation = FPStateLocation;
+      ContextBackup->UContextLocation = UContextLocation;
+      ContextBackup->SigInfoLocation = SigInfoLocation;
 
       FEXCore::x86::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86::ucontext_t*>(UContextLocation);
       FEXCore::x86::siginfo_t *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(SigInfoLocation);
