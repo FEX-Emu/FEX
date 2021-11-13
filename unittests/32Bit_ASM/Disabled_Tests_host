@@ -1,0 +1,12 @@
+# 32-bit segment pushing and popping causes the runner to break
+# We aren't 100% matching behaviour
+Test_32Bit_Primary/Pop_Segments.asm
+
+# Hecks with GS, FS, and ES
+# Causing the signal handler delegate to break
+Test_32Bit_Primary/Primary_8C.asm
+Test_32Bit_Primary/Primary_8C_2.asm
+
+# Hecks with CS
+# Causing our host runner a bit of pain
+Test_32Bit_Primary/Primary_CF.asm
