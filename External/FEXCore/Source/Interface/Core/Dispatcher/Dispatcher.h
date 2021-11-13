@@ -3,6 +3,7 @@
 #include <FEXCore/Core/CPUBackend.h>
 
 #include "Interface/Context/Context.h"
+#include "Interface/Core/ArchHelpers/MContext.h"
 
 #include <bits/types/stack_t.h>
 #include <cstdint>
@@ -77,7 +78,7 @@ protected:
     : CTX {ctx}
     , ThreadState {Thread} {}
 
-  void StoreThreadState(int Signal, void *ucontext);
+  ArchHelpers::Context::ContextBackup* StoreThreadState(int Signal, void *ucontext);
   void RestoreThreadState(void *ucontext);
   std::stack<uint64_t> SignalFrames;
 
