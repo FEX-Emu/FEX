@@ -1133,7 +1133,7 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  OrderedNode *MemDest = _LoadContext(GPRSize, offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDI]), GPRClass);
+  OrderedNode *MemDest = _LoadContext(GPRSize, GPROffset(X86State::REG_RDI), GPRClass);
 
   const size_t NumElements = Size / 64;
   for (size_t Element = 0; Element < NumElements; ++Element) {

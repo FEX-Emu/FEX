@@ -5,6 +5,7 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
@@ -516,6 +517,15 @@ private:
   void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align);
+
+  [[nodiscard]] static uint32_t GPROffset(X86State::X86Reg reg) {
+    LOGMAN_THROW_A_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
+    return static_cast<uint8_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
+  }
+
+  [[nodiscard]] static uint32_t MMBaseOffset() {
+    return static_cast<uint32_t>(offsetof(Core::CPUState, mm[0][0]));
+  }
 
   uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
   uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
