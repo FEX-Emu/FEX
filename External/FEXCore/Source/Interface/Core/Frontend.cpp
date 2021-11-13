@@ -416,7 +416,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
 
   uint8_t DestSize{};
   const bool HasWideningDisplacement = (FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST) != 0 ||
-                                       Options.w;
+                                       (Options.w && CTX->Config.Is64BitMode);
   const bool HasNarrowingDisplacement = (FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST) != 0;
 
   bool HasXMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&

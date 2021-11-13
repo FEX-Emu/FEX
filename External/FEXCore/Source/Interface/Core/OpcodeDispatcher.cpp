@@ -2372,6 +2372,21 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::MULX(OpcodeArgs) {
+  // RDX is the implied source operand in the instruction
+  const auto RDXOffset = offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]);
+  const auto OperandSize = GetSrcSize(Op);
+
+  OrderedNode* Src1 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode* Src2 = _LoadContext(OperandSize, RDXOffset, GPRClass);
+
+  OrderedNode* ResultLo = _UMul(Src1, Src2);
+  OrderedNode* ResultHi = _UMulH(Src1, Src2);
+
+  StoreResult(GPRClass, Op, Op->Src[0], ResultLo, -1);
+  StoreResult(GPRClass, Op, Op->Dest, ResultHi, -1);
+}
+
 void OpDispatchBuilder::ADXOp(OpcodeArgs) {
   // Handles ADCX and ADOX
 
@@ -6088,6 +6103,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(2, 0b00, 0xF2), 1, &OpDispatchBuilder::ANDNBMIOp},
+    {OPD(2, 0b11, 0xF6), 1, &OpDispatchBuilder::MULX},
     {OPD(2, 0b00, 0xF7), 1, &OpDispatchBuilder::BEXTRBMIOp},
     {OPD(2, 0b01, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
     {OPD(2, 0b10, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
