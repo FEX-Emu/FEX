@@ -8,6 +8,7 @@ $end_info$
 #pragma once
 
 #include "Tests/LinuxSyscalls/FileManagement.h"
+#include "Tests/LinuxSyscalls/LinuxAllocator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -143,6 +144,8 @@ public:
   static uint32_t KernelMinor(uint32_t Version) { return (Version >> 16) & 0xFF; }
   static uint32_t KernelPatch(uint32_t Version) { return Version & 0xFFFF; }
 
+  FEX::HLE::MemAllocator *Get32BitAllocator() { return Alloc32Handler.get(); }
+
 protected:
   std::vector<SyscallFunctionDefinition> Definitions{};
   std::mutex MMapMutex;
@@ -169,6 +172,7 @@ private:
     void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret);
   #endif
 
+  std::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler{};
 };
 
 uint64_t HandleSyscall(SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);

@@ -1,8 +1,9 @@
 add_compile_options(-fno-operator-names)
 
 add_library(LinuxEmulation STATIC
-    FileManagement.cpp
     EmulatedFiles/EmulatedFiles.cpp
+    FileManagement.cpp
+    LinuxAllocator.cpp
     SignalDelegator.cpp
     Syscalls.cpp
     x32/Syscalls.cpp
