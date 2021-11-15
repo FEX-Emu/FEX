@@ -521,7 +521,7 @@ private:
 
   [[nodiscard]] static uint32_t GPROffset(X86State::X86Reg reg) {
     LOGMAN_THROW_A_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
-    return static_cast<uint8_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
+    return static_cast<uint32_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
   }
 
   [[nodiscard]] static uint32_t MMBaseOffset() {
