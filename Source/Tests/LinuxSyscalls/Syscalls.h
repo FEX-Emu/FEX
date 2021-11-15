@@ -20,6 +20,16 @@ $end_info$
 #include <stdint.h>
 #include <type_traits>
 #include <vector>
+#ifdef _M_X86_64
+#define SYSCALL_ARCH_NAME x64
+#elif _M_ARM_64
+#include "Tests/LinuxSyscalls/Arm64/SyscallsEnum.h"
+#define SYSCALL_ARCH_NAME Arm64
+#endif
+
+#define CONCAT_(a, b) a ## b
+#define CONCAT(a, b) CONCAT_(a, b)
+#define SYSCALL_DEF(name) ( SYSCALL_ARCH_NAME::CONCAT(CONCAT(SYSCALL_, SYSCALL_ARCH_NAME), _##name))
 
 // #define DEBUG_STRACE
 
@@ -98,6 +108,7 @@ public:
       SyscallPtrArg5 Ptr5;
       SyscallPtrArg6 Ptr6;
     };
+    int32_t HostSyscallNumber;
 #ifdef DEBUG_STRACE
     std::string StraceFmt;
 #endif
@@ -109,7 +120,7 @@ public:
 
   FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
     auto &Def = Definitions.at(Syscall);
-    return {Def.NumArgs, true};
+    return {Def.NumArgs, true, Def.HostSyscallNumber};
   }
 
   uint64_t HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr);
@@ -345,7 +356,15 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   struct impl_##name { \
     impl_##name() \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, #name, lambda); \
+      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, ~0, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, #name, lambda); \
     } } impl_##name
 
+// Registers syscall for both 32bit and 64bit
+#define REGISTER_SYSCALL_IMPL_PASS(name, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, #name, lambda); \
+    } } impl_##name

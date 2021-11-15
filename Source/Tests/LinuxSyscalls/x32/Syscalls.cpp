@@ -62,6 +62,7 @@ namespace FEX::HLE::x32 {
     int SyscallNumber;
     void* SyscallHandler;
     int ArgumentCount;
+    int32_t HostSyscallNumber;
 #ifdef DEBUG_STRACE
     std::string TraceFormatString;
 #endif
@@ -70,6 +71,7 @@ namespace FEX::HLE::x32 {
   std::vector<InternalSyscallDefinition> syscalls_x32;
 
   void RegisterSyscallInternal(int SyscallNumber,
+    int32_t HostSyscallNumber,
 #ifdef DEBUG_STRACE
     const std::string& TraceFormatString,
 #endif
@@ -77,6 +79,7 @@ namespace FEX::HLE::x32 {
     syscalls_x32.push_back({SyscallNumber,
       SyscallHandler,
       ArgumentCount,
+      HostSyscallNumber,
 #ifdef DEBUG_STRACE
       TraceFormatString
 #endif
@@ -90,7 +93,7 @@ namespace FEX::HLE::x32 {
   }
 
   void x32SyscallHandler::RegisterSyscallHandlers() {
-    Definitions.resize(FEX::HLE::x32::SYSCALL_MAX);
+    Definitions.resize(FEX::HLE::x32::SYSCALL_x86_MAX);
     auto cvt = [](auto in) {
       union {
         decltype(in) val;
@@ -155,6 +158,7 @@ namespace FEX::HLE::x32 {
 #endif
       Def.Ptr = Syscall.SyscallHandler;
       Def.NumArgs = Syscall.ArgumentCount;
+      Def.HostSyscallNumber = Syscall.HostSyscallNumber;
 #ifdef DEBUG_STRACE
       Def.StraceFmt = Syscall.TraceFormatString;
 #endif

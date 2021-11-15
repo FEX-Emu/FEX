@@ -14,42 +14,42 @@ $end_info$
 
 namespace FEX::HLE {
   void RegisterIO() {
-    REGISTER_SYSCALL_IMPL(iopl, [](FEXCore::Core::CpuStateFrame *Frame, int level) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(iopl, [](FEXCore::Core::CpuStateFrame *Frame, int level) -> uint64_t {
       // Just claim we don't have permission
       return -EPERM;
     });
 
-    REGISTER_SYSCALL_IMPL(ioperm, [](FEXCore::Core::CpuStateFrame *Frame, unsigned long from, unsigned long num, int turn_on) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(ioperm, [](FEXCore::Core::CpuStateFrame *Frame, unsigned long from, unsigned long num, int turn_on) -> uint64_t {
       // ioperm not available on our architecture
       return -EPERM;
     });
 
-    REGISTER_SYSCALL_IMPL(io_setup, [](FEXCore::Core::CpuStateFrame *Frame, unsigned nr_events, aio_context_t *ctx_idp) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(io_setup, [](FEXCore::Core::CpuStateFrame *Frame, unsigned nr_events, aio_context_t *ctx_idp) -> uint64_t {
       uint64_t Result = ::syscall(SYS_io_setup, nr_events, ctx_idp);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(io_destroy, [](FEXCore::Core::CpuStateFrame *Frame, aio_context_t ctx_id) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(io_destroy, [](FEXCore::Core::CpuStateFrame *Frame, aio_context_t ctx_id) -> uint64_t {
       uint64_t Result = ::syscall(SYS_io_destroy, ctx_id);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(io_submit, [](FEXCore::Core::CpuStateFrame *Frame, aio_context_t ctx_id, long nr, struct iocb **iocbpp) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(io_submit, [](FEXCore::Core::CpuStateFrame *Frame, aio_context_t ctx_id, long nr, struct iocb **iocbpp) -> uint64_t {
       uint64_t Result = ::syscall(SYS_io_submit, ctx_id, nr, iocbpp);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(io_cancel, [](FEXCore::Core::CpuStateFrame *Frame, aio_context_t ctx_id, struct iocb *iocb, struct io_event *result) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(io_cancel, [](FEXCore::Core::CpuStateFrame *Frame, aio_context_t ctx_id, struct iocb *iocb, struct io_event *result) -> uint64_t {
       uint64_t Result = ::syscall(SYS_io_cancel, ctx_id, iocb, result);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(ioprio_set, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(ioprio_set, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who) -> uint64_t {
       uint64_t Result = ::syscall(SYS_ioprio_set, which, who);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(ioprio_get, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who, int ioprio) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(ioprio_get, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who, int ioprio) -> uint64_t {
       uint64_t Result = ::syscall(SYS_ioprio_get, which, who, ioprio);
       SYSCALL_ERRNO();
     });

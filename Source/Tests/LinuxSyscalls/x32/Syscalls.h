@@ -45,6 +45,7 @@ std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Contex
                                                         std::unique_ptr<MemAllocator> Allocator);
 
 void RegisterSyscallInternal(int SyscallNumber,
+  int32_t HostSyscallNumber,
 #ifdef DEBUG_STRACE
   const std::string& TraceFormatString,
 #endif
@@ -60,11 +61,12 @@ void RegisterSyscallInternal(int SyscallNumber,
 // Deduces return, args... from the function passed
 // Does not work with lambas, because they are objects with operator (), not functions
 template<typename R, typename ...Args>
-bool RegisterSyscall(int SyscallNumber, const char *Name, R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)) {
+bool RegisterSyscall(int SyscallNumber, int32_t HostSyscallNumber, const char *Name, R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)) {
 #ifdef DEBUG_STRACE
   auto TraceFormatString = std::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
 #endif
   FEX::HLE::x32::RegisterSyscallInternal(SyscallNumber,
+    HostSyscallNumber,
 #ifdef DEBUG_STRACE
     TraceFormatString,
 #endif
@@ -86,9 +88,9 @@ struct LambdaTraits<T (C::*)(Args...) const>
 // Non-capturing lambdas can be cast to function pointers, but this does not happen on argument matching
 // This is some glue logic that will cast a lambda and call the base RegisterSyscall implementation
 template<class F>
-bool RegisterSyscall(int num, const char *name, F f){
+bool RegisterSyscall(int num, int32_t HostSyscallNumber, const char *name, F f){
   typedef typename LambdaTraits<decltype(&F::operator())>::Type Signature;
-  return RegisterSyscall(num, name, (Signature)f);
+  return RegisterSyscall(num, HostSyscallNumber, name, (Signature)f);
 }
 
 }
@@ -98,5 +100,13 @@ bool RegisterSyscall(int num, const char *name, F f){
   struct impl_##name { \
     impl_##name() \
     { \
-      FEX::HLE::x32::RegisterSyscall(x32::SYSCALL_x86_##name, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(x32::SYSCALL_x86_##name, ~0, #name, lambda); \
+    } } impl_##name
+
+// Registers syscall for 32bit only
+#define REGISTER_SYSCALL_IMPL_X32_PASS(name, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEX::HLE::x32::RegisterSyscall(x32::SYSCALL_x86_##name, SYSCALL_DEF(name), #name, lambda); \
     } } impl_##name

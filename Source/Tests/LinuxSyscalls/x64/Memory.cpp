@@ -84,7 +84,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(mremap, [](FEXCore::Core::CpuStateFrame *Frame, void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(mremap, [](FEXCore::Core::CpuStateFrame *Frame, void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) -> uint64_t {
       uint64_t Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
       SYSCALL_ERRNO();
     });
@@ -99,32 +99,29 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(mlockall, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(mlockall, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
       uint64_t Result = ::mlockall(flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(munlockall, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(munlockall, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::munlockall();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(shmat, [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(shmat, [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
       uint64_t Result = reinterpret_cast<uint64_t>(shmat(shmid, shmaddr, shmflg));
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(shmdt, [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(shmdt, [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
       uint64_t Result = ::shmdt(shmaddr);
       SYSCALL_ERRNO();
     });
 
-#ifndef SYS_process_madvise
-#define SYS_process_madvise 440
-#endif
     if (Handler->IsHostKernelVersionAtLeast(5, 10, 0)) {
-      REGISTER_SYSCALL_IMPL_X64(process_madvise, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, const struct iovec *iovec, size_t vlen, int advice, unsigned int flags) -> uint64_t {
-        uint64_t Result = ::syscall(SYS_process_madvise, pidfd, iovec, vlen, advice, flags);
+      REGISTER_SYSCALL_IMPL_X64_PASS(process_madvise, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, const struct iovec *iovec, size_t vlen, int advice, unsigned int flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(process_madvise), pidfd, iovec, vlen, advice, flags);
         SYSCALL_ERRNO();
       });
     }

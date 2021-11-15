@@ -21,27 +21,27 @@ namespace SignalDelegator {
 namespace FEX::HLE {
   void RegisterNamespace(FEX::HLE::SyscallHandler *const Handler) {
     if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 1, 0)) {
-      REGISTER_SYSCALL_IMPL(open_tree, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *filename, unsigned int flags) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_PASS(open_tree, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *filename, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_open_tree, dfd, filename, flags);
         SYSCALL_ERRNO();
       });
 
-      REGISTER_SYSCALL_IMPL(move_mount, [](FEXCore::Core::CpuStateFrame *Frame, int from_dfd, const char *from_pathname, int to_dfd, const char *to_pathname, unsigned int flags) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_PASS(move_mount, [](FEXCore::Core::CpuStateFrame *Frame, int from_dfd, const char *from_pathname, int to_dfd, const char *to_pathname, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_move_mount, from_dfd, from_pathname, to_dfd, to_pathname, flags);
         SYSCALL_ERRNO();
       });
 
-      REGISTER_SYSCALL_IMPL(fsopen, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *path, unsigned int flags) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_PASS(fsopen, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *path, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_fsopen, dfd, path, flags);
         SYSCALL_ERRNO();
       });
 
-      REGISTER_SYSCALL_IMPL(fsconfig, [](FEXCore::Core::CpuStateFrame *Frame, int fd, unsigned int cmd, const char *key, const void *value, int aux) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_PASS(fsconfig, [](FEXCore::Core::CpuStateFrame *Frame, int fd, unsigned int cmd, const char *key, const void *value, int aux) -> uint64_t {
         uint64_t Result = ::syscall(SYS_fsconfig, fd, cmd, key, value, aux);
         SYSCALL_ERRNO();
       });
 
-      REGISTER_SYSCALL_IMPL(fspick, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *path, unsigned int flags) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_PASS(fspick, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *path, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_fspick, dfd, path, flags);
         SYSCALL_ERRNO();
       });
@@ -55,12 +55,9 @@ namespace FEX::HLE {
       REGISTER_SYSCALL_IMPL(fspick, UnimplementedSyscallSafe);
     }
 
-#ifndef SYS_mount_setattr
-#define SYS_mount_setattr 442
-#endif
     if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 12, 0)) {
-      REGISTER_SYSCALL_IMPL(mount_setattr, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *path, unsigned int flags, void *uattr, size_t usize) -> uint64_t {
-        uint64_t Result = ::syscall(SYS_mount_setattr, dfd, path, flags, uattr, usize);
+      REGISTER_SYSCALL_IMPL_PASS(mount_setattr, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *path, unsigned int flags, void *uattr, size_t usize) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(mount_setattr), dfd, path, flags, uattr, usize);
         SYSCALL_ERRNO();
       });
     }

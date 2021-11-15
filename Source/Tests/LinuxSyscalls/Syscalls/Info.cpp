@@ -58,22 +58,22 @@ namespace FEX::HLE {
       return 0;
     });
 
-    REGISTER_SYSCALL_IMPL(syslog, [](FEXCore::Core::CpuStateFrame *Frame, int type, char *bufp, int len) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(syslog, [](FEXCore::Core::CpuStateFrame *Frame, int type, char *bufp, int len) -> uint64_t {
       uint64_t Result = ::klogctl(type, bufp, len);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(getrandom, [](FEXCore::Core::CpuStateFrame *Frame, void *buf, size_t buflen, unsigned int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(getrandom, [](FEXCore::Core::CpuStateFrame *Frame, void *buf, size_t buflen, unsigned int flags) -> uint64_t {
       uint64_t Result = ::getrandom(buf, buflen, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(capget, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(capget, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
       uint64_t Result = ::syscall(SYS_capget, hdrp, datap);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(capset, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, const cap_user_data_t datap) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(capset, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, const cap_user_data_t datap) -> uint64_t {
       uint64_t Result = ::syscall(SYS_capset, hdrp, datap);
       SYSCALL_ERRNO();
     });
@@ -98,7 +98,7 @@ namespace FEX::HLE {
     });
 
     //compare  two  processes  to determine if they share a kernel resource
-    REGISTER_SYSCALL_IMPL(kcmp, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid1, pid_t pid2, int type, unsigned long idx1, unsigned long idx2) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(kcmp, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid1, pid_t pid2, int type, unsigned long idx1, unsigned long idx2) -> uint64_t {
       uint64_t Result = ::syscall(SYS_kcmp, pid1, pid2, type, idx1, idx2);
       SYSCALL_ERRNO();
     });

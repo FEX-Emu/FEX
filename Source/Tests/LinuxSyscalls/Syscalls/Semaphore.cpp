@@ -14,7 +14,7 @@ $end_info$
 
 namespace FEX::HLE {
   void RegisterSemaphore() {
-    REGISTER_SYSCALL_IMPL(semget, [](FEXCore::Core::CpuStateFrame *Frame, key_t key, int nsems, int semflg) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(semget, [](FEXCore::Core::CpuStateFrame *Frame, key_t key, int nsems, int semflg) -> uint64_t {
       uint64_t Result = ::semget(key, nsems, semflg);
       SYSCALL_ERRNO();
     });

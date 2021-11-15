@@ -8,6 +8,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/FileManagement.h"
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
 
@@ -342,9 +343,6 @@ uint64_t FileManager::Close(int fd) {
 }
 
 uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned int flags) {
-#ifndef SYS_close_range
-#define SYS_close_range 436
-#endif
 #ifndef CLOSE_RANGE_CLOEXEC
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
@@ -358,7 +356,7 @@ uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned
       FDToNameMap.erase(i);
     }
   }
-  return ::syscall(SYS_close_range, first, last, flags);
+  return ::syscall(SYSCALL_DEF(close_range), first, last, flags);
 }
 
 uint64_t FileManager::Stat(const char *pathname, void *buf) {
@@ -423,17 +421,14 @@ uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int 
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-#ifndef SYS_faccessat2
-  const uint32_t SYS_faccessat2 = 439;
-#endif
   auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
-    uint64_t Result = ::syscall(SYS_faccessat2, dirfd, Path.c_str(), mode, flags);
+    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), dirfd, Path.c_str(), mode, flags);
     if (Result != -1)
       return Result;
   }
 
-  return ::syscall(SYS_faccessat2, dirfd, SelfPath, mode, flags);
+  return ::syscall(SYSCALL_DEF(faccessat2), dirfd, SelfPath, mode, flags);
 }
 
 uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
@@ -570,10 +565,6 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
 }
 
 uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_how *how, size_t usize) {
-#ifndef SYS_openat2
-#define SYS_openat2 437
-#endif
-
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
@@ -583,11 +574,11 @@ uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_ho
   if (fd == -1) {
     auto Path = GetEmulatedPath(SelfPath, true);
     if (!Path.empty()) {
-      fd = ::syscall(SYS_openat2, dirfs, Path.c_str(), how, usize);
+      fd = ::syscall(SYSCALL_DEF(openat2), dirfs, Path.c_str(), how, usize);
     }
 
     if (fd == -1)
-      fd = ::syscall(SYS_openat2, dirfs, SelfPath, how, usize);
+      fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
   }
 
   if (fd != -1) {
