@@ -22,14 +22,6 @@ namespace FEXCore {
         using T = std::underlying_type_t<type>;                                                    \
         return static_cast<type>(static_cast<T>(a) ^ static_cast<T>(b));                           \
     }                                                                                              \
-    [[nodiscard]] constexpr type operator<<(type a, type b) noexcept {                             \
-        using T = std::underlying_type_t<type>;                                                    \
-        return static_cast<type>(static_cast<T>(a) << static_cast<T>(b));                          \
-    }                                                                                              \
-    [[nodiscard]] constexpr type operator>>(type a, type b) noexcept {                             \
-        using T = std::underlying_type_t<type>;                                                    \
-        return static_cast<type>(static_cast<T>(a) >> static_cast<T>(b));                          \
-    }                                                                                              \
     constexpr type& operator|=(type& a, type b) noexcept {                                         \
         a = a | b;                                                                                 \
         return a;                                                                                  \
@@ -40,14 +32,6 @@ namespace FEXCore {
     }                                                                                              \
     constexpr type& operator^=(type& a, type b) noexcept {                                         \
         a = a ^ b;                                                                                 \
-        return a;                                                                                  \
-    }                                                                                              \
-    constexpr type& operator<<=(type& a, type b) noexcept {                                        \
-        a = a << b;                                                                                \
-        return a;                                                                                  \
-    }                                                                                              \
-    constexpr type& operator>>=(type& a, type b) noexcept {                                        \
-        a = a >> b;                                                                                \
         return a;                                                                                  \
     }                                                                                              \
     [[nodiscard]] constexpr type operator~(type key) noexcept {                                    \
