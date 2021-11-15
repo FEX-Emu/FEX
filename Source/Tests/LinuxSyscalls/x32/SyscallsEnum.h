@@ -3,9 +3,10 @@ $info$
 tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
+#pragma once
 
 ///< Enum containing all 32bit x86 linux syscalls for the guest kernel version
-enum Syscalls {
+enum Syscalls_x86 {
   SYSCALL_x86_restart_syscall = 0,
   SYSCALL_x86_exit = 1,
   SYSCALL_x86_fork = 2,
@@ -23,6 +24,7 @@ enum Syscalls {
   SYSCALL_x86_mknod = 14,
   SYSCALL_x86_chmod = 15,
   SYSCALL_x86_lchown = 16,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_break = 17,
   SYSCALL_x86_oldstat = 18,
   SYSCALL_x86_lseek = 19,
@@ -37,10 +39,13 @@ enum Syscalls {
   SYSCALL_x86_oldfstat = 28,
   SYSCALL_x86_pause = 29,
   SYSCALL_x86_utime = 30,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_stty = 31,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_gtty = 32,
   SYSCALL_x86_access = 33,
   SYSCALL_x86_nice = 34,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_ftime = 35,
   SYSCALL_x86_sync = 36,
   SYSCALL_x86_kill = 37,
@@ -50,6 +55,7 @@ enum Syscalls {
   SYSCALL_x86_dup = 41,
   SYSCALL_x86_pipe = 42,
   SYSCALL_x86_times = 43,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_prof = 44,
   SYSCALL_x86_brk = 45,
   SYSCALL_x86_setgid = 46,
@@ -59,11 +65,14 @@ enum Syscalls {
   SYSCALL_x86_getegid = 50,
   SYSCALL_x86_acct = 51,
   SYSCALL_x86_umount2 = 52,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_lock = 53,
   SYSCALL_x86_ioctl = 54,
   SYSCALL_x86_fcntl = 55,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_mpx = 56,
   SYSCALL_x86_setpgid = 57,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_ulimit = 58,
   SYSCALL_x86_oldolduname = 59,
   SYSCALL_x86_umask = 60,
@@ -104,6 +113,7 @@ enum Syscalls {
   SYSCALL_x86_fchown = 95,
   SYSCALL_x86_getpriority = 96,
   SYSCALL_x86_setpriority = 97,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_profil = 98,
   SYSCALL_x86_statfs = 99,
   SYSCALL_x86_fstatfs = 100,
@@ -118,6 +128,7 @@ enum Syscalls {
   SYSCALL_x86_olduname = 109,
   SYSCALL_x86_iopl = 110,
   SYSCALL_x86_vhangup = 111,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_idle = 112,
   SYSCALL_x86_vm86old = 113,
   SYSCALL_x86_wait4 = 114,
@@ -133,9 +144,11 @@ enum Syscalls {
   SYSCALL_x86_adjtimex = 124,
   SYSCALL_x86_mprotect = 125,
   SYSCALL_x86_sigprocmask = 126,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_create_module = 127,
   SYSCALL_x86_init_module = 128,
   SYSCALL_x86_delete_module = 129,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_get_kernel_syms = 130,
   SYSCALL_x86_quotactl = 131,
   SYSCALL_x86_getpgid = 132,
@@ -143,6 +156,7 @@ enum Syscalls {
   SYSCALL_x86_bdflush = 134,
   SYSCALL_x86_sysfs = 135,
   SYSCALL_x86_personality = 136,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_afs_syscall = 137,
   SYSCALL_x86_setfsuid = 138,
   SYSCALL_x86_setfsgid = 139,
@@ -173,8 +187,10 @@ enum Syscalls {
   SYSCALL_x86_setresuid = 164,
   SYSCALL_x86_getresuid = 165,
   SYSCALL_x86_vm86 = 166,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_query_module = 167,
   SYSCALL_x86_poll = 168,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_nfsservctl = 169,
   SYSCALL_x86_setresgid = 170,
   SYSCALL_x86_getresgid = 171,
@@ -194,7 +210,9 @@ enum Syscalls {
   SYSCALL_x86_capset = 185,
   SYSCALL_x86_sigaltstack = 186,
   SYSCALL_x86_sendfile = 187,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_getpmsg = 188,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_putpmsg = 189,
   SYSCALL_x86_vfork = 190,
   SYSCALL_x86_ugetrlimit = 191,
@@ -276,6 +294,7 @@ enum Syscalls {
   SYSCALL_x86_tgkill = 270,
   SYSCALL_x86_utimes = 271,
   SYSCALL_x86_fadvise64_64 = 272,
+  // No entrypoint. -ENOSYS
   SYSCALL_x86_vserver = 273,
   SYSCALL_x86_mbind = 274,
   SYSCALL_x86_get_mempolicy = 275,
@@ -438,5 +457,13 @@ enum Syscalls {
   SYSCALL_x86_process_madvise = 440,
   SYSCALL_x86_epoll_pwait2 = 441,
   SYSCALL_x86_mount_setattr = 442,
-  SYSCALL_MAX             = 512,
+  SYSCALL_x86_quotactl_fd = 443,
+  SYSCALL_x86_landlock_create_ruleset = 444,
+  SYSCALL_x86_landlock_add_rule = 445,
+  SYSCALL_x86_landlock_restrict_self = 446,
+  SYSCALL_x86_memfd_secret = 447,
+  SYSCALL_x86_process_mrelease = 448,
+  SYSCALL_x86_futex_waitv = 449,
+  SYSCALL_x86_MAX = 512,
 };
+
