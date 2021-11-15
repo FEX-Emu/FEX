@@ -217,8 +217,31 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   // Otherwise we might load garbage
   if (SRAEnabled) {
     if (IsAddressInJITCode(OldPC, false)) {
+      uint32_t IgnoreMask{};
+#ifdef _M_ARM_64
+      if (Frame->InSyscallInfo != 0) {
+        // We are in a syscall, this means we are in a weird register state
+        // We need to spill SRA but only some of it, since some values have already been spilled
+        // Lower 16 bits tells us which registers are already spilled to the context
+        // So we ignore spilling those ones
+        uint16_t NumRegisters = std::popcount(Frame->InSyscallInfo & 0xFFFF);
+        if (NumRegisters >= 4) {
+          // Unhandled case
+          IgnoreMask = 0;
+        }
+        else {
+          IgnoreMask = Frame->InSyscallInfo & 0xFFFF;
+        }
+      }
+      else {
+        // We must spill everything
+        IgnoreMask = 0;
+      }
+#endif
+
       // We are in jit, SRA must be spilled
-      SpillSRA(ucontext);
+      SpillSRA(ucontext, IgnoreMask);
+
       ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_INJIT;
     } else {
       if (!IsAddressInJITCode(OldPC, true)) {

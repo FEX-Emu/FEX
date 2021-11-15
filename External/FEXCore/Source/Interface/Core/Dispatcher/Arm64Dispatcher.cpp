@@ -349,8 +349,12 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 }
 
-void Arm64Dispatcher::SpillSRA(void *ucontext) {
+void Arm64Dispatcher::SpillSRA(void *ucontext, uint32_t IgnoreMask) {
   for(int i = 0; i < SRA64.size(); i++) {
+    if (IgnoreMask & (1U << SRA64[i].GetCode())) {
+      // Skip this one, it's already spilled
+      continue;
+    }
     ThreadState->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].GetCode());
   }
 

@@ -676,6 +676,26 @@
       ]
     },
 
+    "InlineSyscall": {
+      "HasSideEffects": true,
+      "OpClass": "Branch",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "FixedDestSize": "8",
+      "SSAArgs": "6",
+      "SSANames": [
+        "Arg0",
+        "Arg1",
+        "Arg2",
+        "Arg3",
+        "Arg4",
+        "Arg5"
+      ],
+      "Args": [
+        "int32_t", "HostSyscallNumber"
+      ]
+    },
+
     "Thunk": {
       "HasSideEffects": true,
       "OpClass": "Branch",

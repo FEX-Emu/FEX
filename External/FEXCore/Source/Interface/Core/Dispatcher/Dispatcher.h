@@ -83,7 +83,7 @@ protected:
   std::stack<uint64_t> SignalFrames;
 
   bool SRAEnabled = false;
-  virtual void SpillSRA(void *ucontext) {}
+  virtual void SpillSRA(void *ucontext, uint32_t IgnoreMask) {}
 
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;

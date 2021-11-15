@@ -277,6 +277,7 @@ private:
   DEF_OP(Jump);
   DEF_OP(CondJump);
   DEF_OP(Syscall);
+  DEF_OP(InlineSyscall);
   DEF_OP(Thunk);
   DEF_OP(ValidateCode);
   DEF_OP(RemoveCodeEntry);

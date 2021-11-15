@@ -41,6 +41,27 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
           for (uint8_t Arg = (SyscallDef.NumArgs + 1); Arg < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++Arg) {
             IREmit->ReplaceNodeArgument(CodeNode, Arg, IREmit->Invalid());
           }
+#ifdef _M_ARM_64
+          // Replace syscall with inline passthrough syscall if we can
+          if (SyscallDef.HostSyscallNumber != -1) {
+            IREmit->SetWriteCursor(CodeNode);
+            // Skip Args[0] since that is the syscallid
+            auto InlineSyscall = IREmit->_InlineSyscall(
+              CurrentIR.GetNode(IROp->Args[1]),
+              CurrentIR.GetNode(IROp->Args[2]),
+              CurrentIR.GetNode(IROp->Args[3]),
+              CurrentIR.GetNode(IROp->Args[4]),
+              CurrentIR.GetNode(IROp->Args[5]),
+              CurrentIR.GetNode(IROp->Args[6]),
+              SyscallDef.HostSyscallNumber);
+
+            // Replace all syscall uses with this inline one
+            IREmit->ReplaceAllUsesWith(CodeNode, InlineSyscall);
+
+            // We must remove here since DCE can't remove a IROp with sideeffects
+            IREmit->Remove(CodeNode);
+          }
+#endif
           Changed = true;
         }
       }
