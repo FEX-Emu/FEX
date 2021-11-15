@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/HLE/SyscallHandler.h>
 
 #include <cstdint>
+#include <unistd.h>
 
 namespace FEXCore::CPU {
 [[noreturn]]
@@ -104,6 +105,34 @@ DEF_OP(Syscall) {
   GD = Res;
 }
 
+DEF_OP(InlineSyscall) {
+  auto Op = IROp->C<IR::IROp_InlineSyscall>();
+
+  FEXCore::HLE::SyscallArguments Args;
+  for (size_t j = 0; j < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++j) {
+    if (Op->Header.Args[j].IsInvalid()) break;
+    Args.Argument[j] = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[j]);
+  }
+
+  // We don't want the errno handling but I also don't want to write inline ASM atm
+  uint64_t Res = syscall(
+    Op->HostSyscallNumber,
+    Args.Argument[0],
+    Args.Argument[1],
+    Args.Argument[2],
+    Args.Argument[3],
+    Args.Argument[4],
+    Args.Argument[5],
+    Args.Argument[6]
+  );
+
+  if (Res == -1) {
+    Res = -errno;
+  }
+
+  GD = Res;
+}
+
 DEF_OP(Thunk) {
   auto Op = IROp->C<IR::IROp_Thunk>();
 
@@ -148,6 +177,7 @@ void InterpreterOps::RegisterBranchHandlers() {
   REGISTER_OP(JUMP,              Jump);
   REGISTER_OP(CONDJUMP,          CondJump);
   REGISTER_OP(SYSCALL,           Syscall);
+  REGISTER_OP(INLINESYSCALL,     InlineSyscall);
   REGISTER_OP(THUNK,             Thunk);
   REGISTER_OP(VALIDATECODE,      ValidateCode);
   REGISTER_OP(REMOVECODEENTRY,   RemoveCodeEntry);
