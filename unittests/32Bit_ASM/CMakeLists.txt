@@ -27,7 +27,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     DEPENDS "${OUTPUT_ASM_FOLDER}"
     DEPENDS "${ASM_SRC}"
     COMMAND "cp" ARGS "${ASM_SRC}" "${TMP_FILE}"
-    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\norg 10000h\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
+    COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\norg 10000h\\nmov eax, 0x17\\nmov ds, ax\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
     )
 
   set(OUTPUT_NAME "${OUTPUT_ASM_FOLDER}/${ASM_NAME}.bin")
@@ -47,13 +47,19 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   # Format is "<Test Arguments>" "<Test Name>"
   set(TEST_ARGS
-    "--no-silent -c irint -n 1   --no-multiblock"    "int_1"     "int"
-    "--no-silent -c irint -n 500 --no-multiblock"    "int_500"   "int"
-    "--no-silent -c irint -n 500 --multiblock"       "int_500_m" "int"
-    "--no-silent -c irjit -n 1   --no-multiblock"    "jit_1"     "jit"
-    "--no-silent -c irjit -n 500 --no-multiblock"    "jit_500"   "jit"
-    "--no-silent -c irjit -n 500 --multiblock"       "jit_500_m" "jit"
+    "--no-silent -g -c irint -n 1   --no-multiblock"    "int_1"     "int"
+    "--no-silent -g -c irint -n 500 --no-multiblock"    "int_500"   "int"
+    "--no-silent -g -c irint -n 500 --multiblock"       "int_500_m" "int"
+    "--no-silent -g -c irjit -n 1   --no-multiblock"    "jit_1"     "jit"
+    "--no-silent -g -c irjit -n 500 --no-multiblock"    "jit_500"   "jit"
+    "--no-silent -g -c irjit -n 500 --multiblock"       "jit_500_m" "jit"
     )
+
+  if (_M_X86_64)
+    list(APPEND TEST_ARGS
+      "--no-silent -g -c host"       "host"      "host"
+      )
+  endif()
 
   set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests")
   if (DEFINED ENV{runner_label})

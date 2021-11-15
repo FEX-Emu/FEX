@@ -371,7 +371,7 @@ namespace FEX::HarnessHelper {
     bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) override {
       bool LimitedSize = true;
       auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
-        void *Result = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        void *Result = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         LOGMAN_THROW_A(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
         return Result;
       };

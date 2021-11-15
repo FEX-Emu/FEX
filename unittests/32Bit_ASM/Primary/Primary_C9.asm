@@ -4,9 +4,7 @@
     "RAX": "0x1",
     "RBP": "0x41424344"
   },
-  "MemoryRegions": {
-    "0x100000000": "4096"
-  }
+  "Mode": "32BIT"
 }
 %endif
 
