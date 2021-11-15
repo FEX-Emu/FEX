@@ -528,10 +528,10 @@ private:
     return static_cast<uint32_t>(offsetof(Core::CPUState, mm[0][0]));
   }
 
-  uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
-  uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
-  uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
-  uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
 
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {
