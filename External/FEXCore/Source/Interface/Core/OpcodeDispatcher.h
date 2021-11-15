@@ -530,8 +530,8 @@ private:
 
   uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
   uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
-  uint8_t GetDstBitSize(X86Tables::DecodedOp Op) const;
-  uint8_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
+  uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
+  uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
 
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {
