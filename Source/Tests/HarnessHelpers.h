@@ -143,19 +143,16 @@ namespace FEX::HarnessHelper {
   }
 
   inline void ReadFile(std::string const &Filename, std::vector<char> *Data) {
-    std::fstream TestFile;
-    TestFile.open(Filename, std::fstream::in | std::fstream::binary);
+    std::fstream TestFile(Filename, std::fstream::in | std::fstream::binary);
     LOGMAN_THROW_A_FMT(TestFile.is_open(), "Failed to open file");
 
     TestFile.seekg(0, std::fstream::end);
-    size_t FileSize = TestFile.tellg();
+    const size_t FileSize = TestFile.tellg();
     TestFile.seekg(0, std::fstream::beg);
 
     Data->resize(FileSize);
 
-    TestFile.read(&Data->at(0), FileSize);
-
-    TestFile.close();
+    TestFile.read(Data->data(), FileSize);
   }
 
   class ConfigLoader final {
