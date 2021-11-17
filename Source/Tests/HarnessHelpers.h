@@ -49,7 +49,7 @@ namespace FEX::HarnessHelper {
         return;
       }
 
-      constexpr std::array<unsigned, 17> Flags = {
+      static constexpr std::array<uint32_t, 17> Flags = {
         FEXCore::X86State::RFLAG_CF_LOC,
         FEXCore::X86State::RFLAG_PF_LOC,
         FEXCore::X86State::RFLAG_AF_LOC,
@@ -173,7 +173,7 @@ namespace FEX::HarnessHelper {
       }
 
       if (BaseConfig.OptionRegDataCount > 0) {
-        constexpr std::array<uint64_t, 45> OffsetArray = {{
+        static constexpr std::array<uint64_t, 45> OffsetArray = {{
           offsetof(FEXCore::Core::CPUState, rip),
           offsetof(FEXCore::Core::CPUState, gregs[0]),
           offsetof(FEXCore::Core::CPUState, gregs[1]),
