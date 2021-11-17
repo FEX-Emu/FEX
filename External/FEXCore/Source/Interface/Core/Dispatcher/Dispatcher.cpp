@@ -92,8 +92,8 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
     }
 
     if (!(Context->Flags & ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT)) {
-      FEXCore::x86_64::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(Context->UContextLocation);
-      siginfo_t *guest_siginfo = reinterpret_cast<siginfo_t*>(Context->SigInfoLocation);
+      auto *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(Context->UContextLocation);
+      [[maybe_unused]] auto *guest_siginfo = reinterpret_cast<siginfo_t*>(Context->SigInfoLocation);
 
       // If the guest modified the RIP then we need to take special precautions here
       if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP]) {
@@ -127,8 +127,8 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
       }
     }
     else {
-      FEXCore::x86::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86::ucontext_t*>(Context->UContextLocation);
-      FEXCore::x86::siginfo_t *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(Context->SigInfoLocation);
+      auto *guest_uctx = reinterpret_cast<FEXCore::x86::ucontext_t*>(Context->UContextLocation);
+      [[maybe_unused]] auto *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(Context->SigInfoLocation);
       // If the guest modified the RIP then we need to take special precautions here
       if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP]) {
         // Hack! Go back to the top of the dispatcher top
