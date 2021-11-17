@@ -15,22 +15,22 @@ $end_info$
 
 namespace FEX::HLE::x64 {
   void RegisterInfo() {
-    REGISTER_SYSCALL_IMPL_X64(sysinfo, [](FEXCore::Core::CpuStateFrame *Frame, struct sysinfo *info) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(sysinfo, [](FEXCore::Core::CpuStateFrame *Frame, struct sysinfo *info) -> uint64_t {
       uint64_t Result = ::sysinfo(info);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(getrusage, [](FEXCore::Core::CpuStateFrame *Frame, int who, struct rusage *usage) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(getrusage, [](FEXCore::Core::CpuStateFrame *Frame, int who, struct rusage *usage) -> uint64_t {
       uint64_t Result = ::getrusage(who, usage);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(getrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, struct rlimit *rlim) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(getrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, struct rlimit *rlim) -> uint64_t {
       uint64_t Result = ::getrlimit(resource, rlim);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(setrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, const struct rlimit *rlim) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(setrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, const struct rlimit *rlim) -> uint64_t {
       uint64_t Result = ::setrlimit(resource, rlim);
       SYSCALL_ERRNO();
     });

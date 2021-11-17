@@ -18,47 +18,47 @@ $end_info$
 namespace FEX::HLE {
   void RegisterSched() {
 
-    REGISTER_SYSCALL_IMPL(sched_yield, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_yield, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::sched_yield();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(getpriority, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(getpriority, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who) -> uint64_t {
       uint64_t Result = ::syscall(SYS_getpriority, which, who);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(setpriority, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who, int prio) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(setpriority, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who, int prio) -> uint64_t {
       uint64_t Result = ::setpriority(which, who, prio);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_setparam, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct sched_param *param) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_setparam, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct sched_param *param) -> uint64_t {
       uint64_t Result = ::sched_setparam(pid, param);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_getparam, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_param *param) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_getparam, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_param *param) -> uint64_t {
       uint64_t Result = ::sched_getparam(pid, param);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_setscheduler, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int policy, const struct sched_param *param) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_setscheduler, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int policy, const struct sched_param *param) -> uint64_t {
       uint64_t Result = ::sched_setscheduler(pid, policy, param);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_getscheduler, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_getscheduler, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
       uint64_t Result = ::sched_getscheduler(pid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_get_priority_max, [](FEXCore::Core::CpuStateFrame *Frame, int policy) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_get_priority_max, [](FEXCore::Core::CpuStateFrame *Frame, int policy) -> uint64_t {
       uint64_t Result = ::sched_get_priority_max(policy);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_get_priority_min, [](FEXCore::Core::CpuStateFrame *Frame, int policy) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_get_priority_min, [](FEXCore::Core::CpuStateFrame *Frame, int policy) -> uint64_t {
       uint64_t Result = ::sched_get_priority_min(policy);
       SYSCALL_ERRNO();
     });
@@ -86,12 +86,12 @@ namespace FEX::HLE {
       return Bytes;
     });
 
-    REGISTER_SYSCALL_IMPL(sched_setattr, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_attr *attr, unsigned int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_setattr, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_attr *attr, unsigned int flags) -> uint64_t {
       uint64_t Result = ::syscall(SYS_sched_setattr, pid, attr, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(sched_getattr, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(sched_getattr, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags) -> uint64_t {
       uint64_t Result = ::syscall(SYS_sched_getattr, pid, attr, size, flags);
       SYSCALL_ERRNO();
     });

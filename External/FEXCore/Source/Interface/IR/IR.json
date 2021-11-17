@@ -660,6 +660,8 @@
 
     "Syscall": {
       "HasSideEffects": true,
+      "Desc": ["Dispatches a guest syscall through to the SyscallHandler class"
+              ],
       "OpClass": "Branch",
       "HasDest": true,
       "DestClass": "GPR",
@@ -673,6 +675,33 @@
         "Arg3",
         "Arg4",
         "Arg5"
+      ]
+    },
+
+    "InlineSyscall": {
+      "HasSideEffects": true,
+      "Desc": ["Dispatches a guest syscall directly to the host syscall interface,",
+               "bypassing the SyscallHandler class used by Syscall.",
+               "This has significantly less overhead than Syscall, which needs to save JIT state first.",
+               "Can only be used for syscalls that match across architecture,",
+               "such as gettid (matches on x86/x86-64/Arm64)."
+              ],
+
+      "OpClass": "Branch",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "FixedDestSize": "8",
+      "SSAArgs": "6",
+      "SSANames": [
+        "Arg0",
+        "Arg1",
+        "Arg2",
+        "Arg3",
+        "Arg4",
+        "Arg5"
+      ],
+      "Args": [
+        "int32_t", "HostSyscallNumber"
       ]
     },
 

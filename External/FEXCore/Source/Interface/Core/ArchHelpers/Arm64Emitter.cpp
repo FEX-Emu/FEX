@@ -147,26 +147,52 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
 }
 
 
-void Arm64Emitter::SpillStaticRegs() {
+void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t SpillMask) {
   if (StaticRegisterAllocation()) {
     for (size_t i = 0; i < SRA64.size(); i+=2) {
-        stp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
+      auto Reg1 = SRA64[i];
+      auto Reg2 = SRA64[i+1];
+      if (((1U << Reg1.GetCode()) & SpillMask) &&
+          ((1U << Reg2.GetCode()) & SpillMask)) {
+        stp(Reg1, Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
+      }
+      else if (((1U << Reg1.GetCode()) & SpillMask)) {
+        str(Reg1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
+      }
+      else if (((1U << Reg2.GetCode()) & SpillMask)) {
+        str(Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1])));
+      }
     }
 
-    for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-      stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+    if (FPRs) {
+      for (size_t i = 0; i < SRAFPR.size(); i+=2) {
+        stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+      }
     }
   }
 }
 
-void Arm64Emitter::FillStaticRegs() {
+void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t FillMask) {
   if (StaticRegisterAllocation()) {
     for (size_t i = 0; i < SRA64.size(); i+=2) {
-      ldp(SRA64[i], SRA64[i+1], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
+      auto Reg1 = SRA64[i];
+      auto Reg2 = SRA64[i+1];
+      if (((1U << Reg1.GetCode()) & FillMask) &&
+          ((1U << Reg2.GetCode()) & FillMask)) {
+        ldp(Reg1, Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
+      }
+      else if (((1U << Reg1.GetCode()) & FillMask)) {
+        ldr(Reg1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
+      }
+      else if (((1U << Reg2.GetCode()) & FillMask)) {
+        ldr(Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1])));
+      }
     }
 
-    for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-      ldp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+    if (FPRs) {
+      for (size_t i = 0; i < SRAFPR.size(); i+=2) {
+        ldp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+      }
     }
   }
 }

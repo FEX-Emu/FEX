@@ -12,7 +12,7 @@ $end_info$
 
 namespace FEX::HLE {
   void RegisterTime() {
-    REGISTER_SYSCALL_IMPL(pause, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(pause, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::pause();
       SYSCALL_ERRNO();
     });

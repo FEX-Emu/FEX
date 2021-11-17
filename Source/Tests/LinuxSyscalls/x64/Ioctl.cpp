@@ -16,7 +16,7 @@ namespace FEXCore::Core {
 
 namespace FEX::HLE::x64 {
   void RegisterIoctl() {
-    REGISTER_SYSCALL_IMPL_X64(ioctl, [](FEXCore::Core::CpuStateFrame *Frame, int fd, uint64_t request, void *args) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(ioctl, [](FEXCore::Core::CpuStateFrame *Frame, int fd, uint64_t request, void *args) -> uint64_t {
       uint64_t Result = ::ioctl(fd, request, args);
       SYSCALL_ERRNO();
     });

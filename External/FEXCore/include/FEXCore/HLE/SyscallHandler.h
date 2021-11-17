@@ -24,6 +24,8 @@ namespace FEXCore::HLE {
     // If the syscall has a return then it should be stored in the ABI specific syscall register
     // Linux = RAX
     bool HasReturn;
+
+    int32_t HostSyscallNumber;
   };
 
   enum class SyscallOSABI {

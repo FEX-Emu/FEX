@@ -51,20 +51,20 @@ namespace FEX::HLE {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, flags);
     });
 
-    REGISTER_SYSCALL_IMPL(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, siginfo_t *info) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, siginfo_t *info) -> uint64_t {
       uint64_t Result = ::syscall(SYS_rt_sigqueueinfo, pid, sig, info);
       SYSCALL_ERRNO();
     });
 
     // XXX: siginfo_t definitely isn't correct for 32-bit
-    REGISTER_SYSCALL_IMPL(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, siginfo_t *info) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, siginfo_t *info) -> uint64_t {
       uint64_t Result = ::syscall(SYS_rt_tgsigqueueinfo, tgid, tid, sig, info);
       SYSCALL_ERRNO();
     });
 
     if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
       // XXX: siginfo_t definitely isn't correct for 32-bit
-      REGISTER_SYSCALL_IMPL(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, siginfo_t *info, unsigned int flags) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_PASS(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, siginfo_t *info, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYS_pidfd_send_signal, pidfd, sig, info, flags);
         SYSCALL_ERRNO();
       });

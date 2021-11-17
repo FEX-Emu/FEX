@@ -20,17 +20,17 @@ $end_info$
 namespace FEX::HLE {
   void RegisterTimer() {
 
-    REGISTER_SYSCALL_IMPL(alarm, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int seconds) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(alarm, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int seconds) -> uint64_t {
       uint64_t Result = ::alarm(seconds);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(timer_getoverrun, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(timer_getoverrun, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_getoverrun, timerid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(timer_delete, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(timer_delete, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_delete, timerid);
       SYSCALL_ERRNO();
     });

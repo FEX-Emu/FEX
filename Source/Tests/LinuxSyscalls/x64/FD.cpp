@@ -27,12 +27,12 @@ $end_info$
 
 namespace FEX::HLE::x64 {
   void RegisterFD() {
-    REGISTER_SYSCALL_IMPL_X64(poll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(poll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
       uint64_t Result = ::poll(fds, nfds, timeout);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(select, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(select, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) -> uint64_t {
       uint64_t Result = ::select(nfds, readfds, writefds, exceptfds, timeout);
       SYSCALL_ERRNO();
     });
@@ -56,17 +56,17 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(futimesat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const struct timeval times[2]) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(futimesat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const struct timeval times[2]) -> uint64_t {
       uint64_t Result = ::futimesat(dirfd, pathname, times);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(utimensat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(utimensat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
       uint64_t Result = ::syscall(SYS_utimensat, dirfd, pathname, times, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(pselect6, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const void *sigmaskpack) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(pselect6, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const void *sigmaskpack) -> uint64_t {
       uint64_t Result = ::syscall(SYS_pselect6, nfds, readfds, writefds, exceptfds, timeout, sigmaskpack);
       SYSCALL_ERRNO();
     });
@@ -98,17 +98,17 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(readv, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec *iov, int iovcnt) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(readv, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec *iov, int iovcnt) -> uint64_t {
       uint64_t Result = ::readv(fd, iov, iovcnt);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(writev, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec *iov, int iovcnt) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(writev, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec *iov, int iovcnt) -> uint64_t {
       uint64_t Result = ::writev(fd, iov, iovcnt);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(readahead, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, size_t count) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(readahead, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, size_t count) -> uint64_t {
       uint64_t Result = ::readahead(fd, offset, count);
       SYSCALL_ERRNO();
     });
@@ -122,12 +122,12 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(vmsplice, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec *iov, unsigned long nr_segs, unsigned int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(vmsplice, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec *iov, unsigned long nr_segs, unsigned int flags) -> uint64_t {
       uint64_t Result = ::vmsplice(fd, iov, nr_segs, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(preadv, [](FEXCore::Core::CpuStateFrame *Frame,
+    REGISTER_SYSCALL_IMPL_X64_PASS(preadv, [](FEXCore::Core::CpuStateFrame *Frame,
       int fd,
       const struct iovec *iov,
       uint64_t vlen,
@@ -137,7 +137,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(pwritev, [](FEXCore::Core::CpuStateFrame *Frame,
+    REGISTER_SYSCALL_IMPL_X64_PASS(pwritev, [](FEXCore::Core::CpuStateFrame *Frame,
       int fd,
       const struct iovec *iov,
       uint64_t vlen,
@@ -147,7 +147,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(preadv2, [](FEXCore::Core::CpuStateFrame *Frame,
+    REGISTER_SYSCALL_IMPL_X64_PASS(preadv2, [](FEXCore::Core::CpuStateFrame *Frame,
       int fd,
       const struct iovec *iov,
       uint64_t vlen,
@@ -158,7 +158,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(pwritev2, [](FEXCore::Core::CpuStateFrame *Frame,
+    REGISTER_SYSCALL_IMPL_X64_PASS(pwritev2, [](FEXCore::Core::CpuStateFrame *Frame,
       int fd,
       const struct iovec *iov,
       uint64_t vlen,
@@ -169,27 +169,27 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(pread64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(pread64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
       uint64_t Result = ::pread64(fd, buf, count, offset);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(pwrite64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(pwrite64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
       uint64_t Result = ::pwrite64(fd, buf, count, offset);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(process_vm_readv, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct iovec *local_iov, unsigned long liovcnt, const struct iovec *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(process_vm_readv, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct iovec *local_iov, unsigned long liovcnt, const struct iovec *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
       uint64_t Result = ::process_vm_readv(pid, local_iov, liovcnt, remote_iov, riovcnt, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(process_vm_writev, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct iovec *local_iov, unsigned long liovcnt, const struct iovec *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(process_vm_writev, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct iovec *local_iov, unsigned long liovcnt, const struct iovec *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
       uint64_t Result = ::process_vm_writev(pid, local_iov, liovcnt, remote_iov, riovcnt, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(ppoll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, struct timespec *timeout_ts, const uint64_t *sigmask, size_t sigsetsize) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(ppoll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, struct timespec *timeout_ts, const uint64_t *sigmask, size_t sigsetsize) -> uint64_t {
       // glibc wrapper doesn't allow timeout_ts to be modified like the kernel does
       int Result = ::syscall(SYS_ppoll, fds, nfds, timeout_ts, sigmask, sigsetsize);
       SYSCALL_ERRNO();
@@ -208,7 +208,7 @@ namespace FEX::HLE::x64 {
   #endif
     });
 
-    REGISTER_SYSCALL_IMPL_X64(getdents64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(getdents64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
       uint64_t Result = syscall(SYS_getdents64,
         static_cast<uint64_t>(fd),
         reinterpret_cast<uint64_t>(dirp),
@@ -216,17 +216,17 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(sendfile, [](FEXCore::Core::CpuStateFrame *Frame, int out_fd, int in_fd, off_t *offset, size_t count) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(sendfile, [](FEXCore::Core::CpuStateFrame *Frame, int out_fd, int in_fd, off_t *offset, size_t count) -> uint64_t {
       uint64_t Result = ::sendfile(out_fd, in_fd, offset, count);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(dup, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(dup, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd) -> uint64_t {
       uint64_t Result = ::dup(oldfd);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(dup2, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd, int newfd) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(dup2, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd, int newfd) -> uint64_t {
       uint64_t Result = ::dup2(oldfd, newfd);
       SYSCALL_ERRNO();
     });
@@ -236,29 +236,29 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(fstatfs, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct statfs *buf) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(fstatfs, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct statfs *buf) -> uint64_t {
       uint64_t Result = ::fstatfs(fd, buf);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(sync_file_range, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, off64_t nbytes, unsigned int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(sync_file_range, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, off64_t nbytes, unsigned int flags) -> uint64_t {
       // Flags don't need remapped
       uint64_t Result = ::sync_file_range(fd, offset, nbytes, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(fallocate, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int mode, off_t offset, off_t len) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(fallocate, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int mode, off_t offset, off_t len) -> uint64_t {
       uint64_t Result = ::fallocate(fd, mode, offset, len);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(timerfd_settime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(timerfd_settime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
       // Flags don't need remapped
       uint64_t Result = ::timerfd_settime(fd, flags, new_value, old_value);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(timerfd_gettime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct itimerspec *curr_value) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(timerfd_gettime, [](FEXCore::Core::CpuStateFrame *Frame, int fd, struct itimerspec *curr_value) -> uint64_t {
       uint64_t Result = ::timerfd_gettime(fd, curr_value);
       SYSCALL_ERRNO();
     });

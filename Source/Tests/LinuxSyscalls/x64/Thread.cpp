@@ -54,7 +54,7 @@ namespace FEX::HLE::x64 {
       return CloneHandler(Frame, &args);
     }));
 
-    REGISTER_SYSCALL_IMPL_X64(futex, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(futex, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
       uint64_t Result = syscall(SYS_futex,
         uaddr,
         futex_op,
@@ -72,7 +72,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(get_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, int pid, struct robust_list_head **head, size_t *len_ptr) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(get_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, int pid, struct robust_list_head **head, size_t *len_ptr) -> uint64_t {
       uint64_t Result = ::syscall(SYS_get_robust_list, pid, head, len_ptr);
       SYSCALL_ERRNO();
     });
@@ -134,12 +134,12 @@ namespace FEX::HLE::x64 {
       return FEX::HLE::ExecveHandler(pathname, argv ? const_cast<char* const*>(&Args.at(0)) : nullptr, envp ? const_cast<char * const*>(&Envp.at(0)) : nullptr, &AtArgs);
     }));
 
-    REGISTER_SYSCALL_IMPL_X64(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
       uint64_t Result = ::syscall(SYS_wait4, pid, wstatus, options, rusage);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, siginfo_t *infop, int options, struct rusage *rusage) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, siginfo_t *infop, int options, struct rusage *rusage) -> uint64_t {
       uint64_t Result = ::syscall(SYS_waitid, which, upid, infop, options, rusage);
       SYSCALL_ERRNO();
     });

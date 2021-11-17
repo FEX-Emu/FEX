@@ -15,12 +15,12 @@ $end_info$
 namespace FEX::HLE {
   void RegisterEpoll() {
 
-    REGISTER_SYSCALL_IMPL(epoll_create, [](FEXCore::Core::CpuStateFrame *Frame, int size) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(epoll_create, [](FEXCore::Core::CpuStateFrame *Frame, int size) -> uint64_t {
       uint64_t Result = epoll_create(size);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(epoll_create1, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS(epoll_create1, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
       uint64_t Result = epoll_create1(flags);
       SYSCALL_ERRNO();
     });

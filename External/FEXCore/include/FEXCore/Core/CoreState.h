@@ -42,6 +42,15 @@ namespace FEXCore::Core {
      * Allows the CPU cores to do a long jump out of their execution and safely shut down
      */
     uint64_t ReturningStackLocation{};
+
+    /**
+     * @brief If we are in an inline syscall we need to store a bit of additional information about this
+     *
+     * ARM64:
+     *  - Bit 15: In syscall
+     *  - Bit 14-0: Number of static registers spilled
+     */
+    uint64_t InSyscallInfo{};
     InternalThreadState* Thread;
   };
   static_assert(offsetof(CpuStateFrame, State) == 0, "CPUState must be first member in CpuStateFrame");

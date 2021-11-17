@@ -17,7 +17,7 @@ namespace FEXCore::Core {
 
 namespace FEX::HLE::x64 {
   void RegisterSched() {
-    REGISTER_SYSCALL_IMPL_X64(sched_rr_get_interval, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct timespec *tp) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(sched_rr_get_interval, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct timespec *tp) -> uint64_t {
       uint64_t Result = ::sched_rr_get_interval(pid, tp);
       SYSCALL_ERRNO();
     });

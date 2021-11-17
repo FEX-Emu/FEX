@@ -18,7 +18,7 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
     Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config);
 
   protected:
-    void SpillSRA(void *ucontext) override;
+    void SpillSRA(void *ucontext, uint32_t IgnoreMask) override;
 };
 
 }

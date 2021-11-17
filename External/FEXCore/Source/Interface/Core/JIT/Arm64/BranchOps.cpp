@@ -235,6 +235,152 @@ DEF_OP(Syscall) {
   mov(GetReg<RA_64>(Node), x0);
 }
 
+DEF_OP(InlineSyscall) {
+  auto Op = IROp->C<IR::IROp_InlineSyscall>();
+  // Arguments are passed as follows:
+  // X8: SyscallNumber - RA INTERSECT
+  // X0: Arg0 & Return
+  // X1: Arg1
+  // X2: Arg2
+  // X3: Arg3
+  // X4: Arg4 - RA INTERSECT
+  // X5: Arg5 - RA INTERSECT
+  // X6: Arg6 - Doesn't exist in x86-64 land. RA INTERSECT
+
+  // One argument is removed from the SyscallArguments::MAX_ARGS since the first argument was syscall number
+  const static std::array<vixl::aarch64::Register, FEXCore::HLE::SyscallArguments::MAX_ARGS-1> RegArgs = {{
+    x0, x1, x2, x3, x4, x5
+  }};
+
+  bool Intersects{};
+  // We always need to spill x8 since we can't know if it is live at this SSA location
+  uint32_t SpillMask = 1U << 8;
+  std::vector<vixl::aarch64::Register> IntersectRegs(FEXCore::HLE::SyscallArguments::MAX_ARGS);
+  for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
+    if (Op->Header.Args[i].IsInvalid()) break;
+
+    auto Reg = GetReg<RA_64>(Op->Header.Args[i].ID());
+    if (Reg.GetCode() == x8.GetCode() ||
+        Reg.GetCode() == x4.GetCode() ||
+        Reg.GetCode() == x5.GetCode()) {
+
+      SpillMask |= (1U << Reg.GetCode());
+      Intersects = true;
+    }
+  }
+  // XXX: For some reason spilling only the x4, x5, and x8 registers was causing issues
+  // Come back to this once investigation reveals why it fails the gvisor ioctl test
+  // For now override to all GPRs
+  SpillMask = ~0U;
+
+  // Ordering is incredibly important here
+  // We must spill any overlapping registers first THEN claim we are in a syscall without invalidating state at all
+  // Only spill the registers that intersect with our usage
+  SpillStaticRegs(false, SpillMask);
+
+  // Now that we are spilled, store in the state that we are in a syscall
+  // Still without overwriting registers that matter
+  // 16bit LoadConstant to be a single instruction
+  // We must always spill at least one register (x8) so this value always has a bit set
+  // This gives the signal handler a value to check to see if we are in a syscall at all
+  LoadConstant(x0, SpillMask & 0xFFFF);
+  str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
+
+  // Now that we have claimed to be a syscall we can set up the arguments
+  if (Intersects) {
+    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
+      if (Op->Header.Args[i].IsInvalid()) break;
+
+      if (CTX->Config.Is64BitMode()) {
+        auto Reg = GetReg<RA_64>(Op->Header.Args[i].ID());
+        // In the case of intersection with x4, x5, or x8 then these are currently SRA
+        // for registers RAX, RBX, and RSI. Which have just been spilled
+        // Just load back from the context. Could be slightly smarter but this is fairly uncommon
+        if (Reg.GetCode() == x8.GetCode()) {
+          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI])));
+        }
+        else if (Reg.GetCode() == x4.GetCode()) {
+          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX])));
+        }
+        else if (Reg.GetCode() == x5.GetCode()) {
+          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX])));
+        }
+      }
+    }
+
+    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
+      if (Op->Header.Args[i].IsInvalid()) break;
+
+      if (CTX->Config.Is64BitMode()) {
+        auto Reg = GetReg<RA_64>(Op->Header.Args[i].ID());
+        // In the case of intersection with x4, x5, or x8 then these are currently SRA
+        // for registers RAX, RBX, and RSI. Which have just been spilled
+        // Just load back from the context. Could be slightly smarter but this is fairly uncommon
+        if (Reg.GetCode() == x8.GetCode()) {
+          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI])));
+        }
+        else if (Reg.GetCode() == x4.GetCode()) {
+          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX])));
+        }
+        else if (Reg.GetCode() == x5.GetCode()) {
+          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX])));
+        }
+        else {
+          mov(RegArgs[i], Reg);
+        }
+      }
+      else {
+        auto Reg = GetReg<RA_32>(Op->Header.Args[i].ID());
+        if (Reg.GetCode() == w8.GetCode()) {
+          ldr(RegArgs[i].W(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI])));
+        }
+        else if (Reg.GetCode() == w4.GetCode()) {
+          ldr(RegArgs[i].W(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX])));
+        }
+        else if (Reg.GetCode() == w5.GetCode()) {
+          ldr(RegArgs[i].W(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX])));
+        }
+        else {
+          uxtw(RegArgs[i], Reg);
+        }
+      }
+    }
+  }
+  else {
+    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
+      if (Op->Header.Args[i].IsInvalid()) break;
+
+      if (CTX->Config.Is64BitMode()) {
+        mov(RegArgs[i], GetReg<RA_64>(Op->Header.Args[i].ID()));
+      }
+      else {
+        uxtw(RegArgs[i], GetReg<RA_32>(Op->Header.Args[i].ID()));
+      }
+    }
+  }
+
+  LoadConstant(x8, Op->HostSyscallNumber);
+  svc(0);
+  // On updated signal mask we can receive a signal RIGHT HERE
+
+  // Now that we are done in the syscall we need to carefully peel back the state
+  // First unspill the registers from before
+  FillStaticRegs(false, SpillMask);
+
+  // Now the registers we've spilled are back in their original host registers
+  // We can safely claim we are no longer in a syscall
+  str(xzr, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
+
+  // Result is now in x0
+  // Move result to its destination register
+  if (CTX->Config.Is64BitMode()) {
+    mov(GetReg<RA_64>(Node), x0);
+  }
+  else {
+    uxtw(GetReg<RA_64>(Node), w0);
+  }
+}
+
 DEF_OP(Thunk) {
   auto Op = IROp->C<IR::IROp_Thunk>();
   // Arguments are passed as follows:
@@ -255,7 +401,6 @@ DEF_OP(Thunk) {
 
   FillStaticRegs(); // load from ctx after ra64 refill
 }
-
 
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
@@ -370,6 +515,7 @@ void Arm64JITCore::RegisterBranchHandlers() {
   REGISTER_OP(JUMP,              Jump);
   REGISTER_OP(CONDJUMP,          CondJump);
   REGISTER_OP(SYSCALL,           Syscall);
+  REGISTER_OP(INLINESYSCALL,     InlineSyscall);
   REGISTER_OP(THUNK,             Thunk);
   REGISTER_OP(VALIDATECODE,      ValidateCode);
   REGISTER_OP(REMOVECODEENTRY,   RemoveCodeEntry);

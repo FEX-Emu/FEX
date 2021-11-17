@@ -65,8 +65,8 @@ protected:
   bool SupportsRCPC{};
 
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant);
-  void SpillStaticRegs();
-  void FillStaticRegs();
+  void SpillStaticRegs(bool FPRs = true, uint32_t SpillMask = ~0U);
+  void FillStaticRegs(bool FPRs = true, uint32_t FillMask = ~0U);
 
   void PushDynamicRegsAndLR();
   void PopDynamicRegsAndLR();

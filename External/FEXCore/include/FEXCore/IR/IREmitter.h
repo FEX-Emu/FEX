@@ -520,8 +520,12 @@ friend class FEXCore::IR::PassManager;
 
     LOGMAN_THROW_A_FMT(Node->NumUses == 0, "Node still used");
 
-    // Since we have deleted ALL uses, we can safely delete the node.
-    Remove(Node);
+    auto IROp = Node->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_Header>();
+    // We can not remove the op if there are side-effects
+    if (!IR::HasSideEffects(IROp->Op)) {
+      // Since we have deleted ALL uses, we can safely delete the node.
+      Remove(Node);
+    }
   }
 
   void ReplaceNodeArgument(OrderedNode *Node, uint8_t Arg, OrderedNode *NewArg);

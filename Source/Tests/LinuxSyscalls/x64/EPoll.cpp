@@ -72,13 +72,10 @@ namespace FEX::HLE::x64 {
     });
 
     if (Handler->IsHostKernelVersionAtLeast(5, 11, 0)) {
-#ifndef SYS_epoll_pwait2
-#define SYS_epoll_pwait2 354
-#endif
       REGISTER_SYSCALL_IMPL_X64(epoll_pwait2, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevent, timespec *timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
         std::vector<struct epoll_event> Events(std::max(0, maxevent));
 
-        uint64_t Result = ::syscall(SYS_epoll_pwait2,
+        uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait2),
           epfd,
           Events.data(),
           maxevent,

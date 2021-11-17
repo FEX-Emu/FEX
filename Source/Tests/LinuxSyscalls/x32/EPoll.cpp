@@ -9,6 +9,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/Types.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Types.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -66,9 +67,6 @@ namespace FEX::HLE::x32 {
     });
 
     if (Handler->IsHostKernelVersionAtLeast(5, 11, 0)) {
-#ifndef SYS_epoll_pwait2
-#define SYS_epoll_pwait2 354
-#endif
       REGISTER_SYSCALL_IMPL_X32(epoll_pwait2, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, compat_ptr<FEX::HLE::x32::epoll_event32> events, int maxevent, compat_ptr<timespec32> timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
         std::vector<struct epoll_event> Events(std::max(0, maxevent));
 
@@ -79,7 +77,7 @@ namespace FEX::HLE::x32 {
           timed_ptr = &tp64;
         }
 
-        uint64_t Result = ::syscall(SYS_epoll_pwait2,
+        uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait2),
           epfd,
           Events.data(),
           maxevent,
