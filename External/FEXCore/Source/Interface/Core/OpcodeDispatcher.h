@@ -336,6 +336,7 @@ public:
 
   // BMI2 Ops
   void BMI2Shift(OpcodeArgs);
+  void BZHI(OpcodeArgs);
   void MULX(OpcodeArgs);
   void RORX(OpcodeArgs);
 
