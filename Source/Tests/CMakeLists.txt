@@ -3,24 +3,34 @@ add_subdirectory(LinuxSyscalls)
 list(APPEND LIBS FEXCore Common CommonCore)
 
 add_executable(FEXLoader FEXLoader.cpp)
-target_include_directories(FEXLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-target_include_directories(FEXLoader PRIVATE ${CMAKE_BINARY_DIR}/generated)
-
-target_link_libraries(FEXLoader ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
+target_include_directories(FEXLoader
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+    ${CMAKE_BINARY_DIR}/generated
+)
+target_link_libraries(FEXLoader
+  PRIVATE
+    ${LIBS}
+    LinuxEmulation
+    ${STATIC_PIE_OPTIONS}
+    ${PTHREAD_LIB}
+    fmt::fmt
+)
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(FEXLoader
     PRIVATE
-    "LINKER:--gc-sections"
-    "LINKER:--strip-all"
-    "LINKER:--as-needed"
+      "LINKER:--gc-sections"
+      "LINKER:--strip-all"
+      "LINKER:--as-needed"
   )
 endif()
 
 install(TARGETS FEXLoader
   RUNTIME
     DESTINATION bin
-    COMPONENT runtime)
+    COMPONENT runtime
+)
 
 add_custom_target(FEXInterpreter ALL
   COMMAND "ln" "-f" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXInterpreter"
@@ -91,42 +101,74 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
 endif()
 
 add_executable(FEXBash FEXBash.cpp)
-target_include_directories(FEXBash PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-target_include_directories(FEXBash PRIVATE ${CMAKE_BINARY_DIR}/generated)
-
-target_link_libraries(FEXBash ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
+target_include_directories(FEXBash
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+    ${CMAKE_BINARY_DIR}/generated
+)
+target_link_libraries(FEXBash
+  PRIVATE
+    ${LIBS}
+    LinuxEmulation
+    ${STATIC_PIE_OPTIONS}
+    ${PTHREAD_LIB}
+)
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(FEXBash
     PRIVATE
-    "LINKER:--gc-sections"
-    "LINKER:--strip-all"
-    "LINKER:--as-needed"
+      "LINKER:--gc-sections"
+      "LINKER:--strip-all"
+      "LINKER:--as-needed"
   )
 endif()
 
 install(TARGETS FEXBash
   RUNTIME
     DESTINATION bin
-    COMPONENT runtime)
+    COMPONENT runtime
+)
 
 add_executable(TestHarnessRunner TestHarnessRunner.cpp)
-target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_BINARY_DIR}/generated)
-
-target_link_libraries(TestHarnessRunner ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
+target_include_directories(TestHarnessRunner
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+    ${CMAKE_BINARY_DIR}/generated
+)
+target_link_libraries(TestHarnessRunner
+  PRIVATE
+    ${LIBS}
+    LinuxEmulation
+    ${STATIC_PIE_OPTIONS}
+    ${PTHREAD_LIB}
+)
 
 add_executable(UnitTestGenerator UnitTestGenerator.cpp)
-target_include_directories(UnitTestGenerator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-
-target_link_libraries(UnitTestGenerator ${LIBS} ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
+target_include_directories(UnitTestGenerator
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+)
+target_link_libraries(UnitTestGenerator
+  PRIVATE
+    ${LIBS}
+    ${STATIC_PIE_OPTIONS}
+    ${PTHREAD_LIB}
+)
 
 add_executable(IRLoader
   IRLoader.cpp
   IRLoader/Loader.cpp
 )
-target_include_directories(IRLoader PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-target_include_directories(IRLoader PRIVATE ${CMAKE_BINARY_DIR}/generated)
-
-target_link_libraries(IRLoader ${LIBS} LinuxEmulation ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
+target_include_directories(IRLoader
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+    ${CMAKE_BINARY_DIR}/generated
+)
+target_link_libraries(IRLoader
+  PRIVATE
+    ${LIBS}
+    LinuxEmulation
+    ${STATIC_PIE_OPTIONS}
+    ${PTHREAD_LIB}
+)
 
