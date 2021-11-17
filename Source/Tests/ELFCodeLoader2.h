@@ -1,30 +1,32 @@
 
 #pragma once
+
 #include "Common/Config.h"
 #include "Common/MathUtils.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 
-#include <FEXCore/Core/CodeLoader.h>
 #include <array>
 #include <bitset>
 #include <cassert>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
-#include <sys/mman.h>
-#include <vector>
 #include <string>
+#include <vector>
+
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <elf.h>
-#include <sys/personality.h>
 #include <fcntl.h>
-#include <filesystem>
+#include <fmt/format.h>
 #include <sys/auxv.h>
+#include <sys/mman.h>
+#include <sys/personality.h>
 
 #define PAGE_START(x) ((x) & ~(uintptr_t)(4095))
 #define PAGE_OFFSET(x) ((x) & 4095)
@@ -75,14 +77,11 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       return true;
     }
 
-    void *rv;
-
-    //fprintf(stderr, "MapFile: %lx %ld off: %ld\n", addr, size, off);
-    rv = Mapper((void*)addr, size, prot, flags, file.fd, off);
+    void *rv = Mapper((void*)addr, size, prot, flags, file.fd, off);
 
     if (rv == MAP_FAILED) {
       // uhoh, something went wrong
-      LogMan::Msg::E("MapFile: Some elf mapping failed, %d, fd: %d\n", errno, file.fd);
+      LogMan::Msg::EFmt("MapFile: Some elf mapping failed, {}, fd: {}\n", errno, file.fd);
       return false;
     } else {
       auto Filename = get_fdpath(file.fd);
@@ -159,7 +158,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
         if (BSSPageStart != BSSPageEnd) {
           auto bss = Mapper((void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
           if ((void*)bss == MAP_FAILED) {
-            LogMan::Msg::E("Failed to allocate BSS @ %p, %d\n", bss, errno);
+            LogMan::Msg::EFmt("Failed to allocate BSS @ {}, {}\n", fmt::ptr(bss), errno);
             return {};
           }
         }
@@ -333,7 +332,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     // READ_IMPLIES_EXEC might be default for 32-bit elfs
     // Also, what about ADDR_LIMIT_3GB & co ?
     if (-1 == personality(PER_LINUX | (ExecutableStack ? READ_IMPLIES_EXEC : 0))) {
-      LogMan::Msg::E("Setting personality failed");
+      LogMan::Msg::EFmt("Setting personality failed");
       return false;
     }
 
@@ -345,7 +344,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
     if (StackPointer == ~0ULL) {
-      LogMan::Msg::E("Allocating stack failed");
+      LogMan::Msg::EFmt("Allocating stack failed");
       return false;
     }
 
@@ -358,7 +357,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     if (auto elf = LoadElfFile(MainElf, &BrkBase, Mapper, Unmapper)) {
       LoadBase = *elf;
     } else {
-      LogMan::Msg::E("Failed to load elf file");
+      LogMan::Msg::EFmt("Failed to load elf file");
       return false;
     }
 
@@ -367,7 +366,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
 
     if ((void*)BrkStart == MAP_FAILED) {
-      LogMan::Msg::E("Failed to allocate BRK @ %lx, %d\n", BrkBase, errno);
+      LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkBase, errno);
       return false;
     }
 
@@ -379,7 +378,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       if (auto elf = LoadElfFile(InterpElf, nullptr, Mapper, Unmapper)) {
         InterpLoadBase = *elf;
       } else {
-        LogMan::Msg::E("Failed to load interpreter elf file");
+        LogMan::Msg::EFmt("Failed to load interpreter elf file");
         return false;
       }
 
