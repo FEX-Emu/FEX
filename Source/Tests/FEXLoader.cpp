@@ -177,7 +177,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
   }
 }
 
-bool RanAsInterpreter(char *Program) {
+bool RanAsInterpreter(const char *Program) {
   return ExecutedWithFD || strstr(Program, "FEXInterpreter") != nullptr;
 }
 
@@ -340,7 +340,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
 }
 
 int main(int argc, char **argv, char **const envp) {
-  bool IsInterpreter = RanAsInterpreter(argv[0]);
+  const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
 
