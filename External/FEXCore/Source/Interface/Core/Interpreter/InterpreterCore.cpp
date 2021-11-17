@@ -67,7 +67,6 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
 
 #ifdef _M_ARM_64
     CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
       return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
     }, true);
 #endif
