@@ -170,5 +170,6 @@ target_link_libraries(IRLoader
     LinuxEmulation
     ${STATIC_PIE_OPTIONS}
     ${PTHREAD_LIB}
+    fmt::fmt
 )
 

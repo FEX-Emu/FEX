@@ -23,6 +23,8 @@ $end_info$
 #include <sys/mman.h>
 #include <vector>
 
+#include <fmt/format.h>
+
 namespace FEXCore::Context {
   struct Context;
 }
@@ -59,13 +61,13 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message)
     break;
   }
 
-  printf("[%s] %s\n", CharLevel, Message);
+  fmt::format("[{}] {}\n", CharLevel, Message);
   fflush(stdout);
 }
 
 void AssertHandler(char const *Message)
 {
-  printf("[ASSERT] %s\n", Message);
+  fmt::format("[ASSERT] {}\n", Message);
   fflush(stdout);
 }
 
@@ -130,7 +132,7 @@ int main(int argc, char **argv, char **const envp)
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
 
-  LOGMAN_THROW_A(Args.size() > 1, "Not enough arguments");
+  LOGMAN_THROW_A_FMT(Args.size() > 1, "Not enough arguments");
 
   FEXCore::Context::InitializeStaticTables();
   auto CTX = FEXCore::Context::CreateNewContext();
@@ -149,7 +151,7 @@ int main(int argc, char **argv, char **const envp)
     IRCodeLoader CodeLoader{&Loader};
     CodeLoader.MapMemory(nullptr, nullptr);
     FEXCore::Context::InitCore(CTX, &CodeLoader);
-    FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
+    auto ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
     // There might already be an exit handler, leave it installed
     if (!FEXCore::Context::GetExitHandler(CTX))
@@ -165,20 +167,20 @@ int main(int argc, char **argv, char **const envp)
 
     FEXCore::Context::RunUntilExit(CTX);
 
-    LogMan::Msg::D("Reason we left VM: %d", ShutdownReason);
+    LogMan::Msg::DFmt("Reason we left VM: {}", ShutdownReason);
 
     // Just re-use compare state. It also checks against the expected values in config.
     FEXCore::Core::CPUState State;
     FEXCore::Context::GetCPUState(CTX, &State);
-    bool Passed = Loader.CompareStates(&State);
+    const bool Passed = Loader.CompareStates(&State);
 
-    LogMan::Msg::I("Passed? %s\n", Passed ? "Yes" : "No");
+    LogMan::Msg::IFmt("Passed? {}\n", Passed ? "Yes" : "No");
 
     Return = Passed ? 0 : -1;
   }
   else
   {
-    LogMan::Msg::E("Couldn't load IR");
+    LogMan::Msg::EFmt("Couldn't load IR");
     Return = -1;
   }
 
