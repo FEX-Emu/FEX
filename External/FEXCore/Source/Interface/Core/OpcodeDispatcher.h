@@ -521,17 +521,17 @@ private:
 
   [[nodiscard]] static uint32_t GPROffset(X86State::X86Reg reg) {
     LOGMAN_THROW_A_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
-    return static_cast<uint8_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
+    return static_cast<uint32_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
   }
 
   [[nodiscard]] static uint32_t MMBaseOffset() {
     return static_cast<uint32_t>(offsetof(Core::CPUState, mm[0][0]));
   }
 
-  uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
-  uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
-  uint8_t GetDstBitSize(X86Tables::DecodedOp Op) const;
-  uint8_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] uint8_t GetDstSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] uint8_t GetSrcSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
+  [[nodiscard]] uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
 
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {

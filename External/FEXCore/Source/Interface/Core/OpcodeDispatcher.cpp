@@ -4466,11 +4466,11 @@ uint8_t OpDispatchBuilder::GetSrcSize(X86Tables::DecodedOp Op) const {
   return Size;
 }
 
-uint8_t OpDispatchBuilder::GetSrcBitSize(X86Tables::DecodedOp Op) const {
+uint32_t OpDispatchBuilder::GetSrcBitSize(X86Tables::DecodedOp Op) const {
   return GetSrcSize(Op) * 8;
 }
 
-uint8_t OpDispatchBuilder::GetDstBitSize(X86Tables::DecodedOp Op) const {
+uint32_t OpDispatchBuilder::GetDstBitSize(X86Tables::DecodedOp Op) const {
   return GetDstSize(Op) * 8;
 }
 
