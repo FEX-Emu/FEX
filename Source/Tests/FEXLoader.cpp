@@ -578,7 +578,7 @@ int main(int argc, char **argv, char **const envp) {
     return AOTWrite;
   });
 
-  for(auto Section: *Loader.Sections) {
+  for(const auto &Section: *Loader.Sections) {
     FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
   }
 
