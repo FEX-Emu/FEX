@@ -1,18 +1,19 @@
 %ifdef CONFIG
 {
   "RegData": {
-      "RAX": "0x7F",
       "RBX": "0",
       "RDX": "0xFF",
-      "RSI": "0"
+      "RSI": "0",
+      "R14": "0x7F",
+      "R15": "0x838"
   }
 }
 %endif
 
 ; General extraction
-mov rax, 0x7FFFFFFFFFFFFFFF
-mov rbx, 0x838              ; Start at bit 56 and extract 8 bits
-bextr rax, rax, rbx         ; This results in 0x7F being placed into RAX
+mov r14, 0x7FFFFFFFFFFFFFFF
+mov r15, 0x838              ; Start at bit 56 and extract 8 bits
+bextr r14, r14, r15         ; This results in 0x7F being placed into RAX
 
 ; Extraction with 0 bits should clear the destination
 mov rbx, -1

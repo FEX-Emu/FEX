@@ -775,6 +775,11 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     const uint8_t Byte1 = ReadByte();
     DecodedHeader options{};
 
+    if ((Byte1 & 0b10000000) == 0) {
+      LOGMAN_THROW_A(CTX->Config.Is64BitMode, "VEX.R shouldn't be 0 in 32-bit mode!");
+      DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_R;
+    }
+
     if (Op == 0xC5) { // Two byte VEX
       pp = Byte1 & 0b11;
       options.vvvv = 15 - ((Byte1 & 0b01111000) >> 3);
@@ -785,6 +790,13 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
       map_select = Byte1 & 0b11111;
       options.vvvv = 15 - ((Byte2 & 0b01111000) >> 3);
       options.w = (Byte2 & 0b10000000) != 0;
+      if ((Byte1 & 0b01000000) == 0) {
+        LOGMAN_THROW_A(CTX->Config.Is64BitMode, "VEX.X shouldn't be 0 in 32-bit mode!");
+        DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
+      }
+      if (CTX->Config.Is64BitMode && (Byte1 & 0b00100000) == 0) {
+        DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_B;
+      }
       if (!(map_select >= 1 && map_select <= 3)) {
         LogMan::Msg::E("We don't understand a map_select of: %d", map_select);
         return false;
