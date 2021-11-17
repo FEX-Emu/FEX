@@ -105,12 +105,14 @@ void AssertHandler(char const *Message) {
 }
 
 bool CheckMemMapping() {
-  std::fstream fs;
-  fs.open("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
   std::string Line;
   while (std::getline(fs, Line)) {
-    if (fs.eof()) break;
-    uint64_t Begin, End;
+    if (fs.eof()) {
+      break;
+    }
+    uint64_t Begin{};
+    uint64_t End{};
     if (sscanf(Line.c_str(), "%lx-%lx", &Begin, &End) == 2) {
       // If a memory range is living inside the 32bit memory space then we have a problem
       if (Begin < 0x1'0000'0000) {
@@ -119,27 +121,26 @@ bool CheckMemMapping() {
     }
   }
 
-  fs.close();
   return true;
 }
-}
+} // Anonymous namespace
 
 void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::vector<std::string> *args) {
   // Open the file pointer to the filename and see if we need to find an interpreter
-  std::fstream File;
-  size_t FileSize{0};
-  File.open(*Filename, std::fstream::in | std::fstream::binary);
+  std::fstream File(*Filename, std::fstream::in | std::fstream::binary);
 
-  if (!File.is_open())
+  if (!File.is_open()) {
     return;
+  }
 
-  File.seekg(0, File.end);
-  FileSize = File.tellg();
-  File.seekg(0, File.beg);
+  File.seekg(0, std::fstream::end);
+  const auto FileSize = File.tellg();
+  File.seekg(0, std::fstream::beg);
 
   // Is the file large enough for shebang
-  if (FileSize <= 2)
+  if (FileSize <= 2) {
     return;
+  }
 
   // Handle shebang files
   if (File.get() == '#' &&
@@ -155,7 +156,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
       if (Argument.empty()) {
         continue;
       }
-      ShebangArguments.emplace_back(Argument);
+      ShebangArguments.push_back(std::move(Argument));
     }
 
     // Executable argument
