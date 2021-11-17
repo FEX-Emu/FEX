@@ -24,9 +24,12 @@ $end_info$
 #include <FEXCore/Utils/Threads.h>
 
 #include <atomic>
+#include <cerrno>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <elf.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <fstream>
 #include <filesystem>
@@ -34,10 +37,7 @@ $end_info$
 #include <mutex>
 #include <queue>
 #include <set>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
-#include <string.h>
 #include <sys/auxv.h>
 #include <sys/resource.h>
 #include <sys/select.h>
@@ -47,6 +47,7 @@ $end_info$
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 #include <sys/sysinfo.h>
 
 namespace {
@@ -55,6 +56,10 @@ static int OutputFD {STDERR_FILENO};
 static bool ExecutedWithFD {false};
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
+  if (SilentLog) {
+    return;
+  }
+
   const char *CharLevel{nullptr};
 
   switch (Level) {
@@ -84,30 +89,30 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     break;
   }
 
-  if (!SilentLog) {
-    std::ostringstream Output;
-    Output << "[" << CharLevel << "] " << Message << std::endl;
-    write(OutputFD, Output.str().c_str(), Output.str().size());
-    fsync(OutputFD);
-  }
+  const auto Output = fmt::format("[{}] {}\n", CharLevel, Message);
+  write(OutputFD, Output.c_str(), Output.size());
+  fsync(OutputFD);
 }
 
 void AssertHandler(char const *Message) {
-  if (!SilentLog) {
-    std::ostringstream Output;
-    Output << "[ASSERT] " << Message << std::endl;
-    write(OutputFD, Output.str().c_str(), Output.str().size());
-    fsync(OutputFD);
+  if (SilentLog) {
+    return;
   }
+
+  const auto Output = fmt::format("[ASSERT] {}\n", Message);
+  write(OutputFD, Output.c_str(), Output.size());
+  fsync(OutputFD);
 }
 
 bool CheckMemMapping() {
-  std::fstream fs;
-  fs.open("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
   std::string Line;
   while (std::getline(fs, Line)) {
-    if (fs.eof()) break;
-    uint64_t Begin, End;
+    if (fs.eof()) {
+      break;
+    }
+    uint64_t Begin{};
+    uint64_t End{};
     if (sscanf(Line.c_str(), "%lx-%lx", &Begin, &End) == 2) {
       // If a memory range is living inside the 32bit memory space then we have a problem
       if (Begin < 0x1'0000'0000) {
@@ -116,27 +121,26 @@ bool CheckMemMapping() {
     }
   }
 
-  fs.close();
   return true;
 }
-}
+} // Anonymous namespace
 
 void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::vector<std::string> *args) {
   // Open the file pointer to the filename and see if we need to find an interpreter
-  std::fstream File;
-  size_t FileSize{0};
-  File.open(*Filename, std::fstream::in | std::fstream::binary);
+  std::fstream File(*Filename, std::fstream::in | std::fstream::binary);
 
-  if (!File.is_open())
+  if (!File.is_open()) {
     return;
+  }
 
-  File.seekg(0, File.end);
-  FileSize = File.tellg();
-  File.seekg(0, File.beg);
+  File.seekg(0, std::fstream::end);
+  const auto FileSize = File.tellg();
+  File.seekg(0, std::fstream::beg);
 
   // Is the file large enough for shebang
-  if (FileSize <= 2)
+  if (FileSize <= 2) {
     return;
+  }
 
   // Handle shebang files
   if (File.get() == '#' &&
@@ -152,7 +156,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
       if (Argument.empty()) {
         continue;
       }
-      ShebangArguments.emplace_back(Argument);
+      ShebangArguments.push_back(std::move(Argument));
     }
 
     // Executable argument
@@ -173,7 +177,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
   }
 }
 
-bool RanAsInterpreter(char *Program) {
+bool RanAsInterpreter(const char *Program) {
   return ExecutedWithFD || strstr(Program, "FEXInterpreter") != nullptr;
 }
 
@@ -209,7 +213,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
     InitialBranchTargets.insert(Destination);
   });
 
-  LogMan::Msg::I("Symbol seed: %ld", InitialBranchTargets.size());
+  LogMan::Msg::IFmt("Symbol seed: {}", InitialBranchTargets.size());
 
   // Add unwind entries to the branch target list
   container.AddUnwindEntries([&](uintptr_t Entry) {
@@ -222,7 +226,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
     InitialBranchTargets.insert(Destination);
   });
 
-  LogMan::Msg::I("Symbol + Unwind seed: %ld", InitialBranchTargets.size());
+  LogMan::Msg::IFmt("Symbol + Unwind seed: {}", InitialBranchTargets.size());
 
   // Scan the executable section and try to find function entries
   for (size_t Offset = 0; Offset < (Section.Size - 16); Offset++) {
@@ -332,11 +336,11 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
 
   ThreadPool.clear();
 
-  LogMan::Msg::I("\nAll Done: %d", counter.load());
+  LogMan::Msg::IFmt("\nAll Done: {}", counter.load());
 }
 
 int main(int argc, char **argv, char **const envp) {
-  bool IsInterpreter = RanAsInterpreter(argv[0]);
+  const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
 
@@ -348,7 +352,7 @@ int main(int argc, char **argv, char **const envp) {
   // Valgrind also places us in the lower 32-bits
   if (!getenv("VALGRIND_LAUNCHER") &&
       !CheckMemMapping()) {
-    LogMan::Msg::E("[Unsupported] FEX mapped to lower 32bits! Exiting!");
+    LogMan::Msg::EFmt("[Unsupported] FEX mapped to lower 32bits! Exiting!");
     return -1;
   }
 #endif
@@ -398,7 +402,7 @@ int main(int argc, char **argv, char **const envp) {
 
   // Ensure RootFS is setup before config options try to pull CONFIG_ROOTFS
   if (!FEX::RootFS::Setup(envp)) {
-    LogMan::Msg::E("RootFS failure");
+    LogMan::Msg::EFmt("RootFS failure");
     return -1;
   }
 
@@ -439,7 +443,7 @@ int main(int argc, char **argv, char **const envp) {
   if (!std::filesystem::exists(Program, ec)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
-    fprintf(stderr, "%s: command not found\n", Program.c_str());
+    fmt::print(stderr, "{}: command not found\n", Program);
     return -ENOEXEC;
   }
 
@@ -447,7 +451,7 @@ int main(int argc, char **argv, char **const envp) {
   uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
   if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
     // We require 4.17 minimum for MAP_FIXED_NOREPLACE
-    LogMan::Msg::E("FEXLoader requires kernel 4.17 minimum. Expect problems.");
+    LogMan::Msg::EFmt("FEXLoader requires kernel 4.17 minimum. Expect problems.");
   }
 
   // Before we go any further, set all of our host environment variables that the config has provided
@@ -462,14 +466,14 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
-    fprintf(stderr, "Invalid or Unsupported elf file.\n");
+    fmt::print(stderr, "Invalid or Unsupported elf file.\n");
 #ifdef _M_ARM_64
-    fprintf(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
-    fprintf(stderr, "Current RootFS path set to '%s'\n", LDPath().c_str());
+    fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
+    fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
     std::error_code ec;
-    if (LDPath().size() == 0 ||
+    if (LDPath().empty() ||
         std::filesystem::exists(LDPath(), ec) == false) {
-      fprintf(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
+      fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
     }
 #endif
     return -ENOEXEC;
@@ -490,7 +494,7 @@ int main(int argc, char **argv, char **const envp) {
       return FEXCore::Allocator::munmap(addr, length);
     })) {
       // failed to map
-      LogMan::Msg::E("Failed to map 64-bit elf file.");
+      LogMan::Msg::EFmt("Failed to map 64-bit elf file.");
       return -ENOEXEC;
     }
   } else {
@@ -518,7 +522,7 @@ int main(int argc, char **argv, char **const envp) {
       return Allocator->munmap(addr, length);
     })) {
       // failed to map
-      LogMan::Msg::E("Failed to map 32-bit elf file.");
+      LogMan::Msg::EFmt("Failed to map 32-bit elf file.");
       return -ENOEXEC;
     }
   }
@@ -556,7 +560,8 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
-    LogMan::Msg::I("Warning: AOTIR is experimental, and might lead to crashes. Capture doesn't work with programs that fork.");
+    LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
+                      "Capture doesn't work with programs that fork.");
   }
 
   FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
@@ -571,14 +576,14 @@ int main(int argc, char **argv, char **const envp) {
     if (*AOTWrite) {
       std::filesystem::resize_file(filepath, 0);
       AOTWrite->seekp(0);
-      LogMan::Msg::I("AOTIR: Storing %s", fileid.c_str());
+      LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
     } else {
-      LogMan::Msg::I("AOTIR: Failed to store %s", fileid.c_str());
+      LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
     }
     return AOTWrite;
   });
 
-  for(auto Section: *Loader.Sections) {
+  for(const auto &Section: *Loader.Sections) {
     FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
   }
 
@@ -602,11 +607,8 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (AOTIRCapture() || AOTIRGenerate()) {
-
-
     FEXCore::Context::FinalizeAOTIRCache(CTX);
-
-    LogMan::Msg::I("AOTIR Cache Stored");
+    LogMan::Msg::IFmt("AOTIR Cache Stored");
   }
 
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);

@@ -21,6 +21,8 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 
+#include <fmt/format.h>
+
 namespace FEX::HarnessHelper {
   inline bool CompareStates(FEXCore::Core::CPUState const& State1,
        FEXCore::Core::CPUState const& State2,
@@ -28,18 +30,26 @@ namespace FEX::HarnessHelper {
        bool OutputGPRs) {
     bool Matches = true;
 
-    auto DumpGPRs = [OutputGPRs](auto Name, uint64_t A, uint64_t B) {
-      if (!OutputGPRs) return;
-      if (A == B) return;
+    const auto DumpGPRs = [OutputGPRs](const std::string& Name, uint64_t A, uint64_t B) {
+      if (!OutputGPRs) {
+        return;
+      }
+      if (A == B) {
+        return;
+      }
 
-      printf("%s: 0x%016lx %s 0x%016lx\n", Name.c_str(), A, A==B ? "==" : "!=", B);
+      fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
     };
 
-    auto DumpFLAGs = [OutputGPRs](auto Name, uint64_t A, uint64_t B) {
-      if (!OutputGPRs) return;
-      if (A == B) return;
+    const auto DumpFLAGs = [OutputGPRs](const std::string& Name, uint64_t A, uint64_t B) {
+      if (!OutputGPRs) {
+        return;
+      }
+      if (A == B) {
+        return;
+      }
 
-      constexpr std::array<unsigned, 17> Flags = {
+      static constexpr std::array<uint32_t, 17> Flags = {
         FEXCore::X86State::RFLAG_CF_LOC,
         FEXCore::X86State::RFLAG_PF_LOC,
         FEXCore::X86State::RFLAG_AF_LOC,
@@ -59,22 +69,22 @@ namespace FEX::HarnessHelper {
         FEXCore::X86State::RFLAG_ID_LOC,
       };
 
-      printf("%s: 0x%016lx %s 0x%016lx\n", Name.c_str(), A, A==B ? "==" : "!=", B);
-      for (auto &Flag : Flags) {
-        uint64_t FlagMask = 1 << Flag;
+      fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
+      for (const auto Flag : Flags) {
+        const auto FlagMask = uint64_t{1} << Flag;
         if ((A & FlagMask) != (B & FlagMask)) {
-          printf("\t%s: %ld != %ld\n", FEXCore::Core::GetFlagName(Flag).data(), (A >> Flag) & 1, (B >> Flag) & 1);
+          fmt::print("\t{}: {} != {}\n", FEXCore::Core::GetFlagName(Flag), (A >> Flag) & 1, (B >> Flag) & 1);
         }
       }
     };
 
-    auto CheckGPRs = [&Matches, DumpGPRs](std::string Name, uint64_t A, uint64_t B){
-      DumpGPRs(std::move(Name), A, B);
+    const auto CheckGPRs = [&Matches, DumpGPRs](const std::string& Name, uint64_t A, uint64_t B){
+      DumpGPRs(Name, A, B);
       Matches &= A == B;
     };
 
-    auto CheckFLAGS = [&Matches, DumpFLAGs](std::string Name, uint64_t A, uint64_t B){
-      DumpFLAGs(std::move(Name), A, B);
+    const auto CheckFLAGS = [&Matches, DumpFLAGs](const std::string& Name, uint64_t A, uint64_t B){
+      DumpFLAGs(Name, A, B);
       Matches &= A == B;
     };
 
@@ -133,19 +143,16 @@ namespace FEX::HarnessHelper {
   }
 
   inline void ReadFile(std::string const &Filename, std::vector<char> *Data) {
-    std::fstream TestFile;
-    TestFile.open(Filename, std::fstream::in | std::fstream::binary);
-    LOGMAN_THROW_A(TestFile.is_open(), "Failed to open file");
+    std::fstream TestFile(Filename, std::fstream::in | std::fstream::binary);
+    LOGMAN_THROW_A_FMT(TestFile.is_open(), "Failed to open file");
 
     TestFile.seekg(0, std::fstream::end);
-    size_t FileSize = TestFile.tellg();
+    const size_t FileSize = TestFile.tellg();
     TestFile.seekg(0, std::fstream::beg);
 
     Data->resize(FileSize);
 
-    TestFile.read(&Data->at(0), FileSize);
-
-    TestFile.close();
+    TestFile.read(Data->data(), FileSize);
   }
 
   class ConfigLoader final {
@@ -163,7 +170,7 @@ namespace FEX::HarnessHelper {
       }
 
       if (BaseConfig.OptionRegDataCount > 0) {
-        constexpr std::array<uint64_t, 45> OffsetArray = {{
+        static constexpr std::array<uint64_t, 45> OffsetArray = {{
           offsetof(FEXCore::Core::CPUState, rip),
           offsetof(FEXCore::Core::CPUState, gregs[0]),
           offsetof(FEXCore::Core::CPUState, gregs[1]),
@@ -222,26 +229,27 @@ namespace FEX::HarnessHelper {
           uint64_t *State1Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State1) + Offset);
           uint64_t *State2Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State2) + Offset);
 
-          auto DumpGPRs = [this](auto Name, uint64_t A, uint64_t B) {
-            if (!ConfigDumpGPRs())
+          const auto DumpGPRs = [this](const std::string& Name, uint64_t A, uint64_t B) {
+            if (!ConfigDumpGPRs()) {
               return;
+            }
 
-            printf("%s: 0x%016lx %s 0x%016lx (Expected)\n", Name.c_str(), A, A==B ? "==" : "!=", B);
+            fmt::format("{}: 0x{:016x} {} 0x{:016x} (Expected)\n", Name, A, A==B ? "==" : "!=", B);
           };
 
-          auto CheckGPRs = [&Matches, DumpGPRs](std::string Name, uint64_t A, uint64_t B) {
-            DumpGPRs(std::move(Name), A, B);
+          const auto CheckGPRs = [&Matches, DumpGPRs](const std::string& Name, uint64_t A, uint64_t B) {
+            DumpGPRs(Name, A, B);
             Matches &= A == B;
           };
 
-          for (unsigned j = 0; j < RegData->RegDataCount; ++j) {
+          for (size_t j = 0; j < RegData->RegDataCount; ++j) {
             std::string Name;
             if (NameIndex == 0) // RIP
               Name = "RIP";
             else if (NameIndex >= 1 && NameIndex < 17)
-              Name = "GPR" + std::to_string(NameIndex - 1);
+              Name = fmt::format("GPR{}", NameIndex - 1);
             else if (NameIndex >= 17 && NameIndex < 33)
-              Name = "XMM[" + std::to_string(NameIndex - 17) + "][" + std::to_string(j) + "]";
+              Name = fmt::format("XMM[{}][{}]", NameIndex - 17, j);
             else if (NameIndex == 33)
               Name = "gs";
             else if (NameIndex == 34)
@@ -249,14 +257,13 @@ namespace FEX::HarnessHelper {
             else if (NameIndex == 35)
               Name = "rflags";
             else if (NameIndex >= 36 && NameIndex < 45)
-              Name = "MM[" + std::to_string(NameIndex - 36) + "][" + std::to_string(j) + "]";
-
+              Name = fmt::format("MM[{}][{}]", NameIndex - 36, j);
 
             if (State1) {
-              CheckGPRs("Core1: " + Name + ": ", State1Data[j], RegData->RegValues[j]);
+              CheckGPRs(fmt::format("Core1: {}: ", Name), State1Data[j], RegData->RegValues[j]);
             }
             if (State2) {
-              CheckGPRs("Core2: " + Name + ": ", State2Data[j], RegData->RegValues[j]);
+              CheckGPRs(fmt::format("Core2: {}: ", Name), State2Data[j], RegData->RegValues[j]);
             }
           }
 
@@ -359,7 +366,7 @@ namespace FEX::HarnessHelper {
       }
       else {
         uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-        LOGMAN_THROW_A(Result != ~0ULL, "Stack Pointer mmap failed");
+        LOGMAN_THROW_A_FMT(Result != ~0ULL, "Stack Pointer mmap failed");
         return Result + STACK_SIZE;
       }
     }
@@ -372,7 +379,7 @@ namespace FEX::HarnessHelper {
       bool LimitedSize = true;
       auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
         void *Result = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        LOGMAN_THROW_A(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+        LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
         return Result;
       };
 
