@@ -22,7 +22,7 @@ static bool SetupDev{};
 static bool SetupInstance{};
 std::mutex SetupMutex{};
 
-static std::unordered_map<std::string,PFN_vkVoidFunction*> PtrsToLookUp{};
+static std::unordered_map<std::string_view,PFN_vkVoidFunction*> PtrsToLookUp{};
 
 const std::vector<std::pair<const char*, PFN_vkVoidFunction*>> Map = {{
   // Our local function

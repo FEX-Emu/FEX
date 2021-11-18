@@ -23,7 +23,7 @@ $end_info$
 
 extern "C" {
 static bool Setup{};
-static std::unordered_map<std::string,PFN_vkVoidFunction*> PtrsToLookUp{};
+static std::unordered_map<std::string_view,PFN_vkVoidFunction*> PtrsToLookUp{};
 
 static PFN_vkVoidFunction fexfn_pack_vkGetDeviceProcAddr(VkDevice a_0,const char* a_1);
 static PFN_vkVoidFunction fexfn_pack_vkGetInstanceProcAddr(VkInstance a_0,const char* a_1);
