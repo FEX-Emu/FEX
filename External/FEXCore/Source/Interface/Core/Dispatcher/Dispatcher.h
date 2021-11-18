@@ -80,7 +80,7 @@ protected:
 
   ArchHelpers::Context::ContextBackup* StoreThreadState(int Signal, void *ucontext);
   void RestoreThreadState(void *ucontext);
-  std::stack<uint64_t> SignalFrames;
+  std::stack<uint64_t, std::vector<uint64_t>> SignalFrames;
 
   bool SRAEnabled = false;
   virtual void SpillSRA(void *ucontext, uint32_t IgnoreMask) {}
