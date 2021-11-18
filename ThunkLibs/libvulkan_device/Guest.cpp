@@ -59,15 +59,11 @@ static PFN_vkVoidFunction fexfn_pack_vkGetDeviceProcAddr(VkDevice a_0,const char
   // Okay, we found a host side function for this
   // Now return our local instance of this function
   auto It = PtrsToLookUp.find(a_1);
-  void *ptr{};
-  if (It != PtrsToLookUp.end()) {
-    ptr = It->second;
-  }
-  if (ptr == nullptr) {
+  if (It == PtrsToLookUp.end() || !It->second) {
     fprintf(stderr, "\tvkGetDeviceProcAddr: Couldn't find Guest symbol: '%s'\n", a_1);
     __builtin_trap();
   }
-  return (PFN_vkVoidFunction)ptr;
+  return (PFN_vkVoidFunction)It->second;
 }
 
 static PFN_vkVoidFunction fexfn_pack_vkGetInstanceProcAddr(VkInstance a_0,const char* a_1){
@@ -86,17 +82,12 @@ static PFN_vkVoidFunction fexfn_pack_vkGetInstanceProcAddr(VkInstance a_0,const 
     return nullptr;
   }
 
-  void *ptr{};
-
   auto It = PtrsToLookUp.find(a_1);
-  if (It != PtrsToLookUp.end()) {
-    ptr = (void*)(It->second);
-  }
-  if (ptr == nullptr) {
+  if (It == PtrsToLookUp.end() || !It->second) {
     fprintf(stderr, "\tvkGetInstanceProcAddr: Couldn't find Guest symbol: '%s'\n", a_1);
     __builtin_trap();
   }
-  return (PFN_vkVoidFunction)ptr;
+  return (PFN_vkVoidFunction)It->second;
 }
 
 static void fexfn_pack_vkCmdSetBlendConstants(VkCommandBuffer a_0,const float a_1[4]){
