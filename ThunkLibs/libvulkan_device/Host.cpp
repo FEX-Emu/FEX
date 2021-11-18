@@ -158,9 +158,12 @@ static ExportEntry exports[] = {
 #include "ldr.inl"
 
 static void DoSetup() {
-  for (auto &It : Map) {
-    PtrsToLookUp[It.first] = It.second;
-  }
+    // Initialize unordered_map from generated initializer-list
+    PtrsToLookUp = {
+#define PAIR(name, ptr) { #name, (PFN_vkVoidFunction*)ptr }
+#include "ldr_ptrs_pair.inl"
+#undef PAIR
+    };
 }
 
 static void init_func() {

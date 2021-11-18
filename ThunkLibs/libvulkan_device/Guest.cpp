@@ -32,14 +32,13 @@ static void fexfn_pack_vkCmdSetBlendConstants(VkCommandBuffer a_0,const float a_
 // Setup can't be done on shared library constructor
 // Needs to be deferred until post-constructor phase to remove the chance of crashing
 static void DoSetup() {
-    const std::vector<std::pair<const char*, PFN_vkVoidFunction*>> Map = {{
-#define PAIR(name, ptr) { #name, (PFN_vkVoidFunction*) ptr }
+    // Initialize unordered_map from generated initializer-list
+    PtrsToLookUp = {
+#define PAIR(name, ptr) { #name, (PFN_vkVoidFunction*)ptr }
 #include "function_pack_pair.inl"
 #undef PAIR
-    }};
-    for (auto &It : Map) {
-      PtrsToLookUp[It.first] = It.second;
-    }
+    };
+
     Setup = true;
 }
 static PFN_vkVoidFunction fexfn_pack_vkGetDeviceProcAddr(VkDevice a_0,const char* a_1){
