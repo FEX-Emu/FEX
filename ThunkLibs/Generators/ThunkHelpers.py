@@ -249,7 +249,7 @@ def GenerateFunctionLdrPtr(lib, function):
     print("static fexldr_type_" + lib["name"] + "_" + function["name"] + " *fexldr_ptr_" + lib["name"] + "_" + function["name"] + ";")
 
 def GenerateFunctionLdrPtrPair(lib, function):
-    print("PAIR({0}, &fexldr_ptr_{1}_{0}),".format(function["name"], lib["name"]))
+    print("PAIR({0}, &fexldr_ptr_{1}_{0})".format(function["name"], lib["name"]))
 
 ###
 ### ldr
