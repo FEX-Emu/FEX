@@ -2361,6 +2361,64 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::BZHI(OpcodeArgs) {
+  const auto OperandSize = GetSrcBitSize(Op);
+
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Index = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  // Mask off the index so we only consider the lower byte.
+  auto MaskedIndex = _And(Index, _Constant(0xFF));
+
+  // Now clear the high bits specified by the index.
+  auto NegOne = _Constant(OperandSize, -1);
+  auto Mask = _Lshl(NegOne, MaskedIndex);
+  auto MaskResult = _Andn(Src, Mask);
+
+  // If the index is above OperandSize, we don't clear anything.
+  auto Bounds = _Constant(OperandSize - 1);
+  auto Result = _Select(IR::COND_UGT,
+                        MaskedIndex, Bounds,
+                        Src, MaskResult);
+
+  StoreResult(GPRClass, Op, Result, -1);
+
+  // Now for the flags
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+
+  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
+  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
+  if (CTX->Config.ABINoPF) {
+    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
+  } else {
+    SetRFLAG<X86State::RFLAG_PF_LOC>(Zero);
+  }
+
+  // ZF
+  {
+    auto ZFOp = _Select(IR::COND_EQ,
+                        Result, Zero,
+                        One, Zero);
+    SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFOp);
+  }
+
+  // CF
+  {
+    auto CFOp = _Select(IR::COND_UGT,
+                        MaskedIndex, Bounds,
+                        One, Zero);
+    SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
+  }
+
+  // SF
+  {
+    auto SFOp = _Lshr(Result, Bounds);
+
+    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
+  }
+}
+
 void OpDispatchBuilder::RORX(OpcodeArgs) {
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
@@ -6103,6 +6161,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(2, 0b00, 0xF2), 1, &OpDispatchBuilder::ANDNBMIOp},
+    {OPD(2, 0b00, 0xF5), 1, &OpDispatchBuilder::BZHI},
     {OPD(2, 0b11, 0xF6), 1, &OpDispatchBuilder::MULX},
     {OPD(2, 0b00, 0xF7), 1, &OpDispatchBuilder::BEXTRBMIOp},
     {OPD(2, 0b01, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},

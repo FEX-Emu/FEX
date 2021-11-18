@@ -393,7 +393,7 @@ void InitializeVEXTables() {
     {OPD(2, 0b10, 0xF3), 1, X86InstInfo{"", TYPE_VEX_GROUP_17, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
     {OPD(2, 0b11, 0xF3), 1, X86InstInfo{"", TYPE_VEX_GROUP_17, FLAGS_NONE, 0, nullptr}}, // VEX Group 17
 
-    {OPD(2, 0b00, 0xF5), 1, X86InstInfo{"BZHI", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b00, 0xF5), 1, X86InstInfo{"BZHI", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_2ND_SRC, 0, nullptr}},
     {OPD(2, 0b01, 0xF5), 1, X86InstInfo{"PEXT", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b11, 0xF5), 1, X86InstInfo{"PDEP", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
