@@ -65,14 +65,25 @@ ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(int Signal, vo
   // Set the new SP
   ArchHelpers::Context::SetSp(ucontext, NewSP);
 
-  SignalFrames.push(NewSP);
+  // Signal frames are only used on the interpreter
+  // The JITS require the stack to be setup correctly on rt_sigreturn
+  if (CTX->Config.Core() == FEXCore::Config::CONFIG_INTERPRETER) {
+    SignalFrames.push(NewSP);
+  }
   return Context;
 }
 
 void Dispatcher::RestoreThreadState(void *ucontext) {
-  LOGMAN_THROW_A(!SignalFrames.empty(), "Trying to restore a signal frame when we don't have any");
-  uint64_t OldSP = SignalFrames.top();
-  SignalFrames.pop();
+  uint64_t OldSP{};
+  if (CTX->Config.Core() == FEXCore::Config::CONFIG_IRJIT) {
+    OldSP = ArchHelpers::Context::GetSp(ucontext);
+  }
+  else {
+    LOGMAN_THROW_A(!SignalFrames.empty(), "Trying to restore a signal frame when we don't have any");
+    OldSP = SignalFrames.top();
+    SignalFrames.pop();
+  }
+
   uintptr_t NewSP = OldSP;
   auto Context = reinterpret_cast<ArchHelpers::Context::ContextBackup*>(NewSP);
 
