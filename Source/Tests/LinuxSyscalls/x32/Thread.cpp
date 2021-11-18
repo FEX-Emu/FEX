@@ -10,6 +10,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/x32/Thread.h"
 #include "Tests/LinuxSyscalls/x32/Types.h"
 
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
+
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
@@ -143,82 +145,82 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(getgroups32, [](FEXCore::Core::CpuStateFrame *Frame, int size, gid_t list[]) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(getgroups32, getgroups, [](FEXCore::Core::CpuStateFrame *Frame, int size, gid_t list[]) -> uint64_t {
       uint64_t Result = ::getgroups(size, list);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setgroups32, [](FEXCore::Core::CpuStateFrame *Frame, size_t size, const gid_t *list) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setgroups32, setgroups, [](FEXCore::Core::CpuStateFrame *Frame, size_t size, const gid_t *list) -> uint64_t {
       uint64_t Result = ::setgroups(size, list);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(getuid32, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(getuid32, getuid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getuid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(getgid32, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(getgid32, getgid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getgid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setuid32, [](FEXCore::Core::CpuStateFrame *Frame, uid_t uid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setuid32, setuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t uid) -> uint64_t {
       uint64_t Result = ::setuid(uid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setgid32, [](FEXCore::Core::CpuStateFrame *Frame, gid_t gid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setgid32, setgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t gid) -> uint64_t {
       uint64_t Result = ::setgid(gid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(geteuid32, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(geteuid32, geteuid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::geteuid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(getegid32, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(getegid32, getegid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getegid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setfsuid32, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsuid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setfsuid32, setfsuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsuid) -> uint64_t {
       uint64_t Result = ::setfsuid(fsuid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setfsgid32, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsgid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setfsgid32, setfsgid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsgid) -> uint64_t {
       uint64_t Result = ::setfsgid(fsgid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setreuid32, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setreuid32, setreuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid) -> uint64_t {
       uint64_t Result = ::setreuid(ruid, euid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setresuid32, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid, uid_t suid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setresuid32, setresuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid, uid_t suid) -> uint64_t {
       uint64_t Result = ::setresuid(ruid, euid, suid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(getresuid32, [](FEXCore::Core::CpuStateFrame *Frame, uid_t *ruid, uid_t *euid, uid_t *suid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(getresuid32, getresuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t *ruid, uid_t *euid, uid_t *suid) -> uint64_t {
       uint64_t Result = ::getresuid(ruid, euid, suid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setresgid32, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid, gid_t sgid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setresgid32, setresgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid, gid_t sgid) -> uint64_t {
       uint64_t Result = ::setresgid(rgid, egid, sgid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(getresgid32, [](FEXCore::Core::CpuStateFrame *Frame, gid_t *rgid, gid_t *egid, gid_t *sgid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(getresgid32, getresgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t *rgid, gid_t *egid, gid_t *sgid) -> uint64_t {
       uint64_t Result = ::getresgid(rgid, egid, sgid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(setregid32, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(setregid32, setregid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid) -> uint64_t {
       uint64_t Result = ::setregid(rgid, egid);
       SYSCALL_ERRNO();
     });
@@ -331,8 +333,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-
-    REGISTER_SYSCALL_IMPL_X32(futex_time64, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(futex_time64, futex, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
       uint64_t Result = syscall(SYS_futex,
         uaddr,
         futex_op,

@@ -366,5 +366,5 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     impl_##name() \
     { \
       FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), #name, lambda); \
     } } impl_##name

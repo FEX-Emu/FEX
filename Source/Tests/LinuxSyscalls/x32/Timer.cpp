@@ -9,6 +9,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Types.h"
 
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
+
 #include <bits/types/timer_t.h>
 #include <stdint.h>
 #include <syscall.h>
@@ -52,13 +54,12 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-
-    REGISTER_SYSCALL_IMPL_X32(timer_settime64, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(timer_settime64, timer_settime, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_settime, timerid, flags, new_value, old_value);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(timer_gettime64, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(timer_gettime64, timer_gettime, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
       uint64_t Result = ::syscall(SYS_timer_gettime, timerid, curr_value);
       SYSCALL_ERRNO();
     });
