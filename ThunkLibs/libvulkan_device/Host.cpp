@@ -60,7 +60,11 @@ static void DoSetupWithInstance(VkInstance instance) {
       }
     }
 
-    SetupInstance = true;
+    // Only do this lookup once.
+    // NOTE: If vkGetInstanceProcAddr was called with a null instance, only a few function pointers will be filled with non-null values, so we do repeat the lookup in that case
+    if (instance) {
+        SetupInstance = true;
+    }
 }
 
 static void UNPACKFUNC(vkGetDeviceProcAddr)(void *argsv){
@@ -76,12 +80,6 @@ static void UNPACKFUNC(vkGetDeviceProcAddr)(void *argsv){
   args->rv =
     LDR_PTR(vkGetDeviceProcAddr)
     (args->a_0,args->a_1);
-
-  // Store the result if it exists
-  // This way when a guest calls across the boundary, it calls directly in to the host
-  if (args->rv) {
-    *PtrsToLookUp[args->a_1] = args->rv;
-  }
 }
 
 static void UNPACKFUNC(vkGetInstanceProcAddr)(void *argsv){
@@ -97,12 +95,6 @@ static void UNPACKFUNC(vkGetInstanceProcAddr)(void *argsv){
   args->rv =
     LDR_PTR(vkGetInstanceProcAddr)
     (args->a_0,args->a_1);
-
-  // Store the result if it exists
-  // This way when a guest calls across the boundary, it calls directly in to the host
-  if (args->rv) {
-    *PtrsToLookUp[args->a_1] = args->rv;
-  }
 }
 
 static void UNPACKFUNC(vkCreateShaderModule)(void *argsv){
