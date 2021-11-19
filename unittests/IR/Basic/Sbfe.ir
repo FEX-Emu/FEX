@@ -37,5 +37,5 @@
 ; Test with + shift
     %Res5 i64 = Sbfe %Val2, #0x4, #0x2
     (%Store5 i64) StoreContext %Res5 i64, #0x28, GPR
-    (%brk i0) Break #4, #4
+    (%brk i0) Break Halt, #4
     (%end i0) EndBlock %ssa2
