@@ -27,7 +27,7 @@ public:
 
   Decoder(FEXCore::Context::Context *ctx);
   ~Decoder();
-  bool DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC);
+  void DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC);
 
   std::vector<DecodedBlocks> const *GetDecodedBlocks() const {
     return &Blocks;

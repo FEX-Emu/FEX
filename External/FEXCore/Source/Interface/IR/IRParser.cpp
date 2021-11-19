@@ -38,6 +38,8 @@ enum class DecodeFailure {
   DECODE_INVALID_CONDFLAG,
   DECODE_INVALID_MEMOFFSETTYPE,
   DECODE_INVALID_FENCETYPE,
+  DECODE_INVALID_BREAKTYPE,
+
 };
 
 std::string ltrim(std::string String) {
@@ -74,6 +76,7 @@ std::string DecodeErrorToString(DecodeFailure Failure) {
     case DecodeFailure::DECODE_INVALID_CONDFLAG: return "Invalid Conditional name";
     case DecodeFailure::DECODE_INVALID_MEMOFFSETTYPE: return "Invalid Memory Offset Type";
     case DecodeFailure::DECODE_INVALID_FENCETYPE: return "Invalid Fence Type";
+    case DecodeFailure::DECODE_INVALID_BREAKTYPE: return "Invalid Break Reason Type";
   }
   return "Unknown Error";
 }
@@ -266,6 +269,25 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
     }
     return {DecodeFailure::DECODE_INVALID_FENCETYPE, {}};
+  }
+
+  template<>
+  std::pair<DecodeFailure, FEXCore::IR::BreakReason> DecodeValue(const std::string &Arg) {
+    static constexpr std::array<std::string_view, 6> Names = {
+      "Unimplemented",
+      "Interrupt",
+      "Interrupt3",
+      "Halt",
+      "Overfloat",
+      "InvalidInstruction",
+    };
+
+    for (size_t i = 0; i < Names.size(); ++i) {
+      if (Names[i] == Arg) {
+        return {DecodeFailure::DECODE_OKAY, BreakReason{static_cast<uint8_t>(i)}};
+      }
+    }
+    return {DecodeFailure::DECODE_INVALID_BREAKTYPE, {}};
   }
 
   template<>

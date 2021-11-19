@@ -163,6 +163,8 @@ private:
 
   struct CompilerSharedData {
     uint64_t SignalHandlerReturnAddress{};
+    uint64_t UnimplementedInstructionAddress{};
+
 
     uint32_t *SignalHandlerRefCounterPtr{};
     FEXCore::CPU::Dispatcher *Dispatcher{};

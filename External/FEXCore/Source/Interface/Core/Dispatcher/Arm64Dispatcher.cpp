@@ -251,6 +251,17 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
+    // Guest SIGILL handler
+    // Needs to be distinct from the SignalHandlerReturnAddress
+    UnimplementedInstructionAddress = GetCursorAddress<uint64_t>();
+
+    if (SRAEnabled)
+      SpillStaticRegs();
+
+    hlt(0);
+  }
+
+  {
     ThreadPauseHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
     if (SRAEnabled)
       SpillStaticRegs();

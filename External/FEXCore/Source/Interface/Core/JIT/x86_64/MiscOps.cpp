@@ -47,20 +47,12 @@ DEF_OP(Fence) {
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
   switch (Op->Reason) {
-    case 0: // Hard fault
-    case 5: // Guest ud2
-      ud2();
-    break;
-    case 1: // Int <imm8>
-      ud2();
-    break;
-    case 2: // overflow
+    case FEXCore::IR::Break_Unimplemented: // Hard fault
+    case FEXCore::IR::Break_Interrupt: // Guest ud2
+    case FEXCore::IR::Break_Overflow: // overflow
       ud2();
       break;
-    case 3: // int 1
-      ud2();
-      break;
-    case 4: { // HLT
+    case FEXCore::IR::Break_Halt: { // HLT
       // Time to quit
       // Set our stack to the starting stack location
       mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
@@ -70,7 +62,7 @@ DEF_OP(Break) {
       jmp(TMP1);
       break;
     }
-    case 6: // INT3
+    case FEXCore::IR::Break_Interrupt3: // INT3
     {
       if (CTX->GetGdbServerStatus()) {
         // Adjust the stack first for a regular return
@@ -92,6 +84,18 @@ DEF_OP(Break) {
         jmp(TMP1);
       }
     break;
+    }
+    case FEXCore::IR::Break_InvalidInstruction:
+    {
+      if (SpillSlots) {
+        add(rsp, SpillSlots * 16);
+      }
+
+      // Need to be outside of JIT cache space to ensure cache clearing correctness
+      mov(TMP1, ThreadSharedData.Dispatcher->UnimplementedInstructionAddress);
+      jmp(TMP1);
+
+      break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Break reason: {}", Op->Reason);
   }
