@@ -110,3 +110,10 @@ bool RegisterSyscall(int num, int32_t HostSyscallNumber, const char *name, F f){
     { \
       FEX::HLE::x32::RegisterSyscall(x32::SYSCALL_x86_##name, SYSCALL_DEF(name), #name, lambda); \
     } } impl_##name
+
+#define REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(name, hostname, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEX::HLE::x32::RegisterSyscall(x32::SYSCALL_x86_##name, SYSCALL_DEF(hostname), #name, lambda); \
+    } } impl_##name

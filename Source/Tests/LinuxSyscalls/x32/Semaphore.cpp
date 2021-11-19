@@ -8,6 +8,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Types.h"
 
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
+
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
@@ -825,7 +827,7 @@ namespace FEX::HLE::x32 {
   void RegisterSemaphore() {
     REGISTER_SYSCALL_IMPL_X32(ipc, _ipc);
 
-    REGISTER_SYSCALL_IMPL_X32(semtimedop_time64, [](FEXCore::Core::CpuStateFrame *Frame, int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(semtimedop_time64, semtimedop, [](FEXCore::Core::CpuStateFrame *Frame, int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout) -> uint64_t {
       uint64_t Result = ::semtimedop(semid, sops, nsops, timeout);
       SYSCALL_ERRNO();
     });
