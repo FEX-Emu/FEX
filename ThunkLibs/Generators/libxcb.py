@@ -65,7 +65,6 @@ fn("int xcb_take_socket(xcb_connection_t *, CBType, void *, int, uint64_t *)"); 
 #cb("int XIfEventCB(Display*, XEvent*, XPointer)")
 
 fn("int xcb_take_socket_internal(xcb_connection_t *, CBType, void *, int, uint64_t *)"); no_ldr()
-cb("void xcb_take_socket_cb(void*)"); no_cb_unpack()
 
 fn("int xcb_writev(xcb_connection_t *, struct iovec *, int, uint64_t)")
 fn("void * xcb_wait_for_reply(xcb_connection_t *, unsigned int, xcb_generic_error_t **)"); no_pack()

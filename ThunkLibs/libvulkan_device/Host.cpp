@@ -22,45 +22,48 @@ static bool SetupDev{};
 static bool SetupInstance{};
 std::mutex SetupMutex{};
 
-static std::unordered_map<std::string,PFN_vkVoidFunction*> PtrsToLookUp{};
-
-const std::vector<std::pair<const char*, PFN_vkVoidFunction*>> Map = {{
-  // Our local function
-#define PAIR(name, ptr) { #name,  (PFN_vkVoidFunction*) ptr }
-#include "ldr_ptrs_pair.inl"
-#undef PAIR
-}};
+static std::unordered_map<std::string_view,PFN_vkVoidFunction*> PtrsToLookUp{};
 
 static void DoSetupWithDevice(VkDevice dev) {
-  std::unique_lock lk {SetupMutex};
-    for (auto &It : Map) {
-      auto Lookup = PtrsToLookUp.find(It.first);
-      if (Lookup != PtrsToLookUp.end() && *Lookup->second == nullptr)
-      {
-        auto Res = LDR_PTR(vkGetDeviceProcAddr)(dev,It.first);
-        if (Res) {
-          *PtrsToLookUp[It.first] = Res;
+    std::unique_lock lk {SetupMutex};
+
+    auto add_ptr = [&](const char* name) {
+        auto Lookup = PtrsToLookUp.find(name);
+        if (Lookup != PtrsToLookUp.end() && *Lookup->second == nullptr) {
+            auto Res = LDR_PTR(vkGetDeviceProcAddr)(dev, name);
+            if (Res) {
+                *Lookup->second = Res;
+            }
         }
-      }
-    }
+    };
+
+#define PAIR(name, ptr_unused) add_ptr(#name);
+#include "ldr_ptrs_pair.inl"
+#undef PAIR
+
     SetupDev = true;
 }
 
 static void DoSetupWithInstance(VkInstance instance) {
-  std::unique_lock lk {SetupMutex};
+    std::unique_lock lk {SetupMutex};
 
-    for (auto &It : Map) {
-      auto Lookup = PtrsToLookUp.find(It.first);
-      //if (Lookup != PtrsToLookUp.end() && *Lookup->second == nullptr)
-      {
-        PFN_vkVoidFunction Res = LDR_PTR(vkGetInstanceProcAddr)(instance, It.first);
+    auto add_ptr = [&](const char* name) {
+        auto Lookup = PtrsToLookUp.find(name);
+        auto Res = LDR_PTR(vkGetInstanceProcAddr)(instance, name);
         if (Res) {
-          *Lookup->second = Res;
+            *Lookup->second = Res;
         }
-      }
-    }
+    };
 
-    SetupInstance = true;
+#define PAIR(name, ptr) add_ptr(#name);
+#include "ldr_ptrs_pair.inl"
+#undef PAIR
+
+    // Only do this lookup once.
+    // NOTE: If vkGetInstanceProcAddr was called with a null instance, only a few function pointers will be filled with non-null values, so we do repeat the lookup in that case
+    if (instance) {
+        SetupInstance = true;
+    }
 }
 
 static void UNPACKFUNC(vkGetDeviceProcAddr)(void *argsv){
@@ -76,12 +79,6 @@ static void UNPACKFUNC(vkGetDeviceProcAddr)(void *argsv){
   args->rv =
     LDR_PTR(vkGetDeviceProcAddr)
     (args->a_0,args->a_1);
-
-  // Store the result if it exists
-  // This way when a guest calls across the boundary, it calls directly in to the host
-  if (args->rv) {
-    *PtrsToLookUp[args->a_1] = args->rv;
-  }
 }
 
 static void UNPACKFUNC(vkGetInstanceProcAddr)(void *argsv){
@@ -97,12 +94,6 @@ static void UNPACKFUNC(vkGetInstanceProcAddr)(void *argsv){
   args->rv =
     LDR_PTR(vkGetInstanceProcAddr)
     (args->a_0,args->a_1);
-
-  // Store the result if it exists
-  // This way when a guest calls across the boundary, it calls directly in to the host
-  if (args->rv) {
-    *PtrsToLookUp[args->a_1] = args->rv;
-  }
 }
 
 static void UNPACKFUNC(vkCreateShaderModule)(void *argsv){
@@ -166,9 +157,12 @@ static ExportEntry exports[] = {
 #include "ldr.inl"
 
 static void DoSetup() {
-  for (auto &It : Map) {
-    PtrsToLookUp[It.first] = It.second;
-  }
+    // Initialize unordered_map from generated initializer-list
+    PtrsToLookUp = {
+#define PAIR(name, ptr) { #name, (PFN_vkVoidFunction*)ptr },
+#include "ldr_ptrs_pair.inl"
+#undef PAIR
+    };
 }
 
 static void init_func() {

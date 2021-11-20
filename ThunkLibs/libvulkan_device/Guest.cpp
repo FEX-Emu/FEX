@@ -23,7 +23,7 @@ $end_info$
 
 extern "C" {
 static bool Setup{};
-static std::unordered_map<std::string,PFN_vkVoidFunction*> PtrsToLookUp{};
+static std::unordered_map<std::string_view,PFN_vkVoidFunction*> PtrsToLookUp{};
 
 static PFN_vkVoidFunction fexfn_pack_vkGetDeviceProcAddr(VkDevice a_0,const char* a_1);
 static PFN_vkVoidFunction fexfn_pack_vkGetInstanceProcAddr(VkInstance a_0,const char* a_1);
@@ -32,14 +32,13 @@ static void fexfn_pack_vkCmdSetBlendConstants(VkCommandBuffer a_0,const float a_
 // Setup can't be done on shared library constructor
 // Needs to be deferred until post-constructor phase to remove the chance of crashing
 static void DoSetup() {
-    const std::vector<std::pair<const char*, PFN_vkVoidFunction*>> Map = {{
-#define PAIR(name, ptr) { #name, (PFN_vkVoidFunction*) ptr }
+    // Initialize unordered_map from generated initializer-list
+    PtrsToLookUp = {
+#define PAIR(name, ptr) { #name, (PFN_vkVoidFunction*)ptr }
 #include "function_pack_pair.inl"
 #undef PAIR
-    }};
-    for (auto &It : Map) {
-      PtrsToLookUp[It.first] = It.second;
-    }
+    };
+
     Setup = true;
 }
 static PFN_vkVoidFunction fexfn_pack_vkGetDeviceProcAddr(VkDevice a_0,const char* a_1){
@@ -60,15 +59,11 @@ static PFN_vkVoidFunction fexfn_pack_vkGetDeviceProcAddr(VkDevice a_0,const char
   // Okay, we found a host side function for this
   // Now return our local instance of this function
   auto It = PtrsToLookUp.find(a_1);
-  void *ptr{};
-  if (It != PtrsToLookUp.end()) {
-    ptr = It->second;
-  }
-  if (ptr == nullptr) {
+  if (It == PtrsToLookUp.end() || !It->second) {
     fprintf(stderr, "\tvkGetDeviceProcAddr: Couldn't find Guest symbol: '%s'\n", a_1);
     __builtin_trap();
   }
-  return (PFN_vkVoidFunction)ptr;
+  return (PFN_vkVoidFunction)It->second;
 }
 
 static PFN_vkVoidFunction fexfn_pack_vkGetInstanceProcAddr(VkInstance a_0,const char* a_1){
@@ -87,17 +82,12 @@ static PFN_vkVoidFunction fexfn_pack_vkGetInstanceProcAddr(VkInstance a_0,const 
     return nullptr;
   }
 
-  void *ptr{};
-
   auto It = PtrsToLookUp.find(a_1);
-  if (It != PtrsToLookUp.end()) {
-    ptr = (void*)(It->second);
-  }
-  if (ptr == nullptr) {
+  if (It == PtrsToLookUp.end() || !It->second) {
     fprintf(stderr, "\tvkGetInstanceProcAddr: Couldn't find Guest symbol: '%s'\n", a_1);
     __builtin_trap();
   }
-  return (PFN_vkVoidFunction)ptr;
+  return (PFN_vkVoidFunction)It->second;
 }
 
 static void fexfn_pack_vkCmdSetBlendConstants(VkCommandBuffer a_0,const float a_1[4]){

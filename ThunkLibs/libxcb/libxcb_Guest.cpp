@@ -78,17 +78,6 @@ static void CallbackThreadFunc() {
   }
 }
 
-// Callbacks
-static void fexfn_unpack_libxcb_xcb_take_socket_cb(uintptr_t cb, void *argsv){
-  // Hand the callback off to our native thread which will have proper TLS
-  CBWorkData.cb = cb;
-  CBWorkData.argsv = argsv;
-  // Tell the thread it has work
-  NotifyWorkFunc(&WaitForWork);
-  // Wait for the work to be done
-  WaitForWorkFunc(&WorkDone);
-}
-
 extern "C" {
   static void init_lib() {
     // Start a guest side thread that allows us to do callbacks from xcb safely
