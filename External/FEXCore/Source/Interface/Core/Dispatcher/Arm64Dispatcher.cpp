@@ -25,6 +25,7 @@
 #include "code-buffer-vixl.h"
 #include "platform-vixl.h"
 
+#include <sys/syscall.h>
 #include <unistd.h>
 
 namespace FEXCore::CPU {
@@ -205,10 +206,30 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     ret();
   }
 
+  constexpr bool SignalSafeCompile = true;
   {
     ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
     if (SRAEnabled)
       SpillStaticRegs();
+
+    if (SignalSafeCompile) {
+      // When compiling code, mask all signals to reduce the chance of reentrant allocations
+      // Args:
+      // X0: SETMASK
+      // X1: Pointer to mask value (uint64_t)
+      // X2: Pointer to old mask value (uint64_t)
+      // X3: Size of mask, sizeof(uint64_t)
+      // X8: Syscall
+
+      LoadConstant(x0, ~0ULL);
+      stp(x0, x0, MemOperand(sp, -16, PreIndex));
+      LoadConstant(x0, SIG_SETMASK);
+      add(x1, sp, 0);
+      add(x2, sp, 0);
+      LoadConstant(x3, 8);
+      LoadConstant(x8, SYS_rt_sigprocmask);
+      svc(0);
+    }
 
     ldr(x0, &l_ExitFunctionLinkThis);
     mov(x1, STATE);
@@ -216,6 +237,24 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
     ldr(x3, &l_ExitFunctionLink);
     blr(x3);
+
+    if (SignalSafeCompile) {
+      // Now restore the signal mask
+      // Living in the same location
+
+      mov(x4, x0);
+      LoadConstant(x0, SIG_SETMASK);
+      add(x1, sp, 0);
+      LoadConstant(x2, 0);
+      LoadConstant(x3, 8);
+      LoadConstant(x8, SYS_rt_sigprocmask);
+      svc(0);
+
+      // Bring stack back
+      add(sp, sp, 16);
+
+      mov(x0, x4);
+    }
 
     if (SRAEnabled)
       FillStaticRegs();
@@ -226,15 +265,52 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   {
     bind(&NoBlock);
 
+    if (SRAEnabled)
+      SpillStaticRegs();
+
+    if (SignalSafeCompile) {
+      // When compiling code, mask all signals to reduce the chance of reentrant allocations
+      // Args:
+      // X0: SETMASK
+      // X1: Pointer to mask value (uint64_t)
+      // X2: Pointer to old mask value (uint64_t)
+      // X3: Size of mask, sizeof(uint64_t)
+      // X8: Syscall
+
+      LoadConstant(x0, ~0ULL);
+      stp(x0, x2, MemOperand(sp, -16, PreIndex));
+      LoadConstant(x0, SIG_SETMASK);
+      add(x1, sp, 0);
+      add(x2, sp, 0);
+      LoadConstant(x3, 8);
+      LoadConstant(x8, SYS_rt_sigprocmask);
+      svc(0);
+
+      // Reload x2 to bring back RIP
+      ldr(x2, MemOperand(sp, 8, Offset));
+    }
+
     ldr(x0, &l_CTX);
     mov(x1, STATE);
     ldr(x3, &l_CompileBlock);
 
-    if (SRAEnabled)
-      SpillStaticRegs();
-
     // X2 contains our guest RIP
     blr(x3); // { CTX, Frame, RIP}
+
+
+    if (SignalSafeCompile) {
+      // Now restore the signal mask
+      // Living in the same location
+      LoadConstant(x0, SIG_SETMASK);
+      add(x1, sp, 0);
+      LoadConstant(x2, 0);
+      LoadConstant(x3, 8);
+      LoadConstant(x8, SYS_rt_sigprocmask);
+      svc(0);
+
+      // Bring stack back
+      add(sp, sp, 16);
+    }
 
     if (SRAEnabled)
       FillStaticRegs();
