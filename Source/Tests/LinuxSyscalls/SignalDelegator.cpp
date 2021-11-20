@@ -241,6 +241,12 @@ namespace FEX::HLE {
     return true;
   }
 
+  void SignalDelegator::UninstallHostHandler(int Signal) {
+    SignalHandler &SignalHandler = HostHandlers[Signal];
+
+    ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.OldAction, nullptr, 8);
+  }
+
   SignalDelegator::SignalDelegator() {
     // Register this delegate
     LOGMAN_THROW_A(!GlobalDelegator, "Can't register global delegator multiple times!");

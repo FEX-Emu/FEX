@@ -1,5 +1,4 @@
 #pragma once
-
 // Contains general abstractions related to compilers used to build FEX.
 
 // Specifies the minimum alignment for a variable or structure field, measured in bytes.
@@ -21,9 +20,15 @@
 #define FEX_PACKED __attribute__((packed))
 
 // Causes execution to exit abnormally.
-#define FEX_TRAP_EXECUTION __builtin_trap()
+#define FEX_TRAP_EXECUTION FEXCore::Assert::ForcedAssert()
 
 // Dictates to the compiler that the path this is on should not be reachable
 // from normal execution control flow. If normal execution does reach this,
 // then program behavior is undefined.
 #define FEX_UNREACHABLE __builtin_unreachable()
+
+namespace FEXCore::Assert {
+  // This function can not be inlined
+  [[noreturn]]
+  FEX_DEFAULT_VISIBILITY void ForcedAssert();
+}

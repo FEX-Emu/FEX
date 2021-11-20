@@ -49,6 +49,7 @@ $end_info$
 
 #include <fmt/format.h>
 #include <sys/sysinfo.h>
+#include <sys/signal.h>
 
 namespace {
 static bool SilentLog;
@@ -534,6 +535,25 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::InitializeContext(CTX);
 
   auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+
+  SignalDelegation->RegisterFrontendHostSignalHandler(SIGILL, [&SignalDelegation](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    ucontext_t* _context = (ucontext_t*)ucontext;
+    auto &mcontext = _context->uc_mcontext;
+    uint64_t PC{};
+#ifdef _M_ARM_64
+    PC = mcontext.pc;
+#else
+    PC = mcontext.gregs[REG_RIP];
+#endif
+    if (PC == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
+      // This is a host side assert. Don't deliver this to the guest
+      // We want to actually break here
+      SignalDelegation->UninstallHostHandler(Signal);
+      return true;
+    }
+    return false;
+  }, true);
+
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
