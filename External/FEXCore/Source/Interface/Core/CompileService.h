@@ -48,6 +48,9 @@ class CompileService final {
     // Public for threading
     void ExecutionThread();
 
+    bool IsAddressInJITCode(uint64_t Address) const {
+      return CompileThreadData->CPUBackend->IsAddressInJITCode(Address, false, false);
+    }
   private:
     FEXCore::Context::Context *CTX;
     FEXCore::Core::InternalThreadState *ParentThread;

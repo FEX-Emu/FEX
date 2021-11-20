@@ -64,6 +64,9 @@ public:
   [[nodiscard]] CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true, bool IncludeCompileService = true) const override {
+    return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher, IncludeCompileService);
+  }
 
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);

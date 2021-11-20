@@ -80,6 +80,10 @@ public:
   static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
   void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true, bool IncludeCompileService = true) const override {
+    return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher, IncludeCompileService);
+  }
+
 private:
   Label* PendingTargetLabel{};
   FEXCore::Context::Context *CTX;
