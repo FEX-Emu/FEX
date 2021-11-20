@@ -332,6 +332,14 @@ struct RoundType final {
   friend constexpr bool operator==(const RoundType&, const RoundType&) = default;
 };
 
+struct BreakReason final {
+  uint8_t Val;
+  constexpr operator uint8_t() const {
+    return Val;
+  }
+  friend constexpr bool operator==(const BreakReason&, const BreakReason&) = default;
+};
+
 struct SHA256Sum final {
   uint8_t data[32];
   bool operator<(SHA256Sum const &rhs) const { return memcmp(data, rhs.data, sizeof(data)) < 0; }

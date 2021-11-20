@@ -396,6 +396,8 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   if (!CompileThread) {
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
     ThreadSharedData.SignalReturnInstruction = Dispatcher->SignalHandlerReturnAddress;
+    ThreadSharedData.UnimplementedInstructionAddress = Dispatcher->UnimplementedInstructionAddress;
+
     ThreadSharedData.Dispatcher = Dispatcher.get();
 
     // This will register the host signal handler per thread, which is fine

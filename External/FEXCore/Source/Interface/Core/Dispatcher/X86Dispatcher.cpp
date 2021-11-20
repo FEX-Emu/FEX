@@ -141,7 +141,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     je(NoBlock);
 
     // Update L1
-    
+
     mov(r13, Thread->LookupCache->GetL1Pointer());
     mov(rcx, rdx);
     and_(rcx, LookupCache::L1_ENTRIES_MASK);
@@ -274,10 +274,15 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   {
     // Signal return handler
     SignalHandlerReturnAddress = getCurr<uint64_t>();
-
     ud2();
   }
 
+  {
+    // Guest SIGILL handler
+    // Needs to be distinct from the SignalHandlerReturnAddress
+    UnimplementedInstructionAddress = getCurr<uint64_t>();
+    ud2();
+  }
 
   {
     ReturnPtr = getCurr<FEXCore::Context::Context::IntCallbackReturn>();

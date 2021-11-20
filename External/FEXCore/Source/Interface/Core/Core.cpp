@@ -666,9 +666,7 @@ namespace FEXCore::Context {
     uint64_t TotalInstructions {0};
     uint64_t TotalInstructionsLength {0};
 
-    if (!Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP)) {
-      return {};
-    }
+    Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP);
 
     auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
 
@@ -681,18 +679,12 @@ namespace FEXCore::Context {
       // Set the block entry point
       Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
 
-
       uint64_t BlockInstructionsLength {};
 
       // Reset any block-specific state
       Thread->OpDispatcher->StartNewBlock();
 
       uint64_t InstsInBlock = Block.NumInstructions;
-
-      if (Block.HasInvalidInstruction) {
-        Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize));
-        break;
-      }
 
       for (size_t i = 0; i < InstsInBlock; ++i) {
         FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
@@ -723,7 +715,7 @@ namespace FEXCore::Context {
           Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
         }
 
-        if (TableInfo->OpcodeDispatcher) {
+        if (TableInfo && TableInfo->OpcodeDispatcher) {
           auto Fn = TableInfo->OpcodeDispatcher;
           Thread->OpDispatcher->HandledLock = false;
           Thread->OpDispatcher->ResetDecodeFailure();
@@ -742,8 +734,9 @@ namespace FEXCore::Context {
           }
         }
         else {
-          LogMan::Msg::E("Missing OpDispatcher at 0x%lx{'%s'}", Block.Entry + BlockInstructionsLength, TableInfo->Name);
-          HadDispatchError = true;
+          // Invalid instruction
+          Thread->OpDispatcher->InvalidOp(DecodedInfo);
+          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize));
         }
 
         // If we had a dispatch error then leave early

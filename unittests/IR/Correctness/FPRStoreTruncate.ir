@@ -45,5 +45,5 @@
     (%Store7 i128) StoreContext %Truncated16 i128, #0xf0, FPR
     (%Store8 i128)  StoreContext %Truncated8 i128, #0x100, FPR
     (%Store9 i128)  StoreContext %MemValueA i128, #0x110, FPR
-    (%ssa7 i0) Break #4, #4
+    (%ssa7 i0) Break Halt, #4
     (%end i0) EndBlock %ssa2

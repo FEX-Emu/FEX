@@ -18,6 +18,6 @@
     %Addr i64 = Constant #0x100000
     %Val i32 = LoadMem %Addr i64, %Invalid, #0x8, GPR, SXTX, #0x1, #0x8
     (%Store i64) StoreContext %Val i64, #0x08, GPR
-    (%brk i0) Break #4, #4
+    (%brk i0) Break Halt, #4
     (%end i0) EndBlock %ssa2
 

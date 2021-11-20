@@ -1135,7 +1135,7 @@ const uint8_t *Decoder::AdjustAddrForSpecialRegion(uint8_t const* _InstStream, u
   return _InstStream - EntryPoint + RIP;
 }
 
-bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC) {
+void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC) {
   Blocks.clear();
   BlocksToDecode.clear();
   HasBlocks.clear();
@@ -1149,7 +1149,6 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
   EntryPoint = PC;
   InstStream = _InstStream;
 
-  bool ErrorDuringDecoding = false;
   uint64_t TotalInstructions{};
 
   // If we don't have symbols available then we become a bit optimistic about multiblock ranges
@@ -1181,20 +1180,15 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
     InstStream = AdjustAddrForSpecialRegion(_InstStream, EntryPoint, RIPToDecode);
 
     while (1) {
-      ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
+      bool ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
 
       if (ErrorDuringDecoding) {
         LogMan::Msg::D("Couldn't Decode something at 0x%lx, Started at 0x%lx", PC + PCOffset, PC);
-        if (Blocks.size() == 1) {
-          return false;
-        }
-        LOGMAN_THROW_A(Blocks.size() != 1, "Decode Error in entry block");
-
+        // Put an invalid instruction in the stream so the core can raise SIGILL if hit
         CurrentBlockDecoding.HasInvalidInstruction = true;
-        if (ErrorDuringDecoding && Blocks.size() != 1) {
-          ErrorDuringDecoding = false;
-        }
-        break;
+        // Error while decoding instruction. We don't know the table or instruction size
+        DecodeInst->TableInfo = nullptr;
+        DecodeInst->InstSize = 0;
       }
 
       DecodedMinAddress = std::min(DecodedMinAddress, RIPToDecode + PCOffset);
@@ -1202,6 +1196,11 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
       ++TotalInstructions;
       ++BlockNumberOfInstructions;
       ++DecodedSize;
+
+      // Can not continue this block at all on invalid instruction
+      if (CurrentBlockDecoding.HasInvalidInstruction) {
+        break;
+      }
 
       bool CanContinue = false;
       if (!(DecodeInst->TableInfo->Flags &
@@ -1247,7 +1246,6 @@ bool Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
   std::sort(Blocks.begin(), Blocks.end(), [](const FEXCore::Frontend::Decoder::DecodedBlocks& a, const FEXCore::Frontend::Decoder::DecodedBlocks& b) {
     return a.Entry < b.Entry;
   });
-  return !ErrorDuringDecoding;
 }
 
 }

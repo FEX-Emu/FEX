@@ -357,6 +357,8 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
     ThreadSharedData.SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress;
+    ThreadSharedData.UnimplementedInstructionAddress = Dispatcher->UnimplementedInstructionAddress;
+
     ThreadSharedData.Dispatcher = Dispatcher.get();
 
     // This will register the host signal handler per thread, which is fine

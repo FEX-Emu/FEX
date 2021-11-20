@@ -498,6 +498,8 @@ public:
 
   void UnimplementedOp(OpcodeArgs);
 
+  void InvalidOp(OpcodeArgs);
+
 #undef OpcodeArgs
 
   void SetPackedRFLAG(bool Lower8, OrderedNode *Src);

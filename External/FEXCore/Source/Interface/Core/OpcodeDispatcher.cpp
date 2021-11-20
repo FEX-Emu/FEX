@@ -1492,7 +1492,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         break;
       case 2: // CS
         // CPL3 can't write to this
-        _Break(4, 0);
+        _Break(FEXCore::IR::Break_InvalidInstruction, 0);
         break;
       case 3: // SS
         _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, ss), Src);
@@ -5018,13 +5018,13 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
-  uint8_t Reason{};
+  FEXCore::IR::BreakReason Reason{};
   uint8_t Literal{};
   bool setRIP = false;
 
   switch (Op->OP) {
   case 0xCD:
-    Reason = 1;
+    Reason = FEXCore::IR::Break_Interrupt;
     Literal = Op->Src[0].Data.Literal.Value;
     if (Literal == 0x80) {
       // Syscall on linux
@@ -5033,21 +5033,21 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     }
   break;
   case 0xCE:
-    Reason = 2;
+    Reason = FEXCore::IR::Break_Overflow;
   break;
   case 0xF1:
-    Reason = 3;
+    Reason = FEXCore::IR::Break_Interrupt;
   break;
   case 0xF4: {
-    Reason = 4;
+    Reason = FEXCore::IR::Break_Halt;
     setRIP = true;
   break;
   }
   case 0x0B:
-    Reason = 5;
+    Reason = FEXCore::IR::Break_Interrupt;
   break;
   case 0xCC:
-    Reason = 6;
+    Reason = FEXCore::IR::Break_Interrupt3;
     setRIP = true;
   break;
   }
@@ -5145,11 +5145,22 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // We don't actually support this instruction
   // Multiblock may hit it though
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), GetDynamicPC(Op, -Op->InstSize));
-  _Break(0, 0);
+  _Break(FEXCore::IR::Break_Unimplemented, 0);
   BlockSetRIP = true;
 
   auto NextBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   SetCurrentCodeBlock(NextBlock);
+}
+
+void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+
+  // We don't actually support this instruction
+  // Multiblock may hit it though
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), GetDynamicPC(Op, -Op->InstSize));
+  _Break(FEXCore::IR::Break_InvalidInstruction, 0);
+  LogMan::Msg::D("Emitting InvalidOp for RIP: 0x%lx", Op->PC);
+  BlockSetRIP = true;
 }
 
 #undef OpcodeArgs

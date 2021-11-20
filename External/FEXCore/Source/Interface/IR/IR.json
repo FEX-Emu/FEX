@@ -68,7 +68,14 @@
 
     "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTX {0};",
     "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1};",
-    "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2};"
+    "constexpr static FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2};",
+
+    "static constexpr FEXCore::IR::BreakReason Break_Unimplemented      {0}",
+    "static constexpr FEXCore::IR::BreakReason Break_Interrupt          {1}",
+    "static constexpr FEXCore::IR::BreakReason Break_Interrupt3         {2}",
+    "static constexpr FEXCore::IR::BreakReason Break_Halt               {3}",
+    "static constexpr FEXCore::IR::BreakReason Break_Overflow           {4}",
+    "static constexpr FEXCore::IR::BreakReason Break_InvalidInstruction {5}"
   ],
 
   "Ops": {
@@ -364,7 +371,7 @@
       "HasSideEffects": true,
       "OpClass": "Misc",
       "Args": [
-        "uint8_t", "Reason",
+        "FEXCore::IR::BreakReason", "Reason",
         "uint8_t", "Literal"
       ]
     },
