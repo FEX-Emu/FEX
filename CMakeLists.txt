@@ -519,7 +519,13 @@ endif()
 
 # Package creation
 set (CPACK_GENERATOR "DEB")
-set (CPACK_PACKAGE_NAME fex-emu)
+if (ENABLE_STATIC_PIE)
+  set (CPACK_PACKAGE_NAME fex-emu-static)
+  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "fex-emu")
+else()
+  set (CPACK_PACKAGE_NAME fex-emu)
+  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "fex-emu-static")
+endif()
 set (CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${GIT_DESCRIBE_STRING}_${CMAKE_SYSTEM_PROCESSOR}")
 set (CPACK_PACKAGE_CONTACT "FEX-Emu Maintainers <team@fex-emu.org>")
 set (CPACK_PACKAGE_VERSION_MAJOR "${FEX_VERSION_MAJOR}")
@@ -533,6 +539,6 @@ set (CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/CPack/posti
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   # binfmt_misc conflicts with qemu-user-static
   # We also only install binfmt_misc on aarch64 hosts
-  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "qemu-user-static")
+  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "${CPACK_DEBIAN_PACKAGE_CONFLICTS}, qemu-user-static")
 endif()
 include (CPack)
