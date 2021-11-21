@@ -535,7 +535,8 @@ set (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/CPack/Descripti
 
 # Debian defines
 set (CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6")
-set (CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/CPack/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CPack/prerm")
+set (CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+  "${CMAKE_CURRENT_SOURCE_DIR}/CPack/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CPack/prerm;${CMAKE_CURRENT_SOURCE_DIR}/CPack/triggers")
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   # binfmt_misc conflicts with qemu-user-static
   # We also only install binfmt_misc on aarch64 hosts
