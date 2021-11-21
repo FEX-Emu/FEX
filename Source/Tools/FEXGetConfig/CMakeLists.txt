@@ -5,6 +5,15 @@ add_executable(${NAME} ${SRCS})
 
 list(APPEND LIBS Common CommonCore)
 
+if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+  target_link_options(${NAME}
+    PRIVATE
+      "LINKER:--gc-sections"
+      "LINKER:--strip-all"
+      "LINKER:--as-needed"
+  )
+endif()
+
 install(TARGETS ${NAME}
   RUNTIME
   DESTINATION bin

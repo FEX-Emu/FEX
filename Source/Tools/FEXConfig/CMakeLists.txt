@@ -25,6 +25,15 @@ else()
 endif()
 target_link_libraries(${NAME} PRIVATE FEXCore Common CommonCore pthread epoxy X11 EGL imgui tiny-json json-maker)
 
+if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+  target_link_options(${NAME}
+    PRIVATE
+      "LINKER:--gc-sections"
+      "LINKER:--strip-all"
+      "LINKER:--as-needed"
+  )
+endif()
+
 install(TARGETS ${NAME}
   RUNTIME
   DESTINATION bin
