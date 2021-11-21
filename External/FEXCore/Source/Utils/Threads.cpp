@@ -10,8 +10,11 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <sys/mman.h>
+#include <sys/signal.h>
+#include <sys/syscall.h>
 #include <bits/mman-map-flags-generic.h>
 #include <deque>
+#include <unistd.h>
 
 namespace FEXCore::Threads {
   // Stack pool handling
@@ -208,5 +211,10 @@ namespace FEXCore::Threads {
 
   void FEXCore::Threads::Thread::SetInternalPointers(Pointers const &_Ptrs) {
     memcpy(&Ptrs, &_Ptrs, sizeof(FEXCore::Threads::Pointers));
+  }
+
+  uint64_t SetSignalMask(uint64_t Mask) {
+    ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &Mask, 8);
+    return Mask;
   }
 }

@@ -35,7 +35,9 @@ namespace FEXCore {
     CTX->InitializeCompiler(CompileThreadData.get(), true);
     CompileThreadData->CPUBackend->CopyNecessaryDataForCompileThread(ParentThread->CPUBackend.get());
 
+    uint64_t OldMask = FEXCore::Threads::SetSignalMask(~0ULL);
     WorkerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
+    FEXCore::Threads::SetSignalMask(OldMask);
   }
 
   void CompileService::Initialize() {
@@ -104,9 +106,6 @@ namespace FEXCore {
   }
 
   void CompileService::ExecutionThread() {
-    // Ignore signals coming from the guest
-    CTX->SignalDelegation->MaskThreadSignals();
-
     // Set our thread name so we can see its relation
     char ThreadName[16]{};
     snprintf(ThreadName, 16, "%ld-CS", ParentThread->ThreadManager.TID.load());
