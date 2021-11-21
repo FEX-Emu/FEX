@@ -347,6 +347,7 @@ function(AddLibrary Name Type)
   set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES VISIBILITY_INLINES_HIDDEN TRUE)
+  set_target_properties(${Name} PROPERTIES VERSION ${FEXCore_VERSION} SOVERSION ${FEXCore_VERSION})
 
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
   target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
