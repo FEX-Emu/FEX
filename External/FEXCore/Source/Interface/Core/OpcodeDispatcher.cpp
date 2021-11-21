@@ -5159,7 +5159,6 @@ void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
   // Multiblock may hit it though
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), GetDynamicPC(Op, -Op->InstSize));
   _Break(FEXCore::IR::Break_InvalidInstruction, 0);
-  LogMan::Msg::D("Emitting InvalidOp for RIP: 0x%lx", Op->PC);
   BlockSetRIP = true;
 }
 
