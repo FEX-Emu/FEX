@@ -330,5 +330,15 @@ namespace FEX::HLE {
       REGISTER_SYSCALL_IMPL(landlock_add_rule, UnimplementedSyscallSafe);
       REGISTER_SYSCALL_IMPL(landlock_restrict_self, UnimplementedSyscallSafe);
     }
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 14, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS(memfd_secret, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(memfd_secret), flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(memfd_secret, UnimplementedSyscallSafe);
+    }
   }
 }

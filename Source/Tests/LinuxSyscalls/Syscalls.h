@@ -48,7 +48,7 @@ class SyscallHandler;
 class SignalDelegator;
   void RegisterEpoll();
   void RegisterFD(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterFS();
+  void RegisterFS(FEX::HLE::SyscallHandler *const Handler);
   void RegisterInfo();
   void RegisterIO();
   void RegisterIOUring(FEX::HLE::SyscallHandler *const Handler);

@@ -20,7 +20,7 @@ $end_info$
 #include <sys/xattr.h>
 
 namespace FEX::HLE {
-  void RegisterFS() {
+  void RegisterFS(FEX::HLE::SyscallHandler *const Handler) {
     REGISTER_SYSCALL_IMPL_PASS(getcwd, [](FEXCore::Core::CpuStateFrame *Frame, char *buf, size_t size) -> uint64_t {
       uint64_t Result = syscall(SYSCALL_DEF(getcwd), buf, size);
       SYSCALL_ERRNO();
@@ -228,5 +228,15 @@ namespace FEX::HLE {
       uint64_t Result = ::syscall(SYSCALL_DEF(pivot_root), new_root, put_old);
       SYSCALL_ERRNO();
     });
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 14, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS(quotactl_fd, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t fd, uint32_t cmd, uint32_t id, void* addr) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(quotactl_fd), fd, cmd, id, addr);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(quotactl_fd, UnimplementedSyscallSafe);
+    }
   }
 }

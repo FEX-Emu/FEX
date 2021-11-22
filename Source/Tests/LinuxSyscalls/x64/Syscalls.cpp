@@ -103,7 +103,7 @@ namespace FEX::HLE::x64 {
 
     FEX::HLE::RegisterEpoll();
     FEX::HLE::RegisterFD(this);
-    FEX::HLE::RegisterFS();
+    FEX::HLE::RegisterFS(this);
     FEX::HLE::RegisterInfo();
     FEX::HLE::RegisterIO();
     FEX::HLE::RegisterIOUring(this);
