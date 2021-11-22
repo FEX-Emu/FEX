@@ -237,7 +237,7 @@ namespace FEX::HLE {
     }
   }
 
-  void RegisterThread() {
+  void RegisterThread(FEX::HLE::SyscallHandler *const Handler) {
     REGISTER_SYSCALL_IMPL_PASS(getpid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getpid();
       SYSCALL_ERRNO();
@@ -502,5 +502,15 @@ namespace FEX::HLE {
       uint64_t Result = ::setns(fd, nstype);
       SYSCALL_ERRNO();
     });
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 16, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS(futex_waitv, [](FEXCore::Core::CpuStateFrame *Frame, void *waiters, uint32_t nr_futexes, uint32_t flags, struct timespec *timeout, clockid_t clockid) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(futex_waitv), waiters, nr_futexes, flags, timeout, clockid);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(futex_waitv, UnimplementedSyscallSafe);
+    }
   }
 }

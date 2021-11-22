@@ -62,7 +62,7 @@ class SignalDelegator;
   void RegisterSHM();
   void RegisterSignals(FEX::HLE::SyscallHandler *const Handler);
   void RegisterSocket();
-  void RegisterThread();
+  void RegisterThread(FEX::HLE::SyscallHandler *const Handler);
   void RegisterTime();
   void RegisterTimer();
   void RegisterNotImplemented();

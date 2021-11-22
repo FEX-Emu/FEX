@@ -124,7 +124,7 @@ namespace FEX::HLE::x32 {
     FEX::HLE::RegisterSHM();
     FEX::HLE::RegisterSignals(this);
     FEX::HLE::RegisterSocket();
-    FEX::HLE::RegisterThread();
+    FEX::HLE::RegisterThread(this);
     FEX::HLE::RegisterTime();
     FEX::HLE::RegisterTimer();
     FEX::HLE::RegisterNotImplemented();
