@@ -3,6 +3,15 @@ set(SRCS Main.cpp)
 
 add_executable(${NAME} ${SRCS})
 
+if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+  target_link_options(${NAME}
+    PRIVATE
+      "LINKER:--gc-sections"
+      "LINKER:--strip-all"
+      "LINKER:--as-needed"
+  )
+endif()
+
 install(TARGETS ${NAME}
   RUNTIME
   DESTINATION bin

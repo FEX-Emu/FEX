@@ -519,18 +519,27 @@ endif()
 
 # Package creation
 set (CPACK_GENERATOR "DEB")
-set (CPACK_PACKAGE_NAME fex-emu)
-set (CPACK_PACKAGE_CONTACT "team@fex-emu.org")
+if (ENABLE_STATIC_PIE)
+  set (CPACK_PACKAGE_NAME fex-emu-static)
+  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "fex-emu")
+else()
+  set (CPACK_PACKAGE_NAME fex-emu)
+  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "fex-emu-static")
+endif()
+set (CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${GIT_DESCRIBE_STRING}_${CMAKE_SYSTEM_PROCESSOR}")
+set (CPACK_PACKAGE_CONTACT "FEX-Emu Maintainers <team@fex-emu.org>")
 set (CPACK_PACKAGE_VERSION_MAJOR "${FEX_VERSION_MAJOR}")
 set (CPACK_PACKAGE_VERSION_MINOR "${FEX_VERSION_MINOR}")
 set (CPACK_PACKAGE_VERSION_PATCH "${FEX_VERSION_PATCH}")
+set (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/CPack/Description.txt")
 
 # Debian defines
-set (CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6")
-set (CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/CPack/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CPack/prerm")
+set (CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libstdc++6, libepoxy0, libsdl2-2.0-0, libegl1, libx11-6, squashfuse")
+set (CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+  "${CMAKE_CURRENT_SOURCE_DIR}/CPack/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CPack/prerm;${CMAKE_CURRENT_SOURCE_DIR}/CPack/triggers")
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   # binfmt_misc conflicts with qemu-user-static
   # We also only install binfmt_misc on aarch64 hosts
-  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "qemu-user-static")
+  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "${CPACK_DEBIAN_PACKAGE_CONFLICTS}, qemu-user-static")
 endif()
 include (CPack)

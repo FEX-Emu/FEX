@@ -249,6 +249,7 @@ set(OUTPUT_CONFIG_NAME "${OUTPUT_CONFIG_FOLDER}/ConfigValues.inl")
 set(OUTPUT_CONFIG_OPTION_NAME "${OUTPUT_CONFIG_FOLDER}/ConfigOptions.inl")
 set(INPUT_CONFIG_NAME "${CMAKE_BINARY_DIR}/generated/Config/Config.json")
 set(OUTPUT_MAN_NAME "${CMAKE_BINARY_DIR}/generated/FEX.1")
+set(OUTPUT_MAN_NAME_COMPRESS "${CMAKE_BINARY_DIR}/generated/FEX.1.gz")
 
 add_custom_target(CREATE_CONFIG_FOLDER ALL
   COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTPUT_CONFIG_FOLDER}")
@@ -264,6 +265,12 @@ add_custom_command(
   "${OUTPUT_CONFIG_OPTION_NAME}"
   )
 
+add_custom_command(
+  OUTPUT "${OUTPUT_MAN_NAME_COMPRESS}"
+  DEPENDS "${OUTPUT_MAN_NAME}"
+  COMMAND "gzip" "-kf9n" "${OUTPUT_MAN_NAME}"
+  )
+
 set_source_files_properties(${OUTPUT_CONFIG_NAME} PROPERTIES
   GENERATED TRUE)
 set_source_files_properties(${OUTPUT_CONFIG_OPTION_NAME} PROPERTIES
@@ -271,15 +278,18 @@ set_source_files_properties(${OUTPUT_CONFIG_OPTION_NAME} PROPERTIES
 
 set_source_files_properties(${OUTPUT_MAN_NAME} PROPERTIES
   GENERATED TRUE)
+set_source_files_properties(${OUTPUT_MAN_NAME_COMPRESS} PROPERTIES
+  GENERATED TRUE)
 
 # Create the target
 add_custom_target(CONFIG_INC
   DEPENDS "${OUTPUT_CONFIG_NAME}"
   DEPENDS "${OUTPUT_CONFIG_OPTION_NAME}"
-  DEPENDS "${OUTPUT_MAN_NAME}")
+  DEPENDS "${OUTPUT_MAN_NAME}"
+  DEPENDS "${OUTPUT_MAN_NAME_COMPRESS}")
 
-# Install the man page
-install(FILES ${OUTPUT_MAN_NAME} DESTINATION ${MAN_DIR}/man1)
+# Install the compressed man page
+install(FILES ${OUTPUT_MAN_NAME_COMPRESS} DESTINATION ${MAN_DIR}/man1)
 
 # Add in diagnostic colours if the option is available.
 # Ninja code generator will kill colours if this isn't here
@@ -337,6 +347,7 @@ function(AddLibrary Name Type)
   set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES VISIBILITY_INLINES_HIDDEN TRUE)
+  set_target_properties(${Name} PROPERTIES VERSION ${FEXCore_VERSION} SOVERSION ${FEXCore_VERSION})
 
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
   target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
