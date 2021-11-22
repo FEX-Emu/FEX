@@ -30,7 +30,7 @@ namespace FEX::HLE::x32 {
         mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, offset);
 
       auto Thread = Frame->Thread;
-      if (Result < -4096) {
+      if (!FEX::HLE::HasSyscallError(Result)) {
         if (!(flags & MAP_ANONYMOUS)) {
           auto filename = get_fdpath(fd);
 
@@ -46,7 +46,7 @@ namespace FEX::HLE::x32 {
         mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, (uint64_t)pgoffset * 0x1000);
 
       auto Thread = Frame->Thread;
-      if (Result < -4096) {
+      if (!FEX::HLE::HasSyscallError(Result)) {
         if (!(flags & MAP_ANONYMOUS)) {
           auto filename = get_fdpath(fd);
 

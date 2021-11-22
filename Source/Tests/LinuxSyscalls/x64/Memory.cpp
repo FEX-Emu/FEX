@@ -36,7 +36,7 @@ namespace FEX::HLE::x64 {
           munmap(addr, length);
         return Result;
 
-        if (Result < -4096) {
+        if (FEX::HLE::HasSyscallError(Result)) {
           errno = -Result;
           Result = -1;
         }
@@ -62,7 +62,7 @@ namespace FEX::HLE::x64 {
       if (Map32Bit) {
         Result = (uint64_t)static_cast<FEX::HLE::SyscallHandler*>(FEX::HLE::_SyscallHandler)->Get32BitAllocator()->
           mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, offset);
-        if (Result < -4096) {
+        if (FEX::HLE::HasSyscallError(Result)) {
           errno = -Result;
           Result = -1;
         }

@@ -349,6 +349,38 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     return flags;
   }
 
+/**
+ * @brief Checks raw syscall return for error
+ *
+ * This should only be used with raw syscall usage
+ *
+ * This should not be used with glibc wrapped syscall functions
+ *   - This includes the glibc ::syscall(...) function
+ *   - This is due to glibc already wrapping the return and setting errno
+ *
+ * This function should not be used with UAPI breaking syscall results
+ * ioctl specifically will break this convention.
+ *
+ * @param Result The raw syscall return
+ *
+ * @return If the result was an error result
+ */
+
+[[maybe_unused]]
+static bool HasSyscallError(uint64_t Result) {
+  // MAX_ERRNO is part of the Linux Syscall ABI
+  // Redefined here since it doesn't exist as a visible define in the UAPI headers
+  constexpr uint64_t MAX_ERRNO = 0xFFFF'FFFF'FFFF'0001ULL;
+  // Raw syscalls are guaranteed to not return a valid result in the range of [-4095, -1]
+  // In cases where FEX needs to use raw syscalls, this helper checks for this idiom
+  return reinterpret_cast<uint64_t>(Result) >= MAX_ERRNO;
+}
+
+[[maybe_unused]]
+static bool HasSyscallError(const void* Result) {
+  return HasSyscallError(reinterpret_cast<uintptr_t>(Result));
+}
+
 }
 
 // Registers syscall for both 32bit and 64bit
