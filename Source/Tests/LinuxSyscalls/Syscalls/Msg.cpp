@@ -40,7 +40,7 @@ namespace FEX::HLE {
 
     // last two parameters are optional
     REGISTER_SYSCALL_IMPL_PASS(mq_unlink, [](FEXCore::Core::CpuStateFrame *Frame, const char *name) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_mq_unlink, name);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mq_unlink), name);
       SYSCALL_ERRNO();
     });
   }

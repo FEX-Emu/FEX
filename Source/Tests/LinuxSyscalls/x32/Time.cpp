@@ -184,9 +184,9 @@ namespace FEX::HLE::x32 {
         timespec times64[2]{};
         times64[0] = times[0];
         times64[1] = times[1];
-        Result = ::syscall(SYS_utimensat, dirfd, pathname, times64, flags);
+        Result = ::syscall(SYSCALL_DEF(utimensat), dirfd, pathname, times64, flags);
       } else {
-        Result = ::syscall(SYS_utimensat, dirfd, pathname, nullptr, flags);
+        Result = ::syscall(SYSCALL_DEF(utimensat), dirfd, pathname, nullptr, flags);
       }
       SYSCALL_ERRNO();
     });

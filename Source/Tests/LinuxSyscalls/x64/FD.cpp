@@ -62,12 +62,12 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(utimensat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const struct timespec times[2], int flags) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_utimensat, dirfd, pathname, times, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(utimensat), dirfd, pathname, times, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(pselect6, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, const void *sigmaskpack) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_pselect6, nfds, readfds, writefds, exceptfds, timeout, sigmaskpack);
+      uint64_t Result = ::syscall(SYSCALL_DEF(pselect6), nfds, readfds, writefds, exceptfds, timeout, sigmaskpack);
       SYSCALL_ERRNO();
     });
 
@@ -133,7 +133,7 @@ namespace FEX::HLE::x64 {
       uint64_t vlen,
       uint64_t pos_l,
       uint64_t pos_h) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_preadv, fd, iov, vlen, pos_l, pos_h);
+      uint64_t Result = ::syscall(SYSCALL_DEF(preadv), fd, iov, vlen, pos_l, pos_h);
       SYSCALL_ERRNO();
     });
 
@@ -143,7 +143,7 @@ namespace FEX::HLE::x64 {
       uint64_t vlen,
       uint64_t pos_l,
       uint64_t pos_h) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_pwritev, fd, iov, vlen, pos_l, pos_h);
+      uint64_t Result = ::syscall(SYSCALL_DEF(pwritev), fd, iov, vlen, pos_l, pos_h);
       SYSCALL_ERRNO();
     });
 
@@ -154,7 +154,7 @@ namespace FEX::HLE::x64 {
       uint64_t pos_l,
       uint64_t pos_h,
       int flags) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_preadv2, fd, iov, vlen, pos_l, pos_h, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(preadv2), fd, iov, vlen, pos_l, pos_h, flags);
       SYSCALL_ERRNO();
     });
 
@@ -165,7 +165,7 @@ namespace FEX::HLE::x64 {
       uint64_t pos_l,
       uint64_t pos_h,
       int flags) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_pwritev2, fd, iov, vlen, pos_l, pos_h, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(pwritev2), fd, iov, vlen, pos_l, pos_h, flags);
       SYSCALL_ERRNO();
     });
 
@@ -191,13 +191,13 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64_PASS(ppoll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, struct timespec *timeout_ts, const uint64_t *sigmask, size_t sigsetsize) -> uint64_t {
       // glibc wrapper doesn't allow timeout_ts to be modified like the kernel does
-      int Result = ::syscall(SYS_ppoll, fds, nfds, timeout_ts, sigmask, sigsetsize);
+      int Result = ::syscall(SYSCALL_DEF(ppoll), fds, nfds, timeout_ts, sigmask, sigsetsize);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X64(getdents, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
   #ifdef SYS_getdents
-      uint64_t Result = syscall(SYS_getdents,
+      uint64_t Result = syscall(SYSCALL_DEF(getdents),
         static_cast<uint64_t>(fd),
         reinterpret_cast<uint64_t>(dirp),
         static_cast<uint64_t>(count));
@@ -209,7 +209,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(getdents64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
-      uint64_t Result = syscall(SYS_getdents64,
+      uint64_t Result = syscall(SYSCALL_DEF(getdents64),
         static_cast<uint64_t>(fd),
         reinterpret_cast<uint64_t>(dirp),
         static_cast<uint64_t>(count));

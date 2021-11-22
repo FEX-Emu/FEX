@@ -55,7 +55,7 @@ namespace FEX::HLE::x64 {
     }));
 
     REGISTER_SYSCALL_IMPL_X64_PASS(futex, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
-      uint64_t Result = syscall(SYS_futex,
+      uint64_t Result = syscall(SYSCALL_DEF(futex),
         uaddr,
         futex_op,
         val,
@@ -68,12 +68,12 @@ namespace FEX::HLE::x64 {
     REGISTER_SYSCALL_IMPL_X64(set_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, struct robust_list_head *head, size_t len) -> uint64_t {
       auto Thread = Frame->Thread;
       Thread->ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
-      uint64_t Result = ::syscall(SYS_set_robust_list, head, len);
+      uint64_t Result = ::syscall(SYSCALL_DEF(set_robust_list), head, len);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(get_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, int pid, struct robust_list_head **head, size_t *len_ptr) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_get_robust_list, pid, head, len_ptr);
+      uint64_t Result = ::syscall(SYSCALL_DEF(get_robust_list), pid, head, len_ptr);
       SYSCALL_ERRNO();
     });
 
@@ -135,12 +135,12 @@ namespace FEX::HLE::x64 {
     }));
 
     REGISTER_SYSCALL_IMPL_X64_PASS(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_wait4, pid, wstatus, options, rusage);
+      uint64_t Result = ::syscall(SYSCALL_DEF(wait4), pid, wstatus, options, rusage);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, siginfo_t *infop, int options, struct rusage *rusage) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_waitid, which, upid, infop, options, rusage);
+      uint64_t Result = ::syscall(SYSCALL_DEF(waitid), which, upid, infop, options, rusage);
       SYSCALL_ERRNO();
     });
   }

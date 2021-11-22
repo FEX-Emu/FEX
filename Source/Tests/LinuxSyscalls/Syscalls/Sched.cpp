@@ -24,7 +24,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(getpriority, [](FEXCore::Core::CpuStateFrame *Frame, int which, int who) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_getpriority, which, who);
+      uint64_t Result = ::syscall(SYSCALL_DEF(getpriority), which, who);
       SYSCALL_ERRNO();
     });
 
@@ -87,12 +87,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(sched_setattr, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_attr *attr, unsigned int flags) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_sched_setattr, pid, attr, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(sched_setattr), pid, attr, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(sched_getattr, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_sched_getattr, pid, attr, size, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(sched_getattr), pid, attr, size, flags);
       SYSCALL_ERRNO();
     });
   }

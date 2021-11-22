@@ -27,7 +27,7 @@ namespace FEX::HLE::x64 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler) {
     REGISTER_SYSCALL_IMPL_X64(epoll_wait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevents, int timeout) -> uint64_t {
       std::vector<struct epoll_event> Events(std::max(0, maxevents));
-      uint64_t Result = ::syscall(SYS_epoll_pwait, epfd, Events.data(), maxevents, timeout, nullptr, 8);
+      uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait), epfd, Events.data(), maxevents, timeout, nullptr, 8);
 
       if (Result != -1) {
         for (size_t i = 0; i < Result; ++i) {
@@ -44,7 +44,7 @@ namespace FEX::HLE::x64 {
         Event = *event;
         EventPtr = &Event;
       }
-      uint64_t Result = ::syscall(SYS_epoll_ctl, epfd, op, fd, EventPtr);
+      uint64_t Result = ::syscall(SYSCALL_DEF(epoll_ctl), epfd, op, fd, EventPtr);
       if (Result != -1 && event) {
         *event = Event;
       }
@@ -54,7 +54,7 @@ namespace FEX::HLE::x64 {
     REGISTER_SYSCALL_IMPL_X64(epoll_pwait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevent, int timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
       std::vector<struct epoll_event> Events(std::max(0, maxevent));
 
-      uint64_t Result = ::syscall(SYS_epoll_pwait,
+      uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait),
         epfd,
         Events.data(),
         maxevent,

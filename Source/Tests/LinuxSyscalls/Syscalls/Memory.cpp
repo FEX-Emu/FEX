@@ -58,32 +58,32 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(mbind, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, unsigned long len, int mode, const unsigned long *nodemask, unsigned long maxnode, unsigned flags) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_mbind, addr, len, mode, nodemask, maxnode, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mbind), addr, len, mode, nodemask, maxnode, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(get_mempolicy, [](FEXCore::Core::CpuStateFrame *Frame, int *mode, unsigned long *nodemask, unsigned long maxnode, void *addr, unsigned long flags) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_get_mempolicy, mode, nodemask, maxnode, addr, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(get_mempolicy), mode, nodemask, maxnode, addr, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(set_mempolicy, [](FEXCore::Core::CpuStateFrame *Frame, int mode, const unsigned long *nodemask, unsigned long maxnode) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_set_mempolicy, mode, nodemask, maxnode);
+      uint64_t Result = ::syscall(SYSCALL_DEF(set_mempolicy), mode, nodemask, maxnode);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(migrate_pages, [](FEXCore::Core::CpuStateFrame *Frame, int pid, unsigned long maxnode, const unsigned long *old_nodes, const unsigned long *new_nodes) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_migrate_pages, pid, maxnode, old_nodes, new_nodes);
+      uint64_t Result = ::syscall(SYSCALL_DEF(migrate_pages), pid, maxnode, old_nodes, new_nodes);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(move_pages, [](FEXCore::Core::CpuStateFrame *Frame, int pid, unsigned long count, void **pages, const int *nodes, int *status, int flags) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_move_pages, pid, count, pages, nodes, status, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(move_pages), pid, count, pages, nodes, status, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(membarrier, [](FEXCore::Core::CpuStateFrame *Frame, int cmd, int flags) -> uint64_t {
-        uint64_t Result = syscall(SYS_membarrier, cmd, flags);
+        uint64_t Result = syscall(SYSCALL_DEF(membarrier), cmd, flags);
         SYSCALL_ERRNO();
     });
   }

@@ -39,7 +39,7 @@ namespace FEX::HLE {
       // Disable userfaultfd until we can properly emulate it
       // This is okay because the kernel configuration allows you to disable it at compile time
       return -ENOSYS;
-      uint64_t Result = ::syscall(SYS_userfaultfd, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(userfaultfd), flags);
       SYSCALL_ERRNO();
     });
 
@@ -52,20 +52,20 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, siginfo_t *info) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_rt_sigqueueinfo, pid, sig, info);
+      uint64_t Result = ::syscall(SYSCALL_DEF(rt_sigqueueinfo), pid, sig, info);
       SYSCALL_ERRNO();
     });
 
     // XXX: siginfo_t definitely isn't correct for 32-bit
     REGISTER_SYSCALL_IMPL_PASS(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, siginfo_t *info) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_rt_tgsigqueueinfo, tgid, tid, sig, info);
+      uint64_t Result = ::syscall(SYSCALL_DEF(rt_tgsigqueueinfo), tgid, tid, sig, info);
       SYSCALL_ERRNO();
     });
 
     if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
       // XXX: siginfo_t definitely isn't correct for 32-bit
       REGISTER_SYSCALL_IMPL_PASS(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, siginfo_t *info, unsigned int flags) -> uint64_t {
-        uint64_t Result = ::syscall(SYS_pidfd_send_signal, pidfd, sig, info, flags);
+        uint64_t Result = ::syscall(SYSCALL_DEF(pidfd_send_signal), pidfd, sig, info, flags);
         SYSCALL_ERRNO();
       });
     }

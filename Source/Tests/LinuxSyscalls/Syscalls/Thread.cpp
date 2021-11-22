@@ -85,7 +85,7 @@ namespace FEX::HLE {
     // clone3 flag
     if (flags & CLONE_PIDFD) {
       // Use pidfd_open to emulate this flag
-      int pidfd = ::syscall(SYS_pidfd_open, Result, 0);
+      int pidfd = ::syscall(SYSCALL_DEF(pidfd_open), Result, 0);
       if (Result == ~0ULL) {
         LogMan::Msg::E("Couldn't get pidfd of TID %d\n", Result);
       }
@@ -263,7 +263,7 @@ namespace FEX::HLE {
       if (Thread->ThreadManager.clear_child_tid) {
         std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
         Addr->store(0);
-        syscall(SYS_futex,
+        syscall(SYSCALL_DEF(futex),
           Thread->ThreadManager.clear_child_tid,
           FUTEX_WAKE,
           ~0ULL,
@@ -285,7 +285,7 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS(tkill, [](FEXCore::Core::CpuStateFrame *Frame, int tid, int sig) -> uint64_t {
       // Can't actually use tgkill here, kernel rejects tgkill of tgid == 0
-      uint64_t Result = ::syscall(SYS_tkill, tid, sig);
+      uint64_t Result = ::syscall(SYSCALL_DEF(tkill), tid, sig);
       SYSCALL_ERRNO();
     });
 
@@ -305,12 +305,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(setuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t uid) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_setuid, uid);
+      uint64_t Result = ::syscall(SYSCALL_DEF(setuid), uid);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(setgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t gid) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_setgid, gid);
+      uint64_t Result = ::syscall(SYSCALL_DEF(setgid), gid);
       SYSCALL_ERRNO();
     });
 
@@ -340,12 +340,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(setreuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_setreuid, ruid, euid);
+      uint64_t Result = ::syscall(SYSCALL_DEF(setreuid), ruid, euid);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(setregid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_setregid, rgid, egid);
+      uint64_t Result = ::syscall(SYSCALL_DEF(setregid), rgid, egid);
       SYSCALL_ERRNO();
     });
 
@@ -355,12 +355,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(setgroups, [](FEXCore::Core::CpuStateFrame *Frame, size_t size, const gid_t *list) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_setgroups, size, list);
+      uint64_t Result = ::syscall(SYSCALL_DEF(setgroups), size, list);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(setresuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid, uid_t suid) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_setresuid, ruid, euid, suid);
+      uint64_t Result = ::syscall(SYSCALL_DEF(setresuid), ruid, euid, suid);
       SYSCALL_ERRNO();
     });
 
@@ -370,7 +370,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(setresgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid, gid_t sgid) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_setresgid, rgid, egid, sgid);
+      uint64_t Result = ::syscall(SYSCALL_DEF(setresgid), rgid, egid, sgid);
       SYSCALL_ERRNO();
     });
 

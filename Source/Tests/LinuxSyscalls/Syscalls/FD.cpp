@@ -108,7 +108,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(fadvise64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off_t offset, off_t len, int advice) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_fadvise64, fd, offset, len, advice);
+      uint64_t Result = ::syscall(SYSCALL_DEF(fadvise64), fd, offset, len, advice);
       SYSCALL_ERRNO();
     });
 
@@ -177,7 +177,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(fchmodat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, mode_t mode) -> uint64_t {
-      uint64_t Result = syscall(SYS_fchmodat, dirfd, pathname, mode);
+      uint64_t Result = syscall(SYSCALL_DEF(fchmodat), dirfd, pathname, mode);
       SYSCALL_ERRNO();
     });
 
@@ -233,7 +233,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(eventfd, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t count) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_eventfd2, count, 0);
+      uint64_t Result = ::syscall(SYSCALL_DEF(eventfd2), count, 0);
       SYSCALL_ERRNO();
     });
 
@@ -281,7 +281,7 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS(eventfd2, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int count, int flags) -> uint64_t {
       // Flags don't need remapped
-      uint64_t Result = ::syscall(SYS_eventfd2, count, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(eventfd2), count, flags);
       SYSCALL_ERRNO();
     });
 
@@ -293,7 +293,7 @@ namespace FEX::HLE {
 
     if (Handler->IsHostKernelVersionAtLeast(5, 3, 0)) {
       REGISTER_SYSCALL_IMPL_PASS(pidfd_open, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, unsigned int flags) -> uint64_t {
-        uint64_t Result = ::syscall(SYS_pidfd_open, pid, flags);
+        uint64_t Result = ::syscall(SYSCALL_DEF(pidfd_open), pid, flags);
         SYSCALL_ERRNO();
       });
     }
