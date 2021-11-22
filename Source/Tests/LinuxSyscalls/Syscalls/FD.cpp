@@ -310,5 +310,25 @@ namespace FEX::HLE {
     else {
       REGISTER_SYSCALL_IMPL(close_range, UnimplementedSyscallSafe);
     }
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 13, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS(landlock_create_ruleset, [](FEXCore::Core::CpuStateFrame *Frame, void *const rule_attr, size_t size, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(landlock_create_ruleset), rule_attr, size, flags);
+        SYSCALL_ERRNO();
+      });
+      REGISTER_SYSCALL_IMPL_PASS(landlock_add_rule, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t ruleset_fd, uint64_t rule_type, void *const rule_attr, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(landlock_add_rule), ruleset_fd, rule_type, rule_attr, flags);
+        SYSCALL_ERRNO();
+      });
+      REGISTER_SYSCALL_IMPL_PASS(landlock_restrict_self, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t ruleset_fd, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(landlock_restrict_self), ruleset_fd, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(landlock_create_ruleset, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(landlock_add_rule, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(landlock_restrict_self, UnimplementedSyscallSafe);
+    }
   }
 }
