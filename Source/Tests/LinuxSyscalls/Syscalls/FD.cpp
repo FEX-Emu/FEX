@@ -340,5 +340,15 @@ namespace FEX::HLE {
     else {
       REGISTER_SYSCALL_IMPL(memfd_secret, UnimplementedSyscallSafe);
     }
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 15, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS(process_mrelease, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(process_mrelease), pidfd, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(process_mrelease, UnimplementedSyscallSafe);
+    }
   }
 }
