@@ -221,12 +221,18 @@ bool Setup(char **const envp) {
   // If it is setup to use a squashfs then we need to do something more complex
 
   FEX_CONFIG_OPT(LDPath, ROOTFS);
-  auto ContainerPrefix = FEXCore::Config::FindContainerPrefix();
-  if (!ContainerPrefix.empty()) {
-    // If we are inside of a rootfs/container then drop the rootfs path
-    // Root is already our rootfs
-    FEXCore::Config::Erase(FEXCore::Config::CONFIG_ROOTFS);
-    return true;
+  // XXX: Disabled for now. Causing problems due to weird filesystem problems
+  // Can reproduce by attempting to run an application under pressure-vessel
+  // Will fail once trying to jump in to the chroot with bwrap
+  // eg: FEXInterpreter ./run-in-soldier /usr/bin/ls
+  if constexpr (false) {
+    auto ContainerPrefix = FEXCore::Config::FindContainerPrefix();
+    if (!ContainerPrefix.empty()) {
+      // If we are inside of a rootfs/container then drop the rootfs path
+      // Root is already our rootfs
+      FEXCore::Config::Erase(FEXCore::Config::CONFIG_ROOTFS);
+      return true;
+    }
   }
 
   if (FEX::FormatCheck::IsSquashFS(LDPath())) {
