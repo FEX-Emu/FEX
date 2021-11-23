@@ -515,8 +515,8 @@ void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
 
 template<size_t ElementSize, bool HalfSize, bool Low>
 void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
-  LOGMAN_THROW_A(ElementSize != 0, "What. No element size?");
-  auto Size = GetSrcSize(Op);
+  LOGMAN_THROW_A_FMT(ElementSize != 0, "What. No element size?");
+  const auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
 
@@ -552,8 +552,8 @@ void OpDispatchBuilder::PSHUFDOp<4, false, true>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
-  LOGMAN_THROW_A(ElementSize != 0, "What. No element size?");
-  auto Size = GetSrcSize(Op);
+  LOGMAN_THROW_A_FMT(ElementSize != 0, "What. No element size?");
+  const auto Size = GetSrcSize(Op);
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
@@ -620,7 +620,7 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs) {
     Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
   }
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].Data.Literal.Value;
 
   uint8_t NumElements = Size / ElementSize;
@@ -641,7 +641,7 @@ template
 void OpDispatchBuilder::PINSROp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint8_t Imm = Op->Src[1].Data.Literal.Value;
   uint8_t CountS = (Imm >> 6);
   uint8_t CountD = (Imm >> 4) & 0b11;
@@ -689,7 +689,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].Data.Literal.Value;
 
   const uint8_t NumElements = Size / ElementSize;
@@ -784,7 +784,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::PSRLI(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
   auto Size = GetSrcSize(Op);
@@ -804,7 +804,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::PSLLI(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
   auto Size = GetSrcSize(Op);
@@ -867,7 +867,7 @@ template
 void OpDispatchBuilder::PSRAOp<4>(OpcodeArgs);
 
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -879,7 +879,7 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -892,7 +892,7 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -1226,7 +1226,9 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
     case 0x07: case 0x0F: case 0x17: case 0x1F: // Ordered
       Result = _VFCMPORD(Size, ElementSize, Src2, Src);
     break;
-    default: LOGMAN_MSG_A("Unknown Comparison type: %d", CompType);
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Comparison type: {}", CompType);
+    break;
   }
 
   if constexpr (Scalar) {
@@ -2110,7 +2112,7 @@ void OpDispatchBuilder::ExtendVectorElements<4, 8, true>(OpcodeArgs);
 
 template<size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::VectorRound(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Mode = Op->Src[1].Data.Literal.Value;
   uint64_t RoundControlSource = (Mode >> 2) & 1;
   uint64_t RoundControl = Mode & 0b11;
@@ -2155,7 +2157,7 @@ void OpDispatchBuilder::VectorRound<8, true>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint8_t Select = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -2275,7 +2277,7 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::DPPOp(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint8_t Mask = Op->Src[1].Data.Literal.Value;
   uint8_t SrcMask = Mask >> 4;
   uint8_t DstMask = Mask & 0xF;
@@ -2323,7 +2325,7 @@ template
 void OpDispatchBuilder::DPPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint8_t Select = Op->Src[1].Data.Literal.Value;
 
   // Src1 needs to be in byte offset

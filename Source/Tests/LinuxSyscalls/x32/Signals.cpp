@@ -64,7 +64,7 @@ namespace FEX::HLE::x32 {
           Info->_sifields._timer.sigval.sival_int = Host.si_int;
           break;
         default:
-          LogMan::Msg::E("Unhandled siginfo_t for sigtimedwait: %d", Info->si_signo);
+          LogMan::Msg::EFmt("Unhandled siginfo_t for sigtimedwait: {}", Info->si_signo);
           break;
       }
     }

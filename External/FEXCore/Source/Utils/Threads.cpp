@@ -188,7 +188,8 @@ namespace FEXCore::Threads {
     ClearStackPool(DeadStackPool);
     ClearStackPool(LiveStackPool);
 
-    LogMan::Throw::A((DeadStackPool.size() + LiveStackPool.size()) <= 1, "After fork we should only have zero or one tracked stacks!");
+    LogMan::Throw::AFmt((DeadStackPool.size() + LiveStackPool.size()) <= 1,
+                        "After fork we should only have zero or one tracked stacks!");
   }
 
   static FEXCore::Threads::Pointers Ptrs = {

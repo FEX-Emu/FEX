@@ -1437,9 +1437,8 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
         DesiredFunction = SWAPDesired;
         break;
       default:
-        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", Op);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op);
         return false;
-        break;
     }
 
     auto Res = DoCAS16<true>(
@@ -1499,9 +1498,8 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
         DesiredFunction = SWAPDesired;
         break;
       default:
-        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", Op);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op);
         return false;
-        break;
     }
 
     auto Res = DoCAS32<true>(
@@ -1561,9 +1559,8 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
         DesiredFunction = SWAPDesired;
         break;
       default:
-        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", Op);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", Op);
         return false;
-        break;
     }
 
     auto Res = DoCAS64<true>(
@@ -1744,8 +1741,8 @@ static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
      if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXR_MASK) == FEXCore::ArchHelpers::Arm64::STLXR_INST) {
        #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
        // Just double check that the memory destination matches
-       uint32_t StoreAddressReg = GetRnReg(NextInstr);
-       LOGMAN_THROW_A(StoreAddressReg == AddressReg, "StoreExclusive memory register didn't match the store exclusive register");
+       const uint32_t StoreAddressReg = GetRnReg(NextInstr);
+       LOGMAN_THROW_A_FMT(StoreAddressReg == AddressReg, "StoreExclusive memory register didn't match the store exclusive register");
        #endif
        DesiredReg = GetRdReg(NextInstr);
      }
@@ -1865,8 +1862,8 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXR_MASK) == FEXCore::ArchHelpers::Arm64::STLXR_INST) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       // Just double check that the memory destination matches
-      uint32_t StoreAddressReg = GetRnReg(NextInstr);
-      LOGMAN_THROW_A(StoreAddressReg == AddressReg, "StoreExclusive memory register didn't match the store exclusive register");
+      const uint32_t StoreAddressReg = GetRnReg(NextInstr);
+      LOGMAN_THROW_A_FMT(StoreAddressReg == AddressReg, "StoreExclusive memory register didn't match the store exclusive register");
 #endif
       uint32_t StatusReg = GetRmReg(NextInstr);
       uint32_t StoreResultReg = GetRdReg(NextInstr);
@@ -1885,7 +1882,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
       break;
     }
     else {
-      LogMan::Msg::A("Unknown instruction 0x%08x", NextInstr);
+      LogMan::Msg::AFmt("Unknown instruction 0x{:08x}", NextInstr);
     }
   }
 
@@ -1951,9 +1948,8 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         DesiredFunction = NEGDesired;
         break;
       default:
-        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", AtomicOp);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", AtomicOp);
         return false;
-        break;
     }
 
     auto Res = DoCAS16<DoRetry>(
@@ -2028,9 +2024,8 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         DesiredFunction = NEGDesired;
         break;
       default:
-        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", AtomicOp);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", AtomicOp);
         return false;
-        break;
     }
 
     auto Res = DoCAS32<DoRetry>(
@@ -2105,9 +2100,8 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         DesiredFunction = NEGDesired;
         break;
       default:
-        LogMan::Msg::E("Unhandled JIT SIGBUS Atomic mem op 0x%02x", AtomicOp);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", AtomicOp);
         return false;
-        break;
     }
 
     auto Res = DoCAS64<DoRetry>(

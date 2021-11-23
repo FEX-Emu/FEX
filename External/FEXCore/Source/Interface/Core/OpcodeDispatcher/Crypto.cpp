@@ -53,7 +53,7 @@ void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t RCON = Op->Src[1].Data.Literal.Value;
 
   auto Res = _VAESKeyGenAssist(Src, RCON);

@@ -283,7 +283,7 @@ static int Clone2HandlerRet(void *arg) {
 #endif
 
 static void PrintFlags(uint64_t Flags){
-#define FLAGPRINT(x, y) if (Flags & (y)) LogMan::Msg::I("\tFlag: " #x)
+#define FLAGPRINT(x, y) if (Flags & (y)) LogMan::Msg::IFmt("\tFlag: " #x)
   FLAGPRINT(CSIGNAL,              0x000000FF);
   FLAGPRINT(CLONE_VM,             0x00000100);
   FLAGPRINT(CLONE_FS,             0x00000200);
@@ -415,7 +415,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
 
     if (AnyFlagsSet(args->args.flags, CLONE_THREAD)) {
       if (!AllFlagsSet(args->args.flags, CLONE_SYSVSEM | CLONE_FS |  CLONE_FILES | CLONE_SIGHAND)) {
-        LogMan::Msg::I("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), %X", args->args.flags);
+        LogMan::Msg::IFmt("clone: CLONE_THREAD: Unsuported flags w/ CLONE_THREAD (Shared Resources), {:X}", args->args.flags);
         return false;
       }
     }
@@ -423,7 +423,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
       if (AnyFlagsSet(args->args.flags, CLONE_SYSVSEM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM)) {
         // CLONE_VM is particularly nasty here
         // Memory regions at the point of clone(More similar to a fork) are shared
-        LogMan::Msg::I("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), %X", args->args.flags);
+        LogMan::Msg::IFmt("clone: Unsuported flags w/o CLONE_THREAD (Shared Resources), {:X}", args->args.flags);
         return false;
       }
     }
@@ -445,7 +445,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
       }
     }
     else {
-      LogMan::Msg::I("Unsupported flag with CLONE_THREAD. This breaks TLS, falling down classic thread path");
+      LogMan::Msg::IFmt("Unsupported flag with CLONE_THREAD. This breaks TLS, falling down classic thread path");
       PrintFlags(flags);
     }
   }
@@ -460,14 +460,14 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
 
   if (AnyFlagsSet(flags, CLONE_PTRACE)) {
     PrintFlags(flags);
-    LogMan::Msg::D("clone: Ptrace* not supported");
+    LogMan::Msg::DFmt("clone: Ptrace* not supported");
   }
 
   if (!(flags & CLONE_THREAD)) {
     if (flags & CLONE_VFORK) {
       PrintFlags(flags);
       flags &= ~CLONE_VM;
-      LogMan::Msg::D("clone: WARNING: CLONE_VFORK w/o CLONE_THREAD");
+      LogMan::Msg::DFmt("clone: WARNING: CLONE_VFORK w/o CLONE_THREAD");
     }
 
     // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
@@ -639,7 +639,7 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXC
   // for missing syscalls
   case 255: return std::invoke(Def.Ptr1, Frame, Args->Argument[0]);
   default:
-    LOGMAN_MSG_A("Unhandled syscall: %d", Args->Argument[0]);
+    LOGMAN_MSG_A_FMT("Unhandled syscall: {}", Args->Argument[0]);
     return -1;
   break;
   }
@@ -666,7 +666,7 @@ void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret) 
 #endif
 
 uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber) {
-  ERROR_AND_DIE("Unhandled system call: %d", SyscallNumber);
+  ERROR_AND_DIE_FMT("Unhandled system call: {}", SyscallNumber);
   return -ENOSYS;
 }
 

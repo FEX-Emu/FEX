@@ -47,12 +47,12 @@ struct ELFParser {
 
     uint8_t header[5];
     if (pread(fd, header, sizeof(header), 0) == -1) {
-      LogMan::Msg::E("Failed to read elf header from '%d'", fd);
+      LogMan::Msg::EFmt("Failed to read elf header from '{}'", fd);
       return false;
     }
 
     if (header[0] != ELFMAG0 || header[1] != ELFMAG1 || header[2] != ELFMAG2 || header[3] != ELFMAG3) {
-      LogMan::Msg::E("Elf header from '%d' doesn't match ELF MAGIC", fd);
+      LogMan::Msg::EFmt("Elf header from '{}' doesn't match ELF MAGIC", fd);
       return false;
     }
 
@@ -61,7 +61,7 @@ struct ELFParser {
     if (header[EI_CLASS] == ELFCLASS32) {
       Elf32_Ehdr hdr32;
       if (pread(fd, &hdr32, sizeof(hdr32), 0) == -1) {
-        LogMan::Msg::E("Failed to read Ehdr32 from '%d'", fd);
+        LogMan::Msg::EFmt("Failed to read Ehdr32 from '{}'", fd);
         return false;
       }
 
@@ -69,13 +69,13 @@ struct ELFParser {
 
       // check elf header
       if (hdr32.e_ehsize != sizeof(hdr32)) {
-        LogMan::Msg::E("Invalid e_ehsize32 from '%d'", fd);
+        LogMan::Msg::EFmt("Invalid e_ehsize32 from '{}'", fd);
         return false;
       }
 
       // check program header
       if (hdr32.e_phentsize != sizeof(Elf32_Phdr)) {
-        LogMan::Msg::E("Invalid e_phentsize32 from '%d'", fd);
+        LogMan::Msg::EFmt("Invalid e_phentsize32 from '{}'", fd);
         return false;
       }
 
@@ -100,14 +100,14 @@ struct ELFParser {
       #undef COPY
 
       if (ehdr.e_machine != EM_386) {
-        LogMan::Msg::E("Invalid e_machine from '%d'", fd);
+        LogMan::Msg::EFmt("Invalid e_machine from '{}'", fd);
         return false;
       }
 
       type = ::ELFLoader::ELFContainer::TYPE_X86_32;
     } else if (header[EI_CLASS] == ELFCLASS64) {
       if (pread(fd, &ehdr, sizeof(ehdr), 0) == -1) {
-        LogMan::Msg::E("Failed to read Ehdr64 from '%d'", fd);
+        LogMan::Msg::EFmt("Failed to read Ehdr64 from '{}'", fd);
         return false;
       }
 
@@ -115,31 +115,31 @@ struct ELFParser {
 
       // check elf header
       if (ehdr.e_ehsize != sizeof(ehdr)) {
-        LogMan::Msg::E("Invalid e_ehsize64 from '%d'", fd);
+        LogMan::Msg::EFmt("Invalid e_ehsize64 from '{}'", fd);
         return false;
       }
 
       // check program header
       if (ehdr.e_phentsize != sizeof(Elf64_Phdr)) {
-        LogMan::Msg::E("Invalid e_phentsize64 from '%d'", fd);
+        LogMan::Msg::EFmt("Invalid e_phentsize64 from '{}'", fd);
         return false;
       }
 
       if (ehdr.e_machine != EM_X86_64) {
-        LogMan::Msg::E("Invalid e_machine64 from '%d'", fd);
+        LogMan::Msg::EFmt("Invalid e_machine64 from '{}'", fd);
         return false;
       }
 
       type = ::ELFLoader::ELFContainer::TYPE_X86_64;
     } else {
       // Unexpected elf type
-      LogMan::Msg::E("Unexpected elf type from '%d'", fd);
+      LogMan::Msg::EFmt("Unexpected elf type from '{}'", fd);
       return false;
     }
 
     // sanity check program header count
     if (ehdr.e_phnum < 1 || ehdr.e_phnum > 65536 / ehdr.e_phentsize) {
-      LogMan::Msg::E("Too many program headers '%d'", fd);
+      LogMan::Msg::EFmt("Too many program headers '{}'", fd);
       return false;
     }
 
@@ -147,7 +147,7 @@ struct ELFParser {
       Elf32_Phdr phdrs32[ehdr.e_phnum];
 
       if (pread(fd, phdrs32, sizeof(Elf32_Phdr) * ehdr.e_phnum, ehdr.e_phoff) == -1) {
-        LogMan::Msg::E("Failed to read phdr32 from '%d'", fd);
+        LogMan::Msg::EFmt("Failed to read phdr32 from '{}'", fd);
         return false;
       }
 
@@ -172,7 +172,7 @@ struct ELFParser {
       phdrs.resize(ehdr.e_phnum);
 
       if (pread(fd, &phdrs[0], sizeof(Elf64_Phdr) * ehdr.e_phnum, ehdr.e_phoff) == -1) {
-        LogMan::Msg::E("Failed to read phdr64 from '%d'", fd);
+        LogMan::Msg::EFmt("Failed to read phdr64 from '{}'", fd);
         return false;
       }
     }
@@ -182,7 +182,7 @@ struct ELFParser {
         InterpreterElf.resize(phdr.p_filesz);
 
         if (pread(fd, &InterpreterElf[0], phdr.p_filesz, phdr.p_offset) == -1) {
-          LogMan::Msg::E("Failed to read interpreter from '%d'", fd);
+          LogMan::Msg::EFmt("Failed to read interpreter from '{}'", fd);
           return false;
         }
       }

@@ -75,7 +75,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     GPRIndexes = &GPRIndexes_Hangover;
   }
   else {
-    LogMan::Msg::D("Unhandled OSABI syscall");
+    LogMan::Msg::DFmt("Unhandled OSABI syscall");
   }
 
   const uint8_t GPRSize = CTX->GetGPRSize();
@@ -198,7 +198,7 @@ SS
 void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   // Operand Size override unsupported!
   if ((Op->Flags & X86Tables::DecodeFlags::FLAG_OPERAND_SIZE) != 0) {
-    LogMan::Msg::E("IRET only implemented for 64bit and 32bit sizes");
+    LogMan::Msg::EFmt("IRET only implemented for 64bit and 32bit sizes");
     DecodeFailure = true;
     return;
   }
@@ -293,7 +293,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   break;
   default:
     IROp = FEXCore::IR::IROps::OP_LAST;
-    LOGMAN_MSG_A("Unknown ALU Op: 0x%x", Op->OP);
+    LOGMAN_MSG_A_FMT("Unknown ALU Op: 0x{:x}", Op->OP);
   break;
   };
 #undef OPD
@@ -333,7 +333,9 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
         Result = _Xor(Dest, Src);
         break;
       }
-      default: LOGMAN_MSG_A("Unknown Atomic IR Op: %d", IROp); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Atomic IR Op: {}", IROp);
+        break;
     }
   }
   else {
@@ -881,7 +883,9 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
           Check, OneConst, TrueValue, FalseValue);
       break;
     }
-    default: LOGMAN_MSG_A("Unknown CC Op: 0x%x\n", OP); return nullptr;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown CC Op: 0x{:x}\n", OP);
+      return nullptr;
   }
 
   // Try folding the flags generation in the select op
@@ -1007,7 +1011,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   auto SrcCond = SelectCC(Op->OP & 0xF, TakeBranch, DoNotTakeBranch);
 
-  LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
 
@@ -1066,7 +1070,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   TakeBranch = _Constant(1);
   DoNotTakeBranch = _Constant(0);
 
-  LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
 
@@ -1129,7 +1133,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
 
   uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
 
-  LOGMAN_THROW_A(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Data.Literal.Value;
 
@@ -1197,7 +1201,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
 
   // This is just an unconditional relative literal jump
   if (Multiblock) {
-    LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+    LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
     uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
     auto JumpBlock = JumpTargets.find(Target);
     if (JumpBlock != JumpTargets.end()) {
@@ -1501,7 +1505,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         if (!CTX->Config.Is64BitMode) {
           _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, gs), Src);
         } else {
-          LogMan::Msg::E("We don't support modifying GS selector in 64bit mode!");
+          LogMan::Msg::EFmt("We don't support modifying GS selector in 64bit mode!");
           DecodeFailure = true;
         }
         break;
@@ -1509,12 +1513,12 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         if (!CTX->Config.Is64BitMode) {
           _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, fs), Src);
         } else {
-          LogMan::Msg::E("We don't support modifying FS selector in 64bit mode!");
+          LogMan::Msg::EFmt("We don't support modifying FS selector in 64bit mode!");
           DecodeFailure = true;
         }
         break;
       default:
-        LogMan::Msg::E("Unknown segment register: %d", Op->Dest.Data.GPR.GPR);
+        LogMan::Msg::EFmt("Unknown segment register: %d", Op->Dest.Data.GPR.GPR);
         DecodeFailure = true;
         break;
     }
@@ -1552,7 +1556,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         }
         break;
       default:
-        LogMan::Msg::E("Unknown segment register: %d", Op->Dest.Data.GPR.GPR);
+        LogMan::Msg::EFmt("Unknown segment register: {}", Op->Dest.Data.GPR.GPR);
         DecodeFailure = true;
         return;
     }
@@ -3172,7 +3176,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   }
   else if (Size == 8) {
     if (!CTX->Config.Is64BitMode) {
-      LogMan::Msg::E("Doesn't exist in 32bit mode");
+      LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
       DecodeFailure = true;
       return;
     }
@@ -3223,7 +3227,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
   }
   else if (Size == 8) {
     if (!CTX->Config.Is64BitMode) {
-      LogMan::Msg::E("Doesn't exist in 32bit mode");
+      LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
       DecodeFailure = true;
       return;
     }
@@ -3364,7 +3368,7 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
 
-  LOGMAN_THROW_A(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t Value = Op->Src[0].Data.Literal.Value;
 
   const uint16_t AllocSpace = Value & 0xFFFF;
@@ -3480,7 +3484,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 
 void OpDispatchBuilder::STOSOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::E("Can't handle adddress size");
+    LogMan::Msg::EFmt("Can't handle adddress size");
     DecodeFailure = true;
     return;
   }
@@ -3583,7 +3587,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::E("Can't handle adddress size");
+    LogMan::Msg::EFmt("Can't handle adddress size");
     DecodeFailure = true;
     return;
   }
@@ -3675,7 +3679,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::E("Can't handle adddress size");
+    LogMan::Msg::EFmt("Can't handle adddress size");
     DecodeFailure = true;
     return;
   }
@@ -3794,7 +3798,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::LODSOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::E("Can't handle adddress size");
+    LogMan::Msg::EFmt("Can't handle adddress size");
     DecodeFailure = true;
     return;
   }
@@ -3891,7 +3895,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
 void OpDispatchBuilder::SCASOp(OpcodeArgs) {
   if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) {
-    LogMan::Msg::E("Can't handle adddress size");
+    LogMan::Msg::EFmt("Can't handle adddress size");
     DecodeFailure = true;
     return;
   }
@@ -4122,7 +4126,7 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   }
   else if (Size == 8) {
     if (!CTX->Config.Is64BitMode) {
-      LogMan::Msg::E("Doesn't exist in 32bit mode");
+      LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
       DecodeFailure = true;
       return;
     }
@@ -4176,7 +4180,7 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   }
   else if (Size == 8) {
     if (!CTX->Config.Is64BitMode) {
-      LogMan::Msg::E("Doesn't exist in 32bit mode");
+      LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
       DecodeFailure = true;
       return;
     }
@@ -4476,7 +4480,7 @@ void OpDispatchBuilder::Finalize() {
   FEXCore::IR::IROp_Header *IROp =
 #endif
   RealNode->Op(DualListData.DataBegin());
-  LOGMAN_THROW_A(IROp->Op == OP_IRHEADER, "First op in function must be our header");
+  LOGMAN_THROW_A_FMT(IROp->Op == OP_IRHEADER, "First op in function must be our header");
 
   // Let's walk the jump blocks and see if we have handled every block target
   for (auto &Handler : JumpTargets) {
@@ -4585,13 +4589,13 @@ OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t
 }
 
 OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad) {
-  LOGMAN_THROW_A(Operand.IsGPR() ||
-                 Operand.IsLiteral() ||
-                 Operand.IsGPRDirect() ||
-                 Operand.IsGPRIndirect() ||
-                 Operand.IsRIPRelative() ||
-                 Operand.IsSIB(),
-                 "Unsupported Src type");
+  LOGMAN_THROW_A_FMT(Operand.IsGPR() ||
+                     Operand.IsLiteral() ||
+                     Operand.IsGPRDirect() ||
+                     Operand.IsGPRIndirect() ||
+                     Operand.IsRIPRelative() ||
+                     Operand.IsSIB(),
+                     "Unsupported Src type");
 
   OrderedNode *Src {nullptr};
   bool LoadableType = false;
@@ -4696,7 +4700,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     LoadableType = true;
   }
   else {
-    LOGMAN_MSG_A("Unknown Src Type: %d\n", Operand.Type);
+    LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
   }
 
   if ((LoadableType && LoadData) || ForceLoad) {
@@ -4723,13 +4727,13 @@ OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class,
 }
 
 void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align) {
-  LOGMAN_THROW_A((Operand.IsGPR() ||
-          Operand.IsLiteral() ||
-          Operand.IsGPRDirect() ||
-          Operand.IsGPRIndirect() ||
-          Operand.IsRIPRelative() ||
-          Operand.IsSIB()
-        ), "Unsupported Dest type");
+  LOGMAN_THROW_A_FMT(Operand.IsGPR() ||
+                     Operand.IsLiteral() ||
+                     Operand.IsGPRDirect() ||
+                     Operand.IsGPRIndirect() ||
+                     Operand.IsRIPRelative() ||
+                     Operand.IsSIB(),
+                     "Unsupported Dest type");
 
   // 8Bit and 16bit destination types store their result without effecting the upper bits
   // 32bit ops ZEXT the result to 64bit
@@ -4757,11 +4761,11 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         // For all other sizes, the upper bits are guaranteed to already be zero
          OrderedNode *Value = GetOpSize(Src) == 8 ? _Bfe(4, 32, 0, Src) : Src;
 
-        LOGMAN_THROW_A(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
+        LOGMAN_THROW_A_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
         _StoreContext(Class, GPRSize, offsetof(FEXCore::Core::CPUState, gregs[gpr]), Value);
       }
       else {
-        LOGMAN_THROW_A(!(GPRSize == 4 && OpSize > 4), "Oops had a %d GPR load", OpSize);
+        LOGMAN_THROW_A_FMT(!(GPRSize == 4 && OpSize > 4), "Oops had a {} GPR load", OpSize);
         _StoreContext(Class, std::min(GPRSize, OpSize), offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (Operand.Data.GPR.HighBits ? 1 : 0), Src);
       }
     }
@@ -4937,7 +4941,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
   break;
   default:
     IROp = FEXCore::IR::IROps::OP_LAST;
-    LOGMAN_MSG_A("Unknown ALU Op: 0x%x", Op->OP);
+    LOGMAN_MSG_A_FMT("Unknown ALU Op: 0x{:x}", Op->OP);
   break;
   }
 
@@ -4979,7 +4983,9 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
         Result = _Xor(Dest, Src);
         break;
       }
-      default: LOGMAN_MSG_A("Unknown Atomic IR Op: %d", IROp); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Atomic IR Op: {}", IROp);
+        break;
     }
   }
   else {
@@ -6201,7 +6207,7 @@ constexpr uint16_t PF_F2 = 3;
       auto OpNum = std::get<0>(Op);
       auto Dispatcher = std::get<2>(Op);
       for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LOGMAN_THROW_A(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
+        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
         FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
       }
     }
@@ -6213,7 +6219,7 @@ constexpr uint16_t PF_F2 = 3;
       OpNum = OpNum & 0x7FF;
       auto Dispatcher = std::get<2>(Op);
       for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LOGMAN_THROW_A(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
+        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
         FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
 
         // Flag to indicate if we need to repeat this op in {0x40, 0x80} ranges

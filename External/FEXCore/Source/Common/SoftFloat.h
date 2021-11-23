@@ -111,7 +111,7 @@ struct X80SoftFloat {
   }
 
   static X80SoftFloat FSCALE(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
-    WARN_ONCE("x87: Application used FSCALE which may have accuracy problems");
+    WARN_ONCE_FMT("x87: Application used FSCALE which may have accuracy problems");
     X80SoftFloat Int = FRNDINT(rhs);
     BIGFLOAT Src2_d = Int;
     Src2_d = exp2l(Src2_d);
@@ -121,7 +121,7 @@ struct X80SoftFloat {
   }
 
   static X80SoftFloat F2XM1(X80SoftFloat const &lhs) {
-    WARN_ONCE("x87: Application used F2XM1 which may have accuracy problems");
+    WARN_ONCE_FMT("x87: Application used F2XM1 which may have accuracy problems");
     BIGFLOAT Src1_d = lhs;
     BIGFLOAT Result = exp2l(Src1_d);
     Result -= 1.0;
@@ -129,7 +129,7 @@ struct X80SoftFloat {
   }
 
   static X80SoftFloat FYL2X(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
-    WARN_ONCE("x87: Application used FYL2X which may have accuracy problems");
+    WARN_ONCE_FMT("x87: Application used FYL2X which may have accuracy problems");
     BIGFLOAT Src1_d = lhs;
     BIGFLOAT Src2_d = rhs;
     BIGFLOAT Tmp = Src2_d * log2l(Src1_d);
@@ -137,7 +137,7 @@ struct X80SoftFloat {
   }
 
   static X80SoftFloat FATAN(X80SoftFloat const &lhs, X80SoftFloat const &rhs) {
-    WARN_ONCE("x87: Application used FATAN which may have accuracy problems");
+    WARN_ONCE_FMT("x87: Application used FATAN which may have accuracy problems");
     BIGFLOAT Src1_d = lhs;
     BIGFLOAT Src2_d = rhs;
     BIGFLOAT Tmp = atan2l(Src1_d, Src2_d);
@@ -145,21 +145,21 @@ struct X80SoftFloat {
   }
 
   static X80SoftFloat FTAN(X80SoftFloat const &lhs) {
-    WARN_ONCE("x87: Application used FTAN which may have accuracy problems");
+    WARN_ONCE_FMT("x87: Application used FTAN which may have accuracy problems");
     BIGFLOAT Src_d = lhs;
     Src_d = tanl(Src_d);
     return Src_d;
   }
 
   static X80SoftFloat FSIN(X80SoftFloat const &lhs) {
-    WARN_ONCE("x87: Application used FSIN which may have accuracy problems");
+    WARN_ONCE_FMT("x87: Application used FSIN which may have accuracy problems");
     BIGFLOAT Src_d = lhs;
     Src_d = sinl(Src_d);
     return Src_d;
   }
 
   static X80SoftFloat FCOS(X80SoftFloat const &lhs) {
-    WARN_ONCE("x87: Application used FCOS which may have accuracy problems");
+    WARN_ONCE_FMT("x87: Application used FCOS which may have accuracy problems");
     BIGFLOAT Src_d = lhs;
     Src_d = cosl(Src_d);
     return Src_d;

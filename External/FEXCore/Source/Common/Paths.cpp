@@ -72,7 +72,7 @@ namespace FEXCore::Paths {
     // Ensure the folder structure is created for our Data
     if (!std::filesystem::exists(*EntryCache, ec) &&
         !std::filesystem::create_directories(*EntryCache, ec)) {
-      LogMan::Msg::D("Couldn't create EntryCache directory: '%s'", EntryCache->c_str());
+      LogMan::Msg::DFmt("Couldn't create EntryCache directory: '{}'", *EntryCache);
     }
   }
 

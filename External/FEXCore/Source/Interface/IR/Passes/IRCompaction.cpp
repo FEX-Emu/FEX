@@ -75,7 +75,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   auto HeaderNode = CurrentIR.GetHeaderNode();
   auto HeaderOp = CurrentIR.GetHeader();
-  LOGMAN_THROW_A(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+  LOGMAN_THROW_A_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   // This compaction pass is something that we need to ensure correct ordering and distances between IROps
   // Later on we assume that an IROp's SSA value live range is its Node locations
@@ -99,7 +99,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   {
     // Generate our codeblocks and link them together
     for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-      LOGMAN_THROW_A(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
+      LOGMAN_THROW_A_FMT(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
       auto LocalBlockIRNode = LocalBuilder._CodeBlock(LocalHeaderOp, LocalHeaderOp); // Use LocalHeaderOp as a dummy arg for now
       OldToNewRemap[CurrentIR.GetID(BlockNode)].NodeID = LocalIR.GetID(LocalBlockIRNode.Node);
@@ -164,7 +164,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
     for (auto &Block : GeneratedCodeBlocks) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       auto BlockIROp = LocalIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Block.NewNode);
-      LOGMAN_THROW_A(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+      LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
       for (auto [LocalNode, LocalIROp] : LocalIR.GetCode(Block.NewNode)) {
@@ -176,7 +176,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
         for (uint8_t i = 0; i < NumArgs; ++i) {
           uint32_t OldArg = LocalIROp->Args[i].ID();
           #ifndef NDEBUG
-            LOGMAN_THROW_A(OldToNewRemap[OldArg].NodeID != ~0U, "Tried remapping unfound node %%ssa%d", OldArg);
+            LOGMAN_THROW_A_FMT(OldToNewRemap[OldArg].NodeID != ~0U, "Tried remapping unfound node %ssa{}", OldArg);
           #endif
           LocalIROp->Args[i].NodeOffset = OldToNewRemap[OldArg].NodeID * sizeof(OrderedNode);
         }
@@ -193,16 +193,17 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   // if (NewListSize < OldListSize ||
   //     NewDataSize < OldDataSize) {
   //   if (NewListSize < OldListSize) {
-  //     LogMan::Msg::D("Shaved %ld bytes off the list size", OldListSize - NewListSize);
+  //     LogMan::Msg::DFmt("Shaved {} bytes off the list size", OldListSize - NewListSize);
   //   }
   //   if (NewDataSize < OldDataSize) {
-  //     LogMan::Msg::D("Shaved %ld bytes off the data size", OldDataSize - NewDataSize);
+  //     LogMan::Msg::DFmt("Shaved {} bytes off the data size", OldDataSize - NewDataSize);
   //   }
   // }
 
   // if (NewListSize > OldListSize ||
   //     NewDataSize > OldDataSize) {
-  //   LOGMAN_MSG_A("Whoa. Compaction made the IR a different size when it shouldn't have. 0x%lx > 0x%lx or 0x%lx > 0x%lx",NewListSize, OldListSize, NewDataSize, OldDataSize);
+  //   LOGMAN_MSG_A_FMT("Whoa. Compaction made the IR a different size when it shouldn't have. 0x{:x} > 0x{:x} or 0x{:x} > 0x{:x}",
+  //                    NewListSize, OldListSize, NewDataSize, OldDataSize);
   // }
 
   IREmit->CopyData(LocalBuilder);

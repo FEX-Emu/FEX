@@ -287,7 +287,7 @@ void ConstProp::FCMPOptimization(IREmitter *IREmit, const IRListView& CurrentIR)
       auto ghf = IROp->CW<IR::IROp_GetHostFlag>();
 
       auto fcmp = IREmit->GetOpHeader(ghf->GPR)->CW<IR::IROp_FCmp>();
-      LOGMAN_THROW_A(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP, "Unexpected OP_GETHOSTFLAG source");
+      LOGMAN_THROW_A_FMT(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP, "Unexpected OP_GETHOSTFLAG source");
       if(fcmp->Header.Op == OP_FCMP) {
         fcmp->Flags |= 1 << ghf->Flag;
       }

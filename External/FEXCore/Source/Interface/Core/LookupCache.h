@@ -50,7 +50,7 @@ public:
     auto InsertPoint =
 #endif
     BlockList.emplace(Address, (uintptr_t)HostCode);
-    LOGMAN_THROW_A(InsertPoint.second == true, "Dupplicate block mapping added");
+    LOGMAN_THROW_A_FMT(InsertPoint.second == true, "Dupplicate block mapping added");
 
     for (auto CurrentPage = Start >> 12, EndPage = (Start + Length) >> 12; CurrentPage <= EndPage; CurrentPage++) {
       CodePages[CurrentPage].push_back(Address);

@@ -1334,7 +1334,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
     Type = COMPARE_ZERO;
   break;
   default:
-    LOGMAN_MSG_A("Unhandled FCMOV op: 0x%x", Opcode);
+    LOGMAN_MSG_A_FMT("Unhandled FCMOV op: 0x{:x}", Opcode);
   break;
   }
 

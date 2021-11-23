@@ -282,7 +282,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
     LogMan::Msg::EFmt("{}", Out.str());
 
-    LOGMAN_MSG_A("Encountered IR validation Error");
+    LOGMAN_MSG_A_FMT("Encountered IR validation Error");
 
     Errors.clear();
     Warnings.clear();

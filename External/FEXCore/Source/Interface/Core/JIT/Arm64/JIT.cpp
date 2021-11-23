@@ -674,7 +674,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     bind(&RunBlock);
   }
 
-  //LOGMAN_THROW_A(RAData->HasFullRA(), "Arm64 JIT only works with RA");
+  //LOGMAN_THROW_A_FMT(RAData->HasFullRA(), "Arm64 JIT only works with RA");
 
   SpillSlots = RAData->SpillSlots();
 

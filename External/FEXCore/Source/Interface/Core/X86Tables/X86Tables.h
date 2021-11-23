@@ -34,7 +34,7 @@ static inline void GenerateTable(X86InstInfo *FinalTable, U8U8InfoStruct const *
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
-      LOGMAN_THROW_A(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable[OpNum + i].Name, Info.Name);
+      LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       FinalTable[OpNum + i] = Info;
 #ifndef NDEBUG
       ++Total;
@@ -51,7 +51,7 @@ static inline void GenerateTable(X86InstInfo *FinalTable, U16U8InfoStruct const 
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
-      LOGMAN_THROW_A(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable[OpNum + i].Name, Info.Name);
+      LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       FinalTable[OpNum + i] = Info;
 #ifndef NDEBUG
       ++Total;
@@ -68,7 +68,7 @@ static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, U8U8InfoStruct
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
-      LOGMAN_THROW_A(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable[OpNum + i].Name, Info.Name);
+      LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       if (Info.Type == TYPE_COPY_OTHER) {
         FinalTable[OpNum + i] = OtherLocal[OpNum + i];
       }
@@ -90,7 +90,7 @@ static inline void GenerateX87Table(X86InstInfo *FinalTable, U16U8InfoStruct con
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
-      LOGMAN_THROW_A(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry %s->%s", FinalTable[OpNum + i].Name, Info.Name);
+      LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       if ((OpNum & 0b11'000'000) == 0b11'000'000) {
         // If the mod field is 0b11 then it is a regular op
         FinalTable[OpNum + i] = Info;
@@ -98,7 +98,7 @@ static inline void GenerateX87Table(X86InstInfo *FinalTable, U16U8InfoStruct con
       else {
         // If the mod field is !0b11 then this instruction is duplicated through the whole mod [0b00, 0b10] range
         // and the modrm.rm space because that is used part of the instruction encoding
-        LOGMAN_THROW_A((OpNum & 0b11'000'000) == 0, "Only support mod field of zero in this path");
+        LOGMAN_THROW_A_FMT((OpNum & 0b11'000'000) == 0, "Only support mod field of zero in this path");
         for (uint16_t mod = 0b00'000'000; mod < 0b11'000'000; mod += 0b01'000'000) {
           for (uint16_t rm = 0b000; rm < 0b1'000; ++rm) {
             FinalTable[(OpNum | mod | rm) + i] = Info;

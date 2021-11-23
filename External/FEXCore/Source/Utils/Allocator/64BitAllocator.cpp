@@ -124,7 +124,7 @@ namespace Alloc::OSAllocator {
 
         [[maybe_unused]] auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
 
-        LOGMAN_THROW_A(Res == 0, "Couldn't mprotect region: %d '%s' Likely occurs when running out of memory or Maximum VMAs", errno, strerror(errno));
+        LOGMAN_THROW_A_FMT(Res == 0, "Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno, strerror(errno));
 
         LiveVMARegion *LiveRange = new (reinterpret_cast<void*>(ReservedRegion->Base)) LiveVMARegion();
 

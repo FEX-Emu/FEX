@@ -27,7 +27,7 @@ bool SanityCheckPath(std::string const &LDPath) {
   std::string PathUser = LDPath + "/usr";
   std::error_code ec{};
   if (!std::filesystem::exists(PathUser, ec)) {
-    LogMan::Msg::D("Child couldn't mount rootfs, /usr doesn't exist");
+    LogMan::Msg::DFmt("Child couldn't mount rootfs, /usr doesn't exist");
     rmdir(LDPath.c_str());
     return false;
   }
@@ -79,7 +79,7 @@ bool SendSocketPipe(std::string const &MountPath) {
   // Open pipes so we can send the daemon one
   int fds[2]{};
   if (pipe2(fds, 0) != 0) {
-    LogMan::Msg::E("Couldn't open pipe");
+    LogMan::Msg::EFmt("Couldn't open pipe");
     return false;
   }
 
@@ -122,7 +122,7 @@ bool SendSocketPipe(std::string const &MountPath) {
   // Create the initial unix socket
   int socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
   if (socket_fd == -1) {
-    LogMan::Msg::D("Couldn't open AF_UNIX socket: %d %s", errno, strerror(errno));
+    LogMan::Msg::DFmt("Couldn't open AF_UNIX socket: {} {}", errno, strerror(errno));
     return false;
   }
 
@@ -132,14 +132,14 @@ bool SendSocketPipe(std::string const &MountPath) {
   strncpy(addr.sun_path, SocketPath.data(), sizeof(addr.sun_path));
 
   if (connect(socket_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == -1) {
-    LogMan::Msg::D("Couldn't connect to AF_UNIX socket: %d %s", errno, strerror(errno));
+    LogMan::Msg::DFmt("Couldn't connect to AF_UNIX socket: {} {}", errno, strerror(errno));
     close(socket_fd);
     return false;
   }
 
   ssize_t ResultSend = sendmsg(socket_fd, &msg, 0);
   if (ResultSend == -1) {
-    LogMan::Msg::D("Couldn't sendmsg");
+    LogMan::Msg::DFmt("Couldn't sendmsg");
     close(socket_fd);
     return false;
   }
@@ -249,19 +249,18 @@ bool Setup(char **const envp) {
     }
 
     pid_t ParentTID = ::getpid();
-    std::string ParentTIDString = std::to_string(ParentTID);
-    std::string Tmp = "/tmp/.FEXMount" + ParentTIDString + "-XXXXXX";
+    std::string Tmp = fmt::format("/tmp/.FEXMount{}-XXXXXX", ParentTID);
     char *TempFolder = Tmp.data();
 
     // Make the temporary mount folder
     if (mkdtemp(TempFolder) == nullptr) {
-      LogMan::Msg::E("Couldn't create temporary mount name: %s", TempFolder);
+      LogMan::Msg::EFmt("Couldn't create temporary mount name: {}", TempFolder);
       return false;
     }
 
     // Change the permissions
     if (chmod(TempFolder, 0777) != 0) {
-      LogMan::Msg::E("Couldn't change permissions on temporary mount: %s", TempFolder);
+      LogMan::Msg::EFmt("Couldn't change permissions on temporary mount: {}", TempFolder);
       rmdir(TempFolder);
       return false;
     }
@@ -269,7 +268,7 @@ bool Setup(char **const envp) {
     // Open some pipes for communicating with the new processes
     int fds[2]{};
     if (pipe2(fds, 0) != 0) {
-      LogMan::Msg::E("Couldn't open pipe");
+      LogMan::Msg::EFmt("Couldn't open pipe");
       return false;
     }
 
@@ -294,9 +293,9 @@ bool Setup(char **const envp) {
         write(fds[1], &error, sizeof(error));
 
         // Give a hopefully helpful error message for users
-        LogMan::Msg::E("Couldn't execute: %s", argv[0]);
-        LogMan::Msg::E("This means the squashFS rootfs won't be mounted.");
-        LogMan::Msg::E("Expect errors!");
+        LogMan::Msg::EFmt("Couldn't execute: {}", argv[0]);
+        LogMan::Msg::EFmt("This means the squashFS rootfs won't be mounted.");
+        LogMan::Msg::EFmt("Expect errors!");
         // Destroy this fork
         exit(1);
       }
@@ -319,13 +318,13 @@ bool Setup(char **const envp) {
       int Result = read(fds[0], &ChildResult, sizeof(ChildResult));
 
       if (Result != sizeof(ChildResult)) {
-        LogMan::Msg::D("Spurious read error");
+        LogMan::Msg::DFmt("Spurious read error");
         return false;
       }
 
       if (ChildResult == 1) {
         // Error
-        LogMan::Msg::D("FEXMountDaemon couldn't mount child for some reason");
+        LogMan::Msg::DFmt("FEXMountDaemon couldn't mount child for some reason");
         return false;
       }
 

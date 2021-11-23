@@ -353,15 +353,15 @@ ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ContextClassificationInfo,
 }
 
 ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode) {
-  LOGMAN_THROW_A((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
-  LOGMAN_THROW_A(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
+  LOGMAN_THROW_A_FMT((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
+  LOGMAN_THROW_A_FMT(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
 
   // If we aren't fully overwriting the member then it is a partial write that we need to track
   if (Size < Info->Class.Size) {
     AccessType = AccessType == ACCESS_WRITE ? ACCESS_PARTIAL_WRITE : ACCESS_PARTIAL_READ;
   }
   if (Size > Info->Class.Size) {
-    LOGMAN_MSG_A("Can't handle this");
+    LOGMAN_MSG_A_FMT("Can't handle this");
   }
 
   Info->Accessed = AccessType;
@@ -503,7 +503,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           IREmit->Remove(LastStoreNode);
 
           if (LastSize < IROp->Size) {
-            //printf("RCLSE: Eliminated partial write\n");
+            //fmt::print("RCLSE: Eliminated partial write\n");
           }
           Changed = true;
         }
@@ -589,7 +589,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
               RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
               Changed = true;
             } else {
-              //printf("RCLSE: Not GPR class, missed, %d, lastS: %d, S: %d, Node S: %d\n", LastClass, LastSize, IROp->Size, IREmit->GetOpSize(LastNode));
+              //fmt::print("RCLSE: Not GPR class, missed, {}, lastS: {}, S: {}, Node S: {}\n", LastClass, LastSize, IROp->Size, IREmit->GetOpSize(LastNode));
             }
           }
         }

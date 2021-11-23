@@ -12,15 +12,15 @@ namespace FEXCore::ArchHelpers::Arm64 {
 // Obvously such a configuration can't do the actual arm64-specific stuff
 
 bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
-    ERROR_AND_DIE("HandleCASPAL Not Implemented");
+    ERROR_AND_DIE_FMT("HandleCASPAL Not Implemented");
 }
 
 bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
-    ERROR_AND_DIE("HandleCASAL Not Implemented");
+    ERROR_AND_DIE_FMT("HandleCASAL Not Implemented");
 }
 
 bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
-    ERROR_AND_DIE("HandleAtomicMemOp Not Implemented");
+    ERROR_AND_DIE_FMT("HandleAtomicMemOp Not Implemented");
 }
 #endif
 

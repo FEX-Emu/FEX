@@ -28,13 +28,13 @@ extern "C" {
 
 namespace FEX::HLE::x32 {
   static void UnhandledIoctl(const char *Type, int fd, uint32_t cmd, uint32_t args) {
-    LogMan::Msg::E("@@@@@@@@@@@@@@@@@@@@@@@@@");
-    LogMan::Msg::E("Unhandled %s ioctl(%d, 0x%08x, 0x%08x)", Type, fd, cmd, args);
-    LogMan::Msg::E("\tDir  : 0x%x", _IOC_DIR(cmd));
-    LogMan::Msg::E("\tType : 0x%x", _IOC_TYPE(cmd));
-    LogMan::Msg::E("\tNR   : 0x%x", _IOC_NR(cmd));
-    LogMan::Msg::E("\tSIZE : 0x%x", _IOC_SIZE(cmd));
-    LogMan::Msg::A("@@@@@@@@@@@@@@@@@@@@@@@@@");
+    LogMan::Msg::EFmt("@@@@@@@@@@@@@@@@@@@@@@@@@");
+    LogMan::Msg::EFmt("Unhandled {} ioctl({}, 0x{:08x}, 0x{:08x})", Type, fd, cmd, args);
+    LogMan::Msg::EFmt("\tDir  : 0x{:x}", _IOC_DIR(cmd));
+    LogMan::Msg::EFmt("\tType : 0x{:x}", _IOC_TYPE(cmd));
+    LogMan::Msg::EFmt("\tNR   : 0x{:x}", _IOC_NR(cmd));
+    LogMan::Msg::EFmt("\tSIZE : 0x{:x}", _IOC_SIZE(cmd));
+    LogMan::Msg::AFmt("@@@@@@@@@@@@@@@@@@@@@@@@@");
   }
 
   namespace BasicHandler {
@@ -464,7 +464,7 @@ namespace FEX::HLE::x32 {
           FDToHandler.SetFDHandler(fd, Virtio_Handler);
         }
         else {
-          LogMan::Msg::E("Unknown DRM device: '%s'", Version.name);
+          LogMan::Msg::EFmt("Unknown DRM device: '{}'", Version.name);
         }
       }
     }

@@ -27,7 +27,7 @@ $end_info$
 #include <utility>
 #include <vector>
 
-#define SRA_DEBUG(...) // printf(__VA_ARGS__)
+#define SRA_DEBUG(...) // fmt::print(__VA_ARGS__)
 
 namespace {
   using FEXCore::IR::PhysicalRegister;
@@ -333,8 +333,8 @@ namespace FEXCore::IR {
   }
 
   void ConstrainedRAPass::AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) {
-    LOGMAN_THROW_A(RegisterCount <= INVALID_REG, "Up to %d regs supported", INVALID_REG);
-    LOGMAN_THROW_A(ClassCount <= INVALID_CLASS, "Up to %d classes supported", INVALID_CLASS);
+    LOGMAN_THROW_A_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
+    LOGMAN_THROW_A_FMT(ClassCount <= INVALID_CLASS, "Up to {} classes supported", INVALID_CLASS);
 
     Graph = AllocateRegisterGraph(ClassCount);
 
@@ -347,7 +347,7 @@ namespace FEXCore::IR {
   }
 
   void ConstrainedRAPass::AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) {
-    LOGMAN_THROW_A(RegisterCount <= INVALID_REG, "Up to %d regs supported", INVALID_REG);
+    LOGMAN_THROW_A_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
 
     AllocatePhysicalRegisters(Graph, Class, RegisterCount);
   }
@@ -374,7 +374,7 @@ namespace FEXCore::IR {
 
         auto Op = IROp->C<IROp_CodeBlock>();
 
-        LOGMAN_THROW_A(Op->Header.Op == OP_CODEBLOCK, "Block not defined by codeblock?");
+        LOGMAN_THROW_A_FMT(Op->Header.Op == OP_CODEBLOCK, "Block not defined by codeblock?");
 
         LiveRange->Begin = std::min(LiveRange->Begin, Op->Begin.ID());
         LiveRange->End = std::max(LiveRange->End, Op->Begin.ID());
@@ -402,7 +402,7 @@ namespace FEXCore::IR {
 
         // If the destination hasn't yet been set then set it now
         if (IROp->HasDest) {
-          LOGMAN_THROW_A(LiveRanges[Node].Begin == ~0U, "Node begin already defined?");
+          LOGMAN_THROW_A_FMT(LiveRanges[Node].Begin == ~0U, "Node begin already defined?");
           LiveRanges[Node].Begin = Node;
           // Default to ending right where after it starts
           LiveRanges[Node].End = Node + 1;
@@ -438,7 +438,7 @@ namespace FEXCore::IR {
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
           uint32_t ArgNode = IROp->Args[i].ID();
-          LOGMAN_THROW_A(LiveRanges[ArgNode].Begin != ~0U, "%%ssa%d used by %%ssa%d before defined?", ArgNode, Node);
+          LOGMAN_THROW_A_FMT(LiveRanges[ArgNode].Begin != ~0U, "%ssa{} used by %ssa{} before defined?", ArgNode, Node);
 
           auto ArgNodeBlockID = Graph->Nodes[ArgNode].Head.BlockID;
           if (ArgNodeBlockID == BlockNodeID) {
@@ -492,7 +492,7 @@ namespace FEXCore::IR {
       } else if (StaticClass == FPRFixedClass) {
         return Size == 16;
       } else {
-        LOGMAN_THROW_A(false, "Unexpected static class %d", StaticClass);
+        LOGMAN_THROW_A_FMT(false, "Unexpected static class {}", StaticClass);
       }
       return false; // Unknown
     };
@@ -504,7 +504,7 @@ namespace FEXCore::IR {
       } else if (StaticClass == FPRFixedClass) {
         return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0); // We need more meta info to support not-size-of-reg
       } else {
-        LOGMAN_THROW_A(false, "Unexpected static class %d", StaticClass);
+        LOGMAN_THROW_A_FMT(false, "Unexpected static class {}", StaticClass);
       }
       return false; // Unknown
     };
@@ -524,7 +524,7 @@ namespace FEXCore::IR {
           auto reg = (Offset - beginFpr) / 16;
           return PhysicalRegister(FPRFixedClass, reg);
         } else {
-          LOGMAN_THROW_A(false, "Unexpected Offset %d", Offset);
+          LOGMAN_THROW_A_FMT(false, "Unexpected Offset {}", Offset);
           return PhysicalRegister::Invalid();
         }
     };
@@ -548,7 +548,7 @@ namespace FEXCore::IR {
           auto reg = (Offset - beginFpr) / 16;
           return &StaticMaps[GprSize + reg];
         } else {
-          LOGMAN_THROW_A(false, "Unexpected offset %d", Offset);
+          LOGMAN_THROW_A_FMT(false, "Unexpected offset {}", Offset);
           return (LiveRange**)nullptr;
         }
     };
@@ -560,7 +560,7 @@ namespace FEXCore::IR {
       } else if (PhyReg.Class == FPRFixedClass.Val) {
         return &StaticMaps[GprSize + PhyReg.Reg];
       } else {
-        LOGMAN_THROW_A(false, "Unexpected Class %d", PhyReg.Class);
+        LOGMAN_THROW_A_FMT(false, "Unexpected Class {}", PhyReg.Class);
         return (LiveRange**)nullptr;
       }
     };
@@ -578,7 +578,7 @@ namespace FEXCore::IR {
             && !LiveRanges[Op->Value.ID()].Global) {
 
             //pre-write and sra-allocate in the defining node - this might be undone if a read before the actual store happens
-            SRA_DEBUG("Prewritting ssa%d (Store in ssa%d)\n", Op->Value.ID(), Node);
+            SRA_DEBUG("Prewritting ssa{} (Store in ssa{})\n", Op->Value.ID(), Node);
             LiveRanges[Op->Value.ID()].PrefferedRegister = GetRegAndClassFromOffset(Op->Offset);
             LiveRanges[Op->Value.ID()].PreWritten = Node;
             SetNodeClass(Graph, Op->Value.ID(), Op->StaticClass);
@@ -607,7 +607,7 @@ namespace FEXCore::IR {
 
           // ACCESSED after write, let's not SRA this one
           if (LiveRanges[ArgNode].Written) {
-            SRA_DEBUG("Demoting ssa%d because accessed after write in ssa%d\n", ArgNode, Node);
+            SRA_DEBUG("Demoting ssa{} because accessed after write in ssa{}\n", ArgNode, Node);
             LiveRanges[ArgNode].PrefferedRegister = PhysicalRegister::Invalid();
             auto ArgNodeNode = IR->GetNode(IROp->Args[i]);
             SetNodeClass(Graph, ArgNode, GetRegClassFromNode(IR, ArgNodeNode->Op(IR->GetData())));
@@ -619,10 +619,10 @@ namespace FEXCore::IR {
 
           // If this is a pre-write, update the StaticMap so we track writes
           if (!LiveRanges[Node].PrefferedRegister.IsInvalid()) {
-            SRA_DEBUG("ssa%d is a pre-write\n", Node);
+            SRA_DEBUG("ssa{} is a pre-write\n", Node);
             auto StaticMap = GetStaticMapFromReg(LiveRanges[Node].PrefferedRegister);
             if ((*StaticMap)) {
-              SRA_DEBUG("Markng ssa%ld as written because ssa%d writes to sra%d\n", (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+              SRA_DEBUG("Markng ssa{} as written because ssa{} writes to sra{}\n", (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
               (*StaticMap)->Written = true;
             }
             (*StaticMap) = &LiveRanges[Node];
@@ -641,7 +641,7 @@ namespace FEXCore::IR {
             if ((*StaticMap) && (*StaticMap)->PreWritten) {
               uint32_t ID = (*StaticMap) - &LiveRanges[0];
 
-              SRA_DEBUG("ssa%d cannot be a pre-write because ssa%d reads from sra%d before storereg", ID, Node, -1 /*vreg*/);
+              SRA_DEBUG("ssa{} cannot be a pre-write because ssa{} reads from sra{} before storereg", ID, Node, -1 /*vreg*/);
               (*StaticMap)->PrefferedRegister = PhysicalRegister::Invalid();
               (*StaticMap)->PreWritten = 0;
               SetNodeClass(Graph, ID, Op->Class);
@@ -656,14 +656,14 @@ namespace FEXCore::IR {
                 // Marking here as written is overly agressive, but
                 // there might be write(s) later on the instruction stream
                 if ((*StaticMap)) {
-                  SRA_DEBUG("Markng ssa%ld as written because ssa%d re-loads sra%d, and we can't track possible future writes\n", (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+                  SRA_DEBUG("Markng ssa{} as written because ssa{} re-loads sra{}, and we can't track possible future writes\n", (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
                   (*StaticMap)->Written = true;
                 }
 
                 LiveRanges[Node].PrefferedRegister = GetRegAndClassFromOffset(Op->Offset); //0, 1, and so on
                 (*StaticMap) = &LiveRanges[Node];
                 SetNodeClass(Graph, Node, Op->StaticClass);
-                SRA_DEBUG("Marking ssa%d as allocated to sra%d\n", Node, -1 /*vreg*/);
+                SRA_DEBUG("Marking ssa{} as allocated to sra{}\n", Node, -1 /*vreg*/);
               }
             }
           }
@@ -680,14 +680,14 @@ namespace FEXCore::IR {
           if ((*StaticMap)) {
             // writes to self don't invalidate the span
             if ((*StaticMap)->PreWritten != Node) {
-              SRA_DEBUG("Markng ssa%d as written because ssa%d writes to sra%d with value ssa%d. Write size is %d\n", ID, Node, -1 /*vreg*/, Op->Value.ID(), IROp->Size);
+              SRA_DEBUG("Markng ssa{} as written because ssa{} writes to sra{} with value ssa{}. Write size is {}\n", ID, Node, -1 /*vreg*/, Op->Value.ID(), IROp->Size);
               (*StaticMap)->Written = true;
             }
           }
           if (LiveRanges[Op->Value.ID()].PreWritten == Node) {
             // no longer pre-written
             LiveRanges[Op->Value.ID()].PreWritten = 0;
-            SRA_DEBUG("Markng ssa%d as no longer pre-written as ssa%d is a storereg for sra%d\n", Op->Value.ID(), Node, -1 /*vreg*/);
+            SRA_DEBUG("Markng ssa{} as no longer pre-written as ssa{} is a storereg for sra{}\n", Op->Value.ID(), Node, -1 /*vreg*/);
           }
         }
       }
@@ -699,7 +699,7 @@ namespace FEXCore::IR {
 
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LOGMAN_THROW_A(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+      LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
       BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(IR->GetID(BlockNode)).first->second;
       BlockInterferenceVector->reserve(BlockIROp->Last.ID() - BlockIROp->Begin.ID());
@@ -799,13 +799,13 @@ namespace FEXCore::IR {
     };
 
     // SpanStart/SpanEnd assume SSA id will fit in 24bits
-    LOGMAN_THROW_A(NodeCount <= 0xff'ffff, "Block too large for Spans");
+    LOGMAN_THROW_A_FMT(NodeCount <= 0xff'ffff, "Block too large for Spans");
 
     SpanStart.resize(NodeCount);
     SpanEnd.resize(NodeCount);
     for (uint32_t i = 0; i < NodeCount; ++i) {
       if (LiveRanges[i].Begin != ~0U) {
-        LOGMAN_THROW_A(LiveRanges[i].Begin < LiveRanges[i].End , "Span must Begin before Ending");
+        LOGMAN_THROW_A_FMT(LiveRanges[i].Begin < LiveRanges[i].End , "Span must Begin before Ending");
 
         auto Class = GetClass(Graph->AllocData->Map[i]);
         SpanStart[LiveRanges[i].Begin].Append(INFO_MAKE(i, Class));
@@ -833,7 +833,7 @@ namespace FEXCore::IR {
       });
     }
 
-    LOGMAN_THROW_A(Active.Items[0] == 0, "Interference bug");
+    LOGMAN_THROW_A_FMT(Active.Items[0] == 0, "Interference bug");
     SpanStart.clear();
     SpanEnd.clear();
   }
@@ -852,7 +852,7 @@ namespace FEXCore::IR {
       RegisterClass *RAClass = &Graph->Set.Classes[RegClass];
 
       if (CurrentNode->Head.PhiPartner) {
-        LOGMAN_MSG_A("Phi nodes not supported");
+        LOGMAN_MSG_A_FMT("Phi nodes not supported");
         #if 0
         // In the case that we have a list of nodes that need the same register allocated we need to do something special
         // We need to gather the data from the forward linked list and make sure they all match the virtual register
@@ -1051,7 +1051,7 @@ namespace FEXCore::IR {
             // This would ensure something will spill earlier if its previous use and next use are farther away
             auto InterferenceNodeNextUse = FindFirstUse(IREmit, InterferenceOrderedNode, NodeOpBeginIter, InterferenceNodeOpEndIter);
             auto InterferenceNodePrevUse = FindLastUseBefore(IREmit, InterferenceOrderedNode, InterferenceNodeOpBeginIter, NodeOpBeginIter);
-            LOGMAN_THROW_A(InterferenceNodeNextUse != IR::NodeIterator::Invalid(), "Couldn't find next usage of op");
+            LOGMAN_THROW_A_FMT(InterferenceNodeNextUse != IR::NodeIterator::Invalid(), "Couldn't find next usage of op");
             // If there is no use of the interference op prior to our op then it only has initial definition
             if (InterferenceNodePrevUse == IR::NodeIterator::Invalid()) InterferenceNodePrevUse = InterferenceNodeOpBeginIter;
 
@@ -1198,7 +1198,7 @@ namespace FEXCore::IR {
 
         if (!CurrentNodes.contains(InterferenceNode)) {
           InterferenceIdToSpill = InterferenceNode;
-          LogMan::Msg::D("Panic spilling %%ssa%d, Live Range[%d, %d)", InterferenceIdToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
+          LogMan::Msg::DFmt("Panic spilling %ssa{}, Live Range[{}, {})", InterferenceIdToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
           return true;
         }
         return false;
@@ -1207,17 +1207,17 @@ namespace FEXCore::IR {
 
     if (InterferenceIdToSpill == 0) {
       int j = 0;
-      LogMan::Msg::D("node %%ssa%d, was dumped in to virtual reg %d. Live Range[%d, %d)",
-        CurrentLocation, -1,
-        OpLiveRange->Begin, OpLiveRange->End);
+      LogMan::Msg::DFmt("node %ssa{}, was dumped in to virtual reg {}. Live Range[{}, {})",
+                        CurrentLocation, -1,
+                        OpLiveRange->Begin, OpLiveRange->End);
 
       RegisterNode->Interferences.Iterate([&](uint32_t InterferenceNode) {
         auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
 
-        LogMan::Msg::D("\tInt%d: %%ssa%d Remat: %d [%d, %d)", j++, InterferenceNode, InterferenceLiveRange->RematCost, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
+        LogMan::Msg::DFmt("\tInt{}: %ssa{} Remat: {} [{}, {})", j++, InterferenceNode, InterferenceLiveRange->RematCost, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
       });
     }
-    LOGMAN_THROW_A(InterferenceIdToSpill != 0, "Couldn't find Node to spill");
+    LOGMAN_THROW_A_FMT(InterferenceIdToSpill != 0, "Couldn't find Node to spill");
 
     return InterferenceIdToSpill;
   }
@@ -1254,7 +1254,7 @@ namespace FEXCore::IR {
     auto LastCursor = IREmit->GetWriteCursor();
     auto [CodeNode, IROp] = IR.at(SpillPointId)();
 
-    LOGMAN_THROW_A(IROp->HasDest, "Can't spill with no dest");
+    LOGMAN_THROW_A_FMT(IROp->HasDest, "Can't spill with no dest");
 
     uint32_t Node = IR.GetID(CodeNode);
     RegisterNode *CurrentNode = &Graph->Nodes[Node];
@@ -1278,7 +1278,7 @@ namespace FEXCore::IR {
         // First op post Spill
         auto NextIter = IR.at(CodeNode);
         auto FirstUseLocation = FindFirstUse(IREmit, ConstantNode, NextIter, NodeIterator::Invalid());
-        LOGMAN_THROW_A(FirstUseLocation != IR::NodeIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", Node, InterferenceNode);
+        LOGMAN_THROW_A_FMT(FirstUseLocation != IR::NodeIterator::Invalid(), "At %ssa{} Spilling Op %ssa{} but Failure to find op use", Node, InterferenceNode);
         if (FirstUseLocation != IR::NodeIterator::Invalid()) {
           --FirstUseLocation;
           auto [FirstUseOrderedNode, _] = FirstUseLocation();
@@ -1297,10 +1297,10 @@ namespace FEXCore::IR {
           uint32_t SpillSlot = FindSpillSlot(InterferenceNode, InterferenceRegClass);
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
           RegisterNode *InterferenceRegisterNode = &Graph->Nodes[InterferenceNode];
-          LOGMAN_THROW_A(SpillSlot != ~0U, "Interference Node doesn't have a spill slot!");
-          //LOGMAN_THROW_A(InterferenceRegisterNode->Head.RegAndClass.Reg != INVALID_REG, "Interference node never assigned a register?");
-          LOGMAN_THROW_A(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
-          LOGMAN_THROW_A(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
+          LOGMAN_THROW_A_FMT(SpillSlot != ~0U, "Interference Node doesn't have a spill slot!");
+          //LOGMAN_THROW_A_FMT(InterferenceRegisterNode->Head.RegAndClass.Reg != INVALID_REG, "Interference node never assigned a register?");
+          LOGMAN_THROW_A_FMT(InterferenceRegClass != ~0U, "Interference node never assigned a register class?");
+          LOGMAN_THROW_A_FMT(InterferenceRegisterNode->Head.PhiPartner == nullptr, "We don't support spilling PHI nodes currently");
 #endif
 
           // This is the op that we need to dump
@@ -1334,7 +1334,7 @@ namespace FEXCore::IR {
             ++FirstIter;
             auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, FirstIter, NodeIterator::Invalid());
 
-            LOGMAN_THROW_A(FirstUseLocation != NodeIterator::Invalid(), "At %%ssa%d Spilling Op %%ssa%d but Failure to find op use", Node, InterferenceNode);
+            LOGMAN_THROW_A_FMT(FirstUseLocation != NodeIterator::Invalid(), "At %ssa{} Spilling Op %ssa{} but Failure to find op use", Node, InterferenceNode);
             if (FirstUseLocation != IR::NodeIterator::Invalid()) {
               // We want to fill just before the first use
               --FirstUseLocation;

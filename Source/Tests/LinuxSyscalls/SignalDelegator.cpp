@@ -127,7 +127,7 @@ namespace FEX::HLE {
         // We handled this signal, continue running
         return;
       }
-      ERROR_AND_DIE("Unhandled guest exception");
+      ERROR_AND_DIE_FMT("Unhandled guest exception");
     }
 
     // Unhandled crash
@@ -231,10 +231,10 @@ namespace FEX::HLE {
     }
 
     // Only update the old action if we haven't ever been installed
-    int Result = ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.HostAction, SignalHandler.Installed ? nullptr : &SignalHandler.OldAction, 8);
+    const int Result = ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.HostAction, SignalHandler.Installed ? nullptr : &SignalHandler.OldAction, 8);
     if (Result < 0) {
       // Signal 32 and 33 are consumed by glibc. We don't handle this atm
-      LogMan::Msg::A("Failed to install host signal thunk for signal %d: %s", Signal, strerror(errno));
+      LogMan::Msg::AFmt("Failed to install host signal thunk for signal {}: {}", Signal, strerror(errno));
       return false;
     }
 
@@ -249,7 +249,7 @@ namespace FEX::HLE {
 
   SignalDelegator::SignalDelegator() {
     // Register this delegate
-    LOGMAN_THROW_A(!GlobalDelegator, "Can't register global delegator multiple times!");
+    LOGMAN_THROW_A_FMT(!GlobalDelegator, "Can't register global delegator multiple times!");
     GlobalDelegator = this;
     // Signal zero isn't real
     HostHandlers[0].Installed = true;
@@ -305,12 +305,12 @@ namespace FEX::HLE {
     altstack.ss_sp = ThreadData.AltStackPtr;
     altstack.ss_size = SIGSTKSZ;
     altstack.ss_flags = 0;
-    LOGMAN_THROW_A(!!altstack.ss_sp, "Couldn't allocate stack pointer");
+    LOGMAN_THROW_A_FMT(!!altstack.ss_sp, "Couldn't allocate stack pointer");
 
     // Register the alt stack
-    int Result = sigaltstack(&altstack, nullptr);
+    const int Result = sigaltstack(&altstack, nullptr);
     if (Result == -1) {
-      LogMan::Msg::E("Failed to install alternative signal stack %s", strerror(errno));
+      LogMan::Msg::EFmt("Failed to install alternative signal stack {}", strerror(errno));
     }
 
     // Get the current host signal mask
@@ -326,9 +326,9 @@ namespace FEX::HLE {
     altstack.ss_flags = SS_DISABLE;
 
     // Uninstall the alt stack
-    int Result = sigaltstack(&altstack, nullptr);
+    const int Result = sigaltstack(&altstack, nullptr);
     if (Result == -1) {
-      LogMan::Msg::E("Failed to uninstall alternative signal stack %s", strerror(errno));
+      LogMan::Msg::EFmt("Failed to uninstall alternative signal stack {}", strerror(errno));
     }
   }
 

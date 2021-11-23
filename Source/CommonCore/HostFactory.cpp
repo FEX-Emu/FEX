@@ -167,7 +167,7 @@ namespace HostFactory {
     ldt.lm = 0; // Not-64-bit
     int Res = modify_ldt(0x11, &ldt);
     if (Res == -1) {
-      LogMan::Msg::E("Couldn't load 32-bit LDT");
+      LogMan::Msg::EFmt("Couldn't load 32-bit LDT");
       return;
     }
 
@@ -188,7 +188,7 @@ namespace HostFactory {
     ldt.lm = 0; // Not-64-bit
     Res = modify_ldt(0x11, &ldt);
     if (Res == -1) {
-      LogMan::Msg::E("Couldn't load 32-bit LDT");
+      LogMan::Msg::EFmt("Couldn't load 32-bit LDT");
       return;
     }
 
@@ -206,7 +206,7 @@ namespace HostFactory {
     ldt.lm = 0; // Not-64-bit
     Res = modify_ldt(0x11, &ldt);
     if (Res == -1) {
-      LogMan::Msg::E("Couldn't load 32-bit LDT");
+      LogMan::Msg::EFmt("Couldn't load 32-bit LDT");
       return;
     }
 
@@ -296,7 +296,7 @@ namespace HostFactory {
   }
 #else
   std::unique_ptr<FEXCore::CPU::CPUBackend> CPUCreationFactory(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread) {
-    LOGMAN_MSG_A("HostCPU factory doesn't exist for this host");
+    LOGMAN_MSG_A_FMT("HostCPU factory doesn't exist for this host");
     return nullptr;
   }
 #endif
