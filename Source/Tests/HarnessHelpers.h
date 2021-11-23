@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common/Config.h"
-#include "Common/MathUtils.h"
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 
@@ -20,6 +19,7 @@
 #include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <fmt/format.h>
 
@@ -401,7 +401,7 @@ namespace FEX::HarnessHelper {
       }
 
       // Map in the memory region for the test file
-      size_t Length = AlignUp(RawFile.size(), PAGE_SIZE);
+      size_t Length = FEXCore::AlignUp(RawFile.size(), PAGE_SIZE);
       Code_start_page = reinterpret_cast<uint64_t>(DoMMap(Code_start_page, Length));
       mprotect(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC);
       RIP = Code_start_page;

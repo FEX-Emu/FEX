@@ -3,17 +3,18 @@
 #include "Utils/Allocator/IntrusiveArenaAllocator.h"
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cerrno>
+#include <cstddef>
 #include <cstdint>
-#include <errno.h>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <new>
-#include <stddef.h>
 #include <sstream>
 #include <sys/mman.h>
 #include <bits/mman-map-flags-generic.h>
@@ -69,7 +70,7 @@ namespace Alloc::OSAllocator {
         ReservedVMARegion *SlabInfo;
         uint64_t FreeSpace{};
         uint32_t LastPageAllocation{};
-        FlexBitSet<uint64_t> UsedPages;
+        FEXCore::FlexBitSet<uint64_t> UsedPages;
 
         // This returns the size of the LiveVMARegion in addition to the flex set that tracks the used data
         // The LiveVMARegion lives at the start of the VMA region which means on initialization we need to set that
@@ -82,11 +83,11 @@ namespace Alloc::OSAllocator {
           // 1 bit per page for tracking means 0x20'0000 (Pages / 8) bytes of flex space
           // Which is 2MB of tracking
           uint64_t NumElements = (Size >> PAGE_SHIFT) * sizeof(uint64_t);
-          return sizeof(LiveVMARegion) + FlexBitSet<uint64_t>::Size(NumElements);
+          return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<uint64_t>::Size(NumElements);
         }
 
         static void InitializeVMARegionUsed(LiveVMARegion *Region, size_t AdditionalSize) {
-          size_t SizeOfLiveRegion = AlignUp(LiveVMARegion::GetSizeWithFlexSet(Region->SlabInfo->RegionSize), PAGE_SIZE);
+          size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(Region->SlabInfo->RegionSize), PAGE_SIZE);
           size_t SizePlusManagedData = SizeOfLiveRegion + AdditionalSize;
 
           Region->FreeSpace = Region->SlabInfo->RegionSize - SizePlusManagedData;
@@ -119,7 +120,7 @@ namespace Alloc::OSAllocator {
 
         ReservedRegions->erase(ReservedIterator);
         // mprotect the new region we've allocated
-        size_t SizeOfLiveRegion = AlignUp(LiveVMARegion::GetSizeWithFlexSet(ReservedRegion->RegionSize), PAGE_SIZE);
+        size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(ReservedRegion->RegionSize), PAGE_SIZE);
         size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
 
         [[maybe_unused]] auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
@@ -176,7 +177,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
   }
 
   bool Fixed = (flags & MAP_FIXED) || (flags & MAP_FIXED_NOREPLACE);
-  length = AlignUp(length, PAGE_SIZE);
+  length = FEXCore::AlignUp(length, PAGE_SIZE);
 
   uint64_t AddrEnd = Addr + length;
   size_t NumberOfPages = length / PAGE_SIZE;
@@ -388,7 +389,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
     if (!LiveRegion) {
       // Couldn't find a fit in the live regions
       // Allocate a new reserved region
-      size_t lengthOfLiveRegion = AlignUp(LiveVMARegion::GetSizeWithFlexSet(length), PAGE_SIZE);
+      size_t lengthOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(length), PAGE_SIZE);
       size_t lengthPlusManagedData = length + lengthOfLiveRegion;
       for (auto it = ReservedRegions->begin(); it != ReservedRegions->end(); ++it) {
         if ((*it)->RegionSize >= lengthPlusManagedData) {
@@ -443,7 +444,7 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   // This needs a mutex to be thread safe
   std::scoped_lock<std::mutex> lk{AllocationMutex};
 
-  length = AlignUp(length, PAGE_SIZE);
+  length = FEXCore::AlignUp(length, PAGE_SIZE);
 
   uintptr_t PtrBegin = reinterpret_cast<uintptr_t>(addr);
   uintptr_t PtrEnd = PtrBegin + length;

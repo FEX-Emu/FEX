@@ -1,7 +1,8 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 
-#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include "aarch64/cpu-aarch64.h"
 #include "cpu-features.h"

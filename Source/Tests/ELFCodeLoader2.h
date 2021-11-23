@@ -2,7 +2,6 @@
 #pragma once
 
 #include "Common/Config.h"
-#include "Common/MathUtils.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"

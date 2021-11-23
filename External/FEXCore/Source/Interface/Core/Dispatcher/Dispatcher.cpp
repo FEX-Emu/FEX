@@ -1,5 +1,4 @@
 
-#include "Common/MathUtils.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86HelperGen.h"
@@ -13,12 +12,13 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <atomic>
 #include <condition_variable>
 #include <bits/types/siginfo_t.h>
-#include <signal.h>
-#include <string.h>
+#include <csignal>
+#include <cstring>
 
 namespace FEXCore::CPU {
 

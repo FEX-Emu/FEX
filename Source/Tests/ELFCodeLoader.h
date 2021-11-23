@@ -1,10 +1,9 @@
 #pragma once
+
 #include "Common/Config.h"
-#include "Common/MathUtils.h"
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 
-#include <FEXCore/Core/CodeLoader.h>
 #include <array>
 #include <bitset>
 #include <cassert>
@@ -12,6 +11,7 @@
 #include <fstream>
 #include <sys/mman.h>
 #include <vector>
+
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>

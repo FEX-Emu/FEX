@@ -1,6 +1,7 @@
-#include "Common/MathUtils.h"
 #include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
+
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <bitset>
 #include <map>
@@ -132,7 +133,7 @@ uint64_t MemAllocator32Bit::FindPageRange_TopDown(uint64_t Start, size_t Pages) 
 
 void *MemAllocator32Bit::mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
-  size_t PagesLength = AlignUp(length, PAGE_SIZE) >> PAGE_SHIFT;
+  size_t PagesLength = FEXCore::AlignUp(length, PAGE_SIZE) >> PAGE_SHIFT;
 
   uintptr_t Addr = reinterpret_cast<uintptr_t>(addr);
   uintptr_t PageAddr = Addr >> PAGE_SHIFT;
@@ -265,7 +266,7 @@ restart:
 
 int MemAllocator32Bit::munmap(void *addr, size_t length) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
-  size_t PagesLength = AlignUp(length, PAGE_SIZE) >> PAGE_SHIFT;
+  size_t PagesLength = FEXCore::AlignUp(length, PAGE_SIZE) >> PAGE_SHIFT;
 
   uintptr_t Addr = reinterpret_cast<uintptr_t>(addr);
   uintptr_t PageAddr = Addr >> PAGE_SHIFT;
@@ -309,8 +310,8 @@ int MemAllocator32Bit::munmap(void *addr, size_t length) {
 }
 
 void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) {
-  size_t OldPagesLength = AlignUp(old_size, PAGE_SIZE) >> PAGE_SHIFT;
-  size_t NewPagesLength = AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
+  size_t OldPagesLength = FEXCore::AlignUp(old_size, PAGE_SIZE) >> PAGE_SHIFT;
+  size_t NewPagesLength = FEXCore::AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
 
   {
     std::scoped_lock<std::mutex> lk{AllocMutex};
@@ -341,7 +342,7 @@ void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_s
 
         if (MappedPtr != MAP_FAILED) {
           // Clear the pages that we just shrunk
-          size_t NewPagesLength = AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
+          size_t NewPagesLength = FEXCore::AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
           uintptr_t NewPageAddr = reinterpret_cast<uintptr_t>(MappedPtr) >> PAGE_SHIFT;
           SetFreePages(NewPageAddr + NewPagesLength, OldPagesLength - NewPagesLength);
           return MappedPtr;
@@ -366,7 +367,7 @@ void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_s
 
           if (MappedPtr != MAP_FAILED) {
             // Map the new pages
-            size_t NewPagesLength = AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
+            size_t NewPagesLength = FEXCore::AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
             uintptr_t NewAddr = reinterpret_cast<uintptr_t>(MappedPtr);
             SetUsedPages(NewAddr >> PAGE_SHIFT, NewPagesLength);
             return MappedPtr;
@@ -406,7 +407,7 @@ void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_s
     }
 
     // Map the new pages
-    size_t NewPagesLength = AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
+    size_t NewPagesLength = FEXCore::AlignUp(new_size, PAGE_SIZE) >> PAGE_SHIFT;
     uintptr_t NewAddr = reinterpret_cast<uintptr_t>(MappedPtr);
     SetUsedPages(NewAddr >> PAGE_SHIFT, NewPagesLength);
     return MappedPtr;
@@ -461,7 +462,7 @@ uint64_t MemAllocator32Bit::shmat(int shmid, const void* shmaddr, int shmflg, ui
     uint64_t PagesLength{};
 
     if (shmctl(shmid, IPC_STAT, &buf) == 0) {
-      PagesLength = AlignUp(buf.shm_segsz, PAGE_SIZE) >> PAGE_SHIFT;
+      PagesLength = FEXCore::AlignUp(buf.shm_segsz, PAGE_SIZE) >> PAGE_SHIFT;
     }
     else {
       return -EINVAL;

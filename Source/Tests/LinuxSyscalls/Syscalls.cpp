@@ -6,7 +6,6 @@ desc: Glue logic, brk allocations
 $end_info$
 */
 
-#include "Common/MathUtils.h"
 #include "Linux/Utils/ELFContainer.h"
 
 #include "Tests/LinuxSyscalls/LinuxAllocator.h"
@@ -25,6 +24,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Threads.h>
 
 #include <algorithm>
@@ -518,7 +518,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
     }
     else {
       uint64_t NewSize = NewEnd - DataSpace;
-      uint64_t NewSizeAligned = AlignUp(NewSize, 4096);
+      uint64_t NewSizeAligned = FEXCore::AlignUp(NewSize, 4096);
 
       if (NewSizeAligned < DataSpaceMaxSize) {
         // If we are shrinking the brk then munmap the ranges
@@ -532,7 +532,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
       }
       else if (NewSize > DataSpaceMaxSize) {
         constexpr static uint64_t SizeAlignment = 8 * 1024 * 1024;
-        uint64_t AllocateNewSize = AlignUp(NewSize, SizeAlignment) - DataSpaceMaxSize;
+        uint64_t AllocateNewSize = FEXCore::AlignUp(NewSize, SizeAlignment) - DataSpaceMaxSize;
         if (!Is64BitMode() &&
           (DataSpace + DataSpaceMaxSize + AllocateNewSize > 0x1'0000'0000ULL)) {
           // If we are 32bit and we tried going about the 32bit limit then out of memory

@@ -5,7 +5,6 @@ desc: Sorts the ssa storage in memory, needed for RA and others
 $end_info$
 */
 
-#include "Common/MathUtils.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 
@@ -13,11 +12,12 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <memory>
-#include <stdint.h>
-#include <string.h>
 #include <vector>
 
 namespace FEXCore::IR {

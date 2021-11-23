@@ -11,6 +11,7 @@ $end_info$
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
