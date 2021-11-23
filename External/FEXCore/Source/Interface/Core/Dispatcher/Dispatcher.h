@@ -70,7 +70,7 @@ public:
 
   void RemoveCodeBuffer(uint8_t* start);
 
-  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const;
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true, bool IncludeCompileService = true) const;
   bool IsAddressInDispatcher(uint64_t Address) const {
     return Address >= Start && Address < End;
   }

@@ -85,7 +85,6 @@ namespace FEXCore {
     SelectedThread->CPUBackend->ClearCache();
   }
 
-
   CompileService::WorkItem *CompileService::CompileCode(uint64_t RIP) {
     // Tell the worker thread to compile code for us
     WorkItem *Item = new WorkItem{};
