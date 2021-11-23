@@ -36,7 +36,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(gettimeofday, [](FEXCore::Core::CpuStateFrame *Frame, struct timeval *tv, struct timezone *tz) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_gettimeofday, tv, tz);
+      uint64_t Result = ::syscall(SYSCALL_DEF(gettimeofday), tv, tz);
       SYSCALL_ERRNO();
     });
 
@@ -56,7 +56,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(clock_nanosleep, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, int flags, const struct timespec *request, struct timespec *remain) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_clock_nanosleep, clockid, flags, request, remain);
+      uint64_t Result = ::syscall(SYSCALL_DEF(clock_nanosleep), clockid, flags, request, remain);
       SYSCALL_ERRNO();
     });
 
@@ -86,12 +86,12 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(timer_settime, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_timer_settime, timerid, flags, new_value, old_value);
+      uint64_t Result = ::syscall(SYSCALL_DEF(timer_settime), timerid, flags, new_value, old_value);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(timer_gettime, [](FEXCore::Core::CpuStateFrame *Frame, kernel_timer_t timerid, struct itimerspec *curr_value) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_timer_gettime, timerid, curr_value);
+      uint64_t Result = ::syscall(SYSCALL_DEF(timer_gettime), timerid, curr_value);
       SYSCALL_ERRNO();
     });
 
@@ -106,7 +106,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(timer_create, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, struct sigevent *sevp, kernel_timer_t *timerid) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_timer_create, clockid, sevp, timerid);
+      uint64_t Result = ::syscall(SYSCALL_DEF(timer_create), clockid, sevp, timerid);
       SYSCALL_ERRNO();
     });
   }

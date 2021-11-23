@@ -110,10 +110,12 @@ def ParseCommonArchSyscalls(Defs, DefsDict, Arch, FilePath):
             continue
 
         # Check for NR defines
-        if line.startswith("#define __NR_"):
+        if (line.startswith("#define __NR_") or
+           line.startswith("#define __NR3264_")):
             # This line is defining a syscall for us
             # eg: #define __NR_io_setup 0
             line = line.removeprefix("#define __NR_")
+            line = line.removeprefix("#define __NR3264_")
             split_text = line.split(" ")
 
             # Store this for later
@@ -125,18 +127,26 @@ def ParseCommonArchSyscalls(Defs, DefsDict, Arch, FilePath):
 
         BeginsString = ""
         # Check for __SC_COMP and __SYSCALL defines
-        if line.startswith("__SYSCALL(__NR_"):
-            BeginsString = "__SYSCALL(__NR_"
-        elif line.startswith("__SC_COMP(__NR_"):
-            BeginsString = "__SC_COMP(__NR_"
-        elif line.startswith("__SC_3264(__NR_"):
-            BeginsString = "__SC_3264(__NR_"
-        elif line.startswith("__SC_COMP_3264(__NR_"):
-            BeginsString = "__SC_COMP_3264(__NR_"
+        if line.startswith("__SYSCALL("):
+            BeginsString = "__SYSCALL("
+        elif line.startswith("__SC_COMP("):
+            BeginsString = "__SC_COMP("
+        elif line.startswith("__SC_3264("):
+            BeginsString = "__SC_3264("
+        elif line.startswith("__SC_COMP_3264("):
+            BeginsString = "__SC_COMP_3264("
         else:
             continue
 
         line = line.removeprefix(BeginsString)
+
+        if line.startswith("__NR_"):
+            BeginsString = "__NR_"
+        elif line.startswith("__NR3264_"):
+            BeginsString = "__NR3264_"
+
+        line = line.removeprefix(BeginsString)
+
         split_text = line.split(",")
 
         Name = split_text[0]

@@ -29,7 +29,7 @@ namespace FEX::HLE::x32 {
         timed_ptr = &tp64;
       }
 
-      uint64_t Result = ::syscall(SYS_mq_timedsend, mqdes, msg_ptr, msg_len, msg_prio, timed_ptr);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mq_timedsend), mqdes, msg_ptr, msg_len, msg_prio, timed_ptr);
       SYSCALL_ERRNO();
     });
 
@@ -41,17 +41,17 @@ namespace FEX::HLE::x32 {
         timed_ptr = &tp64;
       }
 
-      uint64_t Result = ::syscall(SYS_mq_timedreceive, mqdes, msg_ptr, msg_len, msg_prio, timed_ptr);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mq_timedreceive), mqdes, msg_ptr, msg_len, msg_prio, timed_ptr);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(mq_timedsend_time64, mq_timedsend, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_mq_timedsend, mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mq_timedsend), mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(mq_timedreceive_time64, mq_timedreceive, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio, const struct timespec *abs_timeout) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_mq_timedreceive, mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mq_timedreceive), mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
       SYSCALL_ERRNO();
     });
 
@@ -64,13 +64,13 @@ namespace FEX::HLE::x32 {
         HostAttr = *attr;
         HostAttr_p = &HostAttr;
       }
-      uint64_t Result = ::syscall(SYS_mq_open, name, oflag, mode, HostAttr_p);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mq_open), name, oflag, mode, HostAttr_p);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(mq_notify, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, const compat_ptr<FEX::HLE::x32::sigevent32> sevp) -> uint64_t {
       sigevent Host = *sevp;
-      uint64_t Result = ::syscall(SYS_mq_notify, mqdes, &Host);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mq_notify), mqdes, &Host);
       SYSCALL_ERRNO();
     });
 
@@ -90,7 +90,7 @@ namespace FEX::HLE::x32 {
         HostOld_p = &HostOld;
       }
 
-      uint64_t Result = ::syscall(SYS_mq_getsetattr, mqdes, HostNew_p, HostOld_p);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mq_getsetattr), mqdes, HostNew_p, HostOld_p);
 
       if (Result != 1 && oldattr) {
         *oldattr = HostOld;

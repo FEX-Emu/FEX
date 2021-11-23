@@ -108,7 +108,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(fadvise64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off_t offset, off_t len, int advice) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_fadvise64, fd, offset, len, advice);
+      uint64_t Result = ::syscall(SYSCALL_DEF(fadvise64), fd, offset, len, advice);
       SYSCALL_ERRNO();
     });
 
@@ -177,7 +177,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(fchmodat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, mode_t mode) -> uint64_t {
-      uint64_t Result = syscall(SYS_fchmodat, dirfd, pathname, mode);
+      uint64_t Result = syscall(SYSCALL_DEF(fchmodat), dirfd, pathname, mode);
       SYSCALL_ERRNO();
     });
 
@@ -233,7 +233,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(eventfd, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t count) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_eventfd2, count, 0);
+      uint64_t Result = ::syscall(SYSCALL_DEF(eventfd2), count, 0);
       SYSCALL_ERRNO();
     });
 
@@ -281,7 +281,7 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS(eventfd2, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int count, int flags) -> uint64_t {
       // Flags don't need remapped
-      uint64_t Result = ::syscall(SYS_eventfd2, count, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(eventfd2), count, flags);
       SYSCALL_ERRNO();
     });
 
@@ -293,7 +293,7 @@ namespace FEX::HLE {
 
     if (Handler->IsHostKernelVersionAtLeast(5, 3, 0)) {
       REGISTER_SYSCALL_IMPL_PASS(pidfd_open, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, unsigned int flags) -> uint64_t {
-        uint64_t Result = ::syscall(SYS_pidfd_open, pid, flags);
+        uint64_t Result = ::syscall(SYSCALL_DEF(pidfd_open), pid, flags);
         SYSCALL_ERRNO();
       });
     }
@@ -309,6 +309,46 @@ namespace FEX::HLE {
     }
     else {
       REGISTER_SYSCALL_IMPL(close_range, UnimplementedSyscallSafe);
+    }
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 13, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS(landlock_create_ruleset, [](FEXCore::Core::CpuStateFrame *Frame, void *const rule_attr, size_t size, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(landlock_create_ruleset), rule_attr, size, flags);
+        SYSCALL_ERRNO();
+      });
+      REGISTER_SYSCALL_IMPL_PASS(landlock_add_rule, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t ruleset_fd, uint64_t rule_type, void *const rule_attr, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(landlock_add_rule), ruleset_fd, rule_type, rule_attr, flags);
+        SYSCALL_ERRNO();
+      });
+      REGISTER_SYSCALL_IMPL_PASS(landlock_restrict_self, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t ruleset_fd, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(landlock_restrict_self), ruleset_fd, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(landlock_create_ruleset, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(landlock_add_rule, UnimplementedSyscallSafe);
+      REGISTER_SYSCALL_IMPL(landlock_restrict_self, UnimplementedSyscallSafe);
+    }
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 14, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS(memfd_secret, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(memfd_secret), flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(memfd_secret, UnimplementedSyscallSafe);
+    }
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 15, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS(process_mrelease, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, uint32_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(process_mrelease), pidfd, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(process_mrelease, UnimplementedSyscallSafe);
     }
   }
 }

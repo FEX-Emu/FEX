@@ -83,7 +83,7 @@ namespace FEX::HLE::x32 {
         timed_ptr = &tp64;
       }
 
-      uint64_t Result = ::syscall(SYS_ppoll,
+      uint64_t Result = ::syscall(SYSCALL_DEF(ppoll),
         fds,
         nfds,
         timed_ptr,
@@ -98,7 +98,7 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(ppoll_time64, ppoll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, struct timespec *timeout_ts, const uint64_t *sigmask, size_t sigsetsize) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_ppoll,
+      uint64_t Result = ::syscall(SYSCALL_DEF(ppoll),
         fds,
         nfds,
         timeout_ts,
@@ -357,7 +357,7 @@ namespace FEX::HLE::x32 {
       uint32_t pos_high) -> uint64_t {
       std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
-      uint64_t Result = ::syscall(SYS_preadv, fd, Host_iovec.data(), iovcnt, pos_low, pos_high);
+      uint64_t Result = ::syscall(SYSCALL_DEF(preadv), fd, Host_iovec.data(), iovcnt, pos_low, pos_high);
       SYSCALL_ERRNO();
     });
 
@@ -369,7 +369,7 @@ namespace FEX::HLE::x32 {
       uint32_t pos_high) -> uint64_t {
       std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
-      uint64_t Result = ::syscall(SYS_pwritev, fd, Host_iovec.data(), iovcnt, pos_low, pos_high);
+      uint64_t Result = ::syscall(SYSCALL_DEF(pwritev), fd, Host_iovec.data(), iovcnt, pos_low, pos_high);
       SYSCALL_ERRNO();
     });
 
@@ -398,7 +398,7 @@ namespace FEX::HLE::x32 {
       int flags) -> uint64_t {
       std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
-      uint64_t Result = ::syscall(SYS_preadv2, fd, Host_iovec.data(), iovcnt, pos_low, pos_high, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(preadv2), fd, Host_iovec.data(), iovcnt, pos_low, pos_high, flags);
       SYSCALL_ERRNO();
     });
 
@@ -411,7 +411,7 @@ namespace FEX::HLE::x32 {
       int flags) -> uint64_t {
       std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
-      uint64_t Result = ::syscall(SYS_pwritev2, fd, Host_iovec.data(),iovcnt, pos_low, pos_high, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(pwritev2), fd, Host_iovec.data(),iovcnt, pos_low, pos_high, flags);
       SYSCALL_ERRNO();
     });
 
@@ -458,7 +458,7 @@ namespace FEX::HLE::x32 {
         Offset += Incoming->d_reclen;
       }
 
-      uint64_t Result = syscall(SYS_getdents,
+      uint64_t Result = syscall(SYSCALL_DEF(getdents),
         static_cast<uint64_t>(fd),
         TmpPtr,
         static_cast<uint64_t>(count));
@@ -499,7 +499,7 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(getdents64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_getdents64,
+      uint64_t Result = ::syscall(SYSCALL_DEF(getdents64),
         static_cast<uint64_t>(fd),
         dirp,
         static_cast<uint64_t>(count));

@@ -69,12 +69,12 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(capget, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_capget, hdrp, datap);
+      uint64_t Result = ::syscall(SYSCALL_DEF(capget), hdrp, datap);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(capset, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, const cap_user_data_t datap) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_capset, hdrp, datap);
+      uint64_t Result = ::syscall(SYSCALL_DEF(capset), hdrp, datap);
       SYSCALL_ERRNO();
     });
 
@@ -82,7 +82,7 @@ namespace FEX::HLE {
       uint32_t LocalCPU{};
       uint32_t LocalNode{};
       // tcache is ignored
-      uint64_t Result = ::syscall(SYS_getcpu, cpu ? &LocalCPU : nullptr, node ? &LocalNode : nullptr, nullptr);
+      uint64_t Result = ::syscall(SYSCALL_DEF(getcpu), cpu ? &LocalCPU : nullptr, node ? &LocalNode : nullptr, nullptr);
       if (Result == 0) {
         if (cpu) {
           // Ensure we don't return a number over our number of emulated cores
@@ -99,7 +99,7 @@ namespace FEX::HLE {
 
     //compare  two  processes  to determine if they share a kernel resource
     REGISTER_SYSCALL_IMPL_PASS(kcmp, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid1, pid_t pid2, int type, unsigned long idx1, unsigned long idx2) -> uint64_t {
-      uint64_t Result = ::syscall(SYS_kcmp, pid1, pid2, type, idx1, idx2);
+      uint64_t Result = ::syscall(SYSCALL_DEF(kcmp), pid1, pid2, type, idx1, idx2);
       SYSCALL_ERRNO();
     });
 

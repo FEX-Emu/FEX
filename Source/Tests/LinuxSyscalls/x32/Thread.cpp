@@ -135,7 +135,7 @@ namespace FEX::HLE::x32 {
         timeout_ptr = &tp64;
       }
 
-      uint64_t Result = syscall(SYS_futex,
+      uint64_t Result = syscall(SYSCALL_DEF(futex),
         uaddr,
         futex_op,
         val,
@@ -324,7 +324,7 @@ namespace FEX::HLE::x32 {
         usage64_p = &usage64;
       }
 
-      uint64_t Result = ::syscall(SYS_waitid, which, upid, infop, options, usage64_p);
+      uint64_t Result = ::syscall(SYSCALL_DEF(waitid), which, upid, infop, options, usage64_p);
 
       if (rusage) {
         *rusage = usage64;
@@ -334,7 +334,7 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(futex_time64, futex, [](FEXCore::Core::CpuStateFrame *Frame, int *uaddr, int futex_op, int val, const struct timespec *timeout, int *uaddr2, uint32_t val3) -> uint64_t {
-      uint64_t Result = syscall(SYS_futex,
+      uint64_t Result = syscall(SYSCALL_DEF(futex),
         uaddr,
         futex_op,
         val,
