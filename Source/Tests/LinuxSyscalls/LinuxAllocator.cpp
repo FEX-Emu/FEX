@@ -387,7 +387,7 @@ void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_s
   // First, try and allocate a region the size of the new size
   void *MappedPtr = this->mmap(nullptr, new_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   std::scoped_lock<std::mutex> lk{AllocMutex};
-  if (reinterpret_cast<uintptr_t>(MappedPtr) > -4096) {
+  if (FEX::HLE::HasSyscallError(MappedPtr)) {
     // Couldn't find a region that fit our space
     return MappedPtr;
   }
