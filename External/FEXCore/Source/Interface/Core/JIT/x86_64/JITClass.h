@@ -9,8 +9,6 @@ $end_info$
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
-#include "Common/MathUtils.h"
-
 #define XBYAK64
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
@@ -20,6 +18,7 @@ using namespace Xbyak;
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <tuple>

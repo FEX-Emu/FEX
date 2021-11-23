@@ -4,18 +4,17 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "Common/MathUtils.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/IoctlEmulation.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/SyscallsEnum.h"
 
-#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <bitset>
+#include <cerrno>
 #include <cstdint>
-#include <errno.h>
 #include <limits>
 #include <map>
 #include <mutex>

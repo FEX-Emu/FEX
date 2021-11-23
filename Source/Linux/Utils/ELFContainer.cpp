@@ -5,9 +5,9 @@ desc: Loads and parses an elf to memory. Also handles some loading & logic.
 $end_info$
 */
 
-#include "Common/MathUtils.h"
 #include "Linux/Utils/ELFContainer.h"
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <algorithm>
 #include <cstring>
@@ -357,7 +357,7 @@ void ELFContainer::CalculateMemoryLayouts() {
   }
 
   // Calculate BRK
-  MaxPhysAddr = AlignUp(MaxPhysAddr, 4096);
+  MaxPhysAddr = FEXCore::AlignUp(MaxPhysAddr, 4096);
   BRKBase = MaxPhysAddr;
   MaxPhysAddr += BRKSize;
 

@@ -4,8 +4,6 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "Common/MathUtils.h"
-
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/IoctlEmulation.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
@@ -16,6 +14,7 @@ $end_info$
 
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <algorithm>
 #include <bits/types/struct_iovec.h>
@@ -531,7 +530,7 @@ namespace FEX::HLE::x32 {
       FD_ZERO(&Host_exceptfds);
 
       // Round up to the full 32bit word
-      uint32_t NumWords = AlignUp(nfds, 32) / 4;
+      uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
 
       if (readfds) {
         for (int i = 0; i < NumWords; ++i) {
@@ -627,7 +626,7 @@ namespace FEX::HLE::x32 {
       sigemptyset(&HostSet);
 
       // Round up to the full 32bit word
-      uint32_t NumWords = AlignUp(nfds, 32) / 4;
+      uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
 
       if (readfds) {
         for (int i = 0; i < NumWords; ++i) {
@@ -786,7 +785,7 @@ namespace FEX::HLE::x32 {
       sigemptyset(&HostSet);
 
       // Round up to the full 32bit word
-      uint32_t NumWords = AlignUp(nfds, 32) / 4;
+      uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
 
       if (readfds) {
         for (int i = 0; i < NumWords; ++i) {

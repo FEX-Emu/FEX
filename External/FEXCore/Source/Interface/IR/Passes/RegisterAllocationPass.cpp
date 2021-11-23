@@ -4,8 +4,6 @@ tags: ir|opts
 $end_info$
 */
 
-#include <FEXCore/Utils/BucketList.h>
-#include "Common/MathUtils.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include <FEXCore/Core/CoreState.h>
@@ -14,13 +12,15 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
+#include <FEXCore/Utils/BucketList.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <set>
-#include <stddef.h>
-#include <string.h>
 #include <strings.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -142,7 +142,7 @@ namespace {
   }
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount) {
-    NodeCount = AlignUp(NodeCount, REGISTER_NODES_PER_PAGE);
+    NodeCount = FEXCore::AlignUp(NodeCount, REGISTER_NODES_PER_PAGE);
 
     // Clear to free the Bucketlists which have unique_ptrs
     // Resize to our correct size
@@ -734,7 +734,8 @@ namespace FEXCore::IR {
       RegisterNode *Node = &Graph->Nodes[Node1];
       uint32_t NewListMax = Node->Head.InterferenceCount + MaxNewNodes;
       if (Node->InterferenceListSize <= NewListMax) {
-        Node->InterferenceListSize = std::max(Node->InterferenceListSize * 2U, (uint32_t)AlignUp(NewListMax, DEFAULT_INTERFERENCE_LIST_COUNT));
+        const auto AlignedListCount = static_cast<uint32_t>(FEXCore::AlignUp(NewListMax, DEFAULT_INTERFERENCE_LIST_COUNT));
+        Node->InterferenceListSize = std::max(Node->InterferenceListSize * 2U, AlignedListCount);
         Node->InterferenceList = reinterpret_cast<uint32_t*>(realloc(Node->InterferenceList, Node->InterferenceListSize * sizeof(uint32_t)));
       }
     };

@@ -5,17 +5,17 @@ desc: Part of our now defunct ld-linux replacement, keeps tracks of all symbols,
 $end_info$
 */
 
-#include "Common/MathUtils.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
+#include <cstdlib>
 #include <cstring>
 #include <elf.h>
 #include <set>
 #include <sstream>
-#include <stdlib.h>
 #include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -152,7 +152,7 @@ void ELFSymbolDatabase::FillMemoryLayouts(uint64_t DefinedBase) {
     LocalInfo.CustomLayout = File->GetLayout();
     uint64_t CurrentELFBase = std::get<0>(LocalInfo.CustomLayout);
     uint64_t CurrentELFEnd = std::get<1>(LocalInfo.CustomLayout);
-    uint64_t CurrentELFAlignedSize = AlignUp(std::get<2>(LocalInfo.CustomLayout), 4096);
+    uint64_t CurrentELFAlignedSize = FEXCore::AlignUp(std::get<2>(LocalInfo.CustomLayout), 4096);
 
     CurrentELFBase += ELFBases;
     CurrentELFEnd += ELFBases;
@@ -168,7 +168,7 @@ void ELFSymbolDatabase::FillMemoryLayouts(uint64_t DefinedBase) {
   else {
     LocalInfo.CustomLayout = File->GetLayout();
     uint64_t CurrentELFBase = std::get<0>(LocalInfo.CustomLayout);
-    uint64_t CurrentELFAlignedSize = AlignUp(std::get<2>(LocalInfo.CustomLayout), 4096);
+    uint64_t CurrentELFAlignedSize = FEXCore::AlignUp(std::get<2>(LocalInfo.CustomLayout), 4096);
     if (CurrentELFBase < 0x10000) {
       // We can't allocate memory in the first 16KB,  Hopefully no elfs require this.
       LOGMAN_MSG_A_FMT("Elf requires memory mapped in the first 16kb");
@@ -185,7 +185,7 @@ void ELFSymbolDatabase::FillMemoryLayouts(uint64_t DefinedBase) {
 
     uint64_t CurrentELFBase = std::get<0>(Layout);
     uint64_t CurrentELFEnd = std::get<1>(Layout);
-    uint64_t CurrentELFAlignedSize = AlignUp(std::get<2>(Layout), 4096);
+    uint64_t CurrentELFAlignedSize = FEXCore::AlignUp(std::get<2>(Layout), 4096);
 
     CurrentELFBase += ELFBases;
     CurrentELFEnd += ELFBases;

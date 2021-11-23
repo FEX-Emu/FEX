@@ -3,6 +3,8 @@
 #include "FlexBitSet.h"
 #include "HostAllocator.h"
 
+#include <FEXCore/Utils/MathUtils.h>
+
 #include <bitset>
 #include <cstddef>
 #include <memory_resource>
@@ -36,7 +38,7 @@ namespace Alloc {
 
   private:
     void *do_allocate(std::size_t bytes, std::size_t alignment) override {
-      size_t PreviousAligned = Alloc::AlignUp(LastAllocation, alignment);
+      size_t PreviousAligned = FEXCore::AlignUp(LastAllocation, alignment);
       size_t NewOffset = PreviousAligned + bytes;
 
       if (NewOffset > Size) {
@@ -72,7 +74,7 @@ namespace Alloc {
       : Begin {reinterpret_cast<uintptr_t>(Ptr)}
       , Size {_Size} {
       uint64_t NumberOfPages = _Size / PAGE_SIZE;
-      uint64_t UsedBits = Alloc::AlignUp(sizeof(IntrusiveArenaAllocator) +
+      uint64_t UsedBits = FEXCore::AlignUp(sizeof(IntrusiveArenaAllocator) +
         Size / PAGE_SIZE / 8, PAGE_SIZE);
       for (size_t i = 0; i < UsedBits; ++i) {
         UsedPages.Set(i);
@@ -101,7 +103,7 @@ namespace Alloc {
     void *do_allocate(std::size_t bytes, std::size_t alignment) override {
       std::scoped_lock<std::mutex> lk{AllocationMutex};
 
-      size_t NumberPages = Alloc::AlignUp(bytes, PAGE_SIZE) / PAGE_SIZE;
+      size_t NumberPages = FEXCore::AlignUp(bytes, PAGE_SIZE) / PAGE_SIZE;
 
       uintptr_t AllocatedOffset{};
 
@@ -155,7 +157,7 @@ namespace Alloc {
       std::scoped_lock<std::mutex> lk{AllocationMutex};
 
       uintptr_t PageOffset = (reinterpret_cast<uintptr_t>(p) - Begin) / PAGE_SIZE;
-      size_t NumPages = AlignUp(bytes, PAGE_SIZE) / PAGE_SIZE;
+      size_t NumPages = FEXCore::AlignUp(bytes, PAGE_SIZE) / PAGE_SIZE;
 
       // Walk the allocation list and deallocate
       uint64_t FreedPages{};
@@ -181,6 +183,6 @@ namespace Alloc {
     std::mutex AllocationMutex{};
     // For up to 64GB regions this will require up to 2MB tracking
     // Needs to be the last element
-    FlexBitSet<uint64_t> UsedPages;
+    FEXCore::FlexBitSet<uint64_t> UsedPages;
   };
 }

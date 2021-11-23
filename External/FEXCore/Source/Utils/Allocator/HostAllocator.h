@@ -8,10 +8,6 @@
 constexpr static uint64_t PAGE_SIZE = 4096;
 
 namespace Alloc {
-static inline uint64_t AlignUp(uint64_t value, uint64_t size) {
-  return value + (size - value % size) % size;
-};
-
   // HostAllocator is just a page pased slab allocator
   // Similar to mmap and munmap only mapping at the page level
   class HostAllocator {
