@@ -42,4 +42,13 @@ namespace FEXCore::Threads {
   void *AllocateStackObject(size_t Size);
   void DeallocateStackObject(void *Ptr, size_t Size);
   void Shutdown();
+
+  /**
+   * @brief Sets the calling thread's signal mask to the one provided
+   *
+   * @param Mask The new 64-bit signal mask to set
+   *
+   * @return The previous signal mask
+   */
+  uint64_t SetSignalMask(uint64_t Mask);
 }
