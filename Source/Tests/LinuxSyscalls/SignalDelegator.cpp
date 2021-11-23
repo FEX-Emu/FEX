@@ -456,9 +456,14 @@ namespace FEX::HLE {
   }
 
   uint64_t SignalDelegator::GuestSigProcMask(int how, const uint64_t *set, uint64_t *oldset) {
-    if (!!oldset) {
-      *oldset = ThreadData.CurrentSignalMask.Val;
-    }
+    // The order in which we handle signal mask setting is important here
+    // old and new can point to the same location in memory.
+    // Even if the pointers are to same memory location, we must store the original signal mask
+    // coming in to the syscall.
+    // 1) Store old mask
+    // 2) Set mask to new mask if exists
+    // 3) Give old mask back
+    auto OldSet = ThreadData.CurrentSignalMask.Val;
 
     if (!!set) {
       uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
@@ -486,6 +491,10 @@ namespace FEX::HLE {
       }
 
       ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &HostMask, nullptr, 8);
+    }
+
+    if (!!oldset) {
+      *oldset = OldSet;
     }
 
     CheckForPendingSignals(GetTLSThread());
