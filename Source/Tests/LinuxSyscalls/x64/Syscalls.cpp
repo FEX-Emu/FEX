@@ -28,18 +28,20 @@ namespace FEX::HLE::x64 {
   void RegisterTime();
   void RegisterNotImplemented();
 
-  std::map<int, const char*> SyscallNames = {
-    #include "SyscallsNames.inl"
-  };
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  [[nodiscard]] static const char* GetSyscallName(int SyscallNumber) {
+    static const std::map<int, const char*> SyscallNames = {
+      #include "SyscallsNames.inl"
+    };
 
-  const char* GetSyscallName(int SyscallNumber) {
-    const char* name = "[unknown syscall]";
+    const auto EntryIter = SyscallNames.find(SyscallNumber);
+    if (EntryIter == SyscallNames.cend()) {
+      return "[unknown syscall]";
+    }
 
-    if (SyscallNames.count(SyscallNumber))
-      name = SyscallNames[SyscallNumber];
-
-    return name;
+    return EntryIter->second;
   }
+#endif
 
   struct InternalSyscallDefinition {
     int SyscallNumber;
