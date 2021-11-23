@@ -10,6 +10,10 @@
         "/usr/lib/x86_64-linux-gnu/libGL.so.1",
         "/usr/lib/x86_64-linux-gnu/libGL.so.1.2.0",
         "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGL.so",
+        "/usr/local/lib/x86_64-linux-gnu/libGL.so.1",
+        "/usr/local/lib/x86_64-linux-gnu/libGL.so.1.2.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGL.so.1.7.0",
         "/lib/x86_64-linux-gnu/libGL.so",
         "/lib/x86_64-linux-gnu/libGL.so.1",
         "/lib/x86_64-linux-gnu/libGL.so.1.2.0",
@@ -25,6 +29,9 @@
         "/usr/lib/x86_64-linux-gnu/libGLESv2.so",
         "/usr/lib/x86_64-linux-gnu/libGLESv2.so.2",
         "/usr/lib/x86_64-linux-gnu/libGLESv2.so.2.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv2.so",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv2.so.2",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv2.so.2.0.0",
         "/lib/x86_64-linux-gnu/libGLESv2.so",
         "/lib/x86_64-linux-gnu/libGLESv2.so.2",
         "/lib/x86_64-linux-gnu/libGLESv2.so.2.0.0"
@@ -36,6 +43,9 @@
         "/usr/lib/x86_64-linux-gnu/libX11.so",
         "/usr/lib/x86_64-linux-gnu/libX11.so.6",
         "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0",
+        "/usr/local/lib/x86_64-linux-gnu/libX11.so",
+        "/usr/local/lib/x86_64-linux-gnu/libX11.so.6",
+        "/usr/local/lib/x86_64-linux-gnu/libX11.so.6.4.0",
         "/lib/x86_64-linux-gnu/libX11.so",
         "/lib/x86_64-linux-gnu/libX11.so.6",
         "/lib/x86_64-linux-gnu/libX11.so.6.4.0"
@@ -48,6 +58,7 @@
       ],
       "Overlay": [
         "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so",
+        "/usr/local/lib/x86_64-linux-gnu/libvulkan_radeon.so",
         "/lib/x86_64-linux-gnu/libvulkan_radeon.so"
       ],
       "Comment": [
@@ -61,6 +72,7 @@
       ],
       "Overlay": [
         "/usr/lib/x86_64-linux-gnu/libvulkan_lvp.so",
+        "/usr/local/lib/x86_64-linux-gnu/libvulkan_lvp.so",
         "/lib/x86_64-linux-gnu/libvulkan_lvp.so"
       ]
     },
@@ -71,6 +83,7 @@
       ],
       "Overlay": [
         "/usr/lib/x86_64-linux-gnu/libvulkan_freedreno.so",
+        "/usr/local/lib/x86_64-linux-gnu/libvulkan_freedreno.so",
         "/lib/x86_64-linux-gnu/libvulkan_freedreno.so"
       ]
     },
@@ -81,6 +94,7 @@
       ],
       "Overlay": [
         "/usr/lib/x86_64-linux-gnu/libvulkan_intel.so",
+        "/usr/local/lib/x86_64-linux-gnu/libvulkan_intel.so",
         "/lib/x86_64-linux-gnu/libvulkan_intel.so"
       ]
     },
@@ -91,6 +105,7 @@
       ],
       "Overlay": [
         "/usr/lib/x86_64-linux-gnu/libvulkan_panfrost.so",
+        "/usr/local/lib/x86_64-linux-gnu/libvulkan_panfrost.so",
         "/lib/x86_64-linux-gnu/libvulkan_panfrost.so"
       ]
     },
@@ -101,6 +116,7 @@
       ],
       "Overlay": [
         "/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGLX_nvidia.so.0",
         "/lib/x86_64-linux-gnu/libGLX_nvidia.so.0"
       ],
       "Comment": [
@@ -114,6 +130,7 @@
       ],
       "Overlay": [
         "/usr/lib/x86_64-linux-gnu/libvulkan_virtio.so",
+        "/usr/local/lib/x86_64-linux-gnu/libvulkan_virtio.so",
         "/lib/x86_64-linux-gnu/libvulkan_virtio.so"
       ]
     },
@@ -123,6 +140,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb.so",
         "/usr/lib/x86_64-linux-gnu/libxcb.so.1",
         "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb.so.1",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb.so.1.1.0",
         "/lib/x86_64-linux-gnu/libxcb.so",
         "/lib/x86_64-linux-gnu/libxcb.so.1",
         "/lib/x86_64-linux-gnu/libxcb.so.1.1.0"
@@ -134,6 +154,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb-dri2.so",
         "/usr/lib/x86_64-linux-gnu/libxcb-dri2.so.0",
         "/usr/lib/x86_64-linux-gnu/libxcb-dri2.so.0.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-dri2.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-dri2.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-dri2.so.0.0.0",
         "/lib/x86_64-linux-gnu/libxcb-dri2.so",
         "/lib/x86_64-linux-gnu/libxcb-dri2.so.0",
         "/lib/x86_64-linux-gnu/libxcb-dri2.so.0.0.0"
@@ -145,6 +168,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb-dri3.so",
         "/usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0",
         "/usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-dri3.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-dri3.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-dri3.so.0.0.0",
         "/lib/x86_64-linux-gnu/libxcb-dri3.so",
         "/lib/x86_64-linux-gnu/libxcb-dri3.so.0",
         "/lib/x86_64-linux-gnu/libxcb-dri3.so.0.0.0"
@@ -156,6 +182,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb-xfixes.so",
         "/usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0",
         "/usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-xfixes.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-xfixes.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0",
         "/lib/x86_64-linux-gnu/libxcb-xfixes.so",
         "/lib/x86_64-linux-gnu/libxcb-xfixes.so.0",
         "/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0"
@@ -167,6 +196,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb-shm.so",
         "/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0",
         "/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-shm.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-shm.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-shm.so.0.0.0",
         "/lib/x86_64-linux-gnu/libxcb-shm.so",
         "/lib/x86_64-linux-gnu/libxcb-shm.so.0",
         "/lib/x86_64-linux-gnu/libxcb-shm.so.0.0.0"
@@ -178,6 +210,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb-sync.so",
         "/usr/lib/x86_64-linux-gnu/libxcb-sync.so.1",
         "/usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-sync.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-sync.so.1",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0",
         "/lib/x86_64-linux-gnu/libxcb-sync.so",
         "/lib/x86_64-linux-gnu/libxcb-sync.so.1",
         "/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0"
@@ -189,6 +224,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb-randr.so",
         "/usr/lib/x86_64-linux-gnu/libxcb-randr.so.0",
         "/usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-randr.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-randr.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0",
         "/lib/x86_64-linux-gnu/libxcb-randr.so",
         "/lib/x86_64-linux-gnu/libxcb-randr.so.0",
         "/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0"
@@ -200,6 +238,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb-present.so",
         "/usr/lib/x86_64-linux-gnu/libxcb-present.so.0",
         "/usr/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-present.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-present.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0",
         "/lib/x86_64-linux-gnu/libxcb-present.so",
         "/lib/x86_64-linux-gnu/libxcb-present.so.0",
         "/lib/x86_64-linux-gnu/libxcb-present.so.0.0.0"
@@ -211,6 +252,9 @@
         "/usr/lib/x86_64-linux-gnu/libxcb-glx.so",
         "/usr/lib/x86_64-linux-gnu/libxcb-glx.so.0",
         "/usr/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-glx.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-glx.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0",
         "/lib/x86_64-linux-gnu/libxcb-glx.so",
         "/lib/x86_64-linux-gnu/libxcb-glx.so.0",
         "/lib/x86_64-linux-gnu/libxcb-glx.so.0.0.0"
@@ -222,6 +266,9 @@
         "/usr/lib/x86_64-linux-gnu/libxshmfence.so",
         "/usr/lib/x86_64-linux-gnu/libxshmfence.so.1",
         "/usr/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libxshmfence.so",
+        "/usr/local/lib/x86_64-linux-gnu/libxshmfence.so.1",
+        "/usr/local/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0",
         "/lib/x86_64-linux-gnu/libxshmfence.so",
         "/lib/x86_64-linux-gnu/libxshmfence.so.1",
         "/lib/x86_64-linux-gnu/libxshmfence.so.1.0.0"
@@ -233,6 +280,9 @@
         "/usr/lib/x86_64-linux-gnu/libdrm.so",
         "/usr/lib/x86_64-linux-gnu/libdrm.so.2",
         "/usr/lib/x86_64-linux-gnu/libdrm.so.2.4.0",
+        "/usr/local/lib/x86_64-linux-gnu/libdrm.so",
+        "/usr/local/lib/x86_64-linux-gnu/libdrm.so.2",
+        "/usr/local/lib/x86_64-linux-gnu/libdrm.so.2.4.0",
         "/lib/x86_64-linux-gnu/libdrm.so",
         "/lib/x86_64-linux-gnu/libdrm.so.2",
         "/lib/x86_64-linux-gnu/libdrm.so.2.4.0"
@@ -244,6 +294,9 @@
         "/usr/lib/x86_64-linux-gnu/libasound.so",
         "/usr/lib/x86_64-linux-gnu/libasound.so.2",
         "/usr/lib/x86_64-linux-gnu/libasound.so.2.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libasound.so",
+        "/usr/local/lib/x86_64-linux-gnu/libasound.so.2",
+        "/usr/local/lib/x86_64-linux-gnu/libasound.so.2.0.0",
         "/lib/x86_64-linux-gnu/libasound.so",
         "/lib/x86_64-linux-gnu/libasound.so.2",
         "/lib/x86_64-linux-gnu/libasound.so.2.0.0"
@@ -255,6 +308,9 @@
         "/usr/lib/x86_64-linux-gnu/libXrender.so",
         "/usr/lib/x86_64-linux-gnu/libXrender.so.1",
         "/usr/lib/x86_64-linux-gnu/libXrender.so.1.3.0",
+        "/usr/local/lib/x86_64-linux-gnu/libXrender.so",
+        "/usr/local/lib/x86_64-linux-gnu/libXrender.so.1",
+        "/usr/local/lib/x86_64-linux-gnu/libXrender.so.1.3.0",
         "/lib/x86_64-linux-gnu/libXrender.so",
         "/lib/x86_64-linux-gnu/libXrender.so.1",
         "/lib/x86_64-linux-gnu/libXrender.so.1.3.0"
@@ -266,6 +322,9 @@
         "/usr/lib/x86_64-linux-gnu/libXext.so",
         "/usr/lib/x86_64-linux-gnu/libXext.so.6",
         "/usr/lib/x86_64-linux-gnu/libXext.so.6.4.0",
+        "/usr/local/lib/x86_64-linux-gnu/libXext.so",
+        "/usr/local/lib/x86_64-linux-gnu/libXext.so.6",
+        "/usr/local/lib/x86_64-linux-gnu/libXext.so.6.4.0",
         "/lib/x86_64-linux-gnu/libXext.so",
         "/lib/x86_64-linux-gnu/libXext.so.6",
         "/lib/x86_64-linux-gnu/libXext.so.6.4.0"
@@ -277,6 +336,9 @@
         "/usr/lib/x86_64-linux-gnu/libXfixes.so",
         "/usr/lib/x86_64-linux-gnu/libXfixes.so.3",
         "/usr/lib/x86_64-linux-gnu/libXfixes.so.3.1.0",
+        "/usr/local/lib/x86_64-linux-gnu/libXfixes.so",
+        "/usr/local/lib/x86_64-linux-gnu/libXfixes.so.3",
+        "/usr/local/lib/x86_64-linux-gnu/libXfixes.so.3.1.0",
         "/lib/x86_64-linux-gnu/libXfixes.so",
         "/lib/x86_64-linux-gnu/libXfixes.so.3",
         "/lib/x86_64-linux-gnu/libXfixes.so.3.1.0"
