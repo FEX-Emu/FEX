@@ -9,8 +9,8 @@ $end_info$
 
 #include <alloca.h>
 #include <fmt/format.h>
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -20,30 +20,6 @@ namespace Throw {
 std::vector<ThrowHandler> Handlers;
 void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
 void UnInstallHandlers() { Handlers.clear(); }
-
-[[noreturn]] void M(const char *fmt, va_list args) {
-  size_t MsgSize = 1024;
-  char *Buffer = reinterpret_cast<char*>(alloca(MsgSize));
-  va_list argsCopy;
-  va_copy(argsCopy, args);
-  size_t Return = vsnprintf(Buffer, MsgSize, fmt, argsCopy);
-  va_end(argsCopy);
-  if (Return >= MsgSize) {
-    // Allocate a bigger size on failure
-    MsgSize = Return;
-    Buffer = reinterpret_cast<char*>(alloca(MsgSize));
-    va_end(argsCopy);
-    va_copy(argsCopy, args);
-    vsnprintf(Buffer, MsgSize, fmt, argsCopy);
-    va_end(argsCopy);
-  }
-
-  for (auto &Handler : Handlers) {
-    Handler(Buffer);
-  }
-
-  FEX_TRAP_EXECUTION;
-}
 
 void MFmt(const char *fmt, const fmt::format_args& args) {
   auto msg = fmt::vformat(fmt, args);
@@ -61,7 +37,7 @@ std::vector<MsgHandler> Handlers;
 void InstallHandler(MsgHandler Handler) { Handlers.emplace_back(Handler); }
 void UnInstallHandlers() { Handlers.clear(); }
 
-void M(DebugLevels Level, const char *fmt, va_list args) {
+static void M(DebugLevels Level, const char *fmt, va_list args) {
   size_t MsgSize = 1024;
   char *Buffer = reinterpret_cast<char*>(alloca(MsgSize));
   va_list argsCopy;
@@ -80,6 +56,17 @@ void M(DebugLevels Level, const char *fmt, va_list args) {
   for (auto &Handler : Handlers) {
     Handler(Level, Buffer);
   }
+}
+
+void D(const char *fmt, ...) {
+  if (MSG_LEVEL < DEBUG) {
+    return;
+  }
+
+  va_list args;
+  va_start(args, fmt);
+  M(DEBUG, fmt, args);
+  va_end(args);
 }
 
 void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args) {

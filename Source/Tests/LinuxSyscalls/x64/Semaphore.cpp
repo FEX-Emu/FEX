@@ -79,8 +79,9 @@ namespace FEX::HLE::x64 {
         case GETVAL:
           Result = ::semctl(semid, semnum, cmd, semun);
           break;
-        default: LOGMAN_MSG_A("Unhandled semctl cmd: %d", cmd); return -EINVAL; break;
-
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled semctl cmd: {}", cmd);
+          return -EINVAL;
       }
       SYSCALL_ERRNO();
     });

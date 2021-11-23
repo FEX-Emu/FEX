@@ -24,33 +24,33 @@ public:
 };
 
 bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) {
-  bool rv = false;
-  auto begin = offsetof(FEXCore::Core::CPUState, gregs[0]);
-  auto end = offsetof(FEXCore::Core::CPUState, gregs[17]);
+  const auto begin = offsetof(FEXCore::Core::CPUState, gregs[0]);
+  const auto end = offsetof(FEXCore::Core::CPUState, gregs[17]);
 
   if (Offset >= begin && Offset < end) {
-    auto reg = (Offset - begin) / 8;
-    LOGMAN_THROW_A(Class == IR::GPRClass, "unexpected Class %d", Class);
+    const auto reg = (Offset - begin) / 8;
+    LOGMAN_THROW_A_FMT(Class == IR::GPRClass, "unexpected Class {}", Class);
 
-    rv = reg < 16; // 0..15 -> 16 in total
+    // 0..15 -> 16 in total
+    return reg < 16;
   }
 
-  return rv;
+  return false;
 }
 
 bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) {
-  bool rv = false;
-  auto begin = offsetof(FEXCore::Core::CPUState, xmm[0][0]);
-  auto end = offsetof(FEXCore::Core::CPUState, xmm[17][0]);
+  const auto begin = offsetof(FEXCore::Core::CPUState, xmm[0][0]);
+  const auto end = offsetof(FEXCore::Core::CPUState, xmm[17][0]);
 
   if (Offset >= begin && Offset < end) {
-    auto reg = (Offset - begin)/16;
-    LOGMAN_THROW_A(Class == IR::FPRClass || (AllowGpr && Class == IR::GPRClass), "unexpected Class %d, AllowGpr %d", Class, AllowGpr);
+    const auto reg = (Offset - begin) / 16;
+    LOGMAN_THROW_A_FMT(Class == IR::FPRClass || (AllowGpr && Class == IR::GPRClass), "unexpected Class {}, AllowGpr {}", Class, AllowGpr);
 
-    rv = reg < 16; // 0..15 -> 16 in total
+    // 0..15 -> 16 in total
+    return reg < 16;
   }
 
-  return rv;
+  return false;
 }
 /**
  * @brief This pass replaces Load/Store Context with Load/Store Register for Statically Mapped registers. It also does some validation.

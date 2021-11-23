@@ -192,7 +192,7 @@ Decoder::~Decoder() {
 
 uint8_t Decoder::ReadByte() {
   uint8_t Byte = InstStream[InstructionSize];
-  LOGMAN_THROW_A(InstructionSize < MAX_INST_SIZE, "Max instruction size exceeded!");
+  LOGMAN_THROW_A_FMT(InstructionSize < MAX_INST_SIZE, "Max instruction size exceeded!");
   Instruction[InstructionSize] = Byte;
   InstructionSize++;
   return Byte;
@@ -209,7 +209,7 @@ uint64_t Decoder::ReadData(uint8_t Size) {
   }
 
   if (Size > sizeof(uint64_t)) {
-    LOGMAN_MSG_A("Unknown data size to read");
+    LOGMAN_MSG_A_FMT("Unknown data size to read");
     return 0;
   }
 
@@ -351,10 +351,9 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     Operand->Data.SIB.Index = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X ? 1 : 0, SIB.index, false, false, false, false, 0b100);
     Operand->Data.SIB.Base  = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, SIB.base, false, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
 
-    uint64_t Literal {0};
-    LOGMAN_THROW_A(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
+    LOGMAN_THROW_A_FMT(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
 
-    Literal = ReadData(Displacement);
+    uint64_t Literal = ReadData(Displacement);
     if (Displacement == 1) {
       Literal = static_cast<int8_t>(Literal);
     }
@@ -364,8 +363,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     // Explained in Table 1-14. "Operand Addressing Using ModRM and SIB Bytes"
     if (ModRM.rm == 0b101) {
       // 32bit Displacement
-      uint32_t Literal;
-      Literal = ReadData(4);
+      const uint32_t Literal = ReadData(4);
 
       Operand->Type = DecodedOperand::OpType::RIPRelative;
       Operand->Data.RIPLiteral.Value.u = Literal;
@@ -378,8 +376,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
   }
   else {
     uint8_t DisplacementSize = ModRM.mod == 1 ? 1 : 4;
-    uint32_t Literal{};
-    Literal = ReadData(DisplacementSize);
+    uint32_t Literal = ReadData(DisplacementSize);
     if (DisplacementSize == 1) {
       Literal = static_cast<int8_t>(Literal);
     }
@@ -397,22 +394,22 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
 
   // XXX: Once we support 32bit x86 then this will be necessary to support
   if (Info->Type == FEXCore::X86Tables::TYPE_LEGACY_PREFIX) {
-    LogMan::Msg::D("Legacy Prefix");
+    LogMan::Msg::DFmt("Legacy Prefix");
     return false;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
-    LogMan::Msg::D("Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+    LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name, Op, DecodeInst->PC);
     return false;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
-    LogMan::Msg::D("Invalid or Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+    LogMan::Msg::DFmt("Invalid or Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name, Op, DecodeInst->PC);
     return false;
   }
 
-  LOGMAN_THROW_A(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P),
-    "Group Ops should have been decoded before this!");
+  LOGMAN_THROW_A_FMT(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P),
+                     "Group Ops should have been decoded before this!");
 
   uint8_t DestSize{};
   const bool HasWideningDisplacement = (FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST) != 0 ||
@@ -535,7 +532,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   }
 
   if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_REX_IN_BYTE)) {
-    LOGMAN_THROW_A(!HasMODRM, "This instruction shouldn't have ModRM!");
+    LOGMAN_THROW_A_FMT(!HasMODRM, "This instruction shouldn't have ModRM!");
 
     // If the REX is in the byte that means the lower nibble of the OP contains the destination GPR
     // This also means that the destination is always a GPR on these ones
@@ -641,7 +638,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   }
 
   if (Bytes != 0) {
-    LOGMAN_THROW_A(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
+    LOGMAN_THROW_A_FMT(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
 
     DecodeInst->Src[CurrentSrc].Data.Literal.Size = Bytes;
 
@@ -666,7 +663,8 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
     DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal;
   }
 
-  LOGMAN_THROW_A(Bytes == 0, "Inst at 0x%lx: 0x%04x '%s' Had an instruction of size %d with %d remaining", DecodeInst->PC, DecodeInst->OP, DecodeInst->TableInfo->Name, InstructionSize, Bytes);
+  LOGMAN_THROW_A_FMT(Bytes == 0, "Inst at 0x{:x}: 0x{:04x} '{}' Had an instruction of size {} with {} remaining",
+                     DecodeInst->PC, DecodeInst->OP, DecodeInst->TableInfo->Name, InstructionSize, Bytes);
   DecodeInst->InstSize = InstructionSize;
   return true;
 }
@@ -677,21 +675,22 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
 
   // XXX: Once we support 32bit x86 then this will be necessary to support
   if (Info->Type == FEXCore::X86Tables::TYPE_LEGACY_PREFIX) {
-    LogMan::Msg::D("Legacy Prefix");
+    LogMan::Msg::DFmt("Legacy Prefix");
     return false;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
-    LogMan::Msg::D("Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+    LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name, Op, DecodeInst->PC);
     return false;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
-    LogMan::Msg::D("Invalid or Unknown instruction: %s 0x%04x 0x%lx", Info->Name, Op, DecodeInst->PC);
+    LogMan::Msg::DFmt("Invalid or Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name, Op, DecodeInst->PC);
     return false;
   }
 
-  LOGMAN_THROW_A(Info->Type != FEXCore::X86Tables::TYPE_REX_PREFIX, "REX PREFIX should have been decoded before this!");
+  LOGMAN_THROW_A_FMT(Info->Type != FEXCore::X86Tables::TYPE_REX_PREFIX,
+                     "REX PREFIX should have been decoded before this!");
 
   if (Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 &&
       Info->Type <= FEXCore::X86Tables::TYPE_GROUP_11) {
@@ -747,7 +746,7 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
         3,
       };
       uint8_t Field = RegToField[ModRM.reg];
-      LOGMAN_THROW_A(Field != 255, "Invalid field selected!");
+      LOGMAN_THROW_A_FMT(Field != 255, "Invalid field selected!");
 
       LocalOp = (Field << 3) | ModRM.rm;
       return NormalOp(&SecondModRMTableOps[LocalOp], LocalOp);
@@ -776,7 +775,7 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     DecodedHeader options{};
 
     if ((Byte1 & 0b10000000) == 0) {
-      LOGMAN_THROW_A(CTX->Config.Is64BitMode, "VEX.R shouldn't be 0 in 32-bit mode!");
+      LOGMAN_THROW_A_FMT(CTX->Config.Is64BitMode, "VEX.R shouldn't be 0 in 32-bit mode!");
       DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_R;
     }
 
@@ -791,14 +790,14 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
       options.vvvv = 15 - ((Byte2 & 0b01111000) >> 3);
       options.w = (Byte2 & 0b10000000) != 0;
       if ((Byte1 & 0b01000000) == 0) {
-        LOGMAN_THROW_A(CTX->Config.Is64BitMode, "VEX.X shouldn't be 0 in 32-bit mode!");
+        LOGMAN_THROW_A_FMT(CTX->Config.Is64BitMode, "VEX.X shouldn't be 0 in 32-bit mode!");
         DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
       }
       if (CTX->Config.Is64BitMode && (Byte1 & 0b00100000) == 0) {
         DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_B;
       }
       if (!(map_select >= 1 && map_select <= 3)) {
-        LogMan::Msg::E("We don't understand a map_select of: %d", map_select);
+        LogMan::Msg::EFmt("We don't understand a map_select of: {}", map_select);
         return false;
       }
     }
@@ -1010,7 +1009,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
       auto Info = &FEXCore::X86Tables::BaseOps[Op];
 
       if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
-        LOGMAN_THROW_A(CTX->Config.Is64BitMode, "Got REX prefix in 32bit mode");
+        LOGMAN_THROW_A_FMT(CTX->Config.Is64BitMode, "Got REX prefix in 32bit mode");
         DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
 
         // Widening displacement
@@ -1063,13 +1062,13 @@ void Decoder::BranchTargetInMultiblockRange() {
       // auto RIPOffset = LoadSource(Op, Op->Src[0], Op->Flags);
       // auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
       // Target offset is PC + InstSize + Literal
-      LOGMAN_THROW_A(DecodeInst->Src[0].IsLiteral(), "Had wrong operand type");
+      LOGMAN_THROW_A_FMT(DecodeInst->Src[0].IsLiteral(), "Had wrong operand type");
       TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Data.Literal.Value;
     break;
     }
     case 0xE9:
     case 0xEB: // Both are unconditional JMP instructions
-      LOGMAN_THROW_A(DecodeInst->Src[0].IsLiteral(), "Had wrong operand type");
+      LOGMAN_THROW_A_FMT(DecodeInst->Src[0].IsLiteral(), "Had wrong operand type");
       TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Data.Literal.Value;
       Conditional = false;
     break;
@@ -1183,7 +1182,7 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
       bool ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
 
       if (ErrorDuringDecoding) {
-        LogMan::Msg::D("Couldn't Decode something at 0x%lx, Started at 0x%lx", PC + PCOffset, PC);
+        LogMan::Msg::DFmt("Couldn't Decode something at 0x{:x}, Started at 0x{:x}", PC + PCOffset, PC);
         // Put an invalid instruction in the stream so the core can raise SIGILL if hit
         CurrentBlockDecoding.HasInvalidInstruction = true;
         // Error while decoding instruction. We don't know the table or instruction size

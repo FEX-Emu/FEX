@@ -74,7 +74,7 @@ namespace FEXCore {
         }
       }
 
-      LOGMAN_THROW_A(CompileThreadData->LocalIRCache.size() == 0, "Compile service must never have LocalIRCache");
+      LOGMAN_THROW_A_FMT(CompileThreadData->LocalIRCache.size() == 0, "Compile service must never have LocalIRCache");
 
       CompileMutex.unlock();
     }
@@ -137,7 +137,7 @@ namespace FEXCore {
         // If we had a work item then work on it
         if (Item) {
           // Make sure it's not in lookup cache by accident
-          LOGMAN_THROW_A(CompileThreadData->LookupCache->FindBlock(Item->RIP) == 0, "Compile Service must never have entries in the LookupCache");
+          LOGMAN_THROW_A_FMT(CompileThreadData->LookupCache->FindBlock(Item->RIP) == 0, "Compile Service must never have entries in the LookupCache");
 
           // Code isn't in cache, compile now
           // Set our thread state's RIP
@@ -145,11 +145,11 @@ namespace FEXCore {
 
           auto [CodePtr, IRList, DebugData, RAData, Generated, StartAddr, Length] = CTX->CompileCode(CompileThreadData.get(), Item->RIP);
 
-          LOGMAN_THROW_A(Generated == true, "Compile Service doesn't have IR Cache");
+          LOGMAN_THROW_A_FMT(Generated == true, "Compile Service doesn't have IR Cache");
 
           if (!CodePtr) {
             // XXX: We currently have the expectation that compile service code will be significantly smaller than regular thread's code
-            ERROR_AND_DIE("Couldn't compile code for thread at RIP: 0x%lx", Item->RIP);
+            ERROR_AND_DIE_FMT("Couldn't compile code for thread at RIP: 0x{:x}", Item->RIP);
           }
 
           Item->CodePtr = CodePtr;

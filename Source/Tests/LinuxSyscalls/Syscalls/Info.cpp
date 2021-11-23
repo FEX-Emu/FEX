@@ -41,7 +41,7 @@ namespace FEX::HLE {
       }
       else {
         strcpy(buf->nodename, "FEXCore");
-        LogMan::Msg::E("Couldn't determine host nodename. Defaulting to '%s'", buf->nodename);
+        LogMan::Msg::EFmt("Couldn't determine host nodename. Defaulting to '{}'", buf->nodename);
       }
       strcpy(buf->sysname, "Linux");
       uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();

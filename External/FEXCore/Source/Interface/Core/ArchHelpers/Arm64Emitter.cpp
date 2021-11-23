@@ -32,7 +32,7 @@ Arm64Emitter::Arm64Emitter(size_t size) : vixl::aarch64::Assembler(size, vixl::a
   SetCPUFeatures(Features);
 
   if (!SupportsAtomics) {
-    WARN_ONCE("Host CPU doesn't support atomics. Expect bad performance");
+    WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
   }
 
 #ifdef _M_ARM_64

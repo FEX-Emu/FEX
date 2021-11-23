@@ -13,7 +13,7 @@ namespace FEX::IRLoader {
     std::fstream fp(Filename, std::fstream::binary | std::fstream::in);
 
     if (!fp.is_open()) {
-      LogMan::Msg::E("Couldn't open IR file '%s'", Filename.c_str());
+      LogMan::Msg::EFmt("Couldn't open IR file '{}'", Filename);
       return;
     }
 
@@ -25,7 +25,7 @@ namespace FEX::IRLoader {
       
       std::stringstream out;
       FEXCore::IR::Dump(&out, &NewIR, nullptr);
-      printf("IR:\n%s\n@@@@@\n", out.str().c_str());
+      fmt::print("IR:\n{}\n@@@@@\n", out.str());
     }
   }
 }

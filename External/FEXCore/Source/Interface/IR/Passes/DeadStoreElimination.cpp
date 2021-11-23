@@ -116,7 +116,7 @@ uint64_t FPRBit(uint32_t Offset, uint32_t Size) {
   else if (Size == 4)
     return  1UL << (bitn);
   else
-    LOGMAN_MSG_A("Unexpected FPR size %d", Size);
+    LOGMAN_MSG_A_FMT("Unexpected FPR size {}", Size);
 
   return 7UL << (bitn); // Return maximum on failure case
 }

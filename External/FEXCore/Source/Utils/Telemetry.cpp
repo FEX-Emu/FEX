@@ -27,7 +27,7 @@ namespace FEXCore::Telemetry {
     std::error_code ec{};
     if (!std::filesystem::exists(DataDirectory, ec) &&
         !std::filesystem::create_directories(DataDirectory, ec)) {
-      LogMan::Msg::I("Couldn't create telemetry Folder");
+      LogMan::Msg::IFmt("Couldn't create telemetry Folder");
     }
   }
 

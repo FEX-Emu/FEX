@@ -264,7 +264,7 @@ namespace FEX::HLE::x32 {
           break;
         }
         default:
-          LOGMAN_MSG_A("Unsupported socketcall op: %d", call);
+          LOGMAN_MSG_A_FMT("Unsupported socketcall op: {}", call);
           break;
       }
       SYSCALL_ERRNO();

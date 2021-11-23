@@ -168,7 +168,7 @@ namespace FEXCore::Context {
       }
     }
 
-    LOGMAN_MSG_A("Must never get here");
+    LOGMAN_MSG_A_FMT("Must never get here");
   }
 
   void Context::AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn) {
@@ -543,14 +543,16 @@ namespace FEXCore::Context {
 #elif (_M_ARM_64 && JIT_ARM64)
       State->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, State, CompileThread);
 #else
-      ERROR_AND_DIE("FEXCore has been compiled without a viable JIT core");
+      ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
 #endif
 
       break;
     case FEXCore::Config::CONFIG_CUSTOM:
       State->CPUBackend = CustomCPUFactory(this, State);
       break;
-    default: ERROR_AND_DIE("Unknown core configuration");
+    default:
+      ERROR_AND_DIE_FMT("Unknown core configuration");
+      break;
     }
   }
 
@@ -583,7 +585,7 @@ namespace FEXCore::Context {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
 
       auto It = std::find(Threads.begin(), Threads.end(), Thread);
-      LOGMAN_THROW_A(It != Threads.end(), "Thread wasn't in Threads");
+      LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
 
       Threads.erase(It);
     }
@@ -726,7 +728,7 @@ namespace FEXCore::Context {
           else {
             if (Thread->OpDispatcher->HandledLock != IsLocked) {
               HadDispatchError = true;
-              LogMan::Msg::E("Missing LOCK HANDLER at 0x%lx{'%s'}", Block.Entry + BlockInstructionsLength, TableInfo->Name);
+              LogMan::Msg::EFmt("Missing LOCK HANDLER at 0x{:x}{{'{}'}}", Block.Entry + BlockInstructionsLength, TableInfo->Name);
             }
             BlockInstructionsLength += DecodedInfo->InstSize;
             TotalInstructionsLength += DecodedInfo->InstSize;
@@ -763,21 +765,20 @@ namespace FEXCore::Context {
 
     Thread->OpDispatcher->Finalize();
 
-    auto IRDumper = [Thread, GuestRIP](IR::RegisterAllocationData* RA) {
+    const auto IRDumper = [Thread, GuestRIP](IR::RegisterAllocationData* RA) {
       FILE* f = nullptr;
       bool CloseAfter = false;
+      const auto DumpIRStr = Thread->CTX->Config.DumpIR();
 
-      if (Thread->CTX->Config.DumpIR() =="stderr") {
+      if (DumpIRStr =="stderr") {
         f = stderr;
       }
-      else if (Thread->CTX->Config.DumpIR() =="stdout") {
+      else if (DumpIRStr =="stdout") {
         f = stdout;
       }
       else {
-        std::stringstream fileName;
-        fileName << Thread->CTX->Config.DumpIR()  << "/" << std::hex << GuestRIP << (RA ? "-post.ir" : "-pre.ir");
-
-        f = fopen(fileName.str().c_str(), "w");
+        const auto fileName = fmt::format("{}/{:x}{}", DumpIRStr, GuestRIP, RA ? "-post.ir" : "-pre.ir");
+        f = fopen(fileName.c_str(), "w");
         CloseAfter = true;
       }
 
@@ -785,7 +786,7 @@ namespace FEXCore::Context {
         std::stringstream out;
         auto NewIR = Thread->OpDispatcher->ViewIR();
         FEXCore::IR::Dump(&out, &NewIR, RA);
-        fprintf(f,"IR-%s 0x%lx:\n%s\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str().c_str());
+        fmt::print(f,"IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
 
         if (CloseAfter) {
           fclose(f);
@@ -807,15 +808,15 @@ namespace FEXCore::Context {
       out.seekg(0);
       auto reparsed = IR::Parse(&out);
       if (reparsed == nullptr) {
-        LOGMAN_MSG_A("Failed to parse ir\n");
+        LOGMAN_MSG_A_FMT("Failed to parse IR\n");
       } else {
         std::stringstream out2;
         auto NewIR2 = reparsed->ViewIR();
         Dump(&out2, &NewIR2, nullptr);
         if (out.str() != out2.str()) {
-          LogMan::Msg::I("one:\n %s", out.str().c_str());
-          LogMan::Msg::I("two:\n %s", out2.str().c_str());
-          LOGMAN_MSG_A("Parsed ir doesn't match\n");
+          LogMan::Msg::IFmt("one:\n {}", out.str());
+          LogMan::Msg::IFmt("two:\n {}", out2.str());
+          LOGMAN_MSG_A_FMT("Parsed IR doesn't match\n");
         }
       }
     }
@@ -830,7 +831,7 @@ namespace FEXCore::Context {
       std::stringstream out;
       auto NewIR = Thread->OpDispatcher->ViewIR();
       FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
-      LogMan::Msg::I("IR 0x%lx:\n%s\n@@@@@\n", GuestRIP, out.str().c_str());
+      LogMan::Msg::IFmt("IR 0x{:x}:\n{}\n@@@@@\n", GuestRIP, out.str());
     }
 
     auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData() : nullptr;
@@ -961,7 +962,7 @@ namespace FEXCore::Context {
             auto hash = XXH3_64bits((void*)MappedStart, AOTEntry->GuestLength);
             if (hash == AOTEntry->GuestHash) {
               IRList = AOTEntry->GetIRData();
-              //LogMan::Msg::D("using %s + %lx -> %lx\n", file->second.fileid.c_str(), AOTEntry->first, GuestRIP);
+              //LogMan::Msg::DFmt("using {} + {:x} -> {:x}\n", file->second.fileid, AOTEntry->first, GuestRIP);
 
 
               RAData = AOTEntry->GetRAData();;
@@ -971,10 +972,10 @@ namespace FEXCore::Context {
 
               GeneratedIR = true;
             } else {
-              LogMan::Msg::I("AOTIR: hash check failed %lx\n", MappedStart);
+              LogMan::Msg::IFmt("AOTIR: hash check failed {:x}\n", MappedStart);
             }
           } else {
-            //LogMan::Msg::I("AOTIR: Failed to find %lx, %lx, %s\n", GuestRIP, GuestRIP - file->second.Start + file->second.Offset, file->second.fileid.c_str());
+            //LogMan::Msg::IFmt("AOTIR: Failed to find {:x}, {:x}, {}\n", GuestRIP, GuestRIP - file->second.Start + file->second.Offset, file->second.fileid);
           }
         }
       }
@@ -1069,7 +1070,7 @@ namespace FEXCore::Context {
 
     AOTIRCache.insert({Module, {Array, FilePtr, Size}});
 
-    LogMan::Msg::D("AOTIR: Module %s has %ld functions", Module.c_str(), Array->Count);
+    LogMan::Msg::DFmt("AOTIR: Module {} has {} functions", Module, Array->Count);
 
     return true;
 
@@ -1129,7 +1130,7 @@ namespace FEXCore::Context {
     auto NewBlock = CompileBlock(Frame, GuestRIP);
 
     if (NewBlock == 0) {
-      LogMan::Msg::E("CompileBlockJit: Failed to compile code %lX - aborting process", GuestRIP);
+      LogMan::Msg::EFmt("CompileBlockJit: Failed to compile code {:X} - aborting process", GuestRIP);
       // Return similar behaviour of SIGILL abort
       Frame->Thread->StatusCode = 128 + SIGILL;
       Stop(false /* Ignore current thread */);

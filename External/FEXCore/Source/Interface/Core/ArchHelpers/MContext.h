@@ -122,7 +122,7 @@ static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
 static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
   auto MContext = GetMContext(ucontext);
   HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&MContext->__reserved[0]);
-  LOGMAN_THROW_A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
+  LOGMAN_THROW_A_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
 
   return HostState->FPRs[id];
 }
@@ -141,7 +141,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 
     // Host FPR state starts at _mcontext->reserved[0];
     HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
-    LOGMAN_THROW_A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
+    LOGMAN_THROW_A_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
     Backup->FPSR = HostState->FPSR;
     Backup->FPCR = HostState->FPCR;
     memcpy(&Backup->FPRs[0], &HostState->FPRs[0], 32 * sizeof(__uint128_t));
@@ -149,7 +149,8 @@ static inline void BackupContext(void* ucontext, T *Backup) {
     // Save the signal mask so we can restore it
     memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
   } else {
-      ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
+    // This must be a runtime error
+    ERROR_AND_DIE_FMT("Wrong context type");
   }
 }
 
@@ -160,7 +161,7 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
    auto _mcontext = GetMContext(ucontext);
 
     HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
-    LOGMAN_THROW_A(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x%08x", HostState->Head.Magic);
+    LOGMAN_THROW_A_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
     memcpy(&HostState->FPRs[0], &Backup->FPRs[0], 32 * sizeof(__uint128_t));
     HostState->FPCR = Backup->FPCR;
     HostState->FPSR = Backup->FPSR;
@@ -174,7 +175,8 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
     // Restore the signal mask now
     memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
   } else {
-      ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
+    // This must be a runtime error
+    ERROR_AND_DIE_FMT("Wrong context type");
   }
 }
 
@@ -207,15 +209,15 @@ static inline void SetState(void* ucontext, uint64_t val) {
 }
 
 static inline uint64_t GetArmReg(void* ucontext, uint32_t id) {
-  ERROR_AND_DIE("Not impelented for x86 host");
+  ERROR_AND_DIE_FMT("Not impelented for x86 host");
 }
 
 static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
-  ERROR_AND_DIE("Not impelented for x86 host");
+  ERROR_AND_DIE_FMT("Not impelented for x86 host");
 }
 
 static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
-  ERROR_AND_DIE("Not implemented for x86 host");
+  ERROR_AND_DIE_FMT("Not implemented for x86 host");
 }
 
 using ContextBackup = X86ContextBackup;
@@ -234,7 +236,8 @@ static inline void BackupContext(void* ucontext, T *Backup) {
     // Save the signal mask so we can restore it
     memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
   } else {
-    ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
+    // This must be a runtime error
+    ERROR_AND_DIE_FMT("Wrong context type");
   }
 }
 
@@ -252,7 +255,8 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
     // Restore the signal mask now
     memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
   } else {
-    ERROR_AND_DIE("Wrong context type"); // This must be a runtime error
+    // This must be a runtime error
+    ERROR_AND_DIE_FMT("Wrong context type");
   }
 }
 

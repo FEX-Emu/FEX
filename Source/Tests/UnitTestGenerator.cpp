@@ -2386,7 +2386,7 @@ int main(int argc, char **argv, char **const envp) {
 
   auto Args = FEX::ArgLoader::Get();
 
-  LOGMAN_THROW_A(!Args.empty(), "Not enough arguments");
+  LOGMAN_THROW_A_FMT(!Args.empty(), "Not enough arguments");
 
   FEXCore::Context::InitializeStaticTables(FEXCore::Context::MODE_64BIT);
 

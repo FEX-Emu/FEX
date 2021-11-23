@@ -54,7 +54,7 @@ public:
 
   OrderedNode* GetNewJumpBlock(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);
-    LOGMAN_THROW_A(it != JumpTargets.end(), "Couldn't find block generated for 0x%lx", RIP);
+    LOGMAN_THROW_A_FMT(it != JumpTargets.end(), "Couldn't find block generated for 0x{:x}", RIP);
     return it->second.BlockEntry;
   }
 

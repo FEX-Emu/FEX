@@ -27,7 +27,7 @@ namespace FEXCore {
              << std::endl;
     }
     Output.close();
-    LogMan::Msg::D("Dumped %d blocks of sampling data", SamplingMap.size());
+    LogMan::Msg::DFmt("Dumped {} blocks of sampling data", SamplingMap.size());
   }
 
   BlockSamplingData::BlockData *BlockSamplingData::GetBlockData(uint64_t RIP) {

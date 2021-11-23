@@ -32,7 +32,7 @@ struct RegState {
 
   // Mark a physical register as containing a SSA id
   bool Set(PhysicalRegister Reg, uint32_t ssa) {
-    LOGMAN_THROW_A(ssa != 0, "RegState assumes ssa0 will be the block header and never assigned to a register");
+    LOGMAN_THROW_A_FMT(ssa != 0, "RegState assumes ssa0 will be the block header and never assigned to a register");
 
     // PhyscialRegisters aren't fully mapped until assembly emission
     // We need to apply a generic mapping here to catch any aliasing
@@ -197,11 +197,11 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
   // Get the control flow graph from the validation pass
   auto ValidationPass = Manager->GetPass<IRValidation>("IRValidation");
-  LOGMAN_THROW_A(ValidationPass != nullptr, "Couldn't find IRValidation pass");
+  LOGMAN_THROW_A_FMT(ValidationPass != nullptr, "Couldn't find IRValidation pass");
 
   auto& OffsetToBlockMap = ValidationPass->OffsetToBlockMap;
 
-  LOGMAN_THROW_A(ValidationPass->EntryBlock != nullptr, "No entry point");
+  LOGMAN_THROW_A_FMT(ValidationPass->EntryBlock != nullptr, "No entry point");
   BlocksToVisit.push_front(ValidationPass->EntryBlock); // Currently only a single entry point
 
   bool HadError = false;
@@ -440,8 +440,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
     FEXCore::IR::Dump(&IrDump, &CurrentIR, RAData);
 
     LogMan::Msg::EFmt("RA Validation Error\n{}\nErrors:\n{}\n", IrDump.str(), Errors.str());
-
-    LOGMAN_MSG_A("Encountered RA validation Error");
+    LOGMAN_MSG_A_FMT("Encountered RA validation Error");
 
     Errors.clear();
   }

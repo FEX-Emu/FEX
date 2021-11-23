@@ -132,13 +132,17 @@ void OpDispatchBuilder::GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, Orde
     case 64:
       AndOp1 = _Bfe(1, 63, AndOp1);
     break;
-    default: LOGMAN_MSG_A("Unknown BFESize: %d", Size); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown BFE size: {}", Size);
+    break;
     }
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
   }
 }
 
 void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
+  const auto SrcSize = GetSrcSize(Op);
+
   // AF
   {
     OrderedNode *AFRes = _Xor(_Xor(Src1, Src2), Res);
@@ -148,7 +152,7 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
 
   // SF
   {
-    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+    auto SignBitConst = _Constant(SrcSize * 8 - 1);
 
     auto LshrOp = _Lshr(Res, SignBitConst);
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
@@ -187,7 +191,7 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
     auto XorOp2 = _Xor(Res, Src1);
     OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
 
-    switch (GetSrcSize(Op)) {
+    switch (SrcSize) {
     case 1:
       AndOp1 = _Bfe(1, 7, AndOp1);
     break;
@@ -200,7 +204,9 @@ void OpDispatchBuilder::GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, Orde
     case 8:
       AndOp1 = _Bfe(1, 63, AndOp1);
     break;
-    default: LOGMAN_MSG_A("Unknown BFESize: %d", GetSrcSize(Op)); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown BFE size: {}", SrcSize);
+    break;
     }
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
   }
@@ -264,6 +270,8 @@ void OpDispatchBuilder::GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, Orde
 }
 
 void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
+  const auto SrcSize = GetSrcSize(Op);
+
   // AF
   {
     OrderedNode *AFRes = _Xor(_Xor(Src1, Src2), Res);
@@ -273,7 +281,7 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
 
   // SF
   {
-    auto SignBitConst = _Constant(GetSrcSize(Op) * 8 - 1);
+    auto SignBitConst = _Constant(SrcSize * 8 - 1);
 
     auto LshrOp = _Lshr(Res, SignBitConst);
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
@@ -310,7 +318,7 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
 
     OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
 
-    switch (GetSrcSize(Op)) {
+    switch (SrcSize) {
     case 1:
       AndOp1 = _Bfe(1, 7, AndOp1);
     break;
@@ -323,7 +331,9 @@ void OpDispatchBuilder::GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, Orde
     case 8:
       AndOp1 = _Bfe(1, 63, AndOp1);
     break;
-    default: LOGMAN_MSG_A("Unknown BFESize: %d", GetSrcSize(Op)); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown BFE size: {}", SrcSize);
+    break;
     }
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
   }

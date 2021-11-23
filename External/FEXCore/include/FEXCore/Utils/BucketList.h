@@ -44,7 +44,7 @@ namespace FEXCore {
         Enumerator(Item);
 
         if (++i == Bucket->Size) {
-          LOGMAN_THROW_A(Bucket->Next != nullptr, "Interference bug");
+          LOGMAN_THROW_A_FMT(Bucket->Next != nullptr, "Interference bug");
           Bucket = Bucket->Next.get();
           i = 0;
         }
@@ -65,7 +65,7 @@ namespace FEXCore {
           return true;
 
         if (++i == Bucket->Size) {
-          LOGMAN_THROW_A(Bucket->Next != nullptr, "Bucket in bad state");
+          LOGMAN_THROW_A_FMT(Bucket->Next != nullptr, "Bucket in bad state");
           Bucket = Bucket->Next.get();
           i = 0;
         }
@@ -109,7 +109,7 @@ namespace FEXCore {
         }
         else if (++i == Size) {
           i = 0;
-          LOGMAN_THROW_A(that->Next != nullptr, "Bucket::Erase but element not contained");
+          LOGMAN_THROW_A_FMT(that->Next != nullptr, "Bucket::Erase but element not contained");
           that = that->Next.get();
         }
       }

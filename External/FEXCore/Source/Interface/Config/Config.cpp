@@ -74,14 +74,14 @@ namespace JSON {
 
     json_t const *json = json_createWithPool(&Data.at(0), &Pool.PoolObject);
     if (!json) {
-      LogMan::Msg::E("Couldn't create json");
+      LogMan::Msg::EFmt("Couldn't create json");
       return;
     }
 
     json_t const* ConfigList = json_getProperty(json, "Config");
 
     if (!ConfigList) {
-      LogMan::Msg::E("Couldn't get config list");
+      LogMan::Msg::EFmt("Couldn't get config list");
       return;
     }
 
@@ -92,12 +92,12 @@ namespace JSON {
       const char* ConfigString = json_getValue(ConfigItem);
 
       if (!ConfigName) {
-        LogMan::Msg::E("Couldn't get config name");
+        LogMan::Msg::EFmt("Couldn't get config name");
         return;
       }
 
       if (!ConfigString) {
-        LogMan::Msg::E("Couldn't get ConfigString for '%s'", ConfigName);
+        LogMan::Msg::EFmt("Couldn't get ConfigString for '{}'", ConfigName);
         return;
       }
 
@@ -173,7 +173,7 @@ namespace JSON {
     if (!Global &&
         !std::filesystem::exists(ConfigFile, ec) &&
         !std::filesystem::create_directories(ConfigFile, ec)) {
-      LogMan::Msg::D("Couldn't create config directory: '%s'", ConfigFile.c_str());
+      LogMan::Msg::DFmt("Couldn't create config directory: '{}'", ConfigFile);
       // Let's go local in this case
       return "./" + Filename + ".json";
     }

@@ -79,7 +79,7 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
     OldSP = ArchHelpers::Context::GetSp(ucontext);
   }
   else {
-    LOGMAN_THROW_A(!SignalFrames.empty(), "Trying to restore a signal frame when we don't have any");
+    LOGMAN_THROW_A_FMT(!SignalFrames.empty(), "Trying to restore a signal frame when we don't have any");
     OldSP = SignalFrames.top();
     SignalFrames.pop();
   }
@@ -260,7 +260,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
         // This can also happen if we have put a signal on hold, then we just reenabled the signal
         // So we are in the syscall handler
         // Only throw a log message in this case
-        LogMan::Msg::E("Signals in dispatcher have unsynchronized context");
+        LogMan::Msg::EFmt("Signals in dispatcher have unsynchronized context");
       }
     }
   }
@@ -492,7 +492,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
           guest_siginfo->_sifields._timer.sigval.sival_int = HostSigInfo->si_int;
           break;
         default:
-          LogMan::Msg::E("Unhandled siginfo_t for signal: %d\n", Signal);
+          LogMan::Msg::EFmt("Unhandled siginfo_t for signal: {}\n", Signal);
           break;
       }
 
@@ -526,7 +526,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   else {
     NewGuestSP -= 4;
     *(uint32_t*)NewGuestSP = SignalReturn;
-    LOGMAN_THROW_A(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
+    LOGMAN_THROW_A_FMT(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
     Frame->State.gregs[FEXCore::X86State::REG_RSP] = NewGuestSP;
   }
 
@@ -578,7 +578,8 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
     } else {
       if (SRAEnabled) {
         // We are in non-jit, SRA is already spilled
-        LOGMAN_THROW_A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
+        LOGMAN_THROW_A_FMT(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true),
+                           "Signals in dispatcher have unsynchronized context");
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
     }
@@ -610,7 +611,8 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
     } else {
       if (SRAEnabled) {
         // We are in non-jit, SRA is already spilled
-        LOGMAN_THROW_A(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true), "Signals in dispatcher have unsynchronized context");
+        LOGMAN_THROW_A_FMT(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true),
+                           "Signals in dispatcher have unsynchronized context");
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
     }

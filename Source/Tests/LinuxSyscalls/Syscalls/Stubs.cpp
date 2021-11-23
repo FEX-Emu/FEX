@@ -14,7 +14,7 @@ $end_info$
 #include <stdint.h>
 #include <sys/types.h>
 
-#define SYSCALL_STUB(name) do { ERROR_AND_DIE("Syscall: " #name " stub!"); return -ENOSYS; } while(0)
+#define SYSCALL_STUB(name) do { ERROR_AND_DIE_FMT("Syscall: " #name " stub!"); return -ENOSYS; } while(0)
 
 namespace FEXCore::Core {
   struct CpuStateFrame;

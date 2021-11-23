@@ -184,7 +184,7 @@ namespace Type {
     Value(FEXCore::Config::ConfigOption _Option)
       : Option {_Option} {
       if (!FEXCore::Config::Exists(Option)) {
-        ERROR_AND_DIE("FEXCore::Config::Value has no value");
+        ERROR_AND_DIE_FMT("FEXCore::Config::Value has no value");
       }
 
       ValueData = Get(Option);
@@ -194,7 +194,7 @@ namespace Type {
     Value(FEXCore::Config::ConfigOption _Option)
       : Option {_Option} {
       if (!FEXCore::Config::Exists(Option)) {
-        ERROR_AND_DIE("FEXCore::Config::Value has no value");
+        ERROR_AND_DIE_FMT("FEXCore::Config::Value has no value");
       }
 
       ValueData = GetIfExists(Option);

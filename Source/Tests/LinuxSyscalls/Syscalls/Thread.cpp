@@ -85,9 +85,9 @@ namespace FEX::HLE {
     // clone3 flag
     if (flags & CLONE_PIDFD) {
       // Use pidfd_open to emulate this flag
-      int pidfd = ::syscall(SYSCALL_DEF(pidfd_open), Result, 0);
+      const int pidfd = ::syscall(SYSCALL_DEF(pidfd_open), Result, 0);
       if (Result == ~0ULL) {
-        LogMan::Msg::E("Couldn't get pidfd of TID %d\n", Result);
+        LogMan::Msg::EFmt("Couldn't get pidfd of TID {}\n", Result);
       }
       else {
         *reinterpret_cast<int*>(args->pidfd) = pidfd;
@@ -437,7 +437,7 @@ namespace FEX::HLE {
           return -ENODEV; // Claim we don't support faulting on CPUID
         break;
         default:
-          LogMan::Msg::E("Unknown prctl: 0x%x", code);
+          LogMan::Msg::EFmt("Unknown prctl: 0x{:x}", code);
           Result = -EINVAL;
         break;
       }

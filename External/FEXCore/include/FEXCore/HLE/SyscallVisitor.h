@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 namespace FEXCore::HLE {
-#define INVALID_OP { LOGMAN_MSG_A("Tried to syscall with unknown number of registers");  return 0; }
+#define INVALID_OP { LOGMAN_MSG_A_FMT("Tried to syscall with unknown number of registers");  return 0; }
   class SyscallVisitor {
   public:
     SyscallVisitor(uint32_t Mask) : SyscallVisitor(Mask, false) {}

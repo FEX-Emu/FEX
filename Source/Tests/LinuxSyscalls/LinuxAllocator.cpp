@@ -426,7 +426,7 @@ uint64_t MemAllocator32Bit::shmat(int shmid, const void* shmaddr, int shmflg, ui
       uint32_t SmallRet = Result >> 32;
       if (!(SmallRet == 0 ||
             SmallRet == ~0U)) {
-        LOGMAN_MSG_A("Syscall returning something with data in the upper 32bits! BUG!");
+        LOGMAN_MSG_A_FMT("Syscall returning something with data in the upper 32bits! BUG!");
         return -ENOMEM;
       }
 

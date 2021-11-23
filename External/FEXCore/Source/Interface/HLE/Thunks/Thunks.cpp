@@ -66,12 +66,12 @@ namespace FEXCore {
 
             auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
 
-            LogMan::Msg::D("Load lib: %s -> %s", Name, SOName.c_str());
+            LogMan::Msg::DFmt("Load lib: {} -> {}", Name, SOName);
 
             auto Handle = dlopen(SOName.c_str(), RTLD_LOCAL | RTLD_NOW);
 
             if (!Handle) {
-                LogMan::Msg::E("Load lib: failed to dlopen %s: %s", SOName.c_str(), dlerror());
+                LogMan::Msg::EFmt("Load lib: failed to dlopen {}: {}", SOName, dlerror());
                 return;
             }
 
@@ -82,7 +82,7 @@ namespace FEXCore {
             (void*&)InitFN = dlsym(Handle, InitSym.c_str());
 
             if (!InitFN) {
-                LogMan::Msg::E("Load lib: failed to find export %s", InitSym.c_str());
+                LogMan::Msg::EFmt("Load lib: failed to find export {}", InitSym);
                 return;
             }
 
@@ -98,7 +98,7 @@ namespace FEXCore {
                     That->Thunks[*reinterpret_cast<IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
                 }
 
-                LogMan::Msg::D("Loaded %d syms", i);
+                LogMan::Msg::DFmt("Loaded {} syms", i);
             }
         }
 

@@ -263,9 +263,9 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     if (false) {
       // Useful for debugging
       if (ThunkOverlays.size()) {
-        LogMan::Msg::I("Thunk Overlays:");
-        for (auto &Thunk: ThunkOverlays) {
-          LogMan::Msg::I("\t%s -> %s", Thunk.first.c_str(), Thunk.second.c_str());
+        LogMan::Msg::IFmt("Thunk Overlays:");
+        for (const auto& [Overlay, ThunkPath] : ThunkOverlays) {
+          LogMan::Msg::IFmt("\t{} -> {}", Overlay, ThunkPath);
         }
       }
     }

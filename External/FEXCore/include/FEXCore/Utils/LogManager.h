@@ -19,29 +19,13 @@ enum DebugLevels {
 
 constexpr DebugLevels MSG_LEVEL = INFO;
 
+// Note that all logging functions with the Fmt or _FMT suffix on them expect
+// format strings as used by fmtlib (or C++ std::format).
+
 namespace Throw {
 using ThrowHandler = void(*)(char const *Message);
 FEX_DEFAULT_VISIBILITY void InstallHandler(ThrowHandler Handler);
 FEX_DEFAULT_VISIBILITY void UnInstallHandlers();
-
-[[noreturn]] void M(const char *fmt, va_list args);
-
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-static inline void A(bool Value, const char *fmt, ...) {
-  if (MSG_LEVEL >= ASSERT && !Value) {
-    va_list args;
-    va_start(args, fmt);
-    M(fmt, args);
-    va_end(args);
-  }
-}
-#define LOGMAN_THROW_A(pred, ...) do { LogMan::Throw::A(pred, __VA_ARGS__); } while (0)
-#else
-static inline void A(bool, const char*, ...) {}
-#define LOGMAN_THROW_A(pred, ...) do {} while (0)
-#endif
-
-// Fmt interface
 
 [[noreturn]] void MFmt(const char *fmt, const fmt::format_args& args);
 
@@ -66,77 +50,7 @@ using MsgHandler = void(*)(DebugLevels Level, char const *Message);
 FEX_DEFAULT_VISIBILITY void InstallHandler(MsgHandler Handler);
 FEX_DEFAULT_VISIBILITY void UnInstallHandlers();
 
-FEX_DEFAULT_VISIBILITY void M(DebugLevels Level, const char *fmt, va_list args);
-
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-static inline void A(const char *fmt, ...) {
-  if (MSG_LEVEL >= ASSERT) {
-    va_list args;
-    va_start(args, fmt);
-    M(ASSERT, fmt, args);
-    va_end(args);
-  }
-  FEX_TRAP_EXECUTION;
-}
-#define LOGMAN_MSG_A(...) do { LogMan::Msg::A(__VA_ARGS__); } while (0)
-#else
-static inline void A(const char*, ...) {}
-#define LOGMAN_MSG_A(...) do {} while(0)
-#endif
-
-static inline void E(const char *fmt, ...) {
-  if (MSG_LEVEL >= ERROR) {
-    va_list args;
-    va_start(args, fmt);
-    M(ERROR, fmt, args);
-    va_end(args);
-  }
-}
-static inline void D(const char *fmt, ...) {
-  if (MSG_LEVEL >= DEBUG) {
-    va_list args;
-    va_start(args, fmt);
-    M(DEBUG, fmt, args);
-    va_end(args);
-  }
-}
-static inline void I(const char *fmt, ...) {
-  if (MSG_LEVEL >= INFO) {
-    va_list args;
-    va_start(args, fmt);
-    M(INFO, fmt, args);
-    va_end(args);
-  }
-}
-
-static inline void OUT(const char *fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  M(STDOUT, fmt, args);
-  va_end(args);
-}
-
-static inline void ERR(const char *fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  M(STDERR, fmt, args);
-  va_end(args);
-}
-
-#define WARN_ONCE(...) \
-  do { \
-    static bool Warned{}; \
-    if (!Warned) { \
-      LogMan::Msg::D(__VA_ARGS__); \
-      Warned = true; \
-    } \
-  } while (0);
-
-#define ERROR_AND_DIE(...) \
-  do { \
-    LogMan::Msg::E(__VA_ARGS__); \
-    FEX_TRAP_EXECUTION; \
-  } while(0)
+FEX_DEFAULT_VISIBILITY void D(const char *fmt, ...);
 
 // Fmt-capable interface.
 

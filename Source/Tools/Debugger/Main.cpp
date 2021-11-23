@@ -55,13 +55,13 @@ void CreateCoreCallback(char const *Filename, bool ELF) {
     std::string ConfigName = Filename;
     ConfigName.erase(ConfigName.end() - 3, ConfigName.end());
     ConfigName += "config.bin";
-    LogMan::Msg::I("Opening '%s'", Filename);
-    LogMan::Msg::I("Opening '%s'", ConfigName.c_str());
+    LogMan::Msg::IFmt("Opening '{}'", Filename);
+    LogMan::Msg::IFmt("Opening '{}'", ConfigName);
     FEX::HarnessHelper::HarnessCodeLoader Loader{Filename, ConfigName.c_str()};
     Result = FEXCore::Context::InitCore(CTX, &Loader);
   }
 
-  LOGMAN_THROW_A(Result, "Couldn't initialize CTX");
+  LOGMAN_THROW_A_FMT(Result, "Couldn't initialize CTX");
 
   FEX::DebuggerState::SetContext(CTX);
   FEX::DebuggerState::SetHasNewState();

@@ -13,7 +13,7 @@ $end_info$
 #include <sys/epoll.h>
 
 #define REGISTER_SYSCALL_NOT_IMPL(name) REGISTER_SYSCALL_IMPL(name, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t { \
-  LogMan::Msg::D("Using deprecated/removed syscall: " #name); \
+  LogMan::Msg::DFmt("Using deprecated/removed syscall: " #name); \
   return -ENOSYS; \
 });
 

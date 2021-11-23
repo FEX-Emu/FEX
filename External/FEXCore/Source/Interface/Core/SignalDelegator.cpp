@@ -53,7 +53,7 @@ namespace FEXCore {
     // Be warned, a thread will inherit the signal mask if created from this thread
     int Result = pthread_sigmask(how, &SignalSet, nullptr);
     if (Result != 0) {
-      LogMan::Msg::E("Couldn't register thread to mask signals");
+      LogMan::Msg::EFmt("Couldn't register thread to mask signals");
     }
   }
 
@@ -91,7 +91,7 @@ namespace FEXCore {
     HostSignalHandler &Handler = HostHandlers[Signal];
 
     if (!Thread) {
-      LogMan::Msg::E("[%d] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", ::gettid());
+      LogMan::Msg::EFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", ::gettid());
     }
     else {
       if (Handler.Handler &&

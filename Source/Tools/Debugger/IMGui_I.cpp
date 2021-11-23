@@ -611,11 +611,8 @@ namespace IR {
     }
     ImGui::End();
 
-    char const *InitialPath;
-    char const *File;
-
-    InitialPath = Dialog.saveFileDialog(HadSelectedSaveIR, "./");
-    File = Dialog.getChosenPath();
+    const char *InitialPath = Dialog.saveFileDialog(HadSelectedSaveIR, "./");
+    const char *File = Dialog.getChosenPath();
     if (strlen(InitialPath) > 0 && strlen(File) > 0) {
       // FEXCore::IR::IntrusiveIRList *ir;
       // bool HadIR = FEXCore::Context::Debug::FindIRForRIP(FEX::DebuggerState::GetContext(), Disasm::CurrentDisasmRIP, &ir);
@@ -623,22 +620,19 @@ namespace IR {
       //   IRFileHeader Header;
       //   Header.RIP = Disasm::CurrentDisasmRIP;
       //   Header.IRSize = ir->GetOffset();
-      //   std::fstream IRFile;
-      //   IRFile.open(File, std::fstream::out | std::fstream::binary);
-      //   LOGMAN_THROW_A(IRFile.is_open(), "Failed to open file");
-
+      //   std::fstream IRFile(File, std::fstream::out | std::fstream::binary);
+      //   LOGMAN_THROW_A_FMT(IRFile.is_open(), "Failed to open file");
+      //
       //   IRFile.write(reinterpret_cast<char*>(&Header), sizeof(Header));
       //   IRFile.write(ir->GetOpAs<char>(0), Header.IRSize);
-      //   IRFile.close();
       // }
     }
   }
 
   void LoadIR(char const *Filename) {
     IRFileHeader Header;
-    std::fstream IRFile;
-    IRFile.open(Filename, std::fstream::in | std::fstream::binary);
-    LOGMAN_THROW_A(IRFile.is_open(), "Failed to open file");
+    std::fstream IRFile(Filename, std::fstream::in | std::fstream::binary);
+    LOGMAN_THROW_A_FMT(IRFile.is_open(), "Failed to open file");
 
     IRFile.read(reinterpret_cast<char*>(&Header), sizeof(Header));
 
@@ -703,12 +697,10 @@ namespace History {
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-    std::fstream HistoryFile;
-    HistoryFile.open("History.json", std::fstream::out);
-    LOGMAN_THROW_A(HistoryFile.is_open(), "Failed to open file");
+    std::fstream HistoryFile("History.json", std::fstream::out);
+    LOGMAN_THROW_A_FMT(HistoryFile.is_open(), "Failed to open file");
 
     HistoryFile.write(Buffer, strlen(Buffer));
-    HistoryFile.close();
   }
 
   void Add(HistoryType Type, const char *Filename) {
@@ -882,7 +874,7 @@ namespace MemoryViewer {
     //  MappedRegionsMemoryCurrentItem = static_cast<int>(RIP - MappedRegions[MappedRegionsCurrentItem].Offset) / 16;
 
     //  // Now set the Current Address textbox and string to the correct address
-    //  LogMan::Msg::D("RIP is 0x%lx", RIP);
+    //  LogMan::Msg::DFmt("RIP is 0x{:x}", RIP);
     //  CurrentAddress = RIP;
     //  std::ostringstream out{};
     //  out << "0x" << std::hex << CurrentAddress;

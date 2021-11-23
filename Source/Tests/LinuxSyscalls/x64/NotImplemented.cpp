@@ -17,7 +17,7 @@ namespace FEXCore::Core {
 
 namespace FEX::HLE::x64 {
 #define REGISTER_SYSCALL_NOT_IMPL_X64(name) REGISTER_SYSCALL_IMPL_X64(name, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t { \
-  LogMan::Msg::D("Using deprecated/removed syscall: " #name); \
+  LogMan::Msg::DFmt("Using deprecated/removed syscall: " #name); \
   return -ENOSYS; \
 });
 #define REGISTER_SYSCALL_NO_PERM_X64(name) REGISTER_SYSCALL_IMPL_X64(name, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t { \

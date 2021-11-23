@@ -759,7 +759,7 @@ namespace FEX::EmulatedFile {
     uint64_t auxvBase=0, auxvSize=0;
     FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv(auxvBase, auxvSize);
     if (!auxvBase) {
-      LogMan::Msg::D("Failed to get Auxv stack address");
+      LogMan::Msg::DFmt("Failed to get Auxv stack address");
       return -1;
     }
 
