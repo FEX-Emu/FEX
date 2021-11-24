@@ -1174,7 +1174,7 @@ namespace FEXCore::Context {
         Thread->CompileService->Initialize();
       }
 
-      auto WorkItem = Thread->CompileService->CompileCode(GuestRIP);
+      auto* WorkItem = Thread->CompileService->CompileCode(GuestRIP);
       WorkItem->ServiceWorkDone.Wait();
       // Return here with the data in place
       CodePtr = WorkItem->CodePtr;
