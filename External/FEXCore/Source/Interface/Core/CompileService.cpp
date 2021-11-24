@@ -60,23 +60,15 @@ namespace FEXCore {
       // Grab the work queue and clear it
       // We don't need to grab the queue mutex since this thread will no longer receive any work events
       // Threads are bounded 1:1
-      while (WorkQueue.size()) {
-        WorkItem *Item = WorkQueue.front();
+      while (!WorkQueue.empty()) {
         WorkQueue.pop();
-        delete Item;
       }
 
       // Go through the garbage collection array and clear it
       // It's safe to clear things that aren't marked safe since we are clearing cache
-      if (GCArray.size()) {
-        // Clean up our GC array
-        for (auto it = GCArray.begin(); it != GCArray.end();) {
-          delete *it;
-          it = GCArray.erase(it);
-        }
-      }
+      GCArray.clear();
 
-      LOGMAN_THROW_A_FMT(CompileThreadData->LocalIRCache.size() == 0, "Compile service must never have LocalIRCache");
+      LOGMAN_THROW_A_FMT(CompileThreadData->LocalIRCache.empty(), "Compile service must never have LocalIRCache");
 
       CompileMutex.unlock();
     }
@@ -88,20 +80,22 @@ namespace FEXCore {
   }
 
   CompileService::WorkItem *CompileService::CompileCode(uint64_t RIP) {
-    // Tell the worker thread to compile code for us
-    WorkItem *Item = new WorkItem{};
-    Item->RIP = RIP;
+    WorkItem* ResultItem = nullptr;
 
     {
+      // Tell the worker thread to compile code for us
+      auto Item = std::make_unique<WorkItem>();
+      Item->RIP = RIP;
+
       // Fill the threads work queue
-      std::scoped_lock<std::mutex> lk(QueueMutex);
-      WorkQueue.emplace(Item);
+      std::scoped_lock lk(QueueMutex);
+      ResultItem = WorkQueue.emplace(std::move(Item)).get();
     }
 
     // Notify the thread that it has more work
     StartWork.NotifyAll();
 
-    return Item;
+    return ResultItem;
   }
 
   void CompileService::ExecutionThread() {
@@ -116,18 +110,18 @@ namespace FEXCore {
       if (ShuttingDown.load()) {
         break;
       }
-      std::scoped_lock<std::mutex> lk(CompileMutex);
 
+      std::scoped_lock lk(CompileMutex);
       size_t WorkItems{};
 
       do {
         // Grab a work item
-        WorkItem *Item{};
+        std::unique_ptr<WorkItem> Item{};
         {
-          std::scoped_lock<std::mutex> lk(QueueMutex);
+          std::scoped_lock lk(QueueMutex);
           WorkItems = WorkQueue.size();
-          if (WorkItems) {
-            Item = WorkQueue.front();
+          if (WorkItems != 0) {
+            Item = std::move(WorkQueue.front());
             WorkQueue.pop();
           }
         }
@@ -157,23 +151,15 @@ namespace FEXCore {
           Item->StartAddr = StartAddr;
           Item->Length = Length;
 
-          GCArray.emplace_back(Item);
-          Item->ServiceWorkDone.NotifyAll();
+          auto& GCItem = GCArray.emplace_back(std::move(Item));
+          GCItem->ServiceWorkDone.NotifyAll();
         }
       } while (WorkItems != 0);
 
-      if (GCArray.size()) {
-        // Clean up our GC array
-        for (auto it = GCArray.begin(); it != GCArray.end();) {
-          if ((*it)->SafeToClear) {
-            delete *it;
-            it = GCArray.erase(it);
-          }
-          else {
-            ++it;
-          }
-        }
-      }
+      // Clean up any safe entries in our GC array if we have any.
+      std::erase_if(GCArray, [](const auto& Entry) {
+        return Entry->SafeToClear.load(std::memory_order_relaxed);
+      });
     }
   }
 }

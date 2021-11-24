@@ -60,8 +60,8 @@ class CompileService final {
 
     std::mutex QueueMutex{};
     std::mutex CompileMutex{};
-    std::queue<WorkItem*> WorkQueue{};
-    std::vector<WorkItem*> GCArray{};
+    std::queue<std::unique_ptr<WorkItem>> WorkQueue{};
+    std::vector<std::unique_ptr<WorkItem>> GCArray{};
     Event StartWork{};
     std::atomic_bool ShuttingDown{false};
 };
