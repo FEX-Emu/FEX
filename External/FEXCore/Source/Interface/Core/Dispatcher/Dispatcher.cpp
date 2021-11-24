@@ -71,6 +71,12 @@ ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(int Signal, vo
   if (CTX->Config.Core() == FEXCore::Config::CONFIG_INTERPRETER) {
     SignalFrames.push(NewSP);
   }
+
+  Context->Flags = 0;
+  Context->FPStateLocation = 0;
+  Context->UContextLocation = 0;
+  Context->SigInfoLocation = 0;
+
   return Context;
 }
 
@@ -200,10 +206,6 @@ static uint32_t ConvertSignalToError(int Signal, siginfo_t *HostSigInfo) {
 
 bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
   auto ContextBackup = StoreThreadState(Signal, ucontext);
-  ContextBackup->Flags = 0;
-  ContextBackup->FPStateLocation = 0;
-  ContextBackup->UContextLocation = 0;
-  ContextBackup->SigInfoLocation = 0;
 
   auto Frame = ThreadState->CurrentFrame;
 
