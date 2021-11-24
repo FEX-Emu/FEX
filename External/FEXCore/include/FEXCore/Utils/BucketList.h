@@ -44,7 +44,7 @@ namespace FEXCore {
 
         Enumerator(Item);
 
-        if (++i == Bucket->Size) {
+        if (++i == Size) {
           LOGMAN_THROW_A_FMT(Bucket->Next != nullptr, "Interference bug");
           Bucket = Bucket->Next.get();
           i = 0;
@@ -65,7 +65,7 @@ namespace FEXCore {
         if (Enumerator(Item))
           return true;
 
-        if (++i == Bucket->Size) {
+        if (++i == Size) {
           LOGMAN_THROW_A_FMT(Bucket->Next != nullptr, "Bucket in bad state");
           Bucket = Bucket->Next.get();
           i = 0;
