@@ -199,9 +199,9 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
 
     ++CurrentIndent;
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      uint32_t ID = IR->GetID(CodeNode);
+      const auto ID = IR->GetID(CodeNode);
+      const auto Name = FEXCore::IR::GetName(IROp->Op);
 
-      auto Name = FEXCore::IR::GetName(IROp->Op);
       bool Skip{};
       switch (IROp->Op) {
         case IR::OP_PHIVALUE:

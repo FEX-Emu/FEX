@@ -40,7 +40,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   auto CurrentIR = IREmit->ViewIR();
 
   std::ostringstream Errors;
-  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
+  std::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
@@ -89,9 +89,9 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-      uint32_t CodeID = CurrentIR.GetID(CodeNode);
+      const auto CodeID = CurrentIR.GetID(CodeNode);
 
-      uint8_t NumArgs = IR::GetArgs(IROp->Op);
+      const uint8_t NumArgs = IR::GetArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
         if (IROp->Args[i].IsInvalid()) continue;
         if (CurrentIR.GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;

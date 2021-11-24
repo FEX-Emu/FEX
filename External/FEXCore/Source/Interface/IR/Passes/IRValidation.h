@@ -24,7 +24,7 @@ private:
 
   BitSet<uint64_t> NodeIsLive;
   OrderedNode *EntryBlock;
-  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
+  std::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
   size_t MaxNodes{};
 
   friend class RAValidation;

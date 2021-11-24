@@ -31,7 +31,7 @@ struct RegState {
   // These assumptions were all true for the state of the arm64 and x86 jits at the time this was written
 
   // Mark a physical register as containing a SSA id
-  bool Set(PhysicalRegister Reg, uint32_t ssa) {
+  bool Set(PhysicalRegister Reg, IR::NodeID ssa) {
     LOGMAN_THROW_A_FMT(ssa != 0, "RegState assumes ssa0 will be the block header and never assigned to a register");
 
     // PhyscialRegisters aren't fully mapped until assembly emission
@@ -96,12 +96,12 @@ struct RegState {
 
 
   // Mark a spill slot as containing a SSA id
-  void Spill(uint32_t SpillSlot, uint32_t ssa) {
+  void Spill(uint32_t SpillSlot, IR::NodeID ssa) {
     Spills[SpillSlot] = ssa;
   }
 
   // Consume (and return) the SSA id currently in a spill slot
-  uint32_t Unspill(uint32_t SpillSlot) {
+  IR::NodeID Unspill(uint32_t SpillSlot) {
     if (Spills.contains(SpillSlot)) {
       uint32_t Value = Spills[SpillSlot];
       Spills.erase(SpillSlot);
@@ -165,10 +165,10 @@ struct RegState {
   }
 
 private:
-  std::array<uint32_t, 32> GPRs = {};
-  std::array<uint32_t, 32> FPRs = {};
+  std::array<IR::NodeID, 32> GPRs = {};
+  std::array<IR::NodeID, 32> FPRs = {};
 
-  std::unordered_map<uint32_t, uint32_t> Spills;
+  std::unordered_map<uint32_t, IR::NodeID> Spills;
 
 public:
   uint32_t Version{}; // Used to force regeneration of RegStates after following backward edges
@@ -181,7 +181,7 @@ public:
 
 private:
   // Holds the calculated RegState at the exit of each block
-  std::unordered_map<uint32_t, RegState> BlockExitState;
+  std::unordered_map<IR::NodeID, RegState> BlockExitState;
 
   // A queue of blocks we need to visit (or revisit)
   std::deque<OrderedNode*> BlocksToVisit;
@@ -213,10 +213,10 @@ bool RAValidation::Run(IREmitter *IREmit) {
   while (!BlocksToVisit.empty())
   {
     auto BlockNode = BlocksToVisit.front();
-    uint32_t BlockID = CurrentIR.GetID(BlockNode);
+    const auto BlockID = CurrentIR.GetID(BlockNode);
     auto& BlockInfo = OffsetToBlockMap[BlockID];
 
-    auto IsFowardsEdge = [&] (uint32_t PredecessorID) {
+    const auto IsFowardsEdge = [&](IR::NodeID PredecessorID) {
       // Blocks are sorted in FEXes IR, so backwards edges always go to a lower (or equal) Block ID
       return PredecessorID < BlockID;
     };
@@ -226,8 +226,8 @@ bool RAValidation::Run(IREmitter *IREmit) {
     bool MissingPredecessor = false;
 
     for (auto Predecessor : BlockInfo.Predecessors) {
-      auto PredecessorID = CurrentIR.GetID(Predecessor);
-      bool HaveState = BlockExitState.contains(PredecessorID) && BlockExitState[PredecessorID].Version == CurrentVersion;
+      const auto PredecessorID = CurrentIR.GetID(Predecessor);
+      const bool HaveState = BlockExitState.contains(PredecessorID) && BlockExitState[PredecessorID].Version == CurrentVersion;
 
       if (IsFowardsEdge(PredecessorID) && !HaveState) {
         // We are probably about to visit this node anyway, remove it
@@ -252,7 +252,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
     // Second, we need to determine the register status as of Block entry
     auto BlockOp = CurrentIR.GetOp<IROp_CodeBlock>(BlockNode);
-    uint32_t FirstSSA = BlockOp->Begin.ID();
+    const auto FirstSSA = BlockOp->Begin.ID();
 
     auto& BlockRegState = BlockExitState.try_emplace(BlockID).first->second;
     bool EmptyRegState = true;
@@ -281,9 +281,9 @@ bool RAValidation::Run(IREmitter *IREmit) {
     // Thrid, we need to iterate over all IR ops in the block
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-      uint32_t ID = CurrentIR.GetID(CodeNode);
+      const auto ID = CurrentIR.GetID(CodeNode);
 
-      auto CheckArg = [&] (uint32_t i, OrderedNodeWrapper Arg) {
+      const auto CheckArg = [&](uint32_t i, OrderedNodeWrapper Arg) {
         const auto PhyReg = RAData->GetNodeRegister(Arg.ID());
 
         if (PhyReg.IsInvalid())
@@ -330,8 +330,8 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
       case OP_FILLREGISTER: {
         auto FillRegister = IROp->C<IROp_FillRegister>();
-        uint32_t ExpectedValue = FillRegister->OriginalValue.ID();
-        uint32_t Value = BlockRegState.Unspill(FillRegister->Slot);
+        const auto ExpectedValue = FillRegister->OriginalValue.ID();
+        const auto Value = BlockRegState.Unspill(FillRegister->Slot);
 
         // TODO: This only proves that the Spill has a consistent SSA value
         //       In the future we need to prove it contains the correct SSA value
@@ -400,14 +400,14 @@ bool RAValidation::Run(IREmitter *IREmit) {
       HadError |= true;
 
       for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-        uint32_t BlockID = CurrentIR.GetID(BlockNode);
-        auto& BlockInfo = OffsetToBlockMap[BlockID];
+        const auto BlockID = CurrentIR.GetID(BlockNode);
+        const auto& BlockInfo = OffsetToBlockMap[BlockID];
 
         Errors << fmt::format("Block {}\n\tPredecessors: ", BlockID);
 
         for (auto Predecessor : BlockInfo.Predecessors) {
-          auto PredecessorID = CurrentIR.GetID(Predecessor);
-          bool FowardsEdge = PredecessorID < BlockID;
+          const auto PredecessorID = CurrentIR.GetID(Predecessor);
+          const bool FowardsEdge = PredecessorID < BlockID;
           if (!FowardsEdge) {
             Errors << "(Backwards): ";
           }
@@ -417,8 +417,8 @@ bool RAValidation::Run(IREmitter *IREmit) {
         Errors << "\n\tSuccessors: ";
 
         for (auto Successor : BlockInfo.Successors) {
-          auto SuccessorID = CurrentIR.GetID(Successor);
-          bool FowardsEdge = SuccessorID > BlockID;
+          const auto SuccessorID = CurrentIR.GetID(Successor);
+          const bool FowardsEdge = SuccessorID > BlockID;
 
           if (!FowardsEdge) {
             Errors << "(Backwards): ";
