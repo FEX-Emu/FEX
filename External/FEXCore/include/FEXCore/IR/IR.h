@@ -11,6 +11,7 @@
 #include <tuple>
 
 namespace FEXCore::IR {
+class OrderedNode;
 class RegisterAllocationPass;
 class RegisterAllocationData;
 
@@ -22,7 +23,11 @@ class RegisterAllocationData;
  */
 struct IROp_Header;
 
-class OrderedNode;
+/**
+ * @brief Represents the ID of a given IR node.
+ */
+using NodeID = uint32_t;
+
 /**
  * @brief This is a very simple wrapper for our node pointers
  * You probably don't want to use this directly
@@ -64,7 +69,7 @@ struct NodeWrapperBase final {
     return Node.GetNode(Base);
   }
 
-  uint32_t ID() const;
+  NodeID ID() const;
 
   bool IsInvalid() const { return NodeOffset == 0; }
 
@@ -399,7 +404,7 @@ public:
 		return { RealNode, RealNode->Op(IRList) };
 	}
 
-  uint32_t ID() const {
+  NodeID ID() const {
     return Node.ID();
   }
 
@@ -483,6 +488,6 @@ FEX_DEFAULT_VISIBILITY void Dump(std::stringstream *out, IRListView const* IR, I
 FEX_DEFAULT_VISIBILITY std::unique_ptr<IREmitter> Parse(std::istream *in);
 
 template<typename Type>
-inline uint32_t NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }
+inline NodeID NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }
 
 };

@@ -117,21 +117,21 @@ private:
   constexpr static uint8_t RA_64 = 3;
   constexpr static uint8_t RA_XMM = 4;
 
-  [[nodiscard]] IR::PhysicalRegister GetPhys(uint32_t Node) const;
+  [[nodiscard]] IR::PhysicalRegister GetPhys(IR::NodeID Node) const;
 
-  [[nodiscard]] bool IsFPR(uint32_t Node) const;
-  [[nodiscard]] bool IsGPR(uint32_t Node) const;
-
-  template<uint8_t RAType>
-  [[nodiscard]] Xbyak::Reg GetSrc(uint32_t Node) const;
-  template<uint8_t RAType>
-  [[nodiscard]] std::pair<Xbyak::Reg, Xbyak::Reg> GetSrcPair(uint32_t Node) const;
+  [[nodiscard]] bool IsFPR(IR::NodeID Node) const;
+  [[nodiscard]] bool IsGPR(IR::NodeID Node) const;
 
   template<uint8_t RAType>
-  [[nodiscard]] Xbyak::Reg GetDst(uint32_t Node) const;
+  [[nodiscard]] Xbyak::Reg GetSrc(IR::NodeID Node) const;
+  template<uint8_t RAType>
+  [[nodiscard]] std::pair<Xbyak::Reg, Xbyak::Reg> GetSrcPair(IR::NodeID Node) const;
 
-  [[nodiscard]] Xbyak::Xmm GetSrc(uint32_t Node) const;
-  [[nodiscard]] Xbyak::Xmm GetDst(uint32_t Node) const;
+  template<uint8_t RAType>
+  [[nodiscard]] Xbyak::Reg GetDst(IR::NodeID Node) const;
+
+  [[nodiscard]] Xbyak::Xmm GetSrc(IR::NodeID Node) const;
+  [[nodiscard]] Xbyak::Xmm GetDst(IR::NodeID Node) const;
 
   [[nodiscard]] Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset,
                                             IR::MemOffsetType OffsetType, uint8_t OffsetScale) const;
@@ -182,8 +182,8 @@ private:
 
   std::tuple<SetCC, CMovCC, JCC> GetCC(IR::CondClassType cond);
 
-  using OpHandler = void (X86JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
-  std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};
+  using OpHandler = void (X86JITCore::*)(IR::IROp_Header *IROp, IR::NodeID Node);
+  std::array<OpHandler, IR::IROps::OP_LAST + 1> OpHandlers {};
   void RegisterALUHandlers();
   void RegisterAtomicHandlers();
   void RegisterBranchHandlers();
@@ -197,7 +197,7 @@ private:
 
   void PushRegs();
   void PopRegs();
-#define DEF_OP(x) void Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 
   ///< Unhandled handler
   DEF_OP(Unhandled);

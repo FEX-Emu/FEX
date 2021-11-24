@@ -26,7 +26,7 @@ static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
   LogMan::Msg::DFmt("Value: 0x{:016x}'{:016x}", ValueUpper, Value);
 }
 
-#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();

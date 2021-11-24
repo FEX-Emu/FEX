@@ -98,7 +98,7 @@ void X86JITCore::PopRegs() {
   add(rsp, 16 * RAXMM_x.size());
 }
 
-void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
+void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
@@ -308,7 +308,7 @@ void X86JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   }
 }
 
-void X86JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
+void X86JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
 X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread)
@@ -433,7 +433,7 @@ void X86JITCore::ClearCache() {
   }
 }
 
-IR::PhysicalRegister X86JITCore::GetPhys(uint32_t Node) const {
+IR::PhysicalRegister X86JITCore::GetPhys(IR::NodeID Node) const {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
   LOGMAN_THROW_A_FMT(PhyReg.Raw != 255, "Couldn't Allocate register for node: ssa{}. Class: {}", Node, PhyReg.Class);
@@ -441,16 +441,16 @@ IR::PhysicalRegister X86JITCore::GetPhys(uint32_t Node) const {
   return PhyReg;
 }
 
-bool X86JITCore::IsFPR(uint32_t Node) const {
+bool X86JITCore::IsFPR(IR::NodeID Node) const {
   return RAData->GetNodeRegister(Node).Class == IR::FPRClass.Val;
 }
 
-bool X86JITCore::IsGPR(uint32_t Node) const {
+bool X86JITCore::IsGPR(IR::NodeID Node) const {
   return RAData->GetNodeRegister(Node).Class == IR::GPRClass.Val;
 }
 
 template<uint8_t RAType>
-Xbyak::Reg X86JITCore::GetSrc(uint32_t Node) const {
+Xbyak::Reg X86JITCore::GetSrc(IR::NodeID Node) const {
   // rax, rcx, rdx, rsi, r8, r9,
   // r10
   // Callee Saved
@@ -469,24 +469,24 @@ Xbyak::Reg X86JITCore::GetSrc(uint32_t Node) const {
 }
 
 template
-Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_64>(uint32_t Node) const;
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_64>(IR::NodeID Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_32>(uint32_t Node) const;
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_32>(IR::NodeID Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_16>(uint32_t Node) const;
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_16>(IR::NodeID Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_8>(uint32_t Node) const;
+Xbyak::Reg X86JITCore::GetSrc<X86JITCore::RA_8>(IR::NodeID Node) const;
 
-Xbyak::Xmm X86JITCore::GetSrc(uint32_t Node) const {
+Xbyak::Xmm X86JITCore::GetSrc(IR::NodeID Node) const {
   auto PhyReg = GetPhys(Node);
   return RAXMM_x[PhyReg.Reg];
 }
 
 template<uint8_t RAType>
-Xbyak::Reg X86JITCore::GetDst(uint32_t Node) const {
+Xbyak::Reg X86JITCore::GetDst(IR::NodeID Node) const {
   auto PhyReg = GetPhys(Node);
   if constexpr (RAType == RA_64)
     return RA64[PhyReg.Reg].cvt64();
@@ -501,19 +501,19 @@ Xbyak::Reg X86JITCore::GetDst(uint32_t Node) const {
 }
 
 template
-Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_64>(uint32_t Node) const;
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_64>(IR::NodeID Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_32>(uint32_t Node) const;
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_32>(IR::NodeID Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_16>(uint32_t Node) const;
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_16>(IR::NodeID Node) const;
 
 template
-Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_8>(uint32_t Node) const;
+Xbyak::Reg X86JITCore::GetDst<X86JITCore::RA_8>(IR::NodeID Node) const;
 
 template<uint8_t RAType>
-std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair(uint32_t Node) const {
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair(IR::NodeID Node) const {
   auto PhyReg = GetPhys(Node);
   if constexpr (RAType == RA_64)
     return RA64Pair[PhyReg.Reg];
@@ -522,12 +522,12 @@ std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair(uint32_t Node) const {
 }
 
 template
-std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_64>(uint32_t Node) const;
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_64>(IR::NodeID Node) const;
 
 template
-std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_32>(uint32_t Node) const;
+std::pair<Xbyak::Reg, Xbyak::Reg> X86JITCore::GetSrcPair<X86JITCore::RA_32>(IR::NodeID Node) const;
 
-Xbyak::Xmm X86JITCore::GetDst(uint32_t Node) const {
+Xbyak::Xmm X86JITCore::GetDst(IR::NodeID Node) const {
   auto PhyReg = GetPhys(Node);
   return RAXMM_x[PhyReg.Reg];
 }
@@ -689,7 +689,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
       LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
-      uint32_t Node = IR->GetID(BlockNode);
+      const auto Node = IR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
       if (IsTarget == JumpTargets.end()) {
         IsTarget = JumpTargets.try_emplace(Node).first;
@@ -726,10 +726,10 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
           Inst << "\t" << Name << " ";
         }
 
-        uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        const uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
-          uint32_t ArgNode = IROp->Args[i].ID();
-          uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
+          const auto ArgNode = IROp->Args[i].ID();
+          const uint64_t PhysReg = RAPass->GetNodeRegister(ArgNode);
           if (PhysReg >= GPRPairBase)
             Inst << "Pair" << GetPhys(ArgNode) << (i + 1 == NumArgs ? "" : ", ");
           else if (PhysReg >= XMMBase)
@@ -741,7 +741,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
         LogMan::Msg::DFmt("{}", Inst.str());
       }
       #endif
-      uint32_t ID = IR->GetID(CodeNode);
+      const auto ID = IR->GetID(CodeNode);
 
       // Execute handler
       OpHandler Handler = OpHandlers[IROp->Op];

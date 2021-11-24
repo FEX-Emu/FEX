@@ -42,7 +42,7 @@ void Arm64JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
+void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
@@ -307,7 +307,7 @@ void Arm64JITCore::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
   }
 }
 
-void Arm64JITCore::Op_NoOp(FEXCore::IR::IROp_Header *IROp, uint32_t Node) {
+void Arm64JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
 Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
@@ -484,7 +484,7 @@ Arm64JITCore::~Arm64JITCore() {
   FreeCodeBuffer(InitialCodeBuffer);
 }
 
-IR::PhysicalRegister Arm64JITCore::GetPhys(uint32_t Node) const {
+IR::PhysicalRegister Arm64JITCore::GetPhys(IR::NodeID Node) const {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
   LOGMAN_THROW_A_FMT(!PhyReg.IsInvalid(), "Couldn't Allocate register for node: ssa{}. Class: {}", Node, PhyReg.Class);
@@ -493,7 +493,7 @@ IR::PhysicalRegister Arm64JITCore::GetPhys(uint32_t Node) const {
 }
 
 template<>
-aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_32>(uint32_t Node) const {
+aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_32>(IR::NodeID Node) const {
   auto Reg = GetPhys(Node);
 
   if (Reg.Class == IR::GPRFixedClass.Val) {
@@ -508,7 +508,7 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_32>(uint32_t Node) const
 }
 
 template<>
-aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(uint32_t Node) const {
+aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(IR::NodeID Node) const {
   auto Reg = GetPhys(Node);
 
   if (Reg.Class == IR::GPRFixedClass.Val) {
@@ -523,18 +523,18 @@ aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(uint32_t Node) const
 }
 
 template<>
-std::pair<aarch64::Register, aarch64::Register> Arm64JITCore::GetSrcPair<Arm64JITCore::RA_32>(uint32_t Node) const {
+std::pair<aarch64::Register, aarch64::Register> Arm64JITCore::GetSrcPair<Arm64JITCore::RA_32>(IR::NodeID Node) const {
   uint32_t Reg = GetPhys(Node).Reg;
   return RA32Pair[Reg];
 }
 
 template<>
-std::pair<aarch64::Register, aarch64::Register> Arm64JITCore::GetSrcPair<Arm64JITCore::RA_64>(uint32_t Node) const {
+std::pair<aarch64::Register, aarch64::Register> Arm64JITCore::GetSrcPair<Arm64JITCore::RA_64>(IR::NodeID Node) const {
   uint32_t Reg = GetPhys(Node).Reg;
   return RA64Pair[Reg];
 }
 
-aarch64::VRegister Arm64JITCore::GetSrc(uint32_t Node) const {
+aarch64::VRegister Arm64JITCore::GetSrc(IR::NodeID Node) const {
   auto Reg = GetPhys(Node);
 
   if (Reg.Class == IR::FPRFixedClass.Val) {
@@ -548,7 +548,7 @@ aarch64::VRegister Arm64JITCore::GetSrc(uint32_t Node) const {
   FEX_UNREACHABLE;
 }
 
-aarch64::VRegister Arm64JITCore::GetDst(uint32_t Node) const {
+aarch64::VRegister Arm64JITCore::GetDst(IR::NodeID Node) const {
   auto Reg = GetPhys(Node);
 
   if (Reg.Class == IR::FPRFixedClass.Val) {
@@ -590,18 +590,18 @@ bool Arm64JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode,
   }
 }
 
-FEXCore::IR::RegisterClassType Arm64JITCore::GetRegClass(uint32_t Node) const {
+FEXCore::IR::RegisterClassType Arm64JITCore::GetRegClass(IR::NodeID Node) const {
   return FEXCore::IR::RegisterClassType {GetPhys(Node).Class};
 }
 
 
-bool Arm64JITCore::IsFPR(uint32_t Node) const {
+bool Arm64JITCore::IsFPR(IR::NodeID Node) const {
   auto Class = GetRegClass(Node);
 
   return Class == IR::FPRClass || Class == IR::FPRFixedClass;
 }
 
-bool Arm64JITCore::IsGPR(uint32_t Node) const {
+bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
   auto Class = GetRegClass(Node);
 
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
@@ -697,7 +697,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
 #endif
 
     {
-      uint32_t Node = IR->GetID(BlockNode);
+      const auto Node = IR->GetID(BlockNode);
       auto IsTarget = JumpTargets.find(Node);
       if (IsTarget == JumpTargets.end()) {
         IsTarget = JumpTargets.try_emplace(Node).first;
@@ -718,7 +718,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     }
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      uint32_t ID = IR->GetID(CodeNode);
+      const auto ID = IR->GetID(CodeNode);
 
       // Execute handler
       OpHandler Handler = OpHandlers[IROp->Op];

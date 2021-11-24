@@ -102,30 +102,30 @@ private:
   constexpr static uint8_t RA_FPR = 2;
 
   template<uint8_t RAType>
-  [[nodiscard]] aarch64::Register GetReg(uint32_t Node) const;
+  [[nodiscard]] aarch64::Register GetReg(IR::NodeID Node) const;
 
   template<>
-  [[nodiscard]] aarch64::Register GetReg<RA_32>(uint32_t Node) const;
+  [[nodiscard]] aarch64::Register GetReg<RA_32>(IR::NodeID Node) const;
   template<>
-  [[nodiscard]] aarch64::Register GetReg<RA_64>(uint32_t Node) const;
+  [[nodiscard]] aarch64::Register GetReg<RA_64>(IR::NodeID Node) const;
 
   template<uint8_t RAType>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair(uint32_t Node) const;
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair(IR::NodeID Node) const;
 
   template<>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_32>(uint32_t Node) const;
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_32>(IR::NodeID Node) const;
   template<>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_64>(uint32_t Node) const;
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_64>(IR::NodeID Node) const;
 
-  [[nodiscard]] aarch64::VRegister GetSrc(uint32_t Node) const;
-  [[nodiscard]] aarch64::VRegister GetDst(uint32_t Node) const;
+  [[nodiscard]] aarch64::VRegister GetSrc(IR::NodeID Node) const;
+  [[nodiscard]] aarch64::VRegister GetDst(IR::NodeID Node) const;
 
-  [[nodiscard]] FEXCore::IR::RegisterClassType GetRegClass(uint32_t Node) const;
+  [[nodiscard]] FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;
 
-  [[nodiscard]] IR::PhysicalRegister GetPhys(uint32_t Node) const;
+  [[nodiscard]] IR::PhysicalRegister GetPhys(IR::NodeID Node) const;
 
-  [[nodiscard]] bool IsFPR(uint32_t Node) const;
-  [[nodiscard]] bool IsGPR(uint32_t Node) const;
+  [[nodiscard]] bool IsFPR(IR::NodeID Node) const;
+  [[nodiscard]] bool IsGPR(IR::NodeID Node) const;
 
   [[nodiscard]] MemOperand GenerateMemOperand(uint8_t AccessSize,
                                               aarch64::Register Base,
@@ -185,8 +185,8 @@ private:
   IR::RegisterAllocationPass *RAPass;
   IR::RegisterAllocationData *RAData;
 
-  using OpHandler = void (Arm64JITCore::*)(FEXCore::IR::IROp_Header *IROp, uint32_t Node);
-  std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers {};
+  using OpHandler = void (Arm64JITCore::*)(IR::IROp_Header *IROp, IR::NodeID Node);
+  std::array<OpHandler, IR::IROps::OP_LAST + 1> OpHandlers {};
   void RegisterALUHandlers();
   void RegisterAtomicHandlers();
   void RegisterBranchHandlers();
@@ -197,7 +197,7 @@ private:
   void RegisterMoveHandlers();
   void RegisterVectorHandlers();
   void RegisterEncryptionHandlers();
-#define DEF_OP(x) void Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 
   ///< Unhandled handler
   DEF_OP(Unhandled);

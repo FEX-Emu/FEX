@@ -35,7 +35,7 @@ class RegisterAllocationData {
     bool IsShared {false};
     PhysicalRegister Map[0];
 
-    PhysicalRegister GetNodeRegister(uint32_t Node) const {
+    PhysicalRegister GetNodeRegister(NodeID Node) const {
       return Map[Node];
     }
     uint32_t SpillSlots() const { return SpillSlotCount; }

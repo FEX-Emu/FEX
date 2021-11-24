@@ -176,7 +176,7 @@ public:
   bool IsShared() const { return Flags & FLAG_Shared; }
   void SetShared(bool Set) { if (Set) Flags |= FLAG_Shared; else Flags &= ~FLAG_Shared; }
 
-  uint32_t GetID(OrderedNode *Node) const {
+  NodeID GetID(OrderedNode *Node) const {
     return Node->Wrapped(GetListData()).ID();
   }
 
