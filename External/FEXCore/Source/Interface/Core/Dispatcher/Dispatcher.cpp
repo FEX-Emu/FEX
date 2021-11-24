@@ -28,11 +28,15 @@ void Dispatcher::SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuS
   --ctx->IdleWaitRefCount;
   ctx->IdleWaitCV.notify_all();
 
+  Thread->RunningEvents.ThreadSleeping = true;
+
   // Go to sleep
   Thread->StartRunning.Wait();
 
   Thread->RunningEvents.Running = true;
   ++ctx->IdleWaitRefCount;
+  Thread->RunningEvents.ThreadSleeping = false;
+
   ctx->IdleWaitCV.notify_all();
 }
 
@@ -618,6 +622,15 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
                            "Signals in dispatcher have unsynchronized context");
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
+    }
+
+    // We need to be a little bit careful here
+    // If we were already paused (due to GDB) and we are immediately stopping (due to gdb kill)
+    // Then we need to ensure we don't double decrement our idle thread counter
+    if (ThreadState->RunningEvents.ThreadSleeping) {
+      // If the thread was sleeping then its idle counter was decremented
+      // Reincrement it here to not break logic
+      ++ThreadState->CTX->IdleWaitRefCount;
     }
 
     ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
