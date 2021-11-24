@@ -75,7 +75,7 @@ namespace FEXCore {
       return false;
     }
 
-    void Append(uint32_t Val) {
+    void Append(T Val) {
       auto that = this;
 
       while (that->Next) {
@@ -96,7 +96,7 @@ namespace FEXCore {
         that->Next = std::make_unique<BucketList<Size, T>>();
       }
     }
-    void Erase(uint32_t Val) {
+    void Erase(T Val) {
       size_t i = 0;
       auto that = this;
       auto foundThat = this;
