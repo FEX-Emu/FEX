@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <FEXCore/Utils/LogManager.h>
 
@@ -11,9 +12,9 @@ namespace FEXCore {
   // To optimize for best performance, Size should be big enough to allocate one or two
   // buckets for the typical case
   // Picking a Size so sizeof(Bucket<...>) is a power of two is also a small win
-  template<unsigned _Size, typename T = uint32_t>
+  template<size_t _Size, typename T = uint32_t>
   struct BucketList {
-    static constexpr const unsigned Size = _Size;
+    static constexpr size_t Size = _Size;
 
     T Items[Size];
     std::unique_ptr<BucketList<Size>> Next;
@@ -21,7 +22,7 @@ namespace FEXCore {
     void Clear() {
       Items[0] = 0;
       #ifndef NDEBUG
-      for (int i = 1; i < Size; i++)
+      for (size_t i = 1; i < Size; i++)
         Items[i] = 0xDEADBEEF;
       #endif
       Next.reset();
@@ -32,8 +33,8 @@ namespace FEXCore {
     }
 
     template<typename EnumeratorFn>
-    inline void Iterate(EnumeratorFn Enumerator) const {
-      int i = 0;
+    void Iterate(EnumeratorFn Enumerator) const {
+      size_t i = 0;
       auto Bucket = this;
 
       for(;;) {
@@ -52,8 +53,8 @@ namespace FEXCore {
     }
 
     template<typename EnumeratorFn>
-    inline bool Find(EnumeratorFn Enumerator) const {
-      int i = 0;
+    bool Find(EnumeratorFn Enumerator) const {
+      size_t i = 0;
       auto Bucket = this;
 
       for(;;) {
@@ -81,7 +82,7 @@ namespace FEXCore {
         that = that->Next.get();
       }
 
-      int i;
+      size_t i;
       for (i = 0; i < Size; i++) {
         if (that->Items[i] == 0) {
           that->Items[i] = Val;
@@ -96,10 +97,10 @@ namespace FEXCore {
       }
     }
     void Erase(uint32_t Val) {
-      int i = 0;
+      size_t i = 0;
       auto that = this;
       auto foundThat = this;
-      auto foundI = 0;
+      size_t foundI = 0;
 
       for (;;) {
         if (that->Items[i] == Val) {
