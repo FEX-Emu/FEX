@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <FEXCore/Utils/LogManager.h>
 
@@ -11,17 +12,17 @@ namespace FEXCore {
   // To optimize for best performance, Size should be big enough to allocate one or two
   // buckets for the typical case
   // Picking a Size so sizeof(Bucket<...>) is a power of two is also a small win
-  template<unsigned _Size, typename T = uint32_t>
+  template<size_t _Size, typename T = uint32_t>
   struct BucketList {
-    static constexpr const unsigned Size = _Size;
+    static constexpr size_t Size = _Size;
 
     T Items[Size];
     std::unique_ptr<BucketList<Size>> Next;
 
     void Clear() {
-      Items[0] = 0;
+      Items[0] = T{};
       #ifndef NDEBUG
-      for (int i = 1; i < Size; i++)
+      for (size_t i = 1; i < Size; i++)
         Items[i] = 0xDEADBEEF;
       #endif
       Next.reset();
@@ -32,18 +33,19 @@ namespace FEXCore {
     }
 
     template<typename EnumeratorFn>
-    inline void Iterate(EnumeratorFn Enumerator) const {
-      int i = 0;
+    void Iterate(EnumeratorFn Enumerator) const {
+      size_t i = 0;
       auto Bucket = this;
 
-      for(;;) {
+      while (true) {
         auto Item = Bucket->Items[i];
-        if (Item == 0)
+        if (Item == T{}) {
           break;
+        }
 
         Enumerator(Item);
 
-        if (++i == Bucket->Size) {
+        if (++i == Size) {
           LOGMAN_THROW_A_FMT(Bucket->Next != nullptr, "Interference bug");
           Bucket = Bucket->Next.get();
           i = 0;
@@ -52,19 +54,20 @@ namespace FEXCore {
     }
 
     template<typename EnumeratorFn>
-    inline bool Find(EnumeratorFn Enumerator) const {
-      int i = 0;
+    bool Find(EnumeratorFn Enumerator) const {
+      size_t i = 0;
       auto Bucket = this;
 
-      for(;;) {
+      while (true) {
         auto Item = Bucket->Items[i];
-        if (Item == 0)
+        if (Item == T{}) {
           break;
+        }
 
         if (Enumerator(Item))
           return true;
 
-        if (++i == Bucket->Size) {
+        if (++i == Size) {
           LOGMAN_THROW_A_FMT(Bucket->Next != nullptr, "Bucket in bad state");
           Bucket = Bucket->Next.get();
           i = 0;
@@ -74,34 +77,34 @@ namespace FEXCore {
       return false;
     }
 
-    void Append(uint32_t Val) {
+    void Append(T Val) {
       auto that = this;
 
       while (that->Next) {
         that = that->Next.get();
       }
 
-      int i;
+      size_t i;
       for (i = 0; i < Size; i++) {
-        if (that->Items[i] == 0) {
+        if (that->Items[i] == T{}) {
           that->Items[i] = Val;
           break;
         }
       }
 
       if (i < (Size-1)) {
-        that->Items[i+1] = 0;
+        that->Items[i+1] = T{};
       } else {
         that->Next = std::make_unique<BucketList<Size, T>>();
       }
     }
-    void Erase(uint32_t Val) {
-      int i = 0;
+    void Erase(T Val) {
+      size_t i = 0;
       auto that = this;
       auto foundThat = this;
-      auto foundI = 0;
+      size_t foundI = 0;
 
-      for (;;) {
+      while (true) {
         if (that->Items[i] == Val) {
           foundThat = that;
           foundI = i;
@@ -114,17 +117,17 @@ namespace FEXCore {
         }
       }
 
-      for (;;) {
-        if (that->Items[i] == 0) {
+      while (true) {
+        if (that->Items[i] == T{}) {
           foundThat->Items[foundI] = that->Items[i-1];
-          that->Items[i-1] = 0;
+          that->Items[i-1] = T{};
           break;
         }
         else if (++i == Size) {
-          if (that->Next->Items[0] == 0) {
+          if (that->Next->Items[0] == T{}) {
             that->Next.reset();
             foundThat->Items[foundI] = that->Items[Size-1];
-            that->Items[Size-1] = 0;
+            that->Items[Size-1] = T{};
             break;
           }
           i = 0;
