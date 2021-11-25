@@ -166,22 +166,5 @@ DEF_OP(CPUID) {
 }
 
 #undef DEF_OP
-void InterpreterOps::RegisterBranchHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &InterpreterOps::Op_##x
-  REGISTER_OP(GUESTCALLDIRECT,   GuestCallDirect);
-  REGISTER_OP(GUESTCALLINDIRECT, GuestCallIndirect);
-  REGISTER_OP(GUESTRETURN,       GuestReturn);
-  REGISTER_OP(SIGNALRETURN,      SignalReturn);
-  REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
-  REGISTER_OP(EXITFUNCTION,      ExitFunction);
-  REGISTER_OP(JUMP,              Jump);
-  REGISTER_OP(CONDJUMP,          CondJump);
-  REGISTER_OP(SYSCALL,           Syscall);
-  REGISTER_OP(INLINESYSCALL,     InlineSyscall);
-  REGISTER_OP(THUNK,             Thunk);
-  REGISTER_OP(VALIDATECODE,      ValidateCode);
-  REGISTER_OP(REMOVECODEENTRY,   RemoveCodeEntry);
-  REGISTER_OP(CPUID,             CPUID);
-#undef REGISTER_OP
-}
-}
+
+} // namespace FEXCore::CPU

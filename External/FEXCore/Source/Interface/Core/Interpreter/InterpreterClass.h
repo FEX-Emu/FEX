@@ -37,8 +37,6 @@ public:
 
   void CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
 
-  static void InitializeInterpreterOpHandlers();
-
 private:
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *State;

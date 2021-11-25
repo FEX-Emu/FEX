@@ -38,13 +38,5 @@ DEF_OP(Mov) {
 }
 
 #undef DEF_OP
-void InterpreterOps::RegisterMoveHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &InterpreterOps::Op_##x
-  REGISTER_OP(EXTRACTELEMENTPAIR, ExtractElementPair);
-  REGISTER_OP(CREATEELEMENTPAIR,  CreateElementPair);
-  REGISTER_OP(MOV,                Mov);
-#undef REGISTER_OP
-}
-}
 
-
+} // namespace FEXCore::CPU

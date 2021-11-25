@@ -250,7 +250,6 @@ namespace FEXCore::Context {
     LocalLoader = Loader;
     using namespace FEXCore::Core;
 
-    FEXCore::CPU::InitializeInterpreterOpHandlers();
     FEXCore::Core::CPUState NewThreadState = CreateDefaultCPUState();
     FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
 

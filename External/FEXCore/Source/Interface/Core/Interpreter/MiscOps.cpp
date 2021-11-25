@@ -141,21 +141,5 @@ DEF_OP(Print) {
 }
 
 #undef DEF_OP
-void InterpreterOps::RegisterMiscHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &InterpreterOps::Op_##x
-  REGISTER_OP(DUMMY,      NoOp);
-  REGISTER_OP(IRHEADER,   NoOp);
-  REGISTER_OP(CODEBLOCK,  NoOp);
-  REGISTER_OP(BEGINBLOCK, NoOp);
-  REGISTER_OP(ENDBLOCK,   NoOp);
-  REGISTER_OP(FENCE,      Fence);
-  REGISTER_OP(BREAK,      Break);
-  REGISTER_OP(PHI,        NoOp);
-  REGISTER_OP(PHIVALUE,   NoOp);
-  REGISTER_OP(PRINT,      Print);
-  REGISTER_OP(GETROUNDINGMODE, GetRoundingMode);
-  REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
-  REGISTER_OP(INVALIDATEFLAGS,   NoOp);
-#undef REGISTER_OP
-}
-}
+
+} // namespace FEXCore::CPU
