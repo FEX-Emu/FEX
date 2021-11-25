@@ -166,7 +166,7 @@ Res GetDest(void* SSAData, FEXCore::IR::OrderedNodeWrapper Op) {
 }
 
 template<typename Res>
-Res GetDest(void* SSAData, uint32_t Op) {
+Res GetDest(void* SSAData, FEXCore::IR::NodeID Op) {
   auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Op];
   return reinterpret_cast<Res>(DstPtr);
 }

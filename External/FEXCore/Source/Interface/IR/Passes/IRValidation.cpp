@@ -69,15 +69,12 @@ bool IRValidation::Run(IREmitter *IREmit) {
       EntryBlock = BlockNode;
     }
 
-    uint32_t BlockID = CurrentIR.GetID(BlockNode);
-
+    const auto BlockID = CurrentIR.GetID(BlockNode);
     BlockInfo *CurrentBlock = &OffsetToBlockMap.try_emplace(BlockID).first->second;
 
-
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-      uint32_t ID = CurrentIR.GetID(CodeNode);
-
-      uint8_t OpSize = IROp->Size;
+      const auto ID = CurrentIR.GetID(CodeNode);
+      const uint8_t OpSize = IROp->Size;
 
       if (IROp->HasDest) {
         HadError |= OpSize == 0;

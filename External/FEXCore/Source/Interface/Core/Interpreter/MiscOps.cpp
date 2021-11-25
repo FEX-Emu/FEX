@@ -22,7 +22,7 @@ static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
   FEX_UNREACHABLE;
 }
 
-#define DEF_OP(x) void InterpreterOps::Op_##x(FEXCore::IR::IROp_Header *IROp, IROpData *Data, uint32_t Node)
+#define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
   switch (Op->Fence) {

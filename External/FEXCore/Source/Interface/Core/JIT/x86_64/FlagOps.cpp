@@ -14,7 +14,7 @@ $end_info$
 
 namespace FEXCore::CPU {
 
-#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(GetHostFlag) {
   auto Op = IROp->C<IR::IROp_GetHostFlag>();
 

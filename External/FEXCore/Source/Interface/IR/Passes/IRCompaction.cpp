@@ -24,7 +24,7 @@ namespace FEXCore::IR {
 
 // struct to avoid zero-initialization
 struct RemapNode {
-  IR::OrderedNodeWrapper::NodeOffsetType NodeID;
+  IR::NodeID NodeID;
 };
 
 static_assert(sizeof(RemapNode) == 4);
@@ -172,9 +172,9 @@ bool IRCompaction::Run(IREmitter *IREmit) {
         // Now that we have the op copied over, we need to modify SSA values to point to the new correct locations
         // This doesn't use IR::GetArgs(Op) because we need to remap all SSA nodes
         // Including ones that we don't RA
-        uint8_t NumArgs = LocalIROp->NumArgs;
+        const uint8_t NumArgs = LocalIROp->NumArgs;
         for (uint8_t i = 0; i < NumArgs; ++i) {
-          uint32_t OldArg = LocalIROp->Args[i].ID();
+          const auto OldArg = LocalIROp->Args[i].ID();
           #ifndef NDEBUG
             LOGMAN_THROW_A_FMT(OldToNewRemap[OldArg].NodeID != ~0U, "Tried remapping unfound node %ssa{}", OldArg);
           #endif

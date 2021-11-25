@@ -13,7 +13,7 @@ $end_info$
 #include <cstdint>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void InterpreterOps::Op_##x(FEXCore::IR::IROp_Header *IROp, IROpData *Data, uint32_t Node)
+#define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(F80LOADFCW) {
   FEXCore::CPU::OpHandlers<IR::OP_F80LOADFCW>::handle(*GetSrc<uint16_t*>(Data->SSAData, IROp->Args[0]));
 }

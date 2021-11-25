@@ -29,9 +29,8 @@ $end_info$
 
 #define SRA_DEBUG(...) // fmt::print(__VA_ARGS__)
 
+namespace FEXCore::IR {
 namespace {
-  using FEXCore::IR::PhysicalRegister;
-
   constexpr uint32_t INVALID_REG = FEXCore::IR::InvalidReg;
   constexpr uint32_t INVALID_CLASS = FEXCore::IR::InvalidClass.Val;
 
@@ -51,12 +50,12 @@ namespace {
 
   struct RegisterNode {
     struct VolatileHeader {
-      uint32_t BlockID;
+      IR::NodeID BlockID;
       uint32_t SpillSlot;
       RegisterNode *PhiPartner;
     } Head { ~0U, ~0U, nullptr };
 
-    FEXCore::BucketList<DEFAULT_INTERFERENCE_LIST_COUNT, uint32_t> Interferences;
+    FEXCore::BucketList<DEFAULT_INTERFERENCE_LIST_COUNT, IR::NodeID> Interferences;
   };
 
   static_assert(sizeof(RegisterNode) == 128 * 4);
@@ -79,20 +78,20 @@ namespace {
   };
 
   struct SpillStackUnit {
-    uint32_t Node;
-    FEXCore::IR::RegisterClassType Class;
+    IR::NodeID Node;
+    IR::RegisterClassType Class;
     LiveRange SpillRange;
-    FEXCore::IR::OrderedNode *SpilledNode;
+    IR::OrderedNode *SpilledNode;
   };
 
   struct RegisterGraph {
-    std::unique_ptr<FEXCore::IR::RegisterAllocationData, FEXCore::IR::RegisterAllocationDataDeleter> AllocData;
+    std::unique_ptr<IR::RegisterAllocationData, IR::RegisterAllocationDataDeleter> AllocData;
     RegisterSet Set;
     std::vector<RegisterNode> Nodes{};
     uint32_t NodeCount{};
     std::vector<SpillStackUnit> SpillStack;
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> BlockPredecessors;
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> VisitedNodePredecessors;
+    std::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> BlockPredecessors;
+    std::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> VisitedNodePredecessors;
   };
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount);
@@ -157,11 +156,11 @@ namespace {
     Graph->NodeCount = NodeCount;
   }
 
-  void SetNodeClass(RegisterGraph *Graph, uint32_t Node, FEXCore::IR::RegisterClassType Class) {
+  void SetNodeClass(RegisterGraph *Graph, IR::NodeID Node, FEXCore::IR::RegisterClassType Class) {
     Graph->AllocData->Map[Node].Class = Class.Val;
   }
 
-  void SetNodePartner(RegisterGraph *Graph, uint32_t Node, uint32_t Partner) {
+  void SetNodePartner(RegisterGraph *Graph, IR::NodeID Node, IR::NodeID Partner) {
     Graph->Nodes[Node].Head.PhiPartner = &Graph->Nodes[Partner];
   }
 
@@ -178,7 +177,7 @@ namespace {
    */
   bool DoesNodeInterfereWithRegister(RegisterGraph *Graph, RegisterNode const *Node, PhysicalRegister RegAndClass) {
     // Walk the node's interference list and see if it interferes with this register
-    return Node->Interferences.Find([Graph, RegAndClass](uint32_t InterferenceNodeId) {
+    return Node->Interferences.Find([Graph, RegAndClass](IR::NodeID InterferenceNodeId) {
       auto InterferenceRegAndClass = Graph->AllocData->Map[InterferenceNodeId];
       return IsConflict(Graph, InterferenceRegAndClass, RegAndClass);
     });
@@ -262,9 +261,8 @@ namespace {
       }
     }
   }
-}
+} // Anonymous namespace
 
-namespace FEXCore::IR {
   class ConstrainedRAPass final : public RegisterAllocationPass {
     public:
       ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool OptimizeSRA);
@@ -301,9 +299,9 @@ namespace FEXCore::IR {
 
       std::vector<LiveRange> LiveRanges;
 
-      using BlockInterferences = std::vector<uint32_t>;
+      using BlockInterferences = std::vector<IR::NodeID>;
 
-      std::unordered_map<uint32_t, BlockInterferences> LocalBlockInterferences;
+      std::unordered_map<IR::NodeID, BlockInterferences> LocalBlockInterferences;
       BlockInterferences GlobalBlockInterferences;
 
       void CalculateLiveRange(FEXCore::IR::IRListView *IR);
@@ -313,13 +311,17 @@ namespace FEXCore::IR {
       void CalculateNodeInterference(FEXCore::IR::IRListView *IR);
       void AllocateVirtualRegisters();
       void CalculatePredecessors(FEXCore::IR::IRListView *IR);
-      void RecursiveLiveRangeExpansion(FEXCore::IR::IRListView *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors);
+      void RecursiveLiveRangeExpansion(FEXCore::IR::IRListView *IR,
+                                       IR::NodeID Node, IR::NodeID DefiningBlockID,
+                                       LiveRange *LiveRange,
+                                       const std::unordered_set<IR::NodeID> &Predecessors,
+                                       std::unordered_set<IR::NodeID> &VisitedPredecessors);
 
       FEXCore::IR::AllNodesIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
       FEXCore::IR::AllNodesIterator FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
 
-      uint32_t FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost = -1);
-      uint32_t FindSpillSlot(uint32_t Node, FEXCore::IR::RegisterClassType RegisterClass);
+      IR::NodeID FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost = -1);
+      uint32_t FindSpillSlot(IR::NodeID Node, FEXCore::IR::RegisterClassType RegisterClass);
 
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
   };
@@ -364,7 +366,11 @@ namespace FEXCore::IR {
     return std::move(Graph->AllocData);
   }
 
-  void ConstrainedRAPass::RecursiveLiveRangeExpansion(FEXCore::IR::IRListView *IR, uint32_t Node, uint32_t DefiningBlockID, LiveRange *LiveRange, const std::unordered_set<uint32_t> &Predecessors, std::unordered_set<uint32_t> &VisitedPredecessors) {
+  void ConstrainedRAPass::RecursiveLiveRangeExpansion(IR::IRListView *IR,
+                                                      IR::NodeID Node, IR::NodeID DefiningBlockID,
+                                                      LiveRange *LiveRange,
+                                                      const std::unordered_set<IR::NodeID> &Predecessors,
+                                                      std::unordered_set<IR::NodeID> &VisitedPredecessors) {
     for (auto PredecessorId: Predecessors) {
       if (DefiningBlockID != PredecessorId && !VisitedPredecessors.contains(PredecessorId)) {
         // do the magic
@@ -396,9 +402,9 @@ namespace FEXCore::IR {
     constexpr uint32_t DEFAULT_REMAT_COST = 1000;
 
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
-      uint32_t BlockNodeID = IR->GetID(BlockNode);
+      const auto BlockNodeID = IR->GetID(BlockNode);
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        uint32_t Node = IR->GetID(CodeNode);
+        const auto Node = IR->GetID(CodeNode);
 
         // If the destination hasn't yet been set then set it now
         if (IROp->HasDest) {
@@ -431,16 +437,16 @@ namespace FEXCore::IR {
         // to impact the live range.
         if (IROp->Op == OP_FILLREGISTER) continue;
 
-        uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        const uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
-          uint32_t ArgNode = IROp->Args[i].ID();
+          const auto ArgNode = IROp->Args[i].ID();
           LOGMAN_THROW_A_FMT(LiveRanges[ArgNode].Begin != ~0U, "%ssa{} used by %ssa{} before defined?", ArgNode, Node);
 
-          auto ArgNodeBlockID = Graph->Nodes[ArgNode].Head.BlockID;
+          const auto ArgNodeBlockID = Graph->Nodes[ArgNode].Head.BlockID;
           if (ArgNodeBlockID == BlockNodeID) {
             // Set the node end to be at least here
             LiveRanges[ArgNode].End = Node;
@@ -465,7 +471,7 @@ namespace FEXCore::IR {
           auto Op = IROp->C<IR::IROp_Phi>();
           auto NodeBegin = IR->at(Op->PhiBegin);
 
-          uint32_t CurrentSourcePartner = Node;
+          auto CurrentSourcePartner = Node;
           while (NodeBegin != NodeBegin.Invalid()) {
             auto [ValueNode, ValueHeader] = NodeBegin();
             auto ValueOp = ValueHeader->CW<IROp_PhiValue>();
@@ -568,7 +574,7 @@ namespace FEXCore::IR {
     //First pass: Mark pre-writes
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        uint32_t Node = IR->GetID(CodeNode);
+        const auto Node = IR->GetID(CodeNode);
         if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
           //int -1 /*vreg*/ = (int)(Op->Offset / 8) - 1;
@@ -594,16 +600,16 @@ namespace FEXCore::IR {
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       memset(StaticMaps, 0, MapsSize * sizeof(LiveRange*));
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        uint32_t Node = IR->GetID(CodeNode);
+        const auto Node = IR->GetID(CodeNode);
 
         // Check for read-after-write and demote if it happens
-        uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        const uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
           if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
-          uint32_t ArgNode = IROp->Args[i].ID();
+          const auto ArgNode = IROp->Args[i].ID();
 
           // ACCESSED after write, let's not SRA this one
           if (LiveRanges[ArgNode].Written) {
@@ -705,7 +711,7 @@ namespace FEXCore::IR {
       BlockInterferenceVector->reserve(BlockIROp->Last.ID() - BlockIROp->Begin.ID());
 
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        uint32_t Node = IR->GetID(CodeNode);
+        const auto Node = IR->GetID(CodeNode);
         LiveRange *NodeLiveRange = &LiveRanges[Node];
 
         if (NodeLiveRange->Begin >= BlockIROp->Begin.ID() &&
@@ -724,13 +730,13 @@ namespace FEXCore::IR {
 
   void ConstrainedRAPass::CalculateBlockNodeInterference(FEXCore::IR::IRListView *IR) {
     #if 0
-    auto AddInterference = [&](uint32_t Node1, uint32_t Node2) {
+    const auto AddInterference = [&](IR::NodeID Node1, IR::NodeID Node2) {
       RegisterNode *Node = &Graph->Nodes[Node1];
       Node->Interference.Set(Node2);
       Node->InterferenceList[Node->Head.InterferenceCount++] = Node2;
     };
 
-    auto CheckInterferenceNodeSizes = [&](uint32_t Node1, uint32_t MaxNewNodes) {
+    const auto CheckInterferenceNodeSizes = [&](IR::NodeID Node1, uint32_t MaxNewNodes) {
       RegisterNode *Node = &Graph->Nodes[Node1];
       uint32_t NewListMax = Node->Head.InterferenceCount + MaxNewNodes;
       if (Node->InterferenceListSize <= NewListMax) {
@@ -744,11 +750,11 @@ namespace FEXCore::IR {
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(IR->GetID(BlockNode)).first->second;
 
-      std::vector<uint32_t> Interferences;
+      std::vector<IR::NodeID> Interferences;
       Interferences.reserve(BlockInterferenceVector->size() + GlobalBlockInterferences.size());
 
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-        uint32_t Node = IR->GetID(CodeNode);
+        const auto Node = IR->GetID(CodeNode);
 
         // Check for every interference with the local block's interference
         for (auto RHSNode : *BlockInterferenceVector) {
@@ -783,16 +789,16 @@ namespace FEXCore::IR {
   }
 
   void ConstrainedRAPass::CalculateNodeInterference(FEXCore::IR::IRListView *IR) {
-    auto AddInterference = [this](uint32_t Node1, uint32_t Node2) {
+    const auto AddInterference = [this](IR::NodeID Node1, IR::NodeID Node2) {
       RegisterNode *Node = &Graph->Nodes[Node1];
       Node->Interferences.Append(Node2);
     };
 
-    uint32_t NodeCount = IR->GetSSACount();
+    const uint32_t NodeCount = IR->GetSSACount();
 
     // Now that we have all the live ranges calculated we need to add them to our interference graph
 
-    auto GetClass = [](PhysicalRegister PhyReg) {
+    const auto GetClass = [](PhysicalRegister PhyReg) {
       if (PhyReg.Class == IR::GPRPairClass.Val)
         return IR::GPRClass.Val;
       else
@@ -892,7 +898,7 @@ namespace FEXCore::IR {
           RegAndClass = LiveRange->PrefferedRegister;
         } else {
           uint32_t RegisterConflicts = 0;
-          CurrentNode->Interferences.Iterate([&](const uint32_t InterferenceNode) {
+          CurrentNode->Interferences.Iterate([&](const IR::NodeID InterferenceNode) {
             RegisterConflicts |= GetConflicts(Graph, Graph->AllocData->Map[InterferenceNode], {RegClass});
           });
 
@@ -922,14 +928,14 @@ namespace FEXCore::IR {
 
   FEXCore::IR::AllNodesIterator ConstrainedRAPass::FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End) {
     using namespace FEXCore::IR;
-    uint32_t SearchID = IREmit->ViewIR().GetID(Node);
+    const auto SearchID = IREmit->ViewIR().GetID(Node);
 
     while(1) {
       auto [RealNode, IROp] = Begin();
 
-      uint8_t NumArgs = FEXCore::IR::GetArgs(IROp->Op);
+      const uint8_t NumArgs = FEXCore::IR::GetArgs(IROp->Op);
       for (uint8_t i = 0; i < NumArgs; ++i) {
-        uint32_t ArgNode = IROp->Args[i].ID();
+        const auto ArgNode = IROp->Args[i].ID();
         if (ArgNode == SearchID) {
           return Begin;
         }
@@ -948,7 +954,7 @@ namespace FEXCore::IR {
 
   FEXCore::IR::AllNodesIterator ConstrainedRAPass::FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End) {
     auto CurrentIR = IREmit->ViewIR();
-    uint32_t SearchID = CurrentIR.GetID(Node);
+    const auto SearchID = CurrentIR.GetID(Node);
 
     while (1) {
       using namespace FEXCore::IR;
@@ -959,9 +965,9 @@ namespace FEXCore::IR {
         return End;
       }
 
-      uint8_t NumArgs = FEXCore::IR::GetArgs(IROp->Op);
+      const uint8_t NumArgs = FEXCore::IR::GetArgs(IROp->Op);
       for (uint8_t i = 0; i < NumArgs; ++i) {
-        uint32_t ArgNode = IROp->Args[i].ID();
+        const auto ArgNode = IROp->Args[i].ID();
         if (ArgNode == SearchID) {
           return End;
         }
@@ -978,10 +984,10 @@ namespace FEXCore::IR {
     return FEXCore::IR::AllNodesIterator::Invalid();
   }
 
-  uint32_t ConstrainedRAPass::FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost) {
+  IR::NodeID ConstrainedRAPass::FindNodeToSpill(IREmitter *IREmit, RegisterNode *RegisterNode, uint32_t CurrentLocation, LiveRange const *OpLiveRange, int32_t RematCost) {
     auto IR = IREmit->ViewIR();
 
-    uint32_t InterferenceIdToSpill = 0;
+    IR::NodeID InterferenceIdToSpill = 0;
     uint32_t InterferenceFarthestNextUse = 0;
 
     IR::OrderedNodeWrapper NodeOpBegin = IR::OrderedNodeWrapper::WrapOffset(CurrentLocation * sizeof(IR::OrderedNode));
@@ -992,7 +998,7 @@ namespace FEXCore::IR {
     // Couldn't find register to spill
     // Be more aggressive
     if (InterferenceIdToSpill == 0) {
-      RegisterNode->Interferences.Iterate([&](uint32_t InterferenceNode) {
+      RegisterNode->Interferences.Iterate([&](IR::NodeID InterferenceNode) {
         auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
         if (InterferenceLiveRange->RematCost == -1 ||
             (RematCost != -1 && InterferenceLiveRange->RematCost != RematCost)) {
@@ -1054,7 +1060,9 @@ namespace FEXCore::IR {
             auto InterferenceNodePrevUse = FindLastUseBefore(IREmit, InterferenceOrderedNode, InterferenceNodeOpBeginIter, NodeOpBeginIter);
             LOGMAN_THROW_A_FMT(InterferenceNodeNextUse != IR::NodeIterator::Invalid(), "Couldn't find next usage of op");
             // If there is no use of the interference op prior to our op then it only has initial definition
-            if (InterferenceNodePrevUse == IR::NodeIterator::Invalid()) InterferenceNodePrevUse = InterferenceNodeOpBeginIter;
+            if (InterferenceNodePrevUse == IR::NodeIterator::Invalid()) {
+              InterferenceNodePrevUse = InterferenceNodeOpBeginIter;
+            }
 
             uint32_t NextUseDistance = InterferenceNodeNextUse.ID() - CurrentLocation;
             if (NextUseDistance >= InterferenceFarthestNextUse) {
@@ -1069,7 +1077,7 @@ namespace FEXCore::IR {
 
 
     if (InterferenceIdToSpill == 0) {
-      RegisterNode->Interferences.Iterate([&](uint32_t InterferenceNode) {
+      RegisterNode->Interferences.Iterate([&](IR::NodeID InterferenceNode) {
         auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
         if (InterferenceLiveRange->RematCost == -1 ||
             (RematCost != -1 && InterferenceLiveRange->RematCost != RematCost)) {
@@ -1175,7 +1183,7 @@ namespace FEXCore::IR {
     // Heuristics failed to spill ?
     if (InterferenceIdToSpill == 0) {
       // Panic spill: Spill any value not used by the current op
-      std::set<uint32_t> CurrentNodes;
+      std::set<IR::NodeID> CurrentNodes;
 
       // Get all used nodes for current IR op
       {
@@ -1190,7 +1198,7 @@ namespace FEXCore::IR {
       }
 
 
-      RegisterNode->Interferences.Find([&](uint32_t InterferenceNode) {
+      RegisterNode->Interferences.Find([&](IR::NodeID InterferenceNode) {
           auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
           if (InterferenceLiveRange->RematCost == -1 ||
               (RematCost != -1 && InterferenceLiveRange->RematCost != RematCost)) {
@@ -1212,7 +1220,7 @@ namespace FEXCore::IR {
                         CurrentLocation, -1,
                         OpLiveRange->Begin, OpLiveRange->End);
 
-      RegisterNode->Interferences.Iterate([&](uint32_t InterferenceNode) {
+      RegisterNode->Interferences.Iterate([&](IR::NodeID InterferenceNode) {
         auto *InterferenceLiveRange = &LiveRanges[InterferenceNode];
 
         LogMan::Msg::DFmt("\tInt{}: %ssa{} Remat: {} [{}, {})", j++, InterferenceNode, InterferenceLiveRange->RematCost, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
@@ -1223,7 +1231,7 @@ namespace FEXCore::IR {
     return InterferenceIdToSpill;
   }
 
-  uint32_t ConstrainedRAPass::FindSpillSlot(uint32_t Node, FEXCore::IR::RegisterClassType RegisterClass) {
+  uint32_t ConstrainedRAPass::FindSpillSlot(IR::NodeID Node, FEXCore::IR::RegisterClassType RegisterClass) {
     RegisterNode *CurrentNode = &Graph->Nodes[Node];
     LiveRange *NodeLiveRange = &LiveRanges[Node];
     if (ReuseSpillSlots) {
@@ -1257,7 +1265,7 @@ namespace FEXCore::IR {
 
     LOGMAN_THROW_A_FMT(IROp->HasDest, "Can't spill with no dest");
 
-    uint32_t Node = IR.GetID(CodeNode);
+    const auto Node = IR.GetID(CodeNode);
     RegisterNode *CurrentNode = &Graph->Nodes[Node];
     auto &CurrentRegAndClass = Graph->AllocData->Map[Node];
     LiveRange *OpLiveRange = &LiveRanges[Node];
@@ -1270,7 +1278,7 @@ namespace FEXCore::IR {
       bool Spilled = false;
 
       // First let's just check for constants that we can just rematerialize instead of spilling
-      uint32_t InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange, 1);
+      const auto InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange, 1);
       if (InterferenceNode != ~0U) {
         // We want to end the live range of this value here and continue it on first use
         auto [ConstantNode, _] = IR.at(InterferenceNode)();
@@ -1292,7 +1300,7 @@ namespace FEXCore::IR {
 
       // If we didn't remat a constant then we need to do some real spilling
       if (!Spilled) {
-        uint32_t InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange);
+        const auto InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange);
         if (InterferenceNode != ~0U) {
           FEXCore::IR::RegisterClassType InterferenceRegClass = FEXCore::IR::RegisterClassType{Graph->AllocData->Map[InterferenceNode].Class};
           uint32_t SpillSlot = FindSpillSlot(InterferenceNode, InterferenceRegClass);

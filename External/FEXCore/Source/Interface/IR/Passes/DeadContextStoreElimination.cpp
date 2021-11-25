@@ -337,7 +337,7 @@ private:
   std::unique_ptr<FEXCore::IR::Pass> DCE;
 
   ContextInfo ClassifiedStruct;
-  std::unordered_map<FEXCore::IR::OrderedNodeWrapper::NodeOffsetType, BlockInfo> OffsetToBlockMap;
+  std::unordered_map<FEXCore::IR::NodeID, BlockInfo> OffsetToBlockMap;
 
   ContextMemberInfo *FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size);
   ContextMemberInfo *RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode = nullptr);

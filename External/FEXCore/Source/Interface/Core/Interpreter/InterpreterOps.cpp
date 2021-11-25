@@ -35,11 +35,11 @@
 namespace FEXCore::CPU {
 std::array<InterpreterOps::OpHandler, FEXCore::IR::IROps::OP_LAST + 1> InterpreterOps::OpHandlers;
 
-void InterpreterOps::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, IROpData *Data, uint32_t Node) {
+void InterpreterOps::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node) {
   LOGMAN_MSG_A_FMT("Unhandled IR Op: {}", FEXCore::IR::GetName(IROp->Op));
 }
 
-void InterpreterOps::Op_NoOp(FEXCore::IR::IROp_Header *IROp, IROpData *Data, uint32_t Node) {
+void InterpreterOps::Op_NoOp(FEXCore::IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node) {
 }
 
 template<typename R, typename... Args>
@@ -280,8 +280,8 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
     auto CodeLast = CurrentIR->at(BlockIROp->Last);
 
     for (auto [CodeNode, IROp] : CurrentIR->GetCode(BlockNode)) {
-      uint32_t ID = CurrentIR->GetID(CodeNode);
-      uint32_t Op = IROp->Op;
+      const auto ID = CurrentIR->GetID(CodeNode);
+      const uint32_t Op = IROp->Op;
 
       // Execute handler
       OpHandler Handler = InterpreterOps::OpHandlers[Op];

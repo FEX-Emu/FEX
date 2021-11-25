@@ -15,7 +15,7 @@ $end_info$
 #include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void X86JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CAS>();
   uint8_t OpSize = IROp->Size;

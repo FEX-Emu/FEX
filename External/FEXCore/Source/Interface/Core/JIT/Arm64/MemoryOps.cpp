@@ -11,7 +11,7 @@ namespace FEXCore::CPU {
 
 using namespace vixl;
 using namespace vixl::aarch64;
-#define DEF_OP(x) void Arm64JITCore::Op_##x(FEXCore::IR::IROp_Header *IROp, uint32_t Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 
 DEF_OP(LoadContext) {
   auto Op = IROp->C<IR::IROp_LoadContext>();

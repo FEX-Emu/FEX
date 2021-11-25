@@ -72,10 +72,10 @@ namespace FEXCore::CPU {
         IR::NodeIterator BlockIterator{0, 0};
       };
 
-      using OpHandler = std::function<void(FEXCore::IR::IROp_Header *IROp, IROpData *Data, uint32_t Node)>;
-      static std::array<OpHandler, FEXCore::IR::IROps::OP_LAST + 1> OpHandlers;
+      using OpHandler = std::function<void(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)>;
+      static std::array<OpHandler, IR::IROps::OP_LAST + 1> OpHandlers;
 
-#define DEF_OP(x) static void Op_##x(FEXCore::IR::IROp_Header *IROp, IROpData *Data, uint32_t Node)
+#define DEF_OP(x) static void Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 
   ///< Unhandled handler
   DEF_OP(Unhandled);
