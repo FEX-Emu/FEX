@@ -265,25 +265,4 @@ DEF_OP(CacheLineClear) {
 }
 
 #undef DEF_OP
-void InterpreterOps::RegisterMemoryHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &InterpreterOps::Op_##x
-  REGISTER_OP(LOADCONTEXT,         LoadContext);
-  REGISTER_OP(STORECONTEXT,        StoreContext);
-  REGISTER_OP(LOADREGISTER,        LoadRegister);
-  REGISTER_OP(STOREREGISTER,       StoreRegister);
-  REGISTER_OP(LOADCONTEXTINDEXED,  LoadContextIndexed);
-  REGISTER_OP(STORECONTEXTINDEXED, StoreContextIndexed);
-  REGISTER_OP(SPILLREGISTER,       SpillRegister);
-  REGISTER_OP(FILLREGISTER,        FillRegister);
-  REGISTER_OP(LOADFLAG,            LoadFlag);
-  REGISTER_OP(STOREFLAG,           StoreFlag);
-  REGISTER_OP(LOADMEM,             LoadMem);
-  REGISTER_OP(STOREMEM,            StoreMem);
-  REGISTER_OP(LOADMEMTSO,          LoadMem);
-  REGISTER_OP(STOREMEMTSO,         StoreMem);
-  REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
-  REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
-  REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
-#undef REGISTER_OP
-}
-}
+} // namespace FEXCore::CPU

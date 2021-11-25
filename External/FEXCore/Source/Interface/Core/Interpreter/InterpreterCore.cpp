@@ -35,24 +35,6 @@ static void InterpreterExecution(FEXCore::Core::CpuStateFrame *Frame) {
   InterpreterOps::InterpretIR(Thread, Thread->CurrentFrame->State.rip, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
 }
 
-void InitializeInterpreterOpHandlers() {
-  for (uint32_t i = 0; i <= FEXCore::IR::IROps::OP_LAST; ++i) {
-    InterpreterOps::OpHandlers[i] = &InterpreterOps::Op_Unhandled;
-  }
-
-  InterpreterOps::RegisterALUHandlers();
-  InterpreterOps::RegisterAtomicHandlers();
-  InterpreterOps::RegisterBranchHandlers();
-  InterpreterOps::RegisterConversionHandlers();
-  InterpreterOps::RegisterFlagHandlers();
-  InterpreterOps::RegisterMemoryHandlers();
-  InterpreterOps::RegisterMiscHandlers();
-  InterpreterOps::RegisterMoveHandlers();
-  InterpreterOps::RegisterVectorHandlers();
-  InterpreterOps::RegisterEncryptionHandlers();
-  InterpreterOps::RegisterF80Handlers();
-}
-
 InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
   : CTX {ctx}
   , State {Thread} {

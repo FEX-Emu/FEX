@@ -16,12 +16,6 @@ DEF_OP(GetHostFlag) {
   auto Op = IROp->C<IR::IROp_GetHostFlag>();
   GD = (*GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]) >> Op->Flag) & 1;
 }
-
 #undef DEF_OP
-void InterpreterOps::RegisterFlagHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &InterpreterOps::Op_##x
-  REGISTER_OP(GETHOSTFLAG, GetHostFlag);
-#undef REGISTER_OP
-}
-}
 
+} // namespace FEXCore::CPU

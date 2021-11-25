@@ -46,18 +46,6 @@ namespace FEXCore::CPU {
       static void InterpretIR(FEXCore::Core::InternalThreadState *Thread, uint64_t Entry, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData);
       static bool GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info);
 
-      static void RegisterALUHandlers();
-      static void RegisterAtomicHandlers();
-      static void RegisterBranchHandlers();
-      static void RegisterConversionHandlers();
-      static void RegisterFlagHandlers();
-      static void RegisterMemoryHandlers();
-      static void RegisterMiscHandlers();
-      static void RegisterMoveHandlers();
-      static void RegisterVectorHandlers();
-      static void RegisterEncryptionHandlers();
-      static void RegisterF80Handlers();
-
       struct IROpData {
         FEXCore::Core::InternalThreadState *State{};
         uint64_t CurrentEntry{};
@@ -71,9 +59,6 @@ namespace FEXCore::CPU {
 
         IR::NodeIterator BlockIterator{0, 0};
       };
-
-      using OpHandler = std::function<void(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)>;
-      static std::array<OpHandler, IR::IROps::OP_LAST + 1> OpHandlers;
 
 #define DEF_OP(x) static void Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 
@@ -408,4 +393,4 @@ namespace FEXCore::CPU {
   }
 
   };
-};
+} // namespace FEXCore::CPU

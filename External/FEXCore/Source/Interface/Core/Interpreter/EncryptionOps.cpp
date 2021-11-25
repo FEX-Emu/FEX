@@ -430,14 +430,5 @@ DEF_OP(AESKeyGenAssist) {
 }
 
 #undef DEF_OP
-void InterpreterOps::RegisterEncryptionHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &InterpreterOps::Op_##x
-  REGISTER_OP(VAESIMC,     AESImc);
-  REGISTER_OP(VAESENC,     AESEnc);
-  REGISTER_OP(VAESENCLAST, AESEncLast);
-  REGISTER_OP(VAESDEC,     AESDec);
-  REGISTER_OP(VAESDECLAST, AESDecLast);
-  REGISTER_OP(VAESKEYGENASSIST, AESKeyGenAssist);
-#undef REGISTER_OP
-}
-}
+
+} // namespace FEXCore::CPU
