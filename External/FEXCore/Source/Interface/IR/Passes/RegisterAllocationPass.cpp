@@ -583,7 +583,7 @@ namespace {
     LiveRange* StaticMaps[MapsSize];
 
     // Get a StaticMap entry from context offset
-    auto GetStaticMapFromOffset = [&](uint32_t Offset) {
+    const auto GetStaticMapFromOffset = [&](uint32_t Offset) -> LiveRange** {
         auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
         auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[17]);
 
@@ -598,19 +598,19 @@ namespace {
           return &StaticMaps[GprSize + reg];
         } else {
           LOGMAN_THROW_A_FMT(false, "Unexpected offset {}", Offset);
-          return (LiveRange**)nullptr;
+          return nullptr;
         }
     };
 
     // Get a StaticMap entry from reg and class
-    auto GetStaticMapFromReg = [&](IR::PhysicalRegister PhyReg) {
+    const auto GetStaticMapFromReg = [&](IR::PhysicalRegister PhyReg) -> LiveRange** {
       if (PhyReg.Class == GPRFixedClass.Val) {
         return &StaticMaps[PhyReg.Reg];
       } else if (PhyReg.Class == FPRFixedClass.Val) {
         return &StaticMaps[GprSize + PhyReg.Reg];
       } else {
         LOGMAN_THROW_A_FMT(false, "Unexpected Class {}", PhyReg.Class);
-        return (LiveRange**)nullptr;
+        return nullptr;
       }
     };
 
