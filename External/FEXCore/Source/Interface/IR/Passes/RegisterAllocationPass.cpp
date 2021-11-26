@@ -393,13 +393,39 @@ namespace {
     }
   }
 
+  [[nodiscard]] static uint32_t CalculateRematCost(IROps Op) {
+    constexpr uint32_t DEFAULT_REMAT_COST = 1000;
+
+    switch (Op) {
+      case IR::OP_CONSTANT:
+        return 1;
+
+      case IR::OP_LOADFLAG:
+      case IR::OP_LOADCONTEXT:
+      case IR::OP_LOADREGISTER:
+        return 10;
+
+      case IR::OP_LOADMEM:
+      case IR::OP_LOADMEMTSO:
+        return 100;
+
+      case IR::OP_FILLREGISTER:
+        return DEFAULT_REMAT_COST + 1;
+
+      // We want PHI to be very expensive to spill
+      case IR::OP_PHI:
+        return DEFAULT_REMAT_COST * 10;
+
+      default:
+        return DEFAULT_REMAT_COST;
+    }
+  }
+
   void ConstrainedRAPass::CalculateLiveRange(FEXCore::IR::IRListView *IR) {
     using namespace FEXCore;
     size_t Nodes = IR->GetSSACount();
     LiveRanges.clear();
     LiveRanges.resize(Nodes);
-
-    constexpr uint32_t DEFAULT_REMAT_COST = 1000;
 
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       const auto BlockNodeID = IR->GetID(BlockNode);
@@ -415,20 +441,7 @@ namespace {
         }
 
         // Calculate remat cost
-        switch (IROp->Op) {
-          case IR::OP_CONSTANT: LiveRanges[Node].RematCost = 1; break;
-          case IR::OP_LOADFLAG:
-          case IR::OP_LOADCONTEXT: LiveRanges[Node].RematCost = 10; break;
-          case IR::OP_LOADREGISTER: LiveRanges[Node].RematCost = 10; break;
-          case IR::OP_LOADMEM:
-          case IR::OP_LOADMEMTSO:
-            LiveRanges[Node].RematCost = 100;
-            break;
-          case IR::OP_FILLREGISTER: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST + 1; break;
-          // We want PHI to be very expensive to spill
-          case IR::OP_PHI: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST * 10; break;
-          default: LiveRanges[Node].RematCost = DEFAULT_REMAT_COST; break;
-        }
+        LiveRanges[Node].RematCost = CalculateRematCost(IROp->Op);
 
         // Set this node's block ID
         Graph->Nodes[Node].Head.BlockID = BlockNodeID;
