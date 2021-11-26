@@ -7,7 +7,7 @@ def print_enums(ops, defines):
     output_file.write("enum IROps : uint8_t {\n")
 
     for op_key, op_vals in ops.items():
-        output_file.write("\t\tOP_%s,\n" % op_key.upper())
+        output_file.write("\tOP_%s,\n" % op_key.upper())
 
     output_file.write("};\n")
 
@@ -20,7 +20,10 @@ def print_ir_structs(ops, defines):
 
     # Print out defines here
     for op_val in defines:
-        output_file.write("\t%s;\n" % op_val)
+        if op_val:
+            output_file.write("\t%s;\n" % op_val)
+        else:
+            output_file.write("\n")
 
     output_file.write("// Default structs\n")
     output_file.write("struct __attribute__((packed)) IROp_Header {\n")
@@ -81,11 +84,21 @@ def print_ir_structs(ops, defines):
 
         output_file.write("\tstatic constexpr IROps OPCODE = OP_%s;\n" % op_key.upper())
 
+        if (SSAArgs > 0):
+            # Add helpers for accessing SSA arguments, given how frequently they're accessed
+            output_file.write("\n")
+            output_file.write("\t[[nodiscard]] OrderedNodeWrapper& Args(size_t Index) {\n")
+            output_file.write("\t\treturn Header.Args[Index];\n")
+            output_file.write("\t}\n")
+            output_file.write("\t[[nodiscard]] const OrderedNodeWrapper& Args(size_t Index) const {\n")
+            output_file.write("\t\treturn Header.Args[Index];\n")
+            output_file.write("\t}\n")
+
         output_file.write("};\n")
 
         # Add a static assert that the IR ops must be pod
-        output_file.write("static_assert(std::is_trivial<IROp_%s>::value);\n\n" % op_key)
-        output_file.write("static_assert(std::is_standard_layout<IROp_%s>::value);\n\n" % op_key)
+        output_file.write("static_assert(std::is_trivial_v<IROp_%s>);\n" % op_key)
+        output_file.write("static_assert(std::is_standard_layout_v<IROp_%s>);\n\n" % op_key)
 
     output_file.write("#undef IROP_STRUCTS\n")
     output_file.write("#endif\n\n")
@@ -106,12 +119,12 @@ def print_ir_sizes(ops, defines):
     output_file.write("// Make sure our array maps directly to the IROps enum\n")
     output_file.write("static_assert(IRSizes[IROps::OP_LAST] == -1ULL);\n\n")
 
-    output_file.write("[[maybe_unused]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
+    output_file.write("[[maybe_unused, nodiscard]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
 
-    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) std::string_view const& GetName(IROps Op);\n")
-    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) uint8_t GetArgs(IROps Op);\n")
-    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
-    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) bool HasSideEffects(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] std::string_view const& GetName(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] uint8_t GetArgs(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool HasSideEffects(IROps Op);\n")
 
     output_file.write("#undef IROP_SIZES\n")
     output_file.write("#endif\n\n")
@@ -270,7 +283,8 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\t\t\n")
     output_file.write("\t\toperator Wrapper<IROp_Header>() const { return Wrapper<IROp_Header> {reinterpret_cast<IROp_Header*>(first), Node}; }\n")
     output_file.write("\t\toperator OrderedNode *() { return Node; }\n")
-    output_file.write("\t\toperator OpNodeWrapper () { return Node->Header.Value; }\n")
+    output_file.write("\t\toperator const OrderedNode *() const { return Node; }\n")
+    output_file.write("\t\toperator OpNodeWrapper () const { return Node->Header.Value; }\n")
     output_file.write("\t};\n")
 
     output_file.write("\ttemplate <class T>\n")
@@ -301,18 +315,18 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\t\treturn IRPair<T>{Op, CreateNode(&Op->Header)};\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tuint8_t GetOpSize(OrderedNode *Op) const {\n")
+    output_file.write("\tuint8_t GetOpSize(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\treturn HeaderOp->Size;\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tuint8_t GetOpElements(OrderedNode *Op) const {\n")
+    output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\tLOGMAN_THROW_A_FMT(HeaderOp->HasDest, \"Op {} has no dest\\n\", GetName(HeaderOp->Op));\n")
     output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tbool OpHasDest(OrderedNode *Op) const {\n")
+    output_file.write("\tbool OpHasDest(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\treturn HeaderOp->HasDest;\n")
     output_file.write("\t}\n\n")
