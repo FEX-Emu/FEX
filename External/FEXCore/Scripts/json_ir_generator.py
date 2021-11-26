@@ -273,7 +273,8 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\t\t\n")
     output_file.write("\t\toperator Wrapper<IROp_Header>() const { return Wrapper<IROp_Header> {reinterpret_cast<IROp_Header*>(first), Node}; }\n")
     output_file.write("\t\toperator OrderedNode *() { return Node; }\n")
-    output_file.write("\t\toperator OpNodeWrapper () { return Node->Header.Value; }\n")
+    output_file.write("\t\toperator const OrderedNode *() const { return Node; }\n")
+    output_file.write("\t\toperator OpNodeWrapper () const { return Node->Header.Value; }\n")
     output_file.write("\t};\n")
 
     output_file.write("\ttemplate <class T>\n")
@@ -304,18 +305,18 @@ def print_ir_allocator_helpers(ops, defines):
     output_file.write("\t\treturn IRPair<T>{Op, CreateNode(&Op->Header)};\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tuint8_t GetOpSize(OrderedNode *Op) const {\n")
+    output_file.write("\tuint8_t GetOpSize(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\treturn HeaderOp->Size;\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tuint8_t GetOpElements(OrderedNode *Op) const {\n")
+    output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\tLOGMAN_THROW_A_FMT(HeaderOp->HasDest, \"Op {} has no dest\\n\", GetName(HeaderOp->Op));\n")
     output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tbool OpHasDest(OrderedNode *Op) const {\n")
+    output_file.write("\tbool OpHasDest(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\treturn HeaderOp->HasDest;\n")
     output_file.write("\t}\n\n")

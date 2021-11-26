@@ -76,7 +76,7 @@ struct NodeWrapperBase final {
   explicit NodeWrapperBase() = default;
 
   Type *GetNode(uintptr_t Base) { return reinterpret_cast<Type*>(Base + NodeOffset); }
-  Type const *GetNode(uintptr_t Base) const { return reinterpret_cast<Type*>(Base + NodeOffset); }
+  const Type *GetNode(uintptr_t Base) const { return reinterpret_cast<const Type*>(Base + NodeOffset); }
 
   void SetOffset(uintptr_t Base, uintptr_t Value) { NodeOffset = Value - Base; }
   friend constexpr bool operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
