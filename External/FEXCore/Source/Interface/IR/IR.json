@@ -66,9 +66,9 @@
     "constexpr FEXCore::IR::RoundType Round_Towards_Zero {ROUND_MODE_TOWARDS_ZERO} /* Truncate */",
     "constexpr FEXCore::IR::RoundType Round_Host {ROUND_MODE_TOWARDS_ZERO + 1}",
 
-    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_SXTX {0};",
-    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1};",
-    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2};",
+    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_SXTX {0}",
+    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1}",
+    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2}",
 
     "constexpr FEXCore::IR::BreakReason Break_Unimplemented      {0}",
     "constexpr FEXCore::IR::BreakReason Break_Interrupt          {1}",
