@@ -12,6 +12,7 @@ $end_info$
 #include <string>
 #include <memory>
 #include <optional>
+#include <vector>
 #include "Common/NetStream.h"
 #include "Common/SoftFloat.h"
 #include "Interface/Context/Context.h"
@@ -473,6 +474,48 @@ std::string buildTargetXML() {
     return xml.str();
 }
 
+std::string buildMemoryMap() {
+  std::ostringstream xml;
+
+  xml << "<?xml version='1.0'?>\n";
+
+  xml << "<!DOCTYPE memory-map>\n";
+  xml << "<memory-map>";
+
+  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  std::string Line;
+
+  while (std::getline(fs, Line)) {
+    if (fs.eof()) break;
+    uint64_t Begin, End;
+    char r,w,x,p;
+    if (sscanf(Line.c_str(), "%lx-%lx %c%c%c%c", &Begin, &End, &r, &w, &x, &p) == 6) {
+      xml << "<memory type=\"ram\" start=\"0x" << std::hex << Begin << "\" length=\"0x" << (End - Begin) << "\"/>\n";
+    }
+  }
+
+  xml << "</memory-map>";
+
+  xml << std::flush;
+
+  return xml.str();
+}
+
+std::string buildOSData() {
+  std::ostringstream xml;
+
+  xml << "<?xml version='1.0'?>\n";
+
+  xml << "<!DOCTYPE target SYSTEM \"osdata.dtd\">\n";
+  xml << "<osdata type=\"processes\">";
+  // XXX
+  xml << "</osdata>";
+
+  xml << std::flush;
+
+  return xml.str();
+}
+
 GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
     std::string object;
     std::string rw;
@@ -539,11 +582,11 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
 
         ThreadString.clear();
         std::ostringstream ss;
-        ss << "<?xml version=\"1.0\?>\n";
+        ss << "<?xml version=\"1.0\"?>\n";
         ss << "<threads>\n";
-        for (size_t i = 0; i < Threads->size(); ++i) {
-          auto Thread = Threads->at(i);
-          ss << "\t<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\" core=\"" << i << "\" name=\"" <<  getThreadName(Thread->ThreadManager.GetTID()) << "\">\n";
+        for (auto &Thread : *Threads) {
+          // Thread id is in hex without 0x prefix
+          ss << "\t<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\" name=\"" <<  getThreadName(Thread->ThreadManager.GetTID()) << "\">\n";
           ss << "\t</thread>\n";
         }
 
@@ -554,6 +597,20 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
 
       return {encode(ThreadString.substr(offset, length)), HandledPacketType::TYPE_ACK};
     }
+
+    if (object == "memory-map") {
+      if (offset == 0) {
+        MemoryMapString = buildMemoryMap();
+      }
+      return {encode(MemoryMapString.substr(offset, length)), HandledPacketType::TYPE_ACK};
+    }
+    if (object == "osdata") {
+      if (offset == 0) {
+        OSDataString = buildOSData();
+      }
+      return {encode(OSDataString.substr(offset, length)), HandledPacketType::TYPE_ACK};
+    }
+
     return {"", HandledPacketType::TYPE_UNKNOWN};
 }
 
@@ -643,12 +700,82 @@ GdbServer::HandledPacketType GdbServer::handleMemory(const std::string &packet) 
 
 GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
   const auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
+  const auto MatchStr = [](const std::string &Str, const char *str) -> bool { return Str.rfind(str, 0) == 0; };
 
-  if (match("qSupported")) {
-    return {"PacketSize=5000;xmlRegisters=i386;qXfer:exec-file:read+;qXfer:features:read+;", HandledPacketType::TYPE_ACK};
+  const auto split = [](const std::string &Str, char deliminator) -> std::vector<std::string> {
+    std::vector<std::string> Elements;
+    std::istringstream Input(Str);
+    for (std::string line;
+         std::getline(Input, line);
+         Elements.emplace_back(line));
+    return Elements;
+  };
+
+  if (match("QNonStop:")) {
+    auto ss = std::istringstream(packet);
+    ss.seekg(std::string("QNonStop:").size());
+    ss.get(); // discard colon
+    ss >> NonStopMode;
+    return {"OK", HandledPacketType::TYPE_ACK};
+  }
+  if (match("qSupported:")) {
+    // eg: qSupported:multiprocess+;swbreak+;hwbreak+;qRelocInsn+;fork-events+;vfork-events+;exec-events+;vContSupported+;QThreadEvents+;no-resumed+;memory-tagging+;xmlRegisters=i386
+    auto Features = split(packet.substr(strlen("qSupported:")), ';');
+
+    // For feature documentation
+    // https://sourceware.org/gdb/current/onlinedocs/gdb/General-Query-Packets.html#qSupported
+    std::string SupportedFeatures{};
+
+    // Required features
+    SupportedFeatures += "PacketSize=5000;";
+    SupportedFeatures += "xmlRegisters=i386;";
+
+    // XXX: Not yet supported, would be easy
+    // SupportedFeatures += "qXfer:auxv-file:read+";
+    SupportedFeatures += "qXfer:exec-file:read+;";
+    SupportedFeatures += "qXfer:features:read+;";
+    // XXX: Requires parsing the ELF and watching the library list
+    // SupportedFeatures += "qXfer:libraries:read+;";
+    SupportedFeatures += "qXfer:memory-map:read+;";
+    SupportedFeatures += "qXfer:siginfo:read+;";
+    SupportedFeatures += "qXfer:siginfo:write+;";
+    // XXX: Allowing this causes GDB to crash
+    SupportedFeatures += "qXfer:threads:read+;";
+    // QCatchSignals
+    // QPassSignals
+    SupportedFeatures += "QNonStop+;";
+
+    SupportedFeatures += "qXfer:osdata:read+;";
+
+    // Causes GDB to crash?
+    // SupportedFeatures += "QStartNoAckMode+;";
+
+    for (auto &Feature : Features) {
+
+      if (MatchStr(Feature, "swbreak+")) {
+        SupportedFeatures += "swbreak+;";
+      }
+      if (MatchStr(Feature, "hwbreak+")) {
+        SupportedFeatures += "hwbreak+;";
+      }
+      if (MatchStr(Feature, "vContSupported+")) {
+        SupportedFeatures += "vContSupported+;";
+      }
+
+      // Unsupported:
+      //  multiprocess
+      //  qRelocInsn
+      //  fork-events
+      //  vfork-events
+      //  exec-events
+      //  QThreadEvents
+      //  no-resumed
+      //  memory-tagging
+    }
+    return {SupportedFeatures, HandledPacketType::TYPE_ACK};
   }
   if (match("qAttached")) {
-    return {"1", HandledPacketType::TYPE_ACK}; // We don't currently support launching executables from gdb.
+    return {"tnotrun:0", HandledPacketType::TYPE_ACK}; // We don't currently support launching executables from gdb.
   }
   if (match("qXfer")) {
     return handleXfer(packet);
@@ -667,7 +794,10 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
     ss << "m";
     for (size_t i = 0; i < Threads->size(); ++i) {
       auto Thread = Threads->at(i);
-      ss << std::hex << Thread->ThreadManager.TID << ",";
+      ss << std::hex << Thread->ThreadManager.TID;
+      if (i != (Threads->size() - 1)) {
+        ss << ",";
+      }
     }
     return {ss.str(), HandledPacketType::TYPE_ACK};
   }
@@ -698,6 +828,30 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
   }
 
   return {"", HandledPacketType::TYPE_UNKNOWN};
+}
+
+
+GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) {
+  switch (action) {
+    case 'c': {
+      CTX->Run();
+      CTX->WaitForThreadsToRun();
+      return {"", HandledPacketType::TYPE_ONLYACK};
+    }
+    case 's': {
+      CTX->Step();
+      SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
+      auto str = fmt::format("T05thread:{:02x};core:2c;", getpid());
+      SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
+      return {"OK", HandledPacketType::TYPE_ACK};
+    }
+    case 't':
+      // This thread isn't part of the thread pool
+      CTX->Stop(false /* Ignore current thread */);
+      return {"OK", HandledPacketType::TYPE_ACK};
+    default:
+      return {"E00", HandledPacketType::TYPE_ACK};
+  }
 }
 
 GdbServer::HandledPacketType GdbServer::handleV(const std::string& packet) {
@@ -762,44 +916,25 @@ GdbServer::HandledPacketType GdbServer::handleV(const std::string& packet) {
         return {F_data(ret, data), HandledPacketType::TYPE_ACK};
     }
     if ((ss = match("vCont?"))) {
-        return {"vCont;c;C;t;s;S;r", HandledPacketType::TYPE_ACK}; // We support continue, step and terminate
-                                // FIXME: We also claim to support continue with signal... because it's compulsory
+      return {"vCont;c;t;s;r", HandledPacketType::TYPE_ACK}; // We support continue, step and terminate
+      // FIXME: We also claim to support continue with signal... because it's compulsory
     }
     if ((ss = match("vCont;"))) {
-        char action;
-        int thread;
+      char action{};
+      int thread{};
 
-        action = ss->get();
+      action = ss->get();
 
-        if (ss->peek() == ':') {
-            ss->get();
-            *ss >> std::hex >> thread;
-        }
+      if (ss->peek() == ':') {
+        ss->get();
+        *ss >> std::hex >> thread;
+      }
 
-        if (ss->fail()) {
-            return {"E00", HandledPacketType::TYPE_ACK};
-        }
+      if (ss->fail()) {
+        return {"E00", HandledPacketType::TYPE_ACK};
+      }
 
-        switch (action) {
-        case 'c': {
-            CTX->Run();
-            return {"", HandledPacketType::TYPE_ONLYACK};
-          }
-        case 's': {
-            CTX->Step();
-            SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
-            auto str = fmt::format("T05thread:{:02x};core:2c;", getpid());
-            SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
-            return {"OK", HandledPacketType::TYPE_ACK};
-          }
-        case 't':
-            // This thread isn't part of the thread pool
-            CTX->Stop(false /* Ignore current thread */);
-            return {"OK", HandledPacketType::TYPE_ACK};
-        default:
-            return {"E00", HandledPacketType::TYPE_ACK};
-        }
-
+      return ThreadAction(action, thread);
     }
     return {"", HandledPacketType::TYPE_ACK};
 }
@@ -854,11 +989,24 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const std::string &packet)
       // Indicates the reason that the thread has stopped
       // Behaviour changes if the target is in non-stop mode
       // Binja doesn't support S response here
-      //return {"S00", HandledPacketType::TYPE_ACK};
-      auto str = fmt::format("T00thread:{:02x};core:2c;", getpid());
+      auto str = fmt::format("T00thread:{:x};", getpid());
       return {std::move(str), HandledPacketType::TYPE_ACK};
     }
+    case 'c':
+      // Continue
+      CTX->Run();
+      CTX->WaitForThreadsToRun();
+      return {"OK", HandledPacketType::TYPE_ACK};
+    case 'D':
+      // Detach
+      // Ensure the threads are back in running state on detach
+      CTX->Run();
+      CTX->WaitForThreadsToRun();
+      return {"OK", HandledPacketType::TYPE_ACK};
     case 'g':
+      // We might be running while we try reading
+      // Pause up front
+      CTX->Pause();
       return {readRegs(), HandledPacketType::TYPE_ACK};
     case 'p':
       return readReg(packet);
@@ -875,6 +1023,8 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const std::string &packet)
     case '!': // Enable extended mode
     case 'T': // Is a thread alive?
       return {"OK", HandledPacketType::TYPE_ACK};
+    case 's': // Step
+      return ThreadAction('s', 0);
     case 'Z': // Inserts breakpoint or watchpoint
       return handleBreakpoint(packet);
     case 'k': // Kill the process
@@ -908,6 +1058,8 @@ void GdbServer::SendPacketPair(const HandledPacketType& response) {
 }
 
 void GdbServer::GdbServerLoop() {
+  OpenListenSocket();
+
   while (!CTX->CoreShuttingDown.load()) {
     CommsStream = OpenSocket();
 
@@ -953,6 +1105,8 @@ void GdbServer::GdbServerLoop() {
         CommsStream.reset();
     }
   }
+
+  close(ListenSocket);
 }
 static void* ThreadHandler(void *Arg) {
   FEXCore::GdbServer *This = reinterpret_cast<FEXCore::GdbServer*>(Arg);
@@ -961,49 +1115,52 @@ static void* ThreadHandler(void *Arg) {
 }
 
 void GdbServer::StartThread() {
-    gdbServerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
+  uint64_t OldMask = FEXCore::Threads::SetSignalMask(~0ULL);
+  gdbServerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
+  FEXCore::Threads::SetSignalMask(OldMask);
+}
+
+void GdbServer::OpenListenSocket() {
+  // open socket
+  struct addrinfo hints, *res;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE;
+
+  if(getaddrinfo(NULL, "8086", &hints, &res) < 0) {
+    perror("getaddrinfo");
+  }
+
+  int on = 1;
+
+  ListenSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+  if (ListenSocket < 0) {
+    perror("socket");
+  }
+  if(setsockopt(ListenSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on)) < 0) {
+    perror("setsockopt");
+    close(ListenSocket);
+  }
+
+  if (bind(ListenSocket, res->ai_addr, res->ai_addrlen) < 0) {
+    perror("bind");
+    close(ListenSocket);
+  }
+
+  listen(ListenSocket, 1);
 }
 
 std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
-    // open socket
-    int sockfd, new_fd;
+  // Block until a connection arrives
+  struct sockaddr_storage their_addr;
+  socklen_t addr_size;
 
-    struct addrinfo hints, *res;
-    struct sockaddr_storage their_addr;
-    socklen_t addr_size;
+  LogMan::Msg::IFmt("GdbServer, waiting for connection on localhost:8086");
+  int new_fd = accept(ListenSocket, (struct sockaddr *)&their_addr, &addr_size);
 
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    if(getaddrinfo(NULL, "8086", &hints, &res) < 0) {
-        perror("getaddrinfo");
-    }
-
-    int on = 1;
-
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sockfd < 0) {
-        perror("socket");
-    }
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on)) < 0) {
-        perror("setsockopt");
-    }
-
-    if (bind(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
-        perror("bind");
-    }
-
-    // Block until a connection arrives
-
-    LogMan::Msg::IFmt("GdbServer, waiting for connection on localhost:8086");
-    listen(sockfd, 1);
-
-    new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-
-    return std::make_unique<NetStream>(new_fd);
+  return std::make_unique<NetStream>(new_fd);
 }
 
 

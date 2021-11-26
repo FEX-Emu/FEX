@@ -74,7 +74,9 @@ namespace FEXCore::Core {
 
     struct {
       std::atomic_bool Running {false};
-      std::atomic_bool WaitingToStart {false};
+      std::atomic_bool WaitingToStart {true};
+      std::atomic_bool EarlyExit {false};
+      std::atomic_bool ThreadSleeping {false};
     } RunningEvents;
 
     FEXCore::Context::Context *CTX;

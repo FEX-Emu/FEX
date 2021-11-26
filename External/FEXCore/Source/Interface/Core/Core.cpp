@@ -192,12 +192,6 @@ namespace FEXCore::Context {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
-    if (Config.GdbServer) {
-      StartGdbServer();
-    }
-    else {
-      StopGdbServer();
-    }
   }
 
   Context::~Context() {
@@ -245,6 +239,13 @@ namespace FEXCore::Context {
   }
 
   FEXCore::Core::InternalThreadState* Context::InitCore(FEXCore::CodeLoader *Loader) {
+    if (Config.GdbServer) {
+      StartGdbServer();
+    }
+    else {
+      StopGdbServer();
+    }
+
     ThunkHandler.reset(FEXCore::ThunkHandler::Create());
 
     LocalLoader = Loader;
@@ -341,7 +342,6 @@ namespace FEXCore::Context {
     std::lock_guard<std::mutex> lk(ThreadCreationMutex);
     for (auto &Thread : Threads) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::Return);
-      Thread->RunningEvents.WaitingToStart.store(true);
     }
 
     for (auto &Thread : Threads) {
@@ -380,7 +380,7 @@ namespace FEXCore::Context {
     this->Config.MaxInstPerBlock = 1;
     Run();
     WaitForThreadsToRun();
-    WaitForIdleWithTimeout();
+    WaitForIdle();
     this->Config.RunningMode = PreviousRunningMode;
     this->Config.MaxInstPerBlock = PreviousMaxIntPerBlock;
   }
@@ -406,6 +406,13 @@ namespace FEXCore::Context {
         }
         if (Thread->RunningEvents.Running.load()) {
           StopThread(Thread);
+        }
+
+        // If the thread is waiting to start but immediately killed then there can be a hang
+        // This occurs in the case of gdb attach with immediate kill
+        if (Thread->RunningEvents.WaitingToStart.load()) {
+          Thread->RunningEvents.EarlyExit = true;
+          Thread->StartRunning.NotifyAll();
         }
       }
     }
@@ -1297,14 +1304,17 @@ namespace FEXCore::Context {
       Thread->StartRunning.Wait();
     }
 
-    Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
+    if (!Thread->RunningEvents.EarlyExit.load()) {
+      Thread->RunningEvents.WaitingToStart = false;
 
-    Thread->RunningEvents.Running = true;
+      Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
 
-    Thread->CPUBackend->ExecuteDispatch(Thread->CurrentFrame);
+      Thread->RunningEvents.Running = true;
 
-    Thread->RunningEvents.WaitingToStart = false;
-    Thread->RunningEvents.Running = false;
+      Thread->CPUBackend->ExecuteDispatch(Thread->CurrentFrame);
+
+      Thread->RunningEvents.Running = false;
+    }
 
     // If it is the parent thread that died then just leave
     // XXX: This doesn't make sense when the parent thread doesn't outlive its children

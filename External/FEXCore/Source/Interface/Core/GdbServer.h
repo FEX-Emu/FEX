@@ -30,6 +30,7 @@ public:
 private:
     void Break(int signal);
 
+    void OpenListenSocket();
     std::unique_ptr<std::iostream> OpenSocket();
     void StartThread();
     std::string ReadPacket(std::iostream &stream);
@@ -60,6 +61,8 @@ private:
     HandledPacketType handleBreakpoint(const std::string &packet);
     HandledPacketType handleProgramOffsets();
 
+    HandledPacketType ThreadAction(char action, uint32_t tid);
+
     std::string readRegs();
     HandledPacketType readReg(const std::string& packet);
 
@@ -69,8 +72,13 @@ private:
     std::mutex sendMutex;
     bool SettingNoAckMode{false};
     bool NoAckMode{false};
+    bool NonStopMode{false};
     std::string ThreadString{};
+    std::string MemoryMapString{};
+    std::string OSDataString{};
+
     uint32_t CurrentDebuggingThread{};
+    int ListenSocket{};
     FEX_CONFIG_OPT(Filename, APP_FILENAME);
 };
 
