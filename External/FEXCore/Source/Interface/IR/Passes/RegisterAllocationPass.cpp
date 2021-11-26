@@ -379,16 +379,20 @@ namespace {
         auto [_, IROp] = *IR->at(PredecessorId);
 
         auto Op = IROp->C<IROp_CodeBlock>();
+        const auto BeginID = Op->Begin.ID();
+        const auto LastID = Op->Last.ID();
 
         LOGMAN_THROW_A_FMT(Op->Header.Op == OP_CODEBLOCK, "Block not defined by codeblock?");
 
-        LiveRange->Begin = std::min(LiveRange->Begin, Op->Begin.ID());
-        LiveRange->End = std::max(LiveRange->End, Op->Begin.ID());
+        LiveRange->Begin = std::min(LiveRange->Begin, BeginID);
+        LiveRange->End = std::max(LiveRange->End, BeginID);
 
-        LiveRange->Begin = std::min(LiveRange->Begin, Op->Last.ID());
-        LiveRange->End = std::max(LiveRange->End, Op->Last.ID());
+        LiveRange->Begin = std::min(LiveRange->Begin, LastID);
+        LiveRange->End = std::max(LiveRange->End, LastID);
 
-        RecursiveLiveRangeExpansion(IR, Node, DefiningBlockID, LiveRange, Graph->BlockPredecessors[PredecessorId], VisitedPredecessors);
+        RecursiveLiveRangeExpansion(IR, Node, DefiningBlockID, LiveRange,
+                                    Graph->BlockPredecessors[PredecessorId],
+                                    VisitedPredecessors);
       }
     }
   }
@@ -431,50 +435,67 @@ namespace {
       const auto BlockNodeID = IR->GetID(BlockNode);
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         const auto Node = IR->GetID(CodeNode);
+        auto& NodeLiveRange = LiveRanges[Node];
 
         // If the destination hasn't yet been set then set it now
         if (IROp->HasDest) {
-          LOGMAN_THROW_A_FMT(LiveRanges[Node].Begin == ~0U, "Node begin already defined?");
-          LiveRanges[Node].Begin = Node;
+          LOGMAN_THROW_A_FMT(NodeLiveRange.Begin == ~0U, "Node begin already defined?");
+          NodeLiveRange.Begin = Node;
           // Default to ending right where after it starts
-          LiveRanges[Node].End = Node + 1;
+          NodeLiveRange.End = Node + 1;
         }
 
         // Calculate remat cost
-        LiveRanges[Node].RematCost = CalculateRematCost(IROp->Op);
+        NodeLiveRange.RematCost = CalculateRematCost(IROp->Op);
 
         // Set this node's block ID
         Graph->Nodes[Node].Head.BlockID = BlockNodeID;
 
         // FillRegister's SSA arg is only there for verification, and we don't want it
         // to impact the live range.
-        if (IROp->Op == OP_FILLREGISTER) continue;
+        if (IROp->Op == OP_FILLREGISTER) {
+          continue;
+        }
 
         const uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
-          if (IROp->Args[i].IsInvalid()) continue;
-          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
-          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
-          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
-          const auto ArgNode = IROp->Args[i].ID();
-          LOGMAN_THROW_A_FMT(LiveRanges[ArgNode].Begin != ~0U, "%ssa{} used by %ssa{} before defined?", ArgNode, Node);
+          const auto& Arg = IROp->Args[i];
+
+          if (Arg.IsInvalid()) {
+            continue;
+          }
+          if (IR->GetOp<IROp_Header>(Arg)->Op == OP_INLINECONSTANT) {
+            continue;
+          }
+          if (IR->GetOp<IROp_Header>(Arg)->Op == OP_INLINEENTRYPOINTOFFSET) {
+            continue;
+          }
+          if (IR->GetOp<IROp_Header>(Arg)->Op == OP_IRHEADER) {
+            continue;
+          }
+
+          const auto ArgNode = Arg.ID();
+          auto& ArgNodeLiveRange = LiveRanges[ArgNode];
+          LOGMAN_THROW_A_FMT(ArgNodeLiveRange.Begin != ~0U, "%ssa{} used by %ssa{} before defined?", ArgNode, Node);
 
           const auto ArgNodeBlockID = Graph->Nodes[ArgNode].Head.BlockID;
           if (ArgNodeBlockID == BlockNodeID) {
             // Set the node end to be at least here
-            LiveRanges[ArgNode].End = Node;
+            ArgNodeLiveRange.End = Node;
           } else {
-            LiveRanges[ArgNode].Global = true;
+            ArgNodeLiveRange.Global = true;
 
             // Grow the live range to include this use
-            LiveRanges[ArgNode].Begin = std::min(LiveRanges[ArgNode].Begin, Node);
-            LiveRanges[ArgNode].End = std::max(LiveRanges[ArgNode].End, Node);
+            ArgNodeLiveRange.Begin = std::min(ArgNodeLiveRange.Begin, Node);
+            ArgNodeLiveRange.End = std::max(ArgNodeLiveRange.End, Node);
 
             // Can't spill this range, it is MB
-            LiveRanges[ArgNode].RematCost = -1;
+            ArgNodeLiveRange.RematCost = -1;
 
             // Include any blocks this value passes through in the live range
-            RecursiveLiveRangeExpansion(IR, ArgNode, ArgNodeBlockID, &LiveRanges[ArgNode], Graph->BlockPredecessors[BlockNodeID], Graph->VisitedNodePredecessors[ArgNode]);
+            RecursiveLiveRangeExpansion(IR, ArgNode, ArgNodeBlockID, &ArgNodeLiveRange,
+                                        Graph->BlockPredecessors[BlockNodeID],
+                                        Graph->VisitedNodePredecessors[ArgNode]);
           }
         }
 
@@ -486,13 +507,14 @@ namespace {
 
           auto CurrentSourcePartner = Node;
           while (NodeBegin != NodeBegin.Invalid()) {
-            auto [ValueNode, ValueHeader] = NodeBegin();
-            auto ValueOp = ValueHeader->CW<IROp_PhiValue>();
+            const auto [ValueNode, ValueHeader] = NodeBegin();
+            const auto ValueOp = ValueHeader->CW<IROp_PhiValue>();
+            const auto ValueID = ValueOp->Value.ID();
 
             // Set the node partner to the current one
             // This creates a singly linked list of node partners to follow
-            SetNodePartner(Graph, CurrentSourcePartner, ValueOp->Value.ID());
-            CurrentSourcePartner = ValueOp->Value.ID();
+            SetNodePartner(Graph, CurrentSourcePartner, ValueID);
+            CurrentSourcePartner = ValueID;
             NodeBegin = IR->at(ValueOp->Next);
           }
         }
@@ -584,23 +606,25 @@ namespace {
       }
     };
 
-    //First pass: Mark pre-writes
+    // First pass: Mark pre-writes
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         const auto Node = IR->GetID(CodeNode);
+
         if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
-          //int -1 /*vreg*/ = (int)(Op->Offset / 8) - 1;
+          const auto OpID = Op->Value.ID();
+          auto& OpLiveRange = LiveRanges[OpID];
 
           if (IsPreWritable(IROp->Size, Op->StaticClass)
-            && LiveRanges[Op->Value.ID()].PrefferedRegister.IsInvalid()
-            && !LiveRanges[Op->Value.ID()].Global) {
+            && OpLiveRange.PrefferedRegister.IsInvalid()
+            && !OpLiveRange.Global) {
 
-            //pre-write and sra-allocate in the defining node - this might be undone if a read before the actual store happens
-            SRA_DEBUG("Prewritting ssa{} (Store in ssa{})\n", Op->Value.ID(), Node);
-            LiveRanges[Op->Value.ID()].PrefferedRegister = GetRegAndClassFromOffset(Op->Offset);
-            LiveRanges[Op->Value.ID()].PreWritten = Node;
-            SetNodeClass(Graph, Op->Value.ID(), Op->StaticClass);
+            // Pre-write and sra-allocate in the defining node - this might be undone if a read before the actual store happens
+            SRA_DEBUG("Prewritting ssa{} (Store in ssa{})\n", OpID, Node);
+            OpLiveRange.PrefferedRegister = GetRegAndClassFromOffset(Op->Offset);
+            OpLiveRange.PreWritten = Node;
+            SetNodeClass(Graph, OpID, Op->StaticClass);
           }
         }
       }
@@ -614,37 +638,50 @@ namespace {
       memset(StaticMaps, 0, MapsSize * sizeof(LiveRange*));
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         const auto Node = IR->GetID(CodeNode);
+        auto& NodeLiveRange = LiveRanges[Node];
 
         // Check for read-after-write and demote if it happens
         const uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
-          if (IROp->Args[i].IsInvalid()) continue;
-          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINECONSTANT) continue;
-          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_INLINEENTRYPOINTOFFSET) continue;
-          if (IR->GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
-          const auto ArgNode = IROp->Args[i].ID();
+          const auto& Arg = IROp->Args[i];
+
+          if (Arg.IsInvalid()) {
+            continue;
+          }
+          if (IR->GetOp<IROp_Header>(Arg)->Op == OP_INLINECONSTANT) {
+            continue;
+          }
+          if (IR->GetOp<IROp_Header>(Arg)->Op == OP_INLINEENTRYPOINTOFFSET) {
+            continue;
+          }
+          if (IR->GetOp<IROp_Header>(Arg)->Op == OP_IRHEADER) {
+            continue;
+          }
+
+          const auto ArgNode = Arg.ID();
+          auto& ArgNodeLiveRange = LiveRanges[ArgNode];
 
           // ACCESSED after write, let's not SRA this one
-          if (LiveRanges[ArgNode].Written) {
+          if (ArgNodeLiveRange.Written) {
             SRA_DEBUG("Demoting ssa{} because accessed after write in ssa{}\n", ArgNode, Node);
-            LiveRanges[ArgNode].PrefferedRegister = PhysicalRegister::Invalid();
-            auto ArgNodeNode = IR->GetNode(IROp->Args[i]);
+            ArgNodeLiveRange.PrefferedRegister = PhysicalRegister::Invalid();
+            auto ArgNodeNode = IR->GetNode(Arg);
             SetNodeClass(Graph, ArgNode, GetRegClassFromNode(IR, ArgNodeNode->Op(IR->GetData())));
           }
         }
 
         // This op defines a span
         if (IROp->HasDest) {
-
           // If this is a pre-write, update the StaticMap so we track writes
-          if (!LiveRanges[Node].PrefferedRegister.IsInvalid()) {
+          if (!NodeLiveRange.PrefferedRegister.IsInvalid()) {
             SRA_DEBUG("ssa{} is a pre-write\n", Node);
-            auto StaticMap = GetStaticMapFromReg(LiveRanges[Node].PrefferedRegister);
+            auto StaticMap = GetStaticMapFromReg(NodeLiveRange.PrefferedRegister);
             if ((*StaticMap)) {
-              SRA_DEBUG("Markng ssa{} as written because ssa{} writes to sra{}\n", (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+              SRA_DEBUG("Markng ssa{} as written because ssa{} writes to sra{}\n",
+                        (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
               (*StaticMap)->Written = true;
             }
-            (*StaticMap) = &LiveRanges[Node];
+            (*StaticMap) = &NodeLiveRange;
           }
 
           // Opcode is an SRA read
@@ -658,29 +695,30 @@ namespace {
 
             // Make sure there wasn't a store pre-written before this read
             if ((*StaticMap) && (*StaticMap)->PreWritten) {
-              uint32_t ID = (*StaticMap) - &LiveRanges[0];
+              const IR::NodeID ID = (*StaticMap) - &LiveRanges[0];
 
-              SRA_DEBUG("ssa{} cannot be a pre-write because ssa{} reads from sra{} before storereg", ID, Node, -1 /*vreg*/);
+              SRA_DEBUG("ssa{} cannot be a pre-write because ssa{} reads from sra{} before storereg",
+                        ID, Node, -1 /*vreg*/);
               (*StaticMap)->PrefferedRegister = PhysicalRegister::Invalid();
               (*StaticMap)->PreWritten = 0;
               SetNodeClass(Graph, ID, Op->Class);
             }
 
             // if not sra-allocated and full size, sra-allocate
-            if (!LiveRanges[Node].Global && LiveRanges[Node].PrefferedRegister.IsInvalid()) {
+            if (!NodeLiveRange.Global && NodeLiveRange.PrefferedRegister.IsInvalid()) {
               // only full size reads can be aliased
               if (IsAliasable(IROp->Size, Op->StaticClass, Op->Offset)) {
-
                 // We can only track a single active span.
                 // Marking here as written is overly agressive, but
                 // there might be write(s) later on the instruction stream
                 if ((*StaticMap)) {
-                  SRA_DEBUG("Markng ssa{} as written because ssa{} re-loads sra{}, and we can't track possible future writes\n", (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
+                  SRA_DEBUG("Markng ssa{} as written because ssa{} re-loads sra{}, and we can't track possible future writes\n",
+                            (*StaticMap) - &LiveRanges[0], Node, -1 /*vreg*/);
                   (*StaticMap)->Written = true;
                 }
 
-                LiveRanges[Node].PrefferedRegister = GetRegAndClassFromOffset(Op->Offset); //0, 1, and so on
-                (*StaticMap) = &LiveRanges[Node];
+                NodeLiveRange.PrefferedRegister = GetRegAndClassFromOffset(Op->Offset); //0, 1, and so on
+                (*StaticMap) = &NodeLiveRange;
                 SetNodeClass(Graph, Node, Op->StaticClass);
                 SRA_DEBUG("Marking ssa{} as allocated to sra{}\n", Node, -1 /*vreg*/);
               }
@@ -692,21 +730,25 @@ namespace {
         // - If there was a matching pre-write, clear the pre-write flag as the register is no longer pre-written
         // - Mark the SRA span as written, so that any further reads demote it from read-aliases if they happen
         if (IROp->Op == OP_STOREREGISTER) {
-          auto Op = IROp->C<IR::IROp_StoreRegister>();
+          const auto Op = IROp->C<IR::IROp_StoreRegister>();
+          const auto OpID = Op->Value.ID();
+          auto& OpLiveRange = LiveRanges[OpID];
 
           auto StaticMap = GetStaticMapFromOffset(Op->Offset);
           // if a read pending, it has been writting
           if ((*StaticMap)) {
             // writes to self don't invalidate the span
             if ((*StaticMap)->PreWritten != Node) {
-              SRA_DEBUG("Markng ssa{} as written because ssa{} writes to sra{} with value ssa{}. Write size is {}\n", ID, Node, -1 /*vreg*/, Op->Value.ID(), IROp->Size);
+              SRA_DEBUG("Markng ssa{} as written because ssa{} writes to sra{} with value ssa{}. Write size is {}\n",
+                        ID, Node, -1 /*vreg*/, OpID, IROp->Size);
               (*StaticMap)->Written = true;
             }
           }
-          if (LiveRanges[Op->Value.ID()].PreWritten == Node) {
+          if (OpLiveRange.PreWritten == Node) {
             // no longer pre-written
-            LiveRanges[Op->Value.ID()].PreWritten = 0;
-            SRA_DEBUG("Markng ssa{} as no longer pre-written as ssa{} is a storereg for sra{}\n", Op->Value.ID(), Node, -1 /*vreg*/);
+            OpLiveRange.PreWritten = 0;
+            SRA_DEBUG("Markng ssa{} as no longer pre-written as ssa{} is a storereg for sra{}\n",
+                      OpID, Node, -1 /*vreg*/);
           }
         }
       }
@@ -720,18 +762,22 @@ namespace {
       auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
       LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
-      BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(IR->GetID(BlockNode)).first->second;
-      BlockInterferenceVector->reserve(BlockIROp->Last.ID() - BlockIROp->Begin.ID());
+      const auto BlockNodeID = IR->GetID(BlockNode);
+      const auto BlockBeginID = BlockIROp->Begin.ID();
+      const auto BlockLastID = BlockIROp->Last.ID();
+
+      auto& BlockInterferenceVector = LocalBlockInterferences.try_emplace(BlockNodeID).first->second;
+      BlockInterferenceVector.reserve(BlockLastID - BlockBeginID);
 
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         const auto Node = IR->GetID(CodeNode);
-        LiveRange *NodeLiveRange = &LiveRanges[Node];
+        LiveRange& NodeLiveRange = LiveRanges[Node];
 
-        if (NodeLiveRange->Begin >= BlockIROp->Begin.ID() &&
-            NodeLiveRange->End <= BlockIROp->Last.ID()) {
+        if (NodeLiveRange.Begin >= BlockBeginID &&
+            NodeLiveRange.End <= BlockLastID) {
           // If the live range of this node is FULLY inside of the block
           // Then add it to the block specific interference list
-          BlockInterferenceVector->emplace_back(Node);
+          BlockInterferenceVector.emplace_back(Node);
         }
         else {
           // If the live range is not fully inside the block then add it to the global interference list
@@ -768,19 +814,24 @@ namespace {
 
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
         const auto Node = IR->GetID(CodeNode);
+        const auto& NodeLiveRange = LiveRanges[Node];
 
         // Check for every interference with the local block's interference
         for (auto RHSNode : *BlockInterferenceVector) {
-          if (!(LiveRanges[Node].Begin >= LiveRanges[RHSNode].End ||
-                LiveRanges[RHSNode].Begin >= LiveRanges[Node].End)) {
+          const auto& RHSNodeLiveRange = LiveRanges[RHSNode];
+
+          if (!(NodeLiveRange.Begin >= RHSNodeLiveRange.End ||
+                RHSNodeLiveRange.Begin >= NodeLiveRange.End)) {
             Interferences.emplace_back(RHSNode);
           }
         }
 
         // Now check the global block interference vector
         for (auto RHSNode : GlobalBlockInterferences) {
-          if (!(LiveRanges[Node].Begin >= LiveRanges[RHSNode].End ||
-                LiveRanges[RHSNode].Begin >= LiveRanges[Node].End)) {
+          const auto& RHSNodeLiveRange = LiveRanges[RHSNode];
+
+          if (!(NodeLiveRange.Begin >= RHSNodeLiveRange.End ||
+                RHSNodeLiveRange.Begin >= NodeLiveRange.End)) {
             Interferences.emplace_back(RHSNode);
           }
         }
@@ -824,12 +875,14 @@ namespace {
     SpanStart.resize(NodeCount);
     SpanEnd.resize(NodeCount);
     for (uint32_t i = 0; i < NodeCount; ++i) {
-      if (LiveRanges[i].Begin != ~0U) {
-        LOGMAN_THROW_A_FMT(LiveRanges[i].Begin < LiveRanges[i].End , "Span must Begin before Ending");
+      const auto& NodeLiveRange = LiveRanges[i];
+
+      if (NodeLiveRange.Begin != ~0U) {
+        LOGMAN_THROW_A_FMT(NodeLiveRange.Begin < NodeLiveRange.End , "Span must Begin before Ending");
 
         auto Class = GetClass(Graph->AllocData->Map[i]);
-        SpanStart[LiveRanges[i].Begin].Append(INFO_MAKE(i, Class));
-        SpanEnd[LiveRanges[i].End]    .Append(INFO_MAKE(i, Class));
+        SpanStart[NodeLiveRange.Begin].Append(INFO_MAKE(i, Class));
+        SpanEnd[NodeLiveRange.End]    .Append(INFO_MAKE(i, Class));
       }
     }
 
@@ -1245,16 +1298,18 @@ namespace {
   }
 
   uint32_t ConstrainedRAPass::FindSpillSlot(IR::NodeID Node, FEXCore::IR::RegisterClassType RegisterClass) {
-    RegisterNode *CurrentNode = &Graph->Nodes[Node];
-    LiveRange *NodeLiveRange = &LiveRanges[Node];
+    RegisterNode& CurrentNode = Graph->Nodes[Node];
+    const auto& NodeLiveRange = LiveRanges[Node];
+
     if (ReuseSpillSlots) {
       for (uint32_t i = 0; i < Graph->SpillStack.size(); ++i) {
-        SpillStackUnit *SpillUnit = &Graph->SpillStack.at(i);
-        if (NodeLiveRange->Begin <= SpillUnit->SpillRange.End &&
-            SpillUnit->SpillRange.Begin <= NodeLiveRange->End) {
-          SpillUnit->SpillRange.Begin = std::min(SpillUnit->SpillRange.Begin, LiveRanges[Node].Begin);
-          SpillUnit->SpillRange.End = std::max(SpillUnit->SpillRange.End, LiveRanges[Node].End);
-          CurrentNode->Head.SpillSlot = i;
+        SpillStackUnit& SpillUnit = Graph->SpillStack[i];
+
+        if (NodeLiveRange.Begin <= SpillUnit.SpillRange.End &&
+            SpillUnit.SpillRange.Begin <= NodeLiveRange.End) {
+          SpillUnit.SpillRange.Begin = std::min(SpillUnit.SpillRange.Begin, NodeLiveRange.Begin);
+          SpillUnit.SpillRange.End = std::max(SpillUnit.SpillRange.End, NodeLiveRange.End);
+          CurrentNode.Head.SpillSlot = i;
           return i;
         }
       }
@@ -1262,11 +1317,11 @@ namespace {
 
     // Couldn't find a spill slot so just make a new one
     auto StackItem = Graph->SpillStack.emplace_back(SpillStackUnit{Node, RegisterClass});
-    StackItem.SpillRange.Begin = NodeLiveRange->Begin;
-    StackItem.SpillRange.End = NodeLiveRange->End;
-    CurrentNode->Head.SpillSlot = SpillSlotCount;
+    StackItem.SpillRange.Begin = NodeLiveRange.Begin;
+    StackItem.SpillRange.End = NodeLiveRange.End;
+    CurrentNode.Head.SpillSlot = SpillSlotCount;
     SpillSlotCount++;
-    return CurrentNode->Head.SpillSlot;
+    return CurrentNode.Head.SpillSlot;
   }
 
   void ConstrainedRAPass::SpillOne(FEXCore::IR::IREmitter *IREmit) {
