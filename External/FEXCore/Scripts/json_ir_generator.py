@@ -84,6 +84,16 @@ def print_ir_structs(ops, defines):
 
         output_file.write("\tstatic constexpr IROps OPCODE = OP_%s;\n" % op_key.upper())
 
+        if (SSAArgs > 0):
+            # Add helpers for accessing SSA arguments, given how frequently they're accessed
+            output_file.write("\n")
+            output_file.write("\t[[nodiscard]] OrderedNodeWrapper& Args(size_t Index) {\n")
+            output_file.write("\t\treturn Header.Args[Index];\n")
+            output_file.write("\t}\n")
+            output_file.write("\t[[nodiscard]] const OrderedNodeWrapper& Args(size_t Index) const {\n")
+            output_file.write("\t\treturn Header.Args[Index];\n")
+            output_file.write("\t}\n")
+
         output_file.write("};\n")
 
         # Add a static assert that the IR ops must be pod
