@@ -7,7 +7,7 @@ def print_enums(ops, defines):
     output_file.write("enum IROps : uint8_t {\n")
 
     for op_key, op_vals in ops.items():
-        output_file.write("\t\tOP_%s,\n" % op_key.upper())
+        output_file.write("\tOP_%s,\n" % op_key.upper())
 
     output_file.write("};\n")
 
