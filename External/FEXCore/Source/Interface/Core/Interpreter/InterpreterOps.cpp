@@ -21,16 +21,17 @@
 
 #include <alloca.h>
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <bit>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <limits>
 #include <memory>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 namespace FEXCore::CPU {
 
@@ -447,7 +448,7 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
     case IR::OP_F80CMP: {
       auto Op = IROp->C<IR::IROp_F80Cmp>();
 
-      decltype(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<0>) handlers[] = {
+      static constexpr std::array handlers{
         &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<0>,
         &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<1>,
         &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<2>,
@@ -455,7 +456,8 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
         &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<4>,
         &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<5>,
         &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<6>,
-        &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<7> };
+        &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<7>,
+      };
 
       *Info = GetFallbackInfo(handlers[Op->Flags]);
       return true;
