@@ -279,14 +279,11 @@ namespace {
        */
       RegisterAllocationData* GetAllocationData() override;
       std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> PullAllocationData() override;
+
     private:
+      using BlockInterferences = std::vector<IR::NodeID>;
+
       uint32_t SpillPointId;
-
-      #define INFO_MAKE(id, Class) ((id) | (Class << 24))
-
-      #define INFO_IDCLASS(info) (info & 0xffff'ffff)
-      #define INFO_ID(info) (info & 0xff'ffff)
-      #define INFO_CLASS(info) (info & 0xff00'0000)
 
       std::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanStart;
       std::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanEnd;
@@ -295,14 +292,25 @@ namespace {
       FEXCore::IR::Pass* CompactionPass;
       bool OptimizeSRA;
 
-      void SpillOne(FEXCore::IR::IREmitter *IREmit);
-
       std::vector<LiveRange> LiveRanges;
-
-      using BlockInterferences = std::vector<IR::NodeID>;
 
       std::unordered_map<IR::NodeID, BlockInterferences> LocalBlockInterferences;
       BlockInterferences GlobalBlockInterferences;
+
+      [[nodiscard]] static constexpr uint32_t InfoMake(uint32_t id, uint32_t Class) {
+        return id | (Class << 24);
+      }
+      [[nodiscard]] static constexpr uint32_t InfoIDClass(uint32_t info) {
+        return info & 0xffff'ffff;
+      }
+      [[nodiscard]] static constexpr uint32_t InfoID(uint32_t info) {
+        return info & 0xff'ffff;
+      }
+      [[nodiscard]] static constexpr uint32_t InfoClass(uint32_t info) {
+        return info & 0xff00'0000;
+      }
+
+      void SpillOne(FEXCore::IR::IREmitter *IREmit);
 
       void CalculateLiveRange(FEXCore::IR::IRListView *IR);
       void OptimizeStaticRegisters(FEXCore::IR::IRListView *IR);
@@ -880,9 +888,9 @@ namespace {
       if (NodeLiveRange.Begin != ~0U) {
         LOGMAN_THROW_A_FMT(NodeLiveRange.Begin < NodeLiveRange.End , "Span must Begin before Ending");
 
-        auto Class = GetClass(Graph->AllocData->Map[i]);
-        SpanStart[NodeLiveRange.Begin].Append(INFO_MAKE(i, Class));
-        SpanEnd[NodeLiveRange.End]    .Append(INFO_MAKE(i, Class));
+        const auto Class = GetClass(Graph->AllocData->Map[i]);
+        SpanStart[NodeLiveRange.Begin].Append(InfoMake(i, Class));
+        SpanEnd[NodeLiveRange.End]    .Append(InfoMake(i, Class));
       }
     }
 
@@ -890,16 +898,16 @@ namespace {
     for (int OpNodeId = 0; OpNodeId < IR->GetSSACount(); OpNodeId++) {
       // Expire end intervals first
       SpanEnd[OpNodeId].Iterate([&](uint32_t EdgeInfo) {
-        Active.Erase(INFO_IDCLASS(EdgeInfo));
+        Active.Erase(InfoIDClass(EdgeInfo));
       });
 
       // Add starting invervals
       SpanStart[OpNodeId].Iterate([&](uint32_t EdgeInfo) {
         // Starts here
         Active.Iterate([&](uint32_t ActiveInfo) {
-          if (INFO_CLASS(ActiveInfo) == INFO_CLASS(EdgeInfo)) {
-            AddInterference(INFO_ID(ActiveInfo), INFO_ID(EdgeInfo));
-            AddInterference(INFO_ID(EdgeInfo), INFO_ID(ActiveInfo));
+          if (InfoClass(ActiveInfo) == InfoClass(EdgeInfo)) {
+            AddInterference(InfoID(ActiveInfo), InfoID(EdgeInfo));
+            AddInterference(InfoID(EdgeInfo), InfoID(ActiveInfo));
           }
         });
         Active.Append(EdgeInfo);
