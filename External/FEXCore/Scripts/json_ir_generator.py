@@ -119,12 +119,12 @@ def print_ir_sizes(ops, defines):
     output_file.write("// Make sure our array maps directly to the IROps enum\n")
     output_file.write("static_assert(IRSizes[IROps::OP_LAST] == -1ULL);\n\n")
 
-    output_file.write("[[maybe_unused]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
+    output_file.write("[[maybe_unused, nodiscard]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
 
-    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) std::string_view const& GetName(IROps Op);\n")
-    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) uint8_t GetArgs(IROps Op);\n")
-    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
-    output_file.write("__attribute__((const)) __attribute__((visibility(\"default\"))) bool HasSideEffects(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] std::string_view const& GetName(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] uint8_t GetArgs(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool HasSideEffects(IROps Op);\n")
 
     output_file.write("#undef IROP_SIZES\n")
     output_file.write("#endif\n\n")
