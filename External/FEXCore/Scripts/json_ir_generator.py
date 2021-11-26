@@ -20,7 +20,10 @@ def print_ir_structs(ops, defines):
 
     # Print out defines here
     for op_val in defines:
-        output_file.write("\t%s;\n" % op_val)
+        if op_val:
+            output_file.write("\t%s;\n" % op_val)
+        else:
+            output_file.write("\n")
 
     output_file.write("// Default structs\n")
     output_file.write("struct __attribute__((packed)) IROp_Header {\n")
