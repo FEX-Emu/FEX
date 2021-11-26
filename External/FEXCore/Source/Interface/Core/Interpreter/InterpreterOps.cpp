@@ -318,7 +318,7 @@ void InterpreterOps::Op_NoOp(FEXCore::IR::IROp_Header *IROp, IROpData *Data, IR:
 }
 
 template<typename R, typename... Args>
-FallbackInfo GetFallbackInfo(R(*fn)(Args...)) {
+static FallbackInfo GetFallbackInfo(R(*fn)(Args...)) {
   return {FABI_UNKNOWN, (void*)fn};
 }
 
