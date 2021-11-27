@@ -137,10 +137,10 @@ void PrintIntersectingMapping() {
     if (sscanf(Line.c_str(), "%lx-%lx", &Begin, &End) == 2) {
       // If a memory range is living inside the 32bit memory space then we have a problem
       if (Begin < 0x1'0000'0000) {
-        LogMan::Msg::EFmt("*** {}", Line);
+        LogMan::Msg::DFmt("*** {}", Line);
       }
       else {
-        LogMan::Msg::EFmt("    {}", Line);
+        LogMan::Msg::DFmt("    {}", Line);
       }
     }
   }
@@ -376,8 +376,7 @@ int main(int argc, char **argv, char **const envp) {
   if (!getenv("VALGRIND_LAUNCHER") &&
       !CheckMemMapping()) {
     PrintIntersectingMapping();
-    LogMan::Msg::EFmt("[Unsupported] FEX mapped to lower 32bits! Exiting!");
-    return -1;
+    LogMan::Msg::DFmt("[WARNING] FEX mapped to lower 32bits! 32-bit applications may have issues!");
   }
 #endif
 
