@@ -10,7 +10,7 @@ int NetStream::NetBuf::flushBuffer(const char *buffer, size_t size) {
 
     // Send data
     while (total < size) {
-        size_t sent = send(socket, (const void*)(buffer + total), size - total, 0);
+        size_t sent = send(socket, (const void*)(buffer + total), size - total, MSG_NOSIGNAL);
         if (sent == -1) {
             // lets just assume all errors are end of file.
             return -1;
