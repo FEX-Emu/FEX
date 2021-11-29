@@ -268,6 +268,16 @@ endif()
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
 
+if (BUILD_TESTS)
+  option(CATCH_BUILD_STATIC_LIBRARY "" ON)
+  set(CATCH_BUILD_STATIC_LIBRARY ON)
+  add_subdirectory(External/Catch2/)
+
+  # Pull in catch_discover_tests definition
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/External/Catch2/contrib/")
+  include(Catch)
+endif()
+
 add_subdirectory(External/cpp-optparse/)
 include_directories(External/cpp-optparse/)
 
