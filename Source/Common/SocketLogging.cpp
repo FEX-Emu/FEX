@@ -16,14 +16,14 @@
 
 namespace FEX::SocketLogging {
   namespace Common {
-    enum PacketTypes : uint32_t {
+    enum class PacketTypes : uint32_t {
       TYPE_MSG,
       TYPE_ACK,
     };
 
     struct PacketHeader {
       uint64_t Timestamp{};
-      uint32_t PacketType{};
+      PacketTypes PacketType{};
       int32_t PID{};
       int32_t TID{};
       uint32_t Pad{};

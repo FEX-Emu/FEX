@@ -19,11 +19,11 @@ namespace FEX::SocketLogging {
         using FDClosedHandlerType = std::function<void(int FD)>;
 
         void SetMsgHandler(MsgHandlerType Handler) {
-          MsgHandler = Handler;
+          MsgHandler = std::move(Handler);
         }
 
         void SetFDClosedHandler(FDClosedHandlerType Handler) {
-          ClosedHandler = Handler;
+          ClosedHandler = std::move(Handler);
         }
 
         void WaitForShutdown() {
