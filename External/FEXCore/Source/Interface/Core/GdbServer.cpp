@@ -13,7 +13,6 @@ $end_info$
 #include <memory>
 #include <optional>
 #include <vector>
-#include "Common/NetStream.h"
 #include "Common/SoftFloat.h"
 #include "Interface/Context/Context.h"
 
@@ -25,6 +24,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 
@@ -1160,7 +1160,7 @@ std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
   LogMan::Msg::IFmt("GdbServer, waiting for connection on localhost:8086");
   int new_fd = accept(ListenSocket, (struct sockaddr *)&their_addr, &addr_size);
 
-  return std::make_unique<NetStream>(new_fd);
+  return std::make_unique<FEXCore::Utils::NetStream>(new_fd);
 }
 
 

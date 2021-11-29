@@ -1,9 +1,10 @@
-#include "NetStream.h"
+#include <FEXCore/Utils/NetStream.h>
 
 #include <sys/socket.h>
 
 #include <unistd.h>
 
+namespace FEXCore::Utils {
 int NetStream::NetBuf::flushBuffer(const char *buffer, size_t size) {
     size_t total = 0;
 
@@ -79,4 +80,5 @@ NetStream::~NetStream() {
 
 NetStream::NetBuf::~NetBuf() {
   close(socket);
+}
 }

@@ -3,7 +3,6 @@ set (MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man CACHE PATH "MAN_DIR")
 set (SRCS
   Common/Paths.cpp
   Common/JitSymbols.cpp
-  Common/NetStream.cpp
   Common/SoftFloat-3e/extF80_add.c
   Common/SoftFloat-3e/extF80_div.c
   Common/SoftFloat-3e/extF80_sub.c
@@ -144,6 +143,7 @@ set (SRCS
   Utils/FileLoading.cpp
   Utils/ForcedAssert.cpp
   Utils/LogManager.cpp
+  Utils/NetStream.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp
   )
