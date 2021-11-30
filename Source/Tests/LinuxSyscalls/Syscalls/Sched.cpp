@@ -8,6 +8,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
+#include <FEXCore/Utils/MathUtils.h>
+
 #include <stdint.h>
 #include <sched.h>
 #include <sys/time.h>
@@ -69,8 +71,16 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL(sched_getaffinity, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, size_t cpusetsize, unsigned char *mask) -> uint64_t {
       uint64_t Cores = FEX::HLE::_SyscallHandler->ThreadsConfig();
-      uint64_t Bytes = ((Cores+7) / 8);
-      // If we don't have at least one byte in the resulting structure
+
+      // Bytes need to round up to size of uint64_t
+      uint64_t Bytes = FEXCore::AlignUp(Cores, sizeof(uint64_t));
+
+      // cpusetsize needs to be 8byte aligned
+      if (cpusetsize & (sizeof(uint64_t) - 1)) {
+        return -EINVAL;
+      }
+
+      // If we don't have enough bytes to store the resulting structure
       // then we need to return -EINVAL
       if (cpusetsize < Bytes) {
         return -EINVAL;
