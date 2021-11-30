@@ -17,7 +17,9 @@ static fex_call_callback_t* call_guest;
   extern "C" { \
     ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
       call_guest = (fex_call_callback_t*)a0; \
-      fexldr_init_##name(); \
+      if (!fexldr_init_##name()) { \
+        return nullptr; \
+      } \
       return exports; \
     } \
   }
@@ -26,7 +28,9 @@ static fex_call_callback_t* call_guest;
   extern "C" { \
     ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
       call_guest = (fex_call_callback_t*)a0; \
-      fexldr_init_##name(); \
+      if (!fexldr_init_##name()) { \
+        return nullptr; \
+      } \
       init_fn (); \
       return exports; \
     } \
@@ -37,7 +41,9 @@ static fex_call_callback_t* call_guest;
     ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
       call_guest = (fex_call_callback_t*)a0; \
       (uintptr_t&)callback_unpacks = a1; \
-      fexldr_init_##name(); \
+      if (!fexldr_init_##name()) { \
+        return nullptr; \
+      } \
       return exports; \
     } \
   }

@@ -66,27 +66,27 @@ namespace FEXCore {
 
             auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
 
-            LogMan::Msg::DFmt("Load lib: {} -> {}", Name, SOName);
+            LogMan::Msg::DFmt("LoadLib: {} -> {}", Name, SOName);
 
             auto Handle = dlopen(SOName.c_str(), RTLD_LOCAL | RTLD_NOW);
-
             if (!Handle) {
-                LogMan::Msg::EFmt("Load lib: failed to dlopen {}: {}", SOName, dlerror());
-                return;
+                ERROR_AND_DIE_FMT("LoadLib: Failed to dlopen thunk library {}: {}", SOName, dlerror());
             }
 
+            const auto InitSym = std::string("fexthunks_exports_") + Name;
+
             ExportEntry* (*InitFN)(void *, uintptr_t);
-
-            auto InitSym = std::string("fexthunks_exports_") + (const char*)Name;
-
             (void*&)InitFN = dlsym(Handle, InitSym.c_str());
-
             if (!InitFN) {
-                LogMan::Msg::EFmt("Load lib: failed to find export {}", InitSym);
-                return;
+                ERROR_AND_DIE_FMT("LoadLib: Failed to find export {}", InitSym);
             }
 
             auto Exports = InitFN((void*)&CallCallback, CallbackThunks);
+            if (!Exports) {
+                ERROR_AND_DIE_FMT("LoadLib: Failed to initialize thunk library {}. "
+                                  "Check if the corresponding host library is installed "
+                                  "or disable thunking of this library.", Name);
+            }
 
             auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
 
