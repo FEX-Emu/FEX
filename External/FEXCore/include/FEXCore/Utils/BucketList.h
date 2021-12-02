@@ -17,7 +17,7 @@ namespace FEXCore {
     static constexpr size_t Size = _Size;
 
     T Items[Size];
-    std::unique_ptr<BucketList<Size>> Next;
+    std::unique_ptr<BucketList<Size, T>> Next;
 
     void Clear() {
       Items[0] = T{};
