@@ -20,6 +20,7 @@ $end_info$
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <set>
 #include <strings.h>
 #include <unordered_map>
@@ -330,11 +331,11 @@ namespace {
       FEXCore::IR::AllNodesIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
       FEXCore::IR::AllNodesIterator FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
 
-      IR::NodeID FindNodeToSpill(IREmitter *IREmit,
-                                 RegisterNode *RegisterNode,
-                                 IR::NodeID CurrentLocation,
-                                 LiveRange const *OpLiveRange,
-                                 int32_t RematCost = -1);
+      std::optional<IR::NodeID> FindNodeToSpill(IREmitter *IREmit,
+                                                RegisterNode *RegisterNode,
+                                                IR::NodeID CurrentLocation,
+                                                LiveRange const *OpLiveRange,
+                                                int32_t RematCost = -1);
       uint32_t FindSpillSlot(IR::NodeID Node, FEXCore::IR::RegisterClassType RegisterClass);
 
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
@@ -1066,11 +1067,11 @@ namespace {
     return FEXCore::IR::AllNodesIterator::Invalid();
   }
 
-  IR::NodeID ConstrainedRAPass::FindNodeToSpill(IREmitter *IREmit,
-                                                RegisterNode *RegisterNode,
-                                                IR::NodeID CurrentLocation,
-                                                LiveRange const *OpLiveRange,
-                                                int32_t RematCost) {
+  std::optional<IR::NodeID> ConstrainedRAPass::FindNodeToSpill(IREmitter *IREmit,
+                                                               RegisterNode *RegisterNode,
+                                                               IR::NodeID CurrentLocation,
+                                                               LiveRange const *OpLiveRange,
+                                                               int32_t RematCost) {
     auto IR = IREmit->ViewIR();
 
     IR::NodeID InterferenceIdToSpill{};
@@ -1263,7 +1264,7 @@ namespace {
 
     // If we are looking for a specific node then we can safely return not found
     if (RematCost != -1 && InterferenceIdToSpill.IsInvalid()) {
-      return IR::NodeID{UINT32_MAX};
+      return std::nullopt;
     }
 
     // Heuristics failed to spill ?
@@ -1358,24 +1359,28 @@ namespace {
     auto &CurrentRegAndClass = Graph->AllocData->Map[Node.Value];
     LiveRange *OpLiveRange = &LiveRanges[Node.Value];
 
-    // If this node is allocated above the number of physical registers we have then we need to search the interference list and spill the one
+    // If this node is allocated above the number of physical registers
+    // we have then we need to search the interference list and spill the one
     // that is cheapest
-    bool NeedsToSpill = CurrentRegAndClass.Reg == INVALID_REG;
+    const bool NeedsToSpill = CurrentRegAndClass.Reg == INVALID_REG;
 
     if (NeedsToSpill) {
       bool Spilled = false;
 
       // First let's just check for constants that we can just rematerialize instead of spilling
-      const auto InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange, 1);
-      if (InterferenceNode.Value != UINT32_MAX) {
+      if (const auto InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange, 1)) {
         // We want to end the live range of this value here and continue it on first use
-        auto [ConstantNode, _] = IR.at(InterferenceNode)();
+        auto [ConstantNode, _] = IR.at(*InterferenceNode)();
         auto ConstantIROp = IR.GetOp<IR::IROp_Constant>(ConstantNode);
 
         // First op post Spill
         auto NextIter = IR.at(CodeNode);
         auto FirstUseLocation = FindFirstUse(IREmit, ConstantNode, NextIter, NodeIterator::Invalid());
-        LOGMAN_THROW_A_FMT(FirstUseLocation != IR::NodeIterator::Invalid(), "At %ssa{} Spilling Op %ssa{} but Failure to find op use", Node, InterferenceNode);
+
+        LOGMAN_THROW_A_FMT(FirstUseLocation != IR::NodeIterator::Invalid(),
+                           "At %ssa{} Spilling Op %ssa{} but Failure to find op use",
+                           Node, *InterferenceNode);
+
         if (FirstUseLocation != IR::NodeIterator::Invalid()) {
           --FirstUseLocation;
           auto [FirstUseOrderedNode, _] = FirstUseLocation();
@@ -1388,13 +1393,12 @@ namespace {
 
       // If we didn't remat a constant then we need to do some real spilling
       if (!Spilled) {
-        const auto InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange);
-        if (InterferenceNode.Value != UINT32_MAX) {
-          const auto InterferenceRegClass = IR::RegisterClassType{Graph->AllocData->Map[InterferenceNode.Value].Class};
-          const uint32_t SpillSlot = FindSpillSlot(InterferenceNode, InterferenceRegClass);
+        if (const auto InterferenceNode = FindNodeToSpill(IREmit, CurrentNode, Node, OpLiveRange)) {
+          const auto InterferenceRegClass = IR::RegisterClassType{Graph->AllocData->Map[InterferenceNode->Value].Class};
+          const uint32_t SpillSlot = FindSpillSlot(*InterferenceNode, InterferenceRegClass);
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-          RegisterNode *InterferenceRegisterNode = &Graph->Nodes[InterferenceNode.Value];
+          RegisterNode *InterferenceRegisterNode = &Graph->Nodes[InterferenceNode->Value];
           LOGMAN_THROW_A_FMT(SpillSlot != UINT32_MAX, "Interference Node doesn't have a spill slot!");
           //LOGMAN_THROW_A_FMT(InterferenceRegisterNode->Head.RegAndClass.Reg != INVALID_REG, "Interference node never assigned a register?");
           LOGMAN_THROW_A_FMT(InterferenceRegClass != UINT32_MAX, "Interference node never assigned a register class?");
@@ -1402,7 +1406,7 @@ namespace {
 #endif
 
           // This is the op that we need to dump
-          auto [InterferenceOrderedNode, InterferenceIROp] = IR.at(InterferenceNode)();
+          auto [InterferenceOrderedNode, InterferenceIROp] = IR.at(*InterferenceNode)();
 
 
           // This will find the last use of this definition
@@ -1432,7 +1436,10 @@ namespace {
             ++FirstIter;
             auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, FirstIter, NodeIterator::Invalid());
 
-            LOGMAN_THROW_A_FMT(FirstUseLocation != NodeIterator::Invalid(), "At %ssa{} Spilling Op %ssa{} but Failure to find op use", Node, InterferenceNode);
+            LOGMAN_THROW_A_FMT(FirstUseLocation != NodeIterator::Invalid(),
+                               "At %ssa{} Spilling Op %ssa{} but Failure to find op use",
+                               Node, *InterferenceNode);
+
             if (FirstUseLocation != IR::NodeIterator::Invalid()) {
               // We want to fill just before the first use
               --FirstUseLocation;
