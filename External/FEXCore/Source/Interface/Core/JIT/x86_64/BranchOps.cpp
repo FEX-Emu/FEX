@@ -128,18 +128,10 @@ DEF_OP(ExitFunction) {
 }
 
 DEF_OP(Jump) {
-  auto Op = IROp->C<IR::IROp_Jump>();
+  const auto Op = IROp->C<IR::IROp_Jump>();
+  const auto ArgID = Op->Args(0).ID();
 
-  Label *TargetLabel;
-  auto IsTarget = JumpTargets.find(Op->Header.Args[0].ID());
-  if (IsTarget == JumpTargets.end()) {
-    TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[0].ID()).first->second;
-  }
-  else {
-    TargetLabel = &IsTarget->second;
-  }
-
-  PendingTargetLabel = TargetLabel;
+  PendingTargetLabel = &JumpTargets.try_emplace(ArgID).first->second;
 }
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
@@ -147,18 +139,7 @@ DEF_OP(Jump) {
 DEF_OP(CondJump) {
   auto Op = IROp->C<IR::IROp_CondJump>();
 
-  Label *TrueTargetLabel;
-  Label *FalseTargetLabel;
-
-  auto TrueIter = JumpTargets.find(Op->TrueBlock.ID());
-  auto FalseIter = JumpTargets.find(Op->FalseBlock.ID());
-
-  if (TrueIter == JumpTargets.end()) {
-    TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
-  }
-  else {
-    TrueTargetLabel = &TrueIter->second;
-  }
+  Label *TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
 
   if (IsGPR(Op->Cmp1.ID())) {
     uint64_t Const;
@@ -168,24 +149,18 @@ DEF_OP(CondJump) {
       cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
     }
   } else if (IsFPR(Op->Cmp1.ID())) {
-    if (Op->CompareSize  == 4)
+    if (Op->CompareSize == 4) {
       ucomiss(GetSrc(Op->Cmp1.ID()), GetSrc(Op->Cmp2.ID()));
-    else
+    } else {
       ucomisd(GetSrc(Op->Cmp1.ID()), GetSrc(Op->Cmp2.ID()));
+    }
   }
 
   auto [_, __, JCC] = GetCC(Op->Cond);
 
   (this->*JCC)(*TrueTargetLabel, T_NEAR);
 
-  if (FalseIter == JumpTargets.end()) {
-    FalseTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
-  }
-  else {
-    FalseTargetLabel = &FalseIter->second;
-  }
-
-  PendingTargetLabel = FalseTargetLabel;
+  PendingTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
 }
 
 DEF_OP(Syscall) {

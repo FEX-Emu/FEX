@@ -106,17 +106,10 @@ DEF_OP(ExitFunction) {
 }
 
 DEF_OP(Jump) {
-  auto Op = IROp->C<IR::IROp_Jump>();
+  const auto Op = IROp->C<IR::IROp_Jump>();
+  const auto ArgID = Op->Args(0).ID();
 
-  Label *TargetLabel;
-  auto IsTarget = JumpTargets.find(Op->Header.Args[0].ID());
-  if (IsTarget == JumpTargets.end()) {
-    TargetLabel = &JumpTargets.try_emplace(Op->Header.Args[0].ID()).first->second;
-  }
-  else {
-    TargetLabel = &IsTarget->second;
-  }
-  PendingTargetLabel = TargetLabel;
+  PendingTargetLabel = &JumpTargets.try_emplace(ArgID).first->second;
 }
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
@@ -154,22 +147,10 @@ Condition MapBranchCC(IR::CondClassType Cond) {
 DEF_OP(CondJump) {
   auto Op = IROp->C<IR::IROp_CondJump>();
 
-  Label *TrueTargetLabel;
-  Label *FalseTargetLabel;
-
-  auto TrueIter = JumpTargets.find(Op->TrueBlock.ID());
-  auto FalseIter = JumpTargets.find(Op->FalseBlock.ID());
-
-  if (TrueIter == JumpTargets.end()) {
-    TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
-  }
-  else {
-    TrueTargetLabel = &TrueIter->second;
-  }
-
+  Label *TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
 
   uint64_t Const;
-  bool isConst = IsInlineConstant(Op->Cmp2, &Const);
+  const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
   if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_EQ) {
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
@@ -179,10 +160,11 @@ DEF_OP(CondJump) {
     cbnz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
   } else {
     if (IsGPR(Op->Cmp1.ID())) {
-      if (isConst)
+      if (isConst) {
         cmp(GRCMP(Op->Cmp1.ID()), Const);
-      else
+      } else {
         cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+      }
     } else if (IsFPR(Op->Cmp1.ID())) {
       fcmp(GRFCMP(Op->Cmp1.ID()), GRFCMP(Op->Cmp2.ID()));
     } else {
@@ -192,13 +174,7 @@ DEF_OP(CondJump) {
     b(TrueTargetLabel, MapBranchCC(Op->Cond));
   }
 
-  if (FalseIter == JumpTargets.end()) {
-    FalseTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
-  }
-  else {
-    FalseTargetLabel = &FalseIter->second;
-  }
-  PendingTargetLabel = FalseTargetLabel;
+  PendingTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
 }
 
 DEF_OP(Syscall) {
