@@ -115,7 +115,7 @@ DEF_OP(Jump) {
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 #define GRFCMP(Node) (Op->CompareSize == 4 ? GetDst(Node).S() : GetDst(Node).D())
 
-Condition MapBranchCC(IR::CondClassType Cond) {
+static Condition MapBranchCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
   case FEXCore::IR::COND_EQ: return Condition::eq;
   case FEXCore::IR::COND_NEQ: return Condition::ne;
