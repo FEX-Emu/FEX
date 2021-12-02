@@ -1,12 +1,11 @@
 #pragma once
-#include <functional>
+
+#include <cstdint>
 #include <unordered_map>
+#include <utility>
 
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Config/Config.h>
-
-#include <cstdint>
-#include <utility>
 
 namespace FEXCore {
 namespace Context {
@@ -27,22 +26,22 @@ public:
   void Init(FEXCore::Context::Context *ctx);
 
   FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function, uint32_t Leaf) {
-    auto Handler = FunctionHandlers.find(Function);
+    const auto Handler = FunctionHandlers.find(Function);
 
     if (Handler == FunctionHandlers.end()) {
       return Function_Reserved(Leaf);
     }
 
-    return Handler->second(Leaf);
+    return (this->*Handler->second)(Leaf);
   }
 private:
   FEXCore::Context::Context *CTX;
   bool Hybrid{};
   FEX_CONFIG_OPT(Cores, THREADS);
 
-  using FunctionHandler = std::function<FEXCore::CPUID::FunctionResults(uint32_t Leaf)>;
+  using FunctionHandler = FEXCore::CPUID::FunctionResults (CPUIDEmu::*)(uint32_t Leaf);
   void RegisterFunction(uint32_t Function, FunctionHandler Handler) {
-    FunctionHandlers[Function] = Handler;
+    FunctionHandlers.insert_or_assign(Function, Handler);
   }
 
   std::unordered_map<uint32_t, FunctionHandler> FunctionHandlers;

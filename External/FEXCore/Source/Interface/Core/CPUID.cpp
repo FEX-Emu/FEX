@@ -888,25 +888,25 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved(uint32_t Leaf) {
 
 void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   CTX = ctx;
-  using namespace std::placeholders;
-  RegisterFunction(0, std::bind(&CPUIDEmu::Function_0h, this, _1));
-  RegisterFunction(1, std::bind(&CPUIDEmu::Function_01h, this, _1));
-  RegisterFunction(2, std::bind(&CPUIDEmu::Function_02h, this, _1));
+
+  RegisterFunction(0, &CPUIDEmu::Function_0h);
+  RegisterFunction(1, &CPUIDEmu::Function_01h);
+  RegisterFunction(2, &CPUIDEmu::Function_02h);
   // 3: Serial Number(previously), now reserved
 #ifndef CPUID_AMD
   // Deterministic cache parameters for each level
-  RegisterFunction(0x4, std::bind(&CPUIDEmu::Function_04h, this, _1));
+  RegisterFunction(0x4, &CPUIDEmu::Function_04h);
 #endif
   // 5: Monitor/mwait
   // Thermal and power management
-  RegisterFunction(6, std::bind(&CPUIDEmu::Function_06h, this, _1));
+  RegisterFunction(6, &CPUIDEmu::Function_06h);
   // Extended feature flags
-  RegisterFunction(7, std::bind(&CPUIDEmu::Function_07h, this, _1));
+  RegisterFunction(7, &CPUIDEmu::Function_07h);
   // 9: Direct Cache Access information
   // 0x0A: Architectural performance monitoring
   // 0x0B: Extended topology enumeration
   // 0x0D: Processor extended state enumeration
-  RegisterFunction(0x0D, std::bind(&CPUIDEmu::Function_0Dh, this, _1));
+  RegisterFunction(0x0D, &CPUIDEmu::Function_0Dh);
   // 0x0F: Intel RDT monitoring
   // 0x10: Intel RDT allocation enumeration
   // 0x12: Intel SGX capability enumeration
@@ -915,38 +915,38 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
 #ifndef CPUID_AMD
   // Timestamp counter information
   // Doesn't exist on AMD hardware
-  RegisterFunction(0x15, std::bind(&CPUIDEmu::Function_15h, this, _1));
+  RegisterFunction(0x15, &CPUIDEmu::Function_15h);
 #endif
   // 0x16: Processor frequency information
   // 0x17: SoC vendor attribute enumeration
 
   // Largest extended function number
-  RegisterFunction(0x8000'0000, std::bind(&CPUIDEmu::Function_8000_0000h, this, _1));
+  RegisterFunction(0x8000'0000, &CPUIDEmu::Function_8000_0000h);
   // Processor vendor
-  RegisterFunction(0x8000'0001, std::bind(&CPUIDEmu::Function_8000_0001h, this, _1));
+  RegisterFunction(0x8000'0001, &CPUIDEmu::Function_8000_0001h);
   // Processor brand string
-  RegisterFunction(0x8000'0002, std::bind(&CPUIDEmu::Function_8000_0002h, this, _1));
+  RegisterFunction(0x8000'0002, &CPUIDEmu::Function_8000_0002h);
   // Processor brand string continued
-  RegisterFunction(0x8000'0003, std::bind(&CPUIDEmu::Function_8000_0003h, this, _1));
+  RegisterFunction(0x8000'0003, &CPUIDEmu::Function_8000_0003h);
   // Processor brand string continued
-  RegisterFunction(0x8000'0004, std::bind(&CPUIDEmu::Function_8000_0004h, this, _1));
+  RegisterFunction(0x8000'0004, &CPUIDEmu::Function_8000_0004h);
   // 0x8000'0005: L1 Cache and TLB identifiers
 #ifdef CPUID_AMD
-  RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_8000_0005h, this, _1));
+  RegisterFunction(0x8000'0005, &CPUIDEmu::Function_8000_0005h);
 #else
   // This is full reserved on Intel platforms
-  RegisterFunction(0x8000'0005, std::bind(&CPUIDEmu::Function_Reserved, this, _1));
+  RegisterFunction(0x8000'0005, &CPUIDEmu::Function_Reserved);
 #endif
   // 0x8000'0006: L2 Cache identifiers
-  RegisterFunction(0x8000'0006, std::bind(&CPUIDEmu::Function_8000_0006h, this, _1));
+  RegisterFunction(0x8000'0006, &CPUIDEmu::Function_8000_0006h);
   // Advanced power management information
-  RegisterFunction(0x8000'0007, std::bind(&CPUIDEmu::Function_8000_0007h, this, _1));
+  RegisterFunction(0x8000'0007, &CPUIDEmu::Function_8000_0007h);
   // Virtual and physical address sizes
-  RegisterFunction(0x8000'0008, std::bind(&CPUIDEmu::Function_8000_0008h, this, _1));
+  RegisterFunction(0x8000'0008, &CPUIDEmu::Function_8000_0008h);
 
   // 0x8000'000A: SVM Revision
   // TLB 1GB page identifiers
-  RegisterFunction(0x8000'0019, std::bind(&CPUIDEmu::Function_8000_0019h, this, _1));
+  RegisterFunction(0x8000'0019, &CPUIDEmu::Function_8000_0019h);
 
   // 0x8000'001A: Performance optimization identifiers
   // 0x8000'001B: Instruction based sampling identifiers
@@ -954,7 +954,7 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   // 0x8000'001D: Cache properties
 #ifdef CPUID_AMD
   // Deterministic cache parameters for each level
-  RegisterFunction(0x8000'001D, std::bind(&CPUIDEmu::Function_8000_001Dh, this, _1));
+  RegisterFunction(0x8000'001D, &CPUIDEmu::Function_8000_001Dh);
 #endif
   // 0x8000'001E: Extended APIC ID
   // 0x8000'001F: AMD Secure Encryption
