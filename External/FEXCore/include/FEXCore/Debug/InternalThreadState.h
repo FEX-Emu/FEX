@@ -37,7 +37,7 @@ namespace FEXCore::Core {
   struct DebugDataSubblock {
     uintptr_t HostCodeStart;
     uint32_t HostCodeSize;
-    uint32_t SSAId;
+    IR::NodeID SSAId;
   };
 
   /**

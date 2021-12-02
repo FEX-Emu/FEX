@@ -92,9 +92,9 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   // Then create all the ops inside the code blocks
 
   // Zero is always zero(invalid)
-  OldToNewRemap[0].NodeID = 0;
+  OldToNewRemap[0].NodeID.Invalidate();
   auto LocalHeaderOp = LocalBuilder._IRHeader(OrderedNodeWrapper::WrapOffset(0).GetNode(ListBegin), HeaderOp->BlockCount);
-  OldToNewRemap[CurrentIR.GetID(HeaderNode)].NodeID = LocalIR.GetID(LocalHeaderOp.Node);
+  OldToNewRemap[CurrentIR.GetID(HeaderNode).Value].NodeID = LocalIR.GetID(LocalHeaderOp.Node);
 
   {
     // Generate our codeblocks and link them together
@@ -102,15 +102,13 @@ bool IRCompaction::Run(IREmitter *IREmit) {
       LOGMAN_THROW_A_FMT(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
       auto LocalBlockIRNode = LocalBuilder._CodeBlock(LocalHeaderOp, LocalHeaderOp); // Use LocalHeaderOp as a dummy arg for now
-      OldToNewRemap[CurrentIR.GetID(BlockNode)].NodeID = LocalIR.GetID(LocalBlockIRNode.Node);
+      OldToNewRemap[CurrentIR.GetID(BlockNode).Value].NodeID = LocalIR.GetID(LocalBlockIRNode.Node);
       GeneratedCodeBlocks.emplace_back(CodeBlockData{BlockNode, LocalBlockIRNode});
     }
 
     // Link the IRHeader to the first code block
     LocalHeaderOp.first->Blocks = GeneratedCodeBlocks[0].NewNode->Wrapped(LocalListBegin);
   }
-
-
 
   {
     // Copy all of our IR ops over to the new location
@@ -123,7 +121,8 @@ bool IRCompaction::Run(IREmitter *IREmit) {
       CodeBlockData LastNode{};
       uint32_t i {};
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block.OldNode)) {
-        size_t OpSize = FEXCore::IR::GetSize(IROp->Op);
+        const size_t OpSize = FEXCore::IR::GetSize(IROp->Op);
+        const auto CodeID = CurrentIR.GetID(CodeNode);
 
         // Allocate the ops locally for our local dispatch
         auto LocalPair = LocalBuilder.AllocateRawOp(OpSize);
@@ -137,7 +136,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
         // Set our map remapper to map the new location
         // Even nodes that don't have a destination need to be in this map
         // Need to be able to remap branch targets any other bits
-        OldToNewRemap[CurrentIR.GetID(CodeNode)].NodeID = LocalIR.GetID(LocalPair.Node);
+        OldToNewRemap[CodeID.Value].NodeID = LocalIR.GetID(LocalPair.Node);
 
         if (i == 0) {
           FirstNode.OldNode = CodeNode;
@@ -175,10 +174,14 @@ bool IRCompaction::Run(IREmitter *IREmit) {
         const uint8_t NumArgs = LocalIROp->NumArgs;
         for (uint8_t i = 0; i < NumArgs; ++i) {
           const auto OldArg = LocalIROp->Args[i].ID();
+          const auto NewArg = OldToNewRemap[OldArg.Value].NodeID;
+
           #ifndef NDEBUG
-            LOGMAN_THROW_A_FMT(OldToNewRemap[OldArg].NodeID != ~0U, "Tried remapping unfound node %ssa{}", OldArg);
+            LOGMAN_THROW_A_FMT(NewArg.Value != UINT32_MAX,
+                               "Tried remapping unfound node %ssa{}", OldArg);
           #endif
-          LocalIROp->Args[i].NodeOffset = OldToNewRemap[OldArg].NodeID * sizeof(OrderedNode);
+
+          LocalIROp->Args[i].NodeOffset = NewArg.Value * sizeof(OrderedNode);
         }
       }
     }

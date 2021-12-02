@@ -306,9 +306,9 @@ public:
     return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
 
-  iterator at(uint32_t ID) const noexcept {
+  iterator at(NodeID ID) const noexcept {
     OrderedNodeWrapper Wrapped;
-    Wrapped.NodeOffset = ID * sizeof(OrderedNode);
+    Wrapped.NodeOffset = ID.Value * sizeof(OrderedNode);
     return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
 

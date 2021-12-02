@@ -36,7 +36,7 @@ class RegisterAllocationData {
     PhysicalRegister Map[0];
 
     PhysicalRegister GetNodeRegister(NodeID Node) const {
-      return Map[Node];
+      return Map[Node.Value];
     }
     uint32_t SpillSlots() const { return SpillSlotCount; }
 

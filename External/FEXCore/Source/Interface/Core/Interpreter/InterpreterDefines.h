@@ -161,19 +161,19 @@
 
 template<typename Res>
 Res GetDest(void* SSAData, FEXCore::IR::OrderedNodeWrapper Op) {
-  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Op.ID()];
+  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Op.ID().Value];
   return reinterpret_cast<Res>(DstPtr);
 }
 
 template<typename Res>
 Res GetDest(void* SSAData, FEXCore::IR::NodeID Op) {
-  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Op];
+  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Op.Value];
   return reinterpret_cast<Res>(DstPtr);
 }
 
 
 template<typename Res>
 Res GetSrc(void* SSAData, FEXCore::IR::OrderedNodeWrapper Src) {
-  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Src.ID()];
+  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Src.ID().Value];
   return reinterpret_cast<Res>(DstPtr);
 }
