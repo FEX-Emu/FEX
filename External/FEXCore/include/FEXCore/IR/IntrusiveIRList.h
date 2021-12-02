@@ -283,19 +283,19 @@ public:
   {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
-    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
+    return iterator(GetListData(), GetData(), Wrapped);
   }
 
   /**
    * @brief This is not an iterator that you can reverse iterator through!
    *
-   * @return Our iterator sentinal to ensure ending correctly
+   * @return Our iterator sentinel to ensure ending correctly
    */
   iterator end() const noexcept
   {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = 0;
-    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
+    return iterator(GetListData(), GetData(), Wrapped);
   }
 
   /**
@@ -303,18 +303,19 @@ public:
    * @return Iterator for this op
    */
   iterator at(OrderedNodeWrapper Wrapped) const noexcept {
-    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
+    return iterator(GetListData(), GetData(), Wrapped);
   }
 
   iterator at(NodeID ID) const noexcept {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = ID.Value * sizeof(OrderedNode);
-    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
+    return iterator(GetListData(), GetData(), Wrapped);
   }
 
   iterator at(const OrderedNode *Node) const noexcept {
-    auto Wrapped = Node->Wrapped(reinterpret_cast<uintptr_t>(GetListData()));
-    return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
+    const auto ListData = GetListData();
+    auto Wrapped = Node->Wrapped(ListData);
+    return iterator(ListData, GetData(), Wrapped);
   }
 
   uintptr_t GetData() const {
