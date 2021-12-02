@@ -7,6 +7,7 @@ $end_info$
 
 #include "Common/ArgumentLoader.h"
 #include "Common/RootFSSetup.h"
+#include "Common/SocketLogging.h"
 #include "ELFCodeLoader2.h"
 #include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
@@ -434,28 +435,44 @@ int main(int argc, char **argv, char **const envp) {
   FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
   FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
+  FEX_CONFIG_OPT(OutputSocket, OUTPUTSOCKET);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);
   FEX_CONFIG_OPT(HostEnvironment, HOSTENV);
   ::SilentLog = SilentLog();
 
-  if (!::SilentLog) {
-    auto LogFile = OutputLog();
-    // If stderr or stdout then we need to dup the FD
-    // In some cases some applications will close stderr and stdout
-    // then redirect the FD to either a log OR some cases just not use
-    // stderr/stdout and the FD will be reused for regular FD ops.
-    //
-    // We want to maintain the original output location otherwise we
-    // can run in to problems of writing to some file
-    if (LogFile == "stderr") {
-      OutputFD = dup(STDERR_FILENO);
+  if (::SilentLog) {
+    LogMan::Throw::UnInstallHandlers();
+    LogMan::Msg::UnInstallHandlers();
+  }
+  else {
+    if (OutputSocket().size()) {
+      LogMan::Throw::UnInstallHandlers();
+      LogMan::Msg::UnInstallHandlers();
+
+      if (FEX::SocketLogging::Client::ConnectToClient(OutputSocket())) {
+        LogMan::Throw::InstallHandler(FEX::SocketLogging::Client::AssertHandler);
+        LogMan::Msg::InstallHandler(FEX::SocketLogging::Client::MsgHandler);
+      }
     }
-    else if (LogFile == "stdout") {
-      OutputFD = dup(STDOUT_FILENO);
-    }
-    else if (!LogFile.empty()) {
-      OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
+    else {
+      auto LogFile = OutputLog();
+      // If stderr or stdout then we need to dup the FD
+      // In some cases some applications will close stderr and stdout
+      // then redirect the FD to either a log OR some cases just not use
+      // stderr/stdout and the FD will be reused for regular FD ops.
+      //
+      // We want to maintain the original output location otherwise we
+      // can run in to problems of writing to some file
+      if (LogFile == "stderr") {
+        OutputFD = dup(STDERR_FILENO);
+      }
+      else if (LogFile == "stdout") {
+        OutputFD = dup(STDOUT_FILENO);
+      }
+      else if (!LogFile.empty()) {
+        OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
+      }
     }
   }
 

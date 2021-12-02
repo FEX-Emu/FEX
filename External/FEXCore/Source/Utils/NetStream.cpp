@@ -1,15 +1,16 @@
-#include "NetStream.h"
+#include <FEXCore/Utils/NetStream.h>
 
 #include <sys/socket.h>
 
 #include <unistd.h>
 
+namespace FEXCore::Utils {
 int NetStream::NetBuf::flushBuffer(const char *buffer, size_t size) {
     size_t total = 0;
 
     // Send data
     while (total < size) {
-        size_t sent = send(socket, (const void*)(buffer + total), size - total, 0);
+        size_t sent = send(socket, (const void*)(buffer + total), size - total, MSG_NOSIGNAL);
         if (sent == -1) {
             // lets just assume all errors are end of file.
             return -1;
@@ -79,4 +80,5 @@ NetStream::~NetStream() {
 
 NetStream::NetBuf::~NetBuf() {
   close(socket);
+}
 }

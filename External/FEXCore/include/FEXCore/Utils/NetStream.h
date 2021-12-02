@@ -1,11 +1,14 @@
 #pragma once
 
+#include <FEXCore/Utils/CompilerDefs.h>
+
 #include <array>
 #include <iostream>
 #include <iterator>
 #include <string.h>
 
-class NetStream : public std::iostream {
+namespace FEXCore::Utils {
+class FEX_DEFAULT_VISIBILITY NetStream : public std::iostream {
 public:
     NetStream(int socketfd) : std::iostream(new NetBuf(socketfd)) {}
     virtual ~NetStream();
@@ -40,3 +43,4 @@ private:
         std::array<char, 1500> input_buffer; // enough for a typical packet
     };
 };
+}

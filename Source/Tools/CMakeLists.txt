@@ -5,6 +5,7 @@ endif()
 add_subdirectory(FEXConfig/)
 add_subdirectory(FEXGetConfig/)
 add_subdirectory(FEXMountDaemon/)
+add_subdirectory(FEXLogServer/)
 
 set(NAME Opt)
 set(SRCS Opt.cpp)
