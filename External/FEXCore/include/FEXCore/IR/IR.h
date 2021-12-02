@@ -287,14 +287,14 @@ class OrderedNode final {
     void AddUse() { ++NumUses; }
     void RemoveUse() { --NumUses; }
 
-    value_type Wrapped(uintptr_t Base) {
+    value_type Wrapped(uintptr_t Base) const {
       value_type Tmp;
       Tmp.SetOffset(Base, reinterpret_cast<uintptr_t>(this));
       return Tmp;
     }
 
   private:
-    value_type WrappedOffset(uint32_t Offset) {
+    value_type WrappedOffset(uint32_t Offset) const {
       value_type Tmp;
       Tmp.NodeOffset = Offset;
       return Tmp;

@@ -176,7 +176,7 @@ public:
   bool IsShared() const { return Flags & FLAG_Shared; }
   void SetShared(bool Set) { if (Set) Flags |= FLAG_Shared; else Flags &= ~FLAG_Shared; }
 
-  NodeID GetID(OrderedNode *Node) const {
+  NodeID GetID(const OrderedNode *Node) const {
     return Node->Wrapped(GetListData()).ID();
   }
 
@@ -269,7 +269,7 @@ public:
     return BlockRange(this);
   }
 
-  CodeRange GetCode(OrderedNode *block) const {
+  CodeRange GetCode(const OrderedNode *block) const {
     return CodeRange(this, block->Wrapped(GetListData()));
   }
 
@@ -312,7 +312,7 @@ public:
     return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
 
-  iterator at(OrderedNode *Node) const noexcept {
+  iterator at(const OrderedNode *Node) const noexcept {
     auto Wrapped = Node->Wrapped(reinterpret_cast<uintptr_t>(GetListData()));
     return iterator(reinterpret_cast<uintptr_t>(GetListData()), reinterpret_cast<uintptr_t>(GetData()), Wrapped);
   }
