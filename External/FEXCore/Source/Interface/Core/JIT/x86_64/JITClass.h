@@ -91,7 +91,7 @@ private:
   std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
   uint64_t Entry;
 
-  std::unordered_map<IR::OrderedNodeWrapper::NodeOffsetType, Label> JumpTargets;
+  std::unordered_map<IR::NodeID, Label> JumpTargets;
   Xbyak::util::Cpu Features{};
 
   bool MemoryDebug = false;

@@ -78,7 +78,7 @@ private:
   FEXCore::IR::IRListView const *IR;
   uint64_t Entry;
 
-  std::map<IR::OrderedNodeWrapper::NodeOffsetType, aarch64::Label> JumpTargets;
+  std::map<IR::NodeID, aarch64::Label> JumpTargets;
 
   /**
    * @name Register Allocation

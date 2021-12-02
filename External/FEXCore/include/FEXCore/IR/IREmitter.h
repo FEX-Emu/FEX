@@ -398,7 +398,7 @@ friend class FEXCore::IR::PassManager;
     Phi->Header.Size = ValueIROp->Size;
     Phi->Header.ElementSize = ValueIROp->ElementSize;
 
-    if (!Phi->PhiBegin.ID()) {
+    if (Phi->PhiBegin.ID().IsInvalid()) {
       Phi->PhiBegin = Phi->PhiEnd = Value->Wrapped(DualListData.ListBegin());
       return;
     }

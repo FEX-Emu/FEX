@@ -97,13 +97,14 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
 
 static void PrintArg(std::stringstream *out, IRListView const* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationData *RAData) {
   auto [CodeNode, IROp] = IR->at(Arg)();
+  const auto ArgID = Arg.ID();
 
-  if (Arg.ID() == 0) {
+  if (ArgID.IsInvalid()) {
     *out << "%Invalid";
   } else {
-    *out << "%ssa" << std::to_string(Arg.ID());
+    *out << "%ssa" << ArgID;
     if (RAData) {
-      auto PhyReg = RAData->GetNodeRegister(Arg.ID());
+      auto PhyReg = RAData->GetNodeRegister(ArgID);
 
       switch (PhyReg.Class) {
         case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
@@ -191,10 +192,10 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
       auto BlockIROp = BlockHeader->C<FEXCore::IR::IROp_CodeBlock>();
 
       AddIndent();
-      *out << "(%ssa" << std::to_string(IR->GetID(BlockNode)) << ") " << "CodeBlock ";
+      *out << "(%ssa" << IR->GetID(BlockNode) << ") " << "CodeBlock ";
 
-      *out << "%ssa" << std::to_string(BlockIROp->Begin.ID()) << ", ";
-      *out << "%ssa" << std::to_string(BlockIROp->Last.ID()) << std::endl;
+      *out << "%ssa" << BlockIROp->Begin.ID() << ", ";
+      *out << "%ssa" << BlockIROp->Last.ID() << std::endl;
     }
 
     ++CurrentIndent;
@@ -224,7 +225,7 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
             NumElements /= ElementSize;
           }
 
-          *out << "%ssa" << std::to_string(ID);
+          *out << "%ssa" << ID;
 
           if (RAData) {
             auto PhyReg = RAData->GetNodeRegister(ID);
@@ -264,10 +265,10 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
             NumElements = IROp->Size / ElementSize;
           }
 
-          *out << "(%ssa" << std::to_string(ID) << " ";
-          *out << "i" << std::dec << (ElementSize * 8);
+          *out << "(%ssa" << ID << ' ';
+          *out << 'i' << std::dec << (ElementSize * 8);
           if (NumElements > 1) {
-            *out << "v" << std::dec << NumElements;
+            *out << 'v' << std::dec << NumElements;
           }
           *out << ") ";
         }
@@ -289,8 +290,9 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
             PrintArg(out, IR, PhiOp->Block, RAData);
             *out << " ]";
 
-            if (PhiOp->Next.ID())
+            if (PhiOp->Next.ID().IsValid()) {
               *out << ", ";
+            }
 
             NodeBegin = IR->at(PhiOp->Next);
           }

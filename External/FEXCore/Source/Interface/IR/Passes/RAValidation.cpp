@@ -16,11 +16,11 @@ namespace FEXCore::IR::Validation {
 
 // Hold the mapping of physical registers to the SSA id it holds at any given point in the IR
 struct RegState {
-  static constexpr uint32_t UninitializedValue = 0;
-  static constexpr uint32_t InvalidReg         = 0xffff'ffff;
-  static constexpr uint32_t CorruptedPair      = 0xffff'fffe;
-  static constexpr uint32_t ClobberedValue     = 0xffff'fffd;
-  static constexpr uint32_t StaticAssigned     = 0xffff'ff00;
+  static constexpr IR::NodeID UninitializedValue{0};
+  static constexpr IR::NodeID InvalidReg        {0xffff'ffff};
+  static constexpr IR::NodeID CorruptedPair     {0xffff'fffe};
+  static constexpr IR::NodeID ClobberedValue    {0xffff'fffd};
+  static constexpr IR::NodeID StaticAssigned    {0xffff'ff00};
 
   // This class makes some assumptions about how the host registers are arranged and mapped to virtual registers:
   // 1. There will be less than 32 GPRs and 32 FPRs
@@ -32,9 +32,9 @@ struct RegState {
 
   // Mark a physical register as containing a SSA id
   bool Set(PhysicalRegister Reg, IR::NodeID ssa) {
-    LOGMAN_THROW_A_FMT(ssa != 0, "RegState assumes ssa0 will be the block header and never assigned to a register");
+    LOGMAN_THROW_A_FMT(ssa.IsValid(), "RegState assumes ssa0 will be the block header and never assigned to a register");
 
-    // PhyscialRegisters aren't fully mapped until assembly emission
+    // PhysicalRegisters aren't fully mapped until assembly emission
     // We need to apply a generic mapping here to catch any aliasing
     switch (Reg.Class) {
     case GPRClass:
@@ -65,7 +65,7 @@ struct RegState {
 
   // Get the current SSA id
   // Or an error value there isn't a (sane) SSA id
-  uint32_t Get(PhysicalRegister Reg) {
+  IR::NodeID Get(PhysicalRegister Reg) const {
     switch (Reg.Class) {
     case GPRClass:
       return GPRs[Reg.Reg];
@@ -103,7 +103,7 @@ struct RegState {
   // Consume (and return) the SSA id currently in a spill slot
   IR::NodeID Unspill(uint32_t SpillSlot) {
     if (Spills.contains(SpillSlot)) {
-      uint32_t Value = Spills[SpillSlot];
+      const auto Value = Spills[SpillSlot];
       Spills.erase(SpillSlot);
       return Value;
     }
@@ -143,7 +143,7 @@ struct RegState {
   // Filter out all registers/slots containing an SSA id larger than MaxSSA
   // Mark them as Clobbered.
   // Useful for backwards edges, where using an SSA from before the
-  void Filter(uint32_t MaxSSA) {
+  void Filter(IR::NodeID MaxSSA) {
     for (auto &gpr : GPRs) {
       if (gpr > MaxSSA) {
         gpr = ClobberedValue;
@@ -278,13 +278,14 @@ bool RAValidation::Run(IREmitter *IREmit) {
       }
     }
 
-    // Thrid, we need to iterate over all IR ops in the block
+    // Third, we need to iterate over all IR ops in the block
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       const auto ID = CurrentIR.GetID(CodeNode);
 
       const auto CheckArg = [&](uint32_t i, OrderedNodeWrapper Arg) {
-        const auto PhyReg = RAData->GetNodeRegister(Arg.ID());
+        const auto ArgID = Arg.ID();
+        const auto PhyReg = RAData->GetNodeRegister(ArgID);
 
         if (PhyReg.IsInvalid())
           return;
@@ -300,21 +301,21 @@ bool RAValidation::Run(IREmitter *IREmit) {
           auto Upper = BlockRegState.Get(PhysicalRegister(GPRClass, PhyReg.Reg*2 + 1));
 
           Errors << fmt::format("%ssa{}: Arg[{}] expects paired reg{} to contain %ssa{}, but it actually contains {{%ssa{}, %ssa{}}}\n",
-                                  ID, i, PhyReg.Reg, Arg.ID(), Lower, Upper);
+                                ID, i, PhyReg.Reg, ArgID, Lower, Upper);
         } else if (CurrentSSAAtReg == RegState::UninitializedValue) {
           HadError |= true;
 
           Errors << fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it is uninitialized\n",
-                                ID, i, PhyReg.Reg, Arg.ID());
+                                ID, i, PhyReg.Reg, ArgID);
         } else if (CurrentSSAAtReg == RegState::ClobberedValue) {
           HadError |= true;
 
           Errors << fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but contents vary depending on control flow\n",
-                                ID, i, PhyReg.Reg, Arg.ID());
-        } else if (CurrentSSAAtReg != Arg.ID()) {
+                                ID, i, PhyReg.Reg, ArgID);
+        } else if (CurrentSSAAtReg != ArgID) {
           HadError |= true;
           Errors << fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it actually contains %ssa{}\n",
-                                ID, i, PhyReg.Reg, Arg.ID(), CurrentSSAAtReg);
+                                ID, i, PhyReg.Reg, ArgID, CurrentSSAAtReg);
         }
       };
 

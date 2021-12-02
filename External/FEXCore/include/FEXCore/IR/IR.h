@@ -6,9 +6,12 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <sstream>
 #include <tuple>
+
+#include <fmt/format.h>
 
 namespace FEXCore::IR {
 class OrderedNode;
@@ -25,8 +28,58 @@ struct IROp_Header;
 
 /**
  * @brief Represents the ID of a given IR node.
+ *
+ * Intended to provide strong typing from other integer values
+ * to prevent passing incorrect values to certain API functions.
  */
-using NodeID = uint32_t;
+struct NodeID final {
+  using value_type = uint32_t;
+
+  constexpr NodeID() noexcept = default;
+  constexpr explicit NodeID(value_type Value_) noexcept : Value{Value_} {}
+
+  constexpr NodeID(const NodeID&) noexcept = default;
+  constexpr NodeID& operator=(const NodeID&) noexcept = default;
+
+  constexpr NodeID(NodeID&&) noexcept = default;
+  constexpr NodeID& operator=(NodeID&&) noexcept = default;
+
+  [[nodiscard]] constexpr bool IsValid() const noexcept {
+    return Value != 0;
+  }
+  [[nodiscard]] constexpr bool IsInvalid() const noexcept {
+    return !IsValid();
+  }
+  constexpr void Invalidate() noexcept {
+    Value = 0;
+  }
+
+  [[nodiscard]] friend constexpr bool operator==(NodeID, NodeID) noexcept = default;
+
+  [[nodiscard]] friend constexpr bool operator<(NodeID lhs, NodeID rhs) noexcept {
+    return lhs.Value < rhs.Value;
+  }
+  [[nodiscard]] friend constexpr bool operator>(NodeID lhs, NodeID rhs) noexcept {
+    return operator<(rhs, lhs);
+  }
+  [[nodiscard]] friend constexpr bool operator<=(NodeID lhs, NodeID rhs) noexcept {
+    return !operator>(lhs, rhs);
+  }
+  [[nodiscard]] friend constexpr bool operator>=(NodeID lhs, NodeID rhs) noexcept {
+    return !operator<(lhs, rhs);
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, NodeID ID) {
+    out << ID.Value;
+    return out;
+  }
+  friend std::istream& operator>>(std::istream& in, NodeID& ID) {
+    in >> ID.Value;
+    return in;
+  }
+
+  value_type Value{};
+};
 
 /**
  * @brief This is a very simple wrapper for our node pointers
@@ -488,6 +541,27 @@ FEX_DEFAULT_VISIBILITY void Dump(std::stringstream *out, IRListView const* IR, I
 FEX_DEFAULT_VISIBILITY std::unique_ptr<IREmitter> Parse(std::istream *in);
 
 template<typename Type>
-inline NodeID NodeWrapperBase<Type>::ID() const { return NodeOffset / sizeof(IR::OrderedNode); }
+inline NodeID NodeWrapperBase<Type>::ID() const {
+  return NodeID(NodeOffset / sizeof(IR::OrderedNode));
+}
 
+} // namespace FEXCore::IR
+
+template <>
+struct std::hash<FEXCore::IR::NodeID> {
+  size_t operator()(const FEXCore::IR::NodeID& ID) const noexcept {
+    return std::hash<FEXCore::IR::NodeID::value_type>{}(ID.Value);
+  }
+};
+
+template <>
+struct fmt::formatter<FEXCore::IR::NodeID> : fmt::formatter<FEXCore::IR::NodeID::value_type> {
+  using Base = fmt::formatter<FEXCore::IR::NodeID::value_type>;
+
+  // Pass-through the underlying value, so IDs can
+  // be formatted like any integral value.
+  template <typename FormatContext>
+  auto format(const FEXCore::IR::NodeID& ID, FormatContext& ctx) {
+    return Base::format(ID.Value, ctx);
+  }
 };

@@ -22,8 +22,9 @@ namespace FEXCore {
     void Clear() {
       Items[0] = T{};
       #ifndef NDEBUG
-      for (size_t i = 1; i < Size; i++)
-        Items[i] = 0xDEADBEEF;
+      for (size_t i = 1; i < Size; i++) {
+        Items[i] = T{0xDEADBEEF};
+      }
       #endif
       Next.reset();
     }

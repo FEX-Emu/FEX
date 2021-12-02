@@ -127,7 +127,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
           case OP_PHIVALUE:
           case OP_CONDJUMP:
           case OP_JUMP:
-            // These override the nubmer of args for RA, so ignore them.
+            // These override the number of args for RA, so ignore them.
             break;
           default:
             HadError |= true;
@@ -136,23 +136,25 @@ bool IRValidation::Run(IREmitter *IREmit) {
       }
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
+        const auto ArgID = Arg.ID();
+
         // Was an argument defined after this node?
-        if (Arg.ID() >= ID) {
+        if (ArgID >= ID) {
           HadError |= true;
-          Errors << "%ssa" << ID << ": Arg[" << i << "] has definition after use at %ssa" << Arg.ID() << std::endl;
+          Errors << "%ssa" << ID << ": Arg[" << i << "] has definition after use at %ssa" << ArgID << std::endl;
         }
 
-        if (Arg.ID() != 0 && !NodeIsLive.Get(Arg.ID())) {
+        if (ArgID.IsValid() && !NodeIsLive.Get(ArgID.Value)) {
           HadError |= true;
-          Errors << "%ssa" << ID << ": Arg[" << i << "] refrences dead %ssa" << Arg.ID() << std::endl;
+          Errors << "%ssa" << ID << ": Arg[" << i << "] references dead %ssa" << ArgID << std::endl;
         }
 
-        if (Arg.ID() != 0) {
-          Uses[Arg.ID()]++;
+        if (ArgID.IsValid()) {
+          Uses[ArgID.Value]++;
         }
       }
 
-      NodeIsLive.Set(ID);
+      NodeIsLive.Set(ID.Value);
 
       switch (IROp->Op) {
         case IR::OP_EXITFUNCTION: {
@@ -256,8 +258,8 @@ bool IRValidation::Run(IREmitter *IREmit) {
     }
   }
 
-  for (int i = 0; i < CurrentIR.GetSSACount(); i++) {
-    auto [Node, IROp] = CurrentIR.at(i)();
+  for (uint32_t i = 0; i < CurrentIR.GetSSACount(); i++) {
+    auto [Node, IROp] = CurrentIR.at(IR::NodeID{i})();
     if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
       HadError |= true;
       Errors << "%ssa" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
