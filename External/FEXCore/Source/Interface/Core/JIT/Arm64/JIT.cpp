@@ -698,10 +698,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
 
     {
       const auto Node = IR->GetID(BlockNode);
-      auto IsTarget = JumpTargets.find(Node);
-      if (IsTarget == JumpTargets.end()) {
-        IsTarget = JumpTargets.try_emplace(Node).first;
-      }
+      const auto IsTarget = JumpTargets.try_emplace(Node).first;
 
       // if there's a pending branch, and it is not fall-through
       if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second)
