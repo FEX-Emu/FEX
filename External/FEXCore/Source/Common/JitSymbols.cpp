@@ -5,22 +5,18 @@
 #include <unistd.h>
 
 namespace FEXCore {
-  JITSymbols::JITSymbols() {
+  JITSymbols::JITSymbols() : fp{nullptr, std::fclose} {
     std::stringstream PerfMap;
     PerfMap << "/tmp/perf-" << getpid() << ".map";
 
-    fp = fopen(PerfMap.str().c_str(), "wb");
+    fp.reset(fopen(PerfMap.str().c_str(), "wb"));
     if (fp) {
       // Disable buffering on this file
-      setvbuf(fp, nullptr, _IONBF, 0);
+      setvbuf(fp.get(), nullptr, _IONBF, 0);
     }
   }
 
-  JITSymbols::~JITSymbols() {
-    if (fp) {
-      fclose(fp);
-    }
-  }
+  JITSymbols::~JITSymbols() = default;
 
   void JITSymbols::Register(void *HostAddr, uint64_t GuestAddr, uint32_t CodeSize) {
     if (!fp) return;
@@ -29,7 +25,7 @@ namespace FEXCore {
     // `<HostPtr> <Size> <Name>\n`
     std::stringstream String;
     String << std::hex << HostAddr << " " << CodeSize << " " << "JIT_0x" << GuestAddr << "_" << HostAddr << std::endl;
-    fwrite(String.str().c_str(), 1, String.str().size(), fp);
+    fwrite(String.str().c_str(), 1, String.str().size(), fp.get());
   }
 
   void JITSymbols::Register(void *HostAddr, uint32_t CodeSize, std::string const &Name) {
@@ -39,7 +35,7 @@ namespace FEXCore {
     // `<HostPtr> <Size> <Name>\n`
     std::stringstream String;
     String << std::hex << HostAddr << " " << CodeSize << " " << Name << "_" << HostAddr << std::endl;
-    fwrite(String.str().c_str(), 1, String.str().size(), fp);
+    fwrite(String.str().c_str(), 1, String.str().size(), fp.get());
   }
 
   void JITSymbols::RegisterNamedRegion(void *HostAddr, uint32_t CodeSize, std::string const &Name) {
@@ -49,7 +45,7 @@ namespace FEXCore {
     // `<HostPtr> <Size> <Name>\n`
     std::stringstream String;
     String << std::hex << HostAddr << " " << CodeSize << " " << Name << std::endl;
-    fwrite(String.str().c_str(), 1, String.str().size(), fp);
+    fwrite(String.str().c_str(), 1, String.str().size(), fp.get());
   }
 
   void JITSymbols::RegisterJITSpace(void *HostAddr, uint32_t CodeSize) {
@@ -59,7 +55,7 @@ namespace FEXCore {
     // `<HostPtr> <Size> <Name>\n`
     std::stringstream String;
     String << std::hex << HostAddr << " " << CodeSize << " FEXJIT" << std::endl;
-    fwrite(String.str().c_str(), 1, String.str().size(), fp);
+    fwrite(String.str().c_str(), 1, String.str().size(), fp.get());
   }
 
 }
