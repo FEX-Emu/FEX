@@ -904,7 +904,7 @@ namespace {
     }
 
     BucketList<32, uint32_t> Active;
-    for (int OpNodeId = 0; OpNodeId < IR->GetSSACount(); OpNodeId++) {
+    for (size_t OpNodeId = 0; OpNodeId < IR->GetSSACount(); OpNodeId++) {
       // Expire end intervals first
       SpanEnd[OpNodeId].Iterate([&](uint32_t EdgeInfo) {
         Active.Erase(InfoIDClass(EdgeInfo));
