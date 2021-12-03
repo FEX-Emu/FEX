@@ -1,15 +1,15 @@
 #include "Common/JitSymbols.h"
 
 #include <string>
-#include <sstream>
 #include <unistd.h>
+
+#include <fmt/format.h>
 
 namespace FEXCore {
   JITSymbols::JITSymbols() : fp{nullptr, std::fclose} {
-    std::stringstream PerfMap;
-    PerfMap << "/tmp/perf-" << getpid() << ".map";
+    const auto PerfMap = fmt::format("/tmp/perf-{}.map", getpid());
 
-    fp.reset(fopen(PerfMap.str().c_str(), "wb"));
+    fp.reset(fopen(PerfMap.c_str(), "wb"));
     if (fp) {
       // Disable buffering on this file
       setvbuf(fp.get(), nullptr, _IONBF, 0);
@@ -23,9 +23,7 @@ namespace FEXCore {
 
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
-    std::stringstream String;
-    String << std::hex << HostAddr << " " << CodeSize << " " << "JIT_0x" << GuestAddr << "_" << HostAddr << std::endl;
-    fwrite(String.str().c_str(), 1, String.str().size(), fp.get());
+    fmt::print(fp.get(), "{:x} {:x} JIT_0x{:x}_{:x}\n", HostAddr, CodeSize, GuestAddr, HostAddr);
   }
 
   void JITSymbols::Register(void *HostAddr, uint32_t CodeSize, std::string const &Name) {
@@ -33,9 +31,7 @@ namespace FEXCore {
 
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
-    std::stringstream String;
-    String << std::hex << HostAddr << " " << CodeSize << " " << Name << "_" << HostAddr << std::endl;
-    fwrite(String.str().c_str(), 1, String.str().size(), fp.get());
+    fmt::print(fp.get(), "{:x} {:x} {}_{:x}\n", HostAddr, CodeSize, Name, HostAddr);
   }
 
   void JITSymbols::RegisterNamedRegion(void *HostAddr, uint32_t CodeSize, std::string const &Name) {
@@ -43,9 +39,7 @@ namespace FEXCore {
 
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
-    std::stringstream String;
-    String << std::hex << HostAddr << " " << CodeSize << " " << Name << std::endl;
-    fwrite(String.str().c_str(), 1, String.str().size(), fp.get());
+    fmt::print(fp.get(), "{:x} {:x} {}\n", HostAddr, CodeSize, Name);
   }
 
   void JITSymbols::RegisterJITSpace(void *HostAddr, uint32_t CodeSize) {
@@ -53,10 +47,7 @@ namespace FEXCore {
 
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
-    std::stringstream String;
-    String << std::hex << HostAddr << " " << CodeSize << " FEXJIT" << std::endl;
-    fwrite(String.str().c_str(), 1, String.str().size(), fp.get());
+    fmt::print(fp.get(), "{:x} {:x} FEXJIT\n", HostAddr, CodeSize);
   }
 
-}
-
+} // namespace FEXCore
