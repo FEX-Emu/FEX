@@ -106,33 +106,38 @@ struct NodeWrapperBase final {
   using NodeOffsetType = uint32_t;
   NodeOffsetType NodeOffset;
 
-  static NodeWrapperBase WrapOffset(NodeOffsetType Offset) {
+  explicit NodeWrapperBase() = default;
+
+  [[nodiscard]] static NodeWrapperBase WrapOffset(NodeOffsetType Offset) {
     NodeWrapperBase Wrapped;
     Wrapped.NodeOffset = Offset;
     return Wrapped;
   }
 
-  static NodeWrapperBase WrapPtr(uintptr_t Base, uintptr_t Value) {
+  [[nodiscard]] static NodeWrapperBase WrapPtr(uintptr_t Base, uintptr_t Value) {
     NodeWrapperBase Wrapped;
     Wrapped.SetOffset(Base, Value);
     return Wrapped;
   }
 
-  static void *UnwrapNode(uintptr_t Base, NodeWrapperBase Node) {
+  [[nodiscard]] static void *UnwrapNode(uintptr_t Base, NodeWrapperBase Node) {
     return Node.GetNode(Base);
   }
 
-  NodeID ID() const;
+  [[nodiscard]] NodeID ID() const;
 
-  bool IsInvalid() const { return NodeOffset == 0; }
+  [[nodiscard]] bool IsInvalid() const { return NodeOffset == 0; }
 
-  explicit NodeWrapperBase() = default;
-
-  Type *GetNode(uintptr_t Base) { return reinterpret_cast<Type*>(Base + NodeOffset); }
-  const Type *GetNode(uintptr_t Base) const { return reinterpret_cast<const Type*>(Base + NodeOffset); }
+  [[nodiscard]] Type *GetNode(uintptr_t Base) {
+    return reinterpret_cast<Type*>(Base + NodeOffset);
+  }
+  [[nodiscard]] const Type *GetNode(uintptr_t Base) const {
+    return reinterpret_cast<const Type*>(Base + NodeOffset);
+  }
 
   void SetOffset(uintptr_t Base, uintptr_t Value) { NodeOffset = Value - Base; }
-  friend constexpr bool operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
+
+  [[nodiscard]] friend constexpr bool operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
 };
 
 static_assert(std::is_trivial_v<NodeWrapperBase<OrderedNode>>);
@@ -259,9 +264,9 @@ class OrderedNode final {
      * Doesn't find the head of the list
      *
      */
-    size_t size(uintptr_t Base) const {
+    [[nodiscard]] size_t size(uintptr_t Base) const {
       size_t Size = 1;
-      // Walk the list forward until we hit a sentinal
+      // Walk the list forward until we hit a sentinel
       value_type Current = Header.Next;
       while (Current.NodeOffset != 0) {
         ++Size;
@@ -279,22 +284,26 @@ class OrderedNode final {
       SetPrevious(Base, Header.Next, Header.Previous);
     }
 
-    IROp_Header const* Op(uintptr_t Base) const { return Header.Value.GetNode(Base); }
-    IROp_Header *Op(uintptr_t Base) { return Header.Value.GetNode(Base); }
+    [[nodiscard]] IROp_Header const* Op(uintptr_t Base) const {
+      return Header.Value.GetNode(Base);
+    }
+    [[nodiscard]] IROp_Header *Op(uintptr_t Base) {
+      return Header.Value.GetNode(Base);
+    }
 
-    uint32_t GetUses() const { return NumUses; }
+    [[nodiscard]] uint32_t GetUses() const { return NumUses; }
 
     void AddUse() { ++NumUses; }
     void RemoveUse() { --NumUses; }
 
-    value_type Wrapped(uintptr_t Base) {
+    [[nodiscard]] value_type Wrapped(uintptr_t Base) const {
       value_type Tmp;
       Tmp.SetOffset(Base, reinterpret_cast<uintptr_t>(this));
       return Tmp;
     }
 
   private:
-    value_type WrappedOffset(uint32_t Offset) {
+    [[nodiscard]] value_type WrappedOffset(uint32_t Offset) const {
       value_type Tmp;
       Tmp.NodeOffset = Offset;
       return Tmp;
@@ -320,87 +329,89 @@ static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_
 
 struct RegisterClassType final {
   uint32_t Val;
-  constexpr operator uint32_t() const {
+  [[nodiscard]] constexpr operator uint32_t() const {
     return Val;
   }
-  friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
+  [[nodiscard]] friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
 };
 
 struct CondClassType final {
   uint8_t Val;
-  constexpr operator uint8_t() const {
+  [[nodiscard]] constexpr operator uint8_t() const {
     return Val;
   }
-  friend constexpr bool operator==(const CondClassType&, const CondClassType&) = default;
+  [[nodiscard]] friend constexpr bool operator==(const CondClassType&, const CondClassType&) = default;
 };
 
 struct MemOffsetType final {
   uint8_t Val;
-  constexpr operator uint8_t() const {
+  [[nodiscard]] constexpr operator uint8_t() const {
     return Val;
   }
-  friend constexpr bool operator==(const MemOffsetType&, const MemOffsetType&) = default;
+  [[nodiscard]] friend constexpr bool operator==(const MemOffsetType&, const MemOffsetType&) = default;
 };
 
 struct TypeDefinition final {
   uint16_t Val;
 
-  constexpr operator uint16_t() const {
+  [[nodiscard]] constexpr operator uint16_t() const {
     return Val;
   }
 
-  static constexpr TypeDefinition Create(uint8_t Bytes) {
+  [[nodiscard]] static constexpr TypeDefinition Create(uint8_t Bytes) {
     TypeDefinition Type{};
     Type.Val = Bytes << 8;
     return Type;
   }
 
-  static constexpr TypeDefinition Create(uint8_t Bytes, uint8_t Elements) {
+  [[nodiscard]] static constexpr TypeDefinition Create(uint8_t Bytes, uint8_t Elements) {
     TypeDefinition Type{};
     Type.Val = (Bytes << 8) | (Elements & 255);
     return Type;
   }
 
-  constexpr uint8_t Bytes() const {
+  [[nodiscard]] constexpr uint8_t Bytes() const {
     return Val >> 8;
   }
 
-  constexpr uint8_t Elements() const {
+  [[nodiscard]] constexpr uint8_t Elements() const {
     return Val & 255;
   }
 
-  friend constexpr bool operator==(const TypeDefinition&, const TypeDefinition&) = default;
+  [[nodiscard]] friend constexpr bool operator==(const TypeDefinition&, const TypeDefinition&) = default;
 };
 
 static_assert(std::is_trivial_v<TypeDefinition>);
 
 struct FenceType final {
   uint8_t Val;
-  constexpr operator uint8_t() const {
+  [[nodiscard]] constexpr operator uint8_t() const {
     return Val;
   }
-  friend constexpr bool operator==(const FenceType&, const FenceType&) = default;
+  [[nodiscard]] friend constexpr bool operator==(const FenceType&, const FenceType&) = default;
 };
 
 struct RoundType final {
   uint8_t Val;
-  constexpr operator uint8_t() const {
+  [[nodiscard]] constexpr operator uint8_t() const {
     return Val;
   }
-  friend constexpr bool operator==(const RoundType&, const RoundType&) = default;
+  [[nodiscard]] friend constexpr bool operator==(const RoundType&, const RoundType&) = default;
 };
 
 struct BreakReason final {
   uint8_t Val;
-  constexpr operator uint8_t() const {
+  [[nodiscard]] constexpr operator uint8_t() const {
     return Val;
   }
-  friend constexpr bool operator==(const BreakReason&, const BreakReason&) = default;
+  [[nodiscard]] friend constexpr bool operator==(const BreakReason&, const BreakReason&) = default;
 };
 
 struct SHA256Sum final {
   uint8_t data[32];
-  bool operator<(SHA256Sum const &rhs) const { return memcmp(data, rhs.data, sizeof(data)) < 0; }
+  [[nodiscard]] bool operator<(SHA256Sum const &rhs) const {
+    return memcmp(data, rhs.data, sizeof(data)) < 0;
+  }
 };
 
 class NodeIterator;
@@ -411,32 +422,32 @@ class NodeIterator;
  */
 class NodeIterator {
 public:
-	using value_type              = std::tuple<OrderedNode*, IROp_Header*>;
-	using size_type               = std::size_t;
-	using difference_type         = std::ptrdiff_t;
-	using reference               = value_type&;
-	using const_reference         = const value_type&;
-	using pointer                 = value_type*;
-	using const_pointer           = const value_type*;
-	using iterator                = NodeIterator;
-	using const_iterator          = const NodeIterator;
-	using reverse_iterator        = iterator;
-	using const_reverse_iterator  = const_iterator;
-	using iterator_category       = std::bidirectional_iterator_tag;
+  using value_type              = std::tuple<OrderedNode*, IROp_Header*>;
+  using size_type               = std::size_t;
+  using difference_type         = std::ptrdiff_t;
+  using reference               = value_type&;
+  using const_reference         = const value_type&;
+  using pointer                 = value_type*;
+  using const_pointer           = const value_type*;
+  using iterator                = NodeIterator;
+  using const_iterator          = const NodeIterator;
+  using reverse_iterator        = iterator;
+  using const_reverse_iterator  = const_iterator;
+  using iterator_category       = std::bidirectional_iterator_tag;
 
-	NodeIterator(uintptr_t Base, uintptr_t IRBase) : BaseList {Base}, IRList{ IRBase } {}
-	explicit NodeIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : BaseList {Base},  IRList{ IRBase }, Node {Ptr} {}
+  NodeIterator(uintptr_t Base, uintptr_t IRBase) : BaseList {Base}, IRList{ IRBase } {}
+  explicit NodeIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : BaseList {Base},  IRList{ IRBase }, Node {Ptr} {}
 
-	bool operator==(const NodeIterator &rhs) const {
-		return Node.NodeOffset == rhs.Node.NodeOffset;
-	}
+  [[nodiscard]] bool operator==(const NodeIterator &rhs) const {
+    return Node.NodeOffset == rhs.Node.NodeOffset;
+  }
 
-	bool operator!=(const NodeIterator &rhs) const {
-		return !operator==(rhs);
-	}
+  [[nodiscard]] bool operator!=(const NodeIterator &rhs) const {
+    return !operator==(rhs);
+  }
 
   NodeIterator operator++() {
-		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
+    OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
     Node = RealNode->Next;
     return *this;
   }
@@ -447,26 +458,26 @@ public:
     return *this;
   }
 
-	value_type operator*() {
-		OrderedNode *RealNode = Node.GetNode(BaseList);
-		return { RealNode, RealNode->Op(IRList) };
-	}
-
-	value_type operator()() {
+  [[nodiscard]] value_type operator*() {
     OrderedNode *RealNode = Node.GetNode(BaseList);
-		return { RealNode, RealNode->Op(IRList) };
-	}
+    return { RealNode, RealNode->Op(IRList) };
+  }
 
-  NodeID ID() const {
+  [[nodiscard]] value_type operator()() {
+    OrderedNode *RealNode = Node.GetNode(BaseList);
+    return { RealNode, RealNode->Op(IRList) };
+  }
+
+  [[nodiscard]] NodeID ID() const {
     return Node.ID();
   }
 
-  static NodeIterator Invalid() {
+  [[nodiscard]] static NodeIterator Invalid() {
     return NodeIterator(0, 0);
   }
 
 protected:
-	uintptr_t BaseList{};
+  uintptr_t BaseList{};
   uintptr_t IRList{};
   OrderedNodeWrapper Node{};
 };
@@ -486,11 +497,11 @@ protected:
 class AllNodesIterator : public NodeIterator {
 public:
   AllNodesIterator(uintptr_t Base, uintptr_t IRBase) : NodeIterator(Base, IRBase) {}
-	explicit AllNodesIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : NodeIterator(Base, IRBase, Ptr) {}
+  explicit AllNodesIterator(uintptr_t Base, uintptr_t IRBase, OrderedNodeWrapper Ptr) : NodeIterator(Base, IRBase, Ptr) {}
   AllNodesIterator(NodeIterator other) : NodeIterator(other) {} // Allow NodeIterator to be upgraded
 
   AllNodesIterator operator++() {
-		OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
+    OrderedNodeHeader *RealNode = reinterpret_cast<OrderedNodeHeader*>(Node.GetNode(BaseList));
     auto IROp = Node.GetNode(BaseList)->Op(IRList);
 
     // If this is the last node of a codeblock, we need to continue to the next block
@@ -507,8 +518,8 @@ public:
       Node = RealNode->Next;
     }
 
-		return *this;
-	}
+    return *this;
+  }
 
   AllNodesIterator operator--() {
     auto IROp = Node.GetNode(BaseList)->Op(IRList);
@@ -529,7 +540,7 @@ public:
     return *this;
   }
 
-  static AllNodesIterator Invalid() {
+  [[nodiscard]] static AllNodesIterator Invalid() {
     return AllNodesIterator(0, 0);
   }
 };
