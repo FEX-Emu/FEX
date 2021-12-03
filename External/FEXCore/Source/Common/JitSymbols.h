@@ -1,19 +1,24 @@
 #pragma once
+
 #include <cstdint>
 #include <cstdio>
-#include <string>
+#include <memory>
+#include <string_view>
 
 namespace FEXCore {
 class JITSymbols final {
 public:
   JITSymbols();
   ~JITSymbols();
-  void Register(void *HostAddr, uint64_t GuestAddr, uint32_t CodeSize);
-  void Register(void *HostAddr, uint32_t CodeSize, std::string const &Name);
-  void RegisterNamedRegion(void *HostAddr, uint32_t CodeSize, std::string const &Name);
-  void RegisterJITSpace(void *HostAddr, uint32_t CodeSize);
+
+  void Register(const void *HostAddr, uint64_t GuestAddr, uint32_t CodeSize);
+  void Register(const void *HostAddr, uint32_t CodeSize, std::string_view Name);
+  void RegisterNamedRegion(const void *HostAddr, uint32_t CodeSize, std::string_view Name);
+  void RegisterJITSpace(const void *HostAddr, uint32_t CodeSize);
 
 private:
-  FILE* fp{};
+  using FILEPtr = std::unique_ptr<FILE, decltype(&std::fclose)>;
+
+  FILEPtr fp;
 };
 }
