@@ -35,17 +35,17 @@ class DualIntrusiveAllocator final {
       FEXCore::Allocator::free(reinterpret_cast<void*>(Data));
     }
 
-    bool DataCheckSize(size_t Size) const {
+    [[nodiscard]] bool DataCheckSize(size_t Size) const {
       size_t NewOffset = DataCurrentOffset + Size;
       return NewOffset <= MemorySize;
     }
 
-    bool ListCheckSize(size_t Size) const {
+    [[nodiscard]] bool ListCheckSize(size_t Size) const {
       size_t NewOffset = ListCurrentOffset + Size;
       return NewOffset <= MemorySize;
     }
 
-    void *DataAllocate(size_t Size) {
+    [[nodiscard]] void *DataAllocate(size_t Size) {
       assert(DataCheckSize(Size) &&
         "Ran out of space in DualIntrusiveAllocator during allocation");
       size_t NewOffset = DataCurrentOffset + Size;
@@ -54,7 +54,7 @@ class DualIntrusiveAllocator final {
       return reinterpret_cast<void*>(NewPointer);
     }
 
-    void *ListAllocate(size_t Size) {
+    [[nodiscard]] void *ListAllocate(size_t Size) {
       assert(ListCheckSize(Size) &&
         "Ran out of space in DualIntrusiveAllocator during allocation");
       size_t NewOffset = ListCurrentOffset + Size;
@@ -63,14 +63,14 @@ class DualIntrusiveAllocator final {
       return reinterpret_cast<void*>(NewPointer);
     }
 
-    size_t DataSize() const { return DataCurrentOffset; }
-    size_t DataBackingSize() const { return MemorySize; }
+    [[nodiscard]] size_t DataSize() const { return DataCurrentOffset; }
+    [[nodiscard]] size_t DataBackingSize() const { return MemorySize; }
 
-    size_t ListSize() const { return ListCurrentOffset; }
-    size_t ListBackingSize() const { return MemorySize; }
+    [[nodiscard]] size_t ListSize() const { return ListCurrentOffset; }
+    [[nodiscard]] size_t ListBackingSize() const { return MemorySize; }
 
-    uintptr_t DataBegin() const { return Data; }
-    uintptr_t ListBegin() const { return List; }
+    [[nodiscard]] uintptr_t DataBegin() const { return Data; }
+    [[nodiscard]] uintptr_t ListBegin() const { return List; }
 
     void Reset() { DataCurrentOffset = 0; ListCurrentOffset = 0; }
 
@@ -159,39 +159,57 @@ public:
     stream.write((char*)GetListData(), ListSize);
   }
 
-  size_t GetInlineSize() const {
+  [[nodiscard]] size_t GetInlineSize() const {
     static_assert(sizeof(*this) == 40);
     return sizeof(*this) + DataSize + ListSize;
   }
 
-  IRListView *CreateCopy() {
+  [[nodiscard]] IRListView *CreateCopy() {
     return new IRListView(this, true);
   }
 
-  size_t GetDataSize() const { return DataSize; }
-  size_t GetListSize() const { return ListSize; }
-  size_t GetSSACount() const { return ListSize / sizeof(OrderedNode); }
-  bool IsCopy() const { return Flags & FLAG_IsCopy; }
-  void SetCopy(bool Set) { if (Set) Flags |= FLAG_IsCopy; else Flags &= ~FLAG_IsCopy; }
-  bool IsShared() const { return Flags & FLAG_Shared; }
-  void SetShared(bool Set) { if (Set) Flags |= FLAG_Shared; else Flags &= ~FLAG_Shared; }
+  [[nodiscard]] size_t GetDataSize() const { return DataSize; }
+  [[nodiscard]] size_t GetListSize() const { return ListSize; }
+  [[nodiscard]] size_t GetSSACount() const { return ListSize / sizeof(OrderedNode); }
 
-  NodeID GetID(const OrderedNode *Node) const {
+  [[nodiscard]] bool IsCopy() const {
+    return (Flags & FLAG_IsCopy) != 0;
+  }
+  void SetCopy(bool Set) {
+    if (Set) {
+      Flags |= FLAG_IsCopy;
+    } else {
+      Flags &= ~FLAG_IsCopy;
+    }
+  }
+
+  [[nodiscard]] bool IsShared() const {
+    return (Flags & FLAG_Shared) != 0;
+  }
+  void SetShared(bool Set) {
+    if (Set) {
+      Flags |= FLAG_Shared;
+    } else {
+      Flags &= ~FLAG_Shared;
+    }
+  }
+
+  [[nodiscard]] NodeID GetID(const OrderedNode *Node) const {
     return Node->Wrapped(GetListData()).ID();
   }
 
-  OrderedNode* GetHeaderNode() const {
+  [[nodiscard]] OrderedNode* GetHeaderNode() const {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
     return Wrapped.GetNode(GetListData());
   }
 
-  IROp_IRHeader *GetHeader() const {
+  [[nodiscard]] IROp_IRHeader *GetHeader() const {
     return GetOp<IROp_IRHeader>(GetHeaderNode());
   }
 
   template <typename T>
-  T *GetOp(OrderedNode *Node) const {
+  [[nodiscard]] T *GetOp(OrderedNode *Node) const {
     auto OpHeader = Node->Op(GetData());
     auto Op = OpHeader->template CW<T>();
 
@@ -204,12 +222,12 @@ public:
   }
 
   template <typename T>
-  T *GetOp(OrderedNodeWrapper Wrapper) const {
+  [[nodiscard]] T *GetOp(OrderedNodeWrapper Wrapper) const {
     auto Node = Wrapper.GetNode(GetListData());
     return GetOp<T>(Node);
   }
 
-  OrderedNode* GetNode(OrderedNodeWrapper Wrapper) const {
+  [[nodiscard]] OrderedNode* GetNode(OrderedNodeWrapper Wrapper) const {
     return Wrapper.GetNode(GetListData());
   }
 
@@ -220,12 +238,12 @@ private:
 
     BlockRange(const IRListView *parent) : View(parent) {};
 
-    iterator begin() const noexcept {
+    [[nodiscard]] iterator begin() const noexcept {
       auto Header = View->GetHeader();
       return iterator(View->GetListData(), View->GetData(), Header->Blocks);
     }
 
-    iterator end() const noexcept {
+    [[nodiscard]] iterator end() const noexcept {
       return iterator(View->GetListData(), View->GetData());
     }
   };
@@ -237,12 +255,12 @@ private:
 
     CodeRange(const IRListView *parent, OrderedNodeWrapper block) : View(parent), BlockWrapper(block) {};
 
-    iterator begin() const noexcept {
+    [[nodiscard]] iterator begin() const noexcept {
       auto Block = View->GetOp<IROp_CodeBlock>(BlockWrapper);
       return iterator(View->GetListData(), View->GetData(), Block->Begin);
     }
 
-    iterator end() const noexcept {
+    [[nodiscard]] iterator end() const noexcept {
       return iterator(View->GetListData(), View->GetData());
     }
   };
@@ -253,34 +271,32 @@ private:
 
     AllCodeRange(const IRListView *parent) : View(parent) {};
 
-    iterator begin() const noexcept {
+    [[nodiscard]] iterator begin() const noexcept {
       auto Header = View->GetHeader();
       return iterator(View->GetListData(), View->GetData(), Header->Blocks);
     }
 
-    iterator end() const noexcept {
+    [[nodiscard]] iterator end() const noexcept {
       return iterator(View->GetListData(), View->GetData());
     }
   };
 
 public:
+  using iterator = NodeIterator;
 
-  BlockRange GetBlocks() const {
+  [[nodiscard]] BlockRange GetBlocks() const {
     return BlockRange(this);
   }
 
-  CodeRange GetCode(const OrderedNode *block) const {
+  [[nodiscard]] CodeRange GetCode(const OrderedNode *block) const {
     return CodeRange(this, block->Wrapped(GetListData()));
   }
 
-  AllCodeRange GetAllCode() const {
+  [[nodiscard]] AllCodeRange GetAllCode() const {
     return AllCodeRange(this);
   }
 
-  using iterator = NodeIterator;
-
-  iterator begin() const noexcept
-  {
+  [[nodiscard]] iterator begin() const noexcept {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = sizeof(OrderedNode);
     return iterator(GetListData(), GetData(), Wrapped);
@@ -291,8 +307,7 @@ public:
    *
    * @return Our iterator sentinel to ensure ending correctly
    */
-  iterator end() const noexcept
-  {
+  [[nodiscard]] iterator end() const noexcept {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = 0;
     return iterator(GetListData(), GetData(), Wrapped);
@@ -302,27 +317,27 @@ public:
    * @brief Convert a OrderedNodeWrapper to an interator that we can iterate over
    * @return Iterator for this op
    */
-  iterator at(OrderedNodeWrapper Wrapped) const noexcept {
+  [[nodiscard]] iterator at(OrderedNodeWrapper Wrapped) const noexcept {
     return iterator(GetListData(), GetData(), Wrapped);
   }
 
-  iterator at(NodeID ID) const noexcept {
+  [[nodiscard]] iterator at(NodeID ID) const noexcept {
     OrderedNodeWrapper Wrapped;
     Wrapped.NodeOffset = ID.Value * sizeof(OrderedNode);
     return iterator(GetListData(), GetData(), Wrapped);
   }
 
-  iterator at(const OrderedNode *Node) const noexcept {
+  [[nodiscard]] iterator at(const OrderedNode *Node) const noexcept {
     const auto ListData = GetListData();
     auto Wrapped = Node->Wrapped(ListData);
     return iterator(ListData, GetData(), Wrapped);
   }
 
-  uintptr_t GetData() const {
+  [[nodiscard]] uintptr_t GetData() const {
     return reinterpret_cast<uintptr_t>(IRDataInternal ? IRDataInternal : InlineData);
   }
 
-  uintptr_t GetListData() const {
+  [[nodiscard]] uintptr_t GetListData() const {
     return reinterpret_cast<uintptr_t>(ListDataInternal ? ListDataInternal : &InlineData[DataSize]);
   }
 
