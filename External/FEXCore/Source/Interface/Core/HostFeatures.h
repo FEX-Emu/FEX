@@ -5,5 +5,6 @@ class HostFeatures final {
   public:
     HostFeatures();
     bool SupportsAES{};
+    bool SupportsCLZERO{};
 };
 }
