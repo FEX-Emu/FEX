@@ -264,5 +264,22 @@ DEF_OP(CacheLineClear) {
   CacheLineFlush(MemData);
 }
 
+DEF_OP(CacheLineZero) {
+  auto Op = IROp->C<IR::IROp_CacheLineZero>();
+
+  uintptr_t MemData = *GetSrc<uintptr_t*>(Data->SSAData, Op->Addr);
+
+  // Force cacheline alignment
+  MemData = MemData & ~(CPUIDEmu::CACHELINE_SIZE - 1);
+
+  using DataType = uint64_t;
+  DataType *MemData64 = reinterpret_cast<DataType*>(MemData);
+
+  // 64-byte cache line zero
+  for (size_t i = 0; i < (CPUIDEmu::CACHELINE_SIZE / sizeof(DataType)); ++i) {
+    MemData64[i] = 0;
+  }
+}
+
 #undef DEF_OP
 } // namespace FEXCore::CPU
