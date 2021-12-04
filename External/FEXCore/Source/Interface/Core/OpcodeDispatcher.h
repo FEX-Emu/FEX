@@ -469,6 +469,7 @@ public:
   void FenceOp(OpcodeArgs);
 
   void StoreFenceOrCLFlush(OpcodeArgs);
+  void CLZeroOp(OpcodeArgs);
 
   void PSADBW(OpcodeArgs);
 
