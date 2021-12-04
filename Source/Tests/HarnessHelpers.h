@@ -234,7 +234,7 @@ namespace FEX::HarnessHelper {
               return;
             }
 
-            fmt::format("{}: 0x{:016x} {} 0x{:016x} (Expected)\n", Name, A, A==B ? "==" : "!=", B);
+            fmt::print("{}: 0x{:016x} {} 0x{:016x} (Expected)\n", Name, A, A==B ? "==" : "!=", B);
           };
 
           const auto CheckGPRs = [&Matches, DumpGPRs](const std::string& Name, uint64_t A, uint64_t B) {
