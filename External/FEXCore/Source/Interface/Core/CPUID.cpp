@@ -757,7 +757,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0008h(uint32_t Leaf) {
   Res.ebx =
     (0 << 2) | // XSaveErPtr: Saving and restoring error pointers
     (0 << 1) | // IRPerf: Instructions retired count support
-    (0 << 0);  // CLZERO support
+    (CTX->HostFeatures.SupportsCLZERO << 0);  // CLZERO support
 
   uint32_t CoreCount = Cores() - 1;
   Res.ecx =
