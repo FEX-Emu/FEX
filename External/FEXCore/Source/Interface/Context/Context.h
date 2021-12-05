@@ -4,6 +4,7 @@
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/X86HelperGen.h"
+#include "Interface/IR/AOTIR.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -55,38 +56,6 @@ namespace FEXCore::Context {
   enum CoreRunningMode {
     MODE_RUN        = 0,
     MODE_SINGLESTEP = 1,
-  };
-
-  struct AOTIRInlineEntry {
-    uint64_t GuestHash;
-    uint64_t GuestLength;
-
-    /* RAData followed by IRData */
-    uint8_t InlineData[0];
-
-    IR::RegisterAllocationData *GetRAData();
-    IR::IRListView *GetIRData();
-  };
-
-  struct AOTIRInlineIndexEntry {
-    uint64_t GuestStart;
-    uint64_t DataOffset;
-  };
-
-  struct AOTIRInlineIndex {
-    uint64_t Count;
-    uint64_t DataBase;
-    AOTIRInlineIndexEntry Entries[0];
-
-    AOTIRInlineEntry *Find(uint64_t GuestStart);
-    AOTIRInlineEntry *GetInlineEntry(uint64_t DataOffset);
-  };
-
-  struct AOTIRCaptureCacheEntry {
-    std::unique_ptr<std::ostream> Stream;
-    std::map<uint64_t, uint64_t> Index;
-
-    void AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView *IRList, FEXCore::IR::RegisterAllocationData *RAData);
   };
 
   struct Context {
@@ -156,32 +125,6 @@ namespace FEXCore::Context {
     CustomCPUFactoryType CustomCPUFactory;
     FEXCore::Context::ExitHandler CustomExitHandler;
 
-    struct AOTIRCacheEntry {
-      AOTIRInlineIndex *Array;
-      void *mapping;
-      size_t size;
-    };
-
-    std::unordered_map<std::string, AOTIRCacheEntry> AOTIRCache;
-    std::function<int(const std::string&)> AOTIRLoader;
-    std::function<std::unique_ptr<std::ostream>(const std::string&)> AOTIRWriter;
-    std::unordered_map<std::string, AOTIRCaptureCacheEntry> AOTIRCaptureCache;
-
-    struct AddrToFileEntry {
-      uint64_t Start;
-      uint64_t Len;
-      uint64_t Offset;
-      std::string fileid;
-      std::string filename;
-      void *CachedFileEntry;
-      bool ContainsCode;
-    };
-
-    using AddrToFileMapType = std::map<uint64_t, AddrToFileEntry>;
-    AddrToFileMapType AddrToFile;
-    std::map<std::string, std::string> FilesWithCode;
-
-    AddrToFileMapType::iterator FindAddrForFile(uint64_t Entry, uint64_t Length);
 #ifdef BLOCKSTATS
     std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif
@@ -253,9 +196,6 @@ namespace FEXCore::Context {
     // same as CompileBlock, but aborts on failure
     void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
-    bool LoadAOTIRCache(int streamfd);
-    void FinalizeAOTIRCache();
-    void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer);
     /**
      * @brief Initializes the JIT compilers for the thread
      *
@@ -337,6 +277,26 @@ namespace FEXCore::Context {
     // Public for threading
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
 
+    void FinalizeAOTIRCache() {
+      IRCaptureCache.FinalizeAOTIRCache();
+    }
+
+    void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
+      IRCaptureCache.WriteFilesWithCode(Writer);
+    }
+
+    void SetAOTIRLoader(std::function<int(const std::string&)> CacheReader) {
+      IRCaptureCache.SetAOTIRLoader(CacheReader);
+    }
+
+    void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter) {
+      IRCaptureCache.SetAOTIRWriter(CacheWriter);
+    }
+
+    void SetAOTIRRenamer(std::function<void(const std::string&)> CacheRenamer) {
+      IRCaptureCache.SetAOTIRRenamer(CacheRenamer);
+    }
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
 
@@ -362,13 +322,7 @@ namespace FEXCore::Context {
     std::mutex ExitMutex;
     std::unique_ptr<GdbServer> DebugServer;
 
-    std::shared_mutex AOTIRCacheLock;
-    std::shared_mutex AOTIRCaptureCacheWriteoutLock;
-    std::atomic<bool> AOTIRCaptureCacheWriteoutFlusing;
-
-    std::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
-    void AOTIRCaptureCacheWriteoutQueue_Flush();
-    void AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn);
+    IR::AOTIRCaptureCache IRCaptureCache;
 
     bool StartPaused = false;
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);

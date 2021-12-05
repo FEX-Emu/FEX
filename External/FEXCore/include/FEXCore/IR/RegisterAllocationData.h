@@ -28,7 +28,9 @@ union PhysicalRegister {
 
 static_assert(sizeof(PhysicalRegister) == 1);
 
-class RegisterAllocationData {
+// This class is serialized, can't have any holes in the structure
+// otherwise ASAN complains about reading uninitialized memory
+class FEX_PACKED RegisterAllocationData {
   public:
     uint32_t SpillSlotCount {};
     uint32_t MapCount {};
@@ -42,6 +44,16 @@ class RegisterAllocationData {
 
     static size_t Size(uint32_t NodeCount) {
       return sizeof(RegisterAllocationData) + NodeCount * sizeof(Map[0]);
+    }
+
+    void Serialize(std::ostream& stream) const {
+      stream.write((const char*)&SpillSlotCount, sizeof(SpillSlotCount));
+      stream.write((const char*)&MapCount, sizeof(MapCount));
+      // RAData (inline)
+      // In file, IsShared is always set
+      bool _IsShared = true;
+      stream.write((const char*)&_IsShared, sizeof(IsShared));
+      stream.write((const char*)&Map[0], sizeof(Map[0]) * MapCount);
     }
 };
 

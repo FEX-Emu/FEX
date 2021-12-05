@@ -163,11 +163,15 @@ namespace FEXCore::Context {
   }
 
   void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader) {
-    CTX->AOTIRLoader = CacheReader;
+    CTX->SetAOTIRLoader(CacheReader);
   }
 
-  void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ostream>(const std::string&)> CacheWriter) {
-    CTX->AOTIRWriter = CacheWriter;
+  void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter) {
+    CTX->SetAOTIRWriter(CacheWriter);
+  }
+
+  void SetAOTIRRenamer(FEXCore::Context::Context *CTX, std::function<void(const std::string&)> CacheRenamer) {
+    CTX->SetAOTIRRenamer(CacheRenamer);
   }
 
   void FinalizeAOTIRCache(FEXCore::Context::Context *CTX) {
