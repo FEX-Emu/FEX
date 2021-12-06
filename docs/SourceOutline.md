@@ -1,4 +1,4 @@
-# FEX-2111
+# FEX-2112
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -290,6 +290,9 @@ Linux syscall emulation, marshaling and passthrough
 - [SignalDelegator.h](../Source/Tests/LinuxSyscalls/SignalDelegator.h)
 - [Syscalls.cpp](../Source/Tests/LinuxSyscalls/Syscalls.cpp): Glue logic, brk allocations
 - [Syscalls.h](../Source/Tests/LinuxSyscalls/Syscalls.h): Glue logic, STRACE magic
+
+#### syscalls-arm64
+- [SyscallsEnum.h](../Source/Tests/LinuxSyscalls/Arm64/SyscallsEnum.h)
 
 #### syscalls-shared
 Syscall implementations shared between x86 and x86-64
