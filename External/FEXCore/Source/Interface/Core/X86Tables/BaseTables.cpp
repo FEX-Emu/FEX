@@ -288,13 +288,13 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xEA, 1, X86InstInfo{"JMPF",   TYPE_INST, FLAGS_NONE,                                                        0, nullptr}},
   };
 
-  GenerateTable(BaseOps, BaseOpTable, std::size(BaseOpTable));
+  GenerateTable(&BaseOps.at(0), BaseOpTable, std::size(BaseOpTable));
 
   if (Mode == Context::MODE_64BIT) {
-    GenerateTable(BaseOps, BaseOpTable_64, std::size(BaseOpTable_64));
+    GenerateTable(&BaseOps.at(0), BaseOpTable_64, std::size(BaseOpTable_64));
   }
   else {
-    GenerateTable(BaseOps, BaseOpTable_32, std::size(BaseOpTable_32));
+    GenerateTable(&BaseOps.at(0), BaseOpTable_32, std::size(BaseOpTable_32));
   }
 }
 }

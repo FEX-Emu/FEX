@@ -509,7 +509,7 @@ void InitializeVEXTables() {
   };
 #undef OPD
 
-  GenerateTable(VEXTableOps, VEXTable, std::size(VEXTable));
-  GenerateTable(VEXTableGroupOps, VEXGroupTable, std::size(VEXGroupTable));
+  GenerateTable(&VEXTableOps.at(0), VEXTable, std::size(VEXTable));
+  GenerateTable(&VEXTableGroupOps.at(0), VEXGroupTable, std::size(VEXGroupTable));
 }
 }

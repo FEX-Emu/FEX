@@ -582,18 +582,18 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0xFF, 1, X86InstInfo{"",           TYPE_COPY_OTHER, FLAGS_NONE,                                                            0, nullptr}},
   };
 
-  GenerateTable(SecondBaseOps, TwoByteOpTable, std::size(TwoByteOpTable));
+  GenerateTable(&SecondBaseOps.at(0), TwoByteOpTable, std::size(TwoByteOpTable));
 
-if (Mode == Context::MODE_64BIT) {
-    GenerateTable(SecondBaseOps, TwoByteOpTable_64, std::size(TwoByteOpTable_64));
+  if (Mode == Context::MODE_64BIT) {
+    GenerateTable(&SecondBaseOps.at(0), TwoByteOpTable_64, std::size(TwoByteOpTable_64));
   }
   else {
-    GenerateTable(SecondBaseOps, TwoByteOpTable_32, std::size(TwoByteOpTable_32));
+    GenerateTable(&SecondBaseOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
   }
 
-  GenerateTableWithCopy(RepModOps, RepModOpTable, std::size(RepModOpTable), SecondBaseOps);
-  GenerateTableWithCopy(RepNEModOps, RepNEModOpTable,   std::size(RepNEModOpTable), SecondBaseOps);
-  GenerateTableWithCopy(OpSizeModOps, OpSizeModOpTable, std::size(OpSizeModOpTable), SecondBaseOps);
+  GenerateTableWithCopy(&RepModOps.at(0), RepModOpTable, std::size(RepModOpTable), &SecondBaseOps.at(0));
+  GenerateTableWithCopy(&RepNEModOps.at(0), RepNEModOpTable,   std::size(RepNEModOpTable), &SecondBaseOps.at(0));
+  GenerateTableWithCopy(&OpSizeModOps.at(0), OpSizeModOpTable, std::size(OpSizeModOpTable), &SecondBaseOps.at(0));
 
 }
 
