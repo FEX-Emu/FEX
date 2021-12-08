@@ -1,7 +1,7 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "0x0",
+    "RAX": "0x4700",
     "RBX": "0x0300"
   },
   "MemoryRegions": {
