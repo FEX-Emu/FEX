@@ -1,11 +1,42 @@
 #include <FEXCore/Utils/NetStream.h>
 
+#include <array>
+#include <cstring>
+#include <iterator>
 #include <sys/socket.h>
-
 #include <unistd.h>
 
 namespace FEXCore::Utils {
-int NetStream::NetBuf::flushBuffer(const char *buffer, size_t size) {
+namespace {
+class NetBuf final : public std::streambuf {
+public:
+    explicit NetBuf(int socketfd) : socket{socketfd} {
+        reset_output_buffer();
+    }
+    ~NetBuf() override {
+        close(socket);
+    }
+
+private:
+    std::streamsize xsputn(const char* buffer, std::streamsize size) override;
+
+    std::streambuf::int_type underflow() override;
+    std::streambuf::int_type overflow(std::streambuf::int_type ch) override;
+    int sync() override;
+
+    void reset_output_buffer() {
+        // we always leave room for one extra char
+        setp(std::begin(output_buffer), std::end(output_buffer) -1);
+    }
+
+    int flushBuffer(const char *buffer, size_t size);
+
+    int socket;
+    std::array<char, 1400> output_buffer;
+    std::array<char, 1500> input_buffer; // enough for a typical packet
+};
+
+int NetBuf::flushBuffer(const char *buffer, size_t size) {
     size_t total = 0;
 
     // Send data
@@ -21,7 +52,7 @@ int NetStream::NetBuf::flushBuffer(const char *buffer, size_t size) {
     return 0;
 }
 
-std::streamsize NetStream::NetBuf::xsputn(const char* buffer, std::streamsize size) {
+std::streamsize NetBuf::xsputn(const char* buffer, std::streamsize size) {
     size_t buf_remaining = epptr() - pptr();
 
     // Check if the string fits neatly in our buffer
@@ -45,23 +76,23 @@ std::streamsize NetStream::NetBuf::xsputn(const char* buffer, std::streamsize si
     }
 }
 
-std::streambuf::int_type NetStream::NetBuf::overflow(std::streambuf::int_type ch) {
+std::streambuf::int_type NetBuf::overflow(std::streambuf::int_type ch) {
     // we always leave room for one extra char
     *pptr() = (char) ch;
     pbump(1);
     return sync();
 }
 
-int NetStream::NetBuf::sync() {
+int NetBuf::sync() {
     // Flush and reset output buffer to zero
-    if(flushBuffer(pbase(), pptr() - pbase()) < 0) {
+    if (flushBuffer(pbase(), pptr() - pbase()) < 0) {
         return -1;
     }
     reset_output_buffer();
     return 0;
 }
 
-std::streambuf::int_type NetStream::NetBuf::underflow() {
+std::streambuf::int_type NetBuf::underflow() {
     ssize_t size = recv(socket, (void *)std::begin(input_buffer), sizeof(input_buffer), 0);
 
     if (size <= 0) {
@@ -73,12 +104,12 @@ std::streambuf::int_type NetStream::NetBuf::underflow() {
 
     return traits_type::to_int_type(*gptr());
 }
+} // Anonymous namespace
+
+NetStream::NetStream(int socketfd) : std::iostream(new NetBuf(socketfd)) {}
 
 NetStream::~NetStream() {
     delete rdbuf();
 }
 
-NetStream::NetBuf::~NetBuf() {
-  close(socket);
-}
-}
+} // namespace FEXCore::Utils
