@@ -916,7 +916,7 @@ Condition MapSelectCC(IR::CondClassType Cond) {
   case FEXCore::IR::COND_FLU: return Condition::lt;
   case FEXCore::IR::COND_FGE: return Condition::ge;
   case FEXCore::IR::COND_FLEU:return Condition::le;
-  case FEXCore::IR::COND_FGT: return Condition::hi;
+  case FEXCore::IR::COND_FGT: return Condition::gt;
   case FEXCore::IR::COND_FU:  return Condition::vs;
   case FEXCore::IR::COND_FNU: return Condition::vc;
   case FEXCore::IR::COND_VS:
