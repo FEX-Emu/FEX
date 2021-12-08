@@ -10,15 +10,14 @@
 namespace FEXCore::Utils {
 class FEX_DEFAULT_VISIBILITY NetStream : public std::iostream {
 public:
-    NetStream(int socketfd) : std::iostream(new NetBuf(socketfd)) {}
+    explicit NetStream(int socketfd) : std::iostream(new NetBuf(socketfd)) {}
     virtual ~NetStream();
 
 private:
     class NetBuf : public std::streambuf {
 
     public:
-        NetBuf(int socketfd) {
-            socket = socketfd;
+        explicit NetBuf(int socketfd) : socket{socketfd} {
             reset_output_buffer();
         }
         virtual ~NetBuf();
