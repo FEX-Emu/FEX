@@ -11,23 +11,22 @@ namespace FEXCore::Utils {
 class FEX_DEFAULT_VISIBILITY NetStream : public std::iostream {
 public:
     explicit NetStream(int socketfd) : std::iostream(new NetBuf(socketfd)) {}
-    virtual ~NetStream();
+    ~NetStream() override;
 
 private:
     class NetBuf : public std::streambuf {
-
     public:
         explicit NetBuf(int socketfd) : socket{socketfd} {
             reset_output_buffer();
         }
-        virtual ~NetBuf();
+        ~NetBuf() override;
 
     protected:
-        virtual std::streamsize xsputn(const char* buffer, std::streamsize size);
+        std::streamsize xsputn(const char* buffer, std::streamsize size) override;
 
-        virtual std::streambuf::int_type underflow();
-        virtual std::streambuf::int_type overflow(std::streambuf::int_type ch);
-        virtual int sync();
+        std::streambuf::int_type underflow() override;
+        std::streambuf::int_type overflow(std::streambuf::int_type ch) override;
+        int sync() override;
 
     private:
         void reset_output_buffer() {
