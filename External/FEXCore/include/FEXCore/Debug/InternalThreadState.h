@@ -5,6 +5,7 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Threads.h>
 
 #include <unordered_map>
@@ -83,7 +84,7 @@ namespace FEXCore::Core {
     std::atomic<SignalEvent> SignalReason{SignalEvent::Nothing};
 
     std::unique_ptr<FEXCore::Threads::Thread> ExecutionThread;
-    Event StartRunning;
+    InterruptableConditionVariable StartRunning;
     Event ThreadWaiting;
 
     std::unique_ptr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
