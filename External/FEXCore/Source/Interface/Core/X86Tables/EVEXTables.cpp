@@ -30,6 +30,6 @@ void InitializeEVEXTables() {
     {0xE7, 1, X86InstInfo{"VMOVNTDQ",        TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
   };
 
-  GenerateTable(EVEXTableOps, EVEXTable, std::size(EVEXTable));
+  GenerateTable(&EVEXTableOps.at(0), EVEXTable, std::size(EVEXTable));
 }
 }

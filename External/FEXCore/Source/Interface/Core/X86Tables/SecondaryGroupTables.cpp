@@ -488,7 +488,7 @@ void InitializeSecondaryGroupTables() {
   };
 #undef OPD
 
-  GenerateTable(SecondInstGroupOps, SecondaryExtensionOpTable, std::size(SecondaryExtensionOpTable));
+  GenerateTable(&SecondInstGroupOps.at(0), SecondaryExtensionOpTable, std::size(SecondaryExtensionOpTable));
 }
 
 }

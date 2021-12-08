@@ -48,6 +48,6 @@ void InitializeDDDTables() {
     {0xB7, 1, X86InstInfo{"PMULHRW",  TYPE_3DNOW_INST, FLAGS_MODRM, 0, nullptr}},
   };
 
-  GenerateTable(DDDNowOps, DDDNowOpTable, std::size(DDDNowOpTable));
+  GenerateTable(&DDDNowOps.at(0), DDDNowOpTable, std::size(DDDNowOpTable));
 }
 }

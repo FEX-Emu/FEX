@@ -130,7 +130,7 @@ void InitializeXOPTables() {
   };
 #undef OPD
 
-  GenerateTable(XOPTableOps, XOPTable, std::size(XOPTable));
-  GenerateTable(XOPTableGroupOps, XOPGroupTable, std::size(XOPGroupTable));
+  GenerateTable(&XOPTableOps.at(0), XOPTable, std::size(XOPTable));
+  GenerateTable(&XOPTableGroupOps.at(0), XOPGroupTable, std::size(XOPGroupTable));
 }
 }

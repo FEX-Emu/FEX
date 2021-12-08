@@ -399,12 +399,12 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
-    LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name, Op, DecodeInst->PC);
+    LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
-    LogMan::Msg::DFmt("Invalid or Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name, Op, DecodeInst->PC);
+    LogMan::Msg::DFmt("Invalid or Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
   }
 
@@ -664,7 +664,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   }
 
   LOGMAN_THROW_A_FMT(Bytes == 0, "Inst at 0x{:x}: 0x{:04x} '{}' Had an instruction of size {} with {} remaining",
-                     DecodeInst->PC, DecodeInst->OP, DecodeInst->TableInfo->Name, InstructionSize, Bytes);
+                     DecodeInst->PC, DecodeInst->OP, DecodeInst->TableInfo->Name ?: "UND", InstructionSize, Bytes);
   DecodeInst->InstSize = InstructionSize;
   return true;
 }
@@ -680,12 +680,12 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
-    LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name, Op, DecodeInst->PC);
+    LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
-    LogMan::Msg::DFmt("Invalid or Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name, Op, DecodeInst->PC);
+    LogMan::Msg::DFmt("Invalid or Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
   }
 

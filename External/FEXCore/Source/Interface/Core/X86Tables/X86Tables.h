@@ -17,20 +17,19 @@ extern uint64_t Total;
 extern uint64_t NumInsts;
 #endif
 
-struct U8U8InfoStruct {
-  uint8_t first, second;
-  X86InstInfo Info;
-};
-
-struct U16U8InfoStruct {
-  uint16_t first;
+template <typename OpcodeType>
+struct X86TablesInfoStruct {
+  OpcodeType first;
   uint8_t second;
   X86InstInfo Info;
 };
+using U8U8InfoStruct = X86TablesInfoStruct<uint8_t>;
+using U16U8InfoStruct = X86TablesInfoStruct<uint16_t>;
 
-static inline void GenerateTable(X86InstInfo *FinalTable, U8U8InfoStruct const *LocalTable, size_t TableSize) {
+template<typename OpcodeType>
+static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize) {
   for (size_t j = 0; j < TableSize; ++j) {
-    U8U8InfoStruct const &Op = LocalTable[j];
+    X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
@@ -45,26 +44,10 @@ static inline void GenerateTable(X86InstInfo *FinalTable, U8U8InfoStruct const *
   }
 };
 
-static inline void GenerateTable(X86InstInfo *FinalTable, U16U8InfoStruct const *LocalTable, size_t TableSize) {
+template<typename OpcodeType>
+static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize, X86InstInfo *OtherLocal) {
   for (size_t j = 0; j < TableSize; ++j) {
-    U16U8InfoStruct const &Op = LocalTable[j];
-    auto OpNum = Op.first;
-    X86InstInfo const &Info = Op.Info;
-    for (uint32_t i = 0; i < Op.second; ++i) {
-      LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].Type == TYPE_UNKNOWN, "Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
-      FinalTable[OpNum + i] = Info;
-#ifndef NDEBUG
-      ++Total;
-      if (Info.Type == TYPE_INST)
-        NumInsts++;
-#endif
-    }
-  }
-};
-
-static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, U8U8InfoStruct const *LocalTable, size_t TableSize, X86InstInfo *OtherLocal) {
-  for (size_t j = 0; j < TableSize; ++j) {
-    U8U8InfoStruct const &Op = LocalTable[j];
+    X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
@@ -84,9 +67,10 @@ static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, U8U8InfoStruct
   }
 };
 
-static inline void GenerateX87Table(X86InstInfo *FinalTable, U16U8InfoStruct const *LocalTable, size_t TableSize) {
+template<typename OpcodeType>
+static inline void GenerateX87Table(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize) {
   for (size_t j = 0; j < TableSize; ++j) {
-    U16U8InfoStruct const &Op = LocalTable[j];
+    X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
     auto OpNum = Op.first;
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {

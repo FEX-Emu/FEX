@@ -263,6 +263,6 @@ void InitializeX87Tables() {
 #undef OPD
 #undef OPDReg
 
-  GenerateX87Table(X87Ops, X87OpTable, std::size(X87OpTable));
+  GenerateX87Table(&X87Ops.at(0), X87OpTable, std::size(X87OpTable));
 }
 }
