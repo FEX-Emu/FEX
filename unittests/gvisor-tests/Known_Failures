@@ -200,3 +200,6 @@ proc_net_test
 rtsignal_test
 sigstop_test
 stat_test
+
+# Flaky
+udp_socket_test

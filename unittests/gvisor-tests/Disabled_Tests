@@ -174,3 +174,6 @@ stat_test
 # This currently passes on x86-64 hosts
 # This fails on AArch64 because getdents isn't emulated
 getdents_test
+
+# Flaky
+udp_socket_test
