@@ -39,11 +39,11 @@ DEF_OP(VCastFromGPR) {
   auto Op = IROp->C<IR::IROp_VCastFromGPR>();
   switch (Op->Header.ElementSize) {
     case 1:
-      uxtb(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()).W());
+      uxtb(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
       fmov(GetDst(Node).S(), TMP1.W());
       break;
     case 2:
-      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()).W());
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
       fmov(GetDst(Node).S(), TMP1.W());
       break;
     case 4:
