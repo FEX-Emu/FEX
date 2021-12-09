@@ -59,7 +59,7 @@ namespace FEX::HLE::x32 {
     HostHeader.msg_name = msg->msg_name;
     HostHeader.msg_namelen = msg->msg_namelen;
 
-    HostHeader.msg_iov = &Host_iovec.at(0);
+    HostHeader.msg_iov = Host_iovec.data();
     HostHeader.msg_iovlen = msg->msg_iovlen;
 
     HostHeader.msg_control = alloca(msg->msg_controllen * 2);
@@ -115,7 +115,7 @@ namespace FEX::HLE::x32 {
     HostHeader.msg_name = msg->msg_name;
     HostHeader.msg_namelen = msg->msg_namelen;
 
-    HostHeader.msg_iov = &Host_iovec.at(0);
+    HostHeader.msg_iov = Host_iovec.data();
     HostHeader.msg_iovlen = msg->msg_iovlen;
 
     HostHeader.msg_control = alloca(msg->msg_controllen*2);
