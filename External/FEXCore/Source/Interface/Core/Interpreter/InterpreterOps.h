@@ -96,6 +96,7 @@ namespace FEXCore::CPU {
   DEF_OP(Rol);
   DEF_OP(Ror);
   DEF_OP(Extr);
+  DEF_OP(PExt);
   DEF_OP(LDiv);
   DEF_OP(LUDiv);
   DEF_OP(LRem);
