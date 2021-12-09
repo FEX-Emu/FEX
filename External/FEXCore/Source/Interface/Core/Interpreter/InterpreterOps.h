@@ -180,6 +180,7 @@ namespace FEXCore::CPU {
   DEF_OP(VLoadMemElement);
   DEF_OP(VStoreMemElement);
   DEF_OP(CacheLineClear);
+  DEF_OP(CacheLineZero);
 
   ///< Misc ops
   DEF_OP(EndBlock);

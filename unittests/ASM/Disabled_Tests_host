@@ -7,3 +7,7 @@ Test_REPNE/F2_2B.asm
 
 # 3DNow! no longer exists on AMD Zen CPUs
 Test_TwoByte/0F_0E.asm
+
+# Intel doesn't support CLZero, which the CI uses
+Test_SecondaryModRM/Reg_7_4.asm
+Test_SecondaryModRM/Reg_7_4_2.asm

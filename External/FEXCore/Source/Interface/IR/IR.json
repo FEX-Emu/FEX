@@ -858,7 +858,22 @@
     },
 
     "CacheLineClear": {
-      "Desc": ["Does a 64 byte cacheline clear at the address specified"
+      "Desc": ["Does a 64 byte cacheline clear at the address specified",
+               "Only clears the data cachelines. Doesn't do any zeroing"
+              ],
+      "HasSideEffects": true,
+      "OpClass": "Memory",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Addr"
+      ]
+    },
+
+    "CacheLineZero": {
+      "Desc": ["Does a 64 byte zero at the address specified",
+               "Writing zeroes to memory",
+               "It is specifically non-temporal and weakly ordered",
+               "This matches CLZero behaviour"
               ],
       "HasSideEffects": true,
       "OpClass": "Memory",

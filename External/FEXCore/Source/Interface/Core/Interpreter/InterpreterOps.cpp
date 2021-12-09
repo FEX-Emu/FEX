@@ -157,6 +157,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VLOADMEMELEMENT,        VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,       VStoreMemElement);
   REGISTER_OP(CACHELINECLEAR,         CacheLineClear);
+  REGISTER_OP(CACHELINEZERO,          CacheLineZero);
 
   // Misc ops
   REGISTER_OP(DUMMY,                  NoOp);

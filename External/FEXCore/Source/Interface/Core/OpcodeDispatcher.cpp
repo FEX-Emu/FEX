@@ -5145,6 +5145,11 @@ void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
+  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  _CacheLineZero(DestMem);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
 
@@ -5791,6 +5796,10 @@ constexpr uint16_t PF_F2 = 3;
   const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> SecondaryModRMExtensionOpTable = {
     // REG /2
     {((1 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    // REG /7
+    {((3 << 3) | 4), 1, &OpDispatchBuilder::CLZeroOp},
+
   };
 // Top bit indicating if it needs to be repeated with {0x40, 0x80} or'd in
 // All OPDReg versions need it

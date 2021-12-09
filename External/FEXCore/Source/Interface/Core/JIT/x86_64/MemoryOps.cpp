@@ -595,6 +595,23 @@ DEF_OP(CacheLineClear) {
   clflush(ptr [MemReg]);
 }
 
+DEF_OP(CacheLineZero) {
+  auto Op = IROp->C<IR::IROp_CacheLineZero>();
+
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
+
+  // Align by cacheline
+  mov (TMP1, CPUIDEmu::CACHELINE_SIZE - 1);
+  andn(TMP1, TMP1, MemReg.cvt64());
+  xor_(TMP2, TMP2);
+
+  using DataType = uint64_t;
+  // 64-byte cache line zero
+  for (size_t i = 0; i < CPUIDEmu::CACHELINE_SIZE; i += sizeof(DataType)) {
+    mov (qword [TMP1 + i], TMP2);
+  }
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterMemoryHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -615,6 +632,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
   REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
+  REGISTER_OP(CACHELINEZERO,       CacheLineZero);
 #undef REGISTER_OP
 }
 }

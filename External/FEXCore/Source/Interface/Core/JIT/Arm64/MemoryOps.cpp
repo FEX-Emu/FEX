@@ -946,6 +946,28 @@ DEF_OP(CacheLineClear) {
   dsb(InnerShareable, BarrierAll);
 }
 
+DEF_OP(CacheLineZero) {
+  auto Op = IROp->C<IR::IROp_CacheLineZero>();
+
+  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+
+  if (CTX->HostFeatures.SupportsCLZERO) {
+    // We can use this instruction directly
+    dc(DataCacheOp::ZVA, MemReg);
+  }
+  else {
+    // We must walk the cacheline ourselves
+    // Force cacheline alignment
+    and_(TMP1, MemReg, ~(CPUIDEmu::CACHELINE_SIZE - 1));
+    // This will end up being four STPs
+    // Depending on uarch it could be slightly more efficient in instructions emitted
+    // and uops to use vector pair STP, but we want the non-temporal bit specifically here
+    for (size_t i = 0; i < CPUIDEmu::CACHELINE_SIZE; i += 16) {
+      stnp(xzr, xzr, MemOperand(TMP1, i, Offset));
+    }
+  }
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterMemoryHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -972,6 +994,7 @@ void Arm64JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(VLOADMEMELEMENT,     VLoadMemElement);
   REGISTER_OP(VSTOREMEMELEMENT,    VStoreMemElement);
   REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
+  REGISTER_OP(CACHELINEZERO,       CacheLineZero);
 #undef REGISTER_OP
 }
 }
