@@ -220,10 +220,11 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
   }
 
   if (Args) {
-    Result = ::syscall(SYS_execveat, Args->dirfd, "/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), envp, Args->flags);
+    Result = ::syscall(SYS_execveat, Args->dirfd, "/proc/self/exe",
+                       const_cast<char *const *>(ExecveArgs.data()), envp, Args->flags);
   }
   else {
-    Result = execve("/proc/self/exe", const_cast<char *const *>(&ExecveArgs.at(0)), envp);
+    Result = execve("/proc/self/exe", const_cast<char *const *>(ExecveArgs.data()), envp);
   }
 
   SYSCALL_ERRNO();

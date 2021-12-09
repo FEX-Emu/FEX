@@ -103,7 +103,9 @@ namespace FEX::HLE::x64 {
         Envp.push_back(nullptr);
       }
 
-      return FEX::HLE::ExecveHandler(pathname, argv ? const_cast<char* const*>(&Args.at(0)) : nullptr, envp ? const_cast<char* const*>(&Envp.at(0)) : nullptr, nullptr);
+      auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
+      auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
+      return FEX::HLE::ExecveHandler(pathname, ArgsPtr, EnvpPtr, nullptr);
     });
 
     REGISTER_SYSCALL_IMPL_X64(execveat, ([](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags) -> uint64_t {
@@ -131,7 +133,9 @@ namespace FEX::HLE::x64 {
         .flags = flags,
       };
 
-      return FEX::HLE::ExecveHandler(pathname, argv ? const_cast<char* const*>(&Args.at(0)) : nullptr, envp ? const_cast<char * const*>(&Envp.at(0)) : nullptr, &AtArgs);
+      auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
+      auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
+      return FEX::HLE::ExecveHandler(pathname, ArgsPtr, EnvpPtr, &AtArgs);
     }));
 
     REGISTER_SYSCALL_IMPL_X64_PASS(wait4, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int *wstatus, int options, struct rusage *rusage) -> uint64_t {
