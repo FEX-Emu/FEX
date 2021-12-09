@@ -59,20 +59,28 @@ add_library(LinuxEmulation STATIC
     Syscalls/Stubs.cpp
 )
 
-target_link_libraries(LinuxEmulation FEXCore FEX_Utils)
-target_include_directories(LinuxEmulation PRIVATE ${CMAKE_BINARY_DIR}/generated)
-target_include_directories(LinuxEmulation PRIVATE ${PROJECT_SOURCE_DIR}/External/drm-headers/include/)
+target_include_directories(LinuxEmulation
+PRIVATE
+  ${CMAKE_BINARY_DIR}/generated
+  ${PROJECT_SOURCE_DIR}/External/drm-headers/include/
+)
+
+target_link_libraries(LinuxEmulation
+PRIVATE
+  FEXCore
+  FEX_Utils
+)
 
 set(HEADERS_TO_VERIFY
-  x32/Types.h x86_32 # This needs to match structs to 32bit structs
-  x32/Ioctl/asound.h x86_32 # This needs to match structs to 32bit structs
-  x32/Ioctl/drm.h x86_32 # This needs to match structs to 32bit structs
-  x32/Ioctl/streams.h x86_32 # This needs to match structs to 32bit structs
-  x32/Ioctl/usbdev.h x86_32 # This needs to match structs to 32bit structs
-  x32/Ioctl/input.h x86_32 # This needs to match structs to 32bit structs
-  x32/Ioctl/sockios.h x86_32 # This needs to match structs to 32bit structs
+  x32/Types.h          x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/asound.h   x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/drm.h      x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/streams.h  x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/usbdev.h   x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/input.h    x86_32 # This needs to match structs to 32bit structs
+  x32/Ioctl/sockios.h  x86_32 # This needs to match structs to 32bit structs
   x32/Ioctl/joystick.h x86_32 # This needs to match structs to 32bit structs
-  x64/Types.h x86_64 # This needs to match structs to 64bit structs
+  x64/Types.h          x86_64 # This needs to match structs to 64bit structs
 )
 
 list(LENGTH HEADERS_TO_VERIFY ARG_COUNT)
