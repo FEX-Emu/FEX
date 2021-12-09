@@ -52,7 +52,7 @@ namespace FEX::HLE::x32 {
   static uint64_t SendMsg(int sockfd, const struct msghdr32 *msg, int flags) {
     struct msghdr HostHeader{};
     std::vector<iovec> Host_iovec(msg->msg_iovlen);
-    for (int i = 0; i < msg->msg_iovlen; ++i) {
+    for (size_t i = 0; i < msg->msg_iovlen; ++i) {
       Host_iovec[i] = msg->msg_iov[i];
     }
 
@@ -108,7 +108,7 @@ namespace FEX::HLE::x32 {
   static uint64_t RecvMsg(int sockfd, struct msghdr32 *msg, int flags) {
     struct msghdr HostHeader{};
     std::vector<iovec> Host_iovec(msg->msg_iovlen);
-    for (int i = 0; i < msg->msg_iovlen; ++i) {
+    for (size_t i = 0; i < msg->msg_iovlen; ++i) {
       Host_iovec[i] = msg->msg_iov[i];
     }
 
@@ -125,7 +125,7 @@ namespace FEX::HLE::x32 {
 
     uint64_t Result = ::recvmsg(sockfd, &HostHeader, flags);
     if (Result != -1) {
-      for (int i = 0; i < msg->msg_iovlen; ++i) {
+      for (size_t i = 0; i < msg->msg_iovlen; ++i) {
         msg->msg_iov[i] = Host_iovec[i];
       }
 
