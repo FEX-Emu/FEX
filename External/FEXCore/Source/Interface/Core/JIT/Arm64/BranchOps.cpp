@@ -318,7 +318,7 @@ DEF_OP(InlineSyscall) {
           ldr(RegArgs[i].W(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX])));
         }
         else {
-          uxtw(RegArgs[i], Reg);
+          uxtw(RegArgs[i].W(), Reg);
         }
       }
     }
@@ -331,7 +331,7 @@ DEF_OP(InlineSyscall) {
         mov(RegArgs[i], GetReg<RA_64>(Op->Header.Args[i].ID()));
       }
       else {
-        uxtw(RegArgs[i], GetReg<RA_32>(Op->Header.Args[i].ID()));
+        uxtw(RegArgs[i], GetReg<RA_64>(Op->Header.Args[i].ID()));
       }
     }
   }
@@ -354,7 +354,7 @@ DEF_OP(InlineSyscall) {
     mov(GetReg<RA_64>(Node), x0);
   }
   else {
-    uxtw(GetReg<RA_64>(Node), w0);
+    uxtw(GetReg<RA_64>(Node), x0);
   }
 }
 
