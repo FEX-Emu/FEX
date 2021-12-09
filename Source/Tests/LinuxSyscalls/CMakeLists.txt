@@ -59,6 +59,16 @@ add_library(LinuxEmulation STATIC
     Syscalls/Stubs.cpp
 )
 
+target_compile_options(LinuxEmulation
+PRIVATE
+  -Wall
+  -Werror=cast-qual
+  -Werror=ignored-qualifiers
+  -Werror=implicit-fallthrough
+
+  -Wno-trigraphs
+)
+
 target_include_directories(LinuxEmulation
 PRIVATE
   ${CMAKE_BINARY_DIR}/generated
