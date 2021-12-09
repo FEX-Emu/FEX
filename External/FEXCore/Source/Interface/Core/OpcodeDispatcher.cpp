@@ -2449,6 +2449,14 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
   StoreResult(GPRClass, Op, Op->Dest, ResultHi, -1);
 }
 
+void OpDispatchBuilder::PEXT(OpcodeArgs) {
+  auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  auto Result = _PExt(Input, Mask);
+
+  StoreResult(GPRClass, Op, Op->Dest, Result, -1);
+}
+
 void OpDispatchBuilder::ADXOp(OpcodeArgs) {
   // Handles ADCX and ADOX
 
@@ -6178,6 +6186,7 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPD(2, 0b00, 0xF2), 1, &OpDispatchBuilder::ANDNBMIOp},
     {OPD(2, 0b00, 0xF5), 1, &OpDispatchBuilder::BZHI},
+    {OPD(2, 0b10, 0xF5), 1, &OpDispatchBuilder::PEXT},
     {OPD(2, 0b11, 0xF6), 1, &OpDispatchBuilder::MULX},
     {OPD(2, 0b00, 0xF7), 1, &OpDispatchBuilder::BEXTRBMIOp},
     {OPD(2, 0b01, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
