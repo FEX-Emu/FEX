@@ -94,7 +94,7 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY FEXCore::Core::InternalThreadState* InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
 
   FEX_DEFAULT_VISIBILITY void SetExitHandler(FEXCore::Context::Context *CTX, ExitHandler handler);
-  FEX_DEFAULT_VISIBILITY ExitHandler GetExitHandler(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY ExitHandler GetExitHandler(const FEXCore::Context::Context *CTX);
 
   /**
    * @brief Pauses execution on the CPU core
@@ -134,7 +134,7 @@ namespace FEXCore::Context {
    *
    * @return The program exit status
    */
-  FEX_DEFAULT_VISIBILITY int GetProgramStatus(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY int GetProgramStatus(const FEXCore::Context::Context *CTX);
 
   /**
    * @brief Tells the core to shutdown
@@ -157,7 +157,7 @@ namespace FEXCore::Context {
    *
    * @return The ExitReason for the parentthread
    */
-  FEX_DEFAULT_VISIBILITY ExitReason GetExitReason(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY ExitReason GetExitReason(const FEXCore::Context::Context *CTX);
 
   /**
    * @brief [[theadsafe]] Checks if the Context is either done working or paused(in the case of single stepping)
@@ -168,7 +168,7 @@ namespace FEXCore::Context {
    *
    * @return true if the core is done or paused
    */
-  FEX_DEFAULT_VISIBILITY bool IsDone(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY bool IsDone(const FEXCore::Context::Context *CTX);
 
   /**
    * @brief Gets a copy the CPUState of the parent thread
@@ -176,7 +176,8 @@ namespace FEXCore::Context {
    * @param CTX The context that we created
    * @param State The state object to populate
    */
-  FEX_DEFAULT_VISIBILITY void GetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State);
+  FEX_DEFAULT_VISIBILITY void GetCPUState(const FEXCore::Context::Context *CTX,
+                                          FEXCore::Core::CPUState *State);
 
   /**
    * @brief Copies the CPUState provided to the parent thread
@@ -184,7 +185,8 @@ namespace FEXCore::Context {
    * @param CTX The context that we created
    * @param State The satate object to copy from
    */
-  FEX_DEFAULT_VISIBILITY void SetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State);
+  FEX_DEFAULT_VISIBILITY void SetCPUState(FEXCore::Context::Context *CTX,
+                                          const FEXCore::Core::CPUState *State);
 
   /**
    * @brief Allows the frontend to pass in a custom CPUBackend creation factory
