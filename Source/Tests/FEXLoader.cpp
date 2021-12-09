@@ -629,8 +629,8 @@ int main(int argc, char **argv, char **const envp) {
     return open(filepath.c_str(), O_RDONLY);
   });
 
-  FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ostream> {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+  FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
     auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
     if (*AOTWrite) {
       std::filesystem::resize_file(filepath, 0);
@@ -640,6 +640,14 @@ int main(int argc, char **argv, char **const envp) {
       LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
     }
     return AOTWrite;
+  });
+
+  FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
+    auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
+    auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+
+    // Rename the temporary file to atomically update the file
+    std::filesystem::rename(TmpFilepath, NewFilepath);
   });
 
   for(const auto &Section: *Loader.Sections) {

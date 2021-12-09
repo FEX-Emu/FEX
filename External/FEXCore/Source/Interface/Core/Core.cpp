@@ -50,6 +50,7 @@ $end_info$
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -61,7 +62,6 @@ $end_info$
 #include <string.h>
 #include <string>
 #include <string_view>
-#include <sstream>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -141,54 +141,8 @@ std::string_view const& GetGRegName(unsigned Reg) {
 } // namespace FEXCore::Core
 
 namespace FEXCore::Context {
-  void Context::AOTIRCaptureCacheWriteoutQueue_Flush() {
-    {
-      std::shared_lock lk{AOTIRCaptureCacheWriteoutLock};
-      if (AOTIRCaptureCacheWriteoutQueue.size() == 0) {
-        AOTIRCaptureCacheWriteoutFlusing.store(false);
-        return;
-      }
-    }
-
-    for (;;) {
-      AOTIRCaptureCacheWriteoutLock.lock();
-      std::function<void()> fn = std::move(AOTIRCaptureCacheWriteoutQueue.front());
-      bool MaybeEmpty = false;
-      AOTIRCaptureCacheWriteoutQueue.pop();
-      MaybeEmpty = AOTIRCaptureCacheWriteoutQueue.size() == 0;
-      AOTIRCaptureCacheWriteoutLock.unlock();
-
-      fn();
-      if (MaybeEmpty) {
-        std::shared_lock lk{AOTIRCaptureCacheWriteoutLock};
-        if (AOTIRCaptureCacheWriteoutQueue.size() == 0) {
-          AOTIRCaptureCacheWriteoutFlusing.store(false);
-          return;
-        }
-      }
-    }
-
-    LOGMAN_MSG_A_FMT("Must never get here");
-  }
-
-  void Context::AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn) {
-    bool Flush = false;
-
-    {
-      std::unique_lock lk{AOTIRCaptureCacheWriteoutLock};
-      AOTIRCaptureCacheWriteoutQueue.push(fn);
-      if (AOTIRCaptureCacheWriteoutQueue.size() > 10000) {
-        Flush = true;
-      }
-    }
-
-    bool test_val = false;
-    if (Flush && AOTIRCaptureCacheWriteoutFlusing.compare_exchange_strong(test_val, true)) {
-      AOTIRCaptureCacheWriteoutQueue_Flush();
-    }
-  }
-
-  Context::Context() {
+  Context::Context()
+  : IRCaptureCache {this} {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
@@ -210,10 +164,6 @@ namespace FEXCore::Context {
         delete Thread;
       }
       Threads.clear();
-    }
-
-    for (auto &Mod: AOTIRCache) {
-      FEXCore::Allocator::munmap(Mod.second.mapping, Mod.second.size);
     }
   }
 
@@ -474,7 +424,6 @@ namespace FEXCore::Context {
     };
 
     LocalLoader->AddIR(IRHandler);
-
   }
 
   struct ExecutionThreadHandler {
@@ -665,6 +614,58 @@ namespace FEXCore::Context {
     }
   }
 
+  static void IRDumper(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
+    FILE* f = nullptr;
+    bool CloseAfter = false;
+    const auto DumpIRStr = Thread->CTX->Config.DumpIR();
+
+    if (DumpIRStr =="stderr") {
+      f = stderr;
+    }
+    else if (DumpIRStr =="stdout") {
+      f = stdout;
+    }
+    else {
+      const auto fileName = fmt::format("{}/{:x}{}", DumpIRStr, GuestRIP, RA ? "-post.ir" : "-pre.ir");
+      f = fopen(fileName.c_str(), "w");
+      CloseAfter = true;
+    }
+
+    if (f) {
+      std::stringstream out;
+      auto NewIR = Thread->OpDispatcher->ViewIR();
+      FEXCore::IR::Dump(&out, &NewIR, RA);
+      fmt::print(f,"IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
+
+      if (CloseAfter) {
+        fclose(f);
+      }
+    }
+  };
+
+  static void ValidateIR(FEXCore::Core::InternalThreadState *Thread) {
+    // Convert to text, Parse, Convert to text again and make sure the texts match
+    std::stringstream out;
+    static auto compaction = IR::CreateIRCompaction();
+    compaction->Run(Thread->OpDispatcher.get());
+    auto NewIR = Thread->OpDispatcher->ViewIR();
+    Dump(&out, &NewIR, nullptr);
+    out.seekg(0);
+    auto reparsed = IR::Parse(&out);
+    if (reparsed == nullptr) {
+      LOGMAN_MSG_A_FMT("Failed to parse IR\n");
+    } else {
+      std::stringstream out2;
+      auto NewIR2 = reparsed->ViewIR();
+      Dump(&out2, &NewIR2, nullptr);
+      if (out.str() != out2.str()) {
+        LogMan::Msg::IFmt("one:\n {}", out.str());
+        LogMan::Msg::IFmt("two:\n {}", out2.str());
+        LOGMAN_MSG_A_FMT("Parsed IR doesn't match\n");
+      }
+    }
+  }
+
   Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     uint8_t const *GuestCode{};
     GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
@@ -771,73 +772,32 @@ namespace FEXCore::Context {
 
     Thread->OpDispatcher->Finalize();
 
-    const auto IRDumper = [Thread, GuestRIP](IR::RegisterAllocationData* RA) {
-      FILE* f = nullptr;
-      bool CloseAfter = false;
-      const auto DumpIRStr = Thread->CTX->Config.DumpIR();
-
-      if (DumpIRStr =="stderr") {
-        f = stderr;
-      }
-      else if (DumpIRStr =="stdout") {
-        f = stdout;
-      }
-      else {
-        const auto fileName = fmt::format("{}/{:x}{}", DumpIRStr, GuestRIP, RA ? "-post.ir" : "-pre.ir");
-        f = fopen(fileName.c_str(), "w");
-        CloseAfter = true;
+    // Debug
+    {
+      if (Thread->CTX->Config.DumpIR() != "no") {
+        IRDumper(Thread, GuestRIP, nullptr);
       }
 
-      if (f) {
-        std::stringstream out;
-        auto NewIR = Thread->OpDispatcher->ViewIR();
-        FEXCore::IR::Dump(&out, &NewIR, RA);
-        fmt::print(f,"IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
-
-        if (CloseAfter) {
-          fclose(f);
-        }
-      }
-    };
-
-    if (Thread->CTX->Config.DumpIR() != "no") {
-      IRDumper(nullptr);
-    }
-
-    if (Thread->CTX->Config.ValidateIRarser) {
-      // Convert to text, Parse, Convert to text again and make sure the texts match
-      std::stringstream out;
-      static auto compaction = IR::CreateIRCompaction();
-      compaction->Run(Thread->OpDispatcher.get());
-      auto NewIR = Thread->OpDispatcher->ViewIR();
-      Dump(&out, &NewIR, nullptr);
-      out.seekg(0);
-      auto reparsed = IR::Parse(&out);
-      if (reparsed == nullptr) {
-        LOGMAN_MSG_A_FMT("Failed to parse IR\n");
-      } else {
-        std::stringstream out2;
-        auto NewIR2 = reparsed->ViewIR();
-        Dump(&out2, &NewIR2, nullptr);
-        if (out.str() != out2.str()) {
-          LogMan::Msg::IFmt("one:\n {}", out.str());
-          LogMan::Msg::IFmt("two:\n {}", out2.str());
-          LOGMAN_MSG_A_FMT("Parsed IR doesn't match\n");
-        }
+      if (Thread->CTX->Config.ValidateIRarser) {
+        ValidateIR(Thread);
       }
     }
+
     // Run the passmanager over the IR from the dispatcher
     Thread->PassManager->Run(Thread->OpDispatcher.get());
 
-    if (Thread->CTX->Config.DumpIR() != "no") {
-      IRDumper(Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
-    }
+    // Debug
+    {
+      if (Thread->CTX->Config.DumpIR() != "no") {
+        IRDumper(Thread, GuestRIP, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
+      }
 
-    if (Thread->OpDispatcher->ShouldDump) {
-      std::stringstream out;
-      auto NewIR = Thread->OpDispatcher->ViewIR();
-      FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
-      LogMan::Msg::IFmt("IR 0x{:x}:\n{}\n@@@@@\n", GuestRIP, out.str());
+      if (Thread->OpDispatcher->ShouldDump) {
+        std::stringstream out;
+        auto NewIR = Thread->OpDispatcher->ViewIR();
+        FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
+        LogMan::Msg::IFmt("IR 0x{:x}:\n{}\n@@@@@\n", GuestRIP, out.str());
+      }
     }
 
     auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData() : nullptr;
@@ -853,63 +813,6 @@ namespace FEXCore::Context {
       .StartAddr = Thread->FrontendDecoder->DecodedMinAddress,
       .Length = Thread->FrontendDecoder->DecodedMaxAddress - Thread->FrontendDecoder->DecodedMinAddress,
     };
-  }
-
-  AOTIRInlineEntry *AOTIRInlineIndex::GetInlineEntry(uint64_t DataOffset) {
-    uintptr_t This = (uintptr_t)this;
-
-    return (AOTIRInlineEntry*)(This + DataBase + DataOffset);
-  }
-
-  AOTIRInlineEntry *AOTIRInlineIndex::Find(uint64_t GuestStart) {
-    ssize_t l = 0;
-    ssize_t r = Count - 1;
-
-    while (l <= r) {
-      size_t m = l + (r - l) / 2;
-
-      if (Entries[m].GuestStart == GuestStart)
-        return GetInlineEntry(Entries[m].DataOffset);
-      else if (Entries[m].GuestStart < GuestStart)
-        l = m + 1;
-      else
-        r = m - 1;
-    }
-
-    return nullptr;
-  }
-
-  IR::RegisterAllocationData *AOTIRInlineEntry::GetRAData() {
-    return (IR::RegisterAllocationData *)InlineData;
-  }
-
-  IR::IRListView *AOTIRInlineEntry::GetIRData() {
-    auto RAData = GetRAData();
-    auto Offset = RAData->Size(RAData->MapCount);
-
-    return (IR::IRListView *)&InlineData[Offset];
-  }
-
-  void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView *IRList, FEXCore::IR::RegisterAllocationData *RAData) {
-    auto Inserted = Index.emplace(GuestRIP, Stream->tellp());
-
-    if (Inserted.second) {
-      //GuestHash
-      Stream->write((const char*)&Hash, sizeof(Hash));
-
-      //GuestLength
-      Stream->write((const char*)&Length, sizeof(Length));
-
-      // RAData (inline)
-      // In file, IsShared is always set
-      auto Shared = RAData->IsShared;
-      RAData->IsShared = true;
-      Stream->write((const char*)RAData, RAData->Size(RAData->MapCount));
-      RAData->IsShared = Shared;
-
-      // IRData (inline)
-      IRList->Serialize(*Stream);
-    }
   }
 
   Context::CompileCodeResult Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
@@ -935,55 +838,17 @@ namespace FEXCore::Context {
       GeneratedIR = false;
     }
 
+    // AOT IR bookkeeping and cache
     {
-      std::shared_lock lk(AOTIRCacheLock);
-      auto file = AddrToFile.lower_bound(GuestRIP);
-      if (file != AddrToFile.begin()) {
-        --file;
-        if (!file->second.ContainsCode) {
-          file->second.ContainsCode = true;
-          FilesWithCode[file->second.fileid] = file->second.filename;
-        }
-      }
-    }
-
-    if (IRList == nullptr && Config.AOTIRLoad) {
-      std::shared_lock lk(AOTIRCacheLock);
-      auto file = AddrToFile.lower_bound(GuestRIP);
-      if (file != AddrToFile.begin()) {
-        --file;
-        auto Mod = (AOTIRInlineIndex*)file->second.CachedFileEntry;
-
-        if (Mod == nullptr) {
-          file->second.CachedFileEntry = Mod = AOTIRCache[file->second.fileid].Array;
-        }
-
-        if (Mod != nullptr)
-        {
-          auto AOTEntry = Mod->Find(GuestRIP - file->second.Start + file->second.Offset);
-
-          if (AOTEntry) {
-            // verify hash
-            auto MappedStart = GuestRIP;
-            auto hash = XXH3_64bits((void*)MappedStart, AOTEntry->GuestLength);
-            if (hash == AOTEntry->GuestHash) {
-              IRList = AOTEntry->GetIRData();
-              //LogMan::Msg::DFmt("using {} + {:x} -> {:x}\n", file->second.fileid, AOTEntry->first, GuestRIP);
-
-
-              RAData = AOTEntry->GetRAData();;
-              DebugData = new FEXCore::Core::DebugData();
-              StartAddr = MappedStart;
-              Length = AOTEntry->GuestLength;
-
-              GeneratedIR = true;
-            } else {
-              LogMan::Msg::IFmt("AOTIR: hash check failed {:x}\n", MappedStart);
-            }
-          } else {
-            //LogMan::Msg::IFmt("AOTIR: Failed to find {:x}, {:x}, {}\n", GuestRIP, GuestRIP - file->second.Start + file->second.Offset, file->second.fileid);
-          }
-        }
+      auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(GuestRIP, IRList);
+      if (_GeneratedIR) {
+        // Setup pointers to internal structures
+        IRList = IRCopy;
+        RAData = RACopy;
+        DebugData = DebugDataCopy;
+        StartAddr = _StartAddr;
+        Length = _Length;
+        GeneratedIR = _GeneratedIR;
       }
     }
 
@@ -1024,114 +889,6 @@ namespace FEXCore::Context {
     };
   }
 
-  static bool readAll(int fd, void *data, size_t size) {
-    int rv = read(fd, data, size);
-
-    if (rv != size)
-      return false;
-    else
-      return true;
-  }
-
-  bool Context::LoadAOTIRCache(int streamfd) {
-    uint64_t tag;
-
-    if (!readAll(streamfd, (char*)&tag, sizeof(tag)) || tag != 0xDEADBEEFC0D30004)
-      return false;
-
-    std::string Module;
-    uint64_t ModSize;
-    uint64_t IndexSize;
-
-    lseek(streamfd, -sizeof(ModSize), SEEK_END);
-
-    if (!readAll(streamfd,  (char*)&ModSize, sizeof(ModSize)))
-      return false;
-
-    Module.resize(ModSize);
-
-    lseek(streamfd, -sizeof(ModSize) - ModSize, SEEK_END);
-
-    if (!readAll(streamfd,  (char*)&Module[0], Module.size()))
-      return false;
-
-    lseek(streamfd, -sizeof(ModSize) - ModSize - sizeof(IndexSize), SEEK_END);
-
-    if (!readAll(streamfd,  (char*)&IndexSize, sizeof(IndexSize)))
-      return false;
-
-    struct stat fileinfo;
-    if (fstat(streamfd, &fileinfo) < 0)
-      return false;
-    size_t Size = (fileinfo.st_size + 4095) & ~4095;
-
-    size_t IndexOffset = fileinfo.st_size - IndexSize -sizeof(ModSize) - ModSize - sizeof(IndexSize);
-
-    void *FilePtr = FEXCore::Allocator::mmap(nullptr, Size, PROT_READ, MAP_SHARED, streamfd, 0);
-
-    if (FilePtr == MAP_FAILED)
-      return false;
-
-    auto Array = (AOTIRInlineIndex *)((char*)FilePtr + IndexOffset);
-
-    AOTIRCache.insert({Module, {Array, FilePtr, Size}});
-
-    LogMan::Msg::DFmt("AOTIR: Module {} has {} functions", Module, Array->Count);
-
-    return true;
-
-  }
-
-  void Context::WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
-    std::shared_lock lk(AOTIRCacheLock);
-    for( const auto &File: FilesWithCode) {
-      Writer(File.first, File.second);
-    }
-  }
-
-  void Context::FinalizeAOTIRCache() {
-    AOTIRCaptureCacheWriteoutQueue_Flush();
-
-    std::unique_lock lk(AOTIRCacheLock);
-
-    for (auto& [String, Entry] : AOTIRCaptureCache) {
-      if (!Entry.Stream) {
-        continue;
-      }
-
-      const auto ModSize = String.size();
-      auto &stream = Entry.Stream;
-
-      // pad to 32 bytes
-      constexpr char Zero = 0;
-      while(stream->tellp() & 31)
-        stream->write(&Zero, 1);
-
-      // AOTIRInlineIndex
-      const auto FnCount = Entry.Index.size();
-      const size_t DataBase = -stream->tellp();
-
-      stream->write((const char*)&FnCount, sizeof(FnCount));
-      stream->write((const char*)&DataBase, sizeof(DataBase));
-
-      for (const auto& [GuestStart, DataOffset] : Entry.Index) {
-        //AOTIRInlineIndexEntry
-
-        // GuestStart
-        stream->write((const char*)&GuestStart, sizeof(GuestStart));
-
-        // DataOffset
-        stream->write((const char*)&DataOffset, sizeof(DataOffset));
-      }
-
-      // End of file header
-      const auto IndexSize = FnCount * sizeof(AOTIRInlineIndexEntry) + sizeof(DataBase) + sizeof(FnCount);
-      stream->write((const char*)&IndexSize, sizeof(IndexSize));
-      stream->write(String.c_str(), ModSize);
-      stream->write((const char*)&ModSize, sizeof(ModSize));
-    }
-  }
-
   void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto NewBlock = CompileBlock(Frame, GuestRIP);
 
@@ -1141,19 +898,6 @@ namespace FEXCore::Context {
       Frame->Thread->StatusCode = 128 + SIGILL;
       Stop(false /* Ignore current thread */);
     }
-  }
-
-  Context::AddrToFileMapType::iterator Context::FindAddrForFile(uint64_t Entry, uint64_t Length) {
-    // Thread safety here! We are returning an iterator to the map object
-    // This needs the AOTIRCacheLock locked prior to coming in to the function
-    auto file = AddrToFile.lower_bound(Entry);
-    if (file != AddrToFile.begin()) {
-      --file;
-      if (file->second.Start <= Entry && (file->second.Start + file->second.Len) >= (Entry + Length)) {
-        return file;
-      }
-    }
-    return AddrToFile.end();
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
@@ -1227,56 +971,19 @@ namespace FEXCore::Context {
       }
     }
 
-    // Both generated ir and LibraryJITName need a named region lookup
-    if (GeneratedIR || Config.LibraryJITNaming()) {
-      std::shared_lock lk(AOTIRCacheLock);
-
-      auto file = FindAddrForFile(StartAddr, Length);
-
-      // Only go down this path if we actually found a library region
-      if (file != AddrToFile.end()) {
-        if (DebugData && Config.LibraryJITNaming()) {
-          Symbols.RegisterNamedRegion(CodePtr, DebugData->HostCodeSize, file->second.filename);
-        }
-
-        // Add to AOT cache if aot generation is enabled
-        if (GeneratedIR && RAData &&
-            (Config.AOTIRCapture() || Config.AOTIRGenerate())) {
-          auto hash = XXH3_64bits((void*)StartAddr, Length);
-
-          auto LocalRIP = GuestRIP - file->second.Start + file->second.Offset;
-          auto LocalStartAddr = StartAddr - file->second.Start + file->second.Offset;
-          auto fileid = file->second.fileid;
-          AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRList, RAData, fileid]() {
-            auto *AotFile = &AOTIRCaptureCache[fileid];
-
-            if (!AotFile->Stream) {
-              AotFile->Stream = AOTIRWriter(fileid);
-              uint64_t tag = 0xDEADBEEFC0D30004;
-              AotFile->Stream->write((char*)&tag, sizeof(tag));
-            }
-            AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRList, RAData);
-          });
-
-          if (Config.AOTIRGenerate()) {
-            // cleanup memory and early exit here -- we're not running the application
-
-            if (DecrementRefCount)
-              --Thread->CompileBlockReentrantRefCount;
-
-            Thread->CPUBackend->ClearCache();
-
-            return (uintptr_t)CodePtr;
-          }
-        }
-      }
-
-      // Insert to caches if we generated IR
-      if (GeneratedIR) {
-        // Add to thread local ir cache
-        Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
-        Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
-      }
+    if (IRCaptureCache.PostCompileCode(
+        Thread,
+        CodePtr,
+        GuestRIP,
+        StartAddr,
+        Length,
+        RAData,
+        IRList,
+        DebugData,
+        GeneratedIR,
+        DecrementRefCount)) {
+      // Early exit
+      return (uintptr_t)CodePtr;
     }
 
     if (DecrementRefCount)
@@ -1406,38 +1113,11 @@ namespace FEXCore::Context {
   }
 
   void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
-    // TODO: Support overlapping maps and region splitting
-    auto base_filename = std::filesystem::path(filename).filename().string();
-
-    if (!base_filename.empty()) {
-      auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());
-
-      auto fileid = base_filename + "-" + std::to_string(filename_hash) + "-";
-
-      // append optimization flags to the fileid
-      fileid += (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? "S" : "s";
-      fileid += Config.TSOEnabled ? "T" : "t";
-      fileid += Config.ABILocalFlags ? "L" : "l";
-      fileid += Config.ABINoPF ? "p" : "P";
-
-      std::unique_lock lk(AOTIRCacheLock);
-
-      AddrToFile.insert({ Base, { Base, Size, Offset, fileid, filename, nullptr, false} });
-
-      if (Config.AOTIRLoad && !AOTIRCache.contains(fileid) && AOTIRLoader) {
-        auto streamfd = AOTIRLoader(fileid);
-        if (streamfd != -1) {
-          LoadAOTIRCache(streamfd);
-          close(streamfd);
-        }
-      }
-    }
+    IRCaptureCache.AddNamedRegion(Base, Size, Offset, filename);
   }
 
   void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
-    std::unique_lock lk(AOTIRCacheLock);
-    // TODO: Support partial removing
-    AddrToFile.erase(Base);
+    IRCaptureCache.RemoveNamedRegion(Base, Size);
   }
 
   void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
