@@ -34,6 +34,16 @@ public:
 
     return (this->*Handler->second)(Leaf);
   }
+
+  FEXCore::CPUID::FunctionResults RunFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) {
+    if (Function == 0x8000'0002U)
+      return Function_8000_0002h(Leaf, CPU % PerCPUData.size());
+    else if (Function == 0x8000'0003U)
+      return Function_8000_0003h(Leaf, CPU % PerCPUData.size());
+    else
+      return Function_8000_0004h(Leaf, CPU % PerCPUData.size());
+  }
+
 private:
   FEXCore::Context::Context *CTX;
   bool Hybrid{};
@@ -45,6 +55,14 @@ private:
   }
 
   std::unordered_map<uint32_t, FunctionHandler> FunctionHandlers;
+  struct CPUData {
+    const char *ProductName{};
+#ifdef _M_ARM_64
+    uint32_t MIDR{};
+#endif
+    bool IsBig{};
+  };
+  std::vector<CPUData> PerCPUData{};
 
   // Functions
   FEXCore::CPUID::FunctionResults Function_0h(uint32_t Leaf);
@@ -55,11 +73,17 @@ private:
   FEXCore::CPUID::FunctionResults Function_07h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_0Dh(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_15h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_1Ah(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0000h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0001h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0002h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0003h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0004h(uint32_t Leaf);
+
+  FEXCore::CPUID::FunctionResults Function_8000_0002h(uint32_t Leaf, uint32_t CPU);
+  FEXCore::CPUID::FunctionResults Function_8000_0003h(uint32_t Leaf, uint32_t CPU);
+  FEXCore::CPUID::FunctionResults Function_8000_0004h(uint32_t Leaf, uint32_t CPU);
+
   FEXCore::CPUID::FunctionResults Function_8000_0005h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0006h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0007h(uint32_t Leaf);
@@ -68,5 +92,8 @@ private:
   FEXCore::CPUID::FunctionResults Function_8000_0019h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_001Dh(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_Reserved(uint32_t Leaf);
+
+  void SetupHostHybridFlag();
+
 };
 }

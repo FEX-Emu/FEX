@@ -21,6 +21,66 @@ $end_info$
 #endif
 
 namespace FEXCore {
+namespace ProductNames {
+#ifdef _M_ARM_64
+  static const char ARM_UNKNOWN[] = "Unknown ARM CPU";
+  static const char ARM_A57[] = "Cortex-A57";
+  static const char ARM_A72[] = "Cortex-A72";
+  static const char ARM_A73[] = "Cortex-A73";
+  static const char ARM_A75[] = "Cortex-A75";
+  static const char ARM_A76[] = "Cortex-A76";
+  static const char ARM_A76AE[] = "Cortex-A76AE";
+  static const char ARM_V1[] = "Neoverse V1";
+  static const char ARM_A77[] = "Cortex-A77";
+  static const char ARM_A78[] = "Cortex-A78";
+  static const char ARM_A78AE[] = "Cortex-A78AE";
+  static const char ARM_A78C[] = "Cortex-A78C";
+  static const char ARM_A710[] = "Cortex-A710";
+  static const char ARM_X1[] = "Cortex-X1";
+  static const char ARM_X2[] = "Cortex-X2";
+  static const char ARM_N1[] = "Neoverse N1";
+  static const char ARM_N2[] = "Neoverse N2";
+  static const char ARM_E1[] = "Neoverse E1";
+  static const char ARM_A35[] = "Cortex-A35";
+  static const char ARM_A53[] = "Cortex-A53";
+  static const char ARM_A55[] = "Cortex-A55";
+  static const char ARM_A65[] = "Cortex-A65";
+  static const char ARM_A510[] = "Cortex-A510";
+
+  static const char ARM_Kryo200[] = "Kryo 2xx";
+  static const char ARM_Kryo300[] = "Kryo 3xx";
+  static const char ARM_Kryo400[] = "Kryo 4xx/5xx";
+
+  static const char ARM_Kryo200S[] = "Kryo 2xx S";
+  static const char ARM_Kryo300S[] = "Kryo 3xx S";
+  static const char ARM_Kryo400S[] = "Kryo 4xx/5xx S";
+
+  static const char ARM_Denver[] = "Nvidia Denver";
+  static const char ARM_Carmel[] = "Nvidia Carmel";
+
+  static const char ARM_Firestorm[] = "Apple Firestorm";
+  static const char ARM_Icestorm[] = "Apple Icestorm";
+#else
+  static const char UNKNOWN[] = "Unknown CPU";
+#endif
+}
+
+static uint32_t GetCPUID() {
+  uint32_t CPU{};
+  getcpu(&CPU, nullptr);
+  return CPU;
+}
+
+static uint32_t CalculateNumberOfCPUs() {
+  size_t CPUs = 1;
+
+  while(std::filesystem::exists("/sys/devices/system/cpu/cpu" + std::to_string(CPUs))) {
+    CPUs++;
+  }
+
+  return CPUs;
+}
+
 constexpr uint32_t SUPPORTS_AVX = 0;
 // #define CPUID_AMD
 #ifdef CPUID_AMD
@@ -49,60 +109,231 @@ static uint32_t GetCycleCounterFrequency() {
   return Result;
 }
 
-static bool GetHostHybridFlag() {
-  int MaxCPUs = 64;
-  size_t AllocSize = CPU_ALLOC_SIZE(MaxCPUs);
-  cpu_set_t *Set = CPU_ALLOC(MaxCPUs);
-  CPU_ZERO_S(AllocSize, Set);
+void CPUIDEmu::SetupHostHybridFlag() {
+  size_t CPUs = CalculateNumberOfCPUs();
+  PerCPUData.resize(CPUs);
 
-  int Result{};
-  for (;;) {
-    Result = sched_getaffinity(0, AllocSize, Set);
-    if (Result == 0 ||
-        (Result == -1 && errno != EINVAL)) {
-      break;
-    }
-
-    MaxCPUs <<= 1;
-    CPU_FREE(Set);
-    Set = CPU_ALLOC(MaxCPUs);
-    AllocSize = CPU_ALLOC_SIZE(MaxCPUs);
-    CPU_ZERO_S(AllocSize, Set);
-  }
-
-  if (Result != 0) {
-    return false;
-  }
-
-  int CPUs = CPU_COUNT_S(AllocSize, Set);
-
-  bool Hybrid = false;
   uint64_t MIDR{};
-  for (int i = 0; i < CPUs; ++i) {
-    if (CPU_ISSET_S(i, AllocSize, Set)) {
-      std::error_code ec{};
-      std::string MIDRPath = "/sys/devices/system/cpu/cpu" + std::to_string(i) + "/regs/identification/midr_el1";
-      if (std::filesystem::exists(MIDRPath, ec)) {
-        std::vector<char> Data{};
-        // Needs to be a fixed size since depending on kernel it will try to read a full page of data and fail
-        // Only read 18 bytes for a 64bit value prefixed with 0x
-        if (FEXCore::FileLoading::LoadFile(Data, MIDRPath, 18)) {
-          uint64_t NewMIDR{};
-          if (FEXCore::StrConv::Conv(&Data.at(0), &NewMIDR)) {
-            if (MIDR != 0 && MIDR != NewMIDR) {
-              // CPU mismatch, claim hybrid
-              Hybrid = true;
-              break;
-            }
-            MIDR = NewMIDR;
+  for (size_t i = 0; i < CPUs; ++i) {
+    std::error_code ec{};
+    std::string MIDRPath = "/sys/devices/system/cpu/cpu" + std::to_string(i) + "/regs/identification/midr_el1";
+    if (std::filesystem::exists(MIDRPath, ec)) {
+      std::vector<char> Data{};
+      // Needs to be a fixed size since depending on kernel it will try to read a full page of data and fail
+      // Only read 18 bytes for a 64bit value prefixed with 0x
+      if (FEXCore::FileLoading::LoadFile(Data, MIDRPath, 18)) {
+        uint64_t NewMIDR{};
+        if (FEXCore::StrConv::Conv(&Data.at(0), &NewMIDR)) {
+          if (MIDR != 0 && MIDR != NewMIDR) {
+            // CPU mismatch, claim hybrid
+            Hybrid = true;
           }
+
+          // Truncate to 32-bits, top 32-bits are all reserved in MIDR
+          PerCPUData[i].ProductName = ProductNames::ARM_UNKNOWN;
+          PerCPUData[i].MIDR = NewMIDR;
+          MIDR = NewMIDR;
         }
       }
     }
   }
 
-  CPU_FREE(Set);
-  return Hybrid;
+  struct CPUMIDR {
+    uint8_t Implementer;
+    uint16_t Part;
+    bool DefaultBig; // Defaults to a big core
+    const char *ProductName{};
+  };
+
+  // CPU priority order
+  // This is mostly arbitrary but will sort by some sort of CPU priority by performance
+  // Relative list so things they will commonly end up in big.little configurations sort of relate
+  static constexpr std::array<CPUMIDR, 35> CPUMIDRs = {{
+    // Typically big CPU cores
+    {0x61, 0x023, 1, ProductNames::ARM_Firestorm}, // Apple M1 Firestorm
+
+    {0x41, 0xd49, 1, ProductNames::ARM_N2}, // N2
+    {0x41, 0xd4b, 1, ProductNames::ARM_A78C}, // A78C
+    {0x41, 0xd4a, 1, ProductNames::ARM_E1}, // E1
+    {0x41, 0xd49, 1, ProductNames::ARM_N2}, // N2
+    {0x41, 0xd48, 1, ProductNames::ARM_X2}, // X2
+    {0x41, 0xd47, 1, ProductNames::ARM_A710}, // A710
+    {0x41, 0xd44, 1, ProductNames::ARM_X1}, // X1
+    {0x41, 0xd42, 1, ProductNames::ARM_A78AE}, // A78AE
+    {0x41, 0xd41, 1, ProductNames::ARM_A78}, // A78
+    {0x41, 0xd40, 1, ProductNames::ARM_V1}, // V1
+    {0x41, 0xd0e, 1, ProductNames::ARM_A76AE}, // A76AE
+    {0x41, 0xd0d, 1, ProductNames::ARM_A77}, // A77
+    {0x41, 0xd0c, 1, ProductNames::ARM_N1}, // N1
+    {0x41, 0xd0b, 1, ProductNames::ARM_A76}, // A76
+    {0x51, 0x804, 1, ProductNames::ARM_Kryo400}, // Kryo 4xx Gold (A76 based)
+    {0x41, 0xd0a, 1, ProductNames::ARM_A75}, // A75
+    {0x51, 0x802, 1, ProductNames::ARM_Kryo300}, // Kryo 3xx Gold (A75 based)
+    {0x41, 0xd09, 1, ProductNames::ARM_A73}, // A73
+    {0x51, 0x800, 1, ProductNames::ARM_Kryo200}, // Kryo 2xx Gold (A73 based)
+    {0x41, 0xd08, 1, ProductNames::ARM_A72}, // A72
+
+    {0x4e, 0x004, 1, ProductNames::ARM_Carmel}, // Carmel
+
+    // Denver rated above A57 to match TX2 weirdness
+    {0x4e, 0x003, 1, ProductNames::ARM_Denver}, // Denver
+
+    {0x41, 0xd07, 1, ProductNames::ARM_A57}, // A57
+
+    // Typically Little CPU cores
+    {0x61, 0x022, 0, ProductNames::ARM_Icestorm}, // Apple M1 Icestorm
+    {0x41, 0xd46, 0, ProductNames::ARM_A510}, // A510
+    {0x41, 0xd06, 0, ProductNames::ARM_A65}, // A65
+    {0x41, 0xd05, 0, ProductNames::ARM_A55}, // A55
+    {0x51, 0x805, 0, ProductNames::ARM_Kryo400S}, // Kryo 4xx/5xx Silver (A55 based)
+    {0x51, 0x803, 0, ProductNames::ARM_Kryo300S}, // Kryo 3xx Silver (A55 based)
+    {0x41, 0xd03, 0, ProductNames::ARM_A53}, // A53
+    {0x51, 0x801, 0, ProductNames::ARM_Kryo200S}, // Kryo 2xx Silver (A53 based)
+    {0x41, 0xd04, 0, ProductNames::ARM_A35}, // A35
+
+    {0x41, 0, 0, ProductNames::ARM_UNKNOWN}, // Invalid CPU or Apple CPU inside Parallels VM
+    {0x0, 0, 0, ProductNames::ARM_UNKNOWN}, // Invalid starting point is lowest ranked
+  }};
+
+  auto FindDefinedMIDR = [](uint32_t MIDR) -> const CPUMIDR* {
+    uint8_t Implementer = MIDR >> 24;
+    uint16_t Part = (MIDR >> 4) & 0xFFF;
+
+    for (auto &MIDROption : CPUMIDRs) {
+      if (MIDROption.Implementer == Implementer &&
+          MIDROption.Part == Part) {
+        return &MIDROption;
+      }
+    }
+
+    return nullptr;
+  };
+
+  if (Hybrid) {
+    // Walk the MIDRs and calculate big little designs
+    std::vector<const CPUMIDR*> BigCores;
+    std::vector<const CPUMIDR*> LittleCores;
+
+    // Separate CPU cores out to big or little selected
+    for (size_t i = 0; i < CPUs; ++i) {
+      uint32_t MIDR = PerCPUData[i].MIDR;
+      auto MIDROption = FindDefinedMIDR(MIDR);
+      if (MIDROption) {
+        // Found one
+        if (MIDROption->DefaultBig) {
+          BigCores.emplace_back(MIDROption);
+        }
+        else {
+          LittleCores.emplace_back(MIDROption);
+        }
+      }
+      else {
+        // If we didn't insert this MIDR then claim it is a little core.
+        LittleCores.emplace_back(&CPUMIDRs.back());
+      }
+    }
+
+    if (LittleCores.empty()) {
+      // If we only ended up with big cores then we need to move some to be little cores
+      uint32_t LowestMIDR = ~0U;
+      uint32_t LowestMIDRIdx = 0;
+      // Walk all the big cores
+      for (size_t i = 0; i < BigCores.size(); ++i) {
+        uint8_t Implementer = BigCores[i]->Implementer;
+        uint16_t Part = BigCores[i]->Part;
+
+        // Walk our list of CPUMIDRs to find the most little core
+        for (size_t j = LowestMIDRIdx; j < CPUMIDRs.size(); ++j) {
+          auto &MIDROption = CPUMIDRs[i];
+          if ((MIDROption.Implementer == Implementer &&
+              MIDROption.Part == Part) ||
+              (MIDROption.Implementer == 0 &&
+               MIDROption.Part == 0)) {
+
+            LowestMIDRIdx = j;
+            LowestMIDR = MIDR;
+            break;
+          }
+        }
+      }
+
+      // Now we WILL have found a big core to demote to little status
+      // Demote them
+      std::erase_if(BigCores, [&LittleCores, LowestMIDR](auto *Entry) {
+        // Demote by erase copy to little array
+        uint8_t Implementer = LowestMIDR >> 24;
+        uint16_t Part = (LowestMIDR >> 4) & 0xFFF;
+
+        if (Entry->Implementer == Implementer &&
+            Entry->Part == Part) {
+          // Add it to the BigCore list
+          LittleCores.emplace_back(Entry);
+          return true;
+        }
+        return false;
+      });
+    }
+
+    if (BigCores.empty()) {
+      // We never found a CPU core we understand
+      // Grab the first core, consider it as little, move everything else to Big
+      uint32_t LittleMIDR = PerCPUData[0].MIDR;
+      // Now walk the little cores and move them to Big if they don't match
+      std::erase_if(LittleCores, [&BigCores, LittleMIDR](auto *Entry) {
+        // You're promoted now
+        uint8_t Implementer = LittleMIDR >> 24;
+        uint16_t Part = (LittleMIDR >> 4) & 0xFFF;
+
+        if (Entry->Implementer != Implementer ||
+            Entry->Part != Part) {
+          // Add it to the BigCore list
+          BigCores.emplace_back(Entry);
+          return true;
+        }
+        return false;
+      });
+    }
+
+    // Now walk the per CPU data one more time and set if it is big or little
+    for (auto &Data : PerCPUData) {
+      uint8_t Implementer = Data.MIDR >> 24;
+      uint16_t Part = (Data.MIDR >> 4) & 0xFFF;
+
+      bool FoundBig{};
+      const CPUMIDR *MIDR{};
+      for (auto Big : BigCores) {
+        if (Big->Implementer == Implementer &&
+            Big->Part == Part) {
+          FoundBig = true;
+          MIDR = Big;
+          break;
+        }
+      }
+
+      if (!FoundBig) {
+        for (auto Little : LittleCores) {
+          if (Little->Implementer == Implementer &&
+              Little->Part == Part) {
+            MIDR = Little;
+            break;
+          }
+        }
+      }
+
+      Data.IsBig = FoundBig;
+      Data.ProductName = MIDR->ProductName ?: ProductNames::ARM_UNKNOWN;
+    }
+  }
+  else {
+    // If we aren't hybrid then just claim everything is big
+    for (size_t i = 0; i < CPUs; ++i) {
+      uint32_t MIDR = PerCPUData[i].MIDR;
+      auto MIDROption = FindDefinedMIDR(MIDR);
+
+      PerCPUData[i].IsBig = true;
+      PerCPUData[i].ProductName = MIDROption->ProductName;
+    }
+  }
 }
 
 #else
@@ -119,16 +350,21 @@ static uint32_t GetCycleCounterFrequency() {
   return 0;
 }
 
-static bool GetHostHybridFlag() {
+void CPUIDEmu::SetupHostHybridFlag() {
   uint32_t eax, ebx, ecx, edx;
   __cpuid(0, eax, ebx, ecx, edx);
   if (eax >= 0x7) {
     __cpuid(0x7, eax, ebx, ecx, edx);
     // Bit 15 of edx claims hybrid CPU
-    return (edx & (1U << 15)) != 0;
+    Hybrid = (edx & (1U << 15)) != 0;
   }
 
-  return false;
+  size_t CPUs = CalculateNumberOfCPUs();
+  PerCPUData.resize(CPUs);
+  for (size_t i = 0; i < CPUs; ++i) {
+    PerCPUData[i].IsBig = true;
+    PerCPUData[i].ProductName = ProductNames::UNKNOWN;
+  }
 }
 
 #endif
@@ -549,6 +785,18 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h(uint32_t Leaf) {
   return Res;
 }
 
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_1Ah(uint32_t Leaf) {
+  FEXCore::CPUID::FunctionResults Res{};
+  if (Hybrid) {
+    uint32_t CPU = GetCPUID();
+    auto &Data = PerCPUData[CPU];
+    // 0x40 is a big CPU
+    // 0x20 is a little CPU
+    Res.eax |= (Data.IsBig ? 0x40 : 0x20) << 24;
+  }
+  return Res;
+}
+
 // Highest extended function implemented
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
@@ -644,27 +892,43 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) {
   return Res;
 }
 
-constexpr char ProcessorBrand[48] = {
+constexpr char ProcessorBrand[32] = {
   GIT_DESCRIBE_STRING
-  "\0"
 };
+
+constexpr size_t DESCRIBE_STR_SIZE = std::char_traits<char>::length(GIT_DESCRIBE_STRING);
+static_assert(DESCRIBE_STR_SIZE < 32);
 
 //Processor brand string
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf) {
+  return Function_8000_0002h(Leaf, GetCPUID());
+}
+
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf) {
+  return Function_8000_0003h(Leaf, GetCPUID());
+}
+
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) {
+  return Function_8000_0004h(Leaf, GetCPUID());
+}
+
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf, uint32_t CPU) {
   FEXCore::CPUID::FunctionResults Res{};
   memcpy(&Res, &ProcessorBrand[0], sizeof(FEXCore::CPUID::FunctionResults));
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf, uint32_t CPU) {
   FEXCore::CPUID::FunctionResults Res{};
-  memcpy(&Res, &ProcessorBrand[16], sizeof(FEXCore::CPUID::FunctionResults));
+  memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
+  memcpy(&Res, &ProcessorBrand[16], DESCRIBE_STR_SIZE - 16);
   return Res;
 }
 
-FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) {
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf, uint32_t CPU) {
   FEXCore::CPUID::FunctionResults Res{};
-  memcpy(&Res, &ProcessorBrand[32], sizeof(FEXCore::CPUID::FunctionResults));
+  auto &Data = PerCPUData[CPU];
+  memcpy(&Res, Data.ProductName, std::min(strlen(Data.ProductName), sizeof(FEXCore::CPUID::FunctionResults)));
   return Res;
 }
 
@@ -920,6 +1184,10 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   // 0x16: Processor frequency information
   // 0x17: SoC vendor attribute enumeration
 
+  // 0x1A: Hybrid Information Sub-leaf
+#ifndef CPUID_AMD
+  RegisterFunction(0x1A, &CPUIDEmu::Function_1Ah);
+#endif
   // Largest extended function number
   RegisterFunction(0x8000'0000, &CPUIDEmu::Function_8000_0000h);
   // Processor vendor
@@ -960,7 +1228,7 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   // 0x8000'001F: AMD Secure Encryption
 
   // Setup some state tracking
-  Hybrid = GetHostHybridFlag();
+  SetupHostHybridFlag();
 }
 }
 

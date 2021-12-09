@@ -57,9 +57,6 @@ namespace FEX::EmulatedFile {
     auto res_10 = FEXCore::Context::RunCPUIDFunction(ctx, 0x10, 0);
 
     auto res_8000_0001 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0001, 0);
-    auto res_8000_0002 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0002, 0);
-    auto res_8000_0003 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0003, 0);
-    auto res_8000_0004 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0004, 0);
     auto res_8000_0007 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0007, 0);
     auto res_8000_0008 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0008, 0);
     auto res_8000_000a = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'000a, 0);
@@ -104,12 +101,6 @@ namespace FEX::EmulatedFile {
     VendorID vendorid {};
     vendorid.cpuid = {res_0.eax, res_0.ebx, res_0.edx, res_0.ecx};
     vendorid.null = 0;
-
-    ModelName modelname {};
-    modelname.cpuid_2 = res_8000_0002;
-    modelname.cpuid_3 = res_8000_0003;
-    modelname.cpuid_4 = res_8000_0004;
-    modelname.null = 0;
 
     Info info {res_1};
 
@@ -579,6 +570,15 @@ namespace FEX::EmulatedFile {
       cpu_stream << "vendor_id\t: " << vendorid.Str << std::endl;
       cpu_stream << "cpu family\t: " << Family  << std::endl;
       cpu_stream << "model\t\t: " << (info.Model + (info.FamilyID >= 6 ? (info.ExModelID << 4) : 0)) << std::endl;
+      ModelName modelname {};
+      auto res_8000_0002 = FEXCore::Context::RunCPUIDFunctionName(ctx, 0x8000'0002, 0, i);
+      auto res_8000_0003 = FEXCore::Context::RunCPUIDFunctionName(ctx, 0x8000'0003, 0, i);
+      auto res_8000_0004 = FEXCore::Context::RunCPUIDFunctionName(ctx, 0x8000'0004, 0, i);
+      modelname.cpuid_2 = res_8000_0002;
+      modelname.cpuid_3 = res_8000_0003;
+      modelname.cpuid_4 = res_8000_0004;
+      modelname.null = 0;
+
       cpu_stream << "model name\t: " << modelname.Str << std::endl;
       cpu_stream << "stepping\t: " << info.Stepping << std::endl;
       cpu_stream << "microcode\t: 0x0" << std::endl;
