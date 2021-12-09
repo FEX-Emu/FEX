@@ -51,7 +51,7 @@ namespace FEXCore::Context {
     CTX->CustomExitHandler = std::move(handler);
   }
 
-  ExitHandler GetExitHandler(FEXCore::Context::Context *CTX) {
+  ExitHandler GetExitHandler(const FEXCore::Context::Context *CTX) {
     return CTX->CustomExitHandler;
   }
 
@@ -71,23 +71,23 @@ namespace FEXCore::Context {
     return CTX->RunUntilExit();
   }
 
-  int GetProgramStatus(FEXCore::Context::Context *CTX) {
+  int GetProgramStatus(const FEXCore::Context::Context *CTX) {
     return CTX->GetProgramStatus();
   }
 
-  FEXCore::Context::ExitReason GetExitReason(FEXCore::Context::Context *CTX) {
+  FEXCore::Context::ExitReason GetExitReason(const FEXCore::Context::Context *CTX) {
     return CTX->ParentThread->ExitReason;
   }
 
-  bool IsDone(FEXCore::Context::Context *CTX) {
+  bool IsDone(const FEXCore::Context::Context *CTX) {
     return CTX->IsPaused();
   }
 
-  void GetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State) {
+  void GetCPUState(const FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State) {
     memcpy(State, CTX->ParentThread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
   }
 
-  void SetCPUState(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State) {
+  void SetCPUState(FEXCore::Context::Context *CTX, const FEXCore::Core::CPUState *State) {
     memcpy(CTX->ParentThread->CurrentFrame, State, sizeof(FEXCore::Core::CPUState));
   }
 
