@@ -109,10 +109,6 @@ extern "C" {
     FEX_xcb_init_extension(c, &xcb_xc_misc_id);
   }
 
-  int xcb_take_socket(xcb_connection_t * a_0,CBType a_1,void * a_2,int a_3,uint64_t * a_4){
-    return xcb_take_socket_internal(a_0, a_1, a_2, a_3, a_4);
-  }
-
   void FEX_malloc_free_on_host(void *Ptr) {
     struct {void *p;} args;
     args.p = Ptr;
@@ -126,32 +122,24 @@ extern "C" {
     return args.rv;
   }
 
-  static xcb_connection_t * fexfn_pack_xcb_connect(const char * a_0,int * a_1){
-    struct {const char * a_0;int * a_1;xcb_connection_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;
-    fexthunks_libxcb_xcb_connect(&args);
-    InitializeExtensions(args.rv);
-    return args.rv;
+  xcb_connection_t * xcb_connect(const char * a_0,int * a_1){
+    auto ret = fexfn_pack_xcb_connect(a_0, a_1);
+    InitializeExtensions(ret);
+    return ret;
   }
 
-  static xcb_connection_t * fexfn_pack_xcb_connect_to_display_with_auth_info(const char * a_0,xcb_auth_info_t * a_1,int * a_2){
-    struct {const char * a_0;xcb_auth_info_t * a_1;int * a_2;xcb_connection_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_connect_to_display_with_auth_info(&args);
-    InitializeExtensions(args.rv);
-    return args.rv;
+  xcb_connection_t * xcb_connect_to_display_with_auth_info(const char * a_0,xcb_auth_info_t * a_1,int * a_2){
+    auto ret = fexfn_pack_xcb_connect_to_display_with_auth_info(a_0, a_1, a_2);
+    InitializeExtensions(ret);
+    return ret;
   }
 
-  static void fexfn_pack_xcb_disconnect(xcb_connection_t * a_0){
-    struct {xcb_connection_t * a_0;} args;
-    args.a_0 = a_0;
-    fexthunks_libxcb_xcb_disconnect(&args);
+  void xcb_disconnect(xcb_connection_t * a_0){
+    fexfn_pack_xcb_disconnect(a_0);
   }
 
-  static int fexfn_pack_xcb_parse_display(const char * a_0,char ** a_1,int * a_2,int * a_3){
-    struct {const char * a_0;char ** a_1;int * a_2;int * a_3;int rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;args.a_3 = a_3;
-    fexthunks_libxcb_xcb_parse_display(&args);
+  int xcb_parse_display(const char * a_0,char ** a_1,int * a_2,int * a_3){
+    auto ret = fexfn_pack_xcb_parse_display(a_0, a_1, a_2, a_3);
     if (a_1 && *a_1) {
       // Usable size
       size_t Usable = FEX_malloc_usable_size(*a_1);
@@ -164,124 +152,110 @@ extern "C" {
       *a_1 = (char*)NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_generic_event_t * fexfn_pack_xcb_wait_for_event(xcb_connection_t * a_0){
-    struct {xcb_connection_t * a_0;xcb_generic_event_t * rv;} args;
-    args.a_0 = a_0;
-    fexthunks_libxcb_xcb_wait_for_event(&args);
+  xcb_generic_event_t * xcb_wait_for_event(xcb_connection_t * a_0){
+    auto ret = fexfn_pack_xcb_wait_for_event(a_0);
 
-    if (args.rv) {
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_generic_event_t * fexfn_pack_xcb_poll_for_event(xcb_connection_t * a_0){
-    struct {xcb_connection_t * a_0;xcb_generic_event_t * rv;} args;
-    args.a_0 = a_0;
-    fexthunks_libxcb_xcb_poll_for_event(&args);
-    if (args.rv) {
+  xcb_generic_event_t * xcb_poll_for_event(xcb_connection_t * a_0){
+    auto ret = fexfn_pack_xcb_poll_for_event(a_0);
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_generic_event_t * fexfn_pack_xcb_poll_for_queued_event(xcb_connection_t * a_0){
-    struct {xcb_connection_t * a_0;xcb_generic_event_t * rv;} args;
-    args.a_0 = a_0;
-    fexthunks_libxcb_xcb_poll_for_queued_event(&args);
-    if (args.rv) {
+  xcb_generic_event_t * xcb_poll_for_queued_event(xcb_connection_t * a_0){
+    auto ret = fexfn_pack_xcb_poll_for_queued_event(a_0);
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_generic_event_t * fexfn_pack_xcb_poll_for_special_event(xcb_connection_t * a_0,xcb_special_event_t * a_1){
-    struct {xcb_connection_t * a_0;xcb_special_event_t * a_1;xcb_generic_event_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;
-    fexthunks_libxcb_xcb_poll_for_special_event(&args);
-    if (args.rv) {
+  xcb_generic_event_t * xcb_poll_for_special_event(xcb_connection_t * a_0,xcb_special_event_t * a_1){
+    auto ret = fexfn_pack_xcb_poll_for_special_event(a_0, a_1);
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_generic_event_t * fexfn_pack_xcb_wait_for_special_event(xcb_connection_t * a_0,xcb_special_event_t * a_1){
-    struct {xcb_connection_t * a_0;xcb_special_event_t * a_1;xcb_generic_event_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;
-    fexthunks_libxcb_xcb_wait_for_special_event(&args);
-    if (args.rv) {
+  xcb_generic_event_t * xcb_wait_for_special_event(xcb_connection_t * a_0,xcb_special_event_t * a_1){
+    auto ret = fexfn_pack_xcb_wait_for_special_event(a_0, a_1);
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_generic_error_t * fexfn_pack_xcb_request_check(xcb_connection_t * a_0,xcb_void_cookie_t a_1){
-    struct {xcb_connection_t * a_0;xcb_void_cookie_t a_1;xcb_generic_error_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;
-    fexthunks_libxcb_xcb_request_check(&args);
-    if (args.rv) {
+  xcb_generic_error_t * xcb_request_check(xcb_connection_t * a_0,xcb_void_cookie_t a_1){
+    auto ret = fexfn_pack_xcb_request_check(a_0, a_1);
+    if (ret) {
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(sizeof(xcb_generic_error_t));
-      memcpy(NewPtr, args.rv, sizeof(xcb_generic_error_t));
+      memcpy(NewPtr, ret, sizeof(xcb_generic_error_t));
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
-    return args.rv;
+    return ret;
   }
 
-  static void * fexfn_pack_xcb_wait_for_reply(xcb_connection_t * a_0, uint32_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;uint32_t a_1;xcb_generic_error_t ** a_2;void * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_wait_for_reply(&args);
+  void * xcb_wait_for_reply(xcb_connection_t * a_0, uint32_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_wait_for_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -294,25 +268,23 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static void * fexfn_pack_xcb_wait_for_reply64(xcb_connection_t * a_0,uint64_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;uint64_t a_1;xcb_generic_error_t ** a_2;void * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_wait_for_reply64(&args);
+  void * xcb_wait_for_reply64(xcb_connection_t * a_0,uint64_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_wait_for_reply64(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -325,25 +297,23 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static int fexfn_pack_xcb_poll_for_reply(xcb_connection_t * a_0,unsigned int a_1,void ** a_2,xcb_generic_error_t ** a_3){
-    struct {xcb_connection_t * a_0;unsigned int a_1;void ** a_2;xcb_generic_error_t ** a_3;int rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;args.a_3 = a_3;
-    fexthunks_libxcb_xcb_poll_for_reply(&args);
+  int xcb_poll_for_reply(xcb_connection_t * a_0,unsigned int a_1,void ** a_2,xcb_generic_error_t ** a_3){
+    auto ret = fexfn_pack_xcb_poll_for_reply(a_0, a_1, a_2, a_3);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -368,13 +338,11 @@ extern "C" {
       *a_3 = NewError;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static int fexfn_pack_xcb_poll_for_reply64(xcb_connection_t * a_0,uint64_t a_1,void ** a_2,xcb_generic_error_t ** a_3){
-    struct {xcb_connection_t * a_0;uint64_t a_1;void ** a_2;xcb_generic_error_t ** a_3;int rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;args.a_3 = a_3;
-    fexthunks_libxcb_xcb_poll_for_reply64(&args);
+  int xcb_poll_for_reply64(xcb_connection_t * a_0,uint64_t a_1,void ** a_2,xcb_generic_error_t ** a_3){
+    auto ret = fexfn_pack_xcb_poll_for_reply64(a_0, a_1, a_2, a_3);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -399,13 +367,11 @@ extern "C" {
       *a_3 = NewError;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_query_extension_reply_t * fexfn_pack_xcb_query_extension_reply(xcb_connection_t * a_0,xcb_query_extension_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_query_extension_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_query_extension_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_query_extension_reply(&args);
+  xcb_query_extension_reply_t * xcb_query_extension_reply(xcb_connection_t * a_0,xcb_query_extension_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_query_extension_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -418,26 +384,24 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_window_attributes_reply_t * fexfn_pack_xcb_get_window_attributes_reply(xcb_connection_t * a_0,xcb_get_window_attributes_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_window_attributes_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_window_attributes_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_window_attributes_reply(&args);
+  xcb_get_window_attributes_reply_t * xcb_get_window_attributes_reply(xcb_connection_t * a_0,xcb_get_window_attributes_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_window_attributes_reply(a_0, a_1, a_2);
     // We now need to do some fixups here
     if (a_2 && *a_2) {
       // If the error code pointer exists then we need to copy the contents and free the host facing pointer
@@ -449,21 +413,19 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
+    if (ret) {
       void *NewPtr = malloc(sizeof(xcb_get_window_attributes_reply_t));
-      memcpy(NewPtr, args.rv, sizeof(xcb_get_window_attributes_reply_t));
+      memcpy(NewPtr, ret, sizeof(xcb_get_window_attributes_reply_t));
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_geometry_reply_t * fexfn_pack_xcb_get_geometry_reply(xcb_connection_t * a_0,xcb_get_geometry_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_geometry_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_geometry_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_geometry_reply(&args);
+  xcb_get_geometry_reply_t * xcb_get_geometry_reply(xcb_connection_t * a_0,xcb_get_geometry_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_geometry_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -476,21 +438,19 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
+    if (ret) {
       void *NewPtr = malloc(sizeof(xcb_get_geometry_reply_t));
-      memcpy(NewPtr, args.rv, sizeof(xcb_get_geometry_reply_t));
+      memcpy(NewPtr, ret, sizeof(xcb_get_geometry_reply_t));
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_intern_atom_reply_t * fexfn_pack_xcb_intern_atom_reply(xcb_connection_t * a_0,xcb_intern_atom_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_intern_atom_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_intern_atom_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_intern_atom_reply(&args);
+  xcb_intern_atom_reply_t * xcb_intern_atom_reply(xcb_connection_t * a_0,xcb_intern_atom_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_intern_atom_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -503,25 +463,23 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_property_reply_t * fexfn_pack_xcb_get_property_reply(xcb_connection_t * a_0,xcb_get_property_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_property_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_property_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_property_reply(&args);
+  xcb_get_property_reply_t * xcb_get_property_reply(xcb_connection_t * a_0,xcb_get_property_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_property_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -534,21 +492,19 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
+    if (ret) {
       void *NewPtr = malloc(sizeof(xcb_get_property_reply_t));
-      memcpy(NewPtr, args.rv, sizeof(xcb_get_property_reply_t));
+      memcpy(NewPtr, ret, sizeof(xcb_get_property_reply_t));
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_query_tree_reply_t * fexfn_pack_xcb_query_tree_reply(xcb_connection_t * a_0,xcb_query_tree_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_query_tree_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_query_tree_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_query_tree_reply(&args);
+  xcb_query_tree_reply_t * xcb_query_tree_reply(xcb_connection_t * a_0,xcb_query_tree_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_query_tree_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -561,22 +517,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_atom_name_reply_t * fexfn_pack_xcb_get_atom_name_reply(xcb_connection_t * a_0,xcb_get_atom_name_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_atom_name_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_atom_name_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_atom_name_reply(&args);
+  xcb_get_atom_name_reply_t * xcb_get_atom_name_reply(xcb_connection_t * a_0,xcb_get_atom_name_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_atom_name_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -589,22 +543,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_list_properties_reply_t * fexfn_pack_xcb_list_properties_reply(xcb_connection_t * a_0,xcb_list_properties_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_list_properties_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_list_properties_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_list_properties_reply(&args);
+  xcb_list_properties_reply_t * xcb_list_properties_reply(xcb_connection_t * a_0,xcb_list_properties_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_list_properties_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -617,22 +569,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_selection_owner_reply_t * fexfn_pack_xcb_get_selection_owner_reply(xcb_connection_t * a_0,xcb_get_selection_owner_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_selection_owner_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_selection_owner_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_selection_owner_reply(&args);
+  xcb_get_selection_owner_reply_t * xcb_get_selection_owner_reply(xcb_connection_t * a_0,xcb_get_selection_owner_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_selection_owner_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -645,22 +595,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_grab_pointer_reply_t * fexfn_pack_xcb_grab_pointer_reply(xcb_connection_t * a_0,xcb_grab_pointer_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_grab_pointer_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_grab_pointer_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_grab_pointer_reply(&args);
+  xcb_grab_pointer_reply_t * xcb_grab_pointer_reply(xcb_connection_t * a_0,xcb_grab_pointer_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_grab_pointer_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -673,22 +621,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_grab_keyboard_reply_t * fexfn_pack_xcb_grab_keyboard_reply(xcb_connection_t * a_0,xcb_grab_keyboard_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_grab_keyboard_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_grab_keyboard_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_grab_keyboard_reply(&args);
+  xcb_grab_keyboard_reply_t * xcb_grab_keyboard_reply(xcb_connection_t * a_0,xcb_grab_keyboard_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_grab_keyboard_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -701,22 +647,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_query_pointer_reply_t * fexfn_pack_xcb_query_pointer_reply(xcb_connection_t * a_0,xcb_query_pointer_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_query_pointer_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_query_pointer_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_query_pointer_reply(&args);
+  xcb_query_pointer_reply_t * xcb_query_pointer_reply(xcb_connection_t * a_0,xcb_query_pointer_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_query_pointer_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -729,22 +673,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_motion_events_reply_t * fexfn_pack_xcb_get_motion_events_reply(xcb_connection_t * a_0,xcb_get_motion_events_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_motion_events_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_motion_events_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_motion_events_reply(&args);
+  xcb_get_motion_events_reply_t * xcb_get_motion_events_reply(xcb_connection_t * a_0,xcb_get_motion_events_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_motion_events_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -757,22 +699,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_translate_coordinates_reply_t * fexfn_pack_xcb_translate_coordinates_reply(xcb_connection_t * a_0,xcb_translate_coordinates_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_translate_coordinates_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_translate_coordinates_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_translate_coordinates_reply(&args);
+  xcb_translate_coordinates_reply_t * xcb_translate_coordinates_reply(xcb_connection_t * a_0,xcb_translate_coordinates_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_translate_coordinates_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -785,22 +725,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_input_focus_reply_t * fexfn_pack_xcb_get_input_focus_reply(xcb_connection_t * a_0,xcb_get_input_focus_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_input_focus_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_input_focus_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_input_focus_reply(&args);
+  xcb_get_input_focus_reply_t * xcb_get_input_focus_reply(xcb_connection_t * a_0,xcb_get_input_focus_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_input_focus_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -813,22 +751,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_query_keymap_reply_t * fexfn_pack_xcb_query_keymap_reply(xcb_connection_t * a_0,xcb_query_keymap_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_query_keymap_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_query_keymap_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_query_keymap_reply(&args);
+  xcb_query_keymap_reply_t * xcb_query_keymap_reply(xcb_connection_t * a_0,xcb_query_keymap_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_query_keymap_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -841,22 +777,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_query_font_reply_t * fexfn_pack_xcb_query_font_reply(xcb_connection_t * a_0,xcb_query_font_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_query_font_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_query_font_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_query_font_reply(&args);
+  xcb_query_font_reply_t * xcb_query_font_reply(xcb_connection_t * a_0,xcb_query_font_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_query_font_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -869,22 +803,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_query_text_extents_reply_t * fexfn_pack_xcb_query_text_extents_reply(xcb_connection_t * a_0,xcb_query_text_extents_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_query_text_extents_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_query_text_extents_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_query_text_extents_reply(&args);
+  xcb_query_text_extents_reply_t * xcb_query_text_extents_reply(xcb_connection_t * a_0,xcb_query_text_extents_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_query_text_extents_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -897,22 +829,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_list_fonts_reply_t * fexfn_pack_xcb_list_fonts_reply(xcb_connection_t * a_0,xcb_list_fonts_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_list_fonts_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_list_fonts_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_list_fonts_reply(&args);
+  xcb_list_fonts_reply_t * xcb_list_fonts_reply(xcb_connection_t * a_0,xcb_list_fonts_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_list_fonts_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -925,22 +855,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_list_fonts_with_info_reply_t * fexfn_pack_xcb_list_fonts_with_info_reply(xcb_connection_t * a_0,xcb_list_fonts_with_info_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_list_fonts_with_info_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_list_fonts_with_info_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_list_fonts_with_info_reply(&args);
+  xcb_list_fonts_with_info_reply_t * xcb_list_fonts_with_info_reply(xcb_connection_t * a_0,xcb_list_fonts_with_info_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_list_fonts_with_info_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -953,22 +881,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_font_path_reply_t * fexfn_pack_xcb_get_font_path_reply(xcb_connection_t * a_0,xcb_get_font_path_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_font_path_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_font_path_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_font_path_reply(&args);
+  xcb_get_font_path_reply_t * xcb_get_font_path_reply(xcb_connection_t * a_0,xcb_get_font_path_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_font_path_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -981,22 +907,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_image_reply_t * fexfn_pack_xcb_get_image_reply(xcb_connection_t * a_0,xcb_get_image_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_image_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_image_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_image_reply(&args);
+  xcb_get_image_reply_t * xcb_get_image_reply(xcb_connection_t * a_0,xcb_get_image_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_image_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1009,22 +933,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_list_installed_colormaps_reply_t * fexfn_pack_xcb_list_installed_colormaps_reply(xcb_connection_t * a_0,xcb_list_installed_colormaps_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_list_installed_colormaps_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_list_installed_colormaps_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_list_installed_colormaps_reply(&args);
+  xcb_list_installed_colormaps_reply_t * xcb_list_installed_colormaps_reply(xcb_connection_t * a_0,xcb_list_installed_colormaps_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_list_installed_colormaps_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1037,22 +959,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_alloc_color_reply_t * fexfn_pack_xcb_alloc_color_reply(xcb_connection_t * a_0,xcb_alloc_color_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_alloc_color_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_alloc_color_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_alloc_color_reply(&args);
+  xcb_alloc_color_reply_t * xcb_alloc_color_reply(xcb_connection_t * a_0,xcb_alloc_color_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_alloc_color_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1065,22 +985,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_alloc_named_color_reply_t * fexfn_pack_xcb_alloc_named_color_reply(xcb_connection_t * a_0,xcb_alloc_named_color_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_alloc_named_color_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_alloc_named_color_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_alloc_named_color_reply(&args);
+  xcb_alloc_named_color_reply_t * xcb_alloc_named_color_reply(xcb_connection_t * a_0,xcb_alloc_named_color_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_alloc_named_color_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1093,22 +1011,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_alloc_color_cells_reply_t * fexfn_pack_xcb_alloc_color_cells_reply(xcb_connection_t * a_0,xcb_alloc_color_cells_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_alloc_color_cells_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_alloc_color_cells_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_alloc_color_cells_reply(&args);
+  xcb_alloc_color_cells_reply_t * xcb_alloc_color_cells_reply(xcb_connection_t * a_0,xcb_alloc_color_cells_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_alloc_color_cells_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1121,22 +1037,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_alloc_color_planes_reply_t * fexfn_pack_xcb_alloc_color_planes_reply(xcb_connection_t * a_0,xcb_alloc_color_planes_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_alloc_color_planes_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_alloc_color_planes_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_alloc_color_planes_reply(&args);
+  xcb_alloc_color_planes_reply_t * xcb_alloc_color_planes_reply(xcb_connection_t * a_0,xcb_alloc_color_planes_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_alloc_color_planes_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1149,22 +1063,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_query_colors_reply_t * fexfn_pack_xcb_query_colors_reply(xcb_connection_t * a_0,xcb_query_colors_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_query_colors_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_query_colors_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_query_colors_reply(&args);
+  xcb_query_colors_reply_t * xcb_query_colors_reply(xcb_connection_t * a_0,xcb_query_colors_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_query_colors_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1177,22 +1089,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_lookup_color_reply_t * fexfn_pack_xcb_lookup_color_reply(xcb_connection_t * a_0,xcb_lookup_color_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_lookup_color_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_lookup_color_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_lookup_color_reply(&args);
+  xcb_lookup_color_reply_t * xcb_lookup_color_reply(xcb_connection_t * a_0,xcb_lookup_color_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_lookup_color_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1205,22 +1115,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_query_best_size_reply_t * fexfn_pack_xcb_query_best_size_reply(xcb_connection_t * a_0,xcb_query_best_size_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_query_best_size_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_query_best_size_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_query_best_size_reply(&args);
+  xcb_query_best_size_reply_t * xcb_query_best_size_reply(xcb_connection_t * a_0,xcb_query_best_size_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_query_best_size_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1233,22 +1141,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_list_extensions_reply_t * fexfn_pack_xcb_list_extensions_reply(xcb_connection_t * a_0,xcb_list_extensions_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_list_extensions_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_list_extensions_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_list_extensions_reply(&args);
+  xcb_list_extensions_reply_t * xcb_list_extensions_reply(xcb_connection_t * a_0,xcb_list_extensions_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_list_extensions_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1261,22 +1167,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_keyboard_mapping_reply_t * fexfn_pack_xcb_get_keyboard_mapping_reply(xcb_connection_t * a_0,xcb_get_keyboard_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_keyboard_mapping_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_keyboard_mapping_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_keyboard_mapping_reply(&args);
+  xcb_get_keyboard_mapping_reply_t * xcb_get_keyboard_mapping_reply(xcb_connection_t * a_0,xcb_get_keyboard_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_keyboard_mapping_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1289,22 +1193,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_keyboard_control_reply_t * fexfn_pack_xcb_get_keyboard_control_reply(xcb_connection_t * a_0,xcb_get_keyboard_control_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_keyboard_control_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_keyboard_control_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_keyboard_control_reply(&args);
+  xcb_get_keyboard_control_reply_t * xcb_get_keyboard_control_reply(xcb_connection_t * a_0,xcb_get_keyboard_control_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_keyboard_control_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1317,22 +1219,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_pointer_control_reply_t * fexfn_pack_xcb_get_pointer_control_reply(xcb_connection_t * a_0,xcb_get_pointer_control_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_pointer_control_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_pointer_control_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_pointer_control_reply(&args);
+  xcb_get_pointer_control_reply_t * xcb_get_pointer_control_reply(xcb_connection_t * a_0,xcb_get_pointer_control_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_pointer_control_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1345,22 +1245,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_screen_saver_reply_t * fexfn_pack_xcb_get_screen_saver_reply(xcb_connection_t * a_0,xcb_get_screen_saver_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_screen_saver_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_screen_saver_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_screen_saver_reply(&args);
+  xcb_get_screen_saver_reply_t * xcb_get_screen_saver_reply(xcb_connection_t * a_0,xcb_get_screen_saver_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_screen_saver_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1373,22 +1271,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_list_hosts_reply_t * fexfn_pack_xcb_list_hosts_reply(xcb_connection_t * a_0,xcb_list_hosts_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_list_hosts_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_list_hosts_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_list_hosts_reply(&args);
+  xcb_list_hosts_reply_t * xcb_list_hosts_reply(xcb_connection_t * a_0,xcb_list_hosts_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_list_hosts_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1401,22 +1297,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_set_pointer_mapping_reply_t * fexfn_pack_xcb_set_pointer_mapping_reply(xcb_connection_t * a_0,xcb_set_pointer_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_set_pointer_mapping_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_set_pointer_mapping_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_set_pointer_mapping_reply(&args);
+  xcb_set_pointer_mapping_reply_t * xcb_set_pointer_mapping_reply(xcb_connection_t * a_0,xcb_set_pointer_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_set_pointer_mapping_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1429,22 +1323,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_pointer_mapping_reply_t * fexfn_pack_xcb_get_pointer_mapping_reply(xcb_connection_t * a_0,xcb_get_pointer_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_pointer_mapping_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_pointer_mapping_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_pointer_mapping_reply(&args);
+  xcb_get_pointer_mapping_reply_t * xcb_get_pointer_mapping_reply(xcb_connection_t * a_0,xcb_get_pointer_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_pointer_mapping_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1457,22 +1349,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_set_modifier_mapping_reply_t * fexfn_pack_xcb_set_modifier_mapping_reply(xcb_connection_t * a_0,xcb_set_modifier_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_set_modifier_mapping_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_set_modifier_mapping_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_set_modifier_mapping_reply(&args);
+  xcb_set_modifier_mapping_reply_t * xcb_set_modifier_mapping_reply(xcb_connection_t * a_0,xcb_set_modifier_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_set_modifier_mapping_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1485,22 +1375,20 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static xcb_get_modifier_mapping_reply_t * fexfn_pack_xcb_get_modifier_mapping_reply(xcb_connection_t * a_0,xcb_get_modifier_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
-    struct {xcb_connection_t * a_0;xcb_get_modifier_mapping_cookie_t a_1;xcb_generic_error_t ** a_2;xcb_get_modifier_mapping_reply_t * rv;} args;
-    args.a_0 = a_0;args.a_1 = a_1;args.a_2 = a_2;
-    fexthunks_libxcb_xcb_get_modifier_mapping_reply(&args);
+  xcb_get_modifier_mapping_reply_t * xcb_get_modifier_mapping_reply(xcb_connection_t * a_0,xcb_get_modifier_mapping_cookie_t a_1,xcb_generic_error_t ** a_2){
+    auto ret = fexfn_pack_xcb_get_modifier_mapping_reply(a_0, a_1, a_2);
 
     // We now need to do some fixups here
     if (a_2 && *a_2) {
@@ -1513,77 +1401,17 @@ extern "C" {
       *a_2 = NewError;
     }
 
-    if (args.rv) {
-      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(args.rv)>::type);
+    if (ret) {
+      constexpr size_t ResultSize = sizeof(std::remove_pointer<decltype(ret)>::type);
       void *NewPtr = malloc(ResultSize);
-      memcpy(NewPtr, args.rv, ResultSize);
+      memcpy(NewPtr, ret, ResultSize);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv = (decltype(args.rv))NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret = (decltype(ret))NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
-
-  xcb_connection_t * xcb_connect(const char * a_0,int * a_2) __attribute__((alias("fexfn_pack_xcb_connect")));
-  xcb_connection_t * xcb_connect_to_display_with_auth_info(const char * a_0,xcb_auth_info_t * a_1,int * a_2) __attribute__((alias("fexfn_pack_xcb_connect_to_display_with_auth_info")));
-  void xcb_disconnect(xcb_connection_t * a_0) __attribute__((alias("fexfn_pack_xcb_disconnect")));
-  int xcb_parse_display(const char * a_0,char ** a_1,int * a_2,int * a_3) __attribute__((alias("fexfn_pack_xcb_parse_display")));
-
-  xcb_generic_event_t * xcb_wait_for_event(xcb_connection_t * a_0) __attribute__((alias("fexfn_pack_xcb_wait_for_event")));
-  xcb_generic_event_t * xcb_poll_for_event(xcb_connection_t * a_0) __attribute__((alias("fexfn_pack_xcb_poll_for_event")));
-  xcb_generic_event_t * xcb_poll_for_queued_event(xcb_connection_t * a_0) __attribute__((alias("fexfn_pack_xcb_poll_for_queued_event")));
-  xcb_generic_event_t * xcb_poll_for_special_event(xcb_connection_t * a_0,xcb_special_event_t * a_1) __attribute__((alias("fexfn_pack_xcb_poll_for_special_event")));
-  xcb_generic_event_t * xcb_wait_for_special_event(xcb_connection_t * a_0,xcb_special_event_t * a_1) __attribute__((alias("fexfn_pack_xcb_wait_for_special_event")));
-  xcb_generic_error_t * xcb_request_check(xcb_connection_t * a_0,xcb_void_cookie_t a_1) __attribute__((alias("fexfn_pack_xcb_request_check")));
-
-  void * xcb_wait_for_reply(xcb_connection_t * a_0, uint32_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_wait_for_reply")));
-  void * xcb_wait_for_reply64(xcb_connection_t * a_0,uint64_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_wait_for_reply64")));
-  int xcb_poll_for_reply(xcb_connection_t * a_0,unsigned int a_1,void ** a_2,xcb_generic_error_t ** a_3) __attribute__((alias("fexfn_pack_xcb_poll_for_reply")));
-  int xcb_poll_for_reply64(xcb_connection_t * a_0,uint64_t a_1,void ** a_2,xcb_generic_error_t ** a_3) __attribute__((alias("fexfn_pack_xcb_poll_for_reply64")));
-
-  xcb_query_extension_reply_t * xcb_query_extension_reply(xcb_connection_t * a_0,xcb_query_extension_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_query_extension_reply")));
-
-  xcb_get_window_attributes_reply_t * xcb_get_window_attributes_reply(xcb_connection_t * a_0,xcb_get_window_attributes_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_window_attributes_reply")));
-  xcb_get_geometry_reply_t * xcb_get_geometry_reply(xcb_connection_t * a_0,xcb_get_geometry_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_geometry_reply")));
-  xcb_intern_atom_reply_t * xcb_intern_atom_reply(xcb_connection_t * a_0,xcb_intern_atom_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_intern_atom_reply")));
-
-  xcb_get_property_reply_t * xcb_get_property_reply(xcb_connection_t * a_0,xcb_get_property_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_property_reply")));
-  xcb_query_tree_reply_t * xcb_query_tree_reply(xcb_connection_t * a_0,xcb_query_tree_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_query_tree_reply")));
-  xcb_get_atom_name_reply_t * xcb_get_atom_name_reply(xcb_connection_t * a_0,xcb_get_atom_name_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_atom_name_reply")));
-  xcb_list_properties_reply_t * xcb_list_properties_reply(xcb_connection_t * a_0,xcb_list_properties_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_list_properties_reply")));
-  xcb_get_selection_owner_reply_t * xcb_get_selection_owner_reply(xcb_connection_t * a_0,xcb_get_selection_owner_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_selection_owner_reply")));
-  xcb_grab_pointer_reply_t * xcb_grab_pointer_reply(xcb_connection_t * a_0,xcb_grab_pointer_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_grab_pointer_reply")));
-  xcb_grab_keyboard_reply_t * xcb_grab_keyboard_reply(xcb_connection_t * a_0,xcb_grab_keyboard_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_grab_keyboard_reply")));
-  xcb_query_pointer_reply_t * xcb_query_pointer_reply(xcb_connection_t * a_0,xcb_query_pointer_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_query_pointer_reply")));
-  xcb_get_motion_events_reply_t * xcb_get_motion_events_reply(xcb_connection_t * a_0,xcb_get_motion_events_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_motion_events_reply")));
-  xcb_translate_coordinates_reply_t * xcb_translate_coordinates_reply(xcb_connection_t * a_0,xcb_translate_coordinates_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_translate_coordinates_reply")));
-  xcb_get_input_focus_reply_t * xcb_get_input_focus_reply(xcb_connection_t * a_0,xcb_get_input_focus_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_input_focus_reply")));
-  xcb_query_keymap_reply_t * xcb_query_keymap_reply(xcb_connection_t * a_0,xcb_query_keymap_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_query_keymap_reply")));
-  xcb_query_font_reply_t * xcb_query_font_reply(xcb_connection_t * a_0,xcb_query_font_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_query_font_reply")));
-  xcb_query_text_extents_reply_t * xcb_query_text_extents_reply(xcb_connection_t * a_0,xcb_query_text_extents_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_query_text_extents_reply")));
-  xcb_list_fonts_reply_t * xcb_list_fonts_reply(xcb_connection_t * a_0,xcb_list_fonts_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_list_fonts_reply")));
-  xcb_list_fonts_with_info_reply_t * xcb_list_fonts_with_info_reply(xcb_connection_t * a_0,xcb_list_fonts_with_info_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_list_fonts_with_info_reply")));
-  xcb_get_font_path_reply_t * xcb_get_font_path_reply(xcb_connection_t * a_0,xcb_get_font_path_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_font_path_reply")));
-  xcb_get_image_reply_t * xcb_get_image_reply(xcb_connection_t * a_0,xcb_get_image_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_image_reply")));
-  xcb_list_installed_colormaps_reply_t * xcb_list_installed_colormaps_reply(xcb_connection_t * a_0,xcb_list_installed_colormaps_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_list_installed_colormaps_reply")));
-  xcb_alloc_color_reply_t * xcb_alloc_color_reply(xcb_connection_t * a_0,xcb_alloc_color_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_alloc_color_reply")));
-  xcb_alloc_named_color_reply_t * xcb_alloc_named_color_reply(xcb_connection_t * a_0,xcb_alloc_named_color_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_alloc_named_color_reply")));
-  xcb_alloc_color_cells_reply_t * xcb_alloc_color_cells_reply(xcb_connection_t * a_0,xcb_alloc_color_cells_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_alloc_color_cells_reply")));
-  xcb_alloc_color_planes_reply_t * xcb_alloc_color_planes_reply(xcb_connection_t * a_0,xcb_alloc_color_planes_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_alloc_color_planes_reply")));
-  xcb_query_colors_reply_t * xcb_query_colors_reply(xcb_connection_t * a_0,xcb_query_colors_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_query_colors_reply")));
-  xcb_lookup_color_reply_t * xcb_lookup_color_reply(xcb_connection_t * a_0,xcb_lookup_color_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_lookup_color_reply")));
-  xcb_query_best_size_reply_t * xcb_query_best_size_reply(xcb_connection_t * a_0,xcb_query_best_size_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_query_best_size_reply")));
-  xcb_list_extensions_reply_t * xcb_list_extensions_reply(xcb_connection_t * a_0,xcb_list_extensions_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_list_extensions_reply")));
-  xcb_get_keyboard_mapping_reply_t * xcb_get_keyboard_mapping_reply(xcb_connection_t * a_0,xcb_get_keyboard_mapping_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_keyboard_mapping_reply")));
-  xcb_get_keyboard_control_reply_t * xcb_get_keyboard_control_reply(xcb_connection_t * a_0,xcb_get_keyboard_control_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_keyboard_control_reply")));
-  xcb_get_pointer_control_reply_t * xcb_get_pointer_control_reply(xcb_connection_t * a_0,xcb_get_pointer_control_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_pointer_control_reply")));
-  xcb_get_screen_saver_reply_t * xcb_get_screen_saver_reply(xcb_connection_t * a_0,xcb_get_screen_saver_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_screen_saver_reply")));
-  xcb_list_hosts_reply_t * xcb_list_hosts_reply(xcb_connection_t * a_0,xcb_list_hosts_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_list_hosts_reply")));
-  xcb_set_pointer_mapping_reply_t * xcb_set_pointer_mapping_reply(xcb_connection_t * a_0,xcb_set_pointer_mapping_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_set_pointer_mapping_reply")));
-  xcb_get_pointer_mapping_reply_t * xcb_get_pointer_mapping_reply(xcb_connection_t * a_0,xcb_get_pointer_mapping_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_pointer_mapping_reply")));
-  xcb_set_modifier_mapping_reply_t * xcb_set_modifier_mapping_reply(xcb_connection_t * a_0,xcb_set_modifier_mapping_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_set_modifier_mapping_reply")));
-  xcb_get_modifier_mapping_reply_t * xcb_get_modifier_mapping_reply(xcb_connection_t * a_0,xcb_get_modifier_mapping_cookie_t a_1,xcb_generic_error_t ** a_2) __attribute__((alias("fexfn_pack_xcb_get_modifier_mapping_reply")));
 }
 
 struct {

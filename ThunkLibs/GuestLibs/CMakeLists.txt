@@ -240,7 +240,7 @@ if (BUILD_TESTS)
     COMMAND "ctest" "--timeout" "302" "-j${CORES}" "-R" "Guest_Test_verify*")
 endif()
 
-generate(libxcb thunks function_packs function_packs_public callback_structs callback_unpacks_header callback_unpacks_header_init callback_unpacks callback_typedefs)
+generate_new(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp thunks function_packs function_packs_public callback_structs callback_unpacks_header callback_unpacks_header_init callback_unpacks callback_typedefs)
 add_guest_lib(xcb)
 
 generate(libxcb_dri2 thunks function_packs function_packs_public)

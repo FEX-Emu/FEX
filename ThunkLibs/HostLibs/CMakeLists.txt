@@ -161,7 +161,7 @@ foreach (LIB IN LISTS VULKAN_LIBS)
   set(WITH_ARGS "")
 endforeach()
 
-generate(libxcb function_unpacks tab_function_unpacks ldr ldr_ptrs callback_packs callback_structs callback_unpacks_header callback_typedefs)
+generate_new(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs callback_structs callback_unpacks_header callback_typedefs)
 add_host_lib(xcb)
 
 generate(libxcb_dri2 function_unpacks tab_function_unpacks ldr ldr_ptrs)
