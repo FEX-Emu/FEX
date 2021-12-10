@@ -32,6 +32,7 @@ public:
     std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance&, clang::StringRef /*file*/) override;
 
 private:
-    const std::string& libname;
+    const std::string& libfilename;
+    std::string libname; // sanitized filename, usable as part of emitted function names
     const OutputFilenames& output_filenames;
 };

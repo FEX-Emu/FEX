@@ -377,7 +377,13 @@ public:
 };
 
 FrontendAction::FrontendAction(const std::string& libname_, const OutputFilenames& output_filenames_)
-    : libname(libname_), output_filenames(output_filenames_) {
+    : libfilename(libname_), libname(libname_), output_filenames(output_filenames_) {
+    for (auto& c : libname) {
+        if (c == '-') {
+            c = '_';
+        }
+    }
+
     thunks.clear();
     thunked_api.clear();
     namespaces.clear();
@@ -628,7 +634,7 @@ void FrontendAction::EndSourceFileAction() {
         if (lib_version) {
           version_suffix = '.' + std::to_string(*lib_version);
         }
-        const std::string library_filename = libname + ".so" + version_suffix;
+        const std::string library_filename = libfilename + ".so" + version_suffix;
         file << "  fexldr_ptr_" << libname << "_so = dlopen(\"" << library_filename << "\", RTLD_LOCAL | RTLD_LAZY);\n";
 
         file << "  if (!fexldr_ptr_" << libname << "_so) { return false; }\n\n";
