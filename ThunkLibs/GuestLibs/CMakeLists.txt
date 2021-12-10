@@ -141,7 +141,7 @@ add_guest_lib(X11)
 generate(libXext thunks function_packs function_packs_public)
 add_guest_lib(Xext)
 
-generate(libXrender thunks function_packs function_packs_public)
+generate_new(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(Xrender)
 
 generate_new(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp thunks function_packs function_packs_public)

@@ -135,7 +135,7 @@ add_host_lib(X11)
 generate(libXext function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xext)
 
-generate(libXrender function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate_new(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xrender)
 
 generate_new(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
