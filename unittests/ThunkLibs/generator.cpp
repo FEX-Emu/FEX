@@ -187,9 +187,11 @@ static void run_tool(std::unique_ptr<FrontendAction> action, std::string_view co
     std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
 
     const char* common_header_code = R"(namespace fexgen {
+struct returns_guest_pointer {};
 struct custom_host_impl {};
 struct callback_annotation_base { bool prevent_multiple; };
 struct callback_stub : callback_annotation_base {};
+struct callback_guest : callback_annotation_base {};
 } // namespace fexgen
 )";
 
@@ -354,6 +356,33 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
         )));
 }
 
+// Parameter is a guest function pointer
+TEST_CASE_METHOD(Fixture, "GuestFunctionPointerParameter") {
+    const std::string prelude =
+        "struct fex_guest_function_ptr { int (*x)(char,char); };\n"
+        "void fexfn_impl_libtest_func(fex_guest_function_ptr);\n";
+    const auto output = run_thunkgen(
+        "#include <thunks_common.h>\n" +
+        prelude +
+        "void func(int (*funcptr)(char, char));\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> : fexgen::callback_guest, fexgen::custom_host_impl {};\n");
+
+    CHECK_THAT(output.guest,
+        matches(functionDecl(
+            hasName("fexfn_pack_func"),
+            returns(asString("void")),
+            parameterCountIs(1),
+            hasParameter(0, hasType(asString("int (*)(char, char)")))
+        )));
+
+    // Host-side implementation only sees an opaque type that it can't call
+    CHECK_THAT(prelude + output.host,
+        matches(callExpr(callee(functionDecl(hasName("fexfn_impl_libtest_func"))),
+                         hasArgument(0, hasType(asString("struct fex_guest_function_ptr")))
+            )));
+}
+
 TEST_CASE_METHOD(Fixture, "MultipleParameters") {
     const std::string prelude = "struct TestStruct { int member; };\n";
 
@@ -405,15 +434,21 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             )));
 }
 
-// Returning a function pointer should trigger an error
+// Returning a function pointer should trigger an error unless an annotation is provided
 TEST_CASE_METHOD(Fixture, "ReturnFunctionPointer") {
-    const std::string prelude = "using funcptr = void (*)(char, char);\n";
+    const std::string prelude = "#include <thunks_common.h>\nusing funcptr = void (*)(char, char);\n";
 
     REQUIRE_THROWS(run_thunkgen_guest(
         prelude +
         "funcptr func(int);\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n", true));
+
+    REQUIRE_NOTHROW(run_thunkgen_guest(
+        prelude +
+        "funcptr func(int);\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> : fexgen::returns_guest_pointer {};\n"));
 }
 
 TEST_CASE_METHOD(Fixture, "VariadicFunction") {

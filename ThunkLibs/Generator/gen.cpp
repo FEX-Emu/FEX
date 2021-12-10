@@ -19,7 +19,8 @@ struct ThunkedCallback : FunctionParams {
     std::size_t callback_index;
     std::size_t user_arg_index;
 
-    bool is_stub = false;
+    bool is_stub = false;  // Callback will be replaced by a stub that calls std::abort
+    bool is_guest = false; // Callback will never be called on the host
     bool is_variadic = false;
 };
 
@@ -97,6 +98,7 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
     enum class CallbackStrategy {
         Default,
         Stub,
+        Guest,
     };
 
     struct NamespaceAnnotations {
@@ -105,6 +107,8 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
 
     struct Annotations {
         bool custom_host_impl = false;
+
+        bool returns_guest_pointer = false;
 
         std::optional<clang::QualType> uniform_va_type;
 
@@ -140,10 +144,14 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
 
         for (const auto& base : decl->bases()) {
             auto annotation = base.getType().getAsString();
-            if (annotation == "fexgen::custom_host_impl") {
+            if (annotation == "fexgen::returns_guest_pointer") {
+                ret.returns_guest_pointer = true;
+            } else if (annotation == "fexgen::custom_host_impl") {
                 ret.custom_host_impl = true;
             } else if (annotation == "fexgen::callback_stub") {
                 ret.callback_strategy = CallbackStrategy::Stub;
+            } else if (annotation == "fexgen::callback_guest") {
+                ret.callback_strategy = CallbackStrategy::Guest;
             } else {
                 throw Error(base.getSourceRange().getBegin(), "Unknown annotation");
             }
@@ -216,7 +224,8 @@ public:
         auto return_type = emitted_function->getReturnType();
 
         const auto annotations = GetAnnotations(decl);
-        if (return_type->isFunctionPointerType()) {
+        if (return_type->isFunctionPointerType() && !annotations.returns_guest_pointer) {
+            // TODO: Should regular pointers require annotation, too?
             throw Error(decl->getBeginLoc(),
                         "Function pointer return types require explicit annotation\n");
         }
@@ -243,7 +252,12 @@ public:
                     callback.param_types.push_back(cb_param);
                 }
                 callback.is_stub = annotations.callback_strategy == CallbackStrategy::Stub;
+                callback.is_guest = annotations.callback_strategy == CallbackStrategy::Guest;
                 callback.is_variadic = funcptr->isVariadic();
+
+                if (callback.is_guest && !data.custom_host_impl) {
+                    throw Error(decl->getBeginLoc(), "callback_guest can only be used with custom_host_impl");
+                }
 
                 data.callbacks.emplace(param_idx, callback);
                 // TODO: Support for more than one callback is untested
@@ -254,8 +268,9 @@ public:
             }
         }
 
+        // TODO: Rename to something like "needs_modified_callback"
         const bool has_nonstub_callbacks = std::any_of(data.callbacks.begin(), data.callbacks.end(),
-                                                       [](auto& cb) { return !cb.second.is_stub; });
+                                                       [](auto& cb) { return !cb.second.is_stub && !cb.second.is_guest; });
         thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
                                                     has_nonstub_callbacks || data.is_variadic,
                                                     data.is_variadic });
@@ -301,6 +316,22 @@ FrontendAction::FrontendAction(const std::string& libname_, const OutputFilename
     lib_version = std::nullopt;
 }
 
+template<typename Fn>
+static std::string format_function_args(const FunctionParams& params, Fn&& format_arg) {
+    std::string ret;
+    for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
+        ret += std::forward<Fn>(format_arg)(idx) + ", ";
+    }
+    // drop trailing ", "
+    ret.resize(ret.size() > 2 ? ret.size() - 2 : 0);
+    return ret;
+};
+
+static std::string format_function_args(const FunctionParams& params) {
+    return format_function_args(params,
+                                [](std::size_t idx) -> std::string { return "args->a_" + std::to_string(idx); });
+}
+
 void FrontendAction::EndSourceFileAction() {
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
         if (type->isFunctionPointerType()) {
@@ -327,16 +358,6 @@ void FrontendAction::EndSourceFileAction() {
         return ret;
     };
 
-    auto format_function_args = [](const FunctionParams& params) {
-        std::string ret;
-        for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
-            ret += "args->a_" + std::to_string(idx) + ", ";
-        }
-        // drop trailing ", "
-        ret.resize(ret.size() > 2 ? ret.size() - 2 : 0);
-        return ret;
-    };
-
     auto format_function_params = [](const FunctionParams& params) {
         std::string ret;
         for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
@@ -355,6 +376,10 @@ void FrontendAction::EndSourceFileAction() {
                sha256_message.size(),
                sha256.data());
         return sha256;
+    };
+
+    auto get_callback_name = [](std::string_view function_name, unsigned param_index, bool is_first_cb) -> std::string {
+        return std::string { function_name } + "CBFN" + (is_first_cb ? "" : std::to_string(param_index));
     };
 
     if (!output_filenames.thunks.empty()) {
@@ -453,16 +478,17 @@ void FrontendAction::EndSourceFileAction() {
             }
             file << "};\n";
 
+            /* Generate stub callbacks */
             for (auto& [cb_idx, cb] : thunk.callbacks) {
                 if (cb.is_stub) {
                     bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
                     const char* variadic_ellipsis = cb.is_variadic ? ", ..." : "";
-                    auto cb_function_name = "fexfn_unpack_" + function_name + "CBFN" + (is_first_cb ? "" : std::to_string(cb_idx)) + "_stub";
+                    auto cb_function_name = "fexfn_unpack_" + get_callback_name(function_name, cb_idx, is_first_cb) + "_stub";
                     file << "[[noreturn]] static " << cb.return_type.getAsString() << " "
                          << cb_function_name << "("
                          << format_function_params(cb) << variadic_ellipsis << ") {\n";
-                    file << "  fprintf(stderr, \"SHOULD NOT HAVE BEEN CALLED\");\n"; // TODO: Reword
-                    file << "  abort();\n";
+                    file << "  fprintf(stderr, \"FATAL: Attempted to invoke callback stub for " << function_name << "\\n\");\n";
+                    file << "  std::abort();\n";
                     file << "}\n";
                 }
             }
@@ -470,20 +496,19 @@ void FrontendAction::EndSourceFileAction() {
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(fexfn_packed_args_" << libname << "_" << function_name << "* args) {\n";
             file << (is_void ? "  " : "  args->rv = ") << (thunk.custom_host_impl ? "fexfn_impl_" : "fexldr_ptr_") << libname << "_" << function_name << "(";
             {
-                std::string ret;
-                for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
+                auto format_param = [&](std::size_t idx) {
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         bool is_first_cb = (cb->first == thunk.callbacks.begin()->first);
-                        auto cb_function_name = "fexfn_unpack_" + function_name + "CBFN" + (is_first_cb ? "" : std::to_string(cb->first)) + "_stub";
-                        ret += cb_function_name + ", ";
+                        return "fexfn_unpack_" + get_callback_name(function_name, cb->first, is_first_cb) + "_stub";
+                    } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
+                        return "fex_guest_function_ptr { args->a_" + std::to_string(idx) + " }";
                     } else {
-                        ret += "args->a_" + std::to_string(idx) + ", ";
+                        return "args->a_" + std::to_string(idx);
                     }
-                }
-                // drop trailing ", "
-                ret.resize(ret.size() > 2 ? ret.size() - 2 : 0);
-                file << ret;
+                };
+
+                file << format_function_args(thunk, format_param);
             }
             file << ");\n";
             file << "}\n";
@@ -544,7 +569,7 @@ void FrontendAction::EndSourceFileAction() {
 
         for (auto& thunk : thunks) {
             for (const auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub) {
+                if (cb.is_stub || cb.is_guest) {
                     continue;
                 }
 
@@ -563,12 +588,12 @@ void FrontendAction::EndSourceFileAction() {
 
         for (auto& thunk : thunks) {
             for (const auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub) {
+                if (cb.is_stub || cb.is_guest) {
                     continue;
                 }
 
                 bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
-                auto cb_function_name = thunk.GetOriginalFunctionName() + "CBFN" + (is_first_cb ? "" : std::to_string(cb_idx));
+                auto cb_function_name = get_callback_name(thunk.GetOriginalFunctionName(), cb_idx, is_first_cb);
                 file << "typedef " << cb.return_type.getAsString() << " "
                      << cb_function_name << "("
                      << format_function_params(cb) << ");\n";
@@ -581,7 +606,7 @@ void FrontendAction::EndSourceFileAction() {
 
         for (auto& thunk : thunks) {
             for (const auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub) {
+                if (cb.is_stub || cb.is_guest) {
                     continue;
                 }
 
@@ -609,7 +634,7 @@ void FrontendAction::EndSourceFileAction() {
 
         for (auto& thunk : thunks) {
             for (const auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub) {
+                if (cb.is_stub || cb.is_guest) {
                     continue;
                 }
 
@@ -625,7 +650,7 @@ void FrontendAction::EndSourceFileAction() {
 
         for (auto& thunk : thunks) {
             for (const auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub) {
+                if (cb.is_stub || cb.is_guest) {
                     continue;
                 }
 

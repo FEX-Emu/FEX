@@ -28,6 +28,23 @@ typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
 
 static fex_call_callback_t* call_guest;
 
+/**
+ * Opaque wrapper around a guest function pointer.
+ *
+ * This prevents accidental calls to foreign function pointers while still
+ * allowing us to label function pointers as such.
+ */
+struct fex_guest_function_ptr {
+private:
+    void* value = nullptr;
+
+public:
+    fex_guest_function_ptr() = default;
+
+    template<typename Ret, typename... Args>
+    fex_guest_function_ptr(Ret (*ptr)(Args...)) : value(reinterpret_cast<void*>(ptr)) {}
+};
+
 #define EXPORTS(name) \
   extern "C" { \
     ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \

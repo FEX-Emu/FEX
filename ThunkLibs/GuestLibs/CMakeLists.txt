@@ -97,6 +97,7 @@ function(add_guest_lib_with_name NAME LIBNAME)
 
   add_library(${LIBNAME}-guest SHARED ${SOURCE_FILE} ${GEN_lib${LIBNAME}})
   target_include_directories(${LIBNAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${LIBNAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  target_compile_definitions(${LIBNAME}-guest PRIVATE GUEST_THUNK_LIBRARY)
 
   ## Tell GCC to not complain about ignored attributes
   target_compile_options(${LIBNAME}-guest PRIVATE -Wno-attributes)

@@ -1,4 +1,5 @@
 namespace fexgen {
+struct returns_guest_pointer {};
 struct custom_host_impl {};
 
 struct callback_annotation_base {
