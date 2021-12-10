@@ -13,6 +13,13 @@ struct FunctionParams {
     std::vector<clang::QualType> param_types;
 };
 
+struct ThunkedCallback : FunctionParams {
+    clang::QualType return_type;
+
+    std::size_t callback_index;
+    std::size_t user_arg_index;
+};
+
 /**
  * Guest<->Host transition point.
  *
@@ -51,6 +58,8 @@ struct ThunkedFunction : FunctionParams {
         assert((std::string_view { &*function_name.end() - suffix.size(), suffix.size() } == suffix));
         return function_name.substr(0, function_name.size() - suffix.size());
     }
+
+    std::vector<ThunkedCallback> callbacks;
 
     clang::FunctionDecl* decl;
 };
@@ -152,7 +161,17 @@ public:
             data.param_types.push_back(param->getType());
 
             if (param->getType()->isFunctionPointerType()) {
-                throw Error(param->getBeginLoc(), "Function pointer parameters are not supported\n");
+                auto funcptr = param->getFunctionType()->getAs<clang::FunctionProtoType>();
+                ThunkedCallback callback;
+                callback.return_type = funcptr->getReturnType();
+                for (auto& cb_param : funcptr->getParamTypes()) {
+                    callback.param_types.push_back(cb_param);
+                }
+
+                data.callbacks.push_back(callback);
+                // TODO: Support for more than one callback is untested
+                assert(data.callbacks.size() == 1);
+                assert(!funcptr->isVariadic() && "Variadic callbacks are not supported");
             }
         }
 
@@ -168,7 +187,7 @@ public:
             data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
         }
 
-        if (data.is_variadic) {
+        if (!data.callbacks.empty() || data.is_variadic) {
             // This function is thunked through an "_internal" symbol since its signature
             // is different from the one in the native host/guest libraries.
             data.function_name = data.function_name + "_internal";
@@ -394,6 +413,82 @@ void FrontendAction::EndSourceFileAction() {
             const char* variadic_ellipsis = import.is_variadic ? ", ..." : "";
             file << "using fexldr_type_" << libname << "_" << function_name << " = auto " << "(" << format_function_params(import) << variadic_ellipsis << ") -> " << import.return_type.getAsString() << ";\n";
             file << "static fexldr_type_" << libname << "_" << function_name << " *fexldr_ptr_" << libname << "_" << function_name << ";\n";
+        }
+    }
+
+    if (!output_filenames.callback_structs.empty()) {
+        std::ofstream file(output_filenames.callback_structs);
+
+        for (auto& thunk : thunks) {
+            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
+                auto& cb = thunk.callbacks[cb_idx];
+                file << "struct " << thunk.GetOriginalFunctionName() << "CB_Args {\n";
+                file << format_struct_members(cb, "  ");
+                if (!cb.return_type->isVoidType()) {
+                    file << "  " << format_decl(cb.return_type, "rv") << ";\n";
+                }
+                file << "};\n";
+            }
+        }
+    }
+
+    if (!output_filenames.callback_typedefs.empty()) {
+        std::ofstream file(output_filenames.callback_typedefs);
+
+        for (auto& thunk : thunks) {
+            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
+                auto& cb = thunk.callbacks[cb_idx];
+                auto cb_function_name = thunk.GetOriginalFunctionName() + "CBFN" + (cb_idx == 0 ? "" : std::to_string(cb_idx));
+                file << "typedef " << cb.return_type.getAsString() << " "
+                     << cb_function_name << "("
+                     << format_function_params(cb) << ");\n";
+            }
+        }
+    }
+
+    if (!output_filenames.callback_unpacks.empty()) {
+        std::ofstream file(output_filenames.callback_unpacks);
+
+        for (auto& thunk : thunks) {
+            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
+                auto& cb = thunk.callbacks[cb_idx];
+                bool is_void = cb.return_type->isVoidType();
+                auto cb_function_name = thunk.function_name + "CB" + (cb_idx == 0 ? "" : std::to_string(cb_idx));
+                file << "static void fexfn_unpack_" << libname << "_" << cb_function_name << "(uintptr_t cb, void* argsv) {\n";
+                file << "  typedef " << cb.return_type.getAsString() << " fn_t (" << format_function_params(cb) << ");\n";
+                file << "  auto callback = reinterpret_cast<fn_t*>(cb);\n";
+                file << "  struct arg_t {\n";
+                file << format_struct_members(cb, "    ");
+                if (!is_void) {
+                    file << "    " << format_decl(cb.return_type, "rv") << ";\n";
+                }
+                file << "  };\n";
+                file << "  auto args = (arg_t*)argsv;\n";
+                file << (is_void ? "  " : "  args->rv = ") << "callback(" << format_function_args(cb) << ");\n";
+                file << "}\n";
+            }
+        }
+    }
+
+    if (!output_filenames.callback_unpacks_header.empty()) {
+        std::ofstream file(output_filenames.callback_unpacks_header);
+
+        for (auto& thunk : thunks) {
+            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
+                auto cb_function_name = thunk.GetOriginalFunctionName() + "CB" + (cb_idx == 0 ? "" : std::to_string(cb_idx));
+                file << "uintptr_t " << libname << "_" << cb_function_name << ";\n";
+            }
+        }
+    }
+
+    if (!output_filenames.callback_unpacks_header_init.empty()) {
+        std::ofstream file(output_filenames.callback_unpacks_header_init);
+
+        for (auto& thunk : thunks) {
+            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
+                auto cb_function_name = thunk.function_name + "CB" + (cb_idx == 0 ? "" : std::to_string(cb_idx));
+                file << "(uintptr_t)&fexfn_unpack_" << libname << "_" << cb_function_name << ",\n";
+            }
         }
     }
 }

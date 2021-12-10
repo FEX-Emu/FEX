@@ -22,7 +22,12 @@ struct Fixture {
             tmpdir + "/ldr_ptrs",
             tmpdir + "/thunks",
             tmpdir + "/function_packs",
-            tmpdir + "/function_packs_public"
+            tmpdir + "/function_packs_public",
+            tmpdir + "/callback_unpacks_header_init",
+            tmpdir + "/callback_structs",
+            tmpdir + "/callback_typedefs",
+            tmpdir + "/callback_unpacks_header",
+            tmpdir + "/callback_unpacks",
         };
     }
 
@@ -302,12 +307,20 @@ TEST_CASE_METHOD(Fixture, "Trivial") {
             )));
 }
 
-// Function pointer parameters trigger an error
+// Parameter is a function pointer
 TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
-    REQUIRE_THROWS(run_thunkgen_guest(
+    const auto output = run_thunkgen_guest(
         "void func(int (*funcptr)(char, char));\n"
         "template<auto> struct fex_gen_config {};\n"
-        "template<> struct fex_gen_config<func> { };\n", true));
+        "template<> struct fex_gen_config<func> {};\n");
+
+    CHECK_THAT(output,
+        matches(functionDecl(
+            hasName("fexfn_pack_func_internal"),
+            returns(asString("void")),
+            parameterCountIs(1),
+            hasParameter(0, hasType(asString("int (*)(char, char)")))
+        )));
 }
 
 TEST_CASE_METHOD(Fixture, "MultipleParameters") {

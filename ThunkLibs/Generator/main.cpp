@@ -66,6 +66,16 @@ int main(int argc, char* argv[]) {
             output_filenames.function_packs = out_filename;
         } else if (target == "-function_packs_public") {
             output_filenames.function_packs_public = out_filename;
+        } else if (target == "-callback_structs") {
+            output_filenames.callback_structs = out_filename;
+        } else if (target == "-callback_typedefs") {
+            output_filenames.callback_typedefs = out_filename;
+        } else if (target == "-callback_unpacks") {
+            output_filenames.callback_unpacks = out_filename;
+        } else if (target == "-callback_unpacks_header") {
+            output_filenames.callback_unpacks_header = out_filename;
+        } else if (target == "-callback_unpacks_header_init") {
+            output_filenames.callback_unpacks_header_init = out_filename;
         } else {
             std::cerr << "Unrecognized generator target \"" << target << "\"\n";
             return EXIT_FAILURE;
