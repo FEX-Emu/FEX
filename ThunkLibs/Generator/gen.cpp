@@ -141,6 +141,35 @@ void FrontendAction::EndSourceFileAction() {
         }
     };
 
+    auto format_struct_members = [](const FunctionParams& params, const char* indent) {
+        std::string ret;
+        for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
+            ret += indent + format_decl(params.param_types[idx].getUnqualifiedType(), "a_" + std::to_string(idx)) + ";\n";
+        }
+        return ret;
+    };
+
+    auto format_function_args = [](const FunctionParams& params) {
+        std::string ret;
+        for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
+            ret += "args->a_" + std::to_string(idx) + ", ";
+        }
+        // drop trailing ", "
+        ret.resize(ret.size() > 2 ? ret.size() - 2 : 0);
+        return ret;
+    };
+
+    auto format_function_params = [](const FunctionParams& params) {
+        std::string ret;
+        for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
+            auto& type = params.param_types[idx];
+            ret += format_decl(type, "a_" + std::to_string(idx)) + ", ";
+        }
+        // drop trailing ", "
+        ret.resize(ret.size() > 2 ? ret.size() - 2 : 0);
+        return ret;
+    };
+
     auto get_sha256 = [this](const std::string& function_name) {
         std::string sha256_message = libname + ":" + function_name;
         std::vector<unsigned char> sha256(SHA256_DIGEST_LENGTH);
@@ -222,6 +251,71 @@ void FrontendAction::EndSourceFileAction() {
             file << "}\n";
         }
         file << "}\n";
+    }
+
+    if (!output_filenames.function_unpacks.empty()) {
+        std::ofstream file(output_filenames.function_unpacks);
+
+        file << "extern \"C\" {\n";
+        for (auto& thunk : thunks) {
+            const auto& function_name = thunk.function_name;
+            bool is_void = thunk.return_type->isVoidType();
+
+            file << "struct fexfn_packed_args_" << libname << "_" << function_name << " {\n";
+            file << format_struct_members(thunk, "  ");
+            if (!is_void) {
+                file << "  " << format_decl(thunk.return_type, "rv") << ";\n";
+            } else if (thunk.param_types.size() == 0) {
+                // Avoid "empty struct has size 0 in C, size 1 in C++" warning
+                file << "    char force_nonempty;\n";
+            }
+            file << "};\n";
+
+            file << "static void fexfn_unpack_" << libname << "_" << function_name << "(fexfn_packed_args_" << libname << "_" << function_name << "* args) {\n";
+            file << (is_void ? "  " : "  args->rv = ") << "fexldr_ptr_" << libname << "_" << function_name << "(" << format_function_args(thunk) << ");\n";
+            file << "}\n";
+        }
+
+        file << "}\n";
+    }
+
+    if (!output_filenames.tab_function_unpacks.empty()) {
+        std::ofstream file(output_filenames.tab_function_unpacks);
+
+        for (auto& thunk : thunks) {
+            const auto& function_name = thunk.function_name;
+            auto sha256 = get_sha256(function_name);
+
+            file << "{(uint8_t*)\"";
+            for (auto c : sha256) {
+                file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
+            }
+            file << "\", &fexfn_type_erased_unpack<fexfn_unpack_" << libname << "_" << function_name << ">}, // " << libname << ":" << function_name << "\n";
+        }
+    }
+
+    if (!output_filenames.ldr.empty()) {
+        std::ofstream file(output_filenames.ldr);
+
+        file << "static void* fexldr_ptr_" << libname << "_so;\n";
+        file << "extern \"C\" bool fexldr_init_" << libname << "() {\n";
+        file << "  fexldr_ptr_" << libname << "_so = dlopen(\"" << libname << ".so\", RTLD_LOCAL | RTLD_LAZY);\n";
+        file << "  if (!fexldr_ptr_" << libname << "_so) { return false; }\n\n";
+        for (auto& import : thunked_api) {
+            file << "  (void*&)fexldr_ptr_" << libname << "_" << import.function_name << " = dlsym(fexldr_ptr_" << libname << "_so, \"" << import.function_name << "\");\n";
+        }
+        file << "  return true;\n";
+        file << "}\n";
+    }
+
+    if (!output_filenames.ldr_ptrs.empty()) {
+        std::ofstream file(output_filenames.ldr_ptrs);
+
+        for (auto& import : thunked_api) {
+            const auto& function_name = import.function_name;
+            file << "using fexldr_type_" << libname << "_" << function_name << " = auto " << "(" << format_function_params(import) << ") -> " << import.return_type.getAsString() << ";\n";
+            file << "static fexldr_type_" << libname << "_" << function_name << " *fexldr_ptr_" << libname << "_" << function_name << ";\n";
+        }
     }
 }
 

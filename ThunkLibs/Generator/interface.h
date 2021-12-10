@@ -4,6 +4,12 @@
 #include <string>
 
 struct OutputFilenames {
+    // Host
+    std::string function_unpacks;
+    std::string tab_function_unpacks;
+    std::string ldr;
+    std::string ldr_ptrs;
+
     // Guest
     std::string thunks;
     std::string function_packs;

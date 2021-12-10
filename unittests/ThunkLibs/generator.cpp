@@ -16,6 +16,10 @@ struct Fixture {
         tmpdir = std::tmpnam(nullptr);
         std::filesystem::create_directory(tmpdir);
         output_filenames = {
+            tmpdir + "/function_unpacks",
+            tmpdir + "/tab_function_unpacks",
+            tmpdir + "/ldr",
+            tmpdir + "/ldr_ptrs",
             tmpdir + "/thunks",
             tmpdir + "/function_packs",
             tmpdir + "/function_packs_public"
@@ -26,7 +30,14 @@ struct Fixture {
         std::filesystem::remove_all(tmpdir);
     }
 
+    struct GenOutput {
+        std::string guest;
+        std::string host;
+    };
+
     std::string run_thunkgen_guest(std::string_view code, bool silent = false);
+    std::string run_thunkgen_host(std::string_view code, bool silent = false);
+    GenOutput run_thunkgen(std::string_view code, bool silent = false);
 
     const std::string libname = "libtest";
     std::string tmpdir;
@@ -210,21 +221,85 @@ std::string Fixture::run_thunkgen_guest(std::string_view code, bool silent) {
     return result;
 }
 
+/**
+ * Generates host thunk library code from the given input
+ */
+std::string Fixture::run_thunkgen_host(std::string_view code, bool silent) {
+    run_tool(std::make_unique<FrontendAction>(libname, output_filenames), code, silent);
+
+    std::string result =
+        "#include <cstdint>\n"
+        "#include <dlfcn.h>\n"
+        "template<typename Fn>\n"
+        "struct function_traits;\n"
+        "template<typename Result, typename Arg>\n"
+        "struct function_traits<Result(*)(Arg)> {\n"
+        "    using result_t = Result;\n"
+        "    using arg_t = Arg;\n"
+        "};\n"
+        "template<auto Fn>\n"
+        "static typename function_traits<decltype(Fn)>::result_t\n"
+        "fexfn_type_erased_unpack(void* argsv) {\n"
+        "    using args_t = typename function_traits<decltype(Fn)>::arg_t;\n"
+        "    return Fn(reinterpret_cast<args_t>(argsv));\n"
+        "}\n";
+    for (auto& filename : {
+            output_filenames.ldr_ptrs,
+            output_filenames.function_unpacks,
+            output_filenames.tab_function_unpacks,
+            output_filenames.ldr,
+            }) {
+        bool tab_function_unpacks = (filename == output_filenames.tab_function_unpacks);
+        if (tab_function_unpacks) {
+            result += "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n";
+            result += "static ExportEntry exports[] = {\n";
+        }
+
+        std::ifstream file(filename);
+        const auto current_size = result.size();
+        const auto new_data_size = std::filesystem::file_size(filename);
+        result.resize(result.size() + new_data_size);
+        file.read(result.data() + current_size, result.size());
+
+        if (tab_function_unpacks) {
+            result += "  { nullptr, nullptr }\n";
+            result += "};\n";
+        }
+    }
+    return result;
+}
+
+Fixture::GenOutput Fixture::run_thunkgen(std::string_view code, bool silent) {
+    return { run_thunkgen_guest(code, silent),
+             run_thunkgen_host(code, silent) };
+}
+
 TEST_CASE_METHOD(Fixture, "Trivial") {
-    const auto output = run_thunkgen_guest(
+    const auto output = run_thunkgen(
         "#include <thunks_common.h>\n"
         "void func();\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n");
 
-    CHECK_THAT(output, DefinesPublicFunction("func"));
+    // Guest code
+    CHECK_THAT(output.guest, DefinesPublicFunction("func"));
 
-    CHECK_THAT(output,
+    CHECK_THAT(output.guest,
         matches(functionDecl(
             hasName("fexfn_pack_func"),
             returns(asString("void")),
             parameterCountIs(0)
         )));
+
+    // Host code
+    CHECK_THAT(output.host,
+        matches(varDecl(
+            hasName("exports"),
+            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasInitializer(initListExpr(hasInit(0, expr()),
+                                        hasInit(1, initListExpr(hasInit(0, implicitCastExpr()), hasInit(1, implicitCastExpr())))))
+            // TODO: check null termination
+            )));
 }
 
 // Function pointer parameters trigger an error
@@ -238,17 +313,19 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
 TEST_CASE_METHOD(Fixture, "MultipleParameters") {
     const std::string prelude = "struct TestStruct { int member; };\n";
 
-    auto output = run_thunkgen_guest(
+    auto output = run_thunkgen(
         prelude +
         "void func(int arg, char, unsigned long, TestStruct);\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n");
 
-    output = prelude + output;
+    output.guest = prelude + output.guest;
+    output.host = prelude + output.host;
 
-    CHECK_THAT(output, DefinesPublicFunction("func"));
+    // Guest code
+    CHECK_THAT(output.guest, DefinesPublicFunction("func"));
 
-    CHECK_THAT(output,
+    CHECK_THAT(output.guest,
         matches(functionDecl(
             hasName("fexfn_pack_func"),
             returns(asString("void")),
@@ -258,6 +335,30 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
             hasParameter(2, hasType(asString("unsigned long"))),
             hasParameter(3, hasType(asString("struct TestStruct")))
         )));
+
+    // Host code
+    CHECK_THAT(output.host,
+        matches(varDecl(
+            hasName("exports"),
+            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasInitializer(initListExpr(hasInit(0, expr()),
+                                        hasInit(1, initListExpr(hasInit(0, implicitCastExpr()), hasInit(1, implicitCastExpr())))))
+            // TODO: check null termination
+            )));
+
+    CHECK_THAT(output.host,
+        matches(functionDecl(
+            hasName("fexfn_unpack_libtest_func"),
+            // Packed argument struct should contain all parameters
+            parameterCountIs(1),
+            hasParameter(0, hasType(pointerType(pointee(
+                recordType(hasDeclaration(decl(
+                    has(fieldDecl(hasType(asString("int")))),
+                    has(fieldDecl(hasType(asString("char")))),
+                    has(fieldDecl(hasType(asString("unsigned long")))),
+                    has(fieldDecl(hasType(asString("struct TestStruct"))))
+                    )))))))
+            )));
 }
 
 // Returning a function pointer should trigger an error

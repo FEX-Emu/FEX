@@ -7,6 +7,21 @@ $end_info$
 #pragma once
 #include <stdint.h>
 
+template<typename Fn>
+struct function_traits;
+template<typename Result, typename Arg>
+struct function_traits<Result(*)(Arg)> {
+    using result_t = Result;
+    using arg_t = Arg;
+};
+
+template<auto Fn>
+static typename function_traits<decltype(Fn)>::result_t
+fexfn_type_erased_unpack(void* argsv) {
+    using args_t = typename function_traits<decltype(Fn)>::arg_t;
+    return Fn(reinterpret_cast<args_t>(argsv));
+}
+
 struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };
 
 typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);

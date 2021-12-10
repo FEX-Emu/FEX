@@ -52,7 +52,15 @@ int main(int argc, char* argv[]) {
     while (arg < last_internal_arg) {
         auto target = std::string { *arg++ };
         auto out_filename = *arg++;
-        if (target == "-thunks") {
+        if (target == "-function_unpacks") {
+            output_filenames.function_unpacks = out_filename;
+        } else if (target == "-tab_function_unpacks") {
+            output_filenames.tab_function_unpacks = out_filename;
+        } else if (target == "-ldr") {
+            output_filenames.ldr = out_filename;
+        } else if (target == "-ldr_ptrs") {
+            output_filenames.ldr_ptrs = out_filename;
+        } else if (target == "-thunks") {
             output_filenames.thunks = out_filename;
         } else if (target == "-function_packs") {
             output_filenames.function_packs = out_filename;
