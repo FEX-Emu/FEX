@@ -50,6 +50,38 @@ function(generate NAME)
   endif()
 endfunction()
 
+# Syntax: generate(libxyz libxyz-interface.cpp generator-targets...)
+# This defines a targets and a custom command:
+# - custom command: Main build step that runs the thunk generator on the given interface definition
+# - libxyz-interface: Target for IDE integration (making sure libxyz-interface.cpp shows up as a source file in the project tree)
+function(generate_new NAME)
+  list(POP_FRONT ARGN SOURCE_FILE)
+
+  # Target for IDE integration
+  add_library(${NAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
+
+  # Run thunk generator for each of the given output files
+  foreach(WHAT IN LISTS ARGN)
+    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}")
+    set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
+
+    add_custom_command(OUTPUT ${OUTFOLDER}
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTFOLDER}")
+
+    add_custom_command(
+      OUTPUT "${OUTFILE}"
+      DEPENDS "${GENERATOR_EXE}"
+      DEPENDS "${OUTFOLDER}"
+      DEPENDS "${SOURCE_FILE}"
+      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17 -I"${CMAKE_CURRENT_SOURCE_DIR}/../include"
+      COMMAND_EXPAND_LISTS
+      )
+
+    list(APPEND OUTPUTS "${OUTFILE}")
+  endforeach()
+  set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
+endfunction()
+
 add_custom_target(ThunkGuestsInstall)
 
 function(add_guest_lib_with_name NAME LIBNAME)
@@ -112,7 +144,7 @@ add_guest_lib(Xext)
 generate(libXrender thunks function_packs function_packs_public)
 add_guest_lib(Xrender)
 
-generate(libXfixes thunks function_packs function_packs_public)
+generate_new(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(Xfixes)
 
 set (VULKAN_LIBS
