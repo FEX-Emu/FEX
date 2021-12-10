@@ -21,6 +21,8 @@ struct OutputFilenames {
     std::string callback_typedefs;
     std::string callback_unpacks_header;
     std::string callback_unpacks;
+
+    std::string symbol_list;
 };
 
 class FrontendAction : public clang::ASTFrontendAction {

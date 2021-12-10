@@ -76,6 +76,8 @@ int main(int argc, char* argv[]) {
             output_filenames.callback_unpacks_header = out_filename;
         } else if (target == "-callback_unpacks_header_init") {
             output_filenames.callback_unpacks_header_init = out_filename;
+        } else if (target == "-symbol_list") {
+            output_filenames.symbol_list = out_filename;
         } else {
             std::cerr << "Unrecognized generator target \"" << target << "\"\n";
             return EXIT_FAILURE;
