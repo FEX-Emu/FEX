@@ -442,6 +442,8 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_THUNKS)
+  add_subdirectory(ThunkLibs/Generator)
+
   include(ExternalProject)
 
   ExternalProject_Add(host-libs
@@ -452,8 +454,10 @@ if (BUILD_THUNKS)
       "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DVULKAN_XML=${CMAKE_SOURCE_DIR}/External/Vulkan-Docs/xml/vk.xml"
+      "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
+    DEPENDS thunkgen
   )
 
   install(
@@ -476,8 +480,10 @@ if (BUILD_THUNKS)
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
       "-DVULKAN_XML=${CMAKE_SOURCE_DIR}/External/Vulkan-Docs/xml/vk.xml"
+      "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
+    DEPENDS thunkgen
   )
 
   install(
