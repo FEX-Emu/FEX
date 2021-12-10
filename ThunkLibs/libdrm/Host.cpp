@@ -13,19 +13,16 @@ $end_info$
 #include <malloc.h>
 
 #include "ldr_ptrs.inl"
+
+static size_t fexfn_impl_libdrm_FEX_usable_size(void *a_0){
+  return malloc_usable_size(a_0);
+}
+
+static void fexfn_impl_libdrm_FEX_free_on_host(void *a_0){
+  free(a_0);
+}
+
 #include "function_unpacks.inl"
-
-void fexfn_unpack_libdrm_FEX_usable_size(void *argsv){
-  struct arg_t {void* a_0;size_t rv;};
-  auto args = (arg_t*)argsv;
-  args->rv = malloc_usable_size(args->a_0);
-}
-
-void fexfn_unpack_libdrm_FEX_free_on_host(void *argsv){
-  struct arg_t {void* a_0;};
-  auto args = (arg_t*)argsv;
-  free(args->a_0);
-}
 
 static ExportEntry exports[] = {
     #include "tab_function_unpacks.inl"

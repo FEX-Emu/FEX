@@ -1,28 +1,30 @@
-/*
-$info$
-tags: thunklibs|vulkan
-$end_info$
-*/
-
-#include "Header.inl"
-
-#include <mutex>
-#include <stdio.h>
-#include <string>
-#include <unordered_map>
-#include <vector>
+#define VK_USE_PLATFORM_XLIB_XRANDR_EXT
+#define VK_USE_PLATFORM_XLIB_KHR
+#define VK_USE_PLATFORM_XCB_KHR
+#define VK_USE_PLATFORM_WAYLAND_KHR
+#include <vulkan/vulkan.h>
 
 #include "common/Host.h"
+
+#include <mutex>
+#include <unordered_map>
+
 #include <dlfcn.h>
 
 #include "ldr_ptrs.inl"
-#include "function_unpacks.inl"
+
+#include "symbol_list.inl"
 
 static bool SetupDev{};
 static bool SetupInstance{};
 std::mutex SetupMutex{};
 
 static std::unordered_map<std::string_view,PFN_vkVoidFunction*> PtrsToLookUp{};
+
+
+#define CONCAT(a, b, c) a##_##b##_##c
+#define EVAL(a, b) CONCAT(fexldr_ptr, a, b)
+#define LDR_PTR(fn) EVAL(LIBLIB_NAME, fn)
 
 static void DoSetupWithDevice(VkDevice dev) {
     std::unique_lock lk {SetupMutex};
@@ -37,8 +39,8 @@ static void DoSetupWithDevice(VkDevice dev) {
         }
     };
 
-#define PAIR(name, ptr_unused) add_ptr(#name);
-#include "ldr_ptrs_pair.inl"
+#define PAIR(name, unused) add_ptr(#name);
+FOREACH_SYMBOL(PAIR)
 #undef PAIR
 
     SetupDev = true;
@@ -55,8 +57,8 @@ static void DoSetupWithInstance(VkInstance instance) {
         }
     };
 
-#define PAIR(name, ptr) add_ptr(#name);
-#include "ldr_ptrs_pair.inl"
+#define PAIR(name, unused) add_ptr(#name);
+FOREACH_SYMBOL(PAIR);
 #undef PAIR
 
     // Only do this lookup once.
@@ -66,104 +68,74 @@ static void DoSetupWithInstance(VkInstance instance) {
     }
 }
 
-static void UNPACKFUNC(vkGetDeviceProcAddr)(void *argsv){
-  struct arg_t {VkDevice a_0;const char* a_1;PFN_vkVoidFunction rv;};
-  auto args = (arg_t*)argsv;
+#define FEXFN_IMPL3(a, b, c) a##_##b##_##c
+#define FEXFN_IMPL2(a, b) FEXFN_IMPL3(fexfn_impl, a, b)
+#define FEXFN_IMPL(fn) FEXFN_IMPL2(LIBLIB_NAME, fn)
 
+static PFN_vkVoidFunction FEXFN_IMPL(vkGetDeviceProcAddr)(VkDevice a_0, const char* a_1) {
   if (!SetupDev) {
-    DoSetupWithDevice(args->a_0);
+    DoSetupWithDevice(a_0);
   }
 
   // Just return the host facing function pointer
   // The guest will handle mapping if this exists
-  args->rv =
-    LDR_PTR(vkGetDeviceProcAddr)
-    (args->a_0,args->a_1);
+  auto ret = LDR_PTR(vkGetDeviceProcAddr)(a_0, a_1);
+  return ret;
 }
 
-static void UNPACKFUNC(vkGetInstanceProcAddr)(void *argsv){
-  struct arg_t {VkInstance a_0;const char* a_1;PFN_vkVoidFunction rv;};
-  auto args = (arg_t*)argsv;
-
+static PFN_vkVoidFunction FEXFN_IMPL(vkGetInstanceProcAddr)(VkInstance a_0, const char* a_1) {
   if (!SetupInstance) {
-    DoSetupWithInstance(args->a_0);
+    DoSetupWithInstance(a_0);
   }
 
   // Just return the host facing function pointer
   // The guest will handle mapping if it exists
-  args->rv =
-    LDR_PTR(vkGetInstanceProcAddr)
-    (args->a_0,args->a_1);
+  auto ret = LDR_PTR(vkGetInstanceProcAddr)(a_0, a_1);
+  return ret;
 }
 
-static void UNPACKFUNC(vkCreateShaderModule)(void *argsv){
-  struct arg_t {VkDevice a_0;const VkShaderModuleCreateInfo* a_1;const VkAllocationCallbacks* a_2;VkShaderModule* a_3;VkResult rv;};
-  auto args = (arg_t*)argsv;
-  args->rv =
-    LDR_PTR(vkCreateShaderModule)
-    (args->a_0,args->a_1, nullptr,args->a_3);
-
+static VkResult FEXFN_IMPL(vkCreateShaderModule)(VkDevice a_0, const VkShaderModuleCreateInfo* a_1, const VkAllocationCallbacks* a_2, VkShaderModule* a_3) {
+    return LDR_PTR(vkCreateShaderModule)(a_0, a_1, nullptr, a_3);
 }
 
-static void UNPACKFUNC(vkCmdSetBlendConstants)(void *argsv){
-  struct arg_t {VkCommandBuffer a_0;const float a_1[4];};
-  auto args = (arg_t*)argsv;
-  LDR_PTR(vkCmdSetBlendConstants)
-    (args->a_0,args->a_1);
+static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, const VkAllocationCallbacks* a_1, VkInstance* a_2) {
+  return LDR_PTR(vkCreateInstance)(a_0, nullptr, a_2);
 }
 
-static void UNPACKFUNC(vkCreateInstance)(void *argsv){
-  struct arg_t {const VkInstanceCreateInfo* a_0;const VkAllocationCallbacks* a_1;VkInstance* a_2;VkResult rv;};
-  auto args = (arg_t*)argsv;
-  args->rv =
-    LDR_PTR(vkCreateInstance)
-    (args->a_0, nullptr,args->a_2);
+static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceCreateInfo* a_1, const VkAllocationCallbacks* a_2, VkDevice* a_3){
+  return LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, a_3);
 }
 
-static void UNPACKFUNC(vkCreateDevice)(void *argsv){
-  struct arg_t {VkPhysicalDevice a_0;const VkDeviceCreateInfo* a_1;const VkAllocationCallbacks* a_2;VkDevice* a_3;VkResult rv;};
-  auto args = (arg_t*)argsv;
-  args->rv =
-    LDR_PTR(vkCreateDevice)
-    (args->a_0,args->a_1, nullptr,args->a_3);
+static VkResult FEXFN_IMPL(vkAllocateMemory)(VkDevice a_0, const VkMemoryAllocateInfo* a_1, const VkAllocationCallbacks* a_2, VkDeviceMemory* a_3){
+  return LDR_PTR(vkAllocateMemory)(a_0, a_1, nullptr, a_3);
 }
 
-static void UNPACKFUNC(vkAllocateMemory)(void *argsv){
-  struct arg_t {VkDevice a_0;const VkMemoryAllocateInfo* a_1;const VkAllocationCallbacks* a_2;VkDeviceMemory* a_3;VkResult rv;};
-  auto args = (arg_t*)argsv;
-  args->rv =
-    LDR_PTR(vkAllocateMemory)
-    (args->a_0,args->a_1,nullptr,args->a_3);
-}
-static void UNPACKFUNC(vkFreeMemory)(void *argsv){
-  struct arg_t {VkDevice a_0;VkDeviceMemory a_1;const VkAllocationCallbacks* a_2;};
-  auto args = (arg_t*)argsv;
-  LDR_PTR(vkFreeMemory)
-    (args->a_0,args->a_1,nullptr);
+static void FEXFN_IMPL(vkFreeMemory)(VkDevice a_0, VkDeviceMemory a_1, const VkAllocationCallbacks* a_2) {
+  LDR_PTR(vkFreeMemory)(a_0, a_1, nullptr);
 }
 
-static void UNPACKFUNC(vkGetPhysicalDeviceSurfaceSupportKHR)(void *argsv){
-  struct arg_t {VkPhysicalDevice a_0;uint32_t a_1;VkSurfaceKHR a_2;VkBool32* a_3;VkResult rv;};
-  auto args = (arg_t*)argsv;
-  args->rv = LDR_PTR(vkGetPhysicalDeviceSurfaceSupportKHR)
-    (args->a_0,args->a_1,args->a_2,args->a_3);
-}
+
+#include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
     #include "tab_function_unpacks.inl"
     { nullptr, nullptr }
 };
 
-#include "ldr.inl"
-
 static void DoSetup() {
     // Initialize unordered_map from generated initializer-list
+#define PAIR(name, unused) { #name, (PFN_vkVoidFunction*)&LDR_PTR(name) },
     PtrsToLookUp = {
-#define PAIR(name, ptr) { #name, (PFN_vkVoidFunction*)ptr },
-#include "ldr_ptrs_pair.inl"
-#undef PAIR
+        FOREACH_SYMBOL(PAIR)
     };
+#undef PAIR
 }
+
+#include "ldr.inl"
+
+#define LDR_HANDLE3(a) fexldr_ptr##_##a##_##so
+#define LDR_HANDLE2(a) LDR_HANDLE3(a)
+#define LDR_HANDLE LDR_HANDLE2(LIBLIB_NAME)
 
 static void init_func() {
   // Initialize some initial pointers that we can get while loading

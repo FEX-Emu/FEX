@@ -32,7 +32,7 @@ extern "C" {
     return args.rv;
   }
 
-  static void fexfn_pack_drmMsg(const char *format,...){
+  void drmMsg(const char *format,...){
     va_list ap;
     if (1) {
       va_start(ap, format);
@@ -41,90 +41,75 @@ extern "C" {
     }
   }
 
-  static char * fexfn_pack_drmGetDeviceNameFromFd(int a_0){
-    struct {int a_0;char * rv;} args;
-    args.a_0 = a_0;
-    fexthunks_libdrm_drmGetDeviceNameFromFd(&args);
+  char * drmGetDeviceNameFromFd(int a_0){
+    auto ret = fexfn_pack_drmGetDeviceNameFromFd(a_0);
 
-    if (args.rv) {
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv  = (char*)NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret  = (char*)NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static char * fexfn_pack_drmGetDeviceNameFromFd2(int a_0){
-    struct {int a_0;char * rv;} args;
-    args.a_0 = a_0;
-    fexthunks_libdrm_drmGetDeviceNameFromFd2(&args);
-    if (args.rv) {
+  char * drmGetDeviceNameFromFd2(int a_0){
+    auto ret = fexfn_pack_drmGetDeviceNameFromFd2(a_0);
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv  = (char*)NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret  = (char*)NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static char * fexfn_pack_drmGetPrimaryDeviceNameFromFd(int a_0){
-    struct {int a_0;char * rv;} args;
-    args.a_0 = a_0;
-    fexthunks_libdrm_drmGetPrimaryDeviceNameFromFd(&args);
-    if (args.rv) {
+  char * drmGetPrimaryDeviceNameFromFd(int a_0){
+    auto ret = fexfn_pack_drmGetPrimaryDeviceNameFromFd(a_0);
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv  = (char*)NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret  = (char*)NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
 
-  static char * fexfn_pack_drmGetRenderDeviceNameFromFd(int a_0){
-    struct {int a_0;char * rv;} args;
-    args.a_0 = a_0;
-    fexthunks_libdrm_drmGetRenderDeviceNameFromFd(&args);
+  char * drmGetRenderDeviceNameFromFd(int a_0){
+    auto ret = fexfn_pack_drmGetRenderDeviceNameFromFd(a_0);
 
-    if (args.rv) {
+    if (ret) {
       // Usable size
-      size_t Usable = FEX_malloc_usable_size(args.rv);
+      size_t Usable = FEX_malloc_usable_size(ret);
 
       // This will be a bit wasteful but this is an unsized pointer
       void *NewPtr = malloc(Usable);
-      memcpy(NewPtr, args.rv, Usable);
+      memcpy(NewPtr, ret, Usable);
 
-      FEX_malloc_free_on_host(args.rv);
-      args.rv  = (char*)NewPtr;
+      FEX_malloc_free_on_host(ret);
+      ret  = (char*)NewPtr;
     }
 
-    return args.rv;
+    return ret;
   }
-
-  void drmMsg(const char *format,...) __attribute__((alias("fexfn_pack_drmMsg")));
-  char * drmGetDeviceNameFromFd(int a_0) __attribute__((alias("fexfn_pack_drmGetDeviceNameFromFd")));
-  char * drmGetDeviceNameFromFd2(int a_0) __attribute__((alias("fexfn_pack_drmGetDeviceNameFromFd2")));
-  char * drmGetPrimaryDeviceNameFromFd(int a_0) __attribute__((alias("fexfn_pack_drmGetPrimaryDeviceNameFromFd")));
-  char * drmGetRenderDeviceNameFromFd(int a_0) __attribute__((alias("fexfn_pack_drmGetRenderDeviceNameFromFd")));
-
 }
 
 LOAD_LIB(libdrm)

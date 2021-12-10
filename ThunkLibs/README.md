@@ -23,7 +23,7 @@ We currently don't have any unit tests for the guest libraries, only for OP_THUN
 There are several parts that make this possible. This is a rough outline.
 
 In FEX
-- Opcode 0xF 0x3D (IR:OP_THUNK) is used for the Guest -> Host transition. Register RSI (arg0 in guest) is passed as arg0 in host. Thunks are identified by a string in the form `library:function` that directly follows the Guest opcode.
+- Opcode 0xF 0x3F (IR::OP_THUNK) is used for the Guest -> Host transition. Register RSI (arg0 in guest) is passed as arg0 in host. Thunks are identified by a string in the form `library:function` that directly follows the Guest opcode.
 - `Context::HandleCallback` does the Host -> Guest transition, and returns when the Guest function returns.
 - A special thunk, `fex:loadlib` is used to load and initialize a matching host lib. For more details, look in `ThunkHandler_impl::LoadLib`
 - `ThunkHandler_impl::CallCallback` is provided to the host libs, so they can call callbacks. It prepares guest arguments and uses `Context::HandleCallback` 
@@ -34,10 +34,11 @@ ThunkLibs, Library loading
 - In Host code, the real host library is loaded using dlopen and dlsym (see ldr generation)
 
 ThunkLibs, Guest -> Host
-- In Guest code (guest packer), a packer takes care of packing tha arguments & return value into a struct in Guest stack. The packer is usually exported as a symbol from the Guest library.
-- in Guest code (guest thunk), a thunk does the Guest -> Host transition, and passes the struct ptr as an argument
+- In Guest code (guest packer), a packer takes care of packing the arguments & return value into a struct in Guest stack. The packer is usually exported as a symbol from the Guest library.
+- In Guest code (guest thunk), a thunk does the Guest -> Host transition via OP_THUNK, and passes the struct pointer as an argument
+- FEX handles OP_THUNK and looks up the Host function from the opcode argument
 - In Host code (host unpacker), an unpacker takes the arguments from the struct, and calls a function pointer with the implementation of that function. It also stores the return value, if any, to the struct.
-- In Host code (host unpacker), the the unpacker returns, and we do an implicit Host -> Guest transition
+- In Host code (host unpacker), the unpacker returns, and we do an implicit Host -> Guest transition
 - In Guest code (guest packer), the return value is loaded from the struct and returned, if needed
 
 ThunkLibs, Host -> Guest. This is only possible while handling a Guest -> Host call (ie, callbacks). 
@@ -47,24 +48,28 @@ ThunkLibs, Host -> Guest. This is only possible while handling a Guest -> Host c
 - In Guest code (guest unpacker), the unpacker returns and we do an implicit Guest -> Host transition
 - In host code (host packer), the return value is loaded from the struct and returned, if needed
 
-A python generator script, `Generators/ThunkHelpers.py` can be used to auto-generate various parts of the code. It takes in a
-C-like function descriptor, and can generate guest->host thunks, argument packers, argument unpackers, a host library loader
-and some other helpers.
+Boilerplate code is automated using a dedicated code generator tool, which parses a C++ source file (`libX_interface.cpp`) that specializes
+a templated `fex_gen_config` struct for each thunked function. The generator will pull all required function signatures from the original
+library's header files and emit the appropriate boilerplate (guest->host thunks, argument packers/unpackers, host library loader, ...).
 
-Components that can be generated with the python script
-- `thunks`: Guest -> Host transition functions that use 0xF 0x3D
-- `function_packs`: Guest argument packers / rv handling, private to the SO. These are used to solve symbol resolution issues with glxGetProc*, etc.
-- `function_packs_public`: Guest argument packers / rv handling, exported from the SO. These are identical to the function_packs, but exported from the SO
-- `function_unpacks`: Host argument unpackers / rv handling
-- `ldr`: Host loader that dlopens/dlsyms the "real" host library for the implementation functions.
-- `ldr_ptrs`: Host loader pointer declarations, used by ldr and function_unpacks
-- `tab_function_unpacks`: Host function unpackers list, passed to FEX after Host library init so it can resolve the Guest Thunks to Host functions
-- `tab_function_packs`: Guest private function packers list, used for glxGetProc*
-- `callback_structs`: Guest/Host callback un/packer struct declarations
-- `callback_unpacks_header`: Guest callback unpacker handler declarations (Used both in Guest and Host). This is how the Guest passes the callback unpackers to host
-- `callback_unpacks_header_init`: Guest callback unpacker handler initializer (Used in Guest).
-- `callback_unpacks`: Guest callback unpackers
-- `callback_typedefs`: Guest callback unpacker typedefs
+In most cases, an empty `fex_gen_config` specialization is sufficient, but if needed the generator behavior can be customized on a
+function-by-function basis using an annotation-syntax: Binary properties are toggled by inheriting from a fixed set of tag types
+(e.g. `fexgen::custom_host_impl`), whereas complicated properties are customized by defining struct members/aliases with a magic name
+detected by the generator (e.g. `using uniform_va_type = char`).
+
+For each thunked library, the generator outputs the following files:
+- `thunks.inl`: Guest -> Host transition functions that use 0xF 0x3F
+- `function_packs.inl`: Guest argument packers / rv handling, private to the SO. These are used to solve symbol resolution issues with glxGetProc*, etc.
+- `function_packs_public.inl`: Guest argument packers / rv handling, exported from the SO. These are identical to the function_packs, but exported from the SO
+- `function_unpacks.inl`: Host argument unpackers / rv handling
+- `ldr.inl`: Host loader that dlopens/dlsyms the "real" host library for the implementation functions.
+- `ldr_ptrs.inl`: Host loader pointer declarations, used by ldr and function_unpacks
+- `tab_function_unpacks.inl`: Host function unpackers list, passed to FEX after Host library init so it can resolve the Guest Thunks to Host functions
+- `callback_structs.inl`: Guest/Host callback un/packer struct declarations
+- `callback_unpacks_header.inl`: Guest callback unpacker handler declarations (Used both in Guest and Host). This is how the Guest passes the callback unpackers to host
+- `callback_unpacks_header_init.inl`: Guest callback unpacker handler initializer (Used in Guest).
+- `callback_unpacks.inl`: Guest callback unpackers
+- `callback_typedefs.inl`: Guest callback unpacker typedefs
 
 
 ## Adding a new library
@@ -72,7 +77,7 @@ Components that can be generated with the python script
 There are two kinds of libs, simpler ones with no callbacks, and complex ones with callbacks. You can see how `libX11` is implemented for a callbacks example, and `libasound` for a non-callbacks example.
 
 Getting started
-- In `Generators/` make a new script named `libName.py`. See some existing lib on how to populate that one.
+- Create `libName/libName_interface.cpp` and customize the `fex_gen_config` template for each thunked function. See some existing lib for details.
 - Create `libName/libName_Guest.cpp` and `libName/libName_Host.cpp`. Copy & rename from some existing lib is the way to go.
 - Edit `GuestLibs/CMakeLists.txt` and `HostLibs/CMakeLists.txt` to add the new targets, similar to how other libs are done.
 

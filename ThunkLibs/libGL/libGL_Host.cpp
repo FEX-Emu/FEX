@@ -18,9 +18,23 @@ $end_info$
 #include <GL/gl.h>
 #include <GL/glext.h>
 
-#define dlsym(so, name) (void*)glXGetProcAddress((const GLubyte*)name)
-
 #include "common/Host.h"
+
+void fexfn_impl_libGL_glDebugMessageCallbackAMD_internal(GLDEBUGPROCAMD, const void*) {
+    fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
+}
+
+void fexfn_impl_libGL_glDebugMessageCallbackARB_internal(GLDEBUGPROCARB, const void*) {
+    fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
+}
+
+void fexfn_impl_libGL_glDebugMessageCallback_internal(GLDEBUGPROC, const void*) {
+    fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
+}
+
+void* symbolFromGlXGetProcAddr(void*, const char* name) {
+    return (void*)glXGetProcAddress((const GLubyte*)name);
+}
 
 #include "ldr_ptrs.inl"
 #include "function_unpacks.inl"

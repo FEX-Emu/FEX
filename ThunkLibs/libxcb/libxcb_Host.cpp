@@ -21,8 +21,6 @@ $end_info$
 #include <dlfcn.h>
 #include <unordered_map>
 
-using CBType = void (*)(void *closure);
-
 #include "callback_structs.inl"
 #include "WorkEventData.h"
 #include "callback_typedefs.inl"
@@ -32,11 +30,19 @@ struct {
 } *callback_unpacks;
 
 #include "ldr_ptrs.inl"
+
+static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t*, xcb_extension_t*);
+static size_t fexfn_impl_libxcb_FEX_usable_size(void*);
+static void fexfn_impl_libxcb_FEX_free_on_host(void*);
+static void fexfn_impl_libxcb_FEX_GiveEvents(CrossArchEvent*, CrossArchEvent*, CBWork*);
+
+static int fexfn_impl_libxcb_xcb_take_socket(xcb_connection_t * a_0, fex_guest_function_ptr a_1, void * a_2, int a_3, uint64_t * a_4);
+
 #include "function_unpacks.inl"
 
 struct xcb_take_socket_CB_args {
   xcb_connection_t * conn;
-  CBType CBFunction;
+  fex_guest_function_ptr CBFunction;
   void *closure;
 };
 
@@ -44,32 +50,20 @@ CrossArchEvent *WaitForWork{};
 CrossArchEvent *WorkDone{};
 CBWork *Work{};
 
-void fexfn_unpack_libxcb_FEX_xcb_init_extension(void *argsv);
 static std::unordered_map<xcb_connection_t*, xcb_take_socket_CB_args> CBArgs{};
 
-void fexfn_unpack_libxcb_FEX_usable_size(void *argsv){
-  struct arg_t {void* a_0;size_t rv;};
-  auto args = (arg_t*)argsv;
-  args->rv = malloc_usable_size(args->a_0);
+static size_t fexfn_impl_libxcb_FEX_usable_size(void *a_0){
+  return malloc_usable_size(a_0);
 }
 
-void fexfn_unpack_libxcb_FEX_free_on_host(void *argsv){
-  struct arg_t {void* a_0;};
-  auto args = (arg_t*)argsv;
-  free(args->a_0);
+static void fexfn_impl_libxcb_FEX_free_on_host(void *a_0){
+  free(a_0);
 }
 
-void fexfn_unpack_libxcb_FEX_GiveEvents(void *argsv){
-  struct arg_t {
-    CrossArchEvent *WaitForWork;
-    CrossArchEvent *WorkDone;
-    CBWork* Work;
-  };
-
-  auto args = (arg_t*)argsv;
-  WaitForWork = args->WaitForWork;
-  WorkDone = args->WorkDone;
-  Work = args->Work;
+static void fexfn_impl_libxcb_FEX_GiveEvents(CrossArchEvent* a_0, CrossArchEvent* a_1, CBWork* a_2){
+  WaitForWork = a_0;
+  WorkDone = a_1;
+  Work = a_2;
 }
 
 static void xcb_take_socket_cb(void *closure) {
@@ -77,7 +71,7 @@ static void xcb_take_socket_cb(void *closure) {
 
   // Signalling to the guest thread like this allows us to call the callback function from any thread without
   // creating spurious thread objects inside of FEX
-  Work->cb = (uintptr_t)Args->CBFunction;
+  Work->cb = Args->CBFunction;
   Work->argsv = Args->closure;
   // Tell the thread it has work
   NotifyWorkFunc(WaitForWork);
@@ -85,7 +79,7 @@ static void xcb_take_socket_cb(void *closure) {
   WaitForWorkFunc(WorkDone);
 }
 
-int fexfn_impl_libxcb_xcb_take_socket_internal(xcb_connection_t * a_0, CBType a_1, void * a_2, int a_3, uint64_t * a_4){
+static int fexfn_impl_libxcb_xcb_take_socket(xcb_connection_t * a_0, fex_guest_function_ptr a_1, void * a_2, int a_3, uint64_t * a_4){
   xcb_take_socket_CB_args Args{};
   Args.conn = a_0;
   Args.CBFunction = a_1;
@@ -108,32 +102,30 @@ static ExportEntry exports[] = {
 
 #include "ldr.inl"
 
-void fexfn_unpack_libxcb_FEX_xcb_init_extension(void *argsv){
-  struct arg_t {xcb_connection_t * a_0;xcb_extension_t * a_1;};
-  auto args = (arg_t*)argsv;
+static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t * a_0, xcb_extension_t * a_1){
   xcb_extension_t *ext{};
 
-  if (strcmp(args->a_1->name, "BIG-REQUESTS") == 0) {
+  if (strcmp(a_1->name, "BIG-REQUESTS") == 0) {
     ext = (xcb_extension_t *)dlsym(fexldr_ptr_libxcb_so, "xcb_big_requests_id");
   }
-  else if (strcmp(args->a_1->name, "XC-MISC") == 0) {
+  else if (strcmp(a_1->name, "XC-MISC") == 0) {
     ext = (xcb_extension_t *)dlsym(fexldr_ptr_libxcb_so, "xcb_xc_misc_id");
   }
   else {
-    fprintf(stderr, "Unknown xcb extension '%s'\n", args->a_1->name);
+    fprintf(stderr, "Unknown xcb extension '%s'\n", a_1->name);
     __builtin_trap();
     return;
   }
 
   if (!ext) {
-    fprintf(stderr, "Couldn't find extension symbol: '%s'\n", args->a_1->name);
+    fprintf(stderr, "Couldn't find extension symbol: '%s'\n", a_1->name);
     __builtin_trap();
     return;
   }
-  auto res = fexldr_ptr_libxcb_xcb_get_extension_data(args->a_0, ext);
+  auto res = fexldr_ptr_libxcb_xcb_get_extension_data(a_0, ext);
 
   // Copy over the global id
-  args->a_1->global_id = ext->global_id;
+  a_1->global_id = ext->global_id;
 }
 
 EXPORTS_WITH_CALLBACKS(libxcb)
