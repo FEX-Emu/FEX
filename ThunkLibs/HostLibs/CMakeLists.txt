@@ -4,51 +4,12 @@ project(host-thunks)
 set(CMAKE_CXX_STANDARD 17)
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data directory")
 
-function(generate_with_name NAME LIBNAME)
-  foreach(WHAT IN LISTS ARGN)
-    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${LIBNAME}")
-    set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
-    set(GENERATOR "${CMAKE_CURRENT_SOURCE_DIR}/../Generators/${NAME}.py")
-    set(HELPER "${CMAKE_CURRENT_SOURCE_DIR}/../Generators/ThunkHelpers.py")
-
-    add_custom_command(OUTPUT ${OUTFOLDER}
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTFOLDER}")
-
-    add_custom_command(
-      OUTPUT "${OUTFILE}"
-      DEPENDS "${GENERATOR}"
-      DEPENDS "${HELPER}"
-      DEPENDS "${OUTFOLDER}"
-      COMMAND "python3" "${GENERATOR}" ${WITH_ARGS} "${WHAT}" > "${OUTFILE}"
-      )
-
-    list(APPEND OUTPUTS "${OUTFILE}")
-  endforeach()
-  if (DEFINED GEN_${LIBNAME})
-    list(APPEND OUTPUTS "${GEN_${LIBNAME}}")
-    set(GEN_${LIBNAME} ${OUTPUTS} PARENT_SCOPE)
-  else()
-    set(GEN_${LIBNAME} ${OUTPUTS} PARENT_SCOPE)
-  endif()
-endfunction()
-
-function(generate NAME)
-  generate_with_name(${NAME} ${NAME} ${ARGV})
-  # Pass the details up the stack
-  if (DEFINED GEN_${NAME})
-    list(APPEND OUTPUTS "${GEN_${NAME}}")
-    set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
-  else()
-    set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
-  endif()
-endfunction()
-
 # Syntax: generate(libxyz [LIBNAME libxyz-custom] libxyz-interface.cpp generator-targets...)
 # This defines two targets and a custom command:
 # - custom command: Main build step that runs the thunk generator on the given interface definition
 # - libxyz-interface: Target for IDE integration (making sure libxyz-interface.cpp shows up as a source file in the project tree)
 # - libxyz-deps: Interface target to read include directories from which are passed to libclang when parsing the interface definition
-function(generate_new NAME)
+function(generate NAME)
   cmake_parse_arguments(PARSE_ARGV 1 ARGS "" "LIBNAME" "")
   set(ARGN ${ARGS_UNPARSED_ARGUMENTS})
   list(POP_FRONT ARGN SOURCE_FILE)
@@ -107,11 +68,9 @@ function(add_host_lib_with_name NAME LIBNAME)
   endif()
 
   add_library(${LIBNAME}-host SHARED ${SOURCE_FILE} ${GEN_lib${LIBNAME}})
-  target_include_directories(${LIBNAME}-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${LIBNAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  target_include_directories(${LIBNAME}-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${LIBNAME}")
   target_link_libraries(${LIBNAME}-host PRIVATE dl)
-  if (TARGET lib${LIBNAME}-deps)
-    target_link_libraries(${LIBNAME}-host PRIVATE lib${LIBNAME}-deps)
-  endif()
+  target_link_libraries(${LIBNAME}-host PRIVATE lib${LIBNAME}-deps)
   target_compile_options(${LIBNAME}-host PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
   # generated files forward-declare functions that need to be implemented manually, so pass --no-undefined to make sure errors are detected at compile-time rather than runtime
@@ -134,13 +93,13 @@ endfunction()
 #generate(libfex_malloc function_unpacks tab_function_unpacks ldr ldr_ptrs)
 #add_host_lib(fex_malloc)
 
-generate_new(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(asound)
 
-generate_new(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(EGL)
 
-generate_new(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(GL)
 
 find_package(OpenGL REQUIRED)
@@ -152,16 +111,16 @@ target_link_libraries(GL-host PRIVATE OpenGL::GL)
 # add_host_lib(SDL2)
 # target_include_directories(SDL2-host PRIVATE ${SDL2_INCLUDE_DIRS})
 
-generate_new(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs callback_structs callback_unpacks_header callback_typedefs)
+generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs callback_structs callback_unpacks_header callback_typedefs)
 add_host_lib(X11)
 
-generate_new(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xext)
 
-generate_new(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xrender)
 
-generate_new(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xfixes)
 
 set (VULKAN_LIBS
@@ -174,41 +133,41 @@ set (VULKAN_LIBS
 )
 
 foreach (LIB IN LISTS VULKAN_LIBS)
-  generate_new(libvulkan_device LIBNAME lib${LIB} ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan_device/libvulkan_device_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs symbol_list)
+  generate(libvulkan_device LIBNAME lib${LIB} ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan_device/libvulkan_device_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs symbol_list)
   add_host_lib_with_name(vulkan_device ${LIB})
 endforeach()
 
-generate_new(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs callback_structs callback_unpacks_header callback_typedefs)
+generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs callback_structs callback_unpacks_header callback_typedefs)
 add_host_lib(xcb)
 
-generate_new(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-dri2)
 
-generate_new(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-dri3)
 
-generate_new(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-xfixes)
 
-generate_new(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-shm)
 
-generate_new(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-sync)
 
-generate_new(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-present)
 
-generate_new(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-randr)
 
-generate_new(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-glx)
 
-generate_new(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xshmfence)
 
-generate_new(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 target_include_directories(libdrm-deps INTERFACE /usr/include/drm/)
 target_include_directories(libdrm-deps INTERFACE /usr/include/libdrm/)
 add_host_lib(drm)
