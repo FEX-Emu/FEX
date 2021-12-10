@@ -164,8 +164,8 @@ endforeach()
 generate_new(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs callback_structs callback_unpacks_header callback_typedefs)
 add_host_lib(xcb)
 
-generate(libxcb_dri2 function_unpacks tab_function_unpacks ldr ldr_ptrs)
-add_host_lib(xcb_dri2)
+generate_new(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+add_host_lib(xcb-dri2)
 
 generate(libxcb_dri3 function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb_dri3)
