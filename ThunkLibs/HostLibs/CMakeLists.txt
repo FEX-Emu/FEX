@@ -132,7 +132,7 @@ target_link_libraries(GL-host PRIVATE OpenGL::GL)
 generate(libX11 function_unpacks tab_function_unpacks ldr ldr_ptrs callback_packs callback_structs callback_unpacks_header callback_typedefs)
 add_host_lib(X11)
 
-generate(libXext function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate_new(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xext)
 
 generate_new(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
