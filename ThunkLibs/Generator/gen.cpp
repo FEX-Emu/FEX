@@ -129,6 +129,7 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
 
     struct Annotations {
         bool custom_host_impl = false;
+        bool custom_guest_entrypoint = false;
 
         bool returns_guest_pointer = false;
 
@@ -193,6 +194,8 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
                 ret.callback_strategy = CallbackStrategy::Stub;
             } else if (annotation == "fexgen::callback_guest") {
                 ret.callback_strategy = CallbackStrategy::Guest;
+            } else if (annotation == "fexgen::custom_guest_entrypoint") {
+                ret.custom_guest_entrypoint = true;
             } else {
                 throw Error(base.getSourceRange().getBegin(), "Unknown annotation");
             }
@@ -332,7 +335,7 @@ public:
                                                        [](auto& cb) { return !cb.second.is_stub && !cb.second.is_guest; });
         thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
                                                     namespace_info.host_loader.empty() ? "dlsym" : namespace_info.host_loader,
-                                                    has_nonstub_callbacks || data.is_variadic,
+                                                    has_nonstub_callbacks || data.is_variadic || annotations.custom_guest_entrypoint,
                                                     data.is_variadic,
                                                     std::nullopt });
         if (namespace_info.generate_guest_symtable) {
