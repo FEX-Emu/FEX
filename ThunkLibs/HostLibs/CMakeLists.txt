@@ -185,8 +185,8 @@ add_host_lib(xcb_present)
 generate(libxcb_randr function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb_randr)
 
-generate(libxcb_glx function_unpacks tab_function_unpacks ldr ldr_ptrs)
-add_host_lib(xcb_glx)
+generate_new(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+add_host_lib(xcb-glx)
 
 generate(libxshmfence function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xshmfence)

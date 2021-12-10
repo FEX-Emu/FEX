@@ -264,8 +264,8 @@ add_guest_lib(xcb_present)
 generate(libxcb_randr thunks function_packs function_packs_public)
 add_guest_lib(xcb_randr)
 
-generate(libxcb_glx thunks function_packs function_packs_public)
-add_guest_lib(xcb_glx)
+generate_new(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp thunks function_packs function_packs_public)
+add_guest_lib(xcb-glx)
 
 generate(libxshmfence thunks function_packs function_packs_public)
 add_guest_lib(xshmfence)
