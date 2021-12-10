@@ -1,0 +1,272 @@
+#include <catch2/catch.hpp>
+
+#include <clang/ASTMatchers/ASTMatchers.h>
+#include <clang/ASTMatchers/ASTMatchFinder.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <clang/Tooling/Tooling.h>
+
+#include <interface.h>
+
+#include <filesystem>
+#include <fstream>
+#include <string_view>
+
+struct Fixture {
+    Fixture() {
+        tmpdir = std::tmpnam(nullptr);
+        std::filesystem::create_directory(tmpdir);
+        output_filenames = {
+            tmpdir + "/thunks",
+            tmpdir + "/function_packs",
+            tmpdir + "/function_packs_public"
+        };
+    }
+
+    ~Fixture() {
+        std::filesystem::remove_all(tmpdir);
+    }
+
+    std::string run_thunkgen_guest(std::string_view code, bool silent = false);
+
+    const std::string libname = "libtest";
+    std::string tmpdir;
+    OutputFilenames output_filenames;
+};
+
+using namespace clang::ast_matchers;
+
+class MatchCallback : public MatchFinder::MatchCallback {
+    bool success = false;
+
+    using CheckFn = std::function<bool(const MatchFinder::MatchResult&)>;
+    std::vector<CheckFn> binding_checks;
+
+public:
+    template<typename NodeType>
+    void check_binding(std::string_view binding_name, bool (*check_fn)(const NodeType*)) {
+        // Decorate the given check with node extraction and wrap it in a type-erased interface
+        binding_checks.push_back(
+            [check_fn, binding_name = std::string(binding_name)](const MatchFinder::MatchResult& result) {
+                if (auto node = result.Nodes.getNodeAs<NodeType>(binding_name.c_str())) {
+                    return check_fn(node);
+                }
+                return false;
+            });
+    }
+
+    void run(const MatchFinder::MatchResult& result) override {
+        success = true; // NOTE: If there are no callbacks, this signals that the match was found at all
+
+        for (auto& binding_check : binding_checks) {
+            success = success && binding_check(result);
+        }
+    }
+
+    bool matched() const noexcept {
+        return success;
+    }
+};
+
+template<typename ClangMatcher>
+class HasASTMatching : public Catch::MatcherBase<std::string> {
+    const ClangMatcher& matcher;
+
+    MatchCallback callback;
+
+public:
+    HasASTMatching(const ClangMatcher& matcher_) : matcher(matcher_) {
+
+    }
+
+    template<typename NodeT>
+    HasASTMatching& check_binding(std::string_view binding_name, bool (*check_fn)(const NodeT*)) {
+        callback.check_binding(binding_name, check_fn);
+        return *this;
+    }
+
+    bool match(const std::string& code) const override {
+        MatchCallback result = callback;
+        clang::ast_matchers::MatchFinder finder;
+        finder.addMatcher(matcher, &result);
+        bool compile_success = clang::tooling::runToolOnCodeWithArgs(clang::tooling::newFrontendActionFactory(&finder)->create(), code, { "-std=c++17", "-Werror" });
+        return compile_success && result.matched();
+    }
+
+    std::string describe() const override {
+        std::ostringstream ss;
+        ss << "should compile and match the given AST pattern";
+        return ss.str();
+    }
+};
+
+HasASTMatching<DeclarationMatcher> matches(const DeclarationMatcher& matcher_) {
+    return HasASTMatching<DeclarationMatcher>(matcher_);
+}
+
+HasASTMatching<StatementMatcher> matches(const StatementMatcher& matcher_) {
+    return HasASTMatching<StatementMatcher>(matcher_);
+}
+
+/**
+ * Catch matcher that checks if a tested C++ source defines a function with the given name
+ */
+class DefinesPublicFunction : public Catch::MatcherBase<std::string> {
+    std::string function_name;
+
+public:
+    DefinesPublicFunction(std::string_view name) : function_name(name) {
+    }
+
+    bool match(const std::string& code) const override {
+        MatchCallback result;
+        clang::ast_matchers::MatchFinder finder;
+        finder.addMatcher(functionDecl(hasName(function_name)), &result);
+        clang::tooling::runToolOnCodeWithArgs(clang::tooling::newFrontendActionFactory(&finder)->create(), code, { "-std=c++17" });
+        return result.matched();
+    }
+
+    std::string describe() const override {
+        std::ostringstream ss;
+        ss << "should define and export a function called \"" + function_name + "\"";
+        return ss.str();
+    }
+};
+
+class TestDiagnosticConsumer : public clang::TextDiagnosticPrinter {
+    bool silent;
+
+    std::optional<std::string> first_error;
+
+public:
+    TestDiagnosticConsumer(bool silent_) : clang::TextDiagnosticPrinter(llvm::errs(), new clang::DiagnosticOptions), silent(silent_) {
+
+    }
+
+    void HandleDiagnostic(clang::DiagnosticsEngine::Level level,
+                          const clang::Diagnostic& diag) override {
+        if (level >= clang::DiagnosticsEngine::Error && !first_error) {
+            llvm::SmallVector<char, 64> message;
+            diag.FormatDiagnostic(message);
+            first_error = std::string(message.begin(), message.end());
+        }
+
+        if (silent && level != clang::DiagnosticsEngine::Fatal) {
+            return;
+        }
+
+        clang::TextDiagnosticPrinter::HandleDiagnostic(level, diag);
+    }
+
+    std::optional<std::string> GetFirstError() const {
+        return first_error;
+    }
+};
+
+/**
+ * The "silent" parameter is used to suppress non-fatal diagnostics in tests that expect failure
+ */
+static void run_tool(std::unique_ptr<FrontendAction> action, std::string_view code, bool silent = false) {
+    const char* memory_filename = "gen_input.cpp";
+    auto adjuster = clang::tooling::getClangStripDependencyFileAdjuster();
+    std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
+
+    const char* common_header_code = R"(namespace fexgen {
+} // namespace fexgen
+)";
+
+    llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> memory_fs(new llvm::vfs::InMemoryFileSystem);
+    memory_fs->addFile(memory_filename, 0, llvm::MemoryBuffer::getMemBufferCopy(code));
+    memory_fs->addFile("thunks_common.h", 0, llvm::MemoryBuffer::getMemBufferCopy(common_header_code));
+    llvm::IntrusiveRefCntPtr<clang::FileManager> files(new clang::FileManager(clang::FileSystemOptions(), memory_fs));
+
+    auto invocation = clang::tooling::ToolInvocation(args, std::move(action), files.get());
+    TestDiagnosticConsumer consumer(silent);
+    invocation.setDiagnosticConsumer(&consumer);
+    invocation.run();
+
+    if (auto error = consumer.GetFirstError()) {
+        throw std::runtime_error(*error);
+    }
+}
+
+/**
+ * Generates guest thunk library code from the given input
+ */
+std::string Fixture::run_thunkgen_guest(std::string_view code, bool silent) {
+    run_tool(std::make_unique<FrontendAction>(libname, output_filenames), code, silent);
+
+    std::string result = "#define MAKE_THUNK(lib, name, hash) extern \"C\" int fexthunks_##lib##_##name(void*);\n";
+    for (auto& filename : {
+            output_filenames.thunks,
+            output_filenames.function_packs_public,
+            output_filenames.function_packs,
+            }) {
+        std::ifstream file(filename);
+        const auto current_size = result.size();
+        const auto new_data_size = std::filesystem::file_size(filename);
+        result.resize(result.size() + new_data_size);
+        file.read(result.data() + current_size, result.size());
+    }
+    return result;
+}
+
+TEST_CASE_METHOD(Fixture, "Trivial") {
+    const auto output = run_thunkgen_guest(
+        "#include <thunks_common.h>\n"
+        "void func();\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> {};\n");
+
+    CHECK_THAT(output, DefinesPublicFunction("func"));
+
+    CHECK_THAT(output,
+        matches(functionDecl(
+            hasName("fexfn_pack_func"),
+            returns(asString("void")),
+            parameterCountIs(0)
+        )));
+}
+
+// Function pointer parameters trigger an error
+TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
+    REQUIRE_THROWS(run_thunkgen_guest(
+        "void func(int (*funcptr)(char, char));\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> { };\n", true));
+}
+
+TEST_CASE_METHOD(Fixture, "MultipleParameters") {
+    const std::string prelude = "struct TestStruct { int member; };\n";
+
+    auto output = run_thunkgen_guest(
+        prelude +
+        "void func(int arg, char, unsigned long, TestStruct);\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> {};\n");
+
+    output = prelude + output;
+
+    CHECK_THAT(output, DefinesPublicFunction("func"));
+
+    CHECK_THAT(output,
+        matches(functionDecl(
+            hasName("fexfn_pack_func"),
+            returns(asString("void")),
+            parameterCountIs(4),
+            hasParameter(0, hasType(asString("int"))),
+            hasParameter(1, hasType(asString("char"))),
+            hasParameter(2, hasType(asString("unsigned long"))),
+            hasParameter(3, hasType(asString("struct TestStruct")))
+        )));
+}
+
+// Returning a function pointer should trigger an error
+TEST_CASE_METHOD(Fixture, "ReturnFunctionPointer") {
+    const std::string prelude = "using funcptr = void (*)(char, char);\n";
+
+    REQUIRE_THROWS(run_thunkgen_guest(
+        prelude +
+        "funcptr func(int);\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> {};\n", true));
+}
