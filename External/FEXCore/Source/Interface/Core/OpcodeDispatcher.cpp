@@ -5176,7 +5176,7 @@ void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
 #undef OpcodeArgs
 
 void InstallOpcodeHandlers(Context::OperatingMode Mode) {
-  const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable = {
+  constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable[] = {
     // Instructions
     {0x00, 6, &OpDispatchBuilder::ALUOp},
 
@@ -5246,7 +5246,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xFC, 2, &OpDispatchBuilder::FLAGControlOp},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable_32 = {
+  constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable_32[] = {
     {0x06, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
     {0x07, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
     {0x0E, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX>},
@@ -5261,11 +5261,11 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x61, 1, &OpDispatchBuilder::POPAOp},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> BaseOpTable_64 = {
+  constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable_64[] = {
     {0x63, 1, &OpDispatchBuilder::MOVSXDOp},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable = {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable[] = {
     // Instructions
     {0x0B, 1, &OpDispatchBuilder::INTOp},
     {0x0E, 1, &OpDispatchBuilder::X87EMMS},
@@ -5408,16 +5408,16 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x37, 1, &OpDispatchBuilder::CallbackReturnOp},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable_32 = {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable_32[] = {
     {0x05, 1, &OpDispatchBuilder::NOPOp},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> TwoByteOpTable_64 = {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable_64[] = {
     {0x05, 1, &OpDispatchBuilder::SyscallOp},
   };
 
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
-  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> PrimaryGroupOpTable = {
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> PrimaryGroupOpTable[] = {
     // GROUP 1
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
@@ -5538,7 +5538,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   };
 #undef OPD
 
-  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepModOpTable = {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> RepModOpTable[] = {
     {0x10, 2, &OpDispatchBuilder::MOVSSOp},
     {0x12, 1, &OpDispatchBuilder::MOVSLDUPOp},
     {0x16, 1, &OpDispatchBuilder::MOVSHDUPOp},
@@ -5570,7 +5570,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true>},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> RepNEModOpTable = {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> RepNEModOpTable[] = {
     {0x10, 2, &OpDispatchBuilder::MOVSDOp},
     {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
     {0x19, 7, &OpDispatchBuilder::NOPOp},
@@ -5597,7 +5597,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF0, 1, &OpDispatchBuilder::MOVVectorOp},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> OpSizeModOpTable = {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpSizeModOpTable[] = {
     {0x10, 2, &OpDispatchBuilder::MOVVectorOp},
     {0x12, 2, &OpDispatchBuilder::MOVLPOp},
     {0x14, 1, &OpDispatchBuilder::PUNPCKLOp<8>},
@@ -5711,7 +5711,7 @@ constexpr uint16_t PF_F3 = 1;
 constexpr uint16_t PF_66 = 2;
 constexpr uint16_t PF_F2 = 3;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_6) << 5) | (prefix) << 3 | (Reg))
-  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> SecondaryExtensionOpTable = {
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOpTable[] = {
     // GROUP 8
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::BTOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 4), 1, &OpDispatchBuilder::BTOp<1>},
@@ -5793,7 +5793,7 @@ constexpr uint16_t PF_F2 = 3;
   };
 #undef OPD
 
-  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> SecondaryModRMExtensionOpTable = {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryModRMExtensionOpTable[] = {
     // REG /2
     {((1 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
 
@@ -5805,7 +5805,7 @@ constexpr uint16_t PF_F2 = 3;
 // All OPDReg versions need it
 #define OPDReg(op, reg) ((1 << 15) | ((op - 0xD8) << 8) | (reg << 3))
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
-  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> X87OpTable = {
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87OpTable[] = {
     {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
@@ -6043,7 +6043,7 @@ constexpr uint16_t PF_F2 = 3;
   constexpr uint16_t PF_38_F2   = 2;
   constexpr uint16_t PF_38_F3   = 3;
 
-  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F38Table = {
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38Table[] = {
     {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
     {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::PSHUFBOp},
     {OPD(PF_38_NONE, 0x01), 1, &OpDispatchBuilder::PHADD<2>},
@@ -6125,7 +6125,7 @@ constexpr uint16_t PF_F2 = 3;
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
 #define PF_3A_NONE 0
 #define PF_3A_66   1
-  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> H0F3ATable = {
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3ATable[] = {
     {OPD(0, PF_3A_66,   0x08), 1, &OpDispatchBuilder::VectorRound<4, false>},
     {OPD(0, PF_3A_66,   0x09), 1, &OpDispatchBuilder::VectorRound<8, false>},
     {OPD(0, PF_3A_66,   0x0A), 1, &OpDispatchBuilder::VectorRound<4, true>},
@@ -6160,7 +6160,7 @@ constexpr uint16_t PF_F2 = 3;
 #undef OPD
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  const std::vector<std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> VEXTable = {
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> VEXTable[] = {
     {OPD(1, 0b01, 0x6E), 2, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::UnimplementedOp},
@@ -6198,14 +6198,14 @@ constexpr uint16_t PF_F2 = 3;
 #undef OPD
 
   #define OPD(group, pp, opcode) (((group - X86Tables::InstType::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
-    const std::vector<std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr>> VEXGroupTable = {
+    constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEXGroupTable[] = {
       {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b001), 1, &OpDispatchBuilder::BLSRBMIOp},
       {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b010), 1, &OpDispatchBuilder::BLSMSKBMIOp},
       {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b011), 1, &OpDispatchBuilder::BLSIBMIOp},
     };
   #undef OPD
 
-  const std::vector<std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr>> EVEXTable = {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> EVEXTable[] = {
     {0x10, 2, &OpDispatchBuilder::UnimplementedOp},
     {0x59, 1, &OpDispatchBuilder::UnimplementedOp},
     {0x7F, 1, &OpDispatchBuilder::UnimplementedOp},

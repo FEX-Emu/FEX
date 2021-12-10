@@ -6,44 +6,7 @@
 
 namespace FEXCore::X86Tables::X86InstDebugInfo {
 void InstallDebugInfo() {
-
-  using namespace FEXCore::X86Tables;
-  auto NoFlags = Flags {0};
-
-  for (auto &BaseOp : BaseOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : SecondBaseOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : RepModOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : RepNEModOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : OpSizeModOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : PrimaryInstGroupOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : SecondInstGroupOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : SecondModRMTableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : X87Ops)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : DDDNowOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : H0F38TableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : H0F3ATableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : VEXTableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : VEXTableGroupOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : XOPTableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : XOPTableGroupOps)
-      BaseOp.DebugInfo = NoFlags;
-
-  const std::vector<std::tuple<uint8_t, uint8_t, Flags>> BaseOpTable = {
+  const std::tuple<uint8_t, uint8_t, Flags> BaseOpTable[] = {
     {0x50, 8, {FLAGS_MEM_ACCESS}},
     {0x58, 8, {FLAGS_MEM_ACCESS}},
 
@@ -62,7 +25,7 @@ void InstallDebugInfo() {
     {0xF4, 1, {FLAGS_DEBUG}},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, Flags>> TwoByteOpTable = {
+  const std::tuple<uint8_t, uint8_t, Flags> TwoByteOpTable[] = {
     {0x0B, 1, {FLAGS_DEBUG}},
     {0x19, 7, {FLAGS_DEBUG}},
     {0x28, 2, {FLAGS_MEM_ALIGN_16}},
@@ -78,14 +41,14 @@ void InstallDebugInfo() {
     {0xFF, 1, {FLAGS_DEBUG}},
   };
 
-  const std::vector<std::tuple<uint8_t, uint8_t, Flags>> PrimaryGroupOpTable = {
+  const std::tuple<uint8_t, uint8_t, Flags> PrimaryGroupOpTable[] = {
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
     {OPD(TYPE_GROUP_3, OpToIndex(0xF6), 6), 2, {FLAGS_DIVIDE}},
     {OPD(TYPE_GROUP_3, OpToIndex(0xF7), 6), 2, {FLAGS_DIVIDE}},
 #undef OPD
   };
 
-  const std::vector<std::tuple<uint16_t, uint8_t, Flags>> SecondaryExtensionOpTable = {
+  const std::tuple<uint16_t, uint8_t, Flags> SecondaryExtensionOpTable[] = {
 #define PF_NONE 0
 #define PF_F3 1
 #define PF_66 2
