@@ -6,43 +6,6 @@
 
 namespace FEXCore::X86Tables::X86InstDebugInfo {
 void InstallDebugInfo() {
-
-  using namespace FEXCore::X86Tables;
-  auto NoFlags = Flags {0};
-
-  for (auto &BaseOp : BaseOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : SecondBaseOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : RepModOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : RepNEModOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : OpSizeModOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : PrimaryInstGroupOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : SecondInstGroupOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : SecondModRMTableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : X87Ops)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : DDDNowOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : H0F38TableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : H0F3ATableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : VEXTableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : VEXTableGroupOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : XOPTableOps)
-      BaseOp.DebugInfo = NoFlags;
-  for (auto &BaseOp : XOPTableGroupOps)
-      BaseOp.DebugInfo = NoFlags;
-
   const std::vector<std::tuple<uint8_t, uint8_t, Flags>> BaseOpTable = {
     {0x50, 8, {FLAGS_MEM_ACCESS}},
     {0x58, 8, {FLAGS_MEM_ACCESS}},
