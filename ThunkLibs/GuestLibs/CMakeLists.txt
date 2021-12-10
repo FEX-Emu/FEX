@@ -118,7 +118,7 @@ endfunction()
 #generate(libfex_malloc thunks function_packs function_packs_public)
 #add_guest_lib(fex_malloc)
 
-generate(libasound thunks function_packs function_packs_public)
+generate_new(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(asound)
 
 generate(libEGL thunks function_packs function_packs_public)
