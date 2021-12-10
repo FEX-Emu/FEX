@@ -114,7 +114,7 @@ endfunction()
 generate_new(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(asound)
 
-generate(libEGL function_unpacks tab_function_unpacks ldr ldr_ptrs)
+generate_new(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(EGL)
 
 generate_new(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)

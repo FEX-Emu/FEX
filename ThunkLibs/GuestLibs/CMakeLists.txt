@@ -122,7 +122,7 @@ endfunction()
 generate_new(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(asound)
 
-generate(libEGL thunks function_packs function_packs_public)
+generate_new(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(EGL)
 
 generate_new(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp thunks function_packs function_packs_public)
