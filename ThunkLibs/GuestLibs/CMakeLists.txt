@@ -249,8 +249,8 @@ add_guest_lib(xcb-dri2)
 generate_new(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(xcb-dri3)
 
-generate(libxcb_xfixes thunks function_packs function_packs_public)
-add_guest_lib(xcb_xfixes)
+generate_new(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp thunks function_packs function_packs_public)
+add_guest_lib(xcb-xfixes)
 
 generate_new(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(xcb-shm)
