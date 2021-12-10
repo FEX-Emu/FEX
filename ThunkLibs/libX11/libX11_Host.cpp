@@ -5,6 +5,7 @@ desc: Handles callbacks and varargs
 $end_info$
 */
 
+#include <cstdlib>
 #include <stdio.h>
 
 #include <X11/Xlib.h>
@@ -76,6 +77,17 @@ int fexfn_impl_libX11_XIfEvent_internal(Display* a0, XEvent* a1, XIfEventCBFN* a
     static XIfEventCB_args args = { a2, a3 };
 
     return fexldr_ptr_libX11_XIfEvent(a0, a1, &XIfEventCB, (XPointer)&args);
+}
+
+Bool fexfn_impl_libX11_XUnregisterIMInstantiateCallback_internal(
+    Display*, struct _XrmHashBucketRec*,
+    char*, char*, XUnregisterIMInstantiateCallbackCBFN*, XPointer) {
+    fprintf(stderr, "XUnregisterIMInstantiateCallback: Stubbed");
+    return true;
+}
+
+void fexfn_impl_libX11_XRemoveConnectionWatch_internal(Display*, XRemoveConnectionWatchCBFN*, XPointer) {
+    fprintf(stderr, "XRemoveConnectionWatch: Stubbed");
 }
 
 XErrorHandler guest_handler;

@@ -44,7 +44,7 @@ extern "C" {
         }
 
         va_end(ap);
-        auto rv = XGetICValues_internal(ic, args.size(), &args[0]);
+        auto rv = fexfn_pack_XGetICValues_internal(ic, args.size(), &args[0]);
         fprintf(stderr, "RV: %p\n", rv);
         return rv;
     }
@@ -63,17 +63,17 @@ extern "C" {
         }
 
         va_end(ap);
-        auto rv = XCreateIC_internal(im, args.size(), &args[0]);
+        auto rv = fexfn_pack_XCreateIC_internal(im, args.size(), &args[0]);
         fprintf(stderr, "RV: %p\n", rv);
         return rv;
     }
 
     int XIfEvent(Display* a0, XEvent* a1, XIfEventCBFN* a2, XPointer a3) {
-        return XIfEvent_internal(a0, a1, a2, a3);
+        return fexfn_pack_XIfEvent_internal(a0, a1, a2, a3);
     }
 
     XSetErrorHandlerCBFN* XSetErrorHandler(XErrorHandler a_0) {
-        return XSetErrorHandler_internal(a_0);
+        return fexfn_pack_XSetErrorHandler_internal(a_0);
     }
 
     int (*XESetCloseDisplay(Display *display, int extension, int (*proc)()))() {

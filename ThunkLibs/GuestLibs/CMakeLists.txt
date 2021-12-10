@@ -136,7 +136,7 @@ add_guest_lib(GL)
 # target_link_libraries(SDL2-guest PRIVATE GL)
 # target_link_libraries(SDL2-guest PRIVATE dl)
 
-generate(libX11 thunks function_packs function_packs_public callback_structs callback_unpacks_header callback_unpacks_header_init callback_unpacks callback_typedefs)
+generate_new(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp thunks function_packs function_packs_public callback_structs callback_unpacks_header callback_unpacks_header_init callback_unpacks callback_typedefs)
 add_guest_lib(X11)
 
 generate_new(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp thunks function_packs function_packs_public)

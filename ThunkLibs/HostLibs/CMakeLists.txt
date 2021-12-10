@@ -129,7 +129,7 @@ target_link_libraries(GL-host PRIVATE OpenGL::GL)
 # add_host_lib(SDL2)
 # target_include_directories(SDL2-host PRIVATE ${SDL2_INCLUDE_DIRS})
 
-generate(libX11 function_unpacks tab_function_unpacks ldr ldr_ptrs callback_packs callback_structs callback_unpacks_header callback_typedefs)
+generate_new(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs callback_structs callback_unpacks_header callback_typedefs)
 add_host_lib(X11)
 
 generate_new(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
