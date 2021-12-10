@@ -2,6 +2,8 @@ namespace fexgen {
 struct returns_guest_pointer {};
 struct custom_host_impl {};
 
+struct generate_guest_symtable {};
+
 struct callback_annotation_base {
     // Prevent annotating multiple callback strategies
     bool prevent_multiple;
