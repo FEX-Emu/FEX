@@ -51,14 +51,23 @@ function(generate NAME)
 endfunction()
 
 # Syntax: generate(libxyz libxyz-interface.cpp generator-targets...)
-# This defines a targets and a custom command:
+# This defines two targets and a custom command:
 # - custom command: Main build step that runs the thunk generator on the given interface definition
 # - libxyz-interface: Target for IDE integration (making sure libxyz-interface.cpp shows up as a source file in the project tree)
+# - libxyz-deps: Interface target to read include directories from which are passed to libclang when parsing the interface definition
 function(generate_new NAME)
   list(POP_FRONT ARGN SOURCE_FILE)
 
+  # Interface target for the user to add include directories
+  add_library(${NAME}-deps INTERFACE)
+  target_include_directories(${NAME}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  # Shorthand for the include directories added after calling this function.
+  # This is not evaluated directly, hence directories added after return are still picked up
+  set(prop "$<TARGET_PROPERTY:${NAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
+
   # Target for IDE integration
   add_library(${NAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
+  target_link_libraries(${NAME}-interface PRIVATE ${NAME}-deps)
 
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
@@ -73,7 +82,10 @@ function(generate_new NAME)
       DEPENDS "${GENERATOR_EXE}"
       DEPENDS "${OUTFOLDER}"
       DEPENDS "${SOURCE_FILE}"
-      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17 -I"${CMAKE_CURRENT_SOURCE_DIR}/../include"
+      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
+            # Expand include directories to space-separated list of -isystem parameters
+           "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
+      VERBATIM
       COMMAND_EXPAND_LISTS
       )
 
@@ -98,6 +110,9 @@ function(add_guest_lib_with_name NAME LIBNAME)
   add_library(${LIBNAME}-guest SHARED ${SOURCE_FILE} ${GEN_lib${LIBNAME}})
   target_include_directories(${LIBNAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${LIBNAME}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   target_compile_definitions(${LIBNAME}-guest PRIVATE GUEST_THUNK_LIBRARY)
+  if (TARGET lib${LIBNAME}-deps)
+    target_link_libraries(${LIBNAME}-guest PRIVATE lib${LIBNAME}-deps)
+  endif()
 
   ## Tell GCC to not complain about ignored attributes
   target_compile_options(${LIBNAME}-guest PRIVATE -Wno-attributes)
@@ -270,7 +285,7 @@ add_guest_lib(xcb-glx)
 generate_new(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(xshmfence)
 
-generate(libdrm thunks function_packs function_packs_public)
+generate_new(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp thunks function_packs function_packs_public)
+target_include_directories(libdrm-deps INTERFACE /usr/include/drm/)
+target_include_directories(libdrm-deps INTERFACE /usr/include/libdrm/)
 add_guest_lib(drm)
-target_include_directories(drm-guest PRIVATE /usr/include/drm/)
-target_include_directories(drm-guest PRIVATE /usr/include/libdrm/)
