@@ -371,3 +371,33 @@ TEST_CASE_METHOD(Fixture, "ReturnFunctionPointer") {
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n", true));
 }
+
+TEST_CASE_METHOD(Fixture, "VariadicFunction") {
+    const std::string input =
+        "void func(int arg, ...);\n"
+        "template<auto> struct fex_gen_config {};\n";
+
+    const auto output = run_thunkgen_guest(
+        input +
+        "template<> struct fex_gen_config<func> {\n"
+        "  using uniform_va_type = char;\n"
+        "};\n");
+
+    CHECK_THAT(output,
+        matches(functionDecl(
+            hasName("fexfn_pack_func_internal"),
+            returns(asString("void")),
+            parameterCountIs(3),
+            hasParameter(0, hasType(asString("int"))),
+            hasParameter(1, hasType(asString("unsigned long"))),
+            hasParameter(2, hasType(pointerType(pointee(asString("char")))))
+        )));
+}
+
+// Variadic functions without annotation trigger an error
+TEST_CASE_METHOD(Fixture, "VariadicFunctionsWithoutAnnotation") {
+    REQUIRE_THROWS(run_thunkgen_guest(
+        "void func(int arg, ...);\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> {};\n", true));
+}
