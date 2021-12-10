@@ -50,28 +50,36 @@ function(generate NAME)
   endif()
 endfunction()
 
-# Syntax: generate(libxyz libxyz-interface.cpp generator-targets...)
+# Syntax: generate(libxyz [LIBNAME libxyz-custom] libxyz-interface.cpp generator-targets...)
 # This defines two targets and a custom command:
 # - custom command: Main build step that runs the thunk generator on the given interface definition
 # - libxyz-interface: Target for IDE integration (making sure libxyz-interface.cpp shows up as a source file in the project tree)
 # - libxyz-deps: Interface target to read include directories from which are passed to libclang when parsing the interface definition
 function(generate_new NAME)
+  cmake_parse_arguments(PARSE_ARGV 1 ARGS "" "LIBNAME" "")
+  set(ARGN ${ARGS_UNPARSED_ARGUMENTS})
   list(POP_FRONT ARGN SOURCE_FILE)
 
+  if (ARGS_LIBNAME)
+    set(LIBNAME ${ARGS_LIBNAME})
+  else()
+    set(LIBNAME ${NAME})
+  endif()
+
   # Interface target for the user to add include directories
-  add_library(${NAME}-deps INTERFACE)
-  target_include_directories(${NAME}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  add_library(${LIBNAME}-deps INTERFACE)
+  target_include_directories(${LIBNAME}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
-  set(prop "$<TARGET_PROPERTY:${NAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
+  set(prop "$<TARGET_PROPERTY:${LIBNAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
 
   # Target for IDE integration
-  add_library(${NAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
-  target_link_libraries(${NAME}-interface PRIVATE ${NAME}-deps)
+  add_library(${LIBNAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
+  target_link_libraries(${LIBNAME}-interface PRIVATE ${LIBNAME}-deps)
 
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
-    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}")
+    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${LIBNAME}")
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
     add_custom_command(OUTPUT ${OUTFOLDER}
@@ -82,7 +90,7 @@ function(generate_new NAME)
       DEPENDS "${GENERATOR_EXE}"
       DEPENDS "${OUTFOLDER}"
       DEPENDS "${SOURCE_FILE}"
-      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
+      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${LIBNAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
             # Expand include directories to space-separated list of -isystem parameters
            "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
       VERBATIM
@@ -91,7 +99,7 @@ function(generate_new NAME)
 
     list(APPEND OUTPUTS "${OUTFILE}")
   endforeach()
-  set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
+  set(GEN_${LIBNAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
 add_custom_target(ThunkGuestsInstall)
@@ -173,14 +181,8 @@ set (VULKAN_LIBS
 )
 
 foreach (LIB IN LISTS VULKAN_LIBS)
-  set(WITH_ARGS "lib${LIB}" "${VULKAN_XML}" "--print-header")
-  generate_with_name(libvulkan_device lib${LIB} Header)
-  set(WITH_ARGS "")
-
-  set(WITH_ARGS "lib${LIB}" "${VULKAN_XML}" "--print-thunks")
-  generate_with_name(libvulkan_device lib${LIB} thunks function_packs function_packs_public function_pack_pair)
+  generate_new(libvulkan_device LIBNAME lib${LIB} ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan_device/libvulkan_device_interface.cpp thunks function_packs function_packs_public symbol_list)
   add_guest_lib_with_name(vulkan_device ${LIB})
-  set(WITH_ARGS "")
 endforeach()
 
 generate_new(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp thunks function_packs function_packs_public callback_structs callback_unpacks_header callback_unpacks_header_init callback_unpacks callback_typedefs)
