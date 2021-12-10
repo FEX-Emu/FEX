@@ -18,6 +18,9 @@ struct ThunkedCallback : FunctionParams {
 
     std::size_t callback_index;
     std::size_t user_arg_index;
+
+    bool is_stub = false;
+    bool is_variadic = false;
 };
 
 /**
@@ -59,7 +62,8 @@ struct ThunkedFunction : FunctionParams {
         return function_name.substr(0, function_name.size() - suffix.size());
     }
 
-    std::vector<ThunkedCallback> callbacks;
+    // Maps parameter index to ThunkedCallback
+    std::unordered_map<unsigned, ThunkedCallback> callbacks;
 
     clang::FunctionDecl* decl;
 };
@@ -89,12 +93,28 @@ static std::vector<ThunkedAPIFunction> thunked_api;
 class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
     clang::ASTContext& context;
 
+    enum class CallbackStrategy {
+        Default,
+        Stub,
+    };
+
     struct Annotations {
         std::optional<clang::QualType> uniform_va_type;
+
+        CallbackStrategy callback_strategy = CallbackStrategy::Default;
     };
 
     Annotations GetAnnotations(clang::CXXRecordDecl* decl) {
         Annotations ret;
+
+        for (const auto& base : decl->bases()) {
+            auto annotation = base.getType().getAsString();
+            if (annotation == "fexgen::callback_stub") {
+                ret.callback_strategy = CallbackStrategy::Stub;
+            } else {
+                throw Error(base.getSourceRange().getBegin(), "Unknown annotation");
+            }
+        }
 
         for (const auto& child_decl : decl->getPrimaryContext()->decls()) {
             if (auto field = llvm::dyn_cast_or_null<clang::FieldDecl>(child_decl)) {
@@ -157,7 +177,8 @@ public:
 
         data.decl = emitted_function;
 
-        for (auto* param : emitted_function->parameters()) {
+        for (std::size_t param_idx = 0; param_idx < emitted_function->param_size(); ++param_idx) {
+            auto* param = emitted_function->getParamDecl(param_idx);
             data.param_types.push_back(param->getType());
 
             if (param->getType()->isFunctionPointerType()) {
@@ -167,15 +188,23 @@ public:
                 for (auto& cb_param : funcptr->getParamTypes()) {
                     callback.param_types.push_back(cb_param);
                 }
+                callback.is_stub = annotations.callback_strategy == CallbackStrategy::Stub;
+                callback.is_variadic = funcptr->isVariadic();
 
-                data.callbacks.push_back(callback);
+                data.callbacks.emplace(param_idx, callback);
                 // TODO: Support for more than one callback is untested
                 assert(data.callbacks.size() == 1);
-                assert(!funcptr->isVariadic() && "Variadic callbacks are not supported");
+                if (funcptr->isVariadic() && !callback.is_stub) {
+                    throw Error(decl->getBeginLoc(), "Variadic callbacks are not supported");
+                }
             }
         }
 
-        thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type, data.is_variadic, data.is_variadic });
+        const bool has_nonstub_callbacks = std::any_of(data.callbacks.begin(), data.callbacks.end(),
+                                                       [](auto& cb) { return !cb.second.is_stub; });
+        thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
+                                                    has_nonstub_callbacks || data.is_variadic,
+                                                    data.is_variadic });
 
         if (data.is_variadic) {
             if (!annotations.uniform_va_type) {
@@ -187,7 +216,7 @@ public:
             data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
         }
 
-        if (!data.callbacks.empty() || data.is_variadic) {
+        if (has_nonstub_callbacks || data.is_variadic) {
             // This function is thunked through an "_internal" symbol since its signature
             // is different from the one in the native host/guest libraries.
             data.function_name = data.function_name + "_internal";
@@ -368,8 +397,39 @@ void FrontendAction::EndSourceFileAction() {
             }
             file << "};\n";
 
+            for (auto& [cb_idx, cb] : thunk.callbacks) {
+                if (cb.is_stub) {
+                    bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
+                    const char* variadic_ellipsis = cb.is_variadic ? ", ..." : "";
+                    auto cb_function_name = "fexfn_unpack_" + function_name + "CBFN" + (is_first_cb ? "" : std::to_string(cb_idx)) + "_stub";
+                    file << "[[noreturn]] static " << cb.return_type.getAsString() << " "
+                         << cb_function_name << "("
+                         << format_function_params(cb) << variadic_ellipsis << ") {\n";
+                    file << "  fprintf(stderr, \"SHOULD NOT HAVE BEEN CALLED\");\n"; // TODO: Reword
+                    file << "  abort();\n";
+                    file << "}\n";
+                }
+            }
+
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(fexfn_packed_args_" << libname << "_" << function_name << "* args) {\n";
-            file << (is_void ? "  " : "  args->rv = ") << (thunk.custom_host_impl ? "fexfn_impl_" : "fexldr_ptr_") << libname << "_" << function_name << "(" << format_function_args(thunk) << ");\n";
+            file << (is_void ? "  " : "  args->rv = ") << (thunk.custom_host_impl ? "fexfn_impl_" : "fexldr_ptr_") << libname << "_" << function_name << "(";
+            {
+                std::string ret;
+                for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
+                    auto cb = thunk.callbacks.find(idx);
+                    if (cb != thunk.callbacks.end() && cb->second.is_stub) {
+                        bool is_first_cb = (cb->first == thunk.callbacks.begin()->first);
+                        auto cb_function_name = "fexfn_unpack_" + function_name + "CBFN" + (is_first_cb ? "" : std::to_string(cb->first)) + "_stub";
+                        ret += cb_function_name + ", ";
+                    } else {
+                        ret += "args->a_" + std::to_string(idx) + ", ";
+                    }
+                }
+                // drop trailing ", "
+                ret.resize(ret.size() > 2 ? ret.size() - 2 : 0);
+                file << ret;
+            }
+            file << ");\n";
             file << "}\n";
         }
 
@@ -420,8 +480,11 @@ void FrontendAction::EndSourceFileAction() {
         std::ofstream file(output_filenames.callback_structs);
 
         for (auto& thunk : thunks) {
-            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
-                auto& cb = thunk.callbacks[cb_idx];
+            for (const auto& [cb_idx, cb] : thunk.callbacks) {
+                if (cb.is_stub) {
+                    continue;
+                }
+
                 file << "struct " << thunk.GetOriginalFunctionName() << "CB_Args {\n";
                 file << format_struct_members(cb, "  ");
                 if (!cb.return_type->isVoidType()) {
@@ -436,9 +499,13 @@ void FrontendAction::EndSourceFileAction() {
         std::ofstream file(output_filenames.callback_typedefs);
 
         for (auto& thunk : thunks) {
-            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
-                auto& cb = thunk.callbacks[cb_idx];
-                auto cb_function_name = thunk.GetOriginalFunctionName() + "CBFN" + (cb_idx == 0 ? "" : std::to_string(cb_idx));
+            for (const auto& [cb_idx, cb] : thunk.callbacks) {
+                if (cb.is_stub) {
+                    continue;
+                }
+
+                bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
+                auto cb_function_name = thunk.GetOriginalFunctionName() + "CBFN" + (is_first_cb ? "" : std::to_string(cb_idx));
                 file << "typedef " << cb.return_type.getAsString() << " "
                      << cb_function_name << "("
                      << format_function_params(cb) << ");\n";
@@ -450,10 +517,14 @@ void FrontendAction::EndSourceFileAction() {
         std::ofstream file(output_filenames.callback_unpacks);
 
         for (auto& thunk : thunks) {
-            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
-                auto& cb = thunk.callbacks[cb_idx];
+            for (const auto& [cb_idx, cb] : thunk.callbacks) {
+                if (cb.is_stub) {
+                    continue;
+                }
+
                 bool is_void = cb.return_type->isVoidType();
-                auto cb_function_name = thunk.function_name + "CB" + (cb_idx == 0 ? "" : std::to_string(cb_idx));
+                bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
+                auto cb_function_name = thunk.function_name + "CB" + (is_first_cb ? "" : std::to_string(cb_idx));
                 file << "static void fexfn_unpack_" << libname << "_" << cb_function_name << "(uintptr_t cb, void* argsv) {\n";
                 file << "  typedef " << cb.return_type.getAsString() << " fn_t (" << format_function_params(cb) << ");\n";
                 file << "  auto callback = reinterpret_cast<fn_t*>(cb);\n";
@@ -474,8 +545,13 @@ void FrontendAction::EndSourceFileAction() {
         std::ofstream file(output_filenames.callback_unpacks_header);
 
         for (auto& thunk : thunks) {
-            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
-                auto cb_function_name = thunk.GetOriginalFunctionName() + "CB" + (cb_idx == 0 ? "" : std::to_string(cb_idx));
+            for (const auto& [cb_idx, cb] : thunk.callbacks) {
+                if (cb.is_stub) {
+                    continue;
+                }
+
+                bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
+                auto cb_function_name = thunk.GetOriginalFunctionName() + "CB" + (is_first_cb ? "" : std::to_string(cb_idx));
                 file << "uintptr_t " << libname << "_" << cb_function_name << ";\n";
             }
         }
@@ -485,8 +561,13 @@ void FrontendAction::EndSourceFileAction() {
         std::ofstream file(output_filenames.callback_unpacks_header_init);
 
         for (auto& thunk : thunks) {
-            for (std::size_t cb_idx = 0; cb_idx < thunk.callbacks.size(); ++cb_idx) {
-                auto cb_function_name = thunk.function_name + "CB" + (cb_idx == 0 ? "" : std::to_string(cb_idx));
+            for (const auto& [cb_idx, cb] : thunk.callbacks) {
+                if (cb.is_stub) {
+                    continue;
+                }
+
+                bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
+                auto cb_function_name = thunk.function_name + "CB" + (is_first_cb ? "" : std::to_string(cb_idx));
                 file << "(uintptr_t)&fexfn_unpack_" << libname << "_" << cb_function_name << ",\n";
             }
         }

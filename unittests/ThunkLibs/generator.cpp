@@ -187,6 +187,8 @@ static void run_tool(std::unique_ptr<FrontendAction> action, std::string_view co
     std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
 
     const char* common_header_code = R"(namespace fexgen {
+struct callback_annotation_base { bool prevent_multiple; };
+struct callback_stub : callback_annotation_base {};
 } // namespace fexgen
 )";
 
@@ -305,6 +307,20 @@ TEST_CASE_METHOD(Fixture, "Trivial") {
                                         hasInit(1, initListExpr(hasInit(0, implicitCastExpr()), hasInit(1, implicitCastExpr())))))
             // TODO: check null termination
             )));
+}
+
+// Unknown annotations trigger an error
+TEST_CASE_METHOD(Fixture, "UnknownAnnotation") {
+    REQUIRE_THROWS(run_thunkgen(
+        "void func();\n"
+        "struct invalid_annotation {};\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> : invalid_annotation {};\n", true));
+
+    REQUIRE_THROWS(run_thunkgen(
+        "void func();\n"
+        "template<auto> struct fex_gen_config {};\n"
+        "template<> struct fex_gen_config<func> { int invalid_field_annotation; };\n", true));
 }
 
 // Parameter is a function pointer
