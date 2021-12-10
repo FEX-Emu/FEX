@@ -1,7 +1,14 @@
 set (MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man CACHE PATH "MAN_DIR")
 
-set (SRCS
+set (FEXCORE_BASE_SRCS
   Common/Paths.cpp
+  Interface/Config/Config.cpp
+  Utils/FileLoading.cpp
+  Utils/ForcedAssert.cpp
+  Utils/LogManager.cpp
+  )
+
+set (SRCS
   Common/JitSymbols.cpp
   Common/SoftFloat-3e/extF80_add.c
   Common/SoftFloat-3e/extF80_div.c
@@ -70,7 +77,6 @@ set (SRCS
   Common/SoftFloat-3e/f32_to_extF80.c
   Common/SoftFloat-3e/s_normSubnormalF32Sig.c
   Common/SoftFloat-3e/s_f32UIToCommonNaN.c
-  Interface/Config/Config.cpp
   Interface/Context/Context.cpp
   Interface/Core/LookupCache.cpp
   Interface/Core/BlockSamplingData.cpp
@@ -141,9 +147,6 @@ set (SRCS
   Interface/IR/Passes/SyscallOptimization.cpp
   Utils/Allocator.cpp
   Utils/Allocator/64BitAllocator.cpp
-  Utils/FileLoading.cpp
-  Utils/ForcedAssert.cpp
-  Utils/LogManager.cpp
   Utils/NetStream.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp
@@ -196,7 +199,7 @@ if (ENABLE_JIT_ARM64)
     Interface/Core/JIT/Arm64/VectorOps.cpp)
 endif()
 
-set (LIBS vixl dl fmt::fmt xxhash tiny-json)
+set (LIBS vixl dl xxhash tiny-json)
 if (ENABLE_JEMALLOC)
   list (APPEND LIBS FEX_jemalloc)
 endif()
@@ -297,17 +300,10 @@ install(FILES ${OUTPUT_MAN_NAME_COMPRESS} DESTINATION ${MAN_DIR}/man1)
 check_cxx_compiler_flag(-fdiagnostics-color=always GCC_COLOR)
 check_cxx_compiler_flag(-fcolor-diagnostics CLANG_COLOR)
 
-function(AddObject Name Type)
-  add_library(${Name} ${Type} ${SRCS})
-  add_dependencies(${Name} IR_INC)
-  add_dependencies(${Name} CONFIG_INC)
-
-  target_link_libraries(${Name} ${LIBS})
-  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
+function(AddDefaultOptionsToTarget Name)
   set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)
   set_target_properties(${Name} PROPERTIES VISIBILITY_INLINES_HIDDEN TRUE)
-
   target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
   target_include_directories(${Name} PRIVATE IncludePrivate/)
@@ -339,20 +335,6 @@ function(AddObject Name Type)
       PRIVATE
       "-fcolor-diagnostics")
   endif()
-endfunction()
-
-function(AddLibrary Name Type)
-  add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
-  target_link_libraries(${Name} ${LIBS})
-  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
-  set_target_properties(${Name} PROPERTIES C_VISIBILITY_PRESET hidden)
-  set_target_properties(${Name} PROPERTIES CXX_VISIBILITY_PRESET hidden)
-  set_target_properties(${Name} PROPERTIES VISIBILITY_INLINES_HIDDEN TRUE)
-  set_target_properties(${Name} PROPERTIES VERSION ${FEXCore_VERSION} SOVERSION ${FEXCore_VERSION})
-
-  target_include_directories(${Name} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
-  target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
-  target_include_directories(${Name} PUBLIC "${CMAKE_BINARY_DIR}/include/")
 
   if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
     target_link_options(${Name}
@@ -362,6 +344,30 @@ function(AddLibrary Name Type)
       "LINKER:--as-needed"
     )
   endif()
+endfunction()
+
+# Build FEXCore_Config static library
+add_library(FEXCore_Base STATIC ${FEXCORE_BASE_SRCS})
+target_link_libraries(FEXCore_Base fmt::fmt tiny-json)
+AddDefaultOptionsToTarget(FEXCore_Base)
+
+function(AddObject Name Type)
+  add_library(${Name} ${Type} ${SRCS})
+  add_dependencies(${Name} IR_INC)
+  add_dependencies(${Name} CONFIG_INC)
+
+  target_link_libraries(${Name} FEXCore_Base ${LIBS})
+  AddDefaultOptionsToTarget(${Name})
+
+  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
+endfunction()
+
+function(AddLibrary Name Type)
+  add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
+  target_link_libraries(${Name} FEXCore_Base ${LIBS})
+  set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
+
+  AddDefaultOptionsToTarget(${Name})
 endfunction()
 
 AddObject(${PROJECT_NAME}_object OBJECT)
