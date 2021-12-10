@@ -89,6 +89,7 @@ struct ThunkedAPIFunction : FunctionParams {
 
 static std::vector<ThunkedFunction> thunks;
 static std::vector<ThunkedAPIFunction> thunked_api;
+static std::optional<unsigned> lib_version;
 
 class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
     clang::ASTContext& context;
@@ -98,11 +99,39 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
         Stub,
     };
 
+    struct NamespaceAnnotations {
+        std::optional<unsigned> version;
+    };
+
     struct Annotations {
         std::optional<clang::QualType> uniform_va_type;
 
         CallbackStrategy callback_strategy = CallbackStrategy::Default;
     };
+
+    NamespaceAnnotations GetNamespaceAnnotations(clang::CXXRecordDecl* decl) {
+        if (!decl->hasDefinition()) {
+            return {};
+        }
+
+        NamespaceAnnotations ret;
+
+        for (const clang::FieldDecl* field : decl->fields()) {
+            auto name = field->getNameAsString();
+            if (name == "version") {
+                auto initializer = field->getInClassInitializer()->IgnoreCasts();
+                auto version_literal = llvm::dyn_cast_or_null<clang::IntegerLiteral>(initializer);
+                if (!initializer || !version_literal) {
+                    throw Error(field->getBeginLoc(), "No version given (expected integral typed member, e.g. \"int version = 5;\")");
+                }
+                ret.version = version_literal->getValue().getZExtValue();
+            } else {
+                throw Error(field->getBeginLoc(), "Unknown namespace annotation");
+            }
+        }
+
+        return ret;
+    }
 
     Annotations GetAnnotations(clang::CXXRecordDecl* decl) {
         Annotations ret;
@@ -142,6 +171,25 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
 
 public:
     ASTVisitor(clang::ASTContext& context_) : context(context_) {
+    }
+
+    /**
+     * Matches "template<auto> struct fex_gen_config { ... }"
+     */
+    bool VisitClassTemplateDecl(clang::ClassTemplateDecl* decl) try {
+        if (decl->getName() != "fex_gen_config") {
+            return true;
+        }
+
+        auto annotations = GetNamespaceAnnotations(decl->getTemplatedDecl());
+        if (annotations.version) {
+            lib_version = annotations.version;
+        }
+
+        return true;
+    } catch (ClangDiagnosticAsException& exception) {
+        context.getDiagnostics().Report(exception.first, exception.second);
+        return false;
     }
 
     /**
@@ -243,6 +291,7 @@ FrontendAction::FrontendAction(const std::string& libname_, const OutputFilename
     : libname(libname_), output_filenames(output_filenames_) {
     thunks.clear();
     thunked_api.clear();
+    lib_version = std::nullopt;
 }
 
 void FrontendAction::EndSourceFileAction() {
@@ -456,7 +505,14 @@ void FrontendAction::EndSourceFileAction() {
 
         file << "static void* fexldr_ptr_" << libname << "_so;\n";
         file << "extern \"C\" bool fexldr_init_" << libname << "() {\n";
-        file << "  fexldr_ptr_" << libname << "_so = dlopen(\"" << libname << ".so\", RTLD_LOCAL | RTLD_LAZY);\n";
+
+        std::string version_suffix;
+        if (lib_version) {
+          version_suffix = '.' + std::to_string(*lib_version);
+        }
+        const std::string library_filename = libname + ".so" + version_suffix;
+        file << "  fexldr_ptr_" << libname << "_so = dlopen(\"" << library_filename << "\", RTLD_LOCAL | RTLD_LAZY);\n";
+
         file << "  if (!fexldr_ptr_" << libname << "_so) { return false; }\n\n";
         for (auto& import : thunked_api) {
             file << "  (void*&)fexldr_ptr_" << libname << "_" << import.function_name << " = dlsym(fexldr_ptr_" << libname << "_so, \"" << import.function_name << "\");\n";

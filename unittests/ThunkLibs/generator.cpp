@@ -323,6 +323,20 @@ TEST_CASE_METHOD(Fixture, "UnknownAnnotation") {
         "template<> struct fex_gen_config<func> { int invalid_field_annotation; };\n", true));
 }
 
+TEST_CASE_METHOD(Fixture, "VersionedLibrary") {
+    const auto output = run_thunkgen_host(
+        "template<auto> struct fex_gen_config { int version = 123; };\n");
+
+    CHECK_THAT(output,
+        matches(callExpr(
+            callee(functionDecl(hasName("dlopen"))),
+            hasArgument(0, stringLiteral().bind("libname"))
+            ))
+        .check_binding("libname", +[](const clang::StringLiteral* lit) {
+            return lit->getString().endswith(".so.123");
+        }));
+}
+
 // Parameter is a function pointer
 TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
     const auto output = run_thunkgen_guest(
