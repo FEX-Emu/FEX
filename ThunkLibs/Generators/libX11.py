@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from ThunkHelpers import *
 
-lib("libX11", "1")
+lib("libX11", "6")
 
 # VArgs support needs manual work
 # fn("char* XSetICValues(XIC, ...)") # TODO VARGS
