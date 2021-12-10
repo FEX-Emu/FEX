@@ -261,8 +261,8 @@ add_guest_lib(xcb_sync)
 generate_new(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(xcb-present)
 
-generate(libxcb_randr thunks function_packs function_packs_public)
-add_guest_lib(xcb_randr)
+generate_new(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp thunks function_packs function_packs_public)
+add_guest_lib(xcb-randr)
 
 generate_new(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(xcb-glx)
