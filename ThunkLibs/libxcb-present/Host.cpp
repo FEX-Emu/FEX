@@ -15,22 +15,18 @@ $end_info$
 #include <malloc.h>
 
 #include "ldr_ptrs.inl"
+
+static void fexfn_impl_libxcb_present_FEX_xcb_present_init_extension(xcb_connection_t * a_0, xcb_extension_t * a_1);
+
+static size_t fexfn_impl_libxcb_present_FEX_usable_size(void *a_0){
+  return malloc_usable_size(a_0);
+}
+
+static void fexfn_impl_libxcb_present_FEX_free_on_host(void *a_0){
+  free(a_0);
+}
+
 #include "function_unpacks.inl"
-
-
-void fexfn_unpack_libxcb_present_FEX_xcb_present_init_extension(void *argsv);
-
-void fexfn_unpack_libxcb_present_FEX_usable_size(void *argsv){
-  struct arg_t {void* a_0;size_t rv;};
-  auto args = (arg_t*)argsv;
-  args->rv = malloc_usable_size(args->a_0);
-}
-
-void fexfn_unpack_libxcb_present_FEX_free_on_host(void *argsv){
-  struct arg_t {void* a_0;};
-  auto args = (arg_t*)argsv;
-  free(args->a_0);
-}
 
 static ExportEntry exports[] = {
     #include "tab_function_unpacks.inl"
@@ -39,15 +35,13 @@ static ExportEntry exports[] = {
 
 #include "ldr.inl"
 
-void fexfn_unpack_libxcb_present_FEX_xcb_present_init_extension(void *argsv){
-  struct arg_t {xcb_connection_t * a_0;xcb_extension_t * a_1;};
-  auto args = (arg_t*)argsv;
+static void fexfn_impl_libxcb_present_FEX_xcb_present_init_extension(xcb_connection_t * a_0, xcb_extension_t * a_1) {
   xcb_extension_t *ext{};
-  if (strcmp(args->a_1->name, "Present") == 0) {
+  if (strcmp(a_1->name, "Present") == 0) {
     ext = (xcb_extension_t *)dlsym(fexldr_ptr_libxcb_present_so, "xcb_present_id");
   }
   else {
-    fprintf(stderr, "Unknown xcb extension '%s'\n", args->a_1->name);
+    fprintf(stderr, "Unknown xcb extension '%s'\n", a_1->name);
     __builtin_trap();
     return;
   }
@@ -57,10 +51,10 @@ void fexfn_unpack_libxcb_present_FEX_xcb_present_init_extension(void *argsv){
 
   fexldr_ptr_libxcb_xcb_get_extension_data = (fexldr_type_libxcb_xcb_get_extension_data*)dlsym(RTLD_DEFAULT, "xcb_get_extension_data");
 
-  auto res = fexldr_ptr_libxcb_xcb_get_extension_data(args->a_0, ext);
+  auto res = fexldr_ptr_libxcb_xcb_get_extension_data(a_0, ext);
 
   // Copy over the global id
-  args->a_1->global_id = ext->global_id;
+  a_1->global_id = ext->global_id;
 }
 
 EXPORTS(libxcb_present)

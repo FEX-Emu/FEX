@@ -179,8 +179,8 @@ add_host_lib(xcb_shm)
 generate(libxcb_sync function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb_sync)
 
-generate(libxcb_present function_unpacks tab_function_unpacks ldr ldr_ptrs)
-add_host_lib(xcb_present)
+generate_new(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+add_host_lib(xcb-present)
 
 generate(libxcb_randr function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb_randr)

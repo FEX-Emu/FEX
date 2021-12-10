@@ -258,8 +258,8 @@ add_guest_lib(xcb_shm)
 generate(libxcb_sync thunks function_packs function_packs_public)
 add_guest_lib(xcb_sync)
 
-generate(libxcb_present thunks function_packs function_packs_public)
-add_guest_lib(xcb_present)
+generate_new(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp thunks function_packs function_packs_public)
+add_guest_lib(xcb-present)
 
 generate(libxcb_randr thunks function_packs function_packs_public)
 add_guest_lib(xcb_randr)
