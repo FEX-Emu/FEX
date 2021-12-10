@@ -25,19 +25,14 @@ $end_info$
 
 typedef void voidFunc();
 
-static struct { const char* name; voidFunc* fn; } symtab[] = {
-	#include "tab_function_packs.inl"
-	{ nullptr, nullptr }
-};
-
 extern "C" {
 	voidFunc *glXGetProcAddress(const GLubyte *procname) {
 
-		for (int i = 0; symtab[i].name; i++) {
-			if (strcmp(symtab[i].name, (const char*)procname) == 0) {
+        for (int i = 0; internal_symtable[i].name; i++) {
+            if (strcmp(internal_symtable[i].name, (const char*)procname) == 0) {
 				// for debugging
-				//printf("glXGetProcAddress: looked up %s %s %p %p\n", procname, symtab[i].name, symtab[i].fn, &glXGetProcAddress);
-				return symtab[i].fn;
+                //printf("glXGetProcAddress: looked up %s %s %p %p\n", procname, internal_symtable[i].name, internal_symtable[i].fn, &glXGetProcAddress);
+                return internal_symtable[i].fn;
 			}
 		}
 

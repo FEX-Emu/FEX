@@ -125,7 +125,7 @@ add_guest_lib(asound)
 generate(libEGL thunks function_packs function_packs_public)
 add_guest_lib(EGL)
 
-generate(libGL thunks function_packs function_packs_public tab_function_packs)
+generate_new(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(GL)
 
 # disabled for now, headers are platform specific
