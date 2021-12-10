@@ -167,8 +167,8 @@ add_host_lib(xcb)
 generate_new(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb-dri2)
 
-generate(libxcb_dri3 function_unpacks tab_function_unpacks ldr ldr_ptrs)
-add_host_lib(xcb_dri3)
+generate_new(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+add_host_lib(xcb-dri3)
 
 generate(libxcb_xfixes function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(xcb_xfixes)
