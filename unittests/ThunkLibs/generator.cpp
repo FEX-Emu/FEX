@@ -187,6 +187,7 @@ static void run_tool(std::unique_ptr<FrontendAction> action, std::string_view co
     std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
 
     const char* common_header_code = R"(namespace fexgen {
+struct custom_host_impl {};
 struct callback_annotation_base { bool prevent_multiple; };
 struct callback_stub : callback_annotation_base {};
 } // namespace fexgen

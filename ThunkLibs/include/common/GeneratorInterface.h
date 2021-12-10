@@ -1,4 +1,5 @@
 namespace fexgen {
+struct custom_host_impl {};
 
 struct callback_annotation_base {
     // Prevent annotating multiple callback strategies

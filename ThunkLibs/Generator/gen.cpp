@@ -104,6 +104,8 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
     };
 
     struct Annotations {
+        bool custom_host_impl = false;
+
         std::optional<clang::QualType> uniform_va_type;
 
         CallbackStrategy callback_strategy = CallbackStrategy::Default;
@@ -138,7 +140,9 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
 
         for (const auto& base : decl->bases()) {
             auto annotation = base.getType().getAsString();
-            if (annotation == "fexgen::callback_stub") {
+            if (annotation == "fexgen::custom_host_impl") {
+                ret.custom_host_impl = true;
+            } else if (annotation == "fexgen::callback_stub") {
                 ret.callback_strategy = CallbackStrategy::Stub;
             } else {
                 throw Error(base.getSourceRange().getBegin(), "Unknown annotation");
@@ -225,6 +229,8 @@ public:
 
         data.decl = emitted_function;
 
+        data.custom_host_impl = annotations.custom_host_impl;
+
         for (std::size_t param_idx = 0; param_idx < emitted_function->param_size(); ++param_idx) {
             auto* param = emitted_function->getParamDecl(param_idx);
             data.param_types.push_back(param->getType());
@@ -268,6 +274,7 @@ public:
             // This function is thunked through an "_internal" symbol since its signature
             // is different from the one in the native host/guest libraries.
             data.function_name = data.function_name + "_internal";
+            assert(!data.custom_host_impl && "Custom host impl requested but this is implied by the function signature already");
             data.custom_host_impl = true;
         }
 
