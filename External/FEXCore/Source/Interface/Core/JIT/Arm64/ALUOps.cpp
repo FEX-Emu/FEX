@@ -8,6 +8,10 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 namespace FEXCore::CPU {
+
+#define GRD(Node) (IROp->Size <= 4 ? GetDst<RA_32>(Node) : GetDst<RA_64>(Node))
+#define GRS(Node) (IROp->Size <= 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
+
 static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
   __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
   __uint128_t Res = Source / Divisor;
@@ -79,8 +83,6 @@ DEF_OP(CycleCounter) {
   mrs(GetReg<RA_64>(Node), CNTVCT_EL0);
 #endif
 }
-
-#define GRS(Node) (IROp->Size <= 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 
 DEF_OP(Add) {
   auto Op = IROp->C<IR::IROp_Add>();
@@ -509,6 +511,60 @@ DEF_OP(Extr) {
 
     default: LOGMAN_MSG_A_FMT("Unhandled EXTR size: {}", OpSize);
   }
+}
+
+DEF_OP(PExt) {
+  auto Op = IROp->C<IR::IROp_PExt>();
+  const auto OpSize = IROp->Size;
+
+  const Register Input = GRS(Op->Args(0).ID());
+  const Register Mask = GRS(Op->Args(1).ID());
+  const Register Dest = GRS(Node);
+
+  const Register MaskReg    = OpSize <= 4 ? TMP1.W() : TMP1;
+  const Register BitReg     = OpSize <= 4 ? TMP2.W() : TMP2;
+  const Register SubMaskReg = OpSize <= 4 ? TMP3.W() : TMP3;
+  const Register Offset     = OpSize <= 4 ? TMP4.W() : TMP4;
+  const Register SizedZero  = OpSize <= 4 ? Register{wzr} : Register{xzr};
+
+  aarch64::Label EarlyExit;
+  aarch64::Label NextBit;
+  aarch64::Label Done;
+
+  cbz(Mask, &EarlyExit);
+  mov(MaskReg, Mask);
+  mov(Offset, SizedZero);
+
+  // We sadly need to spill a reg for this for the time being
+  // TODO: Remove when scratch registers can be allocated
+  //       explicitly.
+  SpillStaticRegs(false, 1U << Mask.GetCode());
+  mov(Mask, SizedZero);
+
+  // Main loop
+  bind(&NextBit);
+  rbit(BitReg, MaskReg);
+  clz(BitReg, BitReg);
+  sub(SubMaskReg, MaskReg, 1);
+  ands(MaskReg, SubMaskReg, MaskReg);
+  lsrv(BitReg, Input, BitReg);
+  and_(BitReg, BitReg, 1);
+  lslv(BitReg, BitReg, Offset);
+  add(Offset, Offset, 1);
+  orr(Mask, BitReg, Mask);
+  b(&NextBit, Condition::ne);
+  mov(Dest, Mask);
+  // Restore our mask register before leaving
+  // TODO: Also remove along with above TODO.
+  FillStaticRegs(false, 1U << Mask.GetCode());
+  b(&Done);
+
+  // Early exit
+  bind(&EarlyExit);
+  mov(Dest, SizedZero);
+
+  // All done with nothing to do.
+  bind(&Done);
 }
 
 DEF_OP(LDiv) {
@@ -1099,6 +1155,7 @@ void Arm64JITCore::RegisterALUHandlers() {
   REGISTER_OP(ASHR,              Ashr);
   REGISTER_OP(ROR,               Ror);
   REGISTER_OP(EXTR,              Extr);
+  REGISTER_OP(PEXT,              PExt);
   REGISTER_OP(LDIV,              LDiv);
   REGISTER_OP(LUDIV,             LUDiv);
   REGISTER_OP(LREM,              LRem);

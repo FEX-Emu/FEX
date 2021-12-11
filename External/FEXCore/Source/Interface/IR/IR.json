@@ -1089,6 +1089,22 @@
       ]
     },
 
+    "PExt": {
+      "Desc": [
+        "Performs a parallel bit extract.",
+        "Each bit set in the mask will select the corresponding bit in the Input",
+        "and transfers them to the lower contiguous bits in the destination."
+      ],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Input",
+        "Mask"
+      ]
+    },
+
     "LDiv": {
       "Desc": ["Integer long signed division returning lower bits",
                "The Lower and Upper registers will be concated together to generate a dividend twice the size",

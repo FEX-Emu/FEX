@@ -671,6 +671,21 @@ DEF_OP(Extr) {
   }
 }
 
+DEF_OP(PExt) {
+  const auto Op = IROp->C<IR::IROp_PExt>();
+  const auto OpSize = IROp->Size;
+
+  const auto Input = GRS(Op->Args(0).ID());
+  const auto Mask  = GRS(Op->Args(1).ID());
+  const auto Dest  = GRD(Node);
+
+  if (OpSize == 4) {
+    pext(Dest.cvt32(), Input.cvt32(), Mask.cvt32());
+  } else {
+    pext(Dest.cvt64(), Input.cvt64(), Mask.cvt64());
+  }
+}
+
 DEF_OP(LDiv) {
   auto Op = IROp->C<IR::IROp_LDiv>();
   uint8_t OpSize = IROp->Size;
@@ -1248,6 +1263,7 @@ void X86JITCore::RegisterALUHandlers() {
   REGISTER_OP(ASHR,              Ashr);
   REGISTER_OP(ROR,               Ror);
   REGISTER_OP(EXTR,              Extr);
+  REGISTER_OP(PEXT,              PExt);
   REGISTER_OP(LDIV,              LDiv);
   REGISTER_OP(LUDIV,             LUDiv);
   REGISTER_OP(LREM,              LRem);

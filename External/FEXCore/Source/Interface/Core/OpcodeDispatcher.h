@@ -338,6 +338,7 @@ public:
   void BMI2Shift(OpcodeArgs);
   void BZHI(OpcodeArgs);
   void MULX(OpcodeArgs);
+  void PEXT(OpcodeArgs);
   void RORX(OpcodeArgs);
 
   // ADX Ops
