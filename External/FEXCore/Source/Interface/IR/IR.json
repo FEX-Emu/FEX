@@ -1089,6 +1089,22 @@
       ]
     },
 
+    "PDep": {
+      "Desc": [
+        "Performs a parallel bit deposit.",
+        "Takes the contiguous low-order bits and deposits them into",
+        "the destination at the locations specified by the Mask."
+      ],
+      "OpClass": "ALU",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Input",
+        "Mask"
+      ]
+    },
+
     "PExt": {
       "Desc": [
         "Performs a parallel bit extract.",

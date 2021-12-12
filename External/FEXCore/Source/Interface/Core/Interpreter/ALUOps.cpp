@@ -493,6 +493,30 @@ DEF_OP(Extr) {
   }
 }
 
+DEF_OP(PDep) {
+  const auto Op = IROp->C<IR::IROp_PExt>();
+  const auto OpSize = IROp->Size;
+
+  if (OpSize != 4 && OpSize != 8) {
+    LOGMAN_MSG_A_FMT("Unknown PDep Size: {}\n", OpSize);
+    return;
+  }
+
+  const uint64_t Input = OpSize == 4 ? *GetSrc<uint32_t*>(Data->SSAData, Op->Args(0))
+                                     : *GetSrc<uint64_t*>(Data->SSAData, Op->Args(0));
+  uint64_t Mask = OpSize == 4 ? *GetSrc<uint32_t*>(Data->SSAData, Op->Args(1))
+                              : *GetSrc<uint64_t*>(Data->SSAData, Op->Args(1));
+
+  uint64_t Result = 0;
+  for (uint64_t Index = 0; Mask > 0; Index++) {
+    const uint64_t Offset = std::countr_zero(Mask);
+    Mask &= Mask - 1;
+    Result |= ((Input >> Index) & 1) << Offset;
+  }
+
+  GD = Result;
+}
+
 DEF_OP(PExt) {
   const auto Op = IROp->C<IR::IROp_PExt>();
   const auto OpSize = IROp->Size;
