@@ -84,7 +84,7 @@ namespace EPollWatcher {
 
     // Spin while we are not shutting down
     // Also spin while we have pipes to watch
-    while (!EPollWatcherShutdown.load() || NumPipesRemaining() != 0) {
+    while (!EPollWatcherShutdown.load()) {
       // Loop every ten seconds
       // epoll_pwait2 only available since kernel 5.11...
       int Result = epoll_pwait(epoll_fd, Events, MAX_EVENTS, 10 * 1000, nullptr);
