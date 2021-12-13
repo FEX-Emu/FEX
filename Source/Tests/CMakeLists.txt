@@ -2,7 +2,10 @@ add_subdirectory(LinuxSyscalls)
 
 list(APPEND LIBS FEXCore Common CommonCore)
 
-add_executable(FEXLoader FEXLoader.cpp)
+add_executable(FEXLoader
+  FEXLoader.cpp
+  AOT/AOTGenerator.cpp)
+
 target_include_directories(FEXLoader
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/
