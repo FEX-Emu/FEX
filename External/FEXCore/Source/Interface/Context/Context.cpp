@@ -162,6 +162,10 @@ namespace FEXCore::Context {
     return CTX->CPUID.RunFunction(Function, Leaf);
   }
 
+  FEX_DEFAULT_VISIBILITY FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf, uint32_t CPU) {
+    return CTX->CPUID.RunFunctionName(Function, Leaf, CPU);
+  }
+
   void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader) {
     CTX->SetAOTIRLoader(CacheReader);
   }
