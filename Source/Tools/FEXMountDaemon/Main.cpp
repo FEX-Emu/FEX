@@ -60,6 +60,9 @@ namespace EPollWatcher {
 
   void RemovePipeToWatch(int pipe) {
     int Result = epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe, nullptr);
+
+    // Make sure to close the pipe to not leak the FD
+    close(pipe);
     if (Result == -1) {
       fprintf(stderr, "[FEXMountDaemon] epoll_ctl returned error %d %s\n", errno, strerror(errno));
     }
