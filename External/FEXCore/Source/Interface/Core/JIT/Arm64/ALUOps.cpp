@@ -513,6 +513,71 @@ DEF_OP(Extr) {
   }
 }
 
+DEF_OP(PDep) {
+  auto Op = IROp->C<IR::IROp_PExt>();
+  const auto OpSize = IROp->Size;
+
+  const Register Input = GRS(Op->Args(0).ID());
+  const Register Mask = GRS(Op->Args(1).ID());
+  const Register Dest = GRS(Node);
+
+  const Register ShiftedBitReg = OpSize <= 4 ? TMP1.W() : TMP1;
+  const Register BitReg        = OpSize <= 4 ? TMP2.W() : TMP2;
+  const Register SubMaskReg    = OpSize <= 4 ? TMP3.W() : TMP3;
+  const Register IndexReg      = OpSize <= 4 ? TMP4.W() : TMP4;
+  const Register SizedZero     = OpSize <= 4 ? Register{wzr} : Register{xzr};
+
+  const Register InputReg = OpSize <= 4 ? SRA64[0].W() : SRA64[0];
+  const Register MaskReg  = OpSize <= 4 ? SRA64[1].W() : SRA64[1];
+  const Register DestReg  = OpSize <= 4 ? SRA64[2].W() : SRA64[2];
+  const auto SpillCode    = 1U << InputReg.GetCode() |
+                            1U << MaskReg.GetCode() |
+                            1U << DestReg.GetCode();
+
+  aarch64::Label EarlyExit;
+  aarch64::Label NextBit;
+  aarch64::Label Done;
+
+  cbz(Mask, &EarlyExit);
+  mov(IndexReg, SizedZero);
+
+  // We sadly need to spill regs for this for the time being
+  // TODO: Remove when scratch registers can be allocated
+  //       explicitly.
+  SpillStaticRegs(false, SpillCode);
+  mov(InputReg, Input);
+  mov(MaskReg, Mask);
+  mov(DestReg, SizedZero);
+
+  // Main loop
+  bind(&NextBit);
+  rbit(ShiftedBitReg, MaskReg);
+  clz(ShiftedBitReg, ShiftedBitReg);
+  lsrv(BitReg, InputReg, IndexReg);
+  and_(BitReg, BitReg, 1);
+  sub(SubMaskReg, MaskReg, 1);
+  add(IndexReg, IndexReg, 1);
+  ands(MaskReg, MaskReg, SubMaskReg);
+  lslv(ShiftedBitReg, BitReg, ShiftedBitReg);
+  orr(DestReg, DestReg, ShiftedBitReg);
+  b(&NextBit, Condition::ne);
+  // Store result in a temp so it doesn't get clobbered.
+  // and restore it after the re-fill below.
+  mov(IndexReg, DestReg);
+  // Restore our registers before leaving
+  // TODO: Also remove along with above TODO.
+  FillStaticRegs(false, SpillCode);
+  mov(Dest, IndexReg);
+  b(&Done);
+
+  // Early exit
+  bind(&EarlyExit);
+  mov(Dest, SizedZero);
+
+  // All done with nothing to do.
+  bind(&Done);
+}
+
 DEF_OP(PExt) {
   auto Op = IROp->C<IR::IROp_PExt>();
   const auto OpSize = IROp->Size;
@@ -1155,6 +1220,7 @@ void Arm64JITCore::RegisterALUHandlers() {
   REGISTER_OP(ASHR,              Ashr);
   REGISTER_OP(ROR,               Ror);
   REGISTER_OP(EXTR,              Extr);
+  REGISTER_OP(PDEP,              PDep);
   REGISTER_OP(PEXT,              PExt);
   REGISTER_OP(LDIV,              LDiv);
   REGISTER_OP(LUDIV,             LUDiv);

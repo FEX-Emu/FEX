@@ -396,7 +396,7 @@ void InitializeVEXTables() {
     {OPD(2, 0b00, 0xF5), 1, X86InstInfo{"BZHI", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_2ND_SRC, 0, nullptr}},
     // AMD reference manual is incorrect. PEXT actually maps to 0b10, not 0b01.
     {OPD(2, 0b10, 0xF5), 1, X86InstInfo{"PEXT", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_1ST_SRC, 0, nullptr}},
-    {OPD(2, 0b11, 0xF5), 1, X86InstInfo{"PDEP", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b11, 0xF5), 1, X86InstInfo{"PDEP", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_1ST_SRC, 0, nullptr}},
 
     {OPD(2, 0b11, 0xF6), 1, X86InstInfo{"MULX", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_1ST_SRC, 0, nullptr}},
 
