@@ -156,6 +156,24 @@ namespace FEX::HLE::x64 {
 #endif
     }
 
+    // x86-64 has a gap of syscalls in the range of [335, 424) where there aren't any
+    // These are defined that these must return -ENOSYS
+    // This allows x86-64 to start using the common syscall numbers
+    // Fill the gap to ensure that FEX doesn't assert
+    constexpr int SYSCALL_GAP_BEGIN = 335;
+    constexpr int SYSCALL_GAP_END = 424;
+    for (int SyscallNumber = SYSCALL_GAP_BEGIN; SyscallNumber < SYSCALL_GAP_END; ++SyscallNumber) {
+      auto &Def = Definitions.at(SyscallNumber);
+      Def.Ptr = cvt(&UnimplementedSyscallSafe);
+      Def.NumArgs = 0;
+      // This will allow our syscall optimization code to make this code more optimal
+      // Unlikely to hit a hot path though
+      Def.HostSyscallNumber = SYSCALL_DEF(MAX);
+#ifdef DEBUG_STRACE
+      Def.StraceFmt = "Invalid";
+#endif
+    }
+
 #if PRINT_MISSING_SYSCALLS
     for (auto &Syscall: SyscallNames) {
       if (Definitions[Syscall.first].Ptr == cvt(&UnimplementedSyscall)) {
