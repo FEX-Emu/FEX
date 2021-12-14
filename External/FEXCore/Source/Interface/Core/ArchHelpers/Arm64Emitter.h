@@ -58,12 +58,9 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
 // be used by both Arm64 JIT and ARM64 Dispatcher
 class Arm64Emitter : public vixl::aarch64::Assembler {
 protected:
-  Arm64Emitter(size_t size);
+  Arm64Emitter(FEXCore::Context::Context *ctx, size_t size);
 
   vixl::aarch64::CPU CPU;
-  bool SupportsAtomics{};
-  bool SupportsRCPC{};
-
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant);
   void SpillStaticRegs(bool FPRs = true, uint32_t SpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t FillMask = ~0U);
@@ -78,9 +75,6 @@ protected:
   void Align16B();
 
   uint32_t SpillSlots{};
-
-  uint32_t DCacheLineSize{};
-  uint32_t ICacheLineSize{};
 
   FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
 };

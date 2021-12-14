@@ -333,7 +333,7 @@ void Arm64JITCore::FreeCodeBuffer(CodeBuffer Buffer) {
 }
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
-  : Arm64Emitter(0)
+  : Arm64Emitter(ctx, 0)
   , CTX {ctx}
   , ThreadState {Thread} {
   {

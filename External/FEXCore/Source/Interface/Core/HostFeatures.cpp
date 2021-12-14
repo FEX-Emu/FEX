@@ -41,6 +41,24 @@ HostFeatures::HostFeatures() {
 #ifdef _M_ARM_64
   auto Features = vixl::CPUFeatures::InferFromOS();
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
+  SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
+  // RCPC is bugged on Snapdragon 865
+  // Causes glibc cond16 test to immediately throw assert
+  // __pthread_mutex_cond_lock: Assertion `mutex->__data.__owner == 0'
+  SupportsRCPC = false; //Features.Has(vixl::CPUFeatures::Feature::kRCpc);
+
+  // We need to get the CPU's cache line size
+  // We expect sane targets that have correct cacheline sizes across clusters
+  uint64_t CTR;
+  __asm volatile ("mrs %[ctr], ctr_el0"
+    : [ctr] "=r"(CTR));
+
+  DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
+  ICacheLineSize = 4 << (CTR & 0xF);
+
+  if (!SupportsAtomics) {
+    WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
+  }
 #endif
 #ifdef _M_X86_64
   Xbyak::util::Cpu Features{};
