@@ -127,6 +127,14 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
 
         Frame->State.rip = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP];
         // XXX: Full context setting
+        uint32_t eflags = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL];
+        for (size_t i = 0; i < 32; ++i) {
+          Frame->State.flags[i] = (eflags & (1U << i)) ? 1 : 0;
+        }
+
+        Frame->State.flags[1] = 1;
+        Frame->State.flags[9] = 1;
+
 #define COPY_REG(x) \
             Frame->State.gregs[X86State::REG_##x] = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_##x];
             COPY_REG(R8);
@@ -146,6 +154,21 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
             COPY_REG(RCX);
             COPY_REG(RSP);
 #undef COPY_REG
+        FEXCore::x86_64::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86_64::_libc_fpstate*>(guest_uctx->uc_mcontext.fpregs);
+        // Copy float registers
+        memcpy(Frame->State.mm, fpstate->_st, sizeof(Frame->State.mm));
+        memcpy(Frame->State.xmm, fpstate->_xmm, sizeof(Frame->State.xmm));
+
+        // FCW store default
+        Frame->State.FCW = fpstate->fcw;
+        Frame->State.FTW = fpstate->ftw;
+
+        // Deconstruct FSW
+        Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (fpstate->fsw >> 8) & 1;
+        Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (fpstate->fsw >> 9) & 1;
+        Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (fpstate->fsw >> 10) & 1;
+        Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (fpstate->fsw >> 14) & 1;
+        Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (fpstate->fsw >> 11) & 0b111;
       }
     }
     else {
@@ -160,17 +183,54 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
         ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
         // XXX: Full context setting
+        // First 32-bytes of flags is EFLAGS broken out
+        uint32_t eflags = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL];
+        for (size_t i = 0; i < 32; ++i) {
+          Frame->State.flags[i] = (eflags & (1U << i)) ? 1 : 0;
+        }
+
+        Frame->State.flags[1] = 1;
+        Frame->State.flags[9] = 1;
+
+        Frame->State.rip = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP];
+        Frame->State.cs = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS];
+        Frame->State.ds = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS];
+        Frame->State.es = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES];
+        Frame->State.fs = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS];
+        Frame->State.gs = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS];
+        Frame->State.ss = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_SS];
 #define COPY_REG(x) \
       Frame->State.gregs[X86State::REG_##x] = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_##x];
-      COPY_REG(RDI);
-      COPY_REG(RSI);
-      COPY_REG(RBP);
-      COPY_REG(RBX);
-      COPY_REG(RDX);
-      COPY_REG(RAX);
-      COPY_REG(RCX);
-      COPY_REG(RSP);
+        COPY_REG(RDI);
+        COPY_REG(RSI);
+        COPY_REG(RBP);
+        COPY_REG(RBX);
+        COPY_REG(RDX);
+        COPY_REG(RAX);
+        COPY_REG(RCX);
+        COPY_REG(RSP);
 #undef COPY_REG
+        FEXCore::x86::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86::_libc_fpstate*>(guest_uctx->uc_mcontext.fpregs);
+
+        // Copy float registers
+        for (size_t i = 0; i < 8; ++i) {
+          // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
+          memcpy(&Frame->State.mm[i], &fpstate->_st[i], 10);
+        }
+
+        // Extended XMM state
+        memcpy(fpstate->_xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
+
+        // FCW store default
+        Frame->State.FCW = fpstate->fcw;
+        Frame->State.FTW = fpstate->ftw;
+
+        // Deconstruct FSW
+        Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (fpstate->fsw >> 8) & 1;
+        Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (fpstate->fsw >> 9) & 1;
+        Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (fpstate->fsw >> 10) & 1;
+        Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (fpstate->fsw >> 14) & 1;
+        Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (fpstate->fsw >> 11) & 0b111;
       }
     }
   }
