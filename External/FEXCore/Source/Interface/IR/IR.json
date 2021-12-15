@@ -191,6 +191,19 @@
       ]
     },
 
+    "ProcessorID": {
+      "Desc": ["Returns the processor ID correlating to the current running CPU",
+               "This may be out of date by time this instruction is executed so care must be taken",
+               "This same information can be gotten from syscall getcpu(&cpu, &node)",
+               "uint32_t Res = (node << 12) | cpu;",
+               "This means it has a limitation of 4096 CPU cores. Which is fine and matches x86 behaviour"
+              ],
+      "OpClass": "Misc",
+      "HasDest": true,
+      "DestClass": "GPR",
+      "DestSize": 8
+    },
+
     "SignalReturn": {
       "HasSideEffects": true,
       "OpClass": "Branch"

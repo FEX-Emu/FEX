@@ -140,6 +140,12 @@ DEF_OP(Print) {
     LOGMAN_MSG_A_FMT("Unknown value size: {}", OpSize);
 }
 
+DEF_OP(ProcessorID) {
+  uint32_t CPU, CPUNode;
+  ::getcpu(&CPU, &CPUNode);
+  GD = (CPUNode << 12) | CPU;
+}
+
 #undef DEF_OP
 
 } // namespace FEXCore::CPU

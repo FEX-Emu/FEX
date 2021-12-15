@@ -5166,6 +5166,27 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
   _CacheLineZero(DestMem);
 }
 
+void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+
+  // RDTSCP is slightly different than RDTSC
+  // IA32_TSC_AUX is returned in RCX
+  // All previous loads are globally visible
+  //  - Explicitly does not wait for stores to be globally visible
+  //  - Explicitly use an MFENCE before this instruction if you want this behaviour
+  // This instruction is not an execution fence, so subsequent instructions can execute after this
+  //  - Explicitly use an LFENCE after RDTSCP if you want to block this behaviour
+
+  _Fence({FEXCore::IR::Fence_Load});
+  auto Counter = _CycleCounter();
+  auto CounterLow = _Bfe(32, 0, Counter);
+  auto CounterHigh = _Bfe(32, 32, Counter);
+  auto ID = _ProcessorID();
+  _StoreContext(GPRClass, GPRSize, GPROffset(X86State::REG_RAX), CounterLow);
+  _StoreContext(GPRClass, GPRSize, GPROffset(X86State::REG_RCX), ID);
+  _StoreContext(GPRClass, GPRSize, GPROffset(X86State::REG_RDX), CounterHigh);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
 
@@ -5814,6 +5835,7 @@ constexpr uint16_t PF_F2 = 3;
     {((1 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
 
     // REG /7
+    {((3 << 3) | 1), 1, &OpDispatchBuilder::RDTSCPOp},
     {((3 << 3) | 4), 1, &OpDispatchBuilder::CLZeroOp},
 
   };

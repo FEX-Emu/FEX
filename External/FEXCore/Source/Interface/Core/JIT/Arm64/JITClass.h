@@ -334,6 +334,7 @@ private:
   DEF_OP(Print);
   DEF_OP(GetRoundingMode);
   DEF_OP(SetRoundingMode);
+  DEF_OP(ProcessorID);
 
   ///< Move ops
   DEF_OP(ExtractElementPair);

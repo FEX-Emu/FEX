@@ -155,6 +155,13 @@ DEF_OP(Print) {
   PopRegs();
 }
 
+DEF_OP(ProcessorID) {
+  // Cyclecounter in EDX:EAX
+  // IA32_TSC_AUX in ECX
+  rdtscp();
+  mov (GetDst<RA_32>(Node), ecx);
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterMiscHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -171,6 +178,7 @@ void X86JITCore::RegisterMiscHandlers() {
   REGISTER_OP(GETROUNDINGMODE, GetRoundingMode);
   REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
   REGISTER_OP(INVALIDATEFLAGS,   NoOp);
+  REGISTER_OP(PROCESSORID,   ProcessorID);
 #undef REGISTER_OP
 }
 }

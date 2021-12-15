@@ -884,7 +884,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) {
     (1 << 24) | // FXSAVE/FXRSTOR
     (1 << 25) | // FXSAVE/FXRSTOR Optimizations
     (0 << 26) | // 1 gigabit pages
-    (0 << 27) | // RDTSCP
+    (1 << 27) | // RDTSCP
     (0 << 28) | // Reserved
     (1 << 29) | // Long Mode
     (0 << 30) | // 3DNow! Extensions
