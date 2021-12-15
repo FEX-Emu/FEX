@@ -47,7 +47,7 @@ void InitializeSecondaryModRMTables() {
 
     // REG /7
     {((3 << 3) | 0), 1, X86InstInfo{"SWAPGS",   TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
-    {((3 << 3) | 1), 1, X86InstInfo{"RDTSCP",   TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
+    {((3 << 3) | 1), 1, X86InstInfo{"RDTSCP",   TYPE_INST,    FLAGS_NONE, 0, nullptr}},
     {((3 << 3) | 2), 1, X86InstInfo{"MONITORX", TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
     {((3 << 3) | 3), 1, X86InstInfo{"MWAITX",   TYPE_PRIV,    FLAGS_NONE, 0, nullptr}},
     {((3 << 3) | 4), 1, X86InstInfo{"CLZERO",   TYPE_INST,    FLAGS_SF_SRC_RAX, 0, nullptr}},
