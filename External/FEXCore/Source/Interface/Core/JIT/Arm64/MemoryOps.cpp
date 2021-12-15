@@ -623,7 +623,7 @@ DEF_OP(LoadMemTSO) {
     LOGMAN_MSG_A_FMT("LoadMemTSO: No offset allowed");
   }
 
-  if (SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
+  if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
     if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       auto Dst = GetReg<RA_64>(Node);
@@ -939,9 +939,9 @@ DEF_OP(CacheLineClear) {
   // Clear dcache only
   // icache doesn't matter here since the guest application shouldn't be calling clflush on JIT code.
   mov(TMP1, MemReg);
-  for (size_t i = 0; i < std::max(1U, DCacheLineSize / 64U); ++i) {
+  for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
     dc(DataCacheOp::CVAU, TMP1);
-    add(TMP1, TMP1, DCacheLineSize);
+    add(TMP1, TMP1, CTX->HostFeatures.DCacheLineSize);
   }
   dsb(InnerShareable, BarrierAll);
 }

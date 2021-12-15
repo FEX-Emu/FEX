@@ -19,7 +19,7 @@ DEF_OP(CASPair) {
   auto Desired = GetSrcPair<RA_64>(Op->Header.Args[1].ID());
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[2].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     mov(TMP3, Expected.first);
     mov(TMP4, Expected.second);
 
@@ -110,7 +110,7 @@ DEF_OP(CAS) {
   auto Desired = GetReg<RA_64>(Op->Header.Args[1].ID());
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[2].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     mov(TMP2, Expected);
     switch (OpSize) {
     case 1: casalb(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
@@ -218,7 +218,7 @@ DEF_OP(AtomicAdd) {
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
     case 1: staddlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 2: staddlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
@@ -276,7 +276,7 @@ DEF_OP(AtomicSub) {
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     neg(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (IROp->Size) {
     case 1: staddlb(TMP2.W(), MemOperand(MemSrc)); break;
@@ -335,7 +335,7 @@ DEF_OP(AtomicAnd) {
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     mvn(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (IROp->Size) {
     case 1: stclrlb(TMP2.W(), MemOperand(MemSrc)); break;
@@ -394,7 +394,7 @@ DEF_OP(AtomicOr) {
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
     case 1: stsetlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 2: stsetlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
@@ -452,7 +452,7 @@ DEF_OP(AtomicXor) {
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
     case 1: steorlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
     case 2: steorlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
@@ -510,7 +510,7 @@ DEF_OP(AtomicSwap) {
 
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     mov(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (IROp->Size) {
     case 1: swplb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
@@ -568,7 +568,7 @@ DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
     case 1: ldaddalb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldaddalh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
@@ -629,7 +629,7 @@ DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     neg(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (IROp->Size) {
     case 1: ldaddalb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
@@ -691,7 +691,7 @@ DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     mvn(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
     switch (IROp->Size) {
     case 1: ldclralb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
@@ -753,7 +753,7 @@ DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
     case 1: ldsetalb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldsetalh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
@@ -814,7 +814,7 @@ DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
   auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  if (SupportsAtomics) {
+  if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
     case 1: ldeoralb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldeoralh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;

@@ -1,4 +1,5 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "Interface/Context/Context.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -15,37 +16,16 @@ namespace FEXCore::CPU {
 #define STATE x28
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
-Arm64Emitter::Arm64Emitter(size_t size) : vixl::aarch64::Assembler(size, vixl::aarch64::PositionDependentCode) {
+Arm64Emitter::Arm64Emitter(FEXCore::Context::Context *ctx, size_t size) : vixl::aarch64::Assembler(size, vixl::aarch64::PositionDependentCode) {
   CPU.SetUp();
 
   auto Features = vixl::CPUFeatures::InferFromOS();
-  SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
-  // RCPC is bugged on Snapdragon 865
-  // Causes glibc cond16 test to immediately throw assert
-  // __pthread_mutex_cond_lock: Assertion `mutex->__data.__owner == 0'
-  SupportsRCPC = false; //Features.Has(vixl::CPUFeatures::Feature::kRCpc);
-
-  if (SupportsAtomics) {
+  if (ctx->HostFeatures.SupportsAtomics) {
     // Hypervisor can hide this on the c630?
     Features.Combine(vixl::CPUFeatures::Feature::kLORegions);
   }
 
   SetCPUFeatures(Features);
-
-  if (!SupportsAtomics) {
-    WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
-  }
-
-#ifdef _M_ARM_64
-  // We need to get the CPU's cache line size
-  // We expect sane targets that have correct cacheline sizes across clusters
-  uint64_t CTR;
-  __asm volatile ("mrs %[ctr], ctr_el0"
-    : [ctr] "=r"(CTR));
-
-  DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
-  ICacheLineSize = 4 << (CTR & 0xF);
-#endif
 }
 
 void Arm64Emitter::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
