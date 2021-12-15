@@ -154,6 +154,58 @@ DEF_OP(Print) {
   PopDynamicRegsAndLR();
 }
 
+DEF_OP(ProcessorID) {
+  // We always need to spill x8 since we can't know if it is live at this SSA location
+  uint32_t SpillMask = 1U << 8;
+
+  // Ordering is incredibly important here
+  // We must spill any overlapping registers first THEN claim we are in a syscall without invalidating state at all
+  // Only spill the registers that intersect with our usage
+  SpillStaticRegs(false, SpillMask);
+
+  // Now that we are spilled, store in the state that we are in a syscall
+  // Still without overwriting registers that matter
+  // 16bit LoadConstant to be a single instruction
+  // We must always spill at least one register (x8) so this value always has a bit set
+  // This gives the signal handler a value to check to see if we are in a syscall at all
+  LoadConstant(x0, SpillMask & 0xFFFF);
+  str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
+
+  // Allocate some temporary space for storing the uint32_t CPU and Node IDs
+  sub(sp, sp, 16);
+
+  // Load the getcpu syscall number
+  LoadConstant(x8, SYS_getcpu);
+
+  // CPU pointer in x0
+  add(x0, sp, 0);
+  // Node in x1
+  add(x1, sp, 4);
+
+  svc(0);
+  // On updated signal mask we can receive a signal RIGHT HERE
+
+  // Load the values returned by the kernel
+  ldp(w0, w1, MemOperand(sp));
+  // Deallocate stack space
+  sub(sp, sp, 16);
+
+  // Now that we are done in the syscall we need to carefully peel back the state
+  // First unspill the registers from before
+  FillStaticRegs(false, SpillMask);
+
+  // Now the registers we've spilled are back in their original host registers
+  // We can safely claim we are no longer in a syscall
+  str(xzr, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
+
+
+  // Now store the result in the destination in the expected format
+  // uint32_t Res = (node << 12) | cpu;
+  // CPU is in w0
+  // Node is in w1
+  orr(GetReg<RA_64>(Node), x0, Operand(x1, LSL, 12));
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterMiscHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -170,6 +222,7 @@ void Arm64JITCore::RegisterMiscHandlers() {
   REGISTER_OP(GETROUNDINGMODE, GetRoundingMode);
   REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
   REGISTER_OP(INVALIDATEFLAGS,   NoOp);
+  REGISTER_OP(PROCESSORID,   ProcessorID);
 #undef REGISTER_OP
 }
 }
