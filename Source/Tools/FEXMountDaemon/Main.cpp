@@ -21,6 +21,7 @@
 #include <sys/wait.h>
 #include <sys/inotify.h>
 #include <sys/un.h>
+#include <sys/resource.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -35,7 +36,10 @@ namespace EPollWatcher {
   static int epoll_fd{};
   static std::thread EPollThread{};
   static std::atomic<pid_t> EPollThreadTID{};
+  static rlimit MaxFDs{};
+  constexpr size_t static MAX_FD_DISTANCE = 32;
   std::atomic<uint64_t> NumPipesWatched{};
+  std::atomic<size_t> NumFilesOpened{};
   std::atomic<bool> EPollWatcherShutdown {false};
   std::chrono::time_point<std::chrono::system_clock> TimeWhileZeroFDs{};
   // Timeout is ten seconds
@@ -43,6 +47,49 @@ namespace EPollWatcher {
 
   uint64_t NumPipesRemaining() {
     return NumPipesWatched.load();
+  }
+
+  size_t GetNumFilesOpen() {
+    // Walk /proc/self/fd/ to see how many open files we currently have
+    const std::filesystem::path self{"/proc/self/fd/"};
+
+    return std::distance(std::filesystem::directory_iterator{self}, std::filesystem::directory_iterator{});
+  }
+
+  void GetMaxFDs() {
+    // Get our kernel limit for the number of open files
+    if (getrlimit(RLIMIT_NOFILE, &MaxFDs) != 0) {
+      fprintf(stderr, "[FEXMountDaemon] getrlimit(RLIMIT_NOFILE) returned error %d %s\n", errno, strerror(errno));
+    }
+
+    // Walk /proc/self/fd/ to see how many open files we currently have
+    NumFilesOpened = GetNumFilesOpen();
+  }
+
+  void RaiseFDLimit() {
+    if (MaxFDs.rlim_cur == MaxFDs.rlim_max) {
+      fprintf(stderr, "[FEXMountDaemon] Our open FD limit is already set to max and we are wanting to increase it\n");
+      fprintf(stderr, "[FEXMountDaemon] FEXMountDaemon will now no longer be able to track new instances of FEX\n");
+      fprintf(stderr, "[FEXMountDaemon] Current limit is %zd(hard %zd) FDs and we are at %zd\n", MaxFDs.rlim_cur, MaxFDs.rlim_max, GetNumFilesOpen());
+      fprintf(stderr, "[FEXMountDaemon] Ask your administrator to raise your kernel's hard limit on open FDs\n");
+      return;
+    }
+
+    rlimit NewLimit = MaxFDs;
+
+    // Just multiply by two
+    NewLimit.rlim_cur <<= 1;
+
+    // Now limit to the hard max
+    NewLimit.rlim_cur = std::min(NewLimit.rlim_cur, NewLimit.rlim_max);
+
+    if (setrlimit(RLIMIT_NOFILE, &NewLimit) != 0) {
+      fprintf(stderr, "[FEXMountDaemon] Couldn't raise FD limit to %zd even though our hard limit is %zd\n", NewLimit.rlim_cur, NewLimit.rlim_max);
+    }
+    else {
+      // Set the new limit
+      MaxFDs = NewLimit;
+    }
   }
 
   void AddPipeToWatch(int pipe) {
@@ -55,11 +102,20 @@ namespace EPollWatcher {
     }
     else {
       ++NumPipesWatched;
+
+      if ((NumPipesWatched + NumFilesOpened) >= (MaxFDs.rlim_cur - MAX_FD_DISTANCE)) {
+        // We are close to the maximum FD distance
+        // Try to raise the limit
+        RaiseFDLimit();
+      }
     }
   }
 
   void RemovePipeToWatch(int pipe) {
     int Result = epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe, nullptr);
+
+    // Make sure to close the pipe to not leak the FD
+    close(pipe);
     if (Result == -1) {
       fprintf(stderr, "[FEXMountDaemon] epoll_ctl returned error %d %s\n", errno, strerror(errno));
     }
@@ -81,7 +137,7 @@ namespace EPollWatcher {
 
     // Spin while we are not shutting down
     // Also spin while we have pipes to watch
-    while (!EPollWatcherShutdown.load() || NumPipesRemaining() != 0) {
+    while (!EPollWatcherShutdown.load()) {
       // Loop every ten seconds
       // epoll_pwait2 only available since kernel 5.11...
       int Result = epoll_pwait(epoll_fd, Events, MAX_EVENTS, 10 * 1000, nullptr);
@@ -115,6 +171,7 @@ namespace EPollWatcher {
   }
 
   void SetupEPoll() {
+    GetMaxFDs();
     epoll_fd = epoll_create1(EPOLL_CLOEXEC);
     EPollThread = std::thread{EPollWatcher::EPollWatch};
   }

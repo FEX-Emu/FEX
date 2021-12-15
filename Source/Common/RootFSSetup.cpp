@@ -155,14 +155,13 @@ bool SendSocketPipe(std::string const &MountPath) {
   int Result = ppoll(&pfd, 1, &ts, nullptr);
   if (Result == -1 || Result == 0) {
     // didn't get ack back in time
-    // Close our read pipe
-    close(fds[0]);
-    // close our write pipe
-    close(fds[1]);
-
-    // close socket
-    close(socket_fd);
-    return false;
+    // Assume an overburdened system at this point
+    // If the FEXMountDaemon is alive but slept for more than our timeout
+    // then we can spuriously throw errors
+    //
+    // Returning false here would cause FEX to try and spin up a new FEXMountDaemon
+    // and then the FEXMountDaemon would check to see if the lock exists
+    // Then would early exit and not mount a new path
   }
 
   // We've sent the message which means we're done with the socket
