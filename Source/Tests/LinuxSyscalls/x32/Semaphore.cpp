@@ -292,26 +292,21 @@ namespace FEX::HLE::x32 {
         int32_t shmcmd = second;
         int32_t cmd = shmcmd & 0xFF;
         bool IPC64 = shmcmd & 0x100;
-        shmun_32 *shmun = reinterpret_cast<shmun_32*>(ptr);
+        shmun_32 shmun{};
+        shmun.val = reinterpret_cast<uint32_t>(ptr);
 
         switch (cmd) {
           case IPC_SET: {
             struct shmid_ds buf{};
             if (IPC64) {
-              buf = *shmun->buf64;
+              buf = *shmun.buf64;
             }
             else {
-              buf = *shmun->buf32;
+              buf = *shmun.buf32;
             }
             Result = ::shmctl(shmid, cmd, &buf);
-            if (Result != -1) {
-              if (IPC64) {
-                *shmun->buf64 = buf;
-              }
-              else {
-                *shmun->buf32 = buf;
-              }
-            }
+            // IPC_SET sets the internal data structure that the kernel uses
+            // No need to writeback
             break;
           }
           case SHM_STAT:
@@ -321,10 +316,10 @@ namespace FEX::HLE::x32 {
             Result = ::shmctl(shmid, cmd, &buf);
             if (Result != -1) {
               if (IPC64) {
-                buf = *shmun->buf64;
+                *shmun.buf64 = buf;
               }
               else {
-                buf = *shmun->buf32;
+                *shmun.buf32 = buf;
               }
             }
             break;
@@ -334,10 +329,10 @@ namespace FEX::HLE::x32 {
             Result = ::shmctl(shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
             if (Result != -1) {
               if (IPC64) {
-                *shmun->__buf64 = si;
+                *shmun.__buf64 = si;
               }
               else {
-                *shmun->__buf32 = si;
+                *shmun.__buf32 = si;
               }
             }
             break;
@@ -346,12 +341,8 @@ namespace FEX::HLE::x32 {
             struct shm_info si{};
             Result = ::shmctl(shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
             if (Result != -1) {
-              if (IPC64) {
-                *shmun->__buf_info_64 = si;
-              }
-              else {
-                *shmun->__buf_info_32 = si;
-              }
+              // SHM_INFO doesn't follow IPC64 behaviour
+              *shmun.__buf_info_32 = si;
             }
             break;
           }
