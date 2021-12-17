@@ -321,7 +321,12 @@ void CPUIDEmu::SetupHostHybridFlag() {
       }
 
       Data.IsBig = FoundBig;
-      Data.ProductName = MIDR->ProductName ?: ProductNames::ARM_UNKNOWN;
+      if (MIDR) {
+        Data.ProductName = MIDR->ProductName ?: ProductNames::ARM_UNKNOWN;
+      }
+      else {
+        Data.ProductName = ProductNames::ARM_UNKNOWN;
+      }
     }
   }
   else {
@@ -331,7 +336,12 @@ void CPUIDEmu::SetupHostHybridFlag() {
       auto MIDROption = FindDefinedMIDR(MIDR);
 
       PerCPUData[i].IsBig = true;
-      PerCPUData[i].ProductName = MIDROption->ProductName;
+      if (MIDROption) {
+        PerCPUData[i].ProductName = MIDROption->ProductName ?: ProductNames::ARM_UNKNOWN;
+      }
+      else {
+        PerCPUData[i].ProductName = ProductNames::ARM_UNKNOWN;
+      }
     }
   }
 }
