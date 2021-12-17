@@ -9,6 +9,7 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <asm/posix_types.h>
+#include <asm/sembuf.h>
 #include <cstdint>
 #include <sys/sem.h>
 #include <sys/stat.h>
@@ -59,14 +60,19 @@ using __time_t = time_t;
   static_assert(std::is_trivial<ipc_perm_64>::value, "Needs to be trivial");
   static_assert(sizeof(ipc_perm_64) == 48, "Incorrect size");
 
-  struct semid_ds_64 {
+  // Matches the definition x86/include/uapi/asm/sembuf.h
+  struct
+  FEX_ANNOTATE("alias-x86_64-semid64_ds")
+  FEX_ANNOTATE("fex-match")
+  semid_ds_64 {
     FEX::HLE::x64::ipc_perm_64	sem_perm;
     time_t sem_otime;
-    time_t sem_otime_high;
+    uint64_t __unused1;
     time_t sem_ctime;
-    time_t sem_ctime_high;
+    uint64_t __unused2;
     uint64_t sem_nsems;
-    uint64_t _pad[2];
+    uint64_t __unused3;
+    uint64_t __unused4;
 
     semid_ds_64() = delete;
 
@@ -77,15 +83,6 @@ using __time_t = time_t;
       buf.sem_otime = sem_otime;
       buf.sem_ctime = sem_ctime;
       buf.sem_nsems = sem_nsems;
-
-#ifndef _M_ARM_64
-      // AArch64 doesn't have these legacy high variables
-      buf.__sem_otime_high = sem_otime_high;
-      buf.__sem_ctime_high = sem_ctime_high;
-#endif
-
-      // sem_base, sem_pending, sem_pending_last, undo doesn't exist in the definition
-      // Kernel doesn't return anything in them
       return buf;
     }
 
@@ -94,12 +91,6 @@ using __time_t = time_t;
       sem_otime = buf.sem_otime;
       sem_ctime = buf.sem_ctime;
       sem_nsems = buf.sem_nsems;
-
-#ifndef _M_ARM_64
-      // AArch64 doesn't have these legacy high variables
-      sem_otime_high = buf.__sem_otime_high;
-      sem_ctime_high = buf.__sem_ctime_high;
-#endif
     }
   };
 
