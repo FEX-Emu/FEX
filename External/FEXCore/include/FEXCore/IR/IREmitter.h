@@ -43,7 +43,7 @@ friend class FEXCore::IR::PassManager;
 
   IRPair<IROp_Constant> _Constant(uint8_t Size, uint64_t Constant) {
     auto Op = AllocateOp<IROp_Constant, IROps::OP_CONSTANT>();
-    uint64_t Mask = ~0ULL >> (Size - 64);
+    uint64_t Mask = ~0ULL >> (64 - Size);
     Op.first->Constant = (Constant & Mask);
     Op.first->Header.Size = Size / 8;
     Op.first->Header.ElementSize = Size / 8;
