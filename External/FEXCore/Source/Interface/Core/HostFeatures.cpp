@@ -29,6 +29,18 @@ static uint32_t GetDCZID() {
   return Result;
 }
 
+static uint32_t GetFPCR() {
+  uint64_t Result{};
+  __asm ("mrs %[Res], FPCR"
+    : [Res] "=r" (Result));
+  return Result;
+}
+
+static void SetFPCR(uint64_t Value) {
+  __asm ("msr FPCR, %[Value]"
+    :: [Value] "r" (Value));
+}
+
 #else
 static uint32_t GetDCZID() {
   // Return unsupported
@@ -42,6 +54,9 @@ HostFeatures::HostFeatures() {
   auto Features = vixl::CPUFeatures::InferFromOS();
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
+  // Only supported when FEAT_AFP is supported
+  SupportsFlushInputsToZero = Features.Has(vixl::CPUFeatures::Feature::kAFP);
+
   // RCPC is bugged on Snapdragon 865
   // Causes glibc cond16 test to immediately throw assert
   // __pthread_mutex_cond_lock: Assertion `mutex->__data.__owner == 0'
@@ -63,6 +78,27 @@ HostFeatures::HostFeatures() {
 #ifdef _M_X86_64
   Xbyak::util::Cpu Features{};
   SupportsAES = Features.has(Xbyak::util::Cpu::tAESNI);
+  SupportsFlushInputsToZero = true;
+  SupportsFloatExceptions = true;
+#else
+  // Test if this CPU supports float exception trapping by attempting to enable
+  // On unsupported these bits are architecturally defined as RAZ/WI
+  constexpr uint32_t ExceptionEnableTraps =
+    (1U << 8) |  // Invalid Operation float exception trap enable
+    (1U << 9) |  // Divide by zero float exception trap enable
+    (1U << 10) | // Overflow float exception trap enable
+    (1U << 11) | // Underflow float exception trap enable
+    (1U << 12) | // Inexact float exception trap enable
+    (1U << 15);  // Input Denormal float exception trap enable
+
+  uint32_t OriginalFPCR = GetFPCR();
+  uint32_t FPCR = OriginalFPCR | ExceptionEnableTraps;
+  SetFPCR(FPCR);
+  FPCR = GetFPCR();
+  SupportsFloatExceptions = (FPCR & ExceptionEnableTraps) == ExceptionEnableTraps;
+
+  // Set FPCR back to original just in case anything changed
+  SetFPCR(OriginalFPCR);
 #endif
 
   // Check if we can support cacheline clears
