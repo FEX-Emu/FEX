@@ -8,6 +8,7 @@ $end_info$
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <linux/types.h>
 #include <asm/ipcbuf.h>
 #include <asm/posix_types.h>
 #include <asm/sembuf.h>
