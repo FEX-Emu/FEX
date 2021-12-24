@@ -480,7 +480,7 @@ std::string buildMemoryMap() {
   xml << "<?xml version='1.0'?>\n";
 
   xml << "<!DOCTYPE memory-map>\n";
-  xml << "<memory-map>";
+  xml << "<memory-map>\n";
 
   std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
   std::string Line;
@@ -494,7 +494,7 @@ std::string buildMemoryMap() {
     }
   }
 
-  xml << "</memory-map>";
+  xml << "</memory-map>\n";
 
   xml << std::flush;
 
@@ -595,20 +595,20 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
         ThreadString = ss.str();
       }
 
-      return {encode(ThreadString.substr(offset, length)), HandledPacketType::TYPE_ACK};
+      return {encode(ThreadString), HandledPacketType::TYPE_ACK};
     }
 
     if (object == "memory-map") {
       if (offset == 0) {
         MemoryMapString = buildMemoryMap();
       }
-      return {encode(MemoryMapString.substr(offset, length)), HandledPacketType::TYPE_ACK};
+      return {encode(MemoryMapString), HandledPacketType::TYPE_ACK};
     }
     if (object == "osdata") {
       if (offset == 0) {
         OSDataString = buildOSData();
       }
-      return {encode(OSDataString.substr(offset, length)), HandledPacketType::TYPE_ACK};
+      return {encode(OSDataString), HandledPacketType::TYPE_ACK};
     }
 
     return {"", HandledPacketType::TYPE_UNKNOWN};
