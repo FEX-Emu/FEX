@@ -32,7 +32,7 @@
       },
       "Threads": {
         "Type": "uint32",
-        "Default": "1",
+        "Default": "0",
         "ShortArg": "T",
         "Desc": [
           "Number of physical hardware threads to tell the process we have.",
