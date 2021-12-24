@@ -9,6 +9,7 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <linux/types.h>
 #include <asm/ipcbuf.h>
 #include <asm/shmbuf.h>
 #include <bits/types/stack_t.h>
@@ -16,7 +17,6 @@ $end_info$
 #include <cstring>
 #include <fcntl.h>
 #include <limits>
-#include <linux/types.h>
 #include <sys/ipc.h>
 #include <mqueue.h>
 #include <signal.h>
