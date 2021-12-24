@@ -16,6 +16,7 @@ $end_info$
 #include <cstring>
 #include <fcntl.h>
 #include <limits>
+#include <linux/types.h>
 #include <sys/ipc.h>
 #include <mqueue.h>
 #include <signal.h>
