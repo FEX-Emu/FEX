@@ -424,6 +424,20 @@ namespace JSON {
       }
     }
 
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_CORE)) {
+      // Sanitize Core option
+      FEX_CONFIG_OPT(Core, CORE);
+#if (_M_X86_64)
+      constexpr uint32_t MaxCoreNumber = 2;
+#else
+      constexpr uint32_t MaxCoreNumber = 1;
+#endif
+      if (Core > MaxCoreNumber) {
+        // Sanitize the core option by setting the core to the JIT if invalid
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, std::to_string(FEXCore::Config::CONFIG_IRJIT));
+      }
+    }
+
     std::string ContainerPrefix { FindContainerPrefix() };
     auto ExpandPathIfExists = [&ContainerPrefix](FEXCore::Config::ConfigOption Config, std::string PathName) {
       auto NewPath = ExpandPath(ContainerPrefix, PathName);
