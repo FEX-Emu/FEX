@@ -8,6 +8,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
+#include <FEXHeaderUtils/Syscalls.h>
+
 #include <fcntl.h>
 #include <stdint.h>
 #include <sys/file.h>
@@ -251,7 +253,7 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS(renameat2, [](FEXCore::Core::CpuStateFrame *Frame, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags) -> uint64_t {
       // Flags don't need remapped
-      uint64_t Result = ::renameat2(olddirfd, oldpath, newdirfd, newpath, flags);
+      uint64_t Result = FHU::Syscalls::renameat2(olddirfd, oldpath, newdirfd, newpath, flags);
       SYSCALL_ERRNO();
     });
 

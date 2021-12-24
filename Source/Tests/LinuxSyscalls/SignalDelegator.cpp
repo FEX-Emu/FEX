@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <atomic>
 #include <string.h>
@@ -448,7 +449,7 @@ namespace FEX::HLE {
     if (PendingSignals != 0) {
       for (int i = 0; i < 64; ++i) {
         if (PendingSignals & (1ULL << i)) {
-          tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, i + 1);
+          FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, i + 1);
           // We might not even return here which is spooky
         }
       }

@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <algorithm>
 #include <array>
@@ -17,7 +18,6 @@
 #include <new>
 #include <sstream>
 #include <sys/mman.h>
-#include <bits/mman-map-flags-generic.h>
 #include <sys/utsname.h>
 #include <type_traits>
 #include <utility>

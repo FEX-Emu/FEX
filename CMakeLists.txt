@@ -424,6 +424,10 @@ if (BUILD_TESTS)
   enable_testing()
   message(STATUS "Unit tests are enabled")
 endif()
+
+add_subdirectory(FEXHeaderUtils/)
+include_directories(FEXHeaderUtils/)
+
 add_subdirectory(External/FEXCore)
 
 # Binfmt_misc files must be installed prior to Source/ installs

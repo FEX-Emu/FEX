@@ -8,6 +8,8 @@ $end_info$
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/InterpreterDefines.h"
 
+#include <FEXHeaderUtils/Syscalls.h>
+
 #include <cstdint>
 #ifdef _M_X86_64
 #include <xmmintrin.h>
@@ -46,7 +48,7 @@ DEF_OP(Break) {
       StopThread(Data->State);
     break;
     case FEXCore::IR::Break_InvalidInstruction:
-      tgkill(Data->State->ThreadManager.PID, Data->State->ThreadManager.TID, SIGILL);
+      FHU::Syscalls::tgkill(Data->State->ThreadManager.PID, Data->State->ThreadManager.TID, SIGILL);
     break;
   default: LOGMAN_MSG_A_FMT("Unknown Break Reason: {}", Op->Reason); break;
   }
@@ -142,7 +144,7 @@ DEF_OP(Print) {
 
 DEF_OP(ProcessorID) {
   uint32_t CPU, CPUNode;
-  ::getcpu(&CPU, &CPUNode);
+  FHU::Syscalls::getcpu(&CPU, &CPUNode);
   GD = (CPUNode << 12) | CPU;
 }
 

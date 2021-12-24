@@ -11,6 +11,8 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXHeaderUtils/Syscalls.h>
+
 #include <array>
 #include <bit>
 #include <cmath>
@@ -428,7 +430,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   GetBuffer()->SetExecutable();
 
   if (CTX->Config.BlockJITNaming()) {
-    std::string Name = "Dispatch_" + std::to_string(::gettid());
+    std::string Name = "Dispatch_" + std::to_string(FHU::Syscalls::gettid());
     CTX->Symbols.Register(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr), Name);
   }
   if (CTX->Config.GlobalJITNaming()) {

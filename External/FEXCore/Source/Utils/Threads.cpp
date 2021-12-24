@@ -12,7 +12,6 @@
 #include <sys/mman.h>
 #include <sys/signal.h>
 #include <sys/syscall.h>
-#include <bits/mman-map-flags-generic.h>
 #include <deque>
 #include <unistd.h>
 

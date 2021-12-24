@@ -11,6 +11,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstdint>
 #include <errno.h>

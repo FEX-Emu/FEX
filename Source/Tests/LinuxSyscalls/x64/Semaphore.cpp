@@ -8,6 +8,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Types.h"
 
+#include <FEXHeaderUtils/Syscalls.h>
+
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/sem.h>

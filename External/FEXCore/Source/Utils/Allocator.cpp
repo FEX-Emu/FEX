@@ -2,6 +2,9 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Syscalls.h>
+
+#include <array>
 #include <sys/mman.h>
 #ifdef ENABLE_JEMALLOC
 #include <jemalloc/jemalloc.h>

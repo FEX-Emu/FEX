@@ -26,6 +26,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <algorithm>
 #include <alloca.h>
@@ -373,7 +374,7 @@ static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
 
   // Create a copy of the parent frame
   memcpy(&Data->Data.NewFrame, Frame, sizeof(FEXCore::Core::CpuStateFrame));
-  uint64_t Result = ::syscall(SYS_clone3, &HostArgs, sizeof(HostArgs));
+  uint64_t Result = ::syscall(SYSCALL_DEF(clone3), &HostArgs, sizeof(HostArgs));
 
   // Only parent will get here
   SYSCALL_ERRNO();

@@ -11,9 +11,9 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <algorithm>
-#include <bits/statx-generic.h>
 #include <errno.h>
 #include <cstring>
 #include <fcntl.h>
@@ -596,11 +596,11 @@ uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t
 
   auto Path = GetEmulatedPath(SelfPath);
   if (!Path.empty()) {
-    uint64_t Result = ::statx(dirfd, Path.c_str(), flags, mask, statxbuf);
+    uint64_t Result = FHU::Syscalls::statx(dirfd, Path.c_str(), flags, mask, statxbuf);
     if (Result != -1)
       return Result;
   }
-  return ::statx(dirfd, SelfPath, flags, mask, statxbuf);
+  return FHU::Syscalls::statx(dirfd, SelfPath, flags, mask, statxbuf);
 }
 
 uint64_t FileManager::Mknod(const char *pathname, mode_t mode, dev_t dev) {
