@@ -18,4 +18,12 @@ namespace FEX::Config {
   };
 
   void SaveLayerToJSON(const std::string& Filename, FEXCore::Config::Layer *const Layer);
+
+  std::string LoadConfig(
+    bool NoFEXArguments,
+    bool LoadProgramConfig,
+    int argc,
+    char **argv,
+    char **const envp
+  );
 }
