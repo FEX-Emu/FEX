@@ -2,6 +2,7 @@
 
 #include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <atomic>
 #include <fcntl.h>
@@ -48,7 +49,7 @@ namespace FEX::SocketLogging {
         .Timestamp = Timestamp,
         .PacketType = Type,
         .PID = ::getpid(),
-        .TID = ::gettid(),
+        .TID = FHU::Syscalls::gettid(),
       };
 
       return Msg;

@@ -2,6 +2,7 @@
 #include "Tests/LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <bitset>
 #include <map>

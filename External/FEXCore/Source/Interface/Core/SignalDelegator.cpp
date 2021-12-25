@@ -1,5 +1,6 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <unistd.h>
 #include <signal.h>
@@ -91,7 +92,7 @@ namespace FEXCore {
     HostSignalHandler &Handler = HostHandlers[Signal];
 
     if (!Thread) {
-      LogMan::Msg::EFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", ::gettid());
+      LogMan::Msg::EFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());
     }
     else {
       if (Handler.Handler &&

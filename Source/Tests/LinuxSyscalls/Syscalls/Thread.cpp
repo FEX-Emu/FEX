@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <grp.h>
 #include <limits.h>
@@ -154,7 +155,7 @@ namespace FEX::HLE {
     }
 
     // Depending on clone settings, our TID and PID could have changed
-    Thread->ThreadManager.TID = ::gettid();
+    Thread->ThreadManager.TID = FHU::Syscalls::gettid();
     Thread->ThreadManager.PID = ::getpid();
     FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadManager.PID);
 
@@ -180,7 +181,7 @@ namespace FEX::HLE {
     if (Result == 0) {
       // Child
       // update the internal TID
-      Thread->ThreadManager.TID = ::gettid();
+      Thread->ThreadManager.TID = FHU::Syscalls::gettid();
       Thread->ThreadManager.PID = ::getpid();
       FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadManager.PID);
       Thread->ThreadManager.clear_child_tid = nullptr;
@@ -290,7 +291,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(tgkill, [](FEXCore::Core::CpuStateFrame *Frame, int tgid, int tid, int sig) -> uint64_t {
-      uint64_t Result = ::tgkill(tgid, tid, sig);
+      uint64_t Result = FHU::Syscalls::tgkill(tgid, tid, sig);
       SYSCALL_ERRNO();
     });
 
@@ -445,7 +446,7 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_PASS(gettid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      uint64_t Result = ::gettid();
+      uint64_t Result = FHU::Syscalls::gettid();
       SYSCALL_ERRNO();
     });
 

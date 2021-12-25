@@ -1,3 +1,6 @@
+
+#include <FEXHeaderUtils/Syscalls.h>
+
 #include <atomic>
 #include <bits/types/siginfo_t.h>
 #include <chrono>
@@ -131,7 +134,7 @@ namespace EPollWatcher {
 
   void EPollWatch() {
     pthread_setname_np(pthread_self(), "EPollWatcher");
-    EPollThreadTID = ::gettid();
+    EPollThreadTID = FHU::Syscalls::gettid();
     constexpr size_t MAX_EVENTS = 16;
     struct epoll_event Events[MAX_EVENTS]{};
 
@@ -179,7 +182,7 @@ namespace EPollWatcher {
   void SignalShutdown() {
     EPollWatcherShutdown = true;
     // Send a signal to wake up epoll immediately
-    tgkill(::getpid(), EPollThreadTID, SIGUSR1);
+    FHU::Syscalls::tgkill(::getpid(), EPollThreadTID, SIGUSR1);
   }
 
   void ShutdownEPoll() {
@@ -197,7 +200,7 @@ namespace SocketWatcher {
 
   void SocketFunction() {
     pthread_setname_np(pthread_self(), "SocketWatcher");
-    SocketThreadTID = ::gettid();
+    SocketThreadTID = FHU::Syscalls::gettid();
     listen(socket_fd, 16);
     while (!SocketShutdown.load()) {
       // Listen for connections
@@ -339,7 +342,7 @@ namespace SocketWatcher {
   void SignalShutdown() {
     SocketShutdown = true;
     // Send a signal to wake up ppoll immediately
-    tgkill(::getpid(), SocketThreadTID, SIGUSR1);
+    FHU::Syscalls::tgkill(::getpid(), SocketThreadTID, SIGUSR1);
   }
 
   void ShutdownSocketWatcher() {

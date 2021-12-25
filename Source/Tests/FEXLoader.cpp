@@ -39,6 +39,7 @@ $end_info$
 #include <mutex>
 #include <queue>
 #include <set>
+#include <sstream>
 #include <string>
 #include <sys/auxv.h>
 #include <sys/resource.h>

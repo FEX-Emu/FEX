@@ -20,6 +20,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <fmt/format.h>
 

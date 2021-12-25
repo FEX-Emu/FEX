@@ -5,13 +5,15 @@ desc: Handles presented capability bits for guest cpu
 $end_info$
 */
 
-#include <FEXCore/Config/Config.h>
-#include <FEXCore/Core/CPUID.h>
 #include "Common/StringConv.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/HostFeatures.h"
 #include "Utils/FileLoading.h"
+
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/CPUID.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include "git_version.h"
 
@@ -67,7 +69,7 @@ namespace ProductNames {
 
 static uint32_t GetCPUID() {
   uint32_t CPU{};
-  getcpu(&CPU, nullptr);
+  FHU::Syscalls::getcpu(&CPU, nullptr);
   return CPU;
 }
 

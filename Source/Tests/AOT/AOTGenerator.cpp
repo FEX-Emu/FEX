@@ -1,8 +1,9 @@
-#include <FEXCore/Core/Context.h>
-#include <FEXCore/Utils/LogManager.h>
-
 #include "ELFCodeLoader2.h"
 #include "Linux/Utils/ELFContainer.h"
+
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstddef>
 #include <set>
@@ -97,11 +98,11 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
   for (int i = 0; i < get_nprocs_conf(); i++) {
     std::thread thd([&BranchTargets, CTX, &counter, &Compiled, &Section, &QueueMutex, SectionMaxAddress]() {
       // Set the priority of the thread so it doesn't overwhelm the system when running in the background
-      setpriority(PRIO_PROCESS, ::gettid(), 19);
+      setpriority(PRIO_PROCESS, FHU::Syscalls::gettid(), 19);
 
       // Setup thread - Each compilation thread uses its own backing FEX thread
       FEXCore::Core::CPUState state;
-      auto Thread = FEXCore::Context::CreateThread(CTX, &state, gettid());
+      auto Thread = FEXCore::Context::CreateThread(CTX, &state, FHU::Syscalls::gettid());
       std::set<uint64_t> ExternalBranchesLocal;
       FEXCore::Context::ConfigureAOTGen(Thread, &ExternalBranchesLocal, SectionMaxAddress);
 

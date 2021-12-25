@@ -9,12 +9,12 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstdint>
 #include <cstring>
 #include <vector>
 #include <sys/mman.h>
-#include <bits/mman-map-flags-generic.h>
 
 namespace FEXCore {
 constexpr size_t CODE_SIZE = 0x1000;

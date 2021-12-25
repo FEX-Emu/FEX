@@ -11,6 +11,7 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <cmath>
 #include <memory>
@@ -312,7 +313,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   End = Start + getSize();
 
   if (CTX->Config.BlockJITNaming()) {
-    std::string Name = "Dispatch_" + std::to_string(::gettid());
+    std::string Name = "Dispatch_" + std::to_string(FHU::Syscalls::gettid());
     CTX->Symbols.Register(reinterpret_cast<void*>(Start), End-Start, Name);
   }
   if (CTX->Config.GlobalJITNaming()) {

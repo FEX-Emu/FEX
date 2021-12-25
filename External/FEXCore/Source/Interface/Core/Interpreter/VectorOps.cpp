@@ -8,6 +8,7 @@ $end_info$
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/InterpreterDefines.h"
 
+#include <bit>
 #include <cstdint>
 
 namespace FEXCore::CPU {

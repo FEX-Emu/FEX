@@ -20,6 +20,7 @@ $end_info$
 #include <fcntl.h>
 #include <filesystem>
 #include <ostream>
+#include <sstream>
 #include <stdio.h>
 #include <system_error>
 #include <unistd.h>

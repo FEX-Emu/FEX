@@ -41,6 +41,7 @@ $end_info$
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <algorithm>
 #include <array>
@@ -273,7 +274,7 @@ namespace FEXCore::Context {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::Pause);
       if (Thread->RunningEvents.Running.load()) {
         // Only attempt to stop this thread if it is running
-        tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+        FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
       }
     }
   }
@@ -336,7 +337,7 @@ namespace FEXCore::Context {
   }
 
   void Context::Stop(bool IgnoreCurrentThread) {
-    pid_t tid = gettid();
+    pid_t tid = FHU::Syscalls::gettid();
     FEXCore::Core::InternalThreadState* CurrentThread{};
 
     // Tell all the threads that they should stop
@@ -376,14 +377,14 @@ namespace FEXCore::Context {
   void Context::StopThread(FEXCore::Core::InternalThreadState *Thread) {
     if (Thread->RunningEvents.Running.exchange(false)) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::Stop);
-      tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+      FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
     }
   }
 
   void Context::SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event) {
     if (Thread->RunningEvents.Running.load()) {
       Thread->SignalReason.store(Event);
-      tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+      FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
     }
   }
 
@@ -451,7 +452,7 @@ namespace FEXCore::Context {
 
   void Context::InitializeThreadTLSData(FEXCore::Core::InternalThreadState *Thread) {
     // Let's do some initial bookkeeping here
-    Thread->ThreadManager.TID = ::gettid();
+    Thread->ThreadManager.TID = FHU::Syscalls::gettid();
     Thread->ThreadManager.PID = ::getpid();
     SignalDelegation->RegisterTLSState(Thread);
     ThunkHandler->RegisterTLSState(Thread);
